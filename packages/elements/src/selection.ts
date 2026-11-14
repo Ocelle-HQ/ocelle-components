@@ -53,10 +53,13 @@ function kept<T>(kind: Kind, selected: T | null, entries: readonly Entry<T>[]): 
   return kind === "listbox" || selected !== null ? selected : firstEnabled(entries);
 }
 
-/** A host set of `value` (FR-010, FR-010a): every set forgets a remembered value, and may be remembered in turn. */
+/**
+ * A host set of `value` (FR-010, FR-010a): every set forgets a remembered value, and may be remembered in turn. No
+ * child's value is ever empty (FR-009), so `""` matches none.
+ */
 export function hostSet<T>(kind: Kind, state: Selection<T>, entries: readonly Entry<T>[], value: string): Selection<T> {
   if (value === valueOf(state, entries)) return { selected: kept(kind, state.selected, entries), remembered: null };
-  const match = value === "" ? null : firstEnabled(entries, value);
+  const match = firstEnabled(entries, value);
   if (match !== null) return { selected: match, remembered: null };
   const selected = kind === "listbox" ? null : kept(kind, state.selected, entries);
   return { selected, remembered: value === "" ? null : value };
@@ -69,10 +72,9 @@ export function userSelect<T>(state: Selection<T>, entries: readonly Entry<T>[],
   return { state: { selected: node, remembered: null }, changed: node !== state.selected };
 }
 
-/** The first enabled entry of `list` from `start` stepping by `step`, accepted by `present`. */
-function scan<T>(list: readonly Entry<T>[], start: number, step: number, present: (entry: Entry<T>) => Entry<T> | undefined): T | null {
-  const ordered = step > 0 ? list.slice(start) : list.slice(0, start + 1).reverse();
-  for (const entry of ordered) {
+/** The node of the first entry of `list` that `present` finds among the children, enabled; null when none. */
+function firstUsable<T>(list: readonly Entry<T>[], present: (entry: Entry<T>) => Entry<T> | undefined): T | null {
+  for (const entry of list) {
     const found = present(entry);
     if (found !== undefined && !found.disabled) return found.node;
   }
@@ -84,16 +86,16 @@ function scan<T>(list: readonly Entry<T>[], start: number, step: number, present
  * after it in document order, else the nearest enabled child before it; null when there is none or `node` was never a
  * child. A node still present is placed by the children after the batch, a removed one by the children before it.
  */
-export function fallback<T>(before: readonly Entry<T>[], after: readonly Entry<T>[], node: T): T | null {
+export function fallback<T>(before: readonly Entry<T>[], after: readonly Entry<T>[], node: T | null): T | null {
   const inAfter = after.findIndex((entry) => entry.node === node);
   if (inAfter !== -1) {
     const same = (entry: Entry<T>): Entry<T> => entry;
-    return scan(after, inAfter + 1, 1, same) ?? scan(after, inAfter - 1, -1, same);
+    return firstUsable(after.slice(inAfter + 1), same) ?? firstUsable(after.slice(0, inAfter).reverse(), same);
   }
   const inBefore = before.findIndex((entry) => entry.node === node);
   if (inBefore === -1) return null;
   const present = (entry: Entry<T>): Entry<T> | undefined => entryOf(after, entry.node);
-  return scan(before, inBefore + 1, 1, present) ?? scan(before, inBefore - 1, -1, present);
+  return firstUsable(before.slice(inBefore + 1), present) ?? firstUsable(before.slice(0, inBefore).reverse(), present);
 }
 
 /** The outcome of a batch: the selection, and the child to focus (null leaves focus alone). */
@@ -109,8 +111,7 @@ function selectionAfter<T>(kind: Kind, state: Selection<T>, before: readonly Ent
   const current = entryOf(after, state.selected);
   if (kind === "listbox") return { selected: current === undefined ? null : state.selected, remembered: state.remembered };
   if (current !== undefined && !current.disabled) return state;
-  const moved = state.selected === null ? null : fallback(before, after, state.selected);
-  return { selected: moved ?? firstEnabled(after), remembered: state.remembered };
+  return { selected: fallback(before, after, state.selected) ?? firstEnabled(after), remembered: state.remembered };
 }
 
 /**
@@ -121,7 +122,7 @@ function selectionAfter<T>(kind: Kind, state: Selection<T>, before: readonly Ent
 export function batch<T>(kind: Kind, state: Selection<T>, before: readonly Entry<T>[], after: readonly Entry<T>[], hadFocus: T | null): BatchResult<T> {
   const next = selectionAfter(kind, state, before, after);
   if (hadFocus === null) return { state: next, focus: null };
-  const followsSelection = kind !== "listbox" && hadFocus === state.selected && next.selected !== hadFocus;
+  const followsSelection = kind !== "listbox" && hadFocus === state.selected;
   if (followsSelection && next.selected !== null) return { state: next, focus: next.selected };
   if (entryOf(after, hadFocus) !== undefined) return { state: next, focus: hadFocus };
   return { state: next, focus: followsSelection ? null : fallback(before, after, hadFocus) };
@@ -245,7 +246,7 @@ export class SelectionModel<T> {
     const records = this.#source.take();
     const { record, hadFocus } = takeBlurred(this.#record, records.flat(), focusLeft);
     this.#record = record;
-    if (hadFocus === null && records.length === 0) return null;
+    if (records.length === 0) return null;
     return this.#process(hadFocus);
   }
 

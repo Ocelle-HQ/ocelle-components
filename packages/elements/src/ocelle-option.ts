@@ -27,7 +27,9 @@ export class OcelleOption extends LitElement {
     disabled: { type: Boolean, reflect: true },
     // `value` is the accessor below, which writes the attribute itself. Lit wraps an accessor of the class and, at the
     // first update, reflects its initial value; `useDefault` records that value as the default instead, so the index
-    // default is never written to the attribute (FR-009).
+    // default is never written to the attribute (FR-009). `reflect` and `noAccessor` describe the accessor for the
+    // manifest; the accessor's own setter does the reflecting.
+    // Stryker disable next-line BooleanLiteral,ObjectLiteral: equivalent, the accessor's setter writes the attribute and the attribute's changes are not passed to Lit; without `reflect` Lit writes no initial value either
     value: { type: String, reflect: true, noAccessor: true, useDefault: true },
   };
 

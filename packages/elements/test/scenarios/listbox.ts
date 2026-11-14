@@ -38,6 +38,7 @@ function opt(index: number, parent = "lb"): Target & Focused {
 }
 
 const after: Focused = { id: "after" };
+const before: Focused = { id: "before" };
 
 /** Mounts `markup`, scrolls the page to its start and moves the pointer onto the plain text away from the list. */
 async function mount(driver: Driver, inPage: InPage, markup: string): Promise<void> {
@@ -1042,5 +1043,235 @@ export const listboxScenarios: readonly ListboxScenario[] = [
       return { later, inTask };
     },
     expected: { later: { tree: exposed("Folders", ["alpha", "beta", "delta"], 2), value: "delta", events: [] }, inTask: ["delta", "true"] },
+  },
+  // Bodies added after the mutation run of phase 2 (reviews/phase-2/notes.md), each with the mutant it kills.
+  {
+    // Mutants: aria-selected written as "" for false; `disabled` not reflected from its property; an option that leaves
+    // keeping the listbox's attributes (no clean-up, a clean-up of every option, or one attribute left).
+    name: "the listbox writes aria-selected, aria-disabled and tabindex on each option, follows a disabled property set, and removes them from a disabled option that leaves it, which has no role outside and keeps its own disabled",
+    fixture: true,
+    run: async (driver, inPage) => {
+      await mount(driver, inPage, page(options(folderNames, [2]), 'label="Folders" value="beta"'));
+      const states = (): unknown =>
+        [...(document.getElementById("lb")?.children ?? [])].map((child) => [child.getAttribute("aria-selected"), child.getAttribute("aria-disabled"), child.getAttribute("tabindex")]);
+      const written = await inPage(states, null);
+      await driver.mutate("lb", [{ property: "disabled", value: true, child: 3 }]);
+      const disabled = { states: await inPage(states, null), tree: await tree(driver) };
+      await inPage(() => {
+        const option = document.getElementById("lb")?.children[2];
+        if (option !== undefined) {
+          option.id = "left";
+          document.body.append(option);
+        }
+      }, null);
+      await inPage(frames, undefined);
+      const left = await inPage(() => {
+        const option = document.getElementById("left");
+        return [option?.getAttribute("aria-selected") ?? null, option?.getAttribute("aria-disabled") ?? null, option?.getAttribute("tabindex") ?? null, option?.hasAttribute("disabled") ?? null];
+      }, null);
+      return { written, disabled, left, leftTree: await tree(driver, "left"), remaining: await inPage(states, null) };
+    },
+    expected: {
+      written: [
+        ["false", null, "-1"],
+        ["true", null, "0"],
+        ["false", "true", "-1"],
+        ["false", null, "-1"],
+        ["false", null, "-1"],
+      ],
+      disabled: {
+        states: [
+          ["false", null, "-1"],
+          ["true", null, "0"],
+          ["false", "true", "-1"],
+          ["false", "true", "-1"],
+          ["false", null, "-1"],
+        ],
+        tree: exposed("Folders", folderNames, 1, [2, 3]),
+      },
+      left: [null, null, null, true],
+      leftTree: [],
+      remaining: [
+        ["false", null, "-1"],
+        ["true", null, "0"],
+        ["false", "true", "-1"],
+        ["false", null, "-1"],
+      ],
+    },
+  },
+  {
+    // Mutants: the observer not watching the options' `value`; the option's `value` setter not writing the attribute;
+    // the option passing its `value` attribute to Lit (whose default would then be written when the attribute is removed).
+    name: "FR-010a: an option whose value changes to the remembered value, by attribute or by property, is selected with no event; an option whose value attribute is removed takes its index and the attribute stays absent",
+    fixture: true,
+    run: async (driver, inPage) => {
+      await mount(driver, inPage, page(options(["alpha", "beta"])));
+      await inPage(recordEvents, null);
+      await driver.setProperty("lb", "value", "delta");
+      await driver.mutate("lb", [{ child: 1, attribute: "value", value: "delta" }]);
+      const byAttribute = { tree: await tree(driver), value: await inPage(valueOf, "lb") };
+      await driver.setProperty("lb", "value", "zeta");
+      await driver.mutate("lb", [{ property: "value", value: "zeta", child: 0 }]);
+      const byProperty = { tree: await tree(driver), value: await inPage(valueOf, "lb"), attribute: await inPage(() => document.getElementById("lb")?.children[0]?.getAttribute("value") ?? null, null) };
+      await driver.mutate("lb", [{ child: 0, attribute: "value", value: null }]);
+      await inPage(frames, undefined);
+      const removed = {
+        value: await inPage(valueOf, "lb"),
+        option: await inPage(() => {
+          const option = document.getElementById("lb")?.children[0] as (Element & { value?: unknown }) | undefined;
+          return [option?.value ?? null, option?.getAttribute("value") ?? null];
+        }, null),
+      };
+      return { byAttribute, byProperty, removed, events: await inPage(recordedEvents, null) };
+    },
+    expected: {
+      byAttribute: { tree: exposed("Folders", ["alpha", "beta"], 1), value: "delta" },
+      byProperty: { tree: exposed("Folders", ["alpha", "beta"], 0), value: "zeta", attribute: "zeta" },
+      removed: { value: "0", option: ["0", null] },
+      events: [],
+    },
+  },
+  {
+    // Mutants: every element child taken as an option; the default value counted among every child.
+    name: "an element child of the listbox that is not an ocelle-option is not an option: not exposed, not in the keys, not counted in the default values, given no tabindex",
+    fixture: true,
+    run: async (driver, inPage) => {
+      await mount(driver, inPage, page('<span id="note">A note</span><ocelle-option>alpha</ocelle-option><ocelle-option>beta</ocelle-option>'));
+      await inPage(recordEvents, null);
+      await driver.focus("before");
+      await driver.press("Tab");
+      const first = await driver.activeElement();
+      await driver.press("ArrowUp");
+      const up = await driver.activeElement();
+      await driver.click(opt(1));
+      const values = await inPage(() => [...(document.getElementById("lb")?.querySelectorAll("ocelle-option") ?? [])].map((option) => (option as unknown as { value: unknown }).value), null);
+      return { first, up, tree: await tree(driver), note: await driver.attribute("note", "tabindex"), values, events: await inPage(recordedEvents, null) };
+    },
+    expected: { first: opt(0), up: opt(0), tree: exposed("Folders", ["alpha", "beta"], 1), note: null, values: ["0", "1"], events: [change("1")] },
+  },
+  {
+    // Mutants: the origin filter dropped or its `defaultPrevented` check dropped; a focusin from a descendant of an
+    // option recorded as the last focused option.
+    name: "R-04's origin filter: ArrowDown from a focusable inside an option, or already handled by a listener on an option, is not the listbox's; neither moves focus nor the tab stop, beside ArrowDown on an option, which moves",
+    fixture: true,
+    run: async (driver, inPage) => {
+      await mount(driver, inPage, page('<ocelle-option value="alpha">alpha <span id="inner" tabindex="-1">inner</span></ocelle-option><ocelle-option value="beta">beta</ocelle-option><ocelle-option value="gamma">gamma</ocelle-option>'));
+      await driver.focus("before");
+      await driver.press("Tab");
+      await driver.press("ArrowDown");
+      await driver.press("ArrowDown");
+      const moved = await driver.activeElement();
+      await driver.focus("inner");
+      await driver.press("ArrowDown");
+      const inner = { focus: await driver.activeElement(), tabindexes: await inPage(tabindexes, "lb") };
+      await inPage(() => {
+        document.getElementById("lb")?.children[1]?.addEventListener("keydown", (event) => {
+          event.preventDefault();
+        });
+      }, null);
+      await driver.focus(opt(1));
+      await driver.press("ArrowDown");
+      return { moved, inner, handled: await driver.activeElement(), keys: (await driver.keydownRecord()).map((each) => each.defaultPrevented) };
+    },
+    expected: { moved: opt(2), inner: { focus: { id: "inner" }, tabindexes: ["-1", "-1", "0"] }, handled: opt(1), keys: [false, true, true, false, true] },
+  },
+  {
+    // Mutants: the focus record's listeners in the bubble phase (a listener on an option that stops propagation then
+    // hides the focus from the listbox).
+    name: "R-03: the listbox's focus record runs before listeners on the options, so with options whose focusin and focusout stop propagating a later host move does not steal focus back after Tab out, the last focused option stays the tab stop, and focus is kept through an in-task move",
+    fixture: true,
+    run: async (driver, inPage) => {
+      await mount(driver, inPage, page(options(["alpha", "beta", "gamma"])));
+      await inPage(() => {
+        for (const option of document.getElementById("lb")?.children ?? []) {
+          for (const type of ["focusin", "focusout"]) {
+            option.addEventListener(type, (event) => {
+              event.stopPropagation();
+            });
+          }
+        }
+      }, null);
+      await driver.focus("before");
+      await driver.press("Tab");
+      await driver.press("ArrowDown");
+      await driver.press("ArrowDown");
+      await driver.press("Tab");
+      await driver.mutate("lb", [{ move: 2, before: 0 }]);
+      const left = await driver.activeElement();
+      await driver.press("Tab", ["Shift"]);
+      const back = await driver.activeElement();
+      await driver.mutate("lb", [{ move: 0, before: "end" }]);
+      return { left, back, moved: await driver.activeElement() };
+    },
+    expected: { left: after, back: opt(0), moved: opt(2) },
+  },
+  {
+    // Mutants: `focusLeft` always true (a host that focuses another element while it removes the focused option then
+    // has focus taken back); `focusLeft` read with the wrong comparison.
+    name: "R-03: a host that focuses the button after the list while it removes the focused option keeps that focus, beside a removal with no such host, which moves focus to the next option",
+    fixture: true,
+    run: async (driver, inPage) => {
+      await mount(driver, inPage, page(options(["alpha", "beta", "gamma", "delta"])));
+      await driver.focus(opt(1));
+      await driver.mutate("lb", [{ remove: 1 }]);
+      const moved = await driver.activeElement();
+      await inPage(() => {
+        const listbox = document.getElementById("lb");
+        listbox?.addEventListener(
+          "focusout",
+          () => {
+            document.getElementById("after")?.focus();
+          },
+          { once: true },
+        );
+      }, null);
+      await driver.mutate("lb", [{ remove: 1 }]);
+      await inPage(frames, undefined);
+      return { moved, kept: await driver.activeElement(), tree: await tree(driver) };
+    },
+    expected: { moved: opt(1), kept: after, tree: exposed("Folders", ["alpha", "delta"]) },
+  },
+  {
+    // Mutant: the mousedown on the list part's own padding not prevented (the list part, at tabindex -1, then takes focus).
+    name: "R-03: a press on the list part's padding takes no focus: focus stays on the button before an empty listbox when it is clicked, beside a click on an option, which focuses it",
+    fixture: true,
+    run: async (driver, inPage) => {
+      await mount(driver, inPage, page(""));
+      await driver.focus("before");
+      await driver.click("lb");
+      const padding = await driver.activeElement();
+      await mount(driver, inPage, page(options(["alpha"])));
+      await driver.focus("before");
+      await driver.click(opt(0));
+      return { padding, option: await driver.activeElement() };
+    },
+    expected: { padding: before, option: opt(0) },
+  },
+  {
+    // Mutant: a removed value attribute not clearing the selection.
+    name: "FR-010: removing the value attribute the host wrote clears the selection with no event, beside the set it undoes",
+    fixture: true,
+    run: async (driver, inPage) => {
+      await mount(driver, inPage, page(options(folderNames)));
+      await inPage(recordEvents, null);
+      await driver.setAttribute("lb", "value", "delta");
+      const set = { tree: await tree(driver), value: await inPage(valueOf, "lb") };
+      await driver.setAttribute("lb", "value", null);
+      return { set, removed: { tree: await tree(driver), value: await inPage(valueOf, "lb") }, events: await inPage(recordedEvents, null) };
+    },
+    expected: { set: { tree: exposed("Folders", folderNames, 3), value: "delta" }, removed: { tree: exposed("Folders", folderNames), value: "" }, events: [] },
+  },
+  {
+    // Mutant: the name taken from `label` whatever the host's aria-label (the blank host aria-label then names it).
+    name: "FR-006: a blank host aria-label decides alone and leaves the listbox unnamed even with a label, beside a host aria-label that names it",
+    fixture: true,
+    run: async (driver, inPage) => {
+      await mount(driver, inPage, `<ocelle-listbox id="blank" aria-label=" " label="Folders">${options(["alpha"])}</ocelle-listbox><ocelle-listbox id="named" aria-label="Recent folders" label="Folders">${options(["beta"])}</ocelle-listbox>`);
+      return [(await tree(driver, "blank"))[0], (await tree(driver, "named"))[0]];
+    },
+    expected: [
+      { role: "listbox", name: "" },
+      { role: "listbox", name: "Recent folders" },
+    ],
   },
 ];

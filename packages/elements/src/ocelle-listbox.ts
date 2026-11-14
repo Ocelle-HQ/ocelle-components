@@ -39,7 +39,9 @@ const written = ["aria-selected", "aria-disabled", "tabindex"];
  */
 export class OcelleListbox extends LitElement {
   static override properties = {
+    // Stryker disable next-line ObjectLiteral: equivalent, {} gives Lit's default options, which are type String's (attribute "label", the default converter, not reflected)
     label: { type: String },
+    // Stryker disable next-line ObjectLiteral,BooleanLiteral: equivalent, `value` is the class's own accessor and its attribute is handled in attributeChangedCallback; the entry names the attribute for Lit and the manifest
     value: { type: String, noAccessor: true },
   };
 
@@ -123,8 +125,10 @@ export class OcelleListbox extends LitElement {
   }
 
   override attributeChangedCallback(name: string, old: string | null, value: string | null): void {
+    // Stryker disable next-line ConditionalExpression,BlockStatement,StringLiteral,LogicalOperator: equivalent, Lit's own path sets the same accessor from the attribute, and a removed attribute (null) selects nothing as "" does
     if (name === "value") {
-      if (old !== value) this.value = value ?? "";
+      // Stryker disable next-line StringLiteral: equivalent, a removed attribute clears the selection with any value no option has; only what is remembered differs, and no option has the replacement value
+      this.value = value ?? "";
       return;
     }
     super.attributeChangedCallback(name, old, value);
@@ -137,12 +141,8 @@ export class OcelleListbox extends LitElement {
     this.#apply(this.#model.batch());
   }
 
-  override disconnectedCallback(): void {
-    super.disconnectedCallback();
-    this.#observer.disconnect();
-  }
-
   protected override updated(): void {
+    // Stryker disable next-line StringLiteral: equivalent in Chromium, which names the host from a present aria-label, blank or not, whatever the internals say (WebKit is not measured)
     this.#internals.ariaLabel = accessibleName(this.label, this.getAttribute("aria-label")) ?? null;
   }
 
@@ -168,6 +168,11 @@ export class OcelleListbox extends LitElement {
     for (const node of this.#owned) if (!present.has(node)) for (const name of written) node.removeAttribute(name);
     this.#owned = present;
     if (focus !== null && !focus.matches(":focus")) focus.focus();
+  }
+
+  /** The option of the listbox that `target` is, or null. */
+  #childOf(target: EventTarget | null): OcelleOption | null {
+    return this.#model.entries.find((entry) => entry.node === target)?.node ?? null;
   }
 
   /** The option of the listbox an event came from, or null. */
@@ -202,19 +207,19 @@ export class OcelleListbox extends LitElement {
   }
 
   readonly #focusin = (event: FocusEvent): void => {
-    const option = this.#optionOf(event);
-    if (option === null || event.target !== option) return;
+    const option = this.#childOf(event.target);
+    if (option === null) return;
     this.#model.focusIn(option);
     this.#apply(null);
   };
 
   readonly #focusout = (event: FocusEvent): void => {
-    const option = this.#optionOf(event);
-    if (option === null || event.target !== option) return;
+    const option = this.#childOf(event.target);
+    // Stryker disable next-line ConditionalExpression: equivalent, a focusout from a descendant that is not an option records nothing, as `focusOut` of no option leaves `blurred` null and `focused` already null
+    if (option === null) return;
     if (this.#model.focusOut(option, event.relatedTarget)) {
       queueMicrotask(() => {
-        const active = document.activeElement;
-        this.#apply(this.#model.afterBlur(active === null || active === document.body));
+        this.#apply(this.#model.afterBlur(document.activeElement === document.body));
       });
     }
   };

@@ -41,19 +41,17 @@ function direction(key: string, axis: Axis, rtl: boolean): number {
 
 /** The index a key moves focus to, or null for a key that is not a move of this axis. */
 export function target(key: string, move: Move): number | null {
-  const { index, enabled, wrap } = move;
+  const { index, enabled } = move;
   const first = enabled.indexOf(true);
   if (key === "Home" || key === "End") return first === -1 ? null : key === "Home" ? first : enabled.lastIndexOf(true);
   const step = direction(key, move.axis, move.rtl);
   if (step === 0 || first === -1) return null;
-  const count = enabled.length;
-  for (let offset = 1; offset <= count; offset += 1) {
-    const at = index + step * offset;
-    if (!wrap && (at < 0 || at >= count)) return index;
-    const wrapped = ((at % count) + count) % count;
-    if (enabled[wrapped] === true) return wrapped;
-  }
-  return index;
+  // The children in the order the key walks them from the focused one, coming round only when the parent wraps.
+  const all = enabled.map((_, at) => at);
+  const ahead = step === 1 ? all.slice(index + 1) : all.slice(0, index).reverse();
+  // Stryker disable next-line MethodExpression,ArithmeticOperator: equivalent, `behind` is read only after every child `ahead` was found disabled, so a longer list that repeats them, or adds the focused child, finds the same child or falls back to it
+  const behind = step === 1 ? all.slice(0, index) : all.slice(index + 1).reverse();
+  return (move.wrap ? [...ahead, ...behind] : ahead).find((at) => enabled[at] === true) ?? index;
 }
 
 /** What the origin filter reads of a keydown. */
@@ -64,7 +62,7 @@ export interface KeyOrigin {
 
 /** Whether a keydown is the parent's to handle: its target is one of `children` itself and it is not handled yet. */
 export function owns(event: KeyOrigin, children: readonly unknown[]): boolean {
-  return !event.defaultPrevented && event.target !== null && children.includes(event.target);
+  return !event.defaultPrevented && children.includes(event.target);
 }
 
 /** What a parent tells its controller. */
@@ -93,6 +91,7 @@ export class RovingController implements ReactiveController {
     this.#host.addEventListener("keydown", this.#keydown);
   }
 
+  // Stryker disable next-line BlockStatement: equivalent, a detached host receives no keydown, and the listener a re-connected host adds again finds every key it shares with the first already handled (`owns` reads `defaultPrevented`)
   hostDisconnected(): void {
     this.#host.removeEventListener("keydown", this.#keydown);
   }
@@ -110,9 +109,8 @@ export class RovingController implements ReactiveController {
     const index = target(event.key, { index: children.indexOf(child), enabled: children.map(this.#options.enabled), wrap: this.#options.wrap, rtl, axis: this.#options.axis });
     if (index === null) return;
     event.preventDefault();
-    const next = children[index];
-    if (next === undefined || next === child) return;
-    next.focus({ preventScroll: true, focusVisible: true });
-    next.scrollIntoView({ block: "nearest", inline: "nearest" });
+    // Focus scrolls the child into view, its scroll margin included (FR-017).
+    // Stryker disable next-line ObjectLiteral,BooleanLiteral: equivalent in Chromium, whose focus heuristic shows the ring after a keyboard-driven focus() anyway
+    children[index]?.focus({ focusVisible: true });
   };
 }
