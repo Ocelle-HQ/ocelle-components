@@ -16,7 +16,7 @@ change it. Sources are spec FR-001 to FR-029 and research.md.
 | `name` | string or none | the trimmed non-blank host `aria-label`, else the trimmed non-blank `label`, else none |
 | `role` | `group` or `region` | the constructor option: `group` by default (scroller, #13), `region` for the board |
 | `fadeAttribute` | `start`, `end`, `both` or none | from `fadeStart` / `fadeEnd`; none when neither is set, so the box has no `data-fade` attribute and no mask (PLAN-FRESH-2-006) |
-| `maskFigures` | { client, bar } px | the box's `clientHeight` and its scrollbar thickness (`offsetHeight − clientHeight` less block borders, 0 with overlay scrollbars), read whenever the state is written; set as the `mask-size` of the module's per-instance constructed stylesheet when either changed, never to a `style` attribute (R-05, PLAN-FRESH-2-001 (a)) |
+| `maskFigures` | { client, bar } px | the box's `clientHeight` and its scrollbar thickness (`offsetHeight − clientHeight`, since the module sets the box's `border: 0`; 0 with overlay scrollbars), read whenever the state is written; set as the `mask-size` of the module's per-instance constructed stylesheet when either changed, never to a `style` attribute (R-05, PLAN-FRESH-2-001 (a)) |
 
 **Transitions.**
 - not overflowing → overflowing: the box gains its tab stop, plus the role (`role`) and name when it has a name.
@@ -32,7 +32,7 @@ change it. Sources are spec FR-001 to FR-029 and research.md.
 |---|---|---|
 | `title` | string or none | `label` trimmed; blank is none |
 | `count` | safe integer ≥ 0, or none | the attribute is `^[0-9]+$` after trimming, ≤ `MAX_SAFE_INTEGER`; the property is a safe integer ≥ 0 |
-| `countText` | string or none | `count-label` trimmed and non-blank, else `String(count)` when `count` is set |
+| `countText` | string or none | when `count` is set: `count-label` trimmed and non-blank, else `String(count)`; otherwise none |
 | `groupName` | string or none | the trimmed non-blank host `aria-label`; else `title, countText`, `title`, or `countText`; none when neither title nor count |
 | `variant` | `default` or `flat` | `"flat"` gives flat; any other value gives default |
 
@@ -42,13 +42,13 @@ The lane has the group role exactly when `groupName` is set.
 
 | Field | Type | Rule |
 |---|---|---|
-| `measured` | px | the host's border-box inline size from its `ResizeObserver` |
+| `measured` | px | the host's border-box inline size: the inline size a `ResizeObserver` reports for a zero-height `aria-hidden` probe at the top of the shadow root (the host's content box), plus the host's inline padding and borders; a block-size change of the host notifies nothing (reviews/phase-4/spike.md) |
 | `collapseAt` | px | `collapse-below` parsed (R-12), else the token parsed, else 40rem; resolved at each measurement |
 | `inspectorAt` | px | as above with `inspector-below`, the inspector token and 60rem |
 | `hasInspector` | boolean | the `inspector` slot has an assigned element; the slot is always rendered, so `slotchange` sees an inspector added after first render (R-11) |
 | `tier` | `three`, `two` or `one` | `one` if `narrow` or `measured < collapseAt`; else `two` if `measured < inspectorAt`, or if `hasInspector` is false (two columns without an inspector); else `three` |
 | `shown` | set of panes | `three` or `two`: list, detail, and the inspector if present. `one`: the detail and the inspector if `detail-open`, else the list |
-| `intrinsic` | { min, max } px | from the measurement pass (R-13): the one-column stack's min-content and the three-column grid's max-content; written to the instance's adopted constructed stylesheet (the one per-instance sheet FR-030 allows), never to a `style` attribute |
+| `intrinsic` | { min, max } px | from the measurement pass (R-13): the one-column stack's min-content and the three-column grid's max-content; written to the instance's adopted constructed stylesheet (the one per-instance sheet FR-030 allows), never to a `style` attribute, as the inline size of the sizer (an empty `aria-hidden` `<svg>`, which adds nothing to min-content) and the grid's minimum; the panes are contained in inline size outside the pass, so these figures alone give the element's intrinsic sizes (reviews/phase-4/spike.md) |
 | `pending` | boolean | a pass is requested for the next animation frame; set by the triggers below, cleared when the frame callback runs the pass |
 
 **Re-measure triggers (R-13, PLAN-FRESH-2-002 (a), PLAN-FRESH-3-001 (a), PLAN-FRESH-3-002, PLAN-FRESH-3-003 (b)).**

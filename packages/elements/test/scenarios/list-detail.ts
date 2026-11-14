@@ -49,7 +49,6 @@ const rules = [
   ".f720 { inline-size: 720px; }",
   ".cq { container-type: inline-size; }",
   ".vw80 { display: block; inline-size: 80vw; block-size: 1px; }",
-  ".id { font-family: monospace; }",
   "test-appender { display: block; }",
 ].join("\n");
 
@@ -515,7 +514,7 @@ export const listDetailScenarios: readonly ListDetailScenario[] = [
     run: async (driver) => {
       const identifier = `wp${"0123456789".repeat(12)}`;
       const cells = Array.from({ length: 12 }, (_, index) => `<td>Column ${String(index + 1)} value</td>`).join("");
-      const detail = `<div id="l-detail" data-ocelle-prose=""><p><code id="l-code" class="id">${identifier}</code></p><table id="l-table"><tbody><tr>${cells}</tr></tbody></table></div>`;
+      const detail = `<div id="l-detail" data-ocelle-prose=""><p><code id="l-code">${identifier}</code></p><table id="l-table"><tbody><tr>${cells}</tr></tbody></table></div>`;
       await page(driver, "W", framed("l", "W", "", `${listPane("l")}${detail}${inspectorPane("l")}`), { base: true });
       const detailBox = await driver.box("l", ".pane.detail");
       const code = await driver.lines("l-code");

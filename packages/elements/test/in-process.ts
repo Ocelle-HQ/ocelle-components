@@ -139,7 +139,13 @@ export function inProcessDriver(): Driver {
       else element(id).setAttribute(name, value);
       await settle();
     },
-    call: () => Promise.reject(new Error("not implemented")),
+    call: async (id, name) => {
+      const target = element(id) as unknown as Record<string, unknown>;
+      const method = target[name];
+      if (typeof method !== "function") throw new Error(`#${id} has no method ${name}`);
+      (method as () => unknown).call(target);
+      await settle();
+    },
     attribute: (id, name) => Promise.resolve(element(id).getAttribute(name)),
     style: async (id, property, value) => {
       element(id).style.setProperty(property, value);

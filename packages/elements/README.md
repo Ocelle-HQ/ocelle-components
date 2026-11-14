@@ -1,10 +1,11 @@
 # @ocelle/elements
 
 The Ocelle web components: standards-based custom elements (Lit 3) that work in any page, a server-rendered page
-under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has five elements:
+under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has six elements:
 `ocelle-icon`, with a set of thirteen icons, `ocelle-brand-mark`, the Ocelle rosette, `ocelle-scroller`, a
-horizontal strip that is a tab stop only while it overflows, and `ocelle-workflow-board` with its
-`ocelle-workflow-lane`s, a row of lanes that scrolls inside itself when it is narrower than they are.
+horizontal strip that is a tab stop only while it overflows, `ocelle-workflow-board` with its
+`ocelle-workflow-lane`s, a row of lanes that scrolls inside itself when it is narrower than they are, and
+`ocelle-list-detail`, a list beside its detail that collapses to one column by the space it has.
 
 ## Entry points
 
@@ -16,6 +17,7 @@ horizontal strip that is a tab stop only while it overflows, and `ocelle-workflo
 | `@ocelle/elements/ocelle-scroller.js` | `dist/ocelle-scroller.js` | `ocelle-scroller` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-workflow-board.js` | `dist/ocelle-workflow-board.js` | `ocelle-workflow-board` only, not the lane; for hosts with a bundler |
 | `@ocelle/elements/ocelle-workflow-lane.js` | `dist/ocelle-workflow-lane.js` | `ocelle-workflow-lane` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-list-detail.js` | `dist/ocelle-list-detail.js` | `ocelle-list-detail` only; for hosts with a bundler |
 | `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |
 | `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |
 
@@ -293,6 +295,40 @@ default slot, the lane's content, such as cards.
   widen for it, and the count stays visible.
 - `ocelle-workflow-lane` has no event, CSS part or CSS custom property.
 
+## `ocelle-list-detail`
+
+`ocelle-list-detail` lays out a list beside the selected record's detail, with an optional inspector: three columns
+when there is room for them, two with the inspector stacked under the detail, and one pane at a time below its
+threshold or when the host sets `narrow`. It follows the container-tier convention (Element conventions).
+
+- `collapse-below` (attribute, and property `collapseBelow`, not reflected): one column below this length; the default
+  is `--ocelle-list-detail-collapse` (40rem) as computed on the element.
+- `inspector-below` (attribute, and property `inspectorBelow`, not reflected): the inspector stacks under the detail
+  below this length; the default is `--ocelle-list-detail-inspector-collapse` (60rem) as computed on the element.
+- `narrow` (attribute and property, reflected): forces the one-column layout whatever the element's size.
+- `detail-open` (attribute, and property `detailOpen`, reflected): in one column, shows the detail pane, with the
+  inspector stacked under it, instead of the list; in two or three columns it has no effect.
+- `remeasure()`: requests a measurement of the element's intrinsic sizes for the next animation frame, for a change
+  the element cannot see (the container-tier convention lists them).
+- **Slots.** It has three slots: `list`, the list pane; the default slot, the detail pane; and `inspector`, the optional
+  inspector pane. An empty `inspector` slot adds no track, no border and no space.
+- **Tokens.** `ocelle-list-detail` reads the tokens `--ocelle-list-track-width`, `--ocelle-shell-inspector-width`,
+  `--ocelle-list-detail-collapse`, `--ocelle-list-detail-inspector-collapse`, `--ocelle-color-rule`,
+  `--ocelle-border-width`, `--ocelle-focus-width` and `--ocelle-color-focus`.
+- **Widths.** The list pane is `--ocelle-list-track-width` wide, the inspector `--ocelle-shell-inspector-width`, its
+  border included, and the detail takes the rest; a 1 px `--ocelle-color-rule` border, decorative only, runs between
+  adjacent panes, in `CanvasText` in forced colours. Long content in a pane wraps or scrolls inside it (the base
+  styles of `@ocelle/styles`); no pane widens for its content.
+- **Focus.** When a layout or `detail-open` change hides the pane that holds focus, the element moves focus to the
+  start of the pane that is shown: that pane takes focus by script only, never as a tab stop, and shows the focus ring
+  inset, in `Highlight` in forced colours. Focus outside the hidden pane is not moved. The way back to the list is the
+  host's own control; the element emits no event. The next Tab reaches the shown pane's first focusable element. At
+  upgrade, focus is moved only when it is inside a pane that the first layout hides.
+- **Tree.** The element adds no role, landmark or name of its own: the host names its own landmarks or headings in the
+  panes. The panes' slotted content is in the tree in pane order, list, detail and inspector; a hidden pane adds no
+  node.
+- `ocelle-list-detail` has no event, CSS part or CSS custom property.
+
 ## Host ARIA
 
 A host `aria-label` names the element as `label` does. For `ocelle-icon` and `ocelle-brand-mark`, when present it
@@ -405,6 +441,38 @@ element with a scroll region. Its interface:
 
 The module is proven on a test-only host, `ocelle-test-overflow-host` (`test/fixtures/overflow-host.ts`), which ships
 in no package.
+
+**Container tiers.** The container-tier convention: a tier is chosen from the element's own border-box inline size,
+measured by a `ResizeObserver`, never from the viewport. `ocelle-list-detail` follows it, and so does any later
+element with tiers.
+
+- A threshold is a `*-below` attribute. After trimming ASCII whitespace it accepts exactly
+  `^(?:0|[0-9]+(?:\.[0-9]+)?(?:px|rem|em))$`, units in any ASCII letter case: `rem` resolves at the root's computed
+  font size and `em` at the host's, and every other value counts as absent.
+- Without the attribute, the threshold is its token as computed on the element, parsed with the same grammar, so a
+  host that sets the token on the element or an ancestor moves it; a token value that is not an accepted form gives
+  the token's published value.
+- Bounds are exclusive: the narrower tier applies only below the threshold, and at exactly the threshold the wider
+  tier applies.
+- A boolean attribute set by the host, such as `narrow`, forces the narrowest tier.
+- No `container-type` is set on a host that may shrink to fit, such as a flex item, a dialog or a table cell: it would
+  collapse to 0 px there.
+- The element's intrinsic inline sizes do not depend on the tier it shows: its max-content size is that of its widest
+  tier and its min-content size that of its narrowest, so a shrink-to-fit host cannot make the tier alternate.
+- The intrinsic sizes are measured in one pass, at most once per animation frame and never inside a
+  `ResizeObserver` callback, after a slot change or a light-DOM node or text change in any pane, shown or hidden,
+  after a call of `remeasure()`, and, synchronously, before a tier change the host sets through an attribute or a
+  property. The figures go into the element's one per-instance sheet (Styles).
+- Changes with no light-DOM node or text change are not seen and wait for the next of these: an image or a font
+  loading, content a slotted element renders in its own shadow root, and an attribute-only change such as a class
+  swap; the host calls `remeasure()` after one.
+- One pass renders every pane in the measurement grid twice and restores it: about 10 ms (7 to 19 ms) with a 1000-row
+  list. Attribute changes, such as a selection's `class` or `aria-selected`, run none; light-DOM swaps and text
+  changes run at most one per frame.
+- Content a consumer mutates inside its own `ResizeObserver` callback can still make the browser report
+  "ResizeObserver loop completed with undelivered notifications." through layout alone, when the shown layout grows a
+  shrink-to-fit host; the element does not cause it and cannot prevent it.
+- Hosts set `narrow`, `detail-open` and the `*-below` thresholds from a task, not from a `ResizeObserver` callback.
 
 ## Licence
 

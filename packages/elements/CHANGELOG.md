@@ -26,6 +26,15 @@ entry points and the browser build's file path (constitution VII).
 - `ocelle-workflow-lane`, a column of a board with a title and a count, exposed as one group named by them, in a
   default variant with a sheet ground or a `flat` variant; its properties `label`, `count`, `count-label` and `variant`
   (reflected) and its default slot; its entry point `@ocelle/elements/ocelle-workflow-lane.js`.
+- `ocelle-list-detail`, a list beside the selected record's detail with an optional inspector, in three columns, two
+  with the inspector stacked, or one pane at a time below its own measured threshold or when the host sets `narrow`,
+  with focus moved to the shown pane when the pane that holds it is hidden; its properties `collapse-below`,
+  `inspector-below`, `narrow` (reflected) and `detail-open` (reflected), its method `remeasure()`, its `list`, default
+  and `inspector` slots, and its entry point `@ocelle/elements/ocelle-list-detail.js`.
+- In the README, the container-tier convention that later elements with tiers follow: the element's own measured
+  size, the `*-below` grammar and its resolution, the token default and its fallback, exclusive bounds, the forcing
+  boolean, no `container-type`, intrinsic sizes that do not depend on the tier, the re-measure triggers and
+  `remeasure()`, and the cost of one pass.
 - In the README, the overflow-region module convention: the internal module's inputs, outputs, effects, lifecycle and
   structure, which any later element with a scroll region uses; the Host ARIA rule stated per element; and the styles
   rule that allows one per-instance stylesheet of measured figures.
@@ -34,6 +43,7 @@ entry points and the browser build's file path (constitution VII).
   `@ocelle/elements/ocelle-scroller.js` (defines `ocelle-scroller` only),
   `@ocelle/elements/ocelle-workflow-board.js` (defines `ocelle-workflow-board` only),
   `@ocelle/elements/ocelle-workflow-lane.js` (defines `ocelle-workflow-lane` only),
+  `@ocelle/elements/ocelle-list-detail.js` (defines `ocelle-list-detail` only),
   `@ocelle/elements/browser.js` (the browser build) and `@ocelle/elements/custom-elements.json` (the manifest, also
   named by the `customElements` field).
 - The browser build's file, `dist/browser/ocelle-elements.js`: Lit inside, imports nothing, for hosts without a
