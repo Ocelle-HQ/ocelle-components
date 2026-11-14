@@ -63,7 +63,7 @@ the driver as it was.
 
 ### Tests (red, one commit)
 
-- [ ] T001 [P] Write the self-test bodies in `packages/elements/test/scenarios/harness.ts`, one per row of matrix § Harness self-tests, with stand-in elements defined in the test file:
+- [X] T001 [P] Write the self-test bodies in `packages/elements/test/scenarios/harness.ts`, one per row of matrix § Harness self-tests, with stand-in elements defined in the test file:
   - `styleAttributes()`: nested shadow root, CSSOM write, a write then removed;
   - `styleElements()`: a `<style>` added in a shadow root;
   - `topLayer()`: order with a modal dialog and a manual popover;
@@ -78,25 +78,25 @@ the driver as it was.
   - `axTree`: `description`, `modal` and `level`;
   - device: the default context matches `(hover: hover)` and `(pointer: fine)` with `maxTouchPoints` 0; the touch
     context has `maxTouchPoints` above 0.
-- [ ] T002 [P] Write the runners for T001: `packages/elements/test/harness.test.ts` (in process), `packages/elements/test/browser/harness.test.ts` (fixture), `packages/elements/test/harness.touch.test.ts` (in process, touch device) and `packages/elements/test/browser/harness.touch.test.ts` (fixture, `visit(…, { touch: true })`).
-- [ ] T003 [P] Add tests for the new browser commands (`emulateReducedMotion`, `pointerPath`, `touchTap`, the extended `axTree`) to `packages/elements/test/commands.test.ts`.
-- [ ] T004 Make the red commit of T001 to T003 (test files only). `red.sh 1` must show each self-test failing because the driver method or command is missing.
+- [X] T002 [P] Write the runners for T001: `packages/elements/test/harness.test.ts` (in process), `packages/elements/test/browser/harness.test.ts` (fixture), `packages/elements/test/harness.touch.test.ts` (in process, touch device) and `packages/elements/test/browser/harness.touch.test.ts` (fixture, `visit(…, { touch: true })`).
+- [X] T003 [P] Add tests for the new browser commands (`emulateReducedMotion`, `pointerPath`, `touchTap`, the extended `axTree`) to `packages/elements/test/commands.test.ts`.
+- [X] T004 Make the red commit of T001 to T003 (test files only). `red.sh 1` must show each self-test failing because the driver method or command is missing.
 
 ### Implementation (green)
 
-- [ ] T005 Add the methods of T001 to the `Driver` interface in `packages/elements/test/scenarios/driver.ts`. FR-047's counts are taken as a delta from mount, with transient writes counted through a `MutationObserver` on every shadow root. No new method uses `driver.style()` (R-14).
-- [ ] T006 [P] Implement the additions in process in `packages/elements/test/in-process.ts`, using real CDP input via `userEvent` from `vitest/browser` and the new commands.
-- [ ] T007 [P] Implement the additions on the fixture in `packages/elements/test/browser/driver.ts`, using `page.keyboard`, `page.mouse`, `page.touchscreen` and CDP.
-- [ ] T008 [P] Add the browser commands `emulateReducedMotion`, `pointerPath` and `touchTap` to `packages/elements/test/commands.ts`, and make `axTree` also return `description`, `modal` and `level`. The reset helper resets reduced motion together with forced colours.
-- [ ] T009 Update `vitest.config.ts`:
+- [X] T005 Add the methods of T001 to the `Driver` interface in `packages/elements/test/scenarios/driver.ts`. FR-047's counts are taken as a delta from mount, with transient writes counted through a `MutationObserver` on every shadow root. No new method uses `driver.style()` (R-14).
+- [X] T006 [P] Implement the additions in process in `packages/elements/test/in-process.ts`, using real CDP input via `userEvent` from `vitest/browser` and the new commands.
+- [X] T007 [P] Implement the additions on the fixture in `packages/elements/test/browser/driver.ts`, using `page.keyboard`, `page.mouse`, `page.touchscreen` and CDP.
+- [X] T008 [P] Add the browser commands `emulateReducedMotion`, `pointerPath` and `touchTap` to `packages/elements/test/commands.ts`, and make `axTree` also return `description`, `modal` and `level`. The reset helper resets reduced motion together with forced colours.
+- [X] T009 Update `vitest.config.ts`:
   - the `elements` project gets a 1280 × 800 viewport and no touch;
   - a new `elements-touch` project includes only `packages/elements/test/*.touch.test.ts`, with the same excludes as `elements` (`test/node/**`, `test/build/**`, `test/browser/**`), browser mode with `hasTouch`;
   - the new commands are registered.
 
   Add `elements-touch` to `vitest.mutation.elements.config.ts`.
-- [ ] T010 [P] Add a `visit(page, { touch: true })` option to `packages/elements/test/browser/serve.ts` that opens a separate context with `hasTouch`. The default context is unchanged (1280 × 800, no touch).
-- [ ] T011 [P] Add the fixture pages `packages/elements/test/browser/fixtures/overlays.html` and `tooltip.html` (linking `tokens.css` and `ocelle-elements.js`, no inline script or style), and the test delay stylesheet `packages/elements/test/fixtures/tooltip-delay.css` (`--ocelle-tooltip-delay: 300ms`), linked on the fixture and adopted in process (R-15).
-- [ ] T012 Run the `elements`, `elements-touch` and `elements-browser` projects and `pnpm run gate:test-lint`: all self-tests pass. Record the red and green runs in `specs/008-overlays/reviews/phase-1/notes.md`.
+- [X] T010 [P] Add a `visit(page, { touch: true })` option to `packages/elements/test/browser/serve.ts` that opens a separate context with `hasTouch`. The default context is unchanged (1280 × 800, no touch).
+- [X] T011 [P] Add the fixture pages `packages/elements/test/browser/fixtures/overlays.html` and `tooltip.html` (linking `tokens.css` and `ocelle-elements.js`, no inline script or style), and the test delay stylesheet `packages/elements/test/fixtures/tooltip-delay.css` (`--ocelle-tooltip-delay: 300ms`), linked on the fixture and adopted in process (R-15).
+- [X] T012 Run the `elements`, `elements-touch` and `elements-browser` projects and `pnpm run gate:test-lint`: all self-tests pass. Record the red and green runs in `specs/008-overlays/reviews/phase-1/notes.md`.
 
 **Checkpoint**: `tdd-check.sh 1` reports `pass`.
 

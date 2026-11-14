@@ -34,7 +34,8 @@ export interface HarnessScenario {
  * - `ocelle-harness-overlay`: an `open` property (false) and an open shadow root holding
  *   `<dialog><button id="in">`. `act`: `modal` shows the dialog modally and sets `open`; `announce` sets `open`, shows
  *   the dialog modally, focuses the button, dispatches `ocelle-harness-request` (cancelable, detail
- *   `{ reason: "escape" }`), then closes the dialog, clears `open` and dispatches `ocelle-harness-close` (not
+ *   `{ reason: "escape" }`), then closes the dialog, blurs the button (focus on the body), clears `open` and
+ *   dispatches `ocelle-harness-close` (not
  *   cancelable, detail `{ reason: "host" }`); both bubble and are composed.
  * - `ocelle-harness-pop`: `act="show"` calls its own `showPopover()` (the markup sets `popover="manual"`).
  * - `ocelle-harness-focus`: an open shadow root holding `<button id="in">`.
@@ -116,6 +117,9 @@ export function defineStandIns(): void {
           button.focus();
           this.dispatchEvent(new CustomEvent("ocelle-harness-request", { detail: { reason: "escape" }, bubbles: true, composed: true, cancelable: true }));
           dialog.close();
+          // Chromium keeps focus on the button of a dialog closed with nothing focused before it opened; the stand-in
+          // moves focus to the body itself, as an overlay returns focus before its close event.
+          button.blur();
           this.open = false;
           this.dispatchEvent(new CustomEvent("ocelle-harness-close", { detail: { reason: "host" }, bubbles: true, composed: true, cancelable: false }));
         }

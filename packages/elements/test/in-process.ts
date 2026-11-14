@@ -6,15 +6,23 @@
 // go through the `axTree` and `emulateForcedColors` browser commands (vitest.config.ts, test/commands.ts). Console
 // messages are recorded from each mount on; Lit's development build, which Vite resolves here, warns once at import,
 // before any mount, so the console outcome of FR-016 on the built output is the fixture's (test/browser/).
+//
+// 008 (research.md R-14, R-15): every mount also adopts the test delay stylesheet (fixtures/tooltip-delay.css), as the
+// fixture pages link it. Keys are real key presses through `userEvent` from `vitest/browser`; pointer and touch input
+// go through the `pointerPath` and `touchTap` commands at points of this frame (test/commands.ts), reduced motion
+// through `emulateReducedMotion`; what the page holds is read by the probe of scenarios/probe.ts, installed when this
+// module loads, before any element of the test file attaches a shadow root.
 /// <reference types="vite/client" />
 import type { LitElement } from "lit";
 import { vi } from "vitest";
-import { commands, page } from "vitest/browser";
+import { commands, page, userEvent } from "vitest/browser";
 import baseText from "../../styles/src/base.css?raw";
 import { css } from "../../tokens/src/generate.ts";
 import { source } from "../../tokens/src/source.ts";
+import delayText from "./fixtures/tooltip-delay.css?raw";
 import { decodePng } from "./pixels.ts";
 import type { Box, Driver, Drawing, Paint, Part, Placement, Sheets } from "./scenarios/driver.ts";
+import { probe } from "./scenarios/probe.ts";
 
 function sheet(text: string): CSSStyleSheet {
   const made = new CSSStyleSheet();
@@ -24,6 +32,8 @@ function sheet(text: string): CSSStyleSheet {
 
 const tokens = sheet(css(source).replace(/@font-face\s*\{[^}]*\}/g, ""));
 const base = sheet(baseText);
+const delay = sheet(delayText);
+probe();
 
 function element(id: string): HTMLElement {
   const found = document.getElementById(id);
@@ -31,11 +41,29 @@ function element(id: string): HTMLElement {
   return found;
 }
 
-/** Waits until every `ocelle-*` element of the page has rendered, then for a frame. */
+/** Whether every `<iframe srcdoc>` of the page has loaded its document. */
+function framesLoaded(): boolean {
+  return [...document.querySelectorAll("iframe")].every((frame) => !frame.hasAttribute("srcdoc") || (frame.contentDocument?.URL === "about:srcdoc" && frame.contentDocument.readyState === "complete"));
+}
+
+/**
+ * Waits until every `ocelle-*` element of the page has rendered and every `<iframe srcdoc>` has loaded (a bounded poll
+ * of 1 000 ms, R-15), then for a frame.
+ */
 async function settle(): Promise<void> {
   const elements = [...document.querySelectorAll("*")].filter((each) => each.localName.startsWith("ocelle-"));
   await Promise.all(elements.map((each) => (each as Partial<LitElement>).updateComplete ?? Promise.resolve(true)));
+  for (const start = performance.now(); !framesLoaded(); ) {
+    if (performance.now() - start > 1000) throw new Error("an <iframe srcdoc> did not load within 1 000 ms");
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
   await new Promise((resolve) => requestAnimationFrame(resolve));
+}
+
+/** The `userEvent.keyboard` text of one press of `key`, with Shift held when `shift`. */
+function keyText(key: string, shift: boolean): string {
+  const text = key === " " ? "[Space]" : `{${key}}`;
+  return shift ? `{Shift>}${text}{/Shift}` : text;
 }
 
 const round = (value: number): number => Math.round(value * 1000) / 1000;
@@ -65,9 +93,10 @@ window.addEventListener("error", (event) => {
 export function inProcessDriver(): Driver {
   return {
     mount: async (markup, options = {}) => {
-      document.adoptedStyleSheets = options.base === true ? [tokens, base] : [tokens];
+      document.adoptedStyleSheets = options.base === true ? [tokens, base, delay] : [tokens, delay];
       messages.length = 0;
       document.documentElement.removeAttribute("data-theme");
+      probe().reset();
       document.body.innerHTML = markup;
       await settle();
     },
@@ -150,11 +179,12 @@ export function inProcessDriver(): Driver {
     },
     computed: (id, property) => Promise.resolve(getComputedStyle(element(id)).getPropertyValue(property)),
     resolveColour: (value) => {
-      const probe = document.createElement("span");
-      probe.style.color = value;
-      document.body.append(probe);
-      const colour = getComputedStyle(probe).color;
-      probe.remove();
+      const colourProbe = document.createElement("span");
+      probe().ignore(colourProbe);
+      colourProbe.style.color = value;
+      document.body.append(colourProbe);
+      const colour = getComputedStyle(colourProbe).color;
+      colourProbe.remove();
       return Promise.resolve(colour);
     },
     ax: (id) => commands.axTree(id),
@@ -179,5 +209,47 @@ export function inProcessDriver(): Driver {
       });
     },
     messages: () => Promise.resolve([...messages]),
+    press: async (key, options = {}) => {
+      await userEvent.keyboard(keyText(key, options.shift === true));
+      await settle();
+    },
+    hover: async (id, inner) => {
+      await commands.pointerPath([id === null ? { x: 0, y: 0 } : probe().centre(id, inner)]);
+      await settle();
+    },
+    click: async (id, inner, options = {}) => {
+      await commands.pointerPath([{ ...probe().centre(id, inner), down: true, up: true, button: options.button ?? "left" }]);
+      await settle();
+    },
+    pointer: async (path) => {
+      await commands.pointerPath(path);
+      await settle();
+    },
+    touchTap: async (id, inner) => {
+      const { x, y } = probe().centre(id, inner);
+      await commands.touchTap(x, y);
+      await settle();
+    },
+    focusPath: () => Promise.resolve(probe().focusPath()),
+    focusVisible: (id, inner) => Promise.resolve(probe().focusVisible(id, inner)),
+    reducedMotion: async (on) => {
+      await commands.emulateReducedMotion(on);
+      await settle();
+    },
+    viewport: () => Promise.resolve({ width: window.innerWidth, height: window.innerHeight }),
+    setViewport: async (width, height) => {
+      await page.viewport(width, height);
+      await settle();
+    },
+    device: () => Promise.resolve(probe().device()),
+    record: (id, names) => {
+      probe().record(id, names);
+      return Promise.resolve();
+    },
+    recorded: () => Promise.resolve(probe().recorded()),
+    animations: (id, inner) => Promise.resolve(probe().animations(id, inner)),
+    topLayer: () => Promise.resolve(probe().topLayer()),
+    styleAttributes: () => Promise.resolve(probe().styleAttributes()),
+    styleElements: () => Promise.resolve(probe().styleElements()),
   };
 }
