@@ -121,7 +121,7 @@ order 1 → 2 → 3 → 4:
 
 ### Inventory (operator step, before the red tasks)
 
-- [ ] T002a [US1] Operator step, recorded by the planner: the operator supplies the `.sk-facts` modifiers and states with a count for each (role names only, no code), and the planner records them in the R-11 table of `specs/013-data-display/research.md` (role names without the `sk-` prefix, each with its element and variant) in a documentation commit of its own, before T010 is written. A row no element or variant covers goes to the operator. While the family is pending, T010's mapping statements and T012 are blocked: stop and ask.
+- [x] T002a [US1] Operator step, recorded by the planner: the operator supplies the `.sk-facts` modifiers and states with a count for each (role names only, no code), and the planner records them in the R-11 table of `specs/013-data-display/research.md` (role names without the `sk-` prefix, each with its element and variant) in a documentation commit of its own, before T010 is written. A row no element or variant covers goes to the operator. While the family is pending, T010's mapping statements and T012 are blocked: stop and ask. Done: recorded from `specs/013-data-display/sources/013-inputs.md` Part A; its open questions (IQ-01 to IQ-05) are in `specs/013-data-display/reviews/analysis/inputs-questions.md`, which go to the operator before the red commit.
 
 ### Tests (red, one commit, test files only)
 
@@ -256,7 +256,7 @@ order 1 → 2 → 3 → 4:
 
 ### Inventory (operator step, before the red tasks)
 
-- [ ] T022a [US2] Operator step, recorded by the planner: the `.sk-empty-state` modifiers and states with counts (role names only) recorded in the R-11 table of `specs/013-data-display/research.md` in a documentation commit of its own, before T026 is written. A gap goes to the operator; while the family is pending, T026's mapping statements and T028 are blocked.
+- [x] T022a [US2] Operator step, recorded by the planner: the `.sk-empty-state` modifiers and states with counts (role names only) recorded in the R-11 table of `specs/013-data-display/research.md` in a documentation commit of its own, before T026 is written. A gap goes to the operator; while the family is pending, T026's mapping statements and T028 are blocked. Done: recorded from `specs/013-data-display/sources/013-inputs.md` Part A; its open questions (IQ-06 to IQ-11) are in `specs/013-data-display/reviews/analysis/inputs-questions.md`, which go to the operator before the red commit.
 
 ### Tests (red, one commit, test files only)
 
@@ -339,7 +339,7 @@ order 1 → 2 → 3 → 4:
 
 ### Inventory (operator step, before the red tasks)
 
-- [ ] T036a [US3] Operator step, recorded by the planner: the `.sk-progress` modifiers and states with counts (role names only) recorded in the R-11 table of `specs/013-data-display/research.md` in a documentation commit of its own, before T043 is written. A gap goes to the operator; while the family is pending, T043's mapping statements and T045 are blocked.
+- [x] T036a [US3] Operator step, recorded by the planner: the `.sk-progress` modifiers and states with counts (role names only) recorded in the R-11 table of `specs/013-data-display/research.md` in a documentation commit of its own, before T043 is written. A gap goes to the operator; while the family is pending, T043's mapping statements and T045 are blocked. Done: recorded from `specs/013-data-display/sources/013-inputs.md` Part A; its open questions (IQ-10 to IQ-15) are in `specs/013-data-display/reviews/analysis/inputs-questions.md`, which go to the operator before the red commit.
 
 ### Tests (red, one commit, test files only)
 

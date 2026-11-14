@@ -34,16 +34,21 @@ operator chose option B at the triage gate, so this mission builds three of #13'
 spec-kitty-design issues #13 cites (#280, #498, #510, #523, #531, #535) were not read from this session when the
 spec was written. The requirements below come from #13's body, the epic #1's gap table and the triage record, which is
 the source record. The plan's research has since read #531 and #535 from their verbatim copy in
-`specs/003-base-styles/sources/spec-kitty-design-issues.md` (research R-03; FR-008 follows #531); #280, #498, #510 and
-#523 are still unread.
+`specs/003-base-styles/sources/spec-kitty-design-issues.md` (research R-03; FR-008 follows #531).
 The plan's research was to read those six issues and record anything in them that changes or adds to a requirement
 here (#531 for FR-008, #510 for FR-022 and US2, #535 for FR-007, #498 for US3). It read #531 and #535; the read access
 for #280, #498, #510 and #523 was denied, and the operator decided at the plan gate to proceed without them ("Proceed,
-inputs later", below). Anything in them read later that changes a requirement goes to the operator.
+inputs later", below). Anything in them read later that changes a requirement goes to the operator. The operator has
+since supplied #280, #498, #510 and #523 verbatim, with the kitty-mission-ui inventory, in `sources/013-inputs.md`;
+research R-03 records what each states for this mission and R-11 the inventory. No requirement below is changed by
+them yet: their gaps and conflicts with this spec are open questions for the operator in
+`reviews/analysis/inputs-questions.md`.
 Spec Kitty's `sk-*` names are kitty-mission-ui roles, not names in this library.
 
-**Consumers** (constitution VI): kitty-mission-ui (Kitty Desktop and Kitty Dashboard) replaces its `.sk-facts` (34
-class uses), `.sk-empty-state` (75) and `.sk-progress` (74) class families with these elements. The Ocelle web console
+**Consumers** (constitution VI): kitty-mission-ui (Kitty Desktop and Kitty Dashboard) replaces its `.sk-facts` (8
+rendered uses), `.sk-empty-state` (25) and `.sk-progress` (14) class families with these elements. The triage
+record's 34, 75 and 74 "class uses" (183) were text matches in its source, which count comments, local selectors and
+child classes; at the inventoried commit they are 34, 75 and 76 (research R-11). The Ocelle web console
 uses them in server-rendered pages under a strict CSP.
 
 **Operator decisions while specifying** (2026-11-13, human:jeroennouwsdev):
@@ -162,7 +167,7 @@ column the labels and values sit in a two-column grid. In a narrow column (a 320
 same pairs stack, label above value. A long identifier breaks inside its own value and never widens the grid or makes
 the page scroll sideways. A screen-reader user hears each label with its value, as a description list.
 
-**Why this priority**: it replaces 34 class uses and is the first element of the "every class family is an element"
+**Why this priority**: it replaces 8 rendered uses (34 text matches, R-11) and is the first element of the "every class family is an element"
 rule for display content. It sets the slotted-item pattern the follow-on missions (timeline, chain) reuse.
 
 **Independent Test**: render `ocelle-facts` with five pairs, one of them a 64-character identifier. At 1280 px and 320
@@ -221,7 +226,7 @@ which fills a list or inspector panel, it has the larger vertical rhythm and lig
 empty and loading panels. The same panel variant with an `ocelle-progress` inside is the loading panel. The page's
 heading outline stays the page's: the element never forces a heading level.
 
-**Why this priority**: 75 class uses. It depends on nothing from P1, but its panel variant pairs with P3 for the
+**Why this priority**: 25 rendered uses (75 text matches, R-11). It depends on nothing from P1, but its panel variant pairs with P3 for the
 loading panel, so it comes before P3.
 
 **Independent Test**: render the element with a slotted `h2`, a body sentence and a slotted button, in the default and
@@ -267,7 +272,7 @@ plan is loading with no known end, the bar is indeterminate and its motion stops
 motion. In a dense row, the compact size is a thin bar. In light mode the ochre fill is never the only mark: the bar's
 track and the fill's edge are drawn so that the filled part is visible to a user who cannot tell ochre from bone.
 
-**Why this priority**: 74 class uses, and the most accessibility behaviour of the three (live value, name without a
+**Why this priority**: 14 rendered uses (76 text matches, R-11), and the most accessibility behaviour of the three (live value, name without a
 cross-root reference, motion, contrast).
 
 **Independent Test**: render the four variants (determinate, indeterminate, compact, labelled). Read the accessibility
@@ -595,7 +600,7 @@ the exceptions FR-050 and FR-054 name.
 ### Measurable Outcomes
 
 - **SC-001**: The README mapping (FR-058) gives, for every `.sk-facts`, `.sk-empty-state` and `.sk-progress` variant
-  kitty-mission-ui uses (183 class uses in all), an element and variant that replaces it with no `class` attribute on
+  kitty-mission-ui uses (47 rendered uses in all, recorded in research R-11), an element and variant that replaces it with no `class` attribute on
   the element. Checked in review; the replacement in kitty-mission-ui itself is an outcome not gated here.
 - **SC-002**: At 320 px CSS width, every facts story's page scroll width equals the viewport width.
 - **SC-003**: Every story of the four elements reports no serious or critical axe finding by #10's `axe` gate, in

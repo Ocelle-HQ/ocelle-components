@@ -10,7 +10,11 @@ recheck stops the flow for the operator (R-01).
 Squad rounds 1 to 3 (2026-11-13) changed this file: the operator's fork decisions are cited by finding ID with the
 option taken, for example "PLAN-CORRECTNESS-1-003 (a)", "PLAN-FRESH-2-001 (c)" or "PLAN-FRESH-3-001 (c)". The
 operator's plan-gate decisions (2026-11-13, `reviews/plan/operator-gate.md`) changed R-01 (FR-004 confirmed), R-08
-and R-09 (#10 merged) and R-11 (the inventory to follow).
+and R-09 (#10 merged) and R-11 (the inventory to follow). The operator's inputs
+([sources/013-inputs.md](sources/013-inputs.md)) then filled R-11 and the reading of #280, #498, #510 and #523 in
+R-03; the gaps and conflicts they show are open questions for the operator
+([reviews/analysis/inputs-questions.md](reviews/analysis/inputs-questions.md)), and no decision of this file is
+changed by them.
 
 ## R-01 `ocelle-facts`: description list through manual slot assignment (FR-003, FR-004, FR-005)
 
@@ -316,10 +320,47 @@ after the first layout.
     mono is excluded by constitution II.
   - **#535** asks for an identifier wrap policy, with the local stand-in "`overflow-wrap: anywhere` … on the Facts
     `dd`". FR-007's `wrap="anywhere"` on the pair applies the same keyword to that pair's value only (below).
-  - **#280, #498, #510 and #523** are not in the repository and were not read: that repository is outside this
-    session's GitHub scope, and the orchestrator's request for read access was denied. At the plan gate the operator
-    chose "Proceed, inputs later" (plan Decision 5): the plan proceeds without them, and anything in them read later
-    that changes a requirement goes to the operator; #510 bears on FR-022 and US2, #498 on US3.
+  - **#280, #498, #510 and #523** were not read while planning: that repository was outside this session's GitHub
+    scope, and the orchestrator's request for read access was denied. At the plan gate the operator chose "Proceed,
+    inputs later" (plan Decision 5). They are now read: the operator supplied their bodies, comments and timelines
+    verbatim in [sources/013-inputs.md](sources/013-inputs.md) (Part B). What each states for this mission is below.
+    Nothing here changes a requirement: every gap or conflict with the spec or plan is an open question for the
+    operator in [reviews/analysis/inputs-questions.md](reviews/analysis/inputs-questions.md) (IQ-01 to IQ-15).
+    - **#280** (responsive facts grid, open; no comments). It asks to extend the class family `.sk-facts` with a grid
+      modifier whose items each group one pair and reflow between four, two and one columns on the available space,
+      with native description-list semantics in source order; terms visible at every width; long machine values
+      wrapping inside their cells with no page overflow (200% zoom, long unbroken values, right-to-left); missing
+      values as the consumer's text; tokens and logical properties; surface and tone owned by the container; the
+      existing stacked, compact and two-column layouts unchanged. Its non-goals include "truncation that hides values"
+      and "a custom `sk-facts` element". For this mission: FR-003, FR-004, FR-005, FR-009 and FR-010 already meet the
+      semantics, the visible terms, the consumer's missing values and the no-overflow rule; US1-8 has the sheet paint
+      no ground. The custom-element non-goal is overruled by #523 and the mission's input ("every class family
+      replaced by an element"). Open: the four/two/one-column strip, which FR-005's label and value columns do not
+      give (IQ-05), and the hidden-truncation non-goal against a consumer's ellipsis (IQ-04). kitty-mission-ui cites
+      #280 nowhere (R-11).
+    - **#498** (no progress element, open; no comments). It asks for a progress element with `value`/`max`
+      (determinate) or no value (indeterminate), `compact`, a label slot, its accessible name from the label, and
+      reduced motion respected, so that a shadow-DOM consumer stops adopting the stylesheet and writing class markup;
+      and, separately, a default marker for a pulsing status indicator. For this mission: FR-030 to FR-034 meet the
+      value, indeterminate, compact, naming and motion asks (R-05, R-06). The label is a `label` property, not a slot
+      (IQ-14). The status-indicator marker is #7's (mission 012), out of scope as the spec says.
+    - **#510** (loading and empty panel spacing and weight, open; no comments). Its text: the prototype's loading and
+      empty panels have a larger vertical rhythm and a lighter heading weight than the library; the ask is panel
+      tokens for block padding and heading weight, or a page variant for the empty state and the progress panel; the
+      stand-in E-13 sets padding-block, gap and font-weight on the panel wrappers. For this mission: FR-022 follows the
+      text (`variant="panel"`, larger padding and gaps, lighter heading, existing tokens by operator decision Q2;
+      R-04). But the E-13 code on kitty-mission-ui's `main` does not match the text: it sets a bold heading in the
+      display face, card fill, radius, inline padding and a dashed or solid border keyed on the parent's busy state
+      (R-11's "empty-state card", "message" and "ops card" rows). Which is wanted is IQ-06 and IQ-07.
+    - **#523** (no facts or empty-state elements, open; one comment). It asks for facts and empty-state elements that
+      carry the family looks, so screens compose elements instead of classes and stop re-implementing the structure;
+      progress is the same gap, tracked in #498. Its comment (2026-10-11, from the Drift screen) names three defaults
+      a facts element could take: terms at normal weight (400, against the library's 500), values in the mono face at
+      the small text size, and `overflow-wrap: anywhere` for long machine values, ideally a shared identifier wrap
+      rule. For this mission: the four elements answer the ask (FR-002). The wrap is FR-007's `wrap="anywhere"` and
+      003's `data-ocelle-wrap` (#535). The value face stays sans (constitution II: no monospace). The small value size
+      is the consumer's through `--ocelle-facts-value-size` or a compact region (FR-008, #531); the default stays
+      `--ocelle-font-size-fact`, which the mission's input fixed from #531. Open: the term weight default (IQ-03).
   - The kitty-mission-ui variant inventory the README mapping needs is R-11.
 - **Wrap policy (FR-007, SPEC-2-10, PLAN-CORRECTNESS-1-015).** `ocelle-fact` has a `wrap` property, reflected and
   taking only `"anywhere"`. With it, the fact's shadow rule `:host([wrap="anywhere"]) slot { overflow-wrap: anywhere; }`
@@ -833,32 +874,97 @@ identifier and was already allowed; the sweep does not use it.)
 ## R-11 kitty-mission-ui variant inventory (FR-058, SC-001, PLAN-FRESH-2-006)
 
 **Need.** SC-001 and FR-058 ask for a README mapping of every `.sk-facts`, `.sk-empty-state` and `.sk-progress`
-variant kitty-mission-ui uses. Constitution VI makes that consumer need the driver of the elements' surface. The only
-record in this repository is the triage record (`triage/013-data-display.md`: 183 class uses, 34, 75 and 74, with no
-modifiers or states) and 003's copy of the spec-kitty-design issues; a repository grep outside `specs/013` finds
-nothing else.
+variant kitty-mission-ui uses. Constitution VI makes that consumer need the driver of the elements' surface. Before
+the operator's inputs, the only record in this repository was the triage record (`triage/013-data-display.md`: 183
+class uses, 34, 75 and 74, with no modifiers or states) and 003's copy of the spec-kitty-design issues.
 
-**Input the operator supplies.** kitty-mission-ui is outside this session's GitHub scope, so the orchestrator cannot
-fetch it (plan Decision 5). The operator supplies an inventory of the three class families' modifiers and states as
-kitty-mission-ui uses them, with a count for each, naming roles only and copying no code (constitution VI). At the
-plan gate (2026-11-13) the operator chose "Proceed, inputs later": tasks are generated now and the inventory stays
-pending. Each family's rows are recorded here, in the table below, before the red commit of its element's phase,
-since that phase's README-mapping task needs them; the phase does not take its red commit without them.
+**Input the operator supplied.** At the plan gate (2026-11-13) the operator chose "Proceed, inputs later". The
+operator has since supplied the inventory, read at kitty-mission-ui `c994c8ea` (2026-10-17), in
+[sources/013-inputs.md](sources/013-inputs.md) Part A: the three families' modifiers and states as kitty-mission-ui
+uses them, with counts, role names only and no code (constitution VI). The rows below record it, one per role name
+as the source gives it (without the `sk-` prefix), with the element and variant of this mission that covers it, or
+"gap", "consumer's" or "not this mission" with the reason. A gap names its open question in
+[reviews/analysis/inputs-questions.md](reviews/analysis/inputs-questions.md).
+
+**Corrected counts.** The triage figures (34, 75 and 74, 183 in all) are raw text matches in kitty-mission-ui's
+`packages/mission-ui/src`: they count comments, local CSS selectors and every child class separately, so they are not
+use counts. At `c994c8ea` the text matches are 34, 75 and **76** (185); the earlier 74 could not be reproduced. The
+uses, counted once per place a family root is rendered (a shared helper once per caller), are **8**, **25** and
+**14** (47 in all), from 7, 17 and 13 template sites. The "Uses" column below is on that rendered basis; one rendered
+use can carry several rows (a modifier and a state). kitty-mission-ui has no class set by script, so a variant
+changes only by template branch.
 
 | Family | Modifier or state (role name) | Uses | Element and variant | Phase |
 |---|---|---|---|---|
-| `.sk-facts` | pending the operator's inventory | | | 1 |
-| `.sk-empty-state` | pending the operator's inventory | | | 2 |
-| `.sk-progress` | pending the operator's inventory | | | 3 |
+| `.sk-facts` | facts stacked | 2 | `ocelle-facts` with `layout` unset (it stacks below the threshold) or `layout="stacked"`, each pair an `ocelle-fact`. The inspector's shrinking inside its grid (`min-width: 0`) is open: IQ-02. | 1 |
+| `.sk-facts` | facts two-col | 6 | `ocelle-facts` with `layout="columns"` (or unset, at or above the threshold). Gap: every use replaces the column tracks (label about 0.8fr with its longest word as minimum, value about 1.2fr with minimum 0), which FR-005 does not offer: IQ-01. | 1 |
+| `.sk-facts` | facts compact | 0 | `ocelle-facts density="compact"`. Unused by the consumer. | 1 |
+| `.sk-facts` | facts term | 8 | `ocelle-fact`'s `label`, rendered as the sheet's term (`part="label"`). | 1 |
+| `.sk-facts` | facts term regular | 1 | Consumer's: `ocelle-facts::part(label)` with the consumer's weight. Whether the default becomes 400 (#523's comment) is IQ-03. | 1 |
+| `.sk-facts` | facts value mono | 2 | Not this mission: no monospace (constitution II). The value stays sans with tabular figures; the small size is the consumer's through `--ocelle-facts-value-size` or a compact region (FR-008); the inspector's code-wrapped path is the consumer's value content. | 1 |
+| `.sk-facts` | facts value wrap | 2 | `ocelle-fact wrap="anywhere"` for both rules (Work Package `break-word`, Drift break-anywhere, #535). Whether `break-word` keeps a rule of its own, or becomes the default, is IQ-04. | 1 |
+| `.sk-facts` | facts value ellipsis | 1 | Gap: no ellipsis policy (FR-007 offers words and `anywhere`), and #280 rules out truncation that hides values: IQ-04. | 1 |
+| `.sk-facts` | facts value identifier | 3 | `ocelle-fact wrap="anywhere"`, or a value element with `data-ocelle-wrap="anywhere"` (FR-007). The consumer's break hints are value content, which the element does not change (FR-003). | 1 |
+| `.sk-facts` | facts value tooltip | 1 | Consumer's: a `title` on the consumer's own value content. It pairs with the ellipsis gap (IQ-04). | 1 |
+| `.sk-facts` | facts value pill | 2 | Consumer's: pills are inline content in the fact's value (FR-003). | 1 |
+| `.sk-facts` | facts value action | 1 | Consumer's: a button is inline content in the value and keeps its own tab stop (FR-003, FR-011). | 1 |
+| `.sk-facts` | facts row optional | 2 | Consumer's: the consumer leaves the `ocelle-fact` out, or sets `hidden` on it (FR-003). The element adds no fallback, as #280 asks. | 1 |
+| `.sk-facts` | facts group heading | 2 | Consumer's: the heading stays outside the sheet, in the consumer's wrapper. | 1 |
+| `.sk-facts` | facts group omitted | 2 | Consumer's: the consumer leaves the sheet out or renders an `ocelle-empty-state` instead; a sheet with no pairs renders nothing visible (FR-010). | 1 |
+| `.sk-facts` | facts workspace marker | 1 | Consumer's: a `data-*` attribute on the `ocelle-facts` host. | 1 |
+| `.sk-empty-state` | empty-state panel | 15 | `ocelle-empty-state variant="panel"`. The state wrapper and its `aria-busy` stay the consumer's. Its look (#510's text against the E-13 code) is open: IQ-06, IQ-07. | 2 |
+| `.sk-empty-state` | empty-state regional | 9 | `ocelle-empty-state`, default variant, with only the default slot (FR-023). | 2 |
+| `.sk-empty-state` | empty-state refusal | 1 | `ocelle-empty-state` with an `h1` heading, a body and an action. Gap: the eyebrow and the path have no slot (IQ-08); the dashed card is IQ-07. | 2 |
+| `.sk-empty-state` | empty-state heading h1 | 2 | The `heading` slot holding the consumer's `<h1>` (FR-020). | 2 |
+| `.sk-empty-state` | empty-state heading h2 | 9 | The `heading` slot holding the consumer's `<h2>` (FR-020). | 2 |
+| `.sk-empty-state` | empty-state heading paragraph | 1 | The `heading` slot holding the consumer's `<p>` (edge case "slotted heading of a different element"). Its id naming the progress bar is IQ-10. | 2 |
+| `.sk-empty-state` | empty-state no heading | 14 | The `heading` slot left empty (FR-023): a loading panel with `ocelle-progress` in `visual` (5), or a body-only notice (9). | 2 |
+| `.sk-empty-state` | empty-state body multiple | 2 | The default slot holding both paragraphs. The spacing of paragraphs in the body is open: IQ-09. | 2 |
+| `.sk-empty-state` | empty-state body optional | 2 | The default slot filled or left empty (FR-023). | 2 |
+| `.sk-empty-state` | empty-state action | 4 | The `actions` slot; the element gives the body-to-actions gap (FR-021), so the consumer's own top margin goes. Disabling the button while the screen is inert stays the consumer's. | 2 |
+| `.sk-empty-state` | empty-state action wrapper | 0 | The `actions` slot. Unused by the consumer. | 2 |
+| `.sk-empty-state` | empty-state inline | 0 | Not this mission: never used, and the regional notices use the centred block; no left-aligned inline variant is added. | 2 |
+| `.sk-empty-state` | empty-state busy | 6 | `ocelle-empty-state` with an indeterminate `ocelle-progress size="compact"` in `visual` (FR-021, US2-7); `aria-busy` stays on the consumer's wrapper. The look keyed on busy is IQ-07. | 2 |
+| `.sk-empty-state` | empty-state message | 3 | Gap: no dashed message card; neither variant paints a ground or border (FR-021): IQ-07. | 2 |
+| `.sk-empty-state` | empty-state card | 5 | Gap: no card fill, radius, inline padding or busy-keyed border (FR-021): IQ-07; its bold display-face heading is IQ-06. | 2 |
+| `.sk-empty-state` | empty-state card dashed | 2 | Not this mission: panel and card paint, the #509 family (E-45); see IQ-07. | 2 |
+| `.sk-empty-state` | empty-state ops card | 2 | Gap: as "empty-state card" (busy-keyed border, padding, heading): IQ-06, IQ-07. Its selector tests are the consumer's. | 2 |
+| `.sk-empty-state` | empty-state identifier | 3 | Consumer's: the value in the body, with `data-ocelle-wrap="anywhere"` and its own `title`; no mono (constitution II). | 2 |
+| `.sk-empty-state` | empty-state focus target | 2 | Consumer's: `tabindex="-1"` on the consumer's slotted heading (the element adds no tab stop, FR-024). The focusable progress block is IQ-11. | 2 |
+| `.sk-progress` | progress default | 1 | `ocelle-progress` with `value`, `max`, `label` and `show-label`. | 3 |
+| `.sk-progress` | progress narrow | 3 | `ocelle-progress`; the track fills the host's inline size (R-06). The two uses with their own grid are "progress grid layout". | 3 |
+| `.sk-progress` | progress compact | 10 | `ocelle-progress size="compact"`. In the consumer always without `value`. | 3 |
+| `.sk-progress` | progress indeterminate | 10 | `ocelle-progress` with no `value` (FR-032). | 3 |
+| `.sk-progress` | progress determinate | 4 | `ocelle-progress` with `value` and `max`. | 3 |
+| `.sk-progress` | progress meta | 2 | `value-text` with `show-label`: the consumer passes the formatted percentage, since the element formats no numbers (Assumptions). Its place in the row is IQ-13. | 3 |
+| `.sk-progress` | progress external text | 1 | `value-text` with `show-label`, or the consumer's own text beside the element. | 3 |
+| `.sk-progress` | progress label | 12 | `ocelle-progress` with `label` and `show-label` (FR-035). | 3 |
+| `.sk-progress` | progress labelled by heading | 1 | Gap: naming from an outside heading by reference is not in FR-030: IQ-10. | 3 |
+| `.sk-progress` | progress aria-label | 1 | `label` without `show-label`, or a host `aria-label` (FR-030). | 3 |
+| `.sk-progress` | progress fallback text | 2 | Consumer's: the element draws the bar itself; text the consumer puts inside it is not slotted. Whether the README states this is IQ-15. | 3 |
+| `.sk-progress` | progress heading | 1 | Gap: the host is the progressbar (R-05), so a role or tab stop on it would replace the bar: IQ-11. | 3 |
+| `.sk-progress` | progress inline | 1 | Gap: the plan states no host display for a bar inside a row: IQ-12. | 3 |
+| `.sk-progress` | progress in empty-state | 6 | `ocelle-empty-state`'s `visual` slot (FR-021, US2-7). | 3 |
+| `.sk-progress` | progress in busy region | 3 | `ocelle-progress` placed directly; `aria-busy` stays on the consumer's region. | 3 |
+| `.sk-progress` | progress slotted | 2 | `ocelle-progress` in another element's slot; nothing is needed from the element. | 3 |
+| `.sk-progress` | progress grid layout | 2 | `ocelle-progress` with `show-label` in the default size: label and value text in a row above, the bar across the full width below (R-06). A consumer cannot place the shadow parts in its own grid: IQ-13. | 3 |
+| `.sk-progress` | progress centred | 1 | `ocelle-empty-state`'s `visual` slot, which centres the bar and spans it up to the reading measure (FR-021). | 3 |
+
+Each family is recorded in full. Its gap rows go to the operator: the phase's red commit (T012, T028, T045) waits for
+the answers to the questions its rows name, and a row whose answer changes the element changes this table, the spec
+or the plan first, as the operator decides.
 
 **Gaps.** A variant that no element, property or slot of this plan covers goes to the operator before the red commit
-of its element's phase; the surface is not widened by review.
+of its element's phase; the surface is not widened by review. The gaps and conflicts the inputs show are listed, with options, in
+[reviews/analysis/inputs-questions.md](reviews/analysis/inputs-questions.md).
 
 **Who records it, and when (analysis U1).** For each family an operator step precedes the phase's red tasks: the
 operator supplies the family's rows and the planner records them in the table above, in a documentation commit of
 their own before the phase's red commit (tasks T002a, T022a, T036a). A family still pending is a known blocker of
 that phase's red commit (T012, T028, T045): the implementer stops and asks; it does not write the mapping statements
-from anything else.
+from anything else. All three families are now recorded (T002a, T022a and T036a done, from
+[sources/013-inputs.md](sources/013-inputs.md)); the open questions their gap rows name still block the red commits
+as stated above the table.
 
 **Where the mapping is written.** Each element's mapping rows (FR-058) are written in that element's phase, red
 first: the readme-test statements for the rows in the phase's red commit, the rows in its green commit (facts in
