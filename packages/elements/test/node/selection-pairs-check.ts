@@ -53,6 +53,36 @@ export const listboxRows: { readonly painted: Painted; readonly pairs: readonly 
   pairs: [],
 };
 
+/**
+ * R-15's rows for `ocelle-tab` (014 phase 3), as for the option: text `ink` on the main grounds and on `hover-bg`,
+ * `disabled-ink` (exempt), the `hover-bg` fill, the selected bar `accent-strong` (on its block-end edge) on the main
+ * grounds and on `hover-bg`, and the focus ring `color-focus` on the main grounds and, beside a hovered neighbour, on
+ * `hover-bg`.
+ */
+export const tabRows: { readonly painted: Painted; readonly pairs: readonly Pair[] } = {
+  painted: { text: ["color-disabled-ink", "color-ink"], fill: ["color-hover-bg"], bar: ["color-accent-strong"], ring: ["color-focus"], line: [] },
+  pairs: [
+    ...on("color-ink", [...mainGrounds, "color-hover-bg"]),
+    ...on("color-accent-strong", [...mainGrounds, "color-hover-bg"]),
+    ...on("color-focus", [...mainGrounds, "color-hover-bg"]),
+  ],
+};
+
+/**
+ * R-15 for `ocelle-tab-panel`: the focus ring of a panel that is its own tab stop (US2-6), an outline (a `line`) of
+ * `color-focus` on the main grounds; no text, fill or bar of its own (its content is the page's).
+ */
+export const tabPanelRows: { readonly painted: Painted; readonly pairs: readonly Pair[] } = {
+  painted: { text: [], fill: [], bar: [], ring: [], line: ["color-focus"] },
+  pairs: on("color-focus", mainGrounds),
+};
+
+/** R-15 for `ocelle-tabs`: the tabs paint no colour of their own (their tabs and panels do); no pair. */
+export const tabsRows: { readonly painted: Painted; readonly pairs: readonly Pair[] } = {
+  painted: { text: [], fill: [], bar: [], ring: [], line: [] },
+  pairs: [],
+};
+
 /** Whether a rule sits inside `@media (forced-colors: active)` (not inside its negation). */
 function inForcedColours(rule: Rule): boolean {
   for (let parent = rule.parent; parent !== undefined && parent.type !== "root"; parent = parent.parent) {

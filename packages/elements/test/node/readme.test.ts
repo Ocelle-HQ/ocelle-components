@@ -137,6 +137,24 @@ const fragments = [
   "`ocelle-listbox` and `ocelle-option` read the tokens `--ocelle-color-ink`, `--ocelle-color-hover-bg`, `--ocelle-color-accent-strong`, `--ocelle-color-disabled-ink`, `--ocelle-color-focus`, `--ocelle-focus-width`, `--ocelle-focus-offset`, `--ocelle-bar-width`, `--ocelle-target-min`, `--ocelle-space-2`, `--ocelle-space-3` and `--ocelle-icon-size`",
   "An option's `icon` slot takes a leading icon by the slot convention; the icon adds nothing to the option's name",
   "A listbox has no `disabled` of its own; disable every option to disable it. A listbox whose every option is disabled, or with no option, has no tab stop",
+  // ocelle-tabs, ocelle-tab and ocelle-tab-panel (014 US2, FR-006's tabs exception, FR-009 to FR-011a, FR-019 to FR-025, FR-056; research.md R-01 to R-05, R-15)
+  "`ocelle-tabs` is a tablist of `ocelle-tab` children with their `ocelle-tab-panel` panels: the host writes the tabs and the panels as its children, in the page's own markup, and the tabs pair with the panels by order (the first tab with the first panel, and so on); tabs or panels without a partner are not rendered",
+  "The tabs write the association themselves: an `id` on each tab and panel that has none (a child's own `id` is kept and used), `aria-controls` on every paired tab and `aria-labelledby` on the shown panel. A host writes no `id`, `aria-*` or `slot` on the children",
+  "`value` (attribute and property, not reflected): the selected tab's value. Exactly one tab is selected whenever a tab is enabled: on first render the tab whose value `value` names, else the first enabled tab. Setting `value` to a value an enabled tab has selects the first such tab; setting it to `\"\"` or to a value no enabled tab has keeps the selection. A host set never emits an event, and setting the current value changes nothing",
+  "A non-empty `value` that no enabled tab has is remembered until a tab with that value appears or is enabled, which is then selected, with no event; the next user selection or host set forgets it",
+  "`label` (attribute and property, not reflected): the tablist's accessible name, trimmed. Name the tabs with `label`: a host `aria-label` on `ocelle-tabs` does not name the tablist (the element does not forward it, and it would name the host as a second node around the tablist)",
+  "`ocelle-tabs-change` with `detail` `{ value }`: the user selected another tab with an arrow key, Home, End, Enter, Space or a click; `value` already reads the new value when it is dispatched. It bubbles and is composed",
+  "Keys, on a tab: ArrowRight and ArrowLeft move focus and selection to the next and previous enabled tab in visual order (swapped under right-to-left), wrapping at the ends; Home and End to the first and last enabled tab. Enter and Space select a focused tab that is not selected. The tabs handle no other key: ArrowUp, ArrowDown, Escape and letters reach the page unhandled, and keys pressed inside a panel are the panel content's",
+  "Only the selected tab is in the tab order. Tab from it moves into the selected panel: to the panel's first focusable element, or to the panel itself, which then shows the focus ring, when the panel holds nothing focusable (focusables inside shadow roots count, and the panel's content is followed after render)",
+  "When the selected tab is removed or disabled, the next enabled tab after it is selected, else the nearest one before it, with no event; focus moves with the selection when the tab had focus. With every tab disabled, or none, no tab is selected, no panel is shown and `value` reads `\"\"`",
+  "`ocelle-tab`: `value` (attribute and property, reflected) and `disabled` (boolean, reflected). A tab with no `value`, or a blank one, has its index among the tabs as its value, as a string; the default is not written to the attribute",
+  "The tabs write `aria-selected`, `aria-disabled` and `tabindex` on their tabs and `tabindex` on the shown panel; a host's own values of these are overwritten. Keep tab values unique: a host set selects the first tab with the value",
+  "An `ocelle-tab` or `ocelle-tab-panel` is only meaningful inside an `ocelle-tabs`: outside one it has no role and no tab stop",
+  "The tab row is the part `tablist`, and the shown panel sits in the part `panels`, beside the tablist; when the tabs are wider than the row they wrap onto further rows, and the row never scrolls sideways",
+  "The selected tab shows a bar of `--ocelle-bar-width` in `--ocelle-color-accent-strong` on its block-end edge, and `Highlight` in forced colours; the tabs are for the main grounds",
+  "`ocelle-tabs`, `ocelle-tab` and `ocelle-tab-panel` read the tokens `--ocelle-color-ink`, `--ocelle-color-hover-bg`, `--ocelle-color-accent-strong`, `--ocelle-color-disabled-ink`, `--ocelle-color-focus`, `--ocelle-focus-width`, `--ocelle-focus-offset`, `--ocelle-bar-width`, `--ocelle-target-min`, `--ocelle-space-2`, `--ocelle-space-3` and `--ocelle-icon-size`",
+  "A tab's `icon` slot takes a leading icon by the slot convention; the icon adds nothing to the tab's name or its panel's",
+  "The tabs have no `disabled` of their own; disable every tab to disable them",
   // two copies on a page (FR-006, Edge Cases)
   "Two copies of the package on one page, two versions or the browser build beside a bundle of the module build, cannot both define an element: the first definition wins and the second import throws nothing",
 ];
@@ -148,6 +166,9 @@ const entryRows = [
   "| `@ocelle/elements/ocelle-brand-mark.js` | `dist/ocelle-brand-mark.js` | `ocelle-brand-mark` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-listbox.js` | `dist/ocelle-listbox.js` | `ocelle-listbox` and `ocelle-option`; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-option.js` | `dist/ocelle-option.js` | `ocelle-option` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-tabs.js` | `dist/ocelle-tabs.js` | `ocelle-tabs`, `ocelle-tab` and `ocelle-tab-panel`; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-tab.js` | `dist/ocelle-tab.js` | `ocelle-tab` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-tab-panel.js` | `dist/ocelle-tab-panel.js` | `ocelle-tab-panel` only; for hosts with a bundler |",
   "| `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |",
   "| `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |",
 ];
@@ -192,7 +213,7 @@ describe("packages/elements/README.md", () => {
   it("lists exactly the entry points of package.json's exports in its Entry points table (FR-002)", () => {
     const manifest = JSON.parse(read("package.json")) as { exports?: Record<string, string> };
     expect(tableRows(read("README.md"), "Entry points")).toEqual(entryRows);
-    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-listbox.js", "./ocelle-option.js", "./browser.js", "./custom-elements.json"]);
+    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-listbox.js", "./ocelle-option.js", "./ocelle-tabs.js", "./ocelle-tab.js", "./ocelle-tab-panel.js", "./browser.js", "./custom-elements.json"]);
   });
 
   it("lists the thirteen names of the set, whether each mirrors and the consumer need it meets, in its Icons table (US2-1, FR-018, SC-007)", () => {
@@ -231,6 +252,14 @@ describe("packages/elements/CHANGELOG.md", () => {
     "`ocelle-listbox-activate`",
     "`@ocelle/elements/ocelle-listbox.js`",
     "`@ocelle/elements/ocelle-option.js`",
+    // 014 phase 3 (FR-058, research.md R-16)
+    "`ocelle-tabs`",
+    "`ocelle-tab`",
+    "`ocelle-tab-panel`",
+    "`ocelle-tabs-change`",
+    "`@ocelle/elements/ocelle-tabs.js`",
+    "`@ocelle/elements/ocelle-tab.js`",
+    "`@ocelle/elements/ocelle-tab-panel.js`",
     ...["chevron-start", "chevron-end", "chevron-up", "chevron-down", "arrow-start", "arrow-end", "menu", "close", "folder", "file", "search", "table", "copy"].map((name) => `\`${name}\``),
   ])("names %s under Unreleased / Added (constitution VII, FR-031, SC-008)", (surface) => {
     expect(added).toContain(surface);

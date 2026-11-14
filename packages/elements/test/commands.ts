@@ -190,8 +190,12 @@ export async function emulate(page: Page, mode: ForcedColors, palette?: Palette)
   await page.emulateMedia(scheme === undefined ? { forcedColors: mode } : { forcedColors: mode, colorScheme: scheme });
 }
 
-/** Which nodes `axTree` reads: the element's own and its shadow subtree's (`axNodes`), or its accessibility subtree (`axSubtree`). */
-export type AxScope = "element" | "subtree";
+/**
+ * Which nodes `axTree` reads: the element's own and its shadow subtree's (`axNodes`), or its accessibility subtree
+ * (`axSubtree`). `axStates` also reads `"ancestors"` (014 phase 3): the unignored ancestors of the target's node in the
+ * accessibility tree, nearest first, the root included.
+ */
+export type AxScope = "element" | "subtree" | "ancestors";
 
 /**
  * The `axTree(id, scope)` browser command (registered in vitest.config.ts): `axNodes`, or with `"subtree"` `axSubtree`,
@@ -252,6 +256,13 @@ export async function axStatesOf(session: CDPSession, target: Target, scope: AxS
   }
   const byNodeId = new Map(nodes.map((node) => [node.nodeId, node]));
   const found: AxState[] = [];
+  if (scope === "ancestors") {
+    const parents = new Map<string, RawAxNode>();
+    for (const node of nodes) for (const child of node.childIds ?? []) parents.set(child, node);
+    const own = nodes.find((node) => node.backendDOMNodeId === element.backendNodeId);
+    for (let up = own === undefined ? undefined : parents.get(own.nodeId); up !== undefined; up = parents.get(up.nodeId)) if (!up.ignored) found.push(withStates(up, byBackend));
+    return found;
+  }
   const walk = (node: RawAxNode): void => {
     if (!node.ignored && text(node.role?.value) !== "InlineTextBox") found.push(withStates(node, byBackend));
     for (const child of node.childIds ?? []) {
