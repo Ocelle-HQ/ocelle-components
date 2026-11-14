@@ -37,3 +37,33 @@ name) `[button "Save"]`, so a named host `generic` fails both.
   button keeps an 8 px gap after its icon, so the icon sits 4 px towards the inline start of the centre and the button
   is 8 px wider than its padding and icon need (still within FR-011: at least 24 px, and smaller than the default
   size). Not in the plan; left as it is.
+
+## Visual baselines
+
+The 34 button baselines (and the two changed `tokens--colour` captures, which show the four new colour tokens) were
+written only by `pnpm run visual:update` with `OCELLE_VISUAL_ENGINE=docker` in #10's pinned container
+(`mcr.microsoft.com/playwright@sha256:ee15712262f017b8157421b212b12099146645f44b1bc5c0514cbbe6a229b1d0`), and checked
+with `pnpm run gate:visual` (76 captures match, "docker only: no cross-engine comparison"). No podman cross-engine
+check was possible in this environment; CI confirms the baselines at landing. No baseline PNG was hand-edited or
+hand-picked.
+
+## Changes after the red commit (outside the red tests)
+
+- The whole suite after the first green commit found pinned values the red commit had not updated, all changed by
+  design: `gates/test/contrast-required.test.ts` (the hand-written required set gains R-08's rows: 182 per theme, 364
+  in all), the manifest gate's "3 elements checked" (unit and integration), and the axe plant repository's 78
+  story-theme runs. The red `build.test.ts` file filter lacked `ocelle-button.js` while its expected list named it (a
+  test defect: it could never pass); the filter was fixed, the expectation unchanged.
+- Plants: `visual/fail-token-changed` gains the fourteen light button story-themes that show `color-ink` (measured by
+  running its shard); `contrast/exempt-disabled-ink` gains its figures on the two new chrome grounds (4.89, 4.42) and its
+  `why` notes that `color-chrome` is above 4.5:1 with the planted value; the manifest plants' committed-manifest copies
+  were regenerated with `ocelle-button`.
+
+## Gate runs (T029)
+
+`gate:manifest`, `gate:style-lint`, `gate:contrast` (193 pairs light, 201 dark, 182 required per theme),
+`gate:csp`, `gate:prefix`, `gate:pins`, `gate:test-lint`, `gate:storybook-build` (38 stories), `gate:visual` (76
+captures, docker), `gate:axe` (76 story-theme runs, 0 serious or critical, the 10 excepted notes), the whole suite
+(3346 tests), and `gate:plants` shard by shard (`--shard 1` to `--shard 76`, one at a time, docker): every plant as
+expected after the manifest plant copies were regenerated (shards 1 to 3 re-run); the slowest shard took 130 s, the
+three other-plant shards 100 to 131 s, the visual shards about 105 to 130 s, the axe shards about 55 s.
