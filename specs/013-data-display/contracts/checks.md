@@ -68,10 +68,25 @@ something only the element gives:
 - **Each definition is its own value (US1-6, US1-7, US1-10, reorder; PLAN-TESTABILITY-1-005).** These bodies read
   `axSubtree` (which includes slotted light-DOM text), with a distinct value per pair, and assert that each definition
   holds its own fact's value text and follows its own fact's term. Plant: the slots assigned in reverse order.
-- **Layout settle (US1-1 to US1-3, US1-9, the resize bodies; PLAN-TESTABILITY-1-003).** The driver's `layout` wait
-  (R-02): after `updateComplete`, poll once per animation frame until two consecutive frames give the same geometry,
-  failing after 10 frames. The stacking and probe plants are run with this wait. A body resizes the host 600 → 300 →
-  600 px and asserts two columns, one column, two columns.
+- **Layout settle (US1-1 to US1-3, US1-9, the resize bodies; PLAN-TESTABILITY-1-003; operator decision "(a) Defer
+  + 2-frame wait", 2026-11-14).** The driver's `layout` wait (R-02): after `updateComplete`, wait at least 2
+  animation frames, then read once per animation frame until two consecutive frames give the same geometry, failing
+  after 10 frames. The measure pass from the `ResizeObserver` runs one frame after the callback, so a wait that
+  compares from the first frame can return on the old layout (measured in phase 1's spike); the old layout showing for
+  one frame after an observed resize is accepted and no body asserts the layout within that frame. Every body that
+  reads a layout after a resize, a hook change or a dialog reopened uses this wait. The stacking and probe plants are
+  run with this wait. A body resizes the host 600 → 300 → 600 px and asserts two columns, one column, two columns.
+- **No `ResizeObserver` loop error (R-02, operator decision "(a) Defer + 2-frame wait").** The error is a `window`
+  `error` event with no error object: Playwright's `console` and `pageerror` events do not record it, so the fixture
+  harness cannot see it, and Vitest's in-process harness logs it as `console.error`. The assertion therefore lives in
+  the in-process harness (`packages/elements/test/facts.test.ts`): around a run of flips (the host resized 600 → 300
+  → 600 px in a block container; the widen case in a `showModal()` dialog, 360 → 1200 px; the hook changed 15rem →
+  40rem → 15rem at a fixed 450 px width; a `layout="grid"` sheet resized 300 → 600 → 800 px), each read with the
+  layout wait, the test records every `window` `error` event (capture phase) and every `console.error` call, and
+  asserts that none carries "ResizeObserver loop". Paired: the same test asserts each flip happened (the layout or
+  column count after each step), and that the recorder sees a synthetic `ErrorEvent` with that message dispatched by
+  the test itself, so it cannot pass on a recorder that sees nothing. Plant: the measure pass run synchronously inside
+  the `ResizeObserver` callback (no `requestAnimationFrame`); this test must fail.
 - **The measure pass owns the class (PLAN-FRESH-3-002).** A 300 px block sheet (stacked) is resized to 290 px; after
   the layout wait it is still one column (the `<dl>`'s computed `grid-template-columns` is one track and each value is
   below its label). Plant: the class not restored after the measure (the pass toggles `stacked` only when the decision
@@ -79,7 +94,12 @@ something only the element gives:
 - **Re-decide triggers (US1-12, PLAN-FRESH-3-001 (c)).** Each body compares the changed sheet with a fresh load of
   the same content in the same space, and asserts the fresh load's layout (two columns) as well, so it cannot pass on
   a sheet that stacks everywhere. The content is the one phase 1's spike fixes (R-02): its two-column size is above
-  the threshold at 1200 and 1280 px and its stacked size below it.
+  the threshold at 1200 and 1280 px and its stacked size below it, each by at least 16 px (operator decision "Widen
+  the margin", 2026-11-14): at most 368 px where the body expects one column, at least 400 px where it expects two,
+  at the 384 px default threshold. The spike measured "Created by op" / "Ada Lovelace and Charles Babbage" at only
+  386.1 px, so the implementer re-chooses the widen content (and checks relabel and value text), re-measures it and
+  records it in `reviews/phase-1/spike.md` and R-02; the names below are the pre-margin content, replaced by the
+  recorded content where it differs.
   - widen: the pair "Created by op" / "Ada Lovelace and Charles Babbage" in a `showModal()` dialog, loaded at a 360 px
     viewport (one column), widened to 1200 px: two columns, as a load at 1200 px;
   - relabel: the pair "Id" / the same value in a dialog at 1280 px (one column), relabelled "Created by operator":
@@ -88,13 +108,22 @@ something only the element gives:
     `characterData` change) to a longer text whose two-column size crosses the threshold: two columns, as a fresh
     load.
   Plant: the extra triggers removed (the pass runs only from the host and probe `ResizeObserver` and on `layout`);
-  the widen and relabel bodies must fail. A second plant, `characterData` removed from the observer, must fail the
+  the widen and relabel bodies must fail; the bodies wait for the first decision (the layout wait after mount) before
+  they act, since under the plant the first decision comes from the observer alone (spike § 4). A second plant, `characterData` removed from the observer, must fail the
   value-text body.
 - **Unobserved changes (FR-009, PLAN-FRESH-3-001 (c)).** For each case phase 1's spike names as outside the guarantee
   (R-02 § Changes the pass does not observe), a body makes that change twice, once with `layout="columns"` and once
   with an inline size on the sheet, and asserts the chosen layout after the change (the consumer's remedy the README
-  gives), paired with the automatic layout of a fresh load in the changed space. If the spike names no such case,
-  there is no body and the README says history independence holds in every measured host.
+  gives), paired with the automatic layout of a fresh load in the changed space. The spike named one case
+  (`reviews/phase-1/spike.md` §§ 5 and 7): **a sheet in a consumer's CSS grid `auto` track whose neighbour is
+  removed.**
+  - Two-column layout: a sheet with the round 3 widen content in the `auto` track of a 600 px consumer grid beside a
+    neighbour, the neighbour removed. With `layout="columns"`: two columns after the change; with an inline size on
+    the sheet (at least 400 px): two columns after the change; paired with a fresh load of the same content in the
+    track without the neighbour, automatic, two columns.
+  - Grid layout: a `layout="grid"` sheet with the US1-18 content in the `auto` track of a consumer grid at a 1000 px
+    viewport, the neighbour removed. With an inline size on the sheet (at least 2 × T): four columns after the
+    change; paired with a fresh load without the neighbour, four columns.
 - **Copy (US1-4, PLAN-TESTABILITY-1-012).** The driver selects the rendered value's text and performs a user copy;
   the body reads the copy event's `clipboardData.getData("text/plain")` and asserts it equals the 64-character
   identifier. The same body asserts US1-3's wrap (the value spans more than one line box). Plant: a copy of
@@ -228,7 +257,8 @@ From the spec check notes and squad round 1:
   - a non-`ocelle-fact` child is hidden;
   - shrink-to-fit hosts (dialog, popover, float, default flex item, a flex row with a 400 px fixed sibling, a grid
     `auto` track, a table cell) with FR-009's bound; a sheet with the spike's named content (R-02, "Created by op" /
-    "Ada Lovelace and Charles Babbage" or its lengthened form) loaded at 360 px then widened to 1200 px in each, with
+    "Ada Lovelace and Charles Babbage" or the form re-chosen for the 16 px margin) loaded at 360 px then widened to
+    1200 px in each, with
     the same layout as loaded at 1200 px (PLAN-CORRECTNESS-1-003 (a), PLAN-FRESH-2-001 (c), PLAN-FRESH-3-001 (c));
   - the re-decide trigger bodies (widen, relabel, value text), the 300 → 290 px measure-pass body and the
     unobserved-change bodies of § Oracles (US1-12, PLAN-FRESH-3-001 (c), PLAN-FRESH-3-002);
@@ -371,7 +401,7 @@ first phase that uses it:
 |---|---|---|
 | `viewport(width, height)` | sets the page's viewport (Vitest browser `page.viewport()`; Playwright `setViewportSize` on the fixture page) | 1 |
 | `scrollWidth()` | the document element's scroll width | 1 |
-| `layout(id)` | the layout-settle wait (R-02) | 1 |
+| `layout(id)` | the layout-settle wait (R-02): at least 2 animation frames, then one read per frame until two consecutive frames give the same host and `<dl>` geometry, failing after 10 | 1 |
 | `copy(id)` | selects the element's rendered text, performs a user copy, returns the copy event's `text/plain` | 1 |
 | `move(id, parentId)` | moves an element under another parent (or to the body) | 1 |
 | `text(id, value)` | sets the data of the element's first text node (a `characterData` change, not a `childList` one) and waits for the element's ancestors' updates (PLAN-FRESH-3-001 (c)) | 1 |

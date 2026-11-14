@@ -176,7 +176,9 @@ choose where that is not what they want.
   the probes and, when `layout` is unset, the measure: it removes the `stacked` class from the `<dl>`, reads the host's
   content-box inline size (which forces a layout in two columns), and then sets the class from the decision with
   `classList.toggle("stacked", stacked)`, unconditionally, whether or not the decision changed. With `layout` set it
-  sets the class from `layout` alone. All of it runs before paint; in a block container the pass changes no size.
+  sets the class from `layout` alone. In a block container the pass changes no size. The pass is synchronous from
+  every trigger but the `ResizeObserver`; from the observer it runs one animation frame later (§ The `ResizeObserver`
+  loop error, below).
 - **The class is owned by the measure pass alone (PLAN-FRESH-3-002).** The template does not bind the `<dl>`'s
   `class`, and `stacked` is not a reactive property. A Lit attribute binding commits only when the new value differs
   from its own last committed value, not from the DOM, and `requestUpdate` skips an update when `hasChanged` is false;
@@ -193,7 +195,9 @@ choose where that is not what they want.
   from "Id" to "Created by operator" stays stacked, while a fresh load of the same content in the same space gives two
   columns. The pass therefore runs on each of these triggers, the cheap ones of the lens's list (operator option (c)):
   - the callback of one `ResizeObserver` that observes the host and both probes (a resize of the sheet; a threshold
-    change, PLAN-FRESH-2-004);
+    change, PLAN-FRESH-2-004). The callback does not run the pass itself: it schedules one pass in a
+    `requestAnimationFrame`, so the pass runs in the next frame, never synchronously inside the callback (operator decision "(a) Defer + 2-frame wait",
+    2026-11-14);
   - `updated()`, after every render: every re-render from the facts `MutationObserver` (a child added, removed,
     reordered, hidden or shown; a label, `lang` or `dir` changed) and a change of `layout`;
   - the facts `MutationObserver`'s `childList` and `characterData` records inside a pair (R-01), which do not
@@ -215,10 +219,33 @@ choose where that is not what they want.
   remedy (with `layout="columns"`, and with an inline size on the sheet, the layout after the change is the chosen
   one) instead of history independence. In a block container the measure is the container's size, which a resize of
   the host always reports, so no case is narrowed there.
-- **The `ResizeObserver` loop error.** Phase 1's spike records whether a flip raises the "ResizeObserver loop completed
-  with undelivered notifications" error, which the fixture's console check would record. If it does, the pass sets
-  the class in a `requestAnimationFrame` from the callback, and the spike records the frames the layout wait then
-  takes.
+- **The unobserved case the spike found (`reviews/phase-1/spike.md` §§ 5 and 7).** Of the cases above, one differs
+  from a fresh load: **a sheet in a consumer's CSS grid `auto` track whose neighbour is removed.** In the two-column
+  layout (a 600 px grid) the stacked sheet stays stacked at 277.9 px while a fresh load gives two columns at
+  386.1 px; in `layout="grid"` (a 1000 px viewport) the sheet stays two columns at 571.9 px while a fresh load gives
+  four columns at 1000 px. The stacked (or fewer-column) sheet's own size does not change, so neither the host
+  observer nor a window resize fires. Every other case agreed with a fresh load: the fixed flex sibling shrunk from
+  400 to 100 px (the host resizes, in both layouts), the table column widened by another row, the dialog closed and
+  reopened at another width (both ways, in both layouts), and the late web font in a dialog, a flex item and a 450 px
+  block. This is the narrowing of FR-009 the operator's option (c) already decided: the README names the case (in a
+  CSS grid `auto` track whose neighbours can change, set `layout` or give the sheet an inline size; for
+  `layout="grid"`, give it an inline size), and the unobserved-change bodies assert that remedy for it in the
+  two-column and grid layouts.
+- **The `ResizeObserver` loop error (operator decision "(a) Defer + 2-frame wait", 2026-11-14).** Phase 1's spike
+  (`reviews/phase-1/spike.md` § 3) measured that a decision made synchronously inside the observer callback raises
+  "ResizeObserver loop completed with undelivered notifications" on almost every flip: in every shrink-to-fit host and
+  in block containers, on widen, narrow, relabel, value-text, hook and grid column-count flips, whenever the decided
+  class changes the host's box inside the callback, so the host is observed again at the same depth. Where it shows:
+  the error is a `window` `error` event with no error object. Playwright's `console` and `pageerror` events record
+  nothing, so the fixture's console check does **not** catch it; Vitest's in-process harness (`@vitest/browser`'s
+  error catcher) turns it into `console.error(new Error(message))`; a consumer's page error monitor sees it on each
+  flip. The decision: the observer callback schedules the measure pass in a `requestAnimationFrame` (above); the
+  pass from `updated()`, the `MutationObserver` and `window` `resize` stays synchronous. The spike measured no loop
+  error in any of its cases with the deferred pass, and every layout in every host and case equal to the synchronous
+  pass's. The cost, accepted by the operator: after a resize the observer reports, the old layout shows for one frame.
+  A body in the in-process harness, the one that can observe the error, asserts that the flips raise no loop error
+  (contracts/checks.md § Oracles, "No `ResizeObserver` loop error"); its plant runs the pass synchronously inside
+  the callback and must fail it.
 - **Threshold (PLAN-FRESH-2-008).** It comes from a hook, `--ocelle-facts-stack-below`, set by default in `:host` to
   `calc(var(--ocelle-space-10) * 6)`, which is 24rem (384 px at the default root size, more than 320 px as FR-005
   requires). The default is built from the spacing scale, not from `--ocelle-shell-sidebar-width`: the `calc()`
@@ -266,11 +293,12 @@ choose where that is not what they want.
   default (384 px) a cell in four columns at 768 px and a cell in two columns at 384 px have about the same inline
   size (less the gaps), so a cell never gets narrower when the column count rises. The class names are internal, not
   public surface.
-- **Triggers and narrowing.** The same triggers as the stacking (the host and probe `ResizeObserver`, `updated()`,
-  value text changed in place, window resize), and the same narrowing for the changes the pass does not observe: the
-  phase 1 spike runs the grid in the same hosts and unobserved cases, and the README's remedy is the same (an inline
-  size on the sheet; a set `layout` other than `grid` gives another layout, so for the grid the remedy is the inline
-  size).
+- **Triggers and narrowing.** The same triggers as the stacking (the host and probe `ResizeObserver`, its pass
+  deferred one frame, `updated()`, value text changed in place, window resize), and the same narrowing for the changes
+  the pass does not observe: the phase 1 spike ran the grid in the same hosts and unobserved cases, and the one that
+  differs is the same, a CSS grid `auto` track whose neighbour is removed (two columns where a fresh load gives four,
+  § The unobserved case the spike found). The README's remedy is the same (an inline size on the sheet; a set
+  `layout` other than `grid` gives another layout, so for the grid the remedy is the inline size).
 - **Why not a container query or `auto-fit`.** A container query needs inline-size containment, which collapses the
   sheet to 0 px in shrink-to-fit hosts (above). `repeat(auto-fit, minmax(<length>, 1fr))` gives every column count
   from one to many, not four, two or one as #280 asks, and in a shrink-to-fit host its count follows the content's
@@ -307,15 +335,20 @@ spike's record.
 - For PLAN-FRESH-3-002, measuring without touching the `<dl>` (a separate always-two-column measuring element): it
   would duplicate the pairs' content, which FR-003 forbids, or measure something other than the sheet.
 
-**When the layout is read (PLAN-TESTABILITY-1-003).** `settle()` in `test/in-process.ts` waits for `updateComplete`
-and one `requestAnimationFrame`. Animation-frame callbacks run before layout and before `ResizeObserver` delivery in
-the same frame, and the `stacked` class is set in the observer callback (with no Lit update after it), so one frame
-reads the pre-decision layout. The facts bodies therefore wait with a layout settle: after `updateComplete`, the driver
-polls once per animation frame until two consecutive frames give the same host and `<dl>` geometry and the element's
-`updateComplete` is resolved, failing the body after 10 frames. Phase 1's spike measures the number of frames this
-takes in both harnesses, and the stacking and probe plants are run with this wait in place, so they fail on the
-layout and not on timing. A body resizes the host from 600 px to 300 px and back to 600 px, so the observer path runs
-after the first layout.
+**When the layout is read (PLAN-TESTABILITY-1-003, operator decision "(a) Defer + 2-frame wait").** `settle()` in
+`test/in-process.ts` waits for `updateComplete` and one `requestAnimationFrame`. Animation-frame callbacks run before
+layout and before `ResizeObserver` delivery in the same frame, and the observer callback only schedules the measure
+pass for the next frame (with no Lit update after it), so one frame reads the pre-decision layout, and so can two
+equal frames read before that deferred pass runs. The facts bodies therefore wait with a layout settle: after
+`updateComplete`, the driver waits at least 2 animation frames, then reads once per animation frame until two
+consecutive frames give the same host and `<dl>` geometry and the element's `updateComplete` is resolved, failing the
+body after 10 frames. Phase 1's spike measured, in the Playwright harness, that a wait comparing from the first frame
+returns before the deferred pass in several cases (the flex sibling, the 300 → 290 px pass, the hook change at 450 px
+and 600 px, the dialog reopened, and the grid's flex-sibling and dialog cases), and that with at least 2 frames before
+the comparison every result equalled the synchronous pass's (also at 3 and 4 frames). The in-process harness's frame
+count is measured when the phase resumes and recorded in `reviews/phase-1/spike.md`. The stacking and probe plants
+are run with this wait in place, so they fail on the layout and not on timing. A body resizes the host from 600 px to
+300 px and back to 600 px, so the observer path runs after the first layout.
 
 **To measure in phase 1's spike**, before the red commit:
 - the measure (above) in a `showModal()` dialog, a popover, a float, a default flex item, a flex row with a 400 px
@@ -330,7 +363,21 @@ after the first layout.
   across the threshold gives the layout of a fresh load. The spike first confirms in the harness's fonts that each
   content's two-column size is above the 384 px threshold at 1200 or 1280 px and its stacked size below it, and
   lengthens the value if not (round 3's refuter had to, in another font); the content used is recorded and the bodies
-  use it. With the extra triggers removed, both named cases must keep the stacked layout (the plant);
+  use it. With the extra triggers removed, both named cases must keep the stacked layout (the plant). **Margin
+  (operator decision "Widen the margin", 2026-11-14):** the spike measured "Created by op" / "Ada Lovelace and Charles
+  Babbage" at 386.1 px in two columns, 2.1 px above the 384 px threshold, too close for CI's font run. Each round 3
+  content's two-column size must be at least 16 px either side of the threshold: at most 368 px where the body expects
+  one column (before the change) and at least 400 px where it expects two (after the change and on the fresh load).
+  The implementer chooses the content (lengthening the value or the label as needed; relabel, 307.3 → 426.4 px, and
+  value text, 298 → 479.7 px, already meet it as measured), re-measures every case in the harness's fonts and records
+  the content and its sizes in `reviews/phase-1/spike.md` and here, before the red commit; the bodies (and US1-18,
+  which uses the same content) use that content. **Chosen (T001b, `reviews/phase-1/spike.md` § 9):** the value
+  "Ada Lovelace and Charles Babbage FRS" for widen, relabel and US1-18. Widen ("Created by op"): measure 322 px in the
+  dialog at 360 px, 421.3 px after the widen and fresh at 1200 px (in process, fallback face: 322 → 432.8 px).
+  Relabel ("Id" → "Created by operator"): 342.5 → 461.6 px (in process 351.1 → 472.9 px). Value text, unchanged
+  (label "Created by the operator on duty today", value "Ada" → "Ada Lovelace and Babbage"): 298 → 479.7 px (in
+  process 302.9 → 490.7 px). US1-18 with "Status" / "Running" added: one column at 360 px (measure 322 px), four
+  columns at 1242 px at 1280 px. The plant (extra triggers removed) keeps widen and relabel stacked;
 - the unobserved cases of § Changes the pass does not observe, each against a fresh load, to name the narrowing;
 - the 300 px sheet resized to 290 px, stacked after the pass (PLAN-FRESH-3-002);
 - the stacked and two-column states at 300 px and 600 px, `layout="columns"` at 320 px with no page overflow, and the
@@ -339,6 +386,15 @@ after the first layout.
 - the probes with an invalid hook, a percentage hook and a 0 hook at 320 px (stacked), with a valid 15rem hook at
   300 px (two columns) and a valid 40rem hook at 600 px (stacked), and a hook changed at a fixed 450 px width;
 - right-to-left mirroring of the columns (SPEC-2-08).
+
+Measured on 2026-11-14 (`reviews/phase-1/spike.md`); the loop error and the round 3 margin were decided by the operator
+the same day (`reviews/phase-1/operator-spike-decisions.md`), and the unobserved case is copied above. Measured when
+the phase resumed (T001b, `reviews/phase-1/spike.md` § 9): the round 3 content above; with the deferred pass no loop
+error in any case and every layout equal to the synchronous pass's after the 2-frame wait; the wait returns after 2
+frames in the fixture harness and 2 or 3 in the in-process harness, which logs the synchronous pass's loop error as
+`console.error`. With the chosen content the two-column CSS grid `auto` track case agrees with a fresh load, because
+its stacked size (313.1 px) does not fit beside the 300 px neighbour, so the host resizes; the narrowing stays for
+content whose stacked sheet fits there (the pre-margin content), and the grid case still differs.
 
 ## R-03 `ocelle-facts`: grid, type and density (FR-005 to FR-008, FR-014)
 

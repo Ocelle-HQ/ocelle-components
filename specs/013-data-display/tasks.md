@@ -27,6 +27,13 @@ test bodies only, with no new public surface; the resolution of each finding is 
 added bodies and plants are folded into T004a, T021a and T024a, and the story statement into T049; no task is
 added.
 
+Amended after the operator's decisions at the phase 1 spike stop (2026-11-14,
+`reviews/phase-1/operator-spike-decisions.md`, measurements in `reviews/phase-1/spike.md`): "(a) Defer + 2-frame wait"
+(the observer's measure pass runs one animation frame after the callback; the layout wait polls at least 2 frames
+before it compares), "Widen the margin" (the round 3 content at least 16 px either side of the 384 px threshold), and
+the one unobserved change the spike found (a CSS grid `auto` track whose neighbour is removed) copied into R-02, the
+README statement task and the unobserved-change bodies. Added tasks: T001b, T006a.
+
 **Tests**: required. Constitution Principle VIII applies to every phase.
 
 **Phase flow**: `base.sh`, then `scaffold.sh` (phases 1 to 3), then one red commit of test files only proven by
@@ -69,10 +76,13 @@ order 1 → 2 → 3 → 4:
     (PLAN-CORRECTNESS-1-014 (b));
   - the two-column measure shows a state dependence that the cheap triggers do not cover and that is not one of the
     unobserved changes FR-009 is narrowed for (R-02);
-  - a flip raises the `ResizeObserver` loop error;
+  - a flip raises the `ResizeObserver` loop error with the observer's pass deferred one frame (the synchronous pass's
+    error was decided at the spike stop, "(a) Defer + 2-frame wait"), or the deferred pass gives a layout that differs
+    from the synchronous pass's after the 2-frame wait;
   - **T001a**: the grid layout's `<div>` groups inside the shadow `<dl>` fail FR-004 (an axe `definition-list` or
     `dlitem` violation, a Chromium tree that is not one description list with each definition after its term, or an
-    empty term pruned) (IQ-05 (b), research R-01).
+    empty term pruned) (IQ-05 (b), research R-01);
+  - **T001b**: no round 3 content meets the 16 px margin in the harness's fonts with the value or label lengthened.
 - **T035 (phase 3 spike)**: no platform read exposes `valuetext`. US3-3 goes to the operator (R-05).
 - **R-11 inventory** (T002a, T022a, T036a): a phase's `.sk-*` family is missing from research R-11 before that phase's
   red commit, or has a variant that no element or variant covers (Decision 5, operator: "proceed, inputs later"). All
@@ -112,7 +122,7 @@ order 1 → 2 → 3 → 4:
 
 ### Spike (first)
 
-- [ ] T001 [US1] Spike before the scaffold, scratch files only, recorded in `specs/013-data-display/reviews/phase-1/spike.md`. Every item is per plan § Phases 1 and research R-01/R-02:
+- [X] T001 [US1] Spike before the scaffold, scratch files only, recorded in `specs/013-data-display/reviews/phase-1/spike.md`. Every item is per plan § Phases 1 and research R-01/R-02:
   - the A5 structure built with Lit 3.3.3 (`createRenderRoot` with `slotAssignment: "manual"`, `slot.assign()` in `updated()`): the Chromium AX tree, axe-core 4.14.0 (`definition-list`, `dlitem`, full run) and whether an empty `<dt>` stays a term node;
   - the two-column measure with its probes, in a `showModal()` dialog, a popover, a float, a default flex item, a flex row with a 400 px fixed sibling, a grid `auto` track and a table cell:
     - FR-009's bound;
@@ -129,10 +139,17 @@ order 1 → 2 → 3 → 4:
 
   Any failing FR-004 result or unexplained state dependence stops for the operator.
 
-- [ ] T001a [US1] Spike items for the input decisions, scratch files only, recorded in `specs/013-data-display/reviews/phase-1/spike.md` (research R-01 § The grid layout's structure, R-02 § The grid layout's column count and § A sheet as a `1fr` grid item):
+- [X] T001a [US1] Spike items for the input decisions, scratch files only, recorded in `specs/013-data-display/reviews/phase-1/spike.md` (research R-01 § The grid layout's structure, R-02 § The grid layout's column count and § A sheet as a `1fr` grid item):
   - the grid structure: the shadow `<dl>` with each pair in a `<div>` group (`<div><dt></dt><dd><slot></slot></dd></div>`), built with Lit 3.3.3 and manual assignment; the Chromium AX tree (one description list, each definition after its term, the groups ignored or generic), axe-core 4.14.0 (`definition-list`, `dlitem`, full run) and an empty `<dt>` in a group. Any failure stops for the operator (IQ-05 (b));
   - the grid measure as laid out in four columns, in the hosts of T001 and in 300, 600, 800 and 1280 px block containers (one, two, four, four columns), the US1-18 widen case in a dialog with the content T001 fixes (lengthened if its four-column size at 1280 px is below 2 × T or its size at 360 px is not below T), a hook changed at a fixed width moving both points, and whether a flip raises the `ResizeObserver` loop error; the unobserved changes of T001 for the grid, each against a fresh load;
   - the `1fr` grid item (IQ-02 (a)): a sheet with a long unbroken value as the item of a `1fr` grid track at 320 and 600 px, with and without `min-inline-size: 0` on the host, recording the track's and the page's overflow.
+
+- [X] T001b [US1] Spike resumption after the operator's spike decisions (`specs/013-data-display/reviews/phase-1/operator-spike-decisions.md`), scratch files only, before the scaffold, recorded in `specs/013-data-display/reviews/phase-1/spike.md` and research R-02 (§ To measure, Margin):
+  - choose the round 3 content (widen, relabel, value text) so that each two-column size is at most 368 px where the body expects one column and at least 400 px where it expects two (16 px either side of the 384 px threshold), lengthening the value or label of "Created by op" / "Ada Lovelace and Charles Babbage" as needed; re-measure each case in the harness's fonts against a fresh load, with the plant (extra triggers removed) still keeping the widen and relabel cases stacked;
+  - check the same content for US1-18 in the grid (four-column size at 1280 px at least 2 × T, size at 360 px below T);
+  - with the observer's pass deferred one animation frame: no loop error and the same layouts as recorded in §§ 2 to 7, with the layout wait polling at least 2 frames before it compares;
+  - the layout wait's frame count in the in-process harness (Vitest browser mode), and confirm that harness logs the synchronous pass's loop error as `console.error`;
+  - record the chosen content and its sizes in `spike.md` and in research R-02.
 
 ### Scaffold
 
@@ -151,7 +168,7 @@ order 1 → 2 → 3 → 4:
 - [ ] T003 [P] [US1] Driver additions `viewport`, `scrollWidth`, `layout`, `copy`, `move`, `text`, as contracts/checks.md § Driver additions specifies:
   - declared in `packages/elements/test/scenarios/driver.ts`;
   - implemented in `packages/elements/test/in-process.ts` and `packages/elements/test/browser/driver.ts`;
-  - their own tests in `packages/elements/test/commands.test.ts` and the driver tests. Behaviour to test: `layout` polls once per frame until two equal frames and fails after 10; `copy` returns the copy event's `text/plain`; `text` makes a `characterData` change.
+  - their own tests in `packages/elements/test/commands.test.ts` and the driver tests. Behaviour to test: `layout` waits at least 2 animation frames before it compares, then polls once per frame until two consecutive equal frames and fails after 10; a geometry change made in a `requestAnimationFrame` scheduled from a `ResizeObserver` callback (the deferred pass's shape) is read by the wait, never the geometry before it; `copy` returns the copy event's `text/plain`; `text` makes a `characterData` change.
 - [ ] T004 [US1] `packages/elements/test/scenarios/facts.ts`: the facts scenario bodies with the oracles of contracts/checks.md § Oracles (Facts). Every "does not" is paired:
   - US1 scenarios 1 to 10 as shared bodies:
     - US1-6 asserts the AX description list and the flat-tree `<dl>` children (`<dt>`/`<dd>` alternating, one pair per visible fact);
@@ -162,9 +179,9 @@ order 1 → 2 → 3 → 4:
     - US1-8 checks forced colours with system colours read beside the token colours;
     - the FR-011 link sits inside the value column.
   - US1-11, the `layout` property (FR-013): a short sheet in a dialog at 1280 px, one column without `layout` and two columns with `layout="columns"`; `stacked` in a 600 px block; `columns` at 320 px with no page overflow; `layout="table"` acts as unset (`grid` is a value now, FR-014); removing `layout` returns to automatic.
-  - US1-12's re-decide bodies (widen, relabel, value text, each compared with a fresh load), with the content T001 fixed.
+  - US1-12's re-decide bodies (widen, relabel, value text, each compared with a fresh load), with the content T001b fixed: each two-column size at least 16 px either side of the 384 px threshold (at most 368 px where one column is expected, at least 400 px where two are), as recorded in `spike.md` and research R-02; the plant bodies wait for the first decision before they act.
   - The 300 → 290 px measure-pass body.
-  - The unobserved-change bodies for each case T001 recorded: `layout="columns"` and an inline size, each paired with a fresh load.
+  - The unobserved-change bodies for the case T001 recorded (research R-02 § The unobserved case the spike found): a sheet in the `auto` track of a 600 px consumer CSS grid whose neighbour is removed, once with `layout="columns"` and once with an inline size on the sheet, each giving two columns after the change, paired with a fresh load without the neighbour (two columns).
 - [ ] T004a [US1] `packages/elements/test/scenarios/facts.ts` (continued): the `layout="grid"` bodies (FR-014, IQ-05 (b)) with the oracles of contracts/checks.md § Oracles (grid structure, grid geometry), every "does not" paired:
   - US1-13 (four cells at 1280 px; the AX description list; the flat-tree `<dl>` children only `<div>` groups, each one `<dt>` then one `<dd>`; the label-to-value gap exactly `--ocelle-space-1` (the `<dt>`'s block end to the `<dd>`'s block start) and the column gap exactly `--ocelle-space-4` (one group's inline end to the next one's inline start), each value from `packages/tokens/src/source.ts`; the `<dl>`, each group, `<dt>` and `<dd>` with a transparent computed `background-color` and every border style `none`, beside a sibling `<div>` given a ground and a border by a page rule in the same body, read as non-default, FR-014);
   - US1-14 (two columns at 600 px and one at 320 px in one body, page scroll width equal to the viewport width);
@@ -174,7 +191,7 @@ order 1 → 2 → 3 → 4:
   - US1-18 (widen in a dialog from 360 px to 1280 px against a fresh load, with T001a's content);
   - US1-19 (a link, a status text and "Not recorded" as values: shown as given, each inside its own cell; the link's tab stop);
   - the extra grid bodies of contracts/checks.md § Extra scenario bodies: `layout` from `grid` to `columns` and back, `density="compact"` with `grid`, a hidden fact in the grid, the 15rem hook on a 600 px grid sheet;
-  - for each unobserved change T001a records for the grid, the inline-size remedy paired with a fresh load.
+  - the unobserved change T001a recorded for the grid (research R-02): a `layout="grid"` sheet with the US1-18 content in a consumer CSS grid `auto` track at a 1000 px viewport whose neighbour is removed, with an inline size on the sheet (at least 2 × T): four columns after the change, paired with a fresh load without the neighbour (four columns).
 - [ ] T005 [US1] `packages/elements/test/scenarios/facts.ts` (continued): the extra facts bodies of contracts/checks.md § Extra scenario bodies:
   - no pairs (FR-010): empty and whitespace-only sheets render no sized box, expose no list, term or definition, and report no error, paired in the same body with one `ocelle-fact` added giving one description list with one term and one definition;
   - a very long label (FR-005, edge case): in a 600 px two-column sheet, the label column equals 50% of the sheet's content box, the label wraps between words inside it, and the value column takes the rest, beside a short-label pair in the same columns (the guard of T021's `fit-content(50%)`→`auto` plant);
@@ -199,6 +216,7 @@ order 1 → 2 → 3 → 4:
   - `packages/elements/test/entry-facts.test.ts`: importing `src/ocelle-facts.ts` alone defines `ocelle-facts` and `ocelle-fact` and no other element;
   - `packages/elements/test/entry-fact.test.ts`: importing `src/ocelle-fact.ts` defines `ocelle-fact` only;
   - `packages/elements/test/entry-root.test.ts`: extended to the two tags and their exported classes.
+- [ ] T006a [US1] `packages/elements/test/facts.test.ts` (in-process harness only; Playwright's `console` and `pageerror` events do not record the error): the no-`ResizeObserver`-loop-error test of contracts/checks.md § Oracles. Around the flips (600 → 300 → 600 px block resize, the dialog widen 360 → 1200 px, the hook 15rem → 40rem → 15rem at 450 px, a grid sheet 300 → 600 → 800 px), each read with the `layout` wait, record `window` `error` events (capture) and `console.error` calls and assert none carries "ResizeObserver loop"; paired with each flip's layout asserted and a synthetic `ErrorEvent` with that message seen by the recorder. Its plant (T021 step 1): the measure pass run synchronously inside the observer callback; the test must fail.
 - [ ] T007 [P] [US1] `packages/elements/test/build/build.test.ts`: the container import rule. `dist/ocelle-facts.js` imports `./ocelle-fact.js` and no other element module, and `dist/ocelle-fact.js` imports no element module (PLAN-CORRECTNESS-1-012 (a)).
 - [ ] T008 [P] [US1] `gates/test/` `token-only` unit tests for the R-10 grid allowance, plus the `gates/README.md` statement test:
   - `fit-content(<percentage>)` and `minmax(0, <flex>)` in `grid-template-columns` pass;
@@ -210,7 +228,7 @@ order 1 → 2 → 3 → 4:
   - `packages/styles/test/readme.test.ts`: statements for both rules.
 - [ ] T010 [P] [US1] `packages/elements/test/node/readme.test.ts`: statements for the `ocelle-facts` section, one assertion per statement:
   - usage, `layout` and the threshold hook `--ocelle-facts-stack-below` (absolute lengths only, with the fallback);
-  - FR-009's narrowing as recorded by T001;
+  - FR-009's narrowing as recorded by T001 (research R-02 § The unobserved case the spike found): in a consumer's CSS grid `auto` track whose neighbour can be removed, the layout may stay as it was; set `layout` or give the sheet an inline size there (for `layout="grid"`, an inline size);
   - only `ocelle-fact` children; the wrap policy; digests are the consumer's; compact regions; before upgrade; tokens read;
   - the slotted-item convention with the container import rule (FR-056);
   - the Builds correction, and the Engines line for manual slot assignment (Chromium 86, WebKit 16.4, floor unchanged).
@@ -224,7 +242,7 @@ order 1 → 2 → 3 → 4:
   - no truncation; `break-word`, break-anywhere and an ellipsis map to `wrap="anywhere"` with the full value shown (IQ-04 (b));
   - the updated facts mapping rows of research R-11 ("facts stacked", "facts two-col", "facts term regular", "facts value wrap", "facts value ellipsis", "facts value tooltip"), keyed by role name with no `sk-` string in test code.
 - [ ] T011 [P] [US1] `storybook/test/integration/elements-stories.test.ts` (I3, contracts/checks.md § Story test): each facts story of research R-08 is in the built index and renders its `ocelle-facts` in light and dark with no outside request. Each facts story at a 320 px viewport has a page scroll width equal to the viewport width, paired with a non-zero sheet size. Each facts story under reduced motion has no running animation, read on a fresh load and timed by the clock with the `matchMedia` assertion. No facts story animates, so this check is paired only with the `matchMedia` assertion until the animation positive on the indeterminate progress story arrives in T044 (contracts/checks.md § Story test).
-- [ ] T012 [US1] Red commit of T003 to T011 with T004a, T008a and T010a (test files only). Run `.specify/extensions/story/scripts/red.sh 1 phase` and confirm per body in the red log that each fails on an assertion against the scaffold.
+- [ ] T012 [US1] Red commit of T003 to T011 with T004a, T006a, T008a and T010a (test files only). Run `.specify/extensions/story/scripts/red.sh 1 phase` and confirm per body in the red log that each fails on an assertion against the scaffold.
 
 ### Implementation (green)
 
@@ -246,7 +264,7 @@ order 1 → 2 → 3 → 4:
   - `MutationObserver` on `childList`, `characterData`, and the `label`/`hidden`/`aria-hidden`/`lang`/`dir` attributes (subtree).
   - Stacking:
     - the probes `part="probe"`, observed by one `ResizeObserver` with the host;
-    - the measure pass alone owns the `stacked` class and is re-run after every render, on value text changes and on window resize;
+    - the measure pass alone owns the `stacked` class and is re-run after every render, on value text changes and on window resize, and from the `ResizeObserver` one animation frame after the callback (a `requestAnimationFrame` scheduled in it), never synchronously inside the callback (research R-02, operator decision "(a) Defer + 2-frame wait");
     - `--ocelle-facts-stack-below`, defaulting to `calc(var(--ocelle-space-10) * 6)`, with its fallback.
   - `layout` override (FR-013).
   - The two-column tracks `fit-content(50%) minmax(0, 1fr)` on the `<dl>`, row gaps `--ocelle-space-3` (compact `--ocelle-space-1`).
@@ -273,7 +291,7 @@ order 1 → 2 → 3 → 4:
   Also a `packages/elements/CHANGELOG.md` entry for `ocelle-facts` and `ocelle-fact`.
 - [ ] T020a [US1] `packages/elements/README.md`: the facts statements of T010a (the grid layout, the wrap policy on machine values in every layout, the columns not restyled, `min-inline-size: 0` in a consumer's CSS grid, the label weight, no truncation and the wrap mapping) and the updated `.sk-facts` mapping rows of research R-11; the `packages/elements/CHANGELOG.md` entry names `layout="grid"`.
 - [ ] T021 [US1] Checks, one heavy job at a time:
-  1. Run each facts plant of contracts/checks.md once (§ Oracles and § CSS-only behaviours: the A1 `<dl><slot>` structure, slots in reverse order, the U+200B copy, the extra triggers removed, `characterData` removed, class not restored after the measure, `fit-content(50%)`→`auto`, `minmax(0, 1fr)`→`1fr`, the `stacked` rule removed, the hook probe ignored, the default probe removed, probes not observed, probe `block-size: 1px`, the compact hooks removed, the `wrap` rule removed, the styles rule removed, `:not([hidden])` removed) and record the results in `specs/013-data-display/reviews/phase-1/plants.md`.
+  1. Run each facts plant of contracts/checks.md once (§ Oracles and § CSS-only behaviours: the A1 `<dl><slot>` structure, slots in reverse order, the U+200B copy, the extra triggers removed, `characterData` removed, class not restored after the measure, the pass run synchronously inside the observer callback (T006a), `fit-content(50%)`→`auto`, `minmax(0, 1fr)`→`1fr`, the `stacked` rule removed, the hook probe ignored, the default probe removed, probes not observed, probe `block-size: 1px`, the compact hooks removed, the `wrap` rule removed, the styles rule removed, `:not([hidden])` removed) and record the results in `specs/013-data-display/reviews/phase-1/plants.md`.
   2. Run `pnpm run gate:manifest`, `gate:style-lint`, `gate:csp`, `gate:prefix`, `gate:test-lint`, `gate:contrast` (unchanged; US1-8 relies on the existing text rows), `gate:storybook-build`, `gate:visual`, `gate:axe` (no `storybook/a11y-exceptions.json` entry added), `gate:plants`, then `gate:mutation -- --base <phase base>`.
   3. Record the three Storybook gates' summary lines and the `visual:update` line in the phase review.
 

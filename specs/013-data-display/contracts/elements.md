@@ -103,7 +103,7 @@ other token (R-03). No part, slot or hook is added for the grid: its cell groups
   size; `layout`, and that a sheet in a shrink-to-fit host (dialog, popover, float, flex item) with short content
   stacks unless `layout` is set or the sheet is given an inline size; the changes the sheet re-decides on (its own
   resize, a threshold change, a content change including value text, a window resize) and the changes of the offered
-  space it does not observe, named by phase 1's spike (R-02, for example a fixed flex sibling shrinking), where the
+  space it does not observe, named by phase 1's spike (R-02: a neighbour of a consumer's CSS grid `auto` track removed), where the
   consumer sets `layout` or gives the sheet an inline size (FR-009, PLAN-FRESH-3-001 (c)); density: `density="compact"` tightens gaps, a
   compact region sets the value scale (#531); before upgrade (each value on its own line through `@ocelle/styles`, a
   hidden fact stays hidden, labels only after upgrade); tokens read; the `.sk-facts` mapping rows (FR-058, phase 1).

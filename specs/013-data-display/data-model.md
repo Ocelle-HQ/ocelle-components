@@ -50,8 +50,10 @@ its own line; no label is shown until upgrade (R-01, PLAN-FRESH-2-002).
   shrink-to-fit host (R-02; measured in phase 1's spike).
 - `stacked`: `layout === "stacked"`, or `layout` unset (or any other value) and `measure < threshold`; `false` for
   `layout === "columns"`. Decided by the measure pass (R-02), which runs:
-  - in the callback of one `ResizeObserver` that observes the host and both probes, so a change of the hook or of the
-    root font size re-decides without a resize of the sheet (PLAN-FRESH-2-004);
+  - one animation frame after the callback of one `ResizeObserver` that observes the host and both probes (the
+    callback schedules the pass in a `requestAnimationFrame` and never runs it inside the callback, so no
+    "ResizeObserver loop" error is raised; operator decision "(a) Defer + 2-frame wait", 2026-11-14), so a change of
+    the hook or of the root font size re-decides without a resize of the sheet (PLAN-FRESH-2-004);
   - in `updated()`, after every render (a re-render from the facts `MutationObserver`, a change of `layout`);
   - on the facts `MutationObserver`'s `childList` and `characterData` records inside a pair (value text changed in
     place);

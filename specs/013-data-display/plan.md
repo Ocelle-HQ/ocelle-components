@@ -34,10 +34,12 @@ Measurements in this container ([spike/RESULTS.md](spike/RESULTS.md)) and squad 
 - **Facts stacking.** The sheet stacks when its own inline size, as laid out in two columns, is below a token-sized
   threshold, with no `container-type` (a size container collapses to 0 px in dialogs and flex items). One measure
   pass, which alone owns the `stacked` class, decides; it runs from a `ResizeObserver` on the host and the threshold
-  probes, after every render, on value text changed in place, and on window resize (PLAN-FRESH-3-001 (c),
-  PLAN-FRESH-3-002). The measure never reads the stacked layout, so for those changes the layout does not depend on
-  history; changes of the offered space the pass does not observe are named by phase 1's spike, and there the README
-  asks for `layout` or an inline size. In a shrink-to-fit host a short sheet stacks; a public
+  probes (one animation frame after the callback, never inside it, so no "ResizeObserver loop" error is raised), after
+  every render, on value text changed in place, and on window resize (PLAN-FRESH-3-001 (c), PLAN-FRESH-3-002,
+  operator decision "(a) Defer + 2-frame wait" at the phase 1 spike stop). The measure never reads the stacked layout,
+  so for those changes the layout does not depend on history; the one change of the offered space the pass does not
+  observe that phase 1's spike found (a consumer's CSS grid `auto` track whose neighbour is removed) is named in the
+  README, which asks for `layout` or an inline size there. In a shrink-to-fit host a short sheet stacks; a public
   `layout="columns" | "stacked"` lets the consumer choose (R-02, PLAN-FRESH-2-001 (c)); `layout="grid"` is the third
   value (IQ-05 (b), below).
 - **Facts grid (IQ-05 (b), #280).** `layout="grid"` renders each pair as one `<div>` group (`<dt>` above `<dd>`)
@@ -166,7 +168,13 @@ value of `layout`, the `eyebrow` slot) were chosen by the operator (Principle VI
    every render, on value text changed in place and on window resize (FR-005, US1-12); phase 1's spike names the
    changes of the offered space it does not observe, and for those FR-009 is narrowed as the operator decided: the
    README asks for `layout` or an inline size there, and the bodies assert that remedy. Any other spike result that
-   shows the measure is not state-independent comes back to the operator before the red commit.
+   shows the measure is not state-independent comes back to the operator before the red commit. Phase 1 spike stop
+   (`reviews/phase-1/operator-spike-decisions.md`, 2026-11-14): a decision made inside the observer callback raised
+   the `ResizeObserver` loop error, so the observer's pass runs one animation frame after the callback (the old layout
+   shows for one frame after an observed resize, accepted) and the layout-settle wait polls at least 2 frames before
+   it compares two consecutive frames ("(a) Defer + 2-frame wait"); the round 3 content keeps at least 16 px either
+   side of the 384 px threshold ("Widen the margin"); the one unobserved case is a CSS grid `auto` track whose
+   neighbour is removed, in the two-column and grid layouts (R-02).
 3. **Progress basis (R-05).** ElementInternals, so axe cannot test the name. No story sets a host `aria-label` (that
    would be an axe false positive), the AX-tree tests carry the evidence, and the story test checks every bar in every
    story is named.
@@ -336,6 +344,10 @@ fixed in the story or the element; an exception entry would need a Complexity Tr
      - the layout-settle wait in both harnesses;
      - the stacked and two-column states, the four-, two- and one-column grid states, and right-to-left;
      - the compact-region hooks in Chromium;
+     - recorded on 2026-11-14; at its stop the operator chose the deferred pass with the 2-frame wait and the 16 px
+       margin (`reviews/phase-1/operator-spike-decisions.md`). When the phase resumes, before the scaffold: the round
+       3 content re-chosen and re-measured for the margin, the deferred pass's results with it, the in-process
+       harness's wait frame count, and the unobserved case copied into R-02, all recorded in the spike record;
    - **scaffold**: `ocelle-fact.ts`, `ocelle-facts.ts`, their exports and entries;
    - **red**:
      - US1 scenarios 1 to 10 as shared bodies (US1-11 and US1-12 below), with the oracles of contracts/checks.md (flat-tree structure,
@@ -348,9 +360,13 @@ fixed in the story or the element; an exception entry would need a Complexity Tr
        640 px, `ocelle-fact` alone and moved, non-fact children, shrink-to-fit and shared hosts and history, `layout`
        (US1-11), resize, the hook fallbacks, the valid-hook and hook-change bodies and the probes' overflow, compact
        region, unset properties);
-     - US1-12's re-decide bodies (widen, relabel, value text), the 300 → 290 px measure-pass body and the
-       unobserved-change bodies (PLAN-FRESH-3-001 (c), PLAN-FRESH-3-002);
-     - the driver additions `viewport`, `scrollWidth`, `layout`, `copy`, `move` and `text`, with their tests;
+     - US1-12's re-decide bodies (widen, relabel, value text, with content at least 16 px either side of the
+       threshold), the 300 → 290 px measure-pass body and the unobserved-change bodies for the CSS grid `auto` track
+       whose neighbour is removed, in the two-column and grid layouts (PLAN-FRESH-3-001 (c), PLAN-FRESH-3-002);
+     - the driver additions `viewport`, `scrollWidth`, `layout` (at least 2 frames before it compares), `copy`,
+       `move` and `text`, with their tests;
+     - the in-process test that the flips raise no `ResizeObserver` loop error, with its plant (the pass run
+       synchronously inside the observer callback);
      - `entry-facts` and `entry-fact` tests; the build test of the container import rule;
      - the `token-only` unit tests for the grid functions, and their `gates/README.md` statements;
      - the `@ocelle/styles` tests (compact-region hooks, pre-upgrade rule with a hidden fact, README statements);
@@ -365,7 +381,7 @@ fixed in the story or the element; an exception entry would need a Complexity Tr
        operator (Decision 5);
      - the story-test extension for the facts stories (presence, light and dark, 320 px reflow, reduced motion);
      - the named plants of contracts/checks.md for facts (among them the extra triggers removed, `characterData`
-       removed and the class not restored after the measure, and for the grid: the groups not rendered, the
+       removed, the class not restored after the measure and the pass run synchronously in the observer callback, and for the grid: the groups not rendered, the
        four-column rule removed, the four-column point at the threshold instead of twice it, the grid layout's
        two-column rule removed, the grid `<dt>`'s label-to-value margin removed, a divider added on each group);
    - **green**:
