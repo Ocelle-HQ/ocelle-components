@@ -6,6 +6,7 @@ import { extname, join, normalize } from "node:path";
 import { chromium } from "playwright";
 import type { Browser, Page } from "playwright";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
+import { readScrollWidth, readTextBoxes } from "../../../packages/elements/test/commands.ts";
 
 // The element stories in the built Storybook (005 US1 scenario 13, FR-019; research.md R-14; analysis G4 and L14;
 // T020a). The global setup (setup.ts) built the Storybook; this test serves it, as render.test.ts does, and opens
@@ -19,7 +20,10 @@ import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 // stylesheet clause, analysis L14). Phase 3 adds the grid of the thirteen names, left to right and right to left
 // (T035a; US1-13's "every icon in the set"), phase 5 the mark's stories (T056a; US4 scenario 11): main ground, chrome,
 // mono and labelled, each rendering its `ocelle-brand-mark` with the story's `ground`, `tone` and `label`, drawn, in
-// light and dark, with no request outside the origin.
+// light and dark, with no request outside the origin. 011 phase 2 (T017; FR-033, SC-002; research.md R-14, operator
+// decision PLAN-CORRECTNESS-1-009 (a)) adds the section-header and card stories: each renders its elements with their
+// slotted content in light and dark, and, loaded at 320 × 800 px, the document does not scroll horizontally and no
+// slotted text node is clipped (packages/elements/test/commands.ts `readTextBoxes`), beside the same content rendered.
 const types: Readonly<Record<string, string>> = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
@@ -170,5 +174,59 @@ describe("the ocelle-brand-mark stories in the built Storybook (US4-11, FR-019)"
         await page.close();
       });
     }
+  }
+});
+
+/** The 011 layout stories (T017): each story's id, its element tag and how many it renders, and the text it shows. */
+const layoutStories = [
+  { id: "elements-ocelle-section-header--heading-only", tag: "ocelle-section-header", count: 1, texts: ["Runs"] },
+  { id: "elements-ocelle-section-header--filled", tag: "ocelle-section-header", count: 1, texts: ["Mission", "Runs", "Every run of the mission, newest first.", "Edit", "New run"] },
+  { id: "elements-ocelle-section-header--compact", tag: "ocelle-section-header", count: 1, texts: ["Mission", "Runs", "Every run of the mission, newest first.", "Edit", "New run"] },
+  { id: "elements-ocelle-section-header--eyebrow-variant", tag: "ocelle-section-header", count: 1, texts: ["Recent", "Edit", "New run", "Run 12, passed", "Run 11, failed"] },
+  { id: "elements-ocelle-section-header--empty-heading", tag: "ocelle-section-header", count: 1, texts: ["Mission", "A header whose heading slot is empty.", "Edit", "New run"] },
+  { id: "elements-ocelle-section-header--long-heading", tag: "ocelle-section-header", count: 1, texts: [`Mission${"x".repeat(60)}end`, "An unbroken heading wraps inside the header.", "Edit", "New run"] },
+  ...["regular", "compact", "inset", "inset-compact"].map((name) => ({
+    id: `elements-ocelle-card--${name}`,
+    tag: "ocelle-card",
+    count: 1,
+    texts: ["Mission", "Runs", "New run", "Twelve runs this week, ten passed.", "The last run finished an hour ago."],
+  })),
+  { id: "elements-ocelle-card--no-header", tag: "ocelle-card", count: 1, texts: ["Twelve runs this week, ten passed.", "The last run finished an hour ago."] },
+  { id: "elements-ocelle-card--nested", tag: "ocelle-card", count: 2, texts: ["Mission", "Runs", "New run", "The outer card holds an inset compact card.", "Mission", "Runs", "New run", "The nested card."] },
+] as const;
+
+/** What a layout story's page shows: its theme, its elements, each defined and upgraded, and the slotted text it draws. */
+async function observeLayout(page: Page, tag: string): Promise<unknown> {
+  const shown = await page.evaluate((tag) => ({
+    theme: document.documentElement.dataset.theme,
+    defined: customElements.get(tag) !== undefined,
+    elements: [...document.querySelectorAll(`#storybook-root ${tag}`)].filter((each) => each.shadowRoot !== null).length,
+  }), tag);
+  const texts = (await readTextBoxes(page.mainFrame(), "storybook-root")).map((box) => box.text.trim());
+  return { ...shown, texts };
+}
+
+describe("the ocelle-section-header and ocelle-card stories in the built Storybook (011 US1, FR-033)", { timeout: 60_000 }, () => {
+  for (const { id, tag, count, texts } of layoutStories) {
+    for (const theme of ["light", "dark"] as const) {
+      it(`${id} in ${theme}: renders its ${tag} elements with their slotted content, with no request outside the origin`, async () => {
+        const { page, outside } = await open(id, theme, tag);
+        expect({ ...((await observeLayout(page, tag)) as object), outside }).toEqual({ theme, defined: true, elements: count, texts: [...texts], outside: [] });
+        await page.close();
+      });
+    }
+    it(`${id} at 320 × 800 px: no horizontal scroll and no clipped text, its content rendered (SC-002, FR-004)`, async () => {
+      const { page } = await open(id, "light", tag);
+      await page.setViewportSize({ width: 320, height: 800 });
+      await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
+      const boxes = await readTextBoxes(page.mainFrame(), "storybook-root");
+      expect({
+        scrollWidth: (await readScrollWidth(page.mainFrame())) <= 320,
+        clipped: boxes.filter((box) => box.clipped).map((box) => box.text),
+        insideViewport: boxes.filter((box) => box.box.x < -0.5 || box.box.x + box.box.width > 320.5).map((box) => box.text),
+        texts: boxes.map((box) => box.text.trim()),
+      }).toEqual({ scrollWidth: true, clipped: [], insideViewport: [], texts: [...texts] });
+      await page.close();
+    });
   }
 });
