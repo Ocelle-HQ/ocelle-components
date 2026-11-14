@@ -340,7 +340,7 @@ a stated reason why its expected value differs from the browser default and from
 | Behaviour | Body | Plant, or reason |
 |---|---|---|
 | label column capped at 50% | long-label body | plant: `fit-content(50%)` replaced by `auto` |
-| value column never widened | US1-3 | plant: `minmax(0, 1fr)` replaced by `1fr` |
+| value column never widened | unbroken-value body (600 px two-column sheet, a 64-character value without `wrap`) | plant: the value tracks' `minmax(0, 1fr)` replaced by `1fr` (two-column and stacked) and the `<dd>`'s `min-inline-size: 0` removed, together; each of the two changes alone is equivalent (either rule alone keeps the column's minimum at 0; reviews/phase-1/plants.md § Resolution, operator decision (b)) |
 | stacking | US1-2, resize | plant: the `stacked` class's one-column rule removed |
 | threshold from a valid hook | valid-hook bodies (15rem at 300 px, 40rem at 600 px) | plant: the hook probe ignored (the default probe's measure always used); each valid-hook body must fail |
 | threshold fallback | hook-fallback bodies (invalid, percentage, 0 at 320 px) | plant: the default probe removed (no fallback); each fallback body must fail |

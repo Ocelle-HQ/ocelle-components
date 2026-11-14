@@ -1,6 +1,6 @@
 {
   "expect": "fail",
-  "why": "A changed token value (color-ink, light) changes every story-theme that shows it: differs on the twenty light story-themes measured in the pinned container (FR-004, US2 scenario 2), the twelve the phase 1 spike listed and the eight of mission 005's stories that show color-ink (all but elements-ocelle-brand-mark--chrome, measured for plan decision 29), and none in dark. A story added later that shows color-ink in light adds its line here (research.md R-07).",
+  "why": "A changed token value (color-ink, light) changes every story-theme that shows it: differs on the forty-two light story-themes measured in the pinned container (FR-004, US2 scenario 2), the twelve the phase 1 spike listed, the eight of mission 005's stories that show color-ink (all but elements-ocelle-brand-mark--chrome, measured for plan decision 29) and the twenty-two ocelle-facts stories of mission 013 (measured in its phase 1), and none in dark. A story added later that shows color-ink in light adds its line here (research.md R-07).",
   "findings": [
     {
       "location": "base-styles--base-page/light",
@@ -48,6 +48,94 @@
     },
     {
       "location": "elements-ocelle-icon--set-right-to-left/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-facts--default/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-facts--compact/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-facts--stacked/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-facts--columns-shrink-to-fit/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-facts--stacked-wide/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-facts--identifier-wrap/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-facts--missing-label/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-facts--missing-value/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-facts--link-in-value/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-facts--right-to-left/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-facts--compact-region/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-facts--grid-strip/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-facts--grid-two-columns/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-facts--grid-one-column/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-facts--grid-one-fact/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-facts--grid-three-facts/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-facts--grid-eight-facts/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-facts--grid-long-label-and-identifier/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-facts--grid-link-and-status/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-facts--grid-unavailable-value/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-facts--grid-compact/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-facts--grid-right-to-left/light",
       "rule": "differs"
     },
     {

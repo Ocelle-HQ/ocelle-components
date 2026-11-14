@@ -246,8 +246,9 @@ choose where that is not what they want.
   A body in the in-process harness, the one that can observe the error, asserts that the flips raise no loop error
   (contracts/checks.md § Oracles, "No `ResizeObserver` loop error"); its plant runs the pass synchronously inside
   the callback and must fail it.
-- **Threshold (PLAN-FRESH-2-008).** It comes from a hook, `--ocelle-facts-stack-below`, set by default in `:host` to
-  `calc(var(--ocelle-space-10) * 6)`, which is 24rem (384 px at the default root size, more than 320 px as FR-005
+- **Threshold (PLAN-FRESH-2-008).** It comes from a hook, `--ocelle-facts-stack-below`, whose default is the `var()` fallback
+  `calc(var(--ocelle-space-10) * 6)` read on the probe (not a `:host` declaration, which would beat a value set on an
+  ancestor; notes.md), which is 24rem (384 px at the default root size, more than 320 px as FR-005
   requires). The default is built from the spacing scale, not from `--ocelle-shell-sidebar-width`: the `calc()`
   resolves on the host from inherited custom properties, so a consumer that resizes its shell's sidebar on `:root`
   would otherwise move every sheet's stacking point, including in dialogs and inspectors with no sidebar. The spacing

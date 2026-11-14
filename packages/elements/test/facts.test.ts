@@ -27,6 +27,24 @@ describe("ocelle-facts and ocelle-fact, in process (US1)", () => {
   });
 });
 
+describe("reconnection, in process (R-01)", () => {
+  it("a sheet whose children change while it is out of the document shows its new pairs once it is back", async () => {
+    await driver.mount('<div id="holder"><ocelle-facts id="s"><ocelle-fact label="Owner">Ada</ocelle-fact></ocelle-facts></div>');
+    const sheet = document.getElementById("s");
+    const holder = document.getElementById("holder");
+    if (sheet === null || holder === null) throw new Error("no sheet");
+    sheet.remove();
+    const added = document.createElement("ocelle-fact");
+    added.setAttribute("label", "Status");
+    added.textContent = "Running";
+    sheet.append(added);
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    holder.append(sheet);
+    await driver.layout("s");
+    expect((await driver.axSubtree("s")).filter((node) => node.role === "term").map((node) => node.name)).toEqual(["Owner", "Status"]);
+  });
+});
+
 describe("no ResizeObserver loop error (013 R-02, operator decision \"(a) Defer + 2-frame wait\"; T006a)", () => {
   it("the flips (a block 600 → 300 → 600 px, the round 3 dialog widened 360 → 1200 px, the hook 15rem → 40rem → 15rem at 450 px, a grid sheet 300 → 600 → 800 px) each happen and raise no ResizeObserver loop error in a window error event or a console.error call, which the recorder sees when the test dispatches one", async () => {
     const recorded: string[] = [];

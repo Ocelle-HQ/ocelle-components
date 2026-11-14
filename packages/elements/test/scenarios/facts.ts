@@ -86,6 +86,8 @@ body { margin: 0; }
 .auto-grid.w600 { inline-size: 600px; }
 .other { inline-size: 40px; }
 .sized { inline-size: 420px; } .sized-grid { inline-size: 800px; }
+.w383 { inline-size: 383px; } .w384 { inline-size: 384px; } .w767 { inline-size: 767px; } .w768 { inline-size: 768px; }
+.padded { padding-inline: 30px; border-inline: 5px solid; }
 .ref { display: inline-block; white-space: nowrap; font-family: var(--ocelle-font-sans); font-size: var(--ocelle-font-size-fact); font-variant-numeric: var(--ocelle-figures); }
 .painted { background-color: rgb(1, 2, 3); border: 1px solid rgb(4, 5, 6); }
 `;
@@ -734,6 +736,26 @@ function factsExtras(): FactsScenario[] {
       expected: { labelColumn: 300, lines: true, wraps: "normal", valueStart: 300 + space4, valueWidth: 300 - space4, shared: true },
     },
     {
+      name: "An unbroken 64-character value without wrap in a 600 px two-column sheet does not widen the value column: the column ends at the sheet's edge after the label column and the gap, a short pair shares it, and the value overflows its box (FR-005, FR-009 as qualified)",
+      run: async (driver) => {
+        await mount(driver, `<div class="w600">${sheet("s", [fact("Identifier", `<span id="value">${identifier}</span>`), fact("Owner", "Ada")], ' layout="columns"')}</div>`);
+        const layout = await settled(driver, "s");
+        const host = await driver.box("s");
+        const terms = await driver.boxes("s", "dt");
+        const values = await driver.boxes("s", "dd");
+        const value = await driver.box("value");
+        return {
+          layout,
+          valueEnd: Math.round(((values[0]?.x ?? 0) + (values[0]?.width ?? 0) - (host.x + host.width)) * 100) / 100,
+          gap: Math.round(((values[0]?.x ?? 0) - ((terms[0]?.x ?? 0) + (terms[0]?.width ?? 0))) * 100) / 100,
+          labelUnderHalf: (terms[0]?.width ?? 300) < 300,
+          shared: close(values[1]?.x ?? -1, values[0]?.x ?? -2) && close(values[1]?.width ?? -1, values[0]?.width ?? -2),
+          overflows: value.width > (values[0]?.width ?? Infinity),
+        };
+      },
+      expected: { layout: "columns", valueEnd: 0, gap: space4, labelUnderHalf: true, shared: true, overflows: true },
+    },
+    {
       name: "Dynamic: a fact added, one removed, one moved to the end and a label changed each re-render the list in source order (FR-003, SPEC-2-06)",
       run: async (driver) => {
         await mount(driver, `${sheet("s", [fact("A", "1", ' id="a"'), fact("B", "2", ' id="b"')])}<div id="spare">${fact("C", "3", ' id="c"')}</div>`);
@@ -828,6 +850,69 @@ function factsExtras(): FactsScenario[] {
         };
       },
       expected: { labelAbove: true, valueWrapped: true, valueWithin: true, valueWraps: "anywhere", labelWraps: "normal", roles: 0 },
+    },
+    {
+      name: "A standalone ocelle-fact without a label renders an empty label box above its value",
+      run: async (driver) => {
+        await mount(driver, `<div class="w200">${fact(null, '<span id="value">Ada</span>', ' id="f"')}</div>`);
+        const label = await driver.box("f", '[part="label"]');
+        return { label: [label.display, label.height], text: (await driver.axSubtree("f")).filter((node) => node.role === "StaticText").map((node) => node.name) };
+      },
+      expected: { label: ["block", 0], text: ["Ada"] },
+    },
+    {
+      name: "aria-hidden, lang and dir changed on a fact after render: aria-hidden=true removes the pair and its removal brings it back; lang and dir reach the term (FR-003)",
+      run: async (driver) => {
+        await mount(driver, sheet("s", [fact("Owner", "Ada", ' id="a"'), fact("Status", "Running", ' id="b"')]));
+        await driver.setAttribute("a", "aria-hidden", "true");
+        const hidden = await list(driver, "s");
+        await driver.setAttribute("a", "aria-hidden", null);
+        const terms = async (): Promise<unknown> => (await driver.elements("s")).filter((each) => each.name === "dt").map((each) => ({ lang: each.attributes.lang ?? null, dir: each.attributes.dir ?? null }));
+        await driver.setAttribute("b", "lang", "fr");
+        const lang = await terms();
+        await driver.setAttribute("b", "dir", "rtl");
+        return { hidden, shown: await list(driver, "s"), lang, dir: await terms() };
+      },
+      expected: {
+        hidden: listOf([["Status", "Running"]]),
+        shown: listOf([["Owner", "Ada"], ["Status", "Running"]]),
+        lang: [{ lang: null, dir: null }, { lang: "fr", dir: null }],
+        dir: [{ lang: null, dir: null }, { lang: "fr", dir: "rtl" }],
+      },
+    },
+    {
+      name: "The measure is the content box: a sheet with 30 px inline padding and 5 px borders in a 450 px block (380 px content) is one column, beside one without them (two columns) (R-02)",
+      run: async (driver) => {
+        await mount(driver, `<div class="w450">${sheet("padded", three, ' class="padded"')}${sheet("plain", three)}</div>`);
+        return { padded: await settled(driver, "padded"), plain: await settled(driver, "plain") };
+      },
+      expected: { padded: "stacked", plain: "columns" },
+    },
+    {
+      name: "At the threshold: a sheet exactly 384 px wide is two columns and one 383 px wide one column; a grid sheet is two columns at 384 and 767 px, four at 768 px and one at 383 px (FR-005, FR-014)",
+      run: async (driver) => {
+        await mount(driver, ["w383", "w384", "w767", "w768"].map((width) => `<div class="${width}">${sheet(`two-${width}`, three)}${sheet(`grid-${width}`, gridFour, ' layout="grid"')}</div>`).join(""));
+        const two: string[] = [];
+        const grid: number[] = [];
+        for (const width of ["w383", "w384", "w767", "w768"]) {
+          two.push(await settled(driver, `two-${width}`));
+          grid.push(await gridColumns(driver, `grid-${width}`));
+        }
+        return { two, grid };
+      },
+      expected: { two: ["stacked", "columns", "columns", "columns"], grid: [1, 2, 2, 4] },
+    },
+    {
+      name: "A sheet moved to another container still follows its threshold hook: 15rem gives two columns at 450 px, 40rem then one column, with no resize (R-02)",
+      run: async (driver) => {
+        await mount(driver, `<div class="w450" id="first">${sheet("s", three, ' class="hook-15"')}</div><div class="w450" id="second"></div>`);
+        await driver.layout("s");
+        await driver.move("s", "second");
+        const moved = await settled(driver, "s");
+        await driver.setAttribute("s", "class", "hook-40");
+        return { moved, changed: await settled(driver, "s") };
+      },
+      expected: { moved: "columns", changed: "stacked" },
     },
     {
       name: "A standalone fact moved into a sheet is one term with no label of its own, and moved out again shows its own label (PLAN-TESTABILITY-1-014)",
