@@ -340,6 +340,7 @@ export class OcelleNotice extends LitElement {
   }
 
   override disconnectedCallback(): void {
+    // Stryker disable next-line CallExpression: equivalent, LitElement's disconnectedCallback() only tells reactive controllers, and the notice has none
     super.disconnectedCallback();
     this.startMove();
     afterTask(() => {
@@ -367,7 +368,7 @@ export class OcelleNotice extends LitElement {
   /** A connection: a move, the first load, or an insertion after parsing. */
   protected onConnect(): void {
     if (this.isMove()) {
-      this.moving = false;
+      // the move flag stays set until endMove() clears it in the next task; a later connection follows a disconnect
       return;
     }
     const first = !this.#connected;

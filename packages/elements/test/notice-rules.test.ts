@@ -199,6 +199,16 @@ describe("first load and removal (R-02)", () => {
     expect({ atRemoval, removed: copy(removed), moved: copy(moved) }).toEqual({ atRemoval: "Removed", removed: "", moved: "Moved" });
   });
 
+  it("moved, its held copy is not announced again: it stays past the minimum hold", async () => {
+    const inserted = await holding("announce", "Saved");
+    vi.advanceTimersByTime(10);
+    inserted.remove();
+    container.append(inserted);
+    await endOfTask();
+    vi.advanceTimersByTime(W);
+    expect(copy(inserted)).toBe("Saved");
+  });
+
   it("moved with its announce removed while out of the document, the region goes off", async () => {
     const inserted = await holding("announce", "Saved");
     inserted.remove();
