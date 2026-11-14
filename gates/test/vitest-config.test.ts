@@ -43,10 +43,11 @@ function inProject(project: Project, path: string): boolean {
 
 describe("vitest.mutation.config.ts", () => {
   // 005 research.md R-12: elements is mutated by stryker.elements.config.json; elements-build and elements-browser
-  // start tools or Chromium; elements-node stays.
-  const notMutated = ["tokens-browser", "styles-browser", "elements", "elements-build", "elements-browser", "storybook-integration", "gates-integration"];
+  // start tools or Chromium; elements-node stays. 014 research.md R-09: elements-browser-file starts Chromium on a
+  // file: fixture, so no Stryker run does.
+  const notMutated = ["tokens-browser", "styles-browser", "elements", "elements-build", "elements-browser", "elements-browser-file", "storybook-integration", "gates-integration"];
 
-  it("excludes exactly tokens-browser, styles-browser, elements, elements-build, elements-browser, storybook-integration and gates-integration from the projects of vitest.config.ts, and splits tokens", () => {
+  it("excludes exactly tokens-browser, styles-browser, elements, elements-build, elements-browser, elements-browser-file, storybook-integration and gates-integration from the projects of vitest.config.ts, and splits tokens", () => {
     expect(all.map((project) => project.name).filter((name) => !kept.some((project) => project.name === name))).toEqual(notMutated);
     // 007 research.md R-05 (lever 1): the mutation configuration splits tokens in two, source-table.test.ts alone in
     // tokens-source-table and the rest in tokens; every other kept project is unchanged. This replaces the plain
@@ -122,6 +123,29 @@ describe("the Vitest projects", () => {
     expect(pick("elements")?.exclude).toEqual(
       expect.arrayContaining(["packages/elements/test/node/**", "packages/elements/test/build/**", "packages/elements/test/browser/**"]),
     );
+  });
+
+  // 014 research.md R-09 (PLAN-CORRECTNESS-1-013): User Story 5 scenario 12's file: test runs in its own node project,
+  // elements-browser-file, on exactly packages/elements/test/browser-file/, with Chromium's --allow-file-access-from-files
+  // given to its tests; elements excludes that directory and elements-browser does not include it.
+  it("put an element file: test in elements-browser-file only, a node project on exactly its own directory that provides the file-access flag", () => {
+    const ownersOf = (path: string) => all.filter((project) => inProject(project, path)).map((project) => project.name);
+    const raw = (base.test?.projects ?? []).map((project) => (project as { test?: { name?: unknown; provide?: unknown } }).test ?? {});
+    expect({
+      owners: ownersOf("packages/elements/test/browser-file/x.test.ts"),
+      deep: ownersOf("packages/elements/test/browser-file/deep/x.test.ts"),
+      browser: ownersOf("packages/elements/test/browser/x.test.ts"),
+      project: all.find((project) => project.name === "elements-browser-file"),
+      provide: raw.find((test) => test.name === "elements-browser-file")?.provide,
+      elementsExclude: all.find((project) => project.name === "elements")?.exclude,
+    }).toEqual({
+      owners: ["elements-browser-file"],
+      deep: ["elements-browser-file"],
+      browser: ["elements-browser"],
+      project: { name: "elements-browser-file", environment: "node", include: ["packages/elements/test/browser-file/**/*.test.ts"], exclude: expect.arrayContaining(["gates/plants/**", "gates/test/fixtures/**"]) as unknown },
+      provide: { chromiumArgs: ["--allow-file-access-from-files"] },
+      elementsExclude: expect.arrayContaining(["packages/elements/test/browser-file/**"]) as unknown,
+    });
   });
 
   it("keep no test file both in a project Stryker runs and in one it excludes", () => {
