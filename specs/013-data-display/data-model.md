@@ -111,7 +111,7 @@ None of these emits an event.
 | slot `visual` | nodes | none | An icon or an `ocelle-progress`. A slotted `ocelle-progress` is as wide as the column, capped at `--ocelle-measure-reading`. |
 | slot `eyebrow` | nodes | none | A short line above the heading (IQ-08 (c), FR-025): sans, `--ocelle-font-size-xs`, medium, ink-muted, upper case, margins 0. No role added. |
 | slot `heading` | nodes | none | The consumer's own heading element. Its level is the consumer's. |
-| default slot | nodes | none | The body. Assigned elements have block margins 0 and are separated by `--ocelle-space-2`; each assigned element or run of text is its own block (IQ-09 (b), FR-026). |
+| default slot | nodes | none | The body. Assigned elements have block margins 0 and are separated by `--ocelle-space-2`; each assigned element or run of text is its own block (IQ-09 (b), FR-026). They sit in the default-slot area, the internal `.text` wrapper, which is not a part; the `body` part is the whole column. |
 | slot `actions` | nodes | none | Buttons or links. |
 
 **Derived values:**

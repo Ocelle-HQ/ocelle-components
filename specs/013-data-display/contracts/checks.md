@@ -47,13 +47,15 @@ something only the element gives:
 | Body | Outcome the light DOM gives anyway | Assertion only the element gives |
 |---|---|---|
 | US2-1 | heading, paragraph and button in AX order | the consumer markup is written out of slot order (actions, body, heading, visual), so the AX order heading, paragraph, button proves the slotting |
-| US2-2 | the heading's level | the heading is laid out in the element's column: centred in the body part and below the visual |
+| US2-2 | the heading's level | the heading is laid out in the element's column: centred in the column (`part="body"`) and below the visual |
 | US2-6 | the button's tab stop | the button sits in the actions part, below the text, centred in the column |
 | FR-011 link in a fact | the link's tab stop | the link's box is inside the value column (`<dd>`), right of the label column |
 | US1-4 | the value's text is unchanged | the copy oracle below, paired with US1-3's wrap |
 | US1-19 | the link's tab stop and the consumer's text | each value's box is inside its own cell, below its label, in the grid's column for its source position |
 | US2-10 | the eyebrow `<p>` before the heading in AX order | the eyebrow's computed type (12 px, 500, ink-muted, upper case) and its gap to the heading, written in markup after the heading |
-| US2-11 | two paragraphs one after the other | no user-agent margin on either and the `--ocelle-space-2` gap between them (the light DOM alone gives 1em margins) |
+| US2-11 | two paragraphs one after the other | no user-agent margin on either and the `--ocelle-space-2` gap between them (the light DOM alone gives 1em margins), read against the default-slot area (the internal `.text` wrapper), not `part="body"` |
+| visual and eyebrow body (FR-025) | the parts in AX order if the markup were in that order | the markup is written heading, body, eyebrow, visual, so the order visual, eyebrow, heading, body in the column and in the AX tree proves the slotting, with the visual-to-eyebrow gap |
+| inline-content body (FR-026) | text, a link and text on one line in the light DOM | three block boxes separated by `--ocelle-space-2` (the light DOM alone gives one line box), beside a `<p>` with the same content on one line box |
 
 ## Oracles
 
@@ -107,7 +109,13 @@ something only the element gives:
 - **Grid geometry (US1-13 to US1-18).** Read after the layout wait: the `<dl>`'s computed `grid-template-columns`
   track count (4, 2 or 1) and equal track sizes; each group's box (its row and column from its block and inline
   start), each `<dt>`'s box above its `<dd>`'s box in the same cell (block end at or above the value's block start,
-  inline starts aligned); no two groups' boxes intersecting; the page scroll width against the viewport. US1-14
+  inline starts aligned); no two groups' boxes intersecting; the page scroll width against the viewport. US1-13 also
+  reads the grid's spacing as exact token values from `packages/tokens/src/source.ts` (analysis G2): the
+  label-to-value gap (a `<dt>`'s block end to its `<dd>`'s block start) is `--ocelle-space-1`, and the column gap
+  (one group's inline end to the next group's inline start in the same row) is `--ocelle-space-4`; and FR-014's "no
+  ground, divider or border": the `<dl>`, each group, `<dt>` and `<dd>` compute a transparent `background-color`
+  and `border-*-style: none`, read beside a sibling `<div>` in the same body that a page rule gives a ground and a
+  border, read as non-default, so the read cannot pass on a reader that returns defaults. US1-14
   asserts two columns at 600 px and one at 320 px in one body, so the plants below fail on a count, not on timing.
   US1-15 asserts the empty tracks of the one- and three-fact sheets at 1280 px (the first cell a quarter of the
   sheet's content box less the gaps). US1-17 asserts the first group's inline-end edge at the sheet's right edge under
@@ -115,9 +123,11 @@ something only the element gives:
   a fresh load at 1280 px and asserts the fresh load's column count (four) as well, so it cannot pass on a sheet that
   is one column everywhere; the content is the one phase 1's spike fixes for US1-12 (its four-column size at 1280 px
   is at least 2 × T and its size at 360 px below T; the spike lengthens it if not).
-  Plants: the four-column rule removed (US1-13 fails), the two-column grid rule removed (US1-14 fails), the
-  four-column point at T instead of 2 × T (the 600 px half of US1-14 fails: four columns at 600 px), and the grid
-  measure read in the decided layout instead of four columns (US1-18 fails).
+  Plants: the four-column rule removed (US1-13 fails), the grid layout's two-column rule removed (US1-14 fails), the
+  four-column point at T instead of 2 × T (the 600 px half of US1-14 fails: four columns at 600 px), the grid
+  measure read in the decided layout instead of four columns (US1-18 fails), the grid `<dt>`'s `margin-block-end`
+  removed (US1-13 fails on the label-to-value gap), and a divider added as a `border-block-end` on each group
+  (US1-13 fails on the border read).
 - **Label type (US1-5, FR-006; analysis G4).** The US1-5 body also reads a label's computed style in the same sheet:
   font family through `--ocelle-font-sans`, size `--ocelle-font-size-sm`, weight `--ocelle-font-weight-medium`,
   colour `--ocelle-color-ink-muted` (R-03), and asserts the label's size and weight each differ from the value's
@@ -257,7 +267,21 @@ From the spec check notes and squad round 1:
     from whitespace to words makes the text part present. Plant: the `hidden` observer removed;
   - eyebrow only, and eyebrow plus actions: the eyebrow at the block padding edge and, with no heading, the
     eyebrow-to-actions gap; with a heading, the eyebrow-to-heading gap (R-04's table, both variants) (IQ-08 (c));
-  - US2-10 and US2-11 as § Bodies that the platform alone could pass;
+  - a visual and an eyebrow (FR-025; analysis G1): a visual, an eyebrow, a heading and a body paragraph, written in
+    markup as heading, body, eyebrow, visual. In the column the order is visual, eyebrow, heading, body (each part's
+    block start below the previous part's block end) and in the AX tree the same; the gap from the visual's block
+    end to the eyebrow's block start is `--ocelle-space-3`, and `--ocelle-space-5` with `variant="panel"`, both in
+    one body;
+  - an eyebrow and body text with no heading (FR-025; analysis G1): the eyebrow at the block padding edge, and the
+    gap from its block end to the paragraph's block start `--ocelle-space-2`, `--ocelle-space-3` in the panel, both
+    in one body;
+  - inline content in the default slot (edge case "Empty-state body with inline content", FR-026; analysis G3): a
+    text run, an `<a>` and a text run placed directly in the default slot give three block boxes, one below the
+    other, separated by `--ocelle-space-2`; in the same body a single `<p>` holding the same text and link is one
+    line box;
+  - US2-10 and US2-11 as § Bodies that the platform alone could pass. US2-11's oracle reads the default-slot area,
+    the internal `.text` wrapper's box (or the first and last slotted elements' edges against it), not `part="body"`,
+    which is the whole column and has the heading and the block padding before the first paragraph (analysis I2);
   - unset `variant` writes no attribute.
 - **progress:**
   - `value-text` ignored while indeterminate and kept when clamped (SPEC-2-02);
@@ -306,10 +330,14 @@ a stated reason why its expected value differs from the browser default and from
 | progress bar width in `visual` | US2-7 (phase 3, real bar) | plant: the `::slotted(ocelle-progress)` rule removed, run in phase 3 only (T052): phase 2's stand-in is not an `ocelle-progress`, so the rule cannot match it (analysis U2) |
 | empty-state forced colours | US2-8 | reason: system colours differ from the token colours |
 | eyebrow type | US2-10 | plant: the `::slotted([slot="eyebrow"])` type rule removed (16 px, 400, ink, no upper case) |
-| eyebrow gaps | US2-10, eyebrow present-parts bodies | plant: the eyebrow's heading-dependent class ignored (the `space-2` gap before a heading); reason: default and panel are asserted in one body |
+| eyebrow gaps | US2-10, eyebrow present-parts bodies, eyebrow and text body | plant: the eyebrow's heading-dependent class ignored (the `space-2` gap before a heading); reason: default and panel are asserted in one body, and the eyebrow-to-text gap (`space-2`, panel `space-3`) differs from the eyebrow-to-heading gap (`space-1`, panel `space-2`) |
+| eyebrow below the visual, visual-to-eyebrow gap | visual and eyebrow body | reason: the order is set by the template, and the markup is written in another order; the gap is the visual's margin (`space-3`, panel `space-5`), asserted in both variants in one body and different from 0 |
 | body margins reset | US2-11 | plant: the `::slotted(:not([slot]))` `margin-block: 0` removed (1em user-agent margins return) |
-| body gap | US2-11 | plant: the text wrapper's `gap` removed (the two paragraphs touch) |
-| grid tracks | US1-13, US1-14 | plants: the four-column rule removed; the two-column grid rule removed |
+| body gap | US2-11, inline-content body | plant: the text wrapper's `gap` removed (the two paragraphs touch, and the three blocks of the inline-content body touch) |
+| grid tracks | US1-13, US1-14 | plants: the four-column rule removed; the grid layout's two-column rule removed |
+| grid label-to-value gap | US1-13 | plant: the grid `<dt>`'s `margin-block-end` removed (the label touches the value) |
+| grid column gap | US1-13 | reason: the exact `--ocelle-space-4` value is asserted, and differs from a grid's default column gap (0) |
+| grid paints no ground, divider or border | US1-13 | plant: a divider added as a `border-block-end` on each group; reason for the ground: a transparent `background-color` is read beside a sibling's non-default ground in the same body |
 | grid cell (label above value) | US1-13 | plant: the groups not rendered (§ Oracles, grid structure) |
 | grid compact row gap | grid compact body | reason: the compact and default row gaps are asserted in one body and differ |
 | grid right-to-left | US1-17 | reason: the first cell's edge is asserted at the left in LTR and the right in RTL in one body |

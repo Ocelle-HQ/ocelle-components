@@ -364,7 +364,9 @@ after the first layout.
   fills each row from the inline start). With fewer pairs than columns the row ends with empty tracks; cells are not
   stretched. A long unbroken value breaks in its cell with `wrap="anywhere"`; without it, it wraps between words only
   (FR-007, IQ-04 (b)) and can overflow its cell, which the README tells consumers to avoid by setting the policy on
-  machine values.
+  machine values. FR-009's no-horizontal-scroll rule is qualified accordingly, in every layout (operator decision
+  "Grid limits"). The bodies assert the label-to-value and column gaps as exact token values and the absence of a
+  ground or border (US1-13, contracts/checks.md § Oracles, grid geometry).
 - **Gaps.** Column gap `--ocelle-space-4`. Row gap `--ocelle-space-3`, or `--ocelle-space-1` with
   `density="compact"`. When stacked, a pair's label-to-value gap is `--ocelle-space-1` and the gap between pairs is
   the row gap. `<dt>` and `<dd>` have no margins (`margin: 0`).
@@ -538,7 +540,11 @@ after the first layout.
     without a margin on the first or last. Each assigned element, and each run of assigned text, is then a block of
     its own (a flex item); inline content meant to flow together (text with a link, an identifier span) goes in one
     element, which the README says. The gap is `--ocelle-space-2`, the smallest step that separates two paragraphs
-    visibly at the body size, and the same in the panel (the panel's rhythm is between parts, FR-022).
+    visibly at the body size, and the same in the panel (the panel's rhythm is between parts, FR-022). The spec
+    calls this wrapper's box the default-slot area (FR-026, US2-11): the body's first line starts at its block start
+    and its last line ends at its block end. It is not the public `body` part, which is the whole centred column
+    (`<div part="body" class="stack">`) with the padding and every other part in it; US2-11's oracle reads the
+    `.text` wrapper's box, or the first and last slotted elements' edges against it (analysis I2).
 - **Panel variant (FR-022, operator Q2: existing tokens).**
   - Block padding `--ocelle-space-10`.
   - Gaps as in the table.
@@ -908,7 +914,11 @@ Both are additions to documented base-style behaviour (MINOR, constitution VII).
     only, several actions at 320 px, refusal with an eyebrow (an eyebrow, an `<h1>`, a sentence, a path with
     `data-ocelle-wrap="anywhere"` and an action; IQ-08 (c)), several body paragraphs (IQ-09 (b));
   - **progress**: determinate, zero, full, indeterminate, compact, labelled, labelled compact, value text,
-    right-to-left, on a tinted ground (`ground="tinted"` on `color-inset`). The indeterminate story is captured with
+    right-to-left, on a tinted ground (`ground="tinted"` on `color-inset`). The "value text" story is a labelled bar
+    (`label`, `show-label`) at the default size with a determinate `value` and `value-text`, so the label row with
+    the value text at its inline end has a baseline; "labelled compact" also carries a determinate `value` and
+    `value-text`, so the compact row (label, bar, value text) has one (IQ-13 (b), FR-035; analysis G4). No story is
+    added. The indeterminate story is captured with
     reduced motion by #10's `visual` and `axe` contexts, which gives a still, deterministic baseline.
   - No story has a hover or press state, so none declares one (#10 FR-031: a state is declared with
     `parameters: { ocelle: { pointer: { hover | press: "<selector>" } } }`); each variant and state is its own

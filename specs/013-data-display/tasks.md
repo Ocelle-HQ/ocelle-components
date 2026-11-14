@@ -21,6 +21,12 @@ IQ-01 to IQ-15): `layout="grid"` (IQ-05 (b)), the empty state's `eyebrow` slot (
 statements for the rest. Added tasks: T001a, T004a, T008a, T010a, T014a, T018a, T020a, T021a (phase 1); T024a,
 T026a, T029a, T031a, T033a, T034a (phase 2); T038a, T043a, T046a, T051a, T052a (phase 3); T053a (phase 4).
 
+Amended after the second analysis of the tasks (`analysis-report.md`, head d221dd5) with the operator's decision at
+the second tasks gate (2026-11-14, "approve + fix all", `reviews/analysis/operator-decisions.md`): wording and added
+test bodies only, with no new public surface; the resolution of each finding is in `reviews/analysis/fixes-2.md`. The
+added bodies and plants are folded into T004a, T021a and T024a, and the story statement into T049; no task is
+added.
+
 **Tests**: required. Constitution Principle VIII applies to every phase.
 
 **Phase flow**: `base.sh`, then `scaffold.sh` (phases 1 to 3), then one red commit of test files only proven by
@@ -100,6 +106,7 @@ order 1 → 2 → 3 → 4:
 - at 1280 px, two columns sharing one label column;
 - at 320 px, one column with the page scroll width equal to the viewport width;
 - the Chromium AX tree is one description list with term and definition pairs in source order;
+- with `layout="grid"` and four of those pairs: four cells in one row at 1280 px, one cell per row at 320 px with the page scroll width equal to the viewport width, and one description list in the Chromium AX tree;
 - zero violations;
 - `gate:manifest`, `gate:style-lint`, `gate:storybook-build`, `gate:visual` and `gate:axe` pass.
 
@@ -159,7 +166,7 @@ order 1 → 2 → 3 → 4:
   - The 300 → 290 px measure-pass body.
   - The unobserved-change bodies for each case T001 recorded: `layout="columns"` and an inline size, each paired with a fresh load.
 - [ ] T004a [US1] `packages/elements/test/scenarios/facts.ts` (continued): the `layout="grid"` bodies (FR-014, IQ-05 (b)) with the oracles of contracts/checks.md § Oracles (grid structure, grid geometry), every "does not" paired:
-  - US1-13 (four cells at 1280 px; the AX description list; the flat-tree `<dl>` children only `<div>` groups, each one `<dt>` then one `<dd>`);
+  - US1-13 (four cells at 1280 px; the AX description list; the flat-tree `<dl>` children only `<div>` groups, each one `<dt>` then one `<dd>`; the label-to-value gap exactly `--ocelle-space-1` (the `<dt>`'s block end to the `<dd>`'s block start) and the column gap exactly `--ocelle-space-4` (one group's inline end to the next one's inline start), each value from `packages/tokens/src/source.ts`; the `<dl>`, each group, `<dt>` and `<dd>` with a transparent computed `background-color` and every border style `none`, beside a sibling `<div>` given a ground and a border by a page rule in the same body, read as non-default, FR-014);
   - US1-14 (two columns at 600 px and one at 320 px in one body, page scroll width equal to the viewport width);
   - US1-15 (one, three and eight facts at 1280 px: four equal tracks, empty tracks kept, no spanning);
   - US1-16 (a long label and the 64-character identifier with `wrap="anywhere"` at 600 px and at a 640 px viewport: wrapping inside the cells, no intersecting group boxes, no page overflow);
@@ -210,9 +217,9 @@ order 1 → 2 → 3 → 4:
 
   Also the facts mapping-row statements (FR-058), one per row of the `.sk-facts` inventory in research R-11 (T002a), each keyed by the row's role name (for example "facts compact" names `ocelle-facts` and `density="compact"`). No `sk-` string appears in test code, built directly or indirectly; the README table holds the `.sk-*` names, Markdown being outside `gate:prefix` (operator decision I1, research R-11, contracts/checks.md § Gates touched). If the inventory is missing or has a gap, stop and ask the operator (Decision 5).
 - [ ] T010a [US1] `packages/elements/test/node/readme.test.ts`: statements for the facts input decisions, one assertion per statement (contracts/elements.md § README sections):
-  - `layout="grid"`: cells with the label above the value, four columns from twice `--ocelle-facts-stack-below`, two from it, one below it; one description list; give a grid sheet in a shrink-to-fit host an inline size; set `wrap="anywhere"` on machine values in a cell (IQ-05 (b));
+  - `layout="grid"`: cells with the label above the value, four columns from twice `--ocelle-facts-stack-below`, two from it, one below it; one description list; give a grid sheet in a shrink-to-fit host an inline size; set `wrap="anywhere"` on machine values in a cell (IQ-05 (b)); in every layout, an unbroken value without the policy can overflow its value box or cell, so machine values take `wrap="anywhere"` (FR-009 as qualified, operator decision "Grid limits");
   - do not set `grid-template-columns` through `ocelle-facts::part(list)` (IQ-01 (a));
-  - in a grid parent, set `min-inline-size: 0` on the `ocelle-facts` host (IQ-02 (a));
+  - in a consumer's CSS grid, set `min-inline-size: 0` on the `ocelle-facts` host (IQ-02 (a));
   - labels at weight 500; `::part(label)` sets another weight (IQ-03 (a));
   - no truncation; `break-word`, break-anywhere and an ellipsis map to `wrap="anywhere"` with the full value shown (IQ-04 (b));
   - the updated facts mapping rows of research R-11 ("facts stacked", "facts two-col", "facts term regular", "facts value wrap", "facts value ellipsis", "facts value tooltip"), keyed by role name with no `sk-` string in test code.
@@ -242,7 +249,7 @@ order 1 → 2 → 3 → 4:
     - the measure pass alone owns the `stacked` class and is re-run after every render, on value text changes and on window resize;
     - `--ocelle-facts-stack-below`, defaulting to `calc(var(--ocelle-space-10) * 6)`, with its fallback.
   - `layout` override (FR-013).
-  - Grid `fit-content(50%) minmax(0, 1fr)`, row gaps `--ocelle-space-3` (compact `--ocelle-space-1`).
+  - The two-column tracks `fit-content(50%) minmax(0, 1fr)` on the `<dl>`, row gaps `--ocelle-space-3` (compact `--ocelle-space-1`).
   - Label and value type and colours per R-03; values read `--ocelle-facts-value-size` and `--ocelle-facts-value-line-height`.
   - Forced-colours rules; `:host([hidden])`.
 - [ ] T014a [US1] `packages/elements/src/ocelle-facts.ts`: `layout="grid"` (research R-01, R-02, R-03, data-model § `ocelle-facts`):
@@ -264,13 +271,13 @@ order 1 → 2 → 3 → 4:
   - the `.sk-facts` mapping rows (roles only, no code).
 
   Also a `packages/elements/CHANGELOG.md` entry for `ocelle-facts` and `ocelle-fact`.
-- [ ] T020a [US1] `packages/elements/README.md`: the facts statements of T010a (the grid layout, the columns not restyled, `min-inline-size: 0` in a grid parent, the label weight, no truncation and the wrap mapping) and the updated `.sk-facts` mapping rows of research R-11; the `packages/elements/CHANGELOG.md` entry names `layout="grid"`.
+- [ ] T020a [US1] `packages/elements/README.md`: the facts statements of T010a (the grid layout, the wrap policy on machine values in every layout, the columns not restyled, `min-inline-size: 0` in a consumer's CSS grid, the label weight, no truncation and the wrap mapping) and the updated `.sk-facts` mapping rows of research R-11; the `packages/elements/CHANGELOG.md` entry names `layout="grid"`.
 - [ ] T021 [US1] Checks, one heavy job at a time:
   1. Run each facts plant of contracts/checks.md once (§ Oracles and § CSS-only behaviours: the A1 `<dl><slot>` structure, slots in reverse order, the U+200B copy, the extra triggers removed, `characterData` removed, class not restored after the measure, `fit-content(50%)`→`auto`, `minmax(0, 1fr)`→`1fr`, the `stacked` rule removed, the hook probe ignored, the default probe removed, probes not observed, probe `block-size: 1px`, the compact hooks removed, the `wrap` rule removed, the styles rule removed, `:not([hidden])` removed) and record the results in `specs/013-data-display/reviews/phase-1/plants.md`.
   2. Run `pnpm run gate:manifest`, `gate:style-lint`, `gate:csp`, `gate:prefix`, `gate:test-lint`, `gate:contrast` (unchanged; US1-8 relies on the existing text rows), `gate:storybook-build`, `gate:visual`, `gate:axe` (no `storybook/a11y-exceptions.json` entry added), `gate:plants`, then `gate:mutation -- --base <phase base>`.
   3. Record the three Storybook gates' summary lines and the `visual:update` line in the phase review.
 
-- [ ] T021a [US1] Run the grid plants of contracts/checks.md once (the groups not rendered, the four-column rule removed, the two-column grid rule removed, the four-column point at T instead of 2 × T, the grid measure read in the decided layout) and record them in `specs/013-data-display/reviews/phase-1/plants.md`, with T021's step 1 and before its gate runs.
+- [ ] T021a [US1] Run the grid plants of contracts/checks.md once (the groups not rendered, the four-column rule removed, the grid layout's two-column rule removed, the four-column point at T instead of 2 × T, the grid measure read in the decided layout, the grid `<dt>`'s `margin-block-end` removed, a divider added as a `border-block-end` on each group) and record them in `specs/013-data-display/reviews/phase-1/plants.md`, with T021's step 1 and before its gate runs.
 
 **Checkpoint**: `tdd-check.sh 1` reports `pass`; quickstart steps 1 to 6 pass for facts.
 
@@ -318,8 +325,11 @@ order 1 → 2 → 3 → 4:
   - Unset `variant` writes no attribute.
 - [ ] T024a [US2] `packages/elements/test/scenarios/empty-state.ts` (continued), with the oracles of contracts/checks.md:
   - US2-10, the `eyebrow` slot (FR-025, IQ-08 (c)): markup written with the eyebrow after the heading; the eyebrow first present part at the block padding, the eyebrow-to-heading gap, its computed type (`--ocelle-font-size-xs`, `--ocelle-font-weight-medium`, `--ocelle-color-ink-muted`, `text-transform: uppercase`), the AX order eyebrow, heading 1, paragraph, button, no role added; the panel's gaps in the same body;
-  - US2-11, the body (FR-026, IQ-09 (b)): two `<p>` paragraphs with no user-agent margin and `--ocelle-space-2` between them, the first at the body part's block start and the last at its end, the body-to-actions gap unchanged; one paragraph at both edges;
-  - the eyebrow present-parts bodies: eyebrow only, eyebrow plus actions (the eyebrow-to-actions gap), in both variants.
+  - US2-11, the body (FR-026, IQ-09 (b)): two `<p>` paragraphs with no user-agent margin and `--ocelle-space-2` between them, the first at the default-slot area's block start and the last at its end, the body-to-actions gap unchanged; one paragraph at both edges. The oracle reads the internal `.text` wrapper's box (or the first and last slotted element's edges against it), not `part="body"`, which is the whole column and holds the heading and the block padding before the first paragraph;
+  - the eyebrow present-parts bodies: eyebrow only, eyebrow plus actions (the eyebrow-to-actions gap), in both variants;
+  - the visual and eyebrow body (FR-025): a visual, an eyebrow, a heading and a body paragraph written in markup as heading, body, eyebrow, visual; the order visual, eyebrow, heading, body in the column (each part's block start below the previous part's block end) and in the AX tree; the visual-to-eyebrow gap `--ocelle-space-3`, panel `--ocelle-space-5`, in one body;
+  - the eyebrow and text body (FR-025): an eyebrow and a body paragraph with no heading; the eyebrow at the block padding and the eyebrow-to-text gap `--ocelle-space-2`, panel `--ocelle-space-3`, in one body;
+  - the inline-content body (edge case "Empty-state body with inline content", FR-026): the default slot holding a text run, an `<a>` and a text run directly gives three block boxes, one below the other, separated by `--ocelle-space-2`; paired in the same body with a single `<p>` holding the same text and link on one line box.
 - [ ] T025 [P] [US2] Test files for the empty state:
   - `packages/elements/test/empty-state.test.ts` (in process) and `packages/elements/test/browser/empty-state.test.ts` (fixture) over T024;
   - `packages/elements/test/entry-empty-state.test.ts`;
@@ -502,7 +512,7 @@ order 1 → 2 → 3 → 4:
 - [ ] T047 [US3] `gates/stylelint/token-only.ts`: the R-10 phase 3 allowance (`translateX(<percentage>)`, integer `animation-iteration-count`), its plants in `gates/plants/style-lint/`, and its `gates/README.md` row.
 - [ ] T048 [US3] Regenerate and commit the manifest with the `ocelle-progress` declaration (`aria-label` observed, not declared).
 - [ ] T049 [US3] Stories, following research R-08:
-  - `storybook/stories/progress.stories.ts` (`title: "Elements/ocelle-progress"`): every bar named; no host `aria-label` story and no unnamed story;
+  - `storybook/stories/progress.stories.ts` (`title: "Elements/ocelle-progress"`): every bar named; no host `aria-label` story and no unnamed story; the "value text" story is a labelled bar (`label`, `show-label`) at the default size with a determinate `value` and `value-text`, and the "labelled compact" story carries a determinate `value` and `value-text`, so both label rows of FR-035 have a baseline (research R-08);
   - the panel-loading story added to `storybook/stories/empty-state.stories.ts`.
 - [ ] T050 [US3] Baselines: run `pnpm run visual:update` in the pinned container (`<n>` added, 0 changed, 0 removed). The indeterminate stories are captured on the still mark under reduced motion. Commit the new `storybook/baselines/*.png`.
 - [ ] T051 [US3] Documentation:
@@ -539,7 +549,7 @@ gate runs), and the phase review states why no test can fail for them.
 
 - [ ] T053 Final surface lists in `packages/elements/CHANGELOG.md` and `packages/styles/CHANGELOG.md` (FR-057): the four elements, their entry points, the `--ocelle-facts-stack-below` hook and the two facts value hooks, `base.css`'s two rules, and the `token-only` allowance. Mark this exempt (documentation).
 - [ ] T053a Add to T053's surface lists in `packages/elements/CHANGELOG.md` the operator's two additions, the `grid` value of `ocelle-facts`' `layout` and `ocelle-empty-state`'s `eyebrow` slot (IQ-05 (b), IQ-08 (c); constitution VII, MINOR). Mark this exempt (documentation).
-- [ ] T054 Review check, recorded in `specs/013-data-display/reviews/phase-4/coverage.md`: the three README mapping sections together cover every variant in research R-11's inventory, with each row's `.sk-*` family name checked here, since the readme tests key the rows by role name only (SC-001, operator decision I1; the rows themselves landed red first in phases 1 to 3). A gap goes to the operator. Mark this exempt.
+- [ ] T054 Review check, recorded in `specs/013-data-display/reviews/phase-4/coverage.md`: the three README mapping sections together cover every variant in research R-11's inventory, each with a row that names the element and variant, the consumer's remedy, or "not this mission" with the operator's decision, with each row's `.sk-*` family name checked here, since the readme tests key the rows by role name only (SC-001, operator decision I1; the rows themselves landed red first in phases 1 to 3). A gap goes to the operator. Mark this exempt.
 - [ ] T055 Run quickstart.md steps 1 to 7 on the whole mission, one heavy job at a time. `gate:storybook-build`, `gate:visual` and `gate:axe` must pass on all the mission's stories (SC-003, FR-051), and the summary lines are recorded in `specs/013-data-display/reviews/phase-4/quickstart.md`. Mark this exempt.
 
 **Checkpoint**: the phase 4 review approves; `summary.sh` follows in `/ocelle-run` step 4.4.
@@ -560,7 +570,7 @@ gate runs), and the phase review states why no test can fail for them.
 
 ## Implementation strategy
 
-- **MVP**: phase 1, `ocelle-facts` with `ocelle-fact`, which replaces 34 `.sk-facts` uses and sets the slotted-item
+- **MVP**: phase 1, `ocelle-facts` with `ocelle-fact`, which replaces 8 rendered `.sk-facts` uses (34 text matches, research R-11) and sets the slotted-item
   convention the follow-on missions reuse.
 - **Then**: the empty state, then progress, each folded after approval (`/ocelle-run` step 4.3).
 - **Last**: phase 4 closes the records.

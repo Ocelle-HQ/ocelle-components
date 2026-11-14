@@ -47,3 +47,9 @@
   term, and forced-colours checks assert system text colours.
 - `ocelle-fact` is the fourth element: own manifest entry, documented and storied with `ocelle-facts` (FR-050,
   FR-054); its behaviour outside `ocelle-facts` and non-`ocelle-fact` children are edge cases.
+- Second analysis after tasks (2026-11-14, `reviews/analysis/fixes-2.md`): "Requirements are testable and
+  unambiguous" also covers FR-009's no-horizontal-scroll rule, qualified for content that wraps between words or
+  carries the wrap policy (FR-013 and FR-014 by reference, operator decision "Grid limits"); FR-014's grid spacing,
+  no ground, divider or border, and four-track width in a shrink-to-fit host, each with a test or a README statement;
+  FR-025's order below the visual and its eyebrow-to-text gap, each with a body; and FR-026's "default-slot area",
+  which is not the `body` part. SC-001 counts the consumer's-remedy and "not this mission" rows.

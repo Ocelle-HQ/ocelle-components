@@ -70,7 +70,7 @@ other token (R-03). No part, slot or hook is added for the grid: its cell groups
 | slot | `heading` | a heading element | none | The consumer's heading. Its level is the consumer's. |
 | slot | (default) | nodes | none | The explanation. Each element is a block with no margins, separated from the next by a small gap; put inline content in one `<p>`. |
 | slot | `actions` | buttons or links | none | Actions. They wrap when narrow. |
-| part | `body` | `<div>` | none | The centred column. |
+| part | `body` | `<div>` | none | The centred column, with its padding and every slot in it. The default slot's content sits in an internal wrapper inside it, which is not a part. |
 | CSS properties | none | | | |
 | events | none | | | |
 
@@ -108,8 +108,11 @@ other token (R-03). No part, slot or hook is added for the grid: its cell groups
   compact region sets the value scale (#531); before upgrade (each value on its own line through `@ocelle/styles`, a
   hidden fact stays hidden, labels only after upgrade); tokens read; the `.sk-facts` mapping rows (FR-058, phase 1).
   From the input decisions: `layout="grid"`, its four, two and one columns from the threshold and twice it, its
-  `<div>` groups inside the one description list, the wrap policy on machine values in a grid cell (IQ-05 (b)); do not
-  restyle the list's columns through `::part(list)` (IQ-01 (a)); in a grid parent set `min-inline-size: 0` on the
+  `<div>` groups inside the one description list, the wrap policy on machine values in a grid cell, and a grid sheet in
+  a shrink-to-fit host given an inline size, since it is otherwise four tracks wide (IQ-05 (b), "Grid limits"); in
+  every layout, an unbroken value without the wrap policy can overflow its value box or cell, so machine values take
+  `wrap="anywhere"` (FR-009 as qualified, "Grid limits"); do not
+  restyle the list's columns through `::part(list)` (IQ-01 (a)); in a consumer's CSS grid set `min-inline-size: 0` on the
   host (IQ-02 (a)); labels are at weight 500, and `::part(label)` sets another (IQ-03 (a)); the element never truncates
   a value, and `break-word`, break-anywhere and an ellipsis all map to `wrap="anywhere"` with the full value shown
   (IQ-04 (b)).

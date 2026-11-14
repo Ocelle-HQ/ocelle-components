@@ -12,7 +12,10 @@ into this branch and the plan updated for it, and the upstream inputs to follow.
 (`sources/013-inputs.md`) and the operator's decisions on the questions they raised (2026-11-14,
 `reviews/analysis/inputs-decisions.md`, IQ-01 to IQ-15) are applied here: `layout="grid"` (IQ-05 (b)), the empty
 state's `eyebrow` slot (IQ-08 (c)) and body spacing (IQ-09 (b)), the progress value text at the row's inline end
-(IQ-13 (b)), and README statements and tests for the rest.
+(IQ-13 (b)), and README statements and tests for the rest. The second analysis after tasks (head d221dd5) is
+resolved with the operator's decision at the second tasks gate (2026-11-14, "approve + fix all"; resolution note
+`reviews/analysis/fixes-2.md`): wording and added test bodies only, with no new public surface. The Constitution
+Check is unchanged by it.
 
 ## Summary
 
@@ -57,13 +60,14 @@ Measurements in this container ([spike/RESULTS.md](spike/RESULTS.md)) and squad 
   PLAN-FRESH-2-005 (a), PLAN-FRESH-3-004 (a)). The fill has no width transition (PLAN-FRESH-3-003 (b)).
 - **Empty-state parts.** A part is present only while something slotted into it renders; `hidden` on slotted content
   is observed (R-04, PLAN-FRESH-2-007 (a)). An `eyebrow` slot sits between the visual and the heading, at
-  `--ocelle-font-size-xs`, medium, ink-muted, upper case, with its own gaps (IQ-08 (c)). The body part zeroes the
-  block margins of slotted body elements and separates them by `--ocelle-space-2` (IQ-09 (b)).
+  `--ocelle-font-size-xs`, medium, ink-muted, upper case, with its own gaps (IQ-08 (c)). The element zeroes the
+  block margins of the default slot's elements and separates them by `--ocelle-space-2` inside the default-slot area
+  (the internal `.text` wrapper, not `part="body"`, which is the whole column) (IQ-09 (b)).
 - **Progress label row.** With `show-label`, the value text sits at the inline end of the label row, the label at its
   start (IQ-13 (b)). The host is `display: block` (IQ-12 (a)). Text inside the element is not slotted, so after upgrade
   it is neither shown nor exposed, which a browser test proves (IQ-15 (b)).
 - **README statements from the inputs (R-11).** Facts: no restyling of the columns through `::part(list)` (IQ-01 (a)),
-  `min-inline-size: 0` from the consumer in a grid parent (IQ-02 (a)), labels at 500 with `::part(label)` for another
+  `min-inline-size: 0` from the consumer in a consumer's CSS grid (IQ-02 (a)), labels at 500 with `::part(label)` for another
   weight (IQ-03 (a)), no truncation and the wrap mapping (IQ-04 (b)). Empty state: the card, message and ops card stay
   the consumer's, the dashed card is the #509 family's (IQ-07 (a)); the panel heading stays at 500 (IQ-06 (a)).
   Progress: a nearby heading's text as `label` (IQ-10 (a)), the focusable loading heading in the empty state with no
@@ -203,7 +207,7 @@ value of `layout`, the `eyebrow` slot) were chosen by the operator (Principle VI
       (b); FR-026, US2-11; R-04); the value text at the inline end of the label row (IQ-13 (b); FR-035, US3-9, US3-10;
       R-06); text inside the bar neither shown nor exposed after upgrade (IQ-15 (b); FR-039; R-06).
     - Plan and README only: FR-005's tracks with a warning against restyling them (IQ-01 (a)); the consumer's
-      `min-inline-size: 0` in a grid parent, with a `1fr` grid case in phase 1's spike (IQ-02 (a)); labels at 500
+      `min-inline-size: 0` in a consumer's CSS grid, with a `1fr` grid case in phase 1's spike (IQ-02 (a)); labels at 500
       (IQ-03 (a)); no truncation, and the wrap rules mapped to `wrap="anywhere"` (IQ-04 (b)); the panel heading at 500
       as #510's text (IQ-06 (a)); no card chrome, the dashed card to the #509 family (IQ-07 (a)); a nearby heading's
       text as `label` (IQ-10 (a)); the focusable loading heading in the empty state, with a warning against a `role`
@@ -337,8 +341,8 @@ fixed in the story or the element; an exception entry would need a Complexity Tr
      - US1 scenarios 1 to 10 as shared bodies (US1-11 and US1-12 below), with the oracles of contracts/checks.md (flat-tree structure,
        each-definition-its-own-value, layout settle, copy);
      - US1 scenarios 13 to 19 (`layout="grid"`, IQ-05 (b)) as shared bodies, with the grid oracles of
-       contracts/checks.md (grouped flat-tree structure, cell geometry, column count, no overlap) and the grid
-       plants;
+       contracts/checks.md (grouped flat-tree structure, cell geometry with the label-to-value and column gaps as
+       exact token values, no ground, divider or border, column count, no overlap) and the grid plants;
      - the extra facts bodies of contracts/checks.md (no pairs, a very long label, dynamic children and labels,
        hidden facts, `lang`, right-to-left,
        640 px, `ocelle-fact` alone and moved, non-fact children, shrink-to-fit and shared hosts and history, `layout`
@@ -362,8 +366,8 @@ fixed in the story or the element; an exception entry would need a Complexity Tr
      - the story-test extension for the facts stories (presence, light and dark, 320 px reflow, reduced motion);
      - the named plants of contracts/checks.md for facts (among them the extra triggers removed, `characterData`
        removed and the class not restored after the measure, and for the grid: the groups not rendered, the
-       four-column rule removed, the four-column point at the threshold instead of twice it, the two-column grid rule
-       removed);
+       four-column rule removed, the four-column point at the threshold instead of twice it, the grid layout's
+       two-column rule removed, the grid `<dt>`'s label-to-value margin removed, a divider added on each group);
    - **green**:
      - `ocelle-fact.ts` and `ocelle-facts.ts`;
      - the `token-only` allowance for the grid functions, its plants and its `gates/README.md` row;
@@ -380,7 +384,9 @@ fixed in the story or the element; an exception entry would need a Complexity Tr
      - US2-7 with an `ocelle-progress` stand-in: a plain element in `visual`, since progress comes in phase 3; phase 3
        extends US2-7 to the real `ocelle-progress` and its width. The `::slotted(ocelle-progress)` rule's plant runs
        in phase 3 only, against the real bar, since a stand-in of another tag cannot be matched by the rule;
-     - the present-parts bodies (heading only, actions only, visual plus text, eyebrow only, eyebrow plus actions),
+     - the present-parts bodies (heading only, actions only, visual plus text, eyebrow only, eyebrow plus actions,
+       a visual with an eyebrow written out of order, an eyebrow followed by body text with no heading), the
+       inline-content body (text, a link and text as three blocks),
        the slots filled and emptied later, hidden slotted content (US2-9), several actions and a long heading and body
        at 320 px, unset `variant`;
      - US2-10 (the `eyebrow` slot, IQ-08 (c)) and US2-11 (body margins and gap, IQ-09 (b)), with their plants;

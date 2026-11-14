@@ -170,6 +170,17 @@ uses them in server-rendered pages under a strict CSP.
   the README says so and a browser test proves the second half (FR-039, edge case "Text inside the progress
   element").
 
+**Operator decisions after the input decisions** (2026-11-14, human:jeroennouwsdev;
+`reviews/analysis/inputs-decisions.md` § After applying the decisions, `reviews/analysis/operator-decisions.md`
+§ Second tasks gate):
+
+- Grid limits, "Accept, README states": FR-007 is unchanged, so an unbroken value without `wrap="anywhere"` can
+  overflow its value box or cell, and the no-horizontal-scroll rule holds for content that wraps between words or
+  carries the policy (FR-009, FR-013, FR-014). A grid sheet in a shrink-to-fit host is four tracks wide unless given
+  an inline size (FR-014). The README tells consumers to do both.
+- Second tasks gate, "approve + fix all": the second analysis's findings are resolved by wording and added test
+  bodies only, with no new public surface (`reviews/analysis/fixes-2.md`).
+
 ## Scope
 
 **In scope:** four new custom elements in `@ocelle/elements` (`ocelle-facts` with its child `ocelle-fact`,
@@ -196,7 +207,7 @@ on: the compact region's value scale (FR-008) and the pre-upgrade rule (FR-012).
 
 A Kitty Desktop screen shows a mission's facts: status, owner, created date, mission id, and a digest or path. The
 developer writes an `ocelle-facts` element with its pairs inside it instead of a `<dl class="sk-facts">`. In a wide
-column the labels and values sit in a two-column grid. In a narrow column (a 320 px viewport, or a narrow inspector) the
+column the labels and values sit in two columns (the two-column layout). In a narrow column (a 320 px viewport, or a narrow inspector) the
 same pairs stack, label above value. A long identifier breaks inside its own value and never widens the grid or makes
 the page scroll sideways. A screen-reader user hears each label with its value, as a description list. A Work
 Package summary shows four facts as a strip of cells, each label above its value (#280's grid): four cells across a
@@ -252,8 +263,10 @@ px, check the layout, the absence of horizontal overflow, the computed type of t
     changed in place, **Then** its layout is the layout of a fresh load of the changed content (FR-005, FR-009).
 13. **Given** an `ocelle-facts` with `layout="grid"` and four pairs in a block container 1280 px wide, **When** it
     renders, **Then** the four pairs are four cells in one row, in source order from the inline start, each cell's
-    label directly above its value, the cells of equal inline size; and the accessibility tree holds one description
-    list with four terms and four definitions, each definition following its term, in source order (FR-004, FR-014).
+    label directly above its value, the cells of equal inline size, each label separated from its value by
+    `--ocelle-space-1` and the columns by `--ocelle-space-4`, with no ground, divider or border painted by the sheet;
+    and the accessibility tree holds one description list with four terms and four definitions, each definition
+    following its term, in source order (FR-004, FR-014).
 14. **Given** the same sheet in a block container 600 px wide, **When** it renders, **Then** the cells are in two
     columns and two rows, in source order row by row; **Given** a block container 320 px wide, **Then** the cells are
     in one column, with no horizontal overflow of the element or the page (FR-014).
@@ -328,9 +341,10 @@ button stays in the tab order.
     accessibility tree holds the eyebrow's text, the level 1 heading, the paragraph and the button, in that order, with
     no role added by the element. **Given** `variant="panel"`, **Then** the eyebrow's gaps are the panel's (FR-025).
 11. **Given** an empty state with a heading, two `<p>` body paragraphs and an action, **When** it renders, **Then** the
-    first paragraph starts at the body part's block start and the last ends at its block end (no user-agent paragraph
-    margin), the two paragraphs are separated by `--ocelle-space-2`, and the body-to-actions gap is FR-021's; with one
-    body paragraph, it starts and ends at the body part's edges (FR-026).
+    first paragraph starts at the default-slot area's block start and the last ends at its block end (no user-agent
+    paragraph margin), the two paragraphs are separated by `--ocelle-space-2`, and the body-to-actions gap is FR-021's;
+    with one body paragraph, it starts and ends at the default-slot area's edges (FR-026). The default-slot area is
+    the box that holds the default slot's content, not the `body` part (`::part(body)` is the whole centred column).
 
 ---
 
@@ -411,8 +425,8 @@ non-text contrast of the fill's mark against the track and the ground in light a
 - **A child of `ocelle-facts` that is not an `ocelle-fact`** (text, a raw `<dt>`, a `<div>`). It is not rendered and
   not exposed; whitespace between pairs is ignored. Nothing throws. The README says only `ocelle-fact` children are
   allowed.
-- **Facts inside a shrink-to-fit host** (a `<dialog>`, a popover, a float, a flex item, a grid `auto` track, a table
-  cell). The automatic layout switch is decided on the element's own inline size as laid out in two columns (FR-005),
+- **Facts inside a shrink-to-fit host** (a `<dialog>`, a popover, a float, a flex item, an `auto` track of a
+  consumer's CSS grid, a table cell). The automatic layout switch is decided on the element's own inline size as laid out in two columns (FR-005),
   never on its stacked size, and re-decided on every change the element observes (its own resize, a threshold change,
   a content change, a window resize), so for those changes the same content in the same space gives the same layout
   whatever happened before (a narrow window widened, a label or value changed). A change of the offered space the
@@ -425,8 +439,9 @@ non-text contrast of the fill's mark against the track and the ground in light a
   definition, until the attribute is removed. `lang` and `dir` on a fact apply to its label as well as its value
   (FR-003).
 - **Facts before the elements are defined.** See FR-012.
-- **Facts at 200% zoom and 320 px.** One column, no horizontal scroll, no cut text (WCAG 1.4.10).
-- **Facts in a grid parent.** A sheet that is the item of a `1fr` grid track has the track's automatic minimum, its
+- **Facts at 200% zoom and 320 px.** One column, no horizontal scroll, no cut text (WCAG 1.4.10), for content that
+  wraps between words or carries the wrap policy (FR-009).
+- **Facts in a consumer's CSS grid.** A sheet that is the item of a `1fr` track of the consumer's CSS grid has the track's automatic minimum, its
   min-content, so a long value can widen the track. The consumer sets `min-inline-size: 0` on the `ocelle-facts` host
   (host styles are the consumer's); the README says so (operator decision IQ-02 (a)).
 - **Restyled columns.** A consumer rule on `ocelle-facts::part(list)` that sets `grid-template-columns` beats the
@@ -434,11 +449,14 @@ non-text contrast of the fill's mark against the track and the ground in light a
   columns (operator decision IQ-01 (a)).
 - **Grid layout with few or many facts** (`layout="grid"`, FR-014). One, three or eight pairs keep the column count
   the sheet's inline size gives; the cells keep equal inline sizes and fill rows from the inline start, so a row may
-  end with empty columns. Nothing is stretched to fill them.
+  end with empty columns. Nothing is stretched to fill them. In a shrink-to-fit host the sheet is four tracks wide,
+  each as wide as its widest cell, even with one or two pairs; the README tells consumers to give a grid sheet there
+  an inline size (FR-014, operator decision "Grid limits").
 - **Grid layout with long labels or values.** A long label wraps between words inside its cell. A long unbroken value
   breaks inside its cell with `wrap="anywhere"` (FR-007); without the policy it wraps between words only, as in the
-  other layouts (operator decision IQ-04 (b)), so an unbroken word wider than its cell overflows the cell, and the
-  README tells consumers to set the policy on machine values in every layout.
+  other layouts (operator decision IQ-04 (b)), so an unbroken word wider than its cell overflows the cell and can
+  widen the page's scrollable area, which FR-009's qualified rule allows; the README tells consumers to set the
+  policy on machine values in every layout (operator decision "Grid limits").
   With the policy, no cell overlaps another and the page does not scroll sideways at 320 px or 200% zoom.
 - **Grid layout right-to-left.** Cells fill each row from the inline start (the right under `dir="rtl"`); the gaps
   are logical and need no mirroring.
@@ -460,7 +478,7 @@ non-text contrast of the fill's mark against the track and the ground in light a
 - **Empty-state with an eyebrow and no heading.** Allowed: the eyebrow is a present part like any other, and the gap
   below it is the one FR-025 names for the next present part. The eyebrow is the consumer's text and has no heading
   role; the README says to keep it a short line (a `<p>`), not a heading.
-- **Empty-state body with inline content.** The body part lays out each assigned element, and each run of assigned
+- **Empty-state body with inline content.** The default-slot area (FR-026) lays out each assigned element, and each run of assigned
   text, as its own block, separated by `--ocelle-space-2` (FR-026). Text meant to flow as one paragraph with a link or
   an identifier span inside it goes in one element (a `<p>`); the README says so. A page rule that sets margins on the
   slotted body content wins over the element's reset, as for the heading (the consumer owns its content).
@@ -534,8 +552,8 @@ the exceptions FR-050 and FR-054 name.
   generated against FR-004 until then. Confirmed as written by the operator at the plan gate ("Confirm FR-004",
   2026-11-13). It holds in every `layout`, `grid` included (FR-014): there each pair is one item of the list, and the
   plan's phase 1 spike measures that structure against this requirement and stops for the operator if it fails.
-- **FR-005**: Unless `layout` is set (FR-013), the element MUST lay its pairs out as a two-column grid (labels in the
-  first, values in the second) while its own inline size, as laid out in two columns (not the viewport's, and never
+- **FR-005**: Unless `layout` is set (FR-013), the element MUST lay its pairs out in the two-column layout (labels in
+  the first column, values in the second) while its own inline size, as laid out in two columns (not the viewport's, and never
   its stacked size), is at least a threshold, and as one column (each value directly below its label) below it. In a
   block container that size is the container's inline size; in a shrink-to-fit host it is the content's two-column
   max-content capped by the space the host offers. The measure never reads the stacked layout, and the element MUST
@@ -575,7 +593,10 @@ the exceptions FR-050 and FR-054 name.
   element's own two-column size, a sheet whose content is narrower than the threshold stacks there even where the
   host has room; `layout` (FR-013) lets the consumer choose, and the README says so (operator decision
   PLAN-FRESH-2-001 (c)). The element MUST NOT cause horizontal scrolling of
-  the page at 320 px CSS width or at 200% zoom. For the plan's research: a size container query is one way to switch
+  the page at 320 px CSS width or at 200% zoom for content that wraps between words or carries the wrap policy
+  (FR-007); an unbroken value without the policy can overflow its value box or cell, and the README MUST tell
+  consumers to set the policy on machine values (operator decision "Grid limits: Accept, README states",
+  2026-11-14). For the plan's research: a size container query is one way to switch
   on the element's own inline size, but it applies inline-size containment, which collapses a box to 0 px in
   shrink-to-fit hosts (`knowledge/speckit-flows/findings/frontend-missions.md` § Layout; 003 A11Y-SECURITY-1-001,
   FRESH-2-001). The research MUST measure the chosen mechanism in each of those hosts against this requirement.
@@ -589,8 +610,10 @@ the exceptions FR-050 and FR-054 name.
   decision PLAN-FRESH-1-009 (a). An `ocelle-fact` with `hidden` stays hidden before upgrade as after it (FR-003).
 - **FR-013**: `ocelle-facts` MUST offer a `layout` property (`"columns" | "stacked" | "grid"`, unset by default).
   `columns` keeps two columns and `stacked` keeps one column at any size; `grid` gives FR-014's grouped cells; unset,
-  or any other value, gives FR-005's automatic switch. Every set value keeps FR-009's no-horizontal-scroll rule and
-  FR-009's lower bound in shrink-to-fit hosts. Operator decisions PLAN-FRESH-2-001 (c) and IQ-05 (b).
+  or any other value, gives FR-005's automatic switch. Every set value keeps FR-009's no-horizontal-scroll rule, as
+  FR-009 qualifies it (content that wraps between words or carries the wrap policy; an unbroken value without the
+  policy can overflow its value box or cell), and FR-009's lower bound in shrink-to-fit hosts. Operator decisions
+  PLAN-FRESH-2-001 (c), IQ-05 (b) and "Grid limits".
 - **FR-014**: With `layout="grid"` (spec-kitty-design #280), each pair MUST be one cell holding its label directly
   above its value, and the cells MUST sit in a grid of four, two or one columns of equal inline size, filled row by
   row from the inline start in source order, with no cell spanning more than one column and no empty cell added. The
@@ -600,10 +623,13 @@ the exceptions FR-050 and FR-054 name.
   columns while it is at least the threshold, one column below it. The description-list semantics of FR-004 MUST hold
   (one list, each term followed by its definition, in source order, with no serious or critical axe finding,
   `definition-list` and `dlitem` included). A long label MUST wrap between words inside its cell; a value with the
-  wrap policy (FR-007) MUST break inside its cell; spacing between cells and between a label and its value MUST come
+  wrap policy (FR-007) MUST break inside its cell, and an unbroken value without it can overflow its cell, under
+  FR-009's qualified no-horizontal-scroll rule; spacing between cells and between a label and its value MUST come
   from `--ocelle-space-*` tokens and logical properties; `density="compact"` tightens the gap between rows of cells as
   it does between pairs (FR-008); the sheet paints no ground, divider or border (the surface is the container's, as
-  #280 asks). Operator decision IQ-05 (b).
+  #280 asks). In a shrink-to-fit host a grid sheet is four tracks wide, each as wide as its widest cell, even with
+  one or two pairs, unless the consumer gives it an inline size; the README MUST say so (operator decision "Grid
+  limits"). Operator decision IQ-05 (b).
 
 ### `ocelle-empty-state` (P2)
 
@@ -637,8 +663,10 @@ the exceptions FR-050 and FR-054 name.
   follow it by a gap the plan names from the `--ocelle-space-*` scale, in both variants, the panel's gaps larger. The
   element adds no role to it. Operator decision IQ-08 (c).
 - **FR-026**: The element MUST set the block margins of the elements assigned to the default slot to 0 and separate
-  the body's children by `--ocelle-space-2`, in both variants, so the body's first line starts at the body part's
-  block start and its last line ends at its block end, one paragraph or several. Operator decision IQ-09 (b).
+  the body's children by `--ocelle-space-2`, in both variants, so the body's first line starts at the block start of
+  the default-slot area (the box that holds the default slot's content; not the `body` part, which is the whole
+  centred column with every slot in it) and its last line ends at that area's block end, one paragraph or several.
+  Operator decision IQ-09 (b).
 
 ### `ocelle-progress` (P3)
 
@@ -743,7 +771,7 @@ the exceptions FR-050 and FR-054 name.
   the element, "empty-state card dashed" to the #509 family, "empty-state refusal" to the `eyebrow` slot, and "progress
   labelled by heading", "progress heading", "progress inline" and "progress fallback text" to the README statements of
   FR-039. The facts section of the README also states FR-005's column tracks are not to be restyled (IQ-01 (a)) and
-  that a sheet in a grid parent takes `min-inline-size: 0` from the consumer (IQ-02 (a)).
+  that a sheet in a consumer's CSS grid takes `min-inline-size: 0` from the consumer (IQ-02 (a)).
 
 ### Key Entities
 
@@ -757,9 +785,10 @@ the exceptions FR-050 and FR-054 name.
 
 ### Measurable Outcomes
 
-- **SC-001**: The README mapping (FR-058) gives, for every `.sk-facts`, `.sk-empty-state` and `.sk-progress` variant
-  kitty-mission-ui uses (47 rendered uses in all, recorded in research R-11), an element and variant that replaces it with no `class` attribute on
-  the element. Checked in review; the replacement in kitty-mission-ui itself is an outcome not gated here.
+- **SC-001**: The README mapping (FR-058) has, for every `.sk-facts`, `.sk-empty-state` and `.sk-progress` variant
+  kitty-mission-ui uses (47 rendered uses in all, recorded in research R-11), a mapping row that names either the
+  element and variant that replaces it with no `class` attribute on the element, or the consumer's remedy outside
+  the element, or "not this mission" with the operator's decision. Checked in review; the replacement in kitty-mission-ui itself is an outcome not gated here.
 - **SC-002**: At 320 px CSS width, every facts story's page scroll width equals the viewport width.
 - **SC-003**: Every story of the four elements reports no serious or critical axe finding by #10's `axe` gate, in
   light and dark, in the phase that adds it (the unnamed progress state has no story, FR-050). This mission's own

@@ -29,7 +29,8 @@ a time.
    `pnpm run gate:axe` reports 0 serious or critical, with no `storybook/a11y-exceptions.json` entry for these
    stories.
 
-Expected: the spec's SC-002 to SC-007 hold. SC-001 is checked in review: the README mapping covers every variant of
-the operator-supplied inventory in research R-11.
+Expected: the spec's SC-002 to SC-007 hold. SC-001 is checked in review: the README mapping has a row for every variant
+of the operator-supplied inventory in research R-11, naming the element and variant, the consumer's remedy, or "not
+this mission" with the operator's decision.
 
 The spike behind the design decisions can be rerun from [spike/](spike/) (see `spike/RESULTS.md`).
