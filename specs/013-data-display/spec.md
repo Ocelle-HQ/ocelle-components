@@ -430,7 +430,7 @@ non-text contrast of the fill's mark against the track and the ground in light a
   never on its stacked size, and re-decided on every change the element observes (its own resize, a threshold change,
   a content change, a window resize), so for those changes the same content in the same space gives the same layout
   whatever happened before (a narrow window widened, a label or value changed). A change of the offered space the
-  element does not observe (the plan names them, for example a sibling in a flex row shrinking) may leave the earlier
+  element does not observe (the plan names them, for example a neighbour of a CSS grid `auto` track removed) may leave the earlier
   layout; there the consumer sets `layout` or gives the element an inline size (FR-009). In such a host the two-column
   size is the content's two-column max-content, capped by the space the host offers, so a sheet with short content
   stacks even in a wide dialog; the consumer sets `layout` (FR-013) or gives the element an inline size. The element's inline size there is the one FR-009 states: never 0,
@@ -586,7 +586,7 @@ the exceptions FR-050 and FR-054 name.
   offers and the max-content inline size of its widest label or value. Its layout there MUST NOT depend on its
   history for any change FR-005 lists: the same content in the same space gives the same layout. A change of the
   offered space that the element does not observe (no resize of the element and no window resize: the plan's research
-  names these cases from measurement, for example a fixed flex sibling shrinking) is outside that guarantee: the
+  names these cases from measurement, for example a neighbour of a consumer's CSS grid `auto` track removed) is outside that guarantee: the
   README MUST name those cases and tell the consumer to set `layout` or give the element an inline size there, and
   the tests assert that remedy for them instead of history independence (operator decision PLAN-FRESH-3-001 (c)). In
   a block container no case is excluded. Because the automatic switch reads the
