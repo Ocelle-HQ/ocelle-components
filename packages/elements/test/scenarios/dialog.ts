@@ -93,6 +93,7 @@ export interface Inspected {
  * - `ocelle-test-fallback`: an open shadow root holding `<div id="t" tabindex="-1">` (not a stop), then a slot whose
  *   fallback content is `<button id="fb">`.
  * - `ocelle-test-autofocus`: an open shadow root holding `<button id="pa">`, then `<button id="af" autofocus>`.
+ * - `ocelle-test-positive`: an open shadow root holding `<button id="s1" tabindex="1">`.
  */
 export function defineDialogStandIns(): void {
   if (customElements.get("ocelle-test-act") !== undefined) return;
@@ -117,6 +118,7 @@ export function defineDialogStandIns(): void {
   customElements.define("ocelle-test-radio", openRoot('<input type="radio" name="g" id="sr" aria-label="Shadow">'));
   customElements.define("ocelle-test-fallback", openRoot('<div id="t" tabindex="-1">Not a stop</div><slot><button id="fb">Fallback</button></slot>'));
   customElements.define("ocelle-test-autofocus", openRoot('<button id="pa">Plain</button><button id="af" autofocus>Auto</button>'));
+  customElements.define("ocelle-test-positive", openRoot('<button id="s1" tabindex="1">S1</button>'));
   type Command = Record<string, unknown> & { op: string };
   const removed = new Map<string, { element: Element; parent: Node; next: Node | null }>();
   const log: string[] = [];
@@ -452,6 +454,30 @@ const initialRows: DialogScenario[] = [
   { label: "a button inside an SVG foreignObject", content: '<svg width="120" height="48"><foreignObject width="120" height="48"><button id="fo">FO</button></foreignObject></svg><button id="b1">B1</button>', focus: "fo" },
   { label: "a slot's fallback button in a slotted open shadow root", content: '<ocelle-test-fallback id="fh"></ocelle-test-fallback><button id="b1">B1</button>', focus: "fh[fb]" },
   { label: "an autofocus button in a slotted element's open shadow root", content: '<button id="b1">B1</button><ocelle-test-autofocus id="ah"></ocelle-test-autofocus>', focus: "ah[af]" },
+  {
+    label: "a button before a radio group whose second radio is checked: the button",
+    content: '<button id="b1">B1</button><input type="radio" name="g" id="r1" aria-label="One"><input type="radio" name="g" id="r2" aria-label="Two" checked>',
+    focus: "b1",
+  },
+  { label: "a vertical scroller with no stop inside, first: the scroller", content: '<div id="sy"><p>Line 1.</p><p>Line 2.</p><p>Line 3.</p><p>Line 4.</p></div><button id="b1">B1</button>', rules: "#sy { overflow-y: auto; block-size: 40px; }", focus: "sy" },
+  {
+    label: "a scroller holding a button inside a block, first: the button",
+    content: '<div id="sb"><div><button id="ib">In</button></div><p>Line 1.</p><p>Line 2.</p><p>Line 3.</p></div><button id="b1">B1</button>',
+    rules: "#sb { overflow-y: auto; block-size: 40px; }",
+    focus: "ib",
+  },
+  {
+    label: "a scroller holding a radio button, first: the radio",
+    content: '<div id="sr"><input type="radio" name="g" id="q1" aria-label="Q"><p>Line 1.</p><p>Line 2.</p><p>Line 3.</p></div><button id="b1">B1</button>',
+    rules: "#sr { overflow-y: auto; block-size: 40px; }",
+    focus: "q1",
+  },
+  {
+    label: "nested scrollers, first: the inner one",
+    content: '<div id="so"><div id="si"><p>Line 1.</p><p>Line 2.</p><p>Line 3.</p><p>Line 4.</p></div><p>Line 5.</p><p>Line 6.</p><p>Line 7.</p></div><button id="b1">B1</button>',
+    rules: "#so { overflow-y: auto; block-size: 80px; } #si { overflow-y: auto; block-size: 40px; }",
+    focus: "si",
+  },
 ].map(({ label, content, rules, focus }) =>
   row(
     `open and initial focus: ${label}; shown modally in the top layer over the inert page, no event on open (US1-1, FR-002, FR-007, FR-015)`,
@@ -819,6 +845,50 @@ const stopRows = cycleRows("Tab cycle: what is a stop, at the cycle's ends (FR-0
     n: 3,
     tab: "b1 fh[fb] dlg[button] b1 fh[fb]",
     shift: "fh[fb] b1 dlg[button] fh[fb] b1",
+  },
+]);
+
+const moreStopRows = cycleRows("Tab cycle: what is a stop, at the cycle's ends, continued (FR-008, R-04)", [
+  { label: "a display: none button last, not a stop", content: '<button id="b1">B1</button><button id="h1">Hidden</button>', rules: "#h1 { display: none; }", start: "close", n: 2, tab: "b1 dlg[button] b1 dlg[button]", shift: "b1 dlg[button] b1 dlg[button]" },
+  { label: "a visibility: hidden button last, not a stop", content: '<button id="b1">B1</button><button id="h1">Hidden</button>', rules: "#h1 { visibility: hidden; }", start: "close", n: 2, tab: "b1 dlg[button] b1 dlg[button]", shift: "b1 dlg[button] b1 dlg[button]" },
+  { label: "an <a> with href last, a stop", content: '<button id="b1">B1</button><a id="lk" href="#lk">Link</a>', start: "close", n: 3, tab: "b1 lk dlg[button] b1 lk", shift: "lk b1 dlg[button] lk b1" },
+  { label: "an inert block holding a button last, not a stop", content: '<button id="b1">B1</button><div inert><button id="ib">In</button></div>', start: "close", n: 2, tab: "b1 dlg[button] b1 dlg[button]", shift: "b1 dlg[button] b1 dlg[button]" },
+  { label: "a button with an attribute named controls last, an ordinary stop", content: '<button id="b1">B1</button><button id="bc" controls>C</button>', start: "close", n: 3, tab: "b1 bc dlg[button] b1 bc", shift: "bc b1 dlg[button] bc b1" },
+  {
+    label: "a scroller with tabindex=-1 last, not a stop",
+    content: `<button id="b1">B1</button><div id="st" tabindex="-1">${tallProse("t")}</div>`,
+    rules: "#st { overflow-y: auto; block-size: 40px; }",
+    start: "close",
+    n: 2,
+    tab: "b1 dlg[button] b1 dlg[button]",
+    shift: "b1 dlg[button] b1 dlg[button]",
+  },
+  { label: "a scroller with overflow-y: scroll last, a stop", content: `<button id="b1">B1</button><div id="sc">${tallProse("c")}</div>`, rules: "#sc { overflow-y: scroll; block-size: 40px; }", start: "close", n: 3, tab: "b1 sc dlg[button] b1 sc", shift: "sc b1 dlg[button] sc b1" },
+  { label: "an overflowing block with overflow: hidden last, not a stop", content: `<button id="b1">B1</button><div id="oh">${tallProse("h")}</div>`, rules: "#oh { overflow: hidden; block-size: 40px; }", start: "close", n: 2, tab: "b1 dlg[button] b1 dlg[button]", shift: "b1 dlg[button] b1 dlg[button]" },
+  {
+    label: "a scroller holding only an inert button, last: the scroller is the stop",
+    content: `<button id="b1">B1</button><div id="sv"><div inert><button id="ib">In</button></div>${tallProse("v")}</div>`,
+    rules: "#sv { overflow-y: auto; block-size: 40px; }",
+    start: "close",
+    n: 3,
+    tab: "b1 sv dlg[button] b1 sv",
+    shift: "sv b1 dlg[button] sv b1",
+  },
+  {
+    label: "positive tabindex inside a plain block, which is no navigation scope",
+    content: '<button id="b1">B1</button><div><button id="b2" tabindex="1">B2</button></div>',
+    start: "close",
+    n: 3,
+    tab: "b2 b1 dlg[button] b2 b1",
+    shift: "b1 b2 dlg[button] b1 b2",
+  },
+  {
+    label: "positive tabindex in a slotted open shadow root, its own navigation scope, after a tabindex=2 button",
+    content: '<ocelle-test-positive id="sp"></ocelle-test-positive><button id="b1" tabindex="2">B1</button>',
+    start: "close",
+    n: 3,
+    tab: "b1 sp[s1] dlg[button] b1 sp[s1]",
+    shift: "sp[s1] b1 dlg[button] sp[s1] b1",
   },
 ]);
 
@@ -2173,6 +2243,98 @@ const nativeEventRows = [
   ),
 ];
 
+const t025Rows = [
+  row(
+    "Open and initial focus: a footer button with autofocus and nothing focusable in the body: the close control (FR-007: the body only)",
+    async (driver) => {
+      await driver.mount(page("<p>Nothing to focus.</p>", { footer: '<button id="f1" autofocus>F1</button>' }));
+      await open(driver);
+      return { focus: await driver.focusPath() };
+    },
+    { focus: "dlg[button]" },
+  ),
+  row(
+    "Slotted close watchers (US1-13, R-02): a popover=\"auto\" menu inside a slotted block: the first Escape closes it alone, no request, the dialog stays open",
+    async (driver) => {
+      await driver.mount(page(`<div id="wrapm">${menu("auto")}</div>`));
+      await open(driver);
+      await driver.click("inv");
+      const opened = (await inspect(driver, "menu")).popoverOpen;
+      await driver.press("Escape");
+      return { opened, recorded: await after(driver), menuOpen: (await inspect(driver, "menu")).popoverOpen, state: await state(driver) };
+    },
+    { opened: true, recorded: [], menuOpen: false, state: shown },
+  ),
+  row(
+    "Accessibility tree: a host aria-label set while open names the modal dialog (FR-005, R-08)",
+    async (driver) => {
+      await driver.mount(page("<p>Body.</p>"));
+      await open(driver);
+      await driver.setAttribute("dlg", "aria-label", "Settings");
+      await driver.setAttribute("act", "data-wait", "");
+      return { tree: (await driver.ax("dlg")).filter((node) => node.role === "dialog") };
+    },
+    { tree: [{ role: "dialog", name: "Settings", modal: true }] },
+  ),
+  row(
+    "Body (FR-018, R-18): content that fits at 1280 × 800 overflows once the viewport shrinks to 320 × 256, and the body becomes a Tab stop",
+    async (driver) => {
+      try {
+        await driver.mount(page('<p>Line 1 of a body.</p><p>Line 2 of a body.</p><p>Line 3 of a body.</p><p>Line 4 of a body.</p><p>Line 5 of a body.</p>', { footer: shortFooter }));
+        await open(driver);
+        const before = (await inspect(driver, "dlg", '[part="body"]')).attributes.tabindex ?? null;
+        await driver.setViewport(320, 256);
+        let after: string | undefined;
+        for (const start = Date.now(); after === undefined && Date.now() - start < 1000; ) {
+          await pause(20);
+          after = (await inspect(driver, "dlg", '[part="body"]')).attributes.tabindex;
+        }
+        return { before, after: after ?? null };
+      } finally {
+        await driver.setViewport(1280, 800);
+      }
+    },
+    { before: null, after: "0" },
+  ),
+  row(
+    "Host close after the entry ended (open = false while shown): no request, the close with reason host, focus back on the opener (US1-7)",
+    async (driver) => {
+      await driver.mount(page(basic));
+      await open(driver);
+      await pause(300);
+      await driver.setAttribute("dlg", "open", null);
+      return { recorded: await events(driver, 1), state: await state(driver), focus: await driver.focusPath() };
+    },
+    { recorded: [closeEvent("host", "opener")], state: gone, focus: "opener" },
+  ),
+  row(
+    "Two dialogs, B opened over A: a focused button of B that the host removes, then Tab: B's first stop, A does nothing (R-02)",
+    async (driver) => {
+      await driver.mount(twoDialogs);
+      await open(driver);
+      await driver.setAttribute("dlgb", "open", "");
+      await act(driver, { op: "remove", id: "bb1" });
+      const removed = await driver.focusPath();
+      await driver.press("Tab");
+      return { removed, focus: await driver.focusPath(), layer: (await driver.topLayer()).map((each) => each.element) };
+    },
+    { removed: "body", focus: "dlgb[button]", layer: ["dlg[dialog]", "dlgb[dialog]"] },
+  ),
+  row(
+    "A closed dialog removed while another is open: the open one still handles Tab from the body (R-02, R-05a)",
+    async (driver) => {
+      await driver.mount(twoDialogs);
+      await open(driver);
+      await act(driver, { op: "remove", id: "dlgb" });
+      await act(driver, { op: "remove", id: "a1" });
+      const removed = await driver.focusPath();
+      await driver.press("Tab");
+      return { removed, focus: await driver.focusPath() };
+    },
+    { removed: "body", focus: "dlg[button]" },
+  ),
+];
+
 const shortBodyRows = [
   row(
     "Short viewport 320 × 256 (FR-018, R-18): the body held at its minimum block size becomes a Tab stop when the host adds content that overflows it, and stops being one when the host shortens that content",
@@ -2350,6 +2512,7 @@ export const dialogScenarios: readonly DialogScenario[] = [
   ...middleRows,
   ...positiveRows,
   ...stopRows,
+  ...moreStopRows,
   ...shadowNonStopRows,
   ...iframeEscapeRows,
   ...geometryRows,
@@ -2380,6 +2543,7 @@ export const dialogScenarios: readonly DialogScenario[] = [
   ...fieldEscapeRows,
   ...entryExitRows,
   ...lifecycleRows,
+  ...t025Rows,
   ...nativeEventRows,
   ...shortBodyRows,
   ...unitlessMotionRows,
