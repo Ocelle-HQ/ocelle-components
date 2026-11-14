@@ -1,0 +1,5 @@
+# History fold phase-1 of claude/016-overlays: old commit -> new commit (pre-fold head kept as refs/ocelle/prefold/phase-1/claude/016-overlays, 833145b0c19d48c13b8dc1f73a3fdaae02a59ef0).
+b9628e97520f191ecb337b1aebdef5e266449326 c51d6a6c379f5b689f06a880169e1abb3903703e
+78c5edb0957482fdb25e08e398b4e14dc098114d 0e72b53fea0e6ff07a401e5afae9a391ea3ec45a
+69eb0ce0f02fe53f9cf0307bdfdd151b7665625e acbcd6def95fcc5daecb344b885530ee30ccd04e
+833145b0c19d48c13b8dc1f73a3fdaae02a59ef0 735dc0bd7a6d0076604bcb9061905ef1f796b890
