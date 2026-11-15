@@ -14,7 +14,7 @@
 import { assert } from "vitest";
 import type { Expected, Politeness } from "../live-reading.ts";
 import type { Driver, Operation } from "./driver.ts";
-import { announced, el, only, pastFirstLoad, politenessOf, regionPresent, tones, visible } from "./notice.ts";
+import { announced, el, only, politenessOf, regionPresent, tones, visible } from "./notice.ts";
 import type { NoticeScenario, Tone } from "./notice.ts";
 
 type Row = "none" | "alert" | "status";
@@ -138,7 +138,6 @@ function expectedOf(cell: Cell, row: Row, tone: Tone): Expected[] {
 async function matrix(driver: Driver, tag: string, row: Row, tone: Tone): Promise<void> {
   await driver.mount('<main id="c"></main>');
   await driver.firstLoad("c", firstLoaded(row, tone), tag);
-  await pastFirstLoad(driver);
   await driver.batch(operations(row, tone, tag));
   await driver.batch([{ op: "text", id: "while-hidden", text: finalText["while-hidden"] }]);
   const gap = await driver.after(2 * driver.W.loaded);

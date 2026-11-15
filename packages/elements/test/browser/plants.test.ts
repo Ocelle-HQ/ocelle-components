@@ -13,7 +13,9 @@ import type { Recorded, Served } from "./serve.ts";
 // element of fixtures/capture-loop.html with its plain script capture-loop.js. Phase 2's row (T016): the "first load,
 // announces on first load" row's US1-10 cell under `startDocument`, on fixtures/first-load-plants.html, which loads
 // only the plant bundle ocelle-plants.js (global-setup.ts, plants-entry.ts); unplanted, the same body on
-// fixtures/first-load.html with the browser build.
+// fixtures/first-load.html with the browser build. The "empty-state start" row (T025a, phase 2 stop 2): the cells that
+// change a first-loaded notice in the first task after the load, US1-11 text and US1-13 one task, with the plant whose
+// wait ignores the empty state's start, on the same two pages.
 interface Row {
   readonly family: string;
   readonly plant: string;
@@ -79,6 +81,16 @@ const rows: readonly Row[] = [
     planted: () => onNoticePage("first-load-plants.html", ["first-load.js", "ocelle-plants.js"], "US1-10 first load only", "ocelle-plant-never-first-load"),
     unplanted: () => onNoticePage("first-load.html", ["first-load.js", "live-regions.js", "ocelle-elements.js"], "US1-10 first load only", "ocelle-notice"),
   },
+  ...(["US1-11 text", "US1-13 one task"] as const).map(
+    (cell): Row => ({
+      family: "empty-state start",
+      plant: "the wait ignores the empty state's start",
+      body: `${cell} (startDocument)`,
+      message: new RegExp(`^${cell}: (announcements|the write after the first render)`),
+      planted: () => onNoticePage("first-load-plants.html", ["first-load.js", "ocelle-plants.js"], cell, "ocelle-plant-ignores-empty-start"),
+      unplanted: () => onNoticePage("first-load.html", ["first-load.js", "live-regions.js", "ocelle-elements.js"], cell, "ocelle-notice"),
+    }),
+  ),
   {
     family: "capture bounds",
     plant: "an element that mutates its own attribute in a loop",

@@ -11,7 +11,8 @@ import type { OcelleNotice } from "../src/ocelle-notice.ts";
 // capture, where the end-of-wait re-check and an `aria-live="off"` region hide a rule that does not hold; here the
 // region's copy and the wait's timing are read directly. This file does not import test/in-process.ts, so the timing in
 // force is the shipped one (`W` = 300 ms once the document is complete, 700 ms while it loads, `H` = 5000 ms), on a
-// fake clock that moves only when a test advances it.
+// fake clock that moves only when a test advances it, so the wait's floor from the empty state's start, which needs two
+// `D` values, shows here (T025a).
 const W = 300;
 const H = 5000;
 
@@ -229,6 +230,44 @@ describe("first load and removal (R-02)", () => {
     container.append(inserted);
     await endOfTask();
     expect(live(inserted)).toBe("off");
+  });
+});
+
+describe("the wait from the empty state's start (R-02 step 2; phase 2 stop 2, decision (a))", () => {
+  const loadingW = 700;
+
+  it("a change in the first task after a first load is written the pre-load W after the region's first render, not W after the change", async () => {
+    const state = vi.spyOn(document, "readyState", "get").mockReturnValue("loading");
+    const inserted = await insert('<ocelle-notice id="n" announce>A</ocelle-notice>');
+    vi.advanceTimersByTime(20);
+    state.mockReturnValue("complete");
+    inserted.textContent = "B";
+    await endOfTask();
+    vi.advanceTimersByTime(W);
+    const atW = copy(inserted);
+    vi.advanceTimersByTime(loadingW - 20 - W - 1);
+    const before = copy(inserted);
+    vi.advanceTimersByTime(1);
+    expect({ atW, before, at: copy(inserted) }).toEqual({ atW: "", before: "", at: "B" });
+  });
+
+  it("counts from the region's last render or reveal: after the load, a reveal and an insertion again are written W after them, a change of the first-loaded text the pre-load W after its render", async () => {
+    const state = vi.spyOn(document, "readyState", "get").mockReturnValue("loading");
+    container.innerHTML = '<ocelle-notice id="a" announce>A</ocelle-notice><ocelle-notice id="h" announce hidden>H</ocelle-notice><ocelle-notice id="r" announce>R</ocelle-notice>';
+    await endOfTask();
+    const [changed, revealed, again] = [notice("a"), notice("h"), notice("r")];
+    vi.advanceTimersByTime(20);
+    state.mockReturnValue("complete");
+    again.remove();
+    await endOfTask();
+    changed.textContent = "A2";
+    revealed.hidden = false;
+    container.append(again);
+    await endOfTask();
+    vi.advanceTimersByTime(W);
+    const atW = { a: copy(changed), h: copy(revealed), r: copy(again) };
+    vi.advanceTimersByTime(loadingW - 20 - W);
+    expect({ atW, atLoadingW: copy(changed) }).toEqual({ atW: { a: "", h: "H", r: "R" }, atLoadingW: "A2" });
   });
 });
 

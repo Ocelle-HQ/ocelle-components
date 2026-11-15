@@ -108,29 +108,36 @@ async function insertion(driver: Driver, markup: string, how: InsertHow = "inner
 }
 
 /**
- * After a first load, the wait before a body's first step; returns the longest wait it allows, for a capture's
- * `atLeast`. There is none where the capture's pre-load `D` is at most the after-load `W`, as in process, where both
- * load states share the test `D`: there a change in the first task after the load is written `W` later, after the
- * region's first empty state has been kept for its `D`, and is announced once (phase 2 review round 1, R1-01). On the
- * fixture pages (pre-load `D` 350 ms, after-load `W` 300 ms) the region's first empty state begins before the load
- * ends, and a write `W` after a trigger right after the load ends it when it has been kept for 340 to 379 ms, against
- * the pre-load `D` of 350 ms (measured), so there the bodies wait the pre-load `W` first, until the operator decides
- * whether the notice is to meet that window (reviews/phase-2/stop-2.md).
+ * How long after the live region of `host` was first seen, empty, its text was first seen as `text`, in page
+ * milliseconds; -1 when either was not seen.
  */
-export async function pastFirstLoad(driver: Driver): Promise<number> {
-  if (driver.W.loading / 2 <= driver.W.loaded) return 0;
-  expectGap(await driver.after(driver.W.loading), driver.W.loading, 2 * driver.W.loading, "the wait after the first load");
-  return 2 * driver.W.loading;
+function firstWrite(snapshots: readonly Snapshot[], host: string, text: string): number {
+  const seen = (snapshot: Snapshot, want: string): boolean => snapshot.regions.some((region) => region.host === host && region.text === want);
+  const rendered = snapshots.find((snapshot) => seen(snapshot, ""));
+  const written = snapshots.find((snapshot) => seen(snapshot, text));
+  return rendered === undefined || written === undefined ? -1 : written.at - rendered.at;
 }
 
 /**
- * Mounts the page as first loaded with `markup` (the capture armed from before), leaves the wait of `pastFirstLoad`,
- * runs `steps` and stops the capture.
+ * Asserts that notice `n`, first loaded and changed in the first task after the load, had its copy `text` written no
+ * earlier than the pre-load `W` after its region was first seen (spec FR-008; research R-02 step 2, phase 2 stop 2
+ * decision (a)), less half the after-load `W` for the capture's sampling of both states. On fixture pages that is 550
+ * ms; a wait counted from the trigger only writes 340 to 379 ms after it (reviews/phase-2/stop-2.md). In process both
+ * load states share the test `D`, so it holds as soon as the copy is written `W` after the trigger.
+ */
+function writtenAfterFirstRender(driver: Driver, snapshots: readonly Snapshot[], text: string, message: string): void {
+  const gap = firstWrite(snapshots, "n", text);
+  const from = driver.W.loading - driver.W.loaded / 2;
+  assert.deepEqual({ gap: gap >= from }, { gap: true }, `${message}: the write after the first render, ${String(gap)} ms, from ${String(from)}`);
+}
+
+/**
+ * Mounts the page as first loaded with `markup` (the capture armed from before), runs `steps` from the first task after
+ * the load and stops the capture.
  */
 async function loaded(driver: Driver, tag: string, markup: string, steps: () => Promise<void> = () => Promise.resolve()): Promise<Snapshot[]> {
   await driver.mount('<main id="c"></main>');
   await driver.firstLoad("c", markup, tag);
-  await pastFirstLoad(driver);
   await steps();
   return driver.liveCapture.stop();
 }
@@ -363,6 +370,7 @@ export const noticeScenarios: readonly NoticeScenario[] = [
         await driver.batch([{ op: "text", id: "t", text: "failed" }]);
       });
       announced(driver, snapshots, [polite("Run 7 failed")], "US1-11 text: announcements");
+      writtenAfterFirstRender(driver, snapshots, "Run 7 failed", "US1-11 text");
     },
   },
   {
@@ -432,6 +440,7 @@ export const noticeScenarios: readonly NoticeScenario[] = [
         ]);
       });
       announced(driver, snapshots, [polite("Three")], "US1-13 one task: announcements");
+      writtenAfterFirstRender(driver, snapshots, "Three", "US1-13 one task");
     },
   },
   {
@@ -462,7 +471,9 @@ export const noticeScenarios: readonly NoticeScenario[] = [
     run: async (driver, tag) => {
       const snapshots = await loaded(driver, tag, fl('id="n" announce', "A"), async () => {
         await driver.batch([{ op: "text", id: "n", text: "B" }]);
-        expectGap(await driver.after(driver.W.loaded), driver.W.loaded, 2 * driver.W.loaded, "US1-13 10 ms after a write: the write");
+        // The write of a change right after a first load comes no later than the pre-load `W` after it (R-02 step 2:
+        // the wait ends `W` after the trigger and no earlier than the pre-load `W` after the region's first render).
+        expectGap(await driver.after(driver.W.loading), driver.W.loading, 2 * driver.W.loading, "US1-13 10 ms after a write: the write");
         expectGap(await driver.after(driver.W.loaded / 30), driver.W.loaded / 30, driver.W.loaded, "US1-13 10 ms after a write");
         await driver.batch([{ op: "text", id: "n", text: "C" }]);
       });
@@ -474,11 +485,10 @@ export const noticeScenarios: readonly NoticeScenario[] = [
     run: async (driver, tag) => {
       await driver.mount('<main id="c"></main>');
       await driver.firstLoad("c", fl('id="n" announce', "A"), tag);
-      const past = await pastFirstLoad(driver);
       await driver.batch([{ op: "text", id: "n", text: "B" }]);
-      // `stop` first waits for the hold to have passed since the capture started: the wait after the first load (none
-      // in process), W to the write, H, and W more.
-      const snapshots = await driver.liveCapture.stop({ atLeast: past + 2 * driver.W.loaded + driver.H });
+      // `stop` first waits for the hold to have passed since the capture started: the wait to the write (at most the
+      // pre-load W from the region's first render, R-02 step 2), H, and W more.
+      const snapshots = await driver.liveCapture.stop({ atLeast: driver.W.loading + driver.W.loaded + driver.H });
       const text = (snapshot: Snapshot | undefined): string | undefined => snapshot?.regions.find((region) => region.host === "n")?.text;
       const from = snapshots.findIndex((snapshot) => text(snapshot) === "B");
       const until = snapshots.findIndex((snapshot, index) => index > from && text(snapshot) === "");
