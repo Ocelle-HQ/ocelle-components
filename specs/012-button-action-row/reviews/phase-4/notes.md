@@ -7,6 +7,11 @@ stop-and-ask below and deleted uncommitted, so no phase-4 commit sits on it). No
 module (`src/spinner.ts` is reached through the element only). One red commit with all of the phase's story tests,
 T042a included, then the green commits.
 
+Commits so far: b58c55f (red, `red.sh 4 phase`: tests only, red, recorded; 121 of 3579 tests failed), fdc5956 (green:
+T045, T045a; the tokens, brand-rules, gates README and plant-runner tests pass), 4ceaefc (the busy button and spinner,
+in progress: T046 to T048 open). **The phase is stopped on the operator question below**, before baselines, plants,
+gate runs and mutation.
+
 ## Operator decision at phase 4 (the stop-and-ask, resolved)
 
 The phase first stopped before its red commit: 002's brand-rules gate, rule (f), accepted exactly
@@ -49,6 +54,37 @@ tasks T042a, T045a, T049.
 
 ## Red run notes
 
-- Six bodies (US3-6, US3-9, US3-7 in both palettes and the busy look in both themes) fail on the base with the driver's
-  `no .spinner svg in the shadow root of #<id>`: the spinner the body reads is the behaviour that is missing, not a
-  setup error of the test.
+`red-phase.log`: 121 of 3579 tests failed; 109 with an `AssertionError`, 12 (six bodies in two harnesses: US3-6, US3-9,
+US3-7 in both palettes and the busy look in both themes) with the driver's `no .spinner svg in the shadow root of
+#<id>`: the spinner the body reads is the behaviour that is missing, not a syntax, import or setup error. The Storybook
+tests of the busy stories fail on the missing stories, and the tokens story's Motion tests (which read the hand-written
+table) on the missing tokens.
+
+## Operator question (stop-and-ask: red tests that cannot pass for a reason outside the behaviour)
+
+With the implementation of 4ceaefc, every red test passes except six busy bodies, in both harnesses (in process 7
+runs, fixture 6 runs; which ones fail depends on timing):
+
+1. **The spinner's box is read while it turns.** US3-3, US3-4 (both directions), US3-5 (both directions), US3-7 (both
+   palettes) and the edge case "both disabled and busy" read the spinner drawing's border box (`driver.box(id,
+   ".spinner svg")`) with motion allowed. A rotated element's border box is the box of its rotated drawing, so the read
+   gives 22.4 to 28 px instead of 20 (and in US3-5 a gap of 6.8 px instead of 8, `inIconPlace` false in US3-4),
+   depending on the angle at the moment of the read. The red tests assumed a still box; they are wrong, not the
+   element (R-07 asks for the `rotate` property on the drawing, and US3-9 reads the animation on that drawing).
+2. **The dark busy-look page has no ground.** "Busy look (dark)" mounts its buttons on the bare runner page, so the
+   dark-theme labels (light ink) sit on white and axe reports `color-contrast` (the same setup error phase 3 corrected
+   in SC-006). Its look comparison passes.
+
+Changing a red test after the red commit needs the operator (the auto-mode check refused the edit as a possible
+weakening), so the phase stops here. Options:
+
+- **(a) Correct the bodies, same expected values (recommended).** Each body that measures the spinner's layout box
+  sets `reducedMotion("reduce")` first, so it reads the still box; US3-5 also asserts that the turning spinner's box
+  does not intersect the label (stricter than before); "Busy look" gets a canvas ground rule as the other dark bodies
+  have. No expected value changes; the reason goes into the commit body and these notes.
+- **(b) Rotate an inner element instead.** The spinner animates a `<g>` (or the `circle`) inside a still `svg`, so the
+  svg's box never turns; US3-6 and US3-9 then read the animation on that inner element (a selector change in the red
+  tests), and "Busy look" still needs the ground (as in (a)).
+- **(c) Something else** the operator states.
+
+Either (a) or (b) changes red test code; no expectation is loosened in either.
