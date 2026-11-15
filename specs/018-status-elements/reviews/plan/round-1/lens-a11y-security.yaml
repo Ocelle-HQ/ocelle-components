@@ -1,0 +1,143 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: a11y-security
+# Checked and found sound (no finding): strict CSP (adopted stylesheets only, Lit text bindings, no unsafeHTML, the
+# tooltip positions through a CSSStyleSheet, tt.ts 186); no I/O and no network (observers and document.fonts only
+# read; link navigation is user-initiated; 012's linkHref rejects javascript: in every spelling, control.ts 36-45);
+# no new dependency; no ID reference across a shadow root (resolveIds and element reflection, the tooltip used
+# without `describes`); contrast of the status vocabulary on main and state grounds (source.ts 104-116; `main`
+# includes color-inset, color-accent-low and color-hover-bg, source.ts 13-23, so badges and dots in hovered or
+# selected rows are covered); color-focus is checked on the state grounds (source.ts 73-78); the forced-colours
+# transparent-border idiom of R-06 (probe below: a `border: 1px solid transparent` box under emulated
+# forced-colors: active computes `rgb(0, 0, 0)`, so the border shows); reduced motion (`animation: none` plus the
+# 0ms token); 2.2.2 (4.8 s per run, re-insertion settled by SPEC-3-08); 24 px targets; touch and the tooltip
+# (settled as a stated limit, spec check 1 SPEC-1-21); `focus({ focusVisible })` fallback (measured by 012 in
+# Chromium 153, 012 research.md 808-813); label in name (012's README section 5, reused).
+# Probes ran in Chrome for Testing 153.0.8010.12 (/opt/pw-browsers/chromium-1243) through CDP; scripts in the
+# session scratchpad, not in the repository.
+findings:
+  - id: PLAN-A11Y-SECURITY-1-001
+    severity: 3
+    title: "Chromium exposes the metric's `text-transform: uppercase` label upper-cased; US2-2 and FR-022 cannot hold as planned"
+    evidence:
+      - artifact: "spec.md § US2 scenario 2: 'the label's text is reported as written, not uppercased'; FR-022: 'shown uppercase by style only, so assistive technology reads the label as written'"
+      - artifact: "research.md § R-05: '`text-transform: uppercase` (the accessibility tree keeps the written text)'"
+      - code: "probe, Chromium 153: `<dl><div><dt>Shadow label</dt><dd>12</dd></div></dl>` in an open shadow root with an adopted sheet `dt{text-transform:uppercase}`; Accessibility.getFullAXTree gives role `term` named \"SHADOW LABEL\" and StaticText \"SHADOW LABEL\". The same in light DOM gives \"OPEN MISSIONS\". A `dt` with `font-variant-caps: all-small-caps` instead gives term \"Small caps label\" (written text kept)."
+      - code: "git show origin/claude/008-layout-headers:specs/011-layout-headers/research.md line 81: \"`text-transform` on a slotted heading gives the upper-cased name (already probed for spec check 1)\""
+    claim: |
+      The plan's premise is false in the one engine behaviour is measured in. Chromium builds the accessibility tree
+      from the transformed text, so the term is exposed and read as "OPEN MISSIONS". Mission 011 already measured this
+      for the same eyebrow style. US2-2's red test will fail for the right reason, but the green step has no
+      implementation in R-05 that makes it pass. Some screen readers spell short all-capitals words letter by letter
+      (an "ID" or "CI" label), which is the harm FR-022 was written to avoid. The phase would stall at green, or the
+      test would be loosened, which Principle VIII forbids.
+    remedies:
+      - "Keep `text-transform: uppercase` for the look and render the label twice in the `dt`: an `aria-hidden` transformed span and an untransformed copy hidden visually with token-only CSS. Update R-05 and the data model, and add a probe to T001 that confirms the term name is the written text."
+      - "Draw the label with `font-variant-caps: all-small-caps` (the probe shows Chromium keeps the written text) rather than `text-transform`. This changes the eyebrow look that 011's R-12 defines, so it goes to the operator, and 011's headers should match."
+      - "Amend US2-2 and FR-022 (operator decision) to accept the upper-cased text in the tree, as 011 does, and add a README note."
+
+  - id: PLAN-A11Y-SECURITY-1-002
+    severity: 2
+    title: "Refocusing in `updated()` on a button/link switch runs before `ocelle-tooltip`'s slotchange, so a focused truncated pill loses its tooltip"
+    evidence:
+      - artifact: "research.md § R-08 Focus: 'in `updated`, call `newControl.focus()`'"
+      - code: "origin/claude/016-overlays packages/elements/src/ocelle-tooltip.ts 278-282: `#onFocusin` sets `#focused = within(active, this.#trigger ?? this) && active.matches(':focus-visible')`, so it tests the stored trigger; 385-394: `#onSlotchange` stores the new trigger, calls `#hide()` and sets `#focused = false`, and does not look at focus again"
+      - code: "probe, Chromium 153: a custom element with a slot; in a microtask its slotted button is replaced by an `<a>` and `a.focus()` is called synchronously. The log is [\"slotchange:b1\",\"focused-sync\",\"slotchange:a1\",\"microtask-after\"]: the slotchange for the new child fires after the synchronous focus and after the task's other synchronous work. Lit calls `updated()` in the same synchronous pass as the commit."
+    claim: |
+      R-08 replaces the inner control while the pill is wrapped in `ocelle-tooltip`. `focus()` in `updated()` fires
+      `focusin` while the tooltip still holds the removed control as its trigger, so `#focused` is false. The later
+      slotchange then hides the bubble and resets the state. A keyboard user whose truncated pill switches between
+      button and link mode keeps focus with the ring (FR-035 (d)) but loses the full-text tooltip until focus leaves
+      and returns. That breaks US5-3 ("receives keyboard focus ... shows the full text") for the case FR-035 (d) has
+      just set up. No scenario in contracts/checks.md combines a mode switch with truncation, so the defect would ship.
+    remedies:
+      - "R-08: queue the refocus in a microtask from `updated()` (or after the tooltip's `updateComplete` and the slotchange), so the tooltip has taken the new trigger before `focusin` arrives. Add a scenario to `pill-tag-truncation.ts`: a keyboard-focused truncated pill switches mode, and the tooltip shows on the new control with its ring, in both directions."
+
+  - id: PLAN-A11Y-SECURITY-1-003
+    severity: 2
+    title: "Forced colours for the interactive pill rest on `controlStyles` alone: the `.control` class is not in the planned markup, and a disabled link pill keeps `LinkText`"
+    evidence:
+      - artifact: "research.md § R-07: '`<button type=\"button\" part=\"pill control\" class=\"pill …\">` or `<a part=\"pill control\" href=… class=\"pill …\">` ... `controlStyles` for the focus ring and forced colours'"
+      - code: "origin/claude/007-actions-status packages/elements/src/control.ts 157-194: every rule selects the class `.control` (`.control:focus-visible`, `a.control`, `.control:disabled { color: GrayText; border-color: GrayText }`); `:disabled` never matches an `<a>`"
+      - code: "origin/claude/007-actions-status packages/elements/src/ocelle-button.ts 301-304: ocelle-button adds its own `@media (forced-colors: active) { :host([disabled]) .control { color: GrayText; border-color: GrayText; } }`, because a disabled link-mode control is an `<a>` with no href (ocelle-button.ts 509)"
+    claim: |
+      The planned markup gives the inner control the part `control` but shows only the class `pill`. Every
+      `controlStyles` rule selects the class, so as written the pill gets no token focus ring (US4-6, FR-032) and no
+      forced-colours table. Even with the class, `.control:disabled` misses a disabled link-mode pill. In forced
+      colours that pill is drawn in `LinkText`, the same as an enabled link, so users cannot see that it is disabled
+      (constitution III: WCAG in forced colours). ocelle-button closes this gap with its own rule, and R-07 does not
+      carry that rule over.
+    remedies:
+      - "R-07: render the inner control with `class=\"control pill …\"` and copy ocelle-button's forced-colours `:host([disabled]) .control` GrayText rule (and the pressed border width) into the pill's styles. Add forced-colours scenarios for a disabled pill in both modes and for the focus ring on both controls, each asserting computed system colours."
+
+  - id: PLAN-A11Y-SECURITY-1-004
+    severity: 2
+    title: "The disabled look of a neutral pill is almost the same as the enabled look (1.28:1 light, 1.36:1 dark between the two text colours on one ground)"
+    evidence:
+      - artifact: "research.md § R-07: 'Disabled: text `--ocelle-color-disabled-ink` on `--ocelle-color-neutral-bg`, whatever the status'; spec US4-5 '... and has the disabled look'"
+      - code: "packages/tokens/src/source.ts 104-105, 116-117: color-neutral #5E584F / #A39D92, color-disabled-ink #6F685D / #8C8579, color-neutral-bg #E6E1D8 / #2A261F (the same values as color-disabled-bg, line 101); computed contrast color-neutral vs color-disabled-ink: 1.28 (light), 1.36 (dark)"
+      - code: "origin/claude/007-actions-status ocelle-button.ts 274-277: ocelle-button's disabled look also draws a `color-disabled-ink` border, not only the text"
+    claim: |
+      A neutral pill is the default and the most common status. When it is disabled, only its text colour changes, by
+      a difference of 1.28:1, on an unchanged ground with an unchanged transparent border. Sighted users cannot tell a
+      disabled filter pill from an enabled one, and US4-5's "disabled look" has nothing a baseline or a test could tell
+      apart. WCAG 1.4.11 exempts inactive components from contrast, but the state has to be perceivable to be a state.
+      The decision 7 stop is also avoidable: `color-disabled-ink` on `color-disabled-bg`, the same colour as
+      `color-neutral-bg`, is already a declared, exempt pair on `main`.
+    remedies:
+      - "R-07: give the disabled pill a mark beyond the text colour, as ocelle-button does: a `color-disabled-ink` border on `color-disabled-bg` (the declared pair). Pin it in a scenario that compares the disabled and enabled neutral pills' computed border and ground."
+
+  - id: PLAN-A11Y-SECURITY-1-005
+    severity: 2
+    title: "Plan decision 6 does not cover the badge: its hover changes nothing, pressed differs from rest by 1 px of border, and the border-width change resizes the box"
+    evidence:
+      - artifact: "research.md § R-07 Looks: 'all drawn with the status colour on the status ground ... hover: the border, transparent at rest, takes `--ocelle-color-<status>` at `--ocelle-border-width`; active: the same border at `--ocelle-bar-width`; pressed: the border at `--ocelle-bar-width` permanently'"
+      - artifact: "research.md § R-06: badge 'background: transparent; border-color: var(--ocelle-color-<status>)' at rest"
+      - code: "packages/tokens/src/source.ts 161, 164: border-width 1px, bar-width 3px"
+    claim: |
+      An interactive badge (a count badge used as a filter, which FR-028 and US4-7 provide for) has no status ground,
+      and its border is already the status colour at rest. Under decision 6 its hover is identical to its rest state,
+      and its pressed state differs from not-pressed only by a 1 px to 3 px border. That is the weakest cue for the one
+      state a toggle exists to show, and the plan's claim that the looks are drawn on the status ground is wrong for
+      the badge. Because the planned looks change `border-width` on `:active` and `:state(pressed)`, the content box
+      also shrinks by 4 px. A pill that just fits becomes truncated while pressed, so its tooltip and ellipsis can
+      toggle mid-press, and baselines shift.
+    remedies:
+      - "R-07: state the badge's looks separately (for example pressed fills with `--ocelle-color-<status>-bg`, a checked pair). Draw the hover, active and pressed widths with an inset `box-shadow` or `outline` from tokens so the box and the truncation state do not change. Add `Badge` interactive states to the `Pressed` story."
+
+  - id: PLAN-A11Y-SECURITY-1-006
+    severity: 2
+    title: "At rest an interactive pill has no control boundary and looks exactly like a static state pill"
+    evidence:
+      - artifact: "research.md § R-06 and R-07: both modes use `border: var(--ocelle-border-width) solid transparent` at rest; the border appears only on hover, active and pressed"
+      - code: "specs/002-design-tokens/spec.md 521-526 (#5 rule 1 extended): 'a control drawn on any state `-bg` ... uses `color-accent-strong` for its border'; spec A.8 table line 606: color-control-border is for 'inputs, buttons, chips'"
+      - code: "computed: color-neutral-bg #E6E1D8 on color-canvas #F1EEE8 is about 1.1:1, so the fill alone is no visible boundary"
+    claim: |
+      The rule the token contract checks for controls on state grounds is that the border is `color-accent-strong`. An
+      interactive pill is a control drawn as a state ground, yet the plan gives it no resting border, so its extent
+      and the fact that it can be activated are not visible until hover, and never visible on touch. A filter row of
+      interactive pills next to static status pills gives sighted keyboard and pointer users no way to tell which ones
+      act. WCAG 1.4.11 can be read as exempting a text-only control, but the brand rule applies to controls and the
+      plan neither applies it nor records an exception for the operator.
+    remedies:
+      - "Give interactive pills (both variants) a resting control border on the checked pair the token contract requires on state grounds (`color-accent-strong`), with hover, active and pressed drawn on top of it; add a contrast row if one is missing."
+      - "Record as a plan decision for the operator that interactive pills have no resting boundary (a text-only control under 1.4.11, an exception to #5 rule 1 extended), and state in the README that hosts must make a set of interactive pills recognisable as controls."
+
+  - id: PLAN-A11Y-SECURITY-1-007
+    severity: 2
+    title: "In the narrow columns that truncate it, the pill's outside focus ring is clipped, and no README rule or story covers this"
+    evidence:
+      - artifact: "research.md § R-09: the control has `max-inline-size: 100%`; R-06: host `display: inline-block; max-inline-size: 100%`; contracts/elements-status.md line 79 README rules list has no focus clearance rule"
+      - code: "origin/claude/007-actions-status control.ts 158-163: the ring is an outline outside the control at `--ocelle-focus-offset` (2px) + `--ocelle-focus-width` (3px) (source.ts 162-163)"
+      - code: "origin/claude/007-actions-status packages/elements/README.md 230-233: for ocelle-button, 'a container that clips ... keeps at least `--ocelle-focus-offset` + `--ocelle-focus-width` of unclipped space'; 012 plan III draws the row's ring inside so clipping containers cannot cut it"
+    claim: |
+      Truncation only occurs when the pill fills its container, and that is exactly where the 5 px outside ring falls
+      on or past the container's edge. Table cells and list columns that give ellipsis layouts usually clip with
+      `overflow: hidden`, so a truncated pill's focus ring is cut at both inline ends (WCAG 2.4.7; the constitution's
+      "show the token focus ring"). 012 solved the same problem with a documented clearance or an inside ring. The
+      pill plan does neither, and its `Focus` and `Truncated` stories each test one condition, never both together.
+    remedies:
+      - "Cap the truncating control at `max-inline-size: calc(100% - 2 * (var(--ocelle-focus-offset) + var(--ocelle-focus-width)))`, or draw the pill's ring inside it (color-focus is already checked on the state grounds), and add a scenario that focuses a truncated pill inside an `overflow: hidden` container and checks the ring's box lies inside it."
+      - "Keep the outside ring and add 012's clearance rule to the pill's README section, with a focused truncated pill in a clipping container in the `Truncated` story."

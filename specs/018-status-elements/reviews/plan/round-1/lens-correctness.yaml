@@ -1,0 +1,231 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: correctness
+# Checked against: main ce1d9c72 (packages/tokens/src/source.ts, gates/stylelint/token-only.ts, gates/bin/brand-rules.ts,
+# packages/elements/src/{naming,icon-slot,ocelle-icon}.ts); origin/claude/007-actions-status 549409b0
+# (packages/elements/src/{control,ocelle-button,spinner}.ts, specs/012-button-action-row/{spec,data-model,research}.md,
+# packages/tokens/src/{source,generate}.ts); origin/claude/016-overlays 9d8a3b77 (ocelle-tooltip.ts,
+# contracts/elements-overlays.md; no interface change since the 9a44e8e research.md read); origin/claude/008-layout-headers
+# f7fe2430 (research.md R-12, source.ts eyebrow records, consistent with R-01).
+findings:
+  - id: PLAN-CORRECTNESS-1-001
+    severity: 3
+    title: "R-08's static-to-interactive move calls MovedAttributes.connected(), which runs once and never reads host attributes"
+    evidence:
+      - artifact: "research.md § R-08: 'On becoming interactive, `connected()` is called again (it reads the host attributes and mirrors as at upgrade, FR-035 (b))'; data-model.md § Mode transitions, static → button / link: '`connected()`: host attributes and mirrors moved and mirrored as at upgrade'; R-08 'While static, attributeChangedCallback for the seven names does nothing'"
+      - code: "git show origin/claude/007-actions-status:packages/elements/src/control.ts — `connected(): void { if (this.#upgraded) return; this.#upgraded = true; for (...) { const mirror = this.#host.getAttribute(mirrorOf(name)); if (mirror !== null && !this.#values.has(name)) this.#values.set(name, mirror); } }`. It is guarded to the first call and reads only mirrors; host attributes are moved only by `handle(name, value)` from attributeChangedCallback (ocelle-button.ts 442-445)."
+    claim: |
+      The mechanism R-08 and the data model give for FR-035 (b) does nothing. A pill that becomes interactive after it
+      is connected (US4-9: `title`, `aria-label`, `aria-current` on a static host, then `interactive` or a link-mode
+      `href` set) gets no attributeChangedCallback for those attributes (they did not change), and `connected()` returns
+      at once after the first connection and never looks at host attributes anyway. So nothing is moved, `:state(current)`
+      never matches, and the plan's "two additive methods" (plan decision 10) is not enough. The same gap hits a common
+      upgrade path: attributeChangedCallback fires in attribute order (and frameworks such as React set attributes one by
+      one after creating the element), so in `<ocelle-pill-tag title="x" interactive>` the `title` callback arrives while
+      the pill still reads as static if the mode is taken from Lit's `interactive` property, which Lit sets only in the
+      later `interactive` callback. The plan does not say where the mode is read from at that moment.
+    remedies:
+      - "Add a third additive method to MovedAttributes (for example `adopt()`: for each listed name the host sets, `handle(name, host.getAttribute(name))`, then read back mirrors for names still unheld), call it on every static → interactive transition instead of `connected()`, state in R-08 that the 'is static' test inside attributeChangedCallback reads the `interactive` and `href` attributes directly (not Lit properties), update plan decision 10 and the data-model transition table, and add US4-9 cases where the passthrough attribute precedes `interactive` in markup and where it is set before `interactive` after creation."
+
+  - id: PLAN-CORRECTNESS-1-002
+    severity: 3
+    title: "guardHost registered in the constructor stops and prevents every click on a static pill"
+    evidence:
+      - artifact: "research.md § R-07: '`guardHost` registered in the constructor'; FR-027 (a static pill is plain text, no role); Edge Cases: '`disabled` on a static pill ... has no effect'"
+      - code: "origin/claude/007-actions-status:packages/elements/src/control.ts guardHost: `const inner = control(); if (inner !== null && available() && event.composedPath().includes(inner)) return; event.preventDefault(); event.stopImmediatePropagation();` — with no inner control (static mode renders none, R-06) every `click` and `auxclick` at the host is cancelled and stopped; guardHost returns void, so it cannot be removed later."
+    claim: |
+      The static pill is the bulk of the 32 consumer uses, and status pills commonly sit inside clickable rows, cards or
+      an ancestor `<a>`. With the guard as planned, a click on a static pill calls `preventDefault()` (an ancestor link
+      does not navigate) and `stopImmediatePropagation()` (a row's click listener never sees it), and a disabled static
+      pill would be stopped too, against "no effect". Nothing in contracts/checks.md tests a click on a static pill, so
+      the defect would ship.
+    remedies:
+      - "State in R-07 that the guard applies only while the pill is interactive: either an additive optional `active()` predicate on guardHost (guard returns at once while it is false; 012's callers unchanged) or a pill-owned guard that checks the mode first; add a US3 scenario that a click on a static pill (enabled and with `disabled`) inside an `<a>` and under an ancestor listener reaches the ancestor with `defaultPrevented` false."
+
+  - id: PLAN-CORRECTNESS-1-003
+    severity: 3
+    title: "The pulse ring as designed (scale 1 to 2, a 0s delay) cannot pass the token-only style lint"
+    evidence:
+      - artifact: "research.md § R-04: '`animation: ocelle-pulse var(--ocelle-motion-pulse) var(--ocelle-easing-standard) 0s var(--ocelle-motion-pulse-count) normal none`' and 'The keyframes scale the ring from 1 to 2'"
+      - code: "gates/stylelint/token-only.ts: `wordAllowed` rejects any number with a unit other than % or fr outside calc (so `0s` is raw); `scaleRaw` lets `scale` take only the bare numbers -1 and 1 and treats any function, var() and calc() included, as raw; `functionRaw` treats any function other than var()/calc() as raw, so `transform: scale(2)` is raw. Keyframe declarations are walked like any other (`root.walkDecls`). 012's spinner avoids this with `rotate: calc(var(--ocelle-motion-turn) * 6)` and a dedicated token."
+    claim: |
+      gate:style-lint (constitution II) will reject both the `0s` in the shorthand and any way of writing the 1 → 2 ring
+      growth with `scale` or `transform: scale()`. The plan's token list (plan decision 2) and the "CSS only" design are
+      approved on an implementation that cannot be written; the fix either needs another token (a ring extent) or a
+      different property, which changes the decision the operator is asked to take.
+    remedies:
+      - "Rewrite R-04: animation longhands without a delay (or the shorthand without `0s`), and grow the ring through a property the lint allows, for example `box-shadow: 0 0 0 var(--ocelle-<ring-extent>) currentColor` or `inset: calc(-1 * var(--ocelle-<ring-extent>))` keyframed from 0, with the ring-extent token added to R-10, plan decision 2 and data-model.md § Tokens added; add a style-lint run of the new source to US1's gate list (already present) as the check."
+
+  - id: PLAN-CORRECTNESS-1-004
+    severity: 3
+    title: "Truncation observers: created only in connectedCallback, and the ResizeObserver watches a span that a mode switch replaces"
+    evidence:
+      - artifact: "research.md § R-09: 'a `ResizeObserver` on the text span' and 'The observers are created in `connectedCallback` only while interactive and disconnected in `disconnectedCallback` or when the pill becomes static'; data-model.md § Mode transitions: static → button / link 'truncation observers created', button ↔ link 'kept'"
+      - code: "R-07's render puts the text span inside `<button ...>` in button mode and inside `<a ...>` in link mode (two templates), so Lit renders a new text span on a button ↔ link switch, as ocelle-button's render (origin/claude/007-actions-status ocelle-button.ts 501-512) builds `content` inside either branch."
+    claim: |
+      R-09 and the data model disagree on when observers exist: by R-09 a pill that becomes interactive after connection
+      (US4-9) never gets observers, so US5-5 (truncation follows container width) fails for it. And "kept" across a
+      button ↔ link switch leaves the ResizeObserver on the detached old span, so after the switch a width change no
+      longer re-evaluates `truncated` and the tooltip stays enabled or disabled wrongly.
+    remedies:
+      - "State one lifecycle in R-09 and the data model: observers created on connection while interactive and on every static → interactive transition, disconnected on disconnection and on → static; the ResizeObserver re-targeted (unobserve old, observe new) in `updated()` whenever the text span node changes; add a US5-5 case after a button → link switch and after static → interactive."
+
+  - id: PLAN-CORRECTNESS-1-005
+    severity: 2
+    title: "Plan decision 4 lets a host aria-label override the indicator's label, contradicting FR-014 and the Assumptions"
+    evidence:
+      - artifact: "spec FR-014: 'With a non-empty (after trimming) `label`, the element exposes exactly one accessibility node of role `img` named by the label. With no label, the element is hidden from the accessibility tree entirely'; Assumptions: '`label` on the indicator is the one way to name it'; research.md § R-03 / plan decision 4: '005's `accessibleName(label, hostAriaLabel)` lets a present host `aria-label` decide, which is kept'"
+      - code: "packages/elements/src/naming.ts accessibleName: `if (hostAriaLabel !== null) return hostAriaLabel.trim() === \"\" ? undefined : hostAriaLabel;` — `label=\"Running\" aria-label=\"\"` gives no name (hidden), and `aria-label=\"Running\"` with no `label` gives role img."
+    claim: |
+      Decision 4 is not a reading of the spec but a change of FR-014's two shapes: an empty host aria-label hides a
+      labelled indicator, and a host aria-label names one that FR-014 says is hidden. Tests written from FR-014 and
+      the implementation written from R-03 would disagree; the plan gate cannot approve a behaviour the approved spec
+      excludes without the spec changing.
+    remedies:
+      - "Either amend FR-014 and the Assumptions to state the 005 rule (a present host aria-label decides alone) with a US1 scenario, or drop decision 4 and call `expose(internals, label.trim() || undefined, true)` without the host attribute, with a README line that host `aria-label` is unsupported (and say what Chromium then does with it)."
+
+  - id: PLAN-CORRECTNESS-1-006
+    severity: 2
+    title: "The pill's `label` is property-only in the data model and contract, but an attribute in the spec's source (012 FR-013)"
+    evidence:
+      - artifact: "data-model.md § ocelle-pill-tag: '`label` | property only (not reflected)'; contracts/elements-status.md: '| property | `label` | string | `\"\"` | not reflected'; spec FR-025: '`label` (string, not reflected) ... (as 012's FR-013 defines it)'"
+      - code: "012 spec FR-013: '`label` (attribute and property, not reflected)'; origin/claude/007-actions-status ocelle-button.ts 116-117: `label: { type: String }` with the note 'attribute \"label\", the default converter, not reflected'."
+    claim: |
+      Property-only would make the pill's name override unusable from server-rendered markup (the Ocelle console is
+      Thymeleaf and htmx, kitty-mission-ui's markup sets attributes), and it diverges from the control convention the
+      spec says the pill follows. The manifest entry written from the contract would also omit the attribute.
+    remedies:
+      - "Change data-model.md and the contract to 'attribute and property `label`, not reflected', as on ocelle-button, and include the attribute in the manifest test."
+
+  - id: PLAN-CORRECTNESS-1-007
+    severity: 2
+    title: "aria-pressed handling is not 'as on ocelle-button': values are filtered, and ocelle-button does give :state(pressed) in link mode"
+    evidence:
+      - artifact: "research.md § R-07: '`aria-pressed` is applied to the button only when `true`, `false` or `mixed`'; spec FR-030/FR-031 and operator decision SPEC-3-03 '(b) match `ocelle-button`': in link mode 'it gives no `:state(pressed)`'"
+      - code: "012 spec FR-004: 'Any other value is applied as written.'; origin/claude/007-actions-status ocelle-button.ts: `aria-pressed=${value(\"aria-pressed\")}` (any value) and `[\"pressed\", this.#moved.get(\"aria-pressed\") === \"true\"]` with no mode check, matching 012 data-model.md line 15 (`pressed ⇔ moved[\"aria-pressed\"] === \"true\"`)."
+    claim: |
+      R-07's value filter departs from 012's FR-004 that FR-030 says the pill follows as written. Separately, the
+      operator chose SPEC-3-03 (b) on the premise that ocelle-button gives no `:state(pressed)` in link mode, but the
+      merged-to-be ocelle-button does (its link-mode aria-pressed is merely 'not allowed'). The pill's behaviour (no
+      state on a link) is reasonable, but the spec and plan justify it with a false equivalence, so a later alignment
+      of the two elements, or a test copied from 012, will contradict it.
+    remedies:
+      - "Drop the value filter in R-07 (apply the held value as written, button mode only); reword FR-031, US4-10 and the Edge Case so the link-mode rule is the pill's own decision, not 'as on ocelle-button', and record the ocelle-button difference for the operator (or open a triage note for 012)."
+
+  - id: PLAN-CORRECTNESS-1-008
+    severity: 2
+    title: "The disabled-look stop is already decided: 012 does not declare disabled-ink on the state grounds, and the reason given for stopping does not apply"
+    evidence:
+      - artifact: "research.md § R-07 / plan decision 7: 'text `--ocelle-color-disabled-ink` on `--ocelle-color-neutral-bg` ... If 012 as merged declares `color-disabled-ink` on the state grounds with a passing figure (recheck), that row is reused; otherwise the phase stops and asks ... because a new required pair below threshold is the operator's decision'"
+      - code: "origin/claude/007-actions-status packages/tokens/src/source.ts 126-129: `color-disabled-ink` grounds `[...main, \"color-disabled-bg\", ...chrome], exempt: true` — no state ground. main source.ts: `color-disabled-bg` and `color-neutral-bg` have the same values (#E6E1D8 light, #2A261F dark), and `exempt` makes the pair non-required."
+    claim: |
+      The plan defers to implementation a stop that is certain on the branch it read, and the stated reason (a new
+      required pair below threshold) is wrong: disabled-ink pairs are exempt. US4's disabled look should be settled at
+      the plan gate rather than halting phase 5.
+    remedies:
+      - "Use `--ocelle-color-disabled-bg` as the disabled pill's ground (the declared, exempt pair; same values as neutral-bg) and drop the stop from decision 7, or add `color-neutral-bg` to disabled-ink's grounds in US4 with the contrast count changes listed."
+
+  - id: PLAN-CORRECTNESS-1-009
+    severity: 2
+    title: "R-06 puts `icon-row` on the pill box and then says the pill box is not the icon row"
+    evidence:
+      - artifact: "research.md § R-06: shadow root '`<span part=\"pill\" class=\"pill icon-row status-… variant-… density-…\">`' and, below, 'So the pill's box is not the `.icon-row` itself: the `.pill` box carries the density padding'"
+      - code: "packages/elements/src/icon-slot.ts: `.icon-row { display: inline-flex; align-items: flex-start; padding-block: calc((var(--ocelle-icon-size) - 1lh) / 2); }` — on the same box as the density padding, the two `padding-block` rules compete by order and specificity."
+    claim: |
+      US3-4 needs the static pill's block padding to be exactly `--ocelle-space-1`; which box carries `icon-row` decides
+      whether it is. The markup and the prose give opposite answers, so the implementer has to guess and the height pins
+      in the scenarios may be written against the wrong one.
+    remedies:
+      - "Fix the R-06 markup to one structure (for example `<span part=\"pill\" class=\"pill …\"><span class=\"icon-row\">…</span></span>`, or state that `.pill` overrides `.icon-row`'s padding and why it is then still 0 with `--ocelle-icon-size: 1lh`), and use the same in R-07's interactive markup."
+
+  - id: PLAN-CORRECTNESS-1-010
+    severity: 2
+    title: "Hover and pressed looks change the border width, so the pill changes size when pressed, and a badge has no hover change"
+    evidence:
+      - artifact: "research.md § R-07 / plan decision 6: 'hover: the border, transparent at rest, takes `--ocelle-color-<status>` at `--ocelle-border-width`; active: the same border at `--ocelle-bar-width`; pressed: the border at `--ocelle-bar-width` permanently'; R-06 badge: 'border-color: var(--ocelle-color-<status>)' at rest"
+      - code: "main source.ts: `border-width` 1px, `bar-width` 3px; nothing in R-06/R-07 compensates the padding, so a pressed pill is 4 px larger in each axis than an unpressed one (with the 24 px minimum, a compact pill goes from about 24.4 to 28.4 px block size)."
+    claim: |
+      A row of filter pills (US4's main use) reflows whenever one is toggled, and in a narrow column the 4 px can flip
+      `truncated` (R-09) just by pressing. For `variant=\"badge\"` the at-rest border already has the status colour, so
+      the hover look is no change at all. Neither is a matter of taste: the plan defines states that move layout and one
+      that is invisible.
+    remedies:
+      - "Draw active and pressed without changing the box (an inset `box-shadow` of `--ocelle-bar-width` in the status colour, or padding reduced by `calc(var(--ocelle-bar-width) - var(--ocelle-border-width))` while the wider border shows), define the badge's hover look explicitly, and pin equal boxes pressed and unpressed in US4-4."
+
+  - id: PLAN-CORRECTNESS-1-011
+    severity: 2
+    title: "The interactive pill's inner control is not made to fill the host, as 012 FR-001 (which FR-030 adopts as written) requires"
+    evidence:
+      - artifact: "spec FR-030: 'follows mission 012's FR-001 to FR-006 as written'; research.md § R-06: host 'display: inline-block; max-inline-size: 100%'; R-07: control 'display: inline-flex ... max-inline-size: 100%' inside `ocelle-tooltip` (`display: contents`)"
+      - code: "012 spec FR-001: 'The inner control fills the host's box in both axes, so a host stretched by its layout (a flex row, a grid cell) has no area outside the inner control'; ocelle-button.ts uses `:host { display: inline-grid; }` so the control is a stretched grid item. An inline-flex control in an inline-block host does not stretch, and guardHost cancels clicks outside it."
+    claim: |
+      A pill in a stretched flex row or grid cell gets host area outside its visible box; clicks there are silently
+      swallowed by the guard, and the pill breaks a requirement the spec takes over unchanged. Nothing in checks.md
+      measures it.
+    remedies:
+      - "Give the interactive pill's host a layout in which the control fills it (for example `:host { display: inline-grid }` with the control as the grid item, as ocelle-button), state it in R-07, and add a US4 case with the host stretched by a flex row and a click near its edge."
+
+  - id: PLAN-CORRECTNESS-1-012
+    severity: 2
+    title: "`scrollWidth > clientWidth` misses sub-pixel overflow, so an ellipsis can show with the tooltip disabled"
+    evidence:
+      - artifact: "research.md § R-09: '`truncated` ... is `!disabled && text.scrollWidth > text.clientWidth`'; spec Terms 'Truncated ... part of it is replaced by an ellipsis' and US5-3"
+      - code: "scrollWidth and clientWidth are integers (CSSOM View rounds them); with `text-overflow: ellipsis` Chromium draws the ellipsis whenever the fractional content width exceeds the box, so a text that overflows by less than 0.5 px is drawn ellipsised while the comparison is false."
+    claim: |
+      With proportional Schibsted Grotesk text and rem-based padding, fractional widths are normal; at some container
+      widths the pill shows an ellipsis and no tooltip, so its full text is unreadable for a pointer or keyboard user
+      (FR-033/FR-034, SC-005).
+    remedies:
+      - "Measure with fractional geometry (for example compare the text's `Range.getBoundingClientRect().width` or the span's `scrollWidth` against `getBoundingClientRect().width` with a tolerance rule stated in R-09), and add a US5 case at a width a fraction of a pixel below the text width."
+
+  - id: PLAN-CORRECTNESS-1-013
+    severity: 2
+    title: "R-04's 'four start cases for free' does not hold for a state-preserving move or `hidden=\"until-found\"`"
+    evidence:
+      - artifact: "research.md § R-04 (b): 'an element inserted into a document gets a fresh style, and CSS animations start'; (d) spike limited to 'hidden, an ancestor's display: none and <details>'; spec FR-012 (b) 'every reconnection after a removal or a move'; (d) 'the hidden attribute included'"
+      - code: "R-14 sets the floor at Chromium 135, which has `Element.prototype.moveBefore` (shipped in Chromium 133): a state-preserving move keeps CSS animations running, and a custom element without `connectedMoveCallback` still gets disconnected/connected callbacks, but Lit does not re-render, so the ring keeps its animation. `hidden=\"until-found\"` hides with `content-visibility: hidden`, not `display: none`, the same mechanism R-04 already doubts for `<details>`."
+    claim: |
+      A move made with `moveBefore()` (used by morphing libraries where available) is a 'move' under FR-012 (b) but
+      starts no run, and an indicator revealed from `hidden=\"until-found\"` may not start one under (d). The plan
+      claims completeness by construction, so tests for these cases are not planned and the spec's 'complete list'
+      is not met or not defined for them.
+    remedies:
+      - "Extend the T001 spike to `moveBefore()` and `hidden=\"until-found\"`; either state in FR-012 (b)/(d) that a state-preserving move and until-found are not start cases (and keep their behaviour pinned by a test), or add the smallest fix the spike shows, and add both to US1-4's scenario list in checks.md."
+
+  - id: PLAN-CORRECTNESS-1-014
+    severity: 1
+    title: "Removing and adding `pulse` in the same task starts no new run"
+    evidence:
+      - artifact: "research.md § R-04 (a): 'pulse absent → present: the ring element is created, so its animation starts'; spec FR-012 (a) and US1-4 'When `pulse` is set again (removed, then added), Then the animation runs again'"
+      - code: "Lit batches property changes to one update per microtask; `removeAttribute('pulse'); setAttribute('pulse', '')` in one task ends with `pulse` true at update time, the template keeps the same ring node, and its finished animation is not restarted."
+    claim: |
+      FR-012 (a) defines the case by the attribute's transition, not by Lit's update; a host that clears and sets the
+      attribute synchronously gets no run. Minor, but the plan claims (a) needs no script.
+    remedies:
+      - "Either narrow FR-012 (a) to changes that are rendered (state it and test the synchronous toggle as no restart), or key the ring on a counter bumped in attributeChangedCallback when `pulse` goes absent → present, with a test for the same-task toggle."
+
+  - id: PLAN-CORRECTNESS-1-015
+    severity: 1
+    title: "Pill inner-control markup does not carry the `control` class that controlStyles and guardHost-style lookups select"
+    evidence:
+      - artifact: "research.md § R-07: '`<button type=\"button\" part=\"pill control\" class=\"pill …\">` or `<a part=\"pill control\" href=… class=\"pill …\">`' and '`controlStyles` for the focus ring and forced colours'"
+      - code: "origin/claude/007-actions-status control.ts controlStyles selects `.control:focus-visible`, `a.control`, `.control:disabled` (class, not part); ocelle-button's `#control()` queries `.control`."
+    claim: |
+      As written the token focus ring (FR-032), the forced-colours table and the link underline removal would not apply
+      to the pill's control. Probably an elision, but the markup is the plan's only statement of it.
+    remedies:
+      - "Write the class list in R-07 as `class=\"pill control …\"`."
+
+  - id: PLAN-CORRECTNESS-1-016
+    severity: 1
+    title: "R-05 does not say which box gets the row layout; on the `dl` it has no effect"
+    evidence:
+      - artifact: "research.md § R-05: '<dl class=\"metric layout-…\"><div class=\"pair\"><dt …><dd …></div></dl>' and '`row`: `display: flex; flex-wrap: wrap; align-items: baseline; column-gap: var(--ocelle-space-2)`'"
+      - code: "The `dl`'s only child is `div.pair`; a flex container on the `dl` lays out that one div, leaving `dt` and `dd` stacked inside it."
+    claim: |
+      US2-3 (label and value on one line) depends on the flex rule being on `.pair`; the class that selects the layout
+      sits on the `dl`, which invites the wrong selector.
+    remedies:
+      - "State the selector in R-05 (for example `.layout-row .pair { display: flex; … }`)."
