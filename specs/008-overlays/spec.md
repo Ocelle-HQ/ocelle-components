@@ -71,6 +71,17 @@ sources of the requirements below. `#450` and `#503` are spec-kitty/spec-kitty-d
   hidden there, laid out by the storybook's story layout stylesheet; no axe exception is added (FR-042, research
   R-16).
 
+**Operator decisions in Phase 4** (decided by the operator, 2026-11-15; evidence read from MOES-Media/kitty-mission-ui
+at commit `c994c8e`, 2026-10-17, research R-10):
+
+- Kitty Desktop's webview version (T053, FR-041): the floor stays Chromium 120 / WebKit 17 (FR-040). The WebKitGTK
+  version Kitty Desktop ships is not yet determinable: Kitty Desktop has no webview until kitty-mission-ui #20. Its
+  `apps/desktop/src-tauri` crate is a compile-only placeholder with no dependencies, so no Tauri and no webkit2gtk
+  package, and no WebKitGTK version is pinned anywhere. When #20 adds Tauri 2 on Linux (the distro's
+  webkit2gtk-4.1), it must choose a WebKitGTK that meets WebKit 17; by research R-10's reading that is the 2.44 line
+  or later, still unverified. The elements README § Engines states the floor. Phase 4 proceeds, and T053 does not
+  block its approval; T053 records this hand-off in `reviews/phase-4/notes.md`.
+
 ## Consumer need
 
 - **Why the elements exist (#16, spec-kitty-design#503).** "Spec Kitty has no overlay primitives, so consumers cannot
@@ -355,7 +366,9 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
   (FR-036).
 - **Engine without the Popover API.** Below the floor no bubble is painted and nothing throws; this is not a tooltip
   path (Out of Scope), only the absence of a broken one.
-- **Theme change while open.** Switching `data-theme` while an overlay or bubble is shown repaints it in the new theme.
+- **Theme change while open.** Switching `data-theme` while an overlay or bubble is shown repaints it in the new theme
+  (every colour is a token read through `var()`, none is cached by script; one tooltip row checks it with the bubble
+  shown inside an open dialog).
 - **Two copies of the package.** As in the elements README: the first definition wins.
 
 ## Requirements *(mandatory)*
@@ -495,10 +508,10 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
   contents`, operator decision), so wrapping leaves the trigger's box unchanged. Triggers are buttons and links: a
   text field matches `:focus-visible` on any focus, so around one the bubble shows on focus however it arrives, and
   the documentation states this limit (operator decision).
-- **FR-030**: It MUST take a `text` property and attribute (the bubble's plain text), a `placement` property and
-  attribute, `"top"` (default), `"bottom"`, `"start"` or `"end"` (logical under the element's direction), a
-  `disabled` boolean, and a reflected `describes` boolean (default false, FR-036); an empty `text` or `disabled` shows
-  no bubble.
+- **FR-030**: It MUST take a `text` property and attribute (the bubble's plain text), a reflected `placement`
+  property and attribute, `"top"` (default), `"bottom"`, `"start"` or `"end"` (logical under the element's
+  direction), a reflected `disabled` boolean (default false), and a reflected `describes` boolean (default false,
+  FR-036); an empty `text` or `disabled` shows no bubble.
 - **FR-031**: The bubble MUST show when the pointer has rested on the trigger for `--ocelle-tooltip-delay` (FR-038),
   and at once when the trigger, or a control inside it, receives keyboard focus. Keyboard focus, here and in FR-032
   and FR-033, means focus on the trigger or a control inside it that matches `:focus-visible`; focus from a pointer
@@ -513,7 +526,9 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
   it MUST not take focus, MUST not be light-dismissed (it hides only by FR-032, FR-033, FR-010's overlay opening and
   the rules of FR-030), and at most one bubble MUST be shown on the page at a time.
 - **FR-035**: The bubble MUST be placed on its `placement` side of the trigger, offset by a space token, and flip to
-  the opposite side when it would overflow the viewport; it MUST stay beside the trigger while the trigger moves
+  the opposite side when it would overflow the viewport; when it fits on neither side of the trigger on that axis it
+  stays on its `placement` side, where it may then extend past the viewport on that axis (the cross axis is always
+  kept inside the viewport); it MUST stay beside the trigger while the trigger moves
   (any scroll, including scrollers inside shadow roots, and resizes); its inline size MUST not exceed a maximum from a
   token, and text wraps (including unbreakable strings).
 - **FR-036**: Assistive technology MUST get the text once, as the host states it through `describes`: without
@@ -544,6 +559,8 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
   build targets, if any declare it) MUST follow.
 - **FR-041**: This feature's research MUST record Kitty Desktop's webview engines (WKWebView on macOS, WebKitGTK on
   Linux) against WebKit 17, and the plan MUST name any consumer platform below it as a risk for the operator.
+  Where a consumer has no webview yet, research records that the version is not yet determinable and which consumer
+  change must meet the floor (operator decision, 2026-11-15: Kitty Desktop, kitty-mission-ui #20).
 
 **Evidence (done when)**
 
@@ -579,8 +596,8 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
 
 ### Measurable Outcomes
 
-- **SC-001**: In 100% of the open/close paths (four close reasons for the drawer, three for the dialog, each with and
-  without a cancelling host), focus after the path is where FR-007 or FR-009 says, checked by tests in process and on
+- **SC-001**: In 100% of the open/close paths (each user-initiated reason with and without a veto, plus `host`: three
+  user-initiated reasons for the drawer, two for the dialog), focus after the path is where FR-007 or FR-009 says, checked by tests in process and on
   the strict-CSP fixture.
 - **SC-002**: From an open overlay with n focus stops, n + 2 Tab presses give exactly the expected wrap-around
   sequence of stops, with no stop on the document body or outside the overlay, and the same for Shift+Tab, started
@@ -596,8 +613,9 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
   every story has a committed baseline in both themes.
 - **SC-005**: A user pressing Escape over a shown tooltip inside an open dialog needs exactly 2 presses to close the
   dialog: the first hides the bubble only.
-- **SC-006**: In a container with clipped overflow, a transformed ancestor and an open dialog, 100% of the bubble's box
-  is painted on screen and above the overlay.
+- **SC-006**: In a container with clipped overflow, a transformed ancestor and an open dialog, in a viewport where the
+  bubble fits on its `placement` side or the opposite one, 100% of the bubble's box is painted on screen and above the
+  overlay (FR-035 states the case where neither side fits).
 - **SC-007**: No raw colour, size, duration or shadow literal appears in the three elements' styles (`style-lint`), and
   the built output passes the strict-CSP check with every scenario exercised, and after every placement, open and
   close scenario 0 elements carry a `style` attribute and 0 `<style>` elements were added (FR-047).

@@ -320,6 +320,13 @@ modal, level. Device: the default context (`elements`, `visit()`) matches `(hove
   the bubble after crossing the gap; (c) keyboard focus on the trigger (Tab) with the pointer outside both boxes.
 - **Late `:focus-visible`**: click the trigger, move the pointer off both boxes (`pointer()`), press Shift, assert
   `focusVisible()` is true for the trigger, then assert no bubble within 450 ms.
+- **Click focus, then hover** (US3-12, FR-031, FR-032; analysis C3): click the button trigger (`focusPath()` the
+  trigger, `focusVisible()` false) and leave the pointer resting on it: not shown at 150 ms, shown by 450 ms. Then
+  `pointer()` moves off both boxes: hidden within one frame, while `focusPath()` is still the trigger. Then, with
+  focus unchanged and the pointer outside, the bubble is not `:popover-open` at any frame of a bounded 900 ms wait.
+  Then the pointer rests on the trigger again: shown by 450 ms from that entry. In a second case, after the hide, a
+  Shift+Tab to a page button placed before the trigger, then Tab back onto the trigger (focus arriving
+  with `:focus-visible`) shows it at once.
 - **Text-field trigger** (stated limit, R-12): a clicked `<input type=text>` trigger shows the bubble at once.
 - **Hoverable gap**: `pointer()` from the trigger stops at a point inside the gap: shown; moves on to the bubble:
   shown; stops beyond the padded gap: hidden.
@@ -339,9 +346,28 @@ modal, level. Device: the default context (`elements`, `visit()`) matches `(hove
 - **Placement**: each `placement`; flip at an edge; cross-axis clamp; each under `ltr` and `rtl` (`start` on the right
   under `rtl`, flip and clamp mirrored); clipped (`overflow: hidden`) and transformed containers; inside an open
   dialog and drawer (bubble above the backdrop, whole).
+  - **Neither side fits** (FR-035, R-11; analysis A2): `placement="top"` around a trigger centred in a 1280 × 120
+    viewport with text long enough that the bubble's block size exceeds the space above and below the trigger
+    (each less `gutter`): the bubble is on the top side (its block end `space-2` above the trigger's block start),
+    not flipped, and its cross-axis box lies inside the viewport less `gutter`. SC-006's on-screen assertion does not
+    apply to this case.
 - **Following the trigger**: scroll a light-DOM container while shown; scroll the open dialog's body with a
   keyboard-focused trigger inside it; resize the viewport: the bubble's box stays beside the trigger within one frame.
 - **Size**: bubble width ≤ `tooltip-max-inline`; an unbreakable string stays inside the bubble.
+- **Bubble styles** (computed; R-09, analysis U2, constitution II): on the painted box, each of the four corner radii
+  equals the computed `radius-2` (4 px; a `radius-pill` value fails), `padding-block` equals the computed `space-1`
+  and `padding-inline` the computed `space-2`, ground `color-chrome`, ink `color-chrome-ink`, font size
+  `font-size-sm`; on the bubble part, no radius, a transparent background, padding equal to the computed `space-2`
+  on the trigger's side and 0 on the other three, for `top` and for `end` under `ltr` and `rtl`.
+- **No animation** (US3-8, SC-008's note; analysis C2): `animations()` on the bubble part and on its painted box is an
+  empty list after the show (hover and keyboard focus), at every frame of the persistence wait, and after the hide,
+  with motion allowed and with `--ocelle-motion-base` at its real value.
+- **Theme change while shown** (edge case "Theme change while open"; analysis C6): the bubble shown by keyboard focus
+  on a trigger inside an open dialog, then `data-theme` on the root element switched from `light` to `dark`: within
+  one frame the painted box's ground and ink equal the dark computed `color-chrome` and `color-chrome-ink` and the
+  dialog panel's ground equals the dark computed `color-sheet`; the bubble is still `:popover-open`, the dialog open
+  and `:modal`, and no event is dispatched. The drawer holds by construction: the same base styles, every colour a
+  token read through `var()`, none cached by script.
 - **Host layout** (`display: contents`): a pill-shaped button in a narrow container, wrapped and unwrapped: its box is
   the same and it still ellipsises.
 - **Accessibility tree**: without `describes`: no tooltip node, no description, text only as the trigger's name;

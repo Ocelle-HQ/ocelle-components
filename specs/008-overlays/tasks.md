@@ -2,7 +2,7 @@
 
 **Input**: the design documents in `specs/008-overlays/`, approved at the plan gate on 2026-11-13 (human:MOES-Media)
 after three plan-squad rounds (`reviews/plan/round-1..3/`):
-- spec.md: FR-001 to FR-048, SC-001 to SC-008, US1 scenarios 1 to 16, US2 1 to 7, US3 1 to 14;
+- spec.md: FR-001 to FR-048, SC-001 to SC-008, US1 scenarios 1 to 16, US2 1 to 7, US3 1 to 15;
 - plan.md: decisions 1 to 20 and the phase list;
 - research.md: R-01 to R-18, with R-05a;
 - data-model.md;
@@ -46,6 +46,10 @@ Rules for every scenario:
 - Node 22 in this container, 26.13.0 in CI. Browser runs set `OCELLE_CHROMIUM_PATH` as
   `knowledge/speckit-flows/findings/frontend-missions.md` § Browser path describes.
 - One heavy job (browser suites, mutation, plants) at a time. Never `git stash`.
+- **Run time** (reported 2026-11-15): a full `pnpm test` now takes more than 30 minutes (Phase 3 measured 11 m 16 s
+  at `1868fb5`), and a `gate:mutation` run on elements source about 16 minutes, its dry run alone about 5.5. Plan
+  each full run as a background job with its log kept in the phase directory, and run the single projects
+  (`--project …`) while iterating.
 - **Shared files** with the parallel missions 009 to 011 (`packages/elements/src/index.ts`, `test/exports.test.ts`,
   `package.json` `exports`, `custom-elements.json`, the README and CHANGELOGs, `storybook/.storybook/*`,
   `packages/tokens/src/source.ts`, `test/expected.ts`): conflicts are resolved by merging `main`, never by rebasing.
@@ -339,7 +343,7 @@ the driver as it was.
 ## Phase 4: User Story 3 - A tooltip that meets WCAG 1.4.13 (Priority: P3)
 
 **Goal**:
-- US3 scenarios 1 to 14;
+- US3 scenarios 1 to 15;
 - FR-029 to FR-041;
 - the `tooltip-delay` and `tooltip-max-inline` tokens;
 - the engine floor raised to WebKit 17.
@@ -363,20 +367,32 @@ the visual and axe gates (after #10).
   - host layout (`display: contents`, the pill still ellipsises);
   - the accessibility tree with and without `describes`;
   - the `describes` lifecycle: `textContent` only, a unique id, the host's ids kept, the observer re-adding the id, the span re-created after one microtask, slot change;
-  - forced colours.
-- [ ] T042 [P] [US3] Write the runners `packages/elements/test/tooltip.test.ts` and `test/browser/tooltip.test.ts` (fixture `tooltip.html`). Write `packages/elements/test/tooltip.touch.test.ts` and `test/browser/tooltip.touch.test.ts` for the touch row (a tap on a button trigger: the action runs, no bubble). Write `packages/elements/test/tooltip-no-popover.test.ts` (in process, `showPopover` removed before definition: nothing shows, no box, nothing throws).
+  - forced colours;
+  - click focus, then hover (matrix § Tooltip "Click focus, then hover", US3-12, analysis C3): the bubble shown after the delay hides when the pointer leaves both boxes while the trigger keeps focus, is not shown at any frame of a bounded 900 ms wait, and shows again only after the pointer rests on the trigger again or focus arrives with `:focus-visible`;
+  - no animation (analysis C2): `animations()` on the bubble part and its painted box is empty after the show, through the persistence wait and after the hide, motion allowed;
+  - bubble styles (analysis U2): the painted box's four corner radii equal the computed `radius-2` (not `radius-pill`), `padding-block` `space-1`, `padding-inline` `space-2`; the bubble part's padding `space-2` on the trigger's side only;
+  - neither side fits (analysis A2): `placement="top"` in a 1280 × 120 viewport, the bubble stays on top, not flipped, cross axis inside the viewport less `gutter`;
+  - theme change while shown inside an open dialog (analysis C6): the bubble's and the panel's computed colours follow `data-theme` within one frame, the bubble stays shown, no event.
+- [ ] T042 [P] [US3] Write the runners `packages/elements/test/tooltip.test.ts` and `test/browser/tooltip.test.ts` (fixture `tooltip.html`), each test named by its row's full name, never by a `$name` interpolation (Rules § Full test names). Write `packages/elements/test/tooltip.touch.test.ts` and `test/browser/tooltip.touch.test.ts` for the touch row (a tap on a button trigger: the action runs, no bubble). Write `packages/elements/test/tooltip-no-popover.test.ts` (in process, `showPopover` removed before definition: nothing shows, no box, nothing throws).
 - [ ] T043 [P] [US3] Write `packages/elements/test/entry-tooltip.test.ts` and update the exports keys. The `manifest.test.ts` entry for `ocelle-tooltip` must list:
   - `text` (default `""`), `placement` (`"top" | "bottom" | "start" | "end"`, default `"top"`, reflected), `disabled` (reflected), `describes` (reflected);
   - the default slot and the `description` slot;
   - part `bubble`;
   - an empty events list.
 
+  The manifest gate's repository counts go from 4 to 5 elements (`manifest: 5 elements checked, no finding`) in `gates/test/manifest.test.ts` (both repository runs) and `gates/test/integration/manifest.test.ts`, written by hand (R-16 § Story counts, the counts outside its list).
+
   Add the dist files to the build and pack tests.
 - [ ] T044 [P] [US3] In `packages/elements/test/node/readme.test.ts`:
   - change the § Engines floor line (pinned at `:65`) to "Chromium 120+ and WebKit 17+", with the Popover API (Chromium 114, WebKit 17) as the newest feature;
-  - add the tooltip section fragments: the tokens read; the stated limits (text-field triggers, custom-element triggers with `describes`, touch); and #7's and #12's usage.
+  - add the tooltip section fragments:
+    - the tokens sentence of data-model § `ocelle-tooltip`, in the dialog's sentence form: "`ocelle-tooltip` reads the tokens `--ocelle-color-chrome`, `--ocelle-color-chrome-ink`, `--ocelle-radius-2`, `--ocelle-border-width`, `--ocelle-font-sans`, `--ocelle-font-size-sm`, `--ocelle-line-height-normal`, `--ocelle-space-1`, `--ocelle-space-2`, `--ocelle-gutter`, `--ocelle-tooltip-delay` and `--ocelle-tooltip-max-inline`" (analysis U1(a));
+    - the FR-037 statement (analysis U1(c)): the trigger carries its own accessible name; the bubble only repeats or supplements what is available otherwise; touch input shows no bubble, except on a text-field trigger, which shows it on any focus;
+    - FR-036's advice (analysis U1(c)): set `describes` when the text adds to the trigger's name;
+    - the stated limits (text-field triggers, custom-element triggers with `describes`, touch);
+    - #7's and #12's usage.
 - [ ] T045 [P] [US3] Tokens: add the `tooltip-delay` row (group `motion`, `500ms`) and the `tooltip-max-inline` row (group `size`, `18rem`) to `packages/tokens/test/expected.ts`, and the computed values to `tokens-browser`. Test that the reduced-motion block still sets only `motion-fast` and `motion-base`, so `tooltip-delay` is not zeroed (brand rule (f)). Add the README and CHANGELOG checks.
-- [ ] T050 [P] [US3] Red, in `storybook/test/integration/elements-stories.test.ts`: the tooltip stories of data-model § Stories exist in light and dark. In a page with viewport 1280 × 800 and `reducedMotion: "reduce"`, the mouse moves to the centre of each story's trigger (the selector, written by hand, that the story's `parameters.ocelle.pointer.hover` names: an id or data attribute, R-16); that box lies wholly inside 1280 × 800, and after `fonts.ready` and two frames the bubble is `:popover-open`. The parameter itself is proven by `gate:visual` and `gate:axe` (`pointer-target`) at T052. The red commit also holds the story-count updates of R-16 (operator decision D), written by hand from the story files: `gates/test/integration/storybook-build.test.ts` (`built 44 stories`), `gates/test/integration/axe.test.ts` and `gates/test/integration/visual.test.ts` (88 story-themes), counted again after any merge of `main` (R-17). Part of T046's red commit.
+- [ ] T050 [P] [US3] Red, in `storybook/test/integration/elements-stories.test.ts`: the tooltip stories of data-model § Stories exist in light and dark. In a page with viewport 1280 × 800 and `reducedMotion: "reduce"`, the mouse moves to the centre of each story's trigger (the selector, written by hand, that the story's `parameters.ocelle.pointer.hover` names: an id or data attribute, R-16); that box lies wholly inside 1280 × 800, and after `fonts.ready` and two frames the bubble is `:popover-open`. The bubble being open two frames after the move holds only with R-16's delay override, so this check is also the red test of `[data-story="tooltip"] { --ocelle-tooltip-delay: 0ms; }`; the test also asserts that each story's trigger lies inside a `[data-story="tooltip"]` element and that the computed `--ocelle-tooltip-delay` on the trigger is `0ms`. The parameter itself is proven by `gate:visual` and `gate:axe` (`pointer-target`) at T052. The red commit also holds the story-count updates of R-16 (operator decision D), written by hand from the story files: `gates/test/integration/storybook-build.test.ts` (`built 44 stories`), `gates/test/integration/axe.test.ts` and `gates/test/integration/visual.test.ts` (88 story-themes), counted again after any merge of `main` (R-17). It also holds the counts outside R-16's list (R-16 § Story counts): the axe gate's unlabelled-button plant run in `gates/test/integration/axe.test.ts` (`axe: 2 findings in 90 story-theme runs`, the repository's 88 and the plant's 2), the repository's baseline files in `gates/test/integration/plant-repo.test.ts` (`toHaveLength(88)`) and the baseline-command test of `gates/test/integration/visual.test.ts` (88 baseline files). Before the commit, search the repository for every Phase 3 value (`35 stories`, `70 story-themes`, `72 story-theme`, `toHaveLength(70)`, `toBe(70)` (the baseline-command test, `visual.test.ts:244` at Phase 3), `70 captures`, `70 baseline`, and T043's `4 elements`) and update each copy in a test by hand; the Stryker comments in gate source that quote the renamed titles change with the green (comment text only). Part of T046's red commit.
 - [ ] T046 [US3] Make the red commit of T041 to T045 and T050. `red.sh 4 phase` must show each failing for the missing element, token, floor text or stories.
 
 ### Implementation (green)
@@ -390,7 +406,9 @@ the visual and axe gates (after #10).
     - the UA `[popover]` styles reset;
     - colours `color-chrome` and `color-chrome-ink`; forced colours `Canvas`, `CanvasText` and a `CanvasText` border;
     - `max-inline-size: var(--ocelle-tooltip-max-inline)`, wrapping unbreakable strings;
-    - the transparent `--ocelle-space-2` padding on the trigger's side.
+    - the transparent `--ocelle-space-2` padding on the trigger's side, 0 on the other three, and no radius or ground on the part;
+    - the painted box (the part's only element child): `border-radius: var(--ocelle-radius-2)` on all four corners, never `radius-pill` (constitution II), `padding-block: var(--ocelle-space-1)`, `padding-inline: var(--ocelle-space-2)`, `font-sans` at `font-size-sm` with `line-height-normal` (R-09, data-model § `ocelle-tooltip` Shape);
+    - no animation of any kind (US3-8).
   - **Show and hide**:
     - hover tracked by `pointerover`/`pointerout` with `relatedTarget`, ignoring `touch`;
     - the delay read from the computed `--ocelle-tooltip-delay`, through `setTimeout` with a function; 0 ms shows synchronously;
@@ -408,20 +426,21 @@ the visual and axe gates (after #10).
   - the regenerated manifest;
   - the README tooltip section, and § Engines raised to WebKit 17;
   - CHANGELOG entries for `@ocelle/elements` (`ocelle-tooltip` and the floor) and `@ocelle/tokens`;
-  - `storybook/.storybook/stories-layout.css`: the rule `[data-story="tooltip"] { --ocelle-tooltip-delay: 0ms; }` (R-16, operator decision A), with a comment in the file's style.
+  - `storybook/.storybook/stories-layout.css`: the rule `[data-story="tooltip"] { --ocelle-tooltip-delay: 0ms; }` (R-16, operator decision A), with a comment in the file's style;
+  - the floor consumers again (FR-040, R-10, analysis I5): search the whole workspace at this point, after any merge of `main`, for `engines`, `browserslist` (a key or a `.browserslistrc`) and `build.target` (Vite, esbuild, or a `tsconfig` `target` read as an engine floor); each browser floor found follows Chromium 120 / WebKit 17 in this task; the root `package.json` `engines` is Node's and stays. Record the search and its result in `reviews/phase-4/notes.md`.
 
-  Run the suites green, including `elements-touch`, then the gates as in T037.
+  Run the suites green, including `elements-touch`, then the gates as in T037. Mutation: `gate:mutation -- --base <phase base> --plan` first, then one `gate:mutation -- --base <phase base> --files <entries>` run per planned shard (`ocelle-tooltip.ts` in its 30-line entries, `overlay.ts` for the hide-on-open call, `index.ts`, `packages/tokens/src/source.ts`), each with the gate unmodified (no scratch runner) and `stryker.elements.config.json` as committed (`dryRunTimeoutMinutes` 30; R-15). Record each run's result and every report line in `reviews/phase-4/notes.md` § Mutation and `reviews/phase-4/mutation.log`, with the dry run's measured time; any survivor is handled test first, its failing run kept as a `red-*.log` in the phase directory; every Timeout line is named with its cause (R-15). Do not change `.github/workflows/ci.yml`: its `mutation-shard` limit is op 015's (R-15, plan decision 25).
 
 ### Stories (green, after T049)
 
-- [ ] T051 [US3] Green: `storybook/stories/tooltip.stories.ts`, each story's markup inside `<div data-story="tooltip">` (the delay override, R-16), each pointer selector an id or data attribute matching exactly one element.
-- [ ] T052 [US3] Produce the baselines; run `gate:storybook-build` (`built 44 stories`), `gate:visual` and `gate:axe`; commit the baselines. Then add a `differs` line to `gates/plants/visual/fail-token-changed/plant.json` for each new light story-theme that shows `color-ink`, measured in the pinned container as 006 T046s did (R-16), commit it with the baselines, and run `gate:plants`.
+- [ ] T051 [US3] Green: `storybook/stories/tooltip.stories.ts`, each story's markup inside `<div data-story="tooltip">` (the delay override, R-16), each pointer selector an id or data attribute matching exactly one element. The inside-an-open-dialog story keeps the dialog body short enough not to scroll at 1280 × 800. If a tooltip story has a scrolling body after all, R-16's scroll-edge rule applies: an empty `<div data-story="tooltip-scroll-edge">` across the body's scroll edge, sized only by its own `[data-story="tooltip-scroll-edge"]` block-size rule in `storybook/.storybook/stories-layout.css`, with no text, role, name or `style` attribute and no `a11y-exceptions.json` entry.
+- [ ] T052 [US3] Produce the baselines in the pinned container; run `gate:storybook-build` (`built 44 stories`), `gate:visual` (88 captures match) and `gate:axe` (88 story-theme runs, 0 serious or critical, no new `a11y-exceptions.json` entry; a `color-contrast-incomplete` node stops for the operator, R-16); commit the baselines (88 files in `storybook/baselines/`, so T050's `plant-repo.test.ts` and baseline-command counts pass, and the axe plant run gives 90). Then add a `differs` line to `gates/plants/visual/fail-token-changed/plant.json` for each new light story-theme that shows `color-ink`, measured in the pinned container as 006 T046s did (R-16), commit it with the baselines, and run `gate:plants` (at least shards 16, 19 and 27, as in Phases 2 and 3; the rest is CI's). After any fix that lands after the baselines (a story, stylesheet or element change), produce the baselines again and re-run `gate:visual` and `gate:axe`, and shard 16 if a light story-theme changed.
 
 ### Record (FR-041)
 
-- [ ] T053 [US3] Record the WebKitGTK version Kitty Desktop ships, read from its build files, against WebKit 17 in research R-10 and `reviews/phase-4/notes.md`. If it is below WebKit 17, stop and ask the operator before the phase is approved (plan Risks).
+- [ ] T053 [US3] Record Kitty Desktop's WebKitGTK version against WebKit 17 (FR-041). Outcome, decided by the operator on 2026-11-15 (plan decision 26, spec § Operator decisions in Phase 4) and already in research R-10: **not yet determinable: Kitty Desktop has no webview until kitty-mission-ui #20** (at kitty-mission-ui `c994c8e` its Tauri crate is a compile-only placeholder with no dependencies, and no WebKitGTK version is pinned anywhere). The floor stays Chromium 120 / WebKit 17. Remaining work: write the hand-off in `reviews/phase-4/notes.md`: the outcome and the evidence above; that #20, when it adds Tauri 2 on Linux (the distro's webkit2gtk-4.1), must choose a WebKitGTK that meets WebKit 17 (by R-10's reading the 2.44 line or later, unverified); and that the elements README § Engines states that floor (T044, T049). T053 does not block Phase 4's approval.
 
-**Checkpoint**: `tdd-check.sh 4` reports `pass`.
+**Checkpoint**: a full `pnpm test` passes at HEAD (more than 30 minutes, Environment § Run time; log kept in `reviews/phase-4/`), then `tdd-check.sh 4` reports `pass`.
 
 ---
 
