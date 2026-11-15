@@ -18,7 +18,7 @@ import { setAnnouncerTimingForTests } from "../src/live.ts";
 import type { AnnouncerTiming } from "../src/live.ts";
 import type { Delays, Snapshot } from "./live-reading.ts";
 import { decodePng } from "./pixels.ts";
-import type { Box, Drawing, Entries, InProcessDriver, InsertHow, Operation, Paint, Part, Placement, Sheets } from "./scenarios/driver.ts";
+import type { Box, Drawing, Entries, Heard, InProcessDriver, InsertHow, Operation, Paint, Part, Placement, Sheets, Validity } from "./scenarios/driver.ts";
 
 /**
  * The one timing constant of the in-process run (specs/010-feedback-forms research R-09, contracts/testing.md
@@ -168,6 +168,57 @@ function built(markup: string): Node[] {
 /** The keyboard syntax of `text` typed as it is (`{` and `[` doubled). */
 const typed = (text: string): string => text.replace(/[{[]/g, (char) => char + char);
 
+/**
+ * The keyboard syntax of a key name, a chord such as `Shift+Tab` held down around its last key (specs/010-feedback-forms
+ * phase 3).
+ */
+function keys(key: string): string {
+  const parts = key.split("+");
+  const last = parts.pop() ?? key;
+  return `${parts.map((held) => `{${held}>}`).join("")}{${last}}${parts.reverse().map((held) => `{/${held}}`).join("")}`;
+}
+
+/** The events `listen` heard, and the listeners to remove at the next `mount`. */
+const heardEvents: Heard[] = [];
+const listening: (() => void)[] = [];
+
+/** The id of `target`, or its local name without one. */
+function nameOf(target: EventTarget | null): string {
+  if (!(target instanceof Element)) return "";
+  return target.id === "" ? target.localName : target.id;
+}
+
+const noValidity = { valid: false, valueMissing: false, typeMismatch: false, patternMismatch: false, tooLong: false, tooShort: false, rangeUnderflow: false, rangeOverflow: false, stepMismatch: false, badInput: false, customError: false } as ValidityState;
+
+/** The validity of `target` as the driver reports it. */
+function validityOf(target: Element): Validity {
+  const control = target as unknown as { validity?: ValidityState; validationMessage?: string; willValidate?: boolean };
+  // An element without a validity (one not upgraded, say) reads as no flag set, no message and not validated.
+  const validity = control.validity ?? noValidity;
+  return {
+    valid: validity.valid,
+    valueMissing: validity.valueMissing,
+    typeMismatch: validity.typeMismatch,
+    patternMismatch: validity.patternMismatch,
+    tooLong: validity.tooLong,
+    tooShort: validity.tooShort,
+    rangeUnderflow: validity.rangeUnderflow,
+    rangeOverflow: validity.rangeOverflow,
+    stepMismatch: validity.stepMismatch,
+    badInput: validity.badInput,
+    customError: validity.customError,
+    message: control.validationMessage ?? "",
+    willValidate: control.willValidate ?? false,
+  };
+}
+
+/** The ids a property value holds: an element's, each item's of a list, none for null or undefined. */
+function idsOf(value: unknown): string[] {
+  if (value === null || value === undefined) return [];
+  if (value instanceof Element) return [value.id];
+  return [...(value as Iterable<Element>)].map((each) => each.id);
+}
+
 /** Elements a `batch` `remove` took out of the page, by id, for a later `move`. */
 const removed = new Map<string, Element>();
 
@@ -227,6 +278,8 @@ export function inProcessDriver(): InProcessDriver {
     mount: async (markup, options = {}) => {
       useTestTiming();
       restoreReadyState();
+      for (const stop of listening.splice(0)) stop();
+      heardEvents.length = 0;
       removed.clear();
       submissions.clear();
       keyed = false;
@@ -428,7 +481,7 @@ export function inProcessDriver(): InProcessDriver {
     press: async (id, key) => {
       element(id).focus();
       keyed = true;
-      await userEvent.keyboard(`{${key}}`);
+      await userEvent.keyboard(keys(key));
       await settle();
     },
     blur: async () => {
@@ -466,6 +519,52 @@ export function inProcessDriver(): InProcessDriver {
       if (value !== null) readyState = vi.spyOn(document, "readyState", "get").mockReturnValue(value);
       return Promise.resolve();
     },
+    // The phase 3 steps (specs/010-feedback-forms T031 to T033).
+    axDetails: (id) => commands.axTree(id, "details"),
+    listen: (ids, types) => {
+      for (const id of ids) {
+        const target = element(id);
+        for (const type of types) {
+          const listener = (event: Event): void => {
+            const detail = (event as CustomEvent<unknown>).detail;
+            heardEvents.push({
+              type: event.type,
+              at: id,
+              target: nameOf(event.target),
+              value: plain((target as unknown as Record<string, unknown>).value),
+              detail: detail === undefined || detail === null ? null : structuredClone(detail),
+              bubbles: event.bubbles,
+              composed: event.composed,
+            });
+          };
+          target.addEventListener(type, listener);
+          listening.push(() => {
+            target.removeEventListener(type, listener);
+          });
+        }
+      }
+      return Promise.resolve();
+    },
+    heard: () => Promise.resolve(heardEvents.splice(0)),
+    validity: (id) => Promise.resolve(validityOf(element(id))),
+    ids: (id, name) => Promise.resolve(idsOf((element(id) as unknown as Record<string, unknown>)[name])),
+    typeOf: (id, name) => Promise.resolve(typeof (element(id) as unknown as Record<string, unknown>)[name]),
+    has: (id, name) => Promise.resolve(name in element(id)),
+    call: async (id, method, ...args) => {
+      const target = element(id) as unknown as Record<string, (...given: unknown[]) => unknown>;
+      const result = target[method]?.(...args);
+      await settle();
+      return plain(result);
+    },
+    propertyIn: (id, inner, name) => {
+      const target = element(id).shadowRoot?.querySelector(inner);
+      return Promise.resolve(target === null || target === undefined ? null : plain((target as unknown as Record<string, unknown>)[name]));
+    },
+    pseudoIn: (id, inner, pseudo, property) => {
+      const target = element(id).shadowRoot?.querySelector(inner);
+      return Promise.resolve(target === null || target === undefined ? "" : getComputedStyle(target, pseudo).getPropertyValue(property));
+    },
+    instanceOf: (id, constructor) => Promise.resolve(element(id) instanceof (constructor as unknown as typeof HTMLElement)),
   };
   // Every step ends at its own page time, from which `after` measures.
   for (const [name, step] of Object.entries(driver)) {
