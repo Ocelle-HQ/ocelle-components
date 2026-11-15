@@ -609,33 +609,36 @@ export const linkScenarios: readonly Scenario[] = [
     },
   },
   {
-    name: 'US2-12: host rules on ocelle-button:state(expanded), :state(pressed) and :state(current) match while the moved aria-expanded and aria-pressed are "true" and aria-current is any value but "false"; after "false" or "" they no longer match (FR-004)',
+    name: 'US2-12: host rules on ocelle-button:state(expanded), :state(pressed) and :state(current) match while the moved aria-expanded and aria-pressed are "true" and aria-current is any value but "false"; after "false" or "" they no longer match; :state(pressed) follows the moved aria-pressed in link mode too, where the inner <a> carries no aria-pressed (FR-004)',
     run: async (driver) => {
-      await driver.mount('<ocelle-button id="e" aria-expanded="true">A</ocelle-button> <ocelle-button id="p" aria-pressed="true">B</ocelle-button> <ocelle-button id="c" aria-current="page">C</ocelle-button> <ocelle-button id="n">N</ocelle-button>');
+      await driver.mount('<ocelle-button id="e" aria-expanded="true">A</ocelle-button> <ocelle-button id="p" aria-pressed="true">B</ocelle-button> <ocelle-button id="c" aria-current="page">C</ocelle-button> <ocelle-button id="n">N</ocelle-button> <ocelle-button id="lp" href="#here" aria-pressed="true">L</ocelle-button>');
       await driver.rules(stateRules);
-      const all = async (): Promise<unknown> => ({ e: await states(driver, "e"), p: await states(driver, "p"), c: await states(driver, "c"), n: await states(driver, "n") });
+      const all = async (): Promise<unknown> => ({ e: await states(driver, "e"), p: await states(driver, "p"), c: await states(driver, "c"), n: await states(driver, "n"), lp: await states(driver, "lp") });
       const set = await all();
-      for (const [id, name] of [["e", "aria-expanded"], ["p", "aria-pressed"], ["c", "aria-current"]] as const) await driver.setAttribute(id, name, "false");
+      for (const [id, name] of [["e", "aria-expanded"], ["p", "aria-pressed"], ["c", "aria-current"], ["lp", "aria-pressed"]] as const) await driver.setAttribute(id, name, "false");
       const off = await all();
       await driver.setAttribute("c", "aria-current", "step");
       await driver.setAttribute("e", "aria-expanded", "true");
+      await driver.setAttribute("lp", "aria-pressed", "true");
       const again = await all();
       await driver.setAttribute("c", "aria-current", "");
       await driver.setAttribute("e", "aria-expanded", "");
-      return { set, off, again, empty: await all(), axe: await severe(driver) };
+      await driver.setAttribute("lp", "aria-pressed", "");
+      return { set, off, again, empty: await all(), link: await inner(driver, "lp"), axe: await severe(driver) };
     },
     expected: {
-      set: { e: ["expanded"], p: ["pressed"], c: ["current"], n: [] },
-      off: { e: [], p: [], c: [], n: [] },
-      again: { e: ["expanded"], p: [], c: ["current"], n: [] },
-      empty: { e: [], p: [], c: [], n: [] },
+      set: { e: ["expanded"], p: ["pressed"], c: ["current"], n: [], lp: ["pressed"] },
+      off: { e: [], p: [], c: [], n: [], lp: [] },
+      again: { e: ["expanded"], p: [], c: ["current"], n: [], lp: ["pressed"] },
+      empty: { e: [], p: [], c: [], n: [], lp: [] },
+      link: { tag: "a", href: "#here" },
       axe: [],
     },
   },
   {
-    name: 'US2-13, copies: after aria-label="Close" and aria-current="page" are moved, the host carries data-ocelle-moved-aria-label="Close" and data-ocelle-moved-aria-current="page"; a copy parsed from its outerHTML and a cloneNode(true) copy are each named Close, report aria-current page, match :state(current) and have neither host attribute; after aria-current="false" the mirror reads "false" and after aria-label="" its mirror is gone (FR-004)',
+    name: 'US2-13, copies: after aria-label="Close dialog" (content Close, so the name can come only from the moved label) and aria-current="page" are moved, the host carries data-ocelle-moved-aria-label="Close dialog" and data-ocelle-moved-aria-current="page"; a copy parsed from its outerHTML and a cloneNode(true) copy are each named "Close dialog", report aria-current page, match :state(current) and have neither host attribute; after aria-current="false" the mirror reads "false" and after aria-label="" its mirror is gone (FR-004)',
     run: async (driver) => {
-      await driver.mount('<div id="live"><ocelle-button id="b" aria-label="Close" aria-current="page">Close</ocelle-button></div><div id="parsed"></div><div id="cloned"></div>');
+      await driver.mount('<div id="live"><ocelle-button id="b" aria-label="Close dialog" aria-current="page">Close</ocelle-button></div><div id="parsed"></div><div id="cloned"></div>');
       await driver.rules(stateRules);
       const mirrors = { label: await hostPair(driver, "b", "aria-label"), current: await hostPair(driver, "b", "aria-current") };
       await driver.copy("b", "outerHTML", "parsed");
@@ -652,19 +655,19 @@ export const linkScenarios: readonly Scenario[] = [
       return { mirrors, copies, after: { current: await hostPair(driver, "b", "aria-current"), label: await hostPair(driver, "b", "aria-label") }, axe: await severe(driver) };
     },
     expected: {
-      mirrors: { label: { host: null, mirror: "Close" }, current: { host: null, mirror: "page" } },
+      mirrors: { label: { host: null, mirror: "Close dialog" }, current: { host: null, mirror: "page" } },
       copies: {
-        parsed: { name: "Close", current: "page", states: ["current"], host: [null, null] },
-        cloned: { name: "Close", current: "page", states: ["current"], host: [null, null] },
+        parsed: { name: "Close dialog", current: "page", states: ["current"], host: [null, null] },
+        cloned: { name: "Close dialog", current: "page", states: ["current"], host: [null, null] },
       },
       after: { current: { host: null, mirror: "false" }, label: { host: null, mirror: null } },
       axe: [],
     },
   },
   {
-    name: 'US2-13, morph: a morph that applies the unchanged server markup <ocelle-button aria-label="Close" aria-current="page"> to the live element leaves both mirrors with their values and the inner control named Close with aria-current page; a copy through the container\'s innerHTML afterwards is named Close with aria-current page; a mirror the host removes, and one it overwrites, read their stored values again (FR-004)',
+    name: 'US2-13, morph: a morph that applies the unchanged server markup <ocelle-button aria-label="Close dialog" aria-current="page">Close</ocelle-button> to the live element leaves both mirrors with their values and the inner control named "Close dialog" with aria-current page; a copy through the container\'s innerHTML afterwards is named "Close dialog" with aria-current page; a mirror the host removes, and one it overwrites, read their stored values again (FR-004)',
     run: async (driver) => {
-      const server = '<ocelle-button id="m" aria-label="Close" aria-current="page">Close</ocelle-button>';
+      const server = '<ocelle-button id="m" aria-label="Close dialog" aria-current="page">Close</ocelle-button>';
       await driver.mount(`<div id="live">${server}</div><div id="copied"></div>`);
       await driver.morph("m", server);
       const morphed = {
@@ -685,9 +688,9 @@ export const linkScenarios: readonly Scenario[] = [
       };
     },
     expected: {
-      morphed: { label: { host: null, mirror: "Close" }, current: { host: null, mirror: "page" }, name: "Close", inner: "page" },
-      copied: { name: "Close", current: "page" },
-      restored: { label: "Close", current: "page", inner: "page", name: "Close" },
+      morphed: { label: { host: null, mirror: "Close dialog" }, current: { host: null, mirror: "page" }, name: "Close dialog", inner: "page" },
+      copied: { name: "Close dialog", current: "page" },
+      restored: { label: "Close dialog", current: "page", inner: "page", name: "Close dialog" },
       axe: [],
     },
   },
