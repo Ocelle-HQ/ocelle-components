@@ -217,7 +217,6 @@ export class OcelleFacts extends LitElement {
     this.requestUpdate();
   }
 
-  // Stryker disable next-line BlockStatement: equivalent, the cleanup of a sheet out of the document has no observable effect: kept observers, a pending frame or a listener only re-run the idempotent pass on a box that is not rendered, and a reconnection renders and measures again
   override disconnectedCallback(): void {
     // Stryker disable next-line CallExpression: equivalent, Lit's own disconnection only notifies reactive controllers, which this element has none of
     super.disconnectedCallback();
@@ -229,7 +228,6 @@ export class OcelleFacts extends LitElement {
     // Stryker disable next-line CallExpression: equivalent, a pending pass runs on a sheet out of the document, which shows nothing; a reconnection measures again
     cancelAnimationFrame(this.#frame);
     this.#frame = 0;
-    // Stryker disable next-line StringLiteral, CallExpression: equivalent, a kept listener only re-runs the idempotent pass on a sheet out of the document, and adding the same listener on reconnection does not add a second
     window.removeEventListener("resize", this.#resized);
   }
 
@@ -305,8 +303,7 @@ export class OcelleFacts extends LitElement {
       const size = this.#inlineSize();
       const threshold = this.#threshold();
       classes.toggle("cols-1", size < threshold);
-      // Stryker disable next-line ConditionalExpression: equivalent, below the threshold cols-1 is set too, and its one-track rule comes after the two-track rule at the same specificity, so the layout is one column either way
-      classes.toggle("cols-2", size >= threshold && size < 2 * threshold);
+      classes.toggle("cols-2", size < 2 * threshold);
       return;
     }
     classes.remove("cols-2", "cols-1");
