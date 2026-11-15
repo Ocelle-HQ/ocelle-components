@@ -1,7 +1,8 @@
 # Implementation Plan: A phase judges only the plants its diff can affect
 
 **Op**: `ops/016-plants-affected` | **Date**: 2026-11-15 | **Spec**: `spec.md` | **Record**: `op.md`
-**Input**: triage `triage/016-plants-affected.md`, operator decisions Q1 A, Q2 B, Q3 C, Q4 A (`op.md`)
+**Input**: triage `triage/016-plants-affected.md`, operator decisions Q1 A, Q2 B, Q3 C, Q4 A (`op.md`); operator round 3
+of phase 1 (`reviews/phase-1/round-3.md`, 2026-11-15), whose answers this plan follows where it says "round 3"
 
 ## Summary
 
@@ -47,6 +48,20 @@ Unchanged, and the review checks it: `.github/workflows/ci.yml`, `gates/test/ci-
 `shardSize`, `otherShardSize`, `gates/lib/plant-repo.ts`, every existing plant directory, and
 `.claude/skills/ocelle-land/SKILL.md`.
 
+### Files of operator round 3 (phase 1, label `fix-3`)
+
+| File | Change | Finding |
+|---|---|---|
+| `gates/test/plant-runner.test.ts` | Red: the element and token cases, the `gates/bin/prefix.ts` case, the pin grown to `manifest`, `contrast` and `brand-rules`, and the cross-import pin. | O3-01, O3-05 |
+| `gates/test/integration/fold-history.test.ts` (new) | Red: a fold that rewrites a phase's base commit also rewrites the `- base:` line of its `plants.md`. | O3-04 |
+| `gates/test/integration/plants.test.ts` | A `git diff` failure exits 2 (no red: present behaviour). | O3-02 |
+| `gates/lib/plant-runner.ts` | `gateEntryImports`; class 3 and class 5 as below. `repositoryContentPlants` keeps its ten entries. | O3-01, O3-05 |
+| `gates/bin/plants.ts` | Only the two `Stryker disable` records on `failed` and its `return { cause }` in `changed`: they name the new test. | O3-02 |
+| `tooling/speckit/bin/fold-history.sh` | Remap `plants.md`'s `- base:` line; let the outside-evidence check allow that line only; header comment and remap commit message. | O3-04 |
+| `.claude/skills/ocelle-run/SKILL.md` | The fold step's list of remapped files gains `plants.md`'s base line (one phrase). | O3-04 |
+| `gates/README.md` | The *README paragraph* below, as amended by round 3. | O3-01, O3-05 |
+| `specs/006-storybook-workbench/contracts/plants.md`, `specs/006-storybook-workbench/contracts/gates.md` | One dated amendment each (2026-11-15, op 016). | O3-03 |
+
 ## Approach
 
 ### Path classes (Q1 A, Q3 C)
@@ -77,8 +92,10 @@ in this order. The first class that matches decides for that path.
    `<g>/<c>` if it is in `plants`, and every plant `<g>/<x>` whose `baselinesOf` is `<c>`. Any other path under
    `gates/plants/` is unmapped: an unknown gate directory, or a file directly in `gates/plants/` or
    `gates/plants/<g>/`.
-3. **A gate entry.** For `gates/bin/<id>.ts`, where `<id>` is a registered gate id: every plant `<id>/*`.
-   `gates/bin/plants.ts` is the plant job itself, so it is shared gate source. `plants` is not a registered gate id,
+3. **A gate entry.** For `gates/bin/<id>.ts`, where `<id>` is a registered gate id: every plant `<id>/*`, and
+   every plant `<g>/*` for each pair `{ entry: <id>, importer: <g> }` of `gateEntryImports` (round 3, O3-05; today
+   one pair, `prefix` imported by `brand-rules`, for `monospaceFamilies`). `gates/bin/plants.ts` is the plant job
+   itself, so it is shared gate source. `plants` is not a registered gate id,
    so this class never matches it. Other files in `gates/bin/` (`baselines.ts`, `setup-offline.ts`) are shared, too.
 4. **The workflow.** `.github/workflows/ci.yml`: every plant `plants/*`. The registry check itself always runs (Q2 B).
 5. **Repository content: `repositoryContentPlants` (`repositoryContentPath`).** These paths:
@@ -87,6 +104,18 @@ in this order. The first class that matches decides for that path.
      the plans they name);
    - `packages/*/src/**`, `packages/tokens/**` and `packages/elements/custom-elements.json`;
    - but not `packages/*/package.json` and not `packages/*/tsconfig*.json`: these are configuration, class 6.
+
+   Such a path selects the `repositoryContentPlants`. In addition (round 3, O3-01, the operator's "Widen by gate"):
+   - an **element path**, `packages/elements/src/**` or `packages/elements/custom-elements.json`, selects every
+     `manifest/*` plant: most of them overlay one file on the repository's element source and manifest, which the
+     configuration set copies, so a documented-surface change can make them stale;
+   - a **token path**, any class-5 path under `packages/tokens/`, selects every `contrast/*`, `brand-rules/*` and
+     `style-lint/*` plant: most contrast and brand-rules plants are deltas over the repository's `source.ts` and
+     `pairs.json`, and the style-lint plants' `var(--ocelle-…)` uses are judged against the token source.
+
+   Each plant is still noted with the first changed path that selected it. Other repository-content paths (stories,
+   the Storybook configuration and scripts, baselines, the axe exceptions, plans, `packages/styles/src/**`) select
+   only the `repositoryContentPlants`, so SC-001's ten plants hold for story and baseline phases.
 6. **Everything else selects the full set.**
    - `"shared gate source"`: `gates/lib/**`, `gates/gates.json`, every file in `gates/bin/` that class 3 does not
      match, `gates/eslint/**` and `gates/stylelint/**`.
@@ -107,11 +136,21 @@ holds:
 Each entry carries a one-line reason in a comment. The list keeps the order above. The selector selects only the
 entries that are in `plants`.
 
-**The pin (Q3 C).** In `gates/test/plant-runner.test.ts`, `visual` and `axe` each have a literal list of every case
-directory of `gates/plants/<gate>/`, written out in the test, 48 and 25 names today. A test compares the directory
-listing with it. A new or removed plant fails that test. The author then adds the name to the pin, and to
-`repositoryContentPlants` if its expectation names repository content, and the review sees both. A second test
-checks that every `repositoryContentPlants` entry is an existing directory with a `plant.json`.
+**The pin (Q3 C, grown by round 3).** In `gates/test/plant-runner.test.ts`, `visual`, `axe`, `manifest`, `contrast`
+and `brand-rules` each have a literal list of every case directory of `gates/plants/<gate>/`, written out in the
+test: 48, 25, 12, 14 and 14 names today. A test compares the directory listing with it. A new or removed plant
+fails that test. The author then adds the name to the pin, and to `repositoryContentPlants` if its expectation names
+repository content, and the review sees both. A second test checks that every `repositoryContentPlants` entry is an
+existing directory with a `plant.json`. `style-lint` is not pinned: a token path selects all of it.
+
+**Cross-imports of gate entries (round 3, O3-05).** `gateEntryImports` in `gates/lib/plant-runner.ts` is a fixed
+list of `{ entry, importer }` pairs, both registered gate ids, each with a one-line reason in a comment. A test in
+`gates/test/plant-runner.test.ts` reads every `gates/bin/<id>.ts` of a registered gate id, collects its relative
+imports of another registered gate entry (`from "./<x>.ts"`, `import type`, and `import("./<x>.ts")`), and compares
+the whole sorted list of pairs with `gateEntryImports` using `toEqual`. A new cross-import fails it until the pair is
+listed, and then class 3 selects the importer's plants. Imports of files in `gates/bin/` that are not gate entries
+(`setup-offline.ts` imports `test.ts`) are out of the pin: `setup-offline.ts` is shared gate source and selects the
+full set.
 
 ### The mode (Q2 B)
 
@@ -129,7 +168,9 @@ Its real version in `realTools`:
    not resolve to a commit; pass the phase's base.sha`.
 2. `git diff --name-only --no-renames --no-ext-diff -z <base>`, plus `git ls-files --others --exclude-standard -z`.
    NUL-separated output, so no path quoting. Deduplicated and sorted.
-3. If git fails, the cause names its first stderr line.
+3. If git fails, the cause names its first stderr line. The integration test "a failing `git diff` exits 2"
+   (round 3, O3-02) covers this for `diff`: a junk `GIT_INDEX_FILE` lets `rev-parse` succeed and makes `git diff`
+   exit 128.
 
 The real tool carries the process-boundary `Stryker disable` comments that `realTools` uses, naming the
 integration test.
@@ -213,12 +254,36 @@ It is applied in `judgeRun`'s registry findings and in `registryRun`, after `sha
 Add one paragraph after the list of the three modes in "The split plant job". It says:
 - what `--affected <base>` and `--list` do;
 - the path classes in one sentence each, the fallback, and `repositoryContentPlants` with its pin;
+- that element paths also select every `manifest` plant, token paths every `contrast`, `brand-rules` and
+  `style-lint` plant, and a gate entry the plants of the gates that import it (`gateEntryImports`, pinned by a test)
+  (round 3);
 - the known limit: token values, `base.css`, fonts and element source also reach the visual plants' own stories and
-  the plants of `unit-tests` and `mutation`, and only CI's full set judges those;
+  the plants of `unit-tests` and `mutation`, and only CI's full set judges those. Round 3 removes the sentence on
+  `gates/bin/prefix.ts` from the limit, since the selector now covers it, and the pin sentence names the five
+  pinned gates;
 - that it is local only, and that `affected-in-ci` forbids it in the three plant jobs.
 
 In the `plants` row, add `--affected` in a CI plant job (`fail-affected-in-plant-check`) to the list of registry
-plants. No other existing line changes.
+plants. No other existing line changes (round 3 changes only this paragraph).
+
+### The history fold (round 3, O3-04)
+
+`tooling/speckit/bin/fold-history.sh` remaps, for each `reviews/phase-*/` with a `plants.md`, the SHA on its line
+`- base: <sha>` through the same `remap` as `base.sha`, rewriting that line only. The command line and the fenced
+output keep the SHA they were written with: they are a verbatim record, and `reviews/history-map.txt` resolves them.
+The outside-evidence check allows `reviews/phase-*/plants.md` when the diff between the old and the new head in that
+file is exactly the `- base:` line; any other change to it still fails the fold. The header comment and the remap
+commit's body name `plants.md`. The review step's "another base" check then holds after a fold that rewrites a
+phase's base.
+
+### The 006 contracts (round 3, O3-03)
+
+- `specs/006-storybook-workbench/contracts/plants.md`: a dated amendment (2026-11-15, op 016) after the modes table
+  that adds the `--affected <base> [--list]` mode, its exit-2 causes and its summary lines by reference to this
+  plan's *The mode* and *Output*, and after the registry lists that adds the plant `fail-affected-in-plant-check`
+  and the rule `affected-in-ci`.
+- `specs/006-storybook-workbench/contracts/gates.md`: a dated amendment after the registry check's rules
+  (`:164`) that adds `affected-in-ci`: a step of any of the three plant jobs that passes `--affected`.
 
 ## Test approach (red first)
 
@@ -265,6 +330,31 @@ The red commit holds only test files. It adds:
 `red.sh` must show each failing for that reason. If a namespace import does not fit the test-lint rules, a scaffold
 commit (`scaffold.sh`) adds the three exports with neutral bodies first.
 
+**Operator round 3 (phase 1).** The fix procedure (`speckit-story-fix`, round 3) runs these test-first:
+- **Red, one test-only commit, `red.sh 1 fix-3`:**
+  - `gates/test/plant-runner.test.ts`, on hand-written plant and gate lists with `toEqual` on the whole result:
+    an element source path and `packages/elements/custom-elements.json` each select the repository-content plants
+    and every `manifest` plant; `packages/tokens/src/source.ts` and `packages/tokens/contrast/pairs.json` each
+    select the repository-content plants and every `contrast`, `brand-rules` and `style-lint` plant;
+    `packages/tokens/package.json` still gives the full set; a story path still selects only the repository-content
+    plants; `gates/bin/prefix.ts` selects every `prefix` and `brand-rules` plant; `gates/bin/brand-rules.ts` selects
+    only `brand-rules`. Each fails red on the selection it gets today.
+  - the same file: the pin grown to the `manifest`, `contrast` and `brand-rules` lists (they pass at once: they pin
+    present directories), and the cross-import pin, which fails red because `gateEntryImports` is not exported.
+  - `gates/test/integration/fold-history.test.ts`: a temporary git repository with a feature dir holding one phase
+    (`base.sha`, `red-commits`, `plants.md`) and a commit before that phase's base, folded from before it, so that
+    the base commit gets a new SHA. It asserts `ok: true`, `plants.md`'s `- base:` line equal to the new `base.sha`,
+    and every other line of `plants.md` unchanged. It needs at least one unkept commit between the fold base and the
+    phase base, so that the base commit is folded with it and gets a new SHA. It fails red on the `- base:` line:
+    today's fold leaves the old SHA there.
+- **Not red:** `gates/test/integration/plants.test.ts`, the `git diff` failure (O3-02), in the fix commit. Checked by
+  hand mutation of `changed` (the `failed` test forced false, then reverted), and run against the code from before
+  the phase by the automatic check.
+- **Green, the fix commit:** `gateEntryImports`, class 3 and class 5 in `gates/lib/plant-runner.ts`, the two records
+  in `gates/bin/plants.ts`, `fold-history.sh`, the README paragraph, the 006 amendments, the `ocelle-run` phrase;
+  then the checks of *Green* below with `gate:mutation -- --base <phase base>`, and `plants.md` replaced by a new
+  `--affected <phase base>` run (it still selects the full set, by `gates/bin/plants.ts`).
+
 **Green:**
 - The code and the registry plant.
 - Then the docs and the flow text.
@@ -288,7 +378,7 @@ commit (`scaffold.sh`) adds the three exports with neutral bodies first.
 | V Storybook, tests prove behaviour | Not touched. No story or baseline changes. |
 | VI Consumer needs, own code | Pass: #41 is the need (the missions' phase cost). No copied code. |
 | VII Semantic versioning | Pass: no public surface. Gate CLI flags are not the public surface. Semver `none`. |
-| VIII Test-first, non-vacuous | Pass. The selector, mode and rule are red first, and the rule has a fail plant ("Gates are proven, too"). The changed gate source is mutation-tested. A wrong selection only skips a plant locally, and the required check judges it. |
+| VIII Test-first, non-vacuous | Pass. The selector, mode and rule are red first, and the rule has a fail plant ("Gates are proven, too"). The changed gate source is mutation-tested. A wrong selection only skips a plant locally, and the required check judges it. Round 3's behaviour changes (O3-01, O3-04, O3-05) are red first under `fix-3`; O3-02's missing test covers present behaviour, so it has no red commit, per the fix procedure. |
 | Development workflow, merge gates | Pass: **Plants** stays required and judges every plant. `affected-in-ci` stops a CI plant job from passing `--affected`. |
 
 No violation, so there is no Complexity Tracking entry.

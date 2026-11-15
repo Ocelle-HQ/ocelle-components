@@ -1,7 +1,8 @@
 # Op Specification: A phase judges only the plants its diff can affect
 
 **Op**: `ops/016-plants-affected` | **Issue**: #41 (option 1) | **Triage**: `triage/016-plants-affected.md`
-**Created**: 2026-11-15 | **Status**: started | **Operator decisions**: Q1 A, Q2 B, Q3 C, Q4 A (`op.md`)
+**Created**: 2026-11-15 | **Status**: started | **Operator decisions**: Q1 A, Q2 B, Q3 C, Q4 A (`op.md`); operator
+round 3 of phase 1, 2026-11-15 (`reviews/phase-1/round-3.md`, from the landing review `reviews/landing/round-1.md`)
 
 ## Intent
 
@@ -53,12 +54,31 @@ on recorded runs for the mode. One integration run with a real git repository co
 9. **Given** a `ci.yml` whose `plants`, `plants-shard` or `plants-plan` job has a step passing `--affected`, **When**
    the registry check runs, **Then** it reports an `affected-in-ci` finding for that job. The registry plant
    `fail-affected-in-plant-check` proves the rule.
-10. **Given** a new `visual` or `axe` plant directory that the test's pinned list does not hold, **When** the unit
-    tests run, **Then** the pin test fails until someone classifies the plant: they add it to the pin, and add it to
-    `repositoryContentPlants` if its expectation names repository content.
+10. **Given** a new `visual`, `axe`, `manifest`, `contrast` or `brand-rules` plant directory that the test's pinned
+    list does not hold, **When** the unit tests run, **Then** the pin test fails until someone classifies the plant:
+    they add it to the pin, and add it to `repositoryContentPlants` if its expectation names repository content.
 11. **Given** a finished phase, **When** it is reviewed, **Then** `reviews/phase-<N>/plants.md` exists, its base is
     the phase's `base.sha`, and its selection equals the one `--affected <base> --list` gives now. A missing record,
     another base, a different selection, or a recorded run that did not exit 0 is a blocking finding.
+12. **Given** a diff that changes `packages/elements/src/ocelle-brand-mark.ts` (or
+    `packages/elements/custom-elements.json`), **When** the selector runs, **Then** it selects the
+    `repositoryContentPlants` and every `manifest` plant, among them `manifest/pass-reordered`, and no other plant.
+    (Operator round 3, O3-01.)
+13. **Given** a diff that changes `packages/tokens/src/source.ts` (or `packages/tokens/contrast/pairs.json`),
+    **When** the selector runs, **Then** it selects the `repositoryContentPlants` and every `contrast`, `brand-rules`
+    and `style-lint` plant, and no other plant. `packages/tokens/package.json` still selects the full set. (O3-01.)
+14. **Given** a diff that changes `gates/bin/prefix.ts`, which the `brand-rules` entry imports, **When** the selector
+    runs, **Then** it selects every `prefix` plant and every `brand-rules` plant, and no other. (O3-05.)
+15. **Given** a registered gate entry in `gates/bin/` that imports another registered gate entry, and the pair is not
+    in `gateEntryImports`, **When** the unit tests run, **Then** the cross-import test fails until the pair is added
+    there, so the selector covers it. (O3-05.)
+16. **Given** a base that resolves, and a `git diff` that fails (for example with a junk `GIT_INDEX_FILE`), **When**
+    `gate:plants -- --affected <base>` runs, **Then** it exits 2 with `plants: could not run: git failed (<first
+    stderr line>)` and judges no plant. (O3-02: the behaviour is present, the test was missing.)
+17. **Given** a history fold whose base lies before a phase's `base.sha`, so that the fold rewrites that commit,
+    **When** `tooling/speckit/bin/fold-history.sh` remaps the evidence, **Then** the `- base:` line of that phase's
+    `reviews/phase-<N>/plants.md` names the new commit, equal to the remapped `base.sha`, and no other line of
+    `plants.md` changes. (O3-04.)
 
 ### Edge Cases
 
@@ -82,13 +102,21 @@ on recorded runs for the mode. One integration run with a real git repository co
   1. No-plant paths (`plan.md` *Path classes* lists them exactly) select nothing.
   2. `gates/plants/<gate>/<case>/**`, for a registered gate or the registry's `plants`, selects that plant if it
      exists, and every plant whose `baselinesOf` names it.
-  3. `gates/bin/<id>.ts`, for a registered gate id, selects every plant of `<id>`.
+  3. `gates/bin/<id>.ts`, for a registered gate id, selects every plant of `<id>`, and every plant of each gate
+     whose entry imports `<id>`'s entry, as `gateEntryImports` lists (today `prefix` imported by `brand-rules`).
   4. `.github/workflows/ci.yml` selects every registry plant (`plants/<case>`).
-  5. Repository-content paths select the `repositoryContentPlants` that exist.
+  5. Repository-content paths select the `repositoryContentPlants` that exist. In addition, an element path
+     (`packages/elements/src/**`, `packages/elements/custom-elements.json`) selects every `manifest` plant, and a
+     token path (a repository-content path under `packages/tokens/`) selects every `contrast`, `brand-rules` and
+     `style-lint` plant (operator round 3, O3-01: "Widen by gate").
   6. Every other path, including `gates/bin/plants.ts`, selects the full set.
 - **OR-002 (lists)**: `gates/lib/plant-runner.ts` MUST export `repositoryContentPlants`, a fixed list of the plants
   whose expectation names repository content. A unit test MUST check that each entry exists. A unit test MUST pin
-  the full list of `visual` and `axe` case directories.
+  the full list of `visual`, `axe`, `manifest`, `contrast` and `brand-rules` case directories (the last three added
+  by operator round 3, O3-01). It MUST also export `gateEntryImports`, the pairs (imported gate entry, importing
+  gate) of registered gate entries in `gates/bin/` that import one another, each with a one-line reason. A unit test
+  MUST read the imports of every registered gate entry and pin the full set of such pairs to `gateEntryImports`, so
+  a new cross-import fails until it is listed and so selected (O3-05).
 - **OR-003 (mode)**: `gates/bin/plants.ts` MUST accept `--affected <base>` as a mode of its own, with an optional
   `--list`. In this mode it:
   - resolves `<base>` as `gate:mutation --base` does;
@@ -105,17 +133,30 @@ on recorded runs for the mode. One integration run with a real git repository co
   `gates/plants/plants/fail-affected-in-plant-check/` MUST expect exactly that finding.
 - **OR-005 (red first)**: the tests of OR-001 to OR-004 MUST be committed red first, in a test-only commit, before
   the code. The new registry plant belongs with the green code: it is a plant, not a test file, and the plant job
-  judges it.
+  judges it. The tests of operator round 3 for O3-01, O3-04 and O3-05 (scenarios 10, 12 to 15 and 17) MUST be
+  committed red first under the fix procedure's label `fix-3`. The test of O3-02 (scenario 16) covers behaviour
+  that is already right, so it has no red commit: the fix procedure's step 3 applies, and the automatic check runs
+  it against the code from before the phase.
 - **OR-006 (records)**: these MUST say that `--affected` is local only, never CI, and never the Plants verdict, and
   how a phase records it:
   - `gates/README.md` (one added paragraph, and the new plant in the `plants` row);
   - `.specify/templates/tasks-template.md`;
   - the story commands implement, review and fix, in `tooling/speckit/extensions/story/commands/` and their
     installed copies;
-  - both `story-config.yml` copies, with a new `plants_command` key.
+  - both `story-config.yml` copies, with a new `plants_command` key;
+  - the 006 contracts `specs/006-storybook-workbench/contracts/plants.md` (the modes table and the registry plant
+    and rule lists) and `contracts/gates.md` (the registry check's rules), each with a dated amendment that names
+    the `--affected` / `--list` mode, the `affected-in-ci` rule and the plant `fail-affected-in-plant-check`
+    (operator round 3, O3-03).
 - **OR-007 (unchanged)**: the op MUST NOT change any of these: `.github/workflows/ci.yml`,
   `gates/test/ci-workflow.test.ts`, `plantShards`, `shardSize`, `otherShardSize`, the configuration set of
   `gates/lib/plant-repo.ts`, or any existing plant directory.
+- **OR-008 (fold)**: `tooling/speckit/bin/fold-history.sh` MUST remap the base SHA on the `- base:` line of each
+  phase's `reviews/phase-<N>/plants.md`, as it remaps `base.sha`, and its outside-evidence check MUST allow that
+  change and no other change to `plants.md` (operator round 3, O3-04). The command line and the verbatim output of
+  `plants.md` keep the SHA they were written with; `reviews/history-map.txt` resolves it.
+- **OR-009 (git failure)**: the integration test of scenario 16 MUST exist, and the two process-boundary records on
+  the `failed` check and its `return { cause }` in `changed` (`gates/bin/plants.ts`) MUST name it (O3-02).
 
 ### Out of scope
 
@@ -127,16 +168,22 @@ on recorded runs for the mode. One integration run with a real git repository co
 
 ## Success Criteria
 
-- **SC-001**: A phase whose diff holds only story, element, token, baseline and record changes, like mission 008's
-  phases, selects exactly the repository-content list (10 plants). Today the missions pick shards 16, 19 and 27 by
-  hand (9 plants, 3 of them repository-content). The selection is computed by a rule a reviewer can re-run.
+- **SC-001**: A phase whose diff holds only story, baseline and record changes selects exactly the repository-content
+  list (10 plants). Element changes add every `manifest` plant (21 plants in all today); token changes add every
+  `contrast`, `brand-rules` and `style-lint` plant (90 in all today); both give 101 of 302. Today the missions pick
+  shards 16, 19 and 27 by hand (9 plants, 3 of them repository-content). The selection is computed by a rule a
+  reviewer can re-run.
 - **SC-002**: The full test suite, `gate:typecheck`, `gate:lint`, `gate:test-lint`, `gate:config-copies`,
   `gate:mutation -- --base <op base>` and the full `gate:plants` (this op changes shared gate source) pass.
 
 ## Assumptions
 
-- **Known limit (accepted by Q3 C).** A change to token values, `packages/styles/src/base.css` or the fonts changes
-  the pixels of every visual plant's own stories too. A change to element source also reaches the `unit-tests` and
-  `mutation` plants that copy it. The selector does not pick those plants, and CI's full Plants check finds any of
-  them that change. The README paragraph names this limit.
+- **Known limit (accepted by Q3 C, narrowed by operator round 3).** A change to token values,
+  `packages/styles/src/base.css` or the fonts changes the pixels of every visual plant's own stories too. A change
+  to element source also reaches the `unit-tests` and `mutation` plants that copy it. The selector does not pick
+  those plants, and CI's full Plants check finds any of them that change. The README paragraph names this limit.
+  It no longer covers the `manifest`, `contrast`, `brand-rules` and `style-lint` plants that are deltas over the
+  repository's element or token source: element and token paths select those gates whole (O3-01). Nor does it cover
+  a gate entry that another gate entry imports: `gateEntryImports` selects the importer's plants, and a test pins
+  the pairs (O3-05).
 - The diff semantics follow `gate:mutation --base`: a commit, compared with the working tree.
