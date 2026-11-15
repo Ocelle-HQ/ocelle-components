@@ -1,7 +1,7 @@
 // The token source (FR-008, research.md R-01, data-model.md § Token): every token of spec Appendix A as a record, in
 // the order of its tables. Each record's use (Appendix A's "Use" column) is the comment beside it, not data
 // (PLAN-TESTABILITY-1-003 (a)). A derived token (FR-002) writes its source as var(--ocelle-<name>) and lists it in
-// `ref`; a foreground colour carries its contrast kind and intended grounds (A.8: 149 required pairs per theme, 182 with 012's).
+// `ref`; a foreground colour carries its contrast kind and intended grounds (A.8: 149 required pairs per theme, 187 with 012's).
 // `source` is the records with the overrides of overrides.ts applied; the generator, the build and the gates read it.
 // No type assertion wraps the records or the ground lists (`as const`, `satisfies`): Stryker does not mutate inside
 // one, so the values would go untested (op 004). `tokenRecords` keeps the names literal and checks each record instead.
@@ -48,7 +48,7 @@ export const records = tokenRecords([
     contrast: { kind: "text", grounds: [...main, ...stateGrounds, "color-active-bg"] },
   },
   // secondary headings
-  { name: "color-ink-soft", group: "colour", value: { light: "#3F3A33", dark: "#CFC9BE" }, contrast: { kind: "text", grounds: main } },
+  { name: "color-ink-soft", group: "colour", value: { light: "#3F3A33", dark: "#CFC9BE" }, contrast: { kind: "text", grounds: [...main, ...stateGrounds] } }, // the action row's description and tags (012)
   // muted text
   { name: "color-ink-muted", group: "colour", value: { light: "#5E584F", dark: "#A39D92" }, contrast: { kind: "text", grounds: main } },
   { name: "color-rule", group: "colour", value: { light: "#D9D3C7", dark: "#3A342B" } }, // decorative, never a control boundary
@@ -191,6 +191,8 @@ export const records = tokenRecords([
   { name: "border-width", group: "shape", value: "1px" },
   { name: "focus-width", group: "shape", value: "3px" }, // focus ring width
   { name: "focus-offset", group: "shape", value: "2px" }, // focus ring offset
+  // the negative offset that draws a focus ring inside a box, the row's ring (012 research.md R-12)
+  { name: "focus-offset-inset", group: "shape", value: "calc(-1 * (var(--ocelle-focus-offset) + var(--ocelle-focus-width)))", ref: ["focus-offset", "focus-width"] },
   { name: "bar-width", group: "shape", value: "3px" }, // current bar width
   { name: "ring-step", group: "shape", value: "1.5px" },
   { name: "target-min", group: "size", value: "2.75rem" }, // 44px minimum target (spec-kitty-design#532)

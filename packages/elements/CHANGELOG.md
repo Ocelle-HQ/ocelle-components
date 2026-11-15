@@ -52,6 +52,15 @@ entry points and the browser build's file path (constitution VII).
   icon's place that turns six times in 4.8 s and then stays still, and does not move under reduced motion; `disabled`
   wins. It reads the new tokens `--ocelle-motion-spin` and `--ocelle-motion-turn` of `@ocelle/tokens`. In the README,
   the control conventions gain the unavailable state.
+- `ocelle-action-row`, an activatable row (mission 012): an inner `<button type="button">` (an `<a>` in link mode)
+  named by its title and described by its `description` and `tags` slots, which are shown beside it; its properties
+  `row-id`, `layout`, `presentation`, `ground`, `href`, `target`, `rel` and `busy` (reflected) and `label`; the slots
+  default (the title), `icon`, `description`, `tags` and `trailing`; the parts `control`, `title`, `description` and
+  `tags`; the event `ocelle-action-row-activate` (`CustomEvent`, bubbles, composed, cancelable, `detail`
+  `{ rowId }`); the moved host attributes `aria-label`, `aria-labelledby`, `aria-describedby` and `title` with their
+  mirrors; the focus ring drawn inside the row with the new token `--ocelle-focus-offset-inset` of `@ocelle/tokens`.
+- The entry point `@ocelle/elements/ocelle-action-row.js` (defines `ocelle-action-row` only); the package root and the
+  browser build define `ocelle-action-row` too.
 - The engine floor, raised to Chromium 135 and WebKit 17.4 for ARIA element reflection and custom states (from
   Chromium 120 and WebKit 16.4).
 - The slot convention's size rules now apply to the `icon` and `trailing` slots only, so an element in a control's

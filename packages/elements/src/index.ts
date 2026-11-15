@@ -1,5 +1,6 @@
 // The package root (005 FR-002, research.md R-02): importing it defines every element of the package, `ocelle-icon`,
-// `ocelle-brand-mark` and (012) `ocelle-button`, and exports their classes.
+// `ocelle-brand-mark` and (012) `ocelle-button` and `ocelle-action-row`, and exports their classes.
+export { OcelleActionRow } from "./ocelle-action-row.ts";
 export { OcelleBrandMark } from "./ocelle-brand-mark.ts";
 export { OcelleButton } from "./ocelle-button.ts";
 export { OcelleIcon } from "./ocelle-icon.ts";
