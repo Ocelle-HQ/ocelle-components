@@ -26,16 +26,20 @@ None emits an event, declares a CSS part or an element CSS custom property, or i
 - Landmark name: host `aria-label` present → its value (blank → no name); else `label` when not blank; else no name
   (FR-028). The host is the landmark: `internals.ariaLabel` holds the `label` name and a host attribute wins over it
   natively (R-11); the element never writes the host's `aria-label`.
-- Slot empty: no assigned element and every assigned text node empty or whitespace only (spec "Empty slot"). A
+- Slot empty: no assigned element and every assigned text node empty or whitespace only (spec "Empty slot"); a
+  `<slot>` forwarded into the slot from a shell's shadow root is an assigned element, so it is content even when
+  nothing is assigned to it (R-03). A
   `hidden` sidebar section counts as content but draws no box, padding or divider of its own (FR-022); the default
-  slot's head and footer dividers stay even when every section is hidden (spec Edge Cases).
+  slot's head and footer dividers stay even when every section is hidden (spec Edge Cases). A `template` or `script`
+  element in the sidebar's default slot is not a section and likewise counts as content but draws nothing (FR-021).
 
 ## State transitions
 
 - Slot content added or removed, or an assigned text node's data changed → that slot's empty flag is re-read → layout
   updates (FR-005).
-- Card `density` changed, or its `header` slot's assignment changed → the card asks each directly assigned section
-  header, and each one that has just left the slot, to update; each re-resolves its size from its assigned slot
+- Card `density` changed, or its `header` slot's assignment changed (also when the `slotchange` comes from a
+  wrapper's slot forwarded into it, R-05) → the card reads its own `header` slot and asks each directly assigned
+  section header, and each one that has just left the slot, to update; each re-resolves its size from its assigned slot
   (R-05). A section header that is connected or upgraded resolves its size in its own first update, so definition
   order does not matter.
 - Rail `orientation` changed → layout only; DOM, focus and landmark unchanged (FR-026).

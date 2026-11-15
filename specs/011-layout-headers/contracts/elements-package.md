@@ -57,9 +57,11 @@ Slots: `heading`, `eyebrow`, `description`, `actions`. Events, parts, CSS custom
 
 Slots: `head`, default (sections, one element each), `footer`. Events, parts, CSS custom properties: none. The host
 is the navigation landmark (through `ElementInternals`, held under an internal `Symbol("internals")` key so axe's
-role computation sees its `navigation` role, research.md R-11, and not listed in the manifest; axe's landmark rules
-do not select it); a host `aria-label` names it as the README's
-Host ARIA rule says, and the element never writes it. A `hidden` section draws nothing of its own but still counts as content (spec Edge Cases); the edge margins of slotted
+role computation sees its `navigation` role, research.md R-11, and neither listed in the manifest nor declared in the
+published `dist/*.d.ts`, which the package's build emits with `stripInternal`; axe's landmark rules do not select
+it); a host `aria-label` names it as the README's
+Host ARIA rule says, and the element never writes it. A `hidden` section draws nothing of its own but still counts as content (spec Edge Cases); a `template` or `script`
+element in the default slot is not a section, draws nothing and still counts as content (FR-021, landing L1-03); the edge margins of slotted
 sections, head and footer are trimmed, a `hidden` edge element skipped (FR-008); a section's padding, inline margins,
 divider and display are `!important`, so a page rule does not change them, while its block margins are the page's
 (FR-022).
@@ -73,7 +75,8 @@ divider and display are `!important`, so a page rule does not change them, while
 
 Slots: default (primary items), `bottom`. Events, parts, CSS custom properties: none. The host is the navigation
 landmark, named and held as for the sidebar. The host's colour is `--ocelle-color-chrome-ink`; the rail styles no item,
-so an item shows chrome ink only when it inherits colour (plain `<a>` items need `color: inherit`, FR-027).
+so an item shows chrome ink only when it inherits colour (plain `<a>` items need `color: inherit`, FR-027; the
+README names `ocelle-nav-item` as not released yet, landing L1-05).
 
 **For #12**: the rail's whole interface for a shell or drawer is `orientation` (and `label`). A shell that wants
 the rail horizontal inside the personal drawer and vertical in its column sets `orientation` from its own tier,
@@ -84,6 +87,13 @@ with an exclusive bound in its own query. The README's example, which #12 may co
 
 `--ocelle-font-size-eyebrow`, `--ocelle-font-weight-eyebrow`, `--ocelle-tracking-eyebrow`, `--ocelle-color-eyebrow`
 (values in [../data-model.md](../data-model.md)).
+
+## Shell authors (README, once)
+
+A `<slot>` that a shell forwards into one of these elements' slots is an assigned element: it counts as content even
+when nothing is assigned to it, so the part takes its wrapper, gap, padding or divider. The README tells shell authors
+to forward a slot only when it has content (spec Empty slot, FR-036, research.md R-03, landing L1-04). Nothing in the
+surface changes.
 
 ## Tokens each element reads (documented, not declared)
 

@@ -58,18 +58,18 @@ case.
 
 *Gate: passes before Phase 0; re-checked after Phase 1 design and again after the fixes of plan squad rounds 1, 2 and 3
 (`reviews/plan/round-1/`, `reviews/plan/round-2/`, `reviews/plan/round-3/`), after the analysis of the tasks
-(`reviews/analysis/fixes-1.md`) and after the phase-1 spike decision (`reviews/phase-1/spike-fixes.md`) — passes, no
-exception.*
+(`reviews/analysis/fixes-1.md`), after the phase-1 spike decision (`reviews/phase-1/spike-fixes.md`) and after the
+operator decisions at landing (`reviews/landing/round-1-tasks.md`) — passes, no exception.*
 
 | Principle | How this plan meets it |
 |---|---|
-| I. Names, no I/O, small interface, manifest | Tags `ocelle-card`, `ocelle-section-header`, `ocelle-page-header`, `ocelle-context-sidebar`, `ocelle-personal-rail`. No events (checked per element, FR-002), no I/O. Interface: `density`, `inset`, `size`, `variant`, `label`, `orientation` and slots; no parts, no element custom properties (FR-007). The compact-card channel is the header reading its own assigned slot, with the card calling the inherited `requestUpdate()`: no new surface (R-05). Manifest entries generated and gated. |
+| I. Names, no I/O, small interface, manifest | Tags `ocelle-card`, `ocelle-section-header`, `ocelle-page-header`, `ocelle-context-sidebar`, `ocelle-personal-rail`. No events (checked per element, FR-002), no I/O. Interface: `density`, `inset`, `size`, `variant`, `label`, `orientation` and slots; no parts, no element custom properties (FR-007). The compact-card channel is the header reading its own assigned slot, with the card calling the inherited `requestUpdate()`: no new surface (R-05). Manifest entries generated and gated; the published type declarations declare nothing the manifest omits as internal (`stripInternal` in the package's build configuration, R-11, operator decision at landing). |
 | II. Tokens only, brand rules | All values from tokens; `uppercase`, `auto`, `100%`, `50%` and `-1` inside `calc()` are allowed by `token-only` as it stands (no new allowance). The sidebar's section rules use `!important` as the slot convention does (R-09). The rail is on `color-chrome` in both themes. Eyebrow in Schibsted Grotesk, no monospace (FR-031). Cards use `radius-row`; no other radius. `color-rule` draws decorative dividers only, never a control boundary. |
 | III. Accessible by construction | Slotted headings keep the page's level; no ID reference crosses a shadow root (the landmark's name is a string, not a reference). The sidebar and rail hosts are the navigation landmarks through `ElementInternals` (005's `naming.ts` pattern), named by `label` or the host `aria-label` by the Host ARIA rule, with no second named node (R-11, probed in plan squad round 1). No tab stops; focus order is the page's. Borders survive forced colours (FR-003), and layout variants hold in them (FR-001 as amended). Eyebrow colour has text contrast rows on every main ground. axe through #10 on every story, including one story per US3-12 and US4-11 case; the hosts hold their internals under an `internals` symbol key, so axe's role computation gives them `navigation` and judges their ARIA attributes against it, shown by a role probe planted with a `#private` field; axe's landmark rules select by `role` attribute or tag and do not see the hosts, so landmark naming is held by the tree reads, not by axe (R-11, PLAN-FRESH-2-004 (b), PLAN-FRESH-3-001 (b)). Rail stories and fixtures use stand-in items that inherit chrome ink and are 40 px squares, so `color-contrast` and `target-size` hold, and the README says plain `<a>` items need `color: inherit` and a 24 px target (R-10). |
 | IV. Strict CSP | Adopted stylesheets; no `style` attribute or `<style>`; fixture pages under the strict header for every scenario; the rail's stand-in items are styled by same-origin linked stylesheets keyed on `data-story`, never a `style` attribute (R-10); `csp` gate on both builds. |
 | V. Storybook, behaviour tests | A story per variant and state, light and dark, baselines from #10's pinned container (R-14). No events to assert; keyboard paths (tab order, orientation change with focus) tested. |
 | VI. Consumer-driven, own code | Needs from #8 and spec-kitty-design #450, #492, #497, #516, #529 (`sources/README.md`); deviations listed in the spec. Nothing copied. |
-| VII. Semver | MINOR additions only: five elements, five entry points, four tokens; both CHANGELOGs. |
+| VII. Semver | MINOR additions only: five elements, five entry points, four tokens; both CHANGELOGs. The internals key is in neither the manifest nor the `.d.ts`, so it is no part of the versioned surface (R-11). |
 | VIII. Test-first, non-vacuous | Red first per phase, including the driver's behavioural readers (R-13); every "does not" outcome paired with a positive one and a named plant applied by 005's working-tree method (contracts/checks.md); token-sentinel scenarios so a wrong token fails (R-13); scenario bodies shared so the mutated in-process run covers the script logic, mutation scope as 005 decision 16, every phase that changes source mutation-tested with its own phase base, phase 1 included (`src/slot-state.ts`); the `css` templates, which Stryker mutates at most whole, are covered by declaration-level style plants per phase, an uncaught declaration blocking unless recorded as equivalent (R-17). Spike findings are measured before the red commits that depend on them. |
 | Workflow gates | No gate added. `contrast` counts change at the places R-12 lists. #10's three gates join every phase's gate set once merged. |
 
@@ -177,6 +177,7 @@ packages/elements/
 ├── src/naming.ts                       # existing; gains internalsKey (phase 4, R-11)
 ├── src/index.ts, browser.ts            # shared with siblings
 ├── package.json (exports), custom-elements.json, README.md, CHANGELOG.md
+├── tsconfig.json                       # gains stripInternal (landing fix, phase 4, R-11)
 └── test/
     ├── scenarios/<element>.ts, scenarios/driver.ts, <element>.test.ts, slot-state.test.ts,
     │   card-context.test.ts, commands.ts, commands.test.ts, entry-<element>.test.ts,
@@ -269,6 +270,24 @@ commit, and each phase's README task adds its Entry points row. Each phase's `cs
 style plants of R-17. Phase 5 is separable: if the operator splits the rail off (triage 011), phases 1–4 stand alone.
 Phase 5 uses `internalsKey`, which phase 4 adds to `src/naming.ts`; if phase 4 is deferred or runs after phase 5,
 that change moves into phase 5 (tasks.md T036).
+
+### Fixes from the landing review (operator decisions at landing, 2026-11-15)
+
+`reviews/landing/round-1.md` led to one operator round per phase it touches; each fix is red first under the story
+fix procedure (`red.sh <N> fix-<k>`, `<k>` the operator round) and reviewed as that phase's next round. The mapping
+of finding, task and artifact change is `reviews/landing/round-1-tasks.md`.
+
+- **Phase 1** (T048, L1-04): no code change. The slot-state controller keeps reading `assignedNodes()` unflattened
+  (R-03); the README gains one statement for shell authors on forwarded slots (FR-036), asserted by the readme test
+  first.
+- **Phase 2** (T049, L1-01): the card passes its own `header` slot to `notifyHeaders` on `slotchange` (R-05), after a
+  red shared card scenario with a wrapper slot forwarded into the `header` slot, run by both harnesses.
+- **Phase 4** (T050, L1-03; T051, L1-02), one red commit: the sidebar's section rules exclude `template` and `script`
+  (R-09, FR-021, FR-022), after a red US3-3 variant in both harnesses, with its README statement; and
+  `packages/elements/tsconfig.json` sets `stripInternal`, so the `.d.ts` do not declare the internals key (R-11,
+  FR-034), after a red build test on the emitted declarations.
+- **Phase 5** (T052, L1-05): README only: `ocelle-nav-item` named as not released yet, and the stray line break
+  in the rail section removed (FR-027, FR-036), the readme test first.
 
 ## Complexity Tracking
 
