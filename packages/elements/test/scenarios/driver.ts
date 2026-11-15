@@ -196,6 +196,25 @@ export interface Driver {
    * new ones (research.md R-10: the template does not change with orientation).
    */
   identities(id: string): Promise<number[]>;
+  // A shell's own shadow root, forwarding a slot into an element (011 research.md R-05 § Forwarded slots; phase 2
+  // review R4-01). The nodes of that shadow root are reached by a selector in it, `inner`.
+  /**
+   * Attaches an open shadow root holding `markup` (no `style` attribute) to the element with `id`, and waits for every
+   * element, those in that shadow root included, to render.
+   */
+  shadow(id: string, markup: string): Promise<void>;
+  /**
+   * Appends `markup` (no `style` attribute) to the element matching `inner` in the shadow root of the element with
+   * `id`, after its children, and waits for every element, those in that shadow root included, to render.
+   */
+  shadowAppend(id: string, inner: string, markup: string): Promise<void>;
+  /**
+   * Sets an attribute (null removes it) of the element matching `inner` in the shadow root of the element with `id`,
+   * and waits for every element, those in that shadow root included, to render.
+   */
+  shadowAttribute(id: string, inner: string, name: string, value: string | null): Promise<void>;
+  /** The computed value of a CSS property of the element matching `inner` in the shadow root of the element with `id`. */
+  shadowComputed(id: string, inner: string, property: string): Promise<string>;
 }
 
 /**

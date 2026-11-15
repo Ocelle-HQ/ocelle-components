@@ -39,6 +39,21 @@ async function settle(): Promise<void> {
   await new Promise((resolve) => requestAnimationFrame(resolve));
 }
 
+/** The element matching `inner` in the shadow root of the element with `id`. */
+function inShadow(id: string, inner: string): Element {
+  const found = element(id).shadowRoot?.querySelector(inner);
+  if (found === null || found === undefined) throw new Error(`no ${inner} in the shadow root of #${id}`);
+  return found;
+}
+
+/** Waits as `settle` does, and also for every `ocelle-*` element in the shadow root of the element with `id`. */
+async function settleShadow(id: string): Promise<void> {
+  await settle();
+  const elements = [...(element(id).shadowRoot?.querySelectorAll("*") ?? [])].filter((each) => each.localName.startsWith("ocelle-"));
+  await Promise.all(elements.map((each) => (each as Partial<LitElement>).updateComplete ?? Promise.resolve(true)));
+  await new Promise((resolve) => requestAnimationFrame(resolve));
+}
+
 const round = (value: number): number => Math.round(value * 1000) / 1000;
 
 const absent: Box = { x: 0, y: 0, width: 0, height: 0, display: "absent" };
@@ -279,6 +294,20 @@ export function inProcessDriver(): Driver {
         }),
       );
     },
+    shadow: async (id, markup) => {
+      element(id).attachShadow({ mode: "open" }).innerHTML = markup;
+      await settleShadow(id);
+    },
+    shadowAppend: async (id, inner, markup) => {
+      inShadow(id, inner).insertAdjacentHTML("beforeend", markup);
+      await settleShadow(id);
+    },
+    shadowAttribute: async (id, inner, name, value) => {
+      if (value === null) inShadow(id, inner).removeAttribute(name);
+      else inShadow(id, inner).setAttribute(name, value);
+      await settleShadow(id);
+    },
+    shadowComputed: (id, inner, property) => Promise.resolve(getComputedStyle(inShadow(id, inner)).getPropertyValue(property)),
     module: async (code) => {
       // A blob URL is of the test page's origin; this page has no CSP.
       const url = URL.createObjectURL(new Blob([code], { type: "text/javascript" }));

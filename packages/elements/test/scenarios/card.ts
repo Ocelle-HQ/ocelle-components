@@ -22,6 +22,9 @@
 // - the R-05 transitions: density set then removed by script, a header moved out of the `header` slot by its `slot`
 //   attribute and by a DOM move and back, each compact only while assigned to a compact card's `header` slot; plants:
 //   no notice on a density change, `previous` dropped;
+// - R-05 with a forwarded slot (phase 2 review R4-01): a wrapper's slot forwarded into the `header` slot, whose
+//   content changes, does not make the card forget the headers assigned to its own `header` slot: one moved to the
+//   body by its `slot` attribute is regular, beside it compact while assigned; plant: `event.target` restored;
 // - no event (FR-002) across mount, slot and attribute changes beside the layout change of each step.
 // Every scenario runs at 1280 × 800 px (the in-process file sets the viewport; the fixture opens each page at it).
 import type { Scenario } from "./icon.ts";
@@ -406,6 +409,30 @@ export const cardScenarios: Scenario[] = [
       return states;
     },
     expected: ["regular", "compact", "regular", "compact", "regular", "compact", "regular", "compact"],
+  },
+  {
+    name: "R-05 forwarded slot (phase 2 review R4-01): in a wrapper's shadow root that forwards its own slot into a compact card's header slot, a section header assigned directly to that slot is compact; after the forwarded slot's content changes, the header moved to the body by its slot attribute is drawn at the default size, and compact again moved back (FR-017)",
+    run: async (driver) => {
+      await driver.mount('<div id="wrap"></div>' + probe);
+      await driver.shadow("wrap", card("fw", '<slot name="extra" slot="header"></slot>', ' density="compact"'));
+      const size = async (): Promise<string> => {
+        const drawn = await driver.shadowComputed("wrap", "#fw-header-heading", "font-size");
+        await driver.style("probe", "font-size", "var(--ocelle-font-size-subhead)");
+        if (drawn === (await driver.computed("probe", "font-size"))) return "compact";
+        await driver.style("probe", "font-size", "var(--ocelle-font-size-lg)");
+        return drawn === (await driver.computed("probe", "font-size")) ? "regular" : drawn;
+      };
+      await driver.shadowAppend("wrap", "#fw", header("fw-header", heading("fw-header", "Runs", 3), ' slot="header"'));
+      const states: string[] = [await size()];
+      await driver.append("wrap", '<span id="extra" slot="extra">Extra</span>');
+      states.push(await size());
+      await driver.shadowAttribute("wrap", "#fw-header", "slot", null);
+      states.push(await size());
+      await driver.shadowAttribute("wrap", "#fw-header", "slot", "header");
+      states.push(await size());
+      return states;
+    },
+    expected: ["compact", "compact", "regular", "compact"],
   },
   {
     name: "token sentinels (research.md R-13): with every token the card reads set to a distinct sentinel on the root, its border, radius, grounds, padding and gaps follow each sentinel in both densities, and with them removed it draws its default again",
