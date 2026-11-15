@@ -26,7 +26,7 @@ function given(value: string | number | null | undefined): string | number | typ
   return value ?? nothing;
 }
 
-/** Whether `element` is a submit button: a `<button>` or `<input>` of type `submit`, or an image button. */
+/** Whether `element` is a submit button: a `<button>` or an `<input>` of type `submit`, or an image button. */
 function isSubmitButton(element: Element): element is HTMLElement {
   if (element instanceof HTMLButtonElement) return element.type === "submit";
   return element instanceof HTMLInputElement && (element.type === "submit" || element.type === "image");
@@ -167,9 +167,11 @@ export class OcelleFormInput extends FormControl {
   }
 
   set type(value: "text" | "email" | "url" | "tel" | "search" | "password" | "number") {
-    // Lit sets the property from a removed attribute as null, which removes it again here.
-    if ((value as string | null) === null) this.removeAttribute("type");
-    else this.setAttribute("type", value);
+    // Nothing is written when the attribute already holds the value (Lit sets the property from each attribute change),
+    // nor when the attribute is absent and the value is the one the property reads (Lit sets the default when the
+    // attribute is removed), so an absent attribute stays absent.
+    const attribute = this.getAttribute("type");
+    if (value !== attribute && (attribute !== null || value !== this.type)) this.setAttribute("type", value);
   }
 
   override attributeChangedCallback(name: string, old: string | null, value: string | null): void {
@@ -215,7 +217,9 @@ export class OcelleFormInput extends FormControl {
   protected implicitSubmit(): void {
     const form = this.internals.form;
     if (form === null) return;
-    const button = [...form.elements].find(isSubmitButton);
+    // The form's controls in tree order, image buttons included, which `form.elements` leaves out.
+    const controls = [...(form.getRootNode() as ParentNode).querySelectorAll("button, input")].filter((each) => (each as HTMLButtonElement | HTMLInputElement).form === form);
+    const button = controls.find(isSubmitButton);
     if (button !== undefined) button.click();
     else if (this.blockingFields(form) === 1) form.requestSubmit();
   }

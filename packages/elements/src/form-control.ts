@@ -14,15 +14,19 @@ import { LitElement, css, html } from "lit";
 import type { PropertyDeclarations, PropertyValues, TemplateResult } from "lit";
 import { registering } from "./define.ts";
 import { Announcer, afterTask, collapse, readyState } from "./live.ts";
-import type { Reading } from "./live.ts";
+import type { Politeness, Reading } from "./live.ts";
 
 /** The host ARIA attributes the element observes and combines with its own (FR-022, R-05). */
 const hostAria = ["aria-label", "aria-invalid", "aria-required", "aria-disabled", "aria-description"];
 
-/** The text of an external `<label>`, without the text of the control it labels, whitespace collapsed and trimmed. */
+/** The error announcer's politeness: a form control's error is announced politely (FR-027). */
+const politeness: Politeness = "polite";
+
+/** The text of an external `<label>`, without the text of the control it labels (a label may wrap its control). */
 function labelText(label: Node, control: Node): string {
-  const text = (node: Node): string => (node === control ? "" : node instanceof Text ? node.data : [...node.childNodes].map(text).join(""));
-  return collapse(text(label));
+  if (label === control) return "";
+  if (label instanceof Text) return label.data;
+  return [...label.childNodes].map((child) => labelText(child, control)).join("");
 }
 
 /**
@@ -235,7 +239,7 @@ export abstract class FormControl extends LitElement {
     this.required = false;
     this.disabled = false;
     this.announcer = this.createAnnouncer(() => this.reading());
-    this.announcer.live("polite");
+    this.announcer.live(politeness);
     this.syncFormValue();
     this.addEventListener("focusin", () => {
       this.requestUpdate();
@@ -318,7 +322,7 @@ export abstract class FormControl extends LitElement {
 
   /** What the control announces: its error as written (the announcer normalises it), politely. */
   protected reading(): Reading {
-    return { text: this.error, politeness: "polite" };
+    return { text: this.error, politeness };
   }
 
   /** The error, whitespace collapsed and trimmed. */
@@ -337,14 +341,14 @@ export abstract class FormControl extends LitElement {
     this.internals.setValidity(control.validity, control.validationMessage, control);
   }
 
-  /** The control's name (FR-022): a host `aria-label` that is not blank, else the labels' text then `label`. */
+  /**
+   * The control's name (FR-022): a host `aria-label` that is not blank, else the text of each external label, then
+   * `label`, joined by one space; whitespace collapsed and trimmed, so a missing part adds nothing.
+   */
   protected computedName(): string {
     const host = collapse(this.getAttribute("aria-label") ?? "");
     if (host !== "") return host;
-    return [...this.internals.labels, this.label]
-      .map((each) => (typeof each === "string" ? collapse(each) : labelText(each, this)))
-      .filter((each) => each !== "")
-      .join(" ");
+    return collapse([...[...this.internals.labels].map((label) => labelText(label, this)), this.label].join(" "));
   }
 
   /** The `hidden` span that holds the control's name for its `aria-labelledby`. */
@@ -352,9 +356,11 @@ export abstract class FormControl extends LitElement {
     return html`<span id="name" hidden>${name}</span>`;
   }
 
-  /** Observes the text of the external labels, so a changed label renames the control without a focus. */
+  /**
+   * Observes the text of the external labels, so a changed label renames the control without a focus. A label observed
+   * once stays observed: a change of one no longer associated only renders the same name again.
+   */
   protected observeLabels(): void {
-    this.#labels.disconnect();
     for (const label of this.internals.labels) this.#labels.observe(label, { childList: true, characterData: true, subtree: true });
   }
 
@@ -507,10 +513,10 @@ export abstract class FormControl extends LitElement {
     this.announcer.trigger(true);
   }
 
-  /** An `error` change: cleared, it resets the baseline; to a new text, it is announced. */
+  /** An `error` change: cleared, it resets the baseline; to a new text while shown, it is announced. */
   protected onError(): void {
     if (this.errorText() === "") this.clearError();
-    else if (!this.announcer.sameText(this.error)) this.announcer.trigger(false);
+    else if (!this.hidden && !this.announcer.sameText(this.error)) this.announcer.trigger(false);
   }
 
   /** The error cleared: any pending announcement cancelled and the baseline empty. */
