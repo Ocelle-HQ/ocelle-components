@@ -523,6 +523,14 @@ A host then slots its icons with no size of its own (here into `ocelle-button`, 
 The convention is proven on a test-only host, `ocelle-test-host` (`test/fixtures/test-host.ts`), which ships in no
 package; the controls of later features follow it.
 
+## Forwarded slots
+
+A shell that forwards a slot of its own into an element of this package, such as
+`<slot name="footer" slot="footer"></slot>` in its shadow root, assigns that `<slot>` element to the element's slot.
+The element counts it as content even when nothing is assigned to the forwarded slot, so the part takes its wrapper,
+gap, padding or divider with nothing in it. Forward a slot only when it has content, or remove the forwarding
+`<slot>` when it has none.
+
 ## Host ARIA
 
 A host `aria-label` names the element as `label` does, and when present it decides alone: a blank host `aria-label`
