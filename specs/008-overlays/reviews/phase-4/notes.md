@@ -575,3 +575,12 @@ to `mutation.log`. No new survivor; the counts equal the runs at `1f91513` and `
 | 15 | `:241-270` | 24 | 0 | 0 | 4 | 0 | 0 | 504 s |
 | 16 | `:271-300` | 39 | 0 | 0 | 10 | 0 | 0 | 518 s |
 | 17 | `:301-330` | 34 | 0 | 0 | 16 | 2 | 0 | 557 s |
+
+## Operator decision: dialog/drawer rows that fail under load (2026-11-15)
+
+- **Decided by:** the operator, asked in this session as a multiple-choice question.
+- **Problem:** tdd-check 4 at fc08423 failed on one row out of 5067, "Nested in an open ocelle-drawer: the dialog whose opener (a button of the drawer) is removed before its close: focus on the drawer's initial target (R-05)". Its focus was not the expected `ob`.
+  - In recent full runs, other overlay rows have each failed once under load: the drawer close-control focus-ring row (FR-006) and the drawer "two close-control clicks" row.
+  - Each of these rows passes on its own.
+- **Answer:** "Investigate and fix now". An implementer measures these rows under load, finds the timing each relies on, and fixes each one test-first, with a break check. The source changes only if a real bug shows up. tdd-check then runs again.
+- **Not chosen:** re-running and noting the rows for the review; re-running and listing them as a known gap.
