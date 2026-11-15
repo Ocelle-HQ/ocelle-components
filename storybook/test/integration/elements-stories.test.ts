@@ -23,7 +23,13 @@ import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 // stories: each renders one open, modal `ocelle-dialog` (its inner `<dialog>` open and `:modal`) with the story's
 // `label` or host `aria-label`, in light and dark, with base.css applied and no request outside the origin. Phase 3
 // (T038) adds the drawer's: each renders one open, modal `ocelle-drawer` with the story's label, side, ground,
-// heading-hidden and direction, in light and dark, with base.css applied and no request outside the origin.
+// heading-hidden and direction, in light and dark, with base.css applied and no request outside the origin. Phase 4
+// (T050) adds the tooltip's: each page is opened at 1280 × 800 with reduced motion, as the visual and axe gates capture
+// it (research.md R-16), and the mouse moved to the centre of the story's trigger, the selector the story's
+// `parameters.ocelle.pointer.hover` names; the trigger lies wholly inside the viewport and inside a
+// `[data-story="tooltip"]` element whose delay override gives it a computed `--ocelle-tooltip-delay` of 0 ms (the
+// Storybook build's minifier writes the override's `0ms` as `0s`, so the test reads the duration), and after
+// `fonts.ready` and two frames its bubble is shown on the story's side of the trigger, on top at its centre.
 const types: Readonly<Record<string, string>> = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
@@ -274,6 +280,114 @@ describe("the ocelle-drawer stories in the built Storybook (008 FR-042)", { time
           base: { linked: true, scheme: theme },
           defined: true,
           drawers,
+          outside: [],
+        });
+        await page.close();
+      });
+    }
+  }
+});
+
+/** Opens a tooltip story at 1280 × 800 with reduced motion and moves the mouse to the centre of `selector`. */
+async function openHovered(id: string, theme: "light" | "dark", selector: string): Promise<{ readonly page: Page; readonly outside: readonly string[]; readonly inside: boolean }> {
+  if (browser === undefined) throw new Error("the suite did not start");
+  const page = await browser.newPage({ viewport: { width: 1280, height: 800 }, reducedMotion: "reduce" });
+  const outside: string[] = [];
+  page.on("request", (request) => {
+    if (!request.url().startsWith(`${origin}/`)) outside.push(request.url());
+  });
+  await page.goto(`${origin}/iframe.html?id=${id}&viewMode=story&globals=theme:${theme}`, { waitUntil: "load" });
+  // Waits for the story's tooltip, but not past 10 s: a story that never renders is reported by the assertions below.
+  await page.waitForSelector("#storybook-root ocelle-tooltip", { state: "attached", timeout: 10_000 }).catch(() => undefined);
+  await page.evaluate(async () => {
+    await Promise.all([...document.querySelectorAll("#storybook-root *")].map((each) => (each as unknown as { updateComplete?: Promise<unknown> }).updateComplete ?? Promise.resolve()));
+    await document.fonts.ready;
+  });
+  const box = await (await page.$(selector))?.boundingBox();
+  const inside = box !== null && box !== undefined && box.width > 0 && box.x >= 0 && box.y >= 0 && box.x + box.width <= 1280 && box.y + box.height <= 800;
+  await page.mouse.move(box === null || box === undefined ? 0 : box.x + box.width / 2, box === null || box === undefined ? 0 : box.y + box.height / 2);
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+    for (let frame = 0; frame < 2; frame += 1) await new Promise((resolve) => requestAnimationFrame(resolve));
+  });
+  return { page, outside, inside };
+}
+
+/** What a tooltip story's page shows once hovered: its theme, the base stylesheet, its trigger, tooltips and dialogs. */
+function observeTooltips(page: Page, selector: string): Promise<unknown> {
+  return page.evaluate((selector) => {
+    const trigger = document.querySelector(selector);
+    const near = (a: number, b: number): boolean => Math.abs(a - b) < 0.5;
+    /** A computed duration in milliseconds (the Storybook build writes the override's `0ms` as `0s`), NaN without a unit. */
+    const milliseconds = (text: string): number => (text.endsWith("ms") ? Number.parseFloat(text) : text.endsWith("s") ? Number.parseFloat(text) * 1000 : Number.NaN);
+    /** Where the painted box lies against the trigger: the side 8 px (space-2) away, centred on the other axis. */
+    const side = (t: DOMRect, b: DOMRect): string => {
+      const centredX = near(b.left + b.width / 2, t.left + t.width / 2);
+      const centredY = near(b.top + b.height / 2, t.top + t.height / 2);
+      if (near(t.top - b.bottom, 8) && centredX) return "above";
+      if (near(b.top - t.bottom, 8) && centredX) return "below";
+      if (near(t.left - b.right, 8) && centredY) return "left";
+      if (near(b.left - t.right, 8) && centredY) return "right";
+      return "none";
+    };
+    return {
+      theme: document.documentElement.dataset.theme,
+      base: {
+        linked: [...document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')].some((link) => link.href.endsWith("/base.css") && link.sheet !== null),
+        scheme: getComputedStyle(document.documentElement).colorScheme,
+      },
+      defined: customElements.get("ocelle-tooltip") !== undefined,
+      trigger: trigger === null ? null : { count: document.querySelectorAll(selector).length, wrapped: trigger.closest('[data-story="tooltip"]') !== null, delayMs: milliseconds(getComputedStyle(trigger).getPropertyValue("--ocelle-tooltip-delay").trim()) },
+      tooltips: [...document.querySelectorAll("#storybook-root ocelle-tooltip")].map((tooltip) => {
+        const part = tooltip.shadowRoot?.querySelector('[part="bubble"]') ?? null;
+        const box = part?.firstElementChild?.getBoundingClientRect();
+        const own = tooltip.querySelector(":scope > :not([slot])");
+        const centre = box === undefined ? null : document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+        return {
+          placement: tooltip.getAttribute("placement") ?? "top",
+          direction: tooltip.matches(":dir(rtl)") ? "rtl" : "ltr",
+          shown: part?.matches(":popover-open") === true,
+          side: own === null || box === undefined ? "none" : side(own.getBoundingClientRect(), box),
+          onTop: centre === tooltip,
+        };
+      }),
+      dialogs: [...document.querySelectorAll("#storybook-root ocelle-dialog")].map((dialog) => ({ shown: dialog.shadowRoot?.querySelector("dialog")?.open === true, modal: dialog.shadowRoot?.querySelector("dialog")?.matches(":modal") === true })),
+    };
+  }, selector);
+}
+
+/** A tooltip shown on `side` of its trigger, on top at its centre. */
+const shownTooltip = (placement: "top" | "bottom" | "start" | "end", side: "above" | "below" | "left" | "right", direction: "ltr" | "rtl" = "ltr"): unknown => ({ placement, direction, shown: true, side, onTop: true });
+
+// 008 (tasks.md T050; data-model.md § Stories): hover top; hover bottom; hover start; hover end; flipped at the top
+// edge; rtl hover start; rtl hover end; inside an open dialog; long text. Each story's pointer selector, written by
+// hand, is the trigger's id `#tooltip-trigger` (an id, R-16), which matches exactly one element of its page.
+const tooltipStories = [
+  { id: "elements-ocelle-tooltip--hover-top", tooltips: [shownTooltip("top", "above")], dialogs: [] },
+  { id: "elements-ocelle-tooltip--hover-bottom", tooltips: [shownTooltip("bottom", "below")], dialogs: [] },
+  { id: "elements-ocelle-tooltip--hover-start", tooltips: [shownTooltip("start", "left")], dialogs: [] },
+  { id: "elements-ocelle-tooltip--hover-end", tooltips: [shownTooltip("end", "right")], dialogs: [] },
+  { id: "elements-ocelle-tooltip--flipped-at-the-top-edge", tooltips: [shownTooltip("top", "below")], dialogs: [] },
+  { id: "elements-ocelle-tooltip--rtl-hover-start", tooltips: [shownTooltip("start", "right", "rtl")], dialogs: [] },
+  { id: "elements-ocelle-tooltip--rtl-hover-end", tooltips: [shownTooltip("end", "left", "rtl")], dialogs: [] },
+  { id: "elements-ocelle-tooltip--inside-an-open-dialog", tooltips: [shownTooltip("top", "above")], dialogs: [{ shown: true, modal: true }] },
+  { id: "elements-ocelle-tooltip--long-text", tooltips: [shownTooltip("top", "above")], dialogs: [] },
+] as const;
+
+describe("the ocelle-tooltip stories in the built Storybook (008 FR-042)", { timeout: 60_000 }, () => {
+  for (const { id, tooltips, dialogs } of tooltipStories) {
+    for (const theme of ["light", "dark"] as const) {
+      it(`${id} in ${theme}: at 1280 × 800 with reduced motion, the mouse on the centre of #tooltip-trigger, which lies inside the viewport and a [data-story="tooltip"] element with a computed --ocelle-tooltip-delay of 0ms: after fonts.ready and two frames the bubble is shown on the story's side, on top, with base.css applied and no request outside the origin`, async () => {
+        const selector = "#tooltip-trigger";
+        const { page, outside, inside } = await openHovered(id, theme, selector);
+        expect({ ...((await observeTooltips(page, selector)) as object), inside, outside }).toEqual({
+          theme,
+          base: { linked: true, scheme: theme },
+          defined: true,
+          trigger: { count: 1, wrapped: true, delayMs: 0 },
+          tooltips,
+          dialogs,
+          inside: true,
           outside: [],
         });
         await page.close();
