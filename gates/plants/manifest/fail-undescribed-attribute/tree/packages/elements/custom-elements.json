@@ -413,43 +413,6 @@
         {
           "attributes": [
             {
-              "name": "tone"
-            }
-          ],
-          "cssParts": [],
-          "cssProperties": [],
-          "customElement": true,
-          "description": "A plant element with one public member that has no description (005 FR-009).",
-          "events": [],
-          "kind": "class",
-          "members": [],
-          "name": "OcellePlant",
-          "slots": [],
-          "superclass": {
-            "name": "LitElement",
-            "package": "lit"
-          },
-          "tagName": "ocelle-plant"
-        }
-      ],
-      "exports": [
-        {
-          "declaration": {
-            "module": "src/ocelle-plant.ts",
-            "name": "OcellePlant"
-          },
-          "kind": "js",
-          "name": "OcellePlant"
-        }
-      ],
-      "kind": "javascript-module",
-      "path": "src/ocelle-plant.ts"
-    },
-    {
-      "declarations": [
-        {
-          "attributes": [
-            {
               "default": "undefined",
               "description": "The name of the navigation landmark, trimmed, used while the host has no `aria-label`; empty or whitespace-only\ncounts as none, and the landmark is then unnamed. Not reflected.",
               "fieldName": "label",
@@ -529,6 +492,43 @@
       ],
       "kind": "javascript-module",
       "path": "src/ocelle-personal-rail.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "name": "tone"
+            }
+          ],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A plant element with one public member that has no description (005 FR-009).",
+          "events": [],
+          "kind": "class",
+          "members": [],
+          "name": "OcellePlant",
+          "slots": [],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-plant"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-plant.ts",
+            "name": "OcellePlant"
+          },
+          "kind": "js",
+          "name": "OcellePlant"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-plant.ts"
     },
     {
       "declarations": [
