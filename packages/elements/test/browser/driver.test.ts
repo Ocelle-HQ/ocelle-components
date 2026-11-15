@@ -385,6 +385,20 @@ describe("the driver steps on the strict-CSP fixture pages", { timeout: 60_000 }
       expect({ empty, field: await driver.focusPath(), recorded: await page.finish() }).toEqual({ empty: [], field: ["ocelle-test-field#f", "input"], recorded: clean });
     });
 
+    it("call(id, method, ...args) calls the element's method with the arguments and returns its plain result", async () => {
+      const { visit: page, driver } = await open();
+      await driver.mount(form);
+      const results = [await driver.call("f", "checkValidity"), await driver.call("t", "getAttribute", "value"), await driver.call("t", "focus")];
+      expect({ results, recorded: await page.finish() }).toEqual({ results: [true, "draft", null], recorded: clean });
+    });
+
+    it("call(id, method) rejects when the element has no such method, rather than reading undefined (phase 3 review round 1, R1-06)", async () => {
+      const { visit: page, driver } = await open();
+      await driver.mount(form);
+      await expect(driver.call("t", "noSuchMethod")).rejects.toThrow("call: #t has no method noSuchMethod");
+      expect(await page.finish()).toEqual(clean);
+    });
+
     it("navigateAwayAndBack() on a no-store route shows the page again from the network and returns pageshow.persisted", async () => {
       const { visit: page, driver } = await open("live.html", [...scripts, "no-store/live.html"]);
       const response = await page.page.request.get(new URL("/no-store/live.html", page.page.url()).href);
