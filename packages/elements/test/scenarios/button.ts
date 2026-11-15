@@ -54,12 +54,12 @@ const tenth = (value: number): number => Math.round(value * 10) / 10 + 0;
 const colour = (token: string, theme: Palette): string => tokenColour(`color-${token}`, theme);
 
 /** The serious and critical axe results of the page (or of `scope`), by rule id. */
-async function severe(driver: Driver, scope?: string): Promise<string[]> {
+export async function severe(driver: Driver, scope?: string): Promise<string[]> {
   return (await driver.axe(scope)).filter((result) => result.impact === "serious" || result.impact === "critical").map((result) => `${result.kind} ${result.id}`);
 }
 
 /** The number of dispatches (distinct serials) of `type` whose target was the element `id`. */
-function dispatches(records: readonly EventRecord[], type: string, id: string): number {
+export function dispatches(records: readonly EventRecord[], type: string, id: string): number {
   return new Set(records.filter((record) => record.type === type && record.target === `ocelle-button#${id}`).map((record) => record.serial)).size;
 }
 
@@ -69,7 +69,7 @@ function counts(records: readonly EventRecord[], id: string): { readonly click: 
 }
 
 /** One type's records summarised: where each listener was, the targets, the serials and the flags seen. */
-function summary(records: readonly EventRecord[], type: string): unknown {
+export function summary(records: readonly EventRecord[], type: string): unknown {
   const of = records.filter((record) => record.type === type);
   return {
     at: of.map((record) => record.at),
@@ -101,7 +101,7 @@ function groundAttribute(ground: Ground): string | undefined {
   return undefined;
 }
 
-type Variant = "primary" | "secondary" | "quiet";
+export type Variant = "primary" | "secondary" | "quiet";
 type Kind = Variant | "flush";
 
 /** Markup of a button of a kind on a ground, with its id. */
@@ -116,7 +116,7 @@ function button(id: string, kind: Kind, ground: string | undefined, text = "Save
  * The idle look of research.md R-08's tables (items 3, 4, 4a, 5): `ground` the attribute (undefined, `accent-low`,
  * `inset`, `hover-bg`, `state` or `chrome`).
  */
-function idle(variant: Variant, ground: string | undefined, theme: Palette): { fill: string; border: string; ink: string } {
+export function idle(variant: Variant, ground: string | undefined, theme: Palette): { fill: string; border: string; ink: string } {
   const c = (token: string): string => colour(token, theme);
   if (variant === "primary") return { fill: c("accent"), border: c("accent-strong"), ink: c("on-accent") };
   if (ground === "chrome") return { fill: transparent, border: c("chrome-muted"), ink: c("chrome-ink") };
@@ -414,7 +414,7 @@ const flushCases = [
  * `generic` one. Chromium 153 exposes the host of an `ocelle-button` as an unnamed `generic` node (as it does a host
  * with an `id`, mission 005's finding, src/naming.ts `expose`), which no screen reader announces (US1-1 below).
  */
-async function meaningful(driver: Driver, id: string): Promise<unknown[]> {
+export async function meaningful(driver: Driver, id: string): Promise<unknown[]> {
   return (await driver.ax(id)).filter((node) => node.role !== "generic" || node.name !== "");
 }
 

@@ -20,7 +20,7 @@ import { commands, page } from "vitest/browser";
 import baseText from "../../styles/src/base.css?raw";
 import { css } from "../../tokens/src/generate.ts";
 import { source } from "../../tokens/src/source.ts";
-import { activeInnerOf, activePath, clickElement, computedOf, currentOf, endOrder, focusElement, preventNextEvent, recordEvents, resetPage, sentinelId, startOrder, takeRecords } from "./page-side.ts";
+import { activeInnerOf, activePath, clickElement, computedOf, copyElement, currentOf, endOrder, focusElement, morphElement, preventNextEvent, recordEvents, resetPage, sentinelId, startOrder, takeRecords } from "./page-side.ts";
 import { decodePng } from "./pixels.ts";
 import type { Box, Driver, Drawing, NavigationRecord, Paint, Part, Placement, Sheets } from "./scenarios/driver.ts";
 
@@ -278,5 +278,13 @@ export function inProcessDriver(): Driver {
     axState: (id, inner) => commands.axState(id, inner),
     current: (id, inner) => Promise.resolve(currentOf({ id, inner })),
     axe: (scope) => commands.axe(scope),
+    copy: async (id, via, into) => {
+      copyElement({ id, via, into });
+      await settle();
+    },
+    morph: async (id, markup) => {
+      morphElement({ id, markup });
+      await settle();
+    },
   };
 }

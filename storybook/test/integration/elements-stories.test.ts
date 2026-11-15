@@ -189,6 +189,12 @@ interface ButtonSeen {
   readonly disabled: boolean;
   readonly label: string | null;
   readonly rendered: boolean;
+  // 012 phase 3 (tasks.md T034): the host's href, the inner control's tag and the moved states on it.
+  readonly href: string | null;
+  readonly tag: string | null;
+  readonly expanded: string | null;
+  readonly pressed: string | null;
+  readonly current: string | null;
 }
 
 /** What a button story's page shows: its theme, the base stylesheet, its buttons and how many hold focus. */
@@ -207,7 +213,12 @@ function observeButtons(page: Page): Promise<unknown> {
       ground: button.getAttribute("ground"),
       disabled: button.hasAttribute("disabled"),
       label: button.getAttribute("label"),
-      rendered: button.shadowRoot?.querySelectorAll('button[part="control"]').length === 1,
+      rendered: button.shadowRoot?.querySelectorAll('[part="control"]').length === 1,
+      href: button.getAttribute("href"),
+      tag: button.shadowRoot?.querySelector('[part="control"]')?.localName ?? null,
+      expanded: button.shadowRoot?.querySelector('[part="control"]')?.getAttribute("aria-expanded") ?? null,
+      pressed: button.shadowRoot?.querySelector('[part="control"]')?.getAttribute("aria-pressed") ?? null,
+      current: button.shadowRoot?.querySelector('[part="control"]')?.getAttribute("aria-current") ?? null,
     })),
     focused: [...document.querySelectorAll("#storybook-root ocelle-button")].filter((button) => button.shadowRoot?.activeElement?.getAttribute("part") === "control").length,
   }));
@@ -215,7 +226,7 @@ function observeButtons(page: Page): Promise<unknown> {
 
 /** A button of a story with the attributes given, the others absent. */
 function seen(attributes: Partial<ButtonSeen> = {}): ButtonSeen {
-  return { variant: null, size: null, flush: false, ground: null, disabled: false, label: null, rendered: true, ...attributes };
+  return { variant: null, size: null, flush: false, ground: null, disabled: false, label: null, rendered: true, href: null, tag: "button", expanded: null, pressed: null, current: null, ...attributes };
 }
 
 const variants = [seen({ variant: "primary" }), seen({ variant: "secondary" }), seen({ variant: "quiet" })];
@@ -244,6 +255,23 @@ const buttonStories: readonly { readonly id: string; readonly buttons: readonly 
   },
   { id: "elements-ocelle-button--changing-surface", buttons: [seen({ variant: "quiet", ground: "hover-bg" }), seen({ variant: "quiet", ground: "hover-bg" })] },
   { id: "elements-ocelle-button--right-to-left", buttons: [seen(), seen({ flush: true })] },
+  // 012 phase 3 (tasks.md T034, T039): the link stories (link mode in each variant and flush, disabled, a new tab) and
+  // the moved states (expanded, current, pressed), each state on the inner control.
+  {
+    id: "elements-ocelle-button--link",
+    buttons: [seen({ href: "#projects", tag: "a" }), seen({ variant: "primary", href: "#new", tag: "a" }), seen({ variant: "quiet", href: "#docs", tag: "a" }), seen({ flush: true, href: "#projects", tag: "a" })],
+  },
+  {
+    id: "elements-ocelle-button--link-disabled",
+    buttons: [seen({ href: "#projects", tag: "a", disabled: true }), seen({ variant: "primary", href: "#new", tag: "a", disabled: true }), seen({ variant: "quiet", href: "#docs", tag: "a", disabled: true }), seen({ flush: true, href: "#projects", tag: "a", disabled: true })],
+  },
+  { id: "elements-ocelle-button--link-new-tab", buttons: [seen({ href: "#docs", tag: "a" }), seen({ variant: "quiet", href: "#docs", tag: "a" })] },
+  { id: "elements-ocelle-button--expanded", buttons: [seen({ expanded: "true" }), seen({ variant: "quiet", expanded: "false" })] },
+  {
+    id: "elements-ocelle-button--current",
+    buttons: [seen({ flush: true, size: "compact", href: "#home", tag: "a" }), seen({ flush: true, size: "compact", href: "#projects", tag: "a", current: "page" })],
+  },
+  { id: "elements-ocelle-button--pressed", buttons: [seen({ variant: "quiet", pressed: "true" }), seen({ variant: "quiet", pressed: "false" })] },
 ];
 
 describe("the ocelle-button stories in the built Storybook (012 US1, FR-050)", { timeout: 60_000 }, () => {

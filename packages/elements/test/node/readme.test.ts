@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { compositions } from "../scenarios/link.ts";
 
 // The package documentation (005 FR-002, FR-007, FR-008, FR-029, FR-031, FR-033, FR-034, SC-008; research.md R-15;
 // T020), on the model of 003's readme test: the README states the element conventions a later element mission
@@ -67,7 +68,10 @@ const fragments = [
   // ocelle-icon's token (FR-007, FR-011, US1-11)
   "`ocelle-icon` reads the token `--ocelle-icon-size`: overriding it on an ancestor resizes every icon in that subtree",
   // engines (FR-008, R-05)
-  "Engine floor: Chromium 120+ and WebKit 16.4+, with no `window.ShadyCSS` polyfill on the page",
+  // 012 phase 3 (tasks.md T033; research.md R-04): the floor rises to Chromium 135 and WebKit 17.4
+  "Engine floor: Chromium 135+ and WebKit 17.4+, with no `window.ShadyCSS` polyfill on the page",
+  "ARIA element reflection (`ariaControlsElements`, `ariaLabelledByElements`, `ariaDescribedByElements`): Chromium 135, WebKit 16.4 (the controls' ID references)",
+  "Custom states (`ElementInternals.states` and `:state()`): Chromium 125, WebKit 17.4 (`ocelle-button`'s moved states)",
   "`:dir()`: Chromium 120, WebKit 16.4",
   "`@media not (forced-colors: active)` (Media Queries 4's `not (…)` without a media type): Chromium 104, WebKit 16.4",
   "The `lh` unit: Chromium 109",
@@ -125,7 +129,7 @@ const fragments = [
   // 012 (tasks.md T020; contracts/elements-package.md § Control conventions, § ocelle-button): the control conventions
   // that later controls follow, conventions 1 (one inner control, the filled host, the host guard and its limits), 3
   // (the disabled half), 5 (the name order, label in name) and 7 (primary action), and the ocelle-button section
-  convention("One inner control", "Each control renders exactly one native `<button type=\"button\">` in an open shadow root attached with `delegatesFocus`; the host has no role and no tabindex"),
+  convention("One inner control", "Each control renders exactly one native `<button type=\"button\">` (button mode) or `<a>` (link mode) in an open shadow root attached with `delegatesFocus`; the host has no role and no tabindex"),
   "`element.focus()` focuses the inner control, and `element.click()` clicks it, so a click started by `click()` gets the same guarantees as any other click",
   "A click dispatched on the host with `dispatchEvent` is outside the guarantees: it does not pass through the inner control, so the element stops it",
   "The host is a grid container (`inline-grid` for `ocelle-button`) and the inner control its single stretched item, so the inner control fills the host when a flex row or a grid stretches it; a stretched button grows to the row's height (set `align-self` on the element to avoid it)",
@@ -133,7 +137,7 @@ const fragments = [
   "Capture-phase listeners, and listeners added to the element before it is upgraded, are outside that guarantee: they run before the element's own listener",
   convention("Disabled", "`disabled` means the control cannot be used here at all: the inner control is out of the tab order, reported disabled and not activated"),
   "Not activated means: no `ocelle-*` event and no `click` reaching a bubble-phase listener on the element or its ancestors (up to `document` and `window`); capture-phase listeners are outside it",
-  convention("Name order", "The inner control's name is the element's `label` (trimmed; empty or whitespace-only counts as none), and otherwise the element's content; slotted icons never contribute"),
+  convention("Name order", "The inner control's name is, in this order: the host's `aria-labelledby`, the host's `aria-label`, the element's `label` (trimmed; empty or whitespace-only counts as none), and otherwise the element's content; slotted icons never contribute"),
   "When a control's content is visible, its `label` contains the visible text, ideally at its start, so a user who speaks a control's visible name reaches it (label in name)",
   convention("Primary action", "A primary action uses `size=\"default\"` (44 × 44 px minimum); `variant=\"primary\"` is a look, not what makes an action primary"),
   // the ocelle-button section (FR-009 to FR-014, FR-018 to FR-020, FR-022, FR-023)
@@ -155,6 +159,35 @@ const fragments = [
   "In forced colours the label and border are `ButtonText`, hover and pressed borders and the focus ring `Highlight`, a flush button's hover and pressed a dashed `Highlight` outline, and a disabled button `GrayText`",
   "`ocelle-button` does not take part in forms: its inner control is always `type=\"button\"`, so activating it inside a `<form>` neither submits nor resets the form, and it has no `type`, `name`, `value` or `form` attribute. A host that submits from it calls `form.requestSubmit()` in its click handler",
   "A long label wraps between words inside the button, which grows in block size; it is never truncated",
+  // 012 phase 3 (tasks.md T033, T038; contracts/elements-package.md § Control conventions 2, 4 and 6, § ocelle-button):
+  // link mode, the moved host ARIA with its recipes, mirrors and custom states, the two surfaces of current, the
+  // link-mode activate event and look, and the engine floor above
+  convention("Link versus button", "A control is in link mode exactly when its `href` is not empty or whitespace only, parses as a URL against the document's base URL and is not a `javascript:` URL as the URL parser reads it (so `JAVASCRIPT:`, `java\tscript:` and a leading space or control character count); otherwise it is in button mode, with no error for an `href` that does not parse"),
+  "Link mode renders an `<a>` with the `href` as written and the native link behaviour: Enter activates, Space does not, and modifier clicks open new tabs or windows; button mode renders a `<button type=\"button\">` (Enter and Space activate). Both modes look the same for the same variant",
+  "`data:` and `vbscript:` URLs are link mode and left to the host: Chromium blocks a top-level `data:` navigation and runs no `vbscript:`",
+  "A disabled link has no `href`: it is an `<a role=\"link\" aria-disabled=\"true\">` out of the tab order, so neither a click, a modifier click, a middle click, the context menu nor a drag opens it",
+  convention("Host ARIA is moved", "The ARIA attributes a control lists, and `title`, are moved from the host onto the inner control: the element applies the value there and removes the attribute from the host, so the state appears once, on the inner control, and `getAttribute` on the host returns `null` afterwards"),
+  "To clear a moved state, set an empty or whitespace-only value (`aria-controls=\"\"`, `aria-label=\"\"`, `title=\"\"`) or the ARIA off value (`aria-expanded=\"false\"`, `aria-pressed=\"false\"`, `aria-current=\"false\"`); any other value is applied as written",
+  "`removeAttribute` on a moved attribute changes nothing, and neither does a framework binding that becomes `undefined`, `null` or `nothing`, so bind the off value",
+  "| React | `aria-current={active ? \"page\" : \"false\"}`, `aria-expanded={open ? \"true\" : \"false\"}`, `aria-controls={open ? \"panel\" : \"\"}` | `undefined` or `null` |",
+  "| Lit | `aria-current=${active ? \"page\" : \"false\"}` (an attribute binding with a string) | `nothing`, `ifDefined(undefined)` |",
+  "| Svelte | `aria-current={active ? \"page\" : \"false\"}` | `undefined`, `null` |",
+  "| htmx, Thymeleaf | render the attribute with the off value (`th:attr=\"aria-current=${active} ? 'page' : 'false'\"`) | omitting the attribute on an element that is updated in place; writing a `data-ocelle-moved-*` attribute |",
+  "Each moved value is mirrored in a host attribute the element owns, `data-ocelle-moved-<attribute>` (for example `data-ocelle-moved-aria-label`), removed when the value is cleared; at upgrade the element reads a mirror back for an attribute the host does not set, and a host attribute set at upgrade wins over its mirror. So copies of the live DOM (`cloneNode(true)`, `innerHTML` and `outerHTML`, htmx's history snapshot) keep names and states",
+  "The element restores a mirror that is removed or changed while it holds the value, so a morphing swap (htmx's idiomorph `morph` swap, Turbo 8 page-refresh morphs), which removes every attribute the server markup lacks, keeps the mirrors",
+  "Hosts never write or remove a mirror: one written while the element holds no value for it is not read until the next upgrade",
+  "With htmx, a swap that replaces the element moves the new element's attributes at upgrade; a morphing swap sets the changed attributes on the live element, which moves them, and the element restores the mirrors the morph removes; htmx's history restore keeps the moved values through the mirrors",
+  "Since a host attribute selector no longer matches a moved state, `ocelle-button` exposes custom states: `:state(expanded)` while the moved `aria-expanded` is `\"true\"`, `:state(pressed)` while the moved `aria-pressed` is `\"true\"`, and `:state(current)` while the moved `aria-current` is anything but `\"false\"`, for example `ocelle-button:state(expanded) ocelle-icon`",
+  "ID references (`aria-controls`, `aria-labelledby`, `aria-describedby`) are resolved by id in the host's own tree (its document, or the shadow root it is in) when they are set and when the element is connected, and related to the inner control by element reference, never by copying the id into the shadow root; ids not found are skipped, an element in another shadow root is not resolved, and an element added later with the id is picked up only when the attribute is set again",
+  "Any other `aria-*` attribute on the host is not supported: it stays on the host and axe flags it",
+  "This is the controls' own rule: `ocelle-icon` and `ocelle-brand-mark` keep their host `aria-label` rule (Host ARIA), so the two families differ",
+  "An element that moves a standard attribute declares it with `@attr` and a description, with its mirror, so the manifest lists both",
+  convention("Current", "On `ocelle-button`, `aria-current` is passed through to the inner control with any value and draws no visual mark; a host that wants a visible mark styles `:state(current)` or uses a row, whose `current` property draws the mark and sets `aria-current`"),
+  "`href`, `target`, `rel` and `download` (attributes and properties, reflected): link mode (Link versus button) and the inner link's attributes, set while the link is available; in button mode and on a disabled link they have no effect. With `target=\"_blank\"` and no `rel`, the inner link gets `rel=\"noopener\"`",
+  "`ocelle-button` moves `aria-expanded`, `aria-controls`, `aria-current`, `aria-haspopup`, `aria-pressed`, `aria-label`, `aria-labelledby`, `aria-describedby` and `title` (Host ARIA is moved); `aria-pressed` is applied in button mode only, since a link cannot be pressed",
+  "A moved `title` is the inner control's native tooltip and its description, or its name when nothing else names it",
+  "In link mode, calling `preventDefault()` on `ocelle-button-activate` cancels the navigation. A click with Ctrl, Meta, Shift or Alt held dispatches no `ocelle-button-activate`: its `click` is delivered and the browser's default (a new tab or window, or a download) happens; a middle click delivers no `click` and dispatches nothing",
+  "In forced colours a link-mode button's text and border are `LinkText`",
   // two copies on a page (FR-006, Edge Cases)
   "Two copies of the package on one page, two versions or the browser build beside a bundle of the module build, cannot both define an element: the first definition wins and the second import throws nothing",
 ];
@@ -216,6 +249,14 @@ describe("packages/elements/README.md", () => {
     expect(tableRows(read("README.md"), "Icons")).toEqual(iconRows);
   });
 
+  // Plan decision 28 (SC-006; tasks.md T033): the `ocelle-button` section gives the markup of #12's breadcrumb item,
+  // #12's top-bar menu button and #14's copy control, exactly as scenarios/link.ts renders them.
+  it("gives the three consumer compositions in its ocelle-button section, the markup scenarios/link.ts renders (SC-006)", () => {
+    const section = /^## `ocelle-button`\n([\s\S]*?)(?=^## |(?![\s\S]))/m.exec(read("README.md"))?.[1] ?? "";
+    const block = /\*\*Consumer compositions\.\*\*[\s\S]*?```html\n([\s\S]*?)```/.exec(section)?.[1] ?? "";
+    expect(block.split("\n").filter((line) => line !== "" && !line.startsWith("<!--"))).toEqual([compositions.breadcrumb, compositions.menu, compositions.copy]);
+  });
+
   it("names the @ocelle/tokens peer dependency of package.json", () => {
     const manifest = JSON.parse(read("package.json")) as { peerDependencies?: Record<string, string> };
     const pin = manifest.peerDependencies?.["@ocelle/tokens"];
@@ -248,6 +289,13 @@ describe("packages/elements/CHANGELOG.md", () => {
     "`variant`, `size`, `flush` and `ground` (reflected), `label` and `disabled` (reflected)",
     "the control conventions",
     "`--ocelle-color-hover-border`",
+    // 012 phase 3 (tasks.md T038)
+    "link mode",
+    "`href`, `target`, `rel` and `download` (reflected)",
+    "`aria-expanded`, `aria-controls`, `aria-current`, `aria-haspopup`, `aria-pressed`, `aria-label`, `aria-labelledby`, `aria-describedby` and `title`",
+    "`data-ocelle-moved-<attribute>`",
+    "`:state(expanded)`, `:state(pressed)` and `:state(current)`",
+    "Chromium 135 and WebKit 17.4",
     ...["chevron-start", "chevron-end", "chevron-up", "chevron-down", "arrow-start", "arrow-end", "menu", "close", "folder", "file", "search", "table", "copy"].map((name) => `\`${name}\``),
   ])("names %s under Unreleased / Added (constitution VII, FR-031, SC-008)", (surface) => {
     expect(added).toContain(surface);

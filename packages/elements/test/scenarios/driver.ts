@@ -296,4 +296,20 @@ export interface Driver {
    * with 006's rule selection (gates/lib/axe-rules.ts `ruleMeta` and `ruleOptions`, as gates/bin/axe.ts).
    */
   axe(scope?: string): Promise<AxeResult[]>;
+  // 012 phase 3 (US2-13): copies of the live DOM and a morph's attribute sync.
+  /**
+   * Copies the live DOM into the container `into` and waits for every element to render: `outerHTML` parses the element
+   * `id`'s `outerHTML`, `clone` appends its `cloneNode(true)`, `innerHTML` writes the container `id`'s `innerHTML`. Each
+   * id in the copy gets `-<into>` appended.
+   */
+  copy(id: string, via: CopyVia, into: string): Promise<void>;
+  /**
+   * Applies a morph's attribute sync (idiomorph's order) of the first element of `markup` to the live element `id`: set
+   * each attribute that differs, then remove, from the last, each live attribute the markup lacks; waits for every
+   * element to render.
+   */
+  morph(id: string, markup: string): Promise<void>;
 }
+
+/** How `copy` copies the live DOM. */
+export type CopyVia = "outerHTML" | "clone" | "innerHTML";
