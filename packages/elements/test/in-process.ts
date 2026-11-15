@@ -52,6 +52,20 @@ export function firstTimingReturn(): AnnouncerTiming | undefined {
   return first;
 }
 
+/**
+ * Runs `run` with the timing `next` in force and gives the element back the timing it replaced afterwards, for the
+ * fake-clock rule case of the "empty-state start" plant row (test/plants.test.ts, test/announcer-rules.ts; phase 2
+ * stop 2, T025a), which needs the two `D` values of the shipped timing where the test constant has one.
+ */
+export function withTiming<T>(next: AnnouncerTiming, run: () => T): T {
+  const replaced = setAnnouncerTimingForTests(next);
+  try {
+    return run();
+  } finally {
+    setAnnouncerTimingForTests(replaced);
+  }
+}
+
 function sheet(text: string): CSSStyleSheet {
   const made = new CSSStyleSheet();
   made.replaceSync(text);
