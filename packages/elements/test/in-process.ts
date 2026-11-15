@@ -277,6 +277,7 @@ export function inProcessDriver(): Driver {
       }
       await settle();
     },
+    property: (id, name) => Promise.resolve((element(id) as unknown as Record<string, unknown>)[name]),
     textOf: (id, inner) => Promise.resolve(element(id).shadowRoot?.querySelector(inner)?.textContent ?? null),
     rendered: (id) => {
       const target = element(id);

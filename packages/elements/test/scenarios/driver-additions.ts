@@ -354,4 +354,12 @@ export const driverAdditionScenarios: readonly Scenario[] = [
     },
     expected: { term: "Term", missing: null, slotted: { innerText: "Shown", rects: 1 }, unslotted: { innerText: "", rects: 0 } },
   },
+  {
+    name: "property: a property's value is read as the page holds it, a number as a number and an unset one as undefined",
+    run: async (driver) => {
+      await driver.mount('<input id="field" type="number" value="7">');
+      return { valueAsNumber: await driver.property("field", "valueAsNumber"), value: await driver.property("field", "value"), missing: await driver.property("field", "notAProperty") };
+    },
+    expected: { valueAsNumber: 7, value: "7", missing: undefined },
+  },
 ];

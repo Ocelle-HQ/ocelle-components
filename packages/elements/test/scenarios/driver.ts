@@ -234,6 +234,8 @@ export interface Driver {
    * waits for every element to render (013 phase 3: a value set and removed before a frame).
    */
   changeAttributes(id: string, changes: readonly (readonly [string, string | null])[]): Promise<void>;
+  /** The value of the property `name` of the element with `id`, as the page holds it (013 phase 3: a converted attribute). */
+  property(id: string, name: string): Promise<unknown>;
   /** The text content of the first element matching `inner` in the shadow root of the element with `id`, or null when there is none. */
   textOf(id: string, inner: string): Promise<string | null>;
   /**

@@ -336,6 +336,12 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
       }, { id, changes });
       await settle(page);
     },
+    property: (id, name) =>
+      page.evaluate(({ id, name }) => {
+        const element = document.getElementById(id);
+        if (element === null) throw new Error(`no #${id} on the page`);
+        return (element as unknown as Record<string, unknown>)[name];
+      }, { id, name }),
     textOf: (id, inner) => page.evaluate(({ id, inner }) => document.getElementById(id)?.shadowRoot?.querySelector(inner)?.textContent ?? null, { id, inner }),
     rendered: (id) =>
       page.evaluate((id) => {
