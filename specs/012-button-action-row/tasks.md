@@ -41,9 +41,10 @@ written by hand), and extends the `fail-token-changed` (`gates/plants/visual/fai
 phase's light story-themes that show `color-ink`, measured) and `fail-empty-index` plants.
 
 **Environment**: Node 22 in this container, 26.13.0 in CI. Every browser run sets
-`OCELLE_CHROMIUM_PATH=/opt/pw-browsers/chromium-1243/chrome-linux64/chrome`; Stryker and plant runs alias the
-browsers directory as `knowledge/speckit-flows/findings/frontend-missions.md` § Browser path describes. One heavy job
-(browser suites, mutation, plants, visual) at a time. Never `git stash`.
+`OCELLE_CHROMIUM_PATH=/opt/pw-browsers/chromium-1248/chrome-linux64/chrome` (Chromium 156, the build the pinned
+Playwright 1.64.1 expects; phase 3 review R1-04); Stryker and plant runs alias the browsers directory as
+`knowledge/speckit-flows/findings/frontend-missions.md` § Browser path describes. One heavy job (browser suites,
+mutation, plants, visual) at a time. Never `git stash`.
 
 **Organization**: phase 1 is Setup (test harness and shard size); phases 2 to 6 are User Stories 1 to 5, one review
 unit each, folded after approval (`/ocelle-run` step 4.3). Records (README, CHANGELOG, stories, baselines, plants)

@@ -195,8 +195,10 @@ its ancestors. Its target is the element, which identifies the button. Calling `
 `click`'s default action; a button has none, so the `click` is still delivered, with `defaultPrevented` `true`. A
 disabled button dispatches neither event. The `click` reaches the host as an ordinary `click` event whose target is the
 element. In link mode, calling `preventDefault()` on `ocelle-button-activate` cancels the navigation. A click with
-Ctrl, Meta, Shift or Alt held dispatches no `ocelle-button-activate`: its `click` is delivered and the browser's default
-(a new tab or window, or a download) happens; a middle click delivers no `click` and dispatches nothing.
+Ctrl, Meta, Shift or Alt held dispatches no `ocelle-button-activate`: its `click` is delivered, the element prevents
+nothing and the browser's own modifier handling applies (on Chromium on Linux, Ctrl, Shift and Alt give a new tab, a new
+window or a download and leave the page as it is; Meta is not a link modifier there and navigates the current tab); a
+middle click delivers no `click` and dispatches nothing.
 
 **Looks.** Hover and pressed change the surface and the border: a bordered variant's border becomes
 `--ocelle-color-hover-border`; the primary fills with `--ocelle-color-accent-hover` on hover and `--ocelle-color-accent`
@@ -274,10 +276,10 @@ after it) follows these rules.
    a URL against the document's base URL and is not a `javascript:` URL as the URL parser reads it (so `JAVASCRIPT:`,
    `java\tscript:` and a leading space or control character count); otherwise it is in button mode, with no error for
    an `href` that does not parse. Link mode renders an `<a>` with the `href` as written and the native link behaviour:
-   Enter activates, Space does not, and modifier clicks open new tabs or windows; button mode renders a
-   `<button type="button">` (Enter and Space activate). Both modes look the same for the same variant. `data:` and
-   `vbscript:` URLs are link mode and left to the host: Chromium blocks a top-level `data:` navigation and runs no
-   `vbscript:`.
+   Enter activates, Space does not, and modifier clicks get the browser's own modifier handling (the element prevents
+   nothing); button mode renders a `<button type="button">` (Enter and Space activate). Both modes look the same for
+   the same variant. `data:` and `vbscript:` URLs are link mode and left to the host: Chromium blocks a top-level
+   `data:` navigation and runs no `vbscript:`.
 3. **Disabled.** `disabled` means the control cannot be used here at all: the inner control is out of the tab order,
    reported disabled and not activated. Not activated means: no `ocelle-*` event and no `click` reaching a
    bubble-phase listener on the element or its ancestors (up to `document` and `window`); capture-phase listeners are
