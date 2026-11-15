@@ -1,5 +1,5 @@
 import type { Browser } from "playwright";
-import { afterAll, assert, beforeAll, describe, inject, it } from "vitest";
+import { afterAll, assert, beforeAll, describe, expect, inject, it } from "vitest";
 import { matrixScenarios } from "../scenarios/notice-matrix.ts";
 import { noticeScenarios } from "../scenarios/notice.ts";
 import type { NoticeScenario } from "../scenarios/notice.ts";
@@ -43,12 +43,12 @@ async function onPage({ run }: NoticeScenario): Promise<void> {
 
 describe("ocelle-notice on the strict-CSP fixture with the browser build (US1)", { timeout: 60_000 }, () => {
   it.each(noticeScenarios)("$name", async (scenario) => {
-    assert.isUndefined(await onPage(scenario));
+    await expect(onPage(scenario)).resolves.toBeUndefined();
   });
 });
 
 describe("ocelle-notice, the SC-002 matrix on the strict-CSP fixture", { timeout: 60_000 }, () => {
   it.each(matrixScenarios)("$name", async (scenario) => {
-    assert.isUndefined(await onPage(scenario));
+    await expect(onPage(scenario)).resolves.toBeUndefined();
   });
 });

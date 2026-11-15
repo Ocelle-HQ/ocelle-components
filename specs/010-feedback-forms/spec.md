@@ -656,7 +656,10 @@ gates and the README documentation test.
     announcement wait (the plan's `W`: twice Chromium's serialisation delay, 300 ms after load, 700 ms before; "after
     load" means once `document.readyState` is `"complete"`, so a notice inserted while it is `"interactive"`, for
     example from a `DOMContentLoaded` handler, is an insertion announced with the 700 ms wait): the
-    announcement comes `W` after the last of them, with the text and politeness current then, and if those equal the
+    announcement comes `W` after the last of them (for a change right after a first load, also no earlier than the
+    pre-load `W` after the notice was first rendered, about 700 ms; plan research R-02, phase 2 stop 2 operator
+    decision (a)), with the text
+    and politeness current then, and if those equal the
     baseline at that moment nothing is announced (a text that went `A`, `B`, `A`). A notice whose text keeps changing
     more often than every `W` is not announced until the changes stop; the README states `W` and this case. A change
     made while an announced copy is still held is announced after that copy has been in the region for at least `W`,
