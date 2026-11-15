@@ -101,11 +101,13 @@ export interface Waits {
  * fragment parsing (`insertAdjacentHTML("beforeend", …)`), `text` replaces the element's children with one text node
  * (`textContent`), `attribute` sets an attribute (null removes it), `property` sets a property, `move` appends the
  * element to another container (a removal and an insertion in one operation; an element a `remove` removed is found
- * by its id too), `remove` removes it, `focus` focuses it.
+ * by its id too), `remove` removes it, `focus` focuses it. `data` (phase 4) sets the data of the element's first child
+ * node, a text node, so the change is a `characterData` mutation and not a `childList` one.
  */
 export type Operation =
   | { readonly op: "insert"; readonly container: string; readonly markup: string }
   | { readonly op: "text"; readonly id: string; readonly text: string }
+  | { readonly op: "data"; readonly id: string; readonly data: string }
   | { readonly op: "attribute"; readonly id: string; readonly name: string; readonly value: string | null }
   | { readonly op: "property"; readonly id: string; readonly name: string; readonly value: string | number | boolean | null }
   | { readonly op: "move"; readonly id: string; readonly to: string }
