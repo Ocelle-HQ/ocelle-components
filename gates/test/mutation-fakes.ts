@@ -6,6 +6,8 @@
 import { readFileSync } from "node:fs";
 import type { MutationTools, ToolRun } from "../bin/mutation.ts";
 import type { Context, Io } from "../lib/cli.ts";
+import type { LineRange } from "../lib/mutation/ranges.ts";
+import type { PlacedMutant } from "../lib/mutation/shards.ts";
 
 export const root = "/work/repo";
 export const base = "4ac76fd7fb68ba7c8f15b4bc4177e64b518d56c8";
@@ -88,7 +90,7 @@ export const noStryker: FakeStryker = () => {
 export function fakeRepo(
   files: Readonly<Record<string, string>>,
   stryker: FakeStryker = noStryker,
-): Pick<MutationTools, "read" | "remove" | "stryker"> {
+): Pick<MutationTools, "read" | "remove" | "stryker" | "place"> {
   const tree = new Map(Object.entries(files));
   return {
     read: (path) => Promise.resolve(tree.get(path)),
@@ -97,6 +99,30 @@ export function fakeRepo(
       return Promise.resolve();
     },
     stryker: (mutate, config) => Promise.resolve().then(() => stryker(mutate, tree, config)),
+    place: fakePlacer({}),
+  };
+}
+
+/** One call of the mutant placer (`MutationTools["place"]`, phase 3 stop 1, T041a): the file, its content and its changed ranges. */
+export interface PlaceCall {
+  readonly path: string;
+  readonly content: string;
+  readonly ranges: readonly LineRange[];
+}
+
+/**
+ * A placer of Stryker's mutants that places, on any file, the mutants `byPath` gives its path (none for any other
+ * path), records each call in `calls`, and rejects with the error `fails` gives a path, if any.
+ */
+export function fakePlacer(
+  byPath: Readonly<Record<string, readonly PlacedMutant[]>>,
+  calls: PlaceCall[] = [],
+  fails: Readonly<Record<string, string>> = {},
+): MutationTools["place"] {
+  return (path, content, ranges) => {
+    calls.push({ path, content, ranges });
+    const failure = fails[path];
+    return failure === undefined ? Promise.resolve(byPath[path] ?? []) : Promise.reject(new Error(failure));
   };
 }
 
