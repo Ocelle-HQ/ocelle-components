@@ -31,3 +31,15 @@ operator's orchestrator session (session_01NUfZSc26YwQLeow31d6R6X) builds the sc
 `78fe475` itself (the one-line `ci.yml:89` change), pushes it, opens the draft PR, relays the T003 figures and
 closes the PR unmerged. The local scratch branch in this session is dropped. The Op-gate choice that this session
 pushes the scratch branch is superseded.
+
+## Phase 1 fold and review note R1-01 (2026-11-15)
+
+- The first fold attempt took its base from the flow's rule (latest commit whose message contains "remap evidence
+  SHAs after the history fold"), which matched `eaf16896` on main, and folded main's commits. Nothing was pushed.
+  Operator's choice: reset the local branch to the pushed pre-fold head `1b46841` and fold again from the phase
+  base `13259ee`.
+- Force-push: archive the pre-fold head to `archive/claude/035-mutation-shard-timeout-prefold-phase-1`, then
+  force-push with lease. (The operator answered directly; the orchestrator session's relayed standing approval
+  was not used.)
+- R1-01, the unmeasured mixed shard (`overlay.ts:781-798` + `packages/tokens/src/source.ts`): accepted as a known
+  gap; N = 45 stands, and the first element PR after this op lands is its first real measurement.
