@@ -35,7 +35,7 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 774ms using pnpm v12.16.1
+Done in 639ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /opt/pw-browsers/chromium-1243/chrome-linux64/chrome
 $ node gates/bin/test.ts
@@ -231,7 +231,7 @@ packages/elements/test/empty-state.test.ts:23: unit-tests: ocelle-empty-state, i
 packages/elements/test/entry-progress.test.ts:8: unit-tests: importing src/ocelle-progress.ts defines ocelle-progress as OcelleProgress and not ocelle-empty-state, ocelle-facts, ocelle-fact, ocelle-icon or ocelle-brand-mark, and a bar renders its track and fill: AssertionError: expected { …(7) } to deeply equal { …(7) }
 packages/elements/test/entry-root.test.ts:39: unit-tests: importing src/index.ts defines ocelle-progress as the OcelleProgress it exports, and a bar renders its track (013 phase 3): AssertionError: expected { type: 'function', …(2) } to deeply equal { type: 'function', …(2) }
 packages/elements/test/progress.test.ts:25: unit-tests: ocelle-progress, in process (US3) US3-1: value=7 max=12 label=Tasks done …: AssertionError: expected { bars: [], drawn: false, …(2) } to deeply equal { bars: [ { …(5) } ], …(3) }
-packages/elements/test/progress.test.ts:25: unit-tests: ocelle-progress, in process (US3) US3-2: value changed to 9 exposes 9, an…: AssertionError: expected { before: { bars: [], …(1) }, …(1) } to deeply equal { before: { …(2) }, after: { …(3) } }
+packages/elements/test/progress.test.ts:25: unit-tests: ocelle-progress, in process (US3) US3-2: value changed to 9 exposes 9, an…: AssertionError: expected { before: { bars: [], …(1) }, …(1) } to deeply equal { before: { …(2) }, after: { …(4) } }
 packages/elements/test/progress.test.ts:25: unit-tests: ocelle-progress, in process (US3) US3-3: with value-text=7 of 12 and show…: AssertionError: expected { text: null, shown: false, bars: [] } to deeply equal { text: '7 of 12', shown: true, …(1) }
 packages/elements/test/progress.test.ts:25: unit-tests: ocelle-progress, in process (US3) SPEC-2-02: value-text is not shown whil…: AssertionError: expected { indeterminate: { …(3) }, …(1) } to deeply equal { indeterminate: { …(3) }, …(1) }
 packages/elements/test/progress.test.ts:25: unit-tests: ocelle-progress, in process (US3) SPEC-2-02: value-text is kept as given …: AssertionError: expected { clamped: { text: null, …(2) }, …(1) } to deeply equal { clamped: { …(3) }, …(1) }
@@ -253,7 +253,7 @@ packages/elements/test/progress.test.ts:25: unit-tests: ocelle-progress, in proc
 packages/elements/test/progress.test.ts:25: unit-tests: ocelle-progress, in process (US3) right-to-left, indeterminate: within th…: AssertionError: expected { ltr: false, rtl: false, …(1) } to deeply equal { ltr: true, rtl: true, inside: true }
 packages/elements/test/progress.test.ts:25: unit-tests: ocelle-progress, in process (US3) right-to-left, determinate: the fill gr…: AssertionError: expected { …(2) } to deeply equal { ltr: { start: +0, …(2) }, …(1) }
 packages/elements/test/progress.test.ts:25: unit-tests: ocelle-progress, in process (US3) at a 320 px viewport, while the sweep r…: AssertionError: expected { widths: [ 320 ], running: false } to deeply equal { widths: [ 320 ], running: true }
-packages/elements/test/progress.test.ts:25: unit-tests: ocelle-progress, in process (US3) compact long label at 320 px: the track…: AssertionError: expected { cell: true, track: false, …(3) } to deeply equal { cell: true, track: true, …(3) }
+packages/elements/test/progress.test.ts:25: unit-tests: ocelle-progress, in process (US3) compact long label at 320 px: the track…: AssertionError: expected { cell: true, track: false, …(4) } to deeply equal { cell: true, track: true, …(4) }
 packages/elements/test/progress.test.ts:25: unit-tests: ocelle-progress, in process (US3) no tab stop: from a button before the b…: AssertionError: expected { …(2) } to deeply equal { …(2) }
 packages/elements/test/progress.test.ts:25: unit-tests: ocelle-progress, in process (US3) unset size and ground write no attribut…: AssertionError: expected { unset: { size: null, …(1) }, …(1) } to deeply equal { unset: { size: null, …(1) }, …(1) }
 packages/elements/test/progress.test.ts:25: unit-tests: ocelle-progress, in process (US3) fallback text: 7/12 inside a named bar …: AssertionError: expected { …(3) } to deeply equal { …(3) }
@@ -266,5 +266,5 @@ packages/elements/test/progress.test.ts:25: unit-tests: ocelle-progress, in proc
 packages/elements/test/progress.test.ts:25: unit-tests: ocelle-progress, in process (US3) a determinate bar moved does not keep t…: AssertionError: expected { started: false, moved: [], …(1) } to deeply equal { started: true, …(2) }
 packages/elements/test/progress.test.ts:25: unit-tests: ocelle-progress, in process (US3) after the window, while the episode las…: AssertionError: expected { started: false, late: { …(2) } } to deeply equal { started: true, late: { …(2) } }
 packages/elements/test/progress.test.ts:31: unit-tests: a bar changed out of the document, in process (013 R-06 membership) a bar removed after its sweep and made indeterminate again while out of the document does not keep the episode open: a bar inserted two frames later sweeps from its own start: AssertionError: expected { Object (started, running, ...) } to deeply equal { started: true, running: true, …(1) }
-unit-tests: 227 of 3790 tests failed
+unit-tests: 227 of 3792 tests failed
 [ELIFECYCLE] Test failed. See above for more details.
