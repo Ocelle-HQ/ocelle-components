@@ -285,7 +285,7 @@ describe("generate(root) on the repository's element source", () => {
     const manifest = await generate(repo);
     const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
     expect(manifest.schemaVersion).toBe("1.0.0");
-    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-icon.ts", "src/ocelle-listbox.ts", "src/ocelle-option.ts", "src/ocelle-tab-panel.ts", "src/ocelle-tab.ts", "src/ocelle-tabs.ts"]);
+    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-icon.ts", "src/ocelle-listbox.ts", "src/ocelle-option.ts", "src/ocelle-segment.ts", "src/ocelle-segmented-choice.ts", "src/ocelle-tab-panel.ts", "src/ocelle-tab.ts", "src/ocelle-tabs.ts"]);
     const [icon] = modules.find((module) => module.path === "src/ocelle-icon.ts")?.declarations ?? [];
     expect(icon).toMatchObject({
       kind: "class",
@@ -432,6 +432,51 @@ describe("generate(root) on the repository's element source", () => {
   it("declares ocelle-tab-panel per contracts/elements.md: no property, attribute, event, part or CSS property, and the default slot (014 FR-055, phase 3)", async () => {
     const panel = await declared("src/ocelle-tab-panel.ts");
     expect(panel).toEqual({ name: "OcelleTabPanel", tagName: "ocelle-tab-panel", members: [], attributes: [], events: [], slots: [{ name: "", described: true }], cssParts: [], cssProperties: [] });
+  });
+
+  it("declares ocelle-segmented-choice per contracts/elements.md: value (string, not reflected), label and joined (boolean, reflected, default false), the change event with its { value } detail, the default slot and no part (014 FR-055, phase 4)", async () => {
+    const group = await declared("src/ocelle-segmented-choice.ts");
+    expect(group).toEqual({
+      name: "OcelleSegmentedChoice",
+      tagName: "ocelle-segmented-choice",
+      members: [
+        { name: "joined", type: "boolean", attribute: "joined", reflects: true, default: "false", described: true },
+        { name: "label", type: "string | undefined", attribute: "label", reflects: false, default: "undefined", described: true },
+        { name: "value", type: "string", attribute: "value", reflects: false, default: expect.any(String) as unknown, described: true },
+      ],
+      attributes: [
+        { name: "joined", fieldName: "joined", described: true },
+        { name: "label", fieldName: "label", described: true },
+        { name: "value", fieldName: "value", described: true },
+      ],
+      events: [{ name: "ocelle-segmented-choice-change", type: "CustomEvent<{ value: string }>", described: true }],
+      slots: [{ name: "", described: true }],
+      cssParts: [],
+      cssProperties: [],
+    });
+  });
+
+  it("declares ocelle-segment per contracts/elements.md: value (string, reflected) and disabled (boolean, reflected, default false), the default and icon slots, no event, part or CSS property, and no row state as surface (014 FR-055, phase 4)", async () => {
+    const segment = await declared("src/ocelle-segment.ts");
+    expect(segment).toEqual({
+      name: "OcelleSegment",
+      tagName: "ocelle-segment",
+      members: [
+        { name: "disabled", type: "boolean", attribute: "disabled", reflects: true, default: "false", described: true },
+        { name: "value", type: "string", attribute: "value", reflects: true, default: expect.any(String) as unknown, described: true },
+      ],
+      attributes: [
+        { name: "disabled", fieldName: "disabled", described: true },
+        { name: "value", fieldName: "value", described: true },
+      ],
+      events: [],
+      slots: [
+        { name: "", described: true },
+        { name: "icon", described: true },
+      ],
+      cssParts: [],
+      cssProperties: [],
+    });
   });
 
   it("rejects a root without an element module, naming the directory", async () => {
