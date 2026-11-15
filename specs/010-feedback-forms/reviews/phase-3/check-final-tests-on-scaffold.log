@@ -35,7 +35,7 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 382ms using pnpm v12.16.1
+Done in 408ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /opt/pw-browsers/chromium-1243/chrome-linux64/chrome
 $ node gates/bin/test.ts
@@ -95,7 +95,7 @@ packages/elements/test/browser/form-input.test.ts:45: unit-tests: ocelle-form-in
 packages/elements/test/browser/form-input.test.ts:45: unit-tests: ocelle-form-input on the strict-CSP fixture with the browser build (US2) US2-2: typing "Fix lane" sets value, an…: Error: promise rejected "AssertionError: US2-2: expected { Object … { …(4) }" instead of resolving
 packages/elements/test/browser/form-input.test.ts:45: unit-tests: ocelle-form-input on the strict-CSP fixture with the browser build (US2) US2-3: each typed character sends one i…: Error: promise rejected "AssertionError: US2-3: expected { typing:… { …(4) }" instead of resolving
 packages/elements/test/browser/form-input.test.ts:45: unit-tests: ocelle-form-input on the strict-CSP fixture with the browser build (US2) US2-4: with value="draft", typing then …: Error: promise rejected "AssertionError: US2-4: expected { initial… { …(4) }" instead of resolving
-packages/elements/test/browser/form-input.test.ts:45: unit-tests: ocelle-form-input on the strict-CSP fixture with the browser build (US2) US2-5: required and empty, the form rep…: Error: promise rejected "AssertionError: US2-5: expected { Object … { …(4) }" instead of resolving
+packages/elements/test/browser/form-input.test.ts:45: unit-tests: ocelle-form-input on the strict-CSP fixture with the browser build (US2) US2-5: required and empty, the form rep…: Error: promise rejected "Error: page.evaluate: Error: call: #t has… { log: [] }" instead of resolving
 packages/elements/test/browser/form-input.test.ts:45: unit-tests: ocelle-form-input on the strict-CSP fixture with the browser build (US2) US2-6: type email, type url, minlength,…: Error: promise rejected "AssertionError: US2-6: expected { Object … { …(4) }" instead of resolving
 packages/elements/test/browser/form-input.test.ts:45: unit-tests: ocelle-form-input on the strict-CSP fixture with the browser build (US2) US2-7: each type reaches the field and …: Error: promise rejected "AssertionError: US2-7: expected { text: {… { …(4) }" instead of resolving
 packages/elements/test/browser/form-input.test.ts:45: unit-tests: ocelle-form-input on the strict-CSP fixture with the browser build (US2) US2-8: placeholder "Filter lanes" is sh…: Error: promise rejected "AssertionError: US2-8: expected { colour:… { …(4) }" instead of resolving
@@ -206,7 +206,7 @@ packages/elements/test/form-input.test.ts:23: unit-tests: ocelle-form-input, in 
 packages/elements/test/form-input.test.ts:23: unit-tests: ocelle-form-input, in process (US2) US2-2: typing "Fix lane" sets value, an…: Error: promise rejected "AssertionError: US2-2: expected { Object … { …(4) }" instead of resolving
 packages/elements/test/form-input.test.ts:23: unit-tests: ocelle-form-input, in process (US2) US2-3: each typed character sends one i…: Error: promise rejected "AssertionError: US2-3: expected { typing:… { …(4) }" instead of resolving
 packages/elements/test/form-input.test.ts:23: unit-tests: ocelle-form-input, in process (US2) US2-4: with value="draft", typing then …: Error: promise rejected "AssertionError: US2-4: expected { initial… { …(4) }" instead of resolving
-packages/elements/test/form-input.test.ts:23: unit-tests: ocelle-form-input, in process (US2) US2-5: required and empty, the form rep…: Error: promise rejected "AssertionError: US2-5: expected { Object … { …(4) }" instead of resolving
+packages/elements/test/form-input.test.ts:23: unit-tests: ocelle-form-input, in process (US2) US2-5: required and empty, the form rep…: Error: promise rejected "Error: call: #t has no method reportValid…" instead of resolving
 packages/elements/test/form-input.test.ts:23: unit-tests: ocelle-form-input, in process (US2) US2-6: type email, type url, minlength,…: Error: promise rejected "AssertionError: US2-6: expected { Object … { …(4) }" instead of resolving
 packages/elements/test/form-input.test.ts:23: unit-tests: ocelle-form-input, in process (US2) US2-7: each type reaches the field and …: Error: promise rejected "AssertionError: US2-7: expected { text: {… { …(4) }" instead of resolving
 packages/elements/test/form-input.test.ts:23: unit-tests: ocelle-form-input, in process (US2) US2-8: placeholder "Filter lanes" is sh…: Error: promise rejected "AssertionError: US2-8: expected { colour:… { …(4) }" instead of resolving
@@ -272,7 +272,7 @@ packages/elements/test/plants.test.ts:257: unit-tests: plants (elements project)
 packages/elements/test/plants.test.ts:257: unit-tests: plants (elements project) move: move flag never set turns US2-20 move red: Error: expected [Function] to throw error matching /^US2-20 move: announcements/ but got 'US2-20 move: expected { regions: [ fa…'
 packages/elements/test/plants.test.ts:257: unit-tests: plants (elements project) hidden: announces while hidden (the hidden attr… turns US2-22 inserted hidden red: Error: promise rejected "AssertionError: US2-22 inserted hidden: a… { …(4) }" instead of resolving
 packages/elements/test/plants.test.ts:257: unit-tests: plants (elements project) hidden: announces while hidden (the hidden attr… turns US2-22 first loaded hidden red: Error: promise rejected "AssertionError: US2-22 first loaded hidde… { …(4) }" instead of resolving
-packages/elements/test/plants.test.ts:257: unit-tests: plants (elements project) validity: setValidity({}) always turns US2-5 red: Error: promise rejected "AssertionError: US2-5: expected { Object … { …(4) }" instead of resolving
+packages/elements/test/plants.test.ts:257: unit-tests: plants (elements project) validity: setValidity({}) always turns US2-5 red: Error: expected [Function] to throw error matching /^US2-5: / but got 'call: #t has no method reportValidity'
 packages/elements/test/plants.test.ts:257: unit-tests: plants (elements project) validity: setValidity({}) always turns US2-6 red: Error: promise rejected "AssertionError: US2-6: expected { Object … { …(4) }" instead of resolving
 packages/elements/test/plants.test.ts:257: unit-tests: plants (elements project) error baseline: clearing does not reset the baseline turns US2-10 red: Error: promise rejected "AssertionError: US2-10: announcements: ex… { …(4) }" instead of resolving
 packages/elements/test/plants.test.ts:257: unit-tests: plants (elements project) error baseline: no whitespace normalisation turns US2-10 red: Error: promise rejected "AssertionError: US2-10: announcements: ex… { …(4) }" instead of resolving
@@ -285,6 +285,6 @@ packages/elements/test/plants.test.ts:257: unit-tests: plants (elements project)
 packages/elements/test/plants.test.ts:257: unit-tests: plants (elements project) implicit submission: submits ignoring the one-field rule turns US2-21 two fields red: Error: promise rejected "AssertionError: US2-21 two fields: focus:… { …(4) }" instead of resolving
 packages/elements/test/plants.test.ts:257: unit-tests: plants (elements project) form value: forgets setFormValue turns US2-2 red: Error: promise rejected "AssertionError: US2-2: expected { Object … { …(4) }" instead of resolving
 packages/elements/test/plants.test.ts:257: unit-tests: plants (elements project) form value: reset keeps the typed value turns US2-4 red: Error: promise rejected "AssertionError: US2-4: expected { initial… { …(4) }" instead of resolving
-packages/elements/test/plants.test.ts:257: unit-tests: plants (elements project) form value: restore ignored turns SC-003 restore in process red: Error: promise rejected "AssertionError: SC-003 restore in process… { …(4) }" instead of resolving
-unit-tests: 247 of 3771 tests failed
+packages/elements/test/plants.test.ts:257: unit-tests: plants (elements project) form value: restore ignored turns SC-003 restore in process red: Error: expected [Function] to throw error matching /^SC-003 restore in process: expected/ but got 'call: #t has no method formStateResto…'
+unit-tests: 247 of 3775 tests failed
 [ELIFECYCLE] Test failed. See above for more details.
