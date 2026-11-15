@@ -1,9 +1,9 @@
 # @ocelle/elements
 
 The Ocelle web components: standards-based custom elements (Lit 3) that work in any page, a server-rendered page
-under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has six elements:
+under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has seven elements:
 `ocelle-icon`, with a set of thirteen icons, `ocelle-brand-mark`, the Ocelle rosette, and the layout elements
-`ocelle-section-header`, `ocelle-card`, `ocelle-page-header` and `ocelle-context-sidebar`.
+`ocelle-section-header`, `ocelle-card`, `ocelle-page-header`, `ocelle-context-sidebar` and `ocelle-personal-rail`.
 
 ## Entry points
 
@@ -16,6 +16,7 @@ under a strict Content Security Policy, a Svelte shell or a desktop webview. Thi
 | `@ocelle/elements/ocelle-section-header.js` | `dist/ocelle-section-header.js` | `ocelle-section-header` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-page-header.js` | `dist/ocelle-page-header.js` | `ocelle-page-header` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-context-sidebar.js` | `dist/ocelle-context-sidebar.js` | `ocelle-context-sidebar` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-personal-rail.js` | `dist/ocelle-personal-rail.js` | `ocelle-personal-rail` only; for hosts with a bundler |
 | `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |
 | `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |
 
@@ -383,6 +384,91 @@ context sidebars: the parts' padding and the dividers are the sidebar's own, and
 In forced colours the sidebar's dividers are drawn in a system colour. `ocelle-context-sidebar` has no event, CSS part
 or CSS custom property and adds no tab stop. The host itself is its one navigation landmark, with no other landmark
 inside it.
+
+## `ocelle-personal-rail`
+
+```html
+<ocelle-personal-rail label="Personal">
+  <a href="/inbox">Inbox</a>
+  <a href="/runs">Runs</a>
+  <a href="/docs">Docs</a>
+  <a slot="bottom" href="/account">Account</a>
+</ocelle-personal-rail>
+```
+
+`ocelle-personal-rail` is the narrow dark column of personal navigation: icon links from its start, and a bottom
+group, an account link for example, at its end. It is drawn on `--ocelle-color-chrome` with `--ocelle-color-chrome-ink`
+text in both themes.
+
+- The default slot: the primary items, from the rail's block start (vertical) or inline start (horizontal).
+- `bottom` (slot): the bottom group, kept at the rail's block end (vertical) or at the inline end of its first row
+  (horizontal).
+
+The items are `--ocelle-space-1` apart and centred across the rail. A `--ocelle-border-width` divider in
+`--ocelle-color-chrome-muted` lies between the two groups, `--ocelle-space-1` from each, only when both are filled.
+
+- `orientation` (attribute and property, reflected): `vertical` or `horizontal`. Not set, or any other value, draws
+  vertical: a column `--ocelle-shell-rail-width` (52 px) wide, padded `--ocelle-space-2` in the block direction and
+  `--ocelle-space-1` inline, which leaves a 44 px content box, with the divider across it. `horizontal` draws a row
+  padded `--ocelle-space-2` that fills its container's inline size: the primary items wrap onto further rows from its
+  inline start, the bottom group sits at the inline end of the first row, at most half the content box wide, and the
+  divider runs over the rail's whole block size.
+- `label` (attribute and property, not reflected): the name of the rail's navigation landmark, trimmed. Not set, empty
+  or whitespace-only, the landmark has no name; the rail is drawn the same either way.
+
+Set a distinct `label` on every rail: assistive technology lists the navigation landmarks of a page, and unnamed ones
+give its user nothing to tell them apart. A host `aria-label` decides the landmark's name alone when present: a
+non-empty one is the name even when `label` is set, and a blank one leaves the landmark unnamed even with a `label`.
+`label` names the landmark only when the host has no `aria-label`, so removing the host `aria-label` falls back to
+`label`. The rail never writes, changes or removes the host's `aria-label`.
+
+The rail changes orientation only when `orientation` changes: it has no viewport or container query of its own, and
+changing it keeps focus, the document and tab order and the landmark. The page sets it, from wherever its tier comes
+from; this one sets it from a viewport media query whose bound is exclusive, `matchMedia("(width < Npx)")` (never
+`max-width: N`, which also matches at N), vertical while the viewport is at least 720 px wide and horizontal below:
+
+```js
+const rail = document.querySelector("ocelle-personal-rail");
+const narrow = matchMedia("(width < 720px)");
+const orient = () => {
+  rail.orientation = narrow.matches ? "horizontal" : "vertical";
+};
+orient();
+narrow.addEventListener("change", orient);
+```
+
+For #12: `orientation` and `label` are the whole interface a shell or a personal drawer uses to drive the rail. A
+shell that wants the rail horizontal inside its drawer and vertical in its column sets `orientation` from its own
+tier, with an exclusive bound in its own query; the rail does not care where the value comes from. It emits no event.
+
+The rail sizes no item: items are sized by themselves, at `--ocelle-size-rail-item` (40 px), the size #12's
+`ocelle-nav-item` is expected to have.
+The rail sets only the gap, the items' centring and the chrome ink as its colour, which an item takes when it
+inherits colour. A plain `<a>` does not: give `<a>` items `color: inherit` and a target of at least 24 px, or use
+`ocelle-nav-item` elements.
+
+`ocelle-personal-rail` reads the tokens `--ocelle-color-chrome`, `--ocelle-color-chrome-ink`,
+`--ocelle-color-chrome-muted`, `--ocelle-border-width`, `--ocelle-shell-rail-width`, `--ocelle-space-1` and
+`--ocelle-space-2`.
+
+An empty slot of the rail takes no space: no gap and no divider, so a rail without bottom items has no divider, and
+one with only bottom items has them at its block end (vertical) or inline end (horizontal). A slot is empty when no
+element is assigned to it and every text assigned to it is whitespace; an assigned element counts as content even
+when it is `hidden`, so remove an element from the slot rather than hide it. The layout follows the slots' content as
+it changes.
+
+A vertical rail fills its container's block size when its content is shorter, with the free space between the divider
+and the bottom group, and grows with its content when it is taller, the bottom group following the primary items;
+scrolling is the container's. This holds in a block, flex-row or grid container alike, because the host is
+`align-self: start`. A page rule on the host's `align-self` wins, so a page that sets it to `stretch` in a flex row or
+grid of definite block size keeps the rail at the container's size.
+
+The rail replaces the personal-rail `::part` overrides Kitty Desktop sets on its personal rail: the rail's width,
+padding, gap, divider and orientation are its own, and the items are the page's.
+
+In forced colours the rail's divider is drawn in a system colour, and a horizontal rail keeps its row.
+`ocelle-personal-rail` has no event, CSS part or CSS custom property and adds no tab stop. The host itself is its one
+navigation landmark, with no other landmark inside it.
 
 ## Slot convention
 

@@ -27,6 +27,11 @@ entry points and the browser build's file path (constitution VII).
 - `ocelle-context-sidebar`, the column beside a screen's content: a `head`, sections in the default slot and a
   `footer` kept at the block end, ruled off from each other on the rail ground, each empty part taking no space; the
   host is a navigation landmark named by its property `label` or a host `aria-label` (011).
+- `ocelle-personal-rail`, the narrow dark column of personal navigation: primary items in the default slot and a
+  `bottom` group, on the chrome in both themes, with a divider between the groups when both are filled; its
+  properties `orientation` (reflected) and `label`: the page sets `orientation` to `vertical` (not set) or
+  `horizontal`, and the rail never changes it itself; the host is a navigation landmark named by `label` or a host
+  `aria-label` (011).
 - In the README, the slot convention for icons in controls that later controls follow: the `icon` and `trailing`
   slots, their size, alignment, gap and colour rules and the naming rule.
 - Entry points: `@ocelle/elements` (the package root, defines every element), `@ocelle/elements/ocelle-icon.js`
@@ -34,6 +39,7 @@ entry points and the browser build's file path (constitution VII).
   `@ocelle/elements/ocelle-card.js` (defines `ocelle-card` only), `@ocelle/elements/ocelle-section-header.js`
   (defines `ocelle-section-header` only), `@ocelle/elements/ocelle-page-header.js` (defines `ocelle-page-header` only),
   `@ocelle/elements/ocelle-context-sidebar.js` (defines `ocelle-context-sidebar` only),
+  `@ocelle/elements/ocelle-personal-rail.js` (defines `ocelle-personal-rail` only),
   `@ocelle/elements/browser.js` (the browser build) and `@ocelle/elements/custom-elements.json` (the manifest, also
   named by the `customElements` field).
 - The browser build's file, `dist/browser/ocelle-elements.js`: Lit inside, imports nothing, for hosts without a

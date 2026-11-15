@@ -49,3 +49,8 @@ Recorded by the orchestrator; each is the operator's answer (human:jeroennouwsde
    phase 4 on, once a phase's review is approved, the fold with `fold-history.sh`, the archive ref of the pre-fold
    history and the force-push-with-lease of `claude/008-layout-headers` go ahead without a gate. Every other gate
    still goes to the operator.
+9. **2026-11-15, main is merged at landing, not during the run** (the operator's decision in the orchestrator's
+   session, session_01NUfZSc26YwQLeow31d6R6X, which withdrew its request to merge op 015's ce1d9c72; confirmed here:
+   "Merge at landing"). It replaces the earlier relayed rule to merge main whenever it moves. 011 does not merge
+   `main` during its run; `/ocelle-land` merges it, with decision 4's baseline handling (a conflicting baseline PNG
+   is regenerated in the pinned container in the merge) and the other resolutions already agreed.
