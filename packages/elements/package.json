@@ -12,6 +12,8 @@
     "./ocelle-tabs.js": "./dist/ocelle-tabs.js",
     "./ocelle-tab.js": "./dist/ocelle-tab.js",
     "./ocelle-tab-panel.js": "./dist/ocelle-tab-panel.js",
+    "./ocelle-segmented-choice.js": "./dist/ocelle-segmented-choice.js",
+    "./ocelle-segment.js": "./dist/ocelle-segment.js",
     "./browser.js": "./dist/browser/ocelle-elements.js",
     "./custom-elements.json": "./custom-elements.json"
   },
