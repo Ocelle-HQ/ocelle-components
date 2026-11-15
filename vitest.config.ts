@@ -89,6 +89,9 @@ export default defineConfig({
         // stop 1, operator decision (b), reviews/phase-2/decision-stop-1.md): the in-process timing files (the notice
         // suites, the plants file, the capture and timing files) measure gaps in fractions of the test W = 100 ms, and
         // two pages of this project running at once overshot drive.after by more than 2W/3.
+        // Lit's directives the elements import, bundled before the run, so Vite does not find them during a test file
+        // and reload it (specs/010-feedback-forms phase 3: ocelle-form-input imports class-map and live).
+        optimizeDeps: { include: ["lit/directives/class-map.js", "lit/directives/live.js"] },
         test: {
           name: "elements",
           include: ["packages/elements/**/*.test.ts"],

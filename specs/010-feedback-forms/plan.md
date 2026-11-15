@@ -30,7 +30,8 @@ frontend finding)
 
 **Primary Dependencies**: Lit 3.3.3 (pinned, 005); no new runtime dependency. `ocelle-form-select` draws the shared
 set's `chevron-down` itself, the icon data from `src/icons.ts` and the drawing from the internal `src/icon-svg.ts`,
-and does not define `ocelle-icon` (R-07).
+and does not define `ocelle-icon` (R-07). One development dependency is added for the mutation shard planner,
+`@stryker-mutator/instrumenter` 10.1.1 (decision 11; phase 3 stop 1, T041a).
 
 **Storage**: N/A (elements perform no I/O)
 
@@ -76,7 +77,7 @@ VIII, and I for the internal setter), after round 3's fixes (rows I, III and VII
 | VI. Consumer-driven, own code | Needs from #9, spec-kitty-design #509 and #513 (through #9's wording, operator SPEC-1-09), kitty-mission-ui's 28 notices and 2 inputs, Kitty Desktop V2's lane and log filters (#15), the Ocelle console's server-rendered forms. Written from scratch. `tel`, `password`, `number`, `min`, `max`, `step` are a stated small addition (spec Assumptions). |
 | VII. Semver | All additions (MINOR): three elements, two events, their entry points; CHANGELOG entry (FR-036). The engine floor is not raised (R-03), so no consumer loses an engine; a feature found newer than the floor goes to the operator with its semver classification before it is used. The registration flag in `src/define.ts` and the icon drawing's move are internal. |
 | VIII. Test-first, non-vacuous | Each phase red first. Announcement scenarios count announcements, under both the `"settled"` and the `"rendered"` rule, from a capture armed before the step (on a container, following shadow roots as they attach, or from navigation for first load) and bounded so a loop fails as an assertion; its reading and counting functions have per-rule unit tests and planted readings (not mutated, reason in R-09). Each assertion family has a plant, run by `test/plants.test.ts` and recorded per phase (`contracts/testing.md`). Native-twin comparisons for forms also assert an absolute expected outcome (SC-003). Source mutated in process (R-09), first load and submission included through in-process paths; Timeout and CompileError on changed lines are reported, not failing (007), and every Timeout in `src/live.ts`, `src/define.ts` and `src/form-control.ts` is reviewed one by one; survivors are blocking. In process the announcer's `D` and `H` come from a test-only setter in `src/live.ts` that only `test/in-process.ts` calls (a `test/node/` test checks this), with the capture's `D` from the same constant, so the timing is shortened for element and oracle alike and the fixture pages prove the real figures (operator decision PLAN-FRESH-2-003 (a), R-09); the shipped figures are one internal constant that an in-process test asserts, with the timing the setter first replaced, against the spec's 150, 350 and 5000 ms, so their mutants are killed in process (operator decision PLAN-FRESH-3-004 (a)). stop()'s quiet window is derived from `W`, the minimum hold and `D`, so a late write cannot end a zero count vacuously (PLAN-FRESH-2-004); the merge, minimum-hold, re-check, reveal-baseline, hold, alert-path, alert-baseline and late-write plants each turn a named scenario red. Every test change of a phase is in its red commit: the gate tests' contrast counts (the `pairs.json` rows are green records), and the README and CHANGELOG documentation assertions of the phase that writes each item, so phase 5 adds none and only maps them; the oracle's node lists are recorded before the red commit and not replaced afterwards (analysis I1, I3, I6, U2). The pinned element lists and counts (the manifest gate's "N elements checked", the README's Entry points rows, the exact `exports` keys, the manifest's module paths, the root's export names) change in the red commit of the phase that adds the element (analysis I7). Red failures are never import errors (analysis C1, C2): phases 2 to 4 commit a scaffold of their new `src/` modules, recorded by `scaffold.sh`, before the red commit, so `tdd-check.sh` check 3 runs the final tests against it; phase 1's new modules are test paths, which `scaffold.sh` refuses and check 2 overlays onto the base, so its red commit carries signature-only stubs and the final tests are run against those stubs and the log kept (`reviews/phase-1/red-evidence.md`); phase 5 merges `main` before its base and its story test also asserts the committed baselines, the phase's only output outside the test pathspec, so check 2 fails on them and the review records that reading; and since check 2 there overlays the stories too, the final story test is also run, recorded, against T060's base without the stories, every assertion it adds failing (analysis C3). A test that passes at `tdd-check.sh` check 3 because the final test infrastructure is overlaid (phase 2's `timing-setter.test.ts`) has its red run as its evidence, and the review names it (analysis C4). The README's pinned convention fragments that the new elements contradict are restated in the red commit of the phase that adds the element, or of an earlier phase, not dropped (analysis I10, I17). |
-| Licence and supply chain | No new dependency, no new third-party asset. |
+| Licence and supply chain | No new runtime dependency, no new third-party asset. One new direct development dependency, from phase 3 stop 1 (decision 11, T041a): `@stryker-mutator/instrumenter`, pinned exactly at 10.1.1, Apache-2.0, already in the lockfile at that version as a dependency of `@stryker-mutator/core` 10.1.1, so the shard planner counts mutants with Stryker's own code; a gate test keeps its version equal to core's. |
 | Workflow gates | No new gate. #10's gates (`storybook-build`, `visual`, `axe`) are used as #10 lands them. |
 
 ## Decisions the operator should see at the plan gate
@@ -143,6 +144,44 @@ VIII, and I for the internal setter), after round 3's fixes (rows I, III and VII
     end (T041), with the same stop. The shipped figures are the internal constant `announcerDefaults`; the setter returns the timing
     it replaced, and `test/live-timing.test.ts` asserts both against 150, 350 and 5000 ms, so the figures' mutants are
     killed in process (operator decision PLAN-FRESH-3-004 (a), R-09).
+    **Element source is sharded by mutant count** (phase 3 stop 1, operator decision (b), 2026-11-15,
+    `reviews/phase-3/decision-stop-1.md`; `reviews/phase-3/design-change-1.md`; T041a). At T041 the 30-line shards of
+    `src/form-control.ts` took 569.4 s and 534.6 s, and by estimate eight of its 19 were over 420 s: an
+    element-source shard costs about 217 s fixed plus about 14 s a valid mutant (`stop-1.md`), so a shard holds about
+    14 valid mutants at most. A shorter line span cannot bound that: in run 4's report (`b76d4ee`) one line of
+    `src/form-control.ts` holds 10 valid mutants and one of `src/ocelle-form-input.ts` 12, and even 8-line cuts leave
+    entries of 15 to 20 valid mutants (estimates 427 s to 497 s). The planner can count the mutants before Stryker runs:
+    Stryker's own instrumenter (`@stryker-mutator/instrumenter`, the 10.1.1 that `@stryker-mutator/core` 10.1.1 uses)
+    parses the files and places every mutant without running a test or the checker; on `src/form-control.ts` and
+    `src/ocelle-form-input.ts` it found the 257 and 170 mutants (and 2 and 4 ignored) of run 4's report, in about 0.2 s.
+    What it cannot know at plan time is which mutants the TypeScript checker rejects, which time out, and each
+    mutant's test cost. The rule, for changed files under `packages/elements/src/` (those
+    `stryker.elements.config.json` mutates) only:
+    - every mutant the instrumenter places on the file's changed lines counts, compile errors included (unknown at
+      plan time), the ones a `// Stryker disable` comment ignores not; a mutant counts in an entry only when it lies
+      wholly inside the entry's lines, as Stryker mutates a `mutate` range;
+    - a file whose changed lines hold at most **10** mutants is one entry, its path, however many lines changed;
+      otherwise it is cut into `path:start-end` entries of at most 10 mutants: an entry grows over the changed lines
+      in order until the next line would take it over 10, and is then closed at the line boundary inside it that the
+      fewest mutants span (the latest such boundary on a tie), the next entry starting on the next changed line; a
+      single line holding more than 10 mutants is an entry alone (a line is not cut);
+    - entries are filled greedily, in path order, into shards of at most 10 mutants and 10 entries, two entries of one
+      file never sharing a shard, and an element-source entry never shares a shard with an entry of any other file,
+      since such a shard runs both Stryker configurations and both dry runs (shard 2: 569.4 s with 11 valid element
+      mutants).
+    The cap is 10, not 14, for a margin: 217 s + 10 × 14 s = 357 s leaves 63 s for compile errors (counted as full
+    mutants here, though the checker rejects them before any test runs), timeouts, a fixed cost that grows with the
+    suites of phases 4 and 5, and noise. The fewest-spanned boundary keeps the accepted limit of cuts (a mutant
+    spanning a cut is mutated in no shard; 001 O10-02, `gates/README.md`) where it was: on run 4's report the rule
+    leaves 9 valid mutants of the two files spanning a cut, as the 30-line plan did, where cutting at the count alone
+    would leave 21. By the same report the rule cuts the two files into 35 and 23 entries, the largest estimated at
+    357 s and, for the one-line entry of `src/ocelle-form-input.ts:36` (13 mutants), 385 s. Every other changed file
+    keeps the 30-line entries and the 10-entry, 250-line shards of 007 FR-014: the stop concerned element source, and
+    node-run mutants cost far less. `--files`, the `path:start-end` entry syntax, the `--plan` output and
+    `.github/workflows/ci.yml` do not change. CI's 10-minute job limit and T041's 7:00 stay as they are, and so do the
+    tests, the Stryker configurations and the mutators. `gates/lib/mutation/shards.ts` and `gates/bin/mutation.ts`
+    are shared gate code that the sibling missions (#16/008, #15/009, #8/011) may also change; a conflict is resolved
+    by merging `main`.
 
 ## Project Structure
 
@@ -357,7 +396,9 @@ it; announcement timing in one internal helper used by the notice and the base c
    US2 scenario 13's cell), and the declared `value` attribute stated, each fragment in the red commit (analysis
    I10, U6, U10, U11, A5); manifest, CHANGELOG, entry point and its
    entry test; at the phase-end `gate:mutation`, every shard holding a `src/live.ts` or `src/form-control.ts` entry
-   timed, a shard over 7:00 a stop (decision 11; analysis U8).
+   timed, a shard over 7:00 a stop (decision 11; analysis U8). After phase 3 stop 1, the shard planner cuts element
+   source by mutant count (decision 11; T041a, test-first in the gate's own tests), and T041's shard timing runs on
+   that plan.
 4. **User Story 3, `ocelle-form-select`** (P3): a scaffold first (`src/ocelle-form-select.ts`, the class without
    members, not defined; analysis C2) and the pinned lists and counts in the red commit (5 elements; analysis I7);
    the `ocelle-form-select` manifest entry tested red first as the input's (analysis G9); scenarios 1 to 9 and the shared ones of scenario 7 red first, with the

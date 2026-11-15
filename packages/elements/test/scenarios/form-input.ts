@@ -185,6 +185,8 @@ export const formInputScenarios: readonly FormScenario[] = [
       await driver.batch([{ op: "focus", id: "t" }]);
       await driver.blur();
       const unchanged = await driver.heard();
+      // A focus of the host selects the field's whole value (delegatesFocus), as Tab does: End puts the caret after it.
+      await driver.press("t", "End");
       await driver.type("t", "c");
       await driver.press("t", "Enter");
       const submitted = await driver.submit("f");
@@ -196,7 +198,8 @@ export const formInputScenarios: readonly FormScenario[] = [
           typing: [typedEvent("a"), typedEvent("ab")],
           left: [change("ab")],
           unchanged: [],
-          entered: [typedEvent("abc"), change("abc"), { type: "submit", at: "f", target: "f", value: null, detail: null, bubbles: true, composed: false }],
+          // Chromium dispatches the form's submit event composed (measured in both harnesses).
+          entered: [typedEvent("abc"), change("abc"), { type: "submit", at: "f", target: "f", value: null, detail: null, bubbles: true, composed: true }],
           submitted: [["title", "abc"]],
         },
         "US2-3",
@@ -209,6 +212,8 @@ export const formInputScenarios: readonly FormScenario[] = [
       await driver.mount(form(input(tag, 'id="t" name="title" label="Title" value="draft"')));
       await driver.listen(["t"], ["ocelle-form-input-change"]);
       const initial = await driver.property("t", "value");
+      // A focus of the host selects the field's whole value: End puts the caret after it, so the typed text is added.
+      await driver.press("t", "End");
       await driver.type("t", "x");
       const typed = await driver.property("t", "value");
       await driver.reset("f");
@@ -637,6 +642,9 @@ export const formInputScenarios: readonly FormScenario[] = [
     name: "US2-22 announced, hidden and revealed: an announced error, hidden and revealed with the same error, is announced once more",
     run: async (driver, tag) => {
       const snapshots = await loaded(driver, tag, fl('id="t" label="Title"'), async () => {
+        // A change right after a first load is written no earlier than the pre-load W after the first render (R-02
+        // step 2), so the error is set once that has passed, and is announced before the host hides it.
+        await settleAnnouncement(driver);
         await driver.setAttribute("t", "error", "Title is taken");
         await settleAnnouncement(driver);
         await driver.setAttribute("t", "hidden", "");
@@ -719,10 +727,12 @@ export const formInputScenarios: readonly FormScenario[] = [
         await settleAnnouncement(driver);
         await driver.setAttribute("t", "error", "Title is taken");
         await settleAnnouncement(driver);
-        state = { error: drawn(await driver.box("t", parts.error)), description: (await field(driver, "t")).description, focus: await driver.focusPath() };
+        // The first-load host's tag is the fresh one firstLoad gave it, so the path is compared by id.
+        const focus = (await driver.focusPath()).map((each) => each.slice(each.indexOf("#")));
+        state = { error: drawn(await driver.box("t", parts.error)), description: (await field(driver, "t")).description, focus };
       });
       announced(driver, only(snapshots, ["t"]), [polite("Title is taken", "t")], "Edge case, error while focused: announcements");
-      assert.deepEqual(state, { error: true, description: "Title is taken", focus: inField(tag) }, "Edge case, error while focused");
+      assert.deepEqual(state, { error: true, description: "Title is taken", focus: ["#t", "#control"] }, "Edge case, error while focused");
     },
   },
   {
