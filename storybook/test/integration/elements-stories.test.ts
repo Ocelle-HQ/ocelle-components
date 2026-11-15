@@ -366,3 +366,67 @@ describe("the ocelle-tabs stories in the built Storybook (014 FR-050, FR-051)", 
     }
   }
 });
+
+/** What a segmented-choice story's page shows: its theme, whether both elements are defined, its groups and their segments. */
+function observeSegments(page: Page): Promise<unknown> {
+  return page.evaluate(() => {
+    let active: Element | null = document.activeElement;
+    while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement;
+    return {
+      theme: document.documentElement.dataset.theme,
+      defined: ["ocelle-segmented-choice", "ocelle-segment"].map((tag) => customElements.get(tag) !== undefined),
+      groups: [...document.querySelectorAll("#storybook-root ocelle-segmented-choice")].map((group) => {
+        const segments = [...group.children].filter((child) => child.localName === "ocelle-segment");
+        return {
+          value: (group as unknown as { value?: unknown }).value,
+          joined: group.hasAttribute("joined"),
+          rows: new Set(segments.map((child) => Math.round(child.getBoundingClientRect().y))).size,
+          segments: segments.map((child) => ({ text: child.textContent.trim(), pressed: child.getAttribute("aria-pressed"), disabled: child.getAttribute("aria-disabled") === "true", focused: child === active })),
+        };
+      }),
+    };
+  });
+}
+
+/** The segments of `names`: `pressed` the pressed one, `disabled` the disabled one, `focused` the focused one. */
+function laneSegments(names: readonly string[], pressed: string, disabled = "", focused = ""): unknown[] {
+  return names.map((text) => ({ text, pressed: text === pressed ? "true" : "false", disabled: text === disabled, focused: text === focused }));
+}
+
+const laneNames = ["All", "Mine", "Blocked", "Done"];
+
+// The segmented-choice stories (014 FR-050, FR-051; research.md R-01, R-06, R-12; T064): each story renders its group
+// with the states the group writes, in light and dark, and axe with the axe gate's full rule set reports no violation and
+// no serious or critical incomplete (no new entry in a11y-exceptions.json, FR-051). The joined stories carry `joined`;
+// the wrapped story's segments lie on two rows, the others on one; the focused story's target has focus after its
+// `play`.
+const segmentedStories = [
+  { id: "elements-ocelle-segmented-choice--default", groups: [{ value: "all", joined: false, rows: 1, segments: laneSegments(laneNames, "All") }] },
+  { id: "elements-ocelle-segmented-choice--joined-one-row", groups: [{ value: "all", joined: true, rows: 1, segments: laneSegments(laneNames, "All") }] },
+  { id: "elements-ocelle-segmented-choice--joined-wrapped", groups: [{ value: "mine", joined: true, rows: 2, segments: laneSegments(laneNames, "Mine") }] },
+  { id: "elements-ocelle-segmented-choice--pressed", groups: [{ value: "blocked", joined: false, rows: 1, segments: laneSegments(laneNames, "Blocked") }] },
+  { id: "elements-ocelle-segmented-choice--disabled-segment", groups: [{ value: "all", joined: false, rows: 1, segments: laneSegments(laneNames, "All", "Mine") }] },
+  { id: "elements-ocelle-segmented-choice--focused-segment", groups: [{ value: "all", joined: false, rows: 1, segments: laneSegments(laneNames, "All", "", "Mine") }] },
+  { id: "elements-ocelle-segmented-choice--hovered-segment", groups: [{ value: "all", joined: false, rows: 1, segments: laneSegments(laneNames, "All") }] },
+  { id: "elements-ocelle-segmented-choice--hovered-joined-segment", groups: [{ value: "all", joined: true, rows: 1, segments: laneSegments(laneNames, "All") }] },
+  { id: "elements-ocelle-segmented-choice--segment-with-icon", groups: [{ value: "files", joined: false, rows: 1, segments: laneSegments(["Files", "Table"], "Files") }] },
+] as const;
+
+describe("the ocelle-segmented-choice stories in the built Storybook (014 FR-050, FR-051)", { timeout: 60_000 }, () => {
+  for (const { id, groups } of segmentedStories) {
+    for (const theme of ["light", "dark"] as const) {
+      it(`${id} in ${theme}: renders its segments with the states the group writes, and axe's full rule set reports no violation and no serious or critical incomplete`, async () => {
+        const { page, outside } = await open(id, theme, "ocelle-segment");
+        const observed = await observeSegments(page);
+        const results = await axeResults(page);
+        expect({
+          observed,
+          violations: results.violations,
+          incomplete: results.incomplete.filter((each) => each.impact === "serious" || each.impact === "critical"),
+          outside,
+        }).toEqual({ observed: { theme, defined: [true, true], groups }, violations: [], incomplete: [], outside: [] });
+        await page.close();
+      });
+    }
+  }
+});

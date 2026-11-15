@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import { brandPairs, fr026Foregrounds, styleTemplate } from "../node/brand-pairs-check.ts";
 import type { PairEntry } from "../node/brand-pairs-check.ts";
-import { listboxRows, optionRows, selectionPairs, tabPanelRows, tabRows, tabsRows } from "../node/selection-pairs-check.ts";
+import { listboxRows, optionRows, segmentRows, segmentedChoiceRows, selectionPairs, tabPanelRows, tabRows, tabsRows } from "../node/selection-pairs-check.ts";
 import { buildPackage, elements } from "./package-build.ts";
 
 // The two builds as the package ships them (005 FR-001, FR-002, FR-004, FR-016, FR-029, FR-033; US1 scenario 17's
@@ -25,6 +25,9 @@ import { buildPackage, elements } from "./package-build.ts";
 // - since 014 phase 3 (T044, T045): dist/ocelle-tabs.js imports ./ocelle-tab.js and ./ocelle-tab-panel.js, and the tab
 //   and the panel import no other element; the selection pairs check on the built tab, panel and tabs finds R-15's
 //   tokens and every pair checked; the browser build defines the three.
+// - since 014 phase 4 (T063, T064): dist/ocelle-segmented-choice.js imports ./ocelle-segment.js, and the segment imports
+//   no other element; the selection pairs check on the built segment and segmented choice finds R-15's tokens and every
+//   pair checked; the browser build defines both.
 const dist = join(elements, "dist");
 const browserBuild = join(dist, "browser", "ocelle-elements.js");
 
@@ -138,10 +141,35 @@ describe("the module build of the tabs (dist/ocelle-tabs.js, dist/ocelle-tab.js,
   });
 });
 
+describe("the module build of the segmented choice (dist/ocelle-segmented-choice.js, dist/ocelle-segment.js)", () => {
+  const read = (name: string): string => (existsSync(join(dist, name)) ? readFileSync(join(dist, name), "utf8") : "");
+
+  it("dist/ocelle-segmented-choice.js imports lit, the registration helper and ./ocelle-segment.js, and not the package root; the segment imports no other element", () => {
+    const group = specifiers(read("ocelle-segmented-choice.js"));
+    expect({
+      lit: group.includes("lit"),
+      define: group.includes("./define.js"),
+      root: group.includes("./index.js"),
+      elements: group.filter((specifier) => specifier.startsWith("./ocelle-")).sort(),
+      segmentElements: specifiers(read("ocelle-segment.js")).filter((specifier) => specifier.startsWith("./ocelle-")),
+      childDefine: specifiers(read("ocelle-segment.js")).includes("./define.js"),
+    }).toEqual({ lit: true, define: true, root: false, elements: ["./ocelle-segment.js"], segmentElements: [], childDefine: true });
+  });
+
+  it("the css templates of the built segment and segmented choice paint R-15's tokens, each R-15 pair a checked row of pairs.json (the stylesheets as shipped)", () => {
+    const pairs = JSON.parse(readFileSync(join(elements, "..", "tokens", "contrast", "pairs.json"), "utf8")) as PairEntry[];
+    expect({
+      segment: selectionPairs(styleTemplate(read("ocelle-segment.js")), segmentRows.pairs, pairs),
+      group: selectionPairs(styleTemplate(read("ocelle-segmented-choice.js")), segmentedChoiceRows.pairs, pairs),
+      sheets: ["ocelle-segment.js", "ocelle-segmented-choice.js"].map((name) => styleTemplate(read(name)) !== ""),
+    }).toEqual({ segment: { painted: segmentRows.painted, missing: [] }, group: { painted: segmentedChoiceRows.painted, missing: [] }, sheets: [true, true] });
+  });
+});
+
 describe("the browser build (dist/browser/ocelle-elements.js)", () => {
   const text = (): string => (existsSync(browserBuild) ? readFileSync(browserBuild, "utf8") : "");
 
-  it("is self-contained: it defines ocelle-icon, ocelle-brand-mark, ocelle-listbox, ocelle-option, ocelle-tabs, ocelle-tab and ocelle-tab-panel, with no import statement and no dynamic import", () => {
+  it("is self-contained: it defines ocelle-icon, ocelle-brand-mark, ocelle-listbox, ocelle-option, ocelle-tabs, ocelle-tab, ocelle-tab-panel, ocelle-segmented-choice and ocelle-segment, with no import statement and no dynamic import", () => {
     const code = text();
     expect({
       exists: code !== "",
@@ -149,9 +177,10 @@ describe("the browser build (dist/browser/ocelle-elements.js)", () => {
       definesMark: code.includes('"ocelle-brand-mark"'),
       definesListbox: code.includes('"ocelle-listbox"') && code.includes('"ocelle-option"'),
       definesTabs: code.includes('"ocelle-tabs"') && code.includes('"ocelle-tab"') && code.includes('"ocelle-tab-panel"'),
+      definesSegmentedChoice: code.includes('"ocelle-segmented-choice"') && code.includes('"ocelle-segment"'),
       specifiers: specifiers(code),
       dynamicImport: /\bimport\s*\(/.test(code),
-    }).toEqual({ exists: true, definesIcon: true, definesMark: true, definesListbox: true, definesTabs: true, specifiers: [], dynamicImport: false });
+    }).toEqual({ exists: true, definesIcon: true, definesMark: true, definesListbox: true, definesTabs: true, definesSegmentedChoice: true, specifiers: [], dynamicImport: false });
   });
 
   it("holds Lit's production build at the locked versions, not its development build, no ssr-dom-shim and no console call", () => {

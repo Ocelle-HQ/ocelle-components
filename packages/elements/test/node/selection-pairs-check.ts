@@ -83,6 +83,30 @@ export const tabsRows: { readonly painted: Painted; readonly pairs: readonly Pai
   pairs: [],
 };
 
+/**
+ * R-15's rows for `ocelle-segment` (014 phase 4), both variants: text `ink` on the main grounds, on `hover-bg` (hover)
+ * and on `accent-low` (pressed), `disabled-ink` (exempt); the fills `hover-bg` and `accent-low`; the lines
+ * `control-border` on the main grounds (rest) and `accent-strong` on the main grounds, on `hover-bg` and on `accent-low`
+ * (a hovered or pressed segment's own lines, the default pressed border); the joined pressed bar `accent-strong` on
+ * `accent-low`; and the focus ring `color-focus` on the main grounds and, beside a pressed or hovered neighbour, on
+ * `accent-low` and `hover-bg`.
+ */
+export const segmentRows: { readonly painted: Painted; readonly pairs: readonly Pair[] } = {
+  painted: { text: ["color-disabled-ink", "color-ink"], fill: ["color-accent-low", "color-hover-bg"], bar: ["color-accent-strong"], ring: ["color-focus"], line: ["color-accent-strong", "color-control-border"] },
+  pairs: [
+    ...on("color-ink", [...mainGrounds, "color-hover-bg", "color-accent-low"]),
+    ...on("color-control-border", mainGrounds),
+    ...on("color-accent-strong", [...mainGrounds, "color-hover-bg", "color-accent-low"]),
+    ...on("color-focus", [...mainGrounds, "color-hover-bg", "color-accent-low"]),
+  ],
+};
+
+/** R-15 for `ocelle-segmented-choice`: the group paints no colour of its own (its segments do); no pair. */
+export const segmentedChoiceRows: { readonly painted: Painted; readonly pairs: readonly Pair[] } = {
+  painted: { text: [], fill: [], bar: [], ring: [], line: [] },
+  pairs: [],
+};
+
 /** Whether a rule sits inside `@media (forced-colors: active)` (not inside its negation). */
 function inForcedColours(rule: Rule): boolean {
   for (let parent = rule.parent; parent !== undefined && parent.type !== "root"; parent = parent.parent) {

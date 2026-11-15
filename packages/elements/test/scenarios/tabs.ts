@@ -15,11 +15,12 @@
 // focused tab or panel by an id that depends on a per-document counter. `where` names the focused element by its place
 // instead: `{ tab: i }` or `{ panel: i }` among the children of `#tb`, else its own id.
 //
-// US2-21 and US2-22 name `ocelle-segmented-choice` (phase 4) and `ocelle-link` (phase 6), which do not exist in this
-// phase. Their bodies use stand-ins with the property the scenario is about: a nested `ocelle-tabs` (a nested parent of
-// the same keyboard mechanism, whose ArrowRight is a handled key) and `x-shadow-link`, a custom element defined by the
+// US2-21 and US2-22 name `ocelle-segmented-choice` (phase 4) and `ocelle-link` (phase 6), which did not exist in phase
+// 3. Their phase 3 bodies use stand-ins with the property the scenario is about: a nested `ocelle-tabs` (a nested parent
+// of the same keyboard mechanism, whose ArrowRight is a handled key) and `x-shadow-link`, a custom element defined by the
 // body whose open shadow root delegates focus to an `<a href>` (a focusable reached only through a shadow root). The
-// bodies with the real elements belong to their phases (reviews/phase-3/notes.md).
+// stand-in bodies stay; phase 4 adds US2-21's body with the real `ocelle-segmented-choice` (T062b), and phase 6 adds
+// US2-22's with the real `ocelle-link` (reviews/phase-3/notes.md).
 import { tokenColour } from "./icon.ts";
 import type { AxState, Driver, InPage, Target } from "./driver.ts";
 
@@ -311,6 +312,13 @@ const longLabel = "A view whose name is much longer than the tab row is wide, so
 /** The page of US2-21: the selected Plan panel holds a button counting its clicks, a text input and a nested tabs. */
 const nestedPanel =
   '<button id="inner-button" type="button">Run</button><input id="field" type="text" value="abcdef"><ocelle-tabs id="inner" label="Inner"><ocelle-tab value="one">One</ocelle-tab><ocelle-tab value="two">Two</ocelle-tab><ocelle-tab-panel><p>One content</p></ocelle-tab-panel><ocelle-tab-panel><p>Two content</p></ocelle-tab-panel></ocelle-tabs>';
+
+/**
+ * The page of US2-21 with the real element (phase 4, T062b): the selected Plan panel holds a button, a text input and an
+ * `ocelle-segmented-choice` with All pressed.
+ */
+const segmentedPanel =
+  '<button id="inner-button" type="button">Run</button><input id="field" type="text" value="abcdef"><ocelle-segmented-choice id="lanes" label="Lanes" value="all"><ocelle-segment value="all">All</ocelle-segment><ocelle-segment value="mine">Mine</ocelle-segment></ocelle-segmented-choice>';
 
 /** Defines, once, `x-shadow-link`: an element whose open shadow root delegates focus to `<a part="anchor" href="#x">`. */
 function defineShadowLink(): void {
@@ -974,6 +982,49 @@ export const tabsScenarios: readonly TabsScenario[] = [
       nested: { focus: { tab: 1, parent: "inner" }, inner: "two" },
       outer: { value: "plan", shown: [false, true, false], events: [change("two", "inner")] },
       paired: { focus: { tab: 2 }, value: "tasks" },
+      keys: [false, false, false, false, false, true, true],
+    },
+  },
+  {
+    // T062b (phase 4; phase 3 review R1-04): US2-21's body with the real element. Plant: the controller without the
+    // target check (keys from the panel's content, the segmented choice's included, then move the tabs).
+    name: "US2-21: in the selected Plan panel holding a button, a text input and an ocelle-segmented-choice, Enter and Space on the button activate it, ArrowLeft, Home and End in the input move its caret unhandled, and ArrowRight on a segment moves focus to the next segment only; Plan stays selected and its panel shown, no ocelle-tabs-change is emitted, beside ArrowRight on a tab, which moves focus and selection (FR-021a)",
+    fixture: true,
+    run: async (driver, inPage) => {
+      await mount(driver, inPage, page(views.map((name) => tabOf(name)).join("") + panelOf("Spec") + panelOf("Plan", segmentedPanel) + panelOf("Tasks"), 'label="Mission views" value="plan"'));
+      await inPage(() => {
+        const scope = window as unknown as { __clicks: number };
+        scope.__clicks = 0;
+        document.getElementById("inner-button")?.addEventListener("click", () => (scope.__clicks += 1));
+      }, null);
+      await inPage(recordEvents, null);
+      await driver.focus("inner-button");
+      await driver.press("Enter");
+      await driver.press(" ");
+      const clicks = await inPage(() => (window as unknown as { __clicks: number }).__clicks, null);
+      await driver.focus("field");
+      await inPage(() => {
+        (document.getElementById("field") as HTMLInputElement | null)?.setSelectionRange(3, 3);
+      }, null);
+      const caret: unknown[] = [];
+      for (const key of ["ArrowLeft", "Home", "End"]) {
+        await driver.press(key);
+        caret.push(await inPage(() => (document.getElementById("field") as HTMLInputElement | null)?.selectionStart ?? null, null));
+      }
+      await driver.focus({ parent: "lanes", kind: "ocelle-segment", index: 0 });
+      await driver.press("ArrowRight");
+      const segments = { focus: await driver.activeElement(), value: await inPage(valueOf, "lanes"), pressed: await inPage(() => [...document.querySelectorAll("#lanes > ocelle-segment")].map((each) => each.getAttribute("aria-pressed")), null) };
+      const outer = { value: await inPage(valueOf, "tb"), shown: await inPage(shown, "tb"), events: await inPage(recordedEvents, null) };
+      await driver.focus(tab(1));
+      await driver.press("ArrowRight");
+      return { clicks, caret, segments, outer, paired: { focus: await inPage(where, null), value: await inPage(valueOf, "tb"), events: await inPage(recordedEvents, null) }, keys: (await driver.keydownRecord()).map((key) => key.defaultPrevented) };
+    },
+    expected: {
+      clicks: 2,
+      caret: [2, 0, 6],
+      segments: { focus: { parent: "lanes", kind: "ocelle-segment", index: 1 }, value: "all", pressed: ["true", "false"] },
+      outer: { value: "plan", shown: [false, true, false], events: [] },
+      paired: { focus: { tab: 2 }, value: "tasks", events: [change("tasks")] },
       keys: [false, false, false, false, false, true, true],
     },
   },

@@ -63,7 +63,9 @@ const fragments = [
   // ocelle-icon's token (FR-007, FR-011, US1-11)
   "`ocelle-icon` reads the token `--ocelle-icon-size`: overriding it on an ancestor resizes every icon in that subtree",
   // engines (FR-008, R-05)
-  "Engine floor: Chromium 120+ and WebKit 16.4+, with no `window.ShadyCSS` polyfill on the page",
+  // raised by 014 phase 4 (plan decision 1 answered yes, research.md R-06): custom states set the floor
+  "Engine floor: Chromium 125+ and WebKit 17.4+, with no `window.ShadyCSS` polyfill on the page",
+  "Custom states (`:state()` and `ElementInternals.states`): Chromium 125, WebKit 17.4",
   "`:dir()`: Chromium 120, WebKit 16.4",
   "`@media not (forced-colors: active)` (Media Queries 4's `not (…)` without a media type): Chromium 104, WebKit 16.4",
   "The `lh` unit: Chromium 109",
@@ -155,6 +157,25 @@ const fragments = [
   "`ocelle-tabs`, `ocelle-tab` and `ocelle-tab-panel` read the tokens `--ocelle-color-ink`, `--ocelle-color-hover-bg`, `--ocelle-color-accent-strong`, `--ocelle-color-disabled-ink`, `--ocelle-color-focus`, `--ocelle-focus-width`, `--ocelle-focus-offset`, `--ocelle-bar-width`, `--ocelle-target-min`, `--ocelle-space-2`, `--ocelle-space-3` and `--ocelle-icon-size`",
   "A tab's `icon` slot takes a leading icon by the slot convention; the icon adds nothing to the tab's name or its panel's",
   "The tabs have no `disabled` of their own; disable every tab to disable them",
+  // ocelle-segmented-choice and ocelle-segment (014 US3, FR-006, FR-009 to FR-011a, FR-026 to FR-030, FR-056; research.md R-01, R-03 to R-06, R-15)
+  "`ocelle-segmented-choice` is a toolbar of `ocelle-segment` toggle buttons, exactly one of them pressed: the host writes the segments as its children, in the page's own markup, and the group is one tab stop with arrow keys between the segments",
+  "`value` (attribute and property, not reflected): the pressed segment's value. Exactly one segment is pressed whenever a segment is enabled: on first render the segment whose value `value` names, else the first enabled segment. Setting `value` to a value an enabled segment has presses the first such segment; setting it to `\"\"` or to a value no enabled segment has keeps the press. A host set never emits an event, and setting the current value changes nothing",
+  "A non-empty `value` that no enabled segment has is remembered until a segment with that value appears or is enabled, which is then pressed, with no event; the next user press or host set forgets it",
+  "`label` (attribute and property, not reflected): the toolbar's accessible name, trimmed; a host `aria-label` names it too and, when present, decides alone",
+  "`joined` (boolean, reflected): the joined variant. The segments touch, one shared line of `--ocelle-border-width` lies between neighbours and between rows, and only each row's first segment has rounded start corners and each row's last segment rounded end corners. The group recomputes the rounding itself when it wraps or unwraps: no host script, observer or `style` attribute is needed",
+  "`ocelle-segmented-choice-change` with `detail` `{ value }`: the user pressed another segment with Enter, Space or a click; `value` already reads the new value when it is dispatched. It bubbles and is composed",
+  "Keys, on a segment: ArrowRight and ArrowDown move focus to the next enabled segment, ArrowLeft and ArrowUp to the previous one (ArrowLeft and ArrowRight swapped under right-to-left), wrapping at the ends; Home and End to the first and last enabled segment. The arrows move focus only. Enter and Space press the focused segment. The group handles no other key: Escape and letters reach the page unhandled, and Tab leaves the group",
+  "Only the pressed segment is in the tab order. A pressed segment cannot be un-pressed by the user",
+  "When the pressed segment is removed or disabled, the next enabled segment after it is pressed, else the nearest one before it, with no event; focus moves with the press when the segment had focus. With every segment disabled, or none, no segment is pressed and `value` reads `\"\"`",
+  "`ocelle-segment`: `value` (attribute and property, reflected) and `disabled` (boolean, reflected). A segment with no `value`, or a blank one, has its index among the segments as its value, as a string; the default is not written to the attribute",
+  "The segmented choice writes `aria-pressed`, `aria-disabled` and `tabindex` on its segments; a host's own values of these are overwritten. Keep segment values unique: a host set presses the first segment with the value",
+  "An `ocelle-segment` is only meaningful inside an `ocelle-segmented-choice`: outside one it has no role and no tab stop",
+  "In the default variant the segments stand `--ocelle-space-2` apart, each with a border of `--ocelle-border-width` in `--ocelle-color-control-border` and the radius `--ocelle-radius-2`; the pressed segment is filled `--ocelle-color-accent-low` with a border of `--ocelle-bar-width` in `--ocelle-color-accent-strong`",
+  "In the joined variant the lines around the pressed segment, and around a hovered one, are `--ocelle-color-accent-strong` at the same width, and the pressed segment is filled `--ocelle-color-accent-low` with a bar of `--ocelle-bar-width` in `--ocelle-color-accent-strong` along its block-end edge inside its box; in forced colours the bar and the default pressed border are `Highlight` and every line is `ButtonBorder`; the segmented choice is for the main grounds",
+  "`ocelle-segmented-choice` and `ocelle-segment` read the tokens `--ocelle-color-ink`, `--ocelle-color-hover-bg`, `--ocelle-color-accent-low`, `--ocelle-color-accent-strong`, `--ocelle-color-control-border`, `--ocelle-color-disabled-ink`, `--ocelle-color-focus`, `--ocelle-focus-width`, `--ocelle-focus-offset`, `--ocelle-border-width`, `--ocelle-bar-width`, `--ocelle-radius-2`, `--ocelle-target-min`, `--ocelle-space-2`, `--ocelle-space-3` and `--ocelle-icon-size`",
+  "Each segment's box is at least `--ocelle-target-min` high",
+  "A segment's `icon` slot takes a leading icon by the slot convention; the icon adds nothing to the segment's name",
+  "The segmented choice has no `disabled` of its own; disable every segment to disable it",
   // two copies on a page (FR-006, Edge Cases)
   "Two copies of the package on one page, two versions or the browser build beside a bundle of the module build, cannot both define an element: the first definition wins and the second import throws nothing",
 ];
@@ -169,6 +190,8 @@ const entryRows = [
   "| `@ocelle/elements/ocelle-tabs.js` | `dist/ocelle-tabs.js` | `ocelle-tabs`, `ocelle-tab` and `ocelle-tab-panel`; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-tab.js` | `dist/ocelle-tab.js` | `ocelle-tab` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-tab-panel.js` | `dist/ocelle-tab-panel.js` | `ocelle-tab-panel` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-segmented-choice.js` | `dist/ocelle-segmented-choice.js` | `ocelle-segmented-choice` and `ocelle-segment`; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-segment.js` | `dist/ocelle-segment.js` | `ocelle-segment` only; for hosts with a bundler |",
   "| `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |",
   "| `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |",
 ];
@@ -213,7 +236,7 @@ describe("packages/elements/README.md", () => {
   it("lists exactly the entry points of package.json's exports in its Entry points table (FR-002)", () => {
     const manifest = JSON.parse(read("package.json")) as { exports?: Record<string, string> };
     expect(tableRows(read("README.md"), "Entry points")).toEqual(entryRows);
-    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-listbox.js", "./ocelle-option.js", "./ocelle-tabs.js", "./ocelle-tab.js", "./ocelle-tab-panel.js", "./browser.js", "./custom-elements.json"]);
+    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-listbox.js", "./ocelle-option.js", "./ocelle-tabs.js", "./ocelle-tab.js", "./ocelle-tab-panel.js", "./ocelle-segmented-choice.js", "./ocelle-segment.js", "./browser.js", "./custom-elements.json"]);
   });
 
   it("lists the thirteen names of the set, whether each mirrors and the consumer need it meets, in its Icons table (US2-1, FR-018, SC-007)", () => {
@@ -260,9 +283,20 @@ describe("packages/elements/CHANGELOG.md", () => {
     "`@ocelle/elements/ocelle-tabs.js`",
     "`@ocelle/elements/ocelle-tab.js`",
     "`@ocelle/elements/ocelle-tab-panel.js`",
+    // 014 phase 4 (FR-058, research.md R-16)
+    "`ocelle-segmented-choice`",
+    "`ocelle-segment`",
+    "`ocelle-segmented-choice-change`",
+    "`joined`",
+    "`@ocelle/elements/ocelle-segmented-choice.js`",
+    "`@ocelle/elements/ocelle-segment.js`",
     ...["chevron-start", "chevron-end", "chevron-up", "chevron-down", "arrow-start", "arrow-end", "menu", "close", "folder", "file", "search", "table", "copy"].map((name) => `\`${name}\``),
   ])("names %s under Unreleased / Added (constitution VII, FR-031, SC-008)", (surface) => {
     expect(added).toContain(surface);
+  });
+
+  it("records the raised engine floor, Chromium 125 and WebKit 17.4 for custom states, under Unreleased (014 phase 4, plan decision 1)", () => {
+    expect(flat(unreleased)).toContain("The engine floor is Chromium 125 and WebKit 17.4, raised from Chromium 120 and WebKit 16.4 for the custom states (`:state()`) of `ocelle-segment`");
   });
 });
 
