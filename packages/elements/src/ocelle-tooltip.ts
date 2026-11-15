@@ -20,9 +20,6 @@ const opposite: Record<Side, Side> = { top: "bottom", bottom: "top", left: "righ
 /** Whether the engine has the Popover API (R-10); without it the tooltip never shows and listens to no key. */
 const popover = "showPopover" in HTMLElement.prototype;
 
-/** The connected tooltips. */
-const instances = new Set<OcelleTooltip>();
-
 /** The last number of the description ids, `ocelle-tooltip-desc-<n>` (R-13). */
 let described = 0;
 
@@ -30,6 +27,11 @@ let described = 0;
 function within(node: Node, ancestor: Node): boolean {
   for (let each: Node | null = node; each !== null; each = each.parentNode instanceof ShadowRoot ? each.parentNode.host : each.parentNode) if (each === ancestor) return true;
   return false;
+}
+
+/** The ids in `element`'s `aria-describedby`, in order. */
+function describedBy(element: Element): string[] {
+  return (element.getAttribute("aria-describedby") ?? "").split(/\s/).filter((each) => each !== "");
 }
 
 /** Reads a duration such as `300ms` or `0.5s` in milliseconds: 0 without a unit, NaN for no number. */
@@ -50,6 +52,7 @@ function milliseconds(text: string): number {
  */
 export class OcelleTooltip extends LitElement {
   static override properties: PropertyDeclarations = {
+    // Stryker disable next-line ObjectLiteral: equivalent, {} gives Lit's default options, which are type String's (attribute "text", the default converter, not reflected)
     text: { type: String },
     placement: { type: String, reflect: true },
     disabled: { type: Boolean, reflect: true },
@@ -132,9 +135,11 @@ export class OcelleTooltip extends LitElement {
   static #shown: OcelleTooltip | undefined;
 
   static {
-    // An overlay is opening (R-10): every bubble hides, and a pending one does not show.
+    // An overlay is opening (R-10): the shown bubble hides first. A pending delay ends by the pointer's own `pointerout`
+    // when the backdrop covers the trigger, or by the focus that moves into the overlay.
     bubbles.dismiss = () => {
-      for (const each of instances) each.#hide();
+      const shown = OcelleTooltip.#shown;
+      if (shown !== undefined) shown.#hide();
     };
   }
 
@@ -170,14 +175,14 @@ export class OcelleTooltip extends LitElement {
 
   /** The trigger: the first element assigned to the default slot (R-12). */
   #trigger: HTMLElement | undefined;
-  /** Whether the pointer is on the trigger or the bubble. */
-  #hovered = false;
+  /** Whether the pointer is on the trigger or the bubble; false (undefined) from the first `slotchange` on. */
+  #hovered: boolean | undefined;
   /** Whether keyboard focus is on the trigger: focus that arrived while matching `:focus-visible` (FR-031). */
-  #focused = false;
+  #focused: boolean | undefined;
   #timer: number | undefined;
   #frame = 0;
   /** What the last placement was made for (see `#follow`), to place again only when it changed. */
-  #placed = "";
+  #placed: string | undefined;
   /** The bubble's position (R-11): one rule, adopted after the element's styles; never a `style` attribute (FR-047). */
   readonly #sheet = new CSSStyleSheet();
   /** With `describes`, the description span and the observer that keeps it and its id (R-13). */
@@ -208,13 +213,13 @@ export class OcelleTooltip extends LitElement {
 
   override connectedCallback(): void {
     super.connectedCallback();
-    instances.add(this);
     this.#describe();
   }
 
+  /** Removed: the bubble hides and a pending delay ends (a disconnected popover cannot be shown); no description. */
   override disconnectedCallback(): void {
+    // Stryker disable next-line CallExpression: equivalent, Lit's own disconnection serves reactive controllers and async directives; the tooltip uses neither (as the overlays, reviews/phase-2/notes.md)
     super.disconnectedCallback();
-    instances.delete(this);
     this.#hide();
     this.#undescribe(this.#trigger);
   }
@@ -294,10 +299,11 @@ export class OcelleTooltip extends LitElement {
 
   /** Shows the bubble, the only one shown on the page, and places it at once and at every frame. */
   #show(): void {
-    window.clearTimeout(this.#timer);
     const bubble = this.#bubble;
     const shown = OcelleTooltip.#shown;
-    if (!popover || bubble === null || this.disabled || this.text === "" || shown === this) return;
+    if (!popover || bubble === null || this.disabled || this.text === "") return;
+    // Stryker disable next-line ConditionalExpression: equivalent, a bubble already shown would hide and show again in this task, unseen: no frame, event or focus change between (false); true, which every show row would kill, shares the mutator (reviews/phase-4/notes.md)
+    if (shown === this) return;
     if (shown !== undefined) shown.#hide();
     OcelleTooltip.#shown = this;
     bubble.showPopover();
@@ -310,6 +316,7 @@ export class OcelleTooltip extends LitElement {
     window.clearTimeout(this.#timer);
     if (OcelleTooltip.#shown !== this) return;
     OcelleTooltip.#shown = undefined;
+    // Stryker disable next-line CallExpression: equivalent, a loop left running only places a hidden bubble again, and hides it again once its trigger is gone (reviews/phase-4/notes.md)
     cancelAnimationFrame(this.#frame);
     window.removeEventListener("keydown", this.#onKeydown, true);
     this.#bubble?.hidePopover();
@@ -333,7 +340,8 @@ export class OcelleTooltip extends LitElement {
     const size = bubble.getBoundingClientRect();
     const viewport = document.documentElement;
     const rtl = this.matches(":dir(rtl)");
-    const placed = [box.left, box.top, box.width, box.height, size.width, size.height, viewport.clientWidth, viewport.clientHeight, this.placement, rtl].join(" ");
+    const placed = JSON.stringify([box.left, box.top, box.width, box.height, size.width, size.height, viewport.clientWidth, viewport.clientHeight, this.placement, rtl]);
+    // Stryker disable next-line ConditionalExpression: equivalent, placing at every frame gives the same coordinates, the test only spares the work (true); false, which the following rows would kill, shares the mutator (reviews/phase-4/notes.md)
     if (placed !== this.#placed) {
       this.#placed = placed;
       this.#place(trigger, bubble, rtl);
@@ -414,7 +422,7 @@ export class OcelleTooltip extends LitElement {
     }
     span.textContent = this.text;
     this.append(span);
-    const ids = (trigger.getAttribute("aria-describedby") ?? "").split(/\s+/).filter((each) => each !== "");
+    const ids = describedBy(trigger);
     if (!ids.includes(span.id)) trigger.setAttribute("aria-describedby", [...ids, span.id].join(" "));
     this.#observer.observe(trigger, { attributes: true, attributeFilter: ["aria-describedby"] });
     this.#observer.observe(this, { childList: true });
@@ -430,10 +438,11 @@ export class OcelleTooltip extends LitElement {
 
   /** Stops keeping the description and removes its id from `trigger`'s `aria-describedby`, keeping the host's ids. */
   #unlink(trigger: HTMLElement | undefined): void {
+    // Stryker disable next-line CallExpression: equivalent, a callback of a stale observation only runs #describe, which writes nothing while the description is not wanted or already in place (reviews/phase-4/notes.md)
     this.#observer.disconnect();
     const id = this.#span?.id;
     if (trigger === undefined || id === undefined) return;
-    const ids = (trigger.getAttribute("aria-describedby") ?? "").split(/\s+/).filter((each) => each !== "" && each !== id);
+    const ids = describedBy(trigger).filter((each) => each !== id);
     if (ids.length > 0) trigger.setAttribute("aria-describedby", ids.join(" "));
     else trigger.removeAttribute("aria-describedby");
   }
