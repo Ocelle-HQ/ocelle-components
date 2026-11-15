@@ -387,7 +387,7 @@ describe("generate(root) on the repository's element source", () => {
     const manifest = await generate(repo);
     const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
     expect(manifest.schemaVersion).toBe("1.0.0");
-    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-form-input.ts", "src/ocelle-icon.ts", "src/ocelle-notice.ts"]);
+    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-form-input.ts", "src/ocelle-form-select.ts", "src/ocelle-icon.ts", "src/ocelle-notice.ts"]);
     const [icon] = modules.find((module) => module.path === "src/ocelle-icon.ts")?.declarations ?? [];
     expect(icon).toMatchObject({
       kind: "class",
@@ -547,6 +547,74 @@ describe("generate(root) on the repository's element source", () => {
       valueDescription: true,
       events: [{ name: "ocelle-form-input-change", type: "CustomEvent<{ value: string }>", described: true }],
       parts: ["label", "control", "description", "error"].map((name) => ({ name, described: true })),
+    });
+  });
+
+  it('declares ocelle-form-select with its tag name and class, the shared members of contracts/elements.md (value a property with no attribute), none of the input\'s own members, the event ocelle-form-select-change with its detail type, the parts label, control, description and error, no slot and no CSS property, and no value, form, aria-*, role or hidden attribute (specs/010-feedback-forms FR-021, FR-034; analysis G9, I15, I16)', async () => {
+    const manifest = await generate(repo);
+    const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [entry] = modules.find((module) => module.path === "src/ocelle-form-select.ts")?.declarations ?? [];
+    const described = (value: unknown): boolean => typeof value === "string" && value !== "";
+    const byName = (a: Json, b: Json): number => (String(a.name) < String(b.name) ? -1 : 1);
+    const defined = (value: Json): Json => Object.fromEntries(Object.entries(value).filter(([, each]) => each !== undefined));
+    const member = (each: Json): Json => {
+      const type = each.type as { text?: string } | undefined;
+      const returned = each.return as { type?: { text?: string } } | undefined;
+      const parameters = each.parameters as { name: string; optional?: boolean; type?: { text?: string } }[] | undefined;
+      return defined({
+        kind: each.kind,
+        name: each.name,
+        type: type?.text,
+        default: each.default,
+        attribute: each.attribute,
+        reflects: each.reflects,
+        readonly: each.readonly,
+        returns: returned?.type?.text,
+        parameters: parameters?.map((parameter) => `${parameter.name}${parameter.optional === true ? "?" : ""}: ${String(parameter.type?.text)}`),
+        described: described(each.description),
+      });
+    };
+    const field = (name: string, type: string, value: string, attribute?: string, reflects?: boolean): Json => defined({ kind: "field", name, type, default: value, attribute, reflects, described: true });
+    const getter = (name: string, type: string): Json => ({ kind: "field", name, type, readonly: true, described: true });
+    const method = (name: string, returns: string, parameters?: string[]): Json => defined({ kind: "method", name, returns, parameters, described: true });
+    // The shared members only: none of the input's own (type and the pass-through properties).
+    const members = [
+      field("name", "string", '""', "name", true),
+      field("label", "string", '""', "label", true),
+      field("description", "string", '""', "description", true),
+      field("error", "string", '""', "error", true),
+      field("required", "boolean", "false", "required", true),
+      field("disabled", "boolean", "false", "disabled", true),
+      field("value", "string", '""'),
+      getter("form", "HTMLFormElement | null"),
+      getter("labels", "NodeList"),
+      getter("validity", "ValidityState"),
+      getter("validationMessage", "string"),
+      getter("willValidate", "boolean"),
+      method("checkValidity", "boolean"),
+      method("reportValidity", "boolean"),
+      method("focus", "void", ["options?: FocusOptions"]),
+    ];
+    const attribute = (each: Json): Json => defined({ name: each.name, fieldName: each.fieldName, type: (each.type as { text?: string } | undefined)?.text, default: each.default, described: described(each.description) });
+    // Exactly the reflected shared attributes: no value (a host value attribute is ignored), form, aria-*, role or hidden.
+    const attributes = members.filter((each) => each.attribute !== undefined).map((each) => ({ name: each.attribute, fieldName: each.name, type: each.type, default: each.default, described: true }));
+    expect(entry).toMatchObject({ kind: "class", name: "OcelleFormSelect", tagName: "ocelle-form-select", customElement: true, superclass: { name: "LitElement", package: "lit" } });
+    expect({
+      described: described(entry?.description),
+      members: ((entry?.members ?? []) as Json[]).map(member).sort(byName),
+      attributes: ((entry?.attributes ?? []) as Json[]).map(attribute).sort(byName),
+      events: ((entry?.events ?? []) as Json[]).map((event) => ({ name: event.name, type: (event.type as { text?: string } | undefined)?.text, described: described(event.description) })),
+      parts: ((entry?.cssParts ?? []) as Json[]).map((part) => ({ name: part.name, described: described(part.description) })),
+      slots: entry?.slots,
+      cssProperties: entry?.cssProperties,
+    }).toEqual({
+      described: true,
+      members: [...members].sort(byName),
+      attributes: [...attributes].sort(byName),
+      events: [{ name: "ocelle-form-select-change", type: "CustomEvent<{ value: string }>", described: true }],
+      parts: ["label", "control", "description", "error"].map((name) => ({ name, described: true })),
+      slots: [],
+      cssProperties: [],
     });
   });
 

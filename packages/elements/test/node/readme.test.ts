@@ -198,6 +198,21 @@ const fragments = [
   "Pressing Enter in the field dispatches `ocelle-form-input-change` if the value changed, then submits the form as a native input does",
   "Event: `ocelle-form-input-change`, `detail: { value }`. CSS parts: `label`, `control`, `description` and `error`. Slots: none. No CSS custom property of its own",
   "`ocelle-form-input` reads the tokens `--ocelle-color-sheet`, `--ocelle-color-control-border`, `--ocelle-color-ink`, `--ocelle-color-ink-muted`, `--ocelle-color-danger`, `--ocelle-color-focus`, `--ocelle-color-disabled-bg`, `--ocelle-color-disabled-ink`, `--ocelle-border-width`, `--ocelle-bar-width`, `--ocelle-radius-2`, `--ocelle-target-min`, `--ocelle-focus-width`, `--ocelle-focus-offset`, `--ocelle-font-size-sm`, `--ocelle-font-weight-strong`, `--ocelle-line-height-normal`, `--ocelle-space-1`, `--ocelle-space-2` and `--ocelle-space-3`",
+  // ocelle-form-select (specs/010-feedback-forms FR-021, FR-026, FR-031, FR-032, FR-035, Edge Cases; T052a)
+  "`ocelle-form-select` is a labelled native select for closed choices, with an optional description and a host-set error, that takes part in its form like a native select. It follows the form-control convention above",
+  "Attributes and reflected properties: `name`, `label`, `description`, `error`, `required` and `disabled`. Properties: `value`, `form`, `labels`, `validity`, `validationMessage` and `willValidate`. Methods: `checkValidity()`, `reportValidity()` and `focus()`",
+  "Its choices are its light-DOM `<option>` and `<optgroup>` children, written as for a native `<select>`: the native select inside mirrors their order, labels, values, `selected` (the default selection, restored on reset) and `disabled`, and follows every later change to them. The light-DOM children are not rendered and not exposed",
+  "One choice only: there is no `multiple` and no `size`",
+  "A host `value` attribute is ignored: the default selection is the last option marked `selected`, or the first enabled option without one. The `value` property is the current choice; setting it to a value no option has selects nothing and reads `\"\"`, as on a native select. There is no `defaultValue` property",
+  "When the chosen option is removed, the choice falls back to the first enabled option, as on a native select, with no event",
+  "The native select's own keys are unchanged: ArrowDown and ArrowUp change the choice, and typing a letter selects the next option whose label starts with it. Each change the user makes dispatches `ocelle-form-select-change`",
+  "The open-list indicator is the `chevron-down` icon of the set, drawn in `currentColor` at `--ocelle-icon-size` at the inline end of the select, decorative and visible in forced colours; it takes no pointer events, so a click on it reaches the select",
+  "Event: `ocelle-form-select-change`, `detail: { value }`. CSS parts: `label`, `control`, `description` and `error`. Slots: none. No CSS custom property of its own",
+  "`ocelle-form-select` reads the tokens `--ocelle-color-sheet`, `--ocelle-color-control-border`, `--ocelle-color-ink`, `--ocelle-color-ink-muted`, `--ocelle-color-danger`, `--ocelle-color-focus`, `--ocelle-color-disabled-bg`, `--ocelle-color-disabled-ink`, `--ocelle-border-width`, `--ocelle-bar-width`, `--ocelle-radius-2`, `--ocelle-target-min`, `--ocelle-focus-width`, `--ocelle-focus-offset`, `--ocelle-font-size-sm`, `--ocelle-font-weight-strong`, `--ocelle-line-height-normal`, `--ocelle-space-1`, `--ocelle-space-2`, `--ocelle-space-3` and `--ocelle-icon-size`, the last for its indicator",
+  "For htmx, trigger on `hx-trigger=\"ocelle-form-select-change\"` (or `input`)",
+  "Not measured for `ocelle-form-select`: that Alt+Down or Space opens the list, and how the browser draws the open list",
+  "Before the definition has loaded, a select's `<option>` children may show as text",
+  "Importing `@ocelle/elements/ocelle-form-select.js` defines `ocelle-form-select` only: the select draws its indicator itself and does not define `ocelle-icon`",
   // two copies on a page (FR-006, Edge Cases)
   "Two copies of the package on one page, two versions or the browser build beside a bundle of the module build, cannot both define an element: the first definition wins and the second import throws nothing",
 ];
@@ -209,6 +224,7 @@ const entryRows = [
   "| `@ocelle/elements/ocelle-brand-mark.js` | `dist/ocelle-brand-mark.js` | `ocelle-brand-mark` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-notice.js` | `dist/ocelle-notice.js` | `ocelle-notice` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-form-input.js` | `dist/ocelle-form-input.js` | `ocelle-form-input` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-form-select.js` | `dist/ocelle-form-select.js` | `ocelle-form-select` only; for hosts with a bundler |",
   "| `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |",
   "| `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |",
 ];
@@ -253,7 +269,7 @@ describe("packages/elements/README.md", () => {
   it("lists exactly the entry points of package.json's exports in its Entry points table (FR-002)", () => {
     const manifest = JSON.parse(read("package.json")) as { exports?: Record<string, string> };
     expect(tableRows(read("README.md"), "Entry points")).toEqual(entryRows);
-    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-notice.js", "./ocelle-form-input.js", "./browser.js", "./custom-elements.json"]);
+    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-notice.js", "./ocelle-form-input.js", "./ocelle-form-select.js", "./browser.js", "./custom-elements.json"]);
   });
 
   it("lists the thirteen names of the set, whether each mirrors and the consumer need it meets, in its Icons table (US2-1, FR-018, SC-007)", () => {
@@ -297,6 +313,12 @@ describe("packages/elements/CHANGELOG.md", () => {
     "the `value` attribute (its default value), the properties `value`, `form`, `labels`, `validity`, `validationMessage` and `willValidate` and the methods `checkValidity()`, `reportValidity()` and `focus()`",
     "the event `ocelle-form-input-change` with `detail: { value }`, no slot, and the CSS parts `label`, `control`, `description` and `error`",
     "the form-control convention",
+    // ocelle-form-select (specs/010-feedback-forms FR-036; T052a)
+    "`ocelle-form-select`",
+    "`@ocelle/elements/ocelle-form-select.js`",
+    "its options from its light-DOM `<option>` and `<optgroup>` children",
+    "its attributes and reflected properties `name`, `label`, `description`, `error`, `required` and `disabled`; the properties `value`, `form`, `labels`, `validity`, `validationMessage` and `willValidate` and the methods `checkValidity()`, `reportValidity()` and `focus()`",
+    "the event `ocelle-form-select-change` with `detail: { value }`, no slot, and the CSS parts `label`, `control`, `description` and `error`",
     ...["chevron-start", "chevron-end", "chevron-up", "chevron-down", "arrow-start", "arrow-end", "menu", "close", "folder", "file", "search", "table", "copy"].map((name) => `\`${name}\``),
   ])("names %s under Unreleased / Added (constitution VII, FR-031, SC-008)", (surface) => {
     expect(added).toContain(surface);

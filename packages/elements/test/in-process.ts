@@ -227,10 +227,18 @@ function found(id: string): Element {
   return document.getElementById(id) ?? removed.get(id) ?? element(id);
 }
 
+/** The first child of `of`, which a `data` operation requires to be a text node. */
+function firstText(of: Element): Text {
+  const first = of.firstChild;
+  if (!(first instanceof Text)) throw new Error(`data: #${of.id} has no text node first`);
+  return first;
+}
+
 /** One `batch` operation, in the page's current task. */
 function operate(operation: Operation): void {
   if (operation.op === "insert") element(operation.container).insertAdjacentHTML("beforeend", operation.markup);
   else if (operation.op === "text") found(operation.id).textContent = operation.text;
+  else if (operation.op === "data") firstText(found(operation.id)).data = operation.data;
   else if (operation.op === "attribute") {
     if (operation.value === null) found(operation.id).removeAttribute(operation.name);
     else found(operation.id).setAttribute(operation.name, operation.value);
