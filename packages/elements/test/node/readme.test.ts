@@ -62,7 +62,9 @@ const fragments = [
   // ocelle-icon's token (FR-007, FR-011, US1-11)
   "`ocelle-icon` reads the token `--ocelle-icon-size`: overriding it on an ancestor resizes every icon in that subtree",
   // engines (FR-008, R-05)
-  "Engine floor: Chromium 120+ and WebKit 16.4+, with no `window.ShadyCSS` polyfill on the page",
+  // 008 (tasks.md T044; FR-040, research.md R-10): the floor raised to WebKit 17 by the Popover API
+  "Engine floor: Chromium 120+ and WebKit 17+, with no `window.ShadyCSS` polyfill on the page",
+  "The Popover API: Chromium 114, WebKit 17",
   "`:dir()`: Chromium 120, WebKit 16.4",
   "`@media not (forced-colors: active)` (Media Queries 4's `not (…)` without a media type): Chromium 104, WebKit 16.4",
   "The `lh` unit: Chromium 109",
@@ -128,6 +130,7 @@ const entryRows = [
   "| `@ocelle/elements/ocelle-brand-mark.js` | `dist/ocelle-brand-mark.js` | `ocelle-brand-mark` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-dialog.js` | `dist/ocelle-dialog.js` | `ocelle-dialog` and the `ocelle-icon` it renders; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-drawer.js` | `dist/ocelle-drawer.js` | `ocelle-drawer` and the `ocelle-icon` it renders; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-tooltip.js` | `dist/ocelle-tooltip.js` | `ocelle-tooltip` only; for hosts with a bundler |",
   "| `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |",
   "| `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |",
 ];
@@ -172,7 +175,7 @@ describe("packages/elements/README.md", () => {
   it("lists exactly the entry points of package.json's exports in its Entry points table (FR-002)", () => {
     const manifest = JSON.parse(read("package.json")) as { exports?: Record<string, string> };
     expect(tableRows(read("README.md"), "Entry points")).toEqual(entryRows);
-    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-dialog.js", "./ocelle-drawer.js", "./browser.js", "./custom-elements.json"]);
+    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-dialog.js", "./ocelle-drawer.js", "./ocelle-tooltip.js", "./browser.js", "./custom-elements.json"]);
   });
 
   it("lists the thirteen names of the set, whether each mirrors and the consumer need it meets, in its Icons table (US2-1, FR-018, SC-007)", () => {
@@ -324,6 +327,76 @@ describe("packages/elements/README.md: ocelle-drawer (008)", () => {
   });
 });
 
+/**
+ * The `ocelle-tooltip` section and the statements about it (008 tasks.md T044; contracts/elements-overlays.md
+ * § `ocelle-tooltip`; research.md R-10 to R-13; data-model.md § `ocelle-tooltip`): what it is, its surface, show and
+ * hide, Escape, placement, the tokens it reads in the dialog's sentence form (analysis U1(a)), FR-037's statement and
+ * FR-036's advice (analysis U1(c)), the stated limits (text-field triggers, custom-element triggers with `describes`,
+ * touch) and #7's and #12's usage.
+ */
+const tooltipFragments = [
+  // what it is and its surface
+  "`ocelle-tooltip` shows a short text in a bubble beside its trigger, the first element in its default slot, when the pointer rests on the trigger or the trigger receives keyboard focus",
+  "`text` (attribute and property): the bubble's plain text; an empty text shows no bubble",
+  "`placement` (attribute and property, reflected): `top` (the default), `bottom`, `start` or `end`, the side of the trigger the bubble is shown on, `start` and `end` in the tooltip's direction",
+  "`disabled` (attribute and property, reflected): no bubble is shown",
+  "`describes` (attribute and property, reflected): the text becomes the trigger's accessible description",
+  "Slots: the default slot holds the trigger; the `description` slot is the tooltip's own and is never rendered. Part: `bubble`. Events: none",
+  "The host is `display: contents`, so wrapping a trigger leaves the trigger's box unchanged",
+  // show and hide
+  "The bubble shows after the pointer has rested on the trigger for `--ocelle-tooltip-delay`, and at once when the trigger, or a control inside it, receives keyboard focus (it matches `:focus-visible`); focus from a pointer click or a tap neither shows nor keeps it",
+  "It stays while the pointer is on the trigger or on the bubble, which the pointer can reach across the gap between them, or the trigger has keyboard focus, with no timeout, and hides when none of these holds",
+  "Escape hides it and goes no further: focus and pointer do not move, an open dialog or drawer around it stays open and the next Escape asks to close that, and the bubble stays hidden until the pointer re-enters or keyboard focus arrives again",
+  "At most one bubble is shown on the page; it hides when its trigger is removed or disabled and when a dialog or drawer opens",
+  "The delay applies under `prefers-reduced-motion: reduce` too (a delay is not motion), and the bubble never animates",
+  // placement
+  "The bubble is shown in the top layer through the Popover API, above any open dialog or drawer, whole, whatever the overflow, transform or stacking context around the trigger",
+  "It is placed on its `placement` side, `--ocelle-space-2` away, and shown on the opposite side when it would overflow the viewport less `--ocelle-gutter`; when it fits on neither side it stays on its `placement` side; across that axis it is kept inside the viewport less `--ocelle-gutter`; it follows the trigger when anything scrolls or the viewport is resized",
+  "It is never wider than `--ocelle-tooltip-max-inline`: longer text wraps, an unbreakable string included",
+  "Its position is written to a stylesheet the tooltip adopts, never to a `style` attribute",
+  // the tokens it reads (analysis U1(a); data-model § ocelle-tooltip)
+  "`ocelle-tooltip` reads the tokens `--ocelle-color-chrome`, `--ocelle-color-chrome-ink`, `--ocelle-radius-2`, `--ocelle-border-width`, `--ocelle-font-sans`, `--ocelle-font-size-sm`, `--ocelle-line-height-normal`, `--ocelle-space-1`, `--ocelle-space-2`, `--ocelle-gutter`, `--ocelle-tooltip-delay` and `--ocelle-tooltip-max-inline`",
+  "In forced colours the bubble has the `Canvas` ground, `CanvasText` text and a `CanvasText` border",
+  // FR-037's statement and FR-036's advice (analysis U1(c))
+  "The trigger carries its own accessible name: the tooltip never names it. The bubble only repeats or supplements what is available otherwise, so it never carries essential information; touch input shows no bubble, except on a text-field trigger, which shows it on any focus",
+  "Without `describes`, the bubble is hidden from assistive technology and the trigger gets no description from the tooltip: use it when the text repeats the trigger's name",
+  "Set `describes` when the text adds to the trigger's name",
+  "With `describes`, the tooltip adds one hidden `span` with `slot=\"description\"` and `role=\"tooltip\"` to its own children, its text set as text, and that span's id to the trigger's `aria-describedby`, keeping the ids the host put there; it puts both back when a re-render of the host's template removes them, and moves the id when the trigger is replaced",
+  // the stated limits
+  "Triggers are buttons and links. A text field matches `:focus-visible` on any focus, so around one the bubble shows on focus however it arrives, by a click or a tap too",
+  "`describes` is supported only when the trigger is itself the focusable element (a native control, or a custom element focusable as its host): a custom element whose inner control takes focus cannot be described from outside its shadow root",
+  "On touch there is no hover, and a tap on a button or link does not give keyboard focus, so a tap shows no bubble",
+  "In an engine without the Popover API (below the engine floor) the tooltip shows nothing and throws nothing",
+  // #7's and #12's usage
+  '<ocelle-tooltip text="Projects" placement="end"><a href="/projects" aria-label="Projects">',
+  '<ocelle-tooltip text="${this.text}" ?disabled=${!this.truncated}><button class="pill">${this.text}</button></ocelle-tooltip>',
+  "#12's icon-only nav item: the link carries its name, and the bubble repeats it on hover and keyboard focus",
+  "#7's pill tag: the tooltip shows the full text only while the tag is ellipsised",
+];
+
+describe("packages/elements/README.md: ocelle-tooltip (008)", () => {
+  const text = read("README.md");
+  const readme = flat(text);
+
+  it.each(tooltipFragments)("states: %s", (fragment) => {
+    expect(readme).toContain(flat(fragment));
+  });
+
+  it("names ocelle-tooltip in its intro, before the first section", () => {
+    expect(flat(text.split(/^## /m)[0] ?? "")).toContain("`ocelle-tooltip`, a tooltip");
+  });
+
+  it("has an `ocelle-tooltip` section", () => {
+    expect(text).toMatch(/^## `ocelle-tooltip`$/m);
+  });
+
+  // FR-040: the floor's line names WebKit 17 and no longer WebKit 16.4.
+  it("states no WebKit 16.4 floor in § Engines", () => {
+    const engines = flat(/^## Engines\n([\s\S]*?)(?=^## )/m.exec(text)?.[1] ?? "");
+    expect({ found: engines !== "", old: engines.includes("WebKit 16.4+") }).toEqual({ found: true, old: false });
+  });
+});
+
 describe("packages/elements/CHANGELOG.md", () => {
   const changelog = read("CHANGELOG.md");
   const unreleased = /^## Unreleased\n([\s\S]*?)(?=^## |(?![\s\S]))/m.exec(changelog)?.[1] ?? "";
@@ -354,6 +427,11 @@ describe("packages/elements/CHANGELOG.md", () => {
     "`ocelle-drawer-close-request`",
     "`ocelle-drawer-close`",
     "`side`, `ground` and `heading-hidden` (reflected)",
+    // 008 (T043, T049): the tooltip's surface and the floor
+    "`ocelle-tooltip`",
+    "`@ocelle/elements/ocelle-tooltip.js`",
+    "`text`, `placement`, `disabled` and `describes`",
+    "the engine floor raised to Chromium 120 and WebKit 17",
     ...["chevron-start", "chevron-end", "chevron-up", "chevron-down", "arrow-start", "arrow-end", "menu", "close", "folder", "file", "search", "table", "copy"].map((name) => `\`${name}\``),
   ])("names %s under Unreleased / Added (constitution VII, FR-031, SC-008)", (surface) => {
     expect(added).toContain(surface);

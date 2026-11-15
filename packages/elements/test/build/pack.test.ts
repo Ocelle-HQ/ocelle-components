@@ -34,4 +34,10 @@ describe("pnpm pack of @ocelle/elements", () => {
     const manifest = JSON.parse(await readFile(join(elements, "package.json"), "utf8")) as { exports?: Record<string, string> };
     expect({ drawer: packed.includes("dist/ocelle-drawer.js"), entry: manifest.exports?.["./ocelle-drawer.js"] }).toEqual({ drawer: true, entry: "./dist/ocelle-drawer.js" });
   });
+
+  // 008 tasks.md T043: the tooltip's entry point is packed, and package.json maps it.
+  it("lists dist/ocelle-tooltip.js, and the packed package.json maps ./ocelle-tooltip.js to dist/ocelle-tooltip.js", async () => {
+    const manifest = JSON.parse(await readFile(join(elements, "package.json"), "utf8")) as { exports?: Record<string, string> };
+    expect({ tooltip: packed.includes("dist/ocelle-tooltip.js"), entry: manifest.exports?.["./ocelle-tooltip.js"] }).toEqual({ tooltip: true, entry: "./dist/ocelle-tooltip.js" });
+  });
 });
