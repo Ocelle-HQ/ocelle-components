@@ -310,7 +310,9 @@ threshold or when the host sets `narrow`. It follows the container-tier conventi
   inspector stacked under it, instead of the list; in two or three columns it has no effect.
 - `remeasure()`: requests a measurement of the element's intrinsic sizes for the next animation frame, for a change
   the element cannot see (the container-tier convention lists them), and in that frame re-chooses the tier from a fresh
-  measurement of the element's border box.
+  measurement of the element's border box. On an element that is not in a document, never connected or removed, it
+  does nothing: a never-connected element measures itself at its first render anyway, and after changing a removed
+  element, call `remeasure()` once it is inserted again.
 - **Slots.** It has three slots: `list`, the list pane; the default slot, the detail pane; and `inspector`, the optional
   inspector pane. An empty `inspector` slot adds no track, no border and no space.
 - **Tokens.** `ocelle-list-detail` reads the tokens `--ocelle-list-track-width`, `--ocelle-shell-inspector-width`,
@@ -472,10 +474,11 @@ element with tiers.
   and the host calls `remeasure()` after a change in either; it re-chooses the tier from a fresh measurement of the
   element's border box in the next animation frame:
   - a percentage inline padding that changes with the host's container while the element's content box keeps its
-    size, such as a content-box host with a fixed or capped inline size and percentage gutters: the tier stays stale
-    until `remeasure()` or the next change the element sees;
+    size, such as a content-box host with a fixed or capped inline size and percentage gutters: the change may go
+    unseen, unless, for example, the host's container is positioned and the host is not; otherwise the tier stays
+    stale until `remeasure()` or the next change the element sees;
   - a host whose content box is narrower than its own inline padding and borders: a change of a px or em padding or of
-    a border alone is seen there too, and only a percentage padding stays stale, as above.
+    a border alone is seen there too, and only a percentage padding may go unseen, as above.
 - One pass renders every pane in the measurement grid twice and restores it: about 10 ms (7 to 19 ms) with a 1000-row
   list. Attribute changes, such as a selection's `class` or `aria-selected`, run none; light-DOM swaps and text
   changes run at most one per frame.

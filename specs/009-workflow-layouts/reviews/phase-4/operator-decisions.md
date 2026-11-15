@@ -28,3 +28,10 @@
   - **R3-02:** gets its guard red-first.
   - **R3-04:** its wording is fixed in the same round.
   - Review round 4 follows.
+- **G2** (gate "phase 4" after review round 4, `reviews/phase-4/round-4.md`, changes_requested), "accept": phase 4 is
+  accepted without a further round.
+  - **R4-01** (the evidence commit `58fb1ff` has no Signed-off-by): resolved by the fold, which gives each folded
+    commit the union of its group's trailers. `gate:signoff` and `tdd-check.sh 4` run on the folded head; if signoff
+    still fails, the run goes back to the operator.
+  - **R4-02** (a reconnected element schedules no measurement pass) and **R4-03** (phase 2's R2-02) are carried into
+    the PR as open notes.
