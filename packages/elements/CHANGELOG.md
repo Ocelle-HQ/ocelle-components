@@ -37,6 +37,10 @@ entry points and the browser build's file path (constitution VII).
   value text at its inline end), `size` (reflected, `size="compact"`) and `ground` (reflected, `ground="tinted"` for
   tinted grounds); its parts `track`, `fill`, `label` and `value-text`. Entry point
   `@ocelle/elements/ocelle-progress.js` (defines `ocelle-progress` only).
+- The style lint's token-only rule, which checks these elements' styles, admits four values and nothing near them:
+  the `grid-template-columns` tracks `fit-content(<percentage>)` and `minmax(0, <flex>)` (the facts columns and
+  grid), `translateX(<percentage>)` in `transform` (the progress sweep) and a bare positive integer
+  `animation-iteration-count` (the bounded sweep). No token is added.
 - In the README, the slot convention for icons in controls that later controls follow: the `icon` and `trailing`
   slots, their size, alignment, gap and colour rules and the naming rule.
 - Entry points: `@ocelle/elements` (the package root, defines every element), `@ocelle/elements/ocelle-icon.js`
