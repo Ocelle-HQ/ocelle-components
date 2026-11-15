@@ -419,11 +419,11 @@ order 1 → 2 → 3 → 4:
 
 ### Spike (first)
 
-- [ ] T035 [US3] Spike before the scaffold, recorded in `specs/013-data-display/reviews/phase-3/spike.md`: the `valuetext` oracle among platform reads only (`locator.ariaSnapshot()`, CDP `Accessibility.getPartialAXTree`, other CDP reads) on an ElementInternals bar with `ariaValueText` (R-05). If none exposes it, stop: US3-3 goes to the operator.
+- [X] T035 [US3] Spike before the scaffold, recorded in `specs/013-data-display/reviews/phase-3/spike.md`: the `valuetext` oracle among platform reads only (`locator.ariaSnapshot()`, CDP `Accessibility.getPartialAXTree`, other CDP reads) on an ElementInternals bar with `ariaValueText` (R-05). If none exposes it, stop: US3-3 goes to the operator.
 
 ### Scaffold
 
-- [ ] T036 [US3] Scaffold commit, recorded by `scaffold.sh 3`:
+- [X] T036 [US3] Scaffold commit, recorded by `scaffold.sh 3`:
   - `packages/elements/src/ocelle-progress.ts` with `define`, `@tagname`, the properties of contracts/elements.md (`value`, `max`, `valueText`, `label`, `showLabel`, `size`, `ground`), each `| undefined` with `@default undefined`, and an empty `render()`;
   - its exports (`./ocelle-progress.js`);
   - no test file.
@@ -434,13 +434,13 @@ order 1 → 2 → 3 → 4:
 
 ### Tests (red, one commit, test files only)
 
-- [ ] T037 [P] [US3] Driver additions from contracts/checks.md § Driver additions, with their tests:
+- [X] T037 [P] [US3] Driver additions from contracts/checks.md § Driver additions, with their tests:
   - `reducedMotion(mode)`: the `emulateReducedMotion` command through `page.emulateMedia` in `emulate()`, reset in each progress test file's `afterEach`. Its test in `packages/elements/test/commands.test.ts` asserts `matchMedia` after the command, after a later `emulateForcedColors`, and after the reset.
   - `animations(id)`, returning kind, target part, property, play state and end time.
   - AX value properties (`value`, `valuemin`, `valuemax`, `valuetext`) on `AxNode`, `axNodes` and `axSubtree`; `value`, `valuemin` and `valuemax` tested present and absent on a native `<progress>` and an ElementInternals bar; `valuetext` reads `""` in Chromium and is not asserted (T035).
   - `replace`, `remove`, `frames`.
   - The loading-episode reset in `mount`.
-- [ ] T038 [US3] `packages/elements/test/scenarios/progress.ts`, with the oracles of contracts/checks.md § Oracles (Progress):
+- [X] T038 [US3] `packages/elements/test/scenarios/progress.ts`, with the oracles of contracts/checks.md § Oracles (Progress):
   - US3 scenarios 1 to 15 as shared bodies:
     - US3-2 reads 75% at once, with `animations()` empty;
     - US3-3 proves the wiring, not the exposure (operator decision on T035, (a)): with `value-text="7 of 12"` and `show-label`, the visible `value-text` part reads "7 of 12", paired with the progressbar's name, value, min and max read from the accessibility tree; no `internals` reflection read;
@@ -464,26 +464,26 @@ order 1 → 2 → 3 → 4:
   - The compact long-label body at 320 px: `size="compact"`, `show-label` and a long label; the track's inline size is at least the `--ocelle-measure-cell` value, the label wraps between words, and the page scroll width equals the viewport width.
   - The no-tab-stop body (FR-039): from a button before the bar, one Tab focuses the button after it (`pressTab`, `focused`), paired with the bar's named progressbar node in the same body.
   - Unset properties write no attribute (`size`, `ground`).
-- [ ] T038a [US3] `packages/elements/test/scenarios/progress.ts` (continued), with the oracles of contracts/checks.md § Oracles (Progress):
+- [X] T038a [US3] `packages/elements/test/scenarios/progress.ts` (continued), with the oracles of contracts/checks.md § Oracles (Progress):
   - in US3-10's body: at the default size with `value-text`, the label's inline start at the track's and the value text's inline end at the track's, both above the track, mirrored under `dir="rtl"` in the same body (FR-035, IQ-13 (b));
   - in US3-9's body: on the compact bar with `value-text`, the value text's box on the same line after the track's inline end;
   - the fallback-text body (FR-039, IQ-15 (b)): "7/12" inside a named bar has no client rect, is absent from `innerText` and from the AX tree after upgrade, paired with the bar's progressbar node named "Tasks done" with value 7;
   - the inline-placement body (IQ-12 (a)): the host's computed `display` is `block`; a bar given `display: inline-block; inline-size: 12rem` by a page rule sits on the paragraph's first line at 12rem.
-- [ ] T039 [US3] `packages/elements/test/scenarios/empty-state.ts`: extend US2-7 to a real `ocelle-progress` in `visual`:
+- [X] T039 [US3] `packages/elements/test/scenarios/empty-state.ts`: extend US2-7 to a real `ocelle-progress` in `visual`:
   - above the heading at the panel's visual-to-heading gap;
   - the screen reader reaches the bar first;
   - the bar spans the column up to `--ocelle-measure-reading`.
-- [ ] T040 [P] [US3] Test files for progress:
+- [X] T040 [P] [US3] Test files for progress:
   - `packages/elements/test/progress.test.ts` (in process) and `packages/elements/test/browser/progress.test.ts` (fixture) over T038;
   - `packages/elements/test/entry-progress.test.ts`;
   - `entry-root.test.ts` extended.
-- [ ] T041 [P] [US3] The pairing test in two halves (contracts/checks.md § Contrast):
+- [X] T041 [P] [US3] The pairing test in two halves (contracts/checks.md § Contrast):
   - `packages/elements/test/node/progress-pairs.test.ts`: from `src/ocelle-progress.ts`, the mark and edge token is `color-accent-strong`, the track `color-inset`, and the boundaries `color-control-border` and, under `ground="tinted"`, `color-accent-strong`. Against `packages/tokens/src/source.ts` and `packages/tokens/contrast/pairs.json`: `color-focus` `ref` is `color-accent-strong` in both themes, and each (token, ground) pair the README assigns is a `checked` row.
   - `packages/elements/test/build/build.test.ts`: `dist/ocelle-progress.js` uses the same tokens.
-- [ ] T042 [P] [US3] `gates/test/` `token-only` unit tests for the R-10 phase 3 allowance, plus the `gates/README.md` statement test:
+- [X] T042 [P] [US3] `gates/test/` `token-only` unit tests for the R-10 phase 3 allowance, plus the `gates/README.md` statement test:
   - `translateX(<percentage>)` in `transform` and a bare integer `animation-iteration-count` pass;
   - other functions, non-integers and other properties are findings.
-- [ ] T043 [P] [US3] `packages/elements/test/node/readme.test.ts`: statements for the `ocelle-progress` section, one per statement:
+- [X] T043 [P] [US3] `packages/elements/test/node/readme.test.ts`: statements for the `ocelle-progress` section, one per statement:
   - naming (`label` or host `aria-label`, an unnamed bar is a consumer error, axe does not check the name);
   - the value rules and `value-text`;
   - the library's tests do not verify the value text's exposure to assistive technology (operator decision on T035, (a));
@@ -492,7 +492,7 @@ order 1 → 2 → 3 → 4:
   - the busy vocabulary (FR-033); tokens read.
 
   Also the progress mapping-row statements (FR-058), one per row of research R-11's `.sk-progress` inventory (T036a), each keyed by the row's role name, with no `sk-` string in test code (operator decision I1, research R-11). If the inventory is missing or has a gap, stop and ask the operator.
-- [ ] T043a [US3] `packages/elements/test/node/readme.test.ts`: statements for the progress input decisions, one assertion per statement:
+- [X] T043a [US3] `packages/elements/test/node/readme.test.ts`: statements for the progress input decisions, one assertion per statement:
   - a bar named after a nearby heading takes the heading's text as `label` (IQ-10 (a));
   - a `role` or `tabindex` on the host replaces or alters the progressbar, so set neither; a focusable loading heading goes in the empty state (IQ-11 (b));
   - the host is a block; to place a bar inline, set its `display` and inline size from outside (IQ-12 (a));
@@ -500,14 +500,14 @@ order 1 → 2 → 3 → 4:
   - the label is text only, with no slot (IQ-14 (a));
   - text inside the element shows only before upgrade and is neither shown nor exposed after it (IQ-15 (b));
   - the updated progress mapping rows of research R-11 ("progress meta", "progress label", "progress labelled by heading", "progress fallback text", "progress heading", "progress inline", "progress grid layout"), keyed by role name with no `sk-` string in test code.
-- [ ] T044 [P] [US3] `storybook/test/integration/elements-stories.test.ts`: the progress stories and the empty-state panel-loading story of research R-08, present, in light and dark, with no outside request. Also:
+- [X] T044 [P] [US3] `storybook/test/integration/elements-stories.test.ts`: the progress stories and the empty-state panel-loading story of research R-08, present, in light and dark, with no outside request. Also:
   - each motion read on its own fresh story load within the first iteration: without reduced motion, a running animation on the indeterminate story, guarded by `currentTime` under 1400 ms; under reduced motion, no running animation, timed by `performance.now()`, with `matchMedia("(prefers-reduced-motion: reduce)").matches` asserted first;
   - every progressbar in every story has a non-empty name, paired with a count above 0 in the progress and panel-loading stories.
-- [ ] T045 [US3] Red commit of T037 to T044 with T038a and T043a. Run `red.sh 3 phase` and check the red log per body.
+- [X] T045 [US3] Red commit of T037 to T044 with T038a and T043a. Run `red.sh 3 phase` and check the red log per body.
 
 ### Implementation (green)
 
-- [ ] T046 [US3] `packages/elements/src/ocelle-progress.ts` (R-05, R-06, data-model § `ocelle-progress`):
+- [X] T046 [US3] `packages/elements/src/ocelle-progress.ts` (R-05, R-06, data-model § `ocelle-progress`):
   - ElementInternals:
     - `role="progressbar"`;
     - `ariaValueMin` `"0"`, `ariaValueMax` the effective max (100 when `max` is not finite and above 0);
@@ -525,21 +525,21 @@ order 1 → 2 → 3 → 4:
     - the episode ends when no indeterminate bar is connected at the next frame.
   - The still mark (inset 30%, 40% wide) under reduced motion and after the sweep.
   - Forced-colours rules; `:host([hidden])`.
-- [ ] T046a [US3] `packages/elements/src/ocelle-progress.ts` (research R-05, R-06, data-model § `ocelle-progress`):
+- [X] T046a [US3] `packages/elements/src/ocelle-progress.ts` (research R-05, R-06, data-model § `ocelle-progress`):
   - `:host { display: block }`;
   - the label row at the default size as `display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--ocelle-space-2)` with the value text's `margin-inline-start: auto`; the compact row in the order label, track (`flex: 1`), value text;
   - no `<slot>` in the shadow root, so light-DOM content is not rendered or exposed after upgrade.
-- [ ] T047 [US3] `gates/stylelint/token-only.ts`: the R-10 phase 3 allowance (`translateX(<percentage>)`, integer `animation-iteration-count`), its plants in `gates/plants/style-lint/`, and its `gates/README.md` row.
-- [ ] T048 [US3] Regenerate and commit the manifest with the `ocelle-progress` declaration (`aria-label` observed, not declared).
-- [ ] T049 [US3] Stories, following research R-08:
+- [X] T047 [US3] `gates/stylelint/token-only.ts`: the R-10 phase 3 allowance (`translateX(<percentage>)`, integer `animation-iteration-count`), its plants in `gates/plants/style-lint/`, and its `gates/README.md` row.
+- [X] T048 [US3] Regenerate and commit the manifest with the `ocelle-progress` declaration (`aria-label` observed, not declared).
+- [X] T049 [US3] Stories, following research R-08:
   - `storybook/stories/progress.stories.ts` (`title: "Elements/ocelle-progress"`): every bar named; no host `aria-label` story and no unnamed story; the "value text" story is a labelled bar (`label`, `show-label`) at the default size with a determinate `value` and `value-text`, and the "labelled compact" story carries a determinate `value` and `value-text`, so both label rows of FR-035 have a baseline (research R-08);
   - the panel-loading story added to `storybook/stories/empty-state.stories.ts`.
-- [ ] T050 [US3] Baselines: run `pnpm run visual:update` in the pinned container (`<n>` added, 0 changed, 0 removed). The indeterminate stories are captured on the still mark under reduced motion. Commit the new `storybook/baselines/*.png`.
-- [ ] T051 [US3] Documentation:
+- [X] T050 [US3] Baselines: run `pnpm run visual:update` in the pinned container (`<n>` added, 0 changed, 0 removed). The indeterminate stories are captured on the still mark under reduced motion. Commit the new `storybook/baselines/*.png`.
+- [X] T051 [US3] Documentation:
   - `packages/elements/README.md`: the `ocelle-progress` section (including that the library's tests do not verify the value text's exposure to assistive technology, T043) and the `.sk-progress` mapping rows;
   - `packages/elements/CHANGELOG.md` entry.
-- [ ] T051a [US3] `packages/elements/README.md`: the progress statements of T043a (naming after a nearby heading, no `role` or `tabindex` on the host, the block host placed inline from outside, the value text at the row's end, text-only labels, the fallback text) and the updated `.sk-progress` mapping rows of research R-11.
-- [ ] T052 [US3] Checks:
+- [X] T051a [US3] `packages/elements/README.md`: the progress statements of T043a (naming after a nearby heading, no `role` or `tabindex` on the host, the block host placed inline from outside, the value text at the row's end, text-only labels, the fallback text) and the updated `.sk-progress` mapping rows of research R-11.
+- [X] T052 [US3] Checks:
   1. Run each progress plant of contracts/checks.md once and record it in `reviews/phase-3/plants.md`:
      - still-mark inset removed;
      - `infinite` restored;
@@ -556,7 +556,7 @@ order 1 → 2 → 3 → 4:
      - a story's `label` removed.
   2. Run `gate:manifest`, `gate:style-lint`, `gate:csp`, `gate:prefix`, `gate:test-lint`, `gate:contrast` (unchanged), `gate:storybook-build`, `gate:visual`, `gate:axe`, `gate:plants`, then `gate:mutation -- --base <phase base>`. Timeout and CompileError mutants are reported and pass (#23).
 
-- [ ] T052a [US3] Run the progress plants for the input decisions once, with T052's step 1 (the value text's `margin-inline-start: auto` removed, which US3-10 must fail; a default `<slot>` added to the shadow root, which the fallback-text body must fail), and record them in `specs/013-data-display/reviews/phase-3/plants.md`.
+- [X] T052a [US3] Run the progress plants for the input decisions once, with T052's step 1 (the value text's `margin-inline-start: auto` removed, which US3-10 must fail; a default `<slot>` added to the shadow root, which the fallback-text body must fail), and record them in `specs/013-data-display/reviews/phase-3/plants.md`.
 
 **Checkpoint**: `tdd-check.sh 3` reports `pass`.
 
