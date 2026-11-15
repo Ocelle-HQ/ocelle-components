@@ -493,9 +493,13 @@ the shadow grid. The host's attributes are not touched.
 
 | Tier | Columns | Inspector |
 |---|---|---|
-| `three` | `var(--ocelle-list-track-width) minmax(0, 1fr) var(--ocelle-shell-inspector-width)` | its own column |
-| `two` | `var(--ocelle-list-track-width) minmax(0, 1fr)` | stacked in the detail column's second row |
-| `one` | `minmax(0, 1fr)` | stacked under the detail |
+| `three` | `var(--ocelle-list-track-width) 1fr var(--ocelle-shell-inspector-width)` | its own column |
+| `two` | `var(--ocelle-list-track-width) 1fr` | stacked in the detail column's second row |
+| `one` | `1fr` | stacked under the detail |
+
+The flexible track is `1fr`, not `minmax(0, 1fr)`: `style-lint`'s `token-only` rule reports the function as raw, and
+`1fr` is equivalent here because every grid item has `min-inline-size: 0` or no min-content (reviews/phase-4/spike.md
+item 1).
 
 In the one-column tier the panes that are not shown are `display: none` (no box, no node), following `detail-open`.
 
@@ -577,9 +581,13 @@ layout's, whatever tier it shows, so a shrink-to-fit host cannot make the tier a
   mutation made inside a `ResizeObserver` or animation-frame callback is measured one frame later. The pass writes a
   figure only when it differs from the one in force.
 
-  The host's `ResizeObserver` gives `measured` only, and a tier change it causes is applied without a pass: it never
+  The element's `ResizeObserver` gives `measured` only, and a tier change it causes is applied without a pass: it never
   writes the figures. So the element never writes the sizer from inside a `ResizeObserver` delivery, whoever made the
-  mutation. Measured in squad round 2, a pane `ResizeObserver` whose callback set the sizer grew a shrink-to-fit host
+  mutation. It observes two zero-height `aria-hidden` blocks in the shadow root, not the host: a probe whose content
+  box is the host's content box, to which the host's computed inline padding and borders are added, and an edge box
+  that inherits those padding and borders, so a change of them alone is seen too (data-model.md `measured`;
+  reviews/phase-4/spike.md item 2 and round-1-fixes.md R1-03). Observing the host's own border box brought the loop
+  message below; the blocks' block size never changes. Measured in squad round 2, a pane `ResizeObserver` whose callback set the sizer grew a shrink-to-fit host
   inside the delivery, and the window received "ResizeObserver loop completed with undelivered notifications." with
   the host's new size a frame late; and a width-only widening of a shown pane's content fired no pane observation at
   all. Measured in squad round 3, a pass run in the `MutationObserver` callback brought the same error back when the
@@ -603,9 +611,10 @@ layout's, whatever tier it shows, so a shrink-to-fit host cannot make the tier a
   shadow root (an ocelle element or a consumer's web component re-rendering from a property; a `MutationObserver`'s
   `subtree` follows tree children, and a shadow root is not one); and a change of an attribute only (a class or a
   style swap on pane content). They are picked up at the next slot change, light-DOM mutation, property-driven tier
-  change or `remeasure()` call, and the host calls `remeasure()` after one. Where CSS already carries the change (a
-  shown pane in three columns, whose content counts in the grid's own intrinsic size), it shows without a pass; where
-  it does not (a hidden pane, or the max-content figure while one column shows), the figures stay stale until then.
+  change or `remeasure()` call, and the host calls `remeasure()` after one. Until then the figures stay stale in every
+  tier and for every pane, shown or hidden: the panes are contained in inline size (`contain: inline-size` outside the
+  measurement tiers, reviews/phase-4/spike.md item 3), so a shown pane's content does not count in the grid's own
+  intrinsic size and CSS does not carry the change either.
   FR-025 states this reading since the plan gate, and the README says it in the container-tier convention.
 - **Sizer.** The two figures are applied to an internal, `aria-hidden`, zero-block-size sizer element in the shadow
   grid. Its `inline-size` is the max-content figure, capped by `max-inline-size: 100%`. The grid's `min-inline-size` is
@@ -718,7 +727,9 @@ layout's, whatever tier it shows, so a shrink-to-fit host cannot make the tier a
   order; after a switch, once focus has left the wrapper, the same holds; a real click on pane text does not make the
   host `document.activeElement`. Plant: wrappers focusable at all times.
 - **When the element moves focus.** Before applying a tier or `detail-open` change, the element records whether
-  `document.activeElement`, through the composed tree, is inside a pane that the change hides. After the update it
+  `document.activeElement`, through the composed tree, is inside a pane that the change hides. It reads the active
+  element of its own root node, the document or the shadow root of a host component that holds it, since
+  `document.activeElement` alone is that component's host (reviews/phase-4/round-1-fixes.md R1-02). After the update it
   focuses the shown pane's wrapper as above.
 - **Ring (PLAN-A11Y-SECURITY-1-003).** base.css does not reach into the shadow root, so the wrapper's ring is what the
   element's sheet says: on `:focus-visible`, `outline: var(--ocelle-focus-width) solid var(--ocelle-color-focus)` with

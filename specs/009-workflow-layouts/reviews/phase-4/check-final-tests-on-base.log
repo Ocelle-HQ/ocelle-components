@@ -8,9 +8,6 @@ Packages: +502
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 Progress: resolved 502, reused 502, downloaded 0, added 502, done
 .../node_modules/rs-module-lexer postinstall$ node postinstall.js
-Update available! 12.16.1 → 12.18.0.
-Changelog: https://pnpm.io/v/12.18.0
-To update, run: curl -fsSL https://get.pnpm.io/install.sh | sh -
 .../node_modules/rs-module-lexer postinstall: Done
 
 devDependencies:
@@ -38,7 +35,7 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 1s using pnpm v12.16.1
+Done in 279ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /opt/pw-browsers/chromium-1248/chrome-linux64/chrome
 $ node gates/bin/test.ts
