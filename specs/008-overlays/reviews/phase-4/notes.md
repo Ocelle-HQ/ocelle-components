@@ -411,3 +411,13 @@ again, `gate:mutation -- --base 78fe475 --files packages/elements/src/ocelle-too
 | 15 | `:241-270` | 24 | 0 | 0 | 4 | 0 | 0 | 517 s |
 | 16 | `:271-300` | 39 | 0 | 0 | 10 | 0 | 0 | 525 s |
 | 17 | `:301-330` | 34 | 0 | 0 | 16 | 2 | 0 | 566 s |
+
+## Operator decision: the FR-031 click-focus row and the other immediate-action rows (2026-11-15)
+
+- **Decided by:** the operator, asked in this session as a multiple-choice question.
+- **Problem:** full run 1 at 8c49287 failed on "Click focus (FR-031): a pointer click on the button trigger and the pointer moved off at once …". It passes 3 of 3 on its own. Its move-off is timed outside the page.
+- **Answer:** "Yes, measure it too". The FR-031 row uses the `beforeDelay` method. So do the other two rows flagged with the same weakness:
+  - "Trigger opens an ocelle-dialog before the delay (FR-010, FR-034, R-10)";
+  - the text-field trigger row's `early` check.
+- Each of the three rows gets a break check.
+- **Not chosen:** changing only the FR-031 row; leaving it and re-running.
