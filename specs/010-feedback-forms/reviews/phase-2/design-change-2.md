@@ -94,3 +94,17 @@ Not changed here (source and tests are outside this role): `pastFirstLoad` in
 `packages/elements/test/scenarios/notice.ts` and `notice-matrix.ts`, the `Announcer`'s wait in
 `packages/elements/src/live.ts`, the plant fixture and the README. The implementer does them as T025a and T025b.
 R1-03 needs no code change.
+
+## Addendum: `withTiming()` (review round 2, R2-03)
+
+T025a (`c3064b5`) added `withTiming(next, run)` to `packages/elements/test/in-process.ts`. It calls
+`setAnnouncerTimingForTests` with `next`, runs `run` synchronously and restores the timing it replaced. Its one use
+is the fake-clock case of the "empty-state start" plant row (`test/plants.test.ts`), which needs the two `D` values
+of `announcerDefaults`. The records said only that in-process.ts calls the setter before each scenario with the test
+constant. No behaviour or check changes: both calls are in in-process.ts, so `test/node/timing-setter.test.ts` still
+finds that file as the only caller, and `firstTimingReturn()` is not affected.
+
+- `contracts/testing.md` § Driver steps, Timing: names `withTiming()`, its one use, and why the caller check and the
+  kept first return stand.
+- `research.md` R-09 § Timing in process: the same, after the `test/node/` caller check.
+- Unchanged: `data-model.md`, which names the setter without its callers, and `tasks.md`.

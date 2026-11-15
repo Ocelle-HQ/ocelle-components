@@ -19,7 +19,7 @@ export type NoticeTone = "info" | "success" | "warning" | "danger" | "neutral";
 /** The notice's sizes. */
 export type NoticeSize = "regular" | "compact";
 
-const tones: readonly string[] = ["info", "success", "warning", "danger", "neutral"];
+const tones: readonly NoticeTone[] = ["info", "success", "warning", "danger", "neutral"];
 
 /** The trigger that set the alert baseline pending, or none (data-model.md § Notice). */
 type Pending = "none" | "insertion" | "role" | "live";
@@ -210,8 +210,8 @@ export class OcelleNotice extends LitElement {
    * @default "info"
    */
   get tone(): "info" | "success" | "warning" | "danger" | "neutral" {
-    const value = this.getAttribute("tone") ?? "";
-    return tones.includes(value) ? (value as NoticeTone) : "info";
+    const value = this.getAttribute("tone");
+    return tones.find((tone) => tone === value) ?? "info";
   }
 
   set tone(value: "info" | "success" | "warning" | "danger" | "neutral") {
@@ -374,6 +374,7 @@ export class OcelleNotice extends LitElement {
     }
     const first = !this.#connected;
     this.#connected = true;
+    this.announcer.shown();
     if (first && this.isFirstLoad()) {
       this.announcer.takeBaseline();
       return;
@@ -390,6 +391,7 @@ export class OcelleNotice extends LitElement {
       this.announcer.cancel();
       return;
     }
+    this.announcer.shown();
     if (!this.isLive()) return;
     if (this.liveRole() === "alert") this.alertPath("insertion");
     else this.announcer.trigger(true);

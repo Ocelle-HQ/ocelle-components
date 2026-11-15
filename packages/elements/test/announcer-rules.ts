@@ -2,9 +2,9 @@
 // step 2, data-model.md *Announce*; phase 2 stop 2, operator decision (a); T025a). The in-process scenarios cannot show
 // the floor, since the test constant gives both load states one `D`; this case drives announcers made by `make`
 // through their public methods with the two `D` values of the shipped `announcerDefaults` (150 ms once the document is
-// complete, 350 ms while it loads) and reads each region's copy at the bounds. test/announcer.test.ts runs it with
-// `Announcer`; the "empty-state start" plant row of test/plants.test.ts with the plant that ignores the start, which
-// must fail it. The caller installs fake timers (setTimeout, clearTimeout and performance) and the shipped timing; the
+// complete, 350 ms while it loads) and reads each region's copy at the bounds. test/announcer.test.ts compares the
+// readings for `Announcer` with `emptyStartExpected`; the "empty-state start" plant row of test/plants.test.ts runs
+// `emptyStartCase`, which asserts the same, with the plant that ignores the start, which must fail it. The caller installs fake timers (setTimeout, clearTimeout and performance) and the shipped timing; the
 // case spies on `document.readyState` and restores it.
 import { assert, vi } from "vitest";
 import { announcerDefaults } from "../src/live.ts";
@@ -26,8 +26,22 @@ interface Probe {
   copy(): string | null;
 }
 
-/** Runs the case for announcers of class `make`; throws an assertion that starts with `emptyStartMessage` when a rule fails. */
-export function emptyStartCase(make: MakeAnnouncer): void {
+/** The copies the case reads when every rule holds. */
+export const emptyStartExpected = {
+  firstLoad: { before: "", at: "B" },
+  afterLoad: { before: "", at: "B" },
+  restart: { before: "", at: "C" },
+  assertive: { before: "", at: "B" },
+  cancel: { before: "", at: "B" },
+  heldAfter: "B",
+  emptiedAtH: "",
+  afterEmptied: { before: "", at: "C" },
+  emptiedWhileLoading: "",
+  loadingEmptied: { before: "", at: "C" },
+} as const;
+
+/** Runs the case for announcers of class `make` and returns the copies it read, in the shape of `emptyStartExpected`. */
+export function emptyStartReadings(make: MakeAnnouncer): unknown {
   const state = vi.spyOn(document, "readyState", "get").mockReturnValue("loading");
   const load = (value: DocumentReadyState): void => {
     state.mockReturnValue(value);
@@ -127,23 +141,13 @@ export function emptyStartCase(make: MakeAnnouncer): void {
     emptiedLoading.announcer.trigger(false);
     const loadingEmptied = around(emptiedLoading, loadingW - 20);
 
-    assert.deepEqual(
-      { firstLoad, afterLoad, restart, assertive, cancel, heldAfter, emptiedAtH, afterEmptied, emptiedWhileLoading, loadingEmptied },
-      {
-        firstLoad: { before: "", at: "B" },
-        afterLoad: { before: "", at: "B" },
-        restart: { before: "", at: "C" },
-        assertive: { before: "", at: "B" },
-        cancel: { before: "", at: "B" },
-        heldAfter: "B",
-        emptiedAtH: "",
-        afterEmptied: { before: "", at: "C" },
-        emptiedWhileLoading: "",
-        loadingEmptied: { before: "", at: "C" },
-      },
-      `${emptyStartMessage}: the copies at the wait's bounds (W ${String(W)} ms, pre-load W ${String(loadingW)} ms)`,
-    );
+    return { firstLoad, afterLoad, restart, assertive, cancel, heldAfter, emptiedAtH, afterEmptied, emptiedWhileLoading, loadingEmptied };
   } finally {
     state.mockRestore();
   }
+}
+
+/** Runs the case for announcers of class `make`; throws an assertion that starts with `emptyStartMessage` when a rule fails. */
+export function emptyStartCase(make: MakeAnnouncer): void {
+  assert.deepEqual(emptyStartReadings(make), emptyStartExpected, `${emptyStartMessage}: the copies at the wait's bounds (W ${String(W)} ms, pre-load W ${String(loadingW)} ms)`);
 }

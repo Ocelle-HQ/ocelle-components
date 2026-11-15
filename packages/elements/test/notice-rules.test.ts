@@ -269,6 +269,22 @@ describe("the wait from the empty state's start (R-02 step 2; phase 2 stop 2, de
     vi.advanceTimersByTime(loadingW - 20 - W);
     expect({ atW, atLoadingW: copy(changed) }).toEqual({ atW: { a: "", h: "H", r: "R" }, atLoadingW: "A2" });
   });
+
+  it("counts from aria-live set from off: announce set after a loading render, the next change is written W after it", async () => {
+    const state = vi.spyOn(document, "readyState", "get").mockReturnValue("loading");
+    const inserted = await insert('<ocelle-notice id="n">A</ocelle-notice>');
+    vi.advanceTimersByTime(20);
+    state.mockReturnValue("complete");
+    vi.advanceTimersByTime(20);
+    inserted.toggleAttribute("announce", true);
+    await endOfTask();
+    inserted.textContent = "B";
+    await endOfTask();
+    vi.advanceTimersByTime(W - 1);
+    const before = copy(inserted);
+    vi.advanceTimersByTime(1);
+    expect({ live: live(inserted), before, at: copy(inserted) }).toEqual({ live: "polite", before: "", at: "B" });
+  });
 });
 
 describe("hidden (FR-010)", () => {

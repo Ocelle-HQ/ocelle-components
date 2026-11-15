@@ -9,7 +9,9 @@
 // 1. if the region holds a copy, waits until the copy has been current for at least `W` (the minimum hold), then
 //    empties the region;
 // 2. waits until the region has been empty for `W`, a trigger while waiting restarting the wait, so changes less than
-//    `W` apart write only the final text;
+//    `W` apart write only the final text; the wait also ends no earlier than `W` of the load state in which the
+//    region's current empty state began, counted from its start (phase 2 stop 2, operator decision (a)), so a change
+//    right after a first load is written the pre-load `W` after the region's first render;
 // 3. when the wait ends, reads the text and politeness and writes nothing if the text is empty or both equal the
 //    baseline (the last written text and politeness, or those current when announcing began; none after an insertion
 //    or a reveal); otherwise writes the text as the copy and makes it the baseline;
@@ -52,6 +54,23 @@ export function readyState(): DocumentReadyState {
   return document.readyState;
 }
 
+/** The load state that sets `D`: `loaded` once `document.readyState` is "complete", else `loading`. */
+type LoadState = "loaded" | "loading";
+
+function loadState(): LoadState {
+  return readyState() === "complete" ? "loaded" : "loading";
+}
+
+/** When an empty state of the region began (`performance.now()`) and the load state then. */
+interface EmptyStart {
+  readonly at: number;
+  readonly load: LoadState;
+}
+
+function emptyNow(): EmptyStart {
+  return { at: performance.now(), load: loadState() };
+}
+
 const steps: (() => void)[] = [];
 const channel = new MessageChannel();
 channel.port1.onmessage = () => {
@@ -89,6 +108,12 @@ export class Announcer {
   /** When the current copy was written (`performance.now()`). */
   protected writtenAt = 0;
   protected timer: ReturnType<typeof setTimeout> | undefined;
+  /**
+   * When the region's current empty state began and the load state then (R-02 step 2): each time it becomes live, shown
+   * and empty (rendered while live, shown again, `aria-live` set from `off`, the copy emptied). Until the region is first
+   * made live, the construction.
+   */
+  protected emptySince: EmptyStart;
 
   constructor(read: () => Reading) {
     this.read = read;
@@ -96,12 +121,23 @@ export class Announcer {
     this.region.className = "announcer";
     this.region.setAttribute("aria-live", "off");
     this.region.setAttribute("aria-atomic", "true");
+    this.emptySince = emptyNow();
     this.setBaseline(read());
   }
 
-  /** Sets the region's live politeness, or `off` while the element is not announcing. */
+  /**
+   * Sets the region's live politeness, or `off` while the element is not announcing. From `off`, the region's empty state
+   * begins (a region that stays `off` announces nothing, and its next politeness begins one again); a change between
+   * `polite` and `assertive` does not begin one.
+   */
   live(politeness: Politeness | "off"): void {
+    if (this.region.getAttribute("aria-live") === "off") this.shown();
     this.region.setAttribute("aria-live", politeness);
+  }
+
+  /** The element rendered or showed the region again (an insertion, a first load, a reveal): its empty state begins. */
+  shown(): void {
+    this.emptySince = emptyNow();
   }
 
   /** The baseline becomes the current text and politeness. */
@@ -159,7 +195,7 @@ export class Announcer {
   }
 
   /** `D` for the load state `state`, by default the document's now. */
-  protected delay(state: "loaded" | "loading" = readyState() === "complete" ? "loaded" : "loading"): number {
+  protected delay(state: LoadState = loadState()): number {
     return state === "loaded" ? timing.delayLoaded : timing.delayLoading;
   }
 
@@ -193,13 +229,22 @@ export class Announcer {
     if (this.waitNext) this.wait();
   }
 
-  /** Step 2: starts, or restarts, the wait of `W` with the region empty. */
+  /** Step 2: starts, or restarts, the wait with the region empty; a restart keeps the empty state's start. */
   protected wait(): void {
     this.stop();
     this.phase = "waiting";
     this.timer = setTimeout(() => {
       this.end();
-    }, this.waitTime());
+    }, this.waitLength());
+  }
+
+  /**
+   * How long a wait started now runs: `W` (now), and at least until `W` of the load state in which the region's empty
+   * state began has passed since its start (R-02 step 2).
+   */
+  protected waitLength(): number {
+    const floor = this.emptySince.at + 2 * this.delay(this.emptySince.load) - performance.now();
+    return Math.max(this.waitTime(), floor);
   }
 
   /** Step 3: the end of the wait, the re-check against the baseline, then the write or nothing. */
@@ -236,9 +281,10 @@ export class Announcer {
     }, timing.hold);
   }
 
-  /** Empties the region; nothing is pending afterwards. */
+  /** Empties the region; nothing is pending afterwards. Emptying a copy begins an empty state; an empty region keeps its own. */
   protected release(): void {
     this.stop();
+    if (this.region.textContent !== "") this.shown();
     this.region.textContent = "";
     this.phase = "empty";
   }
