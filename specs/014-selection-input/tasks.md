@@ -253,7 +253,7 @@ stay `accent-strong` with a focused neighbour on either side.
 - [X] T067 [US3] Manifest; README segmented-choice section and engines section; CHANGELOG
 - [X] T067a [US3] **Skipped by plan decision 1** (answered yes at the stop, T059a; `specs/014-selection-input/reviews/phase-4/decision-1.md`): ticked as skipped, not done; the text below is kept for the record. Only if decision 1 was answered no at the stop (T059a), instead of T067's engines section: README segmented-choice section with the row attributes as element-owned, internal, not a styling hook and subject to change in a PATCH (T064a; second analysis U2), no manifest entry for them, engines section unchanged (Chromium 120 / WebKit 16.4); CHANGELOG without a floor raise
 - [X] T068 [US3] Baselines for the segmented-choice stories with `pnpm run visual:update` in #10's pinned container under docker (`storybook/baselines/`), with any shared baseline (the token stories included) that changes, inspected and committed with the reason in the commit message; move the story-theme counts of `gates/test/integration/visual.test.ts` and add the new light stories that show `color-ink` to `gates/plants/visual/fail-token-changed/plant.json`; record in `reviews/phase-4/notes.md` that no podman cross-engine check was possible and CI confirms the baselines at landing (operator decision 2026-11-14, `reviews/phase-2/operator-decisions.md`; FR-053, SC-007)
-- [ ] T069 [US3] Plants recorded in `reviews/phase-4/plants.md`; the gates of T028
+- [X] T069 [US3] Plants recorded in `reviews/phase-4/plants.md`; the gates of T028
 
 **Checkpoint**: `tdd-check.sh 4` reports `pass`.
 

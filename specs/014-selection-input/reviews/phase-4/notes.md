@@ -54,8 +54,9 @@ harnesses. The phase 3 stand-in body (a nested `ocelle-tabs`) stays, as T062b as
 ## A behaviour fix found in green
 
 The first green run failed US3-18's second case: a host rule widens Mine's inline-end padding with no DOM change. The
-group observed content boxes, and a padding change leaves the content box as it was. It now observes border boxes
-(`ResizeObserver` `box: "border-box"`). This is within green, before the green commit, so it is not a fix after review.
+group observed content boxes, and a padding change leaves the content box as it was. It now observes the segments'
+border boxes (`ResizeObserver` `box: "border-box"`); since the refactor below, the group's own box is observed as a
+content box. This happened in green, before the green commit, so it is not a fix after review.
 
 ## Visual baselines under docker (T068)
 
@@ -91,3 +92,88 @@ changed tests.
 
 `gates/test/integration/visual.test.ts:271` ("captures a story alone byte for byte ...") also fails in phase 1's and
 phase 3's red logs. It is not a test of this phase.
+
+## The mutation gate (T069)
+
+The first run of `pnpm run gate:mutation -- --base 29ae41c` on the green commit `0f13127` reported 15 survivors, all in
+`src/ocelle-segmented-choice.ts`. The commits after the green one handle them.
+
+- **A behaviour fix, red first.** The surviving `aria-label` entry of `observedAttributes` showed a defect. The group
+  observes `aria-label`, but a change of it requested no update. A host `aria-label` removed after a render that had
+  copied it into the internals therefore stayed the toolbar's name, where FR-006 falls back to `label`.
+  - The red body, `FR-006: a host aria-label present while the label changes, then removed, ...`, came first, in the
+    test-only commit `2ef22f2`. It fails on the green source in both harnesses (`red-mutation.log`).
+  - The fix is the `fix(...)` commit `8edc6e3`: `attributeChangedCallback` requests an update, as `ocelle-listbox`
+    does.
+- **Killed by new bodies** (`2ef22f2`, both harnesses), each passing on the source:
+  - `joined` set after render, then a resize (the group observed when `joined` is set);
+  - a child that is not a segment;
+  - a segment that leaves a joined group.
+- **Removed by simplifying the source** (`a1323c4`, `refactor(...)`). Every phase 4 test passes before and after.
+  - The `disconnectedCallback` override is gone.
+  - `#apply` no longer regroups. It observes the segments again, and their delivery regroups in the frame that renders
+    the batch.
+  - The group's own box is observed as a content box.
+  - The toolbar's orientation is no longer set: horizontal is a toolbar's default, and Chromium exposes it.
+  - The row states are passed as one `Row | null`.
+- **The second run** (on `a1323c4`) left two survivors. Two new tests kill them (`2b056a1`), with the mutant runs in
+  `mutant-2.log`:
+  - a reorder of a joined group at the same group size: the segments are observed again after a batch;
+  - `segmented-choice-copies.test.ts`, segments of another copy of the package defined first: the row-state method's
+    feature check.
+- **A false equivalent record, withdrawn** (`refactor(...)`, after the plants). The record on `#observe`'s
+  `disconnect()` claimed that observing a target again restarts its observation anyway.
+  - Applying the mutant disproved it. Chromium delivers no new size for an already observed segment, and the reorder
+    body fails.
+  - The record is gone, and the gate now runs and kills that mutant.
+- **Equivalent records** (6), each with a `Stryker disable next-line` comment giving its reason:
+  - the segment's `value` options, as on `ocelle-tab`;
+  - the group's `label` and `value` options, as on `ocelle-tabs`;
+  - the host `aria-label` read for the internals name. Chromium names the host from a present `aria-label` whatever the
+    internals say, as on `ocelle-listbox`;
+  - `#observe`'s guard (`ConditionalExpression`, `LogicalOperator`). Observing a group that is not joined, or not
+    connected, delivers only sizes whose regroup sets no state. Both mutants were applied, and every segmented-choice,
+    copies and tabs test passed;
+  - `focusLeft`'s null test, as on the tabs.
+
+## Plants (T069)
+
+`plants.md` records 83 plants, each applied alone, run once and reverted. Every one makes a test fail. Four forms did not
+bite on their first run. Each was recorded with the reason and corrected; none is a guard that cannot fail:
+- the forced-colours boundary (`CanvasText` is a system colour too);
+- the host `aria-label` deciding alone (Chromium's own naming);
+- FR-027's first render, twice (two paths pick the first enabled segment).
+
+## Tests changed after the red commit (continued)
+
+- Comments only: the plant names beside six bodies of `scenarios/segmented-choice.ts` now name the plants that are run
+  (`plants.md`). No assertion changed.
+- Added after the green commit, never removed or loosened: the six bodies and the copies test of the mutation runs
+  above.
+
+## The gate run (T069)
+
+The gates were run one at a time with `OCELLE_CHROMIUM_PATH=/opt/pw-browsers/chromium-1243/chrome-linux64/chrome` and
+`OCELLE_VISUAL_ENGINE=docker`. The code is that of `57699e8`; `c52c507` adds only the empty-index plant's story file.
+
+| Gate | Result |
+|---|---|
+| typecheck, lint (305 files), test-lint (205 files), style-lint (22 files), brand-rules, pins, config-copies, prefix (276 files) | exit 0, no finding |
+| contrast | exit 0: 166 pairs in light, 174 in dark, 155 required per theme (the segmented choice adds no pair: every R-15 pair of the segment is a checked row already) |
+| manifest | exit 0: 9 elements |
+| csp | exit 0: 27 files |
+| storybook-build | exit 0: 45 stories |
+| unit-tests (on `c52c507`) | exit 0: 3822 tests in 160 files |
+| visual | exit 0: 90 captures match their baselines (docker only, no cross-engine comparison; no podman in this session) |
+| axe | exit 0: 90 story-theme runs, 0 serious or critical; 22 notes, all excepted (the Prose document's ten and the scrolling listbox story's twelve); no new exception |
+| `mutation -- --base 29ae41c` | exit 0: 271 mutants on the changed lines of 4 files, none survived; 0 timeouts, 80 compile errors, 2 zero-mutant entries (`src/index.ts`, `src/internals.ts`), 6 equivalent records |
+| plants (on `c52c507`) | exit 0: 301 plants of 17 gates and the registry, every plant as expected |
+| `signoff -- --range 29ae41c..HEAD` | exit 0, no finding |
+
+Two earlier runs, for the record:
+- The first full `gate:plants` run (on `57699e8`) reported one problem:
+  `storybook-build/fail-empty-index: not-caught`. That plant replaces every story file of the repository with one that
+  has no story export, and the new `segmented-choice.stories.ts` was not replaced. `c52c507` adds its empty copy, as phase 3
+  added the tabs one. `--shard 1` then judged the plant as expected, and the full run above passes.
+- A run before that was stopped by its own two-hour `timeout` after 289 plants, with no failure printed. It is not
+  counted.
