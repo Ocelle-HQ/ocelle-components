@@ -343,3 +343,17 @@ describe("the phase 2 steps", () => {
     expect({ defined: customElements.get(unused) !== undefined, kept: customElements.get("ocelle-test-region") === OcelleTestRegion }).toEqual({ defined: true, kept: true });
   });
 });
+
+// The phase 3 step `call` (specs/010-feedback-forms phase 3 review round 1, R1-06): a missing method is an error of
+// the scenario, not a result.
+describe("call(id, method, ...args)", () => {
+  it("calls the element's method with the arguments and returns its plain result", async () => {
+    await driver.mount('<input id="i" value="draft">');
+    expect([await driver.call("i", "checkValidity"), await driver.call("i", "getAttribute", "value"), await driver.call("i", "focus")]).toEqual([true, "draft", null]);
+  });
+
+  it("rejects when the element has no such method, rather than reading undefined", async () => {
+    await driver.mount('<input id="i">');
+    await expect(driver.call("i", "noSuchMethod")).rejects.toThrow("call: #i has no method noSuchMethod");
+  });
+});
