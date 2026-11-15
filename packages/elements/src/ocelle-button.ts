@@ -419,7 +419,9 @@ export class OcelleButton extends LitElement {
 
   override connectedCallback(): void {
     this.#moved.connected();
+    // A later connection may put the element in another tree: its references are resolved there (research.md R-04).
     this.#resolve();
+    this.requestUpdate();
     super.connectedCallback();
   }
 

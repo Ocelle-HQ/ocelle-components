@@ -473,6 +473,19 @@ describe("src/control.ts: ID references by element reflection, in the host's own
     await host.updateComplete;
     expect(innerOf(host).ariaControlsElements?.map((each) => each.id)).toEqual(["panel"]);
   });
+
+  // Added in the green step (phase 3 plants, reviews/phase-3/plants.md): the first connection resolves through the
+  // mirrors' read-back as well, so only a later connection shows the resolution at connectedCallback.
+  it("resolves the ids again at every connection: moved from the document into a shadow root, the reference follows the tree it is in", async () => {
+    const { host } = await mounted('<p id="panel">Document</p><ocelle-button id="b" aria-controls="panel">Save</ocelle-button><div id="outer"></div>', "b");
+    const before = innerOf(host).ariaControlsElements?.map((each) => each.textContent);
+    const root = document.getElementById("outer")?.attachShadow({ mode: "open" });
+    if (root === undefined) throw new Error("no shadow root");
+    root.innerHTML = '<p id="panel">Shadow</p>';
+    root.append(host);
+    await (host as HTMLElementTagNameMap["ocelle-button"]).updateComplete;
+    expect({ before, after: innerOf(host).ariaControlsElements?.map((each) => each.textContent) }).toEqual({ before: ["Document"], after: ["Shadow"] });
+  });
 });
 
 describe("src/control.ts: the name order (FR-006; research.md R-05)", () => {
