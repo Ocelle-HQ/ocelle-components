@@ -35,10 +35,8 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 507ms using pnpm v12.16.1
+Done in 449ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /opt/pw-browsers/chromium-1243/chrome-linux64/chrome
 $ node gates/bin/test.ts
-packages/elements/test/dialog.test.ts:28: unit-tests: ocelle-dialog, in process (US1) Nested in an open ocelle-drawer: the dialog whose opener (a button of the drawer) is removed before its close: focus on the drawer's initial target (R-05): AssertionError: expected { last: { …(9) }, …(3) } to deeply equal { last: { …(9) }, focus: 'ob', …(2) }
-unit-tests: 1 of 5067 tests failed
-[ELIFECYCLE] Test failed. See above for more details.
+unit-tests: 5067 tests passed in 159 files
