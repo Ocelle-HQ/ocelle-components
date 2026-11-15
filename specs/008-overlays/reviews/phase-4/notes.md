@@ -276,3 +276,10 @@ touch); the other shards are left to CI.
 - `pnpm test` at `6904082` (`full-test-6904082.log`, 13 m 20 s): **2 of 5065 tests failed, both the axe gate tests of
   the open finding**. Every other test passes, the tooltip's rows in both harnesses and the touch contexts among them.
   `tdd-check.sh 4` needs this suite green, so it waits for the operator's decision on the long-text story (T052).
+
+## Operator decision: T052 (2026-11-15)
+
+- **Decided by:** the operator, asked in this session as a multiple-choice question.
+- **Question:** axe reports `color-contrast-incomplete` (`elmPartiallyObscuring`) on the long-text tooltip story, light and dark. Which fix?
+- **Answer:** "(a) Rearrange markup". Move the trigger later inside one long paragraph, so the bubble lies wholly inside that paragraph's box.
+- **Not chosen:** (b) a spacer block with its own story rule; (c) an `a11y-exceptions.json` entry.
