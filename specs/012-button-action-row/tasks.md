@@ -168,7 +168,7 @@ the inner control; `aria-controls` relates to the light-DOM panel; a clone keeps
 - [X] T036 [US2] `packages/elements/src/ocelle-button.ts`: `href`, `target`, `rel`, `download` reflected; observed moved attributes and mirrors; in link mode the activate event skips clicks with `ctrlKey`, `metaKey`, `shiftKey` or `altKey`, and its cancel prevents the navigation (decision 26)
 - [X] T037 [US2] `packages/elements/scripts/manifest.ts` (normaliser keeps declared standard attributes); JSDoc for the moved attributes, mirrors and custom states; regenerate `custom-elements.json`
 - [X] T038 [US2] `packages/elements/README.md` and `CHANGELOG.md` with the statements of T033, including the three consumer compositions' markup (decision 28)
-- [ ] T039 [US2] `storybook/stories/button.stories.ts` link stories; baselines; `fail-token-changed` extended
+- [X] T039 [US2] `storybook/stories/button.stories.ts` link stories; baselines; `fail-token-changed` extended
 - [ ] T040 [US2] Plants of T031 to T033 recorded in `reviews/phase-3/plants.md`; gates as T029, then plants and mutation
 
 **Checkpoint**: `tdd-check.sh 3` reports `pass`; with phase 2 this serves #12's `href` crumbs.
