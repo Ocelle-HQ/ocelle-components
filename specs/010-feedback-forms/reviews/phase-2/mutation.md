@@ -174,8 +174,52 @@ timed from the command's start to its exit.
 | Shard | Entries | Wall-clock | Result |
 |---|---|---|---|
 | 1 | `packages/elements/src/live.ts:12-130` | 222.0 s (3:42.0) | exit 0: 9 mutants on the changed lines of 1 file, none survived; 0 timeouts, 6 compile errors, 0 zero-mutant entries; 0 equivalent records |
-| 2 | `packages/elements/src/live.ts:131-287,packages/elements/src/ocelle-notice.ts` | 345.5 s (5:45.5) | exit 0: 18 mutants on the changed lines of 2 files, none survived; 0 timeouts, 2 compile errors, 0 zero-mutant entries; 0 equivalent records |
+| 2 | `packages/elements/src/live.ts:131-287,packages/elements/src/ocelle-notice.ts` | 345.5 s (5:45.5) | exit 0: 18 mutants on the changed lines of 2 files, none survived; 0 timeouts, 2 compile errors, 0 zero-mutant entries; 0 equivalent records. **Corrected in review round 2 (R2-01):** "none survived" included a kill without an assertion. `live.ts:134`'s `StringLiteral` mutant (`=== "off"` to `=== ""`) passed every test of the `elements` project (round-2.md) and survived the review's whole-diff run, so its kill here came from the in-process timing cells under Stryker's load |
 
 The tests that bind these lines run on a fake clock with the shipped timing's two `D` values: the rule case of
 `test/announcer-rules.ts` and the two `notice-rules.test.ts` cases. So each of these mutants can be killed without
-the in-process timing (R1-05). The report does not say which test killed each mutant.
+the in-process timing (R1-05). The report does not say which test killed each mutant. **Corrected in review round 2:** not each. No fake-clock
+case set `aria-live` from `off` after the load on a region rendered while loading, so the `live()` rule of `:134` had
+no assertion (R2-01); see § Review round 2.
+
+## Review round 2 (R2-01, R2-02): the whole diff against the phase base
+
+Two changes since `c8600f8`:
+- **R2-01.** A fake-clock case in `test/notice-rules.test.ts` (§ the wait from the empty state's start, "counts from
+  aria-live set from off"): a notice rendered without `announce` while the document loads, `announce` set 20 ms
+  after the load, then a text change, read `W` - 1 and `W` after it. It fails on the `live.ts:134` mutant
+  (`at: ""` against `"B"`) and passes on the code. `live.ts` is unchanged.
+- **R2-02.** The `tone` getter reads `tones.find((tone) => tone === value) ?? "info"`, with `tones` typed
+  `readonly NoticeTone[]`, so it needs no cast and no fallback literal: an absent `tone` (null) matches no entry, and
+  the result is `"info"` as before. Its `?? "info"` mutants (`""`, `&&`) are compile errors, because the getter's
+  return type does not take `""` or `undefined`. No equivalent record was added.
+
+Run as CI runs it, the whole diff, one job in this container (2026-11-15, Chromium 153 build 1243), with the working
+tree of the fix commit: `pnpm run gate:mutation -- --base 6c9400c`. Log: `mutation-fix-2.log`.
+
+| Run | Wall-clock | Result |
+|---|---|---|
+| whole diff, `--base 6c9400c` | 1575 s (26:15) | exit 0: 634 mutants on the changed lines of 7 files, none survived; 1 timeout, 174 compile errors, 2 zero-mutant entries (`gates/bin/contrast.ts`, `src/index.ts`); 14 equivalent records |
+
+The 14 equivalent records are the review's 14, unchanged.
+
+**Kills checked for an assertion (R1-05; the instruction that a kill by timing counts as a survivor).** Stryker stops
+each mutant's run at its first failing test, and the report names an in-process plant row as the killer of most
+mutants here, so the report alone does not show an assertion kill. Each mutant of the lines this round changed, and
+the run's one timeout, was applied by hand in the working tree and run against `test/notice-rules.test.ts` alone,
+which uses the shipped timing on a fake clock (log: `fix-2-mutants.log`; unmutated, 50/50 pass):
+
+| Line | Mutant | Fake-clock result |
+|---|---|---|
+| `live.ts:134` | `=== "off"` to `=== ""` (R2-01) | 1 failed: "counts from aria-live set from off", `at: ""` against `"B"` |
+| `live.ts:134` | `getAttribute("aria-live")` to `getAttribute("")` | 1 failed: the same case |
+| `ocelle-notice.ts:213` | `getAttribute("tone")` to `getAttribute("")` | 5 failed (the tone cases) |
+| `ocelle-notice.ts:214` | arrow to `() => undefined`; `tone === value` to `!==`, `true`, `false` | 5 failed each (the tone cases) |
+| `ocelle-notice.ts:22` | `tones` to `[]` | 5 failed (the tone cases) |
+| `ocelle-notice.ts:257` | `value !== attribute` to `value === attribute` (**the gate's timeout**) | 3 failed in 2.8 s: "tone, size and announce set their attributes" (`tone: null` against `"danger"`), "writes no attribute for the default ...", and a tone case |
+
+The `:257` timeout is therefore not a survivor: three assertions fail on it at once, with no timing involved. Why the
+Stryker run timed out was not traced. A likely cause is that the mutant makes a setter write the attribute it already
+holds, which Lit's attribute callback turns back into a property set, so some other test file of the run hangs. The
+review's run (0 timeouts) reported this mutant killed; the line is unchanged since `0bdb997`.
+
