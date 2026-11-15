@@ -182,6 +182,41 @@ VIII, and I for the internal setter), after round 3's fixes (rows I, III and VII
     tests, the Stryker configurations and the mutators. `gates/lib/mutation/shards.ts` and `gates/bin/mutation.ts`
     are shared gate code that the sibling missions (#16/008, #15/009, #8/011) may also change; a conflict is resolved
     by merging `main`.
+    **Probably-static element mutants are weighted** (phase 3 stop 2, operator decision (a), 2026-11-15,
+    `reviews/phase-3/decision-stop-2.md`; `reviews/phase-3/design-change-2.md`; T041b). On the mutant-count plan,
+    shards 9 and 10 (`src/form-control.ts:43-46` and `:47-56`, 9 valid mutants each) took 439.5 s, 448.4 s and
+    435.6 s (`stop-2.md`). Every one of their mutants is static in run 4's report, meaning code run when the module
+    loads, which Stryker runs against the whole in-process suite. Such a mutant costs about 25 s. Other mutants cost
+    about 2 to 6 s: shards of 10 took 240.5 s to 277.5 s. The fixed cost stays about 217 s. The instrumenter does not
+    mark static mutants, but the planner can parse each changed element file once more with the pinned `typescript`
+    (already a root development dependency, `ts.createSourceFile` as `gates/bin/csp.ts` uses it) and look at the
+    nodes that enclose each placed mutant, using the instrumenter's start and end line and column. No new dependency
+    is needed. The rule:
+    - a counted mutant is **probably static** when an enclosing node is a `static` class member (property, method,
+      get or set accessor, or `static { }` block, the body of a static method or accessor included), or the
+      initialiser of a class property (static or not), or when no enclosing node is a function (function declaration
+      or expression, arrow function, method, accessor or constructor), which is top-level module code. A compile
+      error is weighted by the same rule;
+    - a probably-static mutant counts as **5**, and every other counted mutant as 1. The rule above applies to these
+      weights in place of counts, with its caps of 10 unchanged: a file of weight at most 10 is one entry; entries are
+      cut at weight 10; shards are filled to weight 10 and 10 entries; a single line weighing more than 10 is an entry
+      alone. The boundary that closes an entry is still the one the fewest mutants span, counted and not weighted;
+    - so an entry or shard holds up to 10 other mutants, or 2 probably-static ones, or 1 and up to 5 others. At 25 s a
+      static mutant (5 s a unit of weight) and 6 s another, no shard under the cap is estimated over
+      217 s + 10 × 6 s = **277 s**, a margin of 143 s (34 %) under 420 s; 2 static mutants make 267 s and 1 with 5
+      others 272 s. A line over the cap is bounded by its own mutants (217 s + 25 s a static valid mutant, over
+      420 s from 9 of them); on run 4's report the heaviest is `src/form-control.ts:20` (`hostAria`, 5 static valid
+      mutants and a compile error), 342 s.
+    Checked against run 4's report (`b76d4ee`): the rule catches all 70 static mutants of the two files (58 valid),
+    among them the 56 valid static mutants in the element shards of T041a's plan, and wrongly flags 8 valid mutants, the instance property
+    initialisers of `src/form-control.ts:215-229`, which only make their shards smaller. Weight 5 leaves the same 9
+    valid mutants spanning a cut as design change 1 (weight 6 leaves 10). It makes 48 and 34 entries of the two
+    files and 81 element shards (58 before), 30 of them holding a probably-static mutant. Known limit: a function
+    body that another module calls at load is static but not caught. The example is `src/define.ts`'s `define`,
+    whose 9 mutants are static in feature 009's report and of which the rule catches 1. That file is unchanged here,
+    and a phase that changes it relies on its shard timing and the 7:00 stop. T041b times every element shard
+    holding a probably-static mutant and the highest-estimated others, and a shard over 7:00 is a new stop. CI's
+    10-minute limit, T041's 7:00, `--files`, the `--plan` JSON and `ci.yml` do not change.
 
 ## Project Structure
 
@@ -397,8 +432,9 @@ it; announcement timing in one internal helper used by the notice and the base c
    I10, U6, U10, U11, A5); manifest, CHANGELOG, entry point and its
    entry test; at the phase-end `gate:mutation`, every shard holding a `src/live.ts` or `src/form-control.ts` entry
    timed, a shard over 7:00 a stop (decision 11; analysis U8). After phase 3 stop 1, the shard planner cuts element
-   source by mutant count (decision 11; T041a, test-first in the gate's own tests), and T041's shard timing runs on
-   that plan.
+   source by mutant count (decision 11; T041a, test-first in the gate's own tests). After phase 3 stop 2, it also
+   weights probably-static element mutants as 5 (decision 11; T041b, test-first the same way), and T041's shard
+   timing runs on T041b's plan.
 4. **User Story 3, `ocelle-form-select`** (P3): a scaffold first (`src/ocelle-form-select.ts`, the class without
    members, not defined; analysis C2) and the pinned lists and counts in the red commit (5 elements; analysis I7);
    the `ocelle-form-select` manifest entry tested red first as the input's (analysis G9); scenarios 1 to 9 and the shared ones of scenario 7 red first, with the
