@@ -424,11 +424,11 @@ export abstract class FormControl extends LitElement {
 
   /** The default value changed: it becomes the current value while the value is not dirty. */
   protected defaultChanged(): void {
+    // Called from attributeChangedCallback(), which has requested the update that shows the value.
     if (this.dirty) return;
     this.current = this.initialValue();
     this.lastCommitted = this.current;
     this.syncFormValue();
-    this.requestUpdate();
   }
 
   /** @internal The form was reset. */
@@ -475,6 +475,7 @@ export abstract class FormControl extends LitElement {
   }
 
   override disconnectedCallback(): void {
+    // Stryker disable next-line CallExpression: equivalent, LitElement's disconnectedCallback() tells reactive controllers, which the control has none of, and disconnects its template's async directives, which it uses none of (class-map and live are synchronous)
     super.disconnectedCallback();
     this.startMove();
     afterTask(() => {

@@ -18,9 +18,6 @@ export type FormInputType = "text" | "email" | "url" | "tel" | "search" | "passw
 
 const types: readonly FormInputType[] = ["text", "email", "url", "tel", "search", "password", "number"];
 
-/** The native input types that block implicit submission (HTML § Implicit submission). */
-const blockingTypes = ["text", "search", "url", "tel", "email", "password", "date", "month", "week", "time", "datetime-local", "number"];
-
 /** A pass-through value for the field's attribute: the attribute removed when the host's is absent (null or undefined). */
 function given(value: string | number | null | undefined): string | number | typeof nothing {
   return value ?? nothing;
@@ -32,10 +29,12 @@ function isSubmitButton(element: Element): element is HTMLElement {
   return element instanceof HTMLInputElement && (element.type === "submit" || element.type === "image");
 }
 
-/** Whether `element` is a field that blocks implicit submission: a native input of a blocking type, or an input. */
+/** Whether `element` is a field that blocks implicit submission: an input, or a native input of a type that does. */
 function blocks(element: Element): boolean {
   if (element instanceof OcelleFormInput) return true;
-  return element instanceof HTMLInputElement && blockingTypes.includes(element.type);
+  // The native input types that block implicit submission (HTML § Implicit submission).
+  const types = ["text", "search", "url", "tel", "email", "password", "date", "month", "week", "time", "datetime-local", "number"];
+  return element instanceof HTMLInputElement && types.includes(element.type);
 }
 
 /**

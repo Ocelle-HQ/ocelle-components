@@ -118,6 +118,17 @@ describe("the shared properties (FR-021)", () => {
     });
   });
 
+  it("with no label, description or error, their parts are hidden and the field is the host's box, with no gap above or under it", async () => {
+    const made = await insert('<ocelle-form-input id="t"></ocelle-form-input>');
+    const host = made.getBoundingClientRect();
+    const box = field(made).getBoundingClientRect();
+    expect({
+      hidden: ['[part="label"]', '[part="description"]', '[part="error"]'].map((part) => inner(made, part).hasAttribute("hidden")),
+      top: box.top - host.top,
+      bottom: host.bottom - box.bottom,
+    }).toEqual({ hidden: [true, true, true], top: 0, bottom: 0 });
+  });
+
   it("checkValidity() of the host reports the field's constraints", async () => {
     const made = await insert('<ocelle-form-input id="t" required></ocelle-form-input>');
     const empty = made.checkValidity();
@@ -139,6 +150,15 @@ describe("the input's own attributes (FR-029)", () => {
       set: { attribute: "email", field: "email" },
       removed: { attribute: null, type: "text", field: "text" },
     });
+  });
+
+  it("type set by the property writes the attribute at once, text included on a host whose type is unknown", async () => {
+    const made = await insert('<ocelle-form-input id="t" type="bogus"></ocelle-form-input>');
+    made.type = "text";
+    const text = made.getAttribute("type");
+    made.removeAttribute("type");
+    made.type = "email";
+    expect({ text, email: made.getAttribute("type") }).toEqual({ text: "text", email: "email" });
   });
 
   it("a pass-through attribute removed from the host is removed from the field", async () => {
@@ -242,6 +262,15 @@ describe("the value, its default and the change event (FR-021, FR-024, R-05)", (
     });
   });
 
+  it("without a value attribute the default value is empty: the attribute removed, and a reset after an edit, give an empty value", async () => {
+    const made = await insert('<form id="f"><ocelle-form-input id="t" name="title" value="a"></ocelle-form-input></form>');
+    made.removeAttribute("value");
+    const removed = made.value;
+    edit(made, "typed");
+    made.formResetCallback();
+    expect({ removed, reset: made.value }).toEqual({ removed: "", reset: "" });
+  });
+
   it("a change of the value attribute while not dirty shows the value and puts it in the form data", async () => {
     const made = await insert('<form id="f"><ocelle-form-input id="t" name="title" value="a"></ocelle-form-input></form>');
     made.setAttribute("value", "b");
@@ -293,6 +322,20 @@ describe("Enter and implicit submission (FR-030, R-05)", () => {
     const seen: Record<string, number> = {};
     for (const type of [...blocking, ...other]) seen[type] = (await enterIn(`<input type="${type}" name="x">`)).submitted.length;
     expect(seen).toEqual(Object.fromEntries([...blocking.map((type) => [type, 0]), ...other.map((type) => [type, 1])]));
+  });
+
+  it("the default button is one of the input's own form, not of another form in the page", async () => {
+    container.innerHTML = '<form id="o"><button id="x">Other</button></form><form id="f"><ocelle-form-input id="t" name="title"></ocelle-form-input></form>';
+    await endOfTask();
+    const submitted: string[] = [];
+    for (const id of ["o", "f"]) {
+      document.getElementById(id)?.addEventListener("submit", (event) => {
+        submitted.push(`${id} ${event.submitter?.id ?? "none"}`);
+        event.preventDefault();
+      });
+    }
+    field().dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", cancelable: true }));
+    expect(submitted).toEqual(["f none"]);
   });
 
   it("a second input blocks implicit submission too", async () => {
@@ -446,6 +489,17 @@ describe("the error announcement (FR-027, R-06)", () => {
     await endOfTask();
     vi.advanceTimersByTime(W);
     expect({ loaded, again: copy(made) }).toEqual({ loaded: "", again: "Title is taken" });
+  });
+
+  it("first loaded hidden while the document loads and revealed after the load, the error is written W after the reveal", async () => {
+    const state = vi.spyOn(document, "readyState", "get").mockReturnValue("loading");
+    const made = await insert('<ocelle-form-input id="t" error="Title is taken" hidden></ocelle-form-input>');
+    vi.advanceTimersByTime(100);
+    state.mockReturnValue("complete");
+    made.hidden = false;
+    await endOfTask();
+    vi.advanceTimersByTime(W);
+    expect(copy(made)).toBe("Title is taken");
   });
 
   it("constructed while the document loads and inserted after the load, the error is written W after the insertion", async () => {
