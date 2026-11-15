@@ -7,8 +7,8 @@ import { mutation, run } from "../bin/mutation.ts";
 import type { MutationTools } from "../bin/mutation.ts";
 import { changedFiles } from "../lib/mutation/ranges.ts";
 import type { ChangedFile, LineRange } from "../lib/mutation/ranges.ts";
-import { countCuts, formatPlan, planShards, selectFiles } from "../lib/mutation/shards.ts";
-import type { PlacedMutant } from "../lib/mutation/shards.ts";
+import { countCuts, formatPlan, planShards, probablyStatic, selectFiles } from "../lib/mutation/shards.ts";
+import type { PlacedMutant, Span } from "../lib/mutation/shards.ts";
 import {
   base,
   capture,
@@ -1198,6 +1198,218 @@ describe("planShards: element source cut by mutant count (phase 3 stop 1, T041a)
   });
 });
 
+// Probably-static element mutants weighted (010 phase 3 stop 2, operator decision (a), 2026-11-15;
+// specs/010-feedback-forms/reviews/phase-3/design-change-2.md; plan decision 11): a mutant in a static class member,
+// a class property's initialiser or code outside any function probably runs when its module loads, and Stryker runs
+// such a mutant against the whole in-process suite (about 25 s against 2 to 6 s), so it counts as 5 against the caps
+// of 10. The boundary closing an entry is still the one the fewest mutants span, by count.
+
+/** The span of `text`'s first occurrence in `content`, as Stryker's instrumenter gives a location (0-based line and column). */
+function spanOf(content: string, text: string): Span {
+  const offset = content.indexOf(text);
+  if (offset === -1) throw new Error(`the fixture holds no ${text}`);
+  const position = (at: number): Span["start"] => {
+    const before = content.slice(0, at).split("\n");
+    return { line: before.length - 1, column: String(before.at(-1)).length };
+  };
+  return { start: position(offset), end: position(offset + text.length) };
+}
+
+/** Whether the syntax rule takes the mutant spanning each of `texts` in `content` for probably static, in order. */
+function flags(content: string, ...texts: readonly string[]): boolean[] {
+  expect(probablyStatic).toBeTypeOf("function");
+  const isStatic = probablyStatic(element("x"), content);
+  return texts.map((text) => isStatic(spanOf(content, text)));
+}
+
+describe("probablyStatic: the syntax rule (phase 3 stop 2, T041b)", () => {
+  const source = [
+    'import { Base, define, register, use } from "./base.ts";',
+    "export class Field extends Base {",
+    '  static label = "static-property";',
+    '  static get observedAttributes() { return ["static-get"]; }',
+    '  static make() { return "static-method"; }',
+    '  static { register("static-block"); }',
+    '  current = "instance-property";',
+    '  #labels = () => this.find("instance-arrow");',
+    '  constructor() { super(); this.x = "constructor"; }',
+    '  get value() { return "instance-get"; }',
+    '  set value(next) { this.y = next || "instance-set"; }',
+    '  render() { return "method"; }',
+    "}",
+    'export function helper() { return "function-declaration"; }',
+    'export const table = { key: "top-const" };',
+    'export const later = () => "top-arrow";',
+    'export const expression = function () { return "function-expression"; };',
+    'define("top-call", () => "call-arrow");',
+    "export function make() {",
+    '  return class { static { use("nested-block"); } field = "nested-field"; method() { return "nested-method"; } };',
+    "}",
+    "",
+  ].join("\n");
+
+  it("flags a mutant in a static property's initialiser, a static method's or get accessor's body and a static block", () => {
+    expect(flags(source, '"static-property"', '"static-get"', '"static-method"', '"static-block"')).toEqual([true, true, true, true]);
+  });
+
+  it("flags a mutant in an instance property's initialiser, a function inside it included", () => {
+    expect(flags(source, '"instance-property"', '"instance-arrow"')).toEqual([true, true]);
+  });
+
+  it("flags a mutant in a top-level const initialiser and in a top-level call's arguments", () => {
+    expect(flags(source, '"top-const"', '"top-call"')).toEqual([true, true]);
+  });
+
+  it("does not flag a mutant in a constructor, a method's body or an instance get or set accessor's body", () => {
+    expect(flags(source, '"constructor"', '"method"', '"instance-get"', '"instance-set"')).toEqual([false, false, false, false]);
+  });
+
+  it("does not flag a mutant in a function declaration's or expression's body, nor in an arrow function's body at top level or passed to a top-level call", () => {
+    expect(flags(source, '"function-declaration"', '"function-expression"', '"top-arrow"', '"call-arrow"')).toEqual([false, false, false, false]);
+  });
+
+  it("flags, in a class a function makes, a mutant that is a property's whole initialiser or in a static block, and not one in a method", () => {
+    // Inside the function, only the static block (part 1) and the property's initialiser (part 2) flag a mutant; the
+    // initialiser's mutant spans it exactly, so it is one of the mutant's enclosing nodes.
+    expect(flags(source, '"nested-field"', '"nested-block"', '"nested-method"')).toEqual([true, true, false]);
+  });
+});
+
+/** `count` probably-static mutants on each of the lines `first` to `last`, each within its line, none ignored. */
+function statics(first: number, last: number, count = 1): PlacedMutant[] {
+  return singles(first, last, count).map((one) => ({ ...one, probablyStatic: true }));
+}
+
+/** A probably-static mutant whose node runs from line `start` to line `end`. */
+function spanningStatic(start: number, end: number): PlacedMutant {
+  return { ...spanning(start, end), probablyStatic: true };
+}
+
+describe("planShards: probably-static element mutants weigh 5 (phase 3 stop 2, T041b)", () => {
+  const a = element("a");
+
+  it("keeps an element file of 2 probably-static mutants one entry, and cuts one of 2 and 1 other", () => {
+    expect(planShards([file(a, 40)], new Map([[a, statics(1, 2)]]))).toEqual([{ files: [a], lines: 40 }]);
+    expect(planShards([file(a, 40)], new Map([[a, [...statics(1, 2), ...singles(3, 3)]]]))).toEqual([
+      { files: [`${a}:1-2`], lines: 2 },
+      { files: [`${a}:3-40`], lines: 38 },
+    ]);
+  });
+
+  it("closes an entry before a third probably-static mutant, and after 1 and 5 others", () => {
+    expect(planShards([file(a, 3)], new Map([[a, statics(1, 3)]]))).toEqual([
+      { files: [`${a}:1-2`], lines: 2 },
+      { files: [`${a}:3-3`], lines: 1 },
+    ]);
+    expect(planShards([file(a, 7)], new Map([[a, [...statics(1, 1), ...singles(2, 7)]]]))).toEqual([
+      { files: [`${a}:1-6`], lines: 6 },
+      { files: [`${a}:7-7`], lines: 1 },
+    ]);
+  });
+
+  it("makes a single line of 3 probably-static mutants (weight 15) an entry alone", () => {
+    expect(planShards([file(a, 3)], new Map([[a, [...singles(1, 1), ...statics(2, 2, 3), ...singles(3, 3)]]]))).toEqual([
+      { files: [`${a}:1-1`], lines: 1 },
+      { files: [`${a}:2-2`], lines: 1 },
+      { files: [`${a}:3-3`], lines: 1 },
+    ]);
+  });
+
+  it("fills shards to a weight of 10: entries of two element files weighing 5 and 5 share one, 5 and 6 do not", () => {
+    const b = element("b");
+    const c = element("c");
+    expect(planShards([file(b, 2), file(c, 2)], new Map([[b, statics(1, 1)], [c, statics(1, 1)]]))).toEqual([{ files: [b, c], lines: 4 }]);
+    const six = new Map([[b, statics(1, 1)], [c, [...statics(1, 1), ...singles(2, 2)]]]);
+    expect(planShards([file(b, 2), file(c, 2)], six)).toEqual([
+      { files: [b], lines: 2 },
+      { files: [c], lines: 2 },
+    ]);
+  });
+
+  it("closes an entry at the boundary the fewest mutants span by count, not weight, the latest still winning a tie", () => {
+    // Lines 1 to 5 weigh 10 (1 + 2 + 5 + 2), and line 6 would make 12. By count the boundaries after lines 1 to 5 are
+    // spanned by 1, 2, 1 (the probably-static mutant), 2 and 2 mutants: the entry closes after line 3, the later of
+    // the two spanned once. By weight (1, 2, 5, 2, 2) it would close after line 1.
+    const placed = [
+      spanning(1, 2),
+      spanning(2, 3),
+      spanning(2, 3),
+      spanningStatic(3, 4),
+      spanning(4, 5),
+      spanning(4, 5),
+      spanning(5, 6),
+      spanning(5, 6),
+    ];
+    expect(planShards([file(a, 6)], new Map([[a, placed]]))).toEqual([
+      { files: [`${a}:1-3`], lines: 3 },
+      { files: [`${a}:4-6`], lines: 3 },
+    ]);
+  });
+
+  it("does not count an ignored probably-static mutant at all, and counts one not ignored as 5", () => {
+    const ignored = { start: 7, end: 7, ignored: true, probablyStatic: true };
+    expect(planShards([file(a, 7)], new Map([[a, [...statics(1, 1), ...singles(2, 6), ignored]]]))).toEqual([{ files: [a], lines: 7 }]);
+    expect(planShards([file(a, 7)], new Map([[a, [...statics(1, 1), ...singles(2, 6), ...statics(7, 7)]]]))).toEqual([
+      { files: [`${a}:1-6`], lines: 6 },
+      { files: [`${a}:7-7`], lines: 1 },
+    ]);
+  });
+
+  it("keeps the 30-line rule for every other file, whatever mutants are placed for it, beside a weighted element file", () => {
+    const other = "gates/lib/a.ts";
+    const placed = new Map([
+      [other, statics(1, 31)],
+      [a, [...statics(1, 2), ...singles(3, 3)]],
+    ]);
+    expect(planShards([file(other, 31), file(a, 3)], placed)).toEqual([
+      { files: [`${other}:1-30`], lines: 30 },
+      { files: [`${other}:31-31`], lines: 1 },
+      { files: [`${a}:1-2`], lines: 2 },
+      { files: [`${a}:3-3`], lines: 1 },
+    ]);
+  });
+});
+
+describe("mutation gate: --plan weights the flags the place tool returns (phase 3 stop 2, T041b)", () => {
+  const x = element("x");
+  const diff = newFilesDiff({ [x]: 25, "gates/lib/a.ts": 3 });
+  const sources = { [x]: "export const x = 1;\n", "gates/lib/a.ts": "export const a = 1;\n" };
+
+  async function gate(args: readonly string[], tools: MutationTools) {
+    const { io, out, err } = capture();
+    const code = await mutation(context(args), tools, io);
+    return { code, out, err };
+  }
+
+  it("--plan cuts an element file by the weights of its flagged mutants, its JSON's shape kept, and --files takes a shard back", async () => {
+    const tools = (stryker: FakeStryker = noStryker): MutationTools => ({
+      git: fakeGit(diff),
+      ...fakeRepo(sources, stryker),
+      place: fakePlacer({ [x]: statics(1, 3) }),
+    });
+    expect(await gate(["--base", base, "--plan"], tools())).toEqual({
+      code: 0,
+      out: [
+        JSON.stringify([
+          { files: "gates/lib/a.ts", lines: 3 },
+          { files: `${x}:1-2`, lines: 2 },
+          { files: `${x}:3-25`, lines: 23 },
+        ]),
+      ],
+      err: ["mutation: plan: 3 shards, 1 cut within files (a mutant spanning a cut is mutated in no shard, see gates/README.md)"],
+    });
+    const mutated: string[] = [];
+    const stryker = configuredStryker(() => "Killed");
+    const recording: FakeStryker = (mutate, tree, config) => (mutated.push(...mutate), stryker(mutate, tree, config));
+    expect(await gate(["--base", base, "--files", `${x}:3-25`], tools(recording))).toEqual({
+      code: 0,
+      out: ["mutation: 1 mutant on the changed lines of 1 file, none survived; 0 timeouts, 0 compile errors, 0 zero-mutant entries; 0 equivalent records"],
+      err: [],
+    });
+    expect(mutated).toEqual([`${x}:3-25`]);
+  });
+});
+
 describe("mutation gate: --plan counts element source's mutants (phase 3 stop 1, T041a)", () => {
   const x = element("x");
   const diff = newFilesDiff({ [x]: 25, "gates/lib/a.ts": 3 });
@@ -1275,10 +1487,12 @@ describe("mutation gate: --plan counts element source's mutants (phase 3 stop 1,
 });
 
 // The real tool of run(): Stryker's own instrumenter, on a temporary git repository whose second commit changes
-// packages/elements/src/x.ts and y.ts. x.ts's changed lines 2 to 12 hold 11 mutants: one on line 2 that the
-// TypeScript checker would reject (`"t"` replaced by `""` is not of type "t"), which the planner cannot know and so
-// counts, and one on each of lines 3 to 12. y.ts's changed lines 2 to 13 hold 10 mutants and one that a
-// `// Stryker disable` comment ignores, beside unchanged lines that hold mutants too (lines 1 and 14).
+// packages/elements/src/x.ts and y.ts. In the first case each file's changed lines are inside a function whose first
+// and last lines are unchanged, so no mutant on them probably runs when the module loads (T041b) and each counts as
+// one. x.ts's changed lines 3 to 13 hold 11 mutants: one on line 3 that the TypeScript checker would reject (`"t"`
+// replaced by `""` is not of type "t"), which the planner cannot know and so counts, and one on each of lines 4 to
+// 13. y.ts's changed lines 3 to 14 hold 10 mutants and one that a `// Stryker disable` comment ignores, beside
+// unchanged lines that hold mutants too (lines 2 and 15).
 describe("mutation gate: --plan with Stryker's instrumenter (phase 3 stop 1, T041a)", () => {
   const identity = ["-c", "user.name=Fixture Author", "-c", "user.email=fixture@example.com", "-c", "commit.gpgsign=false"];
   const made: string[] = [];
@@ -1322,18 +1536,28 @@ describe("mutation gate: --plan with Stryker's instrumenter (phase 3 stop 1, T04
   const lines = (...parts: readonly (string | readonly string[])[]): string => `${parts.flat().join("\n")}\n`;
   const numbered = (prefix: string, count: number): string[] => Array.from({ length: count }, (_, i) => `${prefix}${String(i + 1)}`);
 
+  /** A function of `name` calling `use` once for each statement of `body`, one a line. */
+  const within = (name: string, body: readonly string[]): string[] => [
+    `export function ${name}(use: (name: string) => void): void {`,
+    ...body.map((statement) => `  ${statement}`),
+    "}",
+  ];
+  const uses = (names: readonly string[]): string[] => names.map((name) => `use("${name}");`);
+
   it("counts the mutants on the changed lines, a compile error included and an ignored one not", async () => {
     const x = element("x");
     const y = element("y");
     const { root, base: first } = repository(
-      { [x]: lines(constants(["before", "after"])), [y]: lines(constants(["head", "tail"])) },
+      { [x]: lines(within("x", uses(["before", "after"]))), [y]: lines(within("y", uses(["head", "tail"]))) },
       {
-        [x]: lines(constants(["before"]), 'export const typed: "t" = "t";', constants(numbered("x", 10)), constants(["after"])),
+        [x]: lines(within("x", [...uses(["before"]), 'const typed: "t" = "t";', ...uses(numbered("x", 10)), ...uses(["after"])])),
         [y]: lines(
-          constants(["head"]),
-          constants(numbered("y", 9)),
-          "// Stryker disable next-line all: equivalent, the planner's test of an ignored mutant",
-          constants(["ignored", "y10", "tail"]),
+          within("y", [
+            ...uses(["head"]),
+            ...uses(numbered("y", 9)),
+            "// Stryker disable next-line all: equivalent, the planner's test of an ignored mutant",
+            ...uses(["ignored", "y10", "tail"]),
+          ]),
         ),
       },
     );
@@ -1341,12 +1565,33 @@ describe("mutation gate: --plan with Stryker's instrumenter (phase 3 stop 1, T04
       code: 0,
       out: [
         JSON.stringify([
-          { files: `${x}:2-11`, lines: 10 },
-          { files: `${x}:12-12`, lines: 1 },
+          { files: `${x}:3-12`, lines: 10 },
+          { files: `${x}:13-13`, lines: 1 },
           { files: y, lines: 12 },
         ]),
       ],
       err: ["mutation: plan: 3 shards, 1 cut within files (a mutant spanning a cut is mutated in no shard, see gates/README.md)"],
+    });
+  });
+
+  it("weighs as 5 each mutant the syntax rule takes for probably static, a compile error included (T041b)", async () => {
+    // x.ts's changed lines 2 to 6 hold two top-level mutants (line 3's a compile error), weighing 10, and two in a
+    // function: its body, from line 4 to 6, and the string on line 5. The entry closes after line 3, the latest
+    // boundary no mutant spans.
+    const x = element("x");
+    const { root, base: first } = repository(
+      { [x]: lines(constants(["head"])) },
+      { [x]: lines(constants(["head", "s1"]), 'export const typed: "t" = "t";', "export function f(): string {", '  return "f";', "}") },
+    );
+    expect(await plan(root, first)).toEqual({
+      code: 0,
+      out: [
+        JSON.stringify([
+          { files: `${x}:2-3`, lines: 2 },
+          { files: `${x}:4-6`, lines: 3 },
+        ]),
+      ],
+      err: ["mutation: plan: 2 shards, 1 cut within files (a mutant spanning a cut is mutated in no shard, see gates/README.md)"],
     });
   });
 
