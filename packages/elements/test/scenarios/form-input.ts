@@ -20,11 +20,29 @@ import type { AxDetail, Box, Driver, InsertHow, Snapshot } from "./driver.ts";
 import { tokenColour } from "./icon.ts";
 import { announced, el, expectGap, only, polite, px, regionPresent, used } from "./notice.ts";
 
+/**
+ * The kind of form control a shared body runs on (specs/010-feedback-forms US3 scenario 7 reuses User Story 2's bodies
+ * with `ocelle-form-select`, T050): the local name of its inner control, the roles of that control's node, and how a
+ * host of the kind is written with a value. The input's kind is the default, so a body run without one runs on the
+ * input exactly as written for it.
+ */
+export interface ControlKind {
+  /** The local name of the inner control, `part="control"` with the id `control`. */
+  readonly inner: string;
+  /** The roles of the inner control's node in the accessibility tree. */
+  readonly roles: readonly string[];
+  /** The markup of a host of tag `tag` with `attributes` (as written), holding `value` as its value when one is given. */
+  readonly markup: (tag: string, attributes: string, value?: string) => string;
+}
+
 export interface FormScenario {
   /** The spec scenario and what it checks. */
   readonly name: string;
-  /** Runs the scenario with the input's tag `tag` (`ocelle-form-input`, or a plant's tag), asserting as it goes. */
-  readonly run: (driver: Driver, tag: string) => Promise<void>;
+  /**
+   * Runs the scenario with the control's tag `tag` (`ocelle-form-input`, or a plant's tag) on a control of `kind` (the
+   * input's when not given), asserting as it goes.
+   */
+  readonly run: (driver: Driver, tag: string, kind?: ControlKind) => Promise<void>;
 }
 
 /** The literal tag that `firstLoad` replaces by the input's tag. */
@@ -44,18 +62,24 @@ export const form = (content: string, id = "f"): string => `<form id="${id}" act
 /** An input of tag `tag` with `attributes` (as written). */
 export const input = (tag: string, attributes: string): string => el(tag, attributes, "");
 
-/** A first-load input: the literal tag `firstLoad` replaces. */
-const fl = (attributes: string): string => el(firstTag, attributes, "");
+/** The input's kind: an `<input>`, a textbox (a searchbox or a spinbutton for those types), its value the `value` attribute. */
+export const inputKind: ControlKind = {
+  inner: "input",
+  roles: ["textbox", "searchbox", "spinbutton"],
+  markup: (tag, attributes, value) => el(tag, value === undefined ? attributes : `${attributes} value="${value}"`, ""),
+};
 
-/** The focus path of the input `id` of tag `tag` when its field has focus. */
-export const inField = (tag: string, id = "t"): string[] => [`${tag}#${id}`, "input#control"];
+/** A first-load control of `kind`: the literal tag `firstLoad` replaces. */
+const fl = (attributes: string, kind: ControlKind = inputKind): string => kind.markup(firstTag, attributes);
 
-const fieldRoles = ["textbox", "searchbox", "spinbutton"];
+/** The focus path of the control `id` of tag `tag` and of `kind` when its inner control has focus. */
+export const inField = (tag: string, id = "t", kind: ControlKind = inputKind): string[] => [`${tag}#${id}`, `${kind.inner}#control`];
+
 const absentNode: AxDetail = { role: "none", name: "", host: false, description: "", invalid: "", required: false, disabled: false, readonly: false, focused: false, focusable: false };
 
-/** The accessibility node of the inner field of the input `id`: the first node of its shadow subtree with a field role. */
-export async function field(driver: Driver, id: string): Promise<AxDetail> {
-  return (await driver.axDetails(id)).find((node) => !node.host && fieldRoles.includes(node.role)) ?? absentNode;
+/** The accessibility node of the inner control of the control `id` of `kind`: the first node of its shadow subtree with a role of the kind. */
+export async function field(driver: Driver, id: string, kind: ControlKind = inputKind): Promise<AxDetail> {
+  return (await driver.axDetails(id)).find((node) => !node.host && kind.roles.includes(node.role)) ?? absentNode;
 }
 
 /** The accessibility node of the host `id` itself, or an absent node when the host's node is ignored. */
@@ -132,9 +156,9 @@ async function errorLook(driver: Driver, id: string): Promise<Record<string, str
   };
 }
 
-/** The US2-20 fragment: two inputs with an error each. */
-const swapped = (tag: string): string =>
-  form(input(tag, 'id="t" name="title" label="Title" error="Title is taken"') + input(tag, 'id="l" name="lane" label="Lane" error="Lane is required"'));
+/** The US2-20 fragment: two controls of `kind` with an error each. */
+const swapped = (tag: string, kind: ControlKind = inputKind): string =>
+  form(kind.markup(tag, 'id="t" name="title" label="Title" error="Title is taken"') + kind.markup(tag, 'id="l" name="lane" label="Lane" error="Lane is required"'));
 
 export const formInputScenarios: readonly FormScenario[] = [
   {
@@ -321,13 +345,13 @@ export const formInputScenarios: readonly FormScenario[] = [
   },
   {
     name: 'US2-9: description="Shown on the lane card" is shown under the label, above the field, and is the focused field\'s description',
-    run: async (driver, tag) => {
-      await driver.mount(input(tag, 'id="t" label="Title" description="Shown on the lane card"'));
+    run: async (driver, tag, kind = inputKind) => {
+      await driver.mount(kind.markup(tag, 'id="t" label="Title" description="Shown on the lane card"'));
       const label = await driver.box("t", parts.label);
       const description = await driver.box("t", parts.description);
       const control = await driver.box("t", parts.control);
       await driver.batch([{ op: "focus", id: "t" }]);
-      const node = await field(driver, "t");
+      const node = await field(driver, "t", kind);
       assert.deepEqual(
         { drawn: drawn(label) && drawn(description), under: description.y >= label.y + label.height - 0.5 && description.y + description.height <= control.y + 0.5, text: await driver.propertyIn("t", parts.description, "textContent"), description: node.description },
         { drawn: true, under: true, text: "Shown on the lane card", description: "Shown on the lane card" },
@@ -337,8 +361,8 @@ export const formInputScenarios: readonly FormScenario[] = [
   },
   {
     name: 'US2-10: error="Title is taken" is shown under the field in --ocelle-color-danger with the danger boundary at the bar width, the focused field is invalid and described by the description then the error, it is announced politely once and the form still submits; cleared, it goes and announces nothing; set again, it is announced once more; with whitespace changes only, nothing',
-    run: async (driver, tag) => {
-      await driver.mount(`<main id="c">${form(input(tag, 'id="t" name="title" label="Title" description="Shown on the lane card"'))}</main>`);
+    run: async (driver, tag, kind = inputKind) => {
+      await driver.mount(`<main id="c">${form(kind.markup(tag, 'id="t" name="title" label="Title" description="Shown on the lane card"'))}</main>`);
       await driver.liveCapture.start("c");
       await driver.setAttribute("t", "error", "Title is taken");
       await settleAnnouncement(driver);
@@ -346,18 +370,18 @@ export const formInputScenarios: readonly FormScenario[] = [
       const error = await driver.box("t", parts.error);
       const look = await errorLook(driver, "t");
       await driver.batch([{ op: "focus", id: "t" }]);
-      const set = reported(await field(driver, "t"));
+      const set = reported(await field(driver, "t", kind));
       const submitted = await driver.submit("f");
       await driver.blur();
       await driver.setAttribute("t", "error", "");
       await settleAnnouncement(driver);
-      const cleared = { error: drawn(await driver.box("t", parts.error)), field: reported(await field(driver, "t")) };
+      const cleared = { error: drawn(await driver.box("t", parts.error)), field: reported(await field(driver, "t", kind)) };
       await driver.setAttribute("t", "error", "Title is taken");
       await settleAnnouncement(driver);
       await driver.setAttribute("t", "error", " Title  is taken ");
       const snapshots = await driver.liveCapture.stop();
       announced(driver, only(snapshots, ["t"]), [polite("Title is taken", "t"), polite("Title is taken", "t")], "US2-10: announcements");
-      const unset = { role: "textbox", name: "Title", description: "Shown on the lane card", required: false, disabled: false };
+      const unset = { role: kind.roles[0], name: "Title", description: "Shown on the lane card", required: false, disabled: false };
       assert.deepEqual(
         { under: drawn(error) && error.y >= control.y + control.height - 0.5, text: await driver.propertyIn("t", parts.error, "textContent"), look, set, submitted, cleared },
         {
@@ -375,13 +399,13 @@ export const formInputScenarios: readonly FormScenario[] = [
   ...(["disabled", "fieldset"] as const).map(
     (kind): FormScenario => ({
       name: `US2-11 ${kind}: ${kind === "disabled" ? "disabled" : "inside <fieldset disabled>"}, the field cannot be focused or edited, is drawn with the disabled tokens, reports disabled and is not in the form data; enabling it restores all of that`,
-      run: async (driver, tag) => {
-        const control = input(tag, `id="t" name="title" label="Title" value="draft"${kind === "disabled" ? " disabled" : ""}`);
-        await driver.mount(form(kind === "disabled" ? control : `<fieldset id="s" disabled>${control}</fieldset>`));
+      run: async (driver, tag, control = inputKind) => {
+        const markup = control.markup(tag, `id="t" name="title" label="Title"${kind === "disabled" ? " disabled" : ""}`, "draft");
+        await driver.mount(form(kind === "disabled" ? markup : `<fieldset id="s" disabled>${markup}</fieldset>`));
         const observe = async (): Promise<unknown> => {
           await driver.batch([{ op: "focus", id: "t" }]);
           const focus = await driver.focusPath();
-          const node = await field(driver, "t");
+          const node = await field(driver, "t", control);
           await driver.blur();
           return { focus, disabled: node.disabled, data: await driver.formData("f") };
         };
@@ -397,7 +421,7 @@ export const formInputScenarios: readonly FormScenario[] = [
             before: { focus: [], disabled: true, data: [] },
             value: "draft",
             look: { ground: tokenColour("color-disabled-bg", "light"), text: tokenColour("color-disabled-ink", "light") },
-            after: { focus: inField(tag), disabled: false, data: [["title", "draft"]] },
+            after: { focus: inField(tag, "t", control), disabled: false, data: [["title", "draft"]] },
           },
           `US2-11 ${kind}`,
         );
@@ -419,77 +443,77 @@ export const formInputScenarios: readonly FormScenario[] = [
   },
   {
     name: 'US2-13 external label: <label for="t">Title</label> names the field "Title", clicking it focuses the field, and labels holds it',
-    run: async (driver, tag) => {
-      await driver.mount(`<label for="t" id="l">Title</label>${input(tag, 'id="t" name="title"')}`);
-      const name = (await field(driver, "t")).name;
+    run: async (driver, tag, kind = inputKind) => {
+      await driver.mount(`<label for="t" id="l">Title</label>${kind.markup(tag, 'id="t" name="title"')}`);
+      const name = (await field(driver, "t", kind)).name;
       const label = await driver.box("l");
       await driver.click("l", { x: label.width / 2, y: label.height / 2 });
-      assert.deepEqual({ name, focus: await driver.focusPath(), labels: await driver.ids("t", "labels") }, { name: "Title", focus: inField(tag), labels: ["l"] }, "US2-13 external label");
+      assert.deepEqual({ name, focus: await driver.focusPath(), labels: await driver.ids("t", "labels") }, { name: "Title", focus: inField(tag, "t", kind), labels: ["l"] }, "US2-13 external label");
     },
   },
   {
     name: 'US2-13 rename: changing the external label\'s text to "Card title" renames the field without a focus',
-    run: async (driver, tag) => {
-      await driver.mount(`<label for="t" id="l">Title</label>${input(tag, 'id="t" name="title"')}`);
+    run: async (driver, tag, kind = inputKind) => {
+      await driver.mount(`<label for="t" id="l">Title</label>${kind.markup(tag, 'id="t" name="title"')}`);
       await driver.batch([{ op: "text", id: "l", text: "Card title" }]);
-      const node = await field(driver, "t");
+      const node = await field(driver, "t", kind);
       assert.deepEqual({ name: node.name, focused: node.focused, focus: await driver.focusPath() }, { name: "Card title", focused: false, focus: [] }, "US2-13 rename");
     },
   },
   {
     name: "US2-13 names: a host aria-label alone; an external label and label joined; an aria-label holding the visible label text; a host aria-labelledby with no other source names nothing",
-    run: async (driver, tag) => {
+    run: async (driver, tag, kind = inputKind) => {
       const cells = {
-        "aria-label": input(tag, 'id="t" aria-label="Search lanes"'),
-        both: `<label for="t">Title</label>${input(tag, 'id="t" label="Lane title"')}`,
-        "aria-label with the visible text": `<label for="t">Title</label>${input(tag, 'id="t" label="Lane title" aria-label="Title Lane title, filter"')}`,
-        "aria-labelledby": `<span id="x">Outside</span>${input(tag, 'id="t" aria-labelledby="x"')}`,
+        "aria-label": kind.markup(tag, 'id="t" aria-label="Search lanes"'),
+        both: `<label for="t">Title</label>${kind.markup(tag, 'id="t" label="Lane title"')}`,
+        "aria-label with the visible text": `<label for="t">Title</label>${kind.markup(tag, 'id="t" label="Lane title" aria-label="Title Lane title, filter"')}`,
+        "aria-labelledby": `<span id="x">Outside</span>${kind.markup(tag, 'id="t" aria-labelledby="x"')}`,
       };
       const seen: Record<string, string> = {};
       for (const [cell, markup] of Object.entries(cells)) {
         await driver.mount(markup);
-        seen[cell] = (await field(driver, "t")).name;
+        seen[cell] = (await field(driver, "t", kind)).name;
       }
       assert.deepEqual(seen, { "aria-label": "Search lanes", both: "Title Lane title", "aria-label with the visible text": "Title Lane title, filter", "aria-labelledby": "" }, "US2-13 names");
     },
   },
   {
     name: 'US2-13 host node: a host aria-label="Search lanes" and aria-description="Filters the board" name and describe the textbox, and the host\'s node is a generic with the same name and description',
-    run: async (driver, tag) => {
-      await driver.mount(input(tag, 'id="t" aria-label="Search lanes" aria-description="Filters the board"'));
-      const node = await field(driver, "t");
+    run: async (driver, tag, kind = inputKind) => {
+      await driver.mount(kind.markup(tag, 'id="t" aria-label="Search lanes" aria-description="Filters the board"'));
+      const node = await field(driver, "t", kind);
       const host = await hostNode(driver, "t");
       assert.deepEqual(
         { field: { role: node.role, name: node.name, description: node.description }, host: { role: host.role, name: host.name, description: host.description } },
-        { field: { role: "textbox", name: "Search lanes", description: "Filters the board" }, host: { role: "generic", name: "Search lanes", description: "Filters the board" } },
+        { field: { role: kind.roles[0], name: "Search lanes", description: "Filters the board" }, host: { role: "generic", name: "Search lanes", description: "Filters the board" } },
         "US2-13 host node",
       );
     },
   },
   {
     name: 'US2-13 spaces: a host aria-label=" Title " without label names the field exactly "Title" while the host\'s node is named " Title ", as written',
-    run: async (driver, tag) => {
-      await driver.mount(input(tag, 'id="t" aria-label=" Title "'));
-      assert.deepEqual({ field: (await field(driver, "t")).name, host: (await hostNode(driver, "t")).name }, { field: "Title", host: " Title " }, "US2-13 spaces");
+    run: async (driver, tag, kind = inputKind) => {
+      await driver.mount(kind.markup(tag, 'id="t" aria-label=" Title "'));
+      assert.deepEqual({ field: (await field(driver, "t", kind)).name, host: (await hostNode(driver, "t")).name }, { field: "Title", host: " Title " }, "US2-13 spaces");
     },
   },
   {
     name: 'US2-13 blank aria-label: a host aria-label="" or "   " with label="Title" is skipped, the field named "Title", and with an external label "Lane", "Lane Title"',
-    run: async (driver, tag) => {
+    run: async (driver, tag, control = inputKind) => {
       const seen: Record<string, string> = {};
       for (const [kind, blank] of [["empty", ""], ["spaces", "   "]] as const) {
-        await driver.mount(input(tag, `id="t" label="Title" aria-label="${blank}"`));
-        seen[kind] = (await field(driver, "t")).name;
-        await driver.mount(`<label for="t">Lane</label>${input(tag, `id="t" label="Title" aria-label="${blank}"`)}`);
-        seen[`${kind} with a label`] = (await field(driver, "t")).name;
+        await driver.mount(control.markup(tag, `id="t" label="Title" aria-label="${blank}"`));
+        seen[kind] = (await field(driver, "t", control)).name;
+        await driver.mount(`<label for="t">Lane</label>${control.markup(tag, `id="t" label="Title" aria-label="${blank}"`)}`);
+        seen[`${kind} with a label`] = (await field(driver, "t", control)).name;
       }
       assert.deepEqual(seen, { empty: "Title", "empty with a label": "Lane Title", spaces: "Title", "spaces with a label": "Lane Title" }, "US2-13 blank aria-label");
     },
   },
   {
     name: "US2-14: Tab focuses the field once (the host is no second tab stop) with the token focus ring, Shift+Tab leaves it, and element.focus() focuses the field",
-    run: async (driver, tag) => {
-      await driver.mount(`<button id="before">Before</button>${input(tag, 'id="t" label="Title"')}<button id="after">After</button>`);
+    run: async (driver, tag, kind = inputKind) => {
+      await driver.mount(`<button id="before">Before</button>${kind.markup(tag, 'id="t" label="Title"')}<button id="after">After</button>`);
       await driver.press("before", "Tab");
       const tabbed = await driver.focusPath();
       const ring = {
@@ -509,12 +533,12 @@ export const formInputScenarios: readonly FormScenario[] = [
       assert.deepEqual(
         { tabbed, ring, next, back, left, focused: await driver.focusPath() },
         {
-          tabbed: inField(tag),
+          tabbed: inField(tag, "t", kind),
           ring: { style: "solid", width: px("focus-width"), colour: tokenColour("color-focus", "light"), offset: px("focus-offset") },
           next: ["button#after"],
-          back: inField(tag),
+          back: inField(tag, "t", kind),
           left: ["button#before"],
-          focused: inField(tag),
+          focused: inField(tag, "t", kind),
         },
         "US2-14",
       );
@@ -522,8 +546,8 @@ export const formInputScenarios: readonly FormScenario[] = [
   },
   {
     name: "US2-15: in forced colours the field's boundary (ButtonBorder or CanvasText), the focus ring (Highlight) and the error mark (the boundary at the bar width) are visible",
-    run: async (driver, tag) => {
-      await driver.mount(`<button id="before">Before</button>${input(tag, 'id="t" label="Title"')}${input(tag, 'id="e" label="Lane" error="Lane is required"')}`);
+    run: async (driver, tag, kind = inputKind) => {
+      await driver.mount(`<button id="before">Before</button>${kind.markup(tag, 'id="t" label="Title"')}${kind.markup(tag, 'id="e" label="Lane" error="Lane is required"')}`);
       await driver.forcedColors("active", "light");
       const system = [await driver.resolveColour("ButtonBorder"), await driver.resolveColour("CanvasText")];
       const boundary = await driver.computedIn("t", parts.control, "border-block-start-color");
@@ -550,13 +574,13 @@ export const formInputScenarios: readonly FormScenario[] = [
   },
   {
     name: 'US2-18: an error in the page as first loaded is not announced and focus stays put; it is shown, and the focused field is invalid with a description ending in it; a later change to "Title is too long" is announced politely once',
-    run: async (driver, tag) => {
+    run: async (driver, tag, kind = inputKind) => {
       let state: unknown;
-      const snapshots = await loaded(driver, tag, form(fl('id="t" name="title" label="Title" error="Title is taken"')), async () => {
+      const snapshots = await loaded(driver, tag, form(fl('id="t" name="title" label="Title" error="Title is taken"', kind)), async () => {
         const focus = await driver.focusPath();
         const shown = drawn(await driver.box("t", parts.error));
         await driver.batch([{ op: "focus", id: "t" }]);
-        const node = await field(driver, "t");
+        const node = await field(driver, "t", kind);
         await driver.blur();
         state = { focus, shown, invalid: node.invalid, ends: node.description.endsWith("Title is taken") };
         await settleAnnouncement(driver);
@@ -568,14 +592,14 @@ export const formInputScenarios: readonly FormScenario[] = [
   },
   {
     name: "US2-19: in a container 30rem wide the host is display: block and the field as wide as the host's content box; as a flex item or with a width set by the page the field fills it",
-    run: async (driver, tag) => {
-      await driver.mount(`<div id="w">${input(tag, 'id="t" label="Title"')}</div>`);
+    run: async (driver, tag, kind = inputKind) => {
+      await driver.mount(`<div id="w">${kind.markup(tag, 'id="t" label="Title"')}</div>`);
       await driver.style("w", "inline-size", "30rem");
       const host = await driver.box("t");
       const block = { display: await driver.computed("t", "display"), host: host.width, field: (await driver.box("t", parts.control)).width };
       await driver.style("t", "inline-size", "200px");
       const sized = { host: (await driver.box("t")).width, field: (await driver.box("t", parts.control)).width };
-      await driver.mount(`<div id="w"><span id="s">Side</span>${input(tag, 'id="t" label="Title"')}</div>`);
+      await driver.mount(`<div id="w"><span id="s">Side</span>${kind.markup(tag, 'id="t" label="Title"')}</div>`);
       await driver.style("w", "inline-size", "30rem");
       await driver.style("w", "display", "flex");
       await driver.style("t", "flex", "1 1 0");
@@ -587,8 +611,8 @@ export const formInputScenarios: readonly FormScenario[] = [
   ...ways.map(
     (how): FormScenario => ({
       name: `US2-20 ${how}: a form fragment inserted after parsing with two inputs holding an error announces each error politely once, at its own host, and focus does not move`,
-      run: async (driver, tag) => {
-        const snapshots = await insertion(driver, swapped(tag), how);
+      run: async (driver, tag, kind = inputKind) => {
+        const snapshots = await insertion(driver, swapped(tag, kind), how);
         announced(driver, only(snapshots, ["t"]), [polite("Title is taken", "t")], `US2-20 ${how}: announcements`);
         announced(driver, only(snapshots, ["l"]), [polite("Lane is required", "l")], `US2-20 ${how}: announcements`);
         assert.deepEqual(await driver.focusPath(), [], `US2-20 ${how}: focus`);
@@ -597,9 +621,9 @@ export const formInputScenarios: readonly FormScenario[] = [
   ),
   {
     name: "US2-20 move: the same fragment moved within the page in one task announces nothing, the regions present and the errors visible",
-    run: async (driver, tag) => {
+    run: async (driver, tag, kind = inputKind) => {
       await driver.mount('<div id="page"><div id="d"></div><main id="c"></main></div>');
-      await driver.insert("c", swapped(tag), "innerHTML");
+      await driver.insert("c", swapped(tag, kind), "innerHTML");
       await settleAnnouncement(driver);
       await driver.liveCapture.start("page");
       await driver.batch([
@@ -617,10 +641,10 @@ export const formInputScenarios: readonly FormScenario[] = [
   },
   {
     name: "US2-22 inserted hidden: an input inserted hidden with an error announces nothing, nor an error change while hidden; removing hidden announces the current error politely once",
-    run: async (driver, tag) => {
+    run: async (driver, tag, kind = inputKind) => {
       await driver.mount('<main id="c"></main>');
       await driver.liveCapture.start("c");
-      await driver.insert("c", input(tag, 'id="t" label="Title" error="Title is taken" hidden'), "innerHTML");
+      await driver.insert("c", kind.markup(tag, 'id="t" label="Title" error="Title is taken" hidden'), "innerHTML");
       await settleAnnouncement(driver);
       await driver.setAttribute("t", "error", "Title is wrong");
       await settleAnnouncement(driver);
@@ -631,8 +655,8 @@ export const formInputScenarios: readonly FormScenario[] = [
   },
   {
     name: "US2-22 first loaded hidden: an input first loaded hidden with an error, revealed, announces the error politely once",
-    run: async (driver, tag) => {
-      const snapshots = await loaded(driver, tag, fl('id="t" label="Title" error="Title is taken" hidden'), async () => {
+    run: async (driver, tag, kind = inputKind) => {
+      const snapshots = await loaded(driver, tag, fl('id="t" label="Title" error="Title is taken" hidden', kind), async () => {
         await driver.setAttribute("t", "hidden", null);
       });
       announced(driver, only(snapshots, ["t"]), [polite("Title is taken", "t")], "US2-22 first loaded hidden: announcements");
@@ -640,8 +664,8 @@ export const formInputScenarios: readonly FormScenario[] = [
   },
   {
     name: "US2-22 announced, hidden and revealed: an announced error, hidden and revealed with the same error, is announced once more",
-    run: async (driver, tag) => {
-      const snapshots = await loaded(driver, tag, fl('id="t" label="Title"'), async () => {
+    run: async (driver, tag, kind = inputKind) => {
+      const snapshots = await loaded(driver, tag, fl('id="t" label="Title"', kind), async () => {
         // A change right after a first load is written no earlier than the pre-load W after the first render (R-02
         // step 2), so the error is set once that has passed, and is announced before the host hides it.
         await settleAnnouncement(driver);
@@ -656,8 +680,8 @@ export const formInputScenarios: readonly FormScenario[] = [
   },
   {
     name: "US2-22 no error: an input without an error, revealed, announces nothing, its region present and its field drawn",
-    run: async (driver, tag) => {
-      const snapshots = await loaded(driver, tag, fl('id="t" label="Title" hidden'), async () => {
+    run: async (driver, tag, kind = inputKind) => {
+      const snapshots = await loaded(driver, tag, fl('id="t" label="Title" hidden', kind), async () => {
         await driver.setAttribute("t", "hidden", null);
       });
       announced(driver, only(snapshots, ["t"]), [], "US2-22 no error: announcements");
@@ -666,17 +690,17 @@ export const formInputScenarios: readonly FormScenario[] = [
   },
   {
     name: 'US2-23: host aria-invalid, aria-required and aria-disabled "true" reach the field (aria-disabled leaving it focusable and aria-required adding no constraint); "false" changes nothing of the element\'s own error, required and disabled',
-    run: async (driver, tag) => {
+    run: async (driver, tag, kind = inputKind) => {
       await driver.mount(
-        input(tag, 'id="i" label="A" aria-invalid="false" error="Title is taken"') +
-          input(tag, 'id="r" label="B" aria-required="false" required value="x"') +
-          input(tag, 'id="d" label="C" aria-disabled="false" disabled') +
-          input(tag, 'id="it" label="D" aria-invalid="true"') +
-          input(tag, 'id="rt" label="E" aria-required="true"') +
-          input(tag, 'id="dt" label="F" aria-disabled="true"'),
+        kind.markup(tag, 'id="i" label="A" aria-invalid="false" error="Title is taken"') +
+          kind.markup(tag, 'id="r" label="B" aria-required="false" required', "x") +
+          kind.markup(tag, 'id="d" label="C" aria-disabled="false" disabled') +
+          kind.markup(tag, 'id="it" label="D" aria-invalid="true"') +
+          kind.markup(tag, 'id="rt" label="E" aria-required="true"') +
+          kind.markup(tag, 'id="dt" label="F" aria-disabled="true"'),
       );
       const node = async (id: string): Promise<unknown> => {
-        const each = await field(driver, id);
+        const each = await field(driver, id, kind);
         return { invalid: each.invalid, required: each.required, disabled: each.disabled, focusable: each.focusable };
       };
       assert.deepEqual(
@@ -696,8 +720,8 @@ export const formInputScenarios: readonly FormScenario[] = [
   },
   {
     name: "FR-027 merge, 100 ms apart: two error changes W/3 apart announce only the final one, once",
-    run: async (driver, tag) => {
-      const snapshots = await loaded(driver, tag, fl('id="t" label="Title"'), async () => {
+    run: async (driver, tag, kind = inputKind) => {
+      const snapshots = await loaded(driver, tag, fl('id="t" label="Title"', kind), async () => {
         await driver.batch([{ op: "attribute", id: "t", name: "error", value: "Title is taken" }]);
         expectGap(await driver.after(driver.W.loaded / 3), driver.W.loaded / 3, driver.W.loaded, "FR-027 merge, 100 ms apart");
         await driver.batch([{ op: "attribute", id: "t", name: "error", value: "Title is too long" }]);
@@ -707,8 +731,8 @@ export const formInputScenarios: readonly FormScenario[] = [
   },
   {
     name: "FR-027 merge, A, B, A: an error that goes from A to B and back to A within the wait announces nothing, the region present and the error visible",
-    run: async (driver, tag) => {
-      const snapshots = await loaded(driver, tag, fl('id="t" label="Title" error="Title is taken"'), async () => {
+    run: async (driver, tag, kind = inputKind) => {
+      const snapshots = await loaded(driver, tag, fl('id="t" label="Title" error="Title is taken"', kind), async () => {
         await driver.batch([{ op: "attribute", id: "t", name: "error", value: "Title is too long" }]);
         expectGap(await driver.after(driver.W.loaded / 3), driver.W.loaded / 3, driver.W.loaded, "FR-027 merge, A, B, A");
         await driver.batch([{ op: "attribute", id: "t", name: "error", value: "Title is taken" }]);
@@ -719,9 +743,9 @@ export const formInputScenarios: readonly FormScenario[] = [
   },
   {
     name: "Edge case, error while focused: an error set while the field has focus is announced politely once; set again to the same text it is not, the error visible, in the field's description and focus still in the field",
-    run: async (driver, tag) => {
+    run: async (driver, tag, kind = inputKind) => {
       let state: unknown;
-      const snapshots = await loaded(driver, tag, fl('id="t" label="Title"'), async () => {
+      const snapshots = await loaded(driver, tag, fl('id="t" label="Title"', kind), async () => {
         await driver.batch([{ op: "focus", id: "t" }]);
         await driver.setAttribute("t", "error", "Title is taken");
         await settleAnnouncement(driver);
@@ -732,19 +756,19 @@ export const formInputScenarios: readonly FormScenario[] = [
         // both harnesses, every other tag fails; the inner entry is exact, so focus is on the native input.
         const host = new RegExp(`^(?:${tag}|ocelle-first-load-\\d+-\\d+)#t$`, "u");
         const focus = (await driver.focusPath()).map((each, index) => (index === 0 && host.test(each) ? "<first-load host>#t" : each));
-        state = { error: drawn(await driver.box("t", parts.error)), description: (await field(driver, "t")).description, focus };
+        state = { error: drawn(await driver.box("t", parts.error)), description: (await field(driver, "t", kind)).description, focus };
       });
       announced(driver, only(snapshots, ["t"]), [polite("Title is taken", "t")], "Edge case, error while focused: announcements");
-      assert.deepEqual(state, { error: true, description: "Title is taken", focus: ["<first-load host>#t", "input#control"] }, "Edge case, error while focused");
+      assert.deepEqual(state, { error: true, description: "Title is taken", focus: ["<first-load host>#t", `${kind.inner}#control`] }, "Edge case, error while focused");
     },
   },
   {
     name: "Edge case, hidden ancestor: an input with an error in a container with hidden, in a closed details and in a display: none panel, then shown, announces nothing, the error visible and in the field's description",
-    run: async (driver, tag) => {
+    run: async (driver, tag, kind = inputKind) => {
       const markup =
-        `<div id="p1" hidden>${fl('id="t1" label="One" error="One is wrong"')}</div>` +
-        `<details id="p2"><summary>More</summary>${fl('id="t2" label="Two" error="Two is wrong"')}</details>` +
-        `<div id="p3">${fl('id="t3" label="Three" error="Three is wrong"')}</div>`;
+        `<div id="p1" hidden>${fl('id="t1" label="One" error="One is wrong"', kind)}</div>` +
+        `<details id="p2"><summary>More</summary>${fl('id="t2" label="Two" error="Two is wrong"', kind)}</details>` +
+        `<div id="p3">${fl('id="t3" label="Three" error="Three is wrong"', kind)}</div>`;
       const snapshots = await loaded(driver, tag, markup, async () => {
         await driver.style("p3", "display", "none");
         await settleAnnouncement(driver);
@@ -760,15 +784,15 @@ export const formInputScenarios: readonly FormScenario[] = [
       const descriptions: string[] = [];
       for (const id of hosts) {
         errors.push(drawn(await driver.box(id, parts.error)));
-        descriptions.push((await field(driver, id)).description);
+        descriptions.push((await field(driver, id, kind)).description);
       }
       assert.deepEqual({ errors, descriptions }, { errors: [true, true, true], descriptions: ["One is wrong", "Two is wrong", "Three is wrong"] }, "Edge case, hidden ancestor");
     },
   },
   {
     name: "FR-025, FR-028: label, field, description and error in their token styles: the label text style; the field on the sheet with the control border, the radius and at least the target size; the description and the error in their colours at the small size; the error boundary in danger at the bar width",
-    run: async (driver, tag) => {
-      await driver.mount(input(tag, 'id="t" label="Title" description="Shown on the lane card"') + input(tag, 'id="e" label="Lane" error="Lane is required"'));
+    run: async (driver, tag, kind = inputKind) => {
+      await driver.mount(kind.markup(tag, 'id="t" label="Title" description="Shown on the lane card"') + kind.markup(tag, 'id="e" label="Lane" error="Lane is required"'));
       const small = px("font-size-sm");
       const leading = lineHeight("line-height-normal", small);
       const text = async (id: string, part: string): Promise<Record<string, string>> => ({
@@ -804,8 +828,8 @@ export const formInputScenarios: readonly FormScenario[] = [
   },
   {
     name: "FR-002: the field inherits the host's font: a distinctive family, size, weight and line height set on the host are the field's computed values",
-    run: async (driver, tag) => {
-      await driver.mount(input(tag, 'id="t" label="Title"'));
+    run: async (driver, tag, kind = inputKind) => {
+      await driver.mount(kind.markup(tag, 'id="t" label="Title"'));
       await driver.style("t", "font-family", "serif");
       await driver.style("t", "font-size", "19px");
       await driver.style("t", "font-weight", "700");
@@ -875,9 +899,9 @@ export const formInputScenarios: readonly FormScenario[] = [
   },
   {
     name: "Edge case, long unbroken text: a long unbroken label, description and error wrap inside a narrower container, the host within it, each part growing in block size",
-    run: async (driver, tag) => {
+    run: async (driver, tag, kind = inputKind) => {
       const long = "x".repeat(120);
-      await driver.mount(`<div id="w">${input(tag, `id="t" label="${long}" description="${long}" error="${long}"`)}</div>`);
+      await driver.mount(`<div id="w">${kind.markup(tag, `id="t" label="${long}" description="${long}" error="${long}"`)}</div>`);
       await driver.style("w", "inline-size", "160px");
       const container = await driver.box("w");
       const host = await driver.box("t");
@@ -893,8 +917,8 @@ export const formInputScenarios: readonly FormScenario[] = [
   },
   {
     name: 'Edge case, right to left: under dir="rtl" on an ancestor the label, field, description and error are rtl, the label and the error starting at the right edge of the host\'s content box',
-    run: async (driver, tag) => {
-      await driver.mount(`<div id="w" dir="rtl">${input(tag, 'id="t" label="Title" description="Shown on the lane card" error="Title is taken"')}</div>`);
+    run: async (driver, tag, kind = inputKind) => {
+      await driver.mount(`<div id="w" dir="rtl">${kind.markup(tag, 'id="t" label="Title" description="Shown on the lane card" error="Title is taken"')}</div>`);
       const host = await driver.box("t");
       const directions: Record<string, string> = {};
       for (const part of ["label", "control", "description", "error"] as const) directions[part] = await driver.computedIn("t", parts[part], "direction");

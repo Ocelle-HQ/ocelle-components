@@ -310,7 +310,11 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
         for (const operation of operations) {
           if (operation.op === "insert") byId(operation.container).insertAdjacentHTML("beforeend", operation.markup);
           else if (operation.op === "text") byId(operation.id).textContent = operation.text;
-          else if (operation.op === "attribute") {
+          else if (operation.op === "data") {
+            const first = byId(operation.id).firstChild;
+            if (!(first instanceof Text)) throw new Error(`data: #${operation.id} has no text node first`);
+            first.data = operation.data;
+          } else if (operation.op === "attribute") {
             if (operation.value === null) byId(operation.id).removeAttribute(operation.name);
             else byId(operation.id).setAttribute(operation.name, operation.value);
           } else if (operation.op === "property") (byId(operation.id) as unknown as Record<string, unknown>)[operation.name] = operation.value;

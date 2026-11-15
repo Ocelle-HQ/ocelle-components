@@ -7,6 +7,7 @@ import "../src/ocelle-notice.ts";
 import { emptyStartCase, emptyStartMessage } from "./announcer-rules.ts";
 import type { MakeAnnouncer } from "./announcer-rules.ts";
 import { defineFormInputPlants } from "./fixtures/form-input-plants.ts";
+import { defineFormSelectPlants } from "./fixtures/form-select-plants.ts";
 import { loopMarkup } from "./fixtures/live-loop.ts";
 import { plainRegion } from "./fixtures/live-regions.ts";
 import { IgnoresEmptyStart, noticePlants } from "./fixtures/notice-plants.ts";
@@ -18,6 +19,7 @@ import { caseNamed } from "./live-rules.ts";
 import type { Driver } from "./scenarios/driver.ts";
 import { formInputScenario } from "./scenarios/form-input.ts";
 import type { FormScenario } from "./scenarios/form-input.ts";
+import { formSelectScenario } from "./scenarios/form-select.ts";
 import { restoreInProcess, twinScenario } from "./scenarios/form-twins.ts";
 import { matrixScenarios } from "./scenarios/notice-matrix.ts";
 import { noticeLoadingScenario, noticeScenario } from "./scenarios/notice.ts";
@@ -37,7 +39,10 @@ import type { NoticeScenario } from "./scenarios/notice.ts";
 // plant's announcer and with `Announcer`, under the shipped timing's two `D` values. Phase 3's rows (T034): the form,
 // naming, error, host ARIA, change event, implicit submission, validity and form value rows and the US2 cells of the
 // rows phase 2 began, each cell an input scenario body (test/scenarios/form-input.ts, form-twins.ts) run with a plant
-// class derived from `ocelle-form-input` (test/fixtures/form-input-plants.ts) and with `ocelle-form-input`.
+// class derived from `ocelle-form-input` (test/fixtures/form-input-plants.ts) and with `ocelle-form-input`. Phase 4's
+// rows (T052): the option mirroring and indicator rows and the validity row's US3-5 cell, each a select scenario body
+// (test/scenarios/form-select.ts) run with a plant class derived from `ocelle-form-select`
+// (test/fixtures/form-select-plants.ts) and with `ocelle-form-select`.
 interface Row {
   readonly family: string;
   readonly plant: string;
@@ -52,6 +57,7 @@ const driver = inProcessDriver();
 
 for (const [tag, plant] of Object.entries(noticePlants)) define(tag, plant);
 defineFormInputPlants();
+defineFormSelectPlants();
 
 /** An input row: the scenario body with the plant's tag, and with `ocelle-form-input`. */
 function inputRow(family: string, plant: string, tag: string, body: FormScenario, message: RegExp): Row {
@@ -66,6 +72,18 @@ function inputRow(family: string, plant: string, tag: string, body: FormScenario
 }
 
 const input = formInputScenario;
+
+/** A select row: the scenario body with the plant's tag, and with `ocelle-form-select`. */
+function selectRow(family: string, plant: string, tag: string, body: FormScenario, message: RegExp): Row {
+  return {
+    family,
+    plant,
+    body: body.name.slice(0, body.name.indexOf(":")),
+    message,
+    planted: () => body.run(driver, tag),
+    unplanted: () => body.run(driver, "ocelle-form-select").then(() => "passed"),
+  };
+}
 const restore: FormScenario = { name: restoreInProcess.name, run: (_inProcess, tag) => restoreInProcess.run(driver, tag, OcelleFormInput) };
 
 /** A notice row: the scenario body (by its name's start) with the plant's tag, and with `ocelle-notice`. */
@@ -215,6 +233,10 @@ const rows: readonly Row[] = [
   inputRow("form value", "forgets setFormValue", "ocelle-plant-input-forgets-form-value", input("US2-2:"), /^US2-2: /),
   inputRow("form value", "reset keeps the typed value", "ocelle-plant-input-reset-keeps", input("US2-4:"), /^US2-4: /),
   inputRow("form value", "restore ignored", "ocelle-plant-input-restore-ignored", restore, /^SC-003 restore in process: expected/),
+  // The US3 cells and rows (T052).
+  selectRow("validity", "setValidity({}) always", "ocelle-plant-select-always-valid", formSelectScenario("US3-5:"), /^US3-5: /),
+  selectRow("option mirroring", "the option observer misses characterData", "ocelle-plant-select-misses-character-data", formSelectScenario("US3-4:"), /^US3-4: /),
+  selectRow("indicator", "indicator without pointer-events: none", "ocelle-plant-select-indicator-pointer", formSelectScenario("US3-8:"), /^US3-8: /),
   {
     family: "shipped timing",
     plant: "announcerDefaults with delayLoaded: 0",
