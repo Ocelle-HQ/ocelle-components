@@ -6,7 +6,7 @@ target: "ops/015-mutation-shard-timeout"
 in_scope: [35]
 out_of_scope: [1, 8, 9, 11, 15, 16, 20, 23]
 semver: none
-spec_prompt: "Op for #35 (triage/015-mutation-shard-timeout.md): CI's mutation-shard job limit (.github/workflows/ci.yml, timeout-minutes 10, pinned by gates/test/ci-workflow.test.ts) is raised so that a shard of packages/elements/src source can finish its whole elements dry run (up to 30 minutes under stryker.elements.config.json, mission 008 R-15) plus its own mutants; the shape and value are the ones the operator picks at approval (recommended: 45 minutes for shards whose files name packages/elements/src/, 10 minutes for all other shards); red first on the pinned workflow test, 001 FR-013 and SC-005 amended in place with the decision and its evidence, no change to shard split, entry bounds, the gate or either Stryker configuration; must land before mission 009's (#15) pull request."
+spec_prompt: "Op for #35 (triage/015-mutation-shard-timeout.md): CI's mutation-shard job limit (.github/workflows/ci.yml, timeout-minutes 10, pinned by gates/test/ci-workflow.test.ts) is raised so that a shard of packages/elements/src source can finish its whole elements dry run (up to 30 minutes under stryker.elements.config.json, mission 008 R-15) plus its own mutants; the shape and value are the ones the operator picks at approval (recommended: 60 minutes for shards whose files name packages/elements/src/, 10 minutes for all other shards), confirmed by a CI measurement of the elements shards' step and job times as #35 asks; red first on the pinned workflow test, 001 FR-013 and SC-005 amended in place with the decision and its evidence, no change to shard split, entry bounds, the gate or either Stryker configuration; must land before mission 009's (#15) pull request."
 status: proposed
 ---
 
@@ -41,7 +41,7 @@ status: proposed
 | `specs/001-repository-foundation/spec.md` FR-013 (`:287`), SC-005 (`:515-528`); `contracts/ci-checks.md:40` | spec, contract (merged) | **amended by this op** | FR-013 sets "a job time limit of 10 minutes", and SC-005 says "each shard job's 10-minute limit (FR-013) enforces it" (operator decision, 001 plan squad round 2). Changing the limit amends an operator decision. That is allowed in an op only as a recorded amendment, like 007's amendments of the same FR. |
 | `specs/008-overlays` (branch `origin/claude/016-overlays`): plan decision 25, research R-15 (`research.md:693-709`), `reviews/analysis/fixes-8.md:10`, phase 3 `notes.md:76-99`, `round-1.md` R1-01; `stryker.elements.config.json` (+`dryRunTimeoutMinutes: 30`); `gates/test/vitest-config.test.ts:75-86` | mission in progress (#16) | **input; this op blocks its PR** | Operator decision 2026-11-15: only the elements configuration raises Stryker's dry-run limit to 30 minutes; per-mutant limits and `stryker.config.json` stay at defaults. The evidence: the elements dry run runs every in-process `elements` and `elements-touch` test (about 760 browser rows) whatever `--files` names. It took 5 m 31 s and hit the 5-minute default, and the scratch gate runs took about 16 minutes each. 008 kept CI out of its design and left the 10-minute job limit as an open risk for the operator. Its `--plan` gives 12 shards, 6 with elements source, so 008's own PR hits the same limit. |
 | Not a **fold** into 008 | | | 008 deliberately leaves CI out of its design ("This phase does not change CI, as the design states"). The operator needs this to land before #15's PR, whichever of 008 and 009 lands first. A fold would tie 009 to 008's landing. |
-| #15 (mission 009) | element issue, mission in progress | **blocked by this op** (its PR) | The operator names it as the first element mission PR. Every element mission adds rows to the same dry run, and each of its elements shards repeats that dry run. |
+| #15 (mission 009, branch `origin/claude/015-workflow-layouts`) | element issue, mission in progress | **blocked by this op** (its PR); input | The operator names it as the first element mission PR. Its phase 4 ran each of its 17 `--plan` shards alone on the sandbox: the longest took 292 s (`specs/009-workflow-layouts/reviews/phase-4/plants.md:111-113`). The orchestrator relays that this figure excludes the dry run; `plants.md` itself does not say so. The branch has no `dryRunTimeoutMinutes`, so its own dry run fit Stryker's 5-minute default there. When 008 and 009 are both on main, the dry run holds both missions' rows, and every later element mission adds more. |
 | #9, #8 (missions 010, 011) | element issues, missions in progress | out of scope; blocked by this op at their PRs | Same mechanism (008 `research.md:804` lists 009 to 011 as touching shared sources). They benefit from the op and need no change of their own. |
 | #23 / PR #25 / `specs/007-mutation-gate-strictness` | mission, merged (`e7d7d54`) | out of scope (operator brief); input | It settled the shard and entry bounds (30-line entries, FR-014/FR-015) and the CI measurement of `source.ts` shards at 480 s or less under the 10-minute limit. This op does not touch the split or the bounds. For non-elements shards, keeping 10 minutes keeps 007's SC-004 meaningful as written. |
 | #20 / `ops/004-token-source-mutation` | op, merged (`3a247ef`) | out of scope (done) | Its § CI risk is the history of the 10-minute limit. Nothing here changes. |
@@ -75,7 +75,7 @@ Why not the others:
 In scope (#35):
 1. **Red first:** `gates/test/ci-workflow.test.ts` expects the new `timeout-minutes` line of `mutation-shard`.
    Commit the test alone with its failing run, then change `.github/workflows/ci.yml`. With the recommended shape:
-   `timeout-minutes: ${{ contains(matrix.shard.files, 'packages/elements/src/') && 45 || 10 }}`. The job-level
+   `timeout-minutes: ${{ contains(matrix.shard.files, 'packages/elements/src/') && 60 || 10 }}`. The job-level
    `timeout-minutes` accepts the `matrix` context, so the gate and the `--plan` output stay unchanged. The plan
    must confirm this against GitHub's context-availability table.
 2. Amend 001 FR-013 and SC-005 in place (dated, with the operator's decision and the 008 evidence), and
@@ -102,11 +102,16 @@ Out of scope:
   - **B:** one higher limit for every shard. Simplest, but a runaway gate or token shard then fails later.
   - **C:** keep 10 minutes and first confirm with one CI run (R1-01's second option). This risks blocking #15's PR
     if the run fails, and the elements dry run only grows with each element mission.
+- **Sizing (sandbox figures, CI 1.5 to 3.4 times slower; relayed by the orchestrator, checked on both branches):**
+  008's elements dry run took 5 m 31 s, so about 8 to 19 minutes on CI. 009's longest shard took 292 s without
+  the dry run, so about 7 to 17 minutes on CI. Add about 5 minutes of setup (install, Chromium). The worst case
+  today is about 40 minutes, and that is before 008's and 009's rows share one dry run.
 - **Q2, the value for the raised limit** (choose one):
-  - **A: 45 minutes (recommended):** 30 for 008's dry-run limit, plus about 10 for the shard's mutants (the old
-    budget), plus about 5 for setup (install, Chromium).
-  - **B: 40 minutes:** less setup margin.
-  - **C: 60 minutes:** room for several more element missions before this has to change again.
+  - **A: 60 minutes (recommended):** about 20 minutes over today's worst case, which leaves room for the combined
+    dry run of 008 and 009 and the next element missions.
+  - **B: 45 minutes:** above 30 for 008's dry-run limit, plus about 10 for the shard's mutants (the old budget),
+    plus about 5 for setup. That leaves only about 5 minutes over today's worst case.
+  - **C: 40 minutes:** no margin at the upper CI factor.
   - **D: 30 minutes:** equal to the dry-run limit. Then a dry run that uses its full limit is cancelled by the job
     first, so 008's setting is moot in CI. Not recommended.
 - **Coupling with 008:** the job limit must stay above `dryRunTimeoutMinutes` plus setup and mutant time. If 008
@@ -115,6 +120,9 @@ Out of scope:
   That is 009's or 008's concern, not this op's.
 - **CI cost:** 6 of 008's 12 shards each repeat a dry run that may take 10 to 20 minutes on a runner. Wall time
   stays parallel, but runner minutes grow with each element mission. This is recorded, not solved, here.
+- **CI measurement still required** (#35, as relayed): all the figures above are from the sandbox. The op is done
+  only when one CI run records every elements shard's job time under the chosen limit. If the run shows that
+  limit is too tight, Q2 is reopened with the measured times.
 - **Evidence timing:** the op cannot prove the fix on its own PR without elements source in the diff. Scope item 3
   says how to get the evidence.
 - **#35 not read:** see *Issues read*.
