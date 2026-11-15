@@ -19,32 +19,20 @@
 // given), all before the findings; a report line goes through `oneLine` as a finding does, so a mutant with no
 // replacement ends its line at `replaced by` (phase 2 round 2, O2-01); both summaries count the three kinds, also when zero. These report lines are not
 // findings and change no exit code. A `--files` list naming one file more than once is exit 2 before Stryker runs.
-// Mission 010 (phase 3 stop 1, operator decision (b), 2026-11-15; specs/010-feedback-forms/reviews/phase-3/
-// design-change-1.md; plan decision 11): `--plan` cuts element source (packages/elements/src/) by mutant count, every
-// other file as above. It reads each changed element file and gives its content and changed ranges to the `place`
-// tool, which, in `run()`, is Stryker's own instrumenter (`@stryker-mutator/instrumenter`, pinned at core's version):
-// it places the mutants Stryker would, with no test run and no checker, in well under a second. A changed element
-// file it cannot read, or one the instrumenter cannot parse, is exit 2 naming it, with no plan on stdout. After phase
-// 3 stop 2 (operator decision (a), 2026-11-15; design-change-2.md), each placed mutant also carries whether it probably
-// runs when its module loads, by shards.ts's syntax rule over the file's content and the instrumenter's locations
-// (one parse a file with the pinned `typescript`): in a static class member, a class property's initialiser or code
-// outside any function. Such a mutant weighs 5 in the plan, every other 1, against the caps of 10.
 import { readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
-import { Instrumenter } from "@stryker-mutator/instrumenter";
 import { main, parseArgs } from "../lib/cli.ts";
 import type { Context, Io } from "../lib/cli.ts";
 import { emit, oneLine, plural } from "../lib/findings.ts";
 import type { Finding } from "../lib/findings.ts";
 import { strykerEnv } from "../lib/mutation/coverage.ts";
 import { changedFiles, mutateSpecs, scopePathspecs, unusableMutatePaths } from "../lib/mutation/ranges.ts";
-import type { ChangedFile, LineRange } from "../lib/mutation/ranges.ts";
+import type { ChangedFile } from "../lib/mutation/ranges.ts";
 import { formatRecord, scanRecords } from "../lib/mutation/records.ts";
 import type { EquivalentRecord } from "../lib/mutation/records.ts";
 import { classifyMutants } from "../lib/mutation/report.ts";
 import type { RunEntry, StrykerRun, UndecidedMutant } from "../lib/mutation/report.ts";
-import { countCuts, elementSource, formatPlan, planShards, probablyStatic, selectFiles } from "../lib/mutation/shards.ts";
-import type { PlacedMutant } from "../lib/mutation/shards.ts";
+import { countCuts, formatPlan, planShards, selectFiles } from "../lib/mutation/shards.ts";
 import { runTool } from "../lib/spawn.ts";
 import type { ToolRun } from "../lib/spawn.ts";
 
@@ -60,11 +48,6 @@ export interface MutationTools {
   readonly remove: (path: string) => Promise<void>;
   /** Runs Stryker with this configuration file on these `mutate` entries and returns its exit code and output. */
   readonly stryker: (mutate: readonly string[], config: string) => Promise<ToolRun>;
-  /**
-   * Places Stryker's mutants on the changed lines of a file (path relative to the root, its content and its changed
-   * ranges) without running a test; rejects, with the parser's message, when the file cannot be parsed.
-   */
-  readonly place: (path: string, content: string, ranges: readonly LineRange[]) => Promise<readonly PlacedMutant[]>;
 }
 
 interface Options {
@@ -84,6 +67,11 @@ const configurations = [
   { file: "stryker.config.json", report: "reports/mutation/mutation.json", elements: false },
   { file: "stryker.elements.config.json", report: "reports/mutation/mutation-elements.json", elements: true },
 ] as const;
+
+/** Whether a changed path is element source, which stryker.elements.config.json mutates. */
+function elementSource(path: string): boolean {
+  return path.startsWith("packages/elements/src/");
+}
 
 /**
  * Sorts the report items of the runs, in place, by the changed file each belongs to (`itemKey` of the item equal to
@@ -165,17 +153,7 @@ export async function mutation(context: Context, tools: MutationTools, io: Io): 
     return fail(`Stryker cannot take these changed paths as mutate input (${unusableKinds}): ${paths}; rename them`);
   }
   if (options.plan) {
-    const placed = new Map<string, readonly PlacedMutant[]>();
-    for (const file of changed.filter((one) => elementSource(one.path))) {
-      const source = await tools.read(file.path);
-      if (source === undefined) return fail(`cannot read ${file.path}; check out the files of the change`);
-      try {
-        placed.set(file.path, await tools.place(file.path, source, file.ranges));
-      } catch (error) {
-        return fail(`Stryker's instrumenter cannot parse ${file.path} (${String((error as Error).message.split("\n")[0])})`);
-      }
-    }
-    const shards = planShards(changed, placed);
+    const shards = planShards(changed);
     io.out(formatPlan(shards));
     const counts = `${plural(shards.length, "shard")}, ${plural(countCuts(shards), "cut")}`;
     io.err(`mutation: plan: ${counts} within files (a mutant spanning a cut is mutated in no shard, see gates/README.md)`);
@@ -252,38 +230,6 @@ export async function mutation(context: Context, tools: MutationTools, io: Io): 
   return emit({ exit: 0, summary }, io.out, io.err);
 }
 
-/**
- * Stryker's instrumenter on one file, as Stryker 10.1.1 runs it (core's 2-mutant-instrumenter-executor.js, with
- * stryker.elements.config.json's mutator options, the defaults, and no ignorer plugin): the `mutate` ranges are the
- * changed ranges as Stryker reads `path:start-end` (0-based lines, the end line to its last column), so a mutant is
- * placed only when it lies wholly inside one. Its logger is silent: every method it is asked for does nothing. Each
- * mutant carries the syntax rule's flag for its location (shards.ts `probablyStatic`).
- */
-async function placeMutants(root: string, path: string, content: string, ranges: readonly LineRange[]): Promise<PlacedMutant[]> {
-  const logger = new Proxy({}, { get: () => () => undefined }) as ConstructorParameters<typeof Instrumenter>[0];
-  const name = join(root, path);
-  const mutate = ranges.map((range) => ({
-    start: { line: range.start - 1, column: 0 },
-    end: { line: range.end - 1, column: Number.MAX_SAFE_INTEGER },
-  }));
-  const options = {
-    plugins: null,
-    // Stryker disable next-line ArrayDeclaration: equivalent, no mutator is named "Stryker was here", so excluding it excludes none
-    excludedMutations: [],
-    ignorers: [],
-  };
-  const result = await new Instrumenter(logger).instrument([{ name, content, mutate }], options).catch((error: unknown) => {
-    throw new Error((error as Error).message.replace(`${name}: `, ""));
-  });
-  const isStatic = probablyStatic(path, content);
-  return result.mutants.map((mutant) => ({
-    start: mutant.location.start.line + 1,
-    end: mutant.location.end.line + 1,
-    ignored: mutant.status === "Ignored",
-    probablyStatic: isStatic(mutant.location),
-  }));
-}
-
 // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/mutation.test.ts "--files mutates only the listed file"
 function realTools(root: string, env: Io["env"]): MutationTools {
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/mutation.test.ts "--files mutates only the listed file"
@@ -298,7 +244,6 @@ function realTools(root: string, env: Io["env"]): MutationTools {
     remove: (path) => rm(join(root, path), { force: true }),
     // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/mutation.test.ts "reports a change only to source no test imports as a located NoCoverage finding (exit 1), not as could not run (review round 1, R1-10)"
     stryker: (mutate, config) => runTool(process.execPath, [stryker, "run", config, "--mutate", mutate.join(",")], root, strykerEnv(env)),
-    place: (path, content, ranges) => placeMutants(root, path, content, ranges),
   };
 }
 
