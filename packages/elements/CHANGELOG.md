@@ -20,6 +20,16 @@ entry points and the browser build's file path (constitution VII).
   when `announce` or a host `role` of `alert` or `status` asks for it; its properties `tone`, `size` and `announce`
   (reflected); the slots `heading` and the default slot (the body), the CSS parts `heading` and `body`, and no event;
   its entry point `@ocelle/elements/ocelle-notice.js`.
+- `ocelle-form-input`, a labelled text field with an optional description and a host-set error that takes part in its
+  form like a native input (form-associated, through `ElementInternals`); its attributes and reflected properties
+  `name`, `label`, `description`, `error`, `required`, `disabled`, `type`, `placeholder`, `autocomplete`, `inputmode`,
+  `pattern`, `min`, `max`, `step`, `minlength`, `maxlength` and `readonly`; the `value` attribute (its default value),
+  the properties `value`, `form`, `labels`, `validity`, `validationMessage` and `willValidate` and the methods
+  `checkValidity()`, `reportValidity()` and `focus()`; the event `ocelle-form-input-change` with `detail: { value }`,
+  no slot, and the CSS parts `label`, `control`, `description` and `error`; its entry point
+  `@ocelle/elements/ocelle-form-input.js`.
+- In the README, the form-control convention that later form-like elements follow: form association, naming,
+  description, error and its announcement, host ARIA, events and implicit submission.
 - In the README, the slot convention for icons in controls that later controls follow: the `icon` and `trailing`
   slots, their size, alignment, gap and colour rules and the naming rule.
 - Entry points: `@ocelle/elements` (the package root, defines every element), `@ocelle/elements/ocelle-icon.js`
