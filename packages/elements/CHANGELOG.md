@@ -30,6 +30,13 @@ entry points and the browser build's file path (constitution VII).
   above the heading), `heading`, the default slot (the body, its margins reset and its children spaced) and
   `actions`; its part `body`. Entry point `@ocelle/elements/ocelle-empty-state.js` (defines `ocelle-empty-state`
   only).
+- `ocelle-progress`, a progress bar, determinate with a `value` or indeterminate without one, exposed as one
+  progressbar named by `label` (or a host `aria-label`) with its value, minimum and maximum; the indeterminate mark
+  sweeps once per loading episode for less than 5 s and then rests as a still mark, and shows the still mark at once
+  under reduced motion; its properties `value`, `max`, `value-text`, `label`, `show-label` (the label row, with the
+  value text at its inline end), `size` (reflected, `size="compact"`) and `ground` (reflected, `ground="tinted"` for
+  tinted grounds); its parts `track`, `fill`, `label` and `value-text`. Entry point
+  `@ocelle/elements/ocelle-progress.js` (defines `ocelle-progress` only).
 - In the README, the slot convention for icons in controls that later controls follow: the `icon` and `trailing`
   slots, their size, alignment, gap and colour rules and the naming rule.
 - Entry points: `@ocelle/elements` (the package root, defines every element), `@ocelle/elements/ocelle-icon.js`

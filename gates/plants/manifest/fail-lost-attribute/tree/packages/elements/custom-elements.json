@@ -457,6 +457,200 @@
       ],
       "kind": "javascript-module",
       "path": "src/ocelle-icon.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
+              "description": "The current amount, from 0 to `max`: below 0 counts as 0, above `max` as `max`. Unset, `null`, an empty or\nwhitespace-only attribute, or a value that is not a finite number makes the bar indeterminate. Not reflected.",
+              "fieldName": "value",
+              "name": "value",
+              "type": {
+                "text": "number | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The maximum. Unset, not a finite number, or 0 or less counts as 100. Not reflected.",
+              "fieldName": "max",
+              "name": "max",
+              "type": {
+                "text": "number | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "Words for the current value, for example \"7 of 12\", exposed (and shown with `show-label`) while the bar is\ndeterminate, as given. Unset lets the platform announce the value. Not reflected.",
+              "fieldName": "valueText",
+              "name": "value-text",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The accessible name, as text (no rich label). A bar needs a name: set `label`, or a host `aria-label`, which\noverrides it. To name a bar after a nearby heading, pass the heading's text. Not reflected.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "Shows the label as text above the bar (beside it in compact), and the value text while determinate. Unset hides\nboth; the name and value are exposed either way.",
+              "fieldName": "showLabel",
+              "name": "show-label",
+              "type": {
+                "text": "boolean | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "`compact` is a thin bar with the label beside it. Unset, or any other value, gives the default size. Reflected.",
+              "fieldName": "size",
+              "name": "size",
+              "type": {
+                "text": "\"compact\" | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "`tinted` draws the track's boundary in the accent-strong colour, for a bar on an inset, accent-low, hover or state\nground. Unset is for the canvas, sheet, pane, panel, inspector and rail grounds. Reflected.",
+              "fieldName": "ground",
+              "name": "ground",
+              "type": {
+                "text": "\"tinted\" | undefined"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The track, the full inline size of the bar.",
+              "name": "track"
+            },
+            {
+              "description": "The filled part: the determinate extent from the inline start, or the indeterminate mark.",
+              "name": "fill"
+            },
+            {
+              "description": "The visible label, with `show-label`.",
+              "name": "label"
+            },
+            {
+              "description": "The visible value text, with `show-label` while determinate, at the inline end of the label row.",
+              "name": "value-text"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A progress bar: determinate with a `value`, indeterminate without one. Name it with `label`.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "value",
+              "default": "undefined",
+              "description": "The current amount, from 0 to `max`: below 0 counts as 0, above `max` as `max`. Unset, `null`, an empty or\nwhitespace-only attribute, or a value that is not a finite number makes the bar indeterminate. Not reflected.",
+              "kind": "field",
+              "name": "value",
+              "privacy": "public",
+              "type": {
+                "text": "number | undefined"
+              }
+            },
+            {
+              "attribute": "max",
+              "default": "undefined",
+              "description": "The maximum. Unset, not a finite number, or 0 or less counts as 100. Not reflected.",
+              "kind": "field",
+              "name": "max",
+              "privacy": "public",
+              "type": {
+                "text": "number | undefined"
+              }
+            },
+            {
+              "attribute": "value-text",
+              "default": "undefined",
+              "description": "Words for the current value, for example \"7 of 12\", exposed (and shown with `show-label`) while the bar is\ndeterminate, as given. Unset lets the platform announce the value. Not reflected.",
+              "kind": "field",
+              "name": "valueText",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "label",
+              "default": "undefined",
+              "description": "The accessible name, as text (no rich label). A bar needs a name: set `label`, or a host `aria-label`, which\noverrides it. To name a bar after a nearby heading, pass the heading's text. Not reflected.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "show-label",
+              "default": "undefined",
+              "description": "Shows the label as text above the bar (beside it in compact), and the value text while determinate. Unset hides\nboth; the name and value are exposed either way.",
+              "kind": "field",
+              "name": "showLabel",
+              "privacy": "public",
+              "type": {
+                "text": "boolean | undefined"
+              }
+            },
+            {
+              "attribute": "size",
+              "default": "undefined",
+              "description": "`compact` is a thin bar with the label beside it. Unset, or any other value, gives the default size. Reflected.",
+              "kind": "field",
+              "name": "size",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"compact\" | undefined"
+              }
+            },
+            {
+              "attribute": "ground",
+              "default": "undefined",
+              "description": "`tinted` draws the track's boundary in the accent-strong colour, for a bar on an inset, accent-low, hover or state\nground. Unset is for the canvas, sheet, pane, panel, inspector and rail grounds. Reflected.",
+              "kind": "field",
+              "name": "ground",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"tinted\" | undefined"
+              }
+            }
+          ],
+          "name": "OcelleProgress",
+          "slots": [],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-progress"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-progress.ts",
+            "name": "OcelleProgress"
+          },
+          "kind": "js",
+          "name": "OcelleProgress"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-progress.ts"
     }
   ],
   "readme": "",
