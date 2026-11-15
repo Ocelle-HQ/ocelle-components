@@ -445,6 +445,32 @@ describe("SelectionModel: batching, the value setter and the focus record over a
     ]);
   });
 
+  it("delivered: the records the observer delivers feed the focus record before the focusout microtask runs (phase 3): a removed focused child gives the FR-011 target, a moved one keeps focus, focus gone elsewhere gives none, with no blur the focused child keeps focus, and the microtask then finds nothing", () => {
+    const outcomes: unknown[] = [];
+    for (const [live, focusLeft, blur] of [
+      [[e("a", "alpha"), e("g", "gamma")], true, true],
+      [[e("a", "alpha"), e("g", "gamma"), e("b", "beta")], true, true],
+      [[e("a", "alpha"), e("g", "gamma")], false, true],
+      [[e("a", "alpha"), e("g", "gamma"), e("b", "beta")], true, false],
+    ] as const) {
+      const children = source([e("a", "alpha"), e("b", "beta"), e("g", "gamma")]);
+      const model = new SelectionModel<string>("listbox", children);
+      model.batch();
+      model.focusIn("b");
+      if (blur) model.focusOut("b", null);
+      else model.focusIn("g");
+      children.live = [...live];
+      const focus = model.delivered([["x"], ["b"]], focusLeft);
+      outcomes.push({ focus, blurred: model.record.blurred, entries: model.entries.length, later: model.afterBlur(true) });
+    }
+    expect(outcomes).toEqual([
+      { focus: "g", blurred: null, entries: 2, later: null },
+      { focus: "b", blurred: null, entries: 3, later: null },
+      { focus: null, blurred: null, entries: 2, later: null },
+      { focus: "g", blurred: null, entries: 3, later: null },
+    ]);
+  });
+
   it("batch keeps focus on a focused option that becomes disabled (PLAN-CORRECTNESS-1-004 (a)), and the tab stop leaves it", () => {
     const children = source(folders);
     const model = new SelectionModel<string>("listbox", children);

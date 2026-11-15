@@ -368,6 +368,227 @@
           ]
         }
       ]
+    },
+    {
+      "path": "src/ocelle-tab-panel.ts",
+      "kind": "javascript-module",
+      "exports": [
+        {
+          "name": "OcelleTabPanel",
+          "kind": "js",
+          "declaration": {
+            "name": "OcelleTabPanel",
+            "module": "src/ocelle-tab-panel.ts"
+          }
+        }
+      ],
+      "declarations": [
+        {
+          "tagName": "ocelle-tab-panel",
+          "superclass": {
+            "package": "lit",
+            "name": "LitElement"
+          },
+          "slots": [
+            {
+              "name": "",
+              "description": "The panel's content."
+            }
+          ],
+          "name": "OcelleTabPanel",
+          "members": [],
+          "kind": "class",
+          "events": [],
+          "description": "A panel of an `ocelle-tabs`: its content is shown while the tab at the same place among the tabs is selected.",
+          "customElement": true,
+          "cssProperties": [],
+          "cssParts": [],
+          "attributes": []
+        }
+      ]
+    },
+    {
+      "path": "src/ocelle-tab.ts",
+      "kind": "javascript-module",
+      "exports": [
+        {
+          "name": "OcelleTab",
+          "kind": "js",
+          "declaration": {
+            "name": "OcelleTab",
+            "module": "src/ocelle-tab.ts"
+          }
+        }
+      ],
+      "declarations": [
+        {
+          "tagName": "ocelle-tab",
+          "superclass": {
+            "package": "lit",
+            "name": "LitElement"
+          },
+          "slots": [
+            {
+              "name": "",
+              "description": "The tab's label."
+            },
+            {
+              "name": "icon",
+              "description": "A leading icon, by the slot convention; it adds nothing to the tab's name."
+            }
+          ],
+          "name": "OcelleTab",
+          "members": [
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "disabled",
+              "kind": "field",
+              "description": "Whether the tab is disabled: it cannot be selected, the keys skip it, and it stays focusable, so a focused tab that\nbecomes disabled keeps focus until the selection moves. Reflected.",
+              "default": "false",
+              "attribute": "disabled"
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "value",
+              "kind": "field",
+              "description": "The tab's value, reported by the tabs' `value` and events: the `value` attribute as written (not trimmed), or, when\nit is missing or blank, the tab's index among its parent's tabs, as a string, which is not written to the\nattribute. Reflected.",
+              "default": "the tab's index, as a string",
+              "attribute": "value"
+            }
+          ],
+          "kind": "class",
+          "events": [],
+          "description": "A tab of an `ocelle-tabs`: its content is its label, with an optional leading icon; it pairs with the panel at the\nsame place among the tabs' panels.",
+          "customElement": true,
+          "cssProperties": [],
+          "cssParts": [],
+          "attributes": [
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "name": "disabled",
+              "fieldName": "disabled",
+              "description": "Whether the tab is disabled: it cannot be selected, the keys skip it, and it stays focusable, so a focused tab that\nbecomes disabled keeps focus until the selection moves. Reflected.",
+              "default": "false"
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "value",
+              "fieldName": "value",
+              "description": "The tab's value, reported by the tabs' `value` and events: the `value` attribute as written (not trimmed), or, when\nit is missing or blank, the tab's index among its parent's tabs, as a string, which is not written to the\nattribute. Reflected.",
+              "default": "the tab's index, as a string"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "src/ocelle-tabs.ts",
+      "kind": "javascript-module",
+      "exports": [
+        {
+          "name": "OcelleTabs",
+          "kind": "js",
+          "declaration": {
+            "name": "OcelleTabs",
+            "module": "src/ocelle-tabs.ts"
+          }
+        }
+      ],
+      "declarations": [
+        {
+          "tagName": "ocelle-tabs",
+          "superclass": {
+            "package": "lit",
+            "name": "LitElement"
+          },
+          "slots": [
+            {
+              "name": "",
+              "description": "The `ocelle-tab` and `ocelle-tab-panel` children, in any interleaving; they pair by order among their kind."
+            }
+          ],
+          "name": "OcelleTabs",
+          "members": [
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "privacy": "public",
+              "name": "label",
+              "kind": "field",
+              "description": "The tablist's accessible name, trimmed; empty or whitespace-only counts as none. The tabs' only name source: a host\n`aria-label` does not name the tablist. Not reflected.",
+              "default": "undefined",
+              "attribute": "label"
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "privacy": "public",
+              "name": "value",
+              "kind": "field",
+              "description": "The selected tab's value; `\"\"` only while no tab is enabled. Setting it selects the first enabled tab with the\nvalue; `\"\"` or a value no enabled tab has keeps the selection, and a non-empty such value is remembered until a tab\nwith it appears or is enabled. A set never emits an event; setting the current value changes nothing. Not\nreflected.",
+              "default": "the first enabled tab's value",
+              "attribute": "value"
+            }
+          ],
+          "kind": "class",
+          "events": [
+            {
+              "type": {
+                "text": "CustomEvent<{ value: string }>"
+              },
+              "name": "ocelle-tabs-change",
+              "description": "The user selected another tab (an arrow key, Home, End, Enter, Space or a click); `value` already reads it."
+            }
+          ],
+          "description": "A tablist of `ocelle-tab` children and their `ocelle-tab-panel` panels, paired by order; one tab stop, keyboard and\npointer selection, selection following focus.",
+          "customElement": true,
+          "cssProperties": [],
+          "cssParts": [
+            {
+              "name": "tablist",
+              "description": "The row of the tabs, which wraps onto further rows."
+            },
+            {
+              "name": "panels",
+              "description": "The container of the shown panel, beside the tablist."
+            }
+          ],
+          "attributes": [
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "name": "label",
+              "fieldName": "label",
+              "description": "The tablist's accessible name, trimmed; empty or whitespace-only counts as none. The tabs' only name source: a host\n`aria-label` does not name the tablist. Not reflected.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "value",
+              "fieldName": "value",
+              "description": "The selected tab's value; `\"\"` only while no tab is enabled. Setting it selects the first enabled tab with the\nvalue; `\"\"` or a value no enabled tab has keeps the selection, and a non-empty such value is remembered until a tab\nwith it appears or is enabled. A set never emits an event; setting the current value changes nothing. Not\nreflected.",
+              "default": "the first enabled tab's value"
+            }
+          ]
+        }
+      ]
     }
   ]
 }

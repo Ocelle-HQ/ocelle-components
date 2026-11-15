@@ -190,23 +190,30 @@ async function controls(driver: Driver, target: Target): Promise<unknown> {
   return node?.controls ?? [];
 }
 
-/** The selected bar of a tab: the `::before` content, and with content its block size, block-end and inline offsets and colour. */
+/**
+ * The selected bar of a tab: the `::before` content, and with content the thickness and colour of its block-end edge,
+ * its block-end and inline offsets and its background. The bar is that pseudo-element's block-end border, not its
+ * background (changed after the red run, reviews/phase-3/notes.md): the bar is still read as exactly `--ocelle-bar-width`
+ * thick in its colour, on the block-end edge across the whole tab, and with no background.
+ */
 async function bar(driver: Driver, target: Target): Promise<unknown> {
   const content = await driver.computedPart(target, "::before", "content");
   if (content === "none" || content === "normal") return { content: "none" };
   return {
     content,
-    block: await driver.computedPart(target, "::before", "block-size"),
+    block: await driver.computedPart(target, "::before", "border-block-end-width"),
     end: await driver.computedPart(target, "::before", "inset-block-end"),
     start: await driver.computedPart(target, "::before", "inset-inline-start"),
     inlineEnd: await driver.computedPart(target, "::before", "inset-inline-end"),
+    colour: await driver.computedPart(target, "::before", "border-block-end-color"),
+    style: await driver.computedPart(target, "::before", "border-block-end-style"),
     background: await driver.computedPart(target, "::before", "background-color"),
   };
 }
 
 /** The bar FR-025 and R-15 give a selected tab: 3 px on its block-end edge, the full inline size, in `colour`. */
 function selectedBar(colour: string): unknown {
-  return { content: '""', block: "3px", end: "0px", start: "0px", inlineEnd: "0px", background: colour };
+  return { content: '""', block: "3px", end: "0px", start: "0px", inlineEnd: "0px", colour, style: "solid", background: "rgba(0, 0, 0, 0)" };
 }
 const noBar = { content: "none" };
 
@@ -1298,6 +1305,253 @@ export const tabsScenarios: readonly TabsScenario[] = [
       return { nope, named: { tree: await tree(driver), value: await inPage(valueOf, "tb") } };
     },
     expected: { nope: { tree: exposed("Mission views", views, 1, [0]), value: "plan" }, named: { tree: exposed("Mission views", views, 2), value: "tasks" } },
+  },
+  {
+    // Added after the mutation run (reviews/phase-3/notes.md). Mutants: `disabled` not reflected from its property; the
+    // `value` setter writing nothing; the default from the index among all children (tabs and panels).
+    name: "the tab's disabled and value properties: a disabled property set is reflected and disables the tab, a value property set writes the attribute, a written value reads as written, and the default counts tabs only (FR-009)",
+    fixture: true,
+    run: async (driver, inPage) => {
+      await mount(driver, inPage, page(tabsOf(views)));
+      await driver.mutate("tb", [
+        { property: "disabled", value: true, child: 1 },
+        { property: "value", value: "todo", child: 2 },
+      ]);
+      const set = { tree: await tree(driver), attributes: await inPage(() => [...document.querySelectorAll("#tb > ocelle-tab")].map((each) => [each.hasAttribute("disabled"), each.getAttribute("value"), (each as unknown as { value: unknown }).value]), null) };
+      await mount(driver, inPage, page(panelOf("Spec") + panelOf("Plan") + tabOf("Spec", { values: false }) + tabOf("Plan", { values: false })));
+      return { set, defaults: await inPage(() => [...document.querySelectorAll("#tb > ocelle-tab")].map((each) => (each as unknown as { value: unknown }).value), null), value: await inPage(valueOf, "tb") };
+    },
+    expected: {
+      set: {
+        tree: exposed("Mission views", views, 0, [1]),
+        attributes: [
+          [false, "spec", "spec"],
+          [true, "plan", "plan"],
+          [false, "todo", "todo"],
+        ],
+      },
+      defaults: ["0", "1"],
+      value: "0",
+    },
+  },
+  {
+    // Added after the mutation run. Mutant: the tabs' `focusin` listener not in the capture phase (a tab's own listener
+    // that stops the event then hides the focus from the record).
+    name: "R-03: with tabs whose focusin stops propagating, the selected, focused Plan becoming disabled still moves focus with the selection to Tasks, beside the selection read",
+    fixture: true,
+    run: async (driver, inPage) => {
+      await mount(driver, inPage, page(tabsOf(views), 'label="Mission views" value="plan"'));
+      await inPage(() => {
+        for (const child of document.querySelectorAll("#tb > ocelle-tab")) {
+          child.addEventListener("focusin", (event) => {
+            event.stopPropagation();
+          });
+        }
+      }, null);
+      await driver.focus(tab(1));
+      await driver.mutate("tb", [{ child: 1, attribute: "disabled", value: "" }]);
+      await inPage(frames, undefined);
+      return { focus: await inPage(where, null), value: await inPage(valueOf, "tb") };
+    },
+    expected: { focus: { tab: 2 }, value: "tasks" },
+  },
+  {
+    // Added after the mutation run. Mutant: `aria-disabled` left on a disabled tab that leaves the tabs.
+    name: "a disabled tab and its panel that leave the tabs lose aria-disabled and every other attribute the tabs wrote, beside the same tab exposed disabled inside",
+    fixture: true,
+    run: async (driver, inPage) => {
+      await mount(driver, inPage, page(tabsOf(views, [2])));
+      const inside = await tree(driver);
+      await inPage(() => {
+        const host = document.getElementById("tb");
+        const leaving = [host?.querySelectorAll("ocelle-tab")[2], host?.querySelectorAll("ocelle-tab-panel")[2]];
+        for (const each of leaving) if (each !== undefined) document.body.append(each);
+      }, null);
+      await inPage(frames, undefined);
+      return { inside, left: await inPage(() => [...document.body.children].filter((child) => child.localName === "ocelle-tab" || child.localName === "ocelle-tab-panel").map((child) => [...child.attributes].map((attribute) => attribute.name).sort()), null) };
+    },
+    expected: { inside: exposed("Mission views", views, 0, [2]), left: [["disabled", "value"], []] },
+  },
+  {
+    // Review round 1, R1-01. Mutant: the tab passing its `value` attribute changes to Lit (whose path sets the accessor,
+    // and the setter writes the removed attribute back, so the tab keeps its old value).
+    name: "FR-009: a host that removes a tab's value attribute after render leaves the attribute absent, the tab reads its index, and the tabs' value and the next change event report that index",
+    fixture: true,
+    run: async (driver, inPage) => {
+      await mount(driver, inPage, page(tabsOf(views)));
+      await inPage(recordEvents, null);
+      await driver.mutate("tb", [{ child: 2, attribute: "value", value: null }]);
+      const removed = await inPage(() => {
+        const third = document.querySelectorAll("#tb > ocelle-tab")[2];
+        return [third?.getAttribute("value") ?? null, (third as unknown as { value?: unknown } | undefined)?.value ?? null];
+      }, null);
+      await driver.focus(tab(1));
+      await driver.press("ArrowRight");
+      return { removed, value: await inPage(valueOf, "tb"), events: await inPage(recordedEvents, null) };
+    },
+    expected: { removed: [null, "2"], value: "2", events: [change("2")] },
+  },
+  {
+    // Added after the mutation run. Mutant: the tabs' observer not following a tab's `value` attribute.
+    name: "FR-010a: a tab whose value attribute changes to the remembered value is selected with no event",
+    fixture: true,
+    run: async (driver, inPage) => {
+      await mount(driver, inPage, page(tabsOf(views)));
+      await inPage(recordEvents, null);
+      await driver.setProperty("tb", "value", "todo");
+      const kept = await inPage(valueOf, "tb");
+      await driver.mutate("tb", [{ child: 2, attribute: "value", value: "todo" }]);
+      return { kept, tree: await tree(driver), value: await inPage(valueOf, "tb"), events: await inPage(recordedEvents, null) };
+    },
+    expected: { kept: "spec", tree: exposed("Mission views", views, 2), value: "todo", events: [] },
+  },
+  {
+    // Added after the mutation run. Mutants: a generated id kept when the pairing moves (two children then share one);
+    // the tabindex of a panel that is no longer shown left in place.
+    name: "R-02: a tab and panel added before the others get ids of their own, every id stays unique and every tab controls its own panel; a panel no longer shown loses its tabindex",
+    fixture: true,
+    run: async (driver, inPage) => {
+      await mount(driver, inPage, page(tabsOf(views)));
+      await inPage(() => {
+        const host = document.getElementById("tb");
+        host?.insertAdjacentHTML("afterbegin", '<ocelle-tab value="notes">Notes</ocelle-tab>');
+        host?.querySelector("ocelle-tab-panel")?.insertAdjacentHTML("beforebegin", "<ocelle-tab-panel><p>Notes content</p></ocelle-tab-panel>");
+      }, null);
+      await inPage(frames, undefined);
+      const added = await inPage(association, null);
+      await driver.focus(tab(1));
+      await driver.press("ArrowRight");
+      return { added, tabindexes: await inPage(() => [...document.querySelectorAll("#tb > ocelle-tab-panel")].map((each) => each.getAttribute("tabindex")), null) };
+    },
+    expected: {
+      added: {
+        tabs: [0, 1, 2, 3].map((controls) => ({ hasId: true, controls })),
+        panels: [0, 1, 2, 3].map((index) => ({ hasId: true, labelledBy: index === 1 ? 1 : null })),
+        unique: true,
+        shadowIds: 0,
+      },
+      tabindexes: [null, null, "0", null],
+    },
+  },
+  {
+    // Added after the mutation run. Mutants: the panel observer's attribute filter or subtree dropped; the `hidden`, the
+    // unslotted-child and the anchor rules of the focusable measure dropped.
+    name: "FR-023: the shown panel is a stop while its content has nothing focusable (an anchor without href, a hidden button, a div at tabindex -1, a disabled button, a button no slot shows) and stops being one as each becomes focusable: href, hidden removed, tabindex 0, an anchor's own tabindex, contenteditable, disabled removed; a button slotted into a shadow host counts",
+    fixture: true,
+    run: async (driver, inPage) => {
+      await inPage(() => {
+        if (customElements.get("x-noslot") !== undefined) return;
+        customElements.define(
+          "x-noslot",
+          class extends HTMLElement {
+            constructor() {
+              super();
+              this.attachShadow({ mode: "open" }).append(document.createElement("span"));
+            }
+          },
+        );
+      }, null);
+      const content = '<div><a id="anchor">Anchor</a></div><div><button id="hb" type="button" hidden>Hidden</button></div><div><div id="later" tabindex="-1">Later</div></div><div><div id="edit">Edit</div></div><div><button id="db" type="button" disabled>Disabled</button></div><x-noslot><button type="button">Unslotted</button></x-noslot>';
+      await mount(driver, inPage, page(tabOf("Spec") + tabOf("Plan") + panelOf("Spec", content) + panelOf("Plan")));
+      const read = (): Promise<string | null> => inPage(() => document.querySelector("#tb > ocelle-tab-panel")?.getAttribute("tabindex") ?? null, null);
+      const step = async (id: string, name: string, value: string | null): Promise<string | null> => {
+        await inPage(
+          ([target, attribute, to]) => {
+            const element = document.getElementById(target);
+            if (to === null) element?.removeAttribute(attribute);
+            else element?.setAttribute(attribute, to);
+          },
+          [id, name, value] as const,
+        );
+        await inPage(frames, undefined);
+        return read();
+      };
+      const observed: (string | null)[] = [await read()];
+      for (const [id, name, on, off] of [
+        ["anchor", "href", "#x", null],
+        ["hb", "hidden", null, ""],
+        ["later", "tabindex", "0", "-1"],
+        ["anchor", "tabindex", "0", null],
+        ["edit", "contenteditable", "true", null],
+        ["db", "disabled", null, ""],
+      ] as const) {
+        observed.push(await step(id, name, on), await step(id, name, off));
+      }
+      await inPage(() => {
+        if (customElements.get("x-slotted") === undefined) {
+          customElements.define(
+            "x-slotted",
+            class extends HTMLElement {
+              constructor() {
+                super();
+                this.attachShadow({ mode: "open" }).append(document.createElement("slot"));
+              }
+            },
+          );
+        }
+        document.querySelector("#tb > ocelle-tab-panel")?.insertAdjacentHTML("beforeend", '<x-slotted><button type="button">Slotted</button></x-slotted>');
+      }, null);
+      await inPage(frames, undefined);
+      observed.push(await read());
+      return observed;
+    },
+    expected: ["0", null, "0", null, "0", null, "0", null, "0", null, "0", null, "0", null],
+  },
+  {
+    // Added after the mutation run. Mutant: the record not scoped to the removal that caused the blur (the `focusout`
+    // microtask dropped, so a blur to nothing stays recorded until a later batch).
+    name: "R-03, a move does not steal focus back: after an in-task move keeps focus on Spec, the user clicks plain text to leave it, and a host move in a later task leaves focus on the body",
+    fixture: true,
+    run: async (driver, inPage) => {
+      await mount(driver, inPage, page(tabsOf(["Spec", "Plan"])));
+      await driver.focus(tab(0));
+      await driver.mutate("tb", [{ move: 0, before: 2 }]);
+      const kept = await inPage(where, null);
+      await driver.click("away");
+      await driver.mutate("tb", [{ move: 1, before: 0 }]);
+      await inPage(frames, undefined);
+      return { kept, left: await inPage(where, null) };
+    },
+    expected: { kept: { tab: 1 }, left: null },
+  },
+  {
+    // Added after the mutation run. Mutants: `focusLeft` always true; the focus listeners not in the capture phase.
+    name: "R-03: a host that focuses the button after the tabs while it removes the focused, selected Plan keeps that focus, beside a removal with no such host; with tabs whose focusin and focusout stop propagating, a later host move does not steal focus back after Tab out",
+    fixture: true,
+    run: async (driver, inPage) => {
+      await mount(driver, inPage, page(tabsOf(["Spec", "Plan", "Tasks", "Notes"]), 'label="Mission views" value="plan"'));
+      await driver.focus(tab(1));
+      await driver.mutate("tb", [{ remove: 5 }, { remove: 1 }]);
+      const moved = await inPage(where, null);
+      await inPage(() => {
+        document.getElementById("tb")?.addEventListener(
+          "focusout",
+          () => {
+            document.getElementById("after")?.focus();
+          },
+          { once: true },
+        );
+      }, null);
+      await driver.mutate("tb", [{ remove: 4 }, { remove: 1 }]);
+      await inPage(frames, undefined);
+      const kept = await inPage(where, null);
+      await mount(driver, inPage, page(tabsOf(["Spec", "Plan"])));
+      await inPage(() => {
+        for (const child of document.querySelectorAll("#tb > ocelle-tab")) {
+          for (const type of ["focusin", "focusout"]) {
+            child.addEventListener(type, (event) => {
+              event.stopPropagation();
+            });
+          }
+        }
+      }, null);
+      await driver.focus("before");
+      await driver.press("Tab");
+      await driver.press("Tab", ["Shift"]);
+      await driver.mutate("tb", [{ move: 0, before: 2 }]);
+      return { moved, kept, left: await inPage(where, null) };
+    },
+    expected: { moved: { tab: 1 }, kept: { id: "after" }, left: { id: "before" } },
   },
   {
     // Plant: `label` not trimmed, or a blank label naming the tablist.

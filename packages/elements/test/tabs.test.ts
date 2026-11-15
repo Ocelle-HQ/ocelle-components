@@ -51,7 +51,7 @@ describe("ocelle-tabs, ocelle-tab and ocelle-tab-panel, in process (US2)", () =>
     }).toEqual({
       violations: [],
       incomplete: [],
-      passed: ["aria-allowed-attr", "aria-required-children", "aria-required-parent", "aria-valid-attr-value", "color-contrast"],
+      passed: ["aria-allowed-attr", "aria-allowed-role", "aria-required-children", "aria-valid-attr-value", "color-contrast"],
       axeRoles: ["tab", "tabpanel"],
     });
   });

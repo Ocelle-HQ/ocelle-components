@@ -17,3 +17,8 @@
 [data-story="listbox-scrolling"] ocelle-listbox {
   max-block-size: calc(4 * var(--ocelle-target-min));
 }
+
+/* The wrapped tabs story (014 FR-050, FR-022): a row narrower than the tabs, so they wrap onto a second row. */
+[data-story="tabs-wrapped"] ocelle-tabs {
+  inline-size: 320px;
+}

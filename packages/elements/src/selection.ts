@@ -233,9 +233,20 @@ export class SelectionModel<T> {
     return changed;
   }
 
-  /** The observer's batch; returns the child to focus, or null. */
+  /** A batch of the children as they are (the first one, at connection); returns the child to focus, or null. */
   batch(): T | null {
     return this.#process(this.#record.focused);
+  }
+
+  /**
+   * The observer's batch, of the records it delivered (one list of removed nodes each). They feed the focus record as
+   * the `focusout` microtask's would: when an earlier mutation in the task queued the observer's callback, it runs
+   * before that microtask, which then finds no record (phase 3, reviews/phase-3/notes.md). Returns the child to focus.
+   */
+  delivered(removed: readonly (readonly T[])[], focusLeft: boolean): T | null {
+    const { record, hadFocus } = takeBlurred(this.#record, removed.flat(), focusLeft);
+    this.#record = record;
+    return this.#process(hadFocus ?? record.focused);
   }
 
   focusIn(node: T): void {

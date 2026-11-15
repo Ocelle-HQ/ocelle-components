@@ -1,0 +1,51 @@
+# Review round 1, R1-01: the new FR-009 body (value attribute removed) against src/ocelle-tab.ts with the mutant the record disabled applied (line 158: if (name !== "value") forced true); the source is restored afterwards
+# pnpm exec vitest run --project elements packages/elements/test/tabs.test.ts -t "removes a tab's value"
+ RUN  v5.0.5 /home/user/ocelle-components
+ ❯ |elements (chromium)| packages/elements/test/tabs.test.ts (58 tests | 1 failed | 57 skipped) 328ms
+   ❯ ocelle-tabs, ocelle-tab and ocelle-tab-panel, in process (US2) (58)
+     × FR-009: a host that removes a tab's value attribute after render leaves the attribute absent, the tab reads its index, and the tabs' value and the next change event report that index 326ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  |elements (chromium)| packages/elements/test/tabs.test.ts > ocelle-tabs, ocelle-tab and ocelle-tab-panel, in process (US2) > FR-009: a host that removes a tab's value attribute after render leaves the attribute absent, the tab reads its index, and the tabs' value and the next change event report that index
+AssertionError: expected { observed: { …(3) }, clipboard: [] } to deeply equal { observed: { …(3) }, clipboard: [] }
+Failure screenshot:
+  - .vitest/attachments/failure-screenshots/tabs.test.ts/ocelle-tabs--ocelle-tab-and-ocelle-tab-panel--in-process--US2----FR-009--a-host-that-removes-a-tab-s-value-attribute-after-render-leaves-the-attribute-absent--the-tab-reads-its-index--and-the-tabs--value-and-the-next-change-event-report-that-index.png
+- Expected
++ Received
+@@ -5,19 +5,19 @@
+        {
+          "bubbles": true,
+          "cancelable": false,
+          "composed": true,
+          "detail": {
+-           "value": "2",
++           "value": "tasks",
+          },
+          "target": "tb",
+          "type": "ocelle-tabs-change",
+-         "value": "2",
++         "value": "tasks",
+        },
+      ],
+      "removed": [
+-       null,
+-       "2",
++       "tasks",
++       "tasks",
+      ],
+-     "value": "2",
++     "value": "tasks",
+    },
+  }
+ ❯ packages/elements/test/tabs.test.ts:33:70
+     31|     it(name, async () => {
+     32|       const observed = await run(driver, inPage);
+     33|       expect({ observed, clipboard: await driver.clipboardCalls() }).t…
+       |                                                                      ^
+     34|     });
+     35|   }
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=6d50fd6a:5237:20
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+ Test Files  1 failed (1)
+      Tests  1 failed | 57 skipped (58)
+   Start at  01:11:50
+   Duration  1.62s (tests 44%, import 33%, worker 24%)

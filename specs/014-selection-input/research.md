@@ -736,10 +736,16 @@ feature and the README says so. Every pair below is a `checked` row of `pairs.js
 
 **Techniques** (PLAN-A11Y-SECURITY-1-005). Outside forced colours, the option's and tab's bar, and the joined pressed
 segment's bar, are a `:host::before` pseudo-element positioned inside the host's box (absolute, `bar-width` thick, on
-the stated edge), so it changes no size; the default pressed segment's border is a border of `bar-width` with its
+the stated edge), so it changes no size. The option's and the joined pressed segment's bar is the pseudo-element's
+background; the tab's bar is the pseudo-element's block-end border (`border-block-end`, `bar-width`, solid,
+`accent-strong`) with a transparent background, because axe-core 4.14.0's `color-contrast` counts an absolutely
+positioned pseudo-element with a background as covering the text when its area exceeds a quarter of the text
+element's box, and on a short tab label (such as "Plan") it then reports a serious `incomplete` (`pseudoContent`)
+that the axe gate counts as a finding (FR-051; phase 3, `reviews/phase-3/notes.md`); the default pressed segment's border is a border of `bar-width` with its
 padding reduced by `bar-width` minus `border-width`, so the outer box is unchanged. Under
 `@media (forced-colors: active)` the bar pseudo-element has `forced-color-adjust: none; background: Highlight` (forced
-colours would otherwise replace its background), the default pressed segment's border colour is `Highlight`
+colours would otherwise replace its background), the tab's bar pseudo-element `forced-color-adjust: none` and a
+`Highlight` block-end border colour, the default pressed segment's border colour is `Highlight`
 (`forced-color-adjust: none` on that rule's element, with text `ButtonText` and fill `ButtonFace` set explicitly),
 boundaries (segment borders, the copy field's border and divider, the Copy control) are `ButtonBorder`, the link is
 `LinkText`, the link's and the Copy control's focus ring is an outline, which forced colours keep, in `Highlight`,
@@ -752,7 +758,10 @@ by focus), which under forced colours has `forced-color-adjust: none` and a `Hig
 
 - Selected bar: `computedPart(child, "::before", …)`: block or inline size equal to `--ocelle-bar-width`, background
   colour equal to `driver.resolveColour("var(--ocelle-color-accent-strong)")`, or `Highlight`'s resolved colour under
-  emulated forced colours; absent (`content: none` or zero size) on unselected children. Plants: the bar drawn by
+  emulated forced colours; absent (`content: none` or zero size) on unselected children. For the tab, whose bar is a
+  border: `border-block-end-width` equal to `--ocelle-bar-width`, `border-block-end-style` `solid`,
+  `border-block-end-color` equal to the resolved `accent-strong` (or `Highlight` under emulated forced colours), the
+  block-end and inline offsets, and a transparent `background-color`. Plants: the bar drawn by
   colour only (no size), the bar as `box-shadow`.
 - Shared lines ("one line, not two", US3-9, US4-9 "no double line"): `driver.pixels` across each boundary (between
   neighbours, between rows, around the pressed segment, between the copy text and the control) counts one run of
