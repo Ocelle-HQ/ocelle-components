@@ -395,3 +395,33 @@ describe("the ocelle-tooltip stories in the built Storybook (008 FR-042)", { tim
     }
   }
 });
+
+// 008 (tasks.md T052; reviews/phase-4/notes.md § Operator decision: T052): the long-text story's bubble (288 × 91 px)
+// lay over the paragraphs above its trigger and crossed their boxes, and axe could not determine its background
+// (`color-contrast-incomplete`, `elmPartiallyObscuring`). The operator chose to re-lay the story's markup: the trigger
+// sits later inside one long paragraph, so the painted box lies wholly inside that paragraph's box and crosses the box
+// of no other element of the story (an element outside the tooltip whose box meets the painted box without holding it).
+describe("the ocelle-tooltip long-text story's bubble inside one paragraph (008 T052, operator decision)", { timeout: 60_000 }, () => {
+  for (const theme of ["light", "dark"] as const) {
+    it(`elements-ocelle-tooltip--long-text in ${theme}: at 1280 × 800 with reduced motion, the mouse on the centre of #tooltip-trigger: the painted box lies wholly inside the box of the paragraph that holds the trigger and crosses the box of no other element of the story`, async () => {
+      const selector = "#tooltip-trigger";
+      const { page } = await openHovered("elements-ocelle-tooltip--long-text", theme, selector);
+      const observed = await page.evaluate((selector) => {
+        const trigger = document.querySelector(selector);
+        const tooltip = trigger?.closest("ocelle-tooltip") ?? null;
+        const paragraph = trigger?.closest("p") ?? null;
+        const box = tooltip?.shadowRoot?.querySelector('[part="bubble"]')?.firstElementChild?.getBoundingClientRect();
+        if (tooltip === null || paragraph === null || box === undefined) return { paragraph: paragraph !== null, box: box !== undefined };
+        const holds = (outer: DOMRect, inner: DOMRect): boolean => outer.left <= inner.left && outer.top <= inner.top && outer.right >= inner.right && outer.bottom >= inner.bottom;
+        const meets = (a: DOMRect, b: DOMRect): boolean => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+        const crossed = [...document.querySelectorAll("#storybook-root *")]
+          .filter((each) => !tooltip.contains(each))
+          .filter((each) => meets(each.getBoundingClientRect(), box) && !holds(each.getBoundingClientRect(), box))
+          .map((each) => `${each.localName}${each.id === "" ? "" : `#${each.id}`}`);
+        return { paragraph: true, box: true, insideParagraph: holds(paragraph.getBoundingClientRect(), box), crossed };
+      }, selector);
+      expect(observed).toEqual({ paragraph: true, box: true, insideParagraph: true, crossed: [] });
+      await page.close();
+    });
+  }
+});

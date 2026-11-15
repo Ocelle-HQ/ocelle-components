@@ -18,9 +18,12 @@
 // frame from its `track` command on, which tracked tooltips have their bubble `:popover-open` and how many animations
 // run on the bubble part and its painted box; frame times are relative to the first `pointerover` from outside a
 // tracked tooltip (its first entry), or to the `track` command when there was none. So "not shown at 150 ms" and
-// "shown by 450 ms" hold whatever the latency of the harness. Names: the tooltip `tip` (and `tip2`), its trigger `trg`
-// (and `trg2`), `before` a page button before the trigger in tree order, the bubble part `tip[div]` in `topLayer()`;
-// the bubble part is `[part="bubble"]` and its painted box the part's only element child, `[part="bubble"] > *`.
+// "shown by 450 ms" hold whatever the latency of the harness. A row whose outcome needs the pointer to act before the
+// delay (leave, move inside the tooltip, or click) reads when it really did, in the page, and is judged only on a run
+// in which that came before the test delay, or before the shorter bound the row needs (`beforeDelay`). Names: the
+// tooltip `tip` (and `tip2`), its trigger `trg` (and `trg2`), `before` a page button before the trigger in tree order,
+// the bubble part `tip[div]` in `topLayer()`; the bubble part is `[part="bubble"]` and its painted box the part's only
+// element child, `[part="bubble"] > *`.
 import type { Driver, RecordedEvent } from "./driver.ts";
 import { act, events, inspect, pause, row, sheetDark, state } from "./dialog.ts";
 import type { DialogScenario, Inspected } from "./dialog.ts";
@@ -43,6 +46,8 @@ export type TipCommand =
   | { readonly op: "describedBy"; readonly tip: string; readonly trigger: string }
   | { readonly op: "children"; readonly id: string; readonly markup: string }
   | { readonly op: "removeSpans"; readonly id: string }
+  | { readonly op: "watchModal"; readonly id: string }
+  | { readonly op: "modalLog" }
   | { readonly op: "keep"; readonly id: string }
   | { readonly op: "kept"; readonly id: string; readonly name: string };
 
@@ -59,6 +64,28 @@ export interface Frames {
   readonly frames: readonly Frame[];
   /** Whether the tracked bubble was shown when the first `pointerover` into it reached the window, or null. */
   readonly sameTask: boolean | null;
+  /**
+   * In that same task, the gap between the trigger's block start and the painted box's block end (8 px for a bubble
+   * placed on top), rounded to 1/10 px, or null when the bubble was not shown then.
+   */
+  readonly sameTaskGap: number | null;
+  /**
+   * When the pointer first left the tracked tooltip after the first entry (a `pointerout` from it to a node outside
+   * it, which ends the delay, R-12), in milliseconds from the entry, or null without an entry or a leave.
+   */
+  readonly left: number | null;
+  /**
+   * When the pointer last moved inside the tracked tooltip after the first entry and before the leave (a
+   * `pointerover` whose `relatedTarget` is inside it, e.g. from the trigger onto its inner span), in milliseconds from
+   * the entry, or null without such a move.
+   */
+  readonly moved: number | null;
+  /**
+   * When the first `click` inside the tracked tooltip after the first entry reached the window (capture phase, before
+   * the trigger's own listeners), in milliseconds from the entry, or null without an entry or a click. A pointer click
+   * that enters the trigger is its own entry: the `pointerover` of its move comes first.
+   */
+  readonly clicked: number | null;
 }
 
 /** What `describedBy` reads: the trigger's `aria-describedby` and the tooltip host's description spans. */
@@ -73,14 +100,19 @@ export interface Described {
  * it runs the command (JSON, `TipCommand`) set as its `do` attribute and writes `{ "result": … }` or
  * `{ "error": "…" }` to its `data-result` attribute:
  * - `track`: starts sampling, at once and then at every animation frame, which of the tooltips `ids` show their bubble
- *   and the number of animations on their bubble parts and painted boxes; `frames` stops it and returns the samples;
+ *   and the number of animations on their bubble parts and painted boxes, and records the times of the first entry,
+ *   of the last move inside the tooltip, of the first leave and of the first click (which also takes a sample, so a
+ *   bubble shown by the click's focus is seen at the click's own time); `frames` stops it and returns the samples and
+ *   times;
  * - `over`: a synthetic bubbling, composed `pointerover` of `pointerType` on the element `id`;
  * - `keys`: starts recording the `keydown` events that reach the document (capture and bubble phase) and the element
  *   `id` when given; `keylog` returns them and stops;
  * - `scroll`: sets `scrollTop` of the element `id` (or of `inner` in its shadow root);
  * - `insert`: parses `markup` into the element `id`, as its first or last children; `move`: appends `id` to `to`;
  *   `children`: replaces the children of `id` with `markup`; `removeSpans` removes the description spans among the
- *   children of the tooltip `id` (as a host re-render would) and returns how many; `keep` holds the element `id`, so `kept` reads its
+ *   children of the tooltip `id` (as a host re-render would) and returns how many; `watchModal` records, at each
+ *   synchronous `beforetoggle` to open in the shadow root of the overlay `id` (its `<dialog>` about to be shown), whether
+ *   any tooltip bubble of the page is shown at that moment, and `modalLog` returns those records; `keep` holds the element `id`, so `kept` reads its
  *   attribute `name` after it left the document;
  * - `describedBy`: the trigger's `aria-describedby`, and each `span[slot="description"]` child of the tooltip host with
  *   its id, role, `hidden`, slot, text, element children and how many elements of the trigger's root have its id.
@@ -98,6 +130,11 @@ export function defineTooltipStandIns(): void {
   let start = 0;
   let entry: number | null = null;
   let sameTask: boolean | null = null;
+  let sameTaskGap: number | null = null;
+  let left: number | null = null;
+  let moved: number | null = null;
+  let clicked: number | null = null;
+  let sampling = false;
   let generation = 0;
   let recording = false;
   const keys: string[] = [];
@@ -118,13 +155,38 @@ export function defineTooltipStandIns(): void {
     (event) => {
       const id = hostOf(event);
       const host = id === undefined ? null : document.getElementById(id);
-      if (entry === null && host !== null && !inside(event.relatedTarget, host)) entry = performance.now();
+      if (host === null) return;
+      if (entry === null && !inside(event.relatedTarget, host)) entry = performance.now();
+      else if (entry !== null && left === null && inside(event.relatedTarget, host)) moved = performance.now();
+    },
+    true,
+  );
+  window.addEventListener(
+    "pointerout",
+    (event) => {
+      const id = hostOf(event);
+      const host = id === undefined ? null : document.getElementById(id);
+      if (host !== null && entry !== null && left === null && !inside(event.relatedTarget, host)) left = performance.now();
+    },
+    true,
+  );
+  window.addEventListener(
+    "click",
+    (event) => {
+      if (entry === null || clicked !== null || hostOf(event) === undefined) return;
+      clicked = performance.now();
+      if (sampling) samples.push({ t: clicked, open: tracked.filter(isOpen), animations: tracked.reduce((sum, id) => sum + animationsOf(id), 0) });
     },
     true,
   );
   window.addEventListener("pointerover", (event) => {
     const id = hostOf(event);
-    if (sameTask === null && id !== undefined) sameTask = isOpen(id);
+    if (sameTask !== null || id === undefined) return;
+    sameTask = isOpen(id);
+    const host = document.getElementById(id);
+    const box = bubbleOf(id)?.firstElementChild?.getBoundingClientRect();
+    const trigger = host?.firstElementChild?.getBoundingClientRect();
+    sameTaskGap = sameTask && box !== undefined && trigger !== undefined ? Math.round((trigger.top - box.bottom) * 10) / 10 : null;
   });
   const record = (where: string) => (event: Event) => {
     if (recording) keys.push(`${where}:${(event as KeyboardEvent).key}`);
@@ -144,6 +206,7 @@ export function defineTooltipStandIns(): void {
     return found;
   };
   const held = new Map<string, Element>();
+  const modal: boolean[] = [];
   const parse = (markup: string): Node[] => {
     const template = document.createElement("template");
     template.innerHTML = markup;
@@ -156,14 +219,21 @@ export function defineTooltipStandIns(): void {
         samples = [];
         entry = null;
         sameTask = null;
+        sameTaskGap = null;
+        left = null;
+        moved = null;
+        clicked = null;
+        sampling = true;
         start = performance.now();
         generation += 1;
         sample(generation);
         return null;
       case "frames": {
         generation += 1;
+        sampling = false;
         const origin = entry ?? start;
-        return { t0: entry === null ? null : entry - start, frames: samples.map((each) => ({ ...each, t: Math.round((each.t - origin) * 10) / 10 })), sameTask };
+        const fromEntry = (time: number | null): number | null => (entry === null || time === null ? null : Math.round((time - entry) * 10) / 10);
+        return { t0: entry === null ? null : entry - start, frames: samples.map((each) => ({ ...each, t: Math.round((each.t - origin) * 10) / 10 })), sameTask, sameTaskGap, left: fromEntry(left), moved: fromEntry(moved), clicked: fromEntry(clicked) };
       }
       case "over":
         return byId(String(command.id)).dispatchEvent(new PointerEvent("pointerover", { bubbles: true, composed: true, pointerType: String(command.pointerType), isPrimary: true }));
@@ -195,6 +265,17 @@ export function defineTooltipStandIns(): void {
       case "children":
         byId(String(command.id)).replaceChildren(...parse(String(command.markup)));
         return null;
+      case "watchModal":
+        byId(String(command.id)).shadowRoot?.addEventListener(
+          "beforetoggle",
+          (event) => {
+            if ((event as ToggleEvent).newState === "open") modal.push([...document.querySelectorAll("ocelle-tooltip")].some((each) => each.shadowRoot?.querySelector('[part="bubble"]')?.matches(":popover-open") === true));
+          },
+          true,
+        );
+        return null;
+      case "modalLog":
+        return modal.splice(0);
       case "removeSpans": {
         const spans = [...byId(String(command.id)).children].filter((child) => child.localName === "span" && child.getAttribute("slot") === "description");
         for (const each of spans) each.remove();
@@ -330,6 +411,40 @@ export function never(f: Frames, span: number, id = "tip"): boolean {
   return f.frames.every((each) => !each.open.includes(id)) && (f.frames.at(-1)?.t ?? 0) - first >= span;
 }
 
+/** The test delay of fixtures/tooltip-delay.css (R-15), and how many runs a row timed against it may take. */
+const testDelay = 300;
+const tries = 3;
+/** The text-field row's bound: its click must come this soon after the entry for "shown before 150 ms" to be judged. */
+const early = 150;
+/**
+ * The R-12 leave row's own hover delay, set as `--ocelle-tooltip-delay` on its tooltip (operator decision after
+ * tdd-check 4: under load its leave came after the 300 ms test delay), and its wait from the entry: 1.5 times that
+ * delay, as 450 ms is for the test delay, so a delay the leave did not end would show the bubble inside the window.
+ */
+const longDelay = 1000;
+const longWait = 1500;
+
+/**
+ * For a row whose outcome holds only when the pointer acted before the hover delay (or before `bound`, a shorter time
+ * the row's outcome needs): runs `attempt`, which mounts its page, acts and returns its observation with `at`, the
+ * page-side time of that act in milliseconds from the first entry (`Frames.left`, `Frames.moved` or
+ * `Frames.clicked`). A run in which it came before `bound` is judged: its observation is returned. One in which it
+ * came at or after `bound` judges nothing (the bubble may rightly show, or not yet show, by then), so the body runs
+ * again, at most `tries` times in all; then the row fails with the measured times, never passing without a judged
+ * run. A run in which the page recorded no such time fails at once.
+ */
+export async function beforeDelay(what: string, attempt: () => Promise<{ readonly at: number | null; readonly observed: Record<string, unknown> }>, bound = testDelay): Promise<Record<string, unknown>> {
+  const late: number[] = [];
+  for (let run = 0; run < tries; run += 1) {
+    const { at, observed } = await attempt();
+    if (at === null) throw new Error(`${what}: the page recorded no time for it after the entry`);
+    if (at < bound) return observed;
+    late.push(at);
+  }
+  const limit = bound === testDelay ? `the ${String(testDelay)} ms test delay` : `${String(bound)} ms from the entry`;
+  throw new Error(`${what} came at or after ${limit} in each of ${String(tries)} runs (${late.join(", ")} ms from the entry): the row has no run it can judge`);
+}
+
 /** A coordinate, or 0 where an absent element gave none, so a pointer move to it is still a valid one. */
 const finite = (value: number): number => (Number.isFinite(value) ? value : 0);
 
@@ -397,22 +512,27 @@ const showRows = [
     { delay: delayed, persisted: true, layer: [tipLayer], focus: "body" },
   ),
   row(
-    "Hover delay, moves inside the tooltip before the delay (R-12's delay rule, the matrix's re-entry): the pointer enters the trigger, moves onto its inner span and back at 100 ms intervals: the timer is not restarted, shown by 450 ms from the first entry and not before 150 ms",
-    async (driver) => {
-      await start(driver, page({ trigger: '<button id="trg" aria-label="Projects">Edge <span id="inner">inner text</span> edge</button>' }));
-      const trigger = await inspect(driver, "trg");
-      const inner = await inspect(driver, "inner");
-      const edge = { x: trigger.left + 4, y: trigger.top + trigger.height / 2 };
-      await track(driver);
-      await driver.pointer([edge]);
-      await pause(100);
-      await driver.pointer([centre(inner)]);
-      await pause(100);
-      await driver.pointer([edge]);
-      await pause(300);
-      return { delay: delay(await frames(driver)) };
-    },
-    { delay: delayed },
+    "Hover delay, moves inside the tooltip before the delay (R-12's delay rule, the matrix's re-entry): the pointer enters the trigger, moves onto its inner span and back onto the trigger's edge, both moves before the delay: the timer is not restarted, not shown before the 300 ms delay from the first entry, shown before 300 ms from the move back and by 450 ms",
+    async (driver) =>
+      beforeDelay("the move back onto the trigger", async () => {
+        await start(driver, page({ trigger: '<button id="trg" aria-label="Projects">Edge <span id="inner">inner text</span> edge</button>' }));
+        const trigger = await inspect(driver, "trg");
+        const inner = await inspect(driver, "inner");
+        const edge = { x: trigger.left + 4, y: trigger.top + trigger.height / 2 };
+        await track(driver);
+        await driver.pointer([edge]);
+        await driver.pointer([centre(inner)]);
+        await driver.pointer([edge]);
+        await pause(450);
+        const f = await frames(driver);
+        const back = f.moved ?? 0;
+        const shown = openTimes(f);
+        return {
+          at: f.moved,
+          observed: { entered: f.t0 !== null, beforeDelay: shown.some((t) => t < testDelay), beforeRestart: shown.some((t) => t < back + testDelay), by450: shown.some((t) => t <= 450) },
+        };
+      }),
+    { entered: true, beforeDelay: false, beforeRestart: true, by450: true },
   ),
   row(
     "Hover delay under reduced motion (US3-8, R-09, R-15): with prefers-reduced-motion: reduce the delay is not zeroed: not shown before 150 ms, shown by 450 ms",
@@ -437,9 +557,89 @@ const showRows = [
       await track(driver);
       await driver.hover("trg");
       const f = await frames(driver);
-      return { sameTask: f.sameTask, open: await bubbleOpen(driver) };
+      return { sameTask: f.sameTask, gap: f.sameTaskGap, open: await bubbleOpen(driver) };
     },
-    { sameTask: true, open: true },
+    { sameTask: true, gap: 8, open: true },
+  ),
+  row(
+    "Hover delay 0 on the trigger (R-12: the delay is read from the trigger's computed --ocelle-tooltip-delay): --ocelle-tooltip-delay: 0ms on the trigger itself, the tooltip at the test delay: shown in the same task as the pointerover",
+    async (driver) => {
+      await start(driver, page(), "#trg { --ocelle-tooltip-delay: 0ms; }");
+      await track(driver);
+      await driver.hover("trg");
+      return { sameTask: (await frames(driver)).sameTask };
+    },
+    { sameTask: true },
+  ),
+  row(
+    "Hover delay in seconds (R-12, R-15): --ocelle-tooltip-delay: 0.3s on the tooltip is the same 300 ms: not shown before 150 ms, shown by 450 ms",
+    async (driver) => {
+      await start(driver, page(), "#tip { --ocelle-tooltip-delay: 0.3s; }");
+      await track(driver);
+      await driver.hover("trg");
+      await pause(450);
+      return { delay: delay(await frames(driver)) };
+    },
+    { delay: delayed },
+  ),
+  row(
+    "Hover delay without a unit (R-12; read as the overlays read a duration, R-06): --ocelle-tooltip-delay: 300, no unit, is no delay: shown in the same task as the pointerover",
+    async (driver) => {
+      await start(driver, page(), "#tip { --ocelle-tooltip-delay: 300; }");
+      await track(driver);
+      await driver.hover("trg");
+      return { sameTask: (await frames(driver)).sameTask };
+    },
+    { sameTask: true },
+  ),
+  row(
+    "Touch never starts a show (R-12, FR-037): with delay 0, a pointerover of pointerType touch shows no bubble; one of pointerType mouse then shows it at once",
+    async (driver) => {
+      await start(driver, page(), "#tip { --ocelle-tooltip-delay: 0ms; }");
+      await tip(driver, { op: "over", id: "trg", pointerType: "touch" });
+      const touch = await bubbleOpen(driver);
+      await tip(driver, { op: "over", id: "trg", pointerType: "mouse" });
+      return { touch, mouse: await bubbleOpen(driver) };
+    },
+    { touch: false, mouse: true },
+  ),
+  row(
+    "Hover delay, moves inside the tooltip, then leaving before the delay (R-12): with --ocelle-tooltip-delay: 1000ms on the tooltip, the pointer enters the trigger, moves onto its inner span and leaves both boxes before that delay: no bubble at any frame of a 1500 ms wait from the entry",
+    async (driver) =>
+      beforeDelay(
+        "the leave",
+        async () => {
+          await start(driver, page({ trigger: '<button id="trg" aria-label="Projects">Edge <span id="inner">inner text</span> edge</button>' }), `#tip { --ocelle-tooltip-delay: ${String(longDelay)}ms; }`);
+          const trigger = await inspect(driver, "trg");
+          const inner = await inspect(driver, "inner");
+          await track(driver);
+          await driver.pointer([{ x: trigger.left + 4, y: trigger.top + trigger.height / 2 }]);
+          await pause(35);
+          await driver.pointer([centre(inner)]);
+          await pause(35);
+          await driver.pointer([rest]);
+          await pause(1000);
+          await pause(longWait - 1000);
+          const f = await frames(driver);
+          const leave = f.left ?? Infinity;
+          const shown = openTimes(f);
+          return {
+            at: f.left,
+            observed: { moved: f.moved !== null, beforeLeave: shown.some((t) => t < leave), afterLeave: shown.some((t) => t >= leave), toWait: (f.frames.at(-1)?.t ?? 0) >= longWait },
+          };
+        },
+        longDelay,
+      ),
+    { moved: true, beforeLeave: false, afterLeave: false, toWait: true },
+  ),
+  row(
+    "Keyboard focus inside a custom-element trigger (FR-031: the trigger, or a control inside it): Tab onto the inner button of an open shadow root slotted as the trigger shows the bubble at once",
+    async (driver) => {
+      await start(driver, page({ trigger: '<ocelle-test-opener id="trg"></ocelle-test-opener>' }));
+      await tabFrom(driver);
+      return { focus: await driver.focusPath(), open: await bubbleOpen(driver) };
+    },
+    { focus: "trg[in]", open: true },
   ),
   row(
     "Keyboard focus (US3-1, FR-031): Tab onto the trigger (it matches :focus-visible) shows the bubble at once, whatever the delay; persistence (c) (FR-032): with the pointer outside both boxes it is shown at every frame of a 900 ms wait",
@@ -455,20 +655,21 @@ const showRows = [
     { focus: "trg", visible: true, atOnce: true, persisted: true, layer: [tipLayer] },
   ),
   row(
-    "Click focus (FR-031): a pointer click on the button trigger and the pointer moved off at once: focus on the trigger without :focus-visible, no bubble at any frame of a 450 ms wait; then Shift+Tab and Tab back (keyboard focus) show it at once",
-    async (driver) => {
-      await start(driver, page());
-      await track(driver);
-      await driver.click("trg");
-      await driver.pointer([rest]);
-      await pause(450);
-      const f = await frames(driver);
-      const clicked = { focus: await driver.focusPath(), visible: await driver.focusVisible("trg"), never: never(f, 400) };
-      await driver.press("Tab", { shift: true });
-      await driver.press("Tab");
-      return { clicked, keyboard: await bubbleOpen(driver) };
-    },
-    { clicked: { focus: "trg", visible: false, never: true }, keyboard: true },
+    "Click focus (FR-031): a pointer click on the button trigger and the pointer moved off it before the delay: focus on the trigger without :focus-visible, no bubble at any frame of a 450 ms wait from the click; then Shift+Tab and Tab back (keyboard focus) show it at once",
+    async (driver) =>
+      beforeDelay("the move off the trigger", async () => {
+        await start(driver, page());
+        await track(driver);
+        await driver.click("trg");
+        await driver.pointer([rest]);
+        await pause(450);
+        const f = await frames(driver);
+        const clicked = { focus: await driver.focusPath(), visible: await driver.focusVisible("trg"), never: never(f, 400), to450: (f.frames.at(-1)?.t ?? 0) >= 450 };
+        await driver.press("Tab", { shift: true });
+        await driver.press("Tab");
+        return { at: f.left, observed: { clicked, keyboard: await bubbleOpen(driver) } };
+      }),
+    { clicked: { focus: "trg", visible: false, never: true, to450: true }, keyboard: true },
   ),
   row(
     "Late :focus-visible (SPEC-2-03, R-12): click the trigger, move the pointer off both boxes, press Shift: the trigger now matches :focus-visible, yet no bubble at any frame of a 450 ms wait; keyboard focus arriving again (Shift+Tab, Tab) shows it at once",
@@ -526,14 +727,19 @@ const showRows = [
   ),
   row(
     "Text-field trigger (FR-029, US3-10, R-12; stated limit): a clicked <input type=text> trigger matches :focus-visible and shows the bubble at once, before the hover delay",
-    async (driver) => {
-      await start(driver, page({ trigger: '<input id="trg" type="text" aria-label="Search">', text: "Search the workspace" }));
-      await track(driver);
-      await driver.click("trg");
-      const atOnce = await bubbleOpen(driver);
-      const f = await frames(driver);
-      return { focus: await driver.focusPath(), visible: await driver.focusVisible("trg"), atOnce, early: openTimes(f).some((t) => t < 150) };
-    },
+    async (driver) =>
+      beforeDelay(
+        "the click on the text field",
+        async () => {
+          await start(driver, page({ trigger: '<input id="trg" type="text" aria-label="Search">', text: "Search the workspace" }));
+          await track(driver);
+          await driver.click("trg");
+          const atOnce = await bubbleOpen(driver);
+          const f = await frames(driver);
+          return { at: f.clicked, observed: { focus: await driver.focusPath(), visible: await driver.focusVisible("trg"), atOnce, early: openTimes(f).some((t) => t < 150) } };
+        },
+        early,
+      ),
     { focus: "trg", visible: true, atOnce: true, early: true },
   ),
 ];
@@ -563,7 +769,7 @@ const leaveRows = [
     { gapIsPadding: true, gap: true, onBubble: true, persisted: true, beside: false },
   ),
   row(
-    "Leave (US3-2, FR-032): shown by hover, the pointer leaves both boxes with no keyboard focus: hidden within one frame; shown by keyboard focus, Tab moves focus on while neither box is hovered: hidden",
+    "Leave (US3-2, FR-032): shown by hover, the pointer leaves both boxes with no keyboard focus: hidden within one frame; shown by keyboard focus, Tab moves focus on while neither box is hovered: hidden; then shown by hover again, the pointer leaving hides it (the keyboard focus that left no longer holds it)",
     async (driver) => {
       await start(driver, page({ after: '<button id="next">Next</button>' }));
       await driver.hover("trg");
@@ -574,9 +780,14 @@ const leaveRows = [
       await tabFrom(driver);
       const focused = await bubbleOpen(driver);
       await driver.press("Tab");
-      return { hovered, left, focused, focus: await driver.focusPath(), focusout: await bubbleOpen(driver), layer: await driver.topLayer() };
+      const focusout = { focus: await driver.focusPath(), open: await bubbleOpen(driver), layer: await driver.topLayer() };
+      await driver.hover("trg");
+      await pause(450);
+      const again = await bubbleOpen(driver);
+      await driver.pointer([rest]);
+      return { hovered, left, focused, focusout, again, leftAgain: await bubbleOpen(driver) };
     },
-    { hovered: true, left: false, focused: true, focus: "next", focusout: false, layer: [] },
+    { hovered: true, left: false, focused: true, focusout: { focus: "next", open: false, layer: [] }, again: true, leftAgain: false },
   ),
   row(
     "Leave with the other condition holding (FR-032, data-model § State): with keyboard focus on the trigger, the pointer that entered and leaves both boxes keeps it shown; hovered, focus moving off the trigger keeps it shown",
@@ -622,11 +833,31 @@ const overlayEvent = (tag: string, type: "close-request" | "close", reason: stri
 
 const escapeRows = [
   row(
-    "Escape (US3-4, FR-033): shown by keyboard focus, Escape hides it; focus stays on the trigger; a keydown recorder on the document (capture and bubble) sees nothing; dismissed: no bubble at any frame of a 450 ms wait with focus and pointer unchanged; the pointer entering the trigger shows it again by 450 ms",
+    "Escape, then a brief hover (FR-033, R-12): shown by keyboard focus and hidden by Escape, focus kept on the trigger; the pointer enters the trigger and leaves both boxes within 100 ms: no bubble at any frame of a 450 ms wait from the entry",
+    async (driver) =>
+      beforeDelay("the leave", async () => {
+        await start(driver, page());
+        await tabFrom(driver);
+        await driver.press("Escape");
+        await track(driver);
+        await driver.hover("trg");
+        await pause(50);
+        await driver.pointer([rest]);
+        await pause(450);
+        const f = await frames(driver);
+        return { at: f.left, observed: { never: never(f, 400), focus: await driver.focusPath(), visible: await driver.focusVisible("trg") } };
+      }),
+    { never: true, focus: "trg", visible: true },
+  ),
+  row(
+    "Escape (US3-4, FR-033): shown by keyboard focus, another key (Shift) leaves it shown and reaches the document; Escape hides it; focus stays on the trigger; a keydown recorder on the document (capture and bubble) sees nothing; dismissed: no bubble at any frame of a 450 ms wait with focus and pointer unchanged; the pointer entering the trigger shows it again by 450 ms",
     async (driver) => {
       await start(driver, page());
       await tabFrom(driver);
       const shown = await bubbleOpen(driver);
+      await tip(driver, { op: "keys" });
+      await driver.press("Shift");
+      const other = { open: await bubbleOpen(driver), keys: await tip(driver, { op: "keylog" }) };
       await tip(driver, { op: "keys" });
       await driver.press("Escape");
       const hidden = !(await bubbleOpen(driver));
@@ -637,9 +868,9 @@ const escapeRows = [
       await track(driver);
       await driver.hover("trg");
       await pause(450);
-      return { shown, hidden, keys, dismissed, focus: await driver.focusPath(), again: delay(await frames(driver)) };
+      return { shown, other, hidden, keys, dismissed, focus: await driver.focusPath(), again: delay(await frames(driver)) };
     },
-    { shown: true, hidden: true, keys: [], dismissed: true, focus: "trg", again: delayed },
+    { shown: true, other: { open: true, keys: ["document-capture:Shift", "document:Shift"] }, hidden: true, keys: [], dismissed: true, focus: "trg", again: delayed },
   ),
   row(
     "Escape (US3-4, FR-033): shown by hover, Escape hides it with the pointer resting on the trigger: dismissed, no bubble at any frame of a 450 ms wait; keyboard focus entering (Tab onto the trigger) shows it again at once",
@@ -702,27 +933,43 @@ const escapeRows = [
 
 const opensRows = (["ocelle-dialog", "ocelle-drawer"] as const).map((tag) =>
   row(
-    `Trigger opens an ${tag} (FR-010, FR-034, R-10): the bubble shown by hover past the delay; a click on the trigger opens the ${tag}: the bubble is hidden when it opens, the top layer holds only the ${tag}; one Escape requests the ${tag}'s close`,
+    `Trigger opens an ${tag} (FR-010, FR-034, R-10): the bubble shown by hover past the delay; a click on the trigger opens the ${tag}: the bubble is already hidden when the ${tag}'s <dialog> is shown (its beforetoggle), the top layer holds only the ${tag}; one Escape requests the ${tag}'s close`,
     async (driver) => {
       await start(driver, `<button id="before">Before</button><div id="stage"><ocelle-tooltip id="tip" text="Settings">${button}</ocelle-tooltip></div><${tag} id="dlg" label="Settings"><button id="inner">Inside</button></${tag}>${standIns}`);
       await act(driver, { op: "on", id: "trg", event: "click", then: [{ op: "attr", id: "dlg", name: "open", value: "" }] });
       await act(driver, { op: "veto", id: "dlg", event: `${tag}-close-request` });
       await driver.record("dlg", [`${tag}-close-request`, `${tag}-close`]);
+      await tip(driver, { op: "watchModal", id: "dlg" });
       await driver.hover("trg");
       await pause(450);
       const shown = await bubbleOpen(driver);
       await driver.click("trg");
       await pause(300);
-      const opened = { open: await bubbleOpen(driver), layer: await driver.topLayer(), focus: await driver.focusPath() };
+      const opened = { atOpen: await tip(driver, { op: "modalLog" }), open: await bubbleOpen(driver), layer: await driver.topLayer(), focus: await driver.focusPath() };
       await driver.press("Escape");
       return { shown, opened, recorded: await events(driver, 1) };
     },
     {
       shown: true,
-      opened: { open: false, layer: [dialogLayer], focus: "inner" },
+      opened: { atOpen: [false], open: false, layer: [dialogLayer], focus: "inner" },
       recorded: [overlayEvent(tag, "close-request", "escape", "inner")],
     },
   ),
+);
+
+const opensPendingRow = row(
+  "Trigger opens an ocelle-dialog before the delay (FR-010, FR-034, R-10): the pointer enters the trigger and clicks it before the delay, which opens the dialog: the pending bubble does not show, at no frame of a 450 ms wait from the entry",
+  async (driver) =>
+    beforeDelay("the click that opens the dialog", async () => {
+      await start(driver, `<button id="before">Before</button><div id="stage"><ocelle-tooltip id="tip" text="Settings">${button}</ocelle-tooltip></div><ocelle-dialog id="dlg" label="Settings"><button id="inner">Inside</button></ocelle-dialog>${standIns}`);
+      await act(driver, { op: "on", id: "trg", event: "click", then: [{ op: "attr", id: "dlg", name: "open", value: "" }] });
+      await track(driver);
+      await driver.click("trg");
+      await pause(450);
+      const f = await frames(driver);
+      return { at: f.clicked, observed: { never: never(f, 400), to450: (f.frames.at(-1)?.t ?? 0) >= 450, layer: await driver.topLayer(), focus: await driver.focusPath() } };
+    }),
+  { never: true, to450: true, layer: [dialogLayer], focus: "inner" },
 );
 
 // No bubble: empty text, disabled; hidden when the trigger goes (US3-9, FR-030, Edge Cases) ----------------------------
@@ -752,6 +999,48 @@ const noBubbleRows = [
       { none: { never: true, focus: "trg" }, shown: true },
     ),
   ),
+  row(
+    "No bubble without a text attribute (FR-030, data-model § ocelle-tooltip: text defaults to the empty string): no bubble at any frame of a 450 ms hover nor on keyboard focus; once text is set, keyboard focus arriving shows it at once",
+    async (driver) => {
+      await start(driver, page().replace(' text="Projects"', ""));
+      await track(driver);
+      await driver.hover("trg");
+      await pause(450);
+      await tabFrom(driver);
+      const none = { never: never(await frames(driver), 400), text: (await inspect(driver, "tip", painted)).text };
+      await driver.pointer([rest]);
+      await driver.setAttribute("tip", "text", "Projects");
+      await tabFrom(driver);
+      return { none, shown: await bubbleOpen(driver) };
+    },
+    { none: { never: true, text: "" }, shown: true },
+  ),
+  row(
+    "Tooltip removed during the delay (Edge Cases, FR-034): the pointer enters the trigger and the tooltip is removed at once: no bubble at any frame of a 450 ms wait, nothing thrown",
+    async (driver) => {
+      await start(driver, page());
+      await track(driver);
+      await driver.hover("trg");
+      await act(driver, { op: "remove", id: "tip" });
+      await pause(450);
+      return { layer: await driver.topLayer(), messages: await driver.messages() };
+    },
+    { layer: [], messages: [] },
+  ),
+  row(
+    "Hidden while shown when the tooltip is removed (Edge Cases, FR-033): shown by keyboard focus, the tooltip removed: no bubble in the top layer, and a later Escape is not taken: it reaches the document",
+    async (driver) => {
+      await start(driver, page());
+      await tabFrom(driver);
+      const shown = await bubbleOpen(driver);
+      await act(driver, { op: "remove", id: "tip" });
+      await act(driver, { op: "focus", id: "before" });
+      await tip(driver, { op: "keys" });
+      await driver.press("Escape");
+      return { shown, layer: await driver.topLayer(), keys: await tip(driver, { op: "keylog" }) };
+    },
+    { shown: true, layer: [], keys: ["document-capture:Escape", "document:Escape"] },
+  ),
   ...(
     [
       ["the trigger becomes disabled", { op: "attr", id: "trg", name: "disabled", value: "" }],
@@ -779,6 +1068,32 @@ const noBubbleRows = [
 // Slot change and two tooltips (R-12, FR-034) -------------------------------------------------------------------------
 
 const slotRows = [
+  row(
+    "Slot change after the trigger (R-12: the trigger is the first assigned element): a second element slotted after the trigger while the bubble is shown by keyboard focus leaves it shown",
+    async (driver) => {
+      await start(driver, page());
+      await tabFrom(driver);
+      await tip(driver, { op: "insert", id: "tip", markup: '<span id="extra">Extra</span>', first: false });
+      await pause(50);
+      return { open: await bubbleOpen(driver), focus: await driver.focusPath() };
+    },
+    { open: true, focus: "trg" },
+  ),
+  row(
+    "Slot change with keyboard focus on the old trigger (R-12: the trigger is the first assigned element): the trigger keyboard-focused, a new one slotted before it, so the focused one is no longer the trigger: the bubble hides at once; the pointer that entered the new trigger and showed its bubble hides it when it leaves (focus on the old one no longer holds it)",
+    async (driver) => {
+      await start(driver, page());
+      await tabFrom(driver);
+      await tip(driver, { op: "insert", id: "tip", markup: '<button id="trg2" aria-label="Second">S</button>', first: true });
+      const afterSlot = await bubbleOpen(driver);
+      await driver.hover("trg2");
+      await pause(450);
+      const shown = await bubbleOpen(driver);
+      await driver.pointer([rest]);
+      return { afterSlot, focus: await driver.focusPath(), shown, left: await bubbleOpen(driver) };
+    },
+    { afterSlot: false, focus: "trg", shown: true, left: false },
+  ),
   row(
     "Slot change (R-12): a new trigger slotted first and the old one moved out of the tooltip: the new trigger shows the bubble on keyboard focus and on hover; the old one shows none on hover or keyboard focus",
     async (driver) => {
@@ -813,6 +1128,21 @@ const slotRows = [
       return { first, focus: await driver.focusPath(), open: [await bubbleOpen(driver), await bubbleOpen(driver, "tip2")], layer: await driver.topLayer() };
     },
     { first: true, focus: "trg", open: [false, true], layer: [{ element: "tip2[div]", modal: false, popoverOpen: true }] },
+  ),
+  row(
+    "Two tooltips, keyboard focus after the other's hover (FR-034): the first trigger clicked and the pointer moved onto the second, whose bubble shows by hover; Shift+Tab moves focus from the first trigger to the page button and Tab back onto it: the first's bubble shows at once and the second's hides, one bubble in the top layer",
+    async (driver) => {
+      await start(driver, page({ after: '<ocelle-tooltip id="tip2" text="Files"><button id="trg2" aria-label="Files">F</button></ocelle-tooltip>' }));
+      await driver.click("trg");
+      await driver.hover("trg2");
+      await pause(450);
+      const second = await bubbleOpen(driver, "tip2");
+      await driver.press("Tab", { shift: true });
+      const away = await driver.focusPath();
+      await driver.press("Tab");
+      return { second, away, focus: await driver.focusPath(), open: [await bubbleOpen(driver), await bubbleOpen(driver, "tip2")], layer: await driver.topLayer() };
+    },
+    { second: true, away: "before", focus: "trg", open: [true, false], layer: [tipLayer] },
   ),
 ];
 
@@ -883,6 +1213,87 @@ const flipRows = (
     { side, onScreen: true, reflected: placement },
   ),
 );
+
+const exactRows = (["top", "bottom", "start", "end"] as const).map((placement) =>
+  row(
+    `Flip boundary (FR-035, R-11): placement="${placement}" with exactly the bubble's size plus the gutter between the trigger and the viewport's edge on that side: the bubble fits, so it is not flipped`,
+    async (driver) => {
+      await start(driver, page({ attrs: ` placement="${placement}"` }));
+      await tabFrom(driver);
+      const part = await inspect(driver, "tip", bubblePart);
+      const room = placement === "top" || placement === "bottom" ? part.height + gutter : part.width + gutter;
+      const edge = { top: "top", bottom: "bottom", start: "left", end: "right" }[placement];
+      const rules = {
+        top: `#stage { align-items: flex-start; padding-top: ${String(room)}px; }`,
+        bottom: `#stage { align-items: flex-end; padding-bottom: ${String(room)}px; }`,
+        left: `#stage { justify-content: left; padding-left: ${String(room)}px; }`,
+        right: `#stage { justify-content: right; padding-right: ${String(room)}px; }`,
+      }[edge] ?? "";
+      await driver.rules(rules);
+      await pause(50);
+      return { side: await placed(driver), onScreen: onScreen(await inspect(driver, "tip", painted)) };
+    },
+    { side: sideOf(placement, "ltr"), onScreen: true },
+  ),
+);
+
+const shortRows = (["top", "bottom", "start", "end"] as const).map((placement) =>
+  row(
+    `Flip boundary (FR-035, R-11): placement="${placement}" with one pixel less than the bubble's size plus the gutter between the trigger and the viewport's edge on that side: it does not fit, so it is shown on the opposite side`,
+    async (driver) => {
+      await start(driver, page({ attrs: ` placement="${placement}"` }));
+      await tabFrom(driver);
+      const part = await inspect(driver, "tip", bubblePart);
+      const room = (placement === "top" || placement === "bottom" ? part.height + gutter : part.width + gutter) - 1;
+      const rules = {
+        top: `#stage { align-items: flex-start; padding-top: ${String(room)}px; }`,
+        bottom: `#stage { align-items: flex-end; padding-bottom: ${String(room)}px; }`,
+        start: `#stage { justify-content: left; padding-left: ${String(room)}px; }`,
+        end: `#stage { justify-content: right; padding-right: ${String(room)}px; }`,
+      }[placement];
+      await driver.rules(rules);
+      await pause(50);
+      return { side: await placed(driver), onScreen: onScreen(await inspect(driver, "tip", painted)) };
+    },
+    { side: { top: "below", bottom: "above", start: "right", end: "left" }[placement], onScreen: true },
+  ),
+);
+
+const blockClampRows = (
+  [
+    ["top", "#stage { align-items: flex-start; padding-top: 4px; }", (box: Inspected) => Math.round(box.top), gutter],
+    ["bottom", "#stage { align-items: flex-end; padding-bottom: 4px; }", (box: Inspected) => Math.round(box.bottom), 800 - gutter],
+  ] as const
+).map(([edge, rules, read, expected]) =>
+  row(
+    `Cross-axis clamp on the block axis (FR-035, R-11): placement="end", a long text, the trigger 4 px from the ${edge} edge: the painted box right of the trigger, its ${edge} edge at the gutter (16 px) from the viewport's`,
+    async (driver) => {
+      await start(driver, page({ text: longText, attrs: ' placement="end"' }), rules);
+      await tabFrom(driver);
+      const trigger = await inspect(driver, "trg");
+      const box = await inspect(driver, "tip", painted);
+      return { right: Math.abs(box.left - trigger.right - 8) < 0.5, edge: read(box), onScreen: onScreen(box) };
+    },
+    { right: true, edge: expected, onScreen: true },
+  ),
+);
+
+const changeRows = [
+  row(
+    'Placement changed while shown (FR-030, FR-035): placement set from "top" to "bottom" while the bubble is shown by keyboard focus: within one frame it is below the trigger; the direction set to rtl with placement="start": within one frame it is on the trigger\'s right',
+    async (driver) => {
+      await start(driver, page());
+      await tabFrom(driver);
+      const before = await placed(driver);
+      await driver.setAttribute("tip", "placement", "bottom");
+      const bottom = await placed(driver);
+      await driver.setAttribute("tip", "placement", "start");
+      await driver.dir("stage", "rtl");
+      return { before, bottom, rtlStart: await placed(driver) };
+    },
+    { before: "above", bottom: "below", rtlStart: "right" },
+  ),
+];
 
 const longText = "Shows the missions of the workspace that match every filter you set in the panel on the left";
 
@@ -1248,6 +1659,17 @@ const describesRows = [
     { set: { attribute: true, spans: [span("Saves a draft")] }, unset: { attribute: "x", spans: [] }, again: true, disconnected: "x" },
   ),
   row(
+    'describes lifecycle (FR-036, R-13): host ids "x y" on the trigger: describes set gives "x y <id>", unset gives "x y" again, in order',
+    async (driver) => {
+      await start(driver, `${page({ text: "Saves a draft", trigger: '<button id="trg" aria-describedby="x y">Save</button>' })}<p id="x">Ex</p><p id="y">Why</p>`);
+      await driver.setAttribute("tip", "describes", "");
+      const set = await describedBy(driver);
+      await driver.setAttribute("tip", "describes", null);
+      return { set: set.attribute === `x y ${set.spans[0]?.id ?? "?"}`, unset: (await describedBy(driver)).attribute };
+    },
+    { set: true, unset: "x y" },
+  ),
+  row(
     "describes lifecycle (FR-036, R-13): text changed: the description follows it; text emptied: no span and no id on the trigger",
     async (driver) => {
       await start(driver, page({ text: "Saves a draft", attrs: " describes", trigger: '<button id="trg">Save</button>' }));
@@ -1296,6 +1718,56 @@ const describesRows = [
   ),
 ];
 
+const describesMoreRows = [
+  row(
+    'describes lifecycle (R-13: the tooltip removes only its own id): without describes, a host aria-describedby=" x  y " on the trigger is left exactly as written through updates and a slot change',
+    async (driver) => {
+      await start(driver, `${page({ text: "Saves a draft", trigger: '<button id="trg" aria-describedby=" x  y ">Save</button>' })}<p id="x">Ex</p><p id="y">Why</p>`);
+      await driver.setAttribute("tip", "text", "Saves a copy");
+      const updated = await driver.attribute("trg", "aria-describedby");
+      await tip(driver, { op: "insert", id: "tip", markup: '<button id="trg2">Keep</button>', first: true });
+      return { updated, slotted: await driver.attribute("trg", "aria-describedby") };
+    },
+    { updated: " x  y ", slotted: " x  y " },
+  ),
+  row(
+    "describes lifecycle (FR-036, R-13): the trigger removed with nothing slotted after it: the span is removed and nothing thrown; a new trigger slotted later is described",
+    async (driver) => {
+      await start(driver, page({ text: "Saves a draft", attrs: " describes", trigger: '<button id="trg">Save</button>' }));
+      await act(driver, { op: "remove", id: "trg" });
+      await pause(20);
+      const removed = { children: (await inspect(driver, "tip")).children, messages: await driver.messages() };
+      await tip(driver, { op: "insert", id: "tip", markup: '<button id="trg2">Keep</button>', first: true });
+      const back = await describedBy(driver, "tip", "trg2");
+      return { removed, back: { spans: spansOf(back), linked: back.attribute === back.spans[0]?.id }, trigger: await driver.ax("trg2") };
+    },
+    { removed: { children: 0, messages: [] }, back: { spans: [span("Saves a draft")], linked: true }, trigger: [{ role: "button", name: "Keep", description: "Saves a draft" }] },
+  ),
+  row(
+    "describes lifecycle (FR-036, R-13): a tooltip with describes and a text but no trigger adds no span, and nothing throws",
+    async (driver) => {
+      await start(driver, `<button id="before">Before</button><div id="stage"><ocelle-tooltip id="tip" text="Saves a draft" describes></ocelle-tooltip></div>${standIns}`);
+      return { children: (await inspect(driver, "tip")).children, messages: await driver.messages() };
+    },
+    { children: 0, messages: [] },
+  ),
+  row(
+    "describes lifecycle (FR-036, R-13): a disconnected tooltip whose text changes adds no span and no id back; re-inserted, its trigger is described again after the host's ids",
+    async (driver) => {
+      await start(driver, `${page({ text: "Saves a draft", attrs: " describes", trigger: '<button id="trg" aria-describedby="x">Save</button>' })}<p id="x">Extra</p>`);
+      await tip(driver, { op: "keep", id: "trg" });
+      await act(driver, { op: "remove", id: "tip" });
+      await act(driver, { op: "set", id: "tip", name: "text", value: "Saves a copy" });
+      await pause(20);
+      const removed = await tip(driver, { op: "kept", id: "trg", name: "aria-describedby" });
+      await act(driver, { op: "reinsert", id: "tip" });
+      const back = await describedBy(driver);
+      return { removed, back: { attribute: back.attribute === `x ${back.spans[0]?.id ?? "?"}`, spans: spansOf(back) }, trigger: await driver.ax("trg") };
+    },
+    { removed: "x", back: { attribute: true, spans: [span("Saves a copy")] }, trigger: [{ role: "button", name: "Save", description: "Extra Saves a copy" }] },
+  ),
+];
+
 // Forced colours (US3-8, R-09) ---------------------------------------------------------------------------------------
 
 const forcedRow = row(
@@ -1328,11 +1800,16 @@ export const tooltipScenarios: readonly TooltipScenario[] = [
   ...leaveRows,
   ...escapeRows,
   ...opensRows,
+  opensPendingRow,
   ...noBubbleRows,
   ...slotRows,
   ...placementRows,
   ...flipRows,
+  ...exactRows,
+  ...shortRows,
   ...clampRows,
+  ...blockClampRows,
+  ...changeRows,
   neitherRow,
   ...containerRows,
   ...insideRows,
@@ -1344,6 +1821,7 @@ export const tooltipScenarios: readonly TooltipScenario[] = [
   layoutRow,
   ...treeRows,
   ...describesRows,
+  ...describesMoreRows,
   forcedRow,
 ];
 

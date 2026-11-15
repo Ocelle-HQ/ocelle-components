@@ -170,6 +170,8 @@ export const records = tokenRecords([
   { name: "size-avatar", group: "size", value: "1.6rem" },
   { name: "size-rail-item", group: "size", value: "2.5rem" },
   { name: "size-visually-hidden", group: "size", value: "1px" },
+  // the tooltip bubble's maximum inline size: about 40 characters of font-size-sm (008 research.md R-09)
+  { name: "tooltip-max-inline", group: "size", value: "18rem" },
 
   // A.4 Shell and measure (theme-independent)
   { name: "shell-topbar-height", group: "shell", value: "3.25rem" },
@@ -228,6 +230,8 @@ export const records = tokenRecords([
   { name: "motion-fast", group: "motion", value: "120ms" }, // 0ms under reduced motion
   { name: "motion-base", group: "motion", value: "200ms" }, // 0ms under reduced motion
   { name: "easing-standard", group: "motion", value: "cubic-bezier(0.22, 1, 0.36, 1)" },
+  // the tooltip's hover delay; not 0ms under reduced motion, because a delay is not motion (008 research.md R-09)
+  { name: "tooltip-delay", group: "motion", value: "500ms" },
 ]);
 
 export const source: readonly TokenRecord[] = applyOverrides(records, overrides);

@@ -1,0 +1,4 @@
+$ node gates/bin/test.ts
+packages/elements/test/tooltip.test.ts:29: unit-tests: ocelle-tooltip, in process (US3) Click focus (FR-031): a pointer click on the button trigger and the pointer moved off at once: focus on the trigger without :focus-visible, no bubble at any frame of a 450 ms wait; then Shift+Tab and Tab back (keyboard focus) show it at once: AssertionError: expected { …(3) } to deeply equal { …(3) }
+unit-tests: 1 of 5067 tests failed
+[ELIFECYCLE] Test failed. See above for more details.
