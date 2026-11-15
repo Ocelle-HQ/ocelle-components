@@ -101,13 +101,11 @@ and panels are not rendered.
 
 Roles `toolbar` (horizontal orientation, operator decision PLAN-A11Y-SECURITY-1-008 (a)) / `button` with
 `aria-pressed`. Custom states on segments for joined rows, set through a feature-checked internal method (R-06):
-internal, not manifest surface. This holds if the operator confirms plan decision 1. If not (the stop before phase 4, T059a;
-operator decisions Q2 (c) and, second analysis, Q3 (b)), the parent writes `data-ocelle-row-start`, `data-ocelle-row-end`, `data-ocelle-first-row`
-and `data-ocelle-last-row` on segment hosts instead. These attributes are element-owned and overwritten on every
-regroup, like the state attributes of R-01. They are internal: not manifest attributes, not part of the
-public surface (constitution I, VII) and not a styling hook, so hosts must not select or style on them, and their
-names and values may change in a PATCH release. The README documents them as element-owned and states exactly this,
-and the readme test checks it (T064a, T067a; R-06 Status; second analysis U2).
+internal, not manifest surface. `:state()` sets the package's engine floor at Chromium 125 / WebKit 17.4. Plan
+decision 1 is decided yes (the stop before phase 4, T059a, 2026-11-15; `reviews/phase-4/decision-1.md`; R-06 Status),
+so this contract holds. The declined alternative, element-owned `data-ocelle-row-*` attributes on segment hosts with
+the floor unchanged (operator decisions Q2 (c) and, second analysis, Q3 (b), U2), is not built: no segment host
+carries a row attribute, and T062a, T064a, T066a and T067a are skipped.
 
 ## `ocelle-copy-field`
 
@@ -206,4 +204,4 @@ recorded in `reviews/phase-N/plants.md` (research R-11).
 | a disabled child shows no hover paint (Edge Cases "Hover", R-15; option, tab, segment; second analysis G1) | an enabled sibling under the pointer shows the `hover-bg` fill (and, for a joined segment, `accent-strong` lines) | a `:host(:hover)` rule with no disabled exclusion | a real pointer move onto a disabled option, tab or segment, then on an enabled sibling; computed background and, for the joined segment, the pixel run across its lines read under each |
 | a second definition does not replace the first (Edge Cases, two copies of the package; every new element) | the element defined by the first copy works as specified | `define` without the "already defined" check | a second class registered under the same tag after the first; no exception, the first class's instance still exposed |
 | a `status` attribute is not reflected after the element clears `status` (Edge Cases, FR-042) | the property reads `""` after the clear | reflecting `status` | `status` written as an attribute in the markup, then a request |
-| joined, row attributes (only if plan decision 1 is not confirmed): host-written row attributes do not stay (R-06 Status) | the measured radii per row | writing the row attributes only when absent | a host writes `data-ocelle-row-start` on a middle segment; read after the next regroup |
+| joined, row attributes (only if plan decision 1 had been answered no; it was answered yes, so this pairing is not built, T062a skipped): host-written row attributes do not stay (R-06 Status) | the measured radii per row | writing the row attributes only when absent | a host writes `data-ocelle-row-start` on a middle segment; read after the next regroup |

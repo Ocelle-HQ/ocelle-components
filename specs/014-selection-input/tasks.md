@@ -75,12 +75,10 @@ lines are reports, not findings; entries are at most 30 changed lines.
 - **T090 spikes (phase 6)**: the `file:` page cannot load the browser build or navigate under
   `--allow-file-access-from-files` (R-09, plan decision 6); the link host with a host `aria-label` exposes other than
   one named link (R-08, plan decision 7).
-- **The engine-floor raise (T059a, before phase 4 starts)** (plan decision 1, still open; operator decisions Q2 (c)
-  and, second analysis, Q3 (b)): the operator asks kitty-mission-ui for its WebKitGTK and WKWebView minimums first.
-  Phase 4 does not start (no T060) until the operator's answer to decision 1 is recorded in research R-06. "Yes"
-  (floor confirmed): T064, T066 and T067 as written, and T062a, T064a, T066a and T067a are skipped. "No": T062a,
-  T064a, T066a and T067a replace the custom-state parts of T064, T066 and T067, and the floor stays at Chromium 120 /
-  WebKit 16.4.
+- **The engine-floor raise (T059a, before phase 4 starts)** (plan decision 1; operator decisions Q2 (c) and, second
+  analysis, Q3 (b)): **decided yes** at the stop (2026-11-15, `reviews/phase-4/decision-1.md`, recorded in research
+  R-06 Status). kitty-mission-ui supports WebKit 17.4 and Chromium 125 or later; the floor is raised to Chromium 125 /
+  WebKit 17.4. T064, T066 and T067 apply as written, and T062a, T064a, T066a and T067a are skipped.
 - **A plant that does not bite. Any mutation shard over 10 minutes. A new colour pairing not in R-15/R-17.**
 
 ## Format: `[ID] [P?] [Story] Description`
@@ -218,17 +216,17 @@ unselected panel node; the tabs stories pass #10's full axe rule set.
 ## Phase 4: User Story 3 - Choose one of a few options as a toggle group: `ocelle-segmented-choice` (Priority: P3)
 
 **Goal**: US3 scenarios 1 to 19; FR-026 to FR-030; a toolbar of toggle buttons; the joined variant with its internal
-`ResizeObserver`, `accent-strong` lines around the pressed segment; custom states and the engine-floor raise, if the
-operator confirms plan decision 1 at the stop before the phase (T059a); otherwise element-owned row attributes,
-documented as internal, and no floor raise (T062a, T064a, T066a, T067a).
+`ResizeObserver`, `accent-strong` lines around the pressed segment; custom states and the engine-floor raise to
+Chromium 125 / WebKit 17.4 (plan decision 1, answered yes at the stop before the phase, T059a,
+`reviews/phase-4/decision-1.md`; the row-attribute tasks T062a, T064a, T066a and T067a are skipped).
 
 **Independent Test**: on the strict-CSP fixture, four segments are walked and pressed; the joined variant is measured
 at one-row and two-row widths after the observer's delivery; shared lines beside the pressed and a hovered segment
 stay `accent-strong` with a focused neighbour on either side.
 
-### Stop for plan decision 1 (before the phase starts)
+### Stop for plan decision 1 (before the phase starts; decided yes)
 
-- [ ] T059a [US3] **Stop until plan decision 1 is recorded in research R-06** (engine floor; operator decisions Q2 (c) and, second analysis, Q3 (b)). Phase 4 starts only after the answer: no measurement, scaffold or test of phase 4 before it. Record the answer ("yes": custom states and the raised floor; "no": row attributes, floor unchanged) in `specs/014-selection-input/reviews/phase-4/decision-1.md` (not marked [P]: it blocks every phase 4 task)
+- [X] T059a [US3] **Stop until plan decision 1 is recorded in research R-06** (done: answered yes, 2026-11-15, recorded in `specs/014-selection-input/reviews/phase-4/decision-1.md` and research R-06 Status; floor raised to Chromium 125 / WebKit 17.4) (engine floor; operator decisions Q2 (c) and, second analysis, Q3 (b)). Phase 4 starts only after the answer: no measurement, scaffold or test of phase 4 before it. Record the answer ("yes": custom states and the raised floor; "no": row attributes, floor unchanged) in `specs/014-selection-input/reviews/phase-4/decision-1.md` (not marked [P]: it blocks every phase 4 task)
 
 ### Measurement (first)
 
@@ -236,24 +234,24 @@ stay `accent-strong` with a focused neighbour on either side.
 
 ### Scaffold
 
-- [ ] T061 [US3] `scaffold.sh`: `packages/elements/src/{ocelle-segmented-choice,ocelle-segment}.ts`; `index.ts`, `browser.ts`; `exports`. No row mechanism is scaffolded (no row-state method and no row attribute): the red tests read the radii, not the mechanism, and the mechanism follows the answer recorded at T059a
+- [ ] T061 [US3] `scaffold.sh`: `packages/elements/src/{ocelle-segmented-choice,ocelle-segment}.ts`; `index.ts`, `browser.ts`; `exports`. No row mechanism is scaffolded (no row-state method and no row attribute): the red tests read the radii, not the mechanism, and the mechanism follows the answer recorded at T059a (yes: custom states, T066)
 
 ### Tests (red, one commit)
 
 - [ ] T062 [P] [US3] `packages/elements/test/scenarios/segmented-choice.ts`: US3-1 to US3-19 with pairings (focus-only moves emit nothing, joined: no `style` attribute, shared line not widened, pressed lines not `control-border` also with a focused neighbour), resize measurements, four-sided ring read beside the pressed and a hovered segment, the focused pressed segment beside a later hovered one. The spec's Edge Cases for the segmented choice, by name (analysis G1): an `ocelle-segment` outside a segmented choice (no role, no tab stop); two segments with the same value (a host set presses the first; a user press of the second exposes the second as pressed and reports the same value); a long segment label at 320 px in both variants (wraps, the segment grows, nothing truncated, no sideways scroll); host `hidden` on the segmented choice (no box, no node); a second definition of both tags (the first wins, nothing thrown); the segment's accessible name following a text change; a disabled segment under the pointer shows no hover paint (no `hover-bg` fill and, in the joined variant, no `accent-strong` lines), paired with an enabled sibling's `hover-bg` fill (and joined `accent-strong` lines) under the pointer (contracts § Pairings, plant: a `:host(:hover)` rule with no disabled exclusion; second analysis G1)
-- [ ] T062a [P] [US3] Only if decision 1 was answered no at the stop (T059a): in `scenarios/segmented-choice.ts`, a host-written `data-ocelle-row-start` on a middle segment does not survive the next regroup, paired with the measured radii per row (contracts § Pairings, plant: writing the row attributes only when absent)
+- [X] T062a [P] [US3] **Skipped by plan decision 1** (answered yes at the stop, T059a; `specs/014-selection-input/reviews/phase-4/decision-1.md`): ticked as skipped, not done; the text below is kept for the record. Only if decision 1 was answered no at the stop (T059a): in `scenarios/segmented-choice.ts`, a host-written `data-ocelle-row-start` on a middle segment does not survive the next regroup, paired with the measured radii per row (contracts § Pairings, plant: writing the row attributes only when absent)
 - [ ] T062b [P] [US3] `packages/elements/test/scenarios/tabs.ts`: US2-21's body with the real element, in this phase's red commit (T065), run in both harnesses (`test/tabs.test.ts`, `test/browser/tabs.test.ts`): the selected `Plan` panel holds a `<button>`, a text `<input>` and an `ocelle-segmented-choice`; ArrowRight on a segment moves focus to the next segment only, `Plan` stays selected and its panel shown, no `ocelle-tabs-change` is emitted, paired in the same body with ArrowRight on a tab, which moves focus and selection. The phase 3 stand-in body (a nested `ocelle-tabs` in the Plan panel) stays (phase 3 review R1-04, `reviews/phase-3/notes.md` "Stand-ins")
 - [ ] T063 [P] [US3] `packages/elements/test/segmented-choice.test.ts`, `packages/elements/test/browser/segmented-choice.test.ts`, `fixtures/segmented-choice.html`; `entry-ocelle-segmented-choice.test.ts`, `entry-ocelle-segment.test.ts`; `entry-root.test.ts`
-- [ ] T064 [P] [US3] `storybook/stories/segmented-choice.stories.ts` (default, joined one row, joined wrapped, pressed, disabled, focused, hovered segment in the default variant and in the joined variant via #10's pointer parameter, icon; FR-050) and the story test; `selection-pairs.test.ts`; `readme.test.ts` gains the segmented choice and, if decision 1 was answered yes at the stop (T059a), the engine floor Chromium 125 / WebKit 17.4 with `:state()` as the feature
-- [ ] T064a [P] [US3] Only if decision 1 was answered no at the stop (T059a), instead of T064's engine-floor statement: `readme.test.ts` asserts the engine floor stays Chromium 120 / WebKit 16.4, and that the README documents `data-ocelle-row-start`, `data-ocelle-row-end`, `data-ocelle-first-row` and `data-ocelle-last-row` as element-owned and overwritten on every regroup, internal (not part of the public surface and not a styling hook: hosts must not style on them) and subject to change in a PATCH release (R-06 Status; contracts § `ocelle-segmented-choice`; second analysis U2); the stories and story test of T064 are unchanged
+- [ ] T064 [P] [US3] `storybook/stories/segmented-choice.stories.ts` (default, joined one row, joined wrapped, pressed, disabled, focused, hovered segment in the default variant and in the joined variant via #10's pointer parameter, icon; FR-050) and the story test; `selection-pairs.test.ts`; `readme.test.ts` gains the segmented choice and the engine floor Chromium 125 / WebKit 17.4 with `:state()` as the feature (decision 1 answered yes at the stop, T059a)
+- [X] T064a [P] [US3] **Skipped by plan decision 1** (answered yes at the stop, T059a; `specs/014-selection-input/reviews/phase-4/decision-1.md`): ticked as skipped, not done; the text below is kept for the record. Only if decision 1 was answered no at the stop (T059a), instead of T064's engine-floor statement: `readme.test.ts` asserts the engine floor stays Chromium 120 / WebKit 16.4, and that the README documents `data-ocelle-row-start`, `data-ocelle-row-end`, `data-ocelle-first-row` and `data-ocelle-last-row` as element-owned and overwritten on every regroup, internal (not part of the public surface and not a styling hook: hosts must not style on them) and subject to change in a PATCH release (R-06 Status; contracts § `ocelle-segmented-choice`; second analysis U2); the stories and story test of T064 are unchanged
 - [ ] T065 [US3] `red.sh 4`
 
 ### Implementation (green)
 
 - [ ] T066 [US3] `packages/elements/src/ocelle-segment.ts`, `ocelle-segmented-choice.ts`: `toolbar` role, toggle buttons with `aria-pressed`, roving with wrap on both axes, `joined` with the internal `ResizeObserver` on the group and its segments, custom states for rows, `accent-low` fill and block-end bar for the pressed segment, `accent-strong` lines around it, raised `::after` ring, target size
-- [ ] T066a [US3] Only if decision 1 was answered no at the stop (T059a), instead of T066's custom states: the parent writes the row attributes on segment hosts at each regroup and overwrites host-written ones, and the segment's CSS rounds with `:host([data-ocelle-row-start])` and so on; no internal row method on the segment, no `:state()` (R-06 Status; passes T062a)
+- [X] T066a [US3] **Skipped by plan decision 1** (answered yes at the stop, T059a; `specs/014-selection-input/reviews/phase-4/decision-1.md`): ticked as skipped, not done; the text below is kept for the record. Only if decision 1 was answered no at the stop (T059a), instead of T066's custom states: the parent writes the row attributes on segment hosts at each regroup and overwrites host-written ones, and the segment's CSS rounds with `:host([data-ocelle-row-start])` and so on; no internal row method on the segment, no `:state()` (R-06 Status; passes T062a)
 - [ ] T067 [US3] Manifest; README segmented-choice section and engines section; CHANGELOG
-- [ ] T067a [US3] Only if decision 1 was answered no at the stop (T059a), instead of T067's engines section: README segmented-choice section with the row attributes as element-owned, internal, not a styling hook and subject to change in a PATCH (T064a; second analysis U2), no manifest entry for them, engines section unchanged (Chromium 120 / WebKit 16.4); CHANGELOG without a floor raise
+- [X] T067a [US3] **Skipped by plan decision 1** (answered yes at the stop, T059a; `specs/014-selection-input/reviews/phase-4/decision-1.md`): ticked as skipped, not done; the text below is kept for the record. Only if decision 1 was answered no at the stop (T059a), instead of T067's engines section: README segmented-choice section with the row attributes as element-owned, internal, not a styling hook and subject to change in a PATCH (T064a; second analysis U2), no manifest entry for them, engines section unchanged (Chromium 120 / WebKit 16.4); CHANGELOG without a floor raise
 - [ ] T068 [US3] Baselines for the segmented-choice stories with `pnpm run visual:update` in #10's pinned container under docker (`storybook/baselines/`), with any shared baseline (the token stories included) that changes, inspected and committed with the reason in the commit message; move the story-theme counts of `gates/test/integration/visual.test.ts` and add the new light stories that show `color-ink` to `gates/plants/visual/fail-token-changed/plant.json`; record in `reviews/phase-4/notes.md` that no podman cross-engine check was possible and CI confirms the baselines at landing (operator decision 2026-11-14, `reviews/phase-2/operator-decisions.md`; FR-053, SC-007)
 - [ ] T069 [US3] Plants recorded in `reviews/phase-4/plants.md`; the gates of T028
 
@@ -338,7 +336,7 @@ the `file:` copy navigates to its `file:` target.
 **Purpose**: cross-element records only.
 
 - [ ] T110 `packages/elements/test/node/readme.test.ts` (red first): the README overview names the nine elements and the entry-point table lists every new specifier (contracts § Entry points); the README has one example per SC-009 use: the Open project folder picker (listbox), tabbed screens (tabs), segmented choices (segmented choice), in-text links (link) and copy fields (copy field), each built from the elements' public surface with no ARIA attribute, `ResizeObserver` or clipboard call of the host's own (SC-009, R-14; analysis G3)
-- [ ] T111 `packages/elements/README.md` overview, entry-point table and the SC-009 examples of T110; `packages/elements/CHANGELOG.md` MINOR entry naming the nine elements, six events and the engine floor as decided at the phase 4 stop, T059a (raised, or unchanged with the row attributes)
+- [ ] T111 `packages/elements/README.md` overview, entry-point table and the SC-009 examples of T110; `packages/elements/CHANGELOG.md` MINOR entry naming the nine elements, six events and the engine floor raised to Chromium 125 / WebKit 17.4 as decided at the phase 4 stop (T059a, `reviews/phase-4/decision-1.md`)
 - [ ] T112 If #16 (mission 008) has merged before this feature lands: the composed `ocelle-dialog` + `ocelle-listbox` story with its baselines from the pinned container under docker (FR-054; operator decision 2026-11-14, `reviews/phase-2/operator-decisions.md`); otherwise record in `reviews/phase-7/notes.md` that 008 adds it
 - [ ] T113 Full gate run per `specs/014-selection-input/quickstart.md` (`gate:visual` under docker included, quickstart step 4), one heavy job at a time; record in `reviews/phase-7/gates.md`, with the note that no podman cross-engine check was possible and CI confirms the baselines at landing
 
@@ -356,9 +354,9 @@ the `file:` copy navigates to its `file:` target.
   token pairs.
 - Phases 5 (US4) and 6 (US5) depend only on phase 1 and the conventions, but share the README, the readme test, the
   story test, the manifest and `index.ts`, so phases run in order 2 to 7, one review unit at a time.
-- T059a blocks every phase 4 task: phase 4 does not start (no T060) until the operator's answer to plan decision 1
-  is recorded. "Yes": T064, T066 and T067. "No": T062a, T064a, T066a and T067a in their place for the row mechanism
-  and the engines section (operator decisions Q2 (c) and, second analysis, Q3 (b)).
+- T059a blocked every phase 4 task until the operator's answer to plan decision 1 was recorded (operator decisions
+  Q2 (c) and, second analysis, Q3 (b)). The answer is yes (`reviews/phase-4/decision-1.md`): T064, T066 and T067
+  apply; T062a, T064a, T066a and T067a are skipped.
 
 ## Parallel Opportunities
 
