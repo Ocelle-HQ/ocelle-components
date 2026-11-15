@@ -130,4 +130,28 @@ describe("ocelle-list-detail's measurement pass (R-13)", () => {
     await nextFrame();
     expect({ detail: detail === null || detail === undefined ? "absent" : getComputedStyle(detail).display, passes: passCount() - start }).toEqual({ detail: "none", passes: 1 });
   });
+
+  // Added in phase 4's review round 2 (reviews/phase-4/round-2.md R2-01, operator decision P4), red before the fix: the
+  // host's remedy for a change the element cannot see, `remeasure()`, re-chooses the tier from a fresh measurement of
+  // the host's border box, in the pass it requests, so in the first animation frame after the call and in one pass
+  // with a light-DOM change made in the same task. Plant (L22): that pass does not re-choose the tier.
+  it("review R2-01: remeasure() re-chooses the tier from a fresh measurement of the host's border box in the first animation frame after the call, in one pass with a light-DOM change made in the same task: a content-box host 600 px wide with 2% inline padding and collapse-below 640px, whose container narrows from 1000 px to 500 px, shows one column by the end of that frame", async () => {
+    await driver.viewport(1280, 800);
+    await driver.mount('<div id="q-c"><ocelle-list-detail id="q" collapse-below="640px"><div slot="list"><p>One</p></div><div><p id="q-b">Detail</p></div></ocelle-list-detail></div>');
+    await driver.rules("#q-c { inline-size: 1000px; } #q { box-sizing: content-box; inline-size: 600px; padding-inline: 2%; }");
+    const element = document.querySelector("ocelle-list-detail");
+    const tier = (): string | null | undefined => element?.shadowRoot?.querySelector(".grid")?.getAttribute("data-tier");
+    const wide = tier();
+    await driver.style("q-c", "inline-size", "500px");
+    const stale = { tier: tier(), width: element?.getBoundingClientRect().width };
+    const start = passCount();
+    element?.remeasure();
+    const target = document.getElementById("q-b");
+    if (target !== null) target.textContent = "Changed with remeasure()";
+    await nextFrame();
+    const inFrame = tier();
+    await nextFrame();
+    expect({ wide, stale, inFrame, passes: passCount() - start }).toEqual({ wide: "two", stale: { tier: "two", width: 620 }, inFrame: "one", passes: 1 });
+  });
 });
+

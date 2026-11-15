@@ -805,10 +805,15 @@ export const listDetailGuards: readonly ListDetailScenario[] = [
 // ---------------------------------------------------------------------------------------------------------------
 // Added in phase 4's review round 1 (reviews/phase-4/round-1.md), red before the fix: R1-02, a list-detail inside
 // another component's shadow root, where `document.activeElement` is that component's host; R1-03 (operator decision
-// P3), a change of the host's inline padding or borders alone, which keeps the content box.
+// P3), a change of the host's inline padding or borders alone, which keeps the content box. Added in round 2
+// (reviews/phase-4/round-2.md, operator decision P4), red before the fix: R2-02, the host's inline padding and borders
+// as a floor of its intrinsic sizes; R2-01, a percentage inline padding that changes with the host's container, a
+// recorded limitation whose remedy is `remeasure()`. Each plant is named beside its scenario and recorded in
+// reviews/phase-4/plants.md.
 
 export const listDetailFixes: readonly ListDetailScenario[] = [
   {
+    // Plant (L21): the focused pane read from `document.activeElement` (focus then stays in the hidden list pane).
     name: "US3 review R1-02: a list-detail inside another component's open shadow root (test-shadow-frame) in Frame N, with focus on a list button, moves focus to the detail pane when detail-open is set, and back to the list pane when it is removed, so focus never stays in a hidden pane (FR-028, SC-005)",
     base: false,
     run: async (driver) => {
@@ -823,6 +828,9 @@ export const listDetailFixes: readonly ListDetailScenario[] = [
     expected: { start: "sh >> z-l0", opened: "sh >> z >> div.pane.detail", closed: "sh >> z >> div.pane.list" },
   },
   {
+    // Plants: the edge box not observed (L19: the tier stays one column with the padding and the borders); the host's
+    // own border box observed in place of the edge box (L18: this case passes, and the US3-12 cases and the
+    // "ResizeObserver loop" case fail).
     name: "US3 review R1-03: the tier follows a change of the host's inline padding or borders alone: in Frame W a host 630 px wide in its content box, with collapse-below 640px, shows one column; 10 px inline padding (a 650 px border box) gives two columns and removing it one again; 5 px inline borders (640 px, the exclusive bound) give two and removing them one again (FR-025)",
     base: false,
     run: async (driver) => {
@@ -846,4 +854,79 @@ export const listDetailFixes: readonly ListDetailScenario[] = [
       unbordered: { layout: "one: list", width: 630 },
     },
   },
+  {
+    // Plant (L20): the edge box in flow (its `position: absolute` removed): its padding and borders are then a floor of
+    // the host's content size, so each element is 300 or 400 px wider.
+    name: "US3 review R2-02: the host's inline padding and borders are no floor of its intrinsic sizes: in a min-content wrapper a list-detail with 150 px inline padding is 300 px wide when empty, and 300 px plus one letter with a letter in each pane; in a max-content wrapper an empty one with 200 px inline padding and 1 px inline borders is its two-column max-content (the 288 px list and the detail's 1 px border) plus 402 px (FR-025)",
+    base: false,
+    run: async (driver) => {
+      const letters = '<div slot="list">x</div><div>x</div><div slot="inspector">x</div>';
+      await page(driver, "R", `<div class="mn">${listDetail("a", "", "")}</div><div class="mn">${listDetail("b", "", letters)}</div><div class="mx">${listDetail("c", "", "")}</div><span id="m">x</span>`, {
+        extra: ".mn { inline-size: min-content; } .mx { inline-size: max-content; } #a, #b { padding-inline: 150px; } #c { padding-inline: 200px; border-inline: 1px solid; }",
+      });
+      const width = async (id: string): Promise<number> => (await driver.box(id)).width;
+      const letter = await width("m");
+      return { empty: round(await width("a")), letters: round((await width("b")) - letter), letter: letter > 0, max: round(await width("c")) };
+    },
+    expected: { empty: 300, letters: 300, letter: true, max: 691 },
+  },
+  {
+    // Plant (L22): the pass `remeasure()` requests does not re-choose the tier (the fresh measurement of the host's
+    // border box removed): the tier stays stale after the call, both ways.
+    name: "US3 review R2-01: a percentage inline padding that changes with the host's container is not seen, and remeasure() re-chooses the tier: in Frame W a content-box host 600 px wide with 2% inline padding and collapse-below 640px, in a 1000 px container, is 640 px wide and shows two columns; narrowing the container to 500 px makes it 620 px and the tier stays stale until the host calls remeasure(), which gives one column; widening the container back to 1000 px makes it 640 px, stale in one column until remeasure() gives two again, with no error (FR-025)",
+    base: false,
+    run: async (driver) => {
+      await page(driver, "W", `<div id="q-c" class="qc">${listDetail("q", ' collapse-below="640px"')}</div>`, {
+        extra: ".qc { inline-size: 1000px; } #q { box-sizing: content-box; inline-size: 600px; padding-inline: 2%; }",
+      });
+      const state = async (): Promise<{ layout: string; width: number }> => ({ layout: await layout(driver, "q"), width: round((await driver.box("q")).width) });
+      const first = await state();
+      await driver.style("q-c", "inline-size", "500px");
+      await frames(driver, 4);
+      const narrowed = await state();
+      await driver.call("q", "remeasure");
+      const remeasured = await state();
+      await driver.style("q-c", "inline-size", "1000px");
+      await frames(driver, 4);
+      const widened = await state();
+      await driver.call("q", "remeasure");
+      return { first, narrowed, remeasured, widened, again: await state(), messages: await driver.messages() };
+    },
+    expected: {
+      first: { layout: "two", width: 640 },
+      narrowed: { layout: "two", width: 620 },
+      remeasured: { layout: "one: list", width: 620 },
+      widened: { layout: "one: list", width: 640 },
+      again: { layout: "two", width: 640 },
+      messages: [],
+    },
+  },
+  {
+    // Plants: the edge box observed in its content box (L23: its content box is always 0 px wide, so the tier stays one
+    // column); the edge box 1 px tall (L24: it then adds to the scroll container's overflow, 410 px).
+    name: "US3 review R2-01: a host whose content box is narrower than its own inline padding and borders: in Frame W a content-box host 30 px wide with 40 px inline padding and collapse-below 120px, in a 100 px scroll container, is 110 px wide and shows one column; 50 px inline padding (130 px) gives two columns and 40 px one again; with narrow and 200 px inline-start padding (240 px) the scroll container scrolls to the host's border box only (240 px), with no error (FR-025)",
+    base: false,
+    run: async (driver) => {
+      await page(driver, "W", `<div id="k-c" class="kc">${listDetail("k", ' collapse-below="120px"', '<div slot="list">List</div><div>Detail</div>')}</div>`, {
+        extra: ".kc { inline-size: 100px; overflow: auto; } #k { box-sizing: content-box; inline-size: 30px; padding-inline: 40px; }",
+      });
+      const state = async (): Promise<{ layout: string; width: number }> => ({ layout: await layout(driver, "k"), width: round((await driver.box("k")).width) });
+      const first = await state();
+      await driver.style("k", "padding-inline", "50px");
+      const padded = await state();
+      await driver.style("k", "padding-inline", "40px");
+      const unpadded = await state();
+      await driver.setAttribute("k", "narrow", "");
+      await driver.style("k", "padding-inline", "200px 10px");
+      return { first, padded, unpadded, narrow: { ...(await state()), scrolls: Number(await readOnce(driver, "k-c", "scrollWidth")) }, messages: await driver.messages() };
+    },
+    expected: {
+      first: { layout: "one: list", width: 110 },
+      padded: { layout: "two", width: 130 },
+      unpadded: { layout: "one: list", width: 110 },
+      narrow: { layout: "one: list", width: 240, scrolls: 240 },
+      messages: [],
+    },
+  },
 ];
+
