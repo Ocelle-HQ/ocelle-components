@@ -1539,4 +1539,23 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
     },
     expected: { inside: { margin: "-1px", radii: square }, left: { margin: "0px", radii: bothRound } },
   },
+  {
+    // Added after the second mutation run (reviews/phase-4/notes.md). Mutant: the segments not observed again after a
+    // child batch (a reorder at the same group size, which resizes nothing, then leaves the old rounding).
+    name: "joined: a reorder at the same group size, Done moved before All, regroups at the next delivery: Done takes the start rounding and Blocked the end rounding",
+    fixture: true,
+    run: async (driver, inPage) => {
+      await mount(driver, inPage, page(segmentsOf(lanes), 'label="Lane filter" value="mine" joined'));
+      await measured(driver, inPage);
+      const before = { height: (await driver.box("sc")).height, radii: await inPage(radii, null) };
+      await inPage(task, undefined);
+      await driver.mutate("sc", [{ move: 3, before: 0 }]);
+      await driver.afterResizeDelivery("box");
+      return { before, after: { sameHeight: (await driver.box("sc")).height === before.height, names: (await tree(driver)).slice(1).map((node) => node.name), radii: await inPage(radii, null) } };
+    },
+    expected: {
+      before: { height: 44, radii: [startRound, square, square, endRound] },
+      after: { sameHeight: true, names: ["Done", "All", "Mine", "Blocked"], radii: [startRound, square, square, endRound] },
+    },
+  },
 ];
