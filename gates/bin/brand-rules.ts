@@ -27,8 +27,8 @@ const radii: ReadonlyMap<string, string> = new Map([
   ["radius-shell", "10px"],
   ["radius-pill", "999px"],
 ]);
-/** The reduced-motion declarations FR-007 requires, each 0ms. */
-const reducedMotion = ["--ocelle-motion-fast", "--ocelle-motion-base"];
+/** A duration in milliseconds, as a motion token states one (`120ms`). */
+const duration = /^\d+(?:\.\d+)?ms$/;
 /** The system colour keywords of CSS Color 4 (FR-018). */
 export const systemColours: readonly string[] = [
   "AccentColor",
@@ -188,7 +188,16 @@ function cssAt(line: number | undefined): Location {
   return line === undefined ? { path: tokenPaths.stylesheet } : { path: tokenPaths.stylesheet, line };
 }
 
-/** (f) A prefers-reduced-motion: reduce block sets exactly motion-fast and motion-base, each to 0ms. */
+/**
+ * The reduced-motion declarations FR-007 requires, each 0ms: every token of group `motion` in the source whose value is
+ * a duration, in source order (012 plan decision 29: rule (f) follows the generator; before, the two names
+ * `motion-fast` and `motion-base`).
+ */
+function motionDurations(inputs: Inputs): string[] {
+  return inputs.tokens.source.filter((record) => record.group === "motion" && typeof record.value === "string" && duration.test(record.value)).map((record) => `--ocelle-${record.name}`);
+}
+
+/** (f) A prefers-reduced-motion: reduce block sets exactly the motion durations of the source, each to 0ms. */
 function reducedMotionBlock(inputs: Inputs, found: Found): void {
   const blocks: AtRule[] = [];
   inputs.stylesheet.walkAtRules("media", (block) => {
@@ -199,12 +208,13 @@ function reducedMotionBlock(inputs: Inputs, found: Found): void {
     found(cssAt(undefined), "no @media (prefers-reduced-motion: reduce) block");
     return;
   }
+  const reducedMotion = motionDurations(inputs);
   const set = new Set<string>();
   for (const block of blocks) {
     block.walkDecls((declaration) => {
       set.add(declaration.prop);
       if (reducedMotion.includes(declaration.prop) && declaration.value === "0ms") return;
-      const message = `${declaration.prop}: ${declaration.value} in the reduced-motion block; only --ocelle-motion-fast and --ocelle-motion-base, each 0ms, belong there`;
+      const message = `${declaration.prop}: ${declaration.value} in the reduced-motion block; only the motion durations, each 0ms, belong there`;
       found(cssAt(declaration.source?.start?.line), message);
     });
   }

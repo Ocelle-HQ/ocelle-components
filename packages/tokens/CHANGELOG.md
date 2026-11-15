@@ -16,7 +16,8 @@ nothing loads from a CDN, and two new merge checks (Contrast, Brand rules) keep 
   by `@font-face` in `tokens.css` with a relative URL; see the README for the CSP the host needs.
 - `tokens.css`: every token as an `--ocelle-*` custom property, light by default and with no system preference,
   dark under `prefers-color-scheme: dark` unless `data-theme="light"`, and under `data-theme="dark"` on `<html>`;
-  `--ocelle-motion-fast` and `--ocelle-motion-base` at `0ms` under `prefers-reduced-motion: reduce`.
+  every motion duration (`--ocelle-motion-fast`, `--ocelle-motion-base`, `--ocelle-motion-spin`) at `0ms` under
+  `prefers-reduced-motion: reduce`.
 - `tokens.json`: the same tokens with their group and resolved light and dark (or one) value.
 - The package entry: `TokenName`, `tokenNames`, `tokens` and `cssName()`.
 - The tokens, by group:
@@ -54,7 +55,8 @@ nothing loads from a CDN, and two new merge checks (Contrast, Brand rules) keep 
     `--ocelle-dialog-max-inline`, `--ocelle-dialog-max-block`, `--ocelle-bar-block-narrow`
   - elevation: `--ocelle-elevation-sheet`, `--ocelle-elevation-raised`, `--ocelle-elevation-row`,
     `--ocelle-elevation-seg`, `--ocelle-elevation-bar`
-  - motion: `--ocelle-motion-fast`, `--ocelle-motion-base`, `--ocelle-easing-standard`
+  - motion: `--ocelle-motion-fast`, `--ocelle-motion-base`, `--ocelle-easing-standard`, and for the busy spinner of
+    `ocelle-button` (012) `--ocelle-motion-spin` (one turn, `800ms`) and `--ocelle-motion-turn` (its angle, `1turn`)
 - The control tokens of `@ocelle/elements`' `ocelle-button` (mission 012), in the colour group:
   `--ocelle-color-hover-border` (the border of a hovered or pressed bordered control, `--ocelle-color-ink` unless
   overridden), `--ocelle-color-accent-hover` (a primary control's hover fill), `--ocelle-color-active-bg` (the pressed

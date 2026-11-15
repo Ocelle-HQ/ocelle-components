@@ -63,6 +63,17 @@ of a control on the chrome grounds, with `--ocelle-color-chrome-ink` text on it.
 the grounds it is used on, and `color-accent-strong`, the primary control's border, on every main, state and chrome
 ground.
 
+Two motion tokens exist for the busy spinner of `ocelle-button`. `--ocelle-motion-spin` is the duration of one turn of
+a busy spinner, `800ms`. `--ocelle-motion-turn` is the angle of one turn, `1turn`; it is not a duration and reduced
+motion does not change it.
+
+### Reduced motion
+
+Under `prefers-reduced-motion: reduce` every motion duration (`--ocelle-motion-fast`, `--ocelle-motion-base`,
+`--ocelle-motion-spin`) is `0ms`: the stylesheet's reduced-motion block sets each motion token whose value is a
+duration, and nothing else. `--ocelle-easing-standard` and `--ocelle-motion-turn` keep their values. The brand-rules
+check fails a stylesheet whose block misses a motion duration or sets anything else.
+
 ### Forced colours
 
 The tokens never override the system palette in forced colours: the stylesheet has no `forced-color-adjust: none`,

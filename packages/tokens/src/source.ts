@@ -254,6 +254,8 @@ export const records = tokenRecords([
   { name: "elevation-bar", group: "elevation", value: { light: "0 -6px 16px rgb(21 19 15 / 0.05)", dark: "none" } }, // bottom bars
   { name: "motion-fast", group: "motion", value: "120ms" }, // 0ms under reduced motion
   { name: "motion-base", group: "motion", value: "200ms" }, // 0ms under reduced motion
+  { name: "motion-spin", group: "motion", value: "800ms" }, // one turn of the busy spinner (012); 0ms under reduced motion
+  { name: "motion-turn", group: "motion", value: "1turn" }, // the spinner's angle of one turn (012); not a duration
   { name: "easing-standard", group: "motion", value: "cubic-bezier(0.22, 1, 0.36, 1)" },
 ]);
 
