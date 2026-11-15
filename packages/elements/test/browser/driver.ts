@@ -7,7 +7,8 @@
 // (`<page>-base.html`), so `mount` with `base` must be called on such a page.
 import { inflateSync } from "node:zlib";
 import type { Page } from "playwright";
-import { axNodes, axSubtree, emulate } from "../commands.ts";
+import { runningOf } from "../animations.ts";
+import { axNodes, axSubtree, emulate, emulateMotion } from "../commands.ts";
 import { layoutWait } from "../layout-wait.ts";
 import { decodePng } from "../pixels.ts";
 import type { Bounds, Box, Driver, Drawing, Paint, Part, Placement, Sheets, TreeNode } from "../scenarios/driver.ts";
@@ -35,6 +36,7 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
       await page.evaluate((html) => {
         document.adoptedStyleSheets = [];
         document.documentElement.removeAttribute("data-theme");
+        Reflect.deleteProperty(document, Symbol.for("ocelle.progress.sweepStart"));
         document.body.innerHTML = html;
       }, markup);
       await settle(page);
@@ -296,5 +298,52 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
         if (current === null || current === document.body) return null;
         return current.id === "" ? `<${current.localName}>` : current.id;
       }),
+      reducedMotion: async (mode) => {
+      await emulateMotion(page, mode);
+      await settle(page);
+    },
+    animations: (id) => page.evaluate(runningOf, id),
+    remove: async (id) => {
+      await page.evaluate((id) => {
+        const element = document.getElementById(id);
+        if (element === null) throw new Error(`no #${id} on the page`);
+        element.remove();
+      }, id);
+    },
+    frames: async (count) => {
+      await page.evaluate(async (count) => {
+        for (let frame = 0; frame < count; frame++) await new Promise((resolve) => requestAnimationFrame(resolve));
+      }, count);
+    },
+    replace: async (id, markup) => {
+      await page.evaluate(({ id, markup }) => {
+        const element = document.getElementById(id);
+        if (element === null) throw new Error(`no #${id} on the page`);
+        const template = document.createElement("template");
+        template.innerHTML = markup;
+        element.replaceWith(template.content);
+      }, { id, markup });
+      await settle(page);
+    },
+      changeAttributes: async (id, changes) => {
+      await page.evaluate(({ id, changes }) => {
+        const element = document.getElementById(id);
+        if (element === null) throw new Error(`no #${id} on the page`);
+        for (const [name, value] of changes) {
+          if (value === null) element.removeAttribute(name);
+          else element.setAttribute(name, value);
+        }
+      }, { id, changes });
+      await settle(page);
+    },
+    textOf: (id, inner) => page.evaluate(({ id, inner }) => document.getElementById(id)?.shadowRoot?.querySelector(inner)?.textContent ?? null, { id, inner }),
+    rendered: (id) =>
+      page.evaluate((id) => {
+        const element = document.getElementById(id);
+        if (element === null) throw new Error(`no #${id} on the page`);
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        return { innerText: element.innerText, rects: range.getClientRects().length };
+      }, id),
   };
 }

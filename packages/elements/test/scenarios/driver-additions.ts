@@ -12,6 +12,13 @@
 // - `text` makes a `characterData` change, not a `childList` one.
 // Phase 2 (tasks.md T023) adds `pressTab` and `focused`: Tab moves focus in the page's sequential order, into a shadow
 // root and out of it, and `focused` names the innermost focused element through shadow roots, or null on the body.
+// Phase 3 (tasks.md T037) adds `animations`, `remove`, `frames` and `replace`: `animations` lists a shadow element's
+// CSS animation and, once started, its CSS transition with their part, property, play state and end time; `remove`
+// takes an element out of the page; `frames` waits that many animation frames; `replace` swaps an element for parsed
+// markup in one mutation; `changeAttributes` sets and removes attributes in one task, so an observer sees them in one
+// delivery; `textOf` reads a shadow element's text; `rendered` tells shown light-DOM text from text that is not
+// rendered (an unslotted child of a shadow host). `reducedMotion` and the AX value properties have their own tests (test/commands.test.ts),
+// and the loading-episode reset of `mount` is a progress body (scenarios/progress.ts), since it needs the element.
 import type { Scenario } from "./icon.ts";
 
 /**
@@ -21,7 +28,13 @@ import type { Scenario } from "./icon.ts";
  * - `ocelle-test-restless`: toggles `data-wide` on every animation frame while connected;
  * - `ocelle-test-recorder`: records the types of the mutation records of its own subtree in `data-records`;
  * - `ocelle-test-shadow`: an open shadow root holding `<dl><dt>Term</dt><dd><slot></slot></dd></dl>`;
- * - `ocelle-test-focus`: an open shadow root holding `<button id="inner">Inner</button>` and an unnamed `<button>`.
+ * - `ocelle-test-focus`: an open shadow root holding `<button id="inner">Inner</button>` and an unnamed `<button>`;
+ * - `ocelle-test-animated` (phase 3): an open shadow root holding `<div part="dot">`, which runs a 10 s CSS animation
+ *   of `transform` and has a 10 s `opacity` transition that `data-fade` on the host starts, from a stylesheet adopted
+ *   by the shadow root (the CSSOM, which the fixture's CSP does not govern);
+ * - `ocelle-test-frames` (phase 3): counts its own animation frames in `data-count` while connected;
+ * - `ocelle-test-attributes` (phase 3): records in `data-deliveries` the number of attribute records of each
+ *   delivery of its `MutationObserver`, attribute `data-x` only.
  */
 export function defineDriverHelpers(): void {
   if (customElements.get("ocelle-test-deferred") !== undefined) return;
@@ -86,6 +99,48 @@ export function defineDriverHelpers(): void {
         super();
         const root = this.attachShadow({ mode: "open" });
         root.innerHTML = '<button id="inner">Inner</button><button>Unnamed</button>';
+      }
+    },
+  );
+  customElements.define(
+    "ocelle-test-animated",
+    class extends HTMLElement {
+      constructor() {
+        super();
+        const root = this.attachShadow({ mode: "open" });
+        const sheet = new CSSStyleSheet();
+        sheet.replaceSync(
+          "@keyframes ocelle-test-slide { from { transform: translateX(0px); } to { transform: translateX(10px); } } " +
+            "[part=dot] { inline-size: 10px; block-size: 10px; animation: ocelle-test-slide 10s linear 1; transition: opacity 10s linear; } " +
+            ":host([data-fade]) [part=dot] { opacity: 0; }",
+        );
+        root.adoptedStyleSheets = [sheet];
+        root.innerHTML = '<div part="dot"></div>';
+      }
+    },
+  );
+  customElements.define(
+    "ocelle-test-attributes",
+    class extends HTMLElement {
+      readonly #observer = new MutationObserver((records) => {
+        this.dataset.deliveries = [...(this.dataset.deliveries ?? "").split(" ").filter((each) => each !== ""), String(records.length)].join(" ");
+      });
+
+      connectedCallback(): void {
+        this.#observer.observe(this, { attributes: true, attributeFilter: ["data-x"] });
+      }
+    },
+  );
+  customElements.define(
+    "ocelle-test-frames",
+    class extends HTMLElement {
+      connectedCallback(): void {
+        const step = (): void => {
+          if (!this.isConnected) return;
+          this.dataset.count = String(Number(this.dataset.count ?? "0") + 1);
+          requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
       }
     },
   );
@@ -219,5 +274,84 @@ export const driverAdditionScenarios: readonly Scenario[] = [
       return sequence;
     },
     expected: [null, "first", "inner", "<button>", "link"],
+  },
+  {
+    name: "animations: a shadow part's CSS animation of transform is read with its part, play state and end time, and a transition of opacity started on it is read beside it, the host itself animating nothing",
+    run: async (driver) => {
+      await driver.mount('<ocelle-test-animated id="animated"></ocelle-test-animated>');
+      await driver.frames(2);
+      const shape = (list: Awaited<ReturnType<typeof driver.animations>>): unknown => list.map(({ currentTime, ...rest }) => ({ ...rest, timed: currentTime !== null && currentTime >= 0 }));
+      const before = shape(await driver.animations("animated"));
+      await driver.setAttribute("animated", "data-fade", "");
+      await driver.frames(2);
+      return { before, after: shape(await driver.animations("animated")) };
+    },
+    expected: {
+      before: [{ kind: "CSSAnimation", part: "dot", property: "transform", playState: "running", endTime: 10000, timed: true }],
+      after: [
+        { kind: "CSSTransition", part: "dot", property: "opacity", playState: "running", endTime: 10000, timed: true },
+        { kind: "CSSAnimation", part: "dot", property: "transform", playState: "running", endTime: 10000, timed: true },
+      ],
+    },
+  },
+  {
+    name: "remove: an element removed from the page is no longer in the accessibility tree, which held it before",
+    run: async (driver) => {
+      await driver.mount('<button id="gone" type="button">Gone</button><button id="kept" type="button">Kept</button>');
+      const before = await driver.ax("gone");
+      await driver.remove("gone");
+      return { before, after: await driver.ax("gone"), kept: await driver.ax("kept") };
+    },
+    expected: { before: [{ role: "button", name: "Gone" }], after: [], kept: [{ role: "button", name: "Kept" }] },
+  },
+  {
+    name: "frames: waiting 3 frames lets an element that counts its frames count at least 3 more",
+    run: async (driver) => {
+      await driver.mount('<ocelle-test-frames id="frames"></ocelle-test-frames>');
+      await driver.frames(1);
+      const before = Number(await driver.attribute("frames", "data-count"));
+      await driver.frames(3);
+      const after = Number(await driver.attribute("frames", "data-count"));
+      return { counted: before >= 1, atLeastThree: after - before >= 3 };
+    },
+    expected: { counted: true, atLeastThree: true },
+  },
+  {
+    name: "replace: an element replaced by two parsed paragraphs gives one childList record, the old element gone and the new ones in its place",
+    run: async (driver) => {
+      await driver.mount('<ocelle-test-recorder id="recorder"><p id="old">Old</p><p id="after">After</p></ocelle-test-recorder>');
+      await driver.replace("old", '<p id="new-1">New one</p><p id="new-2">New two</p>');
+      return {
+        records: await driver.attribute("recorder", "data-records"),
+        old: await driver.ax("old"),
+        text: (await driver.axSubtree("recorder")).filter((node) => node.role === "StaticText").map((node) => node.name),
+      };
+    },
+    expected: { records: "childList", old: [], text: ["New one", "New two", "After"] },
+  },
+  {
+    name: "changeAttributes: an attribute set and then removed in one call reaches an observer as one delivery of two records, and the attribute is gone",
+    run: async (driver) => {
+      await driver.mount('<ocelle-test-attributes id="watched"></ocelle-test-attributes>');
+      await driver.changeAttributes("watched", [
+        ["data-x", "1"],
+        ["data-x", null],
+      ]);
+      return { deliveries: await driver.attribute("watched", "data-deliveries"), x: await driver.attribute("watched", "data-x") };
+    },
+    expected: { deliveries: "2", x: null },
+  },
+  {
+    name: "textOf and rendered: a shadow element's text is read, a missing one is null; light-DOM text a shadow root does not slot has no rect and no innerText, beside slotted text that has both",
+    run: async (driver) => {
+      await driver.mount('<ocelle-test-shadow id="slotted">Shown</ocelle-test-shadow><ocelle-test-focus id="unslotted">Hidden</ocelle-test-focus>');
+      return {
+        term: await driver.textOf("slotted", "dt"),
+        missing: await driver.textOf("slotted", "table"),
+        slotted: await driver.rendered("slotted"),
+        unslotted: await driver.rendered("unslotted"),
+      };
+    },
+    expected: { term: "Term", missing: null, slotted: { innerText: "Shown", rects: 1 }, unslotted: { innerText: "", rects: 0 } },
   },
 ];

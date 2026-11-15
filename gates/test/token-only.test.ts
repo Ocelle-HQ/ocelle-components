@@ -903,3 +903,66 @@ describe("rawValues: the grid-template-columns allowance (013 R-10)", () => {
     ]);
   });
 });
+
+// The sweep allowance of 013 phase 3 (research.md R-10, PLAN-CORRECTNESS-1-001 (a), PLAN-A11Y-SECURITY-1-001 (a); tasks.md
+// T042): in `transform`, in a rule or in `@keyframes`, `translateX(<percentage>)` (one percentage argument) passes, and
+// in `animation-iteration-count` a bare positive integer passes. Any other function, argument or property stays raw;
+// `infinite` was already an identifier. Each finding shares its test with the allowed value it guards.
+describe("rawValues: the transform and animation-iteration-count allowance (013 R-10)", () => {
+  it.each([
+    { property: "transform", value: "translateX(-175%)" },
+    { property: "transform", value: "translateX(175%)" },
+    { property: "transform", value: "translateX(0%)" },
+    { property: "transform", value: "translateX(12.5%)" },
+    { property: "TRANSFORM", value: "TRANSLATEX(50%)" },
+    { property: "animation-iteration-count", value: "3" },
+    { property: "animation-iteration-count", value: "1" },
+    { property: "animation-iteration-count", value: "12" },
+  ])("$property: $value is token-only (only the control 4px after it is raw)", ({ property, value }) => {
+    expect({ value: rawValues(property, value), control: rawValues(property, `${value} 4px`) }).toEqual({ value: [], control: ["4px"] });
+  });
+
+  it.each([
+    { value: "translateX(8px)", raw: ["translateX(8px)"] },
+    { value: "translateX(0)", raw: ["translateX(0)"] },
+    { value: "translateY(50%)", raw: ["translateY(50%)"] },
+    { value: "translate(50%)", raw: ["translate(50%)"] },
+    { value: "translate3d(50%, 0, 0)", raw: ["translate3d(50%, 0, 0)"] },
+    { value: "translateX(50%, 10%)", raw: ["translateX(50%, 10%)"] },
+    { value: "translateX(calc(50%))", raw: ["translateX(calc(50%))"] },
+    { value: "translateX(var(--ocelle-space-4))", raw: ["translateX(var(--ocelle-space-4))"] },
+    { value: "translateX(50%) rotate(45deg)", raw: ["rotate(45deg)"] },
+    { value: "scale(2)", raw: ["scale(2)"] },
+  ])("transform: $value is raw: $raw, while translateX(175%) passes", ({ value, raw }) => {
+    expect({ value: rawValues("transform", value), allowed: rawValues("transform", "translateX(175%)") }).toEqual({ value: raw, allowed: [] });
+  });
+
+  it.each([
+    { value: "2.5", raw: ["2.5"] },
+    { value: "-1", raw: ["-1"] },
+    { value: "3 2", raw: ["3", "2"] },
+    { value: "1e1", raw: ["1e1"] },
+  ])("animation-iteration-count: $value is raw: $raw, while 3 passes", ({ value, raw }) => {
+    expect({ value: rawValues("animation-iteration-count", value), allowed: rawValues("animation-iteration-count", "3") }).toEqual({ value: raw, allowed: [] });
+  });
+
+  it.each([
+    { property: "translate", value: "translateX(50%)" },
+    { property: "background-position", value: "translateX(50%)" },
+    { property: "animation", value: "sweep 3" },
+    { property: "column-count", value: "3" },
+    { property: "transition-delay", value: "3" },
+  ])("$property: $value stays raw in any other property, while transform and animation-iteration-count pass theirs", ({ property, value }) => {
+    expect({ other: rawValues(property, value).length > 0, transform: rawValues("transform", "translateX(-175%)"), count: rawValues("animation-iteration-count", "3") }).toEqual({ other: true, transform: [], count: [] });
+  });
+
+  it("reports the sweep's keyframes and iteration count of an element template not at all, and translateX(8px) and a fractional count at their lines", async () => {
+    const code =
+      "const css = String.raw;\nexport const styles = css`\n  @keyframes sweep {\n    from { transform: translateX(-175%); }\n    to { transform: translateX(175%); }\n  }\n  .mark {\n    animation-iteration-count: 3;\n  }\n  .bad {\n    transform: translateX(8px);\n    animation-iteration-count: 2.5;\n  }\n`;\n";
+    const { results } = await stylelint.lint({ code, codeFilename: "x.ts", config: { plugins: [plugin], rules: { [ruleName]: true }, customSyntax: "postcss-lit" } });
+    expect(results[0]?.warnings.map(({ line, text }) => ({ line, text }))).toEqual([
+      { line: 11, text: "transform: raw translateX(8px); use a --ocelle-* token (FR-024) (ocelle/token-only)" },
+      { line: 12, text: "animation-iteration-count: raw 2.5; use a --ocelle-* token (FR-024) (ocelle/token-only)" },
+    ]);
+  });
+});

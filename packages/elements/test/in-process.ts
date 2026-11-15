@@ -13,6 +13,7 @@ import { commands, page, userEvent } from "vitest/browser";
 import baseText from "../../styles/src/base.css?raw";
 import { css } from "../../tokens/src/generate.ts";
 import { source } from "../../tokens/src/source.ts";
+import { runningOf } from "./animations.ts";
 import { layoutWait } from "./layout-wait.ts";
 import { decodePng } from "./pixels.ts";
 import type { Box, Driver, Drawing, Paint, Part, Placement, Sheets, TreeNode } from "./scenarios/driver.ts";
@@ -69,6 +70,7 @@ export function inProcessDriver(): Driver {
       document.adoptedStyleSheets = options.base === true ? [tokens, base] : [tokens];
       messages.length = 0;
       document.documentElement.removeAttribute("data-theme");
+      Reflect.deleteProperty(document, Symbol.for("ocelle.progress.sweepStart"));
       document.body.innerHTML = markup;
       await settle();
     },
@@ -248,6 +250,39 @@ export function inProcessDriver(): Driver {
       while (current?.shadowRoot?.activeElement !== null && current?.shadowRoot?.activeElement !== undefined) current = current.shadowRoot.activeElement;
       if (current === null || current === document.body) return Promise.resolve(null);
       return Promise.resolve(current.id === "" ? `<${current.localName}>` : current.id);
+    },
+      reducedMotion: async (mode) => {
+      await commands.emulateReducedMotion(mode);
+      await settle();
+    },
+    animations: (id) => Promise.resolve(runningOf(id)),
+    remove: (id) => {
+      element(id).remove();
+      return Promise.resolve();
+    },
+    frames: async (count) => {
+      for (let frame = 0; frame < count; frame++) await new Promise((resolve) => requestAnimationFrame(resolve));
+    },
+    replace: async (id, markup) => {
+      const template = document.createElement("template");
+      template.innerHTML = markup;
+      element(id).replaceWith(template.content);
+      await settle();
+    },
+      changeAttributes: async (id, changes) => {
+      const target = element(id);
+      for (const [name, value] of changes) {
+        if (value === null) target.removeAttribute(name);
+        else target.setAttribute(name, value);
+      }
+      await settle();
+    },
+    textOf: (id, inner) => Promise.resolve(element(id).shadowRoot?.querySelector(inner)?.textContent ?? null),
+    rendered: (id) => {
+      const target = element(id);
+      const range = document.createRange();
+      range.selectNodeContents(target);
+      return Promise.resolve({ innerText: target.innerText, rects: range.getClientRects().length });
     },
   };
 }
