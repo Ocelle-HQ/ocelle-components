@@ -26,6 +26,28 @@ function settle(page: Page): Promise<void> {
   });
 }
 
+/**
+ * Runs `act` in the page on the element matching `inner` in the shadow root of the element with `id`, then waits as
+ * `settle` does, and also for every `ocelle-*` element in that shadow root.
+ */
+async function inShadow(page: Page, id: string, inner: string, act: "append" | "attribute", args: readonly (string | null)[]): Promise<void> {
+  await page.evaluate(
+    async ({ id, inner, act, args }) => {
+      const root = document.getElementById(id)?.shadowRoot;
+      const target = root?.querySelector(inner);
+      if (root === null || root === undefined || target === null || target === undefined) throw new Error(`no ${inner} in the shadow root of #${id}`);
+      if (act === "append") target.insertAdjacentHTML("beforeend", args[0] ?? "");
+      else if (args[1] === null) target.removeAttribute(args[0] ?? "");
+      else target.setAttribute(args[0] ?? "", args[1] ?? "");
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      const elements = [...root.querySelectorAll("*")].filter((each) => each.localName.startsWith("ocelle-"));
+      await Promise.all(elements.map((each) => (each as unknown as { updateComplete?: Promise<unknown> }).updateComplete ?? Promise.resolve()));
+    },
+    { id, inner, act, args },
+  );
+  await settle(page);
+}
+
 /** The driver of `page`; `log` is the page's console and error record, `withBase` whether the page links base.css. */
 export function fixtureDriver(page: Page, log: readonly string[], withBase = false): Driver {
   let since = log.length;
@@ -322,6 +344,25 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
           return seen.size;
         });
       }, id),
+    shadow: async (id, markup) => {
+      await page.evaluate(async ({ id, markup }) => {
+        const host = document.getElementById(id);
+        if (host === null) throw new Error(`no #${id} on the page`);
+        const root = host.attachShadow({ mode: "open" });
+        root.innerHTML = markup;
+        const elements = [...root.querySelectorAll("*")].filter((each) => each.localName.startsWith("ocelle-"));
+        await Promise.all(elements.map((each) => (each as unknown as { updateComplete?: Promise<unknown> }).updateComplete ?? Promise.resolve()));
+      }, { id, markup });
+      await settle(page);
+    },
+    shadowAppend: (id, inner, markup) => inShadow(page, id, inner, "append", [markup]),
+    shadowAttribute: (id, inner, name, value) => inShadow(page, id, inner, "attribute", [name, value]),
+    shadowComputed: (id, inner, property) =>
+      page.evaluate(({ id, inner, property }) => {
+        const target = document.getElementById(id)?.shadowRoot?.querySelector(inner);
+        if (target === null || target === undefined) throw new Error(`no ${inner} in the shadow root of #${id}`);
+        return getComputedStyle(target).getPropertyValue(property);
+      }, { id, inner, property }),
     module: async (code) => {
       // Served as `/module.js` of the page's origin under the fixture's policy; a page that runs it allows that path.
       const url = new URL("/module.js", page.url()).href;
