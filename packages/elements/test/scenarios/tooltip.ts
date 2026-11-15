@@ -416,6 +416,13 @@ const testDelay = 300;
 const tries = 3;
 /** The text-field row's bound: its click must come this soon after the entry for "shown before 150 ms" to be judged. */
 const early = 150;
+/**
+ * The R-12 leave row's own hover delay, set as `--ocelle-tooltip-delay` on its tooltip (operator decision after
+ * tdd-check 4: under load its leave came after the 300 ms test delay), and its wait from the entry: 1.5 times that
+ * delay, as 450 ms is for the test delay, so a delay the leave did not end would show the bubble inside the window.
+ */
+const longDelay = 1000;
+const longWait = 1500;
 
 /**
  * For a row whose outcome holds only when the pointer acted before the hover delay (or before `bound`, a shorter time
@@ -597,28 +604,33 @@ const showRows = [
     { touch: false, mouse: true },
   ),
   row(
-    "Hover delay, moves inside the tooltip, then leaving before the delay (R-12): the pointer enters the trigger, moves onto its inner span and leaves both boxes before the delay: no bubble at any frame of a 450 ms wait from the entry",
+    "Hover delay, moves inside the tooltip, then leaving before the delay (R-12): with --ocelle-tooltip-delay: 1000ms on the tooltip, the pointer enters the trigger, moves onto its inner span and leaves both boxes before that delay: no bubble at any frame of a 1500 ms wait from the entry",
     async (driver) =>
-      beforeDelay("the leave", async () => {
-        await start(driver, page({ trigger: '<button id="trg" aria-label="Projects">Edge <span id="inner">inner text</span> edge</button>' }));
-        const trigger = await inspect(driver, "trg");
-        const inner = await inspect(driver, "inner");
-        await track(driver);
-        await driver.pointer([{ x: trigger.left + 4, y: trigger.top + trigger.height / 2 }]);
-        await pause(35);
-        await driver.pointer([centre(inner)]);
-        await pause(35);
-        await driver.pointer([rest]);
-        await pause(450);
-        const f = await frames(driver);
-        const leave = f.left ?? Infinity;
-        const shown = openTimes(f);
-        return {
-          at: f.left,
-          observed: { moved: f.moved !== null, beforeLeave: shown.some((t) => t < leave), afterLeave: shown.some((t) => t >= leave), to450: (f.frames.at(-1)?.t ?? 0) >= 450 },
-        };
-      }),
-    { moved: true, beforeLeave: false, afterLeave: false, to450: true },
+      beforeDelay(
+        "the leave",
+        async () => {
+          await start(driver, page({ trigger: '<button id="trg" aria-label="Projects">Edge <span id="inner">inner text</span> edge</button>' }), `#tip { --ocelle-tooltip-delay: ${String(longDelay)}ms; }`);
+          const trigger = await inspect(driver, "trg");
+          const inner = await inspect(driver, "inner");
+          await track(driver);
+          await driver.pointer([{ x: trigger.left + 4, y: trigger.top + trigger.height / 2 }]);
+          await pause(35);
+          await driver.pointer([centre(inner)]);
+          await pause(35);
+          await driver.pointer([rest]);
+          await pause(1000);
+          await pause(longWait - 1000);
+          const f = await frames(driver);
+          const leave = f.left ?? Infinity;
+          const shown = openTimes(f);
+          return {
+            at: f.left,
+            observed: { moved: f.moved !== null, beforeLeave: shown.some((t) => t < leave), afterLeave: shown.some((t) => t >= leave), toWait: (f.frames.at(-1)?.t ?? 0) >= longWait },
+          };
+        },
+        longDelay,
+      ),
+    { moved: true, beforeLeave: false, afterLeave: false, toWait: true },
   ),
   row(
     "Keyboard focus inside a custom-element trigger (FR-031: the trigger, or a control inside it): Tab onto the inner button of an open shadow root slotted as the trigger shows the bubble at once",
