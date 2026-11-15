@@ -62,5 +62,11 @@ const licence = [
 
 export const LongScrollingBody: StoryObj = {
   name: "Long scrolling body",
-  render: () => `<ocelle-drawer open label="Licence" side="end">${licence.map((text) => `<p>${text}</p>`).join("")}${actions("Close", "Accept")}</ocelle-drawer>`,
+  // The empty, text-free block after the sixth paragraph crosses the body's scroll edge in the 1280 × 800 capture, so
+  // no paragraph's box sits across that edge inside the viewport (operator decision 2026-11-15, R-16 generalised,
+  // plan decision 24); it is sized by the `[data-story="drawer-scroll-edge"]` rule of stories-layout.css.
+  render: () =>
+    `<ocelle-drawer open label="Licence" side="end">${licence
+      .map((text, index) => `<p>${text}</p>${index === 5 ? '<div data-story="drawer-scroll-edge"></div>' : ""}`)
+      .join("")}${actions("Close", "Accept")}</ocelle-drawer>`,
 };
