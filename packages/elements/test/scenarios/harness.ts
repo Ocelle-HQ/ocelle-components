@@ -223,6 +223,31 @@ export const interactionScenarios: readonly HarnessScenario[] = [
     },
     expected: { off: [], plain: [{ type: "click", isTrusted: false }] },
   },
+  // 012 phase 3 (US2-13): the two methods the copies and the morph of the moved values use.
+  {
+    name: "copy(id, via, into) copies the live element by outerHTML and by cloneNode(true), and a container by innerHTML, into the container, each id of the copy suffixed with -<into>; the original stays",
+    host: false,
+    run: async (driver) => {
+      await driver.mount('<div id="wrap"><p id="src" data-x="1"><span id="kid">Kid</span></p></div><div id="a"></div><div id="b"></div><div id="c"></div>');
+      await driver.setAttribute("src", "data-x", "2");
+      await driver.copy("src", "outerHTML", "a");
+      await driver.copy("src", "clone", "b");
+      await driver.copy("wrap", "innerHTML", "c");
+      const read = async (id: string): Promise<unknown> => ({ x: await driver.attribute(id, "data-x"), kid: await driver.attribute(`kid${id.slice(3)}`, "id") });
+      return { a: await read("src-a"), b: await read("src-b"), c: await read("src-c"), original: await read("src") };
+    },
+    expected: { a: { x: "2", kid: "kid-a" }, b: { x: "2", kid: "kid-b" }, c: { x: "2", kid: "kid-c" }, original: { x: "2", kid: "kid" } },
+  },
+  {
+    name: "morph(id, markup) sets each attribute of the markup that differs and removes each live attribute the markup lacks, the live element kept",
+    host: false,
+    run: async (driver) => {
+      await driver.mount('<p id="m" data-a="1" data-b="2" data-c="3">Text</p>');
+      await driver.morph("m", '<p id="m" data-b="2" data-c="9" data-d="4">Other</p>');
+      return Object.fromEntries(await Promise.all(["data-a", "data-b", "data-c", "data-d"].map(async (name) => [name, await driver.attribute("m", name)] as const)));
+    },
+    expected: { "data-a": null, "data-b": "2", "data-c": "9", "data-d": "4" },
+  },
 ];
 
 /** The event recorder (T002): records at the element, its ancestors, `document` and `window`, a serial per dispatch, `preventNext`. */

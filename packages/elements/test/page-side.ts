@@ -171,3 +171,45 @@ export function currentOf({ id, inner }: { readonly id: string; readonly inner?:
   if (target === null || target === undefined) throw new Error(`no ${String(inner)} in the shadow root of #${id}`);
   return { attribute: target.getAttribute("aria-current"), property: target.ariaCurrent };
 }
+
+/**
+ * Copies the live DOM (012 phase 3, US2-13): `outerHTML` parses the element `id`'s `outerHTML` into the container
+ * `into`; `clone` appends the element's `cloneNode(true)` to it; `innerHTML` writes the container `id`'s `innerHTML`
+ * into it. Every element of the copy that has an id gets `-<into>` appended to it, so the copy is reached by its own id.
+ */
+export function copyElement({ id, via, into }: { readonly id: string; readonly via: "outerHTML" | "clone" | "innerHTML"; readonly into: string }): void {
+  const element = document.getElementById(id);
+  const container = document.getElementById(into);
+  if (element === null || container === null) throw new Error(`no #${id} or #${into} on the page`);
+  const rename = (root: Element): void => {
+    for (const each of [root, ...root.querySelectorAll("[id]")]) if (each.id !== "") each.id = `${each.id}-${into}`;
+  };
+  if (via === "clone") {
+    const copy = element.cloneNode(true) as Element;
+    rename(copy);
+    container.append(copy);
+    return;
+  }
+  const before = container.children.length;
+  container.insertAdjacentHTML("beforeend", via === "outerHTML" ? element.outerHTML : element.innerHTML);
+  for (const added of [...container.children].slice(before)) rename(added);
+}
+
+/**
+ * Applies a morph's attribute sync to the element `id` (012 phase 3, US2-13; research.md R-03, idiomorph's
+ * `syncNodeFrom`): the first element of `markup` is the new node; each of its attributes whose value differs on the live
+ * element is set, then each live attribute the new node lacks is removed, counting down from the last attribute.
+ */
+export function morphElement({ id, markup }: { readonly id: string; readonly markup: string }): void {
+  const element = document.getElementById(id);
+  if (element === null) throw new Error(`no #${id} on the page`);
+  const template = document.createElement("template");
+  template.innerHTML = markup;
+  const incoming = template.content.firstElementChild;
+  if (incoming === null) throw new Error("no element in the markup");
+  for (const attribute of [...incoming.attributes]) if (element.getAttribute(attribute.name) !== attribute.value) element.setAttribute(attribute.name, attribute.value);
+  for (let at = element.attributes.length - 1; at >= 0; at -= 1) {
+    const attribute = element.attributes[at];
+    if (attribute !== undefined && !incoming.hasAttribute(attribute.name)) element.removeAttribute(attribute.name);
+  }
+}

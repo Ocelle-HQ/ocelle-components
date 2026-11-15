@@ -16,7 +16,7 @@
 import { inflateSync } from "node:zlib";
 import type { Page } from "playwright";
 import { audit, axNodes, axeSetup, axStateOf, axSubtree, emulate, emulateMotion, pointer, press } from "../commands.ts";
-import { activeInnerOf, activePath, clickElement, computedOf, currentOf, endOrder, focusElement, preventNextEvent, recordEvents, resetPage, sentinelId, startOrder, takeRecords } from "../page-side.ts";
+import { activeInnerOf, activePath, clickElement, computedOf, copyElement, currentOf, endOrder, focusElement, morphElement, preventNextEvent, recordEvents, resetPage, sentinelId, startOrder, takeRecords } from "../page-side.ts";
 import { decodePng } from "../pixels.ts";
 import type { Bounds, Box, Driver, Drawing, Paint, Part, Placement, Sheets } from "../scenarios/driver.ts";
 
@@ -265,5 +265,13 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
     },
     current: (id, inner) => page.evaluate(currentOf, { id, inner }),
     axe: (scope) => audit(page.mainFrame(), () => page.addScriptTag({ url: "axe.js" }), axeSetup().rules, scope),
+    copy: async (id, via, into) => {
+      await page.evaluate(copyElement, { id, via, into });
+      await settle(page);
+    },
+    morph: async (id, markup) => {
+      await page.evaluate(morphElement, { id, markup });
+      await settle(page);
+    },
   };
 }

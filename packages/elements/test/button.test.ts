@@ -4,6 +4,7 @@ import "../src/ocelle-button.ts";
 import "../src/ocelle-icon.ts";
 import { inProcessDriver } from "./in-process.ts";
 import { buttonScenarios } from "./scenarios/button.ts";
+import { linkScenarios, linkSinkScenarios } from "./scenarios/link.ts";
 
 // User Story 1's browser scenarios for `ocelle-button` in button mode, in process on the element source (012
 // research.md R-11; tasks.md T018): the shared bodies of scenarios/button.ts on the in-process driver, light and dark,
@@ -19,6 +20,57 @@ afterEach(async () => {
 describe("ocelle-button, in process (US1)", { timeout: 60_000 }, () => {
   it.each(buttonScenarios)("$name", async ({ run, expected }) => {
     expect(await run(driver)).toEqual(expected);
+  });
+});
+
+// User Story 2 (tasks.md T033): the shared link and passthrough bodies of scenarios/link.ts, and its in-process link
+// bodies on the navigation sink's records.
+describe("ocelle-button in link mode and its ARIA passthrough, in process (US2)", { timeout: 60_000 }, () => {
+  it.each([...linkScenarios, ...linkSinkScenarios])("$name", async ({ run, expected }) => {
+    expect(await run(driver)).toEqual(expected);
+  });
+});
+
+// The link properties reflect (data-model.md § `ocelle-button`; tasks.md T036): `href`, `target`, `rel` and `download`
+// set from script reach the host's attributes and the inner link, and read the attributes back.
+/** The button with its link properties, typed here so the test reads them whatever the element declares. */
+type Linkable = HTMLElementTagNameMap["ocelle-button"] & { href?: string | undefined; target?: string | undefined; rel?: string | undefined; download?: string | undefined };
+
+describe("ocelle-button's reflected link properties", () => {
+  afterEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  it("reflects href, target, rel and download set as properties, renders them on the inner link, and removes the attributes when set to undefined", async () => {
+    const host = document.createElement("ocelle-button") as Linkable;
+    host.textContent = "Projects";
+    document.body.append(host);
+    host.href = "/projects";
+    host.target = "_blank";
+    host.rel = "nofollow";
+    host.download = "list.csv";
+    await host.updateComplete;
+    const link = host.shadowRoot?.querySelector('[part="control"]');
+    const set = { href: host.getAttribute("href"), target: host.getAttribute("target"), rel: host.getAttribute("rel"), download: host.getAttribute("download") };
+    const rendered = { tag: link?.localName, href: link?.getAttribute("href"), target: link?.getAttribute("target"), rel: link?.getAttribute("rel"), download: link?.getAttribute("download") };
+    host.href = undefined;
+    host.target = undefined;
+    host.rel = undefined;
+    host.download = undefined;
+    await host.updateComplete;
+    expect({ set, rendered, cleared: ["href", "target", "rel", "download"].map((name) => host.hasAttribute(name)), mode: host.shadowRoot?.querySelector('[part="control"]')?.localName }).toEqual({
+      set: { href: "/projects", target: "_blank", rel: "nofollow", download: "list.csv" },
+      rendered: { tag: "a", href: "/projects", target: "_blank", rel: "nofollow", download: "list.csv" },
+      cleared: [false, false, false, false],
+      mode: "button",
+    });
+  });
+
+  it("reads href, target, rel and download from the attributes", async () => {
+    document.body.innerHTML = '<ocelle-button href="/a" target="_self" rel="next" download="">A</ocelle-button>';
+    const host = document.querySelector<Linkable>("ocelle-button");
+    await host?.updateComplete;
+    expect({ href: host?.href, target: host?.target, rel: host?.rel, download: host?.download }).toEqual({ href: "/a", target: "_self", rel: "next", download: "" });
   });
 });
 

@@ -171,6 +171,18 @@ describe("normalise(raw, names): what is not an element, and members that are no
   });
 });
 
+describe("normalise(raw, names): standard attributes (012 research.md R-15; tasks.md T033)", () => {
+  it("keeps a standard attribute the element declares with a description, and drops one it observes without declaring", () => {
+    const declared = structuredClone(raw);
+    (declaration(declared).attributes as Json[])[0] = { name: "aria-label", type: { text: "string" }, description: "Moved onto the inner control." };
+    expect({
+      declared: (declaration(normalise(declared, [])).attributes as Json[]).map((attribute) => attribute.name),
+      undeclared: (declaration(normalise(raw, [])).attributes as Json[]).map((attribute) => attribute.name),
+      blank: (declaration(normalise({ ...structuredClone(raw), modules: [{ ...nth(raw.modules, 0, "module"), declarations: [{ ...declaration(raw), attributes: [{ name: "aria-label", description: "" }] }] }] }, [])).attributes as Json[]).map((attribute) => attribute.name),
+    }).toEqual({ declared: ["aria-label", "name", "label"], undeclared: ["name", "label"], blank: [] });
+  });
+});
+
 describe("iconNames(text of src/icons.ts)", () => {
   it.each([
     { label: "a union, after other statements", text: 'export type Other = "x" | "y";\nexport type IconName = "close" | "menu";\n', names: ["close", "menu"] },
@@ -241,6 +253,9 @@ describe("serialise(manifest)", () => {
  */
 const unionOfTheSet =
   '"chevron-start" | "chevron-end" | "chevron-up" | "chevron-down" | "arrow-start" | "arrow-end" | "menu" | "close" | "folder" | "file" | "search" | "table" | "copy" | undefined';
+
+/** The attributes `ocelle-button` moves onto its inner control, in the order it declares them (012 FR-009). */
+const moved = ["aria-expanded", "aria-controls", "aria-current", "aria-haspopup", "aria-pressed", "aria-label", "aria-labelledby", "aria-describedby", "title"];
 
 describe("generate(root) on the repository's element source", () => {
   it("declares ocelle-icon with its tag name, class, name (the union of the thirteen names) and label with types, defaults and attributes, name reflected and label not, and no slot, event, part or CSS property (US1 scenario 11, US2 scenario 1)", async () => {
@@ -316,15 +331,27 @@ describe("generate(root) on the repository's element source", () => {
       { kind: "field", name: "ground", privacy: "public", type: { text: ground }, default: "undefined", attribute: "ground", reflects: true, described: true },
       { kind: "field", name: "label", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "label", described: true },
       { kind: "field", name: "disabled", privacy: "public", type: { text: "boolean" }, default: "false", attribute: "disabled", reflects: true, described: true },
+      // 012 phase 3 (tasks.md T033, T037): the link properties.
+      ...["href", "target", "rel", "download"].map((name) => ({ kind: "field", name, privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: name, reflects: true, described: true })),
       { kind: "method", name: "click", return: { type: { text: "void" } }, described: true },
     ]);
     expect(described(button?.attributes)).toEqual([
+      // 012 phase 3 (FR-053; research.md R-15; tasks.md T033): the moved attributes and `title`, then their mirrors, each
+      // declared with `@attr` and a description, before the properties' attributes.
+      ...moved.map((name) => ({ name, type: { text: "string" }, described: true })),
+      ...moved.map((name) => ({ name: `data-ocelle-moved-${name}`, type: { text: "string" }, described: true })),
       { name: "variant", fieldName: "variant", type: { text: variant }, default: "undefined", described: true },
       { name: "size", fieldName: "size", type: { text: size }, default: "undefined", described: true },
       { name: "flush", fieldName: "flush", type: { text: "boolean" }, default: "false", described: true },
       { name: "ground", fieldName: "ground", type: { text: ground }, default: "undefined", described: true },
       { name: "label", fieldName: "label", type: { text: "string | undefined" }, default: "undefined", described: true },
       { name: "disabled", fieldName: "disabled", type: { text: "boolean" }, default: "false", described: true },
+      ...["href", "target", "rel", "download"].map((name) => ({ name, fieldName: name, type: { text: "string | undefined" }, default: "undefined", described: true })),
+    ]);
+    expect(described(button?.cssStates)).toEqual([
+      { name: "expanded", described: true },
+      { name: "pressed", described: true },
+      { name: "current", described: true },
     ]);
     expect(described(button?.slots)).toEqual([
       { name: "", described: true },
