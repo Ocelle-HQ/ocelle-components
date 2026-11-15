@@ -24,7 +24,8 @@ import { readScrollWidth, readTextBoxes } from "../../../packages/elements/test/
 // decision PLAN-CORRECTNESS-1-009 (a)) adds the section-header and card stories: each renders its elements with their
 // slotted content in light and dark, and, loaded at 320 × 800 px, the document does not scroll horizontally and no
 // slotted text node is clipped (packages/elements/test/commands.ts `readTextBoxes`), beside the same content rendered.
-// Phase 3 (T028) adds the page-header stories, with the same checks, and phase 4 (T035) the context-sidebar stories.
+// Phase 3 (T028) adds the page-header stories, with the same checks, phase 4 (T035) the context-sidebar stories and
+// phase 5 (T043) the personal-rail stories.
 const types: Readonly<Record<string, string>> = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
@@ -218,6 +219,17 @@ const layoutStories = [
   { id: "elements-ocelle-context-sidebar--text-in-the-slot", tag: "ocelle-context-sidebar", count: 1, texts: ["Kitty team", "Missions", "Runs", "Loose text between two sections", "Six members, two away this week.", "3 of 5 missions done"] },
   { id: "elements-ocelle-context-sidebar--empty-sections", tag: "ocelle-context-sidebar", count: 1, texts: ["Kitty team", "3 of 5 missions done"] },
   { id: "elements-ocelle-context-sidebar--hidden-sections", tag: "ocelle-context-sidebar", count: 1, texts: ["Kitty team", "Missions", "Runs", "A hidden section.", "Six members, two away this week.", "3 of 5 missions done"] },
+  // 011 phase 5 (T043; US4, FR-033, FR-038): the personal-rail stories, each rendering one rail of stand-in items, the
+  // three naming cases of US4-11 included, each rendered alone.
+  ...["vertical", "horizontal", "host-aria-label", "label-and-host-aria-label", "blank-host-aria-label"].map((name) => ({
+    id: `elements-ocelle-personal-rail--${name}`,
+    tag: "ocelle-personal-rail",
+    count: 1,
+    texts: ["In", "Ru", "Do", "Me"],
+  })),
+  { id: "elements-ocelle-personal-rail--no-bottom", tag: "ocelle-personal-rail", count: 1, texts: ["In", "Ru", "Do"] },
+  { id: "elements-ocelle-personal-rail--no-primary", tag: "ocelle-personal-rail", count: 1, texts: ["Me"] },
+  { id: "elements-ocelle-personal-rail--wrapped", tag: "ocelle-personal-rail", count: 1, texts: ["1", "2", "3", "4", "5", "6", "7", "8", "Me", "He"] },
 ] as const;
 
 /** What a layout story's page shows: its theme, its elements, each defined and upgraded, and the slotted text it draws. */
@@ -231,7 +243,7 @@ async function observeLayout(page: Page, tag: string): Promise<unknown> {
   return { ...shown, texts };
 }
 
-describe("the ocelle-section-header, ocelle-card, ocelle-page-header and ocelle-context-sidebar stories in the built Storybook (011 US1, US2, US3, FR-033)", { timeout: 60_000 }, () => {
+describe("the ocelle-section-header, ocelle-card, ocelle-page-header, ocelle-context-sidebar and ocelle-personal-rail stories in the built Storybook (011 US1, US2, US3, US4, FR-033)", { timeout: 60_000 }, () => {
   for (const { id, tag, count, texts } of layoutStories) {
     for (const theme of ["light", "dark"] as const) {
       it(`${id} in ${theme}: renders its ${tag} elements with their slotted content, with no request outside the origin`, async () => {

@@ -11,6 +11,7 @@ import { axNodes, axSubtree, emulate, readActiveElement, readScrollWidth, readTe
 import { decodePng } from "../pixels.ts";
 import { heardTypes } from "../scenarios/driver.ts";
 import type { Bounds, Box, Driver, Drawing, Paint, Part, Placement, Sheets } from "../scenarios/driver.ts";
+import { policy } from "./serve.ts";
 
 /**
  * Waits in the page until every `ocelle-*` element has rendered and the fonts the page uses have loaded (a font that
@@ -306,6 +307,27 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
         if (element === null || into === null) throw new Error(`no #${id} or #${parent} on the page`);
         into.append(element);
       }, { id, parent });
+      await settle(page);
+    },
+    identities: (id) =>
+      page.evaluate((id) => {
+        const host = document.getElementById(id);
+        if (host === null) throw new Error(`no #${id} on the page`);
+        const scope = window as unknown as { ocelleIdentities?: Map<Element, number> };
+        const seen = (scope.ocelleIdentities ??= new Map<Element, number>());
+        return [...(host.shadowRoot?.querySelectorAll("*") ?? [])].map((node) => {
+          const known = seen.get(node);
+          if (known !== undefined) return known;
+          seen.set(node, seen.size + 1);
+          return seen.size;
+        });
+      }, id),
+    module: async (code) => {
+      // Served as `/module.js` of the page's origin under the fixture's policy; a page that runs it allows that path.
+      const url = new URL("/module.js", page.url()).href;
+      await page.route(url, (route) => route.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", headers: { "Content-Security-Policy": policy }, body: code }));
+      // A string expression, so the test runner's transform does not rewrite the page's own `import()`.
+      await page.evaluate(`import(${JSON.stringify(url)}).then(() => true)`);
       await settle(page);
     },
   };
