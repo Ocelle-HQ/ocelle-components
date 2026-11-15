@@ -3,7 +3,9 @@
 // "40", a change a `MutationObserver` on the light DOM cannot see; and `test-appender`, which appends a 35rem block to
 // its own light DOM from its own `ResizeObserver` once it is observed with a non-zero inline size, and then stops
 // observing (its own second notification would bring the browser's loop message whatever the list-detail does). The
-// light-DOM blocks are sized by the test page's `.w30` and `.w35` rules. They ship in no package. The in-process tests
+// light-DOM blocks are sized by the test page's `.w30` and `.w35` rules. Since phase 4's review round 1 (R1-02), also
+// `test-shadow-frame`, which moves its children into its own open shadow root when it is first connected, so a
+// list-detail among them sits inside another component's shadow root, as in a shell that renders its screen there. They ship in no package. The in-process tests
 // import this module; global-setup.ts bundles it for the fixture pages as `ocelle-test-list-detail.js`, which imports
 // nothing. The shadow block's sheet is a constructed stylesheet, which the fixture's CSP does not govern.
 
@@ -56,5 +58,24 @@ export class TestAppender extends HTMLElement {
   }
 }
 
+/**
+ * A block that moves its children into its own open shadow root when first connected. Its `open` property set to
+ * "open" sets `detail-open` on the `ocelle-list-detail` in that shadow root; any other value removes it.
+ */
+export class TestShadowFrame extends HTMLElement {
+  connectedCallback(): void {
+    if (this.shadowRoot === null) this.attachShadow({ mode: "open" }).append(...this.childNodes);
+  }
+
+  get open(): string {
+    return this.shadowRoot?.querySelector("ocelle-list-detail")?.hasAttribute("detail-open") === true ? "open" : "";
+  }
+
+  set open(value: string) {
+    this.shadowRoot?.querySelector("ocelle-list-detail")?.toggleAttribute("detail-open", value === "open");
+  }
+}
+
 if (customElements.get("test-shadow-block") === undefined) customElements.define("test-shadow-block", TestShadowBlock);
 if (customElements.get("test-appender") === undefined) customElements.define("test-appender", TestAppender);
+if (customElements.get("test-shadow-frame") === undefined) customElements.define("test-shadow-frame", TestShadowFrame);

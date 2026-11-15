@@ -9,12 +9,14 @@ import { inProcessDriver } from "./in-process.ts";
 // iframe and registry hold nothing else). The other cases need an upgrade of their own after that import, so they
 // define a subclass of the element under a test tag, which runs the same first render. Focus inside the list, which
 // the first layout hides, moves to the detail pane; focus in the detail, which stays shown, and focus outside the
-// element are not moved. test/browser/list-detail.test.ts checks the first two cases on built output.
+// element are not moved. Since phase 4's review round 1 (R1-01), focus in the inspector, which the first layout shows
+// in Frame R (three columns) and in Frame N with `detail-open` (stacked under the detail), is not moved either.
+// test/browser/list-detail.test.ts checks the first two cases and the two inspector cases on built output.
 const driver = inProcessDriver();
 
 /** Server-rendered markup of a list-detail with `detail-open`, as the tag `tag` with id `id`, in Frame N. */
 const markup = (tag: string, id: string): string =>
-  `<button id="before" type="button">before</button><div data-frame="N"><${tag} id="${id}" detail-open><div slot="list"><p>Records</p><button id="${id}-l0" type="button">Record WP-01</button></div><div><p>Detail of WP-01</p><button id="${id}-d0" type="button">Edit</button></div><div slot="inspector"><p>Inspector of WP-01</p></div></${tag}></div>`;
+  `<button id="before" type="button">before</button><div data-frame="N"><${tag} id="${id}" detail-open><div slot="list"><p>Records</p><button id="${id}-l0" type="button">Record WP-01</button></div><div><p>Detail of WP-01</p><button id="${id}-d0" type="button">Edit</button></div><div slot="inspector"><p>Inspector of WP-01</p><button id="${id}-i0" type="button">Assign</button></div></${tag}></div>`;
 
 /** The deep active element, each level as its id or its local name and classes, joined by " >> ". */
 function active(): string {
@@ -74,5 +76,17 @@ describe("ocelle-list-detail at upgrade (R-14)", () => {
     customElements.define("test-list-detail-wide", class extends OcelleListDetail {});
     await driver.settle();
     expect({ before, after: active(), list: display("w", "list"), detail: display("w", "detail") }).toEqual({ before: "w-l0", after: "w-l0", list: "block", detail: "block" });
+  });
+
+  // Added in phase 4's review round 1 (R1-01), red before the fix: the first layout knows the inspector is present.
+  it.each([
+    { frame: "N" as const, tag: "test-list-detail-insp-open", id: "in", list: "none" },
+    { frame: "R" as const, tag: "test-list-detail-insp-wide", id: "ir", list: "block" },
+  ])("review R1-01: in Frame $frame, where the first layout shows the inspector, focus inside the inspector is not moved at upgrade", async ({ frame, tag, id, list }) => {
+    const { OcelleListDetail } = await import("../src/ocelle-list-detail.ts");
+    const before = await mounted(tag, id, `${id}-i0`, frame);
+    customElements.define(tag, class extends OcelleListDetail {});
+    await driver.settle();
+    expect({ before, after: active(), list: display(id, "list"), detail: display(id, "detail"), inspector: display(id, "inspector") }).toEqual({ before: `${id}-i0`, after: `${id}-i0`, list, detail: "block", inspector: "block" });
   });
 });
