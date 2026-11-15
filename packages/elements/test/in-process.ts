@@ -14,10 +14,11 @@ import baseText from "../../styles/src/base.css?raw";
 import { css } from "../../tokens/src/generate.ts";
 import { source } from "../../tokens/src/source.ts";
 import { define } from "../src/define.ts";
+import { setAnnouncerTimingForTests } from "../src/live.ts";
 import type { AnnouncerTiming } from "../src/live.ts";
 import type { Delays, Snapshot } from "./live-reading.ts";
 import { decodePng } from "./pixels.ts";
-import type { Box, Drawing, Entries, InProcessDriver, InsertHow, Paint, Part, Placement, Sheets } from "./scenarios/driver.ts";
+import type { Box, Drawing, Entries, InProcessDriver, InsertHow, Operation, Paint, Part, Placement, Sheets } from "./scenarios/driver.ts";
 
 /**
  * The one timing constant of the in-process run (specs/010-feedback-forms research R-09, contracts/testing.md
@@ -30,13 +31,25 @@ export const timing = { delayLoaded: 50, delayLoading: 50, hold: 500 } as const;
 /** The capture's delays in process: `D` of `timing`. */
 export const delays: Delays = { loaded: timing.delayLoaded, loading: timing.delayLoading };
 
+let first: AnnouncerTiming | undefined;
+
+/**
+ * Gives the element the in-process timing (contracts/testing.md § Timing; T020a): `setAnnouncerTimingForTests` of
+ * src/live.ts with `timing`, the constant the capture's `D` comes from, when this module is imported and before each
+ * scenario (`mount`). The timing its first call in the test file replaced is kept.
+ */
+function useTestTiming(): void {
+  const replaced = setAnnouncerTimingForTests(timing);
+  first ??= replaced;
+}
+useTestTiming();
+
 /**
  * The timing the first `setAnnouncerTimingForTests` call of this test file replaced (the shipped `announcerDefaults`),
- * read-only, for test/live-timing.test.ts (contracts/testing.md § Timing; T014). Stub until T020a wires the call:
- * undefined.
+ * read-only, for test/live-timing.test.ts (contracts/testing.md § Timing; T014).
  */
 export function firstTimingReturn(): AnnouncerTiming | undefined {
-  return undefined;
+  return first;
 }
 
 function sheet(text: string): CSSStyleSheet {
@@ -141,6 +154,50 @@ function built(markup: string): Node[] {
 /** The keyboard syntax of `text` typed as it is (`{` and `[` doubled). */
 const typed = (text: string): string => text.replace(/[{[]/g, (char) => char + char);
 
+/** Elements a `batch` `remove` took out of the page, by id, for a later `move`. */
+const removed = new Map<string, Element>();
+
+/** The element with `id` in the page, or one a `remove` took out. */
+function found(id: string): Element {
+  return document.getElementById(id) ?? removed.get(id) ?? element(id);
+}
+
+/** One `batch` operation, in the page's current task. */
+function operate(operation: Operation): void {
+  if (operation.op === "insert") element(operation.container).insertAdjacentHTML("beforeend", operation.markup);
+  else if (operation.op === "text") found(operation.id).textContent = operation.text;
+  else if (operation.op === "attribute") {
+    if (operation.value === null) found(operation.id).removeAttribute(operation.name);
+    else found(operation.id).setAttribute(operation.name, operation.value);
+  } else if (operation.op === "property") (found(operation.id) as unknown as Record<string, unknown>)[operation.name] = operation.value;
+  else if (operation.op === "move") element(operation.to).append(found(operation.id));
+  else if (operation.op === "remove") {
+    const target = found(operation.id);
+    removed.set(operation.id, target);
+    target.remove();
+  } else (found(operation.id) as HTMLElement).focus();
+}
+
+/** A property value as the driver reports it: a string, number, boolean or null; anything else as null. */
+function plain(value: unknown): string | number | boolean | null {
+  return typeof value === "string" || typeof value === "number" || typeof value === "boolean" ? value : null;
+}
+
+/** The content box of `target`: its border box less its borders and padding. */
+function contentOf(target: Element): { x: number; y: number; width: number; height: number } {
+  const rect = target.getBoundingClientRect();
+  const style = getComputedStyle(target);
+  const px = (property: string): number => Number.parseFloat(style.getPropertyValue(property));
+  const left = px("border-left-width") + px("padding-left");
+  const top = px("border-top-width") + px("padding-top");
+  return {
+    x: rect.x + left,
+    y: rect.y + top,
+    width: rect.width - left - px("padding-right") - px("border-right-width"),
+    height: rect.height - top - px("padding-bottom") - px("border-bottom-width"),
+  };
+}
+
 let fresh = 0;
 let readyState: { mockRestore: () => void } | undefined;
 
@@ -154,7 +211,9 @@ export function inProcessDriver(): InProcessDriver {
   let keyed = false;
   const driver: InProcessDriver = {
     mount: async (markup, options = {}) => {
+      useTestTiming();
       restoreReadyState();
+      removed.clear();
       submissions.clear();
       keyed = false;
       document.adoptedStyleSheets = options.base === true ? [tokens, base] : [tokens];
@@ -306,21 +365,29 @@ export function inProcessDriver(): InProcessDriver {
       return performance.now() - from;
     },
     W: { loaded: 2 * timing.delayLoaded, loading: 2 * timing.delayLoading },
-    // Stub until green (specs/010-feedback-forms phase 2): the hold of `timing`.
-    H: 0,
+    H: timing.hold,
     hostRole: (id) => Promise.resolve(last.at(-1)?.hosts.find((host) => host.host === id)?.role ?? "none"),
-    // Stubs of the phase 2 steps (specs/010-feedback-forms T011): neutral values until green; `firstLoad` arms the
-    // capture and inserts the markup after load, an insertion, not the page as first loaded.
-    batch: () => Promise.resolve(),
-    property: () => Promise.resolve(null),
-    computedIn: () => Promise.resolve(""),
-    contentBox: () => Promise.resolve({ x: 0, y: 0, width: 0, height: 0 }),
-    firstLoad: async (containerId, markup, tag) => {
-      await driver.liveCapture.start(containerId);
-      element(containerId).innerHTML = markup.replaceAll("ocelle-first-load", tag);
+    // The phase 2 steps (specs/010-feedback-forms T011).
+    batch: async (operations) => {
+      for (const operation of operations) operate(operation);
       await settle();
     },
-    defineSecond: () => Promise.resolve(),
+    property: (id, name) => Promise.resolve(plain((element(id) as unknown as Record<string, unknown>)[name])),
+    computedIn: (id, inner, property) => {
+      const target = element(id).shadowRoot?.querySelector(inner);
+      return Promise.resolve(target === null || target === undefined ? "" : getComputedStyle(target).getPropertyValue(property));
+    },
+    contentBox: (id, inner) => {
+      const target = element(id).shadowRoot?.querySelector(inner);
+      return Promise.resolve(target === null || target === undefined ? { x: 0, y: 0, width: 0, height: 0 } : contentOf(target));
+    },
+    firstLoad: async (containerId, markup, tag) => {
+      await driver.registerFirstLoad(containerId, markup, customElements.get(tag) ?? HTMLElement);
+    },
+    defineSecond: (tag) => {
+      define(tag, class extends HTMLElement {});
+      return Promise.resolve();
+    },
     formData: (formId) => Promise.resolve(entries(new FormData(form(formId)))),
     submit: async (formId) => {
       const target = form(formId);

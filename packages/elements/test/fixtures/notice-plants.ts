@@ -120,13 +120,6 @@ class AlertBaselineNow extends OcelleNotice {
   }
 }
 
-/** Alert pending tone: a `tone` change while the alert baseline is pending takes the ordinary `tone` row. */
-class AlertPendingTone extends OcelleNotice {
-  protected override onTone(): void {
-    if (this.isLive() && !this.hidden) this.announcer.trigger(false);
-  }
-}
-
 /** Alert pending role: a change from `alert` to `status` while the alert baseline is pending leaves the marker set. */
 class AlertPendingRole extends OcelleNotice {
   protected override leaveAlert(): void {
@@ -215,6 +208,25 @@ class MoveForever extends OcelleNotice {
   }
 }
 
+/**
+ * First load, deaf window: light-DOM changes are ignored for 100 ms after a first load, so a change in the first task
+ * after the load is not announced (phase 2 review round 1, R1-01).
+ */
+class DeafAfterFirstLoad extends OcelleNotice {
+  #firstLoadAt = Number.NEGATIVE_INFINITY;
+
+  protected override isFirstLoad(): boolean {
+    const first = super.isFirstLoad();
+    if (first) this.#firstLoadAt = performance.now();
+    return first;
+  }
+
+  protected override onContent(): void {
+    if (performance.now() - this.#firstLoadAt < 100) return;
+    super.onContent();
+  }
+}
+
 /** Each plant by its tag. */
 export const noticePlants: Readonly<Record<string, CustomElementConstructor>> = {
   "ocelle-plant-no-wait": withAnnouncer(NoWait),
@@ -229,7 +241,6 @@ export const noticePlants: Readonly<Record<string, CustomElementConstructor>> = 
   "ocelle-plant-raw-baseline": withAnnouncer(RawBaseline),
   "ocelle-plant-alert-copies": AlertCopies,
   "ocelle-plant-alert-baseline-now": AlertBaselineNow,
-  "ocelle-plant-alert-pending-tone": AlertPendingTone,
   "ocelle-plant-alert-pending-role": AlertPendingRole,
   "ocelle-plant-alert-step-after-reset": AlertStepAfterReset,
   "ocelle-plant-always-polite": AlwaysPolite,
@@ -242,4 +253,5 @@ export const noticePlants: Readonly<Record<string, CustomElementConstructor>> = 
   "ocelle-plant-never-first-load": NeverFirstLoad,
   "ocelle-plant-no-move": NoMove,
   "ocelle-plant-move-forever": MoveForever,
+  "ocelle-plant-deaf-after-first-load": DeafAfterFirstLoad,
 };

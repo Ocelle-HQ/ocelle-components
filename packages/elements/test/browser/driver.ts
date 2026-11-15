@@ -292,21 +292,83 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
         return performance.now() - from;
       }, { from: lastEnd, ms }),
     W: { loaded: 300, loading: 700 },
-    // Stub until green (specs/010-feedback-forms phase 2): the shipped hold, 5000 ms.
-    H: 0,
+    H: 5000,
     hostRole: (id) => Promise.resolve(last.at(-1)?.hosts.find((host) => host.host === id)?.role ?? "none"),
-    // Stubs of the phase 2 steps (specs/010-feedback-forms T011): neutral values until green; `firstLoad` arms the
-    // capture on a fresh document and inserts the markup after load, an insertion, not the page as first loaded.
-    batch: () => Promise.resolve(),
-    property: () => Promise.resolve(null),
-    computedIn: () => Promise.resolve(""),
-    contentBox: () => Promise.resolve({ x: 0, y: 0, width: 0, height: 0 }),
-    firstLoad: async (containerId, markup, tag) => {
-      await driver.liveCapture.startDocument(page.url());
-      await insertIn(page, containerId, markup.replaceAll("ocelle-first-load", tag), "innerHTML");
+    // The phase 2 steps (specs/010-feedback-forms T011).
+    batch: async (operations) => {
+      await page.evaluate((operations) => {
+        const holder = globalThis as unknown as { ocelleRemoved?: Map<string, Element> };
+        const removed = (holder.ocelleRemoved ??= new Map<string, Element>());
+        const byId = (id: string): Element => {
+          const found = document.getElementById(id) ?? removed.get(id);
+          if (found === undefined) throw new Error(`no #${id} on the page`);
+          return found;
+        };
+        for (const operation of operations) {
+          if (operation.op === "insert") byId(operation.container).insertAdjacentHTML("beforeend", operation.markup);
+          else if (operation.op === "text") byId(operation.id).textContent = operation.text;
+          else if (operation.op === "attribute") {
+            if (operation.value === null) byId(operation.id).removeAttribute(operation.name);
+            else byId(operation.id).setAttribute(operation.name, operation.value);
+          } else if (operation.op === "property") (byId(operation.id) as unknown as Record<string, unknown>)[operation.name] = operation.value;
+          else if (operation.op === "move") byId(operation.to).append(byId(operation.id));
+          else if (operation.op === "remove") {
+            const target = byId(operation.id);
+            removed.set(operation.id, target);
+            target.remove();
+          } else (byId(operation.id) as HTMLElement).focus();
+        }
+      }, operations);
       await settle(page);
     },
-    defineSecond: () => Promise.resolve(),
+    property: (id, name) =>
+      page.evaluate(({ id, name }) => {
+        const element = document.getElementById(id);
+        if (element === null) throw new Error(`no #${id} on the page`);
+        const value = (element as unknown as Record<string, unknown>)[name];
+        return typeof value === "string" || typeof value === "number" || typeof value === "boolean" ? value : null;
+      }, { id, name }),
+    computedIn: (id, inner, property) =>
+      page.evaluate(({ id, inner, property }) => {
+        const host = document.getElementById(id);
+        if (host === null) throw new Error(`no #${id} on the page`);
+        const target = host.shadowRoot?.querySelector(inner);
+        return target === null || target === undefined ? "" : getComputedStyle(target).getPropertyValue(property);
+      }, { id, inner, property }),
+    contentBox: (id, inner) =>
+      page.evaluate(({ id, inner }): Bounds => {
+        const host = document.getElementById(id);
+        if (host === null) throw new Error(`no #${id} on the page`);
+        const target = host.shadowRoot?.querySelector(inner);
+        if (target === null || target === undefined) return { x: 0, y: 0, width: 0, height: 0 };
+        const rect = target.getBoundingClientRect();
+        const style = getComputedStyle(target);
+        const px = (name: string): number => Number.parseFloat(style.getPropertyValue(name));
+        const left = px("border-left-width") + px("padding-left");
+        const top = px("border-top-width") + px("padding-top");
+        return {
+          x: rect.x + left,
+          y: rect.y + top,
+          width: rect.width - left - px("padding-right") - px("border-right-width"),
+          height: rect.height - top - px("padding-bottom") - px("border-bottom-width"),
+        };
+      }, { id, inner }),
+    firstLoad: async (containerId, markup, tag) => {
+      // The page's parser-blocking script writes the markup into its container while the document is loading
+      // (fixtures/first-load.js, first-load.html, whose container is #c).
+      if (containerId !== "c") throw new Error(`firstLoad: the first-load pages' container is #c, not #${containerId}`);
+      await page.addInitScript((given) => {
+        (globalThis as unknown as { ocelleFirstLoad: unknown }).ocelleFirstLoad = given;
+      }, { markup: markup.replaceAll("ocelle-first-load", tag) });
+      await driver.liveCapture.startDocument(page.url());
+      await settle(page);
+    },
+    defineSecond: async (tag) => {
+      // A second copy's guarded registration, as src/define.ts makes it: a defined tag is left as it is.
+      await page.evaluate((tag) => {
+        if (customElements.get(tag) === undefined) customElements.define(tag, class extends HTMLElement {});
+      }, tag);
+    },
     formData: (formId) =>
       page.evaluate((formId) => {
         const form = document.getElementById(formId);

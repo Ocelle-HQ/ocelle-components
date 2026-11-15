@@ -1,7 +1,7 @@
 // The token source (FR-008, research.md R-01, data-model.md § Token): every token of spec Appendix A as a record, in
 // the order of its tables. Each record's use (Appendix A's "Use" column) is the comment beside it, not data
 // (PLAN-TESTABILITY-1-003 (a)). A derived token (FR-002) writes its source as var(--ocelle-<name>) and lists it in
-// `ref`; a foreground colour carries its contrast kind and intended grounds (A.8: 149 required pairs per theme).
+// `ref`; a foreground colour carries its contrast kind and intended grounds (A.8 and the ink-on-state-ground pairs of 010 research R-04: 154 required pairs per theme).
 // `source` is the records with the overrides of overrides.ts applied; the generator, the build and the gates read it.
 // No type assertion wraps the records or the ground lists (`as const`, `satisfies`): Stryker does not mutate inside
 // one, so the values would go untested (op 004). `tokenRecords` keeps the names literal and checks each record instead.
@@ -40,7 +40,7 @@ export const records = tokenRecords([
   { name: "color-inspector", group: "colour", value: { light: "#F1EEE8", dark: "#15130F" } }, // right inspector, ruled off
   { name: "color-rail", group: "colour", value: { light: "#E9E5DD", dark: "#1C1A15" } }, // context sidebar
   { name: "color-inset", group: "colour", value: { light: "#E2DDD3", dark: "#302B23" } }, // wells, digest backgrounds
-  { name: "color-ink", group: "colour", value: { light: "#15130F", dark: "#EDE9E1" }, contrast: { kind: "text", grounds: main } }, // body text
+  { name: "color-ink", group: "colour", value: { light: "#15130F", dark: "#EDE9E1" }, contrast: { kind: "text", grounds: [...main, ...stateGrounds] } }, // body text, also on the state grounds (010 R-04)
   // secondary headings
   { name: "color-ink-soft", group: "colour", value: { light: "#3F3A33", dark: "#CFC9BE" }, contrast: { kind: "text", grounds: main } },
   // muted text

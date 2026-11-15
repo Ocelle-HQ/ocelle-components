@@ -154,7 +154,9 @@ describe("the driver steps on the strict-CSP fixture pages", { timeout: 60_000 }
     await driver.mount('<main id="c"><span id="s">old</span><input id="i"><div id="from"><b id="m">moved</b></div><div id="to"></div><i id="r">gone</i></main>');
     await page.page.evaluate(() => {
       const deliveries: number[] = [];
-      new MutationObserver((records) => deliveries.push(records.length)).observe(document.getElementById("c") as HTMLElement, { childList: true, characterData: true, attributes: true, subtree: true });
+      const container = document.getElementById("c");
+      if (container === null) throw new Error("no #c on the page");
+      new MutationObserver((records) => deliveries.push(records.length)).observe(container, { childList: true, characterData: true, attributes: true, subtree: true });
       (globalThis as unknown as { ocelleDeliveries: number[] }).ocelleDeliveries = deliveries;
     });
     await driver.batch([
@@ -216,8 +218,9 @@ describe("the driver steps on the strict-CSP fixture pages", { timeout: 60_000 }
     const { visit: page, driver } = await open("first-load.html", ["first-load.html", "first-load.js", "live-regions.js", "ocelle-elements.js"]);
     await driver.firstLoad("c", '<ocelle-first-load id="f"></ocelle-first-load>', "ocelle-test-probe");
     const seen = await page.page.evaluate(() => {
-      const found = document.getElementById("f") as (HTMLElement & { connectedReadyState?: string }) | null;
-      return { name: found?.localName ?? null, readyState: found?.connectedReadyState ?? null, parent: found?.parentElement?.id ?? null };
+      const found = document.getElementById("f");
+      const readyState = found === null ? undefined : (Reflect.get(found, "connectedReadyState") as string | undefined);
+      return { name: found?.localName ?? null, readyState: readyState ?? null, parent: found?.parentElement?.id ?? null };
     });
     const snapshots = await driver.liveCapture.stop();
     expect({ seen, first: snapshots[0]?.loaded ?? null, recorded: await page.finish() }).toEqual({

@@ -82,7 +82,10 @@ text is written into a persistent, visually hidden live region after Chromium's 
 
 Shadow structure: `<div class="box tone-<tone> size-<size>">` (R-03) > `<div part="heading">` (with
 `<slot name="heading">`) and `<div part="body">` (with the default `<slot>`); after the box, a sibling
-`<div class="announcer" aria-live="<politeness>|off" aria-atomic="true">`, visually hidden (the clip pattern), whose
+`<div class="announcer" aria-live="<politeness>|off" aria-atomic="true">`, visually hidden (a box of
+`--ocelle-border-width` with a negative margin of that width, `overflow: hidden`, `white-space: nowrap` and
+`color: transparent` with `forced-color-adjust: none`, so the copy is not drawn in forced colours either; no `clip` or
+`clip-path`, which the token-only style lint rejects as a raw value, `2070cc8`), whose
 only content is a text node holding the copy or nothing. The element keeps two facts: *live* (is it announcing:
 `announce`, or a host `role` of `alert` or `status`) and *politeness* (host `alert` → assertive, host `status` →
 polite, else tone: `warning`, `danger` → assertive, others polite). The announcer's `aria-live` is the politeness while
@@ -110,9 +113,14 @@ handler runs in a later task, after the current task's `MutationObserver` record
 baseline is still pending, clears the marker and sets the baseline to the text and politeness current then; if the
 marker was cleared before it runs (by a cancel, or by a role change away from `alert`, below), it does nothing, so
 it cannot overwrite the baseline that clearing left or make the re-check of the wait it started drop the write
-(plan squad round 3 verify 2). Until it runs, light-DOM mutations and `tone` changes start no
-wait (data-model.md gives every other row for these events the condition that no alert baseline is pending, so each
-event matches one row). So the common
+(plan squad round 3 verify 2). Until it runs, a light-DOM mutation or a `tone` change takes its ordinary row
+(data-model.md; phase 2 design changes 1 and 2): one that changes the text, or the politeness, starts a wait, and
+that wait ends after the step has taken the baseline (the step runs one `MessageChannel` task after the trigger,
+before any wait of `W` can end), with the text current then and the `assertive` politeness the `alert` role gives
+whatever the tone, so the re-check drops it. The alert path leaves the baseline as it is until the step: for an
+insertion or a reveal it is not set to none at once, since the step replaces it before any wait started in the task
+can end, and a role change away from `alert` before the step announces it as an insertion, which sets it to none. So
+the common
 `host.append(n); n.textContent = msg`, reveal-then-fill and role-then-fill in one task are read once, by the alert
 event, which reads the node at the next serialisation (at least `D` after the task, R-01), and no copy follows. A
 baseline taken synchronously would hold the text from before the fill, the microtask observer would see a
@@ -126,7 +134,8 @@ reading documented (option (c)). A role change away from `alert` that keeps the 
 role removed from a notice with `announce`) before the end-of-task step has run clears the pending baseline and
 acts as the trigger would have under the new role, since Chromium has not serialised the `alert` role yet and fires
 no alert event: an insertion or a reveal announces the current text with the new politeness (baseline none), a
-change to `alert` compares the text and politeness with the baseline from before it, and a role set on a notice that
+change to `alert` starts a wait whose re-check compares the text and politeness with the baseline from before it,
+and a role set on a notice that
 was not live takes the current text and politeness as the baseline and announces nothing (plan squad round 3
 verify 1). The pending marker records which of these triggers set it. Text changes of an `alert` notice once the
 step has run, and a role change from `alert` to `status` after it, go through the announcer as below.
@@ -146,14 +155,30 @@ either, and the README says so.
 
 **Announcing** (the `Announcer` of `src/live.ts`, shared with R-06). With `W = 2 × D` and `D` the serialisation delay
 of R-01 for the document's current load state (150 ms once `document.readyState` is `"complete"`, 350 ms before, so
-`W` is 300 ms or 700 ms; source and figures in the README), and the hold `H` = 5000 ms, an announcement:
+`W` is 300 ms or 700 ms; source and figures in the README), `W(s)` the wait for the load state `s`, and the hold
+`H` = 5000 ms, an announcement:
 
 1. if the announcer holds a copy, waits until that copy has been current for at least `W` (the *minimum hold*), then
    empties the announcer; sets its `aria-live` to the current politeness;
 2. waits until the announcer has been live, shown and empty for `W` (a timer; a new trigger while waiting restarts
    the wait, so changes less than `W` apart, in one task or in different tasks, write only the final text: spec
    FR-008 as amended by operator decision PLAN-FRESH-2-001 (a)); a text that keeps changing more often than every
-   `W` is therefore not announced until it stops (README);
+   `W` is therefore not announced until it stops (README). The wait counts from the empty state's start too (phase 2
+   stop 2, operator decision (a), `reviews/phase-2/decision-stop-2.md`): it ends no earlier than `W` (now) after the
+   last trigger *and* no earlier than `W(s)` after the start of the announcer's current empty state, with `s` the
+   load state in which that state began. The empty state begins when the announcer last became live, shown and
+   empty: rendered while live (first load, insertion), shown again (reveal), its `aria-live` set from `off` to a
+   politeness, or its copy emptied (step 1, the end of the hold); a change of its politeness between `polite` and
+   `assertive` does not start one. This is the capture's "settled" rule
+   (R-01), which takes `D` for the load state in which a state began: an empty state begun before the load is kept
+   for the pre-load `D` (350 ms) before a later write can count. Without the floor, a change in the first task after
+   a server-rendered load was written `W` (300 ms) after the trigger, while the empty state, rendered 12 to 22 ms
+   before the load ended, had been kept 340 to 379 ms against the 350 ms it needs (`reviews/phase-2/stop-2.md`).
+   With it, such a change is written about 700 ms after the region's first render, about 650 to 690 ms after the
+   trigger on Chromium. Elsewhere nothing changes: an empty state begun after the load has the after-load `W`, and
+   it begins no later than the trigger's own task, so `W` after the trigger is the later bound; a trigger before the
+   load already waits the pre-load `W`. In process both load states share the test `D`, so the floor never binds
+   there; a fake-clock rule test with two `D` values and the fixture-page cells show it;
 3. when the wait ends, computes the notice's text as FR-008 defines it and the politeness from the DOM at that
    moment and compares them with the baseline: if both are equal (a text that went `A`, `B`, `A`), or the text is
    empty, it writes nothing and the announcer stays empty; otherwise it writes the text as the copy and sets the
@@ -219,8 +244,10 @@ after each announcement, or until the next announcement's step 1 (no earlier tha
 the text twice only within that window (README; the bound was `W` before PLAN-FRESH-2-005 and is restated for the
 operator with that decision); the element computes the
 text itself, which FR-008 defines on the DOM side precisely enough to do so (spec "What 'announced' means here": for
-the content FR-008 names, the tree reading equals that text). Announcements reach the tree `W` after the trigger
-(300 ms after load). The alternative of hiding the visible content from the tree while the copy is read was rejected:
+the content FR-008 names, the tree reading equals that text). Announcements reach the tree `W` after the last
+trigger (300 ms after load), and no earlier than `W(s)` after the start of the announcer's current empty state
+(step 2): a change right after a first load, whose empty state began before the load, reaches it about 700 ms
+after the region's first render, about 650 to 690 ms after the trigger on Chromium (phase 2 stop 2, decision (a)). The alternative of hiding the visible content from the tree while the copy is read was rejected:
 it hides focusable slotted links (FR-011, US1 scenario 18; axe `aria-hidden-focus`).
 
 **Alternatives.** Content-wrapper withholding for one animation frame (the first draft): undone before the first
@@ -517,7 +544,7 @@ passing, every Timeout in `src/live.ts`, `src/define.ts` and `src/form-control.t
 review, and the capture's bounds (R-01) make a looping mutant fail as an assertion (PLAN-TESTABILITY-1-009).
 
 **Timing in process** (operator decision PLAN-FRESH-2-003 (a)). At Chromium's figures every announcing cell costs at
-least `W` plus stop()'s quiet window (2100 ms at Chromium's figures, `contracts/testing.md`), about 2.4 s, so the SC-002 matrix
+least `W` plus stop()'s quiet window (1750 ms at Chromium's figures, `contracts/testing.md`), about 2.1 s, so the SC-002 matrix
 alone would take several minutes in Stryker's dry run and again for every surviving or equivalent mutant
 (`coverageAnalysis: perTest`), against the mutation shard's 10-minute limit (`.github/workflows/ci.yml:84-89`; specs
 001 FR-013, whose records show shards at 9:49 and 670 s). `src/live.ts` therefore exports, from the internal module

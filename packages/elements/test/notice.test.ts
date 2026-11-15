@@ -1,4 +1,4 @@
-import { afterEach, assert, describe, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { commands } from "vitest/browser";
 import "../src/ocelle-icon.ts";
 import "../src/ocelle-notice.ts";
@@ -22,16 +22,16 @@ afterEach(async () => {
 
 describe("ocelle-notice, in process (US1)", { timeout: 30_000 }, () => {
   it.each(noticeScenarios)("$name", async ({ run }) => {
-    assert.isUndefined(await run(driver, "ocelle-notice"));
+    await expect(run(driver, "ocelle-notice")).resolves.toBeUndefined();
   });
 
   it(noticeLoadingScenario.name, async () => {
-    assert.isUndefined(await noticeLoadingScenario.run(driver, "ocelle-notice"));
+    await expect(noticeLoadingScenario.run(driver, "ocelle-notice")).resolves.toBeUndefined();
   });
 });
 
 describe("ocelle-notice, the SC-002 matrix in process", { timeout: 30_000 }, () => {
   it.each(matrixScenarios)("$name", async ({ run }) => {
-    assert.isUndefined(await run(driver, "ocelle-notice"));
+    await expect(run(driver, "ocelle-notice")).resolves.toBeUndefined();
   });
 });

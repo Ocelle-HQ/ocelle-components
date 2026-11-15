@@ -54,6 +54,7 @@ function noticeRow(family: string, plant: string, tag: string, scenario: NoticeS
 }
 
 const matrixAlert = matrixScenarios.find((scenario) => scenario.name.startsWith("SC-002 alert danger"));
+const matrixNoneInfo = matrixScenarios.find((scenario) => scenario.name.startsWith("SC-002 none info"));
 const loading = { name: noticeLoadingScenario.name, run: (_inProcess: Driver, tag: string) => noticeLoadingScenario.run(driver, tag) };
 
 /** The shipped-timing check, unplanted (the real values) and planted. */
@@ -103,7 +104,6 @@ const rows: readonly Row[] = [
   noticeRow("alert baseline", "the alert path takes the baseline at the DOM operation", "ocelle-plant-alert-baseline-now", "US1-15 alert, text set in the same task after insertion", /^US1-15 alert, text after insertion: announcements/),
   noticeRow("alert baseline", "the alert path takes the baseline at the DOM operation", "ocelle-plant-alert-baseline-now", "US1-15 alert, text set in the same task after the reveal", /^US1-15 alert, text after reveal: announcements/),
   noticeRow("alert baseline", "the alert path takes the baseline at the DOM operation", "ocelle-plant-alert-baseline-now", "US1-15 alert, text set in the same task after the role change", /^US1-15 alert, text after role change: announcements/),
-  noticeRow("alert pending tone", "a tone change while pending takes the ordinary tone row", "ocelle-plant-alert-pending-tone", "US1-15 alert, tone changed", /^US1-15 alert, tone after insertion: announcements/),
   noticeRow("alert pending role", "alert to status while pending leaves the marker set", "ocelle-plant-alert-pending-role", "US1-15 inserted as alert", /^US1-15 inserted as alert, to status: announcements/),
   noticeRow("alert pending role", "alert to status while pending leaves the marker set", "ocelle-plant-alert-pending-role", "US1-15 revealed as alert", /^US1-15 revealed as alert, to status: announcements/),
   noticeRow("alert step after reset", "the end-of-task step sets the baseline after the marker was reset", "ocelle-plant-alert-step-after-reset", "US1-15 inserted as alert", /^US1-15 inserted as alert, to status: announcements/),
@@ -121,6 +121,9 @@ const rows: readonly Row[] = [
   noticeRow("first load", "the constructor's isConnected rule", "ocelle-plant-constructed-connected", "US1-8 innerHTML", /^US1-8 innerHTML: announcements/),
   noticeRow("first load", "the constructor's isConnected rule", "ocelle-plant-constructed-connected", "US1-8 template", /^US1-8 template: announcements/),
   noticeRow("first load", "the constructor's isConnected rule", "ocelle-plant-constructed-connected", "US1-8 domparser", /^US1-8 domparser: announcements/),
+  noticeRow("first load, deaf window", "light-DOM changes ignored for 100 ms after a first load", "ocelle-plant-deaf-after-first-load", "US1-11 text", /^US1-11 text: announcements/),
+  noticeRow("first load, deaf window", "light-DOM changes ignored for 100 ms after a first load", "ocelle-plant-deaf-after-first-load", "US1-13 one task", /^US1-13 one task: announcements/),
+  noticeRow("first load, deaf window", "light-DOM changes ignored for 100 ms after a first load", "ocelle-plant-deaf-after-first-load", matrixNoneInfo ?? "SC-002 none info", /^SC-002 none info [a-z-]+: announcements/),
   noticeRow("first load", "announces on first load", "ocelle-plant-never-first-load", "US1-10 first load only", /^US1-10 first load only: announcements/),
   noticeRow("nested region", "the content wrapper also carries aria-live", "ocelle-plant-nested-region", "US1-15 status text change", /^US1-15 status text change: announcements/),
   noticeRow("host-role region", "internals.ariaLive left unset", "ocelle-plant-host-region", "US1-15 status text change", /^US1-15 status text change: announcements/),

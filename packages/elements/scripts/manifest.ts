@@ -4,8 +4,8 @@
 // output is normalised: every element declaration states its slots, events, CSS parts and CSS custom properties, empty
 // when it has none (FR-007); `IconName` in a type is expanded to the union of the icon names, read from the
 // `IconName` type of src/icons.ts (US1-11); modules are ordered by path, by code point; members and attributes that
-// are not public are dropped, and so is the observed `aria-label` attribute, a standard attribute and not a member
-// (FR-034); every object's keys are sorted, so the file is stable. `node scripts/manifest.ts` (the package's `manifest` script) writes custom-elements.json; the
+// are not public are dropped, and so are the observed `aria-label`, `role` and `hidden` attributes, standard attributes
+// and not members (FR-034; specs/010-feedback-forms FR-034); every object's keys are sorted, so the file is stable. `node scripts/manifest.ts` (the package's `manifest` script) writes custom-elements.json; the
 // manifest gate (gates/bin/manifest.ts) generates the same into memory and compares.
 import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -35,7 +35,7 @@ type Json = Record<string, unknown>;
 const sourceDir = "packages/elements/src";
 const element = /^ocelle-[\w-]+\.ts$/;
 /** Attributes every element may observe that are standard attributes, not its members (FR-034). */
-const standardAttributes = new Set(["aria-label"]);
+const standardAttributes = new Set(["aria-label", "role", "hidden"]);
 const memberLists = ["slots", "events", "cssParts", "cssProperties"] as const;
 const iconsFile = "icons.ts";
 const manifestFile = "packages/elements/custom-elements.json";
