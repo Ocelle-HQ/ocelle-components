@@ -264,3 +264,15 @@ expected. `--shard 27` (`axe/pass-excepted-shadow`, `pass-minor-only`, `pass-rep
 finding above (the planted repositories hold the repository's stories, so each run finds the long-text story's two
 `color-contrast-incomplete` nodes). The full `gate:plants` was not run (the brief: only the shards these changes
 touch); the other shards are left to CI.
+
+## Full suite
+
+- `pnpm test` at `ca2da97` (`full-test-ca2da97.log`, 12 m 15 s): 3 of 5041 tests failed: the two axe gate tests of the
+  open finding above ("audits the repository's 88 story-themes and exits 0", and "fails a story with an unlabelled
+  button …", which then prints the repository's two findings as well), and the drawer fixture row "Close control: … the
+  token focus ring when focused by keyboard (FR-006)", which passed 3 times of 3 run alone and again in the next full
+  run; my change does not reach it (the hook an opening overlay calls finds no tooltip on that page). Recorded as a
+  timing failure under the full suite's load, not investigated further in this phase.
+- `pnpm test` at `6904082` (`full-test-6904082.log`, 13 m 20 s): **2 of 5065 tests failed, both the axe gate tests of
+  the open finding**. Every other test passes, the tooltip's rows in both harnesses and the touch contexts among them.
+  `tdd-check.sh 4` needs this suite green, so it waits for the operator's decision on the long-text story (T052).
