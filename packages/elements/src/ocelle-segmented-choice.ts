@@ -142,6 +142,12 @@ export class OcelleSegmentedChoice extends LitElement {
     this.#apply(this.#model.set(value, focusLeft()));
   }
 
+  /** A change of a host `aria-label`, which no property follows, updates the element too, so the name follows it (FR-006). */
+  override attributeChangedCallback(name: string, old: string | null, value: string | null): void {
+    super.attributeChangedCallback(name, old, value);
+    this.requestUpdate();
+  }
+
   override connectedCallback(): void {
     super.connectedCallback();
     this.#observer.observe(this, { childList: true, subtree: true, attributes: true, attributeFilter: ["value", "disabled"] });
