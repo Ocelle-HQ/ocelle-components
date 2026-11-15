@@ -1,0 +1,296 @@
+
+ RUN  v5.0.5 /home/user/ocelle-components
+
+ ❯ |elements-browser| packages/elements/test/browser/notice.test.ts (78 tests | 7 failed | 55 skipped) 70065ms
+   ❯ ocelle-notice on the strict-CSP fixture with the browser build (US1) (63)
+     × US1-11 text: when the host replaces a t… 2460ms
+     × US1-11 heading: when the host changes t… 2368ms
+     × US1-13 one task: three text changes in … 2378ms
+     × US1-13 10 ms after a write: the earlier… 3131ms
+     × US1-13 hold: an announced copy stays in… 7417ms
+     × Edge case, two notices changed in one t… 2407ms
+   ❯ ocelle-notice, the SC-002 matrix on the strict-CSP fixture (15)
+     × SC-002 alert success: one expected coun… 2798ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 7 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |elements-browser| packages/elements/test/browser/notice.test.ts > ocelle-notice on the strict-CSP fixture with the browser build (US1) > US1-11 text: when the host replaces a t…
+AssertionError: promise rejected "AssertionError: US1-11 text: announcement… { …(4) }" instead of resolving
+ ❯ packages/elements/test/browser/notice.test.ts:46:35
+     44| describe("ocelle-notice on the strict-CSP fixture with the browser bui…
+     45|   it.each(noticeScenarios)("$name", async (scenario) => {
+     46|     await expect(onPage(scenario)).resolves.toBeUndefined();
+       |                                   ^
+     47|   });
+     48| });
+
+Caused by: AssertionError: US1-11 text: announcements: expected { settled: [], rendered: [ { …(3) } ] } to deeply equal { settled: [ { …(3) } ], …(1) }
+
+- Expected
++ Received
+
+@@ -4,13 +4,7 @@
+        "host": "n",
+        "politeness": "polite",
+        "text": "Run 7 failed",
+      },
+    ],
+-   "settled": [
+-     {
+-       "host": "n",
+-       "politeness": "polite",
+-       "text": "Run 7 failed",
+-     },
+-   ],
++   "settled": [],
+  }
+
+ ❯ expectAnnouncements packages/elements/test/live-reading.ts:189:10
+ ❯ announced packages/elements/test/scenarios/notice.ts:48:3
+ ❯ run packages/elements/test/scenarios/notice.ts:372:7
+ ❯ onPage packages/elements/test/browser/notice.test.ts:37:5
+ ❯ packages/elements/test/browser/notice.test.ts:46:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/7]⎯
+
+ FAIL  |elements-browser| packages/elements/test/browser/notice.test.ts > ocelle-notice on the strict-CSP fixture with the browser build (US1) > US1-11 heading: when the host changes t…
+AssertionError: promise rejected "AssertionError: US1-11 heading: announcem… { …(4) }" instead of resolving
+ ❯ packages/elements/test/browser/notice.test.ts:46:35
+     44| describe("ocelle-notice on the strict-CSP fixture with the browser bui…
+     45|   it.each(noticeScenarios)("$name", async (scenario) => {
+     46|     await expect(onPage(scenario)).resolves.toBeUndefined();
+       |                                   ^
+     47|   });
+     48| });
+
+Caused by: AssertionError: US1-11 heading: announcements: expected { settled: [], rendered: [ { …(3) } ] } to deeply equal { settled: [ { …(3) } ], …(1) }
+
+- Expected
++ Received
+
+@@ -4,13 +4,7 @@
+        "host": "n",
+        "politeness": "polite",
+        "text": "Run 8 failed",
+      },
+    ],
+-   "settled": [
+-     {
+-       "host": "n",
+-       "politeness": "polite",
+-       "text": "Run 8 failed",
+-     },
+-   ],
++   "settled": [],
+  }
+
+ ❯ expectAnnouncements packages/elements/test/live-reading.ts:189:10
+ ❯ announced packages/elements/test/scenarios/notice.ts:48:3
+ ❯ run packages/elements/test/scenarios/notice.ts:382:7
+ ❯ onPage packages/elements/test/browser/notice.test.ts:37:5
+ ❯ packages/elements/test/browser/notice.test.ts:46:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/7]⎯
+
+ FAIL  |elements-browser| packages/elements/test/browser/notice.test.ts > ocelle-notice on the strict-CSP fixture with the browser build (US1) > US1-13 one task: three text changes in …
+AssertionError: promise rejected "AssertionError: US1-13 one task: announce… { …(4) }" instead of resolving
+ ❯ packages/elements/test/browser/notice.test.ts:46:35
+     44| describe("ocelle-notice on the strict-CSP fixture with the browser bui…
+     45|   it.each(noticeScenarios)("$name", async (scenario) => {
+     46|     await expect(onPage(scenario)).resolves.toBeUndefined();
+       |                                   ^
+     47|   });
+     48| });
+
+Caused by: AssertionError: US1-13 one task: announcements: expected { settled: [], rendered: [ { …(3) } ] } to deeply equal { settled: [ { …(3) } ], …(1) }
+
+- Expected
++ Received
+
+@@ -4,13 +4,7 @@
+        "host": "n",
+        "politeness": "polite",
+        "text": "Three",
+      },
+    ],
+-   "settled": [
+-     {
+-       "host": "n",
+-       "politeness": "polite",
+-       "text": "Three",
+-     },
+-   ],
++   "settled": [],
+  }
+
+ ❯ expectAnnouncements packages/elements/test/live-reading.ts:189:10
+ ❯ announced packages/elements/test/scenarios/notice.ts:48:3
+ ❯ run packages/elements/test/scenarios/notice.ts:442:7
+ ❯ onPage packages/elements/test/browser/notice.test.ts:37:5
+ ❯ packages/elements/test/browser/notice.test.ts:46:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/7]⎯
+
+ FAIL  |elements-browser| packages/elements/test/browser/notice.test.ts > ocelle-notice on the strict-CSP fixture with the browser build (US1) > US1-13 10 ms after a write: the earlier…
+AssertionError: promise rejected "AssertionError: US1-13 10 ms after a writ… { …(4) }" instead of resolving
+ ❯ packages/elements/test/browser/notice.test.ts:46:35
+     44| describe("ocelle-notice on the strict-CSP fixture with the browser bui…
+     45|   it.each(noticeScenarios)("$name", async (scenario) => {
+     46|     await expect(onPage(scenario)).resolves.toBeUndefined();
+       |                                   ^
+     47|   });
+     48| });
+
+Caused by: AssertionError: US1-13 10 ms after a write: announcements: expected { …(2) } to deeply equal { settled: [ …(2) ], …(1) }
+
+- Expected
++ Received
+
+@@ -13,14 +13,9 @@
+    ],
+    "settled": [
+      {
+        "host": "n",
+        "politeness": "polite",
+-       "text": "B",
+-     },
+-     {
+-       "host": "n",
+-       "politeness": "polite",
+        "text": "C",
+      },
+    ],
+  }
+
+ ❯ expectAnnouncements packages/elements/test/live-reading.ts:189:10
+ ❯ announced packages/elements/test/scenarios/notice.ts:48:3
+ ❯ run packages/elements/test/scenarios/notice.ts:480:7
+ ❯ onPage packages/elements/test/browser/notice.test.ts:37:5
+ ❯ packages/elements/test/browser/notice.test.ts:46:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/7]⎯
+
+ FAIL  |elements-browser| packages/elements/test/browser/notice.test.ts > ocelle-notice on the strict-CSP fixture with the browser build (US1) > US1-13 hold: an announced copy stays in…
+AssertionError: promise rejected "AssertionError: US1-13 hold: announcement… { …(4) }" instead of resolving
+ ❯ packages/elements/test/browser/notice.test.ts:46:35
+     44| describe("ocelle-notice on the strict-CSP fixture with the browser bui…
+     45|   it.each(noticeScenarios)("$name", async (scenario) => {
+     46|     await expect(onPage(scenario)).resolves.toBeUndefined();
+       |                                   ^
+     47|   });
+     48| });
+
+Caused by: AssertionError: US1-13 hold: announcements: expected { settled: [], rendered: [ { …(3) } ] } to deeply equal { …(2) }
+
+- Expected
++ Received
+
+@@ -4,13 +4,7 @@
+        "host": "n",
+        "politeness": "polite",
+        "text": "B",
+      },
+    ],
+-   "settled": [
+-     {
+-       "host": "n",
+-       "politeness": "polite",
+-       "text": "B",
+-     },
+-   ],
++   "settled": [],
+  }
+
+ ❯ expectAnnouncements packages/elements/test/live-reading.ts:189:10
+ ❯ announced packages/elements/test/scenarios/notice.ts:48:3
+ ❯ run packages/elements/test/scenarios/notice.ts:496:7
+ ❯ onPage packages/elements/test/browser/notice.test.ts:37:5
+ ❯ packages/elements/test/browser/notice.test.ts:46:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/7]⎯
+
+ FAIL  |elements-browser| packages/elements/test/browser/notice.test.ts > ocelle-notice on the strict-CSP fixture with the browser build (US1) > Edge case, two notices changed in one t…
+AssertionError: promise rejected "AssertionError: Edge case, two notices: a… { …(4) }" instead of resolving
+ ❯ packages/elements/test/browser/notice.test.ts:46:35
+     44| describe("ocelle-notice on the strict-CSP fixture with the browser bui…
+     45|   it.each(noticeScenarios)("$name", async (scenario) => {
+     46|     await expect(onPage(scenario)).resolves.toBeUndefined();
+       |                                   ^
+     47|   });
+     48| });
+
+Caused by: AssertionError: Edge case, two notices: a: expected { settled: [], rendered: [ { …(3) } ] } to deeply equal { …(2) }
+
+- Expected
++ Received
+
+@@ -4,13 +4,7 @@
+        "host": "a",
+        "politeness": "polite",
+        "text": "A2",
+      },
+    ],
+-   "settled": [
+-     {
+-       "host": "a",
+-       "politeness": "polite",
+-       "text": "A2",
+-     },
+-   ],
++   "settled": [],
+  }
+
+ ❯ expectAnnouncements packages/elements/test/live-reading.ts:189:10
+ ❯ announced packages/elements/test/scenarios/notice.ts:48:3
+ ❯ run packages/elements/test/scenarios/notice.ts:868:7
+ ❯ onPage packages/elements/test/browser/notice.test.ts:37:5
+ ❯ packages/elements/test/browser/notice.test.ts:46:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/7]⎯
+
+ FAIL  |elements-browser| packages/elements/test/browser/notice.test.ts > ocelle-notice, the SC-002 matrix on the strict-CSP fixture > SC-002 alert success: one expected coun…
+AssertionError: promise rejected "AssertionError: SC-002 alert success text… { …(4) }" instead of resolving
+ ❯ packages/elements/test/browser/notice.test.ts:52:35
+     50| describe("ocelle-notice, the SC-002 matrix on the strict-CSP fixture",…
+     51|   it.each(matrixScenarios)("$name", async (scenario) => {
+     52|     await expect(onPage(scenario)).resolves.toBeUndefined();
+       |                                   ^
+     53|   });
+     54| });
+
+Caused by: AssertionError: SC-002 alert success text: announcements: expected { settled: [], rendered: [ { …(3) } ] } to deeply equal { settled: [ { …(3) } ], …(1) }
+
+- Expected
++ Received
+
+@@ -4,13 +4,7 @@
+        "host": "text",
+        "politeness": "assertive",
+        "text": "Changed",
+      },
+    ],
+-   "settled": [
+-     {
+-       "host": "text",
+-       "politeness": "assertive",
+-       "text": "Changed",
+-     },
+-   ],
++   "settled": [],
+  }
+
+ ❯ expectAnnouncements packages/elements/test/live-reading.ts:189:10
+ ❯ announced packages/elements/test/scenarios/notice.ts:48:3
+ ❯ matrix packages/elements/test/scenarios/notice-matrix.ts:147:29
+ ❯ run packages/elements/test/scenarios/notice-matrix.ts:172:11
+ ❯ onPage packages/elements/test/browser/notice.test.ts:37:5
+ ❯ packages/elements/test/browser/notice.test.ts:52:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/7]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  7 failed | 16 passed | 55 skipped (78)
+   Start at  01:37:57
+   Duration  72.02s (tests 99%, import 1%)
+

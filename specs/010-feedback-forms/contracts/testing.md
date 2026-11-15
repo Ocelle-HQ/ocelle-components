@@ -114,6 +114,12 @@ it is the same code over the page's CDP session. Both harnesses share `test/live
   notice's copy is written `2 × D` of the constant after the insertion (analysis G7). The constant gives both load
   states one `D`, so in process the wait's floor from the empty state's start (R-02 step 2) never binds; a rule test
   on a fake clock with two `D` values (T025a) and the fixture-page cells cover it.
+  For that rule test `test/in-process.ts` also exports `withTiming(next, run)`: it calls the setter with `next`, runs
+  `run` synchronously, and in a `finally` calls the setter again with the timing that call replaced, so the
+  test constant is in force again afterwards. Its one use is the fake-clock case of the "empty-state start" plant
+  row in `test/plants.test.ts` (T025a), which runs with `next` = the shipped `announcerDefaults` to get their two `D`
+  values. Both calls are in `test/in-process.ts`, so that file stays the setter's only caller
+  (`test/node/timing-setter.test.ts`), and `withTiming()` does not change the kept first return below.
   It keeps the timing its first call in the test file returned (the shipped `announcerDefaults`) and exposes it
   read-only; `test/live-timing.test.ts` asserts that value and `announcerDefaults` against the literals
   `{ delayLoaded: 150, delayLoading: 350, hold: 5000 }`, so the shipped figures' mutants are killed in process

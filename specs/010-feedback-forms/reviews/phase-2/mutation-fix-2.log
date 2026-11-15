@@ -1,0 +1,194 @@
+$ node gates/bin/mutation.ts -- --base 6c9400c
+gates/bin/contrast.ts:116: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/token-gates.test.ts "contrast --root <repo> checks 165 pairs in light and 173 in dark, 154 required per theme"
+packages/elements/src/live.ts:106: mutation: record: BooleanLiteral: equivalent, released() reads waitNext only after the trigger() or alert() that called releaseHeld() has set it
+packages/elements/src/live.ts:252: mutation: record: CallExpression: equivalent, the announcer calls end() only from the wait's own timer, which has fired
+packages/elements/src/live.ts:277: mutation: record: CallExpression: equivalent, the announcer calls hold() only from write(), which only end() calls, from the wait's own timer, which has fired
+packages/elements/src/ocelle-notice.ts:62: mutation: record: ObjectLiteral: equivalent, {} has Lit wrap the element's own accessors, which write the attribute themselves, and reflect nothing; the wrapper's extra update request repeats the one the attribute change makes
+packages/elements/src/ocelle-notice.ts:64: mutation: record: BooleanLiteral: equivalent, Lit reflects a property only when it is set through Lit's accessor, which noAccessor leaves out; the setter writes the attribute itself
+packages/elements/src/ocelle-notice.ts:69: mutation: record: ObjectLiteral: equivalent, as for tone
+packages/elements/src/ocelle-notice.ts:71: mutation: record: BooleanLiteral: equivalent, as for tone
+packages/elements/src/ocelle-notice.ts:78: mutation: record: BooleanLiteral: equivalent, as for tone
+packages/elements/src/ocelle-notice.ts:80: mutation: record: BooleanLiteral: equivalent, Lit's wrapper of the setter reflects the Boolean the getter reads, which is the attribute's presence the setter has just written
+packages/elements/src/ocelle-notice.ts:82: mutation: record: BooleanLiteral: equivalent, Lit falls back to the default only when the converter gives null or undefined for an attribute, and the Boolean converter gives false for a removed one
+packages/elements/src/ocelle-notice.ts:343: mutation: record: CallExpression: equivalent, LitElement's disconnectedCallback() only tells reactive controllers, and the notice has none
+packages/elements/src/ocelle-notice.ts:352: mutation: record: CallExpression: equivalent, Lit's attributeChangedCallback() only sets the property from the attribute, and the notice's own setters write nothing when the attribute already holds the value
+packages/elements/src/ocelle-notice.ts:491: mutation: record: CallExpression: equivalent, LitElement's updated() does nothing
+packages/elements/src/ocelle-notice.ts:257: mutation: timeout: EqualityOperator: replaced by value === attribute
+packages/elements/scripts/manifest.ts:38: mutation: compile-error: ArrayDeclaration: replaced by []
+packages/elements/src/live.ts:38: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/live.ts:46: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/live.ts:53: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/live.ts:60: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/live.ts:61: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/live.ts:61: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/live.ts:61: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/live.ts:70: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/live.ts:71: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/live.ts:74: mutation: compile-error: ArrayDeclaration: replaced by ["Stryker was here"]
+packages/elements/src/live.ts:77: mutation: compile-error: OptionalChaining: replaced by steps.shift()()
+packages/elements/src/live.ts:90: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/live.ts:104: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/live.ts:118: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/live.ts:120: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/live.ts:134: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/live.ts:149: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/live.ts:150: mutation: compile-error: LogicalOperator: replaced by this.baseline !== null || this.baseline.text === this.normalise(text)
+packages/elements/src/live.ts:150: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/live.ts:150: mutation: compile-error: EqualityOperator: replaced by this.baseline === null
+packages/elements/src/live.ts:154: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/live.ts:155: mutation: compile-error: LogicalOperator: replaced by this.baseline !== null || this.baseline.politeness === politeness
+packages/elements/src/live.ts:155: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/live.ts:155: mutation: compile-error: EqualityOperator: replaced by this.baseline === null
+packages/elements/src/live.ts:160: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/live.ts:162: mutation: compile-error: EqualityOperator: replaced by this.phase !== "releasing"
+packages/elements/src/live.ts:162: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/live.ts:163: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/live.ts:163: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/live.ts:170: mutation: compile-error: EqualityOperator: replaced by this.phase !== "holding"
+packages/elements/src/live.ts:170: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/live.ts:170: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/live.ts:171: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/live.ts:173: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/live.ts:184: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/live.ts:193: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/live.ts:198: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/live.ts:199: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/live.ts:203: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/live.ts:208: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/live.ts:220: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/live.ts:229: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/live.ts:235: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/live.ts:245: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/live.ts:254: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/live.ts:257: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/live.ts:261: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/live.ts:262: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/live.ts:263: mutation: compile-error: LogicalOperator: replaced by this.baseline?.text !== text && this.baseline.politeness !== politeness
+packages/elements/src/live.ts:263: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/live.ts:263: mutation: compile-error: EqualityOperator: replaced by this.baseline?.text === text
+packages/elements/src/live.ts:263: mutation: compile-error: OptionalChaining: replaced by this.baseline.text
+packages/elements/src/live.ts:269: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/live.ts:271: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/live.ts:287: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/live.ts:289: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-notice.ts:22: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-notice.ts:22: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-notice.ts:22: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-notice.ts:22: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-notice.ts:22: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-notice.ts:28: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-notice.ts:29: mutation: compile-error: OptionalChaining: replaced by role?.trim().split(/\s/)[0].toLowerCase
+packages/elements/src/ocelle-notice.ts:29: mutation: compile-error: MethodExpression: replaced by role
+packages/elements/src/ocelle-notice.ts:29: mutation: compile-error: OptionalChaining: replaced by role.trim
+packages/elements/src/ocelle-notice.ts:30: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-notice.ts:30: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-notice.ts:30: mutation: compile-error: LogicalOperator: replaced by first === "alert" && first === "status"
+packages/elements/src/ocelle-notice.ts:30: mutation: compile-error: EqualityOperator: replaced by first !== "alert"
+packages/elements/src/ocelle-notice.ts:30: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-notice.ts:30: mutation: compile-error: EqualityOperator: replaced by first !== "status"
+packages/elements/src/ocelle-notice.ts:30: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-notice.ts:34: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-notice.ts:35: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-notice.ts:35: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-notice.ts:36: mutation: compile-error: BooleanLiteral: replaced by node instanceof Element
+packages/elements/src/ocelle-notice.ts:36: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-notice.ts:36: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-notice.ts:37: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-notice.ts:39: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-notice.ts:39: mutation: compile-error: LogicalOperator: replaced by (name === "script" || name === "style") && name === "template"
+packages/elements/src/ocelle-notice.ts:39: mutation: compile-error: LogicalOperator: replaced by name === "script" && name === "style"
+packages/elements/src/ocelle-notice.ts:39: mutation: compile-error: EqualityOperator: replaced by name !== "script"
+packages/elements/src/ocelle-notice.ts:39: mutation: compile-error: EqualityOperator: replaced by name !== "style"
+packages/elements/src/ocelle-notice.ts:39: mutation: compile-error: EqualityOperator: replaced by name !== "template"
+packages/elements/src/ocelle-notice.ts:40: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-notice.ts:40: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-notice.ts:40: mutation: compile-error: EqualityOperator: replaced by name !== "ocelle-icon"
+packages/elements/src/ocelle-notice.ts:42: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-notice.ts:42: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-notice.ts:44: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-notice.ts:88: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-notice.ts:188: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-notice.ts:200: mutation: compile-error: ArrowFunction: replaced by () => undefined
+packages/elements/src/ocelle-notice.ts:212: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-notice.ts:214: mutation: compile-error: LogicalOperator: replaced by tones.find(tone => tone === value) && "info"
+packages/elements/src/ocelle-notice.ts:214: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-notice.ts:227: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-notice.ts:228: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-notice.ts:228: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-notice.ts:241: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-notice.ts:256: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-notice.ts:256: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-notice.ts:256: mutation: compile-error: LogicalOperator: replaced by value === null && value === undefined
+packages/elements/src/ocelle-notice.ts:256: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-notice.ts:256: mutation: compile-error: EqualityOperator: replaced by value !== null
+packages/elements/src/ocelle-notice.ts:256: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-notice.ts:256: mutation: compile-error: EqualityOperator: replaced by value !== undefined
+packages/elements/src/ocelle-notice.ts:256: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/ocelle-notice.ts:257: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-notice.ts:257: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/ocelle-notice.ts:266: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-notice.ts:271: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-notice.ts:276: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-notice.ts:281: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-notice.ts:283: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-notice.ts:283: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-notice.ts:283: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-notice.ts:284: mutation: compile-error: LogicalOperator: replaced by this.tone === "warning" && this.tone === "danger"
+packages/elements/src/ocelle-notice.ts:284: mutation: compile-error: EqualityOperator: replaced by this.tone !== "warning"
+packages/elements/src/ocelle-notice.ts:284: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-notice.ts:284: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-notice.ts:284: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-notice.ts:284: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-notice.ts:288: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-notice.ts:289: mutation: compile-error: ArrayDeclaration: replaced by []
+packages/elements/src/ocelle-notice.ts:293: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-notice.ts:298: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-notice.ts:300: mutation: compile-error: ArrayDeclaration: replaced by []
+packages/elements/src/ocelle-notice.ts:300: mutation: compile-error: LogicalOperator: replaced by (!(node instanceof Element) || !node.hasAttribute("slot")) && node.getAttribute("slot") === ""
+packages/elements/src/ocelle-notice.ts:300: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-notice.ts:300: mutation: compile-error: LogicalOperator: replaced by !(node instanceof Element) && !node.hasAttribute("slot")
+packages/elements/src/ocelle-notice.ts:300: mutation: compile-error: BooleanLiteral: replaced by node instanceof Element
+packages/elements/src/ocelle-notice.ts:305: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-notice.ts:306: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/ocelle-notice.ts:311: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-notice.ts:315: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-notice.ts:316: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-notice.ts:320: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-notice.ts:333: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-notice.ts:356: mutation: compile-error: EqualityOperator: replaced by name !== "hidden"
+packages/elements/src/ocelle-notice.ts:357: mutation: compile-error: EqualityOperator: replaced by name !== "role"
+packages/elements/src/ocelle-notice.ts:357: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/ocelle-notice.ts:358: mutation: compile-error: EqualityOperator: replaced by name !== "tone"
+packages/elements/src/ocelle-notice.ts:358: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/ocelle-notice.ts:359: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/ocelle-notice.ts:364: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-notice.ts:383: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-notice.ts:383: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-notice.ts:390: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-notice.ts:396: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-notice.ts:396: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-notice.ts:414: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-notice.ts:414: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-notice.ts:415: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-notice.ts:415: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/ocelle-notice.ts:428: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/ocelle-notice.ts:441: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-notice.ts:442: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-notice.ts:448: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-notice.ts:472: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-notice.ts:473: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-notice.ts:484: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-notice.ts:485: mutation: compile-error: EqualityOperator: replaced by pending !== "insertion"
+packages/elements/src/ocelle-notice.ts:485: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-notice.ts:486: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-notice.ts:486: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/ocelle-notice.ts:496: mutation: compile-error: BlockStatement: replaced by {}
+packages/tokens/src/source.ts:43: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/tokens/src/source.ts:43: mutation: compile-error: StringLiteral: replaced by ""
+packages/tokens/src/source.ts:43: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/tokens/src/source.ts:43: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/tokens/src/source.ts:43: mutation: compile-error: StringLiteral: replaced by ""
+gates/bin/contrast.ts: mutation: zero-mutants: no mutant on the changed lines
+packages/elements/src/index.ts: mutation: zero-mutants: no mutant on the changed lines
+mutation: 634 mutants on the changed lines of 7 files, none survived; 1 timeout, 174 compile errors, 2 zero-mutant entries; 14 equivalent records
+exit 0, 1575 s
