@@ -453,6 +453,17 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
   colour token.
   - No shadow: #5 reserves `elevation-raised` for the dialog. The drawer uses it as a dialog surface.
   - In forced colours the bubble gets `CanvasText` / `Canvas` and a `border-width` solid `CanvasText` border.
+- **Bubble shape and padding** (analysis U2, constitution II): the painted box (the inner element of R-11, the
+  bubble part's only element child) has `border-radius: var(--ocelle-radius-2)` on all four corners. It is not a
+  pill: constitution II keeps `radius-pill` for state pills, and no requirement or design asks for another shape.
+  Its padding is `var(--ocelle-space-1)` on the block axis and `var(--ocelle-space-2)` on the inline axis, its text
+  `font-sans` at `font-size-sm` with `line-height-normal` (R-09's 18rem holds about 40 characters of it). The bubble
+  part itself has no radius and no ground; its only padding is R-11's transparent `--ocelle-space-2` on the
+  trigger's side, 0 on the other three. All existing tokens; no new one.
+- **Tokens the tooltip reads** (FR-039; data-model § `ocelle-tooltip`): `color-chrome`, `color-chrome-ink`,
+  `radius-2`, `border-width` (forced colours), `font-sans`, `font-size-sm`, `line-height-normal`, `space-1`,
+  `space-2` (painted padding, offset and gap), `gutter` (flip and clamp, R-11), `tooltip-delay` and
+  `tooltip-max-inline`.
 - **Forced colours of the overlays** (FR-021, US1-9): the panel always has a `--ocelle-border-width` solid border,
   transparent outside forced colours, and `CanvasText` with `Canvas` ground and `CanvasText` ink in forced colours, so
   its boundary does not depend on `elevation-raised` (dropped there). The `::backdrop` gets `Canvas` in forced colours;
@@ -491,7 +502,11 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
   above the floor and not used.
 - **Floor consumers**: none declares one today (no `engines` or `browserslist` in `@ocelle/elements`, no Vite
   `build.target`, `tsconfig` `es2024`). So FR-040 changes the README § Engines list and the README test that pins it
-  (`test/node/readme.test.ts:65`), red first.
+  (`test/node/readme.test.ts:65`), red first. The root `package.json` has an `engines` entry, but for Node, not
+  browsers. A parallel mission can add a browser floor consumer before Phase 4 lands, so T049 searches again at
+  implementation time (analysis I5): `engines`, `browserslist` (key or file) and `build.target` (Vite, esbuild,
+  `tsconfig` `target` read as an engine floor) across the workspace. Any browser floor it finds follows FR-040 in
+  T049, and the result is recorded in `reviews/phase-4/notes.md`.
 - **Kitty Desktop** (FR-041): Tauri uses WKWebView on macOS and WebKitGTK on Linux.
   - macOS: WKWebView is the system WebKit. Safari 17 shipped for macOS 12 Monterey and later, so a Mac on macOS 12+
     with current updates is at WebKit 17 or newer.
@@ -516,7 +531,9 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
 - **Placement**: measure the trigger's border box and the bubble's size after it is shown.
   - Main axis: `placement` (logical; `start`/`end` follow `:dir(rtl)` on the tooltip host, so `start` is the
     trigger's right side under `rtl`), offset by `--ocelle-space-2`. If it overflows the viewport minus
-    `--ocelle-gutter`, use the opposite side. If neither side fits, keep the `placement` side. Direction only chooses
+    `--ocelle-gutter`, use the opposite side. If neither side fits, keep the `placement` side: the bubble may then
+    extend past the viewport on the main axis, the stated case of FR-035, which SC-006's "100% on screen" excludes
+    (analysis A2). A matrix row asserts it. Direction only chooses
     the side; the written coordinates are physical in both directions.
   - Cross axis: centre on the trigger, then clamp inside the viewport minus `--ocelle-gutter` (SPEC-1-08).
 - **Following the trigger**: while shown, one `requestAnimationFrame` loop reads the trigger's
@@ -700,13 +717,38 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
   and 2, about 16 minutes each), with room for Phase 4's tooltip rows and slower CI runners. It bounds the dry run
   only; the per-mutant limit (`timeoutMS`, `timeoutFactor`) stays at Stryker's default, so 007's "a timeout is a
   kill" holds and nothing of its FR-012 (no shortened limit, no excluded mutator, no disable comment) is touched.
-  `stryker.config.json` keeps the default: its dry run passed within it (run 3, the whole gate run 1 m 22 s). The
+  `stryker.config.json` keeps the default: its dry run passed within it (run 3, the whole gate run 1 m 22 s).
+  Phase 4 measures the dry run again with the tooltip rows and records it in `reviews/phase-4/notes.md`; if it
+  comes near 30 minutes, it goes to the operator. The
   pinned test `gates/test/vitest-config.test.ts` ("is stryker.config.json with its own Vitest config and its own
   report file") expects the elements configuration to be `stryker.config.json` plus its own Vitest config, its own
   report file and `dryRunTimeoutMinutes: 30`, and `stryker.config.json` to have no `dryRunTimeoutMinutes`; it is
   changed first and seen red, then the configuration. The planted repositories copy both files
-  (`gates/lib/plant-repo.ts`), so the mutation plants run with the same limit. CI's `mutation-shard` job keeps its
-  `timeout-minutes: 10`; an elements shard that exceeds it is an operator question, not decided here.
+  (`gates/lib/plant-repo.ts`), so the mutation plants run with the same limit.
+- **CI's `mutation-shard` limit: op 015, not this mission** (operator decision, 2026-11-15). The open risk (review
+  phase 3 R1-01: `timeout-minutes: 10` on the `mutation-shard` job of `.github/workflows/ci.yml`, while an elements
+  shard repeats the whole elements dry run of about 5.5 minutes) belongs to a separate op: issue #35, op 015, branch
+  `claude/035-mutation-shard-timeout`. That op raises `timeout-minutes` in `ci.yml` and sets `dryRunTimeoutMinutes`
+  in `stryker.elements.config.json`, and it lands before the first mission pull request. Mission 008 does not change
+  `ci.yml` and keeps its committed `"dryRunTimeoutMinutes": 30` for now. When op 015 reaches `main`, 008 merges
+  `main` (R-17) and resolves `stryker.elements.config.json`, and any related change to the pinned test
+  `gates/test/vitest-config.test.ts`, to `main`'s version.
+- **Notes for op 015** (read on 2026-11-15, Phase 3 head; not 008 tasks):
+  - `gates/test/ci-workflow.test.ts` pins the job: "mutation-shard runs one job per planned shard and passes its
+    files value to --files unchanged" expects the line `    timeout-minutes: 10`, so that test goes red first.
+  - The 10 minutes also stand in 001 FR-013 ("the 10-minute limit is not raised", operator decision, 001 plan squad
+    round 2) and SC-005, in 007's 480 s step bound (spec § Assumptions "480 s": 2 minutes of the 10-minute job limit
+    left for setup), in the `ci.yml` comment above `mutation-plan` ("at most 10 minutes each, FR-013") and in
+    `gates/README.md` ("runs under a 10-minute limit"). The op decides which of these it amends.
+  - No other job of `ci.yml` sets `timeout-minutes`, so GitHub's default job limit (360 minutes) applies. The jobs
+    that run the elements browser suites are `unit-tests` (`gate:unit-tests`, every Vitest project: `elements`,
+    `elements-touch`, `elements-browser`, `storybook-integration` among them) and `mutation-shard`. `visual`, `axe`
+    and `plants-shard` drive Chromium on the stories and plants, not the elements suites; the mutation plants run
+    on a planted tree that holds only the plant's files, so their dry run is small. Locally a full `pnpm test` now
+    takes more than 30 minutes (reported 2026-11-15; Phase 3 measured 11 m 16 s at `1868fb5`), well inside 360
+    minutes even on a slower runner. No job limit was found that the larger suite will exceed. The per-test limits
+    in `storybook/test/integration/elements-stories.test.ts` (60 s per test in each element's `describe`, 120 s for
+    the build hook) apply to each test, not to the suite.
 
 ## R-16 Stories against #10 (FR-042) — rechecked against merged `main` (T026)
 
@@ -790,7 +832,15 @@ Rechecked (T026) against #10 as merged into `claude/016-overlays` (merge commit 
   commit, the plant lines with the baselines (measured in the pinned container, as 006 T046s did), then
   `gate:plants`. With data-model § Stories the counts are 29 stories and 58 story-themes after Phase 2, 35 and 70
   after Phase 3, 44 and 88 after Phase 4, from today's 21 and 42; after any merge of `main` they are counted again
-  (R-17).
+  (R-17). The same story files set counts outside this list, written by hand in the same red commit (review phase 2
+  Test quality; fixes-7): the axe gate's unlabelled-button plant run (`axe: 2 findings in <n + 2> story-theme runs`;
+  72 after Phase 3, 90 after Phase 4), the repository's baseline files in
+  `gates/test/integration/plant-repo.test.ts` and the baseline-command test of `gates/test/integration/visual.test.ts`
+  (70 after Phase 3, 88 after Phase 4), and, from each new element, the manifest gate's repository counts (4 elements
+  after Phase 3, 5 after Phase 4). Before each such red commit the repository is searched for every current value
+  (for Phase 4: `35 stories`, `70 story-themes`, `72 story-theme`, `toHaveLength(70)`, `toBe(70)`, `70 captures`, `70 baseline`, `4 elements`),
+  so no copy is missed; the Stryker comments in gate source that quote the renamed test titles are updated with the
+  green, comment text only.
 - **Contributor note**: `storybook/README.md` (006 FR-025) is followed: open shadow roots (README:20-21), every
   surface inside the host, the light-DOM `describes` span included (22-23), `font: inherit` on any shadow form
   control with text (24-25; the overlays' close control holds only an icon), and CSP proven in the elements'

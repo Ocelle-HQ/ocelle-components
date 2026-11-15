@@ -155,6 +155,17 @@ and the close icon's `icon-size`. `color-chrome-hover` is not read: no requireme
 | `:host` display | layout | `contents` | — | Operator decision: layout-transparent, so the trigger's box is unchanged (R-11). |
 | events | — | none | — | The manifest states an empty list (FR-045). |
 
+**Shape** (R-09, analysis U2, constitution II): the painted box, the bubble part's only element child, has
+`radius-2` on all four corners (not `radius-pill`, which is for state pills only), padding `space-1` on the block
+axis and `space-2` on the inline axis, and `font-sans` at `font-size-sm` with `line-height-normal`. The bubble part
+itself has no radius and no ground; its padding is the transparent `space-2` gap on the trigger's side (R-11) and 0 on
+the other three sides.
+
+Tokens read (the README's sentence, T044): `color-chrome`, `color-chrome-ink`, `radius-2`, `border-width` (the
+forced-colours border), `font-sans`, `font-size-sm`, `line-height-normal`, `space-1`, `space-2` (padding, offset and
+gap), `gutter` (flip and clamp), `tooltip-delay` (new) and `tooltip-max-inline` (new). No motion token: the bubble
+never animates (US3-8).
+
 ### State
 
 ```text

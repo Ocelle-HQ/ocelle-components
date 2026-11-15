@@ -56,6 +56,8 @@ Every decision is in [research.md](research.md). The surface is in
 **Testing**: the shared scenario bodies (`test/scenarios/`) run in two harnesses, as in 005:
 - `elements`: Vitest browser mode in process, mutated.
 - `elements-browser`: the built browser build on strict-CSP fixture pages.
+A full `pnpm test` now takes more than 30 minutes (reported 2026-11-15; 11 m 16 s at the
+end of Phase 3), so phase plans run it in the background, once at the phase's head, and iterate on single projects.
 The driver gains real keyboard, pointer-path and touch input, focus paths and `:focus-visible` reads, reduced-motion
 emulation, event recording with the state at dispatch, animation reads, top-layer state and FR-047's style counts as a
 delta with transient writes (R-14). Each addition has a self-test in both harnesses. `axTree` also returns
@@ -84,7 +86,7 @@ Token-only CSS with no new `token-only` allowance. No I/O. No ID reference acros
 | Principle | How this plan meets it |
 |---|---|
 | I. Names, events, no I/O, manifest | Tags `ocelle-dialog`, `ocelle-drawer`, `ocelle-tooltip`. Events `ocelle-dialog-close-request`, `ocelle-dialog-close` and the drawer pair, all `bubbles` and `composed`, with typed `detail`. The tooltip has no events. No I/O and no console output. Every property, attribute, event, slot, part and own CSS custom property is in the generated manifest, inherited members included (with `inheritedFrom`; the analyzer reads `src/overlay.ts` too, and the generator drops that module from the published manifest, operator decision, 2026-11-14), and JSDoc on each concrete class (R-01). The tooltip's unrendered slot is `description`, a plain name (R-13). The describes span is written with `textContent` (R-13). |
-| II. Tokens only | Static CSS only from tokens through `var()`/`calc()`, with no new lint allowance. Runtime numbers (bubble coordinates, WAAPI keyframes of `%` and opacity) are not element CSS literals (R-06, R-11). The bubble uses existing chrome colour pairs, so contrast is already checked. Only the dialog surfaces use `elevation-raised` (#5). The dialog's radius is `radius-2`; the drawer's two inner-edge corners are `radius-2` and its two viewport-edge corners are 0 (FR-003). No monospace. |
+| II. Tokens only | Static CSS only from tokens through `var()`/`calc()`, with no new lint allowance. Runtime numbers (bubble coordinates, WAAPI keyframes of `%` and opacity) are not element CSS literals (R-06, R-11). The bubble uses existing chrome colour pairs, so contrast is already checked. Only the dialog surfaces use `elevation-raised` (#5). The dialog's radius is `radius-2`; the drawer's two inner-edge corners are `radius-2` and its two viewport-edge corners are 0 (FR-003). The bubble's painted box is `radius-2` on all four corners, never `radius-pill` (state pills only), with `space-1` / `space-2` padding, asserted by the tooltip's Bubble styles row (R-09). No monospace. |
 | III. Accessible | Modal `<dialog>` named in one shadow root (R-08). Full keyboard model: Tab cycle, Escape, Enter and Space on the close control. The topmost overlay handles Tab at the cycle's ends, from a non-stop and from the body, so the cycle holds there, and leaves middle moves native, so slotted content with closed shadow roots, iframes and media controls stays keyboard-reachable (WCAG 2.1.1); the stop list follows the engine's navigation order, positive `tabindex` included, so the ends never cut off a slotted element; slotted scrollers are stops; a Shift+Tab wrap onto opaque content at the end enters it from its end through an end sentinel that is not a Tab stop, unnamed and `aria-hidden` (operator decision, 2026-11-14), so every inner element is reached in both directions; the extra press is stated (R-04). Escape and Tab are left to a slotted popover or modal native dialog while it is open, as the platform orders them; a non-modal slotted dialog opened after the overlay (by `show()` or the `open` attribute) whose `closedby` state is Close Request or Any has its Escape left to the platform too, while any other non-modal slotted dialog (one already open when the overlay opened, or one with `closedby` absent, `auto` or `none`) keeps the overlay's Escape handling, so the veto holds on every press, and every non-modal dialog keeps the overlay's Tab handling (R-02). The close control meets `target-min` with the focus ring. WCAG 1.4.13 holds: the bubble is dismissable, hoverable and persistent (R-11, R-12). No ID reference crosses a shadow root (R-13). Reduced motion gives no animation, by the media query as well as the tokens (R-06). Forced colours: a `CanvasText` panel border, `Canvas` backdrop and an outline focus ring (R-09). The overflowing body is a Tab stop and keeps a minimum block size at 320 × 256 (R-04, R-18). Nested overlays act only when topmost (R-02). Host `aria-label` asserted open and closed and under axe (R-08). axe runs on every story (R-16). |
 | IV. Strict CSP | Adopted stylesheets only. The placement sheet is constructable (R-11). WAAPI sets no attribute (R-06). Timers take functions. Every scenario also runs on the strict-CSP fixture, and FR-047's counts run after each one. |
 | V. Storybook and behaviour | A story per variant and state in both themes (data-model § Stories), written against #10 (R-16). Interaction tests cover every event, payload, keyboard path and focus outcome (checks § Test matrix). |
@@ -213,9 +215,14 @@ Settled in Phase 3 by the operator (decided by the operator, 2026-11-15; evidenc
     `gates/test/vitest-config.test.ts` ("is stryker.config.json with its own Vitest config and its own report file")
     is changed red first to expect the key in the elements configuration only (T040). This is a configuration
     decision under the constitution's gates, not an exception to a principle, so it has no Complexity Tracking row.
-    Open risk, not decided here: CI's `mutation-shard` job has `timeout-minutes: 10` (`.github/workflows/ci.yml`),
-    which an elements shard whose dry run alone takes 5 to 6 minutes may exceed; if CI shows that, it goes to the
-    operator.
+    CI's `mutation-shard` limit (`timeout-minutes: 10` in `.github/workflows/ci.yml`, review phase 3 R1-01) is not
+    this mission's (operator decision, 2026-11-15): it belongs to issue #35, op 015, branch
+    `claude/035-mutation-shard-timeout`, which raises `timeout-minutes` in `ci.yml`, sets `dryRunTimeoutMinutes` in
+    `stryker.elements.config.json`, and lands before the first mission pull request. Mission 008 changes no CI file
+    and keeps its committed `"dryRunTimeoutMinutes": 30` for now. When op 015 reaches `main`, 008 merges `main` (R-17)
+    and resolves `stryker.elements.config.json`, and any related change to the pinned test
+    `gates/test/vitest-config.test.ts`, to `main`'s version. What this mission found about the CI limits is recorded
+    for op 015 in R-15 ("Notes for op 015"), not as 008 tasks.
 
 ## Risks
 
@@ -281,6 +288,7 @@ packages/elements/
 ├── test/in-process.ts             # in-process driver implementation of the additions
 ├── test/{dialog,drawer,tooltip,harness}.test.ts   # in process
 ├── test/tooltip-no-popover.test.ts                # in process, Popover API removed (R-10)
+├── test/fixtures/tooltip-delay.css                # --ocelle-tooltip-delay: 300ms, adopted in process, linked on the fixture (R-15)
 ├── test/{dialog,drawer}-upgrade.test.ts          # in process, `open` set before the element is defined
 ├── test/{dialog,drawer}-repeated-escape.test.ts  # in process, the veto-then-Escape-twice case on a page of its own (R-02)
 ├── test/browser/driver.ts         # fixture driver implementation of the additions
@@ -298,6 +306,7 @@ packages/elements/
 ├── test/build/build.test.ts, test/build/pack.test.ts   # + the three dist files
 storybook/
 ├── stories/{dialog,drawer,tooltip}.stories.ts     # after #10 (R-16)
+├── test/integration/elements-stories.test.ts      # + one describe per element's stories (T027, T038, T050)
 ├── .storybook/stories-layout.css  # [data-story="tooltip"] delay override, [data-story="dialog-scroll-edge"] and
 │                                  #   [data-story="drawer-scroll-edge"] blocks (R-16)
 └── baselines/…                    # after #10
