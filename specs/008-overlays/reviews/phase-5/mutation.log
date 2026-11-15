@@ -1,0 +1,16 @@
+$ pnpm run gate:mutation -- --base 9a44e8e8589e6719232a725c6b5f4042a08ee126 --plan
+$ node gates/bin/mutation.ts -- --base 9a44e8e8589e6719232a725c6b5f4042a08ee126 --plan
+[{"files":"packages/elements/src/bubble.ts","lines":6}]
+mutation: plan: 1 shard, 0 cuts within files (a mutant spanning a cut is mutated in no shard, see gates/README.md)
+
+$ pnpm run gate:mutation -- --base 9a44e8e8589e6719232a725c6b5f4042a08ee126 --files packages/elements/src/bubble.ts  (at 915cfdd)
+$ node gates/bin/mutation.ts -- --base 9a44e8e8589e6719232a725c6b5f4042a08ee126 --files packages/elements/src/bubble.ts
+mutation: could not run: Stryker wrote no report (Unexpected error occurred while running Stryker Error: ENOENT: no such file or directory, copyfile '/home/user/ocelle-components/specs/008-overlays/reviews/phase-5/red-commits' -> '/home/user/ocelle-components/.stryker-tmp/sandbox-rdl4MT/specs/008-overlays/reviews/phase-5/red-commits'); run pnpm test and check stryker.config.json
+[ELIFECYCLE] Command failed with exit code 2.
+exit 2, 29 s
+
+$ pnpm run gate:mutation -- --base 9a44e8e8589e6719232a725c6b5f4042a08ee126 --files packages/elements/src/bubble.ts  (run 2, at 915cfdd, tree unchanged during the run)
+$ node gates/bin/mutation.ts -- --base 9a44e8e8589e6719232a725c6b5f4042a08ee126 --files packages/elements/src/bubble.ts
+packages/elements/src/bubble.ts: mutation: zero-mutants: no mutant on the changed lines
+mutation: 0 mutants on the changed lines of 1 file, none survived; 0 timeouts, 0 compile errors, 1 zero-mutant entry; 0 equivalent records
+exit 0, 454 s
