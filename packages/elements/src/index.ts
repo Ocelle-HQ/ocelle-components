@@ -5,6 +5,8 @@ export { OcelleBrandMark } from "./ocelle-brand-mark.ts";
 export { OcelleIcon } from "./ocelle-icon.ts";
 export { OcelleListbox } from "./ocelle-listbox.ts";
 export { OcelleOption } from "./ocelle-option.ts";
+export { OcelleSegment } from "./ocelle-segment.ts";
+export { OcelleSegmentedChoice } from "./ocelle-segmented-choice.ts";
 export { OcelleTab } from "./ocelle-tab.ts";
 export { OcelleTabPanel } from "./ocelle-tab-panel.ts";
 export { OcelleTabs } from "./ocelle-tabs.ts";
