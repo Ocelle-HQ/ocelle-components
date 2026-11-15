@@ -192,7 +192,12 @@ cut into entries `path:start-end` of at most 10, each grown over the changed lin
 an entry alone). These entries fill shards of at most 10 mutants and 10 entries, two of one file never in one shard,
 and never beside an entry of another file, since such a shard would run both configurations. Every other file keeps
 the 30-line entries and the 10-entry, 250-line shards. A changed element file the instrumenter cannot parse is exit 2
-naming it.
+naming it. A mutant that probably runs when its module loads (in a static class member, a class property's
+initialiser, or code outside any function, decided from the syntax with the pinned `typescript`) counts as 5, since
+Stryker runs such a mutant against the whole in-process suite (about 25 s, against 2 to 6 s for another); the caps
+of 10 stand, the boundary that closes an entry is still the one the fewest mutants span by count, and a line weighing
+more than 10 is an entry alone (mission 010, phase 3 stop 2, operator decision (a);
+`specs/010-feedback-forms/reviews/phase-3/design-change-2.md`).
 `--plan` reports the number of shards and of cuts it made on stderr, in one line,
 `mutation: plan: <s> shards, <c> cuts within files (...)`, and the JSON on stdout stays the one array the job
 reads. Each `mutation-shard` job passes its shard's entries unchanged to `--files` and runs under a 10-minute limit. `.github/workflows/cache.yml`

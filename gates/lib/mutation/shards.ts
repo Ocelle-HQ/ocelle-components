@@ -27,6 +27,19 @@
 // may span a cut; a line of more than 10 is an entry alone. These entries fill shards of at most 10 mutants and 10
 // entries, two of one file never in one shard, and never beside an entry of a file outside packages/elements/src/,
 // since such a shard runs both Stryker configurations and both dry runs. Every other file keeps the rule above.
+// Probably-static element mutants are weighted (010 phase 3 stop 2, operator decision (a), 2026-11-15,
+// specs/010-feedback-forms/reviews/phase-3/decision-stop-2.md and design-change-2.md; plan decision 11): Stryker runs
+// a mutant in code that runs when its module loads against the whole in-process suite (about 25 s, against 2 to 6 s
+// for another), and does not mark such mutants before its dry run. `probablyStatic` decides from the syntax, with one
+// parse of the file by the pinned `typescript`: a mutant is probably static when one of its enclosing nodes (those
+// whose span contains its whole span) is a static class member (property, method, accessor or `static { }` block), or
+// a class property's initialiser, or when none of them is a function (a function declaration or expression, an arrow
+// function, a method, an accessor or a constructor), so it is top-level module code. Such a mutant counts as 5 and
+// every other counted mutant as 1, compile errors alike; the rule above applies to these weights in place of the
+// counts, its caps of 10 unchanged, so an entry or shard holds up to 10 other mutants, 2 probably-static ones, or 1
+// and up to 5 others; the boundary that closes an entry is still the one the fewest mutants span, counted, not
+// weighed, and a line weighing more than 10 is an entry alone.
+import ts from "typescript";
 import type { ChangedFile, LineRange } from "./ranges.ts";
 
 /** One CI shard: its entries (`path` or `path:start-end`) and their number of changed lines. */
@@ -53,27 +66,85 @@ export type Selection =
   | { readonly empty: readonly string[] };
 
 /**
- * A mutant Stryker's instrumenter places on a changed line: its first and last line (1-based), and whether a
- * `// Stryker disable` comment ignores it.
+ * A mutant Stryker's instrumenter places on a changed line: its first and last line (1-based), whether a
+ * `// Stryker disable` comment ignores it, and whether it probably runs when its module loads (`probablyStatic`; a
+ * mutant without the flag is not).
  */
 export interface PlacedMutant {
   readonly start: number;
   readonly end: number;
   readonly ignored: boolean;
+  readonly probablyStatic?: boolean;
+}
+
+/** A mutant's place in its file, as Stryker's instrumenter gives it: from `start` to `end`, 0-based lines and columns. */
+export interface Span {
+  readonly start: { readonly line: number; readonly column: number };
+  readonly end: { readonly line: number; readonly column: number };
 }
 
 const maxEntryLines = 30;
 const maxEntries = 10;
 const maxLines = 250;
-/** The most mutants an element-source entry or shard holds (010 plan decision 11: 217 s + 10 x 14 s = 357 s). */
+/**
+ * The most weight an element-source entry or shard holds (010 plan decision 11: 217 s + 10 x 14 s = 357 s; after stop
+ * 2, 217 s + 10 x 6 s = 277 s at most, since a unit of a probably-static mutant's weight costs 25 s / 5 = 5 s).
+ */
 const maxMutants = 10;
+/** What a probably-static mutant weighs against `maxMutants`; every other counted mutant weighs 1 (design-change-2.md). */
+const staticWeight = 5;
 
 interface Entry {
   readonly entry: string;
   readonly path: string;
   readonly lines: number;
-  /** The mutants counted in the entry, for element source; undefined for every other file. */
+  /** The weight of the mutants counted in the entry, for element source; undefined for every other file. */
   readonly mutants?: number;
+}
+
+/** The syntax kinds that are functions to the syntax rule (`probablyStatic`). */
+const functionKinds = new Set([
+  ts.SyntaxKind.FunctionDeclaration,
+  ts.SyntaxKind.FunctionExpression,
+  ts.SyntaxKind.ArrowFunction,
+  ts.SyntaxKind.MethodDeclaration,
+  ts.SyntaxKind.GetAccessor,
+  ts.SyntaxKind.SetAccessor,
+  ts.SyntaxKind.Constructor,
+]);
+
+/** Whether a node is a class member marked `static`, or a `static { }` block. */
+function staticMember(node: ts.Node): boolean {
+  return ts.isClassStaticBlockDeclaration(node) || (ts.getCombinedModifierFlags(node as ts.Declaration) & ts.ModifierFlags.Static) !== 0;
+}
+
+/**
+ * The syntax rule of design-change-2.md for the file at `path` with this content, parsed once: whether a mutant
+ * spanning `span` probably runs when the module loads, in a static class member, in a class property's initialiser,
+ * or in code outside any function.
+ */
+export function probablyStatic(path: string, content: string): (span: Span) => boolean {
+  const source = ts.createSourceFile(path, content, ts.ScriptTarget.Latest);
+  return (span) => {
+    const from = source.getPositionOfLineAndCharacter(span.start.line, span.start.column);
+    const to = source.getPositionOfLineAndCharacter(span.end.line, span.end.column);
+    const enclosing: ts.Node[] = [];
+    const visit = (node: ts.Node): void => {
+      if (node.getStart(source) <= from && to <= node.getEnd()) {
+        enclosing.push(node);
+        ts.forEachChild(node, visit);
+      }
+    };
+    ts.forEachChild(source, visit);
+    const initialiser = (node: ts.Node): boolean =>
+      ts.isPropertyDeclaration(node) && enclosing.some((inner) => inner === node.initializer);
+    return enclosing.some(staticMember) || enclosing.some(initialiser) || !enclosing.some((node) => functionKinds.has(node.kind));
+  };
+}
+
+/** The weight of these mutants: 5 for each probably-static one, 1 for each other. */
+function weight(mutants: readonly PlacedMutant[]): number {
+  return mutants.reduce((sum, mutant) => sum + (mutant.probablyStatic === true ? staticWeight : 1), 0);
 }
 
 /** Whether a changed path is element source, which stryker.elements.config.json mutates (gates/bin/mutation.ts). */
@@ -110,17 +181,17 @@ function splitFile(file: ChangedFile): Entry[] {
 }
 
 /**
- * An element-source file's entries by mutant count: its path when its changed lines hold at most 10 counted mutants,
- * else `path:start-end` entries of at most 10 (a line of more alone), each closed at the latest of the boundaries
- * inside it that the fewest mutants span.
+ * An element-source file's entries by mutant weight: its path when its changed lines' counted mutants weigh at most
+ * 10, else `path:start-end` entries weighing at most 10 (a line of more alone), each closed at the latest of the
+ * boundaries inside it that the fewest mutants span, by count.
  */
 function splitByMutants(file: ChangedFile, placed: readonly PlacedMutant[]): Entry[] {
   const counted = placed.filter((mutant) => !mutant.ignored);
-  if (counted.length <= maxMutants) return [{ entry: file.path, path: file.path, lines: file.lines, mutants: counted.length }];
+  if (weight(counted) <= maxMutants) return [{ entry: file.path, path: file.path, lines: file.lines, mutants: weight(counted) }];
   const changed = file.ranges.flatMap((range) => Array.from({ length: range.end - range.start + 1 }, (_, i) => range.start + i));
-  /** The mutants wholly inside changed lines `first` to `last` (indexes into `changed`). */
+  /** The weight of the mutants wholly inside changed lines `first` to `last` (indexes into `changed`). */
   const inside = (first: number, last: number): number =>
-    counted.filter((mutant) => mutant.start >= Number(changed[first]) && mutant.end <= Number(changed[last])).length;
+    weight(counted.filter((mutant) => mutant.start >= Number(changed[first]) && mutant.end <= Number(changed[last])));
   /** The mutants spanning the boundary after changed line `index`. */
   const spanning = (index: number): number =>
     counted.filter((mutant) => mutant.start <= Number(changed[index]) && mutant.end > Number(changed[index])).length;
@@ -144,7 +215,7 @@ function splitByMutants(file: ChangedFile, placed: readonly PlacedMutant[]): Ent
 
 /**
  * The CI shards of the changed files. `placed` gives, by path, the mutants Stryker's instrumenter places on each
- * changed element-source file's changed lines (a file it does not name has none).
+ * changed element-source file's changed lines, with their probably-static flags (a file it does not name has none).
  */
 export function planShards(files: readonly ChangedFile[], placed: ReadonlyMap<string, readonly PlacedMutant[]> = new Map()): Shard[] {
   const shards: { files: string[]; lines: number; mutants: number | undefined }[] = [];

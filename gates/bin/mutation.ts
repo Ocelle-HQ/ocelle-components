@@ -24,7 +24,11 @@
 // other file as above. It reads each changed element file and gives its content and changed ranges to the `place`
 // tool, which, in `run()`, is Stryker's own instrumenter (`@stryker-mutator/instrumenter`, pinned at core's version):
 // it places the mutants Stryker would, with no test run and no checker, in well under a second. A changed element
-// file it cannot read, or one the instrumenter cannot parse, is exit 2 naming it, with no plan on stdout.
+// file it cannot read, or one the instrumenter cannot parse, is exit 2 naming it, with no plan on stdout. After phase
+// 3 stop 2 (operator decision (a), 2026-11-15; design-change-2.md), each placed mutant also carries whether it probably
+// runs when its module loads, by shards.ts's syntax rule over the file's content and the instrumenter's locations
+// (one parse a file with the pinned `typescript`): in a static class member, a class property's initialiser or code
+// outside any function. Such a mutant weighs 5 in the plan, every other 1, against the caps of 10.
 import { readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { Instrumenter } from "@stryker-mutator/instrumenter";
@@ -39,7 +43,7 @@ import { formatRecord, scanRecords } from "../lib/mutation/records.ts";
 import type { EquivalentRecord } from "../lib/mutation/records.ts";
 import { classifyMutants } from "../lib/mutation/report.ts";
 import type { RunEntry, StrykerRun, UndecidedMutant } from "../lib/mutation/report.ts";
-import { countCuts, elementSource, formatPlan, planShards, selectFiles } from "../lib/mutation/shards.ts";
+import { countCuts, elementSource, formatPlan, planShards, probablyStatic, selectFiles } from "../lib/mutation/shards.ts";
 import type { PlacedMutant } from "../lib/mutation/shards.ts";
 import { runTool } from "../lib/spawn.ts";
 import type { ToolRun } from "../lib/spawn.ts";
@@ -252,7 +256,8 @@ export async function mutation(context: Context, tools: MutationTools, io: Io): 
  * Stryker's instrumenter on one file, as Stryker 10.1.1 runs it (core's 2-mutant-instrumenter-executor.js, with
  * stryker.elements.config.json's mutator options, the defaults, and no ignorer plugin): the `mutate` ranges are the
  * changed ranges as Stryker reads `path:start-end` (0-based lines, the end line to its last column), so a mutant is
- * placed only when it lies wholly inside one. Its logger is silent: every method it is asked for does nothing.
+ * placed only when it lies wholly inside one. Its logger is silent: every method it is asked for does nothing. Each
+ * mutant carries the syntax rule's flag for its location (shards.ts `probablyStatic`).
  */
 async function placeMutants(root: string, path: string, content: string, ranges: readonly LineRange[]): Promise<PlacedMutant[]> {
   const logger = new Proxy({}, { get: () => () => undefined }) as ConstructorParameters<typeof Instrumenter>[0];
@@ -270,10 +275,12 @@ async function placeMutants(root: string, path: string, content: string, ranges:
   const result = await new Instrumenter(logger).instrument([{ name, content, mutate }], options).catch((error: unknown) => {
     throw new Error((error as Error).message.replace(`${name}: `, ""));
   });
+  const isStatic = probablyStatic(path, content);
   return result.mutants.map((mutant) => ({
     start: mutant.location.start.line + 1,
     end: mutant.location.end.line + 1,
     ignored: mutant.status === "Ignored",
+    probablyStatic: isStatic(mutant.location),
   }));
 }
 
