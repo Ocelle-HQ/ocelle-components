@@ -23,11 +23,28 @@ ocelle-action-row or ocelle-tooltip; each element meeting #7's Done-when checkli
 
 - Static pill ellipsis, "Ellipsis interactive only": only the interactive pill truncates its text and shows the full
   text through `ocelle-tooltip`. A static pill never truncates; it wraps onto further lines (FR-027, FR-033).
-- Interactive pill activation, "Native click, aria-pressed": activation is reported by the native `click` only, as
-  `ocelle-button` does; the host may set `aria-pressed`, which mission 012's passthrough moves to the inner button
+- Interactive pill activation, "Native click, aria-pressed": superseded by the decision on SPEC-1-01 below; the part
+  that stands is that the host may set `aria-pressed`, which mission 012's passthrough moves to the inner button
   (FR-030, FR-031).
 - Compact line height, "Add a 1.2 token": a new token `--ocelle-line-height-snug` with the value 1.2 is added to
   `@ocelle/tokens` and used by the compact pill (FR-025, FR-040).
+
+**Operator decisions after spec check 1** (2026-11-15, human:jeroennouwsdev; `reviews/spec/check-1.md`, recorded in
+`reviews/spec/check-1-fixes.md`):
+
+- Activate event (SPEC-1-01), "(a)": the interactive pill dispatches `ocelle-pill-tag-activate` on the same terms as
+  012's `ocelle-button-activate` (beside the native `click`, `bubbles`, `composed`, `cancelable`, `detail` `{}`, none
+  on a modifier click in link mode), in both button and link mode. This supersedes the earlier "native click only"
+  decision; the `aria-pressed` passthrough stays (US4-3, FR-005, FR-031).
+- Pulse duration (SPEC-1-02), "(a)": the pulse stops after at most 5 s (a fixed iteration count from a motion token)
+  and the dot stays solid; it restarts only when `pulse` is set again (US1-4, FR-012, FR-041, SC-004; WCAG 2.2.2).
+- Compact interactive target (SPEC-1-03), "(a)": the interactive compact pill takes a minimum block size of 24 px
+  from a token, so its block padding is at least 4 px rather than exactly 4 px; US3-4's exact 4 px holds for the
+  static pill only (US3-4, US4-7, FR-029, FR-032, FR-043).
+- Pill radius (SPEC-1-04), "(a)": every `ocelle-pill-tag` variant (the `pill` and the `badge`, static or interactive,
+  filter toggles included) counts as a "state pill" for constitution II's pill-radius rule; FR-003 stays as written.
+- Success criterion 1 (SPEC-1-05), "(b)": SC-001 reads "every attribute and slot listed under Consumers has an
+  equivalent", which a test can check; the full inventory of kitty-mission-ui's uses is left to its migration.
 
 **Consumers** (constitution VI): kitty-mission-ui's Kitty Desktop and Kitty Dashboard screens, which today use the
 `sk-pill-tag` (32 uses: `status`, `title`, slotted content, badge use), `sk-status-indicator` (2 uses: `tone`) and
@@ -54,9 +71,18 @@ this feature closes. The `sk-*` library is read as requirements only; nothing is
 
 Terms used below:
 
-- **Status vocabulary**: the five values `info`, `success`, `warning`, `danger` and `neutral`, the same values and the
-  same token mapping (`--ocelle-color-<value>` for the mark or text, `--ocelle-color-<value>-bg` for the ground) as
-  #9's `ocelle-notice` `tone`. An absent, empty or unknown value is `neutral`.
+- **Status vocabulary**: the five values `info`, `success`, `warning`, `danger` and `neutral`, each with its token
+  pair `--ocelle-color-<value>` (for the mark, the border or the text) and `--ocelle-color-<value>-bg` (for the
+  ground). The five values and the token pairs are what this feature shares with #9's `ocelle-notice` `tone`. The
+  default and the fallback are per element, deliberately: on the indicator and the pill an absent, empty or unknown
+  value is `neutral`; the notice keeps its own default and fallback, `info`. How each element uses the pair is its
+  own too (the notice sets its text in `--ocelle-color-ink`; the pill sets its text in `--ocelle-color-<value>`). An
+  unknown value is kept in the attribute as written, as on the notice and under mission 005's conventions; the element
+  never rewrites it, and only the property reads the default (`status="bogus"` stays in the attribute while `status`
+  reads `"neutral"`).
+- **State pill** (constitution II, "the pill radius is for state pills only"): every `ocelle-pill-tag`, whatever its
+  variant (`pill` or `badge`) and mode (static, button or link), a count badge and a filter toggle included
+  (operator decision, SPEC-1-04).
 - **Full text** of a pill: the text content of its default slot, with leading and trailing whitespace removed and
   runs of whitespace collapsed to one space.
 - **Truncated**: an interactive pill whose full text does not fit on its one line in the inline size it is given, so
@@ -86,8 +112,11 @@ accessibility tree.
 3. **Given** `label="Running"`, **When** it renders, **Then** the accessibility tree has exactly one node of role
    `img` named "Running", and nothing else from the element.
 4. **Given** `pulse`, **When** it renders with no motion preference, **Then** an animation runs on a ring around the
-   dot, while the dot itself stays fully opaque at its full size in every frame; **When** `pulse` is removed,
-   **Then** the animation stops.
+   dot, while the dot itself stays fully opaque at its full size in every frame; the animation runs a fixed number of
+   iterations taken from a motion token, ends no later than 5 s after it started, and afterwards no animation runs and
+   the dot is shown solid while `pulse` is still set; **When** `pulse` is removed before then, **Then** the animation
+   stops; **When** `pulse` is set again (removed, then added), **Then** the animation runs again on the same terms,
+   and no other change (of `tone` or `label`) restarts it (WCAG 2.2.2).
 5. **Given** `pulse` and `prefers-reduced-motion: reduce`, **When** it renders, **Then** no animation runs and the dot
    is shown solid.
 6. **Given** forced-colours mode, **When** it renders in any tone, **Then** the dot is drawn in a system colour and
@@ -147,11 +176,13 @@ long text, both themes and forced colours; read boxes, computed styles, the acce
    and exposes its text to the accessibility tree as plain text (no role of its own).
 2. **Given** each status of the vocabulary, **When** it renders in both themes, **Then** the ground and text use that
    status's tokens and the text contrast meets WCAG 1.4.3 (4.5:1), checked by the contrast gate.
-3. **Given** `variant="badge"`, **When** it renders, **Then** it has a 1 px-or-token-width border in the status's
-   colour, no fill other than the page ground, `--ocelle-radius-pill` corners, and its text in Schibsted Grotesk with
-   tabular figures; no monospace family appears in its computed `font-family`.
-4. **Given** `density="compact"`, **When** it renders, **Then** its block padding is `--ocelle-space-1` (4 px), its
-   inline padding `--ocelle-space-2` (8 px), and its line height `--ocelle-line-height-snug` (1.2).
+3. **Given** `variant="badge"`, **When** it renders, **Then** it has a border of `--ocelle-border-width` in the
+   status's colour, no fill other than the page ground, `--ocelle-radius-pill` corners, and its text in Schibsted
+   Grotesk with tabular figures; no monospace family appears in its computed `font-family`.
+4. **Given** `density="compact"` on a static pill, **When** it renders, **Then** its block padding is
+   `--ocelle-space-1` (4 px), its inline padding `--ocelle-space-2` (8 px), and its line height
+   `--ocelle-line-height-snug` (1.2). (An interactive compact pill keeps the inline padding and line height but its
+   block padding is at least 4 px, US4-7, FR-029.)
 5. **Given** a pill whose full text is wider than its container, **When** it renders, **Then** the text wraps onto
    further lines inside the pill, every character is visible, and no ellipsis is shown.
 6. **Given** an icon in the `icon` slot, **When** it renders, **Then** the icon sits before the text as mission 005's
@@ -180,19 +211,27 @@ drive it by pointer and keyboard; read the accessibility tree, the focus ring an
    one node of role `button` named by the pill's full text.
 2. **Given** a non-empty `href` that is link mode under 012's FR-002, **When** it renders, **Then** the inner control
    is a native `<a>` with that `href`, of role `link`, whether or not `interactive` is set.
-3. **Given** an interactive pill, **When** it is clicked, or focused and Enter is pressed (button and link mode), or
-   Space is pressed (button mode), **Then** exactly one native `click` reaches a listener on the host, and no
-   `ocelle-*` event is emitted.
+3. **Given** an enabled interactive pill, in button mode and in link mode, **When** it is clicked, or focused and
+   Enter is pressed (button and link mode), or Space is pressed (button mode), or its `click()` method is called,
+   **Then** exactly one native `click` reaches a listener on the host, and exactly one `ocelle-pill-tag-activate`
+   (`bubbles`, `composed`, `cancelable`, `detail` `{}`) is dispatched from the host before that `click` reaches any
+   bubble-phase listener; **When** a listener calls `preventDefault()` on the activate event, **Then** in link mode
+   there is no navigation and in button mode the `click` is still delivered with `defaultPrevented` `true`; **When**
+   a link-mode pill is clicked with Ctrl, Meta, Shift or Alt held, **Then** its `click` is delivered, no
+   `ocelle-pill-tag-activate` is dispatched and the browser's own modifier handling applies (FR-031).
 4. **Given** `aria-pressed="true"` on the host of a button-mode pill, **When** it renders, **Then** the attribute is
    moved to the inner button as 012's FR-004 sets out, the accessibility tree reports the button pressed, and the
    pressed look is applied; **When** the host sets `aria-pressed="false"`, **Then** it reports not pressed.
 5. **Given** `disabled`, **When** it renders, **Then** the pill is disabled as 012's FR-003 defines it (out of the tab
-   order, reported disabled, not activated, no navigable target in link mode) and has the disabled look.
+   order, reported disabled, not activated, no navigable target in link mode), dispatches neither a `click` to a
+   bubble-phase listener nor `ocelle-pill-tag-activate`, and has the disabled look.
 6. **Given** keyboard focus on the inner control, **When** focus is visible, **Then** the focus ring is drawn from
    `--ocelle-focus-width` and `--ocelle-focus-offset` and the focus colour token, in both themes and in forced
    colours.
-7. **Given** an interactive pill in either density, **When** its target is measured, **Then** the area that takes a
-   pointer click is at least 24 px by 24 px.
+7. **Given** an interactive pill in either density, with a one-character text and with a long one, **When** its
+   target is measured, **Then** the area that takes a pointer click is at least 24 px by 24 px; in `compact` density
+   its block size is at least the 24 px minimum-block-size token (FR-043) and its block padding at least
+   `--ocelle-space-1`.
 
 ---
 
@@ -205,8 +244,8 @@ tooltip. Screen-reader users hear the full text as the control's name either way
 
 **Why this priority**: it depends on #16's `ocelle-tooltip` being on `main`.
 
-**Independent Test**: render interactive pills whose full text fits and does not fit; change the container width and
-the text; hover, focus and press Escape; read the tooltip state, the visible text and the accessibility tree.
+**Independent Test**: render enabled and disabled interactive pills whose full text fits and does not fit; change the
+container width, the text and `disabled`; hover, focus and press Escape; read the tooltip state, the visible text and the accessibility tree.
 
 **Acceptance Scenarios**:
 
@@ -222,23 +261,30 @@ the text; hover, focus and press Escape; read the tooltip state, the visible tex
 5. **Given** a truncated pill, **When** its container grows until the text fits (or its text is shortened until it
    fits), **Then** it stops being truncated and the tooltip is disabled without a reload; and the reverse change
    enables it.
+6. **Given** a disabled interactive pill (button or link mode) whose full text does not fit on one line, **When** it
+   renders, **Then** it is not truncated: its text wraps onto further lines inside the pill as a static pill's does
+   (FR-027), every character is visible, no ellipsis is shown, and the tooltip stays disabled, so no pointer or
+   keyboard path is needed to read the full text; **When** `disabled` is removed, **Then** it shows one line again and
+   is truncated (with the tooltip enabled) if the full text does not fit.
 
 ---
 
 ### Edge Cases
 
 - A pill with no slotted text (only an icon, or nothing): a static pill renders an empty pill without error; an
-  interactive pill with no full text and no `aria-label`, `aria-labelledby` or `label` has no accessible name, and the
-  README says such a pill must be named (axe reports it; the element does not invent a name).
-- An interactive pill named by `aria-label` whose full text differs: the tooltip still shows the full text (the
-  visible text), and the name follows 012's FR-006 precedence.
+  interactive pill with no full text and no `aria-label`, `aria-labelledby` or `label` (FR-025) has no accessible
+  name, and the README says such a pill must be named (axe reports it; the element does not invent a name).
+- An interactive pill named by `aria-label` or `label` whose full text differs: the tooltip still shows the full text
+  (the visible text), and the name follows 012's FR-006 precedence.
+- `label` on a static pill: it has no effect; a static pill has no control to name and exposes its text as plain
+  text (FR-027).
 - Slotted text changes after render (a framework re-render, an htmx swap): the full text, the tooltip text and the
   truncation state follow it.
 - A tone, status, variant, density or layout set to an unknown value falls back to its default silently.
 - `pulse` on a `neutral` indicator: allowed; the vocabulary does not decide which tones pulse, the host does.
 - An indicator with an empty or whitespace-only `label`: treated as no label (decorative).
-- `interactive` together with `disabled` on a static pill without `interactive` or `href`: `disabled` has no effect
-  on a static pill.
+- `disabled` on a static pill (neither `interactive` nor a link-mode `href`) has no effect.
+- A disabled interactive pill with a full text that does not fit: it wraps rather than truncates (US5-6, FR-033).
 - Forced colours: status colours are replaced by system colours; the pill keeps a visible border so its extent is
   still seen; the badge keeps its outline.
 - Right-to-left documents: the icon slot, the row layout and the ellipsis follow the inline direction.
@@ -253,15 +299,23 @@ the text; hover, focus and press Escape; read the tooltip state, the visible tex
 - **FR-001**: The three elements follow mission 005's element conventions (module and registration, naming, property
   and attribute reflection, adopted stylesheets, no I/O) and register as `ocelle-status-indicator`, `ocelle-metric`
   and `ocelle-pill-tag`.
-- **FR-002**: The status vocabulary is one shared definition used by the indicator's `tone` and the pill's `status`,
-  with the same five values and token mapping as #9's notice `tone`. An absent, empty or unknown value is `neutral`.
-  Nothing in this feature introduces a sixth value.
+- **FR-002**: The status vocabulary (Terms) is used by the indicator's `tone` and the pill's `status`. What is shared
+  with #9's notice `tone` is the five values and their `--ocelle-color-<value>` / `--ocelle-color-<value>-bg` pairs
+  only; the default and the fallback are per element. On the indicator and the pill an absent, empty or unknown value
+  is `neutral` (the notice's `info` default is its own and is not changed here). An unknown value stays in the
+  attribute as written and the property reads `"neutral"`. Nothing in this feature introduces a sixth value.
 - **FR-003**: All styling uses `--ocelle-*` tokens only (constitution II); no element uses a monospace family; the
-  pill radius is used only by the pill tag.
+  pill radius is used only by the pill tag, every variant and mode of which is a state pill (Terms; operator
+  decision, SPEC-1-04).
 - **FR-004**: Each element has a story per variant and per state, in light and dark, with committed baselines made in
   mission 006's pinned container, and story-level axe reports no serious or critical finding on any story.
-- **FR-005**: The custom-elements manifest declares every public property, attribute, slot, part and CSS custom
-  property of the three elements; the interactive pill's activation is documented as the native `click`.
+- **FR-005**: The custom-elements manifest declares every public property, attribute, event (with its `detail`
+  type), method, slot, part, custom state and CSS custom property of the three elements, each with a description. For
+  the pill this includes: the passthrough attributes it moves (FR-030) and each one's `data-ocelle-moved-*` mirror
+  attribute, as 012's FR-053 declares them; the methods `focus()` and `click()` (012 FR-001); the events `click` (the
+  native click, documented) and `ocelle-pill-tag-activate` (`detail` `{}`, FR-031); and the custom states `pressed`
+  (button mode) and `current` (link mode) (FR-031). The indicator and the metric have no events, no methods of their
+  own and no custom states, and the manifest declares none for them.
 - **FR-006**: The built output of the three elements passes the strict-CSP check.
 - **FR-007**: The elements README gains a section per element (usage, attributes, accessibility notes, the
   consumer-facing rules stated in this spec), and `@ocelle/elements` and `@ocelle/tokens` each gain a changelog entry
@@ -275,7 +329,11 @@ the text; hover, focus and press Escape; read the tooltip state, the visible tex
   8 px in each dimension and sized from tokens. The dot is shown in every state; it is never transparent, empty or
   outlined only.
 - **FR-012**: With `pulse`, an animation runs on a ring drawn around the dot, never on the dot itself; in every frame
-  the dot keeps its full opacity and size. Its duration comes from a motion token. Without `pulse`, no animation runs.
+  the dot keeps its full opacity and size. Its duration and its iteration count come from motion tokens (FR-041), and
+  the whole animation ends at most 5 s after it starts (WCAG 2.2.2); afterwards no animation runs and the dot is
+  shown solid while `pulse` stays set. The animation starts each time `pulse` goes from absent to present (and when
+  the element first renders with `pulse`); no other change restarts it. Without `pulse`, no animation runs (operator
+  decision, SPEC-1-02).
 - **FR-013**: Under `prefers-reduced-motion: reduce` no animation runs, with or without `pulse`, and the dot is shown
   solid.
 - **FR-014**: With a non-empty (after trimming) `label`, the element exposes exactly one accessibility node of role
@@ -305,7 +363,11 @@ the text; hover, focus and press Escape; read the tooltip state, the visible tex
 
 - **FR-025**: Attributes and properties: `status` (status vocabulary, default `neutral`), `variant` (`pill`, the
   default, or `badge`), `density` (`default` or `compact`), `interactive` (boolean), `href` (string), `disabled`
-  (boolean). All reflect. Unknown `variant` and `density` values fall back to their defaults.
+  (boolean), all reflected; and `label` (string, not reflected), which names the inner control of an interactive pill
+  in 012's FR-006 precedence, trimmed, empty or whitespace-only counting as none (as 012's FR-013 defines it).
+  `label` changes only the accessible name: the visible text and the tooltip text stay the full text (FR-034). On a
+  static pill `label` has no effect. Unknown `variant` and `density` values fall back to their defaults and stay in
+  the attribute as written.
 - **FR-026**: Content: the default slot holds the pill's text; the `icon` slot follows mission 005's slot convention.
   Slotted icons are decorative and add nothing to the accessibility tree.
 - **FR-027**: A static pill (neither `interactive` nor a link-mode `href`) is not focusable, has no role of its own,
@@ -313,11 +375,14 @@ the text; hover, focus and press Escape; read the tooltip state, the visible tex
   `title` and ARIA attributes on a static pill's host are left where they are.
 - **FR-028**: The `pill` variant fills with `--ocelle-color-<status>-bg`, sets its text in `--ocelle-color-<status>`,
   and has `--ocelle-radius-pill` corners. The `badge` variant has no fill of its own, a border in
-  `--ocelle-color-<status>` of a token width, `--ocelle-radius-pill` corners, and its text in Schibsted Grotesk with
+  `--ocelle-color-<status>` of `--ocelle-border-width`, `--ocelle-radius-pill` corners, and its text in Schibsted Grotesk with
   tabular figures. Text meets 4.5:1 and the badge border 3:1 on their grounds, in both themes, checked by the contrast
   gate. Forced colours keep a visible border on both variants.
-- **FR-029**: `density="compact"` sets block padding `--ocelle-space-1`, inline padding `--ocelle-space-2` and line
-  height `--ocelle-line-height-snug`; the default density keeps the spacing the plan sets from tokens.
+- **FR-029**: `density="compact"` sets inline padding `--ocelle-space-2` and line height `--ocelle-line-height-snug`.
+  On a static pill its block padding is exactly `--ocelle-space-1`. On an interactive pill its block padding is at
+  least `--ocelle-space-1` and its block size at least the 24 px minimum-block-size token (FR-043), so its pointer
+  target meets FR-032 whatever its font size (operator decision, SPEC-1-03). The default density keeps the spacing
+  the plan sets from tokens.
 - **FR-030**: An interactive pill (`interactive`, or a non-empty `href` that is link mode) follows mission 012's
   FR-001 to FR-006 as written: one native inner control (`<button type="button">` in button mode, `<a>` in link
   mode, FR-002 deciding the mode), `disabled` as FR-003 defines it, ARIA passthrough by moving attributes with
@@ -325,14 +390,28 @@ the text; hover, focus and press Escape; read the tooltip state, the visible tex
   (FR-006). The attributes it moves are `aria-label`, `aria-labelledby`, `aria-describedby`, `aria-controls`,
   `aria-pressed` (button mode), `aria-current` (link mode) and `title`. It reuses 012's helpers rather than
   re-implementing them.
-- **FR-031**: An interactive pill reports activation by the native `click` only; it emits no `ocelle-*` event.
-  `aria-pressed="true"` (moved to the inner button) gives the pressed look and exposes the custom state
-  `:state(pressed)` for host styling, as `ocelle-button` does.
+- **FR-031**: **Activate event.** Each activation of an enabled interactive pill that delivers a `click` to the host
+  (a pointer click, Enter or Space in button mode, Enter in link mode, the element's `click()`), in button mode and
+  in link mode, also dispatches one `ocelle-pill-tag-activate` `CustomEvent` from the host with `bubbles: true`,
+  `composed: true`, `cancelable: true` and `detail` `{}`, on the same terms as 012's `ocelle-button-activate`
+  (012 FR-023): it is dispatched before that `click` reaches any bubble-phase listener on the host or its ancestors;
+  `preventDefault()` on it cancels the `click`'s default action (in link mode no navigation; in button mode the
+  `click` is still delivered with `defaultPrevented` `true`); in link mode a click with Ctrl, Meta, Shift or Alt
+  held dispatches no `ocelle-pill-tag-activate`, its `click` is delivered and the browser's own modifier handling
+  applies; a middle click dispatches nothing. A disabled pill, or a static pill, dispatches no
+  `ocelle-pill-tag-activate` (operator decision, SPEC-1-01). In button mode `aria-pressed="true"` (moved to the inner
+  button) gives the pressed look and exposes the custom state `:state(pressed)`; in link mode a set `aria-current`
+  (moved to the inner link) exposes `:state(current)`, with no visual mark of its own, as `ocelle-button` does
+  (012 FR-004, FR-009). The pill has no other custom state.
 - **FR-032**: An interactive pill shows the token focus ring on keyboard focus, in both themes and forced colours, and
-  its pointer target is at least 24 px by 24 px in either density (WCAG 2.5.8). It is not a primary action, so
+  its pointer target is at least 24 px by 24 px in either density (WCAG 2.5.8; in compact density by FR-029's
+  minimum block size). It is not a primary action, so
   `--ocelle-target-min` does not apply.
-- **FR-033**: An interactive pill shows its full text on one line; when the full text does not fit, it is truncated
-  with an ellipsis at the inline end. Truncation is re-evaluated whenever the pill's inline size or its full text
+- **FR-033**: An enabled interactive pill shows its full text on one line; when the full text does not fit, it is
+  truncated with an ellipsis at the inline end. A disabled interactive pill is never truncated: it wraps a full text
+  that does not fit onto further lines, as a static pill does (FR-027), because a disabled control is no tooltip
+  trigger (012 FR-003; #16's contract, "Triggers are buttons and links") and its full text must stay readable
+  without one. Truncation is re-evaluated whenever the pill's inline size, its full text or its `disabled` state
   changes.
 - **FR-034**: An interactive pill wraps its inner control in `ocelle-tooltip` as #16's contract shows for the pill
   (`text` set to the full text, `disabled` while not truncated, no `describes`), so the full text is shown on hover and
@@ -343,38 +422,51 @@ the text; hover, focus and press Escape; read the tooltip state, the visible tex
 
 - **FR-040**: `@ocelle/tokens` gains `--ocelle-line-height-snug` with the value 1.2, validated and documented like the
   other line-height tokens.
-- **FR-041**: If no existing motion token suits the indicator's pulse, the plan adds one; it follows the token set's
-  reduced-motion rule as it stands on `main` when the token is added.
+- **FR-041**: The indicator's pulse takes its duration and its iteration count from motion tokens (FR-012); where no
+  existing token suits, the plan adds one, and their product is at most 5 s. A token added here follows the token
+  set's reduced-motion rule as it stands on `main` when the token is added.
 - **FR-042**: If mission 011 has not landed when the metric is built, the four eyebrow tokens are added exactly as
   011's R-12 defines them; if it has, they are used as they are.
+- **FR-043**: The interactive compact pill's minimum block size comes from a token whose value is 24 px (WCAG 2.5.8's
+  minimum); if no existing token has that meaning, the plan adds one to `@ocelle/tokens`, validated and documented
+  like the other size tokens (FR-029; operator decision, SPEC-1-03).
 
 ### Key Entities
 
-- **Status vocabulary**: five named states with their foreground and ground tokens; shared by the indicator and the
-  pill, aligned with #9's notice.
-- **Pill**: full text, status, variant, density, mode (static, button, link), disabled, pressed, truncated.
+- **Status vocabulary**: five named states with their foreground and ground tokens; used by the indicator and the
+  pill; the values and token pairs are shared with #9's notice, the default (`neutral` here, `info` on the notice) is
+  per element.
+- **Pill**: full text, label, status, variant, density, mode (static, button, link), disabled, pressed, current,
+  truncated; activation reported by the native `click` and `ocelle-pill-tag-activate` (payload `{}`, bubbling,
+  composed, cancelable).
 - **Metric**: a label and a display value, laid out stacked or in a row.
 
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
-- **SC-001**: Every one of the 36 kitty-mission-ui uses (32 pill, 2 indicator, 2 metric) can be expressed with the
-  attributes and slots this feature defines, with no consumer CSS beyond layout.
+- **SC-001**: Every attribute and slot listed under Consumers (the pill's `status`, `title`, slotted content and badge
+  use; the indicator's `tone`; the metric's `label` and `display-value`) has an equivalent in the interface this
+  feature defines, and a test renders each equivalent with no consumer CSS. The full inventory of kitty-mission-ui's
+  36 uses is checked at kitty-mission-ui's migration, outside this feature (operator decision, SPEC-1-05).
 - **SC-002**: 100 % of the stories of the three elements have light and dark baselines, and axe reports zero serious
   or critical findings on them.
 - **SC-003**: Every status-vocabulary pairing of foreground and ground used by these elements passes the automated
   contrast check (4.5:1 for text, 3:1 for the dot and the badge border) in both themes.
 - **SC-004**: With reduced motion requested, zero animations run on any indicator; with it not requested, the dot is
-  fully visible in 100 % of sampled animation frames.
-- **SC-005**: A keyboard-only user can reach, activate and read the full text of every interactive pill, truncated
-  or not, without a pointer.
-- **SC-006**: Every attribute, slot, part and CSS custom property of the three elements is in the manifest, and the
-  manifest, CSP, prefix, lint and mutation gates pass for the changed source.
+  fully visible in 100 % of sampled animation frames, and no pulse runs longer than 5 s from its start.
+- **SC-005**: A keyboard-only user can reach, activate and read the full text of every enabled interactive pill,
+  truncated or not, without a pointer; every activation produces exactly one `click` and one
+  `ocelle-pill-tag-activate` (none on a modifier click in link mode); the full text of every disabled interactive
+  pill is visible without any interaction.
+- **SC-006**: Every property, attribute (the passthrough attributes and their `data-ocelle-moved-*` mirrors
+  included), event with its `detail` type, method, slot, part, custom state and CSS custom property of the three
+  elements is in the manifest, and the manifest, CSP, prefix, lint and mutation gates pass for the changed source.
 
 ## Assumptions
 
-- The status vocabulary is exactly #9's notice tone; kitty-mission-ui states such as "running" or "blocked" map onto
+- The status vocabulary has exactly the values and token pairs of #9's notice tone (its default is this feature's
+  own, FR-002); kitty-mission-ui states such as "running" or "blocked" map onto
   it in the consumer (for example running → `info` with `pulse`). A further value needs its own consumer and a later
   feature.
 - `label` on the indicator is the one way to name it; slotted content is not supported on the indicator.
@@ -386,5 +478,7 @@ the text; hover, focus and press Escape; read the tooltip state, the visible tex
 - Behaviour is measured in Chromium only, as in missions 005 and 012; WebKit is a stated limitation.
 - Implementation waits for missions 012 and 008 (and op 016's affected-plants mode) to be on `main`; user stories 1
   to 3 do not need 012 or 008, but the whole mission is implemented after both land.
-- The kitty-mission-ui usage inventory (the 36 uses and their modifiers) is read from #7 as triage 012 recorded it;
-  if the operator supplies a fuller inventory, the spec check reads it against these requirements.
+- The kitty-mission-ui usage inventory is read from #7 as triage 012 recorded it (counts and attribute names only);
+  the spec-kitty-design issues #498, #509, #524 and #526 were not read in full. SC-001 is checked against the
+  recorded attributes and slots; the full inventory of the 36 uses and their modifiers is kitty-mission-ui's
+  migration's to check (operator decision, SPEC-1-05).
