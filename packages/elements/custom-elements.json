@@ -578,6 +578,138 @@
       ],
       "kind": "javascript-module",
       "path": "src/ocelle-icon.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "\"\"",
+              "description": "The bubble's plain text, never parsed as markup. An empty text shows no bubble.",
+              "fieldName": "text",
+              "name": "text",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "\"top\"",
+              "description": "The side of the trigger the bubble is shown on: `top`, `bottom`, `start` or `end`, the last two in the tooltip's\ndirection; it is shown on the opposite side when it does not fit. Reflected.",
+              "fieldName": "placement",
+              "name": "placement",
+              "type": {
+                "text": "\"top\" | \"bottom\" | \"start\" | \"end\""
+              }
+            },
+            {
+              "default": "false",
+              "description": "Whether the tooltip shows no bubble. Reflected.",
+              "fieldName": "disabled",
+              "name": "disabled",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "false",
+              "description": "Whether the text is the trigger's accessible description, for a text that adds to the trigger's name; supported\nonly when the trigger is itself the focusable element. Reflected.",
+              "fieldName": "describes",
+              "name": "describes",
+              "type": {
+                "text": "boolean"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The bubble in the top layer, hidden from assistive technology; its only child paints the text.",
+              "name": "bubble"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A tooltip: a short text in a bubble beside its trigger, shown while the pointer rests on the trigger or the bubble\nor the trigger has keyboard focus, hidden by Escape. The trigger carries its own accessible name; the bubble only\nrepeats or supplements it.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "text",
+              "default": "\"\"",
+              "description": "The bubble's plain text, never parsed as markup. An empty text shows no bubble.",
+              "kind": "field",
+              "name": "text",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "placement",
+              "default": "\"top\"",
+              "description": "The side of the trigger the bubble is shown on: `top`, `bottom`, `start` or `end`, the last two in the tooltip's\ndirection; it is shown on the opposite side when it does not fit. Reflected.",
+              "kind": "field",
+              "name": "placement",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"top\" | \"bottom\" | \"start\" | \"end\""
+              }
+            },
+            {
+              "attribute": "disabled",
+              "default": "false",
+              "description": "Whether the tooltip shows no bubble. Reflected.",
+              "kind": "field",
+              "name": "disabled",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "attribute": "describes",
+              "default": "false",
+              "description": "Whether the text is the trigger's accessible description, for a text that adds to the trigger's name; supported\nonly when the trigger is itself the focusable element. Reflected.",
+              "kind": "field",
+              "name": "describes",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            }
+          ],
+          "name": "OcelleTooltip",
+          "slots": [
+            {
+              "description": "The trigger: the first element assigned, a button or a link that carries its own accessible name.",
+              "name": ""
+            },
+            {
+              "description": "The tooltip's own: with `describes`, the hidden description span it adds to its children; never rendered.",
+              "name": "description"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-tooltip"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-tooltip.ts",
+            "name": "OcelleTooltip"
+          },
+          "kind": "js",
+          "name": "OcelleTooltip"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-tooltip.ts"
     }
   ],
   "readme": "",

@@ -2,10 +2,12 @@
 // `<dialog>` in the open shadow root, shown with `showModal()` while `open` is true, with the user-agent chrome reset
 // to tokens. It owns `open`, `label` and `close-label`, the heading, the close control, the body and footer slots,
 // initial focus and the Tab cycle (R-04), Escape and the veto (R-02), platform closes (R-03), focus return (R-05),
-// disconnection (R-05a), the close order and motion (R-06). A subclass names its event prefix and adds its layout.
+// disconnection (R-05a), the close order and motion (R-06), and hides any tooltip bubble before it opens (R-10). A
+// subclass names its event prefix and adds its layout.
 // Internal, not an entry point, and no tag: `ocelle-dialog` and `ocelle-drawer` extend it.
 import { LitElement, css, html, nothing } from "lit";
 import type { CSSResultGroup, PropertyDeclarations } from "lit";
+import { bubbles } from "./bubble.ts";
 import { deepActive, flatChildren, isOpaqueContent, walk } from "./focusable.ts";
 import type { Walk } from "./focusable.ts";
 import { accessibleName } from "./naming.ts";
@@ -18,6 +20,8 @@ type State = "closed" | "opening" | "shown" | "closing";
 
 /** The open overlays in opening order, bottom first; only the top acts on Escape and Tab (R-02). */
 const stack: OcelleOverlay[] = [];
+// The tooltip's Escape acts only for a trigger inside the topmost open overlay (008 research.md R-12).
+bubbles.top = () => stack.at(-1);
 
 /** Dispatches the `CustomEvent` `name` with `{ reason }`, bubbling and composed; returns whether it was not cancelled. */
 function dispatch(target: HTMLElement, name: string, reason: CloseReason, cancelable: boolean): boolean {
@@ -390,6 +394,8 @@ export class OcelleOverlay extends LitElement {
     this.#asideFor = null;
     // Shown non-modally through the shadow root, it could not be shown modally.
     this.#closeOwn();
+    // A tooltip bubble hides when an overlay opens and stays hidden until its trigger is entered again (R-10).
+    bubbles.dismiss?.();
     dialog.showModal();
     stack.push(this);
     OcelleOverlay.#syncTop();

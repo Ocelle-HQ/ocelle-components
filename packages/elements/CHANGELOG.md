@@ -28,6 +28,13 @@ entry points and the browser build's file path (constitution VII).
   parts `panel`, `heading`, `body`, `footer` and `close-button`, and its events `ocelle-drawer-close-request`
   (cancelable, with the reason `"backdrop"` as well) and `ocelle-drawer-close`. Entry point
   `@ocelle/elements/ocelle-drawer.js` (defines `ocelle-drawer` and the `ocelle-icon` it renders).
+- `ocelle-tooltip`, a tooltip that meets WCAG 1.4.13: its text in a bubble in the top layer beside its trigger, shown
+  after `--ocelle-tooltip-delay` on hover and at once on keyboard focus, hoverable, kept with no timeout while hovered
+  or focused, hidden by Escape, flipped and clamped to the viewport; its properties `text`, `placement`, `disabled` and
+  `describes` (the last three reflected), its default and `description` slots, its part `bubble`, and no event. Entry
+  point `@ocelle/elements/ocelle-tooltip.js` (defines `ocelle-tooltip` only).
+- In the README, the engine floor raised to Chromium 120 and WebKit 17, for the Popover API the tooltip uses (it was
+  Chromium 120 and WebKit 16.4).
 - In the README, the slot convention for icons in controls that later controls follow: the `icon` and `trailing`
   slots, their size, alignment, gap and colour rules and the naming rule.
 - Entry points: `@ocelle/elements` (the package root, defines every element), `@ocelle/elements/ocelle-icon.js`
