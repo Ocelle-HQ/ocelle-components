@@ -52,6 +52,7 @@ const rules = [
   ".cq { container-type: inline-size; }",
   ".vw80 { display: block; inline-size: 80vw; block-size: 1px; }",
   "test-appender { display: block; }",
+  "test-shadow-frame { display: block; }",
 ].join("\n");
 
 /**
@@ -798,5 +799,51 @@ export const listDetailGuards: readonly ListDetailScenario[] = [
       return { moved, back, again: { active: await driver.activeElement(), tabindex: await wrapperTabindex(driver, "n") } };
     },
     expected: { moved: "n >> div.pane.detail", back: { active: "n >> div.pane.list", tabindex: ["-1", null, null] }, again: { active: "n >> div.pane.detail", tabindex: [null, "-1", null] } },
+  },
+];
+
+// ---------------------------------------------------------------------------------------------------------------
+// Added in phase 4's review round 1 (reviews/phase-4/round-1.md), red before the fix: R1-02, a list-detail inside
+// another component's shadow root, where `document.activeElement` is that component's host; R1-03 (operator decision
+// P3), a change of the host's inline padding or borders alone, which keeps the content box.
+
+export const listDetailFixes: readonly ListDetailScenario[] = [
+  {
+    name: "US3 review R1-02: a list-detail inside another component's open shadow root (test-shadow-frame) in Frame N, with focus on a list button, moves focus to the detail pane when detail-open is set, and back to the list pane when it is removed, so focus never stays in a hidden pane (FR-028, SC-005)",
+    base: false,
+    run: async (driver) => {
+      await page(driver, "N", `${before}<div id="z-frame" data-frame="N"><test-shadow-frame id="sh">${listDetail("z")}</test-shadow-frame></div>`);
+      await driver.focus({ id: "sh", inner: "#z-l0" });
+      const start = await driver.activeElement();
+      await driver.setProperty("sh", "open", "open");
+      const opened = await driver.activeElement();
+      await driver.setProperty("sh", "open", "");
+      return { start, opened, closed: await driver.activeElement() };
+    },
+    expected: { start: "sh >> z-l0", opened: "sh >> z >> div.pane.detail", closed: "sh >> z >> div.pane.list" },
+  },
+  {
+    name: "US3 review R1-03: the tier follows a change of the host's inline padding or borders alone: in Frame W a host 630 px wide in its content box, with collapse-below 640px, shows one column; 10 px inline padding (a 650 px border box) gives two columns and removing it one again; 5 px inline borders (640 px, the exclusive bound) give two and removing them one again (FR-025)",
+    base: false,
+    run: async (driver) => {
+      await page(driver, "W", framed("p", "W", ' collapse-below="640px"'), { extra: "#p { inline-size: 630px; border-inline: 0 solid; }" });
+      const state = async (): Promise<{ layout: string; width: number }> => ({ layout: await layout(driver, "p"), width: Math.round((await driver.box("p")).width) });
+      const first = await state();
+      await driver.style("p", "padding-inline", "10px");
+      const padded = await state();
+      await driver.style("p", "padding-inline", "0px");
+      const unpadded = await state();
+      await driver.style("p", "border-inline-width", "5px");
+      const bordered = await state();
+      await driver.style("p", "border-inline-width", "0px");
+      return { first, padded, unpadded, bordered, unbordered: await state() };
+    },
+    expected: {
+      first: { layout: "one: list", width: 630 },
+      padded: { layout: "two", width: 650 },
+      unpadded: { layout: "one: list", width: 630 },
+      bordered: { layout: "two", width: 640 },
+      unbordered: { layout: "one: list", width: 630 },
+    },
   },
 ];

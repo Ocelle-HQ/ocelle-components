@@ -1,6 +1,6 @@
 import type { Browser, Page } from "playwright";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
-import { listDetailGuards, listDetailScenarios } from "../scenarios/list-detail.ts";
+import { listDetailFixes, listDetailGuards, listDetailScenarios } from "../scenarios/list-detail.ts";
 import { fixtureDriver } from "./driver.ts";
 import { clean, launch, serve, visit } from "./serve.ts";
 import type { Served } from "./serve.ts";
@@ -34,7 +34,7 @@ function started(): { readonly browser: Browser; readonly origin: string } {
 }
 
 describe("ocelle-list-detail on the strict-CSP fixture with the browser build (US3)", { timeout: 120_000 }, () => {
-  it.each([...listDetailScenarios, ...listDetailGuards])("$name", async ({ run, expected, base }) => {
+  it.each([...listDetailScenarios, ...listDetailGuards, ...listDetailFixes])("$name", async ({ run, expected, base }) => {
     const { browser, origin } = started();
     const page = await visit(browser, origin, base ? "list-detail-base.html" : "list-detail.html", ["ocelle-elements.js", "ocelle-test-list-detail.js"]);
     const observed = await run(fixtureDriver(page.page, page.log, base));
@@ -69,13 +69,18 @@ async function upgrade(page: Page): Promise<void> {
 describe("ocelle-list-detail upgrading in server HTML on the strict-CSP fixture (US3, Edge Cases \"detail-open before the element upgrades\", R-14)", { timeout: 120_000 }, () => {
   it.each([
     // Focus inside the list, which the first layout (one column, detail-open) hides: it moves to the detail pane.
-    { focus: "u-l0", expected: { before: "u-l0", after: "u >> div.pane.detail", list: "none", detail: "block" } },
+    { frame: "N", focus: "u-l0", expected: { before: "u-l0", after: "u >> div.pane.detail", list: "none", detail: "block", inspector: "block" } },
     // Focus inside the detail, which stays shown: it is not moved.
-    { focus: "u-d0", expected: { before: "u-d0", after: "u-d0", list: "none", detail: "block" } },
-  ])("with focus on #$focus before the build loads, the upgraded element in Frame N shows the detail, and focus is moved only out of the hidden list", async ({ focus, expected }) => {
+    { frame: "N", focus: "u-d0", expected: { before: "u-d0", after: "u-d0", list: "none", detail: "block", inspector: "block" } },
+    // Added in phase 4's review round 1 (R1-01), red before the fix: focus inside the inspector, which the first layout
+    // shows stacked under the detail in Frame N and as the third column in Frame R, is not moved.
+    { frame: "N", focus: "u-i0", expected: { before: "u-i0", after: "u-i0", list: "none", detail: "block", inspector: "block" } },
+    { frame: "R", focus: "u-i0", expected: { before: "u-i0", after: "u-i0", list: "block", detail: "block", inspector: "block" } },
+  ])("with focus on #$focus before the build loads, the upgraded element in Frame $frame shows its first layout, and focus is moved only out of a pane that layout hides", async ({ frame, focus, expected }) => {
     const { browser, origin } = started();
     const page = await visit(browser, origin, "list-detail-upgrade.html");
-    await page.page.setViewportSize({ width: 720, height: 800 });
+    await page.page.setViewportSize({ width: frame === "N" ? 720 : 1280, height: 800 });
+    await page.page.evaluate((name) => document.getElementById("u-frame")?.setAttribute("data-frame", name), frame);
     await page.page.focus(`#${focus}`);
     const before = await active(page.page);
     await upgrade(page.page);
@@ -85,7 +90,7 @@ describe("ocelle-list-detail upgrading in server HTML on the strict-CSP fixture 
         const wrapper = root?.querySelector(`.pane.${pane}`);
         return wrapper === null || wrapper === undefined ? "absent" : getComputedStyle(wrapper).display;
       };
-      return { list: display("list"), detail: display("detail") };
+      return { list: display("list"), detail: display("detail"), inspector: display("inspector") };
     });
     expect({ observed: { before, after: await active(page.page), ...panes }, recorded: await page.finish() }).toEqual({ observed: expected, recorded: clean });
   });
