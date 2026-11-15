@@ -56,3 +56,33 @@ environment; CI confirms the baselines at landing. No baseline PNG was hand-edit
 
 Under load (16 `yes > /dev/null` processes), `OCELLE_VISUAL_ENGINE=docker pnpm run gate:visual` ran three times: 88
 captures matched each time; the processes were killed afterwards.
+
+## Changes after the red commit (outside the red tests' meaning)
+
+- 7c72352 corrected four red tests that could not pass for reasons outside the behaviour (listed above and in its
+  body); no expectation was loosened.
+- 5cd582f added a test (an element connected a second time, in another tree, resolves its references there) and the
+  fix it found: the element resolved in the new tree but did not render the new relation. Found because the plant
+  "references not resolved at connection" did not bite (plants.md).
+- e1887f7, after the first mutation run (15 findings: 7 equivalent, 8 untested), removed the equivalent code and added
+  three tests, each paired with a positive outcome and each failing on the base: a mirror written while no value is
+  held is not read at a later connection; a non-reference moved attribute does not resolve the references again; a
+  Ctrl, Meta, Shift or Alt click in button mode dispatches `ocelle-button-activate` (none in link mode).
+- The manifest plants' committed-manifest copies were regenerated with the new `ocelle-button` entry (7c72352);
+  `visual/fail-token-changed` gained the phase's five light story-themes that show `color-ink` (144bff7).
+- No pinned count outside the red commit changed: the red commit already held the story counts (44 stories, 88
+  story-themes, 90 axe plant-repo runs); the contrast rows and the manifest gate's "3 elements checked" do not change in
+  this phase.
+
+## Gate runs (T040, as T029)
+
+On e1887f7 unless stated: `gate:manifest` (3 elements, no finding), `gate:style-lint` (14 files), `gate:contrast` (193
+pairs light, 201 dark, 182 required per theme; no token changed), `gate:csp` (12 files), `gate:prefix`, `gate:pins`,
+`gate:test-lint` (189 files), `gate:typecheck`, `gate:lint` (281 files), `gate:signoff -- --range 2014d99..HEAD` (no
+finding), `gate:storybook-build` (44 stories, on the tree committed as 6651ed7), `gate:visual` (88 captures, docker, on
+6651ed7), `gate:axe` (88 story-theme runs, 0 serious or critical, the 10 excepted notes, on 6651ed7), and the whole suite
+`pnpm test` (3501 tests in 149 files; 3498 on 144bff7 before e1887f7's three tests).
+
+`gate:mutation -- --base 2014d99`: the first run (on fabffc3) found 15 survivors (above); the second, on e1887f7: 242
+mutants on the changed lines of 3 files (`src/control.ts`, `src/ocelle-button.ts`, `scripts/manifest.ts`), none
+survived; 0 timeouts, 71 compile errors, 0 zero-mutant entries, 0 equivalent records.
