@@ -328,3 +328,15 @@ touch); the other shards are left to CI.
 - **Problem:** the row "Hover delay, moves inside the tooltip, then leaving before the delay (R-12)" failed under full-suite load in 2 of 2 runs at 296072b, though it passes on its own.
 - **Answer:** "Measure real leave time". The test records when the pointer actually left, and asserts there is no bubble whenever leave time minus entry is under the delay. The delay and the spec do not change.
 - **Not chosen:** a longer delay on the row's page; re-running and accepting.
+
+## Operator decision: the R-12 rows after measuring the real times (2026-11-15)
+
+- **Decided by:** the operator, asked in this session as two multiple-choice questions.
+- **What the measurement showed:** each test pointer move takes about 80 ms.
+  - The R-12 leave row ("… leaves both boxes at 150 ms …") really leaves at 266 to 283 ms, against the 300 ms delay.
+  - The re-entry row's move back comes at 333 to 366 ms, after the delay, even without load.
+- **Leave row:** "Shorten pauses, rename". The row keeps measuring the real leave time. The pauses before the leave are shortened or removed, so the leave lands at about 180 to 200 ms, and the row is renamed to say what happens.
+- **Re-entry row:** "Shorten its pauses". Both moves land before the delay, measured in the page, so the row tests "trigger → bubble → trigger before the delay" as contracts/checks.md says.
+- **Not chosen:**
+  - for the leave row: a longer delay on its page; measuring only and accepting the failures;
+  - for the re-entry row: judging on the first move only; leaving the row unchanged.
