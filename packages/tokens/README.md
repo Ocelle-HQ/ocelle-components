@@ -57,6 +57,10 @@ visible width. Without a query container, `100cqi` falls back to the small viewp
 `--ocelle-drawer-inline` is the inline size of `ocelle-drawer`, the sidebar width `--ocelle-shell-sidebar-width`
 (`20rem`), which a narrow-width personal drawer replaces; the drawer is never wider than `--ocelle-dialog-max-inline`.
 
+`--ocelle-tooltip-delay` (`500ms`) is how long the pointer rests on a trigger before `ocelle-tooltip` shows its bubble;
+it is not set to 0 under `prefers-reduced-motion: reduce`, because a delay is not motion. `--ocelle-tooltip-max-inline`
+(`18rem`) is the maximum inline size of the tooltip's bubble, about 40 characters of `--ocelle-font-size-sm`.
+
 ### Forced colours
 
 The tokens never override the system palette in forced colours: the stylesheet has no `forced-color-adjust: none`,

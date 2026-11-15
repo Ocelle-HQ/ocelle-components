@@ -31,3 +31,13 @@
 [data-story="drawer-scroll-edge"] {
   block-size: 10rem;
 }
+
+/*
+ * The ocelle-tooltip stories' delay override (008 research.md R-16, operator decision A at T026): every tooltip story
+ * wraps its markup in this block, so the bubble shows in the same task as the gate's pointer move onto the trigger,
+ * before axe runs two frames later and before the capture; the hover delay itself is a row of the element's test
+ * matrix, not a story.
+ */
+[data-story="tooltip"] {
+  --ocelle-tooltip-delay: 0ms;
+}

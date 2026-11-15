@@ -1,9 +1,9 @@
 # @ocelle/elements
 
 The Ocelle web components: standards-based custom elements (Lit 3) that work in any page, a server-rendered page
-under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has four elements:
+under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has five elements:
 `ocelle-icon`, with a set of thirteen icons, `ocelle-brand-mark`, the Ocelle rosette, `ocelle-dialog`, a modal dialog,
-and `ocelle-drawer`, a modal side drawer.
+`ocelle-drawer`, a modal side drawer, and `ocelle-tooltip`, a tooltip that shows a short text beside its trigger.
 
 ## Entry points
 
@@ -14,6 +14,7 @@ and `ocelle-drawer`, a modal side drawer.
 | `@ocelle/elements/ocelle-brand-mark.js` | `dist/ocelle-brand-mark.js` | `ocelle-brand-mark` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-dialog.js` | `dist/ocelle-dialog.js` | `ocelle-dialog` and the `ocelle-icon` it renders; for hosts with a bundler |
 | `@ocelle/elements/ocelle-drawer.js` | `dist/ocelle-drawer.js` | `ocelle-drawer` and the `ocelle-icon` it renders; for hosts with a bundler |
+| `@ocelle/elements/ocelle-tooltip.js` | `dist/ocelle-tooltip.js` | `ocelle-tooltip` only; for hosts with a bundler |
 | `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |
 | `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |
 
@@ -300,6 +301,78 @@ body.
 </ocelle-drawer>
 ```
 
+## `ocelle-tooltip`
+
+```html
+<ocelle-tooltip text="Projects"><button aria-label="Projects"><ocelle-icon name="folder"></ocelle-icon></button></ocelle-tooltip>
+<ocelle-tooltip text="Saves a draft you can reopen later" describes><button>Save</button></ocelle-tooltip>
+```
+
+`ocelle-tooltip` shows a short text in a bubble beside its trigger, the first element in its default slot, when the
+pointer rests on the trigger or the trigger receives keyboard focus.
+
+- `text` (attribute and property): the bubble's plain text; an empty text shows no bubble.
+- `placement` (attribute and property, reflected): `top` (the default), `bottom`, `start` or `end`, the side of the
+  trigger the bubble is shown on, `start` and `end` in the tooltip's direction.
+- `disabled` (attribute and property, reflected): no bubble is shown.
+- `describes` (attribute and property, reflected): the text becomes the trigger's accessible description.
+- Slots: the default slot holds the trigger; the `description` slot is the tooltip's own and is never rendered. Part:
+  `bubble`. Events: none.
+
+The host is `display: contents`, so wrapping a trigger leaves the trigger's box unchanged: a pill that ellipsises in a
+narrow container still does, and an item keeps its place in a list.
+
+**Show and hide.** The bubble shows after the pointer has rested on the trigger for `--ocelle-tooltip-delay`, and at
+once when the trigger, or a control inside it, receives keyboard focus (it matches `:focus-visible`); focus from a
+pointer click or a tap neither shows nor keeps it. It stays while the pointer is on the trigger or on the bubble, which
+the pointer can reach across the gap between them, or the trigger has keyboard focus, with no timeout, and hides when
+none of these holds. Escape hides it and goes no further: focus and pointer do not move, an open dialog or drawer
+around it stays open and the next Escape asks to close that, and the bubble stays hidden until the pointer re-enters or
+keyboard focus arrives again. At most one bubble is shown on the page; it hides when its trigger is removed or disabled
+and when a dialog or drawer opens. The delay applies under `prefers-reduced-motion: reduce` too (a delay is not
+motion), and the bubble never animates.
+
+**Placement.** The bubble is shown in the top layer through the Popover API, above any open dialog or drawer, whole,
+whatever the overflow, transform or stacking context around the trigger. It is placed on its `placement` side,
+`--ocelle-space-2` away, and shown on the opposite side when it would overflow the viewport less `--ocelle-gutter`;
+when it fits on neither side it stays on its `placement` side; across that axis it is kept inside the viewport less
+`--ocelle-gutter`; it follows the trigger when anything scrolls or the viewport is resized. It is never wider than
+`--ocelle-tooltip-max-inline`: longer text wraps, an unbreakable string included. Its position is written to a
+stylesheet the tooltip adopts, never to a `style` attribute.
+
+`ocelle-tooltip` reads the tokens `--ocelle-color-chrome`, `--ocelle-color-chrome-ink`, `--ocelle-radius-2`,
+`--ocelle-border-width`, `--ocelle-font-sans`, `--ocelle-font-size-sm`, `--ocelle-line-height-normal`,
+`--ocelle-space-1`, `--ocelle-space-2`, `--ocelle-gutter`, `--ocelle-tooltip-delay` and
+`--ocelle-tooltip-max-inline`. In forced colours the bubble has the `Canvas` ground, `CanvasText` text and a
+`CanvasText` border.
+
+**Accessibility.** The trigger carries its own accessible name: the tooltip never names it. The bubble only repeats or
+supplements what is available otherwise, so it never carries essential information; touch input shows no bubble,
+except on a text-field trigger, which shows it on any focus. Without `describes`, the bubble is hidden from assistive
+technology and the trigger gets no description from the tooltip: use it when the text repeats the trigger's name. Set
+`describes` when the text adds to the trigger's name. With `describes`, the tooltip adds one hidden `span` with
+`slot="description"` and `role="tooltip"` to its own children, its text set as text, and that span's id to the
+trigger's `aria-describedby`, keeping the ids the host put there; it puts both back when a re-render of the host's
+template removes them, and moves the id when the trigger is replaced. No id reference crosses a shadow root.
+
+**Limits.** Triggers are buttons and links. A text field matches `:focus-visible` on any focus, so around one the
+bubble shows on focus however it arrives, by a click or a tap too. `describes` is supported only when the trigger is
+itself the focusable element (a native control, or a custom element focusable as its host): a custom element whose
+inner control takes focus cannot be described from outside its shadow root. On touch there is no hover, and a tap on a
+button or link does not give keyboard focus, so a tap shows no bubble. In an engine without the Popover API (below the
+engine floor) the tooltip shows nothing and throws nothing.
+
+#12's icon-only nav item: the link carries its name, and the bubble repeats it on hover and keyboard focus. #7's pill
+tag: the tooltip shows the full text only while the tag is ellipsised. Both render the tooltip inside their own shadow
+root, around their own inner control:
+
+```js
+// inside ocelle-nav-item's shadow root (icon-only mode)
+html`<ocelle-tooltip text="Projects" placement="end"><a href="/projects" aria-label="Projects">…</a></ocelle-tooltip>`;
+// inside ocelle-pill-tag's shadow root
+html`<ocelle-tooltip text="${this.text}" ?disabled=${!this.truncated}><button class="pill">${this.text}</button></ocelle-tooltip>`;
+```
+
 ## Slot convention
 
 A control that shows icons follows one slot convention: an `icon` slot before its label and, where it has an end icon
@@ -377,9 +450,10 @@ then the first copy's.
 
 ## Engines
 
-Engine floor: Chromium 120+ and WebKit 16.4+, with no `window.ShadyCSS` polyfill on the page. Each figure is the
+Engine floor: Chromium 120+ and WebKit 17+, with no `window.ShadyCSS` polyfill on the page. Each figure is the
 newest feature the elements use:
 
+- The Popover API: Chromium 114, WebKit 17 (the tooltip's bubble in the top layer; it raised the floor from WebKit 16.4);
 - `:dir()`: Chromium 120, WebKit 16.4 (the inline-direction icons' mirroring);
 - `@media not (forced-colors: active)` (Media Queries 4's `not (…)` without a media type): Chromium 104, WebKit 16.4
   (the brand mark's variants);

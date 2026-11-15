@@ -188,16 +188,24 @@ export interface PathStep {
   readonly down?: boolean;
   readonly up?: boolean;
   readonly button?: "left" | "right" | "middle";
+  readonly still?: boolean;
 }
 
-/** Moves `page.mouse` through `steps` (points of the page, after `map`), with intermediate moves. */
+/**
+ * Moves `page.mouse` through `steps` (points of the page, after `map`), with intermediate moves; a `still` step does
+ * not move, so its press and release follow the previous step's at once (it must name the previous step's point).
+ */
 export async function movePointer(page: Page, steps: readonly PathStep[], map: (x: number, y: number) => { x: number; y: number } = (x, y) => ({ x, y })): Promise<void> {
+  let last: PathStep | undefined;
   for (const step of steps) {
     const point = map(step.x, step.y);
     const button = step.button ?? "left";
-    await page.mouse.move(point.x, point.y, { steps: 4 });
+    if (step.still === true) {
+      if (last?.x !== step.x || last.y !== step.y) throw new Error("a still pointer step must name the previous step's point");
+    } else await page.mouse.move(point.x, point.y, { steps: 4 });
     if (step.down === true) await page.mouse.down({ button });
     if (step.up === true) await page.mouse.up({ button });
+    last = step;
   }
 }
 

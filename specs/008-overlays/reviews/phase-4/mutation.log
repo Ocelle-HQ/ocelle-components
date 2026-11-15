@@ -1,0 +1,1017 @@
+# Phase 4 mutation runs: gate:mutation -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files <shard>, one run per planned shard (--plan), the gate and stryker.elements.config.json unmodified.
+
+## First runs, at ca2da97 (plan of 21 shards)
+
+== shard 1 at ca2da97: --files gates/bin/axe.ts:44-148
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files gates/bin/axe.ts:44-148
+gates/bin/axe.ts:44: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/bin/axe.ts:46: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/bin/axe.ts:48: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/bin/axe.ts:50: mutation: record: all: process boundary, covered by the axe plants fail-throws-on-load and fail-render-throws, and by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/bin/axe.ts:52: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/bin/axe.ts:54: mutation: record: all: process boundary, covered by the axe plants fail-pointer-target-below-fold, fail-hover-reveals-unlabelled and fail-hover-near-fold, and by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/bin/axe.ts:56: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/bin/axe.ts:58: mutation: record: all: process boundary, covered by the axe plant fail-closed-shadow-root, and by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/bin/axe.ts:60: mutation: record: all: process boundary, covered by the axe plants fail-empty and fail-no-box, and by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/bin/axe.ts:62: mutation: record: all: process boundary, covered by the axe plant fail-outside-root, and by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/bin/axe.ts:64: mutation: record: all: process boundary, covered by the axe plants fail-pointer-target-below-fold, fail-hover-reveals-unlabelled and fail-hover-near-fold, and by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/bin/axe.ts:66: mutation: record: all: process boundary, covered by the axe plants fail-empty, fail-closed-shadow-root and fail-pointer-target-below-fold, and by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/bin/axe.ts:68: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/bin/axe.ts:71: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/bin/axe.ts:102: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/bin/axe.ts:104: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/bin/axe.ts:106: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/bin/axe.ts:111: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/bin/axe.ts:113: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/bin/axe.ts:119: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/bin/axe.ts:123: mutation: record: all: process boundary, covered by the axe plant error-build-fails, and by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/bin/axe.ts:125: mutation: record: all: process boundary, covered by the axe plant error-build-fails, and by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/bin/axe.ts:133: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/bin/axe.ts:135: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/bin/axe.ts:137: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/bin/axe.ts:139: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/bin/axe.ts:141: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/bin/axe.ts:143: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/bin/axe.ts:146: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/bin/axe.ts:148: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/bin/axe.ts:44-148: mutation: zero-mutants: no mutant on the changed lines
+mutation: 0 mutants on the changed lines of 1 file, none survived; 0 timeouts, 0 compile errors, 1 zero-mutant entry; 30 equivalent records
+exit 0
+time 55 s
+
+== shard 2 at ca2da97: --files gates/bin/axe.ts:150-164,gates/bin/visual.ts,gates/lib/story-page.ts:44-109
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files gates/bin/axe.ts:150-164,gates/bin/visual.ts,gates/lib/story-page.ts:44-109
+gates/bin/axe.ts:150: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/bin/axe.ts:152: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/bin/axe.ts:156: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/bin/axe.ts:158: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/bin/axe.ts:160: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/bin/axe.ts:164: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/bin/visual.ts:34: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/bin/visual.ts:36: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/bin/visual.ts:52: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/bin/visual.ts:54: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/bin/visual.ts:56: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/bin/visual.ts:66: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/bin/visual.ts:70: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/bin/visual.ts:73: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/bin/visual.ts:75: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/bin/visual.ts:79: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/bin/visual.ts:81: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/bin/visual.ts:94: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/bin/visual.ts:96: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/bin/visual.ts:98: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/bin/visual.ts:103: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/bin/visual.ts:106: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/bin/visual.ts:110: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/bin/visual.ts:112: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/bin/visual.ts:114: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/bin/visual.ts:116: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/bin/visual.ts:120: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/bin/visual.ts:124: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/bin/visual.ts:126: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/bin/visual.ts:132: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/bin/visual.ts:134: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/bin/visual.ts:138: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:44: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:46: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:48: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:50: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:52: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:54: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:56: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:58: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:60: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:63: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:65: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:67: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:69: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:71: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:73: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:75: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:78: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:80: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:82: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:84: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:86: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:88: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:90: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:92: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:94: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:100: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:102: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:104: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:107: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:109: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/bin/axe.ts:150-164: mutation: zero-mutants: no mutant on the changed lines
+gates/bin/visual.ts: mutation: zero-mutants: no mutant on the changed lines
+gates/lib/story-page.ts:44-109: mutation: zero-mutants: no mutant on the changed lines
+mutation: 0 mutants on the changed lines of 3 files, none survived; 0 timeouts, 0 compile errors, 3 zero-mutant entries; 62 equivalent records
+exit 0
+time 57 s
+
+== shard 3 at ca2da97: --files gates/lib/story-page.ts:112-176
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files gates/lib/story-page.ts:112-176
+gates/lib/story-page.ts:112: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:114: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:116: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:118: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:120: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:122: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:124: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:127: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:129: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:132: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:134: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:136: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:138: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:140: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:142: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:144: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:146: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:148: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:150: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:153: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:157: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:159: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:161: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:163: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:165: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:167: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:169: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:171: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:173: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:176: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:112-176: mutation: zero-mutants: no mutant on the changed lines
+mutation: 0 mutants on the changed lines of 1 file, none survived; 0 timeouts, 0 compile errors, 1 zero-mutant entry; 30 equivalent records
+exit 0
+time 56 s
+
+== shard 4 at ca2da97: --files gates/lib/story-page.ts:178-244
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files gates/lib/story-page.ts:178-244
+gates/lib/story-page.ts:178: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:180: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:183: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:185: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:187: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:190: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:192: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:194: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:198: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:200: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:202: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:204: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:206: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:208: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:210: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:212: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:214: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:216: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:218: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:220: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:222: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:224: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:227: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:229: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:231: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:236: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:238: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:240: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:242: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:244: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:178-244: mutation: zero-mutants: no mutant on the changed lines
+mutation: 0 mutants on the changed lines of 1 file, none survived; 0 timeouts, 0 compile errors, 1 zero-mutant entry; 30 equivalent records
+exit 0
+time 55 s
+
+== shard 5 at ca2da97: --files gates/lib/story-page.ts:246-509
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files gates/lib/story-page.ts:246-509
+gates/lib/story-page.ts:246: mutation: record: all: process boundary, run in the page as an init script; covered by the visual plants fail-local-storage, fail-storage-property, fail-session-storage, fail-cookie, fail-indexeddb, fail-cache-api, fail-clipboard-write, fail-exec-copy, fail-beacon, fail-closed-shadow-root, fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:257: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:259: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:266: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:281: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:288: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:290: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:295: mutation: record: all: process boundary, covered by the visual plants fail-throws-on-load and fail-render-throws, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:361: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:363: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:446: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:452: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:469: mutation: record: all: process boundary, covered by the axe plants fail-empty and fail-no-box, and by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/lib/story-page.ts:471: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/lib/story-page.ts:473: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/lib/story-page.ts:475: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/lib/story-page.ts:477: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/lib/story-page.ts:479: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/lib/story-page.ts:481: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/lib/story-page.ts:483: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/lib/story-page.ts:485: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/lib/story-page.ts:487: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/lib/story-page.ts:490: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/lib/story-page.ts:492: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/lib/story-page.ts:494: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/lib/story-page.ts:496: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/lib/story-page.ts:499: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/lib/story-page.ts:501: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/lib/story-page.ts:507: mutation: record: all: process boundary, covered by the axe plant fail-outside-root, and by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/lib/story-page.ts:509: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/lib/story-page.ts:246-509: mutation: zero-mutants: no mutant on the changed lines
+mutation: 0 mutants on the changed lines of 1 file, none survived; 0 timeouts, 0 compile errors, 1 zero-mutant entry; 30 equivalent records
+exit 0
+time 57 s
+
+== shard 6 at ca2da97: --files gates/lib/story-page.ts:514-540,gates/lib/storybook-serve.ts,gates/lib/visual-host.ts:22-175
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files gates/lib/story-page.ts:514-540,gates/lib/storybook-serve.ts,gates/lib/visual-host.ts:22-175
+gates/lib/story-page.ts:514: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/lib/story-page.ts:516: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/lib/story-page.ts:518: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/lib/story-page.ts:520: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/lib/story-page.ts:522: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/lib/story-page.ts:524: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/lib/story-page.ts:526: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/lib/story-page.ts:528: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/lib/story-page.ts:531: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/lib/story-page.ts:533: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/lib/story-page.ts:535: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/lib/story-page.ts:537: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/lib/story-page.ts:540: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+gates/lib/storybook-serve.ts:48: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/storybook-serve.ts:50: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/storybook-serve.ts:52: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/storybook-serve.ts:54: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/storybook-serve.ts:56: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/storybook-serve.ts:58: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/storybook-serve.ts:60: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/storybook-serve.ts:63: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/storybook-serve.ts:66: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/storybook-serve.ts:68: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/storybook-serve.ts:70: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/storybook-serve.ts:71: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/storybook-serve.ts:73: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/storybook-serve.ts:75: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/storybook-serve.ts:77: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/storybook-serve.ts:79: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/storybook-serve.ts:81: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/visual-host.ts:22: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/visual-host.ts:42: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/visual-host.ts:70: mutation: record: all: process boundary, covered by the visual plants error-tag-pin and error-index-pin, and by gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/visual-host.ts:76: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/visual-host.ts:78: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/visual-host.ts:80: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/visual-host.ts:88: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/visual-host.ts:90: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/visual-host.ts:92: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/visual-host.ts:94: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/visual-host.ts:96: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/visual-host.ts:99: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/visual-host.ts:111: mutation: record: all: process boundary, covered by the visual plant error-build-fails and gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/visual-host.ts:124: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/visual-host.ts:129: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/visual-host.ts:131: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/visual-host.ts:133: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/visual-host.ts:135: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/visual-host.ts:137: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/visual-host.ts:143: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/visual-host.ts:151: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/visual-host.ts:153: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/visual-host.ts:155: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/visual-host.ts:157: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/visual-host.ts:162: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/visual-host.ts:164: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/visual-host.ts:166: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/visual-host.ts:168: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/visual-host.ts:172: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/visual-host.ts:175: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/story-page.ts:514-540: mutation: zero-mutants: no mutant on the changed lines
+gates/lib/storybook-serve.ts: mutation: zero-mutants: no mutant on the changed lines
+gates/lib/visual-host.ts:22-175: mutation: zero-mutants: no mutant on the changed lines
+mutation: 0 mutants on the changed lines of 3 files, none survived; 0 timeouts, 0 compile errors, 3 zero-mutant entries; 60 equivalent records
+exit 0
+time 59 s
+
+== shard 7 at ca2da97: --files gates/lib/visual-host.ts:180-207,gates/visual/capture.ts,packages/elements/src/bubble.ts,packages/elements/src/index.ts,packages/elements/src/ocelle-tooltip.ts:1-30
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files gates/lib/visual-host.ts:180-207,gates/visual/capture.ts,packages/elements/src/bubble.ts,packages/elements/src/index.ts,packages/elements/src/ocelle-tooltip.ts:1-30
+gates/lib/visual-host.ts:180: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/visual-host.ts:182: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/visual-host.ts:190: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/visual-host.ts:194: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/visual-host.ts:196: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/visual-host.ts:198: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/visual-host.ts:202: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/visual-host.ts:204: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/visual-host.ts:207: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:26: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:51: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:53: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:55: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:57: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:63: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:65: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:69: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:71: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:73: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:76: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:81: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:96: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:98: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:100: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:102: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:104: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:106: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:108: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:110: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:113: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:115: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:119: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:121: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:123: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:125: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+packages/elements/src/ocelle-tooltip.ts:18: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/ocelle-tooltip.ts:18: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-tooltip.ts:18: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-tooltip.ts:18: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-tooltip.ts:18: mutation: compile-error: StringLiteral: replaced by ""
+gates/lib/visual-host.ts:180-207: mutation: zero-mutants: no mutant on the changed lines
+gates/visual/capture.ts: mutation: zero-mutants: no mutant on the changed lines
+packages/elements/src/bubble.ts: mutation: zero-mutants: no mutant on the changed lines
+packages/elements/src/index.ts: mutation: zero-mutants: no mutant on the changed lines
+mutation: 6 mutants on the changed lines of 5 files, none survived; 0 timeouts, 5 compile errors, 4 zero-mutant entries; 35 equivalent records
+exit 0
+time 876 s
+
+== shard 8 at ca2da97: --files packages/elements/src/ocelle-tooltip.ts:31-60
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files packages/elements/src/ocelle-tooltip.ts:31-60
+packages/elements/src/ocelle-tooltip.ts:31: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:31: mutation: compile-error: EqualityOperator: replaced by each === null
+packages/elements/src/ocelle-tooltip.ts:31: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-tooltip.ts:36: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-tooltip.ts:38: mutation: StringLiteral: Survived: replaced by ""
+packages/elements/src/ocelle-tooltip.ts:53: mutation: ObjectLiteral: Survived: replaced by {}
+mutation: 2 findings in 1 changed file (21 mutants on changed lines; 0 timeouts, 4 compile errors, 0 zero-mutant entries)
+[ELIFECYCLE] Command failed with exit code 1.
+exit 1
+time 905 s
+
+== shard 9 at ca2da97: --files packages/elements/src/ocelle-tooltip.ts:61-90
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files packages/elements/src/ocelle-tooltip.ts:61-90
+packages/elements/src/ocelle-tooltip.ts:61-90: mutation: zero-mutants: no mutant on the changed lines
+mutation: 0 mutants on the changed lines of 1 file, none survived; 0 timeouts, 0 compile errors, 1 zero-mutant entry; 0 equivalent records
+exit 0
+time 448 s
+
+== shard 10 at ca2da97: --files packages/elements/src/ocelle-tooltip.ts:91-120
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files packages/elements/src/ocelle-tooltip.ts:91-120
+packages/elements/src/ocelle-tooltip.ts:91-120: mutation: zero-mutants: no mutant on the changed lines
+mutation: 0 mutants on the changed lines of 1 file, none survived; 0 timeouts, 0 compile errors, 1 zero-mutant entry; 0 equivalent records
+exit 0
+time 448 s
+
+== shard 11 at ca2da97: --files packages/elements/src/ocelle-tooltip.ts:121-150
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files packages/elements/src/ocelle-tooltip.ts:121-150
+packages/elements/src/ocelle-tooltip.ts:136: mutation: BlockStatement: Survived: replaced by {}
+packages/elements/src/ocelle-tooltip.ts:137: mutation: CallExpression: Survived: replaced by ;
+mutation: 2 findings in 1 changed file (2 mutants on changed lines; 0 timeouts, 0 compile errors, 0 zero-mutant entries)
+[ELIFECYCLE] Command failed with exit code 1.
+exit 1
+time 467 s
+
+== shard 12 at ca2da97: --files packages/elements/src/ocelle-tooltip.ts:151-180
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files packages/elements/src/ocelle-tooltip.ts:151-180
+packages/elements/src/ocelle-tooltip.ts:174: mutation: BooleanLiteral: Survived: replaced by true
+packages/elements/src/ocelle-tooltip.ts:180: mutation: StringLiteral: Survived: replaced by "Stryker was here!"
+packages/elements/src/ocelle-tooltip.ts:176: mutation: BooleanLiteral: Survived: replaced by true
+mutation: 3 findings in 1 changed file (3 mutants on changed lines; 0 timeouts, 0 compile errors, 0 zero-mutant entries)
+[ELIFECYCLE] Command failed with exit code 1.
+exit 1
+time 515 s
+
+== shard 13 at ca2da97: --files packages/elements/src/ocelle-tooltip.ts:181-210
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files packages/elements/src/ocelle-tooltip.ts:181-210
+packages/elements/src/ocelle-tooltip.ts:192: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-tooltip.ts:195: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-tooltip.ts:198: mutation: compile-error: StringLiteral: replaced by ""
+mutation: 19 mutants on the changed lines of 1 file, none survived; 0 timeouts, 3 compile errors, 0 zero-mutant entries; 0 equivalent records
+exit 0
+time 516 s
+
+== shard 14 at ca2da97: --files packages/elements/src/ocelle-tooltip.ts:211-240
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files packages/elements/src/ocelle-tooltip.ts:211-240
+packages/elements/src/ocelle-tooltip.ts:222: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-tooltip.ts:228: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-tooltip.ts:234: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/ocelle-tooltip.ts:238: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-tooltip.ts:216: mutation: CallExpression: Survived: replaced by ;
+packages/elements/src/ocelle-tooltip.ts:211: mutation: CallExpression: Survived: replaced by ;
+packages/elements/src/ocelle-tooltip.ts:218: mutation: CallExpression: Survived: replaced by ;
+packages/elements/src/ocelle-tooltip.ts:217: mutation: CallExpression: Survived: replaced by ;
+mutation: 4 findings in 1 changed file (22 mutants on changed lines; 0 timeouts, 4 compile errors, 0 zero-mutant entries)
+[ELIFECYCLE] Command failed with exit code 1.
+exit 1
+time 584 s
+
+== shard 15 at ca2da97: --files packages/elements/src/ocelle-tooltip.ts:241-270
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files packages/elements/src/ocelle-tooltip.ts:241-270
+packages/elements/src/ocelle-tooltip.ts:243: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-tooltip.ts:244: mutation: compile-error: LogicalOperator: replaced by node instanceof Node || this.contains(node)
+packages/elements/src/ocelle-tooltip.ts:257: mutation: compile-error: LogicalOperator: replaced by this.#trigger && this
+packages/elements/src/ocelle-tooltip.ts:269: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/ocelle-tooltip.ts:255: mutation: LogicalOperator: Survived: replaced by this.#inside(event.relatedTarget) && event.pointerType === "touch"
+packages/elements/src/ocelle-tooltip.ts:255: mutation: ConditionalExpression: Survived: replaced by false
+packages/elements/src/ocelle-tooltip.ts:255: mutation: ConditionalExpression: Survived: replaced by false
+packages/elements/src/ocelle-tooltip.ts:255: mutation: StringLiteral: Survived: replaced by ""
+packages/elements/src/ocelle-tooltip.ts:268: mutation: CallExpression: Survived: replaced by ;
+mutation: 5 findings in 1 changed file (31 mutants on changed lines; 0 timeouts, 4 compile errors, 0 zero-mutant entries)
+[ELIFECYCLE] Command failed with exit code 1.
+exit 1
+time 537 s
+
+== shard 16 at ca2da97: --files packages/elements/src/ocelle-tooltip.ts:271-300
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files packages/elements/src/ocelle-tooltip.ts:271-300
+packages/elements/src/ocelle-tooltip.ts:274: mutation: compile-error: LogicalOperator: replaced by deepActive() && this
+packages/elements/src/ocelle-tooltip.ts:275: mutation: compile-error: LogicalOperator: replaced by this.#trigger && this
+packages/elements/src/ocelle-tooltip.ts:276: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/ocelle-tooltip.ts:282: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/ocelle-tooltip.ts:287: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-tooltip.ts:288: mutation: compile-error: OptionalChaining: replaced by bubbles.top()
+packages/elements/src/ocelle-tooltip.ts:289: mutation: compile-error: LogicalOperator: replaced by top !== undefined || !within(this, top)
+packages/elements/src/ocelle-tooltip.ts:289: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-tooltip.ts:289: mutation: compile-error: EqualityOperator: replaced by top === undefined
+packages/elements/src/ocelle-tooltip.ts:300: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-tooltip.ts:300: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:300: mutation: compile-error: LogicalOperator: replaced by (!popover || bubble === null || this.disabled || this.text === "") && shown === this
+packages/elements/src/ocelle-tooltip.ts:300: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:300: mutation: compile-error: LogicalOperator: replaced by (!popover || bubble === null || this.disabled) && this.text === ""
+packages/elements/src/ocelle-tooltip.ts:300: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:300: mutation: compile-error: LogicalOperator: replaced by (!popover || bubble === null) && this.disabled
+packages/elements/src/ocelle-tooltip.ts:300: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:300: mutation: compile-error: LogicalOperator: replaced by !popover && bubble === null
+packages/elements/src/ocelle-tooltip.ts:300: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:300: mutation: compile-error: EqualityOperator: replaced by bubble !== null
+packages/elements/src/ocelle-tooltip.ts:281: mutation: BooleanLiteral: Survived: replaced by true
+packages/elements/src/ocelle-tooltip.ts:297: mutation: CallExpression: Survived: replaced by ;
+packages/elements/src/ocelle-tooltip.ts:300: mutation: ConditionalExpression: Survived: replaced by false
+mutation: 3 findings in 1 changed file (49 mutants on changed lines; 0 timeouts, 20 compile errors, 0 zero-mutant entries)
+[ELIFECYCLE] Command failed with exit code 1.
+exit 1
+time 561 s
+
+== shard 17 at ca2da97: --files packages/elements/src/ocelle-tooltip.ts:301-330
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files packages/elements/src/ocelle-tooltip.ts:301-330
+packages/elements/src/ocelle-tooltip.ts:301: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-tooltip.ts:301: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:301: mutation: compile-error: EqualityOperator: replaced by shown === undefined
+packages/elements/src/ocelle-tooltip.ts:301: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/ocelle-tooltip.ts:305: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-tooltip.ts:314: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-tooltip.ts:315: mutation: compile-error: OptionalChaining: replaced by this.#bubble.hidePopover
+packages/elements/src/ocelle-tooltip.ts:327: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-tooltip.ts:327: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:327: mutation: compile-error: LogicalOperator: replaced by (trigger?.isConnected !== true || bubble === null) && trigger.matches(":disabled")
+packages/elements/src/ocelle-tooltip.ts:327: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:327: mutation: compile-error: LogicalOperator: replaced by trigger?.isConnected !== true && bubble === null
+packages/elements/src/ocelle-tooltip.ts:327: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:327: mutation: compile-error: EqualityOperator: replaced by trigger?.isConnected === true
+packages/elements/src/ocelle-tooltip.ts:327: mutation: compile-error: OptionalChaining: replaced by trigger.isConnected
+packages/elements/src/ocelle-tooltip.ts:327: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:327: mutation: compile-error: EqualityOperator: replaced by bubble !== null
+packages/elements/src/ocelle-tooltip.ts:327: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-tooltip.ts:311: mutation: ConditionalExpression: Survived: replaced by false
+packages/elements/src/ocelle-tooltip.ts:313: mutation: CallExpression: Survived: replaced by ;
+mutation: 2 findings in 1 changed file (31 mutants on changed lines; 0 timeouts, 18 compile errors, 0 zero-mutant entries)
+[ELIFECYCLE] Command failed with exit code 1.
+exit 1
+time 536 s
+
+== shard 18 at ca2da97: --files packages/elements/src/ocelle-tooltip.ts:331-360
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files packages/elements/src/ocelle-tooltip.ts:331-360
+packages/elements/src/ocelle-tooltip.ts:337: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:349: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-tooltip.ts:349: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-tooltip.ts:349: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-tooltip.ts:349: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-tooltip.ts:349: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-tooltip.ts:350: mutation: compile-error: LogicalOperator: replaced by logical[this.placement] && "top"
+packages/elements/src/ocelle-tooltip.ts:350: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-tooltip.ts:356: mutation: compile-error: ArrayDeclaration: replaced by []
+packages/elements/src/ocelle-tooltip.ts:336: mutation: StringLiteral: Survived: replaced by ""
+packages/elements/src/ocelle-tooltip.ts:337: mutation: ConditionalExpression: Survived: replaced by true
+mutation: 2 findings in 1 changed file (22 mutants on changed lines; 0 timeouts, 9 compile errors, 0 zero-mutant entries)
+[ELIFECYCLE] Command failed with exit code 1.
+exit 1
+time 527 s
+
+== shard 19 at ca2da97: --files packages/elements/src/ocelle-tooltip.ts:361-390
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files packages/elements/src/ocelle-tooltip.ts:361-390
+packages/elements/src/ocelle-tooltip.ts:367: mutation: compile-error: ArrowFunction: replaced by () => undefined
+packages/elements/src/ocelle-tooltip.ts:368: mutation: compile-error: LogicalOperator: replaced by side === "top" && side === "bottom"
+packages/elements/src/ocelle-tooltip.ts:368: mutation: compile-error: EqualityOperator: replaced by side !== "top"
+packages/elements/src/ocelle-tooltip.ts:368: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-tooltip.ts:368: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-tooltip.ts:369: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-tooltip.ts:370: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-tooltip.ts:361: mutation: ArithmeticOperator: Survived: replaced by bottom + gutter
+packages/elements/src/ocelle-tooltip.ts:363: mutation: ArithmeticOperator: Survived: replaced by right + gutter
+packages/elements/src/ocelle-tooltip.ts:380: mutation: CallExpression: Survived: replaced by ;
+mutation: 3 findings in 1 changed file (63 mutants on changed lines; 0 timeouts, 7 compile errors, 0 zero-mutant entries)
+[ELIFECYCLE] Command failed with exit code 1.
+exit 1
+time 666 s
+
+== shard 20 at ca2da97: --files packages/elements/src/ocelle-tooltip.ts:391-420
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files packages/elements/src/ocelle-tooltip.ts:391-420
+packages/elements/src/ocelle-tooltip.ts:407: mutation: timeout: EqualityOperator: replaced by root.getElementById(id) === null
+packages/elements/src/ocelle-tooltip.ts:396: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-tooltip.ts:396: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:396: mutation: compile-error: LogicalOperator: replaced by (!this.describes || this.text === "" || trigger === undefined) && !this.isConnected
+packages/elements/src/ocelle-tooltip.ts:396: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:396: mutation: compile-error: LogicalOperator: replaced by (!this.describes || this.text === "") && trigger === undefined
+packages/elements/src/ocelle-tooltip.ts:396: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:396: mutation: compile-error: EqualityOperator: replaced by trigger !== undefined
+packages/elements/src/ocelle-tooltip.ts:396: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-tooltip.ts:401: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:401: mutation: compile-error: EqualityOperator: replaced by span !== undefined
+packages/elements/src/ocelle-tooltip.ts:401: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-tooltip.ts:404: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-tooltip.ts:417: mutation: compile-error: LogicalOperator: replaced by trigger.getAttribute("aria-describedby") && ""
+packages/elements/src/ocelle-tooltip.ts:417: mutation: compile-error: EqualityOperator: replaced by each === ""
+packages/elements/src/ocelle-tooltip.ts:418: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:417: mutation: Regex: Survived: replaced by /\s/
+mutation: 1 finding in 1 changed file (54 mutants on changed lines; 1 timeout, 15 compile errors, 0 zero-mutant entries)
+[ELIFECYCLE] Command failed with exit code 1.
+exit 1
+time 540 s
+
+== shard 21 at ca2da97: --files packages/elements/src/ocelle-tooltip.ts:421-448,packages/elements/src/overlay.ts,packages/tokens/src/source.ts
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files packages/elements/src/ocelle-tooltip.ts:421-448,packages/elements/src/overlay.ts,packages/tokens/src/source.ts
+packages/elements/src/ocelle-tooltip.ts:421: mutation: timeout: CallExpression: replaced by ;
+packages/elements/src/ocelle-tooltip.ts:427: mutation: compile-error: OptionalChaining: replaced by this.#span.remove
+packages/elements/src/ocelle-tooltip.ts:434: mutation: compile-error: OptionalChaining: replaced by this.#span.id
+packages/elements/src/ocelle-tooltip.ts:435: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-tooltip.ts:435: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:435: mutation: compile-error: LogicalOperator: replaced by trigger === undefined && id === undefined
+packages/elements/src/ocelle-tooltip.ts:435: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:435: mutation: compile-error: EqualityOperator: replaced by trigger !== undefined
+packages/elements/src/ocelle-tooltip.ts:436: mutation: compile-error: LogicalOperator: replaced by trigger.getAttribute("aria-describedby") && ""
+packages/elements/src/ocelle-tooltip.ts:437: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-tooltip.ts:437: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/overlay.ts:398: mutation: compile-error: OptionalChaining: replaced by bubbles.dismiss()
+packages/tokens/src/source.ts:174: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/tokens/src/source.ts:174: mutation: compile-error: StringLiteral: replaced by ""
+packages/tokens/src/source.ts:234: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/tokens/src/source.ts:234: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-tooltip.ts:436: mutation: StringLiteral: NoCoverage: replaced by "Stryker was here!"
+packages/elements/src/ocelle-tooltip.ts:436: mutation: Regex: Survived: replaced by /\s/
+packages/elements/src/ocelle-tooltip.ts:436: mutation: ConditionalExpression: Survived: replaced by true
+packages/elements/src/ocelle-tooltip.ts:436: mutation: StringLiteral: Survived: replaced by "Stryker was here!"
+packages/elements/src/ocelle-tooltip.ts:437: mutation: StringLiteral: Survived: replaced by ""
+packages/elements/src/ocelle-tooltip.ts:433: mutation: CallExpression: Survived: replaced by ;
+packages/elements/src/ocelle-tooltip.ts:435: mutation: ConditionalExpression: Survived: replaced by false
+mutation: 7 findings in 3 changed files (48 mutants on changed lines; 1 timeout, 15 compile errors, 0 zero-mutant entries)
+[ELIFECYCLE] Command failed with exit code 1.
+exit 1
+time 964 s
+
+
+## Final runs, at 1f91513 (plan of 22 shards; shards 1 to 6, the gate files, are unchanged since ca2da97 and their first runs stand)
+
+== shard 7 at 1f91513: --files gates/lib/visual-host.ts:180-207,gates/visual/capture.ts,packages/elements/src/bubble.ts,packages/elements/src/index.ts,packages/elements/src/ocelle-tooltip.ts:1-30
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files gates/lib/visual-host.ts:180-207,gates/visual/capture.ts,packages/elements/src/bubble.ts,packages/elements/src/index.ts,packages/elements/src/ocelle-tooltip.ts:1-30
+gates/lib/visual-host.ts:180: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/visual-host.ts:182: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/visual-host.ts:190: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/visual-host.ts:194: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/visual-host.ts:196: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/visual-host.ts:198: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/visual-host.ts:202: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/visual-host.ts:204: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/lib/visual-host.ts:207: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:26: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:51: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:53: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:55: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:57: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:63: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:65: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:69: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:71: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:73: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:76: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:81: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:96: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:98: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:100: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:102: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:104: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:106: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:108: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:110: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:113: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:115: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:119: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:121: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:123: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+gates/visual/capture.ts:125: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 88 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+packages/elements/src/ocelle-tooltip.ts:18: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/ocelle-tooltip.ts:18: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-tooltip.ts:18: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-tooltip.ts:18: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-tooltip.ts:18: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-tooltip.ts:27: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-tooltip.ts:28: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:28: mutation: compile-error: EqualityOperator: replaced by each === null
+packages/elements/src/ocelle-tooltip.ts:28: mutation: compile-error: ConditionalExpression: replaced by true
+gates/lib/visual-host.ts:180-207: mutation: zero-mutants: no mutant on the changed lines
+gates/visual/capture.ts: mutation: zero-mutants: no mutant on the changed lines
+packages/elements/src/bubble.ts: mutation: zero-mutants: no mutant on the changed lines
+packages/elements/src/index.ts: mutation: zero-mutants: no mutant on the changed lines
+mutation: 14 mutants on the changed lines of 5 files, none survived; 0 timeouts, 9 compile errors, 4 zero-mutant entries; 35 equivalent records
+exit 0
+time 888 s
+
+== shard 8 at 1f91513: --files packages/elements/src/ocelle-tooltip.ts:31-60
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files packages/elements/src/ocelle-tooltip.ts:31-60
+packages/elements/src/ocelle-tooltip.ts:55: mutation: record: ObjectLiteral: equivalent, {} gives Lit's default options, which are type String's (attribute "text", the default converter, not reflected)
+packages/elements/src/ocelle-tooltip.ts:33: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-tooltip.ts:34: mutation: compile-error: LogicalOperator: replaced by element.getAttribute("aria-describedby") && ""
+packages/elements/src/ocelle-tooltip.ts:38: mutation: compile-error: BlockStatement: replaced by {}
+mutation: 25 mutants on the changed lines of 1 file, none survived; 0 timeouts, 3 compile errors, 0 zero-mutant entries; 1 equivalent record
+exit 0
+time 543 s
+
+== shard 9 at 1f91513: --files packages/elements/src/ocelle-tooltip.ts:61-90
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files packages/elements/src/ocelle-tooltip.ts:61-90
+packages/elements/src/ocelle-tooltip.ts:61-90: mutation: zero-mutants: no mutant on the changed lines
+mutation: 0 mutants on the changed lines of 1 file, none survived; 0 timeouts, 0 compile errors, 1 zero-mutant entry; 0 equivalent records
+exit 0
+time 454 s
+
+== shard 10 at 1f91513: --files packages/elements/src/ocelle-tooltip.ts:91-120
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files packages/elements/src/ocelle-tooltip.ts:91-120
+packages/elements/src/ocelle-tooltip.ts:91-120: mutation: zero-mutants: no mutant on the changed lines
+mutation: 0 mutants on the changed lines of 1 file, none survived; 0 timeouts, 0 compile errors, 1 zero-mutant entry; 0 equivalent records
+exit 0
+time 453 s
+
+== shard 11 at 1f91513: --files packages/elements/src/ocelle-tooltip.ts:121-150
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files packages/elements/src/ocelle-tooltip.ts:121-150
+packages/elements/src/ocelle-tooltip.ts:142: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-tooltip.ts:142: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:142: mutation: compile-error: EqualityOperator: replaced by shown === undefined
+packages/elements/src/ocelle-tooltip.ts:142: mutation: compile-error: CallExpression: replaced by ;
+mutation: 5 mutants on the changed lines of 1 file, none survived; 0 timeouts, 4 compile errors, 0 zero-mutant entries; 0 equivalent records
+exit 0
+time 475 s
+
+== shard 12 at 1f91513: --files packages/elements/src/ocelle-tooltip.ts:151-180
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files packages/elements/src/ocelle-tooltip.ts:151-180
+packages/elements/src/ocelle-tooltip.ts:151-180: mutation: zero-mutants: no mutant on the changed lines
+mutation: 0 mutants on the changed lines of 1 file, none survived; 0 timeouts, 0 compile errors, 1 zero-mutant entry; 0 equivalent records
+exit 0
+time 456 s
+
+== shard 13 at 1f91513: --files packages/elements/src/ocelle-tooltip.ts:181-210
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files packages/elements/src/ocelle-tooltip.ts:181-210
+packages/elements/src/ocelle-tooltip.ts:197: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-tooltip.ts:200: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-tooltip.ts:203: mutation: compile-error: StringLiteral: replaced by ""
+mutation: 17 mutants on the changed lines of 1 file, none survived; 0 timeouts, 3 compile errors, 0 zero-mutant entries; 0 equivalent records
+exit 0
+time 536 s
+
+== shard 14 at 1f91513: --files packages/elements/src/ocelle-tooltip.ts:211-240
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files packages/elements/src/ocelle-tooltip.ts:211-240
+packages/elements/src/ocelle-tooltip.ts:221: mutation: record: CallExpression: equivalent, Lit's own disconnection serves reactive controllers and async directives; the tooltip uses neither (as the overlays, reviews/phase-2/notes.md)
+packages/elements/src/ocelle-tooltip.ts:227: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-tooltip.ts:233: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-tooltip.ts:239: mutation: compile-error: CallExpression: replaced by ;
+mutation: 19 mutants on the changed lines of 1 file, none survived; 0 timeouts, 3 compile errors, 0 zero-mutant entries; 1 equivalent record
+exit 0
+time 582 s
+
+== shard 15 at 1f91513: --files packages/elements/src/ocelle-tooltip.ts:241-270
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files packages/elements/src/ocelle-tooltip.ts:241-270
+packages/elements/src/ocelle-tooltip.ts:243: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-tooltip.ts:248: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-tooltip.ts:249: mutation: compile-error: LogicalOperator: replaced by node instanceof Node || this.contains(node)
+packages/elements/src/ocelle-tooltip.ts:262: mutation: compile-error: LogicalOperator: replaced by this.#trigger && this
+mutation: 24 mutants on the changed lines of 1 file, none survived; 0 timeouts, 4 compile errors, 0 zero-mutant entries; 0 equivalent records
+exit 0
+time 509 s
+
+== shard 16 at 1f91513: --files packages/elements/src/ocelle-tooltip.ts:271-300
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files packages/elements/src/ocelle-tooltip.ts:271-300
+packages/elements/src/ocelle-tooltip.ts:274: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/ocelle-tooltip.ts:279: mutation: compile-error: LogicalOperator: replaced by deepActive() && this
+packages/elements/src/ocelle-tooltip.ts:280: mutation: compile-error: LogicalOperator: replaced by this.#trigger && this
+packages/elements/src/ocelle-tooltip.ts:281: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/ocelle-tooltip.ts:287: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/ocelle-tooltip.ts:292: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-tooltip.ts:293: mutation: compile-error: OptionalChaining: replaced by bubbles.top()
+packages/elements/src/ocelle-tooltip.ts:294: mutation: compile-error: LogicalOperator: replaced by top !== undefined || !within(this, top)
+packages/elements/src/ocelle-tooltip.ts:294: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-tooltip.ts:294: mutation: compile-error: EqualityOperator: replaced by top === undefined
+mutation: 39 mutants on the changed lines of 1 file, none survived; 0 timeouts, 10 compile errors, 0 zero-mutant entries; 0 equivalent records
+exit 0
+time 521 s
+
+== shard 17 at 1f91513: --files packages/elements/src/ocelle-tooltip.ts:301-330
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files packages/elements/src/ocelle-tooltip.ts:301-330
+packages/elements/src/ocelle-tooltip.ts:305: mutation: record: ConditionalExpression: equivalent, a bubble already shown would hide and show again in this task, unseen: no frame, event or focus change between (false); true, which every show row would kill, shares the mutator (reviews/phase-4/notes.md)
+packages/elements/src/ocelle-tooltip.ts:319: mutation: record: CallExpression: equivalent, a loop left running only places a hidden bubble again, and hides it again once its trigger is gone (reviews/phase-4/notes.md)
+packages/elements/src/ocelle-tooltip.ts:304: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-tooltip.ts:304: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:304: mutation: compile-error: LogicalOperator: replaced by (!popover || bubble === null || this.disabled) && this.text === ""
+packages/elements/src/ocelle-tooltip.ts:304: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:304: mutation: compile-error: LogicalOperator: replaced by (!popover || bubble === null) && this.disabled
+packages/elements/src/ocelle-tooltip.ts:304: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:304: mutation: compile-error: LogicalOperator: replaced by !popover && bubble === null
+packages/elements/src/ocelle-tooltip.ts:304: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:304: mutation: compile-error: EqualityOperator: replaced by bubble !== null
+packages/elements/src/ocelle-tooltip.ts:307: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-tooltip.ts:307: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:307: mutation: compile-error: EqualityOperator: replaced by shown === undefined
+packages/elements/src/ocelle-tooltip.ts:307: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/ocelle-tooltip.ts:311: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-tooltip.ts:321: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-tooltip.ts:322: mutation: compile-error: OptionalChaining: replaced by this.#bubble.hidePopover
+mutation: 34 mutants on the changed lines of 1 file, none survived; 0 timeouts, 16 compile errors, 0 zero-mutant entries; 2 equivalent records
+exit 0
+time 550 s
+
+== shard 18 at 1f91513: --files packages/elements/src/ocelle-tooltip.ts:331-360
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files packages/elements/src/ocelle-tooltip.ts:331-360
+packages/elements/src/ocelle-tooltip.ts:344: mutation: record: ConditionalExpression: equivalent, placing at every frame gives the same coordinates, the test only spares the work (true); false, which the following rows would kill, shares the mutator (reviews/phase-4/notes.md)
+packages/elements/src/ocelle-tooltip.ts:334: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-tooltip.ts:334: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:334: mutation: compile-error: LogicalOperator: replaced by (trigger?.isConnected !== true || bubble === null) && trigger.matches(":disabled")
+packages/elements/src/ocelle-tooltip.ts:334: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:334: mutation: compile-error: LogicalOperator: replaced by trigger?.isConnected !== true && bubble === null
+packages/elements/src/ocelle-tooltip.ts:334: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:334: mutation: compile-error: EqualityOperator: replaced by trigger?.isConnected === true
+packages/elements/src/ocelle-tooltip.ts:334: mutation: compile-error: OptionalChaining: replaced by trigger.isConnected
+packages/elements/src/ocelle-tooltip.ts:334: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:334: mutation: compile-error: EqualityOperator: replaced by bubble !== null
+packages/elements/src/ocelle-tooltip.ts:334: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-tooltip.ts:357: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-tooltip.ts:357: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-tooltip.ts:357: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-tooltip.ts:357: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-tooltip.ts:357: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-tooltip.ts:358: mutation: compile-error: LogicalOperator: replaced by logical[this.placement] && "top"
+packages/elements/src/ocelle-tooltip.ts:358: mutation: compile-error: StringLiteral: replaced by ""
+mutation: 30 mutants on the changed lines of 1 file, none survived; 0 timeouts, 18 compile errors, 0 zero-mutant entries; 1 equivalent record
+exit 0
+time 540 s
+
+== shard 19 at 1f91513: --files packages/elements/src/ocelle-tooltip.ts:361-390
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files packages/elements/src/ocelle-tooltip.ts:361-390
+packages/elements/src/ocelle-tooltip.ts:364: mutation: compile-error: ArrayDeclaration: replaced by []
+packages/elements/src/ocelle-tooltip.ts:367: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/ocelle-tooltip.ts:375: mutation: compile-error: ArrowFunction: replaced by () => undefined
+packages/elements/src/ocelle-tooltip.ts:376: mutation: compile-error: LogicalOperator: replaced by side === "top" && side === "bottom"
+packages/elements/src/ocelle-tooltip.ts:376: mutation: compile-error: EqualityOperator: replaced by side !== "top"
+packages/elements/src/ocelle-tooltip.ts:376: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-tooltip.ts:376: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-tooltip.ts:377: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-tooltip.ts:378: mutation: compile-error: StringLiteral: replaced by ""
+mutation: 66 mutants on the changed lines of 1 file, none survived; 0 timeouts, 9 compile errors, 0 zero-mutant entries; 0 equivalent records
+exit 0
+time 699 s
+
+== shard 20 at 1f91513: --files packages/elements/src/ocelle-tooltip.ts:391-420
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files packages/elements/src/ocelle-tooltip.ts:391-420
+packages/elements/src/ocelle-tooltip.ts:415: mutation: timeout: EqualityOperator: replaced by root.getElementById(id) === null
+packages/elements/src/ocelle-tooltip.ts:404: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-tooltip.ts:404: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:404: mutation: compile-error: LogicalOperator: replaced by (!this.describes || this.text === "" || trigger === undefined) && !this.isConnected
+packages/elements/src/ocelle-tooltip.ts:404: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:404: mutation: compile-error: LogicalOperator: replaced by (!this.describes || this.text === "") && trigger === undefined
+packages/elements/src/ocelle-tooltip.ts:404: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:404: mutation: compile-error: EqualityOperator: replaced by trigger !== undefined
+packages/elements/src/ocelle-tooltip.ts:404: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-tooltip.ts:409: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:409: mutation: compile-error: EqualityOperator: replaced by span !== undefined
+packages/elements/src/ocelle-tooltip.ts:412: mutation: compile-error: BlockStatement: replaced by {}
+mutation: 32 mutants on the changed lines of 1 file, none survived; 1 timeout, 11 compile errors, 0 zero-mutant entries; 0 equivalent records
+exit 0
+time 563 s
+
+### shard 21, first at 3b6adea (a later row, 19a63c7, kills its survivor)
+== shard 21 at 3b6adea: --files packages/elements/src/ocelle-tooltip.ts:421-450
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files packages/elements/src/ocelle-tooltip.ts:421-450
+packages/elements/src/ocelle-tooltip.ts:441: mutation: record: CallExpression: equivalent, a callback of a stale observation only runs #describe, which writes nothing while the description is not wanted or already in place (reviews/phase-4/notes.md)
+packages/elements/src/ocelle-tooltip.ts:429: mutation: timeout: CallExpression: replaced by ;
+packages/elements/src/ocelle-tooltip.ts:426: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:435: mutation: compile-error: OptionalChaining: replaced by this.#span.remove
+packages/elements/src/ocelle-tooltip.ts:443: mutation: compile-error: OptionalChaining: replaced by this.#span.id
+packages/elements/src/ocelle-tooltip.ts:444: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-tooltip.ts:444: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:444: mutation: compile-error: LogicalOperator: replaced by trigger === undefined && id === undefined
+packages/elements/src/ocelle-tooltip.ts:444: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:444: mutation: compile-error: EqualityOperator: replaced by trigger !== undefined
+packages/elements/src/ocelle-tooltip.ts:446: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-tooltip.ts:446: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:444: mutation: ConditionalExpression: Survived: replaced by false
+mutation: 1 finding in 1 changed file (39 mutants on changed lines; 1 timeout, 10 compile errors, 0 zero-mutant entries)
+[ELIFECYCLE] Command failed with exit code 1.
+exit 1
+time 559 s
+
+### shard 21 again at 19a63c7
+== shard 21 at 19a63c7: --files packages/elements/src/ocelle-tooltip.ts:421-450
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files packages/elements/src/ocelle-tooltip.ts:421-450
+packages/elements/src/ocelle-tooltip.ts:441: mutation: record: CallExpression: equivalent, a callback of a stale observation only runs #describe, which writes nothing while the description is not wanted or already in place (reviews/phase-4/notes.md)
+packages/elements/src/ocelle-tooltip.ts:429: mutation: timeout: CallExpression: replaced by ;
+packages/elements/src/ocelle-tooltip.ts:426: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:435: mutation: compile-error: OptionalChaining: replaced by this.#span.remove
+packages/elements/src/ocelle-tooltip.ts:443: mutation: compile-error: OptionalChaining: replaced by this.#span.id
+packages/elements/src/ocelle-tooltip.ts:444: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-tooltip.ts:444: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:444: mutation: compile-error: LogicalOperator: replaced by trigger === undefined && id === undefined
+packages/elements/src/ocelle-tooltip.ts:444: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:444: mutation: compile-error: EqualityOperator: replaced by trigger !== undefined
+packages/elements/src/ocelle-tooltip.ts:446: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-tooltip.ts:446: mutation: compile-error: ConditionalExpression: replaced by false
+mutation: 39 mutants on the changed lines of 1 file, none survived; 1 timeout, 10 compile errors, 0 zero-mutant entries; 1 equivalent record
+exit 0
+time 560 s
+
+== shard 22 at 1f91513: --files packages/elements/src/ocelle-tooltip.ts:451-457,packages/elements/src/overlay.ts,packages/tokens/src/source.ts
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files packages/elements/src/ocelle-tooltip.ts:451-457,packages/elements/src/overlay.ts,packages/tokens/src/source.ts
+packages/elements/src/overlay.ts:398: mutation: compile-error: OptionalChaining: replaced by bubbles.dismiss()
+packages/tokens/src/source.ts:174: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/tokens/src/source.ts:174: mutation: compile-error: StringLiteral: replaced by ""
+packages/tokens/src/source.ts:234: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/tokens/src/source.ts:234: mutation: compile-error: StringLiteral: replaced by ""
+mutation: 12 mutants on the changed lines of 3 files, none survived; 0 timeouts, 5 compile errors, 0 zero-mutant entries; 0 equivalent records
+exit 0
+time 917 s
+
+
+### shards 15 to 17 again at 8c49287 (the R-12 rows changed)
+== at 8c49287: --files packages/elements/src/ocelle-tooltip.ts:241-270
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files packages/elements/src/ocelle-tooltip.ts:241-270
+packages/elements/src/ocelle-tooltip.ts:243: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-tooltip.ts:248: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-tooltip.ts:249: mutation: compile-error: LogicalOperator: replaced by node instanceof Node || this.contains(node)
+packages/elements/src/ocelle-tooltip.ts:262: mutation: compile-error: LogicalOperator: replaced by this.#trigger && this
+mutation: 24 mutants on the changed lines of 1 file, none survived; 0 timeouts, 4 compile errors, 0 zero-mutant entries; 0 equivalent records
+exit 0
+time 517 s
+
+== at 8c49287: --files packages/elements/src/ocelle-tooltip.ts:271-300
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files packages/elements/src/ocelle-tooltip.ts:271-300
+packages/elements/src/ocelle-tooltip.ts:274: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/ocelle-tooltip.ts:279: mutation: compile-error: LogicalOperator: replaced by deepActive() && this
+packages/elements/src/ocelle-tooltip.ts:280: mutation: compile-error: LogicalOperator: replaced by this.#trigger && this
+packages/elements/src/ocelle-tooltip.ts:281: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/ocelle-tooltip.ts:287: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/ocelle-tooltip.ts:292: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-tooltip.ts:293: mutation: compile-error: OptionalChaining: replaced by bubbles.top()
+packages/elements/src/ocelle-tooltip.ts:294: mutation: compile-error: LogicalOperator: replaced by top !== undefined || !within(this, top)
+packages/elements/src/ocelle-tooltip.ts:294: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-tooltip.ts:294: mutation: compile-error: EqualityOperator: replaced by top === undefined
+mutation: 39 mutants on the changed lines of 1 file, none survived; 0 timeouts, 10 compile errors, 0 zero-mutant entries; 0 equivalent records
+exit 0
+time 525 s
+
+== at 8c49287: --files packages/elements/src/ocelle-tooltip.ts:301-330
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files packages/elements/src/ocelle-tooltip.ts:301-330
+packages/elements/src/ocelle-tooltip.ts:305: mutation: record: ConditionalExpression: equivalent, a bubble already shown would hide and show again in this task, unseen: no frame, event or focus change between (false); true, which every show row would kill, shares the mutator (reviews/phase-4/notes.md)
+packages/elements/src/ocelle-tooltip.ts:319: mutation: record: CallExpression: equivalent, a loop left running only places a hidden bubble again, and hides it again once its trigger is gone (reviews/phase-4/notes.md)
+packages/elements/src/ocelle-tooltip.ts:304: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-tooltip.ts:304: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:304: mutation: compile-error: LogicalOperator: replaced by (!popover || bubble === null || this.disabled) && this.text === ""
+packages/elements/src/ocelle-tooltip.ts:304: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:304: mutation: compile-error: LogicalOperator: replaced by (!popover || bubble === null) && this.disabled
+packages/elements/src/ocelle-tooltip.ts:304: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:304: mutation: compile-error: LogicalOperator: replaced by !popover && bubble === null
+packages/elements/src/ocelle-tooltip.ts:304: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:304: mutation: compile-error: EqualityOperator: replaced by bubble !== null
+packages/elements/src/ocelle-tooltip.ts:307: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-tooltip.ts:307: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:307: mutation: compile-error: EqualityOperator: replaced by shown === undefined
+packages/elements/src/ocelle-tooltip.ts:307: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/ocelle-tooltip.ts:311: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-tooltip.ts:321: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-tooltip.ts:322: mutation: compile-error: OptionalChaining: replaced by this.#bubble.hidePopover
+mutation: 34 mutants on the changed lines of 1 file, none survived; 0 timeouts, 16 compile errors, 0 zero-mutant entries; 2 equivalent records
+exit 0
+time 566 s
+
+### shards 11 and 15 to 17 again at 5d735a8 (the FR-031, dialog-pending and text-field rows changed)
+== at 5d735a8: --files packages/elements/src/ocelle-tooltip.ts:121-150
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files packages/elements/src/ocelle-tooltip.ts:121-150
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files packages/elements/src/ocelle-tooltip.ts:121-150
+packages/elements/src/ocelle-tooltip.ts:142: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-tooltip.ts:142: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:142: mutation: compile-error: EqualityOperator: replaced by shown === undefined
+packages/elements/src/ocelle-tooltip.ts:142: mutation: compile-error: CallExpression: replaced by ;
+mutation: 5 mutants on the changed lines of 1 file, none survived; 0 timeouts, 4 compile errors, 0 zero-mutant entries; 0 equivalent records
+exit 0
+time 475 s
+
+== at 5d735a8: --files packages/elements/src/ocelle-tooltip.ts:241-270
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files packages/elements/src/ocelle-tooltip.ts:241-270
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files packages/elements/src/ocelle-tooltip.ts:241-270
+packages/elements/src/ocelle-tooltip.ts:243: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-tooltip.ts:248: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-tooltip.ts:249: mutation: compile-error: LogicalOperator: replaced by node instanceof Node || this.contains(node)
+packages/elements/src/ocelle-tooltip.ts:262: mutation: compile-error: LogicalOperator: replaced by this.#trigger && this
+mutation: 24 mutants on the changed lines of 1 file, none survived; 0 timeouts, 4 compile errors, 0 zero-mutant entries; 0 equivalent records
+exit 0
+time 516 s
+
+== at 5d735a8: --files packages/elements/src/ocelle-tooltip.ts:271-300
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files packages/elements/src/ocelle-tooltip.ts:271-300
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files packages/elements/src/ocelle-tooltip.ts:271-300
+packages/elements/src/ocelle-tooltip.ts:274: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/ocelle-tooltip.ts:279: mutation: compile-error: LogicalOperator: replaced by deepActive() && this
+packages/elements/src/ocelle-tooltip.ts:280: mutation: compile-error: LogicalOperator: replaced by this.#trigger && this
+packages/elements/src/ocelle-tooltip.ts:281: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/ocelle-tooltip.ts:287: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/ocelle-tooltip.ts:292: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-tooltip.ts:293: mutation: compile-error: OptionalChaining: replaced by bubbles.top()
+packages/elements/src/ocelle-tooltip.ts:294: mutation: compile-error: LogicalOperator: replaced by top !== undefined || !within(this, top)
+packages/elements/src/ocelle-tooltip.ts:294: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-tooltip.ts:294: mutation: compile-error: EqualityOperator: replaced by top === undefined
+mutation: 39 mutants on the changed lines of 1 file, none survived; 0 timeouts, 10 compile errors, 0 zero-mutant entries; 0 equivalent records
+exit 0
+time 516 s
+
+== at 5d735a8: --files packages/elements/src/ocelle-tooltip.ts:301-330
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files packages/elements/src/ocelle-tooltip.ts:301-330
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files packages/elements/src/ocelle-tooltip.ts:301-330
+packages/elements/src/ocelle-tooltip.ts:305: mutation: record: ConditionalExpression: equivalent, a bubble already shown would hide and show again in this task, unseen: no frame, event or focus change between (false); true, which every show row would kill, shares the mutator (reviews/phase-4/notes.md)
+packages/elements/src/ocelle-tooltip.ts:319: mutation: record: CallExpression: equivalent, a loop left running only places a hidden bubble again, and hides it again once its trigger is gone (reviews/phase-4/notes.md)
+packages/elements/src/ocelle-tooltip.ts:304: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-tooltip.ts:304: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:304: mutation: compile-error: LogicalOperator: replaced by (!popover || bubble === null || this.disabled) && this.text === ""
+packages/elements/src/ocelle-tooltip.ts:304: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:304: mutation: compile-error: LogicalOperator: replaced by (!popover || bubble === null) && this.disabled
+packages/elements/src/ocelle-tooltip.ts:304: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:304: mutation: compile-error: LogicalOperator: replaced by !popover && bubble === null
+packages/elements/src/ocelle-tooltip.ts:304: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:304: mutation: compile-error: EqualityOperator: replaced by bubble !== null
+packages/elements/src/ocelle-tooltip.ts:307: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-tooltip.ts:307: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:307: mutation: compile-error: EqualityOperator: replaced by shown === undefined
+packages/elements/src/ocelle-tooltip.ts:307: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/ocelle-tooltip.ts:311: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-tooltip.ts:321: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-tooltip.ts:322: mutation: compile-error: OptionalChaining: replaced by this.#bubble.hidePopover
+mutation: 34 mutants on the changed lines of 1 file, none survived; 0 timeouts, 16 compile errors, 0 zero-mutant entries; 2 equivalent records
+exit 0
+time 551 s
+
+
+== at 9a66884: --files packages/elements/src/ocelle-tooltip.ts:241-270
+$ node gates/bin/mutation.ts -- --base 78fe475 --files packages/elements/src/ocelle-tooltip.ts:241-270
+packages/elements/src/ocelle-tooltip.ts:243: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-tooltip.ts:248: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-tooltip.ts:249: mutation: compile-error: LogicalOperator: replaced by node instanceof Node || this.contains(node)
+packages/elements/src/ocelle-tooltip.ts:262: mutation: compile-error: LogicalOperator: replaced by this.#trigger && this
+mutation: 24 mutants on the changed lines of 1 file, none survived; 0 timeouts, 4 compile errors, 0 zero-mutant entries; 0 equivalent records
+exit 0
+time 504 s
+
+== at 9a66884: --files packages/elements/src/ocelle-tooltip.ts:271-300
+$ node gates/bin/mutation.ts -- --base 78fe475 --files packages/elements/src/ocelle-tooltip.ts:271-300
+packages/elements/src/ocelle-tooltip.ts:274: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/ocelle-tooltip.ts:279: mutation: compile-error: LogicalOperator: replaced by deepActive() && this
+packages/elements/src/ocelle-tooltip.ts:280: mutation: compile-error: LogicalOperator: replaced by this.#trigger && this
+packages/elements/src/ocelle-tooltip.ts:281: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/ocelle-tooltip.ts:287: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/ocelle-tooltip.ts:292: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-tooltip.ts:293: mutation: compile-error: OptionalChaining: replaced by bubbles.top()
+packages/elements/src/ocelle-tooltip.ts:294: mutation: compile-error: LogicalOperator: replaced by top !== undefined || !within(this, top)
+packages/elements/src/ocelle-tooltip.ts:294: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-tooltip.ts:294: mutation: compile-error: EqualityOperator: replaced by top === undefined
+mutation: 39 mutants on the changed lines of 1 file, none survived; 0 timeouts, 10 compile errors, 0 zero-mutant entries; 0 equivalent records
+exit 0
+time 518 s
+
+== at 9a66884: --files packages/elements/src/ocelle-tooltip.ts:301-330
+$ node gates/bin/mutation.ts -- --base 78fe475 --files packages/elements/src/ocelle-tooltip.ts:301-330
+packages/elements/src/ocelle-tooltip.ts:305: mutation: record: ConditionalExpression: equivalent, a bubble already shown would hide and show again in this task, unseen: no frame, event or focus change between (false); true, which every show row would kill, shares the mutator (reviews/phase-4/notes.md)
+packages/elements/src/ocelle-tooltip.ts:319: mutation: record: CallExpression: equivalent, a loop left running only places a hidden bubble again, and hides it again once its trigger is gone (reviews/phase-4/notes.md)
+packages/elements/src/ocelle-tooltip.ts:304: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-tooltip.ts:304: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:304: mutation: compile-error: LogicalOperator: replaced by (!popover || bubble === null || this.disabled) && this.text === ""
+packages/elements/src/ocelle-tooltip.ts:304: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:304: mutation: compile-error: LogicalOperator: replaced by (!popover || bubble === null) && this.disabled
+packages/elements/src/ocelle-tooltip.ts:304: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:304: mutation: compile-error: LogicalOperator: replaced by !popover && bubble === null
+packages/elements/src/ocelle-tooltip.ts:304: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:304: mutation: compile-error: EqualityOperator: replaced by bubble !== null
+packages/elements/src/ocelle-tooltip.ts:307: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-tooltip.ts:307: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:307: mutation: compile-error: EqualityOperator: replaced by shown === undefined
+packages/elements/src/ocelle-tooltip.ts:307: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/ocelle-tooltip.ts:311: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-tooltip.ts:321: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-tooltip.ts:322: mutation: compile-error: OptionalChaining: replaced by this.#bubble.hidePopover
+mutation: 34 mutants on the changed lines of 1 file, none survived; 0 timeouts, 16 compile errors, 0 zero-mutant entries; 2 equivalent records
+exit 0
+time 557 s

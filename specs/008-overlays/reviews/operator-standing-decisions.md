@@ -13,3 +13,13 @@
   - It covers only this mission's own branch, and only those four steps.
   - If `fold-history.sh` reports a problem, or the folded commits fail `tdd-check.sh`, the orchestrator pushes nothing and reports to the operator.
   - Every other gate and question still goes to the operator as a multiple-choice question.
+
+## No merge of main during the run (2026-11-15)
+
+- **Decided by:** the operator, in the orchestrator session (session_01NUfZSc26YwQLeow31d6R6X). They confirmed it in this session as a multiple-choice question: "Don't merge; /ocelle-land".
+- **What it decides:** 008 does not merge `main` during its run. This replaces the run's original "merge main when it moves" instruction, and the orchestrator's request to merge op 015 (ce1d9c72).
+- **Who merges, and how:** /ocelle-land merges main, never by rebase, with the resolutions already agreed:
+  - take main's `stryker.elements.config.json`;
+  - take main's `gates/test/vitest-config.test.ts`;
+  - regenerate any conflicting baseline PNG in the pinned container.
+- **Reported as:** a known gap in ALL PHASES DONE.
