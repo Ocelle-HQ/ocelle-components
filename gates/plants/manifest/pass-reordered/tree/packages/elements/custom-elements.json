@@ -3,6 +3,341 @@
   "readme": "",
   "modules": [
     {
+      "path": "src/ocelle-action-row.ts",
+      "kind": "javascript-module",
+      "exports": [
+        {
+          "name": "OcelleActionRow",
+          "kind": "js",
+          "declaration": {
+            "name": "OcelleActionRow",
+            "module": "src/ocelle-action-row.ts"
+          }
+        }
+      ],
+      "declarations": [
+        {
+          "tagName": "ocelle-action-row",
+          "superclass": {
+            "package": "lit",
+            "name": "LitElement"
+          },
+          "slots": [
+            {
+              "name": "",
+              "description": "The title: the row's accessible name; the description, the tags and the trailing content never join it."
+            },
+            {
+              "name": "icon",
+              "description": "One icon before the title (the slot convention): `--ocelle-icon-size` square, decorative."
+            },
+            {
+              "name": "description",
+              "description": "Elements whose text describes the row, after the title; an element without non-whitespace text contributes nothing, and a slot with no such element takes no space."
+            },
+            {
+              "name": "tags",
+              "description": "Elements whose text describes the row after the description, laid out as one group with the trailing icon; a slot with no element holding text takes no space."
+            },
+            {
+              "name": "trailing",
+              "description": "One icon at the end of the row (the slot convention), for example `arrow-end`."
+            }
+          ],
+          "name": "OcelleActionRow",
+          "members": [
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "rowId",
+              "kind": "field",
+              "description": "The row's id, carried by its `ocelle-action-row-activate` event as `detail.rowId` (`\"\"` when absent). Reflected as\n`row-id`.",
+              "default": "undefined",
+              "attribute": "row-id"
+            },
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "privacy": "public",
+              "name": "label",
+              "kind": "field",
+              "description": "The accessible name of the row, trimmed; empty or whitespace-only counts as none, and the name is then the title.\nNot reflected.",
+              "default": "undefined",
+              "attribute": "label"
+            },
+            {
+              "type": {
+                "text": "\"row\" | \"card\" | undefined"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "layout",
+              "kind": "field",
+              "description": "`row` (icon, title and description, then the tags and the trailing icon, on one line; the tags and the trailing\nicon move to a second line together when the line cannot hold them) or `card`; absent or any other value renders\n`row`. Reflected.",
+              "default": "undefined",
+              "attribute": "layout"
+            },
+            {
+              "type": {
+                "text": "\"default\" | \"flush\" | undefined"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "presentation",
+              "kind": "field",
+              "description": "`default` (a bordered row on a surface) or `flush` (no border and no surface, the compact navigation density);\nabsent or any other value renders `default`. Reflected.",
+              "default": "undefined",
+              "attribute": "presentation"
+            },
+            {
+              "type": {
+                "text": "\"accent-low\" | \"inset\" | \"hover-bg\" | \"state\" | \"chrome\" | undefined"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "ground",
+              "kind": "field",
+              "description": "The ground the row sits on: `accent-low`, `inset`, `hover-bg` or `state` (a state ground) give a default row an\n`--ocelle-color-accent-strong` border; `chrome` gives the chrome look for the chrome grounds; absent or any other\nvalue means the other main grounds. Reflected.",
+              "default": "undefined",
+              "attribute": "ground"
+            },
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "href",
+              "kind": "field",
+              "description": "The link's URL: a non-empty `href` that parses as a URL and is not a `javascript:` URL makes the row a link (an\ninner `<a>` with the `href` as written); any other value is button mode. Reflected.",
+              "default": "undefined",
+              "attribute": "href"
+            },
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "target",
+              "kind": "field",
+              "description": "The inner link's `target`, in link mode; with `_blank` and no `rel` the link gets `rel=\"noopener\"`. Reflected.",
+              "default": "undefined",
+              "attribute": "target"
+            },
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "rel",
+              "kind": "field",
+              "description": "The inner link's `rel`, in link mode. Reflected.",
+              "default": "undefined",
+              "attribute": "rel"
+            },
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "busy",
+              "kind": "field",
+              "description": "Busy: the row's content is updating; its inner control reports `aria-busy`, and activation still dispatches the\nevent. Reflected.",
+              "default": "false",
+              "attribute": "busy"
+            },
+            {
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "name": "click",
+              "kind": "method",
+              "description": "Clicks the inner control, so the click passes through it and the row is activated as by any other click."
+            }
+          ],
+          "kind": "class",
+          "events": [
+            {
+              "type": {
+                "text": "CustomEvent<{ rowId: string }>"
+              },
+              "name": "ocelle-action-row-activate",
+              "description": "Dispatched from the element on each activation (a pointer click, Enter, Space in button mode, `click()`); bubbles, composed and cancelable, `detail` `{ rowId }`, the current `row-id` or `\"\"`."
+            }
+          ],
+          "description": "An activatable row: a leading icon, a title, a description, tags and a trailing icon, activated by pointer or\nkeyboard with one `ocelle-action-row-activate` event that carries the row's id; a row or a card, bordered or flush,\non the ground the host states, and a link with `href`.",
+          "customElement": true,
+          "cssProperties": [],
+          "cssParts": [
+            {
+              "name": "control",
+              "description": "The inner `<button>`, or the inner `<a>` in link mode."
+            },
+            {
+              "name": "title",
+              "description": "The title's wrapper, the row's name."
+            },
+            {
+              "name": "description",
+              "description": "The description slot's wrapper."
+            },
+            {
+              "name": "tags",
+              "description": "The tags slot's wrapper."
+            }
+          ],
+          "attributes": [
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "aria-label",
+              "description": "Moved onto the inner control (the host keeps no copy): the row's accessible name, over `label` and the title; an empty or whitespace-only value clears it; `removeAttribute` after the move changes nothing."
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "aria-labelledby",
+              "description": "Moved onto the inner control: the ids, space-separated, of the elements that name the row, resolved in the host's own tree when set and when the element is connected, over `aria-label`; an empty value clears it."
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "aria-describedby",
+              "description": "Moved onto the inner control: the ids, space-separated, of the elements that describe the row, resolved in the host's own tree; it replaces the description and tags slots' description; an empty value clears it."
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "title",
+              "description": "Moved onto the inner control: its native tooltip, and its description when nothing else describes the row; an empty value clears it."
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "data-ocelle-moved-aria-label",
+              "description": "Element-owned mirror of the moved `aria-label`, so copies of the live DOM keep it; hosts do not write or remove it, and the element restores it when it is removed or changed."
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "data-ocelle-moved-aria-labelledby",
+              "description": "Element-owned mirror of the moved `aria-labelledby`; hosts do not write or remove it."
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "data-ocelle-moved-aria-describedby",
+              "description": "Element-owned mirror of the moved `aria-describedby`; hosts do not write or remove it."
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "data-ocelle-moved-title",
+              "description": "Element-owned mirror of the moved `title`; hosts do not write or remove it."
+            },
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "name": "row-id",
+              "fieldName": "rowId",
+              "description": "The row's id, carried by its `ocelle-action-row-activate` event as `detail.rowId` (`\"\"` when absent). Reflected as\n`row-id`.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "name": "label",
+              "fieldName": "label",
+              "description": "The accessible name of the row, trimmed; empty or whitespace-only counts as none, and the name is then the title.\nNot reflected.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "\"row\" | \"card\" | undefined"
+              },
+              "name": "layout",
+              "fieldName": "layout",
+              "description": "`row` (icon, title and description, then the tags and the trailing icon, on one line; the tags and the trailing\nicon move to a second line together when the line cannot hold them) or `card`; absent or any other value renders\n`row`. Reflected.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "\"default\" | \"flush\" | undefined"
+              },
+              "name": "presentation",
+              "fieldName": "presentation",
+              "description": "`default` (a bordered row on a surface) or `flush` (no border and no surface, the compact navigation density);\nabsent or any other value renders `default`. Reflected.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "\"accent-low\" | \"inset\" | \"hover-bg\" | \"state\" | \"chrome\" | undefined"
+              },
+              "name": "ground",
+              "fieldName": "ground",
+              "description": "The ground the row sits on: `accent-low`, `inset`, `hover-bg` or `state` (a state ground) give a default row an\n`--ocelle-color-accent-strong` border; `chrome` gives the chrome look for the chrome grounds; absent or any other\nvalue means the other main grounds. Reflected.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "name": "href",
+              "fieldName": "href",
+              "description": "The link's URL: a non-empty `href` that parses as a URL and is not a `javascript:` URL makes the row a link (an\ninner `<a>` with the `href` as written); any other value is button mode. Reflected.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "name": "target",
+              "fieldName": "target",
+              "description": "The inner link's `target`, in link mode; with `_blank` and no `rel` the link gets `rel=\"noopener\"`. Reflected.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "name": "rel",
+              "fieldName": "rel",
+              "description": "The inner link's `rel`, in link mode. Reflected.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "name": "busy",
+              "fieldName": "busy",
+              "description": "Busy: the row's content is updating; its inner control reports `aria-busy`, and activation still dispatches the\nevent. Reflected.",
+              "default": "false"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "path": "src/ocelle-brand-mark.ts",
       "kind": "javascript-module",
       "exports": [
