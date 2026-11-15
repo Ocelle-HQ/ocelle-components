@@ -34,6 +34,16 @@ import { attachInternalsTo, rowStates } from "./internals.ts";
 import { childValue } from "./selection.ts";
 
 /**
+ * A segment's place in its row of a joined group: whether it starts the row and whether it ends it. Not surface.
+ *
+ * @internal
+ */
+export interface Row {
+  readonly start: boolean;
+  readonly end: boolean;
+}
+
+/**
  * A segment of an `ocelle-segmented-choice`: its content is its label, with an optional leading icon.
  *
  * @tagname ocelle-segment
@@ -242,12 +252,12 @@ export class OcelleSegment extends LitElement {
    *
    * @internal
    */
-  [rowStates](joined: boolean, start: boolean, end: boolean): void {
+  [rowStates](row: Row | null): void {
     const { states } = this.#internals;
     for (const [state, on] of [
-      ["joined", joined],
-      ["row-start", joined && start],
-      ["row-end", joined && end],
+      ["joined", row !== null],
+      ["row-start", row?.start === true],
+      ["row-end", row?.end === true],
     ] as const) {
       if (on) states.add(state);
       else states.delete(state);

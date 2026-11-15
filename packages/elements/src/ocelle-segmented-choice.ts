@@ -15,8 +15,9 @@
 //   focus;
 // - the focus record (R-03): a capture-phase `focusin` / `focusout` listener on the host, so a removal or a move of the
 //   focused segment keeps focus (or moves it with the press), and a user leaving by Tab or a click is never brought back;
-// - `joined` (R-06): one `ResizeObserver` on the group and every segment while joined, and a regroup after each batch,
-//   so a resize of the group, a segment's size change at the same group size and a child-list change all regroup. The
+// - `joined` (R-06): one `ResizeObserver` on the group and every segment while joined, observed again after each batch,
+//   so a resize of the group, a segment's size change at the same group size and a child-list change all regroup at
+//   the delivery of the frame that renders them. The
 //   segments are put in rows by their `offsetTop`, and each gets its row states through the segment's feature-checked
 //   internal method (`rowStates`). No `style` attribute is ever written. The states change only radii, so a regroup
 //   never moves a row break and the observer never loops.
@@ -29,6 +30,7 @@ import { accessibleName } from "./naming.ts";
 import { OcelleSegment } from "./ocelle-segment.ts";
 import { RovingController } from "./roving.ts";
 import { SelectionModel, childValue } from "./selection.ts";
+import type { Row } from "./ocelle-segment.ts";
 import type { Entry } from "./selection.ts";
 
 /** The attributes the group writes on its segments. */
@@ -108,7 +110,7 @@ export class OcelleSegmentedChoice extends LitElement {
   constructor() {
     super();
     this.joined = false;
-    exposeAsToolbar(this.#internals);
+    exposeAs(this.#internals, "toolbar");
     new RovingController(this, {
       axis: "both",
       wrap: true,
@@ -154,11 +156,6 @@ export class OcelleSegmentedChoice extends LitElement {
     this.#apply(this.#model.batch());
   }
 
-  override disconnectedCallback(): void {
-    super.disconnectedCallback();
-    this.#sizes.disconnect();
-  }
-
   protected override updated(): void {
     // Stryker disable next-line StringLiteral: equivalent in Chromium, which names the host from a present aria-label, blank or not, whatever the internals say (WebKit is not measured)
     this.#internals.ariaLabel = accessibleName(this.label, this.getAttribute("aria-label")) ?? null;
@@ -175,7 +172,7 @@ export class OcelleSegmentedChoice extends LitElement {
     return [...this.children].filter((child): child is OcelleSegment => child.localName === "ocelle-segment");
   }
 
-  /** Writes the states on the segments where they differ, regroups, then moves focus to `focus` when it does not have it. */
+  /** Writes the states on the segments where they differ, observes their sizes, then moves focus to `focus` when it does not have it. */
   #apply(focus: OcelleSegment | null): void {
     const stop = this.#model.tabStop();
     const present = new Set<OcelleSegment>();
@@ -188,22 +185,26 @@ export class OcelleSegmentedChoice extends LitElement {
     for (const node of this.#owned) {
       if (present.has(node)) continue;
       for (const name of written) node.removeAttribute(name);
-      setRows(node, false, false, false);
+      setRows(node, null);
     }
     this.#owned = present;
+    // Observing the segments again also delivers their sizes at the next rendering, and that delivery regroups: a child
+    // batch that moves a row break at the same group size (a text change, a segment added or removed) is rounded in the
+    // frame that renders it.
     this.#observe();
-    this.#regroup();
     if (focus !== null && !focus.matches(":focus")) focus.focus();
   }
 
   /**
-   * While joined and connected, observes the group's and every segment's border box (a host rule that changes only a
-   * segment's padding or border moves a row break too); otherwise nothing.
+   * While joined and connected, observes the group's content box and every segment's border box (a host rule that
+   * changes only a segment's padding or border moves a row break too); otherwise nothing.
    */
   #observe(): void {
+    // Stryker disable next-line CallExpression: equivalent, observing a target again restarts its observation anyway; the call only drops the observations of segments that left and of a group no longer joined, whose deliveries regroup the group's own segments to the states they have
     this.#sizes.disconnect();
+    // Stryker disable next-line ConditionalExpression,LogicalOperator: equivalent, observing a group that is not joined, or not connected, only delivers sizes whose regroup sets no state (`setRows(…, null)` on segments that have none)
     if (!this.joined || !this.isConnected) return;
-    this.#sizes.observe(this, { box: "border-box" });
+    this.#sizes.observe(this);
     for (const { node } of this.#model.entries) this.#sizes.observe(node, { box: "border-box" });
   }
 
@@ -213,7 +214,7 @@ export class OcelleSegmentedChoice extends LitElement {
     const tops = segments.map((node) => node.offsetTop);
     segments.forEach((node, index) => {
       const top = tops[index];
-      setRows(node, this.joined, tops[index - 1] !== top, tops[index + 1] !== top);
+      setRows(node, this.joined ? { start: tops[index - 1] !== top, end: tops[index + 1] !== top } : null);
     });
   }
 
@@ -270,16 +271,18 @@ export class OcelleSegmentedChoice extends LitElement {
   };
 }
 
-/** Sets the group's role, a horizontal toolbar, through its internals. */
-function exposeAsToolbar(internals: ElementInternals): void {
-  internals.role = "toolbar";
-  internals.ariaOrientation = "horizontal";
+/** Sets the element's role through its internals (a toolbar is horizontal unless it says otherwise). */
+function exposeAs(internals: ElementInternals, role: string): void {
+  internals.role = role;
 }
 
-/** Sets a segment's row states through its internal method, when it has one (an upgraded segment of this copy). */
-function setRows(segment: OcelleSegment, joined: boolean, start: boolean, end: boolean): void {
+/**
+ * Sets a segment's row states through its internal method, when it has one (an upgraded segment of this copy): its
+ * place in its row while the group is joined, null otherwise.
+ */
+function setRows(segment: OcelleSegment, row: Row | null): void {
   const method = (segment as Partial<Record<typeof rowStates, unknown>>)[rowStates];
-  if (typeof method === "function") (method as (joined: boolean, start: boolean, end: boolean) => void).call(segment, joined, start, end);
+  if (typeof method === "function") (method as (row: Row | null) => void).call(segment, row);
 }
 
 /** The segments each record removed, one list per record. */
