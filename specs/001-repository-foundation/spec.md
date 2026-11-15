@@ -315,6 +315,21 @@ in this feature depends on it.
     on, three of the four 60-line entries of `packages/tokens/src/source.ts` took 188 s, 251 s and 283 s on the
     sandbox against mission 007's bound of 176 s, after the token tests were moved first and no `concurrency` value
     helped.
+  - **Amendment, 2026-11-15 (op 015, #35):** the text above stands, except for the job time limit. A shard none of
+    whose entries is under `packages/elements/src/` keeps the 10-minute limit. A shard with at least one such entry
+    runs under 45 minutes. So "the 10-minute limit is not raised" now holds only for the first kind, and a shard of
+    the second kind that exceeds 45 minutes MUST end as a failure. The reason is that the elements dry run, under
+    `stryker.elements.config.json`, runs every in-process `elements` test whatever the shard holds. On mission 008's
+    branch it took 5 m 31 s in the sandbox, past Stryker's 5-minute default. `stryker.elements.config.json`
+    therefore sets Stryker's dry-run limit to 30 minutes (`dryRunTimeoutMinutes`, 008 research.md R-15), and
+    `stryker.config.json` keeps the default. The value 45 was measured on CI run 43674498025 (draft PR #36, closed
+    unmerged): the worst elements shard job took W = 18 m 02 s. No dry-run line was relayed, so the worst CI dry
+    run is known only to be under that job's 17 m 29 s `gate:mutation` step. By the rule
+    max(45, ⌈1.5 × W / 5⌉ × 5), N = max(45, 30) = 45. The evidence is in
+    `ops/015-mutation-shard-timeout/measurement/README.md`. Operator decisions Q1 A (only shards with
+    `packages/elements/src/` entries), Q2 A (measure on a draft PR of 008's branch) and Q3 A (that rule) were made by
+    human:jeroennouwsdev on 2026-11-15 (`ops/015-mutation-shard-timeout/reviews/triage/operator-decisions.md`).
+    Shards without element source are unchanged, and so is mission 007's 480 s step bound for `source.ts` shards.
 
 **Merge gates (Story 3)**
 
@@ -525,6 +540,14 @@ in this feature depends on it.
   - **Amendment, 2026-11-11 (mission 007, FR-014, FR-015):** "no entry over 60 changed lines of one file" above
     reads "no entry over 30 changed lines of one file" (operator decision, human:jeroennouwsdev, 2026-11-11,
     "30-line entries, all files"; FR-013's amendment of the same date gives the reason); the rest stands.
+  - **Amendment, 2026-11-15 (op 015, #35):** "finishes in under 10 minutes" and "Each shard job's 10-minute limit
+    (FR-013) enforces it" still hold for a shard none of whose entries is under `packages/elements/src/`. A shard
+    with such an entry finishes in under 45 minutes on the same runner, and its 45-minute job limit enforces that
+    (FR-013's amendment of the same date). The figures come from CI run 43674498025: the worst elements shard took
+    W = 18 m 02 s, and the worst dry run was not relayed but was under that job's 17 m 29 s step. The sandbox figure
+    was 5 m 31 s for the elements dry run alone (008). Operator decisions Q1 A, Q2 A and Q3 A were made by
+    human:jeroennouwsdev on 2026-11-15 (`ops/015-mutation-shard-timeout/reviews/triage/operator-decisions.md`).
+    Shards without element source are unchanged, and so is mission 007's 480 s bound. The rest stands.
 - **SC-006**: A script run in a fresh clone confirms that `LICENSE`, `CONTRIBUTING.md`, `SECURITY.md` and
   `THIRD_PARTY_NOTICES` exist at the repository root under exactly these names, that `CONTRIBUTING.md` contains the
   sign-off rule (`Signed-off-by`, `git commit -s`), that `CODEOWNERS` exists and names `@MOES-Media` as the only
