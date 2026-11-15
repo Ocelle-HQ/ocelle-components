@@ -174,14 +174,19 @@ something only the element gives:
   `inline-size` transition on the fill (`--ocelle-motion-base`); US3-2 must fail on its 75% read and on `animations()`,
   and the value-removed body must fail on its 40% read and on the `CSSTransition`.
 - **Value properties (US3-1 to US3-4, US3-6; PLAN-TESTABILITY-1-006).** `AxNode` carries `value`, `valuemin`,
-  `valuemax` and `valuetext` (§ Driver additions). Every absence assertion sits beside a presence read of the same
-  property for a determinate bar in the same body.
+  `valuemax` and `valuetext` (§ Driver additions). `valuetext` reads `""` in Chromium (phase 3 spike) and no body
+  asserts a value text on it. Every absence assertion sits beside a presence read of the same property for a
+  determinate bar in the same body.
 - **Indeterminate inputs (US3-6, FR-032; analysis G8).** Besides below 0, above max, `NaN` and `max` ≤ 0, the US3-6
   body sets `value=""` and `value="   "` (each indeterminate: no current value exposed, the indeterminate mark shown,
   not a 0-width fill) and, after a determinate value, the property to `null` (indeterminate again), each paired in
   the same body with a determinate bar's value read and with no exception thrown.
-- **Value text (US3-3).** The oracle is picked in phase 3's spike among platform reads only (R-05). No
-  `internals` reflection read. If no platform read exposes it, US3-3 goes to the operator before the red commit.
+- **Value text (US3-3; operator decision on the phase 3 spike, (a)).** No platform read exposes the value text
+  (`reviews/phase-3/spike.md`, R-05), so the body proves the wiring, not the exposure: with `value-text="7 of 12"` and
+  `show-label`, the visible `value-text` part reads "7 of 12", paired in the same body with the progressbar's name,
+  value, min and max read from the accessibility tree; it is absent while the bar is indeterminate and kept when the
+  value is clamped (SPEC-2-02's bodies). No `internals` reflection read. The README states that the library's tests
+  do not verify the value text's exposure to assistive technology.
 - **Reduced motion (US3-5, PLAN-TESTABILITY-1-009).** The body reads running animations and transitions on the
   element's subtree (`getAnimations`, § Driver additions): none under reduced motion, paired in the same body with at
   least one running animation on the mark without reduced motion, and the still mark's geometry (30% to 70% of the
@@ -314,7 +319,9 @@ From the spec check notes and squad round 1:
     which is the whole column and has the heading and the block padding before the first paragraph (analysis I2);
   - unset `variant` writes no attribute.
 - **progress:**
-  - `value-text` ignored while indeterminate and kept when clamped (SPEC-2-02);
+  - `value-text` ignored while indeterminate and kept when clamped (SPEC-2-02), read on the visible `value-text`
+    part with `show-label`: absent while indeterminate, "7 of 12" when clamped, paired with a determinate bar's part
+    read (US3-3);
   - a `value` set, then removed: the mark is 40% of the track, with and without reduced motion, and no `CSSTransition`
     runs on the bar; the sweep animation may run without reduced motion (PLAN-CORRECTNESS-1-005, PLAN-FRESH-3-003);
   - right-to-left indeterminate: at the start of the sweep the mark is at the inline-start (right) side and moves
@@ -412,7 +419,7 @@ first phase that uses it:
 | `pressTab()`, `focused()` | presses Tab; returns the focused element through shadow roots | 2 |
 | `reducedMotion(mode)` | the command `emulateReducedMotion`: `page.emulateMedia({ reducedMotion })` in `emulate()`, so forced colours do not clear it; reset in each progress test file's `afterEach`; its test asserts `matchMedia` after the command, after a later `emulateForcedColors` call, and after the reset | 3 |
 | `animations(id)` | running animations and transitions on the element and its shadow subtree, with kind (`CSSAnimation` or `CSSTransition`), target part, animated property, play state and end time | 3 |
-| AX value properties | `AxNode`, `axNodes` and `axSubtree` carry `value`, `valuemin`, `valuemax` and `valuetext`; tested on a native `<progress>` and an ElementInternals bar | 3 |
+| AX value properties | `AxNode`, `axNodes` and `axSubtree` carry `value`, `valuemin`, `valuemax` and `valuetext`; `value`, `valuemin` and `valuemax` tested present and absent on a native `<progress>` and an ElementInternals bar; `valuetext` reads `""` in Chromium and is not asserted (phase 3 spike) | 3 |
 
 ## Contrast (SC-004, PLAN-CORRECTNESS-1-007 (b))
 

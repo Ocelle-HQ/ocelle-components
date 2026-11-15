@@ -127,7 +127,8 @@ other token (R-03). No part, slot or hook is added for the grid: its cell groups
   tabindex="-1">` in `heading` with the bar in `visual` (IQ-11 (b)).
 - **`ocelle-progress`**: naming (`label` recommended, or a host `aria-label`; an unnamed bar is a consumer error); axe
   does not check the name, and a host `aria-label` makes axe report a false `aria-prohibited-attr` in a consumer's own
-  audit (R-05); the value rules; `value-text`; the bounded sweep (under 5 s, then the still mark, WCAG 2.2.2;
+  audit (R-05); the value rules; `value-text`, and that the library's tests do not verify the value text's exposure
+  to assistive technology (operator decision on the phase 3 spike, (a)); the bounded sweep (under 5 s, then the still mark, WCAG 2.2.2;
   `--ocelle-motion-base` × 21 in total, so an override above 238 ms takes it past 5 s), run once per loading episode:
   a bar inserted, replaced in one task, re-shown or made indeterminate again continues the episode's sweep and after
   it shows the still mark at once; the episode ends when no indeterminate bar is connected at a frame boundary, and a

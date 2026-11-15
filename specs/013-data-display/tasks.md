@@ -83,7 +83,8 @@ order 1 → 2 → 3 → 4:
     `dlitem` violation, a Chromium tree that is not one description list with each definition after its term, or an
     empty term pruned) (IQ-05 (b), research R-01);
   - **T001b**: no round 3 content meets the 16 px margin in the harness's fonts with the value or label lengthened.
-- **T035 (phase 3 spike)**: no platform read exposes `valuetext`. US3-3 goes to the operator (R-05).
+- **T035 (phase 3 spike)**: no platform read exposes `valuetext`. US3-3 goes to the operator (R-05). Reached and
+  decided: (a) "Prove the wiring, not the exposure" (`reviews/phase-3/operator-spike-decisions.md`).
 - **R-11 inventory** (T002a, T022a, T036a): a phase's `.sk-*` family is missing from research R-11 before that phase's
   red commit, or has a variant that no element or variant covers (Decision 5, operator: "proceed, inputs later"). All
   three families are recorded and their gaps decided by the operator (IQ-01 to IQ-15, 2026-11-14, plan Decision 10),
@@ -436,13 +437,13 @@ order 1 → 2 → 3 → 4:
 - [ ] T037 [P] [US3] Driver additions from contracts/checks.md § Driver additions, with their tests:
   - `reducedMotion(mode)`: the `emulateReducedMotion` command through `page.emulateMedia` in `emulate()`, reset in each progress test file's `afterEach`. Its test in `packages/elements/test/commands.test.ts` asserts `matchMedia` after the command, after a later `emulateForcedColors`, and after the reset.
   - `animations(id)`, returning kind, target part, property, play state and end time.
-  - AX value properties (`value`, `valuemin`, `valuemax`, `valuetext`) on `AxNode`, `axNodes` and `axSubtree`, tested on a native `<progress>` and an ElementInternals bar.
+  - AX value properties (`value`, `valuemin`, `valuemax`, `valuetext`) on `AxNode`, `axNodes` and `axSubtree`; `value`, `valuemin` and `valuemax` tested present and absent on a native `<progress>` and an ElementInternals bar; `valuetext` reads `""` in Chromium and is not asserted (T035).
   - `replace`, `remove`, `frames`.
   - The loading-episode reset in `mount`.
 - [ ] T038 [US3] `packages/elements/test/scenarios/progress.ts`, with the oracles of contracts/checks.md § Oracles (Progress):
   - US3 scenarios 1 to 15 as shared bodies:
     - US3-2 reads 75% at once, with `animations()` empty;
-    - US3-3 uses the T035 oracle;
+    - US3-3 proves the wiring, not the exposure (operator decision on T035, (a)): with `value-text="7 of 12"` and `show-label`, the visible `value-text` part reads "7 of 12", paired with the progressbar's name, value, min and max read from the accessibility tree; no `internals` reflection read;
     - US3-4 pairs absence with a determinate read;
     - US3-5 reads reduced motion first, inside the first iteration, then motion, plus the still mark at 30% to 70%;
     - US3-6 also sets `value=""`, `value="   "` and, after a value, the property to `null`: each indeterminate (no current value, not a 0 fill), paired with a determinate read, nothing thrown (FR-032);
@@ -455,7 +456,7 @@ order 1 → 2 → 3 → 4:
     - US3-13 checks `ground="tinted"`;
     - US3-14 is the shared episode with `replace`;
     - US3-15 is a new episode after `remove` + `frames(2)`.
-  - SPEC-2-02's bodies: `value-text` ignored while indeterminate and kept when clamped.
+  - SPEC-2-02's bodies: `value-text` ignored while indeterminate and kept when clamped, read on the visible `value-text` part with `show-label` (absent while indeterminate, "7 of 12" when clamped), paired with a determinate bar's part read.
   - The value-removed body: a 40% mark, no `CSSTransition`, with and without reduced motion.
   - The determinate-then-indeterminate within one task after the window.
   - The right-to-left indeterminate and determinate bodies.
@@ -485,6 +486,7 @@ order 1 → 2 → 3 → 4:
 - [ ] T043 [P] [US3] `packages/elements/test/node/readme.test.ts`: statements for the `ocelle-progress` section, one per statement:
   - naming (`label` or host `aria-label`, an unnamed bar is a consumer error, axe does not check the name);
   - the value rules and `value-text`;
+  - the library's tests do not verify the value text's exposure to assistive technology (operator decision on T035, (a));
   - the bounded sweep, once per loading episode, with the 238 ms `--ocelle-motion-base` limit;
   - reduced motion; no fill transition; `ground="tinted"`;
   - the busy vocabulary (FR-033); tokens read.
@@ -534,7 +536,7 @@ order 1 → 2 → 3 → 4:
   - the panel-loading story added to `storybook/stories/empty-state.stories.ts`.
 - [ ] T050 [US3] Baselines: run `pnpm run visual:update` in the pinned container (`<n>` added, 0 changed, 0 removed). The indeterminate stories are captured on the still mark under reduced motion. Commit the new `storybook/baselines/*.png`.
 - [ ] T051 [US3] Documentation:
-  - `packages/elements/README.md`: the `ocelle-progress` section and the `.sk-progress` mapping rows;
+  - `packages/elements/README.md`: the `ocelle-progress` section (including that the library's tests do not verify the value text's exposure to assistive technology, T043) and the `.sk-progress` mapping rows;
   - `packages/elements/CHANGELOG.md` entry.
 - [ ] T051a [US3] `packages/elements/README.md`: the progress statements of T043a (naming after a nearby heading, no `role` or `tabindex` on the host, the block host placed inline from outside, the value text at the row's end, text-only labels, the fallback text) and the updated `.sk-progress` mapping rows of research R-11.
 - [ ] T052 [US3] Checks:

@@ -680,7 +680,9 @@ children are presentational.
   tasks gate, C1), with its sunset: stories once the pinned axe-core reads ElementInternals ARIA.
 - **README.** It recommends `label` as the way to name a bar, says a host `aria-label` also names it (Host ARIA) but
   makes axe report `aria-prohibited-attr` in a consumer's own audit, a false positive of axe with ElementInternals,
-  and says that axe does not check the bar's name, so a consumer's tests should.
+  and says that axe does not check the bar's name, so a consumer's tests should. It also states that the library's
+  tests do not verify the value text's exposure to assistive technology (operator decision on the phase 3 spike, (a);
+  § Measuring `valuetext` below).
 - #10's `axe` gate (on `main`) runs on the progress stories and passes, but without testing the name.
 - **A bar named by a nearby heading (IQ-10 (a)).** The consumer passes the heading's text as `label`; no ID reference
   is used, and a host `aria-labelledby` is neither specified nor measured. The README says so beside `label` and the
@@ -700,20 +702,31 @@ children are presentational.
 **`value-text` (FR-031, SPEC-2-01, SPEC-2-02).** It is exposed only while the bar is determinate. An indeterminate
 bar exposes no value text, even when `value-text` is set, because there is no value to describe. When the value is
 clamped, `value-text` is still exposed as given (the consumer's words). The element never formats numbers. Without
-`value-text`, Chromium computes the value text (the percentage) itself.
+`value-text`, Chromium computes the value text (the percentage) itself. These rules are proven on the visible
+`value-text` part (US3-3, SPEC-2-02 bodies), not on the exposed value text (§ Measuring `valuetext`).
 
 **Reading the value properties (PLAN-TESTABILITY-1-006).** `AxNode` in `test/commands.ts` carries role and name only.
 It is extended, in both harnesses, with `value`, `valuemin`, `valuemax` and `valuetext`, read from the platform's
 accessibility tree, with its own test in `test/commands.test.ts` (a native `<progress>` and an ElementInternals bar,
-each read present and absent). Every absence assertion (US3-4's "no current value", value text ignored while
-indeterminate) sits in a body that also reads the same property present for a determinate bar.
+`value`, `valuemin` and `valuemax` each read present and absent). `valuetext` reads `""` in Chromium (phase 3 spike)
+and no test asserts a value text on it. Every absence assertion (US3-4's "no current value", the visible value text
+absent while indeterminate) sits in a body that also reads the same property or part present for a determinate bar.
 
 **Measuring `valuetext`.** CDP's `Accessibility.getFullAXTree` returned an empty `valuetext` in every case, including
 a light-DOM control (spike B). Phase 3's spike picks a platform oracle before the red commit: Playwright's
 `locator.ariaSnapshot()` or CDP `Accessibility.getPartialAXTree` on the node. The `aria-valuetext` reflection read
 from `internals` is not an oracle of exposure and is not used (constitution VIII: an assertion on the unit's own state
-is no stand-in). If neither platform read exposes the value text, US3-3 goes to the operator before the red commit;
-its oracle is not weakened.
+is no stand-in).
+
+**Phase 3 spike and operator decision (a), "Prove the wiring, not the exposure"**
+(`reviews/phase-3/spike.md`, `reviews/phase-3/operator-spike-decisions.md`). In Chromium 1243 through Playwright
+1.64.1 no read a test can make (`locator.ariaSnapshot()`, CDP `Accessibility.getPartialAXTree`, `getFullAXTree`,
+`queryAXTree`, `getAXNodeAndAncestors`) exposes a progressbar's value text, not even a light-DOM `aria-valuetext`;
+`value`, `valuemin` and `valuemax` read correctly. So US3-3's test checks the visible `value-text` part: with
+`show-label` it reads "7 of 12", it is absent while the bar is indeterminate, and it is kept when the value is clamped,
+paired with the bar's name, value, min and max read from the accessibility tree. The element still sets
+`ariaValueText` as above; its exposure to assistive technology is not verified by the library's tests, and the README
+says so. Rejected: a Linux AT-SPI harness (b), and a test hook reading `ElementInternals.ariaValueText` (c).
 
 **Value parsing (FR-032).**
 - `value` and `max` are properties of type `number | undefined` (contracts/elements.md) with custom attribute
@@ -808,7 +821,8 @@ its oracle is not weakened.
   webview the document lasts the whole app session, so the first indeterminate bar after launch used the only sweep and
   US3-4's moving mark was not seen again for that session (round 3). The sweep is therefore anchored to a loading
   episode: a run of time in which at least one indeterminate bar is connected to the document.
-  - **The episode record.** It is kept on the `document` under `Symbol.for("ocelle.progress.sweep")`, so two copies of
+  - **The episode record.** It is kept on the `document` under `Symbol.for("ocelle.progress.sweepStart")` (the tasks.md T046 name, operator decision on
+    the phase 3 spike), so two copies of
     the package on a page share it: the episode's sweep start, and the set of connected indeterminate bars. It is not
     public surface: no manifest entry, no README name.
   - **Membership.** A bar joins the set when it is connected while indeterminate, or becomes indeterminate while
