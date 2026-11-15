@@ -152,3 +152,25 @@ export const Current: StoryObj = {
 export const Pressed: StoryObj = {
   render: () => '<p><ocelle-button variant="quiet" aria-pressed="true">Bold</ocelle-button> <ocelle-button variant="quiet" aria-pressed="false">Italic</ocelle-button></p>',
 };
+
+// 012 phase 4 (tasks.md T048; spec US3, FR-050): busy in each variant, with an icon and icon-only, a busy link and the
+// compact size. The capture runs under reduced motion (006), so each spinner is the still arc; in a browser that allows
+// motion it turns six times in 4.8 s and then shows the same arc.
+export const Busy: StoryObj = {
+  render: () => '<p><ocelle-button variant="primary" busy>Saving</ocelle-button> <ocelle-button variant="secondary" busy>Saving</ocelle-button> <ocelle-button variant="quiet" busy>Saving</ocelle-button></p>',
+};
+
+export const BusyWithIcon: StoryObj = {
+  name: "Busy, with icon",
+  render: () => `<p><ocelle-button variant="primary" busy>${folder}Open project</ocelle-button> <ocelle-button variant="quiet" label="Close" busy>${close}</ocelle-button></p>`,
+};
+
+export const BusyLink: StoryObj = {
+  name: "Busy, link",
+  render: () => '<p><ocelle-button href="#projects" busy>Projects</ocelle-button></p><p><ocelle-button flush href="#projects" busy>Projects</ocelle-button></p>',
+};
+
+export const BusyCompact: StoryObj = {
+  name: "Busy, compact",
+  render: () => '<p><ocelle-button variant="primary" size="compact" busy>Saving</ocelle-button> <ocelle-button variant="secondary" size="compact" busy>Saving</ocelle-button> <ocelle-button variant="quiet" size="compact" busy>Saving</ocelle-button></p>',
+};

@@ -140,6 +140,7 @@ every part at 3:1 uses `tone="mono"`. `ocelle-brand-mark` has no slot, event, CS
 <ocelle-button variant="primary"><ocelle-icon slot="icon" name="folder"></ocelle-icon>Open project</ocelle-button>
 <ocelle-button variant="quiet" size="compact" label="Close"><ocelle-icon slot="icon" name="close"></ocelle-icon></ocelle-button>
 <ocelle-button flush size="compact" href="/projects">Projects</ocelle-button>
+<ocelle-button busy>Saving</ocelle-button>
 <ocelle-button aria-expanded="false" aria-controls="filters">Filters</ocelle-button>
 <ocelle-button variant="quiet" ground="inset">Retry</ocelle-button>
 <ocelle-button variant="quiet" ground="chrome" aria-haspopup="menu" aria-expanded="false">Menu</ocelle-button>
@@ -170,6 +171,9 @@ root; a keyboard user and a screen-reader user meet a normal button or a normal 
 - `label` (attribute and property, not reflected): the accessible name, trimmed; empty or whitespace-only counts as
   none.
 - `disabled` (boolean attribute and property, reflected): the disabled state of the control conventions.
+- `busy` (boolean attribute and property, reflected): the button is unavailable (the control conventions) while a host
+  waits for the result of an action, and its inner control reports `aria-busy="true"`; `disabled` wins over `busy`: a
+  disabled busy button is disabled and shows no spinner.
 - `href`, `target`, `rel` and `download` (attributes and properties, reflected): link mode (Link versus button) and the
   inner link's attributes, set while the link is available; in button mode and on a disabled link they have no effect.
   With `target="_blank"` and no `rel`, the inner link gets `rel="noopener"`.
@@ -199,6 +203,17 @@ Ctrl, Meta, Shift or Alt held dispatches no `ocelle-button-activate`: its `click
 nothing and the browser's own modifier handling applies (on Chromium on Linux, Ctrl, Shift and Alt give a new tab, a new
 window or a download and leave the page as it is; Meta is not a link modifier there and navigates the current tab); a
 middle click delivers no `click` and dispatches nothing.
+
+**Busy.** A busy button dispatches neither `ocelle-button-activate` nor a `click`; once `busy` is removed, the next
+activation delivers both. It stays in the tab order and keeps focus when `busy` is set or removed. A busy link has no
+`href` (Unavailable). While busy, a spinner takes the place of the slotted icon, so the button keeps its size; without
+an icon it sits before the label with the slot convention's gap. It never covers the label, is drawn in the control's
+text colour (`currentColor`, the system colour in forced colours) and adds nothing to the accessibility tree. The
+spinner turns six times in 4.8 s and then stays still on the same arc it shows under `prefers-reduced-motion: reduce`,
+where it does not move at all, so it stops within 5 s. A host with long-running work that wants continuous motion
+shows its own pausable indicator. A host that overrides `--ocelle-motion-spin` (one turn of the spinner, 800 ms) keeps
+it at or below 833 ms, so the six turns end within 5 s. The library shows and announces no text while busy (no
+"Loading" string): a host that wants an announcement makes it. A busy button keeps its variant's look.
 
 **Looks.** Hover and pressed change the surface and the border: a bordered variant's border becomes
 `--ocelle-color-hover-border`; the primary fills with `--ocelle-color-accent-hover` on hover and `--ocelle-color-accent`
@@ -254,7 +269,8 @@ control of `ocelle-copy-field` (a flush icon button named by `label`). A consume
 `--ocelle-color-on-accent`, `--ocelle-color-accent-strong`, `--ocelle-color-accent-hover`,
 `--ocelle-color-hover-bg`, `--ocelle-color-hover-border`, `--ocelle-color-active-bg`, `--ocelle-color-chrome-ink`,
 `--ocelle-color-chrome-muted`, `--ocelle-color-chrome-hover`, `--ocelle-color-chrome-active`,
-`--ocelle-color-disabled-bg`, `--ocelle-color-disabled-ink`). It has no CSS custom property of its own.
+`--ocelle-color-disabled-bg`, `--ocelle-color-disabled-ink`). While busy it also reads the motion tokens
+`--ocelle-motion-spin` and `--ocelle-motion-turn`. It has no CSS custom property of its own.
 
 ## Control conventions
 
@@ -284,7 +300,12 @@ after it) follows these rules.
    reported disabled and not activated. Not activated means: no `ocelle-*` event and no `click` reaching a
    bubble-phase listener on the element or its ancestors (up to `document` and `window`); capture-phase listeners are
    outside it. A disabled link has no `href`: it is an `<a role="link" aria-disabled="true">` out of the tab order, so
-   neither a click, a modifier click, a middle click, the context menu nor a drag opens it.
+   neither a click, a modifier click, a middle click, the context menu nor a drag opens it. **Unavailable.**
+   Unavailable means the control exists but cannot be used right now: the inner control stays in the tab order and
+   keeps focus, reports `aria-disabled="true"`, keeps its name and description so a user can learn why, and is not
+   activated. An unavailable link has no `href` either: it is an `<a role="link" tabindex="0" aria-disabled="true">`
+   that stays focusable, so neither a click, a modifier click, a middle click, Enter, the context menu nor a drag opens
+   it. A busy `ocelle-button` is unavailable; `disabled` wins over it.
 4. **Host ARIA is moved.** The ARIA attributes a control lists, and `title`, are moved from the host onto the inner
    control: the element applies the value there and removes the attribute from the host, so the state appears once,
    on the inner control, and `getAttribute` on the host returns `null` afterwards. To clear a moved state, set an

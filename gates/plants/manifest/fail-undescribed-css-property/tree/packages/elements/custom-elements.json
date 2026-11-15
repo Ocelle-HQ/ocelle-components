@@ -282,6 +282,15 @@
               }
             },
             {
+              "default": "false",
+              "description": "Busy: while a host waits for the result of an action the button is unavailable (in the tab order and focusable,\n`aria-disabled`, not activated: no `click`, no `ocelle-button-activate`), reports `aria-busy`, and shows a spinner in\nthe icon's place (six turns in 4.8 s, then still; still under reduced motion); a busy link has no `href`.\n`disabled` wins. Reflected.",
+              "fieldName": "busy",
+              "name": "busy",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
               "default": "undefined",
               "description": "The link's URL: a non-empty `href` that parses as a URL and is not a `javascript:` URL puts the button in link mode\n(an inner `<a>` with the `href` as written); any other value is button mode. Reflected.",
               "fieldName": "href",
@@ -340,10 +349,10 @@
             }
           ],
           "customElement": true,
-          "description": "A native button in the Ocelle look, or a link that looks like one: three variants, two sizes, a flush look, the\nground it sits on, a label, a disabled state, an icon slot, link mode with `href`, and host ARIA moved onto the inner\ncontrol.",
+          "description": "A native button in the Ocelle look, or a link that looks like one: three variants, two sizes, a flush look, the\nground it sits on, a label, a disabled and a busy state, an icon slot, link mode with `href`, and host ARIA moved onto\nthe inner control.",
           "events": [
             {
-              "description": "Dispatched from the element on each activation that delivers a `click` (a pointer click, Enter, Space in button mode, `click()`), before the `click` reaches any bubble-phase listener on the element or its ancestors; bubbles, composed and cancelable, `detail` `{}`. Calling `preventDefault()` on it cancels the click's default action (in link mode the navigation; in button mode the `click` is still delivered). Not dispatched for a link-mode click with Ctrl, Meta, Shift or Alt held, nor for a middle click. A disabled button dispatches neither.",
+              "description": "Dispatched from the element on each activation that delivers a `click` (a pointer click, Enter, Space in button mode, `click()`), before the `click` reaches any bubble-phase listener on the element or its ancestors; bubbles, composed and cancelable, `detail` `{}`. Calling `preventDefault()` on it cancels the click's default action (in link mode the navigation; in button mode the `click` is still delivered). Not dispatched for a link-mode click with Ctrl, Meta, Shift or Alt held, nor for a middle click. A disabled or busy button dispatches neither.",
               "name": "ocelle-button-activate",
               "type": {
                 "text": "CustomEvent<Record<string, never>>"
@@ -424,6 +433,18 @@
               }
             },
             {
+              "attribute": "busy",
+              "default": "false",
+              "description": "Busy: while a host waits for the result of an action the button is unavailable (in the tab order and focusable,\n`aria-disabled`, not activated: no `click`, no `ocelle-button-activate`), reports `aria-busy`, and shows a spinner in\nthe icon's place (six turns in 4.8 s, then still; still under reduced motion); a busy link has no `href`.\n`disabled` wins. Reflected.",
+              "kind": "field",
+              "name": "busy",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
               "attribute": "href",
               "default": "undefined",
               "description": "The link's URL: a non-empty `href` that parses as a URL and is not a `javascript:` URL puts the button in link mode\n(an inner `<a>` with the `href` as written); any other value is button mode. Reflected.",
@@ -489,7 +510,7 @@
               "name": ""
             },
             {
-              "description": "One icon before the label (the slot convention): `--ocelle-icon-size` square, decorative.",
+              "description": "One icon before the label (the slot convention): `--ocelle-icon-size` square, decorative; hidden while busy, the spinner in its place.",
               "name": "icon"
             }
           ],

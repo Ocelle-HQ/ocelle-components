@@ -265,9 +265,20 @@ const fontFace =
   "  font-display: swap;\n" +
   "}\n\n";
 
+/** A duration in milliseconds, as a motion token states one (`120ms`). */
+const duration = /^\d+(?:\.\d+)?ms$/;
+
+/**
+ * The motion durations of a source, in source order: every record of group `motion` whose value is a duration (012
+ * research.md R-07, plan decision 29), so `motion-turn` (an angle) and `easing-standard` are not among them.
+ */
+function motionDurations(source: readonly TokenRecord[]): TokenRecord[] {
+  return source.filter((record) => record.group === "motion" && typeof record.value === "string" && duration.test(record.value));
+}
+
 /**
  * The stylesheet text (research.md R-02, R-06): the font face, light and theme-independent values, dark twice, then
- * reduced motion.
+ * reduced motion, which sets every motion duration of the source to `0ms` (012 research.md R-07).
  */
 export function css(source: readonly TokenRecord[]): string {
   const dark = source.filter((record) => typeof record.value !== "string" && record.value.light !== record.value.dark);
@@ -278,7 +289,9 @@ export function css(source: readonly TokenRecord[]): string {
     `:root {\n${lines("  ", "light", source)}}\n\n` +
     `@media (prefers-color-scheme: dark) {\n  :root:not([data-theme="light"]) {\n${lines("    ", "dark", dark)}  }\n}\n\n` +
     `:root[data-theme="dark"] {\n${lines("  ", "dark", dark)}}\n\n` +
-    `@media (prefers-reduced-motion: reduce) {\n  :root {\n${declaration("    ", "motion-fast", "0ms")}${declaration("    ", "motion-base", "0ms")}  }\n}\n`
+    `@media (prefers-reduced-motion: reduce) {\n  :root {\n${motionDurations(source)
+      .map((record) => declaration("    ", record.name, "0ms"))
+      .join("")}  }\n}\n`
   );
 }
 

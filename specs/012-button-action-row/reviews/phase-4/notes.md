@@ -7,6 +7,11 @@ stop-and-ask below and deleted uncommitted, so no phase-4 commit sits on it). No
 module (`src/spinner.ts` is reached through the element only). One red commit with all of the phase's story tests,
 T042a included, then the green commits.
 
+Commits so far: b58c55f (red, `red.sh 4 phase`: tests only, red, recorded; 121 of 3579 tests failed), fdc5956 (green:
+T045, T045a; the tokens, brand-rules, gates README and plant-runner tests pass), 4ceaefc (the busy button and spinner,
+in progress: T046 to T048 open). The phase stopped on the operator question below; the operator answered it (option (a), 2026-11-15) and the
+phase went on.
+
 ## Operator decision at phase 4 (the stop-and-ask, resolved)
 
 The phase first stopped before its red commit: 002's brand-rules gate, rule (f), accepted exactly
@@ -49,6 +54,97 @@ tasks T042a, T045a, T049.
 
 ## Red run notes
 
-- Six bodies (US3-6, US3-9, US3-7 in both palettes and the busy look in both themes) fail on the base with the driver's
-  `no .spinner svg in the shadow root of #<id>`: the spinner the body reads is the behaviour that is missing, not a
-  setup error of the test.
+`red-phase.log`: 121 of 3579 tests failed; 109 with an `AssertionError`, 12 (six bodies in two harnesses: US3-6, US3-9,
+US3-7 in both palettes and the busy look in both themes) with the driver's `no .spinner svg in the shadow root of
+#<id>`: the spinner the body reads is the behaviour that is missing, not a syntax, import or setup error. The Storybook
+tests of the busy stories fail on the missing stories, and the tokens story's Motion tests (which read the hand-written
+table) on the missing tokens.
+
+## Operator question (stop-and-ask: red tests that cannot pass for a reason outside the behaviour)
+
+With the implementation of 4ceaefc, every red test passes except six busy bodies, in both harnesses (in process 7
+runs, fixture 6 runs; which ones fail depends on timing):
+
+1. **The spinner's box is read while it turns.** US3-3, US3-4 (both directions), US3-5 (both directions), US3-7 (both
+   palettes) and the edge case "both disabled and busy" read the spinner drawing's border box (`driver.box(id,
+   ".spinner svg")`) with motion allowed. A rotated element's border box is the box of its rotated drawing, so the read
+   gives 22.4 to 28 px instead of 20 (and in US3-5 a gap of 6.8 px instead of 8, `inIconPlace` false in US3-4),
+   depending on the angle at the moment of the read. The red tests assumed a still box; they are wrong, not the
+   element (R-07 asks for the `rotate` property on the drawing, and US3-9 reads the animation on that drawing).
+2. **The dark busy-look page has no ground.** "Busy look (dark)" mounts its buttons on the bare runner page, so the
+   dark-theme labels (light ink) sit on white and axe reports `color-contrast` (the same setup error phase 3 corrected
+   in SC-006). Its look comparison passes.
+
+Changing a red test after the red commit needs the operator (the auto-mode check refused the edit as a possible
+weakening), so the phase stops here. Options:
+
+- **(a) Correct the bodies, same expected values (recommended).** Each body that measures the spinner's layout box
+  sets `reducedMotion("reduce")` first, so it reads the still box; US3-5 also asserts that the turning spinner's box
+  does not intersect the label (stricter than before); "Busy look" gets a canvas ground rule as the other dark bodies
+  have. No expected value changes; the reason goes into the commit body and these notes.
+- **(b) Rotate an inner element instead.** The spinner animates a `<g>` (or the `circle`) inside a still `svg`, so the
+  svg's box never turns; US3-6 and US3-9 then read the animation on that inner element (a selector change in the red
+  tests), and "Busy look" still needs the ground (as in (a)).
+- **(c) Something else** the operator states.
+
+Either (a) or (b) changes red test code; no expectation is loosened in either.
+
+**Operator decision at phase 4, 2026-11-15: option (a).** The operator authorised exactly these red-test corrections
+after the red commit, and nothing else in the red tests: in each body that measures the spinner (US3-3, US3-4,
+US3-5, US3-7 and the "both disabled and busy" edge case) reduced motion is turned on first, so the body reads the still
+box, every expected value unchanged; US3-5 also asserts that the turning spinner's box never overlaps the label (five
+reads 150 ms apart with motion allowed, each `false`; stricter than before); the "Busy look" body gets a canvas ground
+rule, as the other dark bodies have. Applied in `scenarios/busy.ts` (commit after ef3cdbf); both harnesses then pass
+(in process 157 of 157 with control.test.ts, fixture 101 of 101).
+
+## Visual baselines
+
+The eight busy baselines (`elements-ocelle-button--{busy,busy-with-icon,busy-link,busy-compact}`, light and dark) and
+the two `tokens--motion` baselines (which now list `motion-spin` and `motion-turn`, a change by design of T045) were
+written only by `OCELLE_VISUAL_ENGINE=docker pnpm run visual:update` in #10's pinned container ("wrote 10 files (8
+added, 2 changed, 0 removed)"; 2443172), and checked with `gate:visual` (96 captures match, "docker only: no
+cross-engine comparison"). No podman cross-engine check was possible in this environment; CI confirms the baselines at
+landing. No baseline PNG was hand-edited or hand-picked.
+
+Under load (16 `yes > /dev/null` processes), `OCELLE_VISUAL_ENGINE=docker pnpm run gate:visual` ran three times: 96
+captures matched each time; the processes were killed afterwards.
+
+## Gate runs (T049)
+
+- `gate:typecheck`, `gate:lint` (283 files), `gate:style-lint` (15 files), `gate:test-lint`, `gate:brand-rules` (7 rules,
+  0 findings on the phase 4 tree), `gate:manifest` (3 elements, no finding): pass.
+- `gate:storybook-build`: 48 stories. `gate:visual`: 96 captures match. `gate:axe`: 96 story-theme runs, 0 serious or
+  critical; 10 notes (0 incomplete, 10 excepted). `gate:contrast` unchanged (no colour token changed).
+- `gate:mutation -- --base 55ec410` (3 shards, `gates/bin/brand-rules.ts` in the default-config scope beside the tokens
+  source and generator): 115 mutants on the changed lines of 6 files, none survived; 8 timeouts, 32 compile errors, 0
+  zero-mutant entries, 0 equivalent records; 7 min 25 s. The 8 timeouts are all on the duration regex
+  (`brand-rules.ts:31`, `generate.ts:269`): the anchors dropped and the fraction part changed (`\d` for `\d+`, `\D+`). No
+  test feeds a fractional or prefixed millisecond value, so these are reported here as Timeout (pass, R-14), not
+  proven killed.
+- `gate:plants`, shard by shard (`OCELLE_VISUAL_ENGINE=docker pnpm run gate:plants -- --shard <k>`, one at a time): all 76
+  shards "every plant as expected"; shards 1 to 3 judged 77, 76 and 76 other plants (with `brand-rules/f-motion-not-zero`
+  and `brand-rules/f-motion-spin-missing`, 32.5 s and 27.8 s), the slowest shard 158 s (40,
+  `visual/fail-token-changed`), 7241 s in all; no shard near 10 minutes.
+- The element plants: reviews/phase-4/plants.md, every one bit.
+- Whole suite, `pnpm test` on 2443172 + fail-token-changed: **3578 of 3579 pass; 1 fails**:
+  `gates/test/integration/plants-robustness.test.ts:178` "has the two gates' plants and the registry's" pins 35
+  contrast and brand-rules plants; the new plant `f-motion-spin-missing` makes 36. This pin changes by design and
+  belonged in the red commit (T042a: "any pinned brand-rules plant count in gates/test/integration/ changed first"); I
+  missed it there. Changing it now is a test change after the red commit outside the operator's authorised
+  corrections, so it is an operator question (T049 left open).
+
+## Operator question 2 (stop-and-ask): the plants-robustness pin
+
+- **(a) Recommended:** change the pin from 35 to 36 in a separate signed-off test commit, recorded here as a missed
+  red-commit pin (the count of plants that this phase adds by design); then rerun the suite and close T049.
+- **(b)** Amend nothing; leave the failing pin for the reviewer to decide.
+- **(c)** Something else the operator states.
+
+**Operator decision at phase 4, 2026-11-15, second stop-and-ask: option (a).** The pin of
+`gates/test/integration/plants-robustness.test.ts` (contrast and brand-rules plants) goes from 35 to 36 for
+`f-motion-spin-missing`, in its own test commit (08246ac), changing nothing else in any test: a pin that changes by design
+and was missed in the red commit.
+
+After it, the whole suite, `pnpm test` on 08246ac: **3579 tests passed in 149 files**. A first rerun gave 5 failures, all
+in `gates/test/integration/visual.test.ts` with exit 2: dockerd had stopped in the container (`docker info` failed). I
+restarted dockerd as root as the environment notes say, and the rerun above passed. T049 is done.

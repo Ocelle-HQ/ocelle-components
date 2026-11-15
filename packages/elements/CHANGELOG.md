@@ -47,6 +47,11 @@ entry points and the browser build's file path (constitution VII).
   after a morph; the moved states are the custom states `:state(expanded)`, `:state(pressed)` and `:state(current)`.
 - In the README, the control conventions gain link versus button, the moved host ARIA (with a recipe per stack) and
   the two surfaces of "current", and the `ocelle-button` section the markup of three consumer compositions.
+- `ocelle-button`'s busy state (mission 012): its property `busy` (reflected) makes the button unavailable (in the tab
+  order, `aria-disabled` and `aria-busy`, not activated; a busy link has no `href`), and shows a busy spinner in the
+  icon's place that turns six times in 4.8 s and then stays still, and does not move under reduced motion; `disabled`
+  wins. It reads the new tokens `--ocelle-motion-spin` and `--ocelle-motion-turn` of `@ocelle/tokens`. In the README,
+  the control conventions gain the unavailable state.
 - The engine floor, raised to Chromium 135 and WebKit 17.4 for ARIA element reflection and custom states (from
   Chromium 120 and WebKit 16.4).
 - The slot convention's size rules now apply to the `icon` and `trailing` slots only, so an element in a control's

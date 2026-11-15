@@ -126,7 +126,7 @@
             },
             {
               "name": "icon",
-              "description": "One icon before the label (the slot convention): `--ocelle-icon-size` square, decorative."
+              "description": "One icon before the label (the slot convention): `--ocelle-icon-size` square, decorative; hidden while busy, the spinner in its place."
             }
           ],
           "name": "OcelleButton",
@@ -204,6 +204,18 @@
             },
             {
               "type": {
+                "text": "boolean"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "busy",
+              "kind": "field",
+              "description": "Busy: while a host waits for the result of an action the button is unavailable (in the tab order and focusable,\n`aria-disabled`, not activated: no `click`, no `ocelle-button-activate`), reports `aria-busy`, and shows a spinner in\nthe icon's place (six turns in 4.8 s, then still; still under reduced motion); a busy link has no `href`.\n`disabled` wins. Reflected.",
+              "default": "false",
+              "attribute": "busy"
+            },
+            {
+              "type": {
                 "text": "string | undefined"
               },
               "reflects": true,
@@ -268,10 +280,10 @@
                 "text": "CustomEvent<Record<string, never>>"
               },
               "name": "ocelle-button-activate",
-              "description": "Dispatched from the element on each activation that delivers a `click` (a pointer click, Enter, Space in button mode, `click()`), before the `click` reaches any bubble-phase listener on the element or its ancestors; bubbles, composed and cancelable, `detail` `{}`. Calling `preventDefault()` on it cancels the click's default action (in link mode the navigation; in button mode the `click` is still delivered). Not dispatched for a link-mode click with Ctrl, Meta, Shift or Alt held, nor for a middle click. A disabled button dispatches neither."
+              "description": "Dispatched from the element on each activation that delivers a `click` (a pointer click, Enter, Space in button mode, `click()`), before the `click` reaches any bubble-phase listener on the element or its ancestors; bubbles, composed and cancelable, `detail` `{}`. Calling `preventDefault()` on it cancels the click's default action (in link mode the navigation; in button mode the `click` is still delivered). Not dispatched for a link-mode click with Ctrl, Meta, Shift or Alt held, nor for a middle click. A disabled or busy button dispatches neither."
             }
           ],
-          "description": "A native button in the Ocelle look, or a link that looks like one: three variants, two sizes, a flush look, the\nground it sits on, a label, a disabled state, an icon slot, link mode with `href`, and host ARIA moved onto the inner\ncontrol.",
+          "description": "A native button in the Ocelle look, or a link that looks like one: three variants, two sizes, a flush look, the\nground it sits on, a label, a disabled and a busy state, an icon slot, link mode with `href`, and host ARIA moved onto\nthe inner control.",
           "customElement": true,
           "cssStates": [
             {
@@ -473,6 +485,15 @@
               "name": "disabled",
               "fieldName": "disabled",
               "description": "Disabled: out of the tab order, reported disabled and not activated (no `click`, no `ocelle-button-activate`).\nReflected.",
+              "default": "false"
+            },
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "name": "busy",
+              "fieldName": "busy",
+              "description": "Busy: while a host waits for the result of an action the button is unavailable (in the tab order and focusable,\n`aria-disabled`, not activated: no `click`, no `ocelle-button-activate`), reports `aria-busy`, and shows a spinner in\nthe icon's place (six turns in 4.8 s, then still; still under reduced motion); a busy link has no `href`.\n`disabled` wins. Reflected.",
               "default": "false"
             },
             {
