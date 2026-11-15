@@ -1,6 +1,6 @@
 {
   "expect": "fail",
-  "why": "A changed token value (color-ink, light) changes every story-theme that shows it: differs on the thirty-four light story-themes measured in the pinned container (FR-004, US2 scenario 2), the twelve the phase 1 spike listed and the eight of mission 005's stories that show color-ink (all but elements-ocelle-brand-mark--chrome, measured for plan decision 29), the fourteen of 012's ocelle-button stories that show color-ink (all but primary, disabled and chrome, measured in the pinned container at phase 2), the five of 012's phase 3 link and state stories that show color-ink (all but link-disabled, measured in the pinned container at phase 3), the four of 012's phase 4 busy stories (measured in the pinned container at phase 4), and none in dark. A story added later that shows color-ink in light adds its line here (research.md R-07).",
+  "why": "A changed token value (color-ink, light) changes every story-theme that shows it: differs on the thirty-four light story-themes measured in the pinned container (FR-004, US2 scenario 2), the twelve the phase 1 spike listed and the eight of mission 005's stories that show color-ink (all but elements-ocelle-brand-mark--chrome, measured for plan decision 29), the fourteen of 012's ocelle-button stories that show color-ink (all but primary, disabled and chrome, measured in the pinned container at phase 2), the five of 012's phase 3 link and state stories that show color-ink (all but link-disabled, measured in the pinned container at phase 3), the four of 012's phase 4 busy stories (measured in the pinned container at phase 4), the twelve of 012's phase 5 action row stories (all but chrome, measured in the pinned container at phase 5), and none in dark. A story added later that shows color-ink in light adds its line here (research.md R-07).",
   "findings": [
     {
       "location": "base-styles--base-page/light",
@@ -172,6 +172,54 @@
     },
     {
       "location": "elements-ocelle-button--busy-compact/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-action-row--default/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-action-row--flush/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-action-row--all-slots/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-action-row--busy/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-action-row--hovered/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-action-row--flush-hovered/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-action-row--right-to-left/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-action-row--ground-accent-low/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-action-row--ground-inset/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-action-row--ground-hover-bg/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-action-row--ground-state/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-action-row--focused/light",
       "rule": "differs"
     }
   ]
