@@ -158,3 +158,15 @@ this container. A control run with no plant (a comment line changed) failed no t
 |---|---|---|
 | `section-header: .heading-column.empty + .actions { margin-inline-start: auto; }` removed | 2: FR-005, FR-010; FR-005, FR-010, narrow | 2: FR-005, FR-010; FR-005, FR-010, narrow |
 | pairing (FR-005, an empty part adds no line or gap): the heading column never hidden (`class="heading-column"` always) | 1: FR-005, FR-010, narrow | 1: FR-005, FR-010, narrow |
+
+## Review round 4 fix (R4-01)
+
+The fix for R4-01 changes one line of `src/ocelle-card.ts`: `#headerChanged` passes `event.currentTarget`, the card's
+own `header` slot, to `notifyHeaders`. The forwarded-slot pairing plant (contracts/checks.md § Pairing plants) was
+planted on the fix code with the `fix-4` red commit's tests (`1926756`), on 2026-11-15 in this container, with the
+browser build rebuilt from the planted source; `pnpm exec vitest run --project elements --project elements-browser
+test/card.test.ts test/browser/card.test.ts`. Without the plant the same run passes 45 of 45.
+
+| Plant | In process (`elements`) | Fixture (`elements-browser`) |
+|---|---|---|
+| pairing (FR-017, a header that leaves the `header` slot after a forwarded slot's content changed is drawn at its own size): `event.target` restored in `#headerChanged` | 1: R-05 forwarded slot (phase 2 review R4-01), observed `compact` where `regular` is expected | 1: R-05 forwarded slot (phase 2 review R4-01), the same |

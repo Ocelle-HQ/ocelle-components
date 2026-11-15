@@ -102,8 +102,10 @@ export class OcelleCard extends LitElement {
   readonly #slots = new SlotState(this);
   #headers: Element[] = [];
 
+  // The card's own `header` slot, the listener's `currentTarget`: `slotchange` bubbles, so its `target` can be a slot
+  // that a wrapper forwards into the `header` slot, and reading that one would forget the headers assigned here.
   readonly #headerChanged = (event: Event): void => {
-    this.#headers = notifyHeaders(event.target as HTMLSlotElement, this.#headers);
+    this.#headers = notifyHeaders(event.currentTarget as HTMLSlotElement, this.#headers);
   };
 
   protected override updated(changed: PropertyValues<this>): void {
