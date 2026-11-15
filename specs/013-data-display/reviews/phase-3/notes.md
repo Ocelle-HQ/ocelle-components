@@ -93,4 +93,35 @@ podman cross-engine check was possible in this container. CI's "Visual regressio
 
 ## T052 step 2: gate runs
 
-See the green commits' report; the final lines are recorded below once run.
+Run on the green tree (`OCELLE_CHROMIUM_PATH` set to Chromium 1243, `OCELLE_VISUAL_ENGINE=docker`):
+
+- `gate:manifest`: `manifest: 6 elements checked, no finding`
+- `gate:style-lint`: `style-lint: 16 files checked, no finding`
+- `gate:csp`: `csp: 14 files checked, no finding` (after the package build; `dist/ocelle-progress.js` included)
+- `gate:prefix`: `prefix: 267 files checked, no finding`
+- `gate:test-lint`: `test-lint: 202 files checked, no finding`
+- `gate:contrast`: `contrast: 160 pairs checked in light, 168 in dark (149 required per theme)` (unchanged)
+- `gate:storybook-build`: `storybook-build: built 61 stories`
+- `gate:visual`: `visual: 122 captures match their baselines (docker only: no cross-engine comparison)`
+- `gate:axe`: `axe: 122 story-theme runs, 0 serious or critical; 10 notes (0 incomplete, 10 excepted)` (no
+  `storybook/a11y-exceptions.json` entry added)
+- `gate:plants`: run as its 28 shards (`--shard 1` to `28`, docker only; a single run outlasts the session's 2 h job
+  limit), every shard "every plant as expected", then `--verdict storybook/.visual/plant-shards`: `plants: 308 plants
+  of 17 gates and the registry judged, every plant as expected`
+- `gate:mutation -- --base 389b5d4`: the first run left 50 findings (survivors and no-coverage mutants in
+  `ocelle-progress.ts` and `token-only.ts`). Bodies were added for those with observable behaviour (test commit
+  `e1a527f`, after green: number properties from attributes, empty or null label and value text, a determinate gap
+  starting a new episode, a bar moved while hidden and re-shown, a swap keeping the episode open, a moved determinate
+  bar, a bar inserted after the window, a bar changed out of the document, and the token-only translate and
+  comma-list cases); the rest were removed by simplifying the source without changing its behaviour (`75d38e1`) or
+  recorded with their reason (5 `Stryker disable` records). Final: `mutation: 247 mutants on the changed lines of 3
+  files, none survived; 0 timeouts, 79 compile errors, 1 zero-mutant entry; 5 equivalent records`.
+  - One of the five records is not an equivalence: the `ariaValueText` line's condition mutants survive because no
+    read a test can make exposes the value text (T035 spike, operator decision (a)); the review decides on it.
+- The plants of `plants.md` were run again on the simplified source for the four the simplification touched (the
+  still mark, the shared start, the episode end, the slot): each still bites.
+- `gate:typecheck`, `gate:lint`: no finding; `pnpm test`: `unit-tests: 3790 tests passed in 152 files`.
+
+## Left open
+
+Nothing in phase 3.
