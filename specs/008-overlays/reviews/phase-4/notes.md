@@ -504,3 +504,12 @@ the final runs at `1f91513`.
 | 15 | `:241-270` | 24 | 0 | 0 | 4 | 0 | 0 | 516 s |
 | 16 | `:271-300` | 39 | 0 | 0 | 10 | 0 | 0 | 516 s |
 | 17 | `:301-330` | 34 | 0 | 0 | 16 | 2 | 0 | 551 s |
+
+## Operator decision: the R-12 leave row's margin after tdd-check 4 (2026-11-15)
+
+- **Decided by:** the operator, asked in this session as a multiple-choice question.
+- **Problem:** at 4cd0569, tdd-check 4 failed on the R-12 leave row. Under the check's load the measured leave came at 385.4, 300.9 and 319.9 ms, all past the 300 ms delay, so the row failed with its "no run it can judge" message.
+- **Answer:** "Longer delay on this row". Only this row's page gets a longer hover delay, for example 1000 ms. The measured method keeps judging against that delay.
+  - The default 300 ms delay stays covered by the other delay rows.
+  - This replaces the operator's earlier rejection of a longer delay, which was made before the timings were measured.
+- **Not chosen:** fewer moves with no pauses; more retries.
