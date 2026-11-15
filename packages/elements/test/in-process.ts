@@ -551,8 +551,10 @@ export function inProcessDriver(): InProcessDriver {
     typeOf: (id, name) => Promise.resolve(typeof (element(id) as unknown as Record<string, unknown>)[name]),
     has: (id, name) => Promise.resolve(name in element(id)),
     call: async (id, method, ...args) => {
-      const target = element(id) as unknown as Record<string, (...given: unknown[]) => unknown>;
-      const result = target[method]?.(...args);
+      const target = element(id) as unknown as Record<string, unknown>;
+      const callee = target[method];
+      if (typeof callee !== "function") throw new Error(`call: #${id} has no method ${method}`);
+      const result: unknown = Reflect.apply(callee, target, args);
       await settle();
       return plain(result);
     },

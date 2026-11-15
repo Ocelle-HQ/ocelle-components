@@ -536,7 +536,9 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
       const result = await page.evaluate(({ id, method, args }) => {
         const element = document.getElementById(id);
         if (element === null) throw new Error(`no #${id} on the page`);
-        const value = (element as unknown as Record<string, (...given: unknown[]) => unknown>)[method]?.(...args);
+        const callee = (element as unknown as Record<string, unknown>)[method];
+        if (typeof callee !== "function") throw new Error(`call: #${id} has no method ${method}`);
+        const value: unknown = Reflect.apply(callee, element, args);
         return typeof value === "string" || typeof value === "number" || typeof value === "boolean" ? value : null;
       }, { id, method, args });
       await settle(page);
