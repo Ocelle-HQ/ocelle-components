@@ -17,11 +17,15 @@ mutation has happened for the *quiet window* and two further rendering updates h
 same rule; the hold scenario (spec User Story 1 scenario 13) uses it to see the copy emptied after `H`.
 
 The quiet window is derived from the capture's own figures, not fixed (PLAN-FRESH-2-004): the largest `W`
-(`2 × D` before load) + the minimum hold (the largest `W`) + the largest `D`, so 700 + 700 + 350 = 2100 ms at
+(`2 × D` before load) + the minimum hold (the largest `W`) + the largest `D`, so 700 + 700 + 350 = 1750 ms at
 Chromium's figures, followed by the two rendering updates. That is longer than any designed gap between two mutations
-of an announcement (a trigger to the write, `W`; a write to a deferred trigger's emptying, at most `W`; R-02), so a
-write that comes `W` after a pre-load trigger or a first load is seen and then stays current until the final snapshot,
-for longer than `D`, and counts under both rules. In process the window is computed from the test `D` that
+of an announcement (a trigger to the write, at most the largest `W`: `W` after the last trigger, or, when the
+announcer's empty state began before the load and the trigger after it, the pre-load `W` from that state's start,
+which comes before the trigger, so about 650 to 690 ms after it on Chromium; a write to a deferred trigger's
+emptying, at most `W`; R-02 step 2, phase 2 stop 2 decision (a)), so a write that comes after a pre-load trigger,
+after a change right after a first load, or after a first load is seen and then stays current until the final
+snapshot, for longer than `D`, and counts under both rules. The empty state before the write has by then been current
+for at least the `W`, so more than the `D`, of the load state in which it began, and is kept under `"settled"` too. In process the window is computed from the test `D` that
 `test/in-process.ts` gives both the element and the capture (research R-09, PLAN-FRESH-2-003 (a)). The hold `H` is
 not part of the window: emptying a copy is not an announcement.
 
@@ -107,7 +111,9 @@ it is the same code over the page's CDP session. Both harnesses share `test/live
   scenario with the one test constant that also sets the capture's `D` (research R-09). Fixture pages never call it.
   Phase 1 (T005) adds the constant and the capture's `D`; phase 2 (T020a) adds the call, and
   `test/in-process-timing.test.ts` (T014a) checks that the capture's `D` is the constant's and that an inserted
-  notice's copy is written `2 × D` of the constant after the insertion (analysis G7).
+  notice's copy is written `2 × D` of the constant after the insertion (analysis G7). The constant gives both load
+  states one `D`, so in process the wait's floor from the empty state's start (R-02 step 2) never binds; a rule test
+  on a fake clock with two `D` values (T025a) and the fixture-page cells cover it.
   It keeps the timing its first call in the test file returned (the shipped `announcerDefaults`) and exposes it
   read-only; `test/live-timing.test.ts` asserts that value and `announcerDefaults` against the literals
   `{ delayLoaded: 150, delayLoading: 350, hold: 5000 }`, so the shipped figures' mutants are killed in process
@@ -183,7 +189,7 @@ phase records the plant run's output in `specs/010-feedback-forms/reviews/phase-
 | Plant kind | Families | Overrides | Imports |
 |---|---|---|---|
 | element class | alert path, alert baseline, alert pending role, alert step after reset, politeness, politeness baseline, hidden, nested region, host-role region, heading gap, host ARIA, naming, change event, implicit submission, form value, validity, option mirroring, indicator | a protected method of the element or of its base class (a trigger handler, the politeness, the render or the static styles, the internals setup, the name, value, validity or option step) | the element class from its `src/ocelle-*.ts` module |
-| announcer | insertion announcement, merge window, minimum hold, baseline re-check, reveal baseline, hold, first load late write, short-lived empty state, text baseline, error baseline | the element's protected `createAnnouncer()`, returning a class derived from `Announcer` with one protected step overridden (the wait, the write, the hold, the re-check, the baseline) | `Announcer` from `src/live.ts`, and the element class |
+| announcer | insertion announcement, merge window, minimum hold, baseline re-check, reveal baseline, hold, first load late write, empty-state start, short-lived empty state, text baseline, error baseline | the element's protected `createAnnouncer()`, returning a class derived from `Announcer` with one protected step overridden (the wait, the write, the hold, the re-check, the baseline) | `Announcer` from `src/live.ts`, and the element class |
 | first load and move | first load (constructor `isConnected` rule), first load (announces on first load), move, later task | the element's protected first-load or move query, which reads `src/live.ts` and the registration flag of `src/define.ts` | the element class |
 | timing values | shipped timing | no class: the row calls `checkShippedTiming(defaults, firstReturn)` of `packages/elements/test/live-timing-check.ts`, the check `test/live-timing.test.ts` runs, with `{ ...announcerDefaults, delayLoaded: 0 }` and the real first return, then with the real `announcerDefaults` and a first return other than the constant; each call must throw the check's message. Before them, the row calls the check unplanted, with the real `announcerDefaults` and the real first return, and that call must not throw, so the row fails at the scaffold and the red commit, where the constant is the neutral `{ 0, 0, 0 }` and the first return is the stub's `undefined` (analysis C5) | `announcerDefaults` from `src/live.ts` |
 | planted reading | oracle reading | no class: the row runs the named case of `packages/elements/test/live-rules.ts` with a planted `{ regionText, announcements }` from `packages/elements/test/fixtures/reading-plants.ts` | `test/live-rules.ts` |
@@ -196,7 +202,7 @@ protected methods' names are fixed by the red commit's plant fixtures and declar
 method the scaffold lacks still loads, since Vitest runs the tests untyped and the typecheck gate runs at phase end.
 
 The last column names the task that adds each row or cell (analysis G11): the capture and oracle rows are T001c's
-(phase 1); the US1, SC-002 and `live-timing` cells T016's (phase 2), with notice plants; the US2 cells T034's (phase 3), with plant classes derived
+(phase 1); the US1, SC-002 and `live-timing` cells T016's (phase 2), with notice plants, and the "empty-state start" row T025a's (phase 2, after stop 2); the US2 cells T034's (phase 3), with plant classes derived
 from `ocelle-form-input`; the US3 cells T052's (phase 4), with plant classes derived from `ocelle-form-select`.
 
 | Family | Plant | Must turn red | Added by |
@@ -213,6 +219,7 @@ from `ocelle-form-input`; the US3 cells T052's (phase 4), with plant classes der
 | shipped timing | `announcerDefaults` with `delayLoaded: 0`; the timing in force not started from the constant (planted values, Seams) | `checkShippedTiming` of `test/live-timing-check.ts`, the assertions `test/live-timing.test.ts` runs; the unplanted call with the real values must not throw (analysis C5) | T016 |
 | hold | empties the copy after `W` instead of `H` (PLAN-FRESH-2-005) | US1-13 hold scenario (copy settled for `H`) | T016 |
 | first load, late write | writes exactly the pre-load `W` after first load under `drive.readyState("loading")` (PLAN-FRESH-2-004) | US1-10 under `registerFirstLoad`, under both rules | T016 |
+| empty-state start | the wait ignores the empty state's start: it ends `W` (now) after the last trigger only (phase 2 stop 2, decision (a)) | on fixture pages under `startDocument`, the cells that change a first-loaded notice in the first task after the load (US1-11 text, US1-13 one task; `test/browser/plants.test.ts`), and in process the fake-clock rule case with two `D` values (a trigger after the load, the empty state begun before it) | T025a |
 | short-lived empty state | text written in a microtask after the announcer appears; text written in the first animation frame | US1-8 (`"settled"` count 0) | T016 |
 | first load | the constructor's `isConnected` rule of the first draft (research R-02) | US1-8 and US2-20 for `innerHTML`, `template` and `domparser` | US1-8 T016; US2-20 T034 |
 | first load | announces on first load | US1-10 under `startDocument` and `registerFirstLoad`, US2-18 | US1-10 T016; US2-18 T034 |

@@ -48,7 +48,9 @@ README's floor list. Only Chromium is measured.
 
 **Performance Goals**: no measurable cost beyond one `MutationObserver` per notice, per select and per control with
 external labels, and one timer per pending announcement. An announcement reaches the tree `W` after its last trigger
-(300 ms after load, 700 ms before; R-02) and its copy is held for `H` (5000 ms), or until the next announcement but
+(300 ms after load, 700 ms before; R-02), and no earlier than `W` of the load state in which the announcer's current
+empty state began, counted from its start (a change right after a first load: about 650 to 690 ms after the trigger
+on Chromium; phase 2 stop 2, decision (a)), and its copy is held for `H` (5000 ms), or until the next announcement but
 at least `W`.
 
 **Constraints**: strict CSP (`default-src 'none'; script-src 'self'; style-src 'self'`), token-only styles, no ID
@@ -107,7 +109,9 @@ VIII, and I for the internal setter), after round 3's fixes (rows I, III and VII
    shows after a programmatic focus is measured when its stories are written; if not, stop for the operator (R-08).
 7. **Announcements through a separate region** (R-02; operator decisions PLAN-FRESH-1-001 (b) and
    PLAN-A11Y-SECURITY-1-002 (a)): a copy of the text is written into a visually hidden atomic live region `W` after the
-   last trigger (300 ms after load, 700 ms before) and held for `H` (5000 ms, or until the next announcement but at
+   last trigger (300 ms after load, 700 ms before), and no earlier than `W` of the load state in which the region's
+   current empty state began, counted from its start (phase 2 stop 2, operator decision (a): a change right after a
+   first load is written about 700 ms after the region's first render), and held for `H` (5000 ms, or until the next announcement but at
    least `W`), so a browse-mode user may meet the text twice within that window (README; operator decision
    PLAN-FRESH-2-005 (b), which restates the cost accepted at round 1 as `W`). The host's node is kept from being a
    second live region by `internals.ariaLive = "off"`, measured in T002; if Chromium does not honour it, the plan
@@ -118,7 +122,10 @@ VIII, and I for the internal setter), after round 3's fixes (rows I, III and VII
    SC-002 amended): a trigger while waiting restarts the wait, so changes less than `W` apart in any tasks announce
    the final text once; the text is compared with the baseline when the wait ends; a trigger during the hold empties
    the copy only once it has been current for `W`. A text changing more often than every `W` is not announced until
-   it stops (README).
+   it stops (README). The wait also ends no earlier than `W` of the load state in which the region's empty state
+   began, counted from its start (phase 2 stop 2, operator decision (a), `reviews/phase-2/decision-stop-2.md`), so a
+   region rendered empty before the load is kept for the pre-load `D` the capture's `"settled"` rule asks before a
+   change right after the load is written (README).
 10. **The platform alert event** (R-02; operator decision PLAN-FRESH-2-002 (a), with spec FR-009 amended): for a host
     `role="alert"`, insertion, reveal and a change to `alert` write no copy; Chromium's alert event
     (`ax_event_generator.cc`) carries them. Not measured by the capture; the scenarios check a zero count and the
