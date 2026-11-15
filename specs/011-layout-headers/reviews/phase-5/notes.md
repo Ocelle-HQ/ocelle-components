@@ -116,3 +116,21 @@ landing.
   phase base byte for byte).
 - `gates/plants/storybook-build/fail-empty-index`: the new story file replaced by one with no story export.
 - `gates/plants/visual/fail-token-changed`: the reason only (above).
+
+## Checks at the green state
+
+OCELLE_CHROMIUM_PATH set to Chromium 1243; docker 29.9.2 as the engine (podman absent). Commits: scaffold `3cda650`,
+red `5d556e3`, green `86f6304`, the manifest plant copies `9ad88a8`.
+
+| Check | Result |
+|---|---|
+| `red.sh 5 phase` on `5d556e3` | tests only, red: 118 of 3593 failed, every one on an assertion (`red-phase.log`), the scenario bodies in both harnesses included |
+| `gate:typecheck`, `gate:lint` (304 files), `gate:style-lint` (19), `gate:test-lint` (207), `gate:csp` (23), `gate:prefix` (268), `gate:pins` (5 manifests), `gate:config-copies` | pass |
+| `gate:manifest` | "manifest: 7 elements checked, no finding" |
+| `gate:storybook-build` | "built 57 stories" |
+| `gate:axe` | "axe: 114 story-theme runs, 0 serious or critical; 10 notes (0 incomplete, 10 excepted)" |
+| `gate:visual -- --engine docker` | "visual: 114 captures match their baselines (docker only: no cross-engine comparison)" |
+| `gate:mutation -- --base 2b1c1ac` | "29 mutants on the changed lines of 2 files, none survived; 0 timeouts, 2 compile errors, 1 zero-mutant entry; 1 equivalent record" (the zero-mutant entry is `src/index.ts`, an export; the equivalent record is the `label` property options, as the sidebar's) |
+| `gate:signoff -- --range 2b1c1ac..HEAD` | no finding |
+| `pnpm test` at `9ad88a8` (dockerd running) | "unit-tests: 3593 tests passed in 158 files" |
+| `gate:plants` (no `--skip-container`, `OCELLE_VISUAL_ENGINE=docker`) at `9ad88a8` | "plants: 301 plants of 17 gates and the registry judged, every plant as expected" (about 2 h 20 min). The run before it, at `86f6304`, judged 295 of 301 as expected: the six `manifest/fail-undescribed-*` plants reported "not-caught: findings differ: unexpected packages/elements/custom-elements.json stale", because the green commit had merged the rail's module into their manifest copies textually, after the plant's module instead of in code-point order. `9ad88a8` regenerates the six copies with the generator (the same derivation reproduces their copies at the phase base byte for byte); a `--skip-container` run then judged 253 plants as expected, and the full run above all 301 |
