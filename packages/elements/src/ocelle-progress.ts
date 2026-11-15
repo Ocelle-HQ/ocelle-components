@@ -48,13 +48,14 @@ const numberAttribute = { fromAttribute: (value: string | null): number | undefi
 /** Gives an element's internals the progressbar role and its minimum, 0 (R-05). */
 function progressbar(internals: ElementInternals): ElementInternals {
   internals.role = "progressbar";
+  // Stryker disable next-line StringLiteral: equivalent, a progressbar's minimum is 0 when none is given, as Chromium's tree reports it; R-05 sets it all the same
   internals.ariaValueMin = "0";
   return internals;
 }
 
-/** Text that is not empty, or undefined. */
-function text(raw: string | undefined): string | undefined {
-  return typeof raw === "string" && raw !== "" ? raw : undefined;
+/** Text that is not empty, or undefined (an unset, `null` or empty property). */
+function text(raw: string | null | undefined): string | undefined {
+  return raw === null || raw === "" ? undefined : raw;
 }
 
 /**
@@ -273,11 +274,12 @@ export class OcelleProgress extends LitElement {
 
   override connectedCallback(): void {
     super.connectedCallback();
-    // A bar moved or re-inserted keeps its render, so it joins the episode here; a new one joins after its render.
-    if (this.hasUpdated && this.#value === undefined) this.#join();
+    // A bar moved or re-inserted keeps its render and gets no update, so it joins the episode here.
+    if (this.#value === undefined) this.#join();
   }
 
   override disconnectedCallback(): void {
+    // Stryker disable next-line CallExpression: equivalent, Lit's own disconnection only notifies reactive controllers, which this element has none of
     super.disconnectedCallback();
     this.#leave();
   }
@@ -295,16 +297,21 @@ export class OcelleProgress extends LitElement {
   /** Leaves the loading episode; the episode ends at the next frame if no indeterminate bar is connected by then. */
   #leave(): void {
     const open = episode();
-    if (!open.bars.delete(this) || open.bars.size > 0) return;
+    open.bars.delete(this);
     requestAnimationFrame(() => {
+      if (open.bars.size > 0) return;
       const holder = document as unknown as Record<symbol, Episode | undefined>;
-      if (open.bars.size === 0 && holder[episodeKey] === open) Reflect.deleteProperty(holder, episodeKey);
+      // Stryker disable next-line ConditionalExpression: equivalent, the record captured at leaving is the document's until a frame callback deletes it, and no bar opens another between two callbacks of one frame
+      if (holder[episodeKey] === open) Reflect.deleteProperty(holder, episodeKey);
     });
   }
 
-  /** A mark animation that starts (a re-show, a direction change, reduced motion ended) joins the episode. */
+  /**
+   * A mark animation that starts (a re-show, a direction change, reduced motion ended) joins the episode; only the
+   * indeterminate mark has an animation.
+   */
   readonly #started = (): void => {
-    if (this.isConnected && this.#value === undefined) this.#join();
+    this.#join();
   };
 
   protected override updated(): void {
@@ -312,6 +319,7 @@ export class OcelleProgress extends LitElement {
     const max = this.#max;
     this.#internals.ariaValueMax = String(max);
     this.#internals.ariaValueNow = value === undefined ? null : String(value);
+    // Stryker disable next-line ConditionalExpression,EqualityOperator: not observable, no read a test can make in Chromium exposes the value text (reviews/phase-3/spike.md; operator decision (a)); the visible value text's rule is proven in render()
     this.#internals.ariaValueText = value === undefined ? null : (text(this.valueText) ?? null);
     this.#internals.ariaLabel = text(this.label) ?? null;
     const fill = this.renderRoot.querySelector<HTMLElement>(".fill");

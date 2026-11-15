@@ -277,9 +277,13 @@ function iterationCountRaw(nodes: readonly Node[]): string[] {
     else items[items.length - 1]?.push(node);
   }
   return items.flatMap((item) => {
-    const counts = item.filter((node) => node.type === "word" && valueParser.unit(node.value) !== false && (valueParser.unit(node.value) as valueParser.Dimension).unit === "");
+    const counts = item.filter((node) => {
+      const number = valueParser.unit(node.value);
+      return number !== false && number.unit === "";
+    });
     const [count] = counts;
     const allowed = counts.length === 1 && count !== undefined && positiveInteger.test(count.value) ? count : undefined;
+    // Stryker disable next-line StringLiteral: equivalent, classify() reads the property only for font values and unitless numbers, and no property name but the unitless ones and the fonts changes either
     return item.flatMap((node) => (node === allowed ? [] : classify([node], "animation-iteration-count", false)));
   });
 }
