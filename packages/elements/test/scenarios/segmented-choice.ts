@@ -674,7 +674,7 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
   },
   {
     // Plants: the pressed paint as an inset box-shadow only (forced colours compute it to none: no Highlight edge); the
-    // boundaries left to forced colours' default (no ButtonBorder).
+    // boundaries kept out of forced colours (`forced-color-adjust: none` with their `control-border` lines).
     name: "US3-11: in forced colours every boundary is ButtonBorder, the default pressed segment shows a 3 px Highlight border, the joined pressed segment a 3 px Highlight bar on its block-end edge inside its box, and a focused segment a Highlight ring (FR-008)",
     fixture: true,
     run: async (driver, inPage) => {
@@ -869,8 +869,8 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
     },
   },
   {
-    // Plants: regrouping on the group's resize only (the text change and the host rule then leave the rounding of the
-    // old rows); regrouping only after a child batch (the host rule, which no mutation reports, is then missed).
+    // Plants: observing the group only, or the segments' content boxes (the host rule, which changes only Mine's
+    // padding, is then missed); no regroup on the observations.
     name: "US3-18: joined on two rows, a text change of Mine at the same container width and group block size moves Blocked to row 2, and Mine, Blocked and Done are rounded for the new rows; a host rule that widens Mine with no DOM change does the same; read at the next delivery of the resize observations (FR-029)",
     fixture: true,
     run: async (driver, inPage) => {
@@ -1229,7 +1229,8 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
     expected: { inTask: { value: "blocked", pressed: "true" }, tree: exposed("Lane filter", ["All", "Mine", "Blocked"], 2), events: [] },
   },
   {
-    // Plants: `label` not trimmed or a blank label naming the group; the host `aria-label` not deciding alone.
+    // Plant: `label` not trimmed or a blank label naming the group. (That a present host `aria-label` decides alone is
+    // Chromium's own naming of the host, so no plant of the element's makes it fail; plants.md.)
     name: "FR-006: the toolbar's name is the trimmed label, a blank label leaves it unnamed, a later label change follows; a host aria-label names it and decides alone, a blank one leaves it unnamed beside a label, and removing it falls back to the label",
     fixture: true,
     run: async (driver, inPage) => {
@@ -1317,7 +1318,8 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
     expected: { kept: "all", tree: exposed("Lane filter", lanes, 3), value: "todo", events: [] },
   },
   {
-    // Plant: the remembered value left out of the first render (a value attribute naming a disabled segment).
+    // Plant: no first enabled segment pressed on first render when the value names a disabled segment (both the host
+    // set's and the batch's pick of the first enabled segment dropped).
     name: "FR-027: on first render with a value no enabled segment has the first enabled segment is pressed, and with a value naming an enabled segment that segment is, with no event",
     fixture: true,
     run: async (driver, inPage) => {
