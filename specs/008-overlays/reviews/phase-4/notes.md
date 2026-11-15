@@ -321,3 +321,10 @@ touch); the other shards are left to CI.
   that row robust under load (for example a longer delay on its page, or measuring the leave's real time) changes a
   Phase 4 test and is a question for the operator. T052's own work (baselines, `gate:visual`, `gate:axe`, plants) is
   done and ticked.
+
+## Operator decision: the R-12 hover-delay timing row (2026-11-15)
+
+- **Decided by:** the operator, asked in this session as a multiple-choice question.
+- **Problem:** the row "Hover delay, moves inside the tooltip, then leaving before the delay (R-12)" failed under full-suite load in 2 of 2 runs at 296072b, though it passes on its own.
+- **Answer:** "Measure real leave time". The test records when the pointer actually left, and asserts there is no bubble whenever leave time minus entry is under the delay. The delay and the spec do not change.
+- **Not chosen:** a longer delay on the row's page; re-running and accepting.
