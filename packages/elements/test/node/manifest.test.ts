@@ -262,7 +262,7 @@ describe("generate(root) on the repository's element source", () => {
     const manifest = await generate(repo);
     const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
     expect(manifest.schemaVersion).toBe("1.0.0");
-    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-button.ts", "src/ocelle-icon.ts"]);
+    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-action-row.ts", "src/ocelle-brand-mark.ts", "src/ocelle-button.ts", "src/ocelle-icon.ts"]);
     const [icon] = modules.find((module) => module.path === "src/ocelle-icon.ts")?.declarations ?? [];
     expect(icon).toMatchObject({
       kind: "class",
@@ -375,6 +375,47 @@ describe("generate(root) on the repository's element source", () => {
       form: [],
       formMembers: [],
     });
+  });
+
+  // 012 phase 5 (tasks.md T053; FR-030, FR-053; contracts/elements-package.md § ocelle-action-row): the row's
+  // properties (current and unavailable come with phase 6), the moved attributes and their mirrors, the slots, parts and
+  // the event with its detail type, each described.
+  it('declares ocelle-action-row with its tag name, class, rowId (row-id), label, layout ("row" | "card"), presentation ("default" | "flush"), ground (with "chrome"), href, target, rel and busy, the click() method, the moved aria-label, aria-labelledby, aria-describedby and title with their mirrors, the default, icon, description, tags and trailing slots, the parts control, title, description and tags, and the event ocelle-action-row-activate with its detail type, each described (012 FR-030, FR-053)', async () => {
+    const manifest = await generate(repo);
+    const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [row] = modules.find((module) => module.path === "src/ocelle-action-row.ts")?.declarations ?? [];
+    expect(row).toMatchObject({ kind: "class", name: "OcelleActionRow", tagName: "ocelle-action-row", customElement: true, cssProperties: [] });
+    const described = (list: unknown): Record<string, unknown>[] =>
+      ((list ?? []) as Record<string, unknown>[]).map(({ description, ...rest }) => ({ ...rest, described: typeof description === "string" && description !== "" }));
+    const text = "string | undefined";
+    const layout = '"row" | "card" | undefined';
+    const presentation = '"default" | "flush" | undefined';
+    const ground = '"accent-low" | "inset" | "hover-bg" | "state" | "chrome" | undefined';
+    const rowMoved = ["aria-label", "aria-labelledby", "aria-describedby", "title"];
+    expect(described(row?.members)).toEqual([
+      { kind: "field", name: "rowId", privacy: "public", type: { text }, default: "undefined", attribute: "row-id", reflects: true, described: true },
+      { kind: "field", name: "label", privacy: "public", type: { text }, default: "undefined", attribute: "label", described: true },
+      { kind: "field", name: "layout", privacy: "public", type: { text: layout }, default: "undefined", attribute: "layout", reflects: true, described: true },
+      { kind: "field", name: "presentation", privacy: "public", type: { text: presentation }, default: "undefined", attribute: "presentation", reflects: true, described: true },
+      { kind: "field", name: "ground", privacy: "public", type: { text: ground }, default: "undefined", attribute: "ground", reflects: true, described: true },
+      ...["href", "target", "rel"].map((name) => ({ kind: "field", name, privacy: "public", type: { text }, default: "undefined", attribute: name, reflects: true, described: true })),
+      { kind: "field", name: "busy", privacy: "public", type: { text: "boolean" }, default: "false", attribute: "busy", reflects: true, described: true },
+      { kind: "method", name: "click", return: { type: { text: "void" } }, described: true },
+    ]);
+    expect(described(row?.attributes)).toEqual([
+      ...rowMoved.map((name) => ({ name, type: { text: "string" }, described: true })),
+      ...rowMoved.map((name) => ({ name: `data-ocelle-moved-${name}`, type: { text: "string" }, described: true })),
+      { name: "row-id", fieldName: "rowId", type: { text }, default: "undefined", described: true },
+      { name: "label", fieldName: "label", type: { text }, default: "undefined", described: true },
+      { name: "layout", fieldName: "layout", type: { text: layout }, default: "undefined", described: true },
+      { name: "presentation", fieldName: "presentation", type: { text: presentation }, default: "undefined", described: true },
+      { name: "ground", fieldName: "ground", type: { text: ground }, default: "undefined", described: true },
+      ...["href", "target", "rel"].map((name) => ({ name, fieldName: name, type: { text }, default: "undefined", described: true })),
+      { name: "busy", fieldName: "busy", type: { text: "boolean" }, default: "false", described: true },
+    ]);
+    expect(described(row?.slots)).toEqual(["", "icon", "description", "tags", "trailing"].map((name) => ({ name, described: true })));
+    expect(described(row?.cssParts)).toEqual(["control", "title", "description", "tags"].map((name) => ({ name, described: true })));
+    expect(described(row?.events)).toEqual([{ name: "ocelle-action-row-activate", type: { text: "CustomEvent<{ rowId: string }>" }, described: true }]);
   });
 
   it("rejects a root without an element module, naming the directory", async () => {

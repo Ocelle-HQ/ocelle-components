@@ -199,6 +199,26 @@ const fragments = [
   "A host that overrides `--ocelle-motion-spin` (one turn of the spinner, 800 ms) keeps it at or below 833 ms, so the six turns end within 5 s",
   "The library shows and announces no text while busy (no \"Loading\" string): a host that wants an announcement makes it",
   "While busy it also reads the motion tokens `--ocelle-motion-spin` and `--ocelle-motion-turn`",
+  // 012 phase 5 (tasks.md T053, T057; contracts/elements-package.md § ocelle-action-row; plan decision 30): the
+  // ocelle-action-row section, its conventions and its interface
+  "The host is a grid container (`grid` for `ocelle-action-row`, with `min-inline-size: min-content`, so a shrink-wrapping container never makes it 0 wide)",
+  "`row-id` (property `rowId`, reflected): the row's id, which `ocelle-action-row-activate` carries as `detail.rowId` (`\"\"` when absent)",
+  "`layout` (attribute and property, reflected): `row` (the default) puts the icon, the title and the description on one line with the tags and the trailing icon, which move together to a second line when the line cannot hold them",
+  "`presentation` (attribute and property, reflected): `default` (a bordered row on `--ocelle-color-sheet`, `--ocelle-radius-row`) or `flush` (no border and no surface, the block padding `--ocelle-space-1` and the compact text scale); any other value renders `default`",
+  "Every row is at least `--ocelle-target-min` (44 px) tall in every presentation and layout, with the inline padding `--ocelle-space-3`",
+  "`ground` (attribute and property, reflected): as on `ocelle-button`, it selects the default row's border: `--ocelle-color-control-border` on the main grounds, `--ocelle-color-accent-strong` with `accent-low`, `inset`, `hover-bg` or `state`; `ground=\"chrome\"` gives no fill, a `--ocelle-color-chrome-muted` border, the title in `--ocelle-color-chrome-ink` and the description and tags in `--ocelle-color-chrome-muted`",
+  "On hover the surface becomes `--ocelle-color-hover-bg` (`--ocelle-color-chrome-hover` on chrome) and a default row's border `--ocelle-color-hover-border` (`--ocelle-color-chrome-ink` on chrome); a flush row gets no border and nothing moves",
+  "`busy` (boolean attribute and property, reflected): the row's content is updating; its inner control reports `aria-busy=\"true\"`, and activation still dispatches the event: on a row, busy does not mean unavailable",
+  "Each activation (a pointer click, Enter or Space, the element's `click()`) dispatches `ocelle-action-row-activate` from the element: a `CustomEvent` with `bubbles: true`, `composed: true`, `cancelable: true` and `detail` `{ rowId }`",
+  "The row is named by its title (the default slot), then by `label` or the host's `aria-label` or `aria-labelledby` in the name order; its accessible description is the text of the `description` slot followed by that of the `tags` slot, unless the host sets `aria-describedby`",
+  "A `description` or `tags` element without non-whitespace text (an empty `<span slot=\"description\"></span>`, as a server template renders a missing value) contributes nothing and takes no space; text written into it later is picked up",
+  "The description, tags and trailing content are shown beside the row's control and hidden from assistive technology as content: the description and tags reach it as the row's accessible description",
+  "Interactive content (a link, a button, an input) in the `description`, `tags` or `trailing` slot is not supported: it is hidden from assistive technology there, and axe reports it as `aria-hidden-focus`",
+  "Slotted content that sets its own `pointer-events` takes the clicks on it, which the row then ignores (they do not pass through its control)",
+  "The part `control` is the row's icon-and-title control, not its surface: `::part(control)` styles do not reach the row's surface or border",
+  "The title and the description wrap anywhere when a word does not fit, so a long identifier never makes the row wider than its container",
+  "The focus ring is drawn inside the row (`--ocelle-focus-offset-inset`), so a scroll container's edge or the next row never clips or covers it",
+  "`ocelle-action-row` moves `aria-label`, `aria-labelledby`, `aria-describedby` and `title` (Host ARIA is moved); a moved `title` describes the row when nothing else does",
   // two copies on a page (FR-006, Edge Cases)
   "Two copies of the package on one page, two versions or the browser build beside a bundle of the module build, cannot both define an element: the first definition wins and the second import throws nothing",
 ];
@@ -209,6 +229,7 @@ const entryRows = [
   "| `@ocelle/elements/ocelle-icon.js` | `dist/ocelle-icon.js` | `ocelle-icon` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-brand-mark.js` | `dist/ocelle-brand-mark.js` | `ocelle-brand-mark` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-button.js` | `dist/ocelle-button.js` | `ocelle-button` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-action-row.js` | `dist/ocelle-action-row.js` | `ocelle-action-row` only; for hosts with a bundler |",
   "| `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |",
   "| `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |",
 ];
@@ -253,7 +274,7 @@ describe("packages/elements/README.md", () => {
   it("lists exactly the entry points of package.json's exports in its Entry points table (FR-002)", () => {
     const manifest = JSON.parse(read("package.json")) as { exports?: Record<string, string> };
     expect(tableRows(read("README.md"), "Entry points")).toEqual(entryRows);
-    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-button.js", "./browser.js", "./custom-elements.json"]);
+    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-button.js", "./ocelle-action-row.js", "./browser.js", "./custom-elements.json"]);
   });
 
   it("lists the thirteen names of the set, whether each mirrors and the consumer need it meets, in its Icons table (US2-1, FR-018, SC-007)", () => {
@@ -310,6 +331,12 @@ describe("packages/elements/CHANGELOG.md", () => {
     // 012 phase 4 (tasks.md T048)
     "`busy` (reflected)",
     "a busy spinner",
+    // 012 phase 5 (tasks.md T057)
+    "`ocelle-action-row`",
+    "`@ocelle/elements/ocelle-action-row.js`",
+    "`ocelle-action-row-activate`",
+    "`row-id`, `layout`, `presentation`, `ground`, `href`, `target`, `rel` and `busy` (reflected) and `label`",
+    "`--ocelle-focus-offset-inset`",
     ...["chevron-start", "chevron-end", "chevron-up", "chevron-down", "arrow-start", "arrow-end", "menu", "close", "folder", "file", "search", "table", "copy"].map((name) => `\`${name}\``),
   ])("names %s under Unreleased / Added (constitution VII, FR-031, SC-008)", (surface) => {
     expect(added).toContain(surface);

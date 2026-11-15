@@ -103,6 +103,14 @@ describe("used values under the six theme conditions", { timeout: 60_000 }, () =
     expect(readings).toEqual(themeConditions.map(() => once));
   });
 
+  // 012 (research.md R-12; tasks.md T052): the row's inside focus ring offset, -(focus-offset + focus-width).
+  it("focus-offset-inset is -5px, the negative of focus-offset (2px) plus focus-width (3px)", async () => {
+    const page = await open("light");
+    const values = await read(page, "light");
+    await page.close();
+    expect([values["focus-offset-inset"], values["focus-offset"], values["focus-width"]]).toEqual([-5, 2, 3]);
+  });
+
   it("the dialog sizes are 1248px and 768px at 1280 × 800, the target size 44px", async () => {
     const page = await open("light");
     const values = await read(page, "light");
