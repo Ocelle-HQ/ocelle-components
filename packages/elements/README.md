@@ -1,9 +1,9 @@
 # @ocelle/elements
 
 The Ocelle web components: standards-based custom elements (Lit 3) that work in any page, a server-rendered page
-under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has five elements:
+under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has six elements:
 `ocelle-icon`, with a set of thirteen icons, `ocelle-brand-mark`, the Ocelle rosette, and the layout elements
-`ocelle-section-header`, `ocelle-card` and `ocelle-page-header`.
+`ocelle-section-header`, `ocelle-card`, `ocelle-page-header` and `ocelle-context-sidebar`.
 
 ## Entry points
 
@@ -15,6 +15,7 @@ under a strict Content Security Policy, a Svelte shell or a desktop webview. Thi
 | `@ocelle/elements/ocelle-card.js` | `dist/ocelle-card.js` | `ocelle-card` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-section-header.js` | `dist/ocelle-section-header.js` | `ocelle-section-header` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-page-header.js` | `dist/ocelle-page-header.js` | `ocelle-page-header` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-context-sidebar.js` | `dist/ocelle-context-sidebar.js` | `ocelle-context-sidebar` only; for hosts with a bundler |
 | `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |
 | `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |
 
@@ -309,6 +310,79 @@ and subtitle fonts and the band are the header's own, at either size.
 In forced colours the rule under the band is drawn in a system colour, and a compact header keeps its compact title.
 `ocelle-page-header` has no event, CSS part or CSS custom property, adds no tab stop, and exposes no heading, banner or
 other landmark of its own.
+
+## `ocelle-context-sidebar`
+
+```html
+<ocelle-context-sidebar label="Team navigation">
+  <p slot="head">Kitty team</p>
+  <ul>
+    <li><a href="/missions">Missions</a></li>
+    <li><a href="/runs">Runs</a></li>
+  </ul>
+  <ocelle-section-header><h2 slot="heading">Projects</h2></ocelle-section-header>
+  <p slot="footer">3 of 5 missions done</p>
+</ocelle-context-sidebar>
+```
+
+`ocelle-context-sidebar` is the column beside a screen's content: a head, sections of navigation and a footer, ruled
+off from each other.
+
+- `head` (slot): the sidebar's head, the team or project it belongs to, padded `--ocelle-space-4` on every side.
+- The default slot: the sections, one element each (a `ul` of links, a `div`, an `ocelle-section-header`), each drawn
+  as a block padded `--ocelle-space-4` on every side across the sidebar's whole inline size.
+- `footer` (slot): the sidebar's footer, a progress summary for example, padded `--ocelle-space-4` on every side and
+  kept at the sidebar's block end.
+
+A `--ocelle-border-width` divider in `--ocelle-color-rule` lies between the head and the first section, between each
+two sections and between the last section and the footer, across the sidebar's whole inline size; with no sections,
+one divider lies between the head and the footer. The sidebar's ground is `--ocelle-color-rail`.
+
+- `label` (attribute and property, not reflected): the name of the sidebar's navigation landmark, trimmed. Not set,
+  empty or whitespace-only, the landmark has no name; the sidebar is drawn the same either way.
+
+Set a distinct `label` on every sidebar: assistive technology lists the navigation landmarks of a page, and unnamed
+ones give its user nothing to tell them apart. A host `aria-label` decides the landmark's name alone when present: a
+non-empty one is the name even when `label` is set, and a blank one leaves the landmark unnamed even with a `label`.
+`label` names the landmark only when the host has no `aria-label`, so removing the host `aria-label` falls back to
+`label`. The sidebar never writes, changes or removes the host's `aria-label`.
+
+`ocelle-context-sidebar` reads the tokens `--ocelle-color-rail`, `--ocelle-color-rule`, `--ocelle-border-width` and
+`--ocelle-space-4`.
+
+The sidebar trims the block margins of each section, and the block-start margin of the first visible element and the
+block-end margin of the last visible element of its head and of its footer, skipping a `hidden` element at either
+edge, so a `p` or a `ul` sits `--ocelle-space-4` inside its part. The margins between the elements of the head or of
+the footer are the page's, and a page rule that sets the trimmed margins wins.
+
+An empty slot of the sidebar takes no space: no padding and no divider. A slot is empty when no element is assigned to
+it and every text assigned to it is whitespace; an assigned element counts as content even when it is `hidden`, so
+remove an element from the slot rather than hide it. The layout follows the slots' content as it changes.
+
+Wrap each section in an element: text in the default slot is drawn between the sections, with the sections' inline
+padding and no block padding, but it is not a section and gets no divider of its own. A `hidden` section draws nothing
+of its own, no box, padding or divider, but it still counts as content: a sidebar whose sections are all hidden keeps
+the dividers around its empty default slot, so remove sections from the slot rather than hide them all.
+
+A page rule does not change a section's padding, inline margins, divider or display: the sidebar sets them
+`!important`, as the slot convention does, so a page reset such as `ul { margin: 0; padding: 0 }` leaves them in
+place. A section's block margins are the page's to set.
+
+The sidebar fills its container's block size when its content is shorter, with the footer at the block end and the
+free space above the footer, and grows with its content when it is taller, the footer following the last section;
+scrolling is the container's. This holds in a block, flex-row or grid container alike, because the host is
+`align-self: start`. A page rule on the host's `align-self` wins, so a page that sets it to `stretch` in a flex row or
+grid of definite block size keeps the sidebar at the container's size. In a flex row or a flex column the container
+sets the sidebar's inline size (an `inline-size`, a `flex` value, a grid track): there `align-self: start` leaves it
+at its content's inline size. In a flex column, `align-self: stretch` on the host also gives it the container's inline
+size.
+
+The sidebar replaces the part-level padding and gap overrides and the token-painted dividers Kitty Desktop sets on its
+context sidebars: the parts' padding and the dividers are the sidebar's own, and an empty part takes none.
+
+In forced colours the sidebar's dividers are drawn in a system colour. `ocelle-context-sidebar` has no event, CSS part
+or CSS custom property and adds no tab stop. The host itself is its one navigation landmark, with no other landmark
+inside it.
 
 ## Slot convention
 

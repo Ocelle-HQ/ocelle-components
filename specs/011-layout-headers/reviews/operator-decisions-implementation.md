@@ -44,3 +44,8 @@ Recorded by the orchestrator; each is the operator's answer (human:jeroennouwsde
    the block axis and the sidebar keeps its content's inline size. FR-036 and T035 state it so: in a flex row or a
    flex column the container sets the sidebar's inline size (an `inline-size`, a `flex` value, a grid track); in a
    flex column `align-self: stretch` on the host also gives it the container's inline size.
+8. **2026-11-15, standing approval of the history folds** (relayed by the orchestrator,
+   session_01NUfZSc26YwQLeow31d6R6X, and confirmed by the operator: "the folds are approved from here on"). From
+   phase 4 on, once a phase's review is approved, the fold with `fold-history.sh`, the archive ref of the pre-fold
+   history and the force-push-with-lease of `claude/008-layout-headers` go ahead without a gate. Every other gate
+   still goes to the operator.
