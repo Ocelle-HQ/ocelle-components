@@ -1,13 +1,15 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { commands } from "vitest/browser";
 import { define } from "../src/define.ts";
-import { announcerDefaults } from "../src/live.ts";
+import { Announcer, announcerDefaults } from "../src/live.ts";
 import "../src/ocelle-notice.ts";
+import { emptyStartCase, emptyStartMessage } from "./announcer-rules.ts";
+import type { MakeAnnouncer } from "./announcer-rules.ts";
 import { loopMarkup } from "./fixtures/live-loop.ts";
 import { plainRegion } from "./fixtures/live-regions.ts";
-import { noticePlants } from "./fixtures/notice-plants.ts";
+import { IgnoresEmptyStart, noticePlants } from "./fixtures/notice-plants.ts";
 import { imgDescendants, linkName, noKeepingRule } from "./fixtures/reading-plants.ts";
-import { firstTimingReturn, inProcessDriver } from "./in-process.ts";
+import { firstTimingReturn, inProcessDriver, withTiming } from "./in-process.ts";
 import { announcements, regionText } from "./live-reading.ts";
 import { checkShippedTiming } from "./live-timing-check.ts";
 import { caseNamed } from "./live-rules.ts";
@@ -26,6 +28,8 @@ import type { NoticeScenario } from "./scenarios/notice.ts";
 // red" names US1, SC-002, `live-timing`, the first-load paths or a notice Edge case, each cell a notice scenario body
 // (test/scenarios/notice.ts, notice-matrix.ts) run with the plant's tag (test/fixtures/notice-plants.ts) and with
 // `ocelle-notice`; the shipped-timing rows call `checkShippedTiming` with planted values, after the unplanted call.
+// The "empty-state start" row (T025a, phase 2 stop 2) runs the fake-clock rule case of test/announcer-rules.ts with the
+// plant's announcer and with `Announcer`, under the shipped timing's two `D` values.
 interface Row {
   readonly family: string;
   readonly plant: string;
@@ -65,6 +69,21 @@ const shipped = {
       return "passed";
     }),
 };
+
+/** The fake-clock rule case of the wait's floor for announcers of class `make`, under the shipped timing. */
+function emptyStart(make: MakeAnnouncer): Promise<unknown> {
+  return Promise.resolve().then(() => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "performance"] });
+    try {
+      withTiming(announcerDefaults, () => {
+        emptyStartCase(make);
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+    return "passed";
+  });
+}
 
 /** The capture-bounds body: a capture over the container while `markup` is in it. */
 async function bounds(run: Driver, markup: string): Promise<unknown> {
@@ -124,6 +143,14 @@ const rows: readonly Row[] = [
   noticeRow("first load, deaf window", "light-DOM changes ignored for 100 ms after a first load", "ocelle-plant-deaf-after-first-load", "US1-11 text", /^US1-11 text: announcements/),
   noticeRow("first load, deaf window", "light-DOM changes ignored for 100 ms after a first load", "ocelle-plant-deaf-after-first-load", "US1-13 one task", /^US1-13 one task: announcements/),
   noticeRow("first load, deaf window", "light-DOM changes ignored for 100 ms after a first load", "ocelle-plant-deaf-after-first-load", matrixNoneInfo ?? "SC-002 none info", /^SC-002 none info [a-z-]+: announcements/),
+  {
+    family: "empty-state start",
+    plant: "the wait ignores the empty state's start",
+    body: "the fake-clock rule case with two D values (test/announcer-rules.ts)",
+    message: new RegExp(`^${emptyStartMessage}: `),
+    planted: () => emptyStart(IgnoresEmptyStart),
+    unplanted: () => emptyStart(Announcer),
+  },
   noticeRow("first load", "announces on first load", "ocelle-plant-never-first-load", "US1-10 first load only", /^US1-10 first load only: announcements/),
   noticeRow("nested region", "the content wrapper also carries aria-live", "ocelle-plant-nested-region", "US1-15 status text change", /^US1-15 status text change: announcements/),
   noticeRow("host-role region", "internals.ariaLive left unset", "ocelle-plant-host-region", "US1-15 status text change", /^US1-15 status text change: announcements/),

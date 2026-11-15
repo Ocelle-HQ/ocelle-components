@@ -79,6 +79,16 @@ class LateWrite extends Announcer {
   }
 }
 
+/**
+ * Empty-state start: the wait ignores the start of the region's empty state and ends `W` (now) after the last trigger
+ * only (phase 2 stop 2, decision (a)). Exported for the fake-clock rule case of test/plants.test.ts.
+ */
+export class IgnoresEmptyStart extends Announcer {
+  protected override waitLength(): number {
+    return this.waitTime();
+  }
+}
+
 /** Short-lived empty state: the text written in a microtask after the trigger. */
 class MicrotaskWrite extends Announcer {
   protected override wait(): void {
@@ -236,6 +246,7 @@ export const noticePlants: Readonly<Record<string, CustomElementConstructor>> = 
   "ocelle-plant-keeps-baseline": withAnnouncer(KeepsBaseline),
   "ocelle-plant-short-hold": withAnnouncer(ShortHold),
   "ocelle-plant-late-write": withAnnouncer(LateWrite),
+  "ocelle-plant-ignores-empty-start": withAnnouncer(IgnoresEmptyStart),
   "ocelle-plant-microtask-write": withAnnouncer(MicrotaskWrite),
   "ocelle-plant-frame-write": withAnnouncer(FrameWrite),
   "ocelle-plant-raw-baseline": withAnnouncer(RawBaseline),
