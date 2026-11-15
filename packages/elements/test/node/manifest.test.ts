@@ -247,7 +247,7 @@ describe("generate(root) on the repository's element source", () => {
     const manifest = await generate(repo);
     const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
     expect(manifest.schemaVersion).toBe("1.0.0");
-    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-empty-state.ts", "src/ocelle-fact.ts", "src/ocelle-facts.ts", "src/ocelle-icon.ts"]);
+    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-empty-state.ts", "src/ocelle-fact.ts", "src/ocelle-facts.ts", "src/ocelle-icon.ts", "src/ocelle-progress.ts"]);
     const [icon] = modules.find((module) => module.path === "src/ocelle-icon.ts")?.declarations ?? [];
     expect(icon).toMatchObject({
       kind: "class",
@@ -342,6 +342,58 @@ describe("generate(root) on the repository's element source", () => {
       ],
       parts: [{ name: "body", described: true }],
       properties: [],
+    });
+  });
+
+  // 013 phase 3 (T048; contracts/elements.md § `ocelle-progress`): every list stated, every member described; the host
+  // `aria-label` is observed, not declared (README § Element conventions).
+  it('declares ocelle-progress with value and max (number | undefined), valueText, label, showLabel, size ("compact" | undefined, reflected) and ground ("tinted" | undefined, reflected), no slot, the parts track, fill, label and value-text, and no event or CSS property, each described', async () => {
+    const manifest = await generate(repo);
+    const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [bar] = modules.find((module) => module.path === "src/ocelle-progress.ts")?.declarations ?? [];
+    const named = (list: unknown): unknown => ((list ?? []) as Record<string, unknown>[]).map(({ name, description }) => ({ name, described: typeof description === "string" && description !== "" }));
+    const described = (list: unknown): Record<string, unknown>[] =>
+      ((list ?? []) as Record<string, unknown>[]).map(({ description, ...rest }) => ({ ...rest, described: typeof description === "string" && description !== "" }));
+    const field = (name: string, type: string, attribute: string, reflects = false): Record<string, unknown> => ({
+      kind: "field",
+      name,
+      privacy: "public",
+      type: { text: type },
+      default: "undefined",
+      attribute,
+      ...(reflects ? { reflects: true } : {}),
+      described: true,
+    });
+    const attribute = (name: string, fieldName: string, type: string): Record<string, unknown> => ({ name, fieldName, type: { text: type }, default: "undefined", described: true });
+    expect({ kind: bar?.kind, name: bar?.name, tagName: bar?.tagName, customElement: bar?.customElement, events: bar?.events }).toEqual({ kind: "class", name: "OcelleProgress", tagName: "ocelle-progress", customElement: true, events: [] });
+    expect(described(bar?.members)).toEqual([
+      field("value", "number | undefined", "value"),
+      field("max", "number | undefined", "max"),
+      field("valueText", "string | undefined", "value-text"),
+      field("label", "string | undefined", "label"),
+      field("showLabel", "boolean | undefined", "show-label"),
+      field("size", '"compact" | undefined', "size", true),
+      field("ground", '"tinted" | undefined', "ground", true),
+    ]);
+    expect(described(bar?.attributes)).toEqual([
+      attribute("value", "value", "number | undefined"),
+      attribute("max", "max", "number | undefined"),
+      attribute("value-text", "valueText", "string | undefined"),
+      attribute("label", "label", "string | undefined"),
+      attribute("show-label", "showLabel", "boolean | undefined"),
+      attribute("size", "size", '"compact" | undefined'),
+      attribute("ground", "ground", '"tinted" | undefined'),
+    ]);
+    expect({ slots: bar?.slots, parts: named(bar?.cssParts), properties: bar?.cssProperties, ariaLabel: JSON.stringify(bar).includes('"aria-label"') }).toEqual({
+      slots: [],
+      parts: [
+        { name: "track", described: true },
+        { name: "fill", described: true },
+        { name: "label", described: true },
+        { name: "value-text", described: true },
+      ],
+      properties: [],
+      ariaLabel: false,
     });
   });
 

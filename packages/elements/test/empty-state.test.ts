@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { commands } from "vitest/browser";
 import "../src/ocelle-empty-state.ts";
+import "../src/ocelle-progress.ts";
 import { inProcessDriver } from "./in-process.ts";
 import { emptyStateScenarios } from "./scenarios/empty-state.ts";
 

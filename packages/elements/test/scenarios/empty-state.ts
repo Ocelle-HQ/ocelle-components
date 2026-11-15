@@ -14,7 +14,8 @@
 //
 // Every "does not" outcome shares its body with the positive outcome it guards (contracts/checks.md § Scenario
 // bodies). Every page gets `pageRules` (body margin 0, so the two harnesses agree; container widths; the visual
-// stand-ins) after its mount. US2-7's visual is a plain stand-in until phase 3 slots a real `ocelle-progress`.
+// stand-ins; the probe of `--ocelle-measure-reading`) after its mount. Since phase 3 (tasks.md T039) US2-7's visual is a
+// real `ocelle-progress`, whose inline size is read against the column and that probe, in the bar's own font context.
 import { source } from "../../../tokens/src/source.ts";
 import { systemColours, tokenColour } from "./icon.ts";
 import type { Scenario } from "./icon.ts";
@@ -57,7 +58,9 @@ const pageRules = `
 body { margin: 0; }
 .w600 { inline-size: 600px; }
 .mark { display: block; inline-size: 24px; block-size: 24px; }
-.fill { display: block; inline-size: 100%; block-size: 8px; }
+.w400 { inline-size: 400px; }
+.w1200 { inline-size: 1200px; }
+.reading { display: block; inline-size: var(--ocelle-measure-reading); block-size: 1px; }
 `;
 
 async function mount(driver: Driver, markup: string, base = false): Promise<void> {
@@ -306,22 +309,35 @@ export const emptyStateScenarios: readonly EmptyStateScenario[] = [
     },
   },
   {
-    name: "US2-7 (stand-in until phase 3): in variant=panel a visual stand-in sits above the heading at the panel's visual-to-heading gap, the visual part spans the column, and the screen reader reaches the visual before the heading (FR-021, FR-022)",
+    name: "US2-7: in variant=panel a slotted ocelle-progress sits above the heading at the panel's visual-to-heading gap, its inline size is the smaller of the column's and the reading measure (a 400 px column: the column; a 1200 px column: the measure), and the screen reader reaches the bar before the heading (FR-021, FR-022)",
     run: async (driver) => {
       await mount(
         driver,
-        '<div class="w600"><ocelle-empty-state id="e" variant="panel"><h2 slot="heading" id="h">Loading missions</h2><div slot="visual" id="v" class="fill" role="img" aria-label="Loading"></div></ocelle-empty-state></div>',
+        '<div class="w400"><ocelle-empty-state id="e" variant="panel"><ocelle-progress slot="visual" id="v" label="Loading"></ocelle-progress><h2 slot="heading" id="h">Loading missions</h2></ocelle-empty-state></div>' +
+          '<div class="w1200"><ocelle-empty-state id="w" variant="panel"><ocelle-progress slot="visual" id="wv" label="Loading"></ocelle-progress><h2 slot="heading" id="wh">Loading plans</h2></ocelle-empty-state><span id="measure" class="reading"></span></div>',
       );
-      const body = await driver.box("e", '[part="body"]');
-      const [padding] = await driver.styles("e", '[part="body"]', ["padding-inline-start", "padding-inline-end"]);
-      const content = body.width - Number.parseFloat(padding?.["padding-inline-start"] ?? "0") - Number.parseFloat(padding?.["padding-inline-end"] ?? "0");
+      const measure = (await driver.box("measure")).width;
+      const spans = async (host: string, bar: string): Promise<{ column: number; bar: number }> => {
+        const body = await driver.box(host, '[part="body"]');
+        const [padding] = await driver.styles(host, '[part="body"]', ["padding-inline-start", "padding-inline-end"]);
+        const content = body.width - Number.parseFloat(padding?.["padding-inline-start"] ?? "0") - Number.parseFloat(padding?.["padding-inline-end"] ?? "0");
+        return { column: content, bar: (await driver.box(bar)).width };
+      };
+      const narrow = await spans("e", "v");
+      const wide = await spans("w", "wv");
       return {
         column: await column(driver, "e", ["v", "h"]),
-        spans: body.width > 0 && round((await driver.box("v")).width) === round(content),
+        narrow: { columnNarrower: narrow.column > 0 && narrow.column < measure, bar: round(narrow.bar) === round(Math.min(narrow.column, measure)) },
+        wide: { measureNarrower: measure > 0 && measure < wide.column, bar: round(wide.bar) === round(Math.min(wide.column, measure)) },
         reading: await reading(driver, "e"),
       };
     },
-    expected: { column: spaced(pad.panel, [gap.panel.visual]), spans: true, reading: ["image Loading", "heading 2 Loading missions", "text Loading missions"] },
+    expected: {
+      column: spaced(pad.panel, [gap.panel.visual]),
+      narrow: { columnNarrower: true, bar: true },
+      wide: { measureNarrower: true, bar: true },
+      reading: ["progressbar Loading", "heading 2 Loading missions", "text Loading missions"],
+    },
   },
   {
     name: "US2-8: in both variants the heading is ink and the body ink-muted in light and dark, and under forced colours, in both palettes, both are CanvasText (FR-021)",

@@ -16,7 +16,8 @@ import { describe, expect, it } from "vitest";
 // `viewBox` rule and the lint's `1lh` limit) and the naming rule (T045, SC-007). Phase 5 adds the mark (T056): its
 // variants and grounds, the tokens it reads, its box and the percentage-height rule, forced colours, the light-mode
 // spot, behaviour without `tokens.css`, its entry point, its licence sentence and the trademark note of FR-030 (in the
-// README and in the repository's `NOTICE`), and the CHANGELOG's final surface list (FR-031).
+// README and in the repository's `NOTICE`), and the CHANGELOG's final surface list (FR-031). 013 phase 3 adds
+// `ocelle-progress` (T043, T043a): its statements, its entry point, its mapping rows by role name and its CHANGELOG names.
 /** A file's text, relative to the package; empty while it does not exist, so each assertion reports what is missing. */
 function read(file: string): string {
   const url = new URL(`../../${file}`, import.meta.url);
@@ -159,6 +160,33 @@ const fragments = [
   "The panel heading is at weight 500, lighter than the default's 600, following the text of spec-kitty-design#510; a heading that was bold in a consumer's card becomes 500",
   "Neither variant paints a ground, a border or a busy look: the element sits on its container's ground. A card around it (fill, radius, padding, a dashed or busy-keyed border) is the consumer's own; the dashed refusal card belongs to the panel-paint family of spec-kitty-design#509, not to this element",
   "A screen that moves focus to a loading block slots its own `<h2 tabindex=\"-1\">` in `heading`, with the bar in `visual`, and focuses the heading; do not put a `role` or `tabindex` on the `ocelle-progress` host",
+  // ocelle-progress (013 FR-030 to FR-039; research.md R-05, R-06; tasks.md T043, T043a)
+  "`ocelle-progress` is a progress bar: with a `value` it is determinate, its fill growing from the inline start (the right under `dir=\"rtl\"`); without one it is indeterminate",
+  "Name every bar: set `label`, the accessible name, as text. A host `aria-label` also names it and overrides `label`, but makes axe report a false `aria-prohibited-attr` in your own audit; prefer `label`",
+  "A bar with neither `label` nor a host `aria-label` has no name: that is a consumer error, which the element does not correct",
+  "axe does not check the bar's name, since it does not read the element's internals: check the name in your own tests",
+  "`max` defaults to 100; a `max` that is not a number above 0 counts as 100. A `value` below 0 is shown and exposed as 0, and above `max` as `max`",
+  "An unset, empty or whitespace-only `value`, a `value` that is not a finite number, and the property set to `null` or `undefined` make the bar indeterminate: no current value is exposed",
+  "`value-text` gives the words for the current value (for example \"7 of 12\"): it is exposed while the bar is determinate, kept as given when the value is clamped, and not used while the bar is indeterminate. Without it the platform announces the value itself; the element formats no number",
+  "The library's tests do not verify the value text's exposure to assistive technology: no read a test can make in Chromium reports it. They check the visible value text, and the bar's name and value in the accessibility tree",
+  "`show-label` shows the label as text above the bar, or beside it with `size=\"compact\"`, with the value text when the bar is determinate; both use tabular figures and are hidden from assistive technology, which reads the name and value from the bar itself",
+  "The indeterminate bar's mark sweeps across the track three times, 4.2 s in all at the default tokens, and then rests as the still mark, a partial fill in the middle of the track, with nothing running: the motion ends by itself in less than 5 s (WCAG 2.2.2)",
+  "The sweep lasts `--ocelle-motion-base` × 21 in all: overriding `--ocelle-motion-base` above 238 ms takes it past 5 s",
+  "There is one sweep per loading episode: a bar inserted, replaced in one task, re-shown or made indeterminate again while the episode lasts continues the episode's sweep, and after the sweep has ended shows the still mark at once. The episode ends when no indeterminate bar is on the page at a frame; the next indeterminate bar starts a new episode with its own sweep",
+  "Keep one bar, or swap it in one task, across one continuous wait: a bar removed and inserted again a frame or more later starts a new sweep",
+  "Under `prefers-reduced-motion: reduce` nothing runs on the bar and the still mark shows at once",
+  "The fill has no transition: its inline size changes at once with each value",
+  "The fill is `--ocelle-color-accent` with an `--ocelle-color-accent-strong` edge on every side, so the filled part is never marked by ochre alone; the track is `--ocelle-color-inset` and clips the mark",
+  "`ground=\"tinted\"` draws the track's boundary in `--ocelle-color-accent-strong`: use it for a bar on `color-inset`, `color-accent-low`, `color-hover-bg` or a state ground, and in a row that can be hovered or selected. Unset, the boundary is `--ocelle-color-control-border`, for `color-canvas`, `color-sheet`, `color-pane`, `color-panel`, `color-inspector` and `color-rail`",
+  "The determinate bar is for work with a known amount, and the indeterminate bar for loading a region, or running work, with no known end; for a state, such as a row that is running, use `ocelle-status-indicator`",
+  "`ocelle-progress` reads the tokens `--ocelle-color-accent`, `--ocelle-color-accent-strong`, `--ocelle-color-inset`, `--ocelle-color-control-border`, `--ocelle-color-ink`, `--ocelle-color-ink-muted`, `--ocelle-font-size-sm`, `--ocelle-figures`, `--ocelle-space-1`, `--ocelle-space-2`, `--ocelle-radius-1`, `--ocelle-border-width`, `--ocelle-measure-cell`, `--ocelle-motion-base` and `--ocelle-easing-standard`",
+  "To name a bar after a nearby heading, pass the heading's text as `label`; the element takes no ID reference",
+  "The host is the progressbar: a `role` on it replaces the progressbar and a `tabindex` makes it a tab stop, so set neither. For a loading block that takes focus, put your own `<h2 tabindex=\"-1\">` in an `ocelle-empty-state`'s `heading` slot, with the bar in `visual`",
+  "The host is a block and fills its container's inline size. To place a bar inside a line of text, set its `display` (for example `inline-block`) and an inline size from outside",
+  "The value text sits at the inline end of the label row: at the default size the row is above the bar, the label at its inline start; in compact the row holds the label, the bar and the value text, in that order",
+  "The label is text only: there is no slot for a rich label",
+  "The element has no slot: text inside it (a \"7/12\" fallback) shows only before the element is defined, and after that it is neither shown nor exposed; the bar keeps its own name and value",
+  "`ocelle-progress` emits no event and adds no tab stop",
   // two copies on a page (FR-006, Edge Cases)
   "Two copies of the package on one page, two versions or the browser build beside a bundle of the module build, cannot both define an element: the first definition wins and the second import throws nothing",
 ];
@@ -171,6 +199,7 @@ const entryRows = [
   "| `@ocelle/elements/ocelle-facts.js` | `dist/ocelle-facts.js` | `ocelle-facts` and its item `ocelle-fact`; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-fact.js` | `dist/ocelle-fact.js` | `ocelle-fact` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-empty-state.js` | `dist/ocelle-empty-state.js` | `ocelle-empty-state` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-progress.js` | `dist/ocelle-progress.js` | `ocelle-progress` only; for hosts with a bundler |",
   "| `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |",
   "| `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |",
 ];
@@ -248,6 +277,33 @@ const emptyStateMapping: readonly (readonly [string, string])[] = [
   ["empty-state focus target", "consumer's: `tabindex=\"-1\"` on its slotted heading; for a loading block, its `<h2 tabindex=\"-1\">` in `heading` with the bar in `visual`"],
 ];
 
+/**
+ * The progress rows of the README's kitty-mission-ui mapping (013 FR-058, SC-001; research.md R-11, the progress
+ * family's inventory; operator decisions I1, IQ-10 to IQ-15): each role name with the element and variant or the
+ * consumer's remedy that covers it, exactly. The class family column is not read, so no class-family name appears in
+ * this test.
+ */
+const progressMapping: readonly (readonly [string, string])[] = [
+  ["progress default", "`ocelle-progress` with `value`, `max`, `label` and `show-label`"],
+  ["progress narrow", "`ocelle-progress`; the track fills the host's inline size"],
+  ["progress compact", "`ocelle-progress size=\"compact\"`"],
+  ["progress indeterminate", "`ocelle-progress` with no `value`"],
+  ["progress determinate", "`ocelle-progress` with `value` and `max`"],
+  ["progress meta", "`value-text` with `show-label`, the consumer passing the formatted percentage (the element formats no number), at the inline end of the label row"],
+  ["progress external text", "`value-text` with `show-label`, or the consumer's own text beside the element"],
+  ["progress label", "`ocelle-progress` with `label` and `show-label`; the label is text only, with no slot"],
+  ["progress labelled by heading", "consumer's: the heading's text passed as `label`, with no ID reference"],
+  ["progress aria-label", "`label` without `show-label`, or a host `aria-label`"],
+  ["progress fallback text", "consumer's: the element draws the bar itself; text inside it shows only before upgrade and is neither shown nor exposed after it"],
+  ["progress heading", "consumer's: its own `<h2 tabindex=\"-1\">` in an `ocelle-empty-state`'s `heading` slot with the bar in `visual`; no `role` or `tabindex` on the host"],
+  ["progress inline", "`ocelle-progress`, a block host given `display: inline-block` and an inline size by the consumer"],
+  ["progress in empty-state", "`ocelle-empty-state`'s `visual` slot"],
+  ["progress in busy region", "`ocelle-progress` placed directly; `aria-busy` stays on the consumer's region"],
+  ["progress slotted", "`ocelle-progress` in another element's slot; nothing is needed from the element"],
+  ["progress grid layout", "`ocelle-progress` with `show-label` at the default size: the label at the inline start and the value text at the inline end of the row above the bar, which spans the full width below; the consumer no longer places the parts"],
+  ["progress centred", "`ocelle-empty-state`'s `visual` slot, which centres the bar and spans it up to the reading measure"],
+];
+
 /** The table rows of one `##` section of the README, as written, without the header and the separator rows. */
 function tableRows(text: string, heading: string): string[] {
   const section = new RegExp(`^## ${heading}\\n([\\s\\S]*?)(?=^## |(?![\\s\\S]))`, "m").exec(text)?.[1] ?? "";
@@ -267,7 +323,7 @@ describe("packages/elements/README.md", () => {
   it("lists exactly the entry points of package.json's exports in its Entry points table (FR-002)", () => {
     const manifest = JSON.parse(read("package.json")) as { exports?: Record<string, string> };
     expect(tableRows(read("README.md"), "Entry points")).toEqual(entryRows);
-    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-facts.js", "./ocelle-fact.js", "./ocelle-empty-state.js", "./browser.js", "./custom-elements.json"]);
+    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-facts.js", "./ocelle-fact.js", "./ocelle-empty-state.js", "./ocelle-progress.js", "./browser.js", "./custom-elements.json"]);
   });
 
   it("lists the thirteen names of the set, whether each mirrors and the consumer need it meets, in its Icons table (US2-1, FR-018, SC-007)", () => {
@@ -280,6 +336,11 @@ describe("packages/elements/README.md", () => {
   });
 
   it.each(emptyStateMapping)("maps the role %s to its element and variant or the consumer's remedy in the kitty-mission-ui mapping (013 FR-058)", (role, covered) => {
+    const row = tableRows(read("README.md"), "Mapping from kitty-mission-ui").map((line) => line.slice(2, -2).split(" | ")).find((cells) => cells[1] === role);
+    expect(row?.[2]).toBe(covered);
+  });
+
+  it.each(progressMapping)("maps the role %s to its element and variant or the consumer's remedy in the kitty-mission-ui mapping (013 FR-058)", (role, covered) => {
     const row = tableRows(read("README.md"), "Mapping from kitty-mission-ui").map((line) => line.slice(2, -2).split(" | ")).find((cells) => cells[1] === role);
     expect(row?.[2]).toBe(covered);
   });
@@ -318,6 +379,11 @@ describe("packages/elements/CHANGELOG.md", () => {
     "`@ocelle/elements/ocelle-empty-state.js`",
     "`variant=\"panel\"`",
     "the `eyebrow` slot",
+    "`ocelle-progress`",
+    "`@ocelle/elements/ocelle-progress.js`",
+    "`show-label`",
+    "`size=\"compact\"`",
+    "`ground=\"tinted\"`",
     ...["chevron-start", "chevron-end", "chevron-up", "chevron-down", "arrow-start", "arrow-end", "menu", "close", "folder", "file", "search", "table", "copy"].map((name) => `\`${name}\``),
   ])("names %s under Unreleased / Added (constitution VII, FR-031, SC-008)", (surface) => {
     expect(added).toContain(surface);
