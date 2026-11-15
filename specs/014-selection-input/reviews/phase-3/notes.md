@@ -88,10 +88,18 @@ The first run of `pnpm run gate:mutation -- --base 83a6f8b` on the green commit 
   - a host that focuses elsewhere while it removes the focused tab;
   - tabs whose `focusin` and `focusout` stop propagating;
   - a `SelectionModel.delivered` case in `test/selection.test.ts`.
-- **Removed by simplifying the source**: the anchor rule now covers `a` only, and an editing host is counted (Chromium
-  reads `tabIndex` 0 for an anchor without `href` and -1 for an editing host); a WeakMap entry's deletion was dropped.
+- **Removed by simplifying the source**: the anchor rule now covers `a` only (Chromium reads `tabIndex` 0 for an
+  anchor without `href`), and a WeakMap entry's deletion was dropped. Neither changes behaviour in Chromium.
+- **A behaviour fix to FR-023 found by the mutation run** (review round 1, R1-03): an editing host (`contenteditable`,
+  no `tabindex`) now counts as focusable, so a shown panel that holds one is no longer a tab stop. Chromium reads
+  `tabIndex` -1 for an editing host, yet Tab reaches it. The fix and its test, the `FR-023: the shown panel is a stop
+  while ...` body, came in the same commit, `9dffb23`, labelled `test(...)`, and the test was not run red first. The
+  red evidence was recorded afterwards in `red-mutation.log`: HEAD's `test/tabs.test.ts` against green `9418dc6`'s
+  `ocelle-tabs.ts` and `ocelle-tab.ts` fails exactly that body (1 of 57), on the contenteditable step (expected
+  `null`, received `"0"`). The branch was already published, so the commit was not split.
 - **Recorded as equivalent**, each with a `Stryker disable next-line` comment giving the reason:
-  - the tab's `value` attribute handling (Lit's own path writes the same attribute back);
+  - the tab's `value` attribute handling: withdrawn in review round 1 (R1-01). It was not equivalent, and the
+    FR-009 body for a removed `value` attribute kills it;
   - the per-document counter counting down (the numbers stay distinct);
   - observing the shown panel again;
   - leaving an old panel observed (the callback measures the shown panel only);
@@ -118,3 +126,16 @@ and with `OCELLE_VISUAL_ENGINE=docker` for `visual` and `plants`. Each exited 0:
 | plants | 301 plants of 17 gates and the registry, every plant as expected; `visual/fail-token-changed` with its 35 light findings, the eight tabs stories included |
 | `mutation -- --base 83a6f8b` | 401 mutants on the changed lines of 7 files, none survived; 1 timeout (`ocelle-tabs.ts:369`, a report under #23), 123 compile errors, 1 zero-mutant entry (`src/index.ts`), 14 equivalent records |
 | `signoff -- --range 83a6f8b..HEAD` | no finding |
+
+## Review round 1 (`round-1-fixes.md`)
+
+- R1-01: the FR-009 body for a removed tab `value` attribute was added, and the false equivalent record on
+  `ocelle-tab.ts`' `if (name !== "value")` was removed. The mutants of that line are now killed.
+- R1-02: `ocelle-tabs` no longer overrides `attributeChangedCallback`. Its `value` attribute takes Lit's own path to
+  the class's setter, so the partly false equivalent record went with the branch.
+- R1-03: see "A behaviour fix to FR-023 found by the mutation run" above, and `red-mutation.log`.
+- Gates rerun on the fix:
+  - `mutation -- --base 83a6f8b`: 392 mutants on the changed lines of 7 files, none survived; 1 timeout
+    (`ocelle-tabs.ts:361`, `write`), 122 compile errors, 1 zero-mutant entry, 11 equivalent records;
+  - `unit-tests`: 3642 tests in 155 files;
+  - `plants` (docker): 301 plants of 17 gates and the registry, every plant as expected.

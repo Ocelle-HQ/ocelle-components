@@ -1373,6 +1373,25 @@ export const tabsScenarios: readonly TabsScenario[] = [
     expected: { inside: exposed("Mission views", views, 0, [2]), left: [["disabled", "value"], []] },
   },
   {
+    // Review round 1, R1-01. Mutant: the tab passing its `value` attribute changes to Lit (whose path sets the accessor,
+    // and the setter writes the removed attribute back, so the tab keeps its old value).
+    name: "FR-009: a host that removes a tab's value attribute after render leaves the attribute absent, the tab reads its index, and the tabs' value and the next change event report that index",
+    fixture: true,
+    run: async (driver, inPage) => {
+      await mount(driver, inPage, page(tabsOf(views)));
+      await inPage(recordEvents, null);
+      await driver.mutate("tb", [{ child: 2, attribute: "value", value: null }]);
+      const removed = await inPage(() => {
+        const third = document.querySelectorAll("#tb > ocelle-tab")[2];
+        return [third?.getAttribute("value") ?? null, (third as unknown as { value?: unknown } | undefined)?.value ?? null];
+      }, null);
+      await driver.focus(tab(1));
+      await driver.press("ArrowRight");
+      return { removed, value: await inPage(valueOf, "tb"), events: await inPage(recordedEvents, null) };
+    },
+    expected: { removed: [null, "2"], value: "2", events: [change("2")] },
+  },
+  {
     // Added after the mutation run. Mutant: the tabs' observer not following a tab's `value` attribute.
     name: "FR-010a: a tab whose value attribute changes to the remembered value is selected with no event",
     fixture: true,

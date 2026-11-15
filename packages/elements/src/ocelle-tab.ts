@@ -154,7 +154,6 @@ export class OcelleTab extends LitElement {
 
   /** The `value` attribute is the tab's input, read by `value` and by the tabs' observer; it renders nothing. */
   override attributeChangedCallback(name: string, old: string | null, value: string | null): void {
-    // Stryker disable next-line ConditionalExpression,StringLiteral: equivalent, Lit would set the `value` accessor from the attribute, whose setter writes the same attribute value back
     if (name !== "value") super.attributeChangedCallback(name, old, value);
   }
 

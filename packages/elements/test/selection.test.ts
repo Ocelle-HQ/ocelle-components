@@ -445,7 +445,7 @@ describe("SelectionModel: batching, the value setter and the focus record over a
     ]);
   });
 
-  it("delivered: the records the observer delivers feed the focus record before the focusout microtask runs (phase 3): a removed focused child gives the FR-011 target, a moved one keeps focus, focus gone elsewhere or no blur gives none, and the microtask then finds nothing", () => {
+  it("delivered: the records the observer delivers feed the focus record before the focusout microtask runs (phase 3): a removed focused child gives the FR-011 target, a moved one keeps focus, focus gone elsewhere gives none, with no blur the focused child keeps focus, and the microtask then finds nothing", () => {
     const outcomes: unknown[] = [];
     for (const [live, focusLeft, blur] of [
       [[e("a", "alpha"), e("g", "gamma")], true, true],

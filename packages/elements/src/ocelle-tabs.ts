@@ -73,7 +73,7 @@ export class OcelleTabs extends LitElement {
   static override properties = {
     // Stryker disable next-line ObjectLiteral: equivalent, {} gives Lit's default options, which are type String's (attribute "label", the default converter, not reflected)
     label: { type: String },
-    // Stryker disable next-line ObjectLiteral,BooleanLiteral: equivalent, `value` is the class's own accessor and its attribute is handled in attributeChangedCallback; the entry names the attribute for Lit and the manifest
+    // Stryker disable next-line ObjectLiteral,BooleanLiteral: equivalent, {} is the default options of type String (attribute "value", the default converter) and without `noAccessor` Lit wraps the class's own accessor, which it still calls
     value: { type: String, noAccessor: true },
   };
 
@@ -153,18 +153,10 @@ export class OcelleTabs extends LitElement {
     return this.#model.value;
   }
 
+  // The `value` attribute reaches this setter through Lit's own attribute path; a removed attribute arrives as null,
+  // which the model treats as `""`: no tab has it, so the selection is kept and nothing is remembered.
   set value(value: string) {
     this.#apply(this.#model.set(value, focusLeft()));
-  }
-
-  override attributeChangedCallback(name: string, old: string | null, value: string | null): void {
-    // Stryker disable next-line ConditionalExpression,BlockStatement,StringLiteral,LogicalOperator: equivalent, Lit's own path sets the same accessor from the attribute, and a removed attribute (null) keeps the selection as "" does
-    if (name === "value") {
-      // Stryker disable next-line StringLiteral: equivalent, a removed attribute keeps the selection with any value no tab has; only what is remembered differs, and no tab has the replacement value
-      this.value = value ?? "";
-      return;
-    }
-    super.attributeChangedCallback(name, old, value);
   }
 
   override connectedCallback(): void {

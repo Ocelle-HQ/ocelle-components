@@ -1,0 +1,38 @@
+# HEAD 5fe3143's packages/elements/test/tabs.test.ts against 9418dc6's src/ocelle-tabs.ts and src/ocelle-tab.ts (review round 1, R1-03)
+# pnpm exec vitest run --project elements packages/elements/test/tabs.test.ts
+ RUN  v5.0.5 /home/user/ocelle-components
+ ❯ |elements (chromium)| packages/elements/test/tabs.test.ts (57 tests | 1 failed) 11780ms
+   ❯ ocelle-tabs, ocelle-tab and ocelle-tab-panel, in process (US2) (57)
+     × FR-023: the shown panel is a stop while its content has nothing focusable (an anchor without href, a hidden button, a div at tabindex -1, a disabled button, a button no slot shows) and stops being one as each becomes focusable: href, hidden removed, tabindex 0, an anchor's own tabindex, contenteditable, disabled removed; a button slotted into a shadow host counts 587ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  |elements (chromium)| packages/elements/test/tabs.test.ts > ocelle-tabs, ocelle-tab and ocelle-tab-panel, in process (US2) > FR-023: the shown panel is a stop while its content has nothing focusable (an anchor without href, a hidden button, a div at tabindex -1, a disabled button, a button no slot shows) and stops being one as each becomes focusable: href, hidden removed, tabindex 0, an anchor's own tabindex, contenteditable, disabled removed; a button slotted into a shadow host counts
+AssertionError: expected { Object (observed, clipboard) } to deeply equal { Object (observed, clipboard) }
+- Expected
++ Received
+@@ -8,11 +8,11 @@
+      "0",
+      null,
+      "0",
+      null,
+      "0",
+-     null,
++     "0",
+      "0",
+      null,
+      "0",
+      null,
+    ],
+ ❯ packages/elements/test/tabs.test.ts:33:70
+     31|     it(name, async () => {
+     32|       const observed = await run(driver, inPage);
+     33|       expect({ observed, clipboard: await driver.clipboardCalls() }).t…
+       |                                                                      ^
+     34|     });
+     35|   }
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=9b8e99d4:5237:20
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+ Test Files  1 failed (1)
+      Tests  1 failed | 56 passed (57)
+   Start at  01:10:46
+   Duration  13.20s (tests 96%, worker 3%, import 2%)
+exit 1
