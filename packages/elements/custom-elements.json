@@ -411,6 +411,38 @@
     {
       "declarations": [
         {
+          "attributes": [],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A personal rail: a navigation landmark holding primary items and a bottom group, on the chrome.",
+          "events": [],
+          "kind": "class",
+          "members": [],
+          "name": "OcellePersonalRail",
+          "slots": [],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          }
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-personal-rail.ts",
+            "name": "OcellePersonalRail"
+          },
+          "kind": "js",
+          "name": "OcellePersonalRail"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-personal-rail.ts"
+    },
+    {
+      "declarations": [
+        {
           "attributes": [
             {
               "default": "undefined",
