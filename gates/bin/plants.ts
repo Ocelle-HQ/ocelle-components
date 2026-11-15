@@ -18,9 +18,9 @@ import { emit, formatFinding, plural } from "../lib/findings.ts";
 import { gateKeysProblem, judgePlant, parsePlant, plantFilesProblem, storybookGates } from "../lib/plant-judge.ts";
 import type { Plant, PlantRun } from "../lib/plant-judge.ts";
 import { buildCommitRepo, buildMutationRepo, buildRepoTree, carriesConfiguration, parseDelta } from "../lib/plant-repo.ts";
-import { containerDecision, gateRunsAtOnce, limiter, needsEngine, otherShardSize, plantSeconds, plantShards, plantTimeNote, runPlant, shardSize } from "../lib/plant-runner.ts";
+import { affectedPlants, containerDecision, gateRunsAtOnce, limiter, needsEngine, otherShardSize, plantSeconds, plantShards, plantTimeNote, runPlant, shardSize } from "../lib/plant-runner.ts";
 import type { RunnerTools, VisualCopyTools } from "../lib/plant-runner.ts";
-import { checkRegistry, ciJobs, parseRegistry, plantJob, shardInPlantCheckFindings, skipContainerFindings } from "../lib/registry.ts";
+import { affectedInCiFindings, checkRegistry, ciJobs, parseRegistry, plantJob, shardInPlantCheckFindings, skipContainerFindings } from "../lib/registry.ts";
 import type { Gate } from "../lib/registry.ts";
 import { runTool } from "../lib/spawn.ts";
 import { parseIndex } from "../lib/storybook-index.ts";
@@ -55,6 +55,8 @@ export interface PlantTools {
   readonly write?: (path: string, text: string) => Promise<void>;
   /** The `.json` files of a report directory (as given to `--verdict`) by file name (plan decision 23). */
   readonly reports?: (dir: string) => Promise<ReadonlyMap<string, string>>;
+  /** The paths changed since a base commit, POSIX and relative to the root, or the cause they cannot be read (op 016). */
+  readonly changed?: (base: string) => Promise<{ readonly paths: readonly string[] } | { readonly cause: string }>;
 }
 
 /** The rule of a plant that did not do what it expects. */
@@ -76,7 +78,7 @@ function registryRun(registryText: string | undefined, workflow: string | undefi
   } catch (error) {
     return broken(error instanceof Error ? error.message : String(error));
   }
-  const findings = [...checkRegistry({ registry, registryPath: "gates.json", jobs: ciJobs(workflow), workflowPath: "ci.yml" }), ...skipContainerFindings(workflow, "ci.yml"), ...shardInPlantCheckFindings(workflow, "ci.yml")];
+  const findings = [...checkRegistry({ registry, registryPath: "gates.json", jobs: ciJobs(workflow), workflowPath: "ci.yml" }), ...skipContainerFindings(workflow, "ci.yml"), ...shardInPlantCheckFindings(workflow, "ci.yml"), ...affectedInCiFindings(workflow, "ci.yml")];
   return { exit: findings.length > 0 ? 1 : 0, stdout: findings.map(formatFinding), stderr: [] };
 }
 
@@ -149,6 +151,11 @@ interface PlantSet {
   readonly only?: ReadonlySet<string> | undefined;
   /** The verdict mode's problem lines of each plant, from the shards' reports: no plant runs (plan decision 23). */
   readonly reported?: ReadonlyMap<string, readonly string[]> | undefined;
+  /**
+   * The plants (paths) `--affected` selected (op 016): every plant is still read and the kinds are still required, but
+   * only these are judged and counted; absent: all.
+   */
+  readonly selected?: ReadonlySet<string> | undefined;
 }
 
 /** One judged plant of a shard report (contracts/plants.md § Shards). */
@@ -184,12 +191,15 @@ async function judgeAll(
   const left = { skip: new Set<string>(), "not-run": new Set<string>() };
   const cases: string[] = [];
   for (const name of await listCases(set, tools)) if (set.only?.has(`${dir}/${name}`) ?? true) cases.push(name);
+  // Whether a plant is judged: every plant, or with --affected only the selected ones (op 016).
+  const judged = (path: string): boolean => set.selected?.has(path) ?? true;
   // A plant's problem lines: its plant.json's, or the verdict's mode's from the reports, or its gate run's judgement.
   const lines = async (path: string): Promise<readonly string[] | undefined> => {
     const plant = await loadPlant(path, set.gate, tools);
     if (typeof plant === "string") return [plant];
     seen.add(plant.expect);
     if (set.reported !== undefined) return set.reported.get(path) ?? [];
+    if (!judged(path)) return undefined;
     const decision = set.decide === undefined ? "run" : await set.decide(plant);
     if (decision !== "run") {
       left[decision].add(path);
@@ -201,8 +211,8 @@ async function judgeAll(
   // Plan decision 24: each judged plant's time, from the start of its plant.json's reading to its judgement.
   const verdict = async (name: string): Promise<JudgedPlant | undefined> => {
     const path = `${dir}/${name}`;
-    // The verdict mode judges no plant, so it times none.
-    const elapsed = set.reported === undefined ? tools.stopwatch?.() : undefined;
+    // The verdict mode judges no plant, so it times none; nor does --affected time a plant it does not judge.
+    const elapsed = set.reported === undefined && judged(path) ? tools.stopwatch?.() : undefined;
     const found = await lines(path);
     if (found === undefined) return undefined;
     const milliseconds = elapsed?.() ?? 0;
@@ -214,8 +224,8 @@ async function judgeAll(
   const verdicts: (JudgedPlant | undefined)[] = [];
   if (set.serial === true) for (const name of cases) verdicts.push(await verdict(name));
   else verdicts.push(...(await Promise.all(cases.map(verdict))));
-  const judged = verdicts.filter((plant) => plant !== undefined);
-  for (const plant of judged) problems.push(...plant.lines);
+  const results = verdicts.filter((plant) => plant !== undefined);
+  for (const plant of results) problems.push(...plant.lines);
   for (const kind of set.only === undefined ? needed : []) {
     if (!seen.has(kind)) problems.push(`${dir}: ${gateId}: missing-plant: ${owner} has no ${kind} plant`);
   }
@@ -223,7 +233,7 @@ async function judgeAll(
   const skipped = inOrder(left.skip);
   const notRun = inOrder(left["not-run"]);
   // The count is printed only when every plant that needs an engine ran, so it leaves out the skipped plants alone.
-  return { count: cases.length - skipped.length, problems, skipped, notRun, plants: judged };
+  return { count: cases.filter((name) => judged(`${dir}/${name}`)).length - skipped.length, problems, skipped, notRun, plants: results };
 }
 
 /** The case names of a set's directory, sorted: every directory, or for the registry's plants those with plant.json. */
@@ -235,12 +245,27 @@ async function listCases(set: PlantSet, tools: PlantTools): Promise<string[]> {
   return cases;
 }
 
-/** The mode of a run (plan decision 23): every plant, the plan, one shard, or the verdict on the shards' reports. */
-type Mode = { readonly kind: "all" } | { readonly kind: "plan" } | { readonly kind: "shard"; readonly shard: string } | { readonly kind: "verdict"; readonly dir: string } | { readonly kind: "error"; readonly cause: string };
+/**
+ * The mode of a run (plan decision 23): every plant, the plan, one shard, or the verdict on the shards' reports; or the
+ * plants affected since a base commit, judged or only listed (op 016).
+ */
+type Mode =
+  | { readonly kind: "affected"; readonly base: string; readonly list: boolean }
+  | { readonly kind: "all" } | { readonly kind: "plan" } | { readonly kind: "shard"; readonly shard: string } | { readonly kind: "verdict"; readonly dir: string } | { readonly kind: "error"; readonly cause: string };
 
 /** The mode of the job's arguments (a leading `--` of `pnpm run gate:plants -- …` skipped). */
 function modeOf(args: readonly string[]): Mode {
   const value = (option: string): string | undefined => args[args.indexOf(option) + 1];
+  // Op 016 (Q2 B): --affected is a mode of its own, and --list belongs to it.
+  if (args.includes("--affected")) {
+    if (["--plan", "--shard", "--verdict"].some((option) => args.includes(option))) {
+      return { kind: "error", cause: "--affected is a mode of its own; it cannot be combined with --plan, --shard or --verdict" };
+    }
+    const base = value("--affected");
+    if (base === undefined || base.startsWith("--")) return { kind: "error", cause: "--affected needs a base commit" };
+    return { kind: "affected", base, list: args.includes("--list") };
+  }
+  if (args.includes("--list")) return { kind: "error", cause: "--list needs --affected <base>" };
   if (args.includes("--plan")) return { kind: "plan" };
   const shard = value("--shard");
   const dir = value("--verdict");
@@ -352,7 +377,8 @@ export async function plants(context: Context, tools: PlantTools, io: Io): Promi
 
   // Plan decision 23: the plan, one shard, or the verdict on the shards' reports; without a mode, every plant.
   const mode = modeOf(context.args);
-  const shards = plantShards(await listPlants(registry, tools), shardSize, otherShardSize);
+  const all = await listPlants(registry, tools);
+  const shards = plantShards(all, shardSize, otherShardSize);
   const n = shards.length;
   if (mode.kind === "plan") {
     io.out(JSON.stringify(shards.map((_, index) => index + 1)));
@@ -369,7 +395,14 @@ export async function plants(context: Context, tools: PlantTools, io: Io): Promi
   const reported = mode.kind === "verdict" ? reportCauses((await tools.reports?.(mode.dir)) ?? new Map(), shards) : undefined;
   const lines = new Map((reported?.reports ?? []).flatMap((report) => report.plants.map((plant) => [`${plantsDir}/${plant.plant}`, plant.lines] as const)));
   const only = shard === undefined ? undefined : new Set(shard.map((plant) => `${plantsDir}/${plant}`));
-  const outcome = await judgeRun(context, tools, io, registry, workflow, { only, reported: reported === undefined ? undefined : lines });
+  let affected: readonly string[] | undefined;
+  if (mode.kind === "affected") {
+    const changes = (await tools.changed?.(mode.base)) ?? { cause: "--affected needs git to read the changed paths" };
+    if ("cause" in changes) return fail(changes.cause);
+    affected = await selection(all, registry, changes.paths, tools, io);
+  }
+  const selected = affected === undefined ? undefined : mode.kind === "affected" && mode.list ? new Set<string>() : new Set(affected.map((plant) => `${plantsDir}/${plant}`));
+  const outcome = await judgeRun(context, tools, io, registry, workflow, { only, reported: reported === undefined ? undefined : lines, selected });
 
   if (shard !== undefined) {
     const report: ShardReport = { shard: Number(k), of: n, plants: outcome.plants, skipped: outcome.skipped.map(plantName), notRun: outcome.notRun.map(plantName) };
@@ -391,6 +424,7 @@ export async function plants(context: Context, tools: PlantTools, io: Io): Promi
   }
   const count = outcome.count;
   const partial = outcome.skipped.length > 0 ? `; partial run: ${plural(outcome.skipped.length, "visual plant")} not run` : "";
+  if (mode.kind === "affected" && affected !== undefined) return affectedSummary(mode, { all: all.length, selected: affected.length, outcome, partial }, io);
   if (outcome.problems.length > 0) {
     for (const problem of outcome.problems) io.out(problem);
     io.out(`${gateId}: ${plural(outcome.problems.length, "problem")} in ${plural(count, "plant")}${partial}`);
@@ -399,6 +433,44 @@ export async function plants(context: Context, tools: PlantTools, io: Io): Promi
   const gates = plural(registry.length, "gate");
   const judged = shard === undefined ? `${plural(count, "plant")} of ${gates} and the registry judged` : `shard ${String(k)} of ${String(n)}: ${plural(count, "plant")} judged`;
   io.out(`${gateId}: ${judged}, every plant as expected${partial}`);
+  return 0;
+}
+
+/**
+ * The plants `--affected` selects among `all` (`<gate>/<case>`) for the changed paths (op 016, plan.md *The mode*),
+ * after the note of each, or of the full set, on stderr.
+ */
+async function selection(all: readonly string[], registry: readonly Gate[], changed: readonly string[], tools: PlantTools, io: Io): Promise<readonly string[]> {
+  const plants = await Promise.all(
+    all.map(async (name) => {
+      // A plant.json that is missing or does not parse names no baselinesOf; the structural checks report it anyway.
+      const text = await tools.read(`${plantsDir}/${name}/plant.json`);
+      const plant = text === undefined ? undefined : parsePlant(text);
+      return { name, baselinesOf: typeof plant === "object" ? plant.baselinesOf : undefined };
+    }),
+  );
+  const affected = affectedPlants({ plants, gates: registry.map((gate) => gate.id), changed });
+  if ("full" in affected) {
+    io.err(`note: affected: every plant, by ${affected.full.path} (${affected.full.reason})`);
+    return all;
+  }
+  for (const [plant, path] of affected.plants) io.err(`note: affected: ${plant}, by ${path}`);
+  return [...affected.plants.keys()];
+}
+
+/** The summary of an `--affected` run (op 016, plan.md *Output*); never the full run's line, since it is not the Plants check. */
+function affectedSummary(mode: { readonly base: string; readonly list: boolean }, counts: { readonly all: number; readonly selected: number; readonly outcome: Outcome; readonly partial: string }, io: Io): number {
+  const { outcome, partial } = counts;
+  const since = `affected since ${mode.base}`;
+  const of = plural(counts.all, "plant");
+  if (outcome.problems.length > 0) {
+    for (const problem of outcome.problems) io.out(problem);
+    io.out(`${gateId}: ${plural(outcome.problems.length, "problem")} in ${plural(outcome.count, "plant")} (${since}; not the Plants check)${partial}`);
+    return 1;
+  }
+  if (mode.list) io.out(`${gateId}: ${since}: ${String(counts.selected)} of ${of} selected, none judged (--list)`);
+  else if (counts.selected === 0) io.out(`${gateId}: ${since}: no plant selected, 0 of ${of} judged; not the Plants check`);
+  else io.out(`${gateId}: ${since}: ${String(outcome.count)} of ${of} judged, every plant as expected; not the Plants check${partial}`);
   return 0;
 }
 
@@ -412,11 +484,11 @@ async function judgeRun(
   io: Io,
   registry: readonly Gate[],
   workflow: string,
-  options: { readonly only: ReadonlySet<string> | undefined; readonly reported: ReadonlyMap<string, readonly string[]> | undefined },
+  options: { readonly only: ReadonlySet<string> | undefined; readonly reported: ReadonlyMap<string, readonly string[]> | undefined; readonly selected?: ReadonlySet<string> | undefined },
 ): Promise<Outcome> {
-  const { only, reported } = options;
+  const { only, reported, selected } = options;
   const whole = only === undefined;
-  const registryFindings = whole ? [...checkRegistry({ registry, registryPath, jobs: ciJobs(workflow), workflowPath }), ...skipContainerFindings(workflow, workflowPath), ...shardInPlantCheckFindings(workflow, workflowPath)] : [];
+  const registryFindings = whole ? [...checkRegistry({ registry, registryPath, jobs: ciJobs(workflow), workflowPath }), ...skipContainerFindings(workflow, workflowPath), ...shardInPlantCheckFindings(workflow, workflowPath), ...affectedInCiFindings(workflow, workflowPath)] : [];
   const problems = registryFindings.map(formatFinding);
   // 006 research.md R-07: --skip-container leaves out every visual plant; otherwise the engines the visual plants are
   // given are probed once, before the first plant that needs one, and a plant that needs a missing engine is not run.
@@ -434,7 +506,7 @@ async function judgeRun(
     io.err(line);
   };
   const judgeGate = (gate: Gate, serial: boolean): ReturnType<typeof judgeAll> => {
-    const set: PlantSet = { ...gateSet(gate), serial, decide: (plant) => decide(gate, plant), only, reported };
+    const set: PlantSet = { ...gateSet(gate), serial, decide: (plant) => decide(gate, plant), only, reported, selected };
     return judgeAll(set, tools, async (plant, path) => judgePlant(gate.id, plant, await tools.runPlant(gate, path, plant)), note);
   };
   // Every other gate's plants are judged at once; the Storybook gates' plants then one at a time, in registry order
@@ -444,7 +516,7 @@ async function judgeRun(
   const judgedSets: Judged[] = [];
   for (const gate of registry) judgedSets.push(await (together.get(gate.id) ?? judgeGate(gate, true)));
   judgedSets.push(
-    await judgeAll({ ...registrySet, only, reported }, tools, async (plant, path) => judgePlant(gateId, plant, registryRun(await tools.read(`${path}/gates.json`), await tools.read(`${path}/ci.yml`))), note),
+    await judgeAll({ ...registrySet, only, reported, selected }, tools, async (plant, path) => judgePlant(gateId, plant, registryRun(await tools.read(`${path}/gates.json`), await tools.read(`${path}/ci.yml`))), note),
   );
   return {
     count: judgedSets.reduce((sum, judged) => sum + judged.count, 0),
@@ -577,6 +649,24 @@ function realTools(root: string, io: Io): PlantTools {
       const names = (await readdir(at).catch(() => [])).filter((name) => name.endsWith(".json"));
       // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "--verdict on an empty directory exits 2 naming every shard of the repository's plan"
       return new Map(await Promise.all(names.map(async (name) => [name, await readFile(join(at, name), "utf8")] as const)));
+    },
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "--affected HEAD judges only the plant whose plant.json changed since HEAD, and names HEAD in its summary"
+    changed: async (base) => {
+      // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "--affected HEAD judges only the plant whose plant.json changed since HEAD, and names HEAD in its summary"
+      const git = (args: readonly string[]): ReturnType<typeof runTool> => runTool("git", args, root, io.env);
+      // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "--affected HEAD judges only the plant whose plant.json changed since HEAD, and names HEAD in its summary"
+      const resolved = await git(["rev-parse", "--verify", "--quiet", `${base}^{commit}`]);
+      // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "--affected HEAD judges only the plant whose plant.json changed since HEAD, and names HEAD in its summary"
+      if (resolved.exitCode !== 0) return { cause: `--affected ${base} does not resolve to a commit; pass the phase's base.sha` };
+      // NUL-separated paths, so git quotes none; a rename is a deleted and an added path, and untracked files count.
+      // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "--affected HEAD judges only the plant whose plant.json changed since HEAD, and names HEAD in its summary"
+      const runs = [await git(["diff", "--name-only", "--no-renames", "--no-ext-diff", "--relative", "-z", base, "--"]), await git(["ls-files", "--others", "--exclude-standard", "-z"])];
+      // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "--affected HEAD judges only the plant whose plant.json changed since HEAD, and names HEAD in its summary"
+      const failed = runs.find((ran) => ran.exitCode !== 0);
+      // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "--affected HEAD judges only the plant whose plant.json changed since HEAD, and names HEAD in its summary"
+      if (failed !== undefined) return { cause: `git failed (${String(failed.stderr.trim().split("\n")[0])})` };
+      // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "--affected HEAD judges only the plant whose plant.json changed since HEAD, and names HEAD in its summary"
+      return { paths: [...new Set(runs.flatMap((ran) => ran.stdout.split("\0")).filter((path) => path !== ""))].sort() };
     },
   };
 }
