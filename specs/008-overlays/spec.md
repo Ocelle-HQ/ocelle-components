@@ -64,6 +64,13 @@ sources of the requirements below. `#450` and `#503` are spec-kitty/spec-kitty-d
   first runs one unasserted vetoed sequence on a stand-in native `<dialog>` in the same page, so its second press
   closes the overlay with reason `"host"` in every harness (Edge Cases, repeated Escape; research R-02).
 
+**Operator decisions in Phase 3** (decided by the operator, 2026-11-15; evidence `reviews/phase-3/notes.md`):
+
+- axe on the long-scrolling-body drawer story: the same remedy as the dialog's, for any overlay story with a long
+  scrolling body. The story places a block without text across the body's scroll edge, so no paragraph is partly
+  hidden there, laid out by the storybook's story layout stylesheet; no axe exception is added (FR-042, research
+  R-16).
+
 ## Consumer need
 
 - **Why the elements exist (#16, spec-kitty-design#503).** "Spec Kitty has no overlay primitives, so consumers cannot

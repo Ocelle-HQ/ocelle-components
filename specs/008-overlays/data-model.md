@@ -193,5 +193,5 @@ any ──(no Popover API in the engine)──▶ hidden, permanently           
 | File | Stories (each in light and dark) |
 |---|---|
 | `dialog.stories.ts` | default open; one-line confirmation body (132 px minimum, R-18); with footer actions; long scrolling body (an empty `data-story="dialog-scroll-edge"` block across the body's scroll edge, R-16); prose with a table (these two with no text clipped at a scroll edge, R-16); Open project shape (stand-in list); long label; named by a host `aria-label` (R-08) |
-| `drawer.stories.ts` | start; end; `rtl` start; chrome ground; chrome ground with `heading-hidden`; long scrolling body |
+| `drawer.stories.ts` | start; end; `rtl` start; chrome ground; chrome ground with `heading-hidden`; long scrolling body (an empty `data-story="drawer-scroll-edge"` block across the body's scroll edge, so no text is clipped there, R-16) |
 | `tooltip.stories.ts` | hover top; hover bottom; hover start; hover end; flipped at the top edge; `rtl` hover start; `rtl` hover end; inside an open dialog; long text |
