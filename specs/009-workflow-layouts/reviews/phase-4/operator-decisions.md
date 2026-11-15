@@ -21,3 +21,10 @@
     - a host whose content box is narrower than its own inline padding and borders.
   - **The host's remedy:** `remeasure()` is made to re-choose the tier from a fresh measurement, red first. A host
     calls it after such a change.
+- **G1** (gate "phase 4" after the first batch of three review rounds without approval, `reviews/phase-4/round-3.md`),
+  "more-rounds": a second batch starts.
+  - **R3-01:** fixed. The nine manifest copies in `gates/plants/manifest/*/tree` take the committed `remeasure()`
+    description, each plant keeping its planted difference, and `gate:plants` is rerun in full.
+  - **R3-02:** gets its guard red-first.
+  - **R3-04:** its wording is fixed in the same round.
+  - Review round 4 follows.

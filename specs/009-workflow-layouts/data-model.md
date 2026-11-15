@@ -42,7 +42,7 @@ The lane has the group role exactly when `groupName` is set.
 
 | Field | Type | Rule |
 |---|---|---|
-| `measured` | px | the host's border-box inline size: the content-box inline size a `ResizeObserver` reports for a zero-height `aria-hidden` probe at the top of the shadow root (the host's content box), plus the host's computed inline padding and borders. The same observer watches a second zero-height `aria-hidden` block, the edge box, which inherits the host's inline padding and border widths and styles, so its content box changes when they change alone and the tier is chosen again (reviews/phase-4/round-1-fixes.md R1-03); only the probe's size enters the sum. A block-size change of the host notifies neither (reviews/phase-4/spike.md item 2) |
+| `measured` | px | the host's border-box inline size: the content-box inline size a `ResizeObserver` reports for a zero-height `aria-hidden` probe at the top of the shadow root (the host's content box), plus the host's computed inline padding and borders. The same observer watches the border box of a second zero-height `aria-hidden` block, the edge box: absolutely positioned, `inline-size: 0`, inheriting the host's inline padding and border widths and styles, so its border box is those padding and borders and changes when they change alone, and the tier is chosen again (reviews/phase-4/round-1-fixes.md R1-03). Out of flow, it adds nothing to the host's intrinsic sizes, and it is not clamped by a host whose content box is narrower than its padding and borders (round-2-fixes.md R2-02). Only the probe's size enters the sum. A block-size change of the host notifies neither (reviews/phase-4/spike.md item 2). After each pass a scheduled frame runs (`slotchange`, a light-DOM change, `remeasure()`, the first render), `measured` is taken afresh in the same callback, from the probe's content box read then plus the host's inline padding and borders (round-2-fixes.md R2-01). A percentage inline padding that changes with the host's container while its content box keeps its size is a known limitation: the edge box resolves the percentage against its own containing block, so no observer reports the change, and `measured` stays stale until that fresh measurement or the next delivery (FR-025) |
 | `collapseAt` | px | `collapse-below` parsed (R-12), else the token parsed, else 40rem; resolved at each measurement |
 | `inspectorAt` | px | as above with `inspector-below`, the inspector token and 60rem |
 | `hasInspector` | boolean | the `inspector` slot has an assigned element, read as an element child of the host with `slot="inspector"`, so it is known at the first update, before any slot is rendered (reviews/phase-4/round-1-fixes.md R1-01); the slot is always rendered, so `slotchange` sees an inspector added after first render (R-11) |
@@ -54,13 +54,15 @@ The lane has the group role exactly when `groupName` is set.
 **Re-measure triggers (R-13, PLAN-FRESH-2-002 (a), PLAN-FRESH-3-001 (a), PLAN-FRESH-3-002, PLAN-FRESH-3-003 (b)).**
 `slotchange` of any of the three slots, a `MutationObserver` delivery (`childList`, `characterData`, `subtree`; no
 `attributes`) from the assigned elements of any pane, shown or hidden, and a call of the public `remeasure()` each set
-`pending` and request one animation frame if none is requested; that frame callback clears `pending` and runs the pass,
-so it runs at most once per frame and never inside a `ResizeObserver` delivery. Before applying a `tier` or
+`pending` and request one animation frame if none is requested, as does the first render; that frame callback clears
+`pending`, runs the pass and then takes `measured` afresh, choosing the tier again if it changed, so it runs at most
+once per frame and never inside a `ResizeObserver` delivery. Before applying a `tier` or
 `detail-open` change that comes from a property or attribute, the pass runs synchronously. It writes a figure only when
 it changed. The element's `ResizeObserver` (on the probe and the edge box) updates `measured` and the tier only and
 never runs the pass. Not seen, and picked up at the next of these triggers: a size change in a pane with no light-DOM
 node or text change (an image or a font loading), content rendered inside a slotted element's shadow root, and an
-attribute-only change; the host calls `remeasure()` after one (FR-025).
+attribute-only change; the host calls `remeasure()` after one (FR-025). The same remedy covers the known limitation of
+`measured` above, a percentage inline padding that changes with the host's container.
 
 **Focus rule (R-14).** If a change of `tier` or `detail-open` hides the pane that holds focus (the active element of
 the element's own root, the document or a host component's shadow root; reviews/phase-4/round-1-fixes.md R1-02),

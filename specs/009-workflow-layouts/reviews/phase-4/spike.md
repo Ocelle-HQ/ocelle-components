@@ -87,6 +87,32 @@ host whose content box is narrower than its own inline padding and borders, the 
 zero and its border box overflows the host's content box by the difference, so a further change of them alone is not
 seen in that case.
 
+## Changed after the spike (phase 4 review round 2, R2-01 and R2-02)
+
+Both costs recorded above were taken up in round 2 (round-2.md; operator decision P4, "Fix R2-02, document R2-01"):
+
+- **The floor (R2-02), removed.** The edge box is now `position: absolute` with `inline-size: 0`, and the observer
+  watches its border box, which is the host's inline padding and borders themselves. Out of flow, it adds nothing to
+  the host's min-content or max-content size: in a min-content wrapper a list-detail with 150 px inline padding is
+  300 px wide empty and 300 px plus one letter with a letter in each pane (600 px both before); in a
+  max-content wrapper an empty one with 200 px padding and 1 px borders is 289 + 402 = 691 px (804 px before). The
+  zero-height box adds no scrollable overflow, also where it reaches past the host's border box. The empty case also
+  showed that a list-detail with nothing slotted never ran a pass (no slot reports a change), so its sizer kept the
+  `<svg>` default of 300 px; the first render now schedules one.
+- **The narrow host (cost 2), now seen.** The border box of a 0 px wide box is never clamped, so in a host whose
+  content box is narrower than its own inline padding and borders a change of a px or em padding or of a border
+  alone notifies too (content 30 px, `collapse-below="120px"`, padding 40 px to 50 px: one column, then two).
+- **Percentage padding (R2-01), a recorded limitation.** The edge box resolves a percentage padding against its own
+  containing block, not the host's, so a percentage padding that follows the host's container while the host's
+  content box keeps its size is reported by no observer. The remedy is `remeasure()`: after each scheduled pass, in
+  the same animation-frame callback, the element takes its border box afresh (the probe's content box read then plus
+  the host's computed inline padding and borders) and chooses the tier again. Measured: a content-box host 600 px
+  wide with 2% padding and `collapse-below="640px"`, its container from 1000 px to 500 px: 620 px and two columns
+  until `remeasure()`, then one in the first frame after the call; and back.
+
+The `ResizeObserver` case of the table above still reports no message in both harnesses, and every round 1 R1-03
+case still passes.
+
 ## Result
 
 Every figure of R-13 holds, with no window error and no leaked measurement frame. The phase continues to the red step.

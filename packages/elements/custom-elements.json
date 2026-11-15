@@ -276,7 +276,7 @@
               }
             },
             {
-              "description": "Requests a measurement of the intrinsic sizes for the next animation frame, coalesced with any other trigger, for\na change the element cannot see: content a slotted element renders in its own shadow root, an attribute-only\nchange, or an image or a font loading.",
+              "description": "Requests a measurement of the intrinsic sizes for the next animation frame, coalesced with any other trigger, for\na change the element cannot see: content a slotted element renders in its own shadow root, an attribute-only\nchange, or an image or a font loading. In that frame it also re-chooses the tier from a fresh measurement of the\nelement's border box, as after a percentage inline padding that changes with the host's container.",
               "kind": "method",
               "name": "remeasure",
               "privacy": "public",

@@ -6,7 +6,9 @@
 // and `.grid`'s `min-inline-size`), never to a `style` attribute. A `MutationObserver` on the assigned elements of
 // every pane (`childList`, `characterData`, `subtree`; no `attributes`), `slotchange` and `remeasure()` schedule the
 // pass for the next animation frame, at most once per frame and never inside a `ResizeObserver` delivery; the element
-// runs it synchronously before a tier or `detail-open` change set through a property or attribute. The pass counter is
+// runs it synchronously before a tier or `detail-open` change set through a property or attribute. After a scheduled
+// pass, in the same animation-frame callback, the element's own `after` step runs (it measures its border box afresh;
+// reviews/phase-4/round-2-fixes.md R2-01). The pass counter is
 // for the tests that count passes (test/list-detail-pass.test.ts). Internal: not exported from the package root, not
 // an entry point and not in the manifest.
 
@@ -22,6 +24,7 @@ export class ListDetailMeasure {
   /** The instance's constructed stylesheet of measured figures, adopted after the element's shared sheets. */
   readonly sheet = new CSSStyleSheet();
   readonly #grid: () => HTMLElement | null;
+  readonly #after: () => void;
   readonly #sizerRule: CSSStyleRule;
   readonly #gridRule: CSSStyleRule;
   readonly #observer = new MutationObserver(() => {
@@ -31,9 +34,14 @@ export class ListDetailMeasure {
   #max: number | undefined;
   #min: number | undefined;
 
-  /** `grid` returns the element's shadow grid (`.grid`, with the `.sizer` in it), or null before the first render. */
-  constructor(grid: () => HTMLElement | null) {
+  /**
+   * `grid` returns the element's shadow grid (`.grid`, with the `.sizer` in it), or null before the first render;
+   * `after` runs after each scheduled pass, in the same animation-frame callback (the element measures its border box
+   * afresh there).
+   */
+  constructor(grid: () => HTMLElement | null, after: () => void) {
     this.#grid = grid;
+    this.#after = after;
     this.sheet.replaceSync(".sizer {} .grid {}");
     this.#sizerRule = this.sheet.cssRules.item(0) as CSSStyleRule;
     this.#gridRule = this.sheet.cssRules.item(1) as CSSStyleRule;
@@ -51,6 +59,7 @@ export class ListDetailMeasure {
     this.#frame = requestAnimationFrame(() => {
       this.#frame = undefined;
       this.measure();
+      this.#after();
     });
   }
 

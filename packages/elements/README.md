@@ -309,7 +309,8 @@ threshold or when the host sets `narrow`. It follows the container-tier conventi
 - `detail-open` (attribute, and property `detailOpen`, reflected): in one column, shows the detail pane, with the
   inspector stacked under it, instead of the list; in two or three columns it has no effect.
 - `remeasure()`: requests a measurement of the element's intrinsic sizes for the next animation frame, for a change
-  the element cannot see (the container-tier convention lists them).
+  the element cannot see (the container-tier convention lists them), and in that frame re-chooses the tier from a fresh
+  measurement of the element's border box.
 - **Slots.** It has three slots: `list`, the list pane; the default slot, the detail pane; and `inspector`, the optional
   inspector pane. An empty `inspector` slot adds no track, no border and no space.
 - **Tokens.** `ocelle-list-detail` reads the tokens `--ocelle-list-track-width`, `--ocelle-shell-inspector-width`,
@@ -458,7 +459,8 @@ element with tiers.
 - No `container-type` is set on a host that may shrink to fit, such as a flex item, a dialog or a table cell: it would
   collapse to 0 px there.
 - The element's intrinsic inline sizes do not depend on the tier it shows: its max-content size is that of its widest
-  tier and its min-content size that of its narrowest, so a shrink-to-fit host cannot make the tier alternate.
+  tier and its min-content size that of its narrowest, so a shrink-to-fit host cannot make the tier alternate. The
+  element's own inline padding and borders are added to each and are no floor of either.
 - The intrinsic sizes are measured in one pass, at most once per animation frame and never inside a
   `ResizeObserver` callback, after a slot change or a light-DOM node or text change in any pane, shown or hidden,
   after a call of `remeasure()`, and, synchronously, before a tier change the host sets through an attribute or a
@@ -466,6 +468,14 @@ element with tiers.
 - Changes with no light-DOM node or text change are not seen and wait for the next of these: an image or a font
   loading, content a slotted element renders in its own shadow root, and an attribute-only change such as a class
   swap; the host calls `remeasure()` after one.
+- A change of the element's own inline padding or borders alone re-chooses the tier. Two cases are known limitations,
+  and the host calls `remeasure()` after a change in either; it re-chooses the tier from a fresh measurement of the
+  element's border box in the next animation frame:
+  - a percentage inline padding that changes with the host's container while the element's content box keeps its
+    size, such as a content-box host with a fixed or capped inline size and percentage gutters: the tier stays stale
+    until `remeasure()` or the next change the element sees;
+  - a host whose content box is narrower than its own inline padding and borders: a change of a px or em padding or of
+    a border alone is seen there too, and only a percentage padding stays stale, as above.
 - One pass renders every pane in the measurement grid twice and restores it: about 10 ms (7 to 19 ms) with a 1000-row
   list. Attribute changes, such as a selection's `class` or `aria-selected`, run none; light-DOM swaps and text
   changes run at most one per frame.

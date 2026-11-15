@@ -758,7 +758,7 @@ goes.
   re-measures on every resize. It does not rely on `container-type` on itself, so it does not collapse in
   shrink-to-fit hosts. Its intrinsic inline sizes, which decide its size in a shrink-to-fit host, do not depend on the
   layout it shows: its max-content size is that of its three-column layout and its min-content size that of its
-  one-column layout. A shrink-to-fit host therefore gives it a size from the room available and its content alone,
+  one-column layout, its own inline padding and borders added to each and no floor of either. A shrink-to-fit host therefore gives it a size from the room available and its content alone,
   it picks its layout from that size as everywhere else, and the layout does not alternate between frames while
   nothing changes (US3-12). Its intrinsic sizes follow its slotted content when an element is added to or removed
   from a slot, when nodes are added or removed or text changes in the light DOM of any pane (shown or hidden), at a
@@ -770,7 +770,19 @@ goes.
   as an image or a font loading, content rendered inside a slotted element's shadow root (an element re-rendering
   from a property), and a change of an attribute only (a class or a style swap); after one the host calls
   `remeasure()` (operator decisions, plan squad rounds 2 and 3). The element has this one public method,
-  `remeasure(): void`. Two thresholds apply, each exclusive (the wider layout applies at exactly the threshold):
+  `remeasure(): void`; besides the pass, it re-chooses the tier from a fresh measurement of the element's border box,
+  in the same animation frame. A change of the element's own inline padding or borders alone is seen. Two cases are
+  known limitations (operator decision P4, phase 4 review round 2), and the host calls `remeasure()` after a change in
+  either:
+  - **A percentage inline padding that changes with the host's container**, while the element's content box keeps
+    its size (a content-box host with a definite or capped inline size): the border box changes and no observer
+    reports it, so the tier stays stale until `remeasure()` or the next change the element sees.
+  - **A host whose content box is narrower than its own inline padding and borders**, recorded by the same decision.
+    Since the round 2 fix (R2-02) the element also sees a change of the padding or borders alone in such a host
+    (US3 review scenario "a host whose content box is narrower than its own inline padding and borders"); only a
+    percentage padding in it stays stale, as above.
+
+  Two thresholds apply, each exclusive (the wider layout applies at exactly the threshold):
   - **One column** below `collapse-below`. Default: the new token `--ocelle-list-detail-collapse`, `40rem`.
   - **Inspector stacked** under the detail below `inspector-below`. Default: the new token
     `--ocelle-list-detail-inspector-collapse`, `60rem`.

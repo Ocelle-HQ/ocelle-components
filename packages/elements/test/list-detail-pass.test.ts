@@ -153,5 +153,40 @@ describe("ocelle-list-detail's measurement pass (R-13)", () => {
     await nextFrame();
     expect({ wide, stale, inFrame, passes: passCount() - start }).toEqual({ wide: "two", stale: { tier: "two", width: 620 }, inFrame: "one", passes: 1 });
   });
+
+  // Guard added after the round 2 fix (reviews/phase-4/round-2-fixes.md; plant L26, which survived without it): the
+  // fresh measurement after a scheduled pass reads the probe's content box itself. Inserted from a task, the element's
+  // first pass runs in the next animation frame, before its `ResizeObserver` first reports, so a measurement from the
+  // last reported content box (none yet) would choose one column and then three again within that frame.
+  it("guard: a list-detail inserted from a task in Frame R keeps three columns through its first pass: the grid's data-tier, read after every change of it and in each of six frames, is always three", async () => {
+    await driver.viewport(1280, 800);
+    await driver.mount('<div id="holder" data-frame="R"></div>');
+    const seen: string[] = [];
+    await new Promise<void>((resolve) => {
+      setTimeout(() => {
+        const holder = document.getElementById("holder");
+        if (holder !== null) holder.innerHTML = '<ocelle-list-detail id="x"><div slot="list">List</div><div>Detail</div><div slot="inspector">Inspector</div></ocelle-list-detail>';
+        const element = document.getElementById("x");
+        const tier = (): string => element?.shadowRoot?.querySelector(".grid")?.getAttribute("data-tier") ?? "none";
+        const changes = new MutationObserver(() => seen.push(`change: ${tier()}`));
+        queueMicrotask(() => {
+          const grid = element?.shadowRoot?.querySelector(".grid");
+          if (grid !== null && grid !== undefined) changes.observe(grid, { attributes: true, attributeFilter: ["data-tier"] });
+        });
+        let frames = 0;
+        const loop = (): void => {
+          seen.push(tier());
+          frames += 1;
+          if (frames < 6) requestAnimationFrame(loop);
+          else {
+            changes.disconnect();
+            resolve();
+          }
+        };
+        requestAnimationFrame(loop);
+      }, 0);
+    });
+    expect({ tiers: [...new Set(seen)], frames: seen.filter((entry) => !entry.startsWith("change: ")).length, changes: seen.some((entry) => entry.startsWith("change: ")) }).toEqual({ tiers: ["three", "change: three"], frames: 6, changes: true });
+  });
 });
 

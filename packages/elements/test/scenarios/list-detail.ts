@@ -829,8 +829,9 @@ export const listDetailFixes: readonly ListDetailScenario[] = [
   },
   {
     // Plants: the edge box not observed (L19: the tier stays one column with the padding and the borders); the host's
-    // own border box observed in place of the edge box (L18: this case passes, and the US3-12 cases and the
-    // "ResizeObserver loop" case fail).
+    // own border box observed in place of the edge box (L18: this case passes, and the "ResizeObserver loop" case of
+    // US3-12 fails with the loop message, as do US3-16 and the percentage case of R2-01, which is then seen); the edge
+    // box observed in its content box (L23: one column throughout).
     name: "US3 review R1-03: the tier follows a change of the host's inline padding or borders alone: in Frame W a host 630 px wide in its content box, with collapse-below 640px, shows one column; 10 px inline padding (a 650 px border box) gives two columns and removing it one again; 5 px inline borders (640 px, the exclusive bound) give two and removing them one again (FR-025)",
     base: false,
     run: async (driver) => {
@@ -903,12 +904,13 @@ export const listDetailFixes: readonly ListDetailScenario[] = [
   },
   {
     // Plants: the edge box observed in its content box (L23: its content box is always 0 px wide, so the tier stays one
-    // column); the edge box 1 px tall (L24: it then adds to the scroll container's overflow, 410 px).
-    name: "US3 review R2-01: a host whose content box is narrower than its own inline padding and borders: in Frame W a content-box host 30 px wide with 40 px inline padding and collapse-below 120px, in a 100 px scroll container, is 110 px wide and shows one column; 50 px inline padding (130 px) gives two columns and 40 px one again; with narrow and 200 px inline-start padding (240 px) the scroll container scrolls to the host's border box only (240 px), with no error (FR-025)",
+    // column); the edge box 1 px tall (L24: it then adds to the scroll container's overflow). The scroll
+    // container is positioned, so it is the edge box's containing block and the edge box's overflow would reach it.
+    name: "US3 review R2-01: a host whose content box is narrower than its own inline padding and borders: in Frame W a content-box host 30 px wide with 40 px inline padding and collapse-below 120px, in a positioned 100 px scroll container, is 110 px wide and shows one column; 50 px inline padding (130 px) gives two columns and 40 px one again; with narrow and 200 px inline-start padding (240 px) the scroll container scrolls to the host's border box only (240 px), with no error (FR-025)",
     base: false,
     run: async (driver) => {
       await page(driver, "W", `<div id="k-c" class="kc">${listDetail("k", ' collapse-below="120px"', '<div slot="list">List</div><div>Detail</div>')}</div>`, {
-        extra: ".kc { inline-size: 100px; overflow: auto; } #k { box-sizing: content-box; inline-size: 30px; padding-inline: 40px; }",
+        extra: ".kc { position: relative; inline-size: 100px; overflow: auto; } #k { box-sizing: content-box; inline-size: 30px; padding-inline: 40px; }",
       });
       const state = async (): Promise<{ layout: string; width: number }> => ({ layout: await layout(driver, "k"), width: round((await driver.box("k")).width) });
       const first = await state();
@@ -927,6 +929,20 @@ export const listDetailFixes: readonly ListDetailScenario[] = [
       narrow: { layout: "one: list", width: 240, scrolls: 240 },
       messages: [],
     },
+  },
+  {
+    // Guard added after the round 2 fix (reviews/phase-4/round-2-fixes.md): since the first render schedules the first
+    // pass, the pass a slot change schedules was no longer told apart from it, and its mutant survived (the
+    // `schedule()` call of the slot change removed: the element then stays 1073 px wide).
+    name: "US3 guard: a slot change after the first render measures again: in the 1196 px row, a light-DOM child with a 40rem block in no slot is 1073 px wide; once its slot attribute is removed, so it joins the detail pane, the element is 1196 px wide (1233 px shrunk to the row) in three columns (FR-025)",
+    base: false,
+    run: async (driver) => {
+      await page(driver, "R", `<div class="row">${listDetail("g", "", `${sized("g")}<div slot="spare" id="g-x"><div class="w40"></div></div>`)}</div>`);
+      const before = Math.round((await driver.box("g")).width);
+      await driver.setAttribute("g-x", "slot", null);
+      return { before, after: Math.round((await driver.box("g")).width), layout: await layout(driver, "g") };
+    },
+    expected: { before: 1073, after: 1196, layout: "three" },
   },
 ];
 

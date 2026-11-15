@@ -586,7 +586,11 @@ layout's, whatever tier it shows, so a shrink-to-fit host cannot make the tier a
   mutation. It observes two zero-height `aria-hidden` blocks in the shadow root, not the host: a probe whose content
   box is the host's content box, to which the host's computed inline padding and borders are added, and an edge box
   that inherits those padding and borders, so a change of them alone is seen too (data-model.md `measured`;
-  reviews/phase-4/spike.md item 2 and round-1-fixes.md R1-03). Observing the host's own border box brought the loop
+  reviews/phase-4/spike.md item 2 and round-1-fixes.md R1-03). The edge box is absolutely positioned and 0 px wide in
+  its content box, and its border box is observed, so it adds nothing to the host's intrinsic sizes (round-2-fixes.md
+  R2-02). After each scheduled pass the element takes `measured` afresh in the same frame callback, so `remeasure()`
+  also re-chooses the tier, the host's remedy for a percentage inline padding that changes with its container, which
+  no observer reports (round-2-fixes.md R2-01, FR-025). Observing the host's own border box brought the loop
   message below; the blocks' block size never changes. Measured in squad round 2, a pane `ResizeObserver` whose callback set the sizer grew a shrink-to-fit host
   inside the delivery, and the window received "ResizeObserver loop completed with undelivered notifications." with
   the host's new size a frame late; and a width-only widening of a shown pane's content fired no pane observation at
