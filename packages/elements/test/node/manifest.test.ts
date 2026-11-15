@@ -247,7 +247,7 @@ describe("generate(root) on the repository's element source", () => {
     const manifest = await generate(repo);
     const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
     expect(manifest.schemaVersion).toBe("1.0.0");
-    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-card.ts", "src/ocelle-context-sidebar.ts", "src/ocelle-icon.ts", "src/ocelle-page-header.ts", "src/ocelle-section-header.ts"]);
+    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-card.ts", "src/ocelle-context-sidebar.ts", "src/ocelle-icon.ts", "src/ocelle-page-header.ts", "src/ocelle-personal-rail.ts", "src/ocelle-section-header.ts"]);
     const [icon] = modules.find((module) => module.path === "src/ocelle-icon.ts")?.declarations ?? [];
     expect(icon).toMatchObject({
       kind: "class",
@@ -363,6 +363,28 @@ describe("generate(root) on the repository's element source", () => {
     });
     expect(described(sidebar?.attributes)).toEqual([{ name: "label", fieldName: "label", type: { text: "string | undefined" }, default: "undefined", described: true }]);
     expect(described(sidebar?.slots)).toEqual(["head", "", "footer"].map((name) => ({ name, described: true })));
+  });
+
+  it("declares ocelle-personal-rail with its tag name and class, label (string | undefined), not reflected, and orientation (\"vertical\" | \"horizontal\" | undefined), reflected, each with the default undefined, the default slot and bottom, no event, part or CSS property, and no member for its internals key (011 FR-024 to FR-026, FR-034; research.md R-11; T042)", async () => {
+    const modules = (await generate(repo)).modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [rail] = modules.find((module) => module.path === "src/ocelle-personal-rail.ts")?.declarations ?? [];
+    expect(rail).toMatchObject({ kind: "class", name: "OcellePersonalRail", tagName: "ocelle-personal-rail", customElement: true, events: [], cssParts: [], cssProperties: [] });
+    const members = described(rail?.members);
+    expect({
+      members,
+      internals: members.filter((member) => JSON.stringify(member).toLowerCase().includes("internals")),
+    }).toEqual({
+      members: [
+        { kind: "field", name: "label", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "label", described: true },
+        { kind: "field", name: "orientation", privacy: "public", type: { text: '"vertical" | "horizontal" | undefined' }, default: "undefined", attribute: "orientation", reflects: true, described: true },
+      ],
+      internals: [],
+    });
+    expect(described(rail?.attributes)).toEqual([
+      { name: "label", fieldName: "label", type: { text: "string | undefined" }, default: "undefined", described: true },
+      { name: "orientation", fieldName: "orientation", type: { text: '"vertical" | "horizontal" | undefined' }, default: "undefined", described: true },
+    ]);
+    expect(described(rail?.slots)).toEqual(["", "bottom"].map((name) => ({ name, described: true })));
   });
 
   it("rejects a root without an element module, naming the directory", async () => {

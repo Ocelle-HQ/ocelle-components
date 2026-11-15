@@ -23,5 +23,6 @@ describe("pnpm pack of @ocelle/elements", () => {
     expect(packed).toContain("dist/ocelle-section-header.js");
     expect(packed).toContain("dist/ocelle-page-header.js");
     expect(packed).toContain("dist/ocelle-context-sidebar.js");
+    expect(packed).toContain("dist/ocelle-personal-rail.js");
   });
 });

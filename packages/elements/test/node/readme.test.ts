@@ -188,6 +188,28 @@ const fragments = [
   "The sidebar replaces the part-level padding and gap overrides and the token-painted dividers Kitty Desktop sets on its context sidebars",
   "In forced colours the sidebar's dividers are drawn in a system colour.",
   "`ocelle-context-sidebar` has no event, CSS part or CSS custom property and adds no tab stop. The host itself is its one navigation landmark, with no other landmark inside it.",
+  // ocelle-personal-rail (011 FR-036, FR-024 to FR-028, SC-006; research.md R-10, R-11; contracts/elements-package.md § Tokens each element reads and the note for #12; T043)
+  '<ocelle-personal-rail label="Personal"> <a href="/inbox">Inbox</a> <a href="/runs">Runs</a> <a href="/docs">Docs</a> <a slot="bottom" href="/account">Account</a> </ocelle-personal-rail>',
+  "The default slot: the primary items, from the rail's block start (vertical) or inline start (horizontal).",
+  "`bottom` (slot): the bottom group, kept at the rail's block end (vertical) or at the inline end of its first row (horizontal).",
+  "The items are `--ocelle-space-1` apart and centred across the rail. A `--ocelle-border-width` divider in `--ocelle-color-chrome-muted` lies between the two groups, `--ocelle-space-1` from each, only when both are filled.",
+  "`orientation` (attribute and property, reflected): `vertical` or `horizontal`. Not set, or any other value, draws vertical: a column `--ocelle-shell-rail-width` (52 px) wide, padded `--ocelle-space-2` in the block direction and `--ocelle-space-1` inline, which leaves a 44 px content box, with the divider across it.",
+  "`horizontal` draws a row padded `--ocelle-space-2` that fills its container's inline size: the primary items wrap onto further rows from its inline start, the bottom group sits at the inline end of the first row, at most half the content box wide, and the divider runs over the rail's whole block size.",
+  "`label` (attribute and property, not reflected): the name of the rail's navigation landmark, trimmed. Not set, empty or whitespace-only, the landmark has no name; the rail is drawn the same either way.",
+  "Set a distinct `label` on every rail: assistive technology lists the navigation landmarks of a page, and unnamed ones give its user nothing to tell them apart.",
+  "A host `aria-label` decides the landmark's name alone when present: a non-empty one is the name even when `label` is set, and a blank one leaves the landmark unnamed even with a `label`. `label` names the landmark only when the host has no `aria-label`, so removing the host `aria-label` falls back to `label`. The rail never writes, changes or removes the host's `aria-label`.",
+  "The rail changes orientation only when `orientation` changes: it has no viewport or container query of its own, and changing it keeps focus, the document and tab order and the landmark.",
+  "this one sets it from a viewport media query whose bound is exclusive, `matchMedia(\"(width < Npx)\")` (never `max-width: N`, which also matches at N), vertical while the viewport is at least 720 px wide and horizontal below:",
+  'const narrow = matchMedia("(width < 720px)");',
+  "For #12: `orientation` and `label` are the whole interface a shell or a personal drawer uses to drive the rail.",
+  "The rail sizes no item: items are sized by themselves, at `--ocelle-size-rail-item` (40 px)",
+  "A plain `<a>` does not: give `<a>` items `color: inherit` and a target of at least 24 px, or use `ocelle-nav-item` elements.",
+  "`ocelle-personal-rail` reads the tokens `--ocelle-color-chrome`, `--ocelle-color-chrome-ink`, `--ocelle-color-chrome-muted`, `--ocelle-border-width`, `--ocelle-shell-rail-width`, `--ocelle-space-1` and `--ocelle-space-2`.",
+  "An empty slot of the rail takes no space: no gap and no divider, so a rail without bottom items has no divider, and one with only bottom items has them at its block end (vertical) or inline end (horizontal). A slot is empty when no element is assigned to it and every text assigned to it is whitespace; an assigned element counts as content even when it is `hidden`, so remove an element from the slot rather than hide it.",
+  "A vertical rail fills its container's block size when its content is shorter, with the free space between the divider and the bottom group, and grows with its content when it is taller, the bottom group following the primary items; scrolling is the container's. This holds in a block, flex-row or grid container alike, because the host is `align-self: start`. A page rule on the host's `align-self` wins, so a page that sets it to `stretch` in a flex row or grid of definite block size keeps the rail at the container's size.",
+  "The rail replaces the personal-rail `::part` overrides Kitty Desktop sets on its personal rail",
+  "In forced colours the rail's divider is drawn in a system colour, and a horizontal rail keeps its row.",
+  "`ocelle-personal-rail` has no event, CSS part or CSS custom property and adds no tab stop. The host itself is its one navigation landmark, with no other landmark inside it.",
   // two copies on a page (FR-006, Edge Cases)
   "Two copies of the package on one page, two versions or the browser build beside a bundle of the module build, cannot both define an element: the first definition wins and the second import throws nothing",
 ];
@@ -201,6 +223,7 @@ const entryRows = [
   "| `@ocelle/elements/ocelle-section-header.js` | `dist/ocelle-section-header.js` | `ocelle-section-header` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-page-header.js` | `dist/ocelle-page-header.js` | `ocelle-page-header` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-context-sidebar.js` | `dist/ocelle-context-sidebar.js` | `ocelle-context-sidebar` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-personal-rail.js` | `dist/ocelle-personal-rail.js` | `ocelle-personal-rail` only; for hosts with a bundler |",
   "| `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |",
   "| `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |",
 ];
@@ -245,7 +268,7 @@ describe("packages/elements/README.md", () => {
   it("lists exactly the entry points of package.json's exports in its Entry points table (FR-002)", () => {
     const manifest = JSON.parse(read("package.json")) as { exports?: Record<string, string> };
     expect(tableRows(read("README.md"), "Entry points")).toEqual(entryRows);
-    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-card.js", "./ocelle-section-header.js", "./ocelle-page-header.js", "./ocelle-context-sidebar.js", "./browser.js", "./custom-elements.json"]);
+    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-card.js", "./ocelle-section-header.js", "./ocelle-page-header.js", "./ocelle-context-sidebar.js", "./ocelle-personal-rail.js", "./browser.js", "./custom-elements.json"]);
   });
 
   it("lists the thirteen names of the set, whether each mirrors and the consumer need it meets, in its Icons table (US2-1, FR-018, SC-007)", () => {
@@ -292,6 +315,10 @@ describe("packages/elements/CHANGELOG.md", () => {
     // 011 phase 4 (FR-036; T035): the context sidebar and its entry point
     "`ocelle-context-sidebar`",
     "`@ocelle/elements/ocelle-context-sidebar.js`",
+    // 011 phase 5 (FR-036; T043): the personal rail, its entry point and its properties
+    "`ocelle-personal-rail`",
+    "`@ocelle/elements/ocelle-personal-rail.js`",
+    "`orientation` (reflected) and `label`",
     ...["chevron-start", "chevron-end", "chevron-up", "chevron-down", "arrow-start", "arrow-end", "menu", "close", "folder", "file", "search", "table", "copy"].map((name) => `\`${name}\``),
   ])("names %s under Unreleased / Added (constitution VII, FR-031, SC-008)", (surface) => {
     expect(added).toContain(surface);
