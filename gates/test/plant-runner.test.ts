@@ -1,7 +1,8 @@
+import { existsSync, readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { Plant } from "../lib/plant-judge.ts";
-import { aloneDecision, containerDecision, engineValue, errorText, failedOwn, gateRunsAtOnce, keptPlantDir, limiter, needsEngine, outputLines, otherShardSize, plantShards, plantTimeNote, plantValues, resolveLocations, runPlant, shardSize } from "../lib/plant-runner.ts";
-import type { BuiltRepo, RunnerTools, TreeView } from "../lib/plant-runner.ts";
+import { affectedPlants, aloneDecision, containerDecision, engineValue, errorText, failedOwn, gateRunsAtOnce, keptPlantDir, limiter, needsEngine, outputLines, otherShardSize, plantShards, plantTimeNote, plantValues, repositoryContentPlants, resolveLocations, runPlant, shardSize } from "../lib/plant-runner.ts";
+import type { Affected, BuiltRepo, RunnerTools, TreeView } from "../lib/plant-runner.ts";
 import type { Gate, PlantForm } from "../lib/registry.ts";
 import type { ToolRun } from "../lib/spawn.ts";
 
@@ -739,5 +740,243 @@ describe("plantTimeNote (plan decision 24)", () => {
     expect(plantTimeNote("plants/pass-matching", 41_660)).toBe("note: plant time: plants/pass-matching: 41.7 s");
     expect(plantTimeNote("lint/fail-b", 0)).toBe("note: plant time: lint/fail-b: 0.0 s");
     expect(plantTimeNote("lint/fail-b", 1249)).toBe("note: plant time: lint/fail-b: 1.2 s");
+  });
+});
+
+// Op 016 (#41; spec.md OR-001, plan.md *Path classes*): the plants a phase's changed paths can affect. The plant and
+// gate lists are written here; each result is asserted whole, the selected plants in order with the path that
+// selected each.
+describe("affectedPlants (op 016)", () => {
+  const gates = ["lint", "contrast", "brand-rules", "manifest", "storybook-build", "visual", "axe"];
+  const content = [
+    "contrast/repository-values",
+    "brand-rules/repository-values",
+    "manifest/pass-repository",
+    "storybook-build/pass-repository",
+    "visual/pass-repository",
+    "visual/fail-token-changed",
+    "visual/fail-one-pixel",
+    "visual/fail-missing-baseline",
+    "visual/fail-same-pixels-other-bytes",
+    "axe/pass-repository",
+  ];
+  const plants = [
+    { name: "lint/fail-a" },
+    { name: "lint/pass-b" },
+    { name: "contrast/fail-x" },
+    { name: "contrast/repository-values" },
+    { name: "brand-rules/repository-values" },
+    { name: "manifest/pass-repository" },
+    { name: "storybook-build/fail-y" },
+    { name: "storybook-build/pass-repository" },
+    { name: "visual/pass-below-fold" },
+    { name: "visual/fail-below-fold", baselinesOf: "pass-below-fold" },
+    { name: "visual/pass-repository" },
+    { name: "visual/fail-token-changed" },
+    { name: "visual/fail-one-pixel" },
+    { name: "visual/fail-missing-baseline" },
+    { name: "visual/fail-same-pixels-other-bytes" },
+    { name: "visual/fail-network" },
+    { name: "axe/fail-empty" },
+    { name: "axe/pass-repository" },
+    { name: "plants/pass-matching" },
+    { name: "plants/fail-gate-without-entry" },
+  ];
+  /** The result with its selection as a list of [plant, path] entries, so that the order is asserted too. */
+  const view = (result: Affected): unknown => ("full" in result ? result : { plants: [...result.plants] });
+  const select = (changed: readonly string[], list: typeof plants = plants): unknown => view(affectedPlants({ plants: list, gates, changed }));
+  const selected = (...entries: (readonly [string, string])[]): unknown => ({ plants: entries });
+  const contentBy = (path: string): unknown => selected(...content.map((plant) => [plant, path] as const));
+  const full = (path: string, reason: "shared gate source" | "not mapped"): unknown => ({ full: { path, reason } });
+
+  it("scenario 1: a plant's plant.json selects that plant and the plant whose baselinesOf names it, and no other", () => {
+    const path = "gates/plants/visual/pass-below-fold/plant.json";
+    expect(select([path])).toEqual(selected(["visual/pass-below-fold", path], ["visual/fail-below-fold", path]));
+  });
+
+  it("scenario 2: a gate entry selects every plant of that gate and no other", () => {
+    expect(select(["gates/bin/contrast.ts"])).toEqual(selected(["contrast/fail-x", "gates/bin/contrast.ts"], ["contrast/repository-values", "gates/bin/contrast.ts"]));
+  });
+
+  it("scenario 3: a story and a baseline select exactly the repository-content plants, by the first of them", () => {
+    expect(select(["storybook/stories/icon.stories.ts", "storybook/baselines/tokens--colour.light.png"])).toEqual(contentBy("storybook/stories/icon.stories.ts"));
+  });
+
+  it("scenario 4: shared gate source, the lock file or an unmapped path selects the full set, naming the first such path", () => {
+    expect(select(["gates/plants/lint/fail-a/plant.json", "gates/lib/registry.ts", "pnpm-lock.yaml"])).toEqual(full("gates/lib/registry.ts", "shared gate source"));
+    expect(select(["pnpm-lock.yaml", "gates/lib/registry.ts"])).toEqual(full("pnpm-lock.yaml", "not mapped"));
+    expect(select(["specs/x/tasks.md", "docs/notes.txt"])).toEqual(full("docs/notes.txt", "not mapped"));
+  });
+
+  it("scenario 5: a feature's tasks.md and review files select no plant", () => {
+    expect(select(["specs/x/tasks.md", "specs/x/reviews/phase-1/red-phase.log", "specs/x/reviews/phase-1/plan.md"])).toEqual(selected());
+  });
+
+  it("selects no plant for an empty list", () => {
+    expect(select([])).toEqual(selected());
+  });
+
+  it("selects no plant for each no-plant path", () => {
+    const none = [
+      "specs/x/spec.md",
+      "ops/016-plants-affected/op.md",
+      "triage/016-plants-affected.md",
+      "knowledge/speckit-flows/log.md",
+      ".claude/skills/speckit-story-implement/SKILL.md",
+      ".specify/memory/constitution.md",
+      "tooling/speckit/extensions/story/story-config.yml",
+      "gates/test/plants.test.ts",
+      "gates/test/fixtures/registry/ci.yml",
+      "gates/README.md",
+      "packages/elements/test/a.test.ts",
+      "packages/tokens/test/source.test.ts",
+      "storybook/test/a.test.ts",
+      "README.md",
+      "packages/tokens/README.md",
+      "packages/elements/CHANGELOG.md",
+      "storybook/README.md",
+    ];
+    expect(none.map((path) => select([path]))).toEqual(none.map(() => selected()));
+  });
+
+  it("gives each no-plant path's near miss its own class", () => {
+    expect([
+      select(["specs/x/plan.md"]),
+      select(["packages/elements/src/a.ts"]),
+      select(["packages/elements/src/README.md"]),
+      select(["storybook/stories/a.stories.ts"]),
+      select(["gates/gates.json"]),
+      select(["gates/lib/plants.ts"]),
+      select(["gates/testing.ts"]),
+      select(["package.json"]),
+      select(["packages/tokens/package.json"]),
+      select(["packages/elements/tsconfig.json"]),
+      select(["storybook/package.json"]),
+      select(["opsx/a.md"]),
+      select([".github/workflows/other.yml"]),
+      select(["docs/README.md"]),
+    ]).toEqual([
+      contentBy("specs/x/plan.md"),
+      contentBy("packages/elements/src/a.ts"),
+      contentBy("packages/elements/src/README.md"),
+      contentBy("storybook/stories/a.stories.ts"),
+      full("gates/gates.json", "shared gate source"),
+      full("gates/lib/plants.ts", "shared gate source"),
+      full("gates/testing.ts", "not mapped"),
+      full("package.json", "not mapped"),
+      full("packages/tokens/package.json", "not mapped"),
+      full("packages/elements/tsconfig.json", "not mapped"),
+      full("storybook/package.json", "not mapped"),
+      full("opsx/a.md", "not mapped"),
+      full(".github/workflows/other.yml", "not mapped"),
+      full("docs/README.md", "not mapped"),
+    ]);
+  });
+
+  it("selects the repository-content plants for each repository-content path, and only those that exist", () => {
+    const paths = [
+      "storybook/.storybook/main.ts",
+      "storybook/scripts/serve.ts",
+      "storybook/baselines/tokens--colour.dark.png",
+      "storybook/a11y-exceptions.json",
+      "packages/styles/src/base.css",
+      "packages/tokens/src/source.ts",
+      "packages/tokens/fonts/schibsted-grotesk.woff2",
+      "packages/elements/custom-elements.json",
+    ];
+    expect(paths.map((path) => select([path]))).toEqual(paths.map(contentBy));
+    const fewer = plants.filter((plant) => plant.name !== "visual/fail-one-pixel" && plant.name !== "axe/pass-repository");
+    const path = "packages/tokens/src/source.ts";
+    expect(select([path], fewer)).toEqual(selected(...content.filter((plant) => plant !== "visual/fail-one-pixel" && plant !== "axe/pass-repository").map((plant) => [plant, path] as const)));
+  });
+
+  it("selects the full set for package configuration and the other unmapped repository paths", () => {
+    const unmapped = ["packages/tokens/tsconfig.build.json", "packages/elements/package.json", "packages/elements/scripts/manifest.ts", "storybook/visual/container.json", ".node-version", "tsconfig.base.json"];
+    expect(unmapped.map((path) => select([path]))).toEqual(unmapped.map((path) => full(path, "not mapped")));
+  });
+
+  it("selects the full set for gates/bin/plants.ts and the other gate files that are not a gate's entry, and for the lint configurations", () => {
+    const shared = ["gates/bin/plants.ts", "gates/bin/baselines.ts", "gates/bin/setup-offline.ts", "gates/bin/no-such-gate.ts", "gates/eslint/rules.ts", "gates/stylelint/config.ts"];
+    expect(shared.map((path) => select([path]))).toEqual(shared.map((path) => full(path, "shared gate source")));
+  });
+
+  it("selects every registry plant for the workflow, and one registry plant for its own files", () => {
+    expect(select([".github/workflows/ci.yml"])).toEqual(selected(["plants/pass-matching", ".github/workflows/ci.yml"], ["plants/fail-gate-without-entry", ".github/workflows/ci.yml"]));
+    expect(select(["gates/plants/plants/pass-matching/ci.yml"])).toEqual(selected(["plants/pass-matching", "gates/plants/plants/pass-matching/ci.yml"]));
+  });
+
+  it("selects the plants whose baselinesOf names a deleted plant, and not the deleted plant", () => {
+    const path = "gates/plants/visual/pass-below-fold/tree/storybook/baselines/a--b.light.png";
+    expect(select([path], plants.filter((plant) => plant.name !== "visual/pass-below-fold"))).toEqual(selected(["visual/fail-below-fold", path]));
+    expect(select(["gates/plants/lint/fail-gone/plant.json"])).toEqual(selected());
+  });
+
+  it("selects the full set for a path under gates/plants/ that is not in a case directory of a registered gate or of the registry", () => {
+    const unmapped = ["gates/plants/no-gate/fail-a/plant.json", "gates/plants/README.md", "gates/plants/lint/notes.md", "gates/plants/plants/notes.md"];
+    expect(unmapped.map((path) => select([path]))).toEqual(unmapped.map((path) => full(path, "not mapped")));
+  });
+
+  it("keeps the first changed path that selected each plant, in the plants' order", () => {
+    expect(select(["gates/bin/lint.ts", "gates/plants/lint/fail-a/plant.json"])).toEqual(selected(["lint/fail-a", "gates/bin/lint.ts"], ["lint/pass-b", "gates/bin/lint.ts"]));
+    expect(select(["gates/plants/lint/pass-b/plant.json", "specs/x/tasks.md", "gates/bin/lint.ts"])).toEqual(selected(["lint/fail-a", "gates/bin/lint.ts"], ["lint/pass-b", "gates/plants/lint/pass-b/plant.json"]));
+  });
+
+  it("selects the full set for a full-set path given after selected paths", () => {
+    expect(select(["gates/plants/lint/fail-a/plant.json", "gates/bin/contrast.ts", "storybook/stories/a.stories.ts", "storybook/package.json"])).toEqual(full("storybook/package.json", "not mapped"));
+  });
+});
+
+// Op 016 (Q3 C; spec.md OR-002 and scenario 10): every visual and axe case directory is pinned here, with the ones whose
+// expectation names repository content, so that a new plant fails this test until someone classifies it.
+describe("repositoryContentPlants and the visual and axe pin (op 016)", () => {
+  const plantsDir = new URL("../plants/", import.meta.url);
+  const cases = (gate: string): string[] =>
+    readdirSync(new URL(`${gate}/`, plantsDir), { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name)
+      .sort();
+  const visualPin = [
+    "error-build-fails", "error-host", "error-index-pin", "error-no-engine", "error-tag-pin", "fail-beacon", "fail-below-fold", "fail-cache-api",
+    "fail-clipboard-write", "fail-closed-shadow-root", "fail-cookie", "fail-exec-copy", "fail-font-file-missing", "fail-font-not-loaded", "fail-hover-style-changed",
+    "fail-indexeddb", "fail-input-system-font", "fail-local-storage", "fail-missing-baseline", "fail-network", "fail-one-pixel", "fail-other-font",
+    "fail-overflow-changed", "fail-pointer-target-below-fold", "fail-pointer-target-missing", "fail-popover-changed", "fail-press-style-changed", "fail-random",
+    "fail-render-throws", "fail-same-origin-fetch", "fail-same-pixels-other-bytes", "fail-session-storage", "fail-storage-left-by-worker", "fail-storage-property",
+    "fail-stray-baseline", "fail-throws-on-load", "fail-token-changed", "fail-websocket", "fail-xhr", "pass-animation-and-caret", "pass-below-fold",
+    "pass-focus-below-fold", "pass-hover-and-press", "pass-input-font", "pass-overflow-and-popover", "pass-repository", "pass-second-render", "pass-unused-face",
+  ];
+  const axePin = [
+    "error-bad-exceptions", "error-build-fails", "error-exception-plan-not-a-plan", "fail-closed-shadow-root", "fail-empty", "fail-excepted-second-node",
+    "fail-hover-near-fold", "fail-hover-reveals-unlabelled", "fail-incomplete", "fail-no-box", "fail-open-shadow-unlabelled", "fail-outside-root",
+    "fail-pointer-target-below-fold", "fail-render-throws", "fail-stale-exception", "fail-throws-on-load", "fail-two-low-contrast", "fail-unlabelled-button",
+    "fail-unrecorded-exception", "pass-excepted", "pass-excepted-incomplete", "pass-excepted-shadow", "pass-minor-only", "pass-repository", "pass-second-render",
+  ];
+  const classified = (gate: string, pin: readonly string[]): string[] => pin.filter((name) => repositoryContentPlants.includes(`${gate}/${name}`));
+
+  it("pins the 48 visual cases, five of them repository content", () => {
+    expect({ count: visualPin.length, listed: cases("visual"), content: classified("visual", visualPin) }).toEqual({
+      count: 48,
+      listed: visualPin,
+      content: ["fail-missing-baseline", "fail-one-pixel", "fail-same-pixels-other-bytes", "fail-token-changed", "pass-repository"],
+    });
+  });
+
+  it("pins the 25 axe cases, one of them repository content", () => {
+    expect({ count: axePin.length, listed: cases("axe"), content: classified("axe", axePin) }).toEqual({ count: 25, listed: axePin, content: ["pass-repository"] });
+  });
+
+  it("lists the ten repository-content plants in plan order, each an existing plant directory with a plant.json", () => {
+    expect(repositoryContentPlants).toEqual([
+      "visual/pass-repository",
+      "visual/fail-token-changed",
+      "visual/fail-one-pixel",
+      "visual/fail-missing-baseline",
+      "visual/fail-same-pixels-other-bytes",
+      "axe/pass-repository",
+      "storybook-build/pass-repository",
+      "manifest/pass-repository",
+      "contrast/repository-values",
+      "brand-rules/repository-values",
+    ]);
+    expect(repositoryContentPlants.filter((plant) => !existsSync(new URL(`${plant}/plant.json`, plantsDir)))).toEqual([]);
   });
 });
