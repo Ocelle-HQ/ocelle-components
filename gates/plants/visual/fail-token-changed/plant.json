@@ -1,6 +1,6 @@
 {
   "expect": "fail",
-  "why": "A changed token value (color-ink, light) changes every story-theme that shows it: differs on the thirty-five light story-themes measured in the pinned container (FR-004, US2 scenario 2), the twelve the phase 1 spike listed, the eight of mission 005's stories that show color-ink (all but elements-ocelle-brand-mark--chrome, measured for plan decision 29), the eleven of 011's section header and card stories that show it (all but elements-ocelle-section-header--empty-heading, measured in the pinned container under docker for 011 phase 2) and the four of 011's page header stories that show it (all but elements-ocelle-page-header--empty-heading, measured in the pinned container under docker for 011 phase 3), and none in dark. A story added later that shows color-ink in light adds its line here (research.md R-07).",
+  "why": "A changed token value (color-ink, light) changes every story-theme that shows it: differs on the forty-six light story-themes measured in the pinned container (FR-004, US2 scenario 2), the twelve the phase 1 spike listed, the eight of mission 005's stories that show color-ink (all but elements-ocelle-brand-mark--chrome, measured for plan decision 29), the eleven of 011's section header and card stories that show it (all but elements-ocelle-section-header--empty-heading, measured in the pinned container under docker for 011 phase 2), the four of 011's page header stories that show it (all but elements-ocelle-page-header--empty-heading, measured in the pinned container under docker for 011 phase 3) and the eleven of 011's context sidebar stories, which all show it (measured in the pinned container under docker for 011 phase 4), and none in dark. A story added later that shows color-ink in light adds its line here (research.md R-07).",
   "findings": [
     {
       "location": "base-styles--base-page/light",
@@ -140,6 +140,50 @@
     },
     {
       "location": "elements-ocelle-page-header--long-heading/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-context-sidebar--full/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-context-sidebar--no-head/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-context-sidebar--no-footer/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-context-sidebar--one-section/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-context-sidebar--text-in-the-slot/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-context-sidebar--empty-sections/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-context-sidebar--hidden-sections/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-context-sidebar--host-aria-label/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-context-sidebar--label-and-host-aria-label/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-context-sidebar--blank-host-aria-label/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-context-sidebar--unnamed/light",
       "rule": "differs"
     }
   ]

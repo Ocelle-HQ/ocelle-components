@@ -186,20 +186,56 @@
     {
       "declarations": [
         {
-          "attributes": [],
+          "attributes": [
+            {
+              "default": "undefined",
+              "description": "The name of the navigation landmark, trimmed, used while the host has no `aria-label`; empty or whitespace-only\ncounts as none, and the landmark is then unnamed. Not reflected.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string | undefined"
+              }
+            }
+          ],
           "cssParts": [],
           "cssProperties": [],
           "customElement": true,
-          "description": "A context sidebar: a navigation landmark holding a head, sections and a footer.",
+          "description": "A context sidebar: a navigation landmark holding a head, sections and a footer, ruled off from each other.",
           "events": [],
           "kind": "class",
-          "members": [],
+          "members": [
+            {
+              "attribute": "label",
+              "default": "undefined",
+              "description": "The name of the navigation landmark, trimmed, used while the host has no `aria-label`; empty or whitespace-only\ncounts as none, and the landmark is then unnamed. Not reflected.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            }
+          ],
           "name": "OcelleContextSidebar",
-          "slots": [],
+          "slots": [
+            {
+              "description": "The sidebar's head, the team or project it belongs to.",
+              "name": "head"
+            },
+            {
+              "description": "The sections, one element each (a `ul` of links, a `div`, an `ocelle-section-header`), drawn as padded blocks with a divider between each two.",
+              "name": ""
+            },
+            {
+              "description": "The sidebar's footer, kept at its block end.",
+              "name": "footer"
+            }
+          ],
           "superclass": {
             "name": "LitElement",
             "package": "lit"
-          }
+          },
+          "tagName": "ocelle-context-sidebar"
         }
       ],
       "exports": [

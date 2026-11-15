@@ -24,12 +24,16 @@ entry points and the browser build's file path (constitution VII).
 - `ocelle-page-header`, a screen's title band: a heading the page slots (`heading`, usually the screen's `h1`) with an
   `eyebrow` above it, a `description` under it and `actions` at its inline end, ruled off below, each empty slot
   taking no space; its property `size` (reflected): a compact size with a 24 px display title (011).
+- `ocelle-context-sidebar`, the column beside a screen's content: a `head`, sections in the default slot and a
+  `footer` kept at the block end, ruled off from each other on the rail ground, each empty part taking no space; the
+  host is a navigation landmark named by its property `label` or a host `aria-label` (011).
 - In the README, the slot convention for icons in controls that later controls follow: the `icon` and `trailing`
   slots, their size, alignment, gap and colour rules and the naming rule.
 - Entry points: `@ocelle/elements` (the package root, defines every element), `@ocelle/elements/ocelle-icon.js`
   (defines `ocelle-icon` only), `@ocelle/elements/ocelle-brand-mark.js` (defines `ocelle-brand-mark` only),
   `@ocelle/elements/ocelle-card.js` (defines `ocelle-card` only), `@ocelle/elements/ocelle-section-header.js`
   (defines `ocelle-section-header` only), `@ocelle/elements/ocelle-page-header.js` (defines `ocelle-page-header` only),
+  `@ocelle/elements/ocelle-context-sidebar.js` (defines `ocelle-context-sidebar` only),
   `@ocelle/elements/browser.js` (the browser build) and `@ocelle/elements/custom-elements.json` (the manifest, also
   named by the `customElements` field).
 - The browser build's file, `dist/browser/ocelle-elements.js`: Lit inside, imports nothing, for hosts without a
