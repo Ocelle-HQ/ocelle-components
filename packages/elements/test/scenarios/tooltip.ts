@@ -1606,6 +1606,19 @@ const describesRows = [
 
 const describesMoreRows = [
   row(
+    "describes lifecycle (FR-036, R-13): the trigger removed with nothing slotted after it: the span is removed and nothing thrown; a new trigger slotted later is described",
+    async (driver) => {
+      await start(driver, page({ text: "Saves a draft", attrs: " describes", trigger: '<button id="trg">Save</button>' }));
+      await act(driver, { op: "remove", id: "trg" });
+      await pause(20);
+      const removed = { children: (await inspect(driver, "tip")).children, messages: await driver.messages() };
+      await tip(driver, { op: "insert", id: "tip", markup: '<button id="trg2">Keep</button>', first: true });
+      const back = await describedBy(driver, "tip", "trg2");
+      return { removed, back: { spans: spansOf(back), linked: back.attribute === back.spans[0]?.id }, trigger: await driver.ax("trg2") };
+    },
+    { removed: { children: 0, messages: [] }, back: { spans: [span("Saves a draft")], linked: true }, trigger: [{ role: "button", name: "Keep", description: "Saves a draft" }] },
+  ),
+  row(
     "describes lifecycle (FR-036, R-13): a tooltip with describes and a text but no trigger adds no span, and nothing throws",
     async (driver) => {
       await start(driver, `<button id="before">Before</button><div id="stage"><ocelle-tooltip id="tip" text="Saves a draft" describes></ocelle-tooltip></div>${standIns}`);
