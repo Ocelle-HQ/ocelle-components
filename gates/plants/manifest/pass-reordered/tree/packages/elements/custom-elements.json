@@ -203,6 +203,54 @@
               "attribute": "disabled"
             },
             {
+              "type": {
+                "text": "string | undefined"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "href",
+              "kind": "field",
+              "description": "The link's URL: a non-empty `href` that parses as a URL and is not a `javascript:` URL puts the button in link mode\n(an inner `<a>` with the `href` as written); any other value is button mode. Reflected.",
+              "default": "undefined",
+              "attribute": "href"
+            },
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "target",
+              "kind": "field",
+              "description": "The inner link's `target`, in link mode while available; with `_blank` and no `rel` the link gets `rel=\"noopener\"`.\nReflected.",
+              "default": "undefined",
+              "attribute": "target"
+            },
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "rel",
+              "kind": "field",
+              "description": "The inner link's `rel`, in link mode while available. Reflected.",
+              "default": "undefined",
+              "attribute": "rel"
+            },
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "download",
+              "kind": "field",
+              "description": "The inner link's `download`, in link mode while available. Reflected.",
+              "default": "undefined",
+              "attribute": "download"
+            },
+            {
               "return": {
                 "type": {
                   "text": "void"
@@ -220,19 +268,159 @@
                 "text": "CustomEvent<Record<string, never>>"
               },
               "name": "ocelle-button-activate",
-              "description": "Dispatched from the element on each activation that delivers a `click` (a pointer click, Enter or Space, `click()`), before the `click` reaches any bubble-phase listener on the element or its ancestors; bubbles, composed and cancelable, `detail` `{}`. Calling `preventDefault()` on it cancels the click's default action (the `click` is still delivered). A disabled button dispatches neither."
+              "description": "Dispatched from the element on each activation that delivers a `click` (a pointer click, Enter, Space in button mode, `click()`), before the `click` reaches any bubble-phase listener on the element or its ancestors; bubbles, composed and cancelable, `detail` `{}`. Calling `preventDefault()` on it cancels the click's default action (in link mode the navigation; in button mode the `click` is still delivered). Not dispatched for a link-mode click with Ctrl, Meta, Shift or Alt held, nor for a middle click. A disabled button dispatches neither."
             }
           ],
-          "description": "A native button in the Ocelle look: three variants, two sizes, a flush look, the ground it sits on, a label, a\ndisabled state and an icon slot.",
+          "description": "A native button in the Ocelle look, or a link that looks like one: three variants, two sizes, a flush look, the\nground it sits on, a label, a disabled state, an icon slot, link mode with `href`, and host ARIA moved onto the inner\ncontrol.",
           "customElement": true,
+          "cssStates": [
+            {
+              "name": "expanded",
+              "description": "While the moved `aria-expanded` is `\"true\"`."
+            },
+            {
+              "name": "pressed",
+              "description": "While the moved `aria-pressed` is `\"true\"`."
+            },
+            {
+              "name": "current",
+              "description": "While the moved `aria-current` is set to any value other than `\"false\"`."
+            }
+          ],
           "cssProperties": [],
           "cssParts": [
             {
               "name": "control",
-              "description": "The inner `<button>`."
+              "description": "The inner `<button>`, or the inner `<a>` in link mode."
             }
           ],
           "attributes": [
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "aria-expanded",
+              "description": "Moved onto the inner control (the host keeps no copy): `\"true\"` reports expanded, `\"false\"` collapsed, an empty value clears it; `removeAttribute` after the move changes nothing."
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "aria-controls",
+              "description": "Moved onto the inner control: the ids, space-separated, of the elements it controls, resolved in the host's own tree when set and when the element is connected; an empty value clears it."
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "aria-current",
+              "description": "Moved onto the inner control with any value; `\"false\"` or an empty value clears it. It draws no mark."
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "aria-haspopup",
+              "description": "Moved onto the inner control: the kind of popup it opens; an empty value clears it."
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "aria-pressed",
+              "description": "Moved onto the inner control in button mode only: `\"true\"` reports pressed, `\"false\"` not pressed, an empty value clears it."
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "aria-label",
+              "description": "Moved onto the inner control: its accessible name, over `label` and the content; an empty or whitespace-only value clears it."
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "aria-labelledby",
+              "description": "Moved onto the inner control: the ids, space-separated, of the elements that name it, resolved in the host's own tree, over `aria-label`; an empty value clears it."
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "aria-describedby",
+              "description": "Moved onto the inner control: the ids, space-separated, of the elements that describe it, resolved in the host's own tree; an empty value clears it."
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "title",
+              "description": "Moved onto the inner control: its native tooltip and description, or its name when nothing else names it; an empty value clears it."
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "data-ocelle-moved-aria-expanded",
+              "description": "Element-owned mirror of the moved `aria-expanded`, so copies of the live DOM keep it; hosts do not write or remove it, and the element restores it when it is removed or changed."
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "data-ocelle-moved-aria-controls",
+              "description": "Element-owned mirror of the moved `aria-controls`; hosts do not write or remove it."
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "data-ocelle-moved-aria-current",
+              "description": "Element-owned mirror of the moved `aria-current`; hosts do not write or remove it."
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "data-ocelle-moved-aria-haspopup",
+              "description": "Element-owned mirror of the moved `aria-haspopup`; hosts do not write or remove it."
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "data-ocelle-moved-aria-pressed",
+              "description": "Element-owned mirror of the moved `aria-pressed`; hosts do not write or remove it."
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "data-ocelle-moved-aria-label",
+              "description": "Element-owned mirror of the moved `aria-label`; hosts do not write or remove it."
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "data-ocelle-moved-aria-labelledby",
+              "description": "Element-owned mirror of the moved `aria-labelledby`; hosts do not write or remove it."
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "data-ocelle-moved-aria-describedby",
+              "description": "Element-owned mirror of the moved `aria-describedby`; hosts do not write or remove it."
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "data-ocelle-moved-title",
+              "description": "Element-owned mirror of the moved `title`; hosts do not write or remove it."
+            },
             {
               "type": {
                 "text": "\"primary\" | \"secondary\" | \"quiet\" | undefined"
@@ -286,6 +474,42 @@
               "fieldName": "disabled",
               "description": "Disabled: out of the tab order, reported disabled and not activated (no `click`, no `ocelle-button-activate`).\nReflected.",
               "default": "false"
+            },
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "name": "href",
+              "fieldName": "href",
+              "description": "The link's URL: a non-empty `href` that parses as a URL and is not a `javascript:` URL puts the button in link mode\n(an inner `<a>` with the `href` as written); any other value is button mode. Reflected.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "name": "target",
+              "fieldName": "target",
+              "description": "The inner link's `target`, in link mode while available; with `_blank` and no `rel` the link gets `rel=\"noopener\"`.\nReflected.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "name": "rel",
+              "fieldName": "rel",
+              "description": "The inner link's `rel`, in link mode while available. Reflected.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "name": "download",
+              "fieldName": "download",
+              "description": "The inner link's `download`, in link mode while available. Reflected.",
+              "default": "undefined"
             }
           ]
         }

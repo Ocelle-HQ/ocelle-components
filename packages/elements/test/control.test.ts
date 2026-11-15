@@ -435,6 +435,54 @@ describe("src/control.ts: the mirrors (research.md R-03; plan decisions 19 and 2
   });
 });
 
+// Added in the green step for the mutation run of T040 (reviews/phase-3/notes.md): each pairs the outcome a mutant
+// changed with the positive outcome beside it, so each fails on the phase's base too.
+describe("src/control.ts: what the mirrors' read-back, the references and the modifier rule leave alone", () => {
+  it("reads a mirror back at the upgrade, but not a mirror written while no value is held when the element is connected again later", async () => {
+    await driver.mount('<div id="spot"></div><div id="elsewhere"></div>');
+    const doc = document.implementation.createHTMLDocument("");
+    doc.body.innerHTML = '<ocelle-button id="b" data-ocelle-moved-aria-current="page">Save</ocelle-button>';
+    const parsed = doc.body.firstElementChild;
+    if (parsed === null) throw new Error("no parsed element");
+    const host = document.adoptNode(parsed) as HTMLElementTagNameMap["ocelle-button"];
+    document.getElementById("spot")?.append(host);
+    await host.updateComplete;
+    const upgraded = innerOf(host).getAttribute("aria-current");
+    host.setAttribute("data-ocelle-moved-aria-expanded", "true");
+    document.getElementById("elsewhere")?.append(host);
+    await host.updateComplete;
+    expect({ upgraded, expanded: innerOf(host).getAttribute("aria-expanded"), current: innerOf(host).getAttribute("aria-current") }).toEqual({ upgraded: "page", expanded: null, current: "page" });
+  });
+
+  it("resolves the references when a reference attribute is set, not when another moved attribute is", async () => {
+    const { host } = await mounted('<ocelle-button id="b" aria-controls="late">Save</ocelle-button><p id="spare">Spare</p>', "b");
+    const element = host as HTMLElementTagNameMap["ocelle-button"];
+    const spare = document.getElementById("spare");
+    if (spare === null) throw new Error("no spare");
+    spare.id = "late";
+    host.setAttribute("aria-expanded", "true");
+    await element.updateComplete;
+    const afterOther = innerOf(host).ariaControlsElements?.map((each) => each.id) ?? [];
+    host.setAttribute("aria-controls", "late");
+    await element.updateComplete;
+    expect({ afterOther, expanded: innerOf(host).getAttribute("aria-expanded"), afterReference: innerOf(host).ariaControlsElements?.map((each) => each.id) }).toEqual({ afterOther: [], expanded: "true", afterReference: ["late"] });
+  });
+
+  it("dispatches ocelle-button-activate for a Ctrl, Meta, Shift or Alt click in button mode, and none for the same clicks in link mode", async () => {
+    await driver.mount('<div id="wrap"><ocelle-button id="b">Save</ocelle-button> <ocelle-button id="l" href="#here">Here</ocelle-button></div>');
+    await driver.events("b", ["ocelle-button-activate"]);
+    await driver.events("l", ["ocelle-button-activate"]);
+    const found: Record<string, number[]> = {};
+    for (const modifier of ["Control", "Meta", "Shift", "Alt"] as const) {
+      await driver.click("b", { modifiers: [modifier] });
+      await driver.click("l", { modifiers: [modifier] });
+      const records = (await driver.takeEvents()).filter((record) => record.at === "document");
+      found[modifier] = [records.filter((record) => record.target === "ocelle-button#b").length, records.filter((record) => record.target === "ocelle-button#l").length];
+    }
+    expect(found).toEqual({ Control: [1, 0], Meta: [1, 0], Shift: [1, 0], Alt: [1, 0] });
+  });
+});
+
 describe("src/control.ts: ID references by element reflection, in the host's own tree (FR-005; research.md R-04)", () => {
   it("resolves ids in the document, in order, missing ones skipped, for aria-controls, aria-labelledby and aria-describedby", async () => {
     const { inner } = await mounted('<p id="one">One</p><p id="two">Two</p><ocelle-button id="b" aria-controls="two nope one" aria-labelledby="one two" aria-describedby="nope two">Save</ocelle-button>', "b");
@@ -472,6 +520,19 @@ describe("src/control.ts: ID references by element reflection, in the host's own
     document.getElementById("spot")?.append(host);
     await host.updateComplete;
     expect(innerOf(host).ariaControlsElements?.map((each) => each.id)).toEqual(["panel"]);
+  });
+
+  // Added in the green step (phase 3 plants, reviews/phase-3/plants.md): the first connection resolves through the
+  // mirrors' read-back as well, so only a later connection shows the resolution at connectedCallback.
+  it("resolves the ids again at every connection: moved from the document into a shadow root, the reference follows the tree it is in", async () => {
+    const { host } = await mounted('<p id="panel">Document</p><ocelle-button id="b" aria-controls="panel">Save</ocelle-button><div id="outer"></div>', "b");
+    const before = innerOf(host).ariaControlsElements?.map((each) => each.textContent);
+    const root = document.getElementById("outer")?.attachShadow({ mode: "open" });
+    if (root === undefined) throw new Error("no shadow root");
+    root.innerHTML = '<p id="panel">Shadow</p>';
+    root.append(host);
+    await (host as HTMLElementTagNameMap["ocelle-button"]).updateComplete;
+    expect({ before, after: innerOf(host).ariaControlsElements?.map((each) => each.textContent) }).toEqual({ before: ["Document"], after: ["Shadow"] });
   });
 });
 

@@ -162,7 +162,7 @@ const fragments = [
   // 012 phase 3 (tasks.md T033, T038; contracts/elements-package.md § Control conventions 2, 4 and 6, § ocelle-button):
   // link mode, the moved host ARIA with its recipes, mirrors and custom states, the two surfaces of current, the
   // link-mode activate event and look, and the engine floor above
-  convention("Link versus button", "A control is in link mode exactly when its `href` is not empty or whitespace only, parses as a URL against the document's base URL and is not a `javascript:` URL as the URL parser reads it (so `JAVASCRIPT:`, `java\tscript:` and a leading space or control character count); otherwise it is in button mode, with no error for an `href` that does not parse"),
+  convention("Link versus button", "A control is in link mode exactly when its `href` is not empty or whitespace only, parses as a URL against the document's base URL and is not a `javascript:` URL as the URL parser reads it (so `JAVASCRIPT:`, `java\\tscript:` and a leading space or control character count); otherwise it is in button mode, with no error for an `href` that does not parse"),
   "Link mode renders an `<a>` with the `href` as written and the native link behaviour: Enter activates, Space does not, and modifier clicks open new tabs or windows; button mode renders a `<button type=\"button\">` (Enter and Space activate). Both modes look the same for the same variant",
   "`data:` and `vbscript:` URLs are link mode and left to the host: Chromium blocks a top-level `data:` navigation and runs no `vbscript:`",
   "A disabled link has no `href`: it is an `<a role=\"link\" aria-disabled=\"true\">` out of the tab order, so neither a click, a modifier click, a middle click, the context menu nor a drag opens it",

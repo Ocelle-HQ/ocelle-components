@@ -135,6 +135,15 @@ option (a) each):
   list is kept, the plan's estimate and shard headroom are corrected (plan decision 15, research R-13), and a triage
   record for a plant design whose shard time does not grow with the story count is opened when this feature lands.
 
+**Operator decisions at phase 3** (2026-11-15, human:jeroennouwsdev):
+
+- Modifier clicks on a link, "reword": the browser's own modifier handling applies. On a link-mode `ocelle-button`
+  and on a link row, a click with Ctrl, Meta, Shift or Alt held dispatches no activate event and the element prevents
+  nothing, so the outcome is the browser's platform behaviour; the element does not intervene. On Chromium on Linux,
+  Meta is not a link modifier, so a Meta-click navigates the current tab; Ctrl, Shift and Alt give a new tab, a new
+  window or a download and leave the current page as it is. This refines the decision on SPEC-1-09 above (FR-002,
+  FR-023, FR-033, US2-1, US5-2). No code or test change: the phase 3 test already asserts this.
+
 **Issues**: #7, in part (triage record `triage/012-button-action-row.md`, approved by the operator on 2026-11-13).
 This feature builds the two action controls of #7. `ocelle-pill-tag`, `ocelle-status-indicator` and `ocelle-metric`
 stay in #7 for a later status mission. The body of #7 (read on 2026-11-13) is the source of the requirements below.
@@ -304,7 +313,7 @@ activate it by pointer, Enter and Space; read its accessibility-tree node and it
 ### User Story 2 - Link mode and ARIA passthrough (Priority: P2)
 
 A host developer sets `href` on an `ocelle-button` and gets a link that looks like a button: it navigates like a link,
-opens in a new tab with the usual modifiers, and is announced as a link. The developer sets `aria-expanded`,
+leaves modifier clicks to the browser's own handling, and is announced as a link. The developer sets `aria-expanded`,
 `aria-controls` or `aria-current` on the host element and an assistive technology reads that state on the real
 control, without the developer knowing about the shadow root.
 
@@ -323,8 +332,10 @@ the host's custom states, the mirrors and the navigation result.
    `ocelle-button-activate` (as in US1-2) and then, unless a listener called `preventDefault()` on it, navigates to
    `/projects`; when a listener prevented it, it does not navigate. Space does not activate it (native link
    behaviour). **When** it is clicked with Ctrl, Meta, Shift or Alt held, or middle-clicked, **Then** no
-   `ocelle-button-activate` is dispatched and the browser's default for that click (a new tab or window, or a
-   download) is not prevented (FR-023).
+   `ocelle-button-activate` is dispatched and the element prevents nothing: the browser's own modifier handling
+   applies (on Chromium on Linux, Ctrl, Shift and Alt give a new tab, a new window or a download and leave the page
+   as it is, and a Meta-click navigates the current tab, since Meta is not a link modifier there) (FR-023; operator
+   decision at phase 3).
 2. **Given** a link-mode button, **When** `target` or `rel` or `download` is set on the host (FR-021), **Then** the
    inner link has the same value.
 3. **Given** a link-mode button with `disabled`, **When** rendered, **Then** it has no navigable target, is not in the
@@ -537,8 +548,9 @@ tree, the navigation result and the line boxes of the tags.
    dispatched first with `{ rowId: "m-42" }` and, unless a listener called `preventDefault()`, the browser navigates to
    `/missions/42`; when a listener prevented it, it does not navigate. Space does not activate a link row.
 2. **Given** a link row, **When** it is clicked with Ctrl, Meta, Shift or Alt held, or middle-clicked, **Then** no
-   `ocelle-action-row-activate` event is dispatched and the browser's default for that click (a new tab or window,
-   or a download on an Alt-click) is not prevented (FR-033).
+   `ocelle-action-row-activate` event is dispatched and the element prevents nothing: the browser's own modifier
+   handling applies, as in US2-1 (on Chromium on Linux a Meta-click navigates the current tab) (FR-033; operator
+   decision at phase 3).
 3. **Given** a link row with `current="page"`, **When** the tree is read, **Then** the inner link reports
    `aria-current="page"`; with `current="true"` it reports `aria-current="true"`; with no `current` it reports none.
 4. **Given** `current` set, **When** rendered, **Then** the row shows the current mark: an `--ocelle-color-accent-low`
@@ -679,7 +691,7 @@ tree, the navigation result and the line boxes of the tags.
   a URL (against the document's base URL) whose scheme, as the URL parser reads it, is not `javascript:`; otherwise it
   is in button mode, with no error for an `href` that does not parse. `data:` and `vbscript:` URLs are link mode and
   left to the host (the README states it). Link mode exposes role `link` and the native link behaviour
-  (Enter activates, Space does not, modifier clicks open new tabs or windows). Button mode exposes role `button`
+  (Enter activates, Space does not, modifier clicks get the browser's own modifier handling). Button mode exposes role `button`
   (Enter and Space activate). The two modes have the same look for the same variant.
 - **FR-003**: **Disabled versus unavailable.** `disabled` means "cannot be used here at all": the inner control is
   removed from the tab order, reported disabled, is not activated (as defined under User Scenarios: no navigation, no
@@ -836,8 +848,9 @@ tree, the navigation result and the line boxes of the tags.
   `click` first, as under "Not activated"). Calling `preventDefault()` on it cancels the `click`'s default action: in
   link mode there is no navigation; in button mode the `click` is still delivered, with `defaultPrevented` `true`. In
   link mode, as on a link row (FR-033), a click with Ctrl, Meta, Shift or Alt held dispatches no
-  `ocelle-button-activate`: its `click` is delivered and the browser's default (a new tab or window, or a download)
-  happens; a middle click delivers no `click` and dispatches nothing. A button that is not activated (FR-003)
+  `ocelle-button-activate`: its `click` is delivered, the element prevents nothing and the browser's own modifier
+  handling applies (on Chromium on Linux, Ctrl, Shift and Alt give a new tab, a new window or a download; Meta is not a
+  link modifier there and navigates the current tab; operator decision at phase 3); a middle click delivers no `click` and dispatches nothing. A button that is not activated (FR-003)
   dispatches neither event (operator decision C1 (a), 2026-11-14).
 
 **`ocelle-action-row`**
@@ -870,8 +883,9 @@ tree, the navigation result and the line boxes of the tags.
   `CustomEvent` from the host with `bubbles: true`, `composed: true`, `cancelable: true` and `detail: { rowId: string
   }` (the current `row-id`, `""` when absent). In link mode the event is dispatched before navigation, and calling
   `preventDefault()` on it cancels the navigation. In link mode a click with Ctrl, Meta, Shift or Alt held, or a
-  middle click, dispatches no event and the browser's default (a new tab or window, or a download on an Alt-click)
-  happens (operator decision, SPEC-1-09; Alt, plan decision 13);
+  middle click, dispatches no event, the element prevents nothing and the browser's own modifier handling applies (on
+  Chromium on Linux a Meta-click navigates the current tab) (operator decision, SPEC-1-09; Alt, plan decision 13;
+  platform behaviour, operator decision at phase 3);
   this applies only to a row that is not unavailable. An unavailable row is not activated by any click or key (FR-003)
   and dispatches nothing; a modifier click or middle click on an unavailable link row opens no new tab or window.
 - **FR-034**: The row's accessible name follows FR-006 (the title slot as content: with no host name and no `label`,

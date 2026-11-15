@@ -102,6 +102,132 @@
         {
           "attributes": [
             {
+              "description": "Moved onto the inner control (the host keeps no copy): `\"true\"` reports expanded, `\"false\"` collapsed, an empty value clears it; `removeAttribute` after the move changes nothing.",
+              "name": "aria-expanded",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Moved onto the inner control: the ids, space-separated, of the elements it controls, resolved in the host's own tree when set and when the element is connected; an empty value clears it.",
+              "name": "aria-controls",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Moved onto the inner control with any value; `\"false\"` or an empty value clears it. It draws no mark.",
+              "name": "aria-current",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Moved onto the inner control: the kind of popup it opens; an empty value clears it.",
+              "name": "aria-haspopup",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Moved onto the inner control in button mode only: `\"true\"` reports pressed, `\"false\"` not pressed, an empty value clears it.",
+              "name": "aria-pressed",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Moved onto the inner control: its accessible name, over `label` and the content; an empty or whitespace-only value clears it.",
+              "name": "aria-label",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Moved onto the inner control: the ids, space-separated, of the elements that name it, resolved in the host's own tree, over `aria-label`; an empty value clears it.",
+              "name": "aria-labelledby",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Moved onto the inner control: the ids, space-separated, of the elements that describe it, resolved in the host's own tree; an empty value clears it.",
+              "name": "aria-describedby",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Moved onto the inner control: its native tooltip and description, or its name when nothing else names it; an empty value clears it.",
+              "name": "title",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `aria-expanded`, so copies of the live DOM keep it; hosts do not write or remove it, and the element restores it when it is removed or changed.",
+              "name": "data-ocelle-moved-aria-expanded",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `aria-controls`; hosts do not write or remove it.",
+              "name": "data-ocelle-moved-aria-controls",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `aria-current`; hosts do not write or remove it.",
+              "name": "data-ocelle-moved-aria-current",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `aria-haspopup`; hosts do not write or remove it.",
+              "name": "data-ocelle-moved-aria-haspopup",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `aria-pressed`; hosts do not write or remove it.",
+              "name": "data-ocelle-moved-aria-pressed",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `aria-label`; hosts do not write or remove it.",
+              "name": "data-ocelle-moved-aria-label",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `aria-labelledby`; hosts do not write or remove it.",
+              "name": "data-ocelle-moved-aria-labelledby",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `aria-describedby`; hosts do not write or remove it.",
+              "name": "data-ocelle-moved-aria-describedby",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `title`; hosts do not write or remove it.",
+              "name": "data-ocelle-moved-title",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
               "default": "undefined",
               "description": "The look: `primary` (filled), `secondary` (bordered on a surface) or `quiet` (bordered, no fill); absent or any\nother value renders `secondary`. Reflected.",
               "fieldName": "variant",
@@ -154,20 +280,70 @@
               "type": {
                 "text": "boolean"
               }
+            },
+            {
+              "default": "undefined",
+              "description": "The link's URL: a non-empty `href` that parses as a URL and is not a `javascript:` URL puts the button in link mode\n(an inner `<a>` with the `href` as written); any other value is button mode. Reflected.",
+              "fieldName": "href",
+              "name": "href",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The inner link's `target`, in link mode while available; with `_blank` and no `rel` the link gets `rel=\"noopener\"`.\nReflected.",
+              "fieldName": "target",
+              "name": "target",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The inner link's `rel`, in link mode while available. Reflected.",
+              "fieldName": "rel",
+              "name": "rel",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The inner link's `download`, in link mode while available. Reflected.",
+              "fieldName": "download",
+              "name": "download",
+              "type": {
+                "text": "string | undefined"
+              }
             }
           ],
           "cssParts": [
             {
-              "description": "The inner `<button>`.",
+              "description": "The inner `<button>`, or the inner `<a>` in link mode.",
               "name": "control"
             }
           ],
           "cssProperties": [],
+          "cssStates": [
+            {
+              "description": "While the moved `aria-expanded` is `\"true\"`.",
+              "name": "expanded"
+            },
+            {
+              "description": "While the moved `aria-pressed` is `\"true\"`.",
+              "name": "pressed"
+            },
+            {
+              "description": "While the moved `aria-current` is set to any value other than `\"false\"`.",
+              "name": "current"
+            }
+          ],
           "customElement": true,
-          "description": "A native button in the Ocelle look: three variants, two sizes, a flush look, the ground it sits on, a label, a\ndisabled state and an icon slot.",
+          "description": "A native button in the Ocelle look, or a link that looks like one: three variants, two sizes, a flush look, the\nground it sits on, a label, a disabled state, an icon slot, link mode with `href`, and host ARIA moved onto the inner\ncontrol.",
           "events": [
             {
-              "description": "Dispatched from the element on each activation that delivers a `click` (a pointer click, Enter or Space, `click()`), before the `click` reaches any bubble-phase listener on the element or its ancestors; bubbles, composed and cancelable, `detail` `{}`. Calling `preventDefault()` on it cancels the click's default action (the `click` is still delivered). A disabled button dispatches neither.",
+              "description": "Dispatched from the element on each activation that delivers a `click` (a pointer click, Enter, Space in button mode, `click()`), before the `click` reaches any bubble-phase listener on the element or its ancestors; bubbles, composed and cancelable, `detail` `{}`. Calling `preventDefault()` on it cancels the click's default action (in link mode the navigation; in button mode the `click` is still delivered). Not dispatched for a link-mode click with Ctrl, Meta, Shift or Alt held, nor for a middle click. A disabled button dispatches neither.",
               "name": "ocelle-button-activate",
               "type": {
                 "text": "CustomEvent<Record<string, never>>"
@@ -245,6 +421,54 @@
               "reflects": true,
               "type": {
                 "text": "boolean"
+              }
+            },
+            {
+              "attribute": "href",
+              "default": "undefined",
+              "description": "The link's URL: a non-empty `href` that parses as a URL and is not a `javascript:` URL puts the button in link mode\n(an inner `<a>` with the `href` as written); any other value is button mode. Reflected.",
+              "kind": "field",
+              "name": "href",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "target",
+              "default": "undefined",
+              "description": "The inner link's `target`, in link mode while available; with `_blank` and no `rel` the link gets `rel=\"noopener\"`.\nReflected.",
+              "kind": "field",
+              "name": "target",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "rel",
+              "default": "undefined",
+              "description": "The inner link's `rel`, in link mode while available. Reflected.",
+              "kind": "field",
+              "name": "rel",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "download",
+              "default": "undefined",
+              "description": "The inner link's `download`, in link mode while available. Reflected.",
+              "kind": "field",
+              "name": "download",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string | undefined"
               }
             },
             {

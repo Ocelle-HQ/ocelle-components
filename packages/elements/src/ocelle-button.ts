@@ -1,7 +1,14 @@
-// `ocelle-button` (012 spec US1, FR-001 to FR-003, FR-006, FR-009 to FR-014, FR-018 to FR-020, FR-022, FR-023;
-// research.md R-01, R-05, R-06, R-08, R-09, R-12; data-model.md § `ocelle-button`; plan decisions 18, 20, 23 and 26), in
-// button mode: one native `<button type="button">` with the part `control` in an open shadow root attached with
-// `delegatesFocus`, laid out by mission 005's slot convention (an `icon` slot before the label). The host is
+// `ocelle-button` (012 spec US1 and US2, FR-001 to FR-014, FR-018 to FR-023; research.md R-01 to R-06, R-08, R-09,
+// R-12; data-model.md § `ocelle-button`; plan decisions 18 to 20, 22 to 24 and 26): one native `<button type="button">`
+// (button mode) or `<a>` (link mode, by src/control.ts `linkHref`) with the part `control` in an open shadow root
+// attached with `delegatesFocus`, laid out by mission 005's slot convention (an `icon` slot before the label). A
+// disabled link has no `href`, `target`, `rel` or `download`, is `role="link" aria-disabled="true"` and is not
+// focusable; `target="_blank"` without `rel` gives `rel="noopener"`. The host attributes of FR-009 are moved onto the
+// inner control (src/control.ts `MovedAttributes`): ID references by element reflection resolved in the host's tree,
+// the name from `aria-labelledby`, then `aria-label`, then `label`, then the content; `aria-pressed` in button mode only;
+// `aria-current="false"` applied as no current state; the moved states as custom states (`expanded`, `pressed`,
+// `current`). In link mode a click with Ctrl, Meta, Shift or Alt held dispatches no `ocelle-button-activate`, and a
+// cancelled activate event cancels the navigation. The host is
 // `display: inline-grid` and the inner control its single stretched grid item, so a host stretched by a flex row or a
 // grid has no area outside the control; the inner control is `inline-flex`, so a page rule that makes the host a block
 // or a flex container leaves it its own size, and the host guard (src/control.ts) stops any click outside it. Each
@@ -21,23 +28,71 @@
 // (review round 1, R1-01).
 // Importing this module defines `ocelle-button` and no other element.
 import { LitElement, css, html, nothing } from "lit";
-import { controlStyles, guardHost } from "./control.ts";
+import { MovedAttributes, controlStyles, guardHost, linkHref, resolveIds } from "./control.ts";
 import { define } from "./define.ts";
 import { iconSlotStyles } from "./icon-slot.ts";
 
+/** The host attributes `ocelle-button` moves onto its inner control (FR-009). */
+const moved = ["aria-expanded", "aria-controls", "aria-current", "aria-haspopup", "aria-pressed", "aria-label", "aria-labelledby", "aria-describedby", "title"] as const;
+/** The moved ID references and the inner control's reflection property for each (research.md R-04). */
+const references = [
+  ["aria-controls", "ariaControlsElements"],
+  ["aria-labelledby", "ariaLabelledByElements"],
+  ["aria-describedby", "ariaDescribedByElements"],
+] as const;
+
 /**
- * A native button in the Ocelle look: three variants, two sizes, a flush look, the ground it sits on, a label, a
- * disabled state and an icon slot.
+ * A native button in the Ocelle look, or a link that looks like one: three variants, two sizes, a flush look, the
+ * ground it sits on, a label, a disabled state, an icon slot, link mode with `href`, and host ARIA moved onto the inner
+ * control.
  *
  * @tagname ocelle-button
+ * @attr {string} aria-expanded - Moved onto the inner control (the host keeps no copy): `"true"` reports expanded,
+ * `"false"` collapsed, an empty value clears it; `removeAttribute` after the move changes nothing.
+ * @attr {string} aria-controls - Moved onto the inner control: the ids, space-separated, of the elements it controls,
+ * resolved in the host's own tree when set and when the element is connected; an empty value clears it.
+ * @attr {string} aria-current - Moved onto the inner control with any value; `"false"` or an empty value clears it. It
+ * draws no mark.
+ * @attr {string} aria-haspopup - Moved onto the inner control: the kind of popup it opens; an empty value clears it.
+ * @attr {string} aria-pressed - Moved onto the inner control in button mode only: `"true"` reports pressed, `"false"`
+ * not pressed, an empty value clears it.
+ * @attr {string} aria-label - Moved onto the inner control: its accessible name, over `label` and the content; an empty
+ * or whitespace-only value clears it.
+ * @attr {string} aria-labelledby - Moved onto the inner control: the ids, space-separated, of the elements that name
+ * it, resolved in the host's own tree, over `aria-label`; an empty value clears it.
+ * @attr {string} aria-describedby - Moved onto the inner control: the ids, space-separated, of the elements that
+ * describe it, resolved in the host's own tree; an empty value clears it.
+ * @attr {string} title - Moved onto the inner control: its native tooltip and description, or its name when nothing
+ * else names it; an empty value clears it.
+ * @attr {string} data-ocelle-moved-aria-expanded - Element-owned mirror of the moved `aria-expanded`, so copies of the
+ * live DOM keep it; hosts do not write or remove it, and the element restores it when it is removed or changed.
+ * @attr {string} data-ocelle-moved-aria-controls - Element-owned mirror of the moved `aria-controls`; hosts do not
+ * write or remove it.
+ * @attr {string} data-ocelle-moved-aria-current - Element-owned mirror of the moved `aria-current`; hosts do not write
+ * or remove it.
+ * @attr {string} data-ocelle-moved-aria-haspopup - Element-owned mirror of the moved `aria-haspopup`; hosts do not
+ * write or remove it.
+ * @attr {string} data-ocelle-moved-aria-pressed - Element-owned mirror of the moved `aria-pressed`; hosts do not write
+ * or remove it.
+ * @attr {string} data-ocelle-moved-aria-label - Element-owned mirror of the moved `aria-label`; hosts do not write or
+ * remove it.
+ * @attr {string} data-ocelle-moved-aria-labelledby - Element-owned mirror of the moved `aria-labelledby`; hosts do not
+ * write or remove it.
+ * @attr {string} data-ocelle-moved-aria-describedby - Element-owned mirror of the moved `aria-describedby`; hosts do
+ * not write or remove it.
+ * @attr {string} data-ocelle-moved-title - Element-owned mirror of the moved `title`; hosts do not write or remove it.
+ * @cssstate expanded - While the moved `aria-expanded` is `"true"`.
+ * @cssstate pressed - While the moved `aria-pressed` is `"true"`.
+ * @cssstate current - While the moved `aria-current` is set to any value other than `"false"`.
  * @slot - The label.
  * @slot icon - One icon before the label (the slot convention): `--ocelle-icon-size` square, decorative.
- * @csspart control - The inner `<button>`.
+ * @csspart control - The inner `<button>`, or the inner `<a>` in link mode.
  * @fires {CustomEvent<Record<string, never>>} ocelle-button-activate - Dispatched from the element on each activation
- * that delivers a `click` (a pointer click, Enter or Space, `click()`), before the `click` reaches any bubble-phase
- * listener on the element or its ancestors; bubbles, composed and cancelable, `detail` `{}`. Calling
- * `preventDefault()` on it cancels the click's default action (the `click` is still delivered). A disabled button
- * dispatches neither.
+ * that delivers a `click` (a pointer click, Enter, Space in button mode, `click()`), before the `click` reaches any
+ * bubble-phase listener on the element or its ancestors; bubbles, composed and cancelable, `detail` `{}`. Calling
+ * `preventDefault()` on it cancels the click's default action (in link mode the navigation; in button mode the
+ * `click` is still delivered). Not dispatched for a link-mode click with Ctrl, Meta, Shift or Alt held, nor for a
+ * middle click. A disabled button dispatches neither.
  */
 export class OcelleButton extends LitElement {
   /** @internal The open shadow root delegates focus to the inner control (research.md R-01). */
@@ -51,7 +106,16 @@ export class OcelleButton extends LitElement {
     // Stryker disable next-line ObjectLiteral: equivalent, {} gives Lit's default options, which are type String's (attribute "label", the default converter, not reflected)
     label: { type: String },
     disabled: { type: Boolean, reflect: true },
+    href: { type: String, reflect: true },
+    target: { type: String, reflect: true },
+    rel: { type: String, reflect: true },
+    download: { type: String, reflect: true },
   };
+
+  /** @internal The moved attributes and their mirrors join Lit's observed attributes (research.md R-03). */
+  static override get observedAttributes(): string[] {
+    return [...super.observedAttributes, ...MovedAttributes.observed(moved)];
+  }
 
   static override styles = [
     css`
@@ -79,10 +143,11 @@ export class OcelleButton extends LitElement {
         font: inherit;
         font-size: var(--ocelle-font-size-md);
         line-height: var(--ocelle-line-height-normal);
+        text-align: center;
         cursor: pointer;
       }
 
-      .control:disabled {
+      :host([disabled]) .control {
         cursor: default;
       }
 
@@ -214,8 +279,13 @@ export class OcelleButton extends LitElement {
           outline-style: solid;
         }
 
-        :host([flush]) .control:disabled {
+        :host([flush][disabled]) .control {
           outline-style: none;
+        }
+
+        :host([disabled]) .control {
+          color: GrayText;
+          border-color: GrayText;
         }
       }
     `,
@@ -272,6 +342,46 @@ export class OcelleButton extends LitElement {
    */
   declare disabled: boolean;
 
+  /**
+   * The link's URL: a non-empty `href` that parses as a URL and is not a `javascript:` URL puts the button in link mode
+   * (an inner `<a>` with the `href` as written); any other value is button mode. Reflected.
+   *
+   * @default undefined
+   */
+  declare href: string | undefined;
+
+  /**
+   * The inner link's `target`, in link mode while available; with `_blank` and no `rel` the link gets `rel="noopener"`.
+   * Reflected.
+   *
+   * @default undefined
+   */
+  declare target: string | undefined;
+
+  /** The inner link's `rel`, in link mode while available. Reflected.
+   *
+   * @default undefined
+   */
+  declare rel: string | undefined;
+
+  /** The inner link's `download`, in link mode while available. Reflected.
+   *
+   * @default undefined
+   */
+  declare download: string | undefined;
+
+  /** The moved host attributes (src/control.ts). */
+  readonly #moved = new MovedAttributes(this, moved, (name) => {
+    if (references.some(([reference]) => reference === name)) this.#resolve();
+    this.requestUpdate();
+  });
+
+  /** The elements each moved ID reference names, resolved when it is set and when the element is connected. */
+  readonly #resolved: Record<(typeof references)[number][0], Element[]> = { "aria-controls": [], "aria-labelledby": [], "aria-describedby": [] };
+
+  /** The custom states (`expanded`, `pressed`, `current`). */
+  readonly #internals = this.attachInternals();
+
   /** Whether the default slot holds a label: non-whitespace text in its flattened assignment. */
   #labelled = false;
 
@@ -302,9 +412,28 @@ export class OcelleButton extends LitElement {
     this.requestUpdate();
   }
 
-  /** The inner `<button>`, once rendered. */
-  #control(): HTMLButtonElement | null {
-    return this.renderRoot.querySelector<HTMLButtonElement>(".control");
+  override attributeChangedCallback(name: string, old: string | null, value: string | null): void {
+    this.#moved.handle(name, value);
+    super.attributeChangedCallback(name, old, value);
+  }
+
+  override connectedCallback(): void {
+    this.#moved.connected();
+    // The mirrors read back, and a later connection may put the element in another tree: the references are resolved
+    // there (research.md R-04).
+    this.#resolve();
+    this.requestUpdate();
+    super.connectedCallback();
+  }
+
+  /** Resolves the moved ID references in the host's own tree (research.md R-04). */
+  #resolve(): void {
+    for (const [name] of references) this.#resolved[name] = resolveIds(this, this.#moved.get(name));
+  }
+
+  /** The inner `<button>` or `<a>`, once rendered. */
+  #control(): HTMLElement | null {
+    return this.renderRoot.querySelector<HTMLElement>(".control");
   }
 
   /**
@@ -318,13 +447,54 @@ export class OcelleButton extends LitElement {
   /** Dispatches `ocelle-button-activate` for a click on the available inner control; a cancelled one cancels the click. */
   #activate(event: MouseEvent): void {
     if (this.disabled) return;
+    if (linkHref(this.href, document.baseURI) !== undefined && (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey)) return;
     const proceed = this.dispatchEvent(new CustomEvent("ocelle-button-activate", { bubbles: true, composed: true, cancelable: true, detail: {} }));
     if (!proceed) event.preventDefault();
   }
 
-  protected override render(): unknown {
+  /** The inner control's name, when it is not its content: the host's `aria-label`, then `label` (research.md R-05). */
+  #name(): string | undefined {
+    if (this.#resolved["aria-labelledby"].length > 0) return undefined;
     const label = this.label?.trim() ?? "";
-    return html`<button part="control" class="control" type="button" ?disabled=${this.disabled} aria-label=${label === "" ? nothing : label} @click=${this.#activate}><span class=${this.#labelled ? "icon-row" : "icon-row bare"}><span class="icon-slot"><slot name="icon"></slot></span><span class="label"><slot @slotchange=${this.#readLabel}></slot></span></span></button>`;
+    return this.#moved.get("aria-label") ?? (label === "" ? undefined : label);
+  }
+
+  /** The moved `aria-current`, unless it is the off value `"false"`. */
+  #current(): string | undefined {
+    const current = this.#moved.get("aria-current");
+    return current === "false" ? undefined : current;
+  }
+
+  protected override render(): unknown {
+    const value = (name: string): string | typeof nothing => this.#moved.get(name) ?? nothing;
+    const content = html`<span class=${this.#labelled ? "icon-row" : "icon-row bare"}><span class="icon-slot"><slot name="icon"></slot></span><span class="label"><slot @slotchange=${this.#readLabel}></slot></span></span>`;
+    const href = linkHref(this.href, document.baseURI);
+    if (href !== undefined) {
+      const available = !this.disabled;
+      const rel = this.rel ?? (this.target === "_blank" ? "noopener" : undefined);
+      return html`<a part="control" class="control" href=${available ? href : nothing} target=${available ? (this.target ?? nothing) : nothing} rel=${available ? (rel ?? nothing) : nothing} download=${available ? (this.download ?? nothing) : nothing} role=${available ? nothing : "link"} aria-disabled=${available ? nothing : "true"} aria-label=${this.#name() ?? nothing} aria-expanded=${value("aria-expanded")} aria-current=${this.#current() ?? nothing} aria-haspopup=${value("aria-haspopup")} title=${value("title")} @click=${this.#activate}>${content}</a>`;
+    }
+    return html`<button part="control" class="control" type="button" ?disabled=${this.disabled} aria-label=${this.#name() ?? nothing} aria-expanded=${value("aria-expanded")} aria-current=${this.#current() ?? nothing} aria-haspopup=${value("aria-haspopup")} aria-pressed=${value("aria-pressed")} title=${value("title")} @click=${this.#activate}>${content}</button>`;
+  }
+
+  /** Relates the inner control to the resolved references and sets the custom states from the moved values. */
+  protected override updated(): void {
+    const inner = this.#control();
+    if (inner !== null) {
+      for (const [name, property] of references) {
+        const found = this.#resolved[name];
+        inner[property] = found.length === 0 ? null : found;
+      }
+    }
+    const states: readonly (readonly [string, boolean])[] = [
+      ["expanded", this.#moved.get("aria-expanded") === "true"],
+      ["pressed", this.#moved.get("aria-pressed") === "true"],
+      ["current", this.#current() !== undefined],
+    ];
+    for (const [state, on] of states) {
+      if (on) this.#internals.states.add(state);
+      else this.#internals.states.delete(state);
+    }
   }
 }
 

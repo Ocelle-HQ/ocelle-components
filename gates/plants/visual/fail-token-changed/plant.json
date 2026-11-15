@@ -1,6 +1,6 @@
 {
   "expect": "fail",
-  "why": "A changed token value (color-ink, light) changes every story-theme that shows it: differs on the thirty-four light story-themes measured in the pinned container (FR-004, US2 scenario 2), the twelve the phase 1 spike listed and the eight of mission 005's stories that show color-ink (all but elements-ocelle-brand-mark--chrome, measured for plan decision 29), the fourteen of 012's ocelle-button stories that show color-ink (all but primary, disabled and chrome, measured in the pinned container at phase 2), and none in dark. A story added later that shows color-ink in light adds its line here (research.md R-07).",
+  "why": "A changed token value (color-ink, light) changes every story-theme that shows it: differs on the thirty-four light story-themes measured in the pinned container (FR-004, US2 scenario 2), the twelve the phase 1 spike listed and the eight of mission 005's stories that show color-ink (all but elements-ocelle-brand-mark--chrome, measured for plan decision 29), the fourteen of 012's ocelle-button stories that show color-ink (all but primary, disabled and chrome, measured in the pinned container at phase 2), the five of 012's phase 3 link and state stories that show color-ink (all but link-disabled, measured in the pinned container at phase 3), and none in dark. A story added later that shows color-ink in light adds its line here (research.md R-07).",
   "findings": [
     {
       "location": "base-styles--base-page/light",
@@ -136,6 +136,26 @@
     },
     {
       "location": "elements-ocelle-button--right-to-left/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-button--link/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-button--link-new-tab/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-button--expanded/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-button--current/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-button--pressed/light",
       "rule": "differs"
     }
   ]

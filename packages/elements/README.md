@@ -139,14 +139,16 @@ every part at 3:1 uses `tone="mono"`. `ocelle-brand-mark` has no slot, event, CS
 <ocelle-button>Save</ocelle-button>
 <ocelle-button variant="primary"><ocelle-icon slot="icon" name="folder"></ocelle-icon>Open project</ocelle-button>
 <ocelle-button variant="quiet" size="compact" label="Close"><ocelle-icon slot="icon" name="close"></ocelle-icon></ocelle-button>
-<ocelle-button flush size="compact">Projects</ocelle-button>
+<ocelle-button flush size="compact" href="/projects">Projects</ocelle-button>
+<ocelle-button aria-expanded="false" aria-controls="filters">Filters</ocelle-button>
 <ocelle-button variant="quiet" ground="inset">Retry</ocelle-button>
-<ocelle-button variant="quiet" ground="chrome">Menu</ocelle-button>
+<ocelle-button variant="quiet" ground="chrome" aria-haspopup="menu" aria-expanded="false">Menu</ocelle-button>
+<ocelle-button variant="quiet" size="compact" title="Close dialog" label="Close"><ocelle-icon slot="icon" name="close"></ocelle-icon></ocelle-button>
 ```
 
-`ocelle-button` is a native button in the Ocelle look. It follows the control conventions below: one inner
-`<button type="button">`, the part `control`, in its shadow root; a keyboard user and a screen-reader user meet a normal
-button.
+`ocelle-button` is a native button in the Ocelle look, or, with an `href`, a link that looks like one. It follows the
+control conventions below: one inner `<button type="button">` (or `<a>` in link mode), the part `control`, in its shadow
+root; a keyboard user and a screen-reader user meet a normal button or a normal link.
 
 - `variant` (attribute and property, reflected): `primary` (filled), `secondary` (the default; bordered on a surface)
   or `quiet` (bordered, no fill); any other value renders `secondary`.
@@ -168,6 +170,14 @@ button.
 - `label` (attribute and property, not reflected): the accessible name, trimmed; empty or whitespace-only counts as
   none.
 - `disabled` (boolean attribute and property, reflected): the disabled state of the control conventions.
+- `href`, `target`, `rel` and `download` (attributes and properties, reflected): link mode (Link versus button) and the
+  inner link's attributes, set while the link is available; in button mode and on a disabled link they have no effect.
+  With `target="_blank"` and no `rel`, the inner link gets `rel="noopener"`.
+- `ocelle-button` moves `aria-expanded`, `aria-controls`, `aria-current`, `aria-haspopup`, `aria-pressed`, `aria-label`,
+  `aria-labelledby`, `aria-describedby` and `title` (Host ARIA is moved); `aria-pressed` is applied in button mode only,
+  since a link cannot be pressed. Each has its mirror, `data-ocelle-moved-aria-expanded` and so on, and the moved states
+  are the custom states `expanded`, `pressed` and `current`. A moved `title` is the inner control's native tooltip and
+  its description, or its name when nothing else names it.
 - The default slot is the label; the `icon` slot holds one icon before it (the slot convention). With no label in
   the default slot (no non-whitespace text in what it holds), the icon takes no gap and is centred in the button; a
   `flush` button still starts it at its inline start. Name such an icon-only button with `label`. The button follows
@@ -184,7 +194,9 @@ dispatches `ocelle-button-activate` from the element: a `CustomEvent` with `bubb
 its ancestors. Its target is the element, which identifies the button. Calling `preventDefault()` on it cancels the
 `click`'s default action; a button has none, so the `click` is still delivered, with `defaultPrevented` `true`. A
 disabled button dispatches neither event. The `click` reaches the host as an ordinary `click` event whose target is the
-element.
+element. In link mode, calling `preventDefault()` on `ocelle-button-activate` cancels the navigation. A click with
+Ctrl, Meta, Shift or Alt held dispatches no `ocelle-button-activate`: its `click` is delivered and the browser's default
+(a new tab or window, or a download) happens; a middle click delivers no `click` and dispatches nothing.
 
 **Looks.** Hover and pressed change the surface and the border: a bordered variant's border becomes
 `--ocelle-color-hover-border`; the primary fills with `--ocelle-color-accent-hover` on hover and `--ocelle-color-accent`
@@ -202,7 +214,8 @@ Keyboard focus shows the token focus ring on the inner control (`--ocelle-color-
 (`overflow` other than `visible`) and holds a flush button at its edge keeps at least `--ocelle-focus-offset` +
 `--ocelle-focus-width` of unclipped space around it, for example `padding-inline` of that size with a matching negative
 margin. In forced colours the label and border are `ButtonText`, hover and pressed borders and the focus ring
-`Highlight`, a flush button's hover and pressed a dashed `Highlight` outline, and a disabled button `GrayText`.
+`Highlight`, a flush button's hover and pressed a dashed `Highlight` outline, and a disabled button `GrayText`. In
+forced colours a link-mode button's text and border are `LinkText`.
 
 A long label wraps between words inside the button, which grows in block size; it is never truncated. A single word
 wider than the button breaks inside the word.
@@ -213,6 +226,22 @@ that submits from it calls `form.requestSubmit()` in its click handler:
 
 ```js
 button.addEventListener("click", () => form.requestSubmit());
+```
+
+**Consumer compositions.** Three controls of other components are built from this interface alone, with no style of
+their own beyond token overrides: the breadcrumb item of `ocelle-breadcrumbs` (a compact flush link whose label lines up
+with the page title, the current page marked with `aria-current`), the top bar's menu button (on the chrome, with
+`aria-haspopup` and `aria-expanded`, bound to `"false"` when closed and styled from `:state(expanded)`) and the copy
+control of `ocelle-copy-field` (a flush icon button named by `label`). A consumer listens for `ocelle-button-activate`
+(or the native `click`) on each.
+
+```html
+<!-- the breadcrumb item -->
+<ocelle-button flush size="compact" href="/projects" aria-current="page">Projects</ocelle-button>
+<!-- the top bar's menu button, in a container on --ocelle-color-chrome -->
+<ocelle-button variant="quiet" ground="chrome" aria-haspopup="menu" aria-expanded="false">Menu</ocelle-button>
+<!-- the copy control -->
+<ocelle-button flush label="Copy"><ocelle-icon slot="icon" name="copy"></ocelle-icon></ocelle-button>
 ```
 
 `ocelle-button` reads the tokens `--ocelle-target-min`, `--ocelle-space-2`, `--ocelle-space-4`, `--ocelle-space-6`,
@@ -230,27 +259,76 @@ button.addEventListener("click", () => form.requestSubmit());
 Every control of this library (`ocelle-button`, and the action row, navigation items, copy control and form controls
 after it) follows these rules.
 
-1. **One inner control.** Each control renders exactly one native `<button type="button">` in an open shadow root
-   attached with `delegatesFocus`; the host has no role and no tabindex. `element.focus()` focuses the inner control,
-   and `element.click()` clicks it, so a click started by `click()` gets the same guarantees as any other click. A
-   click dispatched on the host with `dispatchEvent` is outside the guarantees: it does not pass through the inner
-   control, so the element stops it. The host is a grid container (`inline-grid` for `ocelle-button`) and the inner
-   control its single stretched item, so the inner control fills the host when a flex row or a grid stretches it; a
-   stretched button grows to the row's height (set `align-self` on the element to avoid it). A host may restyle the
-   element's `display` and size: the element also listens for `click` and `auxclick` on the host from its constructor
-   and stops any that did not pass through the inner control, in every state, so host area outside the inner control
-   never activates it. Capture-phase listeners, and listeners added to the element before it is upgraded, are outside
-   that guarantee: they run before the element's own listener.
-2. **Disabled.** `disabled` means the control cannot be used here at all: the inner control is out of the tab order,
+1. **One inner control.** Each control renders exactly one native `<button type="button">` (button mode) or `<a>`
+   (link mode) in an open shadow root attached with `delegatesFocus`; the host has no role and no tabindex.
+   `element.focus()` focuses the inner control, and `element.click()` clicks it, so a click started by `click()` gets
+   the same guarantees as any other click. A click dispatched on the host with `dispatchEvent` is outside the
+   guarantees: it does not pass through the inner control, so the element stops it. The host is a grid container
+   (`inline-grid` for `ocelle-button`) and the inner control its single stretched item, so the inner control fills the
+   host when a flex row or a grid stretches it; a stretched button grows to the row's height (set `align-self` on the
+   element to avoid it). A host may restyle the element's `display` and size: the element also listens for `click` and
+   `auxclick` on the host from its constructor and stops any that did not pass through the inner control, in every
+   state, so host area outside the inner control never activates it. Capture-phase listeners, and listeners added to
+   the element before it is upgraded, are outside that guarantee: they run before the element's own listener.
+2. **Link versus button.** A control is in link mode exactly when its `href` is not empty or whitespace only, parses as
+   a URL against the document's base URL and is not a `javascript:` URL as the URL parser reads it (so `JAVASCRIPT:`,
+   `java\tscript:` and a leading space or control character count); otherwise it is in button mode, with no error for
+   an `href` that does not parse. Link mode renders an `<a>` with the `href` as written and the native link behaviour:
+   Enter activates, Space does not, and modifier clicks open new tabs or windows; button mode renders a
+   `<button type="button">` (Enter and Space activate). Both modes look the same for the same variant. `data:` and
+   `vbscript:` URLs are link mode and left to the host: Chromium blocks a top-level `data:` navigation and runs no
+   `vbscript:`.
+3. **Disabled.** `disabled` means the control cannot be used here at all: the inner control is out of the tab order,
    reported disabled and not activated. Not activated means: no `ocelle-*` event and no `click` reaching a
    bubble-phase listener on the element or its ancestors (up to `document` and `window`); capture-phase listeners are
-   outside it.
-3. **Name order.** The inner control's name is the element's `label` (trimmed; empty or whitespace-only counts as
-   none), and otherwise the element's content; slotted icons never contribute. When a control's content is visible,
-   its `label` contains the visible text, ideally at its start, so a user who speaks a control's visible name reaches
-   it (label in name). A control with no text, no `label` and no icon has no accessible name: a host mistake that axe
+   outside it. A disabled link has no `href`: it is an `<a role="link" aria-disabled="true">` out of the tab order, so
+   neither a click, a modifier click, a middle click, the context menu nor a drag opens it.
+4. **Host ARIA is moved.** The ARIA attributes a control lists, and `title`, are moved from the host onto the inner
+   control: the element applies the value there and removes the attribute from the host, so the state appears once,
+   on the inner control, and `getAttribute` on the host returns `null` afterwards. To clear a moved state, set an
+   empty or whitespace-only value (`aria-controls=""`, `aria-label=""`, `title=""`) or the ARIA off value
+   (`aria-expanded="false"`, `aria-pressed="false"`, `aria-current="false"`); any other value is applied as written.
+   `removeAttribute` on a moved attribute changes nothing, and neither does a framework binding that becomes
+   `undefined`, `null` or `nothing`, so bind the off value:
+
+   | Stack | Bind | Never |
+   |---|---|---|
+   | React | `aria-current={active ? "page" : "false"}`, `aria-expanded={open ? "true" : "false"}`, `aria-controls={open ? "panel" : ""}` | `undefined` or `null` |
+   | Lit | `aria-current=${active ? "page" : "false"}` (an attribute binding with a string) | `nothing`, `ifDefined(undefined)` |
+   | Svelte | `aria-current={active ? "page" : "false"}` | `undefined`, `null` |
+   | htmx, Thymeleaf | render the attribute with the off value (`th:attr="aria-current=${active} ? 'page' : 'false'"`) | omitting the attribute on an element that is updated in place; writing a `data-ocelle-moved-*` attribute |
+
+   Each moved value is mirrored in a host attribute the element owns, `data-ocelle-moved-<attribute>` (for example
+   `data-ocelle-moved-aria-label`), removed when the value is cleared; at upgrade the element reads a mirror back for
+   an attribute the host does not set, and a host attribute set at upgrade wins over its mirror. So copies of the live
+   DOM (`cloneNode(true)`, `innerHTML` and `outerHTML`, htmx's history snapshot) keep names and states. The element
+   restores a mirror that is removed or changed while it holds the value, so a morphing swap (htmx's idiomorph `morph`
+   swap, Turbo 8 page-refresh morphs), which removes every attribute the server markup lacks, keeps the mirrors. Hosts
+   never write or remove a mirror: one written while the element holds no value for it is not read until the next
+   upgrade. With htmx, a swap that replaces the element moves the new element's attributes at upgrade; a morphing swap
+   sets the changed attributes on the live element, which moves them, and the element restores the mirrors the morph
+   removes; htmx's history restore keeps the moved values through the mirrors.
+
+   Since a host attribute selector no longer matches a moved state, `ocelle-button` exposes custom states:
+   `:state(expanded)` while the moved `aria-expanded` is `"true"`, `:state(pressed)` while the moved `aria-pressed` is
+   `"true"`, and `:state(current)` while the moved `aria-current` is anything but `"false"`, for example
+   `ocelle-button:state(expanded) ocelle-icon`. ID references (`aria-controls`, `aria-labelledby`,
+   `aria-describedby`) are resolved by id in the host's own tree (its document, or the shadow root it is in) when they
+   are set and when the element is connected, and related to the inner control by element reference, never by copying
+   the id into the shadow root; ids not found are skipped, an element in another shadow root is not resolved, and an
+   element added later with the id is picked up only when the attribute is set again. Any other `aria-*` attribute on
+   the host is not supported: it stays on the host and axe flags it. This is the controls' own rule: `ocelle-icon` and
+   `ocelle-brand-mark` keep their host `aria-label` rule (Host ARIA), so the two families differ.
+5. **Name order.** The inner control's name is, in this order: the host's `aria-labelledby`, the host's `aria-label`,
+   the element's `label` (trimmed; empty or whitespace-only counts as none), and otherwise the element's content;
+   slotted icons never contribute. When a control's content is visible, its `label` contains the visible text, ideally
+   at its start, so a user who speaks a control's visible name reaches it (label in name); so does a host
+   `aria-label`. A control with no text, no `label` and no icon has no accessible name: a host mistake that axe
    reports; the element adds no fallback text.
-4. **Primary action.** A primary action uses `size="default"` (44 × 44 px minimum); `variant="primary"` is a look, not
+6. **Current.** On `ocelle-button`, `aria-current` is passed through to the inner control with any value and draws no
+   visual mark; a host that wants a visible mark styles `:state(current)` or uses a row, whose `current` property draws
+   the mark and sets `aria-current`.
+7. **Primary action.** A primary action uses `size="default"` (44 × 44 px minimum); `variant="primary"` is a look, not
    what makes an action primary.
 
 ## Slot convention
@@ -313,6 +391,9 @@ leaves the element unlabelled even with a `label`. When both are set, the host `
 falls back to `label`. Chromium uses a host `aria-label` as written, surrounding spaces included, so pass it trimmed;
 the element never rewrites it. An unknown icon name exposes nothing, named or not.
 
+This is the rule of `ocelle-icon` and `ocelle-brand-mark`; the controls move their host ARIA onto their inner control
+instead (Control conventions, Host ARIA is moved).
+
 A host `aria-hidden="true"` hides the element, labelled or not. A host `hidden` attribute removes the element: no box
 and no node, labelled or not. A host `role` or `aria-hidden="false"` is not supported: name the element with `label` or
 `aria-label` instead.
@@ -325,8 +406,13 @@ then the first copy's.
 
 ## Engines
 
-Engine floor: Chromium 120+ and WebKit 16.4+, with no `window.ShadyCSS` polyfill on the page. Each figure is the
+Engine floor: Chromium 135+ and WebKit 17.4+, with no `window.ShadyCSS` polyfill on the page. Each figure is the
 newest feature the elements use:
+
+- ARIA element reflection (`ariaControlsElements`, `ariaLabelledByElements`, `ariaDescribedByElements`): Chromium 135,
+  WebKit 16.4 (the controls' ID references);
+- Custom states (`ElementInternals.states` and `:state()`): Chromium 125, WebKit 17.4 (`ocelle-button`'s moved
+  states);
 
 - `:dir()`: Chromium 120, WebKit 16.4 (the inline-direction icons' mirroring);
 - `@media not (forced-colors: active)` (Media Queries 4's `not (…)` without a media type): Chromium 104, WebKit 16.4
@@ -357,7 +443,8 @@ the same tag does nothing and throws nothing. The module exports the class and d
 fields, not decorators. Every element class carries the JSDoc tag `@tagname <tag>`, and every public property a
 description and `@default undefined`: the manifest takes the tag name and the defaults from them. An element that
 observes a standard attribute such as `aria-label` adds it to `observedAttributes` without declaring a property, so
-the manifest does not list it.
+the manifest does not list it. An element that moves a standard attribute declares it with `@attr` and a description,
+with its mirror, so the manifest lists both.
 
 **Styles.** An element's styles are one `css` tagged template assigned to `static styles`, built only from `--ocelle-*`
 tokens and the values the `style-lint` gate allows, so every instance adopts one shared stylesheet. No template has a

@@ -218,8 +218,8 @@ function themed(theme: Palette): Scenario[] {
     {
       name: `SC-006, decision 28 (${theme}): the README's three consumer compositions, rendered with no style that targets the elements: the breadcrumb item a compact flush link named Projects with aria-current page, at least 24 px, its label at the heading's inline start; the menu button on the chrome ground a button named Menu with a menu popup, collapsed, at least 44 px, chrome-ink label and chrome-muted border, then expanded and :state(expanded); the copy control a button named Copy, at least 44 px`,
       run: async (driver) => {
-        await driver.mount(`<nav id="trail">${withId(compositions.breadcrumb, "crumb")}</nav><h1 id="title">Projects</h1><div class="top-bar">${withId(compositions.menu, "menu")}</div><p>${withId(compositions.copy, "copy")}</p><p id="away">Away</p>`);
-        await driver.rules(".top-bar { background-color: var(--ocelle-color-chrome); }");
+        await driver.mount(`<div class="page"><nav id="trail">${withId(compositions.breadcrumb, "crumb")}</nav><h1 id="title">Projects</h1><div class="top-bar">${withId(compositions.menu, "menu")}</div><p>${withId(compositions.copy, "copy")}</p><p id="away">Away</p></div>`);
+        await driver.rules(".page { background-color: var(--ocelle-color-canvas); color: var(--ocelle-color-ink); } .top-bar { background-color: var(--ocelle-color-chrome); }");
         await driver.theme(theme);
         await driver.hover("away");
         const size = async (id: string): Promise<readonly [number, number]> => {
@@ -529,23 +529,23 @@ export const linkScenarios: readonly Scenario[] = [
     },
   },
   {
-    name: 'US2-8: a host aria-label names the inner control and wins over label and the content; set to "" or to whitespace only it names the inner control by label, or by its content when there is no label, and its mirror is gone (FR-004, FR-006)',
+    name: 'US2-8: a host aria-label names the inner control and wins over label and the content; set to "" or to whitespace only it names the inner control by label, or by its content when there is no label, and its mirror is gone (FR-004, FR-006); each name holds the visible text (label in name)',
     run: async (driver) => {
-      await driver.mount('<ocelle-button id="b" aria-label="Close" label="Shut">Save</ocelle-button> <ocelle-button id="c" aria-label="Close">Save</ocelle-button>');
+      await driver.mount('<ocelle-button id="b" aria-label="Save draft" label="Save now">Save</ocelle-button> <ocelle-button id="c" aria-label="Save draft">Save</ocelle-button>');
       const name = async (id: string): Promise<string> => (await driver.axState(id, control)).name;
       const first = { b: await name("b"), c: await name("c"), mirror: (await hostPair(driver, "b", "aria-label")).mirror };
       await driver.setAttribute("b", "aria-label", "");
       const emptied = { name: await name("b"), ...(await hostPair(driver, "b", "aria-label")) };
-      await driver.setAttribute("b", "aria-label", "Close");
+      await driver.setAttribute("b", "aria-label", "Save draft");
       await driver.setAttribute("b", "aria-label", " \t ");
       const blank = { name: await name("b"), ...(await hostPair(driver, "b", "aria-label")) };
       await driver.setAttribute("c", "aria-label", "  ");
       return { first, emptied, blank, content: await name("c"), axe: await severe(driver) };
     },
     expected: {
-      first: { b: "Close", c: "Close", mirror: "Close" },
-      emptied: { name: "Shut", host: null, mirror: null },
-      blank: { name: "Shut", host: null, mirror: null },
+      first: { b: "Save draft", c: "Save draft", mirror: "Save draft" },
+      emptied: { name: "Save now", host: null, mirror: null },
+      blank: { name: "Save now", host: null, mirror: null },
       content: "Save",
       axe: [],
     },
@@ -553,7 +553,7 @@ export const linkScenarios: readonly Scenario[] = [
   {
     name: 'US2-9 and the several-ids edge case: aria-labelledby naming "Archive" wins over aria-label="Remove"; several ids name the inner control in order, missing ones skipped; ids that all miss fall back to aria-label; aria-labelledby="" names it "Remove" (FR-005, FR-006)',
     run: async (driver) => {
-      await driver.mount('<span id="x">Archive</span> <span id="y">now</span><ocelle-button id="b" aria-labelledby="x" aria-label="Remove">Save</ocelle-button>');
+      await driver.mount('<span id="x">Archive</span> <span id="y">now</span><ocelle-button id="b" aria-labelledby="x" aria-label="Remove"><ocelle-icon slot="icon" name="close"></ocelle-icon></ocelle-button>');
       const name = async (): Promise<string> => (await driver.axState("b", control)).name;
       const first = await name();
       await driver.setAttribute("b", "aria-labelledby", "y nope x");
@@ -635,7 +635,7 @@ export const linkScenarios: readonly Scenario[] = [
   {
     name: 'US2-13, copies: after aria-label="Close" and aria-current="page" are moved, the host carries data-ocelle-moved-aria-label="Close" and data-ocelle-moved-aria-current="page"; a copy parsed from its outerHTML and a cloneNode(true) copy are each named Close, report aria-current page, match :state(current) and have neither host attribute; after aria-current="false" the mirror reads "false" and after aria-label="" its mirror is gone (FR-004)',
     run: async (driver) => {
-      await driver.mount('<div id="live"><ocelle-button id="b" aria-label="Close" aria-current="page">Save</ocelle-button></div><div id="parsed"></div><div id="cloned"></div>');
+      await driver.mount('<div id="live"><ocelle-button id="b" aria-label="Close" aria-current="page">Close</ocelle-button></div><div id="parsed"></div><div id="cloned"></div>');
       await driver.rules(stateRules);
       const mirrors = { label: await hostPair(driver, "b", "aria-label"), current: await hostPair(driver, "b", "aria-current") };
       await driver.copy("b", "outerHTML", "parsed");
@@ -664,7 +664,7 @@ export const linkScenarios: readonly Scenario[] = [
   {
     name: 'US2-13, morph: a morph that applies the unchanged server markup <ocelle-button aria-label="Close" aria-current="page"> to the live element leaves both mirrors with their values and the inner control named Close with aria-current page; a copy through the container\'s innerHTML afterwards is named Close with aria-current page; a mirror the host removes, and one it overwrites, read their stored values again (FR-004)',
     run: async (driver) => {
-      const server = '<ocelle-button id="m" aria-label="Close" aria-current="page">Save</ocelle-button>';
+      const server = '<ocelle-button id="m" aria-label="Close" aria-current="page">Close</ocelle-button>';
       await driver.mount(`<div id="live">${server}</div><div id="copied"></div>`);
       await driver.morph("m", server);
       const morphed = {
