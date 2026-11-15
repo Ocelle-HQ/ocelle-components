@@ -226,26 +226,58 @@ describe("brand-rules (e) dark-chrome", () => {
   });
 });
 
+// Rule (f) since 012 (plan decision 29; operator decision at phase 4, option (a); tasks.md T042a): the reduced-motion
+// block sets exactly every motion token whose source value is a duration to 0ms, the set read from the token source,
+// not a list of names; the messages name the motion durations. The cases of 002's rule (f) are kept with the new
+// message; a source with motion-spin needs it in the block, and a motion token that is no duration (motion-turn) is
+// rejected there.
+const onlyDurations = "only the motion durations, each 0ms, belong there";
+const spin: Data = { name: "motion-spin", group: "motion", value: "800ms" };
+const turn: Data = { name: "motion-turn", group: "motion", value: "1turn" };
+
 describe("brand-rules (f) reduced-motion", () => {
   it("rejects a reduced-motion value other than 0ms, at its line in the stylesheet", async () => {
     const ran = await brandRules({ wrapper: wrapper('text.replace("--ocelle-motion-fast: 0ms;", "--ocelle-motion-fast: 60ms;")') });
-    expect(findings(ran)).toEqual([
-      `${cssPath}:${String(lineOf(stylesheet, "--ocelle-motion-fast: 0ms"))}: brand-rules: reduced-motion: --ocelle-motion-fast: 60ms in the reduced-motion block; only --ocelle-motion-fast and --ocelle-motion-base, each 0ms, belong there`,
-    ]);
+    expect(findings(ran)).toEqual([`${cssPath}:${String(lineOf(stylesheet, "--ocelle-motion-fast: 0ms"))}: brand-rules: reduced-motion: --ocelle-motion-fast: 60ms in the reduced-motion block; ${onlyDurations}`]);
   });
 
   it("rejects another property in the reduced-motion block", async () => {
     const ran = await brandRules({ wrapper: wrapper('text.replace("--ocelle-motion-base: 0ms;", "--ocelle-motion-base: 0ms;\\n    --ocelle-easing-standard: linear;")') });
-    expect(findings(ran)).toEqual([
-      `${cssPath}:${String(lineOf(stylesheet, "--ocelle-motion-base: 0ms") + 1)}: brand-rules: reduced-motion: --ocelle-easing-standard: linear in the reduced-motion block; only --ocelle-motion-fast and --ocelle-motion-base, each 0ms, belong there`,
-    ]);
+    expect(findings(ran)).toEqual([`${cssPath}:${String(lineOf(stylesheet, "--ocelle-motion-base: 0ms") + 1)}: brand-rules: reduced-motion: --ocelle-easing-standard: linear in the reduced-motion block; ${onlyDurations}`]);
   });
 
-  it("rejects a reduced-motion block that does not set one of the two, at the block's line", async () => {
+  it("rejects a reduced-motion block that does not set one of the motion durations, at the block's line", async () => {
     const ran = await brandRules({ wrapper: wrapper('text.replace("    --ocelle-motion-base: 0ms;\\n", "")') });
-    expect(findings(ran)).toEqual([
-      `${cssPath}:${String(lineOf(stylesheet, "prefers-reduced-motion: reduce"))}: brand-rules: reduced-motion: the reduced-motion block does not set --ocelle-motion-base to 0ms`,
-    ]);
+    expect(findings(ran)).toEqual([`${cssPath}:${String(lineOf(stylesheet, "prefers-reduced-motion: reduce"))}: brand-rules: reduced-motion: the reduced-motion block does not set --ocelle-motion-base to 0ms`]);
+  });
+
+  it("accepts --ocelle-motion-spin: 0ms from the generator when the source has motion-spin, and rejects the same block without it at the block's line", async () => {
+    const withSpin = [...records, spin];
+    const sheet = css(withSpin as unknown as readonly TokenRecord[]);
+    expect(await brandRules({ records: withSpin })).toEqual({ code: 0, out: ["brand-rules: 7 rules checked"], err: [] });
+    const dropped = await brandRules({ records: withSpin, wrapper: wrapper('text.replace("    --ocelle-motion-spin: 0ms;\\n", "")') });
+    expect(findings(dropped)).toEqual([`${cssPath}:${String(lineOf(sheet, "prefers-reduced-motion: reduce"))}: brand-rules: reduced-motion: the reduced-motion block does not set --ocelle-motion-spin to 0ms`]);
+  });
+
+  it("rejects --ocelle-motion-spin in the block when the source has no motion-spin, since only the source's durations belong there", async () => {
+    const ran = await brandRules({ wrapper: wrapper('text.replace("--ocelle-motion-base: 0ms;", "--ocelle-motion-base: 0ms;\\n    --ocelle-motion-spin: 0ms;")') });
+    expect(findings(ran)).toEqual([`${cssPath}:${String(lineOf(stylesheet, "--ocelle-motion-base: 0ms") + 1)}: brand-rules: reduced-motion: --ocelle-motion-spin: 0ms in the reduced-motion block; ${onlyDurations}`]);
+  });
+
+  it("rejects a motion token that is no duration (motion-turn, an angle) in the block, and does not require it there", async () => {
+    const withTurn = [...records, turn];
+    const sheet = css(withTurn as unknown as readonly TokenRecord[]);
+    expect(await brandRules({ records: withTurn })).toEqual({ code: 0, out: ["brand-rules: 7 rules checked"], err: [] });
+    const ran = await brandRules({ records: withTurn, wrapper: wrapper('text.replace("--ocelle-motion-base: 0ms;", "--ocelle-motion-base: 0ms;\\n    --ocelle-motion-turn: 0ms;")') });
+    expect(findings(ran)).toEqual([`${cssPath}:${String(lineOf(sheet, "--ocelle-motion-base: 0ms") + 1)}: brand-rules: reduced-motion: --ocelle-motion-turn: 0ms in the reduced-motion block; ${onlyDurations}`]);
+  });
+
+  it("requires a duration of group motion only: a duration of another group is not required and is rejected in the block", async () => {
+    const withOther = [...records, { name: "delay-other", group: "shell", value: "50ms" }];
+    const sheet = css(withOther as unknown as readonly TokenRecord[]);
+    expect(await brandRules({ records: withOther })).toEqual({ code: 0, out: ["brand-rules: 7 rules checked"], err: [] });
+    const ran = await brandRules({ records: withOther, wrapper: wrapper('text.replace("--ocelle-motion-base: 0ms;", "--ocelle-motion-base: 0ms;\\n    --ocelle-delay-other: 0ms;")') });
+    expect(findings(ran)).toEqual([`${cssPath}:${String(lineOf(sheet, "--ocelle-motion-base: 0ms") + 1)}: brand-rules: reduced-motion: --ocelle-delay-other: 0ms in the reduced-motion block; ${onlyDurations}`]);
   });
 
   it("reads the reduced-motion query with any spacing around its colon, and only in @media", async () => {

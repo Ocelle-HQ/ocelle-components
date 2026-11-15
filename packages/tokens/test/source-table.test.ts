@@ -58,10 +58,12 @@ describe("the stylesheet from the real source", () => {
     expect(independent.length).toBeGreaterThan(0);
   });
 
-  it("sets exactly motion-fast and motion-base to 0ms under reduced motion (FR-007)", () => {
+  // 012 (research.md R-07; tasks.md T042): exactly the motion durations, a stricter replacement of "exactly two".
+  it("sets exactly the motion durations, motion-fast, motion-base and motion-spin, to 0ms under reduced motion, and not motion-turn or easing-standard (FR-007)", () => {
     expect([...sheet.reducedMotion.entries()]).toEqual([
       ["--ocelle-motion-fast", "0ms"],
       ["--ocelle-motion-base", "0ms"],
+      ["--ocelle-motion-spin", "0ms"],
     ]);
   });
 });

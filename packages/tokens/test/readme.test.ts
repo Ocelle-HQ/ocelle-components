@@ -49,6 +49,10 @@ const fragments = [
   "`--ocelle-color-accent-hover` is the hover fill of a primary control, with `--ocelle-color-on-accent` text on it",
   "`--ocelle-color-active-bg` is the pressed surface of a secondary, quiet or flush control on the main and state grounds",
   "`--ocelle-color-chrome-active` is the pressed surface of a control on the chrome grounds, with `--ocelle-color-chrome-ink` text on it",
+  // 012 (research.md R-07; tasks.md T042): the spinner's motion tokens and the reduced-motion rule for every duration
+  "`--ocelle-motion-spin` is the duration of one turn of a busy spinner, `800ms`",
+  "`--ocelle-motion-turn` is the angle of one turn, `1turn`; it is not a duration and reduced motion does not change it",
+  "Under `prefers-reduced-motion: reduce` every motion duration (`--ocelle-motion-fast`, `--ocelle-motion-base`, `--ocelle-motion-spin`) is `0ms`",
 ];
 
 describe("packages/tokens/README.md", () => {

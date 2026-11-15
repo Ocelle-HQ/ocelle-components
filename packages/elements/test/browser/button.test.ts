@@ -1,5 +1,6 @@
 import type { Browser } from "playwright";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
+import { busyNavigationScenarios, busyScenarios } from "../scenarios/busy.ts";
 import { buttonScenarios } from "../scenarios/button.ts";
 import { linkNavigationScenarios, linkScenarios } from "../scenarios/link.ts";
 import type { Navigation, Outcome } from "../scenarios/link.ts";
@@ -82,6 +83,26 @@ function navigation(opened: Visit, served: Served, origin: string): Navigation {
 
 describe("ocelle-button's link navigation on the strict-CSP fixture with the browser build (US2-1, US2-3)", { timeout: 120_000 }, () => {
   it.each(linkNavigationScenarios)("$name", async ({ run, expected }) => {
+    const { browser, origin, served } = started();
+    const page = await visit(browser, origin, "button.html", ["ocelle-elements.js", "axe.js", "link-target.html"]);
+    const observed = await run(fixtureDriver(page.page, page.log), navigation(page, served, origin));
+    expect({ observed, recorded: await page.finish() }).toEqual({ observed: expected, recorded: clean });
+  });
+});
+
+// User Story 3 (tasks.md T043): the shared busy bodies of scenarios/busy.ts on the built browser build, and its busy
+// link body on real navigation (the fixture's `link-target.html` allowed, as for the link navigation bodies).
+describe("a busy ocelle-button on the strict-CSP fixture with the browser build (US3)", { timeout: 120_000 }, () => {
+  it.each(busyScenarios)("$name", async ({ run, expected }) => {
+    const { browser, origin } = started();
+    const page = await visit(browser, origin, "button.html", ["ocelle-elements.js", "axe.js"]);
+    const observed = await run(fixtureDriver(page.page, page.log));
+    expect({ observed, recorded: await page.finish() }).toEqual({ observed: expected, recorded: clean });
+  });
+});
+
+describe("a busy ocelle-button's link navigation on the strict-CSP fixture with the browser build (US3-8)", { timeout: 120_000 }, () => {
+  it.each(busyNavigationScenarios)("$name", async ({ run, expected }) => {
     const { browser, origin, served } = started();
     const page = await visit(browser, origin, "button.html", ["ocelle-elements.js", "axe.js", "link-target.html"]);
     const observed = await run(fixtureDriver(page.page, page.log), navigation(page, served, origin));

@@ -188,6 +188,17 @@ const fragments = [
   "A moved `title` is the inner control's native tooltip and its description, or its name when nothing else names it",
   "In link mode, calling `preventDefault()` on `ocelle-button-activate` cancels the navigation. A click with Ctrl, Meta, Shift or Alt held dispatches no `ocelle-button-activate`: its `click` is delivered, the element prevents nothing and the browser's own modifier handling applies (on Chromium on Linux, Ctrl, Shift and Alt give a new tab, a new window or a download and leave the page as it is; Meta is not a link modifier there and navigates the current tab); a middle click delivers no `click` and dispatches nothing",
   "In forced colours a link-mode button's text and border are `LinkText`",
+  // 012 phase 4 (tasks.md T043, T048; contracts/elements-package.md § Control conventions 3, § ocelle-button): the
+  // unavailable half of convention 3, the busy button, its spinner, the 4.8 s stop and the 833 ms limit of an override
+  convention("Unavailable", "Unavailable means the control exists but cannot be used right now: the inner control stays in the tab order and keeps focus, reports `aria-disabled=\"true\"`, keeps its name and description so a user can learn why, and is not activated"),
+  "An unavailable link has no `href` either: it is an `<a role=\"link\" tabindex=\"0\" aria-disabled=\"true\">` that stays focusable, so neither a click, a modifier click, a middle click, Enter, the context menu nor a drag opens it",
+  "`busy` (boolean attribute and property, reflected): the button is unavailable (the control conventions) while a host waits for the result of an action, and its inner control reports `aria-busy=\"true\"`; `disabled` wins over `busy`: a disabled busy button is disabled and shows no spinner",
+  "A busy button dispatches neither `ocelle-button-activate` nor a `click`; once `busy` is removed, the next activation delivers both",
+  "While busy, a spinner takes the place of the slotted icon, so the button keeps its size; without an icon it sits before the label with the slot convention's gap. It never covers the label, is drawn in the control's text colour (`currentColor`, the system colour in forced colours) and adds nothing to the accessibility tree",
+  "The spinner turns six times in 4.8 s and then stays still on the same arc it shows under `prefers-reduced-motion: reduce`, where it does not move at all, so it stops within 5 s. A host with long-running work that wants continuous motion shows its own pausable indicator",
+  "A host that overrides `--ocelle-motion-spin` (one turn of the spinner, 800 ms) keeps it at or below 833 ms, so the six turns end within 5 s",
+  "The library shows and announces no text while busy (no \"Loading\" string): a host that wants an announcement makes it",
+  "While busy it also reads the motion tokens `--ocelle-motion-spin` and `--ocelle-motion-turn`",
   // two copies on a page (FR-006, Edge Cases)
   "Two copies of the package on one page, two versions or the browser build beside a bundle of the module build, cannot both define an element: the first definition wins and the second import throws nothing",
 ];
@@ -296,6 +307,9 @@ describe("packages/elements/CHANGELOG.md", () => {
     "`data-ocelle-moved-<attribute>`",
     "`:state(expanded)`, `:state(pressed)` and `:state(current)`",
     "Chromium 135 and WebKit 17.4",
+    // 012 phase 4 (tasks.md T048)
+    "`busy` (reflected)",
+    "a busy spinner",
     ...["chevron-start", "chevron-end", "chevron-up", "chevron-down", "arrow-start", "arrow-end", "menu", "close", "folder", "file", "search", "table", "copy"].map((name) => `\`${name}\``),
   ])("names %s under Unreleased / Added (constitution VII, FR-031, SC-008)", (surface) => {
     expect(added).toContain(surface);
