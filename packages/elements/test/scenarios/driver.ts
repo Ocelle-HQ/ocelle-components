@@ -81,6 +81,11 @@ export interface PointerStep {
   readonly up?: boolean;
   /** The mouse button of `down` and `up`; `left` when not set. */
   readonly button?: MouseButton;
+  /**
+   * No move to this point, which must be the previous step's: its press and release follow that step's at once, with
+   * no intermediate moves between them (each move waits for a frame).
+   */
+  readonly still?: boolean;
 }
 
 export type MouseButton = "left" | "right" | "middle";

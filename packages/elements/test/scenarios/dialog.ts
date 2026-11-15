@@ -51,7 +51,19 @@ export type Act =
   | { readonly op: "inspect"; readonly id: string; readonly inner?: string; readonly pseudo?: string; readonly styles?: readonly string[] }
   | { readonly op: "hit"; readonly x: number; readonly y: number }
   | { readonly op: "pointerdown"; readonly id: string; readonly inner?: string; readonly x: number; readonly y: number; readonly isPrimary: boolean }
+  | { readonly op: "clicks"; readonly id: string; readonly inner?: string }
+  | { readonly op: "clicked" }
   | { readonly op: "seq"; readonly ops: readonly Act[] };
+
+/** What `clicks` records of a click, when the window sees it, before any element's listener. */
+export interface Click {
+  /** Whether the click's composed path holds the watched element. */
+  readonly on: boolean;
+  /** Whether the host carries its `open` attribute. */
+  readonly open: boolean;
+  /** Whether the host's inner `<dialog>` is open (it stays open through the exit). */
+  readonly panel: boolean;
+}
 
 /** What `inspect` reads of an element (its border box relative to the viewport; `exists` false when there is none). */
 export interface Inspected {
@@ -92,7 +104,10 @@ export interface Inspected {
  *   `bubbles` is true, returns whether it was not cancelled), `key` (a synthetic bubbling, composed, cancelable `keydown` on the deep active
  *   element), `inspect`, `hit` (the id or local name of the element at a viewport point), `pointerdown` (a synthetic
  *   bubbling, composed `pointerdown` of a touch pointer's primary button at a viewport point, primary or not, as a
- *   second finger gives; 008 T036), `seq` (commands in one task). An `inner` selector is looked up in the element's shadow root.
+ *   second finger gives; 008 T036), `clicks` (from then on records each `click` the window sees in the capture phase,
+ *   before any element's listener, as a `Click`: whether its composed path holds the element, and whether the host,
+ *   the element `id` names, has its `open` attribute and its inner `<dialog>` open) and `clicked` (returns and clears
+ *   those records), `seq` (commands in one task). An `inner` selector is looked up in the element's shadow root.
  * - `ocelle-test-closed` and `ocelle-test-closed-delegating`: a closed shadow root holding `<button id="c1">` and
  *   `<button id="c2">`, the second with `delegatesFocus`.
  * - `ocelle-test-opener`: an open shadow root holding `<button id="in">Inner</button>`.
@@ -129,6 +144,8 @@ export function defineDialogStandIns(): void {
   type Command = Record<string, unknown> & { op: string };
   const removed = new Map<string, { element: Element; parent: Node; next: Node | null }>();
   const log: string[] = [];
+  const clicks: unknown[] = [];
+  let clickWatch: { readonly host: HTMLElement; readonly element: HTMLElement | null } | null = null;
   const byId = (id: string): HTMLElement => {
     const found = document.getElementById(id) ?? (removed.get(id)?.element as HTMLElement | undefined);
     if (found === undefined) throw new Error(`no #${id}`);
@@ -263,6 +280,26 @@ export function defineDialogStandIns(): void {
             new PointerEvent("pointerdown", { bubbles: true, composed: true, cancelable: true, clientX: Number(command.x), clientY: Number(command.y), button: 0, buttons: 1, pointerType: "touch", pointerId: 7, isPrimary: command.isPrimary === true }),
           ) ?? null
         );
+      case "clicks": {
+        clicks.length = 0;
+        const host = byId(String(command.id));
+        const element = target(command);
+        // One listener for the page, so commands of later bodies on the same page do not add more.
+        if (clickWatch === null)
+          window.addEventListener(
+            "click",
+            (event) => {
+              if (clickWatch === null) return;
+              const { host: watched, element: on } = clickWatch;
+              clicks.push({ on: on !== null && event.composedPath().includes(on), open: watched.hasAttribute("open"), panel: watched.shadowRoot?.querySelector("dialog")?.open === true });
+            },
+            true,
+          );
+        clickWatch = { host, element };
+        return null;
+      }
+      case "clicked":
+        return clicks.splice(0);
       case "seq":
         return (command.ops as Command[]).map(run);
       default:
@@ -373,6 +410,29 @@ export function row(name: string, body: (driver: Driver) => Promise<Record<strin
     run: async (driver) => ({ ...(await body(driver)), counts: await counts(driver) }),
     expected: { ...expected, counts: none },
   };
+}
+
+/** How many runs a row judged on a page-side measurement makes at most before it fails with what it measured. */
+const tries = 3;
+
+/**
+ * For a row of two clicks on the close control during the exit: runs `attempt`, which mounts its page, clicks and
+ * returns its observation with the clicks the page recorded (the stand-in's `clicks`, read before any element's
+ * listener). A run is judged when the page saw exactly two clicks, both on the close control, the first while the
+ * overlay was open and the second during the exit (the `open` attribute gone, the inner `<dialog>` still open): its
+ * observation is returned. Any other run (a click that missed the control, or came after the exit) judges nothing, so
+ * the body runs again, at most `tries` times in all; then the row fails with the recorded clicks, never passing
+ * without a judged run.
+ */
+export async function duringExit(attempt: () => Promise<{ readonly clicked: readonly Click[]; readonly observed: Record<string, unknown> }>): Promise<Record<string, unknown>> {
+  const seen: string[] = [];
+  for (let run = 0; run < tries; run += 1) {
+    const { clicked, observed } = await attempt();
+    const [first, second] = clicked;
+    if (clicked.length === 2 && first?.on === true && first.open && second?.on === true && !second.open && second.panel) return observed;
+    seen.push(JSON.stringify(clicked));
+  }
+  throw new Error(`the two clicks were not both on the close control, the second during the exit, in any of ${String(tries)} runs (${seen.join(", ")}): the row has no run it can judge`);
 }
 
 // Token values (packages/tokens/src/source.ts), as computed styles in the light theme unless stated.
@@ -1369,6 +1429,9 @@ export function overlayScenarios(kind: OverlayKind) {
         await driver.mount(page(basic, { attrs: ' close-label="Schließen"' }));
         await open(driver);
         await driver.press("Tab", { shift: true });
+        // The box is read once the entry has ended: during the drawer's slide (FR-028) the translated box of the
+        // 44 px control read 43.99998 px wide at some frames.
+        await kind.settle?.(driver);
         const control = await inspect(driver, "dlg", close, ["outline-style", "outline-width", "outline-color", "outline-offset"]);
         const icon = await inspect(driver, "dlg", `${close} > ocelle-icon`);
         return {
@@ -1656,15 +1719,26 @@ export function overlayScenarios(kind: OverlayKind) {
     ),
   ];
 
+  // The two close-control clicks are judged only on a run in which the page saw both on the close control, the second
+  // during the exit (`duringExit`).
   const exitInputRows = [
-    { label: "Escape twice", input: (driver: Driver) => presses(driver, 2, false, "Escape"), at: "b1" },
+    { label: "Escape twice", input: (driver: Driver) => presses(driver, 2, false, "Escape"), at: "b1", clicks: false },
     {
       label: "two close-control clicks",
+      // Both clicks at the control's centre in one pointer path, the second at once after the first, with no move
+      // between them: a second click of its own, or one after the moves of a path step, came 60 to 100 ms later, when
+      // the drawer's slide (FR-028) had moved the control off that point.
       input: async (driver: Driver) => {
-        await click(driver, "dlg", close);
-        await click(driver, "dlg", close);
+        await kind.settle?.(driver);
+        const control = await inspect(driver, "dlg", close);
+        const centre = { x: control.left + control.width / 2, y: control.top + control.height / 2 };
+        await driver.pointer([
+          { ...centre, down: true, up: true },
+          { ...centre, down: true, up: true, still: true },
+        ]);
       },
       at: "dlg[button]",
+      clicks: true,
     },
     {
       label: "Enter twice on the close control",
@@ -1673,21 +1747,25 @@ export function overlayScenarios(kind: OverlayKind) {
         await presses(driver, 2, false, "Enter");
       },
       at: "dlg[button]",
+      clicks: false,
     },
-  ].map(({ label, input, at }) =>
-    row(
+  ].map(({ label, input, at, clicks }) => {
+    const attempt = async (driver: Driver): Promise<{ readonly clicked: readonly Click[]; readonly observed: Record<string, unknown> }> => {
+      await driver.mount(page(basic));
+      await open(driver);
+      await watchPanel(driver);
+      if (clicks) await act(driver, { op: "clicks", id: "dlg", inner: close });
+      await input(driver);
+      await events(driver, 2);
+      const observed = { recorded: await after(driver), log: await act(driver, { op: "log" }), focus: await driver.focusPath() };
+      return { clicked: clicks ? ((await act(driver, { op: "clicked" })) as Click[]) : [], observed };
+    };
+    return row(
       `Input during the exit, motion on: ${label}: exactly one request and one close, no cancel event, focus on the opener (FR-013, FR-014, R-02, R-06)`,
-      async (driver) => {
-        await driver.mount(page(basic));
-        await open(driver);
-        await watchPanel(driver);
-        await input(driver);
-        await events(driver, 2);
-        return { recorded: await after(driver), log: await act(driver, { op: "log" }), focus: await driver.focusPath() };
-      },
+      async (driver) => (clicks ? duringExit(() => attempt(driver)) : (await attempt(driver)).observed),
       { recorded: [request(label === "Escape twice" ? "escape" : "close-button", at), closeEvent(label === "Escape twice" ? "escape" : "close-button", "opener")], log: ["close:false"], focus: "opener" },
-    ),
-  );
+    );
+  });
 
   const staleRows = [
     ...([false, true] as const).map((reduced) =>
@@ -2724,13 +2802,24 @@ const dialogClose = (reason: string, focusPath: string): RecordedEvent => ({
 const inDrawer = '<button id="opener">Open</button><ocelle-drawer id="drw" label="Outer"><button id="oi">Open inner</button><ocelle-dialog id="inner" label="Inner"><button id="i1">I1</button><button id="i2">I2</button></ocelle-dialog><button id="ob">Outer button</button></ocelle-drawer><ocelle-test-act id="act"></ocelle-test-act>';
 const drawerEvents = ["ocelle-drawer-close-request", "ocelle-drawer-close"];
 
-/** Opens the drawer from the page's opener, watches its own events, then opens the dialog from `oi` and records the dialog's. */
+/**
+ * Opens the drawer from the page's opener, watches its own events, then opens the dialog from `oi` and records the
+ * dialog's. The click on `oi` waits, at most 1 000 ms, until the drawer's entry has ended: during it the slide
+ * (FR-028) has `oi` off the viewport, so a click at once missed it and left focus on the body, and the dialog had no
+ * opener. It fails with a message when the entry does not end in time, or when the click did not leave focus on `oi`.
+ */
 async function openInDrawer(driver: Driver): Promise<void> {
   await driver.mount(inDrawer);
   await driver.click("opener");
   await driver.setAttribute("drw", "open", "");
   await act(driver, { op: "watch", id: "drw", events: drawerEvents });
+  for (const start = Date.now(); (await driver.animations("drw", "dialog")).length > 0; ) {
+    if (Date.now() - start > 1000) throw new Error("the entry of #drw did not end within 1 000 ms");
+    await pause(20);
+  }
   await driver.click("oi");
+  const opener = await driver.focusPath();
+  if (opener !== "oi") throw new Error(`the click on #oi left focus on ${opener}, so the dialog would open with no opener in the drawer`);
   await driver.setAttribute("inner", "open", "");
   await driver.record("inner", ["ocelle-dialog-close-request", "ocelle-dialog-close"]);
 }
