@@ -52,6 +52,11 @@ group, `--ocelle-measure-reading` (`68ch`) holds prose paragraphs, list items an
 the inline size of the nearest query container: a prose table is one, so it caps the table's caption at the table's
 visible width. Without a query container, `100cqi` falls back to the small viewport's inline size.
 
+### Tokens for the overlays
+
+`--ocelle-drawer-inline` is the inline size of `ocelle-drawer`, the sidebar width `--ocelle-shell-sidebar-width`
+(`20rem`), which a narrow-width personal drawer replaces; the drawer is never wider than `--ocelle-dialog-max-inline`.
+
 ### Forced colours
 
 The tokens never override the system palette in forced colours: the stylesheet has no `forced-color-adjust: none`,

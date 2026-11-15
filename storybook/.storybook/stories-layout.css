@@ -22,3 +22,12 @@
   padding: 0;
   block-size: 10rem;
 }
+
+/*
+ * The ocelle-drawer Long scrolling body story's scroll-edge block (008 research.md R-16, operator decision 2026-11-15,
+ * plan decision 24): an empty, text-free block between two paragraphs, tall enough to cross the body's scroll edge in
+ * the 1280 × 800 capture with room either side, so no paragraph's box sits across that edge inside the viewport.
+ */
+[data-story="drawer-scroll-edge"] {
+  block-size: 10rem;
+}

@@ -51,7 +51,8 @@ nothing loads from a CDN, and two new merge checks (Contrast, Brand rules) keep 
     `--ocelle-shell-collapse-sidebar`, `--ocelle-shell-height`, `--ocelle-footer-h`, `--ocelle-measure-sheet`,
     `--ocelle-measure-sentence`, `--ocelle-measure-page`, `--ocelle-measure-reading`, `--ocelle-measure-cell` and
     `--ocelle-measure-container` (the prose measure, table cell floor and caption cap of `@ocelle/styles`, 003),
-    `--ocelle-dialog-max-inline`, `--ocelle-dialog-max-block`, `--ocelle-bar-block-narrow`
+    `--ocelle-dialog-max-inline`, `--ocelle-dialog-max-block`, `--ocelle-bar-block-narrow`, `--ocelle-drawer-inline`
+    (the inline size of `ocelle-drawer`, the sidebar width; mission 008)
   - elevation: `--ocelle-elevation-sheet`, `--ocelle-elevation-raised`, `--ocelle-elevation-row`,
     `--ocelle-elevation-seg`, `--ocelle-elevation-bar`
   - motion: `--ocelle-motion-fast`, `--ocelle-motion-base`, `--ocelle-easing-standard`
