@@ -42,10 +42,10 @@ The lane has the group role exactly when `groupName` is set.
 
 | Field | Type | Rule |
 |---|---|---|
-| `measured` | px | the host's border-box inline size: the inline size a `ResizeObserver` reports for a zero-height `aria-hidden` probe at the top of the shadow root (the host's content box), plus the host's inline padding and borders; a block-size change of the host notifies nothing (reviews/phase-4/spike.md) |
+| `measured` | px | the host's border-box inline size: the content-box inline size a `ResizeObserver` reports for a zero-height `aria-hidden` probe at the top of the shadow root (the host's content box), plus the host's computed inline padding and borders. The same observer watches a second zero-height `aria-hidden` block, the edge box, which inherits the host's inline padding and border widths and styles, so its content box changes when they change alone and the tier is chosen again (reviews/phase-4/round-1-fixes.md R1-03); only the probe's size enters the sum. A block-size change of the host notifies neither (reviews/phase-4/spike.md item 2) |
 | `collapseAt` | px | `collapse-below` parsed (R-12), else the token parsed, else 40rem; resolved at each measurement |
 | `inspectorAt` | px | as above with `inspector-below`, the inspector token and 60rem |
-| `hasInspector` | boolean | the `inspector` slot has an assigned element; the slot is always rendered, so `slotchange` sees an inspector added after first render (R-11) |
+| `hasInspector` | boolean | the `inspector` slot has an assigned element, read as an element child of the host with `slot="inspector"`, so it is known at the first update, before any slot is rendered (reviews/phase-4/round-1-fixes.md R1-01); the slot is always rendered, so `slotchange` sees an inspector added after first render (R-11) |
 | `tier` | `three`, `two` or `one` | `one` if `narrow` or `measured < collapseAt`; else `two` if `measured < inspectorAt`, or if `hasInspector` is false (two columns without an inspector); else `three` |
 | `shown` | set of panes | `three` or `two`: list, detail, and the inspector if present. `one`: the detail and the inspector if `detail-open`, else the list |
 | `intrinsic` | { min, max } px | from the measurement pass (R-13): the one-column stack's min-content and the three-column grid's max-content; written to the instance's adopted constructed stylesheet (the one per-instance sheet FR-030 allows), never to a `style` attribute, as the inline size of the sizer (an empty `aria-hidden` `<svg>`, which adds nothing to min-content) and the grid's minimum; the panes are contained in inline size outside the pass, so these figures alone give the element's intrinsic sizes (reviews/phase-4/spike.md) |
@@ -57,12 +57,13 @@ The lane has the group role exactly when `groupName` is set.
 `pending` and request one animation frame if none is requested; that frame callback clears `pending` and runs the pass,
 so it runs at most once per frame and never inside a `ResizeObserver` delivery. Before applying a `tier` or
 `detail-open` change that comes from a property or attribute, the pass runs synchronously. It writes a figure only when
-it changed. The host's `ResizeObserver` updates `measured` and the tier only and never runs the pass. Not seen, and
-picked up at the next of these triggers: a size change in a pane with no light-DOM node or text change (an image or a
-font loading), content rendered inside a slotted element's shadow root, and an attribute-only change; the host calls
-`remeasure()` after one (FR-025).
+it changed. The element's `ResizeObserver` (on the probe and the edge box) updates `measured` and the tier only and
+never runs the pass. Not seen, and picked up at the next of these triggers: a size change in a pane with no light-DOM
+node or text change (an image or a font loading), content rendered inside a slotted element's shadow root, and an
+attribute-only change; the host calls `remeasure()` after one (FR-025).
 
-**Focus rule (R-14).** If a change of `tier` or `detail-open` hides the pane that holds `document.activeElement`,
+**Focus rule (R-14).** If a change of `tier` or `detail-open` hides the pane that holds focus (the active element of
+the element's own root, the document or a host component's shadow root; reviews/phase-4/round-1-fixes.md R1-02),
 the shown pane's wrapper gets `tabindex="-1"` and focus after the update, and loses the attribute on its `focusout`.
 At rest no wrapper has a `tabindex`. At first render the same rule applies, and nothing else moves focus.
 

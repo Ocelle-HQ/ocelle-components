@@ -1,18 +1,22 @@
 // `ocelle-list-detail` (009 FR-022 to FR-030; contracts/elements.md § `ocelle-list-detail`; research.md R-11 to R-14;
 // data-model.md § list-detail): a list beside its detail, with an optional inspector, that collapses to one column by
-// its own measured inline size or when the host sets `narrow`. Its shadow root holds a zero-height `aria-hidden` probe,
-// whose `ResizeObserver` gives the element's inline size (a block-size change of the element notifies nothing, so
-// content a slotted element appends from its own `ResizeObserver` brings no loop message; reviews/phase-4/spike.md),
-// and one grid with an `aria-hidden` sizer and three pane wrappers, one per slot. The `inspector` slot is always
-// rendered, so its `slotchange` shows an inspector added after the first render (R-11). The tier is chosen from the
-// measured size, the thresholds and `narrow` (src/tiers.ts) and rendered as the grid's `data-tier`; the panes a tier
-// hides are `display: none`. The intrinsic sizes come from the measurement pass (src/list-detail-measure.ts), whose
-// figures are the sizer's inline size and the grid's minimum; the panes are contained in inline size, so the shown
-// layout never feeds them (R-13). When a tier or `detail-open` change hides the pane that holds focus, the shown pane's
-// wrapper takes it by script, with a temporary `tabindex="-1"` removed on its `focusout`, and shows the inset ring
-// (R-14); at the first render the same rule applies. The borders are outside any forced-colours query, so they stay in
-// `CanvasText`. The element adds no role and no name and emits no event. Importing this module defines
-// `ocelle-list-detail` and no other element.
+// its own measured inline size or when the host sets `narrow`. Its shadow root holds two zero-height `aria-hidden`
+// blocks, observed by one `ResizeObserver`: the probe, whose content box is the host's content box and gives the
+// element's inline size with the host's inline padding and borders added, and the edge box, which inherits those
+// padding and borders, so its content box changes when they change alone (reviews/phase-4/round-1-fixes.md R1-03). A
+// block-size change of the element notifies neither, so content a slotted element appends from its own `ResizeObserver`
+// brings no loop message (reviews/phase-4/spike.md). After them, one grid with an `aria-hidden` sizer and three pane
+// wrappers, one per slot. The `inspector` slot is always rendered, so its `slotchange` shows an inspector added after
+// the first render (R-11); whether an inspector is present is read from the host's light-DOM children, so the first
+// layout knows it. Focus is read from the element's own root, the document or a host component's shadow root. The tier
+// is chosen from the measured size, the thresholds and `narrow` (src/tiers.ts) and rendered as the grid's `data-tier`;
+// the panes a tier hides are `display: none`. The intrinsic sizes come from the measurement pass
+// (src/list-detail-measure.ts), whose figures are the sizer's inline size and the grid's minimum; the panes are
+// contained in inline size, so the shown layout never feeds them (R-13). When a tier or `detail-open` change hides the
+// pane that holds focus, the shown pane's wrapper takes it by script, with a temporary `tabindex="-1"` removed on its
+// `focusout`, and shows the inset ring (R-14); at the first render the same rule applies. The borders are outside any
+// forced-colours query, so they stay in `CanvasText`. The element adds no role and no name and emits no event.
+// Importing this module defines `ocelle-list-detail` and no other element.
 import { LitElement, css, html } from "lit";
 import type { PropertyValues } from "lit";
 import { define } from "./define.ts";
@@ -59,6 +63,14 @@ export class OcelleListDetail extends LitElement {
 
     .probe {
       block-size: 0;
+    }
+
+    .edges {
+      box-sizing: content-box;
+      block-size: 0;
+      padding-inline: inherit;
+      border-inline-width: inherit;
+      border-inline-style: inherit;
     }
 
     .sizer {
@@ -190,19 +202,22 @@ export class OcelleListDetail extends LitElement {
   declare detailOpen: boolean;
 
   readonly #measure = new ListDetailMeasure(() => this.renderRoot.querySelector<HTMLElement>(".grid"));
+  // The probe's content box is the host's content box; the edge box only tells of a change of the host's inline padding
+  // or borders, whose computed values are added (a percentage padding resolves against another box in the edge box).
   readonly #resize = new ResizeObserver((entries) => {
-    const probe = entries.at(-1)?.contentBoxSize[0]?.inlineSize;
-    if (probe === undefined) return;
+    const probe = entries.find((entry) => entry.target.classList.contains("probe"))?.contentBoxSize[0]?.inlineSize;
+    if (probe !== undefined) this.#content = probe;
     const style = getComputedStyle(this);
     const edges = ["padding-inline-start", "padding-inline-end", "border-inline-start-width", "border-inline-end-width"].reduce((sum, name) => sum + Number.parseFloat(style.getPropertyValue(name)), 0);
-    const size = probe + edges;
+    const size = this.#content + edges;
     // Stryker disable next-line ConditionalExpression: equivalent, an update with the size in force chooses the same tier
     if (size === this.#measured) return;
     this.#measured = size;
     this.requestUpdate();
   });
   #measured = 0;
-  // Stryker disable next-line BooleanLiteral: equivalent, connectedCallback reads the inspector slot before the first render
+  #content = 0;
+  // Stryker disable next-line BooleanLiteral: equivalent, connectedCallback sets it from the host's light-DOM children before the first update
   #hasInspector = false;
   #tier: Tier = "one";
   #shown: readonly Pane[] = ["list", "detail", "inspector"];
@@ -225,7 +240,8 @@ export class OcelleListDetail extends LitElement {
 
   override connectedCallback(): void {
     super.connectedCallback();
-    // Before the first render the shadow root holds no probe and no slot yet; firstUpdated observes them then.
+    // Before the first render the shadow root holds no probe and no slot yet; firstUpdated observes them then. Whether an
+    // inspector is present is read from the light-DOM children, so the first layout knows it.
     this.#observeShadow();
   }
 
@@ -259,7 +275,7 @@ export class OcelleListDetail extends LitElement {
   }
 
   protected override render(): unknown {
-    return html`<div class="probe" aria-hidden="true"></div><div class="grid" data-tier=${this.#tier} ?data-open=${this.detailOpen} ?data-inspector=${this.#hasInspector}>
+    return html`<div class="probe" aria-hidden="true"></div><div class="edges" aria-hidden="true"></div><div class="grid" data-tier=${this.#tier} ?data-open=${this.detailOpen} ?data-inspector=${this.#hasInspector}>
       <svg class="sizer" aria-hidden="true"></svg>
       <div class="pane list" @focusout=${this.#rest}><slot name="list" @slotchange=${this.#slotChanged}></slot></div>
       <div class="pane detail" @focusout=${this.#rest}><slot @slotchange=${this.#slotChanged}></slot></div>
@@ -282,9 +298,12 @@ export class OcelleListDetail extends LitElement {
     pane.focus();
   }
 
-  /** The pane that holds the document's focus, or none. */
+  /**
+   * The pane that holds focus, or none. The active element is read from the element's own root, the document or the
+   * shadow root that holds it, since a host component's shadow root retargets `document.activeElement` to its host.
+   */
   #focusedPane(): Pane | undefined {
-    const active = document.activeElement;
+    const active = (this.getRootNode() as Document | ShadowRoot).activeElement;
     if (active === null) return undefined;
     if (active === this) return this.#paneOf(this.shadowRoot?.activeElement?.closest(".pane") ?? null);
     if (!this.contains(active)) return undefined;
@@ -309,18 +328,17 @@ export class OcelleListDetail extends LitElement {
     this.#measure.schedule();
   };
 
-  /** Observes the probe's size and the slotted elements, once the shadow root holds them. */
+  /** Observes the probe, the edge box and the slotted elements, once the shadow root holds them. */
   #observeShadow(): void {
-    const probe = this.renderRoot.querySelector(".probe");
-    if (probe !== null) this.#resize.observe(probe);
+    for (const block of this.renderRoot.querySelectorAll(".probe, .edges")) this.#resize.observe(block);
     this.#observeSlots();
   }
 
   #observeSlots(): void {
     const slots = [...this.renderRoot.querySelectorAll("slot")];
     this.#measure.observe(slots.flatMap((slot) => slot.assignedElements()));
-    const inspector = slots.find((slot) => slot.name === "inspector");
-    this.#hasInspector = (inspector?.assignedElements().length ?? 0) > 0;
+    // The children the `inspector` slot is assigned, by their slot attribute: known before the first render too.
+    this.#hasInspector = [...this.children].some((child) => child.slot === "inspector");
     this.requestUpdate();
   }
 }

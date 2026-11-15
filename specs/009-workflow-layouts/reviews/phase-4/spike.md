@@ -70,6 +70,23 @@ recorded here and in the green commit.
    other unseen change. No test or contract states the CSS case; the README's convention says unseen changes wait for
    the next trigger or `remeasure()`, which now holds for every pane.
 
+## Changed after the spike (phase 4 review round 1, R1-03)
+
+Item 2's probe gave the host's border box only when the content box changed too: a change of the host's inline padding
+or borders alone (a content-box host with a definite `inline-size`, or a shrink-to-fit host) notified nothing, so the
+tier went stale (round-1.md R1-03; operator decision P3). The fix keeps the probe and its sum, and adds a second
+zero-height `aria-hidden` block beside it, the edge box, a direct child of the shadow root that inherits the host's
+`padding-inline`, `border-inline-width` and `border-inline-style`. Its border box fills the host's content box, so its
+content box is the host's content box less those padding and borders, and changes when they change alone. The one
+`ResizeObserver` observes both blocks' content boxes; only the probe's size enters the sum. Neither block's block size
+ever changes, so the `ResizeObserver` case of the table above still reports no message (US3-12, "a mutation inside a
+ResizeObserver callback", passes in both harnesses). Observing the host's own border box was not taken, for the loop
+message item 2 records. Recorded costs: the edge box's own intrinsic contribution, the host's inline padding and
+borders, is a floor of the host's content size, far below the grid's figures in every case of the scenarios; and in a
+host whose content box is narrower than its own inline padding and borders, the edge box's content box is clamped at
+zero and its border box overflows the host's content box by the difference, so a further change of them alone is not
+seen in that case.
+
 ## Result
 
 Every figure of R-13 holds, with no window error and no leaked measurement frame. The phase continues to the red step.
