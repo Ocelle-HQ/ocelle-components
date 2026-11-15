@@ -559,7 +559,11 @@ is written `2 × D` of the constant after the insertion, not at Chromium's figur
 chosen in T002 and is at least two rendering updates long,
 so the microtask and first-frame plants still count zero under `"settled"`. Fixture pages never call the setter and
 run at Chromium's 150 and 350 ms and the real `H`; they are the evidence that the real figures work. A test in
-`test/node/` checks that the setter is called only from `test/in-process.ts` (no `src/` module, no fixture page). T002 measures, with
+`test/node/` checks that the setter is called only from `test/in-process.ts` (no `src/` module, no fixture page).
+The one other use of the setter is also in that file: `withTiming(next, run)` (phase 2 stop 2, T025a) sets `next`,
+runs `run` synchronously and restores the timing it replaced, so that the fake-clock case of the "empty-state start"
+plant row in `test/plants.test.ts` runs on `announcerDefaults` and its two `D` values (`contracts/testing.md`
+§ Timing). It leaves the kept first return below unchanged. T002 measures, with
 the test `D`, the `elements` project's dry run, a shard of `src/live.ts` and the fixture-page suite at real figures.
 **The shard T002 measures** (analysis U8): `src/live.ts` does not exist in phase 1, so its subject is a draft. It is
 an uncommitted `packages/elements/src/live.ts` holding the announcer of R-02 as T020 will write it (the wait restarted
