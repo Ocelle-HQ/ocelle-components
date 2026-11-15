@@ -294,3 +294,40 @@ Shard 9 was over 420 s, so the queue stopped (`stop-2.md`). Shard 9 was then run
 noise, and shard 10, the other `src/form-control.ts` shard whose valid mutants are all static; both are over 420 s.
 Shards 6 to 8, 12 to 18, 20 to 23, 25 to 31 and 33 to 40 were not run. Each shard's mutants were all killed or were
 compile errors; none timed out.
+
+## T041b: probably-static element mutants weighted (design change 2)
+
+Operator decision `decision-stop-2.md` (option (a), weight the mutants that probably run when their module loads);
+the rule and the weight are `design-change-2.md`'s (plan decision 11).
+
+### Red (`5c2ef49`, `red-commits` `design-2`)
+
+`5c2ef49` changes only `gates/test/mutation-shards.test.ts` (15 new cases) and `gates/test/mutation-fakes.ts` (the
+`place` double's comment: each placed mutant carries the flag it is given). `red.sh` accepts only the labels `phase`
+and `fix-<n>` and is unchanged, so its steps were run by hand with its own helpers from `common.sh`, as for
+`design-1`: `story_non_test_changes 5c2ef49^ 5c2ef49 specs/010-feedback-forms` printed nothing (tests only);
+`story_run_tests_at 5c2ef49 specs/010-feedback-forms/reviews/phase-3/red-design-2.log ""` ran `pnpm test` in a
+detached worktree after `pnpm run setup:offline` and exited 1 (red); the earlier `design-2` line (none) was removed
+from `red-commits` and `design-2 5c2ef495c594fdb43dbf4edf154042da91b87b90` appended. The line red.sh would print:
+
+```json
+{"phase":"3","label":"design-2","sha":"5c2ef495c594fdb43dbf4edf154042da91b87b90","tests_only":true,"red":true,"recorded":true,"exit_code":1,"log":"specs/010-feedback-forms/reviews/phase-3/red-design-2.log"}
+```
+
+`red-design-2.log`: "15 of 3802 tests failed", each of them one of the 15 new cases and each an `AssertionError`
+against T041a's planner: the six syntax-rule cases on "expected undefined to be type of 'function'" (each case first
+asserts that `shards.ts` exports the rule, so a missing export fails on an assertion, not on a call of
+`undefined`), the seven weight cases and the `--plan` case on the unweighted plan they get, and the
+real-instrumenter case on one entry where two are expected. No setup, import or type error, and every existing case
+passes. One existing case changed its fixture, not its assertion: "counts the mutants on the changed lines, a compile
+error included and an ignored one not" (the real instrumenter) had its changed lines at top level, which the new rule
+flags; they are now inside a function whose first and last lines are unchanged, so each mutant stays ordinary, and
+the case passes at red with its entries one line later (`x.ts:3-12`, `x.ts:13-13`, `y.ts`).
+
+### Plant reading
+
+No plant is required, as in T041a. 006 `contracts/plants.md` (with 001's) gives every gate fail, pass and error
+plants, judged on the gate's findings and exit code in a whole-diff run of a plant repository. The change is in
+`--plan` only: it weighs the planner's counts, gives no verdict, adds no finding and no rule, and no plant under
+`gates/plants/mutation/` runs `--plan`. The whole-diff and `--files` runs are unchanged, so no plant's expectation
+moves and no plant tree changes. A review that finds a rule asking for one adds it.
