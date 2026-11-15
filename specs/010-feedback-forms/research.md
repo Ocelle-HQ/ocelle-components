@@ -601,6 +601,22 @@ The cap leaves a margin under the 14: 217 s + 10 × 14 s = 357 s. On run 4's rep
 for the two files, the largest estimated at 357 s and 385 s (a one-line entry of 13 mutants, 12 valid), and leaves 9
 valid mutants spanning a cut, as many as the 30-line plan did. T041a re-plans with `--base 2004e82` and times every
 shard holding a `src/form-control.ts` entry; a shard over 7:00 is a new stop.
+**Probably-static mutants weighted** (phase 3 stop 2, operator decision (a), `reviews/phase-3/decision-stop-2.md`;
+plan decision 11; T041b). On T041a's plan, shards 9 and 10 of `src/form-control.ts` took 439.5 s, 448.4 s and
+435.6 s with 9 valid mutants each (`reviews/phase-3/stop-2.md`). All 9 are static in run 4's report, meaning class
+fields run when the module loads, and Stryker runs a static mutant against the whole in-process suite. That costs
+about 25 s a static mutant, against 2 to 6 s for another (shards of 10 others took 240.5 s to 277.5 s). The
+instrumenter does not mark static mutants. The planner instead reads the syntax: it parses each changed element file
+with the pinned `typescript`, as `gates/bin/csp.ts` does, and takes a mutant as probably static when it lies in a
+`static` class member (a static method's or accessor's body included), in a class property's initialiser, or outside
+any function. Such a mutant counts as 5 against the caps of 10, which are unchanged, so a shard holds at most 2 of
+them. Under the cap no shard is then estimated over 217 s + 10 × 6 s = 277 s. A single line weighing more than 10 is
+an entry alone, bounded by its own mutants; the heaviest on run 4's report is 342 s. On run 4's report the rule
+catches all 70 static mutants of the two files (58 valid) and wrongly flags 8 (instance property initialisers), and
+it leaves the same 9 valid mutants spanning a cut. It does not catch a function body that another module calls at
+load, such as `src/define.ts`'s `define`, which is not changed here. The rule in full, its check and the figures are
+in plan decision 11 and `reviews/phase-3/design-change-2.md`. T041b re-plans and times every element shard holding a
+probably-static mutant and the highest-estimated others; a shard over 7:00 is a new stop.
 
 **The shipped figures under mutation** (operator decision PLAN-FRESH-3-004 (a)). Because every in-process scenario
 replaces `D` and `H` first, no scenario reads the shipped figures, and the mutation gate runs only the in-process

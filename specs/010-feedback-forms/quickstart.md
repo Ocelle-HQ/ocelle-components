@@ -33,4 +33,6 @@ and, for phase 5, #10 (mission 006) merged on `main` with podman or docker avail
    phases 2 and 3 each planned shard holding `src/live.ts` (phase 3: or `src/form-control.ts`) is also run with
    `--files` and timed; over 7:00 is a stop (plan decision 11). Since phase 3 stop 1, `--plan` cuts element source
    (`packages/elements/src/`) into shards of at most 10 mutants, counted before Stryker runs, and every other file
-   into 30-line entries as before (plan decision 11; T041a).
+   into 30-line entries as before (plan decision 11; T041a). Since phase 3 stop 2, a mutant that probably runs when
+   its module loads (in a static class member, a class property's initialiser, or code outside any function) counts
+   as 5 of those 10 (plan decision 11; T041b).

@@ -15,6 +15,18 @@
 // changed ranges to the entry naming it and keeps that entry, as given, as the name the run's report lines use (007
 // data-model § Entry). A list that names one file more than once (two entries of one file, or one entry repeated) selects
 // nothing, since two entries of one file never share a shard (operator decision, 2026-11-10, PLAN-CORRECTNESS-1-005 (a)).
+// Element source is cut by mutant count instead (010 phase 3 stop 1, operator decision (b), 2026-11-15,
+// specs/010-feedback-forms/reviews/phase-3/decision-stop-1.md and design-change-1.md; 010 plan decision 11): for a
+// changed file under packages/elements/src/ (which stryker.elements.config.json mutates, its shards costing about
+// 217 s fixed and 14 s a mutant), the mutants Stryker's instrumenter places on its changed lines are counted, those a
+// `// Stryker disable` comment ignores left out and compile errors kept (the planner cannot know them), a mutant
+// counting in an entry only when it lies wholly inside the entry's lines, as Stryker mutates a `mutate` range. A file
+// of at most 10 such mutants is one entry, its path, however many lines changed; a file of more is cut into entries
+// `path:start-end` of at most 10: an entry grows over the changed lines until the next line would take it over 10,
+// and closes at the line boundary inside it that the fewest mutants span (the latest on a tie), so as few mutants as
+// may span a cut; a line of more than 10 is an entry alone. These entries fill shards of at most 10 mutants and 10
+// entries, two of one file never in one shard, and never beside an entry of a file outside packages/elements/src/,
+// since such a shard runs both Stryker configurations and both dry runs. Every other file keeps the rule above.
 import type { ChangedFile, LineRange } from "./ranges.ts";
 
 /** One CI shard: its entries (`path` or `path:start-end`) and their number of changed lines. */
@@ -40,14 +52,33 @@ export type Selection =
   | { readonly missing: readonly string[] }
   | { readonly empty: readonly string[] };
 
+/**
+ * A mutant Stryker's instrumenter places on a changed line: its first and last line (1-based), and whether a
+ * `// Stryker disable` comment ignores it.
+ */
+export interface PlacedMutant {
+  readonly start: number;
+  readonly end: number;
+  readonly ignored: boolean;
+}
+
 const maxEntryLines = 30;
 const maxEntries = 10;
 const maxLines = 250;
+/** The most mutants an element-source entry or shard holds (010 plan decision 11: 217 s + 10 x 14 s = 357 s). */
+const maxMutants = 10;
 
 interface Entry {
   readonly entry: string;
   readonly path: string;
   readonly lines: number;
+  /** The mutants counted in the entry, for element source; undefined for every other file. */
+  readonly mutants?: number;
+}
+
+/** Whether a changed path is element source, which stryker.elements.config.json mutates (gates/bin/mutation.ts). */
+export function elementSource(path: string): boolean {
+  return path.startsWith("packages/elements/src/");
 }
 
 function lineCount(ranges: readonly LineRange[]): number {
@@ -78,22 +109,69 @@ function splitFile(file: ChangedFile): Entry[] {
   return entries;
 }
 
-export function planShards(files: readonly ChangedFile[]): Shard[] {
-  const shards: { files: string[]; lines: number }[] = [];
+/**
+ * An element-source file's entries by mutant count: its path when its changed lines hold at most 10 counted mutants,
+ * else `path:start-end` entries of at most 10 (a line of more alone), each closed at the latest of the boundaries
+ * inside it that the fewest mutants span.
+ */
+function splitByMutants(file: ChangedFile, placed: readonly PlacedMutant[]): Entry[] {
+  const counted = placed.filter((mutant) => !mutant.ignored);
+  if (counted.length <= maxMutants) return [{ entry: file.path, path: file.path, lines: file.lines, mutants: counted.length }];
+  const changed = file.ranges.flatMap((range) => Array.from({ length: range.end - range.start + 1 }, (_, i) => range.start + i));
+  /** The mutants wholly inside changed lines `first` to `last` (indexes into `changed`). */
+  const inside = (first: number, last: number): number =>
+    counted.filter((mutant) => mutant.start >= Number(changed[first]) && mutant.end <= Number(changed[last])).length;
+  /** The mutants spanning the boundary after changed line `index`. */
+  const spanning = (index: number): number =>
+    counted.filter((mutant) => mutant.start <= Number(changed[index]) && mutant.end > Number(changed[index])).length;
+  const entries: Entry[] = [];
+  for (let first = 0; first < changed.length; ) {
+    let last = first;
+    while (last + 1 < changed.length && inside(first, last + 1) <= maxMutants) last += 1;
+    // The latest boundary the fewest mutants span; after the file's last changed line, which none spans, the entry ends.
+    let close = last;
+    for (let index = last - 1; index >= first; index -= 1) if (spanning(index) < spanning(close)) close = index;
+    entries.push({
+      entry: `${file.path}:${String(changed[first])}-${String(changed[close])}`,
+      path: file.path,
+      lines: close - first + 1,
+      mutants: inside(first, close),
+    });
+    first = close + 1;
+  }
+  return entries;
+}
+
+/**
+ * The CI shards of the changed files. `placed` gives, by path, the mutants Stryker's instrumenter places on each
+ * changed element-source file's changed lines (a file it does not name has none).
+ */
+export function planShards(files: readonly ChangedFile[], placed: ReadonlyMap<string, readonly PlacedMutant[]> = new Map()): Shard[] {
+  const shards: { files: string[]; lines: number; mutants: number | undefined }[] = [];
   const sorted = [...files].sort((a, b) => a.path.localeCompare(b.path));
+  const split = (file: ChangedFile): Entry[] =>
+    elementSource(file.path) ? splitByMutants(file, placed.get(file.path) ?? []) : splitFile(file);
   let lastPath: string | undefined;
-  for (const { entry, path, lines } of sorted.flatMap(splitFile)) {
+  for (const { entry, path, lines, mutants } of sorted.flatMap(split)) {
     const last = shards.at(-1);
     // Entries come in path order, so the current shard holds an entry of this file only if its last entry is one.
-    if (last !== undefined && path !== lastPath && last.files.length < maxEntries && last.lines + lines <= maxLines) {
+    const fits =
+      last !== undefined &&
+      path !== lastPath &&
+      last.files.length < maxEntries &&
+      (mutants === undefined
+        ? last.mutants === undefined && last.lines + lines <= maxLines
+        : last.mutants !== undefined && last.mutants + mutants <= maxMutants);
+    if (fits) {
       last.files.push(entry);
       last.lines += lines;
+      if (mutants !== undefined) last.mutants = Number(last.mutants) + mutants;
     } else {
-      shards.push({ files: [entry], lines });
+      shards.push({ files: [entry], lines, mutants });
     }
     lastPath = path;
   }
-  return shards;
+  return shards.map((shard) => ({ files: shard.files, lines: shard.lines }));
 }
 
 /**
