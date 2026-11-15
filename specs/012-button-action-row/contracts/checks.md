@@ -1,7 +1,8 @@
 # Contract: tests and checks for 012
 
 No new gate. The existing gates take the new elements and tokens; the test harness gains interaction, AX-state,
-reduced-motion, navigation-sink and axe support.
+reduced-motion, navigation-sink and axe support. One existing rule changes: 002's `brand-rules` rule (f) follows the generator's
+reduced-motion block in phase 4 (§ Gates touched, plan decision 29).
 
 ## Test harness (phase 1, red first)
 
@@ -82,6 +83,7 @@ Each row is written in its phase's red commit, with a plant; a documentation-onl
 | Changing surface (decision 7) | 2 | `button.ts` | US1-16: border `accent-strong` on canvas and on `hover-bg`; plant: `hover-bg` ground ignored |
 | Flush hover exception (decision 6) | 2, 5 | `button.ts`, `action-row.ts` | US1-14 and US4-8 with the hand-written per-theme list; plant: the flush hover token changed (fails on every other ground) |
 | Ring and bar distinct (decision 21) | 5, 6 | `action-row.ts`, `row-states.ts` | US4-9 four sides on a non-current row (plant: no ring); US5-4 focused current row: ring band, gap and bar band read apart, in ltr and rtl (plants: bar at `inset-inline-start: 0`; bar at the ring's inner edge) |
+| Decision 29: 002's brand-rules rule (f) follows the generator | 4 | `gates/test/brand-rules.test.ts` | the phase 4 stylesheet passes (`motion-spin: 0ms` accepted); a block without `motion-spin` gives one `reduced-motion` finding at the block's line; `motion-turn` in the block and `motion-fast` at 60ms each give one finding; plants `f-motion-not-zero`, `f-motion-spin-missing` |
 | Flush button in a clipping container; spinner token override | — | documentation only | README sentences (`readme.test.ts`) |
 
 ## Tokens tests (`@ocelle/tokens`)
@@ -114,10 +116,11 @@ Focus stories (decision 27): the button's (phase 2), a focused non-current row (
 | `manifest` | two new elements in `custom-elements.json` (regenerated, committed), moved attributes, `title` and the mirrors declared and described |
 | `style-lint` | new element CSS, tokens only; no new allowance (the spinner's angle is a token, its factor a number inside `calc()`; the bar's offset a `calc()` of tokens); a needed one stops the phase and goes to the squad |
 | `contrast` | new rows (R-08) |
+| `brand-rules` | phase 4 changes 002's rule (f) (002 FR-007, FR-019 (f); plan decision 29, operator decision at phase 4, option (a)): the reduced-motion block sets exactly every `motion` token whose source value is a duration to `0ms` (today `motion-fast`, `motion-base`, `motion-spin`; not `motion-turn`, not `easing-standard`), read from the token source, so a later duration token needs no gate edit; red first in `gates/test/brand-rules.test.ts` in phase 4's red commit (the existing (f) cases with the new message; a block without `motion-spin` reported at the block's line; `motion-turn` in the block reported); `gates/bin/brand-rules.ts` mutated (§ Mutation scope); plant `f-motion-not-zero` kept and still bites, new fail plant `gates/plants/brand-rules/f-motion-spin-missing` (wrapped generator without `--ocelle-motion-spin: 0ms;`, one `reduced-motion` finding at the block); the `gates/README.md` `brand-rules` row records the change and lists the plant; `gate:brand-rules` passes on the phase 4 tree |
 | `csp`, `prefix` | new built files and stories |
 | `storybook-build`, `visual`, `axe` | every phase that adds stories: the new stories built, captured against their committed baselines and audited with 0 serious or critical results; the pinned counts in their integration tests and `plant-repo.test.ts` updated red first |
 | `plants` | `shardSize` 1 (phase 1); `fail-token-changed` and `fail-empty-index` extended per phase |
-| `mutation` | `src/control.ts`, `src/spinner.ts`, `src/ocelle-button.ts`, `src/ocelle-action-row.ts`, `src/icon-slot.ts` under `stryker.elements.config.json`; `packages/tokens/src/source.ts`, `packages/tokens/src/generate.ts` and `packages/elements/scripts/manifest.ts` under the default config; `gates/lib/plant-runner.ts` (the `shardSize` constant) under the default config; 007 verdicts (Timeout and CompileError reported, pass) |
+| `mutation` | `src/control.ts`, `src/spinner.ts`, `src/ocelle-button.ts`, `src/ocelle-action-row.ts`, `src/icon-slot.ts` under `stryker.elements.config.json`; `packages/tokens/src/source.ts`, `packages/tokens/src/generate.ts` and `packages/elements/scripts/manifest.ts` under the default config; `gates/lib/plant-runner.ts` (the `shardSize` constant, phase 1) and `gates/bin/brand-rules.ts` (rule (f), phase 4) under the default config; 007 verdicts (Timeout and CompileError reported, pass) |
 | `test-lint` | all new tests |
 
 ## Feature 006 work, per phase (006 merged into this branch at 37dd501)
@@ -139,6 +142,6 @@ opens the plant-design triage record when this feature lands.
 ## Mutation scope
 
 As mission 005 decision 16: changed source is `packages/elements/src/**` (in-process, elements config),
-`packages/tokens/src/**`, `packages/elements/scripts/**` and, in phase 1, `gates/lib/plant-runner.ts` (default
-config), as § Gates touched lists. Test code, fixture suites, build and
+`packages/tokens/src/**`, `packages/elements/scripts/**`, in phase 1 `gates/lib/plant-runner.ts` and in phase 4
+`gates/bin/brand-rules.ts` (default config), as § Gates touched lists. Test code, fixture suites, build and
 pack tests and stories are not source.

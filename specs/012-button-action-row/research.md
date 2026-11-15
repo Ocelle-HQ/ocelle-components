@@ -385,6 +385,22 @@ and `motion-turn` and `easing-standard` do not (PLAN-CORRECTNESS-1-007). The `ge
 "exactly the motion durations: `motion-fast`, `motion-base`, `motion-spin`", recorded as a stricter replacement
 (constitution VIII); `generate.ts` is mutated under the default configuration.
 
+**002's brand-rules rule (f) (operator decision at phase 4, option (a), 2026-11-15; plan decision 29)**: this
+research missed a second reader of the reduced-motion block. Feature 002's `brand-rules` gate, rule (f)
+(`gates/bin/brand-rules.ts:31`, `:191-214`; 002 FR-007, FR-019 (f)), accepts exactly `--ocelle-motion-fast` and
+`--ocelle-motion-base`, each `0ms`, and reports any other declaration there. Measured on 959b366 with the phase 4
+source and generator change applied to the working tree and restored afterwards: `packages/tokens/dist/tokens.css:223:
+brand-rules: reduced-motion: --ocelle-motion-spin: 0ms in the reduced-motion block; ...`, 1 finding
+(`reviews/phase-4/notes.md`). Rule (f) is changed to follow the generator: the block must set exactly every token of
+group `motion` whose source value is a duration (`ms`) to `0ms`, the set read from the token source the gate already
+loads, so `motion-fast`, `motion-base` and `motion-spin` today, not `motion-turn`, not `easing-standard`, and a later
+duration token needs no gate edit. Red first in `gates/test/brand-rules.test.ts` (phase 4's red commit);
+`gates/bin/brand-rules.ts` mutated under the default configuration; the plant `f-motion-not-zero` kept, a new fail
+plant `f-motion-spin-missing` for a block without `motion-spin`; the `gates/README.md` row and plan decision 29 record
+the change to 002's rule (f). *Alternatives*: (b) a third name in rule (f)'s list (smaller, but every later duration
+token needs a gate edit); (c) leave `motion-spin` at 800 ms under reduced motion and rely on the element's
+`animation: none` alone (drops one of the two mechanisms above). Neither chosen.
+
 **Rationale**: measured, a border-based spinner (transparent border segment) computes every segment to the system
 colour in forced colours, a full ring with no gap; an SVG stroke in `currentColor` keeps its gap and takes the system
 colour.

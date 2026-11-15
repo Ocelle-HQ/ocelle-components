@@ -5,7 +5,8 @@ plan-squad rounds (`reviews/plan/round-1..3/`), with the analysis fixes of 2026-
 added tasks carry suffixed IDs, e.g. T031a, and no task is renumbered):
 - spec.md (FR-001 to FR-023, FR-030 to FR-042, FR-050 to FR-056, SC-001 to SC-007; US1-1..19, US2-1..14, US3-1..11,
   US4-1..18, US5-1..12; edge cases);
-- plan.md, with decisions 1 to 28 and the phase list;
+- plan.md, with decisions 1 to 28 and the phase list, and decision 29 (operator decision at phase 4: 002's
+  brand-rules rule (f) follows the generator; added tasks T042a, T045a);
 - research.md, R-01 to R-16;
 - data-model.md;
 - contracts/elements-package.md and contracts/checks.md (§ Edge cases and plan decisions maps every edge case and plan
@@ -179,7 +180,8 @@ the inner control; `aria-controls` relates to the light-DOM panel; a clone keeps
 ## Phase 4: User Story 3 - Busy (Priority: P3)
 
 **Goal**: US3-1 to US3-11 and this phase's rows of § Edge cases and plan decisions; FR-003 (unavailable), FR-015 to
-FR-017; tokens `motion-spin` and `motion-turn`; busy stories with baselines and axe.
+FR-017; tokens `motion-spin` and `motion-turn`; 002's brand-rules rule (f) following the generator (plan decision 29);
+busy stories with baselines and axe.
 
 **Independent Test**: a focused button set `busy` keeps focus, reports `aria-busy` and `aria-disabled`, shows a spinner
 in the icon place without changing size, sends no click by pointer, Enter, Space or a restyled-host click, and the
@@ -188,17 +190,19 @@ spinner is still under reduced motion and ends within 4.8 s.
 ### Tests (red, one commit)
 
 - [ ] T041 [P] [US3] `packages/elements/test/scenarios/busy.ts`: US3-1 to US3-11 as shared bodies; spinner box replaces the icon (equal button box) or sits before the label without intersecting it; `animation-name` `none` under reduced motion with the arc still painted; the animation's duration 4.8 s and iteration count giving six turns; forced colours `currentColor` system colour; busy link (no `href`, `tabindex="0"`, focusable, `role="link"`, decision 9) not activated by plain, Ctrl, Meta, Shift, Alt or middle click or Enter (sink and fixture bodies); both `disabled` and `busy`; `busy` removed while the pointer is down; `host.click()` while busy; no `ocelle-button-activate` while busy by any of these paths, and one with the `click` after `busy` is removed (US3-1, decision 26); stretched (US3-10) and restyled (US3-11) busy host; plants: guard limited to unavailable, spinner over the label, `animation: none` rule removed
-- [ ] T042 [P] [US3] `packages/tokens/test/expected.ts` (`motion-spin` 800 ms, 0 ms under reduced motion; `motion-turn` `1turn`), `test/browser/values.test.ts`, `packages/tokens/test/generate.test.ts` (the reduced-motion block holds exactly `motion-fast`, `motion-base`, `motion-spin`: a stricter replacement of "exactly two", reason recorded in `reviews/phase-4/notes.md`), tokens README and CHANGELOG tests
+- [ ] T042 [P] [US3] `packages/tokens/test/expected.ts` (`motion-spin` 800 ms, 0 ms under reduced motion; `motion-turn` `1turn`), `test/browser/values.test.ts`, `packages/tokens/test/generate.test.ts` (the reduced-motion block holds exactly `motion-fast`, `motion-base`, `motion-spin`: a stricter replacement of "exactly two", reason recorded in `reviews/phase-4/notes.md`), tokens README and CHANGELOG tests; `gate:brand-rules` accepts this block only after T045a (plan decision 29)
+- [ ] T042a [P] [US3] `gates/test/brand-rules.test.ts`, rule (f) (plan decision 29, operator decision at phase 4, option (a)): the block must set exactly every `motion` token whose source value is a duration to `0ms`, read from the token source; a source with `motion-spin` and a block with `--ocelle-motion-spin: 0ms` passes; the same source with the `motion-spin` line dropped gives one `reduced-motion` finding at the block's line (`does not set --ocelle-motion-spin to 0ms`); `--ocelle-motion-turn` in the block is reported; the existing (f) cases (`motion-fast` at 60ms, `easing-standard` in the block, `motion-base` missing, spacing, no block) kept with the new message naming the motion durations instead of two names; `gates/test/gates-readme.test.ts` requires `f-motion-spin-missing` in the `brand-rules` row; any pinned brand-rules plant count in `gates/test/integration/` changed first
 - [ ] T043 [P] [US3] `packages/elements/test/button.test.ts` and `test/browser/button.test.ts` run `busy.ts` (with `reducedMotion`); `test/node/readme.test.ts`: busy on the button is unavailable, the 4.8 s stop, the 833 ms limit for an override of `--ocelle-motion-spin`
 - [ ] T044 [P] [US3] Story tests: `elements-stories.test.ts` gains the busy stories (busy, busy with icon, busy link, busy compact); the four pinned story counts
 
 ### Implementation (green)
 
 - [ ] T045 [US3] `packages/tokens/src/source.ts` (`motion-spin`, `motion-turn`) and `packages/tokens/src/generate.ts` (reduced-motion block from the motion durations); tokens README and CHANGELOG
+- [ ] T045a [US3] `gates/bin/brand-rules.ts` rule (f) over T042a: the expected set is every `motion` record of the token source whose value is a duration (`ms`), not the `reducedMotion` name list, and the messages name the motion durations; new fail plant `gates/plants/brand-rules/f-motion-spin-missing/` (`plant.json`, `delta.json` with `generator: "wrapped"`, a `tree/packages/tokens/src/generate.ts` wrapper as `f-motion-not-zero`'s that drops `    --ocelle-motion-spin: 0ms;\n`; one `reduced-motion` finding at the block); `f-motion-not-zero` kept unchanged; the `gates/README.md` `brand-rules` row records that 012 changed 002's rule (f) to every motion duration at 0ms and lists `f-motion-spin-missing`
 - [ ] T046 [US3] `packages/elements/src/spinner.ts`: inline SVG arc, `stroke="currentColor"`, `aria-hidden="true"`, rotation `calc(var(--ocelle-motion-turn) * 6)` over `calc(var(--ocelle-motion-spin) * 6)`, ending still; `animation: none` under `prefers-reduced-motion: reduce`
 - [ ] T047 [US3] `packages/elements/src/control.ts`: the unavailable state (guard on `click` and `auxclick`, `aria-disabled`, unavailable link without `href` and with `tabindex="0"`); `packages/elements/src/ocelle-button.ts`: `busy` reflected, `aria-busy`, the icon wrapper hidden and the spinner in its place, `disabled` wins
 - [ ] T048 [US3] README, CHANGELOG, busy stories and baselines; `custom-elements.json` regenerated
-- [ ] T049 [US3] Plants recorded in `reviews/phase-4/plants.md`; gates as T029 (with `gate:contrast` unchanged), then plants and mutation (expect Timeout mutants on the spinner and guard: reported, pass, listed in the review, R-14)
+- [ ] T049 [US3] Plants recorded in `reviews/phase-4/plants.md` (with `f-motion-not-zero` and `f-motion-spin-missing` run once each, each giving exactly its finding); gates as T029 (with `gate:contrast` unchanged) and `gate:brand-rules` (0 findings on the phase 4 tree), then plants and mutation, `gates/bin/brand-rules.ts` in the default-config scope beside the tokens source (expect Timeout mutants on the spinner and guard: reported, pass, listed in the review, R-14)
 
 **Checkpoint**: `tdd-check.sh 4` reports `pass`.
 

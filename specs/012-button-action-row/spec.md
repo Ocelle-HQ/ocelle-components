@@ -144,6 +144,18 @@ option (a) each):
   window or a download and leave the current page as it is. This refines the decision on SPEC-1-09 above (FR-002,
   FR-023, FR-033, US2-1, US5-2). No code or test change: the phase 3 test already asserts this.
 
+**Operator decisions at phase 4** (2026-11-15, operator; the phase 4 implementer's stop-and-ask,
+`reviews/phase-4/notes.md`):
+
+- Reduced motion and the brand rules, "(a) the brand rule follows the token source": feature 002's brand rule for
+  reduced motion (002 FR-007, FR-019 (f)) accepts only `--ocelle-motion-fast` and `--ocelle-motion-base` at `0ms`, so
+  it would reject the new `--ocelle-motion-spin` that this feature sets to `0ms` under reduced motion (FR-017). The
+  rule changes: under reduced motion, exactly every motion token whose value is a duration is `0ms`, read from the
+  token source. Today that is `motion-fast`, `motion-base` and `motion-spin`; `motion-turn` (an angle) and
+  `easing-standard` are not durations and are not set there. A later duration token needs no further rule change.
+  The rule keeps rejecting a duration that is not `0ms` under reduced motion and now also rejects a missing
+  `motion-spin`. This changes 002's rule (f) for every later feature; the plan records it (plan decision 29).
+
 **Issues**: #7, in part (triage record `triage/012-button-action-row.md`, approved by the operator on 2026-11-13).
 This feature builds the two action controls of #7. `ocelle-pill-tag`, `ocelle-status-indicator` and `ocelle-metric`
 stay in #7 for a later status mission. The body of #7 (read on 2026-11-13) is the source of the requirements below.

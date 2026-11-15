@@ -90,9 +90,9 @@ phase 2),
 | V. Storybook, behaviour tests | A story per variant and state in light and dark (R-13), each with a committed baseline made in the pinned container in the phase that adds it (006 is on this branch); a focus story for each element, by programmatic focus or, failing that, `focus({ focusVisible: true })` (decision 27); interaction tests assert the `click` and both activate events with every flag, the target at every listener and one dispatch serial, from pointer, `click()` and every keyboard path (FR-051). |
 | VI. Consumer-driven, own code | Needs from #7 and spec-kitty-design #493, #495, #496, #501, #504, #508, #509, #518, #525, #528, #532; consumers #12 (breadcrumb items, and its top-bar menu button with `aria-haspopup` and `ground="chrome"`, so it is not hand-rolled) and #14. Nothing copied from Spec Kitty. |
 | VII. Semver | Additions only (MINOR): two elements, two entry points, an event, seven tokens, declared grounds, custom states, the mirror attributes; changelog entries in both packages (FR-055). Raising the engine floor (Chromium 135, WebKit 17.4) is documented in the README's engines section and the CHANGELOG; before 1.0.0 it needs no major bump. The `icon-slot.ts` scoping changes no output of 005's elements. |
-| VIII. Test-first, non-vacuous | Each phase starts with one red commit holding its scenario bodies, harness tests, node/build tests and story test (I3), recorded by `red.sh`; each "does not" paired with a positive assertion and a measured plant; every spec edge case and plan decision has a scenario row (contracts/checks.md); clicks on `aria-disabled` controls sent with `force: true` (R-06); link mode covered in-process by the navigation sink, so its mutants are not NoCoverage; `generate.test.ts`'s "exactly two" becomes "exactly the motion durations", recorded as a stricter replacement; element source mutated under the elements config, token, generator and manifest-script source under the default config, with 007's verdicts (R-14). |
+| VIII. Test-first, non-vacuous | Each phase starts with one red commit holding its scenario bodies, harness tests, node/build tests and story test (I3), recorded by `red.sh`; each "does not" paired with a positive assertion and a measured plant; every spec edge case and plan decision has a scenario row (contracts/checks.md); clicks on `aria-disabled` controls sent with `force: true` (R-06); link mode covered in-process by the navigation sink, so its mutants are not NoCoverage; `generate.test.ts`'s "exactly two" becomes "exactly the motion durations", recorded as a stricter replacement; element source mutated under the elements config, token, generator and manifest-script source, and in phase 4 `gates/bin/brand-rules.ts` (decision 29), under the default config, with 007's verdicts (R-14). |
 | Licence and supply chain | No new dependency: `axe-core` 4.14.0 (MPL-2.0, dev only, not shipped) is already pinned by 006 and is reused by the element tests. |
-| Workflow gates | No new gate; the touched gates are listed in contracts/checks.md. Phase 1 lowers 006's plant `shardSize` to 1 before the repository reaches 006's split count of 25 stories (006's Complexity Tracking sunset), test-first; the new split count at size 1 goes to the operator at phase 1's review, with the facts that size 1 is the last lever (about 18 stories of headroom after this feature) and the Plants runner time it costs (about 11.2 runner-hours per CI run at 58 stories), and a request to open a triage record for a plant design whose shard time does not grow with the story count before the next element mission; phase 6 records a CI run with every Plants shard under 10 minutes (R-13). |
+| Workflow gates | No new gate; the touched gates are listed in contracts/checks.md. Phase 4 changes 002's `brand-rules` rule (f) to follow the generator (every motion duration at `0ms` under reduced motion), red first, mutated, with a new plant and the `gates/README.md` row (decision 29). Phase 1 lowers 006's plant `shardSize` to 1 before the repository reaches 006's split count of 25 stories (006's Complexity Tracking sunset), test-first; the new split count at size 1 goes to the operator at phase 1's review, with the facts that size 1 is the last lever (about 18 stories of headroom after this feature) and the Plants runner time it costs (about 11.2 runner-hours per CI run at 58 stories), and a request to open a triage record for a plant design whose shard time does not grow with the story count before the next element mission; phase 6 records a CI run with every Plants shard under 10 minutes (R-13). |
 
 ## Decisions the operator should see at the plan gate
 
@@ -116,7 +116,8 @@ phase 2),
    `--ocelle-focus-offset-inset` (-5 px from the two focus tokens); `color-ink`, `color-ink-soft`,
    `color-accent-strong`, `color-on-accent`, `color-chrome-ink` and `color-disabled-ink` gain declared grounds. If a
    new required pair is below threshold, the phase stops and asks (a value change to an existing token is out of
-   scope).
+   scope). Amended at phase 4: `motion-spin` at `0ms` under reduced motion needs the change to 002's brand-rules
+   rule (f) of decision 29.
 6. **Hover and active** (R-08 item 3, round 2 fix PLAN-FRESH-2-004): every variant has a hover and an active look
    distinct from idle and from each other; the one exception is a flush control's hover where the fill equals the
    ground: the `hover-bg` ground in both themes, the `inset` ground in light, the `neutral-bg` ground in dark (dark
@@ -239,6 +240,23 @@ phase 2),
     alignment; chrome colours), and `readme.test.ts` asserts that the README's markup is the markup the scenario
     renders (plant: a README snippet that differs). No story is added for them, so the shard headroom of decision 15
     is not spent on them.
+29. **002's brand-rules rule (f) follows the generator** (operator decision at phase 4, option (a), 2026-11-15; spec
+    "Operator decisions at phase 4"; R-07; `reviews/phase-4/notes.md`): feature 002's `brand-rules` gate, rule (f)
+    (`gates/bin/brand-rules.ts`, the `reducedMotion` list and `reducedMotionBlock`; 002 FR-007, FR-019 (f)), accepts
+    exactly `--ocelle-motion-fast` and `--ocelle-motion-base` at `0ms` in the reduced-motion block, so the generator
+    of decision 5 fails it (measured on 959b366: 1 finding, `--ocelle-motion-spin: 0ms`). **This feature changes
+    002's rule (f)**: the reduced-motion block must set exactly every token of group `motion` whose source value is a
+    duration (`ms`) to `0ms`, the set read from the token source (`inputs.tokens`) as the generator reads it, not
+    from a list of names; today `motion-fast`, `motion-base` and `motion-spin`, not `motion-turn`, not
+    `easing-standard`. A later duration token needs no gate edit. The finding messages name the rule ("only the motion
+    durations, each 0ms, belong there") instead of two names. Red first in `gates/test/brand-rules.test.ts`, in phase
+    4's red commit (the existing (f) cases with the new message, a source with `motion-spin` whose block lacks it, and
+    a non-duration motion token such as `motion-turn` in the block rejected); `gates/bin/brand-rules.ts` is mutated
+    under the default configuration in phase 4. The plant `f-motion-not-zero` stays and still bites; a new fail plant
+    `f-motion-spin-missing` (a wrapped generator that drops `--ocelle-motion-spin: 0ms;`) covers a missing
+    `motion-spin`. The `gates/README.md` `brand-rules` row records the change to 002's rule (f) and lists the new
+    plant. No principle is relaxed (constitution II keeps its reduced-motion rule, now for every duration), so no
+    Complexity Tracking row is needed.
 
 ## Project Structure
 
@@ -344,7 +362,8 @@ one at a time.
    consumer compositions (SC-006) and this phase's edge-case rows.
 4. **US3 Busy** (P3): the unavailable half of the guard, the unavailable link without `href` and with
    `tabindex="0"`, `spinner.ts` (six turns, 4.8 s), the `motion-spin` and `motion-turn` tokens with `generate.ts`'s
-   reduced-motion block from the motion durations (tokens and generator tests first), reduced-motion and
+   reduced-motion block from the motion durations (tokens and generator tests first), 002's `brand-rules` rule (f)
+   following it (decision 29: `brand-rules.test.ts` first, the plant `f-motion-spin-missing`, the README row), reduced-motion and
    forced-colours rules, the README's 833 ms note for a spin override; busy stories with their baselines and the axe
    gate; US3 scenarios 1 to 11 (US3-11 the restyled busy button; no `ocelle-button-activate` while busy, one after
    `busy` is removed) and this phase's edge-case rows.
@@ -386,4 +405,6 @@ baselines and runs the `axe` gate on them (decision 15, operator decision 2026-1
 can meet it, so phase 1's update of that row records the headroom and runner time and phase 1's review asks the
 operator for a triage record on a plant design that does not grow with the story count (decision 15,
 PLAN-FRESH-3-003). At phase 2 the estimate was corrected to about 72 stories, leaving about 4 stories of headroom to
-the split count of 76; the operator opens that triage record when this feature lands (decision 15).
+the split count of 76; the operator opens that triage record when this feature lands (decision 15). Phase 4's change
+to 002's brand-rules rule (f) (decision 29) is no exception: it keeps the reduced-motion rule and extends it to every
+motion duration, so it has no row.
