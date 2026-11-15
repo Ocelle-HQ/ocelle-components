@@ -372,12 +372,12 @@ export class OcelleButton extends LitElement {
 
   /** The moved host attributes (src/control.ts). */
   readonly #moved = new MovedAttributes(this, moved, (name) => {
-    if (name === undefined || references.some(([reference]) => reference === name)) this.#resolve();
+    if (references.some(([reference]) => reference === name)) this.#resolve();
     this.requestUpdate();
   });
 
   /** The elements each moved ID reference names, resolved when it is set and when the element is connected. */
-  readonly #resolved = new Map<string, Element[]>();
+  readonly #resolved: Record<(typeof references)[number][0], Element[]> = { "aria-controls": [], "aria-labelledby": [], "aria-describedby": [] };
 
   /** The custom states (`expanded`, `pressed`, `current`). */
   readonly #internals = this.attachInternals();
@@ -413,13 +413,14 @@ export class OcelleButton extends LitElement {
   }
 
   override attributeChangedCallback(name: string, old: string | null, value: string | null): void {
-    if (this.#moved.handle(name, value)) return;
+    this.#moved.handle(name, value);
     super.attributeChangedCallback(name, old, value);
   }
 
   override connectedCallback(): void {
     this.#moved.connected();
-    // A later connection may put the element in another tree: its references are resolved there (research.md R-04).
+    // The mirrors read back, and a later connection may put the element in another tree: the references are resolved
+    // there (research.md R-04).
     this.#resolve();
     this.requestUpdate();
     super.connectedCallback();
@@ -427,7 +428,7 @@ export class OcelleButton extends LitElement {
 
   /** Resolves the moved ID references in the host's own tree (research.md R-04). */
   #resolve(): void {
-    for (const [name] of references) this.#resolved.set(name, resolveIds(this, this.#moved.get(name)));
+    for (const [name] of references) this.#resolved[name] = resolveIds(this, this.#moved.get(name));
   }
 
   /** The inner `<button>` or `<a>`, once rendered. */
@@ -453,7 +454,7 @@ export class OcelleButton extends LitElement {
 
   /** The inner control's name, when it is not its content: the host's `aria-label`, then `label` (research.md R-05). */
   #name(): string | undefined {
-    if ((this.#resolved.get("aria-labelledby") ?? []).length > 0) return undefined;
+    if (this.#resolved["aria-labelledby"].length > 0) return undefined;
     const label = this.label?.trim() ?? "";
     return this.#moved.get("aria-label") ?? (label === "" ? undefined : label);
   }
@@ -481,7 +482,7 @@ export class OcelleButton extends LitElement {
     const inner = this.#control();
     if (inner !== null) {
       for (const [name, property] of references) {
-        const found = this.#resolved.get(name) ?? [];
+        const found = this.#resolved[name];
         inner[property] = found.length === 0 ? null : found;
       }
     }

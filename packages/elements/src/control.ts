@@ -47,18 +47,18 @@ export function mirrorOf(name: string): string {
 
 /**
  * The attributes a control moves from its host onto its inner control, with their mirrors (FR-004; research.md R-03).
- * The element observes `observed()`, hands every change of them to `handle`, calls `connected()` from its
- * `connectedCallback` and reads the stored values with `get`; `changed` is told the name of each moved attribute whose
- * stored value was set or cleared (or nothing, when the mirrors were read back).
+ * The element observes `observed()`, hands every change of them to `handle` (a change of any other attribute is
+ * ignored), calls `connected()` from its `connectedCallback` and reads the stored values with `get`; `changed` is told
+ * the name of each moved attribute whose stored value was set or cleared.
  */
 export class MovedAttributes {
   readonly #host: HTMLElement;
   readonly #names: readonly string[];
-  readonly #changed: (name: string | undefined) => void;
+  readonly #changed: (name: string) => void;
   readonly #values = new Map<string, string>();
   #upgraded = false;
 
-  constructor(host: HTMLElement, names: readonly string[], changed: (name: string | undefined) => void) {
+  constructor(host: HTMLElement, names: readonly string[], changed: (name: string) => void) {
     this.#host = host;
     this.#names = names;
     this.#changed = changed;
@@ -69,17 +69,15 @@ export class MovedAttributes {
     return [...names, ...names.map(mirrorOf)];
   }
 
-  /** Handles a change of an observed attribute; false when `name` is neither a moved attribute nor a mirror. */
-  handle(name: string, value: string | null): boolean {
+  /** Handles a change of an observed attribute: a moved attribute is stored, a mirror restored. */
+  handle(name: string, value: string | null): void {
     if (this.#names.includes(name)) {
       if (value !== null) this.#store(name, value);
-      return true;
+      return;
     }
     const moved = this.#names.find((each) => mirrorOf(each) === name);
-    if (moved === undefined) return false;
-    const held = this.#values.get(moved);
+    const held = moved === undefined ? undefined : this.#values.get(moved);
     if (held !== undefined && value !== held) this.#host.setAttribute(name, held);
-    return true;
   }
 
   /** At the first connection (the upgrade), reads back the mirror of each attribute the host did not set. */
@@ -90,7 +88,6 @@ export class MovedAttributes {
       const mirror = this.#host.getAttribute(mirrorOf(name));
       if (mirror !== null && !this.#values.has(name)) this.#values.set(name, mirror);
     }
-    this.#changed(undefined);
   }
 
   /** The stored value of a moved attribute, as written, or undefined when none is held. */
@@ -118,8 +115,9 @@ export class MovedAttributes {
 export function resolveIds(host: Element, value: string | undefined): Element[] {
   if (value === undefined || !host.isConnected) return [];
   const root = host.getRootNode() as Document | ShadowRoot;
-  return value.split(/\s+/).flatMap((id) => {
-    const found = id === "" ? null : root.getElementById(id);
+  // An empty id (around the separators) finds nothing: `getElementById("")` is null.
+  return value.split(/\s/).flatMap((id) => {
+    const found = root.getElementById(id);
     return found === null ? [] : [found];
   });
 }
