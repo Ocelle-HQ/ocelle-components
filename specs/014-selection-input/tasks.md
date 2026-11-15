@@ -230,7 +230,7 @@ stay `accent-strong` with a focused neighbour on either side.
 
 ### Measurement (first)
 
-- [ ] T060 [US3] Measure in Chromium, recorded in `specs/014-selection-input/reviews/phase-4/measure.md`: when the joined group's rounding is settled after a resize relative to `afterResizeDelivery`, re-wrap without a size change (font load, text change), no resize-loop warning (R-06); stop-and-ask per the list above
+- [X] T060 [US3] Measure in Chromium, recorded in `specs/014-selection-input/reviews/phase-4/measure.md`: when the joined group's rounding is settled after a resize relative to `afterResizeDelivery`, re-wrap without a size change (font load, text change), no resize-loop warning (R-06); stop-and-ask per the list above
 
 ### Scaffold
 
