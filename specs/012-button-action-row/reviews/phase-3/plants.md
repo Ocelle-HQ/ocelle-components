@@ -44,3 +44,16 @@ link-new-tab, expanded, current, pressed; link-disabled shows only the disabled 
 five; after, "shard 40 of 76: 1 plant judged, every plant as expected", 138.7 s). `fail-empty-index` needs nothing new
 (phase 2 gave its tree `button.stories.ts`). The manifest plants' committed-manifest copies carry the new
 `ocelle-button` entry (7c72352).
+
+## Review round 1 fixes (R1-01, R1-06)
+
+Run on 2026-11-15 in Chromium 156 (`chromium-1248`) on the working tree at ff917fb (the round-1 red commit, whose
+US2-12 and US2-13 bodies are the final ones), each plant applied to the source and restored with `git checkout`.
+
+| Plant | Change | Result | Failing tests |
+|---|---|---|---|
+| the `aria-label` read-back skipped (reviewer's R1-01 plant) | `src/control.ts` `MovedAttributes.connected()`: `name !== "aria-label" &&` added before `mirror !== null` | in process (`--project elements` `button.test.ts` `control.test.ts`): 3 failed, 128 passed (131); fixture build (`--project elements-browser` `test/browser/button.test.ts`, which builds the planted source): 2 failed, 75 passed (77) | in process: reads a mirror back at upgrade for an attribute the host does not set…; US2-13, copies… (parsed and cloned copies named `Close`, expected `Close dialog`); US2-13, morph… (the innerHTML copy named `Close`, expected `Close dialog`). Fixture: US2-13, copies…; US2-13, morph… |
+| `:state(pressed)` in button mode only (R1-06) | `src/ocelle-button.ts` `updated()`: `pressed` also requires `linkHref(this.href, document.baseURI) === undefined` | 1 failed, 130 passed (131) | US2-12: host rules on ocelle-button:state(expanded)… (the link-mode host `lp` matches no `pressed`) |
+
+Before the fix, both US2-13 bodies passed under the first plant (reviewer's run, round-1.md R1-01); the second plant
+bit nothing before US2-12 gained its link-mode host.
