@@ -7,7 +7,9 @@ in_scope: [42]
 out_of_scope: [1, 9, 15, 16, 8, 23, 35, 41, 11]
 semver: none
 spec_prompt: "If Q0 is go: op for #42 (triage/017-element-shards-by-mutant-count.md): redo test-first, from main, the element-source shard rule prototyped on claude/009-feedback-forms (971c431, 0d99aa5, 5c2ef49, 9a91a92, 253292f; reverted in 14538fa): changed lines under packages/elements/src/ are cut into entries and shards by counted mutant weight (cap, weight and syntax rule as the operator picks in Q2), other files keep 007 FR-014's 30-line rule, with the dependency choice of Q3, the amendments of Q1, a CI cost check per Q4 and the merge order of Q5; ci.yml and op 015's 45-minute limit unchanged; whole-diff gate:mutation over the change."
-status: proposed
+status: approved
+decided_by: "human:jeroennouwsdev"
+decided_at: 2026-11-15T17:42:20Z
 ---
 
 # Triage 017: cut element-source mutation shards by mutant count (#42)
