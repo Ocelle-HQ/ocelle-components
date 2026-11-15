@@ -1,6 +1,7 @@
 Scope: all 5 workspace projects
-✓ Lockfile passes supply-chain policies (verified 1h ago)
+✓ Lockfile passes supply-chain policies (verified 1d ago)
 Lockfile is up to date, resolution step is skipped
+Progress: resolved 1, reused 0, downloaded 0, added 0
 Packages are hard linked from the content-addressable store to the virtual store.
   Content-addressable store is at: /root/.local/share/pnpm/store/v11
   Virtual store is at:             node_modules/.pnpm
@@ -35,15 +36,10 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 346ms using pnpm v12.16.1
+Done in 2.1s using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /opt/pw-browsers/chromium-1243/chrome-linux64/chrome
 $ node gates/bin/test.ts
-gates/test/integration/visual.test.ts:115: unit-tests: visual gate (gates/bin/visual.ts) captures the repository's 42 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1): AssertionError: expected { code: 2, stdout: [], …(1) } to deeply equal { code: +0, …(2) }
-gates/test/integration/visual.test.ts:126: unit-tests: visual gate (gates/bin/visual.ts) keeps the capture, its diff image and run 1 in baseline layout for differs and missing-baseline, and nothing for any other story-theme (FR-005, analysis G2): AssertionError: expected { code: 2, findings: [], …(1) } to deeply equal { code: 1, findings: [ …(2) ], …(1) }
-gates/test/integration/visual.test.ts:239: unit-tests: baseline command (gates/bin/baselines.ts) writes nothing on an unchanged tree and says so (FR-008, analysis G1): AssertionError: expected { code: 2, stdout: [], …(1) } to deeply equal { code: +0, …(2) }
-gates/test/integration/visual.test.ts:251: unit-tests: baseline command (gates/bin/baselines.ts) the plant mode writes a deleted baseline of a plant back with the bytes it had, and touches no other file (research.md R-11): AssertionError: expected { code: 2, stdout: [], …(1) } to deeply equal { code: +0, …(2) }
-gates/test/integration/visual.test.ts:271: unit-tests: capture (gates/visual/capture.ts in the pinned container) captures a story alone byte for byte as in a full run after other stories (freshness, FR-028), and a 2000 px story 2000 px tall (FR-012): AssertionError: expected { code: 1, …(1) } to deeply equal { code: +0, stderr: '' }
 packages/elements/test/commands.test.ts:85: unit-tests: axTree(id): heading levels (011 R-13) gives an <h3 id> one heading node at level 3 and an <h2 id> one at level 2: AssertionError: expected { three: [ { …(2) } ], …(1) } to deeply equal { three: [ { …(3) } ], …(1) }
 packages/elements/test/commands.test.ts:93: unit-tests: axTree(id): heading levels (011 R-13) gives the level of a heading in an element's accessibility subtree, and none to a node that is not a heading: AssertionError: expected [ …(5) ] to deeply equal [ …(5) ]
 packages/elements/test/commands.test.ts:107: unit-tests: scrollWidth() (011 R-13) reads 400 for a 400 px wide child in a 320 px viewport, and 320 once the child is gone: Error: empty
@@ -62,5 +58,5 @@ packages/elements/test/slot-state.test.ts:185: unit-tests: SlotState: the state 
 packages/elements/test/slot-state.test.ts:194: unit-tests: SlotState: the state follows the light DOM (R-03) keeps following the light DOM after the host is moved to another place on the page: AssertionError: expected { moved: { body: false, …(1) }, …(2) } to deeply equal { moved: { body: false, …(1) }, …(2) }
 packages/elements/test/slot-state.test.ts:215: unit-tests: SlotState: the first render (R-03) sets the empty class on an empty slot's wrapper once updateComplete resolves after the first render: AssertionError: expected { first: { body: false, …(1) }, …(1) } to deeply equal { …(2) }
 packages/elements/test/slot-state.test.ts:223: unit-tests: SlotState: the first render (R-03) clears the empty class of a slot with content once the host has settled after the first render: AssertionError: expected { …(2) } to deeply equal { …(2) }
-unit-tests: 23 of 3130 tests failed
+unit-tests: 18 of 3130 tests failed
 [ELIFECYCLE] Test failed. See above for more details.

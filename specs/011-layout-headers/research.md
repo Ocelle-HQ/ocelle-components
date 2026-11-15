@@ -103,6 +103,13 @@ observer.
 **Alternatives**: `:has-slotted` (floor, whitespace); attributes on the host reflecting emptiness (would add public
 surface the manifest must list).
 
+**Forwarded slots** (landing review L1-04; operator decision at landing, `reviews/phase-1/round-2.md` R2-01): the read
+is `assignedNodes()` without `{ flatten: true }`, so a `<slot>` that a shell's shadow root forwards into an element's
+slot is an assigned element and counts as content even when nothing is assigned to it. That is the spec's definition
+("no element is assigned"), and it stays: flattening would change the rule for every element and would make a
+forwarded slot's emptiness depend on another shadow tree. The README tells shell authors instead (FR-036): forward a
+slot only when it has content, or remove the forwarding `<slot>`. The controller does not change.
+
 ## R-04 Section header layout (FR-010, FR-011)
 
 **Decision**: the host is `:host { display: block }` (a custom element is inline by default, and the card and the
@@ -176,6 +183,13 @@ Paths this covers (PLAN-CORRECTNESS-1-007, PLAN-TESTABILITY-1-009):
 - **Moves**: a header whose `slot` attribute changes or that is moved out of the card is in `previous` at the next
   `slotchange` and re-resolves; one moved in by DOM insertion also re-resolves on connect. No flag is stored, so none
   can be stale.
+- **Forwarded slots** (landing review L1-01; operator decision at landing, `reviews/phase-2/round-4.md` R4-01):
+  `slotchange` bubbles, so a `slotchange` of a wrapper's slot that is forwarded into the card's `header` slot
+  (`<slot name="extra" slot="header">` in the wrapper's shadow root) reaches the card's listener with that wrapper's
+  slot as `event.target`. The card therefore always passes its own `header` slot to `notifyHeaders` (the
+  `slot[name="header"]` of its render root, as `updated()` reads it, or `event.currentTarget` when the listener is
+  on that slot), never `event.target`; otherwise `previous` is replaced by the forwarded slot's elements and a header
+  that then leaves the card's `header` slot without reconnecting is never told and stays compact in the body.
 - **Two copies on a page**: nothing is module-private; the header reads the DOM and the card's notice is the
   `requestUpdate()` every Lit element has, so a card and a header defined by different copies (for example the card
   by a bundle of `@ocelle/elements/ocelle-card.js`, the header by the browser build) still agree. The one limit: a
@@ -197,7 +211,8 @@ not chosen).
 
 Tests (phase 2, contracts/checks.md): density set and then removed by script (header compact, then regular); a header
 moved from the `header` slot to the body by its `slot` attribute and back, and moved out of the card by DOM removal
-and back; entry tests that import `ocelle-card.js`, mount, then import `ocelle-section-header.js`, and the reverse
+and back; the same move by the `slot` attribute after the content of a wrapper's slot forwarded into the `header`
+slot changed (tasks.md T049, both harnesses); entry tests that import `ocelle-card.js`, mount, then import `ocelle-section-header.js`, and the reverse
 order; a fixture page that loads a named same-origin test bundle of the module build's `ocelle-card.js` before the
 browser build, so the card and the header come from different copies.
 
@@ -283,6 +298,20 @@ free space, so in a sidebar taller than its content the free space lies between 
   so FR-008's "a page rule wins" still holds for a section's block margins, and the README says which properties a
   page can and cannot set on a section (FR-036). The `hidden` exclusion below is unchanged, so a hidden section still
   draws nothing;
+- never-rendered elements (landing review L1-03; operator decision at landing, `reviews/phase-4/round-2.md` R2-01):
+  every section rule, the first-section exception included, also excludes `template` and `script`
+  (`::slotted(:not([slot]):not([hidden]):not(template, script))` and
+  `::slotted(:nth-child(1 of :not([slot]):not([hidden]):not(template, script)))`). Without the exclusion the
+  `display: block !important` rule beats the user agent's `display: none` on a `<template>` (an outer-context author
+  rule over a user-agent one), and a `<template>` that Alpine.js keeps in light DOM for `x-if` or `x-for` was drawn
+  as an empty 33 px section with a divider (measured on the browser build in Chromium, landing round 1). With it, such
+  an element keeps its UA `display: none`, has no padding or divider, and is skipped by the first-section rule. It
+  still counts as content for slot emptiness (R-03), as a hidden section does. `style` is not listed: an inline
+  `<style>` element is what the strict CSP these elements are built for forbids (constitution IV), and the
+  strict-CSP fixture pages could not hold one without recording a violation, so no shared scenario could prove the
+  exclusion; a `<script type="application/json">` data block is never run, so the CSP does not report it. A page class that sets
+  `display: none !important` on a section still does not hide it (the inner context's `!important` wins), as the
+  README says;
 - hidden sections (PLAN-FRESH-2-001): every section rule, the first-section exception included, excludes `[hidden]`.
   A `::slotted()` rule is an author rule of the outer context, so it beats both the user agent's `[hidden] { display:
   none }` and a slotted custom element's own `:host([hidden])` (an inner-context rule); without the exclusion a hidden
@@ -444,9 +473,34 @@ properties `_internals`, `internals` or `internals_`, or own symbols described `
 axe's role computation gives each host the `navigation` role (`axe.commons.aria.getRole(host) === "navigation"`) and
 its ARIA attribute checks judge a host `aria-*` attribute against that role. axe's landmark rules do not see the host
 (PLAN-FRESH-3-001, below). The field is not public surface: it is a
-symbol-keyed field with no string name, marked `@internal` (and `@ignore`) so the manifest generator omits it, and
+symbol-keyed field with no string name, marked `@internal` so the manifest generator omits it, and
 `test/node/manifest.test.ts` asserts that neither element's manifest entry lists a member for it, paired with
-the same entry listing `label`. The same change for 005's `ocelle-icon` and `ocelle-brand-mark` (whose `img` role axe's role computation does not see either)
+the same entry listing `label`. The field carries `@internal` only, not `@ignore` (as built in phase 4,
+`reviews/phase-4/notes.md` § Departures): the analyzer omits a member with either tag, so with both the
+contracts/checks.md plant "the `@internal` tag removed" would change nothing and no test could catch it; with
+`@internal` alone that plant lists a member `[internalsKey]` and the manifest test fails.
+
+**Type declarations** (landing review L1-02; operator decision at landing, `reviews/phase-4/round-2.md` R2-02):
+`@internal` acts on the manifest analyzer only, and `tsconfig.base.json` has no `stripInternal`, so as built each
+class's `dist/*.d.ts` declared `readonly [internalsKey]: ElementInternals` and imported `internalsKey` from
+`./naming.ts`, and `dist/naming.d.ts` exported it. The package emits its declarations beside the module build, and
+TypeScript resolves each `exports` entry to them, so a consumer saw a member the manifest omits. Intended treatment:
+the declarations agree with the manifest (FR-034; constitution I and VII: the manifest is the public surface).
+`packages/elements/tsconfig.json`, the package's build configuration, sets `"stripInternal": true`; the shared
+`tsconfig.base.json` is not changed, so `@ocelle/tokens` and `@ocelle/styles` are unaffected. tsc then omits every
+declaration whose JSDoc carries `@internal`: the `[internalsKey]` member of both classes, the import it needed, and
+the `internalsKey` export of `dist/naming.d.ts` (probed with `tsc --stripInternal --emitDeclarationOnly` on the
+landing head: none of the three remains, and the rest of each file is unchanged). At the landing head no other
+declaration in `packages/elements/src` carries `@internal`. The emitted JavaScript does not change: the own
+symbol-keyed property is still there for axe's role computation, and `Object.getOwnPropertySymbols(host)` still
+reaches it. That is not a security boundary (page scripts already own the DOM) and not public surface; no README or
+CHANGELOG statement is added for it. Test: `test/build/build.test.ts` asserts, after the package's build, that
+`dist/ocelle-context-sidebar.d.ts` and `dist/ocelle-personal-rail.d.ts` each declare `label` and contain no
+`internalsKey`, and that `dist/naming.d.ts` declares `accessibleName` and no `internalsKey` (tasks.md T051); its plant
+is `stripInternal` removed from `packages/elements/tsconfig.json`. **Alternatives**: `@ignore` beside `@internal`
+(changes neither the manifest nor the declarations, and voids the manifest plant, above); a `#private` field (axe
+cannot read it, PLAN-FRESH-2-004); keeping the member in the declarations with a README note that it is not API (a
+typed member the manifest does not list is the mismatch the finding names). The same change for 005's `ocelle-icon` and `ocelle-brand-mark` (whose `img` role axe's role computation does not see either)
 was considered: it would change 005's source and its tests, which is outside this feature's scope, so it is raised to
 the operator at the plan gate as a follow-up for those elements and 005 is not touched here.
 

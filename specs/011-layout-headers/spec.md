@@ -113,6 +113,20 @@ decisions 6 and 7, measured in `reviews/phase-4/flex-column-probe.log`):
   size there, and in a flex column `align-self: stretch` on the host also does (decision 7, "Tighten the wording")
   (FR-023, FR-036).
 
+**Operator decisions at landing** (2026-11-15, human:jeroennouwsdev; `reviews/landing/round-1.md`, recorded in
+`reviews/phase-1/round-2.md`, `reviews/phase-2/round-4.md`, `reviews/phase-4/round-2.md` and
+`reviews/phase-5/round-2.md`): the blocking finding and all four notes are fixed in this feature, test-first.
+
+- Forwarded slots (L1-04): the empty-slot rule stays as it is (a forwarded `<slot>` is an assigned element), and the
+  README gains one statement for shell authors (Empty slot, FR-036).
+- Card `slotchange` (L1-01): a section header that leaves a compact card's `header` slot is drawn at its own size
+  also when a wrapper forwards a slot of its own into that `header` slot (FR-017).
+- Sidebar sections (L1-03): a `template` or `script` element in the sidebar's default slot is not a section and
+  draws nothing (FR-021, FR-022, US3-3, FR-036).
+- Internals key (L1-02): the published type declarations, like the manifest, do not declare the internals key
+  (FR-034; research.md R-11).
+- Rail README (L1-05): the README says that `ocelle-nav-item` is not released yet (FR-027, FR-036).
+
 **Constitution decision recorded by triage**: #8 and spec-kitty-design#529 ask for a "12 px mono uppercase" eyebrow.
 Constitution II says "No monospace anywhere", so the eyebrow is set in Schibsted Grotesk, uppercase and tracked
 (FR-030, FR-031).
@@ -184,7 +198,10 @@ cascade order), and the README says so.
 **Empty slot.** A slot is empty when no element is assigned to it and every text node assigned to it is empty or
 whitespace only. An assigned element is content even when it is `hidden` or has no box; the README says to remove
 such an element from the slot rather than hide it. Emptiness follows the slot's content as it changes: adding or
-removing content updates the layout without the host page doing anything else.
+removing content updates the layout without the host page doing anything else. A `<slot>` element that a shell's
+shadow root forwards into one of these slots (`<slot name="actions" slot="actions">`) is an assigned element, so it is
+content even when nothing is assigned to it; the README tells shell authors to forward a slot only when it has
+content (operator decision at landing, L1-04; FR-036).
 
 **Reading the accessibility tree.** As in mission 005, every accessibility-tree outcome is read from Chromium's full
 accessibility tree with ignored nodes filtered out, and every element whose tree is read carries an `id`.
@@ -399,7 +416,12 @@ landmark, and reflow at 320 px.
    neither hidden section has a box, padding or divider, and there is exactly one divider between the two visible
    sections, with `--ocelle-space-4` of padding on both sides as between the visible sections above; with the first
    section hidden, the first visible section has no divider of its own, so one divider lies between it and the head
-   (hidden sections still count as content, Empty slot above).
+   (hidden sections still count as content, Empty slot above). With a `<template>` and a `<script
+   type="application/json">` in the default slot before the first section, between the two visible sections and after
+   the last, neither has a box, padding or divider, there is exactly one divider between the two visible sections with
+   `--ocelle-space-4` of padding on both sides, and the first visible section has no divider of its own; with only a
+   `<template>` in the default slot, the head and footer dividers stay and meet with no padding between them, as with
+   every section hidden (they still count as content; FR-021, FR-022; operator decision at landing, L1-03).
 4. **Given** the same sidebar in a container shorter than its content, **When** it is measured, **Then** the footer
    follows the last section (it does not overlap it) and the sidebar's block size is its content's. The same holds
    when that container is a block container, a flex row and a grid, each with a definite block size; and the same
@@ -529,6 +551,14 @@ orientation with focus inside, and reflow at 320 px.
   the nesting.
 - A section header in a compact card's body, or nested inside another element in its `header` slot: not assigned to
   the card's `header` slot, so drawn at its own size, regular when `size` is not set (FR-017, US1-18).
+- A card inside a wrapper's shadow root, with a `<slot>` of the wrapper forwarded into the card's `header` slot beside
+  a section header assigned there directly: when the forwarded slot's content changes, the card still tracks the
+  section header, so the header is compact while it is in the `header` slot and drawn at its own size once it leaves
+  it, for example when its `slot` attribute is removed (FR-017; operator decision at landing, L1-01).
+- A shell that forwards an empty slot of its own into one of these elements (`<slot name="footer" slot="footer">` in
+  its shadow root, with nothing assigned to it): the forwarded `<slot>` is an assigned element, so the part is not
+  empty and takes its wrapper, gap, padding or divider (Empty slot, FR-005); the README tells shell authors to
+  forward a slot only when it has content (FR-036).
 - A section header outside a card, with `size="compact"`: drawn compact (US1-6).
 - A compact card whose header slot holds something other than a section header: the card's density changes only its
   own padding and gap.
@@ -562,6 +592,11 @@ orientation with focus inside, and reflow at 320 px.
   default-slot-to-footer dividers stay; when every section is hidden and the slot holds no text, those two dividers
   meet with no padding between them. The README says to remove such sections from the slot rather than hide them
   (Empty slot, FR-036).
+- A `<template>` or `<script>` element in the context sidebar's default slot (Alpine.js keeps `x-if` and `x-for`
+  templates in the page's DOM): it is not a section, so it has no box, padding or divider, and "the first section"
+  and "consecutive sections" skip it as they skip a hidden one. Like a hidden section it still counts as content for
+  the Empty slot rule (FR-021, FR-022, US3-3; operator decision at landing, L1-03). A page class that sets
+  `display: none` on a section still does not hide it (FR-022); the README says so.
 - Slotted content with user-agent margins (a `p` description or body, a `ul` section): the elements trim its edge
   block margins, so the gaps and padding the scenarios state hold; a page rule that sets those margins wins (FR-008).
   A `hidden` element at the edge of a card body or a sidebar head or footer is skipped: the first and last visible
@@ -570,7 +605,8 @@ orientation with focus inside, and reflow at 320 px.
   a section keeps its padding, full-width divider and block display, which the sidebar sets `!important` as the slot
   convention does; only its block margins are the page's (FR-008, FR-022, US3-3).
 - Plain `<a>` items in the personal rail: the user agent's link colour beats the rail's inherited chrome ink, so the
-  README says to give them `color: inherit` and a target of at least 24 px, or to use `ocelle-nav-item` (FR-027).
+  README says to give them `color: inherit` and a target of at least 24 px, or to use `ocelle-nav-item` once it is
+  released, which no release of `@ocelle/elements` does yet (FR-027).
 - Very long words and identifiers in any slot wrap inside the element and never cause horizontal scroll (US1-14,
   US2-5).
 
@@ -657,7 +693,11 @@ orientation with focus inside, and reflow at 320 px.
   unless the section header has its own valid `size` attribute (`"regular"` or `"compact"`), which wins; a section
   header with an absent, empty or invalid `size` takes the card's density (US1-8, US1-9, US1-17). A section header
   that is not itself assigned to a compact card's `header` slot (in its body, nested inside another element in the
-  `header` slot, or in a card nested in it) is drawn at its own size, regular when `size` is not set (US1-18).
+  `header` slot, or in a card nested in it) is drawn at its own size, regular when `size` is not set (US1-18). This
+  holds whatever else is assigned to the card's `header` slot, a `<slot>` that a wrapper's shadow root forwards into
+  it included: a change of the forwarded slot's content never makes the card lose track of the section headers
+  assigned directly to its `header` slot, so one that leaves it is drawn at its own size (operator decision at
+  landing, L1-01; research.md R-05).
 - **FR-018**: The card MUST expose no role or landmark of its own; a page that needs a region or an article wraps or
   labels its content itself, as the README says (US1-19).
 
@@ -689,6 +729,9 @@ orientation with focus inside, and reflow at 320 px.
   no gap between parts: two adjacent padded parts meet at the divider between them (FR-022).
   Text assigned to the default slot is rendered in document order but is not a section: it makes the default slot
   non-empty, gets `--ocelle-space-4` inline padding and no block padding, and gets no divider of its own (US3-11).
+  A `template` or `script` element assigned to the default slot is not a section: it is not drawn and gets no
+  padding or divider, and it still counts as content for the Empty slot rule (operator decision at landing, L1-03;
+  US3-3).
 - **FR-022**: A `--ocelle-border-width` divider in `--ocelle-color-rule` MUST lie between each two adjacent non-empty
   parts, where the parts are the head, the default slot (its sections and its text together) and the footer: one
   between the head and the default slot, at the default slot's block start, and one between the default slot and the
@@ -705,7 +748,9 @@ orientation with focus inside, and reflow at 320 px.
   `* { border: 0 solid }` leaves FR-021's padding and these dividers in place; only the section's block margins are
   the page's to set (FR-008) (US3-3). A section that is `hidden` (the attribute) has no box, padding or divider, whatever its element:
   "the first section" and "consecutive sections" above count visible sections only, while a hidden section still
-  makes the default slot non-empty (Empty slot; US3-3).
+  makes the default slot non-empty (Empty slot; US3-3). A `template` or `script` element in the default slot is not a
+  section (FR-021): the section rules, `!important` ones included, do not apply to it, so it keeps the user agent's
+  `display: none`, and the counts above skip it as they skip a hidden section (operator decision at landing, L1-03).
 - **FR-023**: The sidebar MUST fill its container's block size when its content is shorter, with the footer at the
   block end; when its content is taller, it MUST grow with its content and the footer follows the last section
   (US3-3, US3-4). The divider follows the content: when the sidebar is taller than its content, the free space lies
@@ -745,7 +790,8 @@ orientation with focus inside, and reflow at 320 px.
   chrome ink colour on the host, which an item takes when it inherits colour (a plain `<a>` does not unless the page
   gives it `color: inherit`); item size and density are the items' own (#12's `ocelle-nav-item`, expected at
   `--ocelle-size-rail-item`). The README says that `<a>` items need `color: inherit` (or are `ocelle-nav-item`
-  elements) and a target of at least 24 px (US4-2).
+  elements, once released: no release of `@ocelle/elements` ships `ocelle-nav-item` yet) and a target of at least
+  24 px (US4-2; operator decision at landing, L1-05).
 - **FR-028**: For the sidebar and the rail, the landmark's name MUST follow the README's Host ARIA rule (operator
   decisions "Keep FR-028" and "Follow convention"; constitution III: a name set on the host reaches the landmark). A
   host `aria-label`, when present, decides the name alone: a non-empty one is the name even when `label` is set, and
@@ -782,6 +828,9 @@ orientation with focus inside, and reflow at 320 px.
   user story's scenarios name, in light and dark.
 - **FR-034**: The manifest MUST list each element with every public property and attribute (type, default,
   description), its slots, and its empty event, part and CSS custom property lists; the `manifest` gate MUST pass.
+  The published type declarations (`dist/*.d.ts`) MUST NOT declare a member or export that the manifest omits as
+  internal: neither the sidebar's and rail's internals key member nor `internalsKey` itself is declared there
+  (operator decision at landing, L1-02; research.md R-11).
 - **FR-035**: The browser build and the module build MUST pass the `csp` gate; the fixture pages of every scenario
   MUST record no CSP violation and no request outside the allowed list, each paired with the positive outcome of its
   scenario.
@@ -799,6 +848,10 @@ orientation with focus inside, and reflow at 320 px.
     stated in each one's section;
   - the element conventions' Styles paragraph (once, not per element): variant rules that set colours or grounds go
     inside `@media not (forced-colors: active)`, layout-only variant rules outside it (FR-001);
+  - once, not per element, for shell authors: a `<slot>` that a shell forwards into one of these elements' slots is
+    an assigned element, so it counts as content even when nothing is assigned to it and the part takes its wrapper,
+    gap, padding or divider; forward a slot only when it has content, or remove the forwarding `<slot>` when it has
+    none (Empty slot; operator decision at landing, L1-04);
   - section header and page header: the slotted-heading rule (slot one heading element; the page's own heading rules
     win) and "place outside a `[data-ocelle-prose]` region";
   - section header: the eyebrow variant draws the heading upper case while its DOM text stays as written;
@@ -808,9 +861,11 @@ orientation with focus inside, and reflow at 320 px.
     landmarks with nothing to tell them apart, and that a host `aria-label` decides the landmark's name alone when
     present (a blank one leaves it unnamed even with a `label`), with `label` used only when the host has none;
   - sidebar: wrap each section in an element; a `hidden` section draws nothing of its own but still counts as
-    content, so remove sections from the slot rather than hide them all; a page rule does not change a section's
-    padding, inline margins, divider or display (they are `!important`, as the slot convention's), while its block
-    margins are the page's to set (FR-022);
+    content, so remove sections from the slot rather than hide them all; a `template` or `script` element in the
+    default slot (such as the templates Alpine.js keeps in the page) is not a section and draws nothing, but, like a
+    hidden section, still counts as content (FR-021; operator decision at landing, L1-03); a page rule does not
+    change a section's padding, inline margins, divider or display (they are `!important`, as the slot
+    convention's), while its block margins are the page's to set (FR-022);
   - sidebar and vertical rail: it fills its container's block size when its content is shorter and grows with its
     content when taller, scrolling being the container's, in a block, flex-row or grid container alike, because the
     host is `align-self: start`; a page rule on the host's `align-self` wins (so a page that sets it to `stretch`
@@ -821,7 +876,9 @@ orientation with focus inside, and reflow at 320 px.
     phase 4);
   - rail: the orientation example of US4-10, a viewport media query with an exclusive bound
     (`matchMedia("(width < Npx)")`); that items are sized by themselves (`--ocelle-size-rail-item`); and that `<a>`
-    items need `color: inherit` (or are `ocelle-nav-item` elements) and a target of at least 24 px (FR-027).
+    items need `color: inherit` (or are `ocelle-nav-item` elements, once released, with the statement that no
+    release of this package ships `ocelle-nav-item` yet) and a target of at least 24 px (FR-027; operator decision at
+    landing, L1-05).
 - **FR-037**: Every story of these elements MUST have committed visual baselines in light and dark, produced as #10's
   contributor note says, and the `visual` gate MUST pass.
 - **FR-038**: The `axe` gate MUST report no serious or critical finding on any story of these elements in either

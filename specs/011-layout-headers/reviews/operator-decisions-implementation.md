@@ -54,3 +54,11 @@ Recorded by the orchestrator; each is the operator's answer (human:jeroennouwsde
    "Merge at landing"). It replaces the earlier relayed rule to merge main whenever it moves. 011 does not merge
    `main` during its run; `/ocelle-land` merges it, with decision 4's baseline handling (a conflicting baseline PNG
    is regenerated in the pinned container in the merge) and the other resolutions already agreed.
+10. **2026-11-15, the red Sign-off check at landing** (PR #44, CI run 43764641711,
+    https://github.com/Ocelle-HQ/ocelle-components/actions/runs/43764641711/job/132966885442): "Accept the red
+    check". Commit 3a7bc81 ("docs(plan): squad round 3 — 4 confirmed, 2 forks", a planning commit) has no
+    Signed-off-by line, so `gate:signoff` over the PR range reports 1 finding in 65 commits. It lies before 767c097,
+    the merge of main (#10) that is phase 1's base, and `fold-history.sh` cannot fold across a merge commit; a
+    scripted rewrite of the earlier history would break the landing rule that only the fold script rewrites. The
+    history is kept, the check is recorded as a PR defect the operator accepted, and the squash commit on main carries
+    its own sign-off. An earlier choice, "Refold from PR base", was withdrawn when the fold script refused the merge.
