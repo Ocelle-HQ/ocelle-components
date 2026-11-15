@@ -374,6 +374,7 @@ export class OcelleNotice extends LitElement {
     }
     const first = !this.#connected;
     this.#connected = true;
+    this.announcer.shown();
     if (first && this.isFirstLoad()) {
       this.announcer.takeBaseline();
       return;
@@ -390,6 +391,7 @@ export class OcelleNotice extends LitElement {
       this.announcer.cancel();
       return;
     }
+    this.announcer.shown();
     if (!this.isLive()) return;
     if (this.liveRole() === "alert") this.alertPath("insertion");
     else this.announcer.trigger(true);

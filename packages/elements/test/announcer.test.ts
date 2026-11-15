@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Announcer, announcerDefaults } from "../src/live.ts";
 import type { Politeness, Reading } from "../src/live.ts";
-import { emptyStartCase } from "./announcer-rules.ts";
+import { emptyStartExpected, emptyStartReadings } from "./announcer-rules.ts";
 
 // The announcer's steps on their own (specs/010-feedback-forms research.md R-02, data-model.md § Announcement
 // transitions; T025's phase-end mutation run): an `Announcer` driven through its public methods under fake timers, its
@@ -150,7 +150,7 @@ describe("the wait", () => {
 
 describe("the wait's floor from the empty state's start (R-02 step 2; phase 2 stop 2, decision (a))", () => {
   it("ends no earlier than W of the load state in which the region's empty state began, counted from its start, and W after the last trigger", () => {
-    emptyStartCase(Announcer);
+    expect(emptyStartReadings(Announcer)).toEqual(emptyStartExpected);
   });
 });
 

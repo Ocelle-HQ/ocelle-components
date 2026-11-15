@@ -197,8 +197,11 @@ or a change of whitespace only, is no change. Removing `announce` stops the anno
 atomic, that never holds the visible content: a copy of the text is written into it `W` after the last trigger. `W` is
 twice Chromium's accessibility serialisation delay, 150 ms once `document.readyState` is `"complete"` and 350 ms before
 (`AXObjectCacheImpl::GetDeferredEventsDelay()` in `ax_object_cache_impl.cc`), so 300 ms after load and 700 ms before;
-the region is empty for that time first, so a screen reader is handed the whole text as a change. Changes closer
-together than `W`, in one task or in different tasks, merge: only the final text is announced, once, and a text that
+the region is empty for that time first, so a screen reader is handed the whole text as a change. The wait also ends
+no earlier than `W` of the load state in which the region last became empty, counted from then, so a change right
+after a first load is written no earlier than the pre-load `W` after the notice was first rendered (about 650 to 690
+ms after the change on Chromium), since the tests' reading of Chromium's serialisation holds an empty state begun
+before the load to the pre-load delay. Changes closer together than `W`, in one task or in different tasks, merge: only the final text is announced, once, and a text that
 is back to the last announced text when the wait ends announces nothing. A text that keeps changing more often than
 every `W` is not announced until it stops changing. A copy is held for `H`, 5000 ms, or until the next announcement but
 at least `W`, and then removed. `H` is a chosen figure, not measured: the tests cannot see when a screen reader fetches

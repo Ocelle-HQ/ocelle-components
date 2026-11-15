@@ -162,3 +162,20 @@ Shard 9 re-run on the fixed source (2026-11-15, this container, one job at a tim
 
 This fix changes no other source line. The test changes of round 1 (scenarios/notice.ts, plants.test.ts,
 fixtures/notice-plants.ts) are not mutated.
+
+## Phase 2 stop 2 (T025b): the wait from the empty state's start
+
+T025b's source lines (`src/live.ts`: `loadState`, `emptyNow`, `emptySince`, `live()`, `shown()`, `waitLength()`, and
+the mark in `release()`; `src/ocelle-notice.ts:377` and `:394`, the `shown()` calls) were run as
+`pnpm run gate:mutation -- --base 8a123f6 --files <entries>`. Base `8a123f6` is the commit before T025a, so only these
+lines are mutated (`--plan`: 2 shards, 1 cut within files). The shards ran one at a time in this container and were
+timed from the command's start to its exit.
+
+| Shard | Entries | Wall-clock | Result |
+|---|---|---|---|
+| 1 | `packages/elements/src/live.ts:12-130` | 222.0 s (3:42.0) | exit 0: 9 mutants on the changed lines of 1 file, none survived; 0 timeouts, 6 compile errors, 0 zero-mutant entries; 0 equivalent records |
+| 2 | `packages/elements/src/live.ts:131-287,packages/elements/src/ocelle-notice.ts` | 345.5 s (5:45.5) | exit 0: 18 mutants on the changed lines of 2 files, none survived; 0 timeouts, 2 compile errors, 0 zero-mutant entries; 0 equivalent records |
+
+The tests that bind these lines run on a fake clock with the shipped timing's two `D` values: the rule case of
+`test/announcer-rules.ts` and the two `notice-rules.test.ts` cases. So each of these mutants can be killed without
+the in-process timing (R1-05). The report does not say which test killed each mutant.
