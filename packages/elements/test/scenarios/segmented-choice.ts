@@ -1136,7 +1136,7 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
     expected: { changed: true, same: 0, tree: exposed("Lane filter", lanes, 1), events: [] },
   },
   {
-    // Plants: row states changing margins or borders (a resize loop); the observer left connected to removed segments.
+    // Plant: row states changing margins (a regroup then moves the row break, a resize loop).
     name: "Edge Cases: while the container resizes continuously (ten steps between one row and two rows) the rounding follows each step at its delivery, with no console message, no ResizeObserver loop error and no error event",
     fixture: true,
     run: async (driver, inPage) => {
@@ -1195,8 +1195,8 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
     },
   },
   {
-    // Plant: the joined group observing only the segments present at first render (an appended segment is then not
-    // rounded as the new last).
+    // Plant: regrouping and observing only at render, not on a child batch (an appended segment is then not rounded as
+    // the new last).
     name: "joined: a segment appended at the end becomes the row's last and takes the end rounding, the former last is squared, at the same group size or not",
     fixture: true,
     run: async (driver, inPage) => {
@@ -1460,5 +1460,83 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
       return { moved, kept, disabled, left: await driver.activeElement() };
     },
     expected: { moved: seg(1), kept: after, disabled: { focus: seg(2), value: "blocked" }, left: before },
+  },
+  {
+    // Added after the mutation run (reviews/phase-4/notes.md). Mutant: `aria-label` not observed (a host
+    // `aria-label` removed after a render that read it then leaves its text as the name).
+    name: "FR-006: a host aria-label present while the label changes, then removed, leaves the toolbar named by the new label",
+    fixture: true,
+    run: async (driver, inPage) => {
+      await mount(driver, inPage, page(segmentsOf(["All"]), 'label="Lane filter" aria-label="Filter by lane"'));
+      const host = (await tree(driver))[0];
+      await driver.setProperty("sc", "label", "Lanes");
+      const relabelled = (await tree(driver))[0];
+      await driver.setAttribute("sc", "aria-label", null);
+      return { host, relabelled, removed: (await tree(driver))[0] };
+    },
+    expected: {
+      host: { role: "toolbar", name: "Filter by lane", orientation: "horizontal" },
+      relabelled: { role: "toolbar", name: "Filter by lane", orientation: "horizontal" },
+      removed: { role: "toolbar", name: "Lanes", orientation: "horizontal" },
+    },
+  },
+  {
+    // Added after the mutation run. Mutant: the group not observed when `joined` is set after render (a later resize
+    // then leaves the rounding of one row).
+    name: "joined set after render: a later resize to two rows rounds each row on its own at the delivery, beside the one-row rounding at the set",
+    fixture: true,
+    run: async (driver, inPage) => {
+      await mount(driver, inPage, page(segmentsOf(lanes), 'label="Lane filter" value="mine"'));
+      const { twoRows } = await measured(driver, inPage);
+      await driver.setAttribute("sc", "joined", "");
+      await driver.afterResizeDelivery("box");
+      const set = await inPage(radii, null);
+      await resized(driver, inPage, twoRows - 8);
+      return { set, wrapped: { rows: await inPage(rows, null), radii: await inPage(radii, null) } };
+    },
+    expected: { set: [startRound, square, square, endRound], wrapped: { rows: [0, 0, 0, 1], radii: [startRound, square, endRound, bothRound] } },
+  },
+  {
+    // Added after the mutation run. Mutant: every element child taken as a segment (the text before the segments then
+    // pressed and the tab stop).
+    name: "a child of the group that is not a segment gets no state and is not pressed or a tab stop, beside the first segment pressed and taking the tab stop",
+    fixture: true,
+    run: async (driver, inPage) => {
+      await mount(driver, inPage, page(`<span id="note">Lanes:</span>${segmentsOf(["All", "Mine"])}`));
+      await driver.focus("before");
+      await driver.press("Tab");
+      return {
+        note: await inPage(() => ["aria-pressed", "aria-disabled", "tabindex"].map((name) => document.getElementById("note")?.getAttribute(name) ?? null), null),
+        tree: await tree(driver),
+        value: await inPage(valueOf, "sc"),
+        tabindexes: await inPage(tabindexes, "sc"),
+        focus: await driver.activeElement(),
+      };
+    },
+    expected: { note: [null, null, null], tree: exposed("Lane filter", ["All", "Mine"]), value: "all", tabindexes: ["0", "-1"], focus: seg(0) },
+  },
+  {
+    // Added after the mutation run. Mutant: a segment that leaves a joined group keeping its joined state (square
+    // corners and the negative margins outside the group).
+    name: "a segment that leaves a joined group loses the joined look: its corners are radius-2 and it has no negative margin, beside the same segment squared with a -1 px margin inside",
+    fixture: true,
+    run: async (driver, inPage) => {
+      await mount(driver, inPage, page(segmentsOf(["All", "Mine", "Blocked"]), 'label="Lane filter" value="all" joined'));
+      await measured(driver, inPage);
+      const look = (selector: string): unknown => {
+        const mine = document.querySelector(selector);
+        if (mine === null) return null;
+        const style = getComputedStyle(mine);
+        return { margin: style.marginInlineStart, radii: [style.borderStartStartRadius, style.borderStartEndRadius, style.borderEndEndRadius, style.borderEndStartRadius] };
+      };
+      const inside = await inPage(look, "#sc > ocelle-segment:nth-child(2)");
+      await inPage(() => {
+        const mine = document.querySelectorAll("#sc > ocelle-segment")[1];
+        if (mine !== undefined) document.body.append(mine);
+      }, null);
+      await inPage(frames, undefined);
+      return { inside, left: await inPage(look, "body > ocelle-segment") };
+    },
+    expected: { inside: { margin: "-1px", radii: square }, left: { margin: "0px", radii: bothRound } },
   },
 ];
