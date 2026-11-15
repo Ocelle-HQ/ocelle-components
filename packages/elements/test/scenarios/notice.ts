@@ -108,17 +108,24 @@ async function insertion(driver: Driver, markup: string, how: InsertHow = "inner
 }
 
 /**
- * Waits the pre-load `W` after a first load. A region's first state begins before the load ends, when the capture's
- * `D` is the pre-load one, and a write `W` (after load) after a trigger right after the load would end that state
- * before it had been kept for that `D`, so no write there could count under `"settled"`.
+ * After a first load, the wait before a body's first step; returns the longest wait it allows, for a capture's
+ * `atLeast`. There is none where the capture's pre-load `D` is at most the after-load `W`, as in process, where both
+ * load states share the test `D`: there a change in the first task after the load is written `W` later, after the
+ * region's first empty state has been kept for its `D`, and is announced once (phase 2 review round 1, R1-01). On the
+ * fixture pages (pre-load `D` 350 ms, after-load `W` 300 ms) the region's first empty state begins before the load
+ * ends, and a write `W` after a trigger right after the load ends it when it has been kept for 340 to 379 ms, against
+ * the pre-load `D` of 350 ms (measured), so there the bodies wait the pre-load `W` first, until the operator decides
+ * whether the notice is to meet that window (reviews/phase-2/stop-2.md).
  */
-export async function pastFirstLoad(driver: Driver): Promise<void> {
+export async function pastFirstLoad(driver: Driver): Promise<number> {
+  if (driver.W.loading / 2 <= driver.W.loaded) return 0;
   expectGap(await driver.after(driver.W.loading), driver.W.loading, 2 * driver.W.loading, "the wait after the first load");
+  return 2 * driver.W.loading;
 }
 
 /**
- * Mounts the page as first loaded with `markup` (the capture armed from before), waits the pre-load `W`, runs `steps`
- * and stops the capture.
+ * Mounts the page as first loaded with `markup` (the capture armed from before), leaves the wait of `pastFirstLoad`,
+ * runs `steps` and stops the capture.
  */
 async function loaded(driver: Driver, tag: string, markup: string, steps: () => Promise<void> = () => Promise.resolve()): Promise<Snapshot[]> {
   await driver.mount('<main id="c"></main>');
@@ -467,11 +474,11 @@ export const noticeScenarios: readonly NoticeScenario[] = [
     run: async (driver, tag) => {
       await driver.mount('<main id="c"></main>');
       await driver.firstLoad("c", fl('id="n" announce', "A"), tag);
-      await pastFirstLoad(driver);
+      const past = await pastFirstLoad(driver);
       await driver.batch([{ op: "text", id: "n", text: "B" }]);
-      // `stop` first waits for the hold to have passed since the capture started: the wait after the first load (below
-      // twice the pre-load W), W to the write, H, and W more.
-      const snapshots = await driver.liveCapture.stop({ atLeast: 2 * driver.W.loading + 2 * driver.W.loaded + driver.H });
+      // `stop` first waits for the hold to have passed since the capture started: the wait after the first load (none
+      // in process), W to the write, H, and W more.
+      const snapshots = await driver.liveCapture.stop({ atLeast: past + 2 * driver.W.loaded + driver.H });
       const text = (snapshot: Snapshot | undefined): string | undefined => snapshot?.regions.find((region) => region.host === "n")?.text;
       const from = snapshots.findIndex((snapshot) => text(snapshot) === "B");
       const until = snapshots.findIndex((snapshot, index) => index > from && text(snapshot) === "");

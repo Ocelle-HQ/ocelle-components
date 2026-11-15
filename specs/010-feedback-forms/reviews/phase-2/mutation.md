@@ -104,7 +104,7 @@ entry**; `live.ts` is unchanged since `f57394d`.
 | 6 | `packages/elements/src/live.ts:151-180` | `f5fdc92` | 333.3 s (5:33.3) | exit 0: 24 mutants on the changed lines of 1 file, none survived; 0 timeouts, 8 compile errors, 0 zero-mutant entries; 0 equivalent records |
 | 7 | `packages/elements/src/live.ts:181-210` | `f5fdc92` | 311.0 s (5:11.0) | exit 0: 16 mutants on the changed lines of 1 file, none survived; 0 timeouts, 4 compile errors, 0 zero-mutant entries; 1 equivalent record |
 | 8 | `packages/elements/src/live.ts:211-240` | `f5fdc92` | 301.8 s (5:01.8) | exit 0: 25 mutants on the changed lines of 1 file, none survived; 0 timeouts, 9 compile errors, 0 zero-mutant entries; 1 equivalent record |
-| 9 | `packages/elements/src/live.ts:241-251,packages/elements/src/ocelle-notice.ts:1-30` | `f5fdc92` | 311.6 s (5:11.6) | exit 0: 26 mutants on the changed lines of 2 files, none survived; 0 timeouts, 10 compile errors, 0 zero-mutant entries; 0 equivalent records |
+| 9 | `packages/elements/src/live.ts:241-251,packages/elements/src/ocelle-notice.ts:1-30` | `f5fdc92` | 311.6 s (5:11.6) | exit 0: 26 mutants on the changed lines of 2 files, none survived; 0 timeouts, 10 compile errors, 0 zero-mutant entries; 0 equivalent records **Corrected (review round 1, R1-02):** this "none survived" was not an assertion. The `StringLiteral` mutant of `ocelle-notice.ts:29` (`role ?? ""` replaced by `"Stryker was here!"`) is equivalent: a null role then reads `"stryker"`, which is neither `alert` nor `status`. No test can kill it, so its kill in this run was a timing kill. It survived in the review's whole-diff run (exit 1). See § Review round 1 for the rewritten line and the re-run. |
 | 10 | `packages/elements/src/ocelle-notice.ts:31-60` | `f5fdc92` | 264.8 s (4:24.8) | exit 0: 54 mutants on the changed lines of 1 file, none survived; 0 timeouts, 19 compile errors, 0 zero-mutant entries; 0 equivalent records |
 | 11 | `packages/elements/src/ocelle-notice.ts:61-90` | `f5fdc92` | 253.7 s (4:13.7) | exit 0: 16 mutants on the changed lines of 1 file, none survived; 0 timeouts, 1 compile error, 0 zero-mutant entries; 7 equivalent records |
 | 12 | `packages/elements/src/ocelle-notice.ts:91-120` | `f5fdc92` | 172.9 s (2:52.9) | exit 0: 0 mutants on the changed lines of 1 file, none survived; 0 timeouts, 0 compile errors, 1 zero-mutant entry; 0 equivalent records |
@@ -122,7 +122,7 @@ entry**; `live.ts` is unchanged since `f57394d`.
 | 24 | `packages/elements/src/ocelle-notice.ts:451-480` | `30572ae` | 199.1 s (3:19.1) | exit 0: 13 mutants on the changed lines of 1 file, none survived; 0 timeouts, 2 compile errors, 0 zero-mutant entries; 0 equivalent records |
 | 25 | `packages/elements/src/ocelle-notice.ts:481-508,packages/tokens/src/source.ts` | `30572ae` | 308.2 s (5:08.2) | exit 0: 28 mutants on the changed lines of 2 files, none survived; 0 timeouts, 11 compile errors, 0 zero-mutant entries; 1 equivalent record |
 
-**Result: every shard exit 0.** 597 mutants on the changed lines: 160 compile errors, 0 timeouts, 0 survived, 0
+**Result: every shard exit 0** (but see the shard 9 correction: one of its kills was a timing kill of an equivalent mutant). 597 mutants on the changed lines: 160 compile errors, 0 timeouts, 0 survived, 0
 without coverage: **mutation score 100 % of the 437 valid mutants**, with 14 equivalent records (13 new: three in
 `live.ts`, ten in `ocelle-notice.ts`; and the earlier `gates/bin/contrast.ts:116` record).
 
@@ -143,3 +143,22 @@ under the CI job's 10-minute limit.
   scenarios and plants keep their real timing (T002's `D`, unchanged).
 - `gate:plants` ran at `1ed4d04`, before these fixes; they change no file of a plant tree and no manifest
   (`custom-elements.json` regenerates unchanged), so it was not run again.
+
+## Review round 1 (R1-02): `ocelle-notice.ts:29` without the literal
+
+`liveRoleOf()` read the role as `(role ?? "").trim()...`. Its `StringLiteral` mutant was equivalent, and a review
+whole-diff run at `fdc0eff` showed it surviving. The line is now `role?.trim().split(/\s/)[0]?.toLowerCase()`, with
+the same result: a null role gives `undefined`, which is neither `alert` nor `status`, so `liveRoleOf` returns null.
+The line has no string literal and needs no equivalent record. Its `role.trim` mutant (the optional chaining
+removed) is a compile error under strict null checks.
+
+Shard 9 re-run on the fixed source (2026-11-15, this container, one job at a time), as
+`pnpm run gate:mutation -- --base 6c9400c --files packages/elements/src/live.ts:241-251,packages/elements/src/ocelle-notice.ts:1-30`
+(the shard's entries in `--plan` are unchanged):
+
+| Shard | Entries | Wall-clock | Result |
+|---|---|---|---|
+| 9 | `packages/elements/src/live.ts:241-251,packages/elements/src/ocelle-notice.ts:1-30` | 298.0 s (4:58.0) | exit 0: 25 mutants on the changed lines of 2 files, none survived; 0 timeouts, 11 compile errors, 0 zero-mutant entries; 0 equivalent records |
+
+This fix changes no other source line. The test changes of round 1 (scenarios/notice.ts, plants.test.ts,
+fixtures/notice-plants.ts) are not mutated.

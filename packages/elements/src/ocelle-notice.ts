@@ -26,7 +26,7 @@ type Pending = "none" | "insertion" | "role" | "live";
 
 /** A host role that makes the notice announce, or null: the first token of the role attribute (FR-009). */
 function liveRoleOf(role: string | null): "alert" | "status" | null {
-  const first = (role ?? "").trim().split(/\s/)[0]?.toLowerCase();
+  const first = role?.trim().split(/\s/)[0]?.toLowerCase();
   return first === "alert" || first === "status" ? first : null;
 }
 

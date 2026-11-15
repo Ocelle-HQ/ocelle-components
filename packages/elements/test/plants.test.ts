@@ -54,6 +54,7 @@ function noticeRow(family: string, plant: string, tag: string, scenario: NoticeS
 }
 
 const matrixAlert = matrixScenarios.find((scenario) => scenario.name.startsWith("SC-002 alert danger"));
+const matrixNoneInfo = matrixScenarios.find((scenario) => scenario.name.startsWith("SC-002 none info"));
 const loading = { name: noticeLoadingScenario.name, run: (_inProcess: Driver, tag: string) => noticeLoadingScenario.run(driver, tag) };
 
 /** The shipped-timing check, unplanted (the real values) and planted. */
@@ -120,6 +121,9 @@ const rows: readonly Row[] = [
   noticeRow("first load", "the constructor's isConnected rule", "ocelle-plant-constructed-connected", "US1-8 innerHTML", /^US1-8 innerHTML: announcements/),
   noticeRow("first load", "the constructor's isConnected rule", "ocelle-plant-constructed-connected", "US1-8 template", /^US1-8 template: announcements/),
   noticeRow("first load", "the constructor's isConnected rule", "ocelle-plant-constructed-connected", "US1-8 domparser", /^US1-8 domparser: announcements/),
+  noticeRow("first load, deaf window", "light-DOM changes ignored for 100 ms after a first load", "ocelle-plant-deaf-after-first-load", "US1-11 text", /^US1-11 text: announcements/),
+  noticeRow("first load, deaf window", "light-DOM changes ignored for 100 ms after a first load", "ocelle-plant-deaf-after-first-load", "US1-13 one task", /^US1-13 one task: announcements/),
+  noticeRow("first load, deaf window", "light-DOM changes ignored for 100 ms after a first load", "ocelle-plant-deaf-after-first-load", matrixNoneInfo ?? "SC-002 none info", /^SC-002 none info [a-z-]+: announcements/),
   noticeRow("first load", "announces on first load", "ocelle-plant-never-first-load", "US1-10 first load only", /^US1-10 first load only: announcements/),
   noticeRow("nested region", "the content wrapper also carries aria-live", "ocelle-plant-nested-region", "US1-15 status text change", /^US1-15 status text change: announcements/),
   noticeRow("host-role region", "internals.ariaLive left unset", "ocelle-plant-host-region", "US1-15 status text change", /^US1-15 status text change: announcements/),

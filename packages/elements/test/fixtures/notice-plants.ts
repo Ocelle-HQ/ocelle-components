@@ -208,6 +208,25 @@ class MoveForever extends OcelleNotice {
   }
 }
 
+/**
+ * First load, deaf window: light-DOM changes are ignored for 100 ms after a first load, so a change in the first task
+ * after the load is not announced (phase 2 review round 1, R1-01).
+ */
+class DeafAfterFirstLoad extends OcelleNotice {
+  #firstLoadAt = Number.NEGATIVE_INFINITY;
+
+  protected override isFirstLoad(): boolean {
+    const first = super.isFirstLoad();
+    if (first) this.#firstLoadAt = performance.now();
+    return first;
+  }
+
+  protected override onContent(): void {
+    if (performance.now() - this.#firstLoadAt < 100) return;
+    super.onContent();
+  }
+}
+
 /** Each plant by its tag. */
 export const noticePlants: Readonly<Record<string, CustomElementConstructor>> = {
   "ocelle-plant-no-wait": withAnnouncer(NoWait),
@@ -234,4 +253,5 @@ export const noticePlants: Readonly<Record<string, CustomElementConstructor>> = 
   "ocelle-plant-never-first-load": NeverFirstLoad,
   "ocelle-plant-no-move": NoMove,
   "ocelle-plant-move-forever": MoveForever,
+  "ocelle-plant-deaf-after-first-load": DeafAfterFirstLoad,
 };
