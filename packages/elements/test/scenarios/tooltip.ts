@@ -662,9 +662,12 @@ const showRows = [
         await track(driver);
         await driver.click("trg");
         await driver.pointer([rest]);
-        await pause(450);
+        await pause(500);
         const f = await frames(driver);
-        const clicked = { focus: await driver.focusPath(), visible: await driver.focusVisible("trg"), never: never(f, 400), to450: (f.frames.at(-1)?.t ?? 0) >= 450 };
+        const click = f.clicked;
+        if (click === null) throw new Error("the click on the trigger: the page recorded no time for it after the entry");
+        const last = f.frames.at(-1)?.t ?? 0;
+        const clicked = { focus: await driver.focusPath(), visible: await driver.focusVisible("trg"), never: never(f, 0) && last - click >= 400, to450: last >= click + 450 };
         await driver.press("Tab", { shift: true });
         await driver.press("Tab");
         return { at: f.left, observed: { clicked, keyboard: await bubbleOpen(driver) } };
@@ -846,7 +849,7 @@ const escapeRows = [
         await pause(450);
         const f = await frames(driver);
         return { at: f.left, observed: { never: never(f, 400), focus: await driver.focusPath(), visible: await driver.focusVisible("trg") } };
-      }),
+      }, 100),
     { never: true, focus: "trg", visible: true },
   ),
   row(
