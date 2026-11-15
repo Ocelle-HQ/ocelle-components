@@ -848,3 +848,55 @@ mutation: 12 mutants on the changed lines of 3 files, none survived; 0 timeouts,
 exit 0
 time 917 s
 
+
+### shards 15 to 17 again at 8c49287 (the R-12 rows changed)
+== at 8c49287: --files packages/elements/src/ocelle-tooltip.ts:241-270
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files packages/elements/src/ocelle-tooltip.ts:241-270
+packages/elements/src/ocelle-tooltip.ts:243: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-tooltip.ts:248: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-tooltip.ts:249: mutation: compile-error: LogicalOperator: replaced by node instanceof Node || this.contains(node)
+packages/elements/src/ocelle-tooltip.ts:262: mutation: compile-error: LogicalOperator: replaced by this.#trigger && this
+mutation: 24 mutants on the changed lines of 1 file, none survived; 0 timeouts, 4 compile errors, 0 zero-mutant entries; 0 equivalent records
+exit 0
+time 517 s
+
+== at 8c49287: --files packages/elements/src/ocelle-tooltip.ts:271-300
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files packages/elements/src/ocelle-tooltip.ts:271-300
+packages/elements/src/ocelle-tooltip.ts:274: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/ocelle-tooltip.ts:279: mutation: compile-error: LogicalOperator: replaced by deepActive() && this
+packages/elements/src/ocelle-tooltip.ts:280: mutation: compile-error: LogicalOperator: replaced by this.#trigger && this
+packages/elements/src/ocelle-tooltip.ts:281: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/ocelle-tooltip.ts:287: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/ocelle-tooltip.ts:292: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-tooltip.ts:293: mutation: compile-error: OptionalChaining: replaced by bubbles.top()
+packages/elements/src/ocelle-tooltip.ts:294: mutation: compile-error: LogicalOperator: replaced by top !== undefined || !within(this, top)
+packages/elements/src/ocelle-tooltip.ts:294: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-tooltip.ts:294: mutation: compile-error: EqualityOperator: replaced by top === undefined
+mutation: 39 mutants on the changed lines of 1 file, none survived; 0 timeouts, 10 compile errors, 0 zero-mutant entries; 0 equivalent records
+exit 0
+time 525 s
+
+== at 8c49287: --files packages/elements/src/ocelle-tooltip.ts:301-330
+$ node gates/bin/mutation.ts -- --base 78fe47542f77137d4fb2d45642f89029993a8af3 --files packages/elements/src/ocelle-tooltip.ts:301-330
+packages/elements/src/ocelle-tooltip.ts:305: mutation: record: ConditionalExpression: equivalent, a bubble already shown would hide and show again in this task, unseen: no frame, event or focus change between (false); true, which every show row would kill, shares the mutator (reviews/phase-4/notes.md)
+packages/elements/src/ocelle-tooltip.ts:319: mutation: record: CallExpression: equivalent, a loop left running only places a hidden bubble again, and hides it again once its trigger is gone (reviews/phase-4/notes.md)
+packages/elements/src/ocelle-tooltip.ts:304: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-tooltip.ts:304: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:304: mutation: compile-error: LogicalOperator: replaced by (!popover || bubble === null || this.disabled) && this.text === ""
+packages/elements/src/ocelle-tooltip.ts:304: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:304: mutation: compile-error: LogicalOperator: replaced by (!popover || bubble === null) && this.disabled
+packages/elements/src/ocelle-tooltip.ts:304: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:304: mutation: compile-error: LogicalOperator: replaced by !popover && bubble === null
+packages/elements/src/ocelle-tooltip.ts:304: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:304: mutation: compile-error: EqualityOperator: replaced by bubble !== null
+packages/elements/src/ocelle-tooltip.ts:307: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-tooltip.ts:307: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-tooltip.ts:307: mutation: compile-error: EqualityOperator: replaced by shown === undefined
+packages/elements/src/ocelle-tooltip.ts:307: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/ocelle-tooltip.ts:311: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-tooltip.ts:321: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-tooltip.ts:322: mutation: compile-error: OptionalChaining: replaced by this.#bubble.hidePopover
+mutation: 34 mutants on the changed lines of 1 file, none survived; 0 timeouts, 16 compile errors, 0 zero-mutant entries; 2 equivalent records
+exit 0
+time 566 s
+

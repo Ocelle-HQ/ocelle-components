@@ -340,3 +340,74 @@ touch); the other shards are left to CI.
 - **Not chosen:**
   - for the leave row: a longer delay on its page; measuring only and accepting the failures;
   - for the re-entry row: judging on the first move only; leaving the row unchanged.
+
+## The R-12 rows after the operator's decisions (`8c49287`)
+
+`8c49287` changes `packages/elements/test/scenarios/tooltip.ts` only (no source, delay or spec change). The stand-in
+`ocelle-test-tip` records, in the page, `Frames.left` (the first `pointerout` from the tracked tooltip to outside it)
+and `Frames.moved` (the last `pointerover` inside it, before the leave), both in ms from the first entry.
+`beforeDelay(what, attempt)` judges a run only when that time is under the 300 ms test delay, runs the body again up to
+3 times in all, and then throws with the measured times: it never passes without a judged run.
+
+### Rows changed (old and new full names, measured times)
+
+Times are page-side, in ms from the first entry, unloaded, 3 runs in each harness (in process, then the fixture twin).
+
+1. R-12 leave row. Pauses before the leave: 100 + 50 ms became 35 + 35 ms. Leave at 199.8, 182.8, 182.8 / 183.2,
+   183.2, 183.5 ms (was 266 to 283 ms). It asserts a move inside the tooltip, no bubble before or after the leave,
+   and frames up to 450 ms.
+   - Old: "Hover delay, moves inside the tooltip, then leaving before the delay (R-12): the pointer enters the trigger,
+     moves onto its inner span and leaves both boxes at 150 ms: no bubble at any frame of a 450 ms wait from the entry"
+   - New: "Hover delay, moves inside the tooltip, then leaving before the delay (R-12): the pointer enters the trigger,
+     moves onto its inner span and leaves both boxes before the delay: no bubble at any frame of a 450 ms wait from the
+     entry"
+2. Re-entry row. Pauses 100 + 100 ms removed; judged on the move back (`Frames.moved`, the later of the two moves). The
+   move back came at 166.5, 149.7, 133.3 / 133.4, 133.4, 133.4 ms (was 333 to 366 ms). It asserts no shown frame
+   before 300 ms, a shown frame before the move back + 300 ms (the earliest a restarted timer could show it), and
+   one by 450 ms.
+   - Old: "Hover delay, moves inside the tooltip before the delay (R-12's delay rule, the matrix's re-entry): the
+     pointer enters the trigger, moves onto its inner span and back at 100 ms intervals: the timer is not restarted,
+     shown by 450 ms from the first entry and not before 150 ms"
+   - New: "Hover delay, moves inside the tooltip before the delay (R-12's delay rule, the matrix's re-entry): the
+     pointer enters the trigger, moves onto its inner span and back onto the trigger's edge, both moves before the
+     delay: the timer is not restarted, not shown before the 300 ms delay from the first entry, shown before 300 ms
+     from the move back and by 450 ms"
+3. "Escape, then a brief hover (FR-033, R-12): shown by keyboard focus and hidden by Escape, focus kept on the
+   trigger; the pointer enters the trigger and leaves both boxes within 100 ms: no bubble at any frame of a 450 ms wait
+   from the entry". Name and pauses unchanged; now judged through `beforeDelay` on the measured leave. Leave at 83.0,
+   82.5, 82.9 / 83.1, 83.3, 83.1 ms, so "within 100 ms" holds.
+
+### Break checks (temporary source edits, reverted, never committed)
+
+- Bubble shown on entry with no delay (`if (delay > 0 && false)` in `#onPointerover`): all three rows fail in both
+  harnesses. Leave row `beforeLeave: true`; re-entry row `beforeDelay: true`; Escape row `never: false`.
+- Re-entry restarts the timer (the `#inside(event.relatedTarget)` return removed from `#onPointerover` and
+  `clearTimeout` added before the new timer): the re-entry row fails in both harnesses with `beforeRestart: false`.
+  `by450` stayed `true` under this break (restart from about 133 ms shows by about 433 ms), so the old "shown by
+  450 ms" bound alone would not catch it; the bound from the move back does.
+
+### Repeat runs at `8c49287`
+
+- `tooltip.test.ts` (in process): 104 of 104 passed, 3 runs of 3. `test/browser/tooltip.test.ts` (fixture twin, same
+  scenarios): 104 of 104 passed, 3 runs of 3.
+- `pnpm test` run 1 (`full-test-8c49287.log`, 13 m 55 s): **1 of 5067 tests failed**, a tooltip row this change does
+  not touch: "Click focus (FR-031): a pointer click on the button trigger and the pointer moved off at once: focus on
+  the trigger without :focus-visible, no bubble at any frame of a 450 ms wait; then Shift+Tab and Tab back (keyboard
+  focus) show it at once" (in process). Alone: 3 of 3 passed. Reading: the same timing class as the old leave row:
+  the click is the entry, and the move off is timed by the host; under load it can come after 300 ms, so the bubble
+  rightly shows. Not changed: whether to put it under `beforeDelay` is a question for the operator.
+- `pnpm test` run 2 (`full-test-8c49287-run2.log`, 13 m 58 s): **5067 of 5067 passed**.
+- The drawer row "Input during the exit, motion on: two close-control clicks …" passed in both runs.
+- The suite is therefore not yet green twice in a row at `8c49287`.
+
+### Mutation at `8c49287`
+
+The changed rows kill mutants in the pointer handlers, the timer and `#hide`, so shards 15 to 17 of the final plan ran
+again, `gate:mutation -- --base 78fe475 --files packages/elements/src/ocelle-tooltip.ts:<lines>`, output appended to
+`mutation.log`. No new survivor; the counts equal the final runs at `1f91513`.
+
+| Shard | Entries | Mutants on changed lines | Survived | Timeouts | Compile errors | Equivalent records | Exit | Time |
+|---|---|---|---|---|---|---|---|---|
+| 15 | `:241-270` | 24 | 0 | 0 | 4 | 0 | 0 | 517 s |
+| 16 | `:271-300` | 39 | 0 | 0 | 10 | 0 | 0 | 525 s |
+| 17 | `:301-330` | 34 | 0 | 0 | 16 | 2 | 0 | 566 s |
