@@ -81,8 +81,8 @@ keyboard mechanism (`src/roving.ts`, with an origin filter so keys from panel co
 selection model (`src/selection.ts`) hold the key maps and the value rules of FR-009 to FR-011a as pure functions
 tested in the in-process project Stryker runs (R-04, R-05, R-13). The segmented choice is a toolbar; its joined
 variant observes its own and its segments' sizes and rounds each row through custom states, raising the engine floor
-to Chromium 125 / WebKit 17.4 (R-06), if the operator confirms plan decision 1. Otherwise it rounds each row through
-element-owned row attributes and keeps the floor (R-06 Status). The listbox emits `ocelle-listbox-activate` for a
+to Chromium 125 / WebKit 17.4 (R-06; plan decision 1, decided yes at the phase 4 stop, T059a,
+`reviews/phase-4/decision-1.md`). The listbox emits `ocelle-listbox-activate` for a
 confirm gesture (R-18). The copy field is request-only with a native Copy button and a polite live region written
 outside Lit, and dispatches its request after the cleared region has reached the accessibility tree (R-07). The link
 wraps a native anchor, intercepts plain activations (Enter included on an anchor without `href`), resolves `href` at
@@ -105,10 +105,9 @@ Storybook's gates (axe-core 4.14.0, the pinned capture container).
 scenario 12 (R-09; not mutated); `storybook-integration` for the story test; #10's `visual` and `axe` gates; the
 `contrast` gate over `@ocelle/tokens`' extended pair list (R-17).
 
-**Target Platform** (conditional on plan decision 1, still open; operator decision Q2 (c)): Chromium 125+ and WebKit
-17.4+ (raised from 120 / 16.4 for `:state()`, R-06) if the operator confirms the floor after kitty-mission-ui's
-WebKitGTK and WKWebView minimums are known; otherwise Chromium 120+ and WebKit 16.4+, unchanged, with the row-attribute
-alternative (R-06 Status). Only Chromium is measured.
+**Target Platform** (plan decision 1, decided yes at the phase 4 stop, T059a, 2026-11-15,
+`reviews/phase-4/decision-1.md`): Chromium 125+ and WebKit 17.4+ (raised from 120 / 16.4 for `:state()`, R-06); the
+operator confirms that kitty-mission-ui supports these engines. Only Chromium is measured.
 
 **Project Type**: library (web components).
 
@@ -128,10 +127,10 @@ attribute, no ID reference across a shadow root, real keyboard input in tests, m
 | I. `ocelle-` names, no I/O, small interface, manifest | Nine `ocelle-*` tags; events `ocelle-listbox-change`, `ocelle-listbox-activate`, `ocelle-tabs-change`, `ocelle-segmented-choice-change`, `ocelle-copy-field-request`, `ocelle-link-activate`, all bubbling and composed. No I/O: the copy field emits a request and never touches the clipboard; the link's only navigation is `location.assign` of an `href` that `navigationTarget` allows at activation, after an uncancelled event (FR-047, R-08), which is the documented behaviour, not I/O (SPEC-1-22). The `ResizeObserver` of R-06 observes the element and its own segments. Manifest per `contracts/elements.md`, every list stated; `roving.ts`, `selection.ts`, `link-target.ts` and `internals.ts` are internal, and the internals symbol is not surface. |
 | II. Tokens only, brand rules | All styles from tokens (`color-accent-low`, `color-accent-strong`, `color-hover-bg`, `color-disabled-ink`, `bar-width`, `border-width`, `control-border`, `inset`, `sheet`, `link`, `link-hover`, `focus-*`, `target-min`, `radius-2`, `space-2`, `icon-size`), per element and ground in R-15. Ochre fill never alone: every selected state has an `accent-strong` bar. #5 rule 1 (extended) held everywhere: a control on `accent-low`, `inset` or `hover-bg` is bordered in `accent-strong`, so the joined pressed (and hovered) segment's lines and the Copy control's divider against the `inset` well are `accent-strong` at `border-width` (operator decision PLAN-CORRECTNESS-1-010 (a)); no `control-border` line bounds `accent-low`, `inset` or `hover-bg`; no control boundary on `color-rule`. No monospace: the copy field's text uses the sans with tabular figures. No new token; `@ocelle/tokens` gains the checked non-text pairs of `color-accent-strong` on the six main grounds (R-17, operator decision PLAN-CORRECTNESS-1-011 (b)). |
 | III. Accessible by construction | Children in the parent's tree scope; ids generated only in that scope (R-02, SC-003). Full keyboard models of their ARIA patterns with roving tabindex: listbox, tablist (the role on the shadow `part="tablist"`, so panels are beside it, R-01), toolbar of toggle buttons for the segmented choice (operator decision PLAN-A11Y-SECURITY-1-008 (a)); keys taken only from the parent's own children (R-04); focus kept across moves and on a child that becomes disabled, through a focus record that counts a blur only when the removal or move caused it (`relatedTarget` null and the child in the records its `focusout` microtask takes), so neither a later host move nor a host re-render on blur steals focus back and the user can always Tab or click out (WCAG 2.1.2; R-03); the focus ring of options, tabs and segments drawn on a raised `::after` above every neighbour while the focused host stays unraised, so no side is cut and no neighbour's `accent-strong` line is covered (R-06, R-15). Host `aria-label` decides naming on the listbox and the segmented choice; `ocelle-tabs` is named from `label` only, a host `aria-label` not forwarded (FR-006's tabs exception, operator decision during phase 3, R-01; exception to this principle in Complexity Tracking); host `aria-label` forwarded to the link's anchor with exactly one named node, and the README requires it to contain the visible text (WCAG 2.5.3, R-08). Targets at `target-min` (R-10). Non-text contrast of every bar, border and divider checked automatically: `@ocelle/tokens`' pair list (R-17) and the element pairs check over each stylesheet (R-17). Forced-colours `Highlight` bars as pseudo-elements with `forced-color-adjust: none`, system boundaries, `Highlight` focus rings (outlines, and the raised ring pseudo-elements with `forced-color-adjust: none`) never clipped (R-03, R-06, R-15). Axe on every story through #10, internals stored where axe reads them (R-01, operator decision PLAN-FRESH-1-001 (a)); one exception, node by node, for the scrolling listbox story's clipped options (FR-051, operator decision 2026-11-14 option (a); Complexity Tracking); `aria-labelledby` only on the assigned tab panel, so axe 4.14.0 reports no serious `incomplete` on the tabs (R-02). The copy field's request reaches the host after the cleared live region is in the tree (R-07, operator decision PLAN-TESTABILITY-1-011 (a)); that it arrives outside the click's task is stated in the README for hosts that copy from the page (operator decision PLAN-FRESH-2-004 (a)). |
-| IV. Strict CSP, offline | Adopted stylesheets only; no `style` attribute (joined rounding through custom states, or row attributes if plan decision 1 is not confirmed, R-06); browser build under the fixture's strict CSP in every browser scenario; the `file:` scenario carries the same policy in a `<meta>` element (R-09). |
+| IV. Strict CSP, offline | Adopted stylesheets only; no `style` attribute (joined rounding through custom states, R-06; plan decision 1 decided yes); browser build under the fixture's strict CSP in every browser scenario; the `file:` scenario carries the same policy in a `<meta>` element (R-09). |
 | V. Storybook, behaviour tests | Stories per variant and state in light and dark with baselines from #10's pinned container, an icon story per child (R-12); from phase 2 on the baselines are produced under docker in the pinned container and checked by the `visual` gate in each phase, with CI confirming them at landing (operator decision 2026-11-14, `reviews/phase-2/operator-decisions.md`). The states with their own paint have their own stories too: hovered option, tab and segment (default and joined), the focused Copy control and the focused tab panel (FR-050; analysis C1, operator decision Q3 (a)); every event, payload and key path asserted with real input, and every paint claim read from computed styles or pixels, not from baselines alone (R-11, R-15). Stories written in the red commit (operator decision I3). |
 | VI. Consumer-driven, own code | Needs from #14 and spec-kitty-design #511, #521, #522, #527, #534 (read only as requirements, not available to this session); first consumer #16's Open project dialog, whose confirm gesture is `ocelle-listbox-activate` (operator decision PLAN-CORRECTNESS-1-018 (b)). Form association has no consumer need and stays out (spec Assumptions). Nothing copied. |
-| VII. Semver | Nine elements, six events, parts and attributes: MINOR in `@ocelle/elements`. The `copy-control` part's surface is stated as its box, accessible name and events, so the later `ocelle-button` swap is a PATCH under that stated surface (operator decision PLAN-CORRECTNESS-1-017 (a); README, FR-044). The README's module rule is amended (a parent's entry defines its children, R-16). If plan decision 1 is confirmed, the engine-floor raise is documented in the README and the changelog (before 1.0.0 the surface may change; a floor raise is named as a notable change); if not, the README states that the segment hosts' `data-ocelle-row-*` attributes are internal, not a styling hook, and may change in a PATCH (contracts/elements.md § `ocelle-segmented-choice`; second analysis U2). `@ocelle/tokens`: new checked pairs only, no token change, named in its changelog (R-17). |
+| VII. Semver | Nine elements, six events, parts and attributes: MINOR in `@ocelle/elements`. The `copy-control` part's surface is stated as its box, accessible name and events, so the later `ocelle-button` swap is a PATCH under that stated surface (operator decision PLAN-CORRECTNESS-1-017 (a); README, FR-044). The README's module rule is amended (a parent's entry defines its children, R-16). Plan decision 1 is decided yes (T059a, `reviews/phase-4/decision-1.md`), so the engine-floor raise to Chromium 125 / WebKit 17.4 is documented in the README and the changelog (before 1.0.0 the surface may change; a floor raise is named as a notable change); the row-attribute alternative and its README statement (second analysis U2) are not built. `@ocelle/tokens`: new checked pairs only, no token change, named in its changelog (R-17). |
 | VIII. Test-first, non-vacuous | Each phase red first with story tests in the red commit, after the phase's scaffold (`.claude/skills/speckit-story-implement`); every "does not" outcome paired with a named plant and a falsifiable setup (`contracts/elements.md` § Pairings), plant runs recorded in `reviews/phase-N/plants.md`; the pure modules' tests run in the in-process `elements` project, the one the elements Stryker configuration runs, so their mutants are killed there (R-13); the link's navigation decision is killed in process, not only on the unmutated fixture (R-08, R-11); timing claims measured as the platform orders them (R-06, R-07); #23's rules for timeouts. Phase 1 has one exemption-candidate task (the #10 recheck, documentation only). |
 | Workflow gates | No new gate. The constitution's merge gates as the repository defines them must pass in every phase: `typecheck`, `lint`, `test-lint`, `style-lint`, `brand-rules`, `unit-tests`, `signoff`, `pins`, `config-copies`, `manifest`, `csp`, `contrast`, `prefix`, `plants`, `mutation`, and #10's `storybook-build`, `visual` and `axe` (tasks T028; analysis G4). The `visual` gate runs under docker in these sessions; no podman cross-engine check is possible here, which each phase records, and CI's run of both engines confirms the baselines at landing (operator decision 2026-11-14, `reviews/phase-2/operator-decisions.md`). The Vitest configuration gains `elements-browser-file`, excluded from mutation runs, with its configuration test first (R-09). |
 
@@ -141,13 +140,14 @@ attribute, no ID reference across a shadow root, real keyboard input in tests, m
    alternative is row attributes the element writes on segment hosts (`data-ocelle-row-*`), the same element-owned
    model as R-01's states and R-03's `tabindex`, read by the segment's own CSS with no cross-element call and no floor
    raise. Open before this decision: kitty-mission-ui's WebKitGTK (Linux) and WKWebView (macOS) minimums, which this
-   repository has never recorded (PLAN-FRESH-1-012); the earlier "touches no consumer" claim is withdrawn. **Still
-   open** (analysis U1, operator decision Q2 (c)). The operator asks kitty-mission-ui first. Phase 4 stops for this
-   decision before it starts, before T060 (stop task T059a; second analysis U1, operator decision Q3 (b)). "Yes" to
-   the floor: T064, T066 and T067 as written. "No": T062a, T064a, T066a and T067a replace the
-   custom-state parts, the floor stays at Chromium 120 / WebKit 16.4, and phase 4 still has its tasks. The same
-   request asks kitty-mission-ui and the console owners whether a clipboard write from the deferred copy request
-   still counts as user-activated in those engines (R-07, PLAN-FRESH-2-004 (a)).
+   repository had never recorded (PLAN-FRESH-1-012); the earlier "touches no consumer" claim is withdrawn. It stayed
+   open at the plan (analysis U1, operator decision Q2 (c)), and phase 4 stopped for it before T060 (stop task T059a;
+   second analysis U1, operator decision Q3 (b)). **Decided: yes** (operator answer at T059a, 2026-11-15,
+   human:jeroennouwsdev; `reviews/phase-4/decision-1.md`; R-06 Status): kitty-mission-ui supports WebKit 17.4 and
+   Chromium 125 or later, so the floor is raised to Chromium 125 / WebKit 17.4. T064, T066 and T067 apply as
+   written; T062a, T064a, T066a and T067a are skipped. The same request asked kitty-mission-ui and the console owners
+   whether a clipboard write from the deferred copy request still counts as user-activated in those engines (R-07,
+   PLAN-FRESH-2-004 (a)); that question is not answered by this decision and stays open.
 2. **Generated ids for tabs** (R-02): `ocelle-tabs` writes `id`, `aria-controls` (every paired tab) and
    `aria-labelledby` (the assigned panel only, for axe 4.14.0, PLAN-FRESH-2-002) on its light-DOM children; a host's
    own `id` on a child is kept. ARIA element reflection would avoid ids but needs
@@ -207,7 +207,7 @@ packages/elements/
 │   ├── roving.ts                  # internal keyboard mechanism and origin guard (R-04)
 │   ├── selection.ts               # internal selection model, batching, focus record (R-05, R-03)
 │   ├── link-target.ts             # internal navigation decision (R-08)
-│   ├── internals.ts               # internal symbol for internals (R-01); the row-state method only if decision 1 is confirmed (R-06)
+│   ├── internals.ts               # internal symbol for internals (R-01) and the row-state method (R-06; decision 1 decided yes)
 │   ├── ocelle-listbox.ts, ocelle-option.ts
 │   ├── ocelle-tabs.ts, ocelle-tab.ts, ocelle-tab-panel.ts
 │   ├── ocelle-segmented-choice.ts, ocelle-segment.ts
@@ -292,12 +292,12 @@ unreflected `status` attribute. Each "does not" outcome among them is paired in 
    violation, no serious or critical `incomplete`; plant: `aria-labelledby` on every panel);
    the axe defect recorded in `reviews/phase-3/spike.md` for an upstream report; manifest; README (tabs are named
    with `label`; a host `aria-label` does not name the tablist, checked by the documentation test).
-4. **US3 Segmented choice (P3)**: the phase stops before it starts (before T060) until plan decision 1 is recorded
-   (T059a; operator decision Q3 (b) of the second analysis). `ocelle-segmented-choice` (toolbar), `ocelle-segment`;
+4. **US3 Segmented choice (P3)**: the phase stopped before it started (before T060) until plan decision 1 was
+   recorded (T059a; operator decision Q3 (b) of the second analysis); it is decided yes
+   (`reviews/phase-4/decision-1.md`, R-06 Status). `ocelle-segmented-choice` (toolbar), `ocelle-segment`;
    the joined variant with the internal `ResizeObserver` on the group and its segments and the shared-line technique;
-   if decision 1 is confirmed, custom states (R-06) and the engine-floor raise in the README; if not, element-owned
-   row attributes documented as internal (not a styling hook, may change in a PATCH), the floor unchanged, tasks
-   T062a, T064a, T066a and T067a (R-06 Status); the
+   custom states (R-06) and the engine-floor raise to Chromium 125 / WebKit 17.4 in the README (T064, T066, T067;
+   the row-attribute tasks T062a, T064a, T066a and T067a are skipped); the
    focused segment's ring on a raised `::after`, the host not raised by focus
    (R-06); scenarios US3-1 to 19 with resize measurements after the observations' delivery, the four-sided ring read
    beside the pressed and a hovered segment, and the `accent-strong` shared-line read with a focused neighbour on
@@ -307,7 +307,8 @@ unreflected `status` attribute. Each "does not" outcome among them is paired in 
    a spike-page host listener writing the clipboard from the deferred request in Chromium with no clipboard permission
    granted, after two controls in the same page hold (a write with no prior click rejects, a write synchronously in the
    click handler resolves), `navigator.userActivation.isActive` at dispatch and the result recorded, or, if the controls
-   cannot hold, the question recorded as unanswerable here and sent open with decision 1; PLAN-FRESH-2-004 (a),
+   cannot hold, the question recorded as unanswerable here and sent open with the WebKit question (decision 1 itself
+   is answered, R-06 Status); PLAN-FRESH-2-004 (a),
    PLAN-FRESH-3-004); `ocelle-copy-field` (R-07) with the imperative live-region text and `ocelle-icon` defined by its
    entry; scenarios US4-1 to 12 with the clipboard observer, the live-region MutationObserver, and for US4-6 a
    synchronous listener with the frame-order record and the tree-update history (no tree read from the listener);
@@ -323,7 +324,7 @@ unreflected `status` attribute. Each "does not" outcome among them is paired in 
    navigates itself applies (FR-047), that hosts needing other schemes handle the event (US5-9), and FR-049's three
    statements (a modified activation keeps the browser's new tab or window; a modified activation without `href` does
    nothing; a host that wants a new window handles the event), each checked by the documentation test (analysis G2).
-7. **Polish**: README overview (nine elements, engine floor as decided at the phase 4 stop, T059a, module rule) and one README example
+7. **Polish**: README overview (nine elements, engine floor Chromium 125 / WebKit 17.4 as decided at the phase 4 stop, T059a, module rule) and one README example
    per SC-009 use (the Open project folder picker, tabbed screens, segmented choices, in-text links, copy fields),
    checked by the documentation test, red first (analysis G3); CHANGELOG MINOR entry, the composed dialog
    + listbox story if #16 has merged (FR-054), a full gate run per quickstart.md.

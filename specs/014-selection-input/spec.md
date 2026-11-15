@@ -123,6 +123,14 @@ the T040 spike in `reviews/phase-3/spike.md`):
   tabs with `label` (FR-006, FR-019, User Story 2 scenario 24). The listbox and the segmented choice keep the host
   `aria-label` path. Options (a), moving the attribute off the host, and (b), accepting two named nodes, were declined.
 
+**Operator decision at the phase 4 stop** (2026-11-15, human:jeroennouwsdev; `reviews/phase-4/decision-1.md`, plan
+decision 1, task T059a):
+
+- Yes, raise the engine floor. kitty-mission-ui supports WebKit 17.4 and Chromium 125 or later, so the joined segmented
+  choice rounds its rows through CSS custom states (`:state()`) and the package's engine floor rises from Chromium 120 /
+  WebKit 16.4 to Chromium 125 / WebKit 17.4 (FR-029, FR-056; plan research R-06). No segment host carries a row
+  attribute. The options "no, keep the floor" and "wait for the answer" were declined.
+
 **Dependency on #10 (not merged).** The Storybook workbench of #10 (branch `claude/010-storybook-workbench`,
 `specs/006-storybook-workbench`) gives the `visual` gate (baselines in a pinned container, light and dark), the `axe`
 gate (axe on every story, serious and critical findings fail) and its contributor note (006 FR-025). Its design is

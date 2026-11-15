@@ -310,7 +310,7 @@ frame is not used by this step.
 WebKit 16.4 to Chromium 125 / WebKit 17.4, recorded in the README's engines section (mission 005's rule) and listed
 under the plan's "Decisions the operator should see". The real trade-off (PLAN-FRESH-1-012):
 
-- custom states (chosen here): no host-visible attribute; a cross-element call through the segment (above); the floor
+- custom states (chosen here, and confirmed by the operator's "yes" to plan decision 1, Status below): no host-visible attribute; a cross-element call through the segment (above); the floor
   raised for the whole package;
 - element-owned row attributes on segment hosts (`data-ocelle-row-start` etc.): the same model as R-01's state
   attributes and R-03's `tabindex` (written by the parent, documented as element-owned, overwritten on every update),
@@ -319,20 +319,22 @@ under the plan's "Decisions the operator should see". The real trade-off (PLAN-F
 The earlier claim that the floor raise "touches no consumer today" is withdrawn: Kitty Desktop on Linux runs the
 distribution's WebKitGTK and on macOS WKWebView, and their minimum versions are not recorded in this repository
 (README § Engines: WebKit is not measured). Before the operator takes plan decision 1, kitty-mission-ui is asked for
-its WebKitGTK and WKWebView minimums; the answer is recorded here. **Status** (analysis U1, operator decision Q2 (c),
-2026-11-13; stop placement: second analysis U1, operator decision Q3 (b)): decision 1 stays open. The operator asks
-kitty-mission-ui for its minimums first. Phase 4 stops for the answer before it starts, before T060 (task T059a), and
-the answer is recorded here. If the operator then confirms the floor, phase 4 implements the custom states (T064, T066, T067). If not, phase 4
-implements the row attributes instead (T062a, T064a, T066a, T067a), and the package floor stays Chromium 120 / WebKit
-16.4. Under the alternative, the parent writes `data-ocelle-row-start`, `data-ocelle-row-end`, `data-ocelle-first-row`
-and `data-ocelle-last-row` on segment hosts. These attributes are element-owned and overwritten on every regroup. The
-segment's own CSS reads them (`:host([data-ocelle-row-start])` and so on), and no internal method is called on the
-segment. The row attributes are internal: they are not manifest attributes, not part of the public surface and not a
-styling hook (hosts must not select on them), and their names and values may change in a PATCH release. The README
-says so (T064a, T067a; contracts/elements.md § `ocelle-segmented-choice`; second analysis U2). The shared-line,
+its WebKitGTK and WKWebView minimums; the answer is recorded here. **Status: decided, yes** (operator answer at the
+phase 4 stop, T059a, 2026-11-15, human:jeroennouwsdev; `reviews/phase-4/decision-1.md`; asked as a multiple-choice
+question with the options "no, keep the floor", "yes, raise the floor" and "wait for the answer"). The operator
+confirms that kitty-mission-ui supports WebKit 17.4 and Chromium 125 or later. The joined segmented choice rounds its
+rows through custom states (`:state()`), and the package floor is raised from Chromium 120 / WebKit 16.4 to Chromium
+125 / WebKit 17.4. Phase 4 implements the custom states as written (T064, T066, T067); the row-attribute tasks T062a,
+T064a, T066a and T067a are skipped by this decision. The history: the decision stayed open at the plan (analysis U1,
+operator decision Q2 (c), 2026-11-13) and phase 4 stopped for it before T060 (second analysis U1, operator decision
+Q3 (b)). The declined alternative, kept for the record only: the parent would have written `data-ocelle-row-start`,
+`data-ocelle-row-end`, `data-ocelle-first-row` and `data-ocelle-last-row` on segment hosts, element-owned and
+overwritten on every regroup, read by the segment's own CSS (`:host([data-ocelle-row-start])` and so on), internal
+and not a styling hook, with the floor unchanged (second analysis U2). The shared-line,
 focus-ring and timing rules above are the same for both designs. Only the selector that rounds
-the corners differs. The same request carries R-07's user-activation question (a clipboard write from the deferred copy
-request in WKWebView and WebKitGTK; PLAN-FRESH-2-004 (a)), also put to the console owners.
+the corners differs; the decision picks `:state()`. The same request carries R-07's user-activation question (a
+clipboard write from the deferred copy request in WKWebView and WebKitGTK; PLAN-FRESH-2-004 (a)), also put to the
+console owners; the answer to decision 1 does not answer it, and it stays open (R-07).
 
 **Alternatives.** CSS only: no selector reaches "first item of a wrapped row". A consumer `ResizeObserver`: what #511
 asks to remove.
@@ -385,12 +387,14 @@ measured and cannot be probed here. Therefore:
   succeed). Only when both hold does it record the deferred request's write: `navigator.userActivation.isActive` at
   the dispatch and whether the write resolved or rejected, in `reviews/phase-5/spike.md`. If the controls cannot be
   made to hold without a grant, the spike records that it cannot answer the question in Chromium, and the Chromium
-  question goes to the owners as open together with the WebKit question and plan decision 1, never as a grant-based
+  question goes to the owners as open together with the WebKit question (plan decision 1 itself is answered, R-06
+  Status), never as a grant-based
   pass. This listener exists only in the spike page; no scenario of the element calls the clipboard, and the
   clipboard observer's zero-call assertion (R-11) is unchanged;
 - the WebKit question (does a clipboard write from the deferred request still count as user-activated in WKWebView
-  and WebKitGTK) goes to kitty-mission-ui and the console owners together with plan decision 1's engine question
-  (R-06), and the answer is recorded here;
+  and WebKitGTK) goes to kitty-mission-ui and the console owners with the request that carried plan decision 1's
+  engine question (R-06); the operator's answer to decision 1 (`reviews/phase-4/decision-1.md`) does not answer it, so
+  it stays open, and its answer is recorded here;
 - the README's FR-035 paragraph says that the request is dispatched after the next frame, outside the click's task,
   so a host that writes the clipboard from the page must check its engines' user-activation rules for clipboard
   writes (a desktop bridge is not affected); the documentation test checks the statement.
