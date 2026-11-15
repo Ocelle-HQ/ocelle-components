@@ -1,23 +1,31 @@
-import { readFileSync } from "node:fs";
-import { describe, expect, it } from "vitest";
-import { mutation } from "../bin/mutation.ts";
+import { execFileSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
+import { afterEach, describe, expect, it } from "vitest";
+import { mutation, run } from "../bin/mutation.ts";
 import type { MutationTools } from "../bin/mutation.ts";
 import { changedFiles } from "../lib/mutation/ranges.ts";
 import type { ChangedFile, LineRange } from "../lib/mutation/ranges.ts";
 import { countCuts, formatPlan, planShards, selectFiles } from "../lib/mutation/shards.ts";
+import type { PlacedMutant } from "../lib/mutation/shards.ts";
 import {
   base,
   capture,
+  configuredStryker,
   context,
   fakeGit,
+  fakePlacer,
   fakeRepo,
   fakeStryker,
   mutant,
   newFilesDiff,
+  noStryker,
   reportPath,
   skippingStryker,
   strykerReport,
 } from "./mutation-fakes.ts";
+import type { FakeStryker, PlaceCall } from "./mutation-fakes.ts";
 
 // CI shards (FR-013, research.md R-08): the changed files, sorted by path, become entries: a file of at most 30
 // changed lines is one entry `path`, a file of more is split by line range into entries `path:start-end` of at most
@@ -1064,5 +1072,302 @@ describe("mutation gate: the report of undecided mutants and zero-mutant entries
       });
       expect(endsInWhitespace(ran.out)).toEqual([]);
     });
+  });
+});
+
+// Element source by mutant count (phase 3 stop 1, operator decision (b), specs/010-feedback-forms/reviews/phase-3/
+// decision-stop-1.md; design-change-1.md; plan decision 11; T041a). A changed file under packages/elements/src/ is cut
+// by the mutants Stryker's instrumenter places on its changed lines, not by lines: at most 10 counted mutants an entry
+// and a shard, an entry closing at the boundary inside it that the fewest mutants span (the latest on a tie), and an
+// element-source shard holding element source only. Every other file keeps the 30-line rule above, unchanged.
+const element = (name: string): string => `packages/elements/src/${name}.ts`;
+
+/** `count` mutants on each of the lines `first` to `last`, each mutant within its line, none ignored. */
+function singles(first: number, last: number, count = 1): PlacedMutant[] {
+  return Array.from({ length: last - first + 1 }, (_, i) => first + i).flatMap((line) =>
+    Array.from({ length: count }, () => ({ start: line, end: line, ignored: false })),
+  );
+}
+
+/** A mutant whose node runs from line `start` to line `end`. */
+function spanning(start: number, end: number): PlacedMutant {
+  return { start, end, ignored: false };
+}
+
+describe("planShards: element source cut by mutant count (phase 3 stop 1, T041a)", () => {
+  it("cuts an element file whose changed lines hold more than 10 mutants into path:start-end entries of at most 10", () => {
+    const a = element("a");
+    expect(planShards([file(a, 25)], new Map([[a, singles(1, 25)]]))).toEqual([
+      { files: [`${a}:1-10`], lines: 10 },
+      { files: [`${a}:11-20`], lines: 10 },
+      { files: [`${a}:21-25`], lines: 5 },
+    ]);
+  });
+
+  it("keeps an element file of at most 10 mutants one entry, its path, though more than 30 lines changed; 11 are cut", () => {
+    const a = element("a");
+    expect(planShards([file(a, 40)], new Map([[a, singles(1, 10)]]))).toEqual([{ files: [a], lines: 40 }]);
+    expect(planShards([file(a, 40)], new Map([[a, singles(1, 11)]]))).toEqual([
+      { files: [`${a}:1-10`], lines: 10 },
+      { files: [`${a}:11-40`], lines: 30 },
+    ]);
+  });
+
+  it("counts a mutant in an entry only when it lies wholly inside the entry's lines", () => {
+    // b.ts: a mutant from line 1 to 20 (a function body) and one on each of lines 2 to 19. Lines 1 to 11 hold the
+    // ten of lines 2 to 11, the long one not wholly inside, so the entry grows to 11; lines 12 to 20 hold 8, so
+    // c.ts's 2 fit beside them in a shard of 10.
+    const b = element("b");
+    const c = element("c");
+    const placed = new Map([
+      [b, [spanning(1, 20), ...singles(2, 19)]],
+      [c, singles(1, 2)],
+    ]);
+    expect(planShards([file(b, 20), file(c, 2)], placed)).toEqual([
+      { files: [`${b}:1-11`], lines: 11 },
+      { files: [`${b}:12-20`, c], lines: 11 },
+    ]);
+  });
+
+  it("closes an entry at the latest boundary the fewest mutants span, not at its last line when that one is spanned more", () => {
+    // One mutant on each of lines 1 to 12 and one from line 10 to 11: lines 1 to 10 hold 10, and 11 would make 12.
+    // The boundary after line 10 is spanned by one mutant, every earlier one by none: the entry closes after line 9.
+    const a = element("a");
+    expect(planShards([file(a, 12)], new Map([[a, [...singles(1, 12), spanning(10, 11)]]]))).toEqual([
+      { files: [`${a}:1-9`], lines: 9 },
+      { files: [`${a}:10-12`], lines: 3 },
+    ]);
+  });
+
+  it("closes at the latest of equally spanned boundaries, and never lets two entries of one file share a shard", () => {
+    // One mutant on each of lines 1 to 11 and one from line 2 to 11. The first entry closes after line 1, the one
+    // boundary no mutant spans; the second grows to line 10 (9 mutants) with every boundary spanned once, and closes
+    // at the latest; line 11 is the third. The first two hold 10 together, but are of one file; d.ts joins the third.
+    const a = element("a");
+    const d = element("d");
+    const placed = new Map([[a, [...singles(1, 11), spanning(2, 11)]]]);
+    expect(planShards([file(a, 11), file(d, 2)], placed)).toEqual([
+      { files: [`${a}:1-1`], lines: 1 },
+      { files: [`${a}:2-10`], lines: 9 },
+      { files: [`${a}:11-11`, d], lines: 3 },
+    ]);
+  });
+
+  it("makes a single line of more than 10 mutants an entry alone, since a line is not cut", () => {
+    const a = element("a");
+    const placed = new Map([[a, [...singles(1, 1, 2), ...singles(2, 2, 12), ...singles(3, 3)]]]);
+    expect(planShards([file(a, 3)], placed)).toEqual([
+      { files: [`${a}:1-1`], lines: 1 },
+      { files: [`${a}:2-2`], lines: 1 },
+      { files: [`${a}:3-3`], lines: 1 },
+    ]);
+  });
+
+  it("does not count the mutants a // Stryker disable comment ignores", () => {
+    const a = element("a");
+    const ignored = [11, 12].map((line) => ({ start: line, end: line, ignored: true }));
+    expect(planShards([file(a, 40)], new Map([[a, [...singles(1, 10), ...ignored]]]))).toEqual([{ files: [a], lines: 40 }]);
+  });
+
+  it("fills element-source entries into shards of at most 10 mutants, exactly 10 included, and at most 10 entries", () => {
+    const names = (count: number): string[] => Array.from({ length: count }, (_, i) => element(`f${String(i).padStart(2, "0")}`));
+    const three = names(4);
+    expect(planShards(three.map((path) => file(path, 2)), new Map(three.map((path) => [path, singles(1, 1, 3)])))).toEqual([
+      { files: three.slice(0, 3), lines: 6 },
+      { files: three.slice(3), lines: 2 },
+    ]);
+    const five = names(2);
+    expect(planShards(five.map((path) => file(path, 40)), new Map(five.map((path) => [path, singles(1, 5)])))).toEqual([
+      { files: five, lines: 80 },
+    ]);
+    const none = names(11);
+    expect(planShards(none.map((path) => file(path, 40)), new Map())).toEqual([
+      { files: none.slice(0, 10), lines: 400 },
+      { files: none.slice(10), lines: 40 },
+    ]);
+  });
+
+  it("never puts an element-source entry in a shard with an entry of a file outside packages/elements/src/", () => {
+    const a = element("a");
+    const changed = [file("packages/tokens/src/x.ts", 4), file(a, 3), file("packages/elements/scripts/manifest.ts", 5)];
+    expect(planShards(changed, new Map([[a, singles(1, 1)]]))).toEqual([
+      { files: ["packages/elements/scripts/manifest.ts"], lines: 5 },
+      { files: [a], lines: 3 },
+      { files: ["packages/tokens/src/x.ts"], lines: 4 },
+    ]);
+  });
+});
+
+describe("mutation gate: --plan counts element source's mutants (phase 3 stop 1, T041a)", () => {
+  const x = element("x");
+  const diff = newFilesDiff({ [x]: 25, "gates/lib/a.ts": 3 });
+  const sources = { [x]: "export const x = 1;\n", "gates/lib/a.ts": "export const a = 1;\n" };
+  const planLine = (counts: string): string =>
+    `mutation: plan: ${counts} within files (a mutant spanning a cut is mutated in no shard, see gates/README.md)`;
+
+  async function gate(args: readonly string[], tools: MutationTools) {
+    const { io, out, err } = capture();
+    const code = await mutation(context(args), tools, io);
+    return { code, out, err };
+  }
+
+  it("--plan gives the tool each changed element file's content and changed ranges, and cuts by its count", async () => {
+    const calls: PlaceCall[] = [];
+    const tools = { git: fakeGit(diff), ...fakeRepo(sources), place: fakePlacer({ [x]: singles(1, 25) }, calls) };
+    expect(await gate(["--base", base, "--plan"], tools)).toEqual({
+      code: 0,
+      out: [
+        JSON.stringify([
+          { files: "gates/lib/a.ts", lines: 3 },
+          { files: `${x}:1-10`, lines: 10 },
+          { files: `${x}:11-20`, lines: 10 },
+          { files: `${x}:21-25`, lines: 5 },
+        ]),
+      ],
+      err: [planLine("4 shards, 2 cuts")],
+    });
+    expect(calls).toEqual([{ path: x, content: sources[x], ranges: [{ start: 1, end: 25 }] }]);
+  });
+
+  it("--plan exits 2 naming a changed element file the tool cannot parse, with no plan on stdout", async () => {
+    const fails = { [x]: "Unexpected token (2:17)\n\n> 2 | export const z = ;" };
+    const tools = { git: fakeGit(diff), ...fakeRepo(sources), place: fakePlacer({}, [], fails) };
+    expect(await gate(["--base", base, "--plan"], tools)).toEqual({
+      code: 2,
+      out: [],
+      err: [`mutation: could not run: Stryker's instrumenter cannot parse ${x} (Unexpected token (2:17))`],
+    });
+  });
+
+  it("--plan exits 2 naming a changed element file it cannot read, with no plan on stdout", async () => {
+    const tools = { git: fakeGit(diff), ...fakeRepo({ "gates/lib/a.ts": sources["gates/lib/a.ts"] }), place: fakePlacer({ [x]: singles(1, 25) }) };
+    expect(await gate(["--base", base, "--plan"], tools)).toEqual({
+      code: 2,
+      out: [],
+      err: [`mutation: could not run: cannot read ${x}; check out the files of the change`],
+    });
+  });
+
+  it("keeps the --plan JSON's shape, and --files takes a shard's files back as its entries", async () => {
+    const tools = (stryker: FakeStryker = noStryker): MutationTools => ({
+      git: fakeGit(diff),
+      ...fakeRepo(sources, stryker),
+      place: fakePlacer({ [x]: singles(1, 25) }),
+    });
+    const planned = await gate(["--base", base, "--plan"], tools());
+    const shards = JSON.parse(String(planned.out[0])) as { files: string; lines: number }[];
+    expect(shards.map((shard) => Object.keys(shard))).toEqual([
+      ["files", "lines"],
+      ["files", "lines"],
+      ["files", "lines"],
+      ["files", "lines"],
+    ]);
+    const mutated: string[] = [];
+    const stryker = configuredStryker(() => "Killed");
+    const recording: FakeStryker = (mutate, tree, config) => (mutated.push(...mutate), stryker(mutate, tree, config));
+    expect(await gate(["--base", base, "--files", String(shards[2]?.files)], tools(recording))).toEqual({
+      code: 0,
+      out: ["mutation: 1 mutant on the changed lines of 1 file, none survived; 0 timeouts, 0 compile errors, 0 zero-mutant entries; 0 equivalent records"],
+      err: [],
+    });
+    expect(mutated).toEqual([`${x}:11-20`]);
+  });
+});
+
+// The real tool of run(): Stryker's own instrumenter, on a temporary git repository whose second commit changes
+// packages/elements/src/x.ts and y.ts. x.ts's changed lines 2 to 12 hold 11 mutants: one on line 2 that the
+// TypeScript checker would reject (`"t"` replaced by `""` is not of type "t"), which the planner cannot know and so
+// counts, and one on each of lines 3 to 12. y.ts's changed lines 2 to 13 hold 10 mutants and one that a
+// `// Stryker disable` comment ignores, beside unchanged lines that hold mutants too (lines 1 and 14).
+describe("mutation gate: --plan with Stryker's instrumenter (phase 3 stop 1, T041a)", () => {
+  const identity = ["-c", "user.name=Fixture Author", "-c", "user.email=fixture@example.com", "-c", "commit.gpgsign=false"];
+  const made: string[] = [];
+  afterEach(() => {
+    for (const dir of made.splice(0)) rmSync(dir, { recursive: true, force: true });
+  });
+
+  function git(dir: string, args: readonly string[]): string {
+    return execFileSync("git", [...identity, ...args], { cwd: dir, encoding: "utf8" }).trim();
+  }
+
+  /** A repository whose first commit (the base) holds `before` and whose second holds `after`, by path. */
+  function repository(before: Readonly<Record<string, string>>, after: Readonly<Record<string, string>>): { root: string; base: string } {
+    const root = mkdtempSync(join(tmpdir(), "ocelle-mutation-plan-"));
+    made.push(root);
+    const write = (files: Readonly<Record<string, string>>): void => {
+      for (const [path, content] of Object.entries(files)) {
+        mkdirSync(dirname(join(root, path)), { recursive: true });
+        writeFileSync(join(root, path), content);
+      }
+    };
+    git(root, ["init", "-q", "-b", "main"]);
+    write(before);
+    git(root, ["add", "-A"]);
+    git(root, ["commit", "-q", "-m", "base"]);
+    const first = git(root, ["rev-parse", "HEAD"]);
+    write(after);
+    git(root, ["add", "-A"]);
+    git(root, ["commit", "-q", "-m", "head"]);
+    return { root, base: first };
+  }
+
+  async function plan(root: string, first: string) {
+    const out: string[] = [];
+    const err: string[] = [];
+    const code = await run(["--root", root, "--base", first, "--plan"], { cwd: root, env: process.env, out: (line) => out.push(line), err: (line) => err.push(line) });
+    return { code, out, err };
+  }
+
+  const constants = (names: readonly string[]): string[] => names.map((name) => `export const ${name} = "${name}";`);
+  const lines = (...parts: readonly (string | readonly string[])[]): string => `${parts.flat().join("\n")}\n`;
+  const numbered = (prefix: string, count: number): string[] => Array.from({ length: count }, (_, i) => `${prefix}${String(i + 1)}`);
+
+  it("counts the mutants on the changed lines, a compile error included and an ignored one not", async () => {
+    const x = element("x");
+    const y = element("y");
+    const { root, base: first } = repository(
+      { [x]: lines(constants(["before", "after"])), [y]: lines(constants(["head", "tail"])) },
+      {
+        [x]: lines(constants(["before"]), 'export const typed: "t" = "t";', constants(numbered("x", 10)), constants(["after"])),
+        [y]: lines(
+          constants(["head"]),
+          constants(numbered("y", 9)),
+          "// Stryker disable next-line all: equivalent, the planner's test of an ignored mutant",
+          constants(["ignored", "y10", "tail"]),
+        ),
+      },
+    );
+    expect(await plan(root, first)).toEqual({
+      code: 0,
+      out: [
+        JSON.stringify([
+          { files: `${x}:2-11`, lines: 10 },
+          { files: `${x}:12-12`, lines: 1 },
+          { files: y, lines: 12 },
+        ]),
+      ],
+      err: ["mutation: plan: 3 shards, 1 cut within files (a mutant spanning a cut is mutated in no shard, see gates/README.md)"],
+    });
+  });
+
+  it("exits 2 naming a changed element file the instrumenter cannot parse, with no plan on stdout", async () => {
+    const z = element("z");
+    const { root, base: first } = repository({ [z]: lines(constants(["z"])) }, { [z]: lines(constants(["z"]), "export const broken = ;") });
+    expect(await plan(root, first)).toEqual({
+      code: 2,
+      out: [],
+      err: [`mutation: could not run: Stryker's instrumenter cannot parse ${z} (Unexpected token (2:22))`],
+    });
+  });
+});
+
+describe("@stryker-mutator/instrumenter's pin (phase 3 stop 1, T041a)", () => {
+  it("equals @stryker-mutator/core's exact version in the root devDependencies, so an upgrade moves both", () => {
+    const manifest = JSON.parse(readFileSync(new URL("../../package.json", import.meta.url), "utf8")) as {
+      devDependencies: Record<string, string | undefined>;
+    };
+    const pins = manifest.devDependencies;
+    expect(pins["@stryker-mutator/core"]).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(pins["@stryker-mutator/instrumenter"]).toBe(pins["@stryker-mutator/core"]);
   });
 });
