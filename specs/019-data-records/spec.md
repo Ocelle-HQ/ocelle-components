@@ -32,9 +32,9 @@ and `ocelle-progress`. This mission builds three more of #13's elements. `ocelle
 are mission 020's (`specs/020-disclosure-code-block`, own session), and #13 stays open until 020 lands. The
 spec-kitty-design issues #13 cites for these three (#470, #517, #533) were not read from this session. The requirements
 below come from #13's body (re-read on 2026-11-15: unchanged since 2026-11-02, no comments), the epic #1's gap table
-and the triage record. The plan's research reads #470, #517 and #533 where it can (from the operator or a verbatim copy
-in the repository) and records anything in them that changes or adds to a requirement here; such a change goes to the
-operator. Spec Kitty's `sk-*` names are kitty-mission-ui roles, not names in this library.
+and the triage record. Planning proceeds on #13's text (operator decision SPEC-1-06 (b), below): the plan's research
+lists each point #470, #517 and #533 could change as an open question for the plan gate, where the operator answers.
+Spec Kitty's `sk-*` names are kitty-mission-ui roles, not names in this library.
 
 **Consumers** (constitution VI): kitty-mission-ui (Kitty Desktop and Kitty Dashboard) replaces its `.sk-data-table`
 class family, and the event history and evidence-chain markup of the Desktop V2 prototype, with these elements. The
@@ -57,6 +57,12 @@ Ocelle web console uses them in server-rendered pages under a strict CSP, filled
 - Orchestrator note from the operator (2026-11-15): implementation waits until #15 (mission 009), mission 013 and
   op 016 (#41, affected plants) are on `main`. Per-phase plant runs are planned as op 016's affected plants, not a full
   `gate:plants`, and the first task rechecks the tasks against op 016 as merged.
+- Unread spec-kitty-design issues (spec check 1, SPEC-1-06), "(b) Plan on #13, ask later": planning proceeds on #13's
+  text now. The plan's research lists each point the unread issues #470, #517 and #533 could change as an open question
+  for the plan gate, where the operator answers: at least the chip step's look (FR-035, #517), the column headers'
+  weight and colour (FR-006, #533), and whether an event's time sits before or above its content (FR-023, which also
+  decides the line FR-021 centres the marker on; #470). The plan's own choices on these points stand until the
+  operator answers; an answer that changes a requirement here is recorded in the spec before tasks are generated.
 
 ## Scope
 
@@ -112,7 +118,7 @@ the region's tab stop and name, the page's scroll width and the accessibility tr
 2. **Given** that table, **When** a body cell's computed style is read, **Then** its font family resolves through
    `--ocelle-font-sans`, its colour through `--ocelle-color-ink-soft`, its `font-variant-numeric` is `tabular-nums`
    through `--ocelle-figures`, and its block and inline padding are the compact token steps the plan names, each
-   smaller than 003's base table cell padding (`--ocelle-space-2` block, `--ocelle-space-3` inline). No computed font
+   smaller than 003's prose table cell padding (`--ocelle-space-2` block, `--ocelle-space-3` inline). No computed font
    family in the table is a monospace family (FR-005).
 3. **Given** a column header cell (a `<th>` in the table's `<thead>`, or one with `scope="col"`), **When** its computed
    style is read, **Then** it is at `--ocelle-font-size-xs`, `text-transform: uppercase`, letter spacing through
@@ -137,19 +143,27 @@ the region's tab stop and name, the page's scroll width and the accessibility tr
 9. **Given** a cell holding a 26-character identifier with no spaces inside a `<span data-ocelle-wrap="anywhere">`, or
    with `wrap="anywhere"` on the element, **When** the table is narrower than its content, **Then** the identifier
    breaks inside its cell before the table overflows; and copying the cell gives the identifier unchanged (FR-007).
-10. **Given** the element inside a `[data-ocelle-prose]` container (003's prose rules), **When** it renders, **Then**
-    the table is not a scroll box of its own: there is exactly one sideways scroll box, the element's region, and the
-    table keeps its table display (FR-012).
-11. **Given** the page in light or dark theme, **When** it renders, **Then** cell text, header text and the row rules
-    meet the contrast check on each main ground the tokens declare (the element paints no ground of its own). **Given**
-    forced colours, **Then** every cell's and header's computed text colour is a system colour and the row rules are
-    visible (FR-005, FR-013).
+10. **Given** the element inside a `[data-ocelle-prose]` container (003's prose rules), holding the US1-1 table,
+    **When** it renders in a 1280 px and a 320 px container, **Then** the table is not a scroll box of its own: there is
+    exactly one sideways scroll box, the element's region; the table's computed `display` is `table`, its `overflow-x`
+    is `visible` and its `container-type` is `normal`; the table's rendered inline size is not smaller than outside a
+    prose container; and every body cell's and header cell's computed padding, `min-inline-size`, font weight and
+    the caption's `position` equal those of the same table outside a prose container, so the cell padding is still the
+    compact padding of US1-2 (FR-012).
+11. **Given** the page in light or dark theme, **When** it renders, **Then** cell text and header text meet the tokens'
+    text-contrast declaration on each main ground (the element paints no ground of its own); the row rules and the
+    header rule are decorative and are not held to 3:1 (FR-013). **Given** forced colours, **Then** every cell's and
+    header's computed text colour is a system colour, and the row rules and the header rule are drawn in a system
+    colour and visible (FR-005, FR-013).
 12. **Given** the table under `dir="rtl"`, **When** it renders and overflows, **Then** its first column is at the right,
     cell text aligns to the inline start, and the region's start edge is the right edge (FR-008, FR-005).
 13. **Given** an overflowing data table, **When** its rows are replaced by an htmx-style swap of the `<tbody>` or of the
     whole `<table>` with a narrower one that fits, **Then** the region re-decides its overflow state without a resize of
     the page: it is no longer a tab stop, and if it had focus, focus moves as 009's focus handover states (FR-008,
     FR-014).
+14. **Given** a consumer stylesheet rule `td { padding-inline: <a token step> }` (specificity (0,0,1)), outside a
+    prose container, **When** the table renders, **Then** every body cell's computed `padding-inline` is the
+    consumer's value, not the data table's (FR-005).
 
 ---
 
@@ -173,15 +187,16 @@ width.
 
 1. **Given** an `ocelle-event-timeline` with `label="Mission history"` and three `ocelle-timeline-event` children,
    **When** the accessibility tree is read in Chromium, **Then** it holds one list named "Mission history" with three
-   list items in source order, each item's text being its time followed by its content; no marker or connector is in
-   the tree, and axe reports no serious or critical finding, `list` and `listitem` included (FR-020, FR-022).
+   list items in source order, each item's item text (FR-016) being its time, a space and its content (for example
+   "14:02 Mission created"); no marker or connector is in the tree, and axe reports no serious or critical finding,
+   `list` and `listitem` included (FR-020, FR-022, FR-016).
 2. **Given** the same element, **When** its markers are measured, **Then** each event has one marker of inline and block
    size `--ocelle-size-dot`, centred on the first line of its event, and a connector joins each marker to the next
    one; the last event has no connector after it (FR-021).
 3. **Given** an event with `time="14:02"`, **When** its computed style is read, **Then** the time is in
    `--ocelle-font-sans` with `tabular-nums` through `--ocelle-figures` and is distinct from the content by more than
    colour (size or weight, the plan names it); **Given** an event with no `time`, **Then** it shows its content with no
-   empty time box and the list item's text is its content alone (FR-023).
+   empty time box and the list item's item text (FR-016) is its content alone (FR-023).
 4. **Given** an event whose content holds a 26-character identifier and whose `wrap="anywhere"` is set, **When** the
    timeline is 320 px wide, **Then** the identifier wraps inside the event, the page's scroll width equals the viewport
    width, and copying the content gives the identifier unchanged (FR-024, FR-009).
@@ -193,10 +208,16 @@ width.
 7. **Given** an event holding a link, **When** the user tabs, **Then** the link keeps its own tab stop and focus ring
    and the timeline adds no tab stop (FR-026).
 8. **Given** light and dark themes and forced colours, **When** it renders, **Then** time and content text meet the
-   contrast check on each main ground, the markers meet 3:1 non-text contrast against each main ground, and in forced
-   colours the markers and connectors are drawn in a system colour (FR-027).
+   tokens' text-contrast declaration on each main ground, the markers (structural) meet 3:1 non-text contrast against
+   each main ground, the connectors (decorative) are not held to 3:1, and in forced colours the markers and connectors
+   are drawn in a system colour and visible (FR-013, FR-027).
 9. **Given** the timeline under `dir="rtl"`, **When** it renders, **Then** the markers and connector are on the inline
    start side (the right) (FR-021).
+10. **Given** a timeline with `label="Mission history"` and a blank host `aria-label` (`aria-label=""` or only white
+    space), **When** the accessibility tree is read, **Then** the list is named "Mission history": the blank host
+    `aria-label` counts as absent; **Given** a blank host `aria-label` and no `label` (or a blank one), **Then** the
+    list is unnamed; **Given** a non-blank host `aria-label` "History" and `label="Mission history"`, **Then** the list
+    is named "History" (FR-022).
 
 ---
 
@@ -219,8 +240,8 @@ the chip variant.
 
 1. **Given** an `ocelle-evidence-chain` with `label="Evidence"` and six `ocelle-evidence-step` children, **When** the
    accessibility tree is read in Chromium, **Then** it holds one list named "Evidence" with six list items in source
-   order, each item's text being its content only (no visible number, no connector text); axe reports no serious or
-   critical finding (FR-030, FR-032).
+   order, each item's item text (FR-016) being its content only (for example "Red commit": no visible number, no
+   connector text); axe reports no serious or critical finding (FR-030, FR-032, FR-016).
 2. **Given** the chain in a 1280 px container where the six steps fit, **When** it renders, **Then** the steps sit in
    one row from the inline start, in source order, each default step with a marker of inline and block size
    `--ocelle-size-step` drawn with a ring of `--ocelle-ring-step` showing the step's ordinal (1 to 6) in tabular figures,
@@ -229,9 +250,11 @@ the chip variant.
    each line filled from the inline start in source order, no step is cut or overlaps another, no connector extends
    past the chain's inline edges or crosses from one line to the next, and the page's scroll width equals the viewport
    width (FR-034, FR-009).
-4. **Given** a step with `variant="chip"`, **When** it renders, **Then** it is drawn compact, as FR-035 states, from the
-   element's own tokens; no token, part or hook of #7's pill tag is read, and the chain's list semantics and order are
-   unchanged (FR-035).
+4. **Given** a step with `variant="chip"` beside a default step, **When** it renders, **Then** it has no marker and no
+   ordinal; its outline's computed corner radius is the value of `--ocelle-radius-2`, not of `--ocelle-radius-pill`;
+   its rendered block size is less than `--ocelle-size-step`; its content's computed font size is one step below the
+   default step content's on the `--ocelle-font-size-*` scale; no custom property, part or hook of `ocelle-pill-tag`
+   is read by its styles; and the chain's list semantics and order are unchanged (FR-035).
 5. **Given** a step whose content is long text, **When** the chain is 320 px wide, **Then** the text wraps between words
    inside the step and never widens the chain; with `wrap="anywhere"` on a step holding an unbroken identifier, the
    identifier breaks inside the step (FR-034, FR-024).
@@ -239,11 +262,17 @@ the chip variant.
    1 to N in source order of the visible steps, and the list item count matches the visible steps (FR-033, FR-025).
 7. **Given** children that are not `ocelle-evidence-step`, **When** it renders, **Then** they are neither shown nor
    exposed (FR-030).
-8. **Given** light and dark themes and forced colours, **When** it renders, **Then** step text meets the contrast check,
-   markers, rings and chip borders meet 3:1 non-text contrast against each main ground, and in forced colours markers,
-   rings, connectors and chip borders are drawn in system colours (FR-036).
+8. **Given** light and dark themes and forced colours, **When** it renders, **Then** step text, chip text and the
+   ordinals meet the tokens' text-contrast declaration, the marker rings and chip outlines (structural) meet 3:1
+   non-text contrast against each main ground, the connectors (decorative) are not held to 3:1, and in forced colours
+   markers, rings, ordinals, connectors and chip outlines are drawn in system colours and visible (FR-013, FR-036).
 9. **Given** the chain under `dir="rtl"`, **When** it renders, **Then** the first step is at the inline start (the
    right) and lines fill towards the left (FR-034).
+10. **Given** a chain with `label="Evidence"` and a blank host `aria-label` (`aria-label=""` or only white space),
+    **When** the accessibility tree is read, **Then** the list is named "Evidence": the blank host `aria-label` counts
+    as absent; **Given** a blank host `aria-label` and no `label` (or a blank one), **Then** the list is unnamed;
+    **Given** a non-blank host `aria-label` "Proof" and `label="Evidence"`, **Then** the list is named "Proof" (FR-032,
+    FR-022).
 
 ---
 
@@ -308,10 +337,32 @@ the chip variant.
 - **FR-011**: The elements emit no event. Only the data table's overflowing region is a tab stop (FR-008); otherwise no
   element adds a tab stop. Focusable content a consumer puts in a cell, an event or a step keeps its own tab stop and
   focus ring.
-- **FR-013**: Every text colour an element sets MUST pass the tokens' text-contrast declaration on each main ground,
-  and every marker, ring, connector, rule or border that conveys structure MUST meet 3:1 non-text contrast on each main
-  ground, in light and dark. In forced colours, text is a system text colour and every such line is visible in a system
-  colour.
+- **FR-013**: Every text colour an element sets (cell, header, time, content, step and chip text, and the ordinal
+  inside a step marker against the marker's inside) MUST pass the tokens' text-contrast declaration on each main
+  ground, in light and dark. Each line and mark the elements draw is classed as follows, and only the structural ones
+  MUST meet 3:1 non-text contrast (WCAG 1.4.11) against each main ground, in light and dark, through a token with a
+  non-text contrast declaration for those grounds:
+
+  | Line or mark | Class |
+  |---|---|
+  | Data-table row rule (between body rows) | decorative, exempt from 3:1 (table semantics convey rows) |
+  | Data-table header rule (below the header row) | decorative, exempt from 3:1 |
+  | Timeline marker (`--ocelle-size-dot`) | structural, 3:1 |
+  | Timeline connector | decorative, exempt from 3:1 |
+  | Evidence-step marker ring (`--ocelle-ring-step`) | structural, 3:1 |
+  | Evidence-chain connector | decorative, exempt from 3:1 |
+  | Chip-step outline | structural, 3:1 (it is the chip's only boundary) |
+
+  A decorative line MAY use `--ocelle-color-rule` or `--ocelle-color-rule-strong`. A structural one MUST use a token
+  whose non-text contrast declaration covers the main grounds; the rule tokens have none (they are decorative,
+  constitution II). In forced colours, text is a system text colour, and every line and mark classed above, decorative
+  ones included, is drawn in a system colour and visible.
+- **FR-016**: The **item text** of a list item, used by every scenario that asserts what a timeline or chain item
+  exposes, is measured in Chromium's accessibility tree (the full tree, ignored nodes left out): the names of the text
+  nodes (role `StaticText`) in the list item's subtree, in tree order, joined with single spaces, with every run of
+  white space collapsed to one space and the result trimmed. It is not the list item's accessible name (Chromium
+  computes none for `listitem` from content) and not `textContent`. A test that asserts an item text MUST also assert
+  that the item text is not empty when the item has content, so the assertion cannot pass on an empty subtree.
 
 ### `ocelle-data-table` (P1)
 
@@ -324,12 +375,15 @@ the chip variant.
   between cells), measured in Chromium against the same table outside the element, with no serious or critical axe
   finding. The element adds no table, row, cell or header role and no ID reference across a shadow root.
 - **FR-005**: Body cells MUST use `--ocelle-font-sans`, `--ocelle-figures`, `--ocelle-color-ink-soft` and a compact
-  padding from the `--ocelle-space-*` scale smaller than 003's base table cell, with a row rule in a token colour
-  between body rows, at a font size and line height the plan names from the tokens. Because shadow-root styles cannot
-  reach a slotted table's cells, these rules MUST ship in `@ocelle/styles`, selected on `ocelle-data-table > table`
-  (and its cells) at zero added specificity beyond the element selector, so a consumer rule wins; they MUST NOT need a
-  class. The README MUST say that the table's look needs `@ocelle/styles` on the page (or adopted in a consumer's
-  shadow root) and what the table shows without it.
+  padding from the `--ocelle-space-*` scale smaller than 003's prose table cell (`--ocelle-space-2` block,
+  `--ocelle-space-3` inline), with a row rule in a token colour between body rows, at a font size and line height the
+  plan names from the tokens. Because shadow-root styles cannot reach a slotted table's cells, these rules MUST ship in
+  `@ocelle/styles` and MUST NOT need a class. Outside a prose container every data-table rule MUST have specificity
+  (0,0,0) (the whole selector inside `:where()`, for example `:where(ocelle-data-table > table td)`), so any consumer
+  rule that matches the same element wins, whatever its specificity. The prose override is FR-012's separate rule set.
+  The README MUST say that the table's look needs `@ocelle/styles` on the page (or adopted in a consumer's shadow
+  root), what the table shows without it, and the specificity a consumer rule needs inside a prose container
+  (FR-012).
 - **FR-006**: Column header cells (each `<th>` in the table's `<thead>`, and each `<th scope="col">`) MUST be eyebrows:
   `--ocelle-font-size-xs`, upper case, letter spacing `--ocelle-tracking-caps`, at the weight and colour the plan names
   from existing tokens and their contrast declarations (#533). If 011's or 012's eyebrow tokens are on `main` when the
@@ -352,10 +406,19 @@ the chip variant.
   else the trimmed text content of the table's `<caption>`, read by the element and passed to the module as its
   label (no ID reference), and re-read when the caption changes; else none, which the contract handles (tab stop, no
   role, no name). The README MUST tell consumers to give an overflowing table a caption or a `label`.
-- **FR-012**: Inside a `[data-ocelle-prose]` container, the element MUST override 003's prose table rule so that the
-  table keeps `display: table` and is not a scroll box of its own: the element's region is the only sideways scroll
-  box. Before the element is defined, the `@ocelle/styles` cell rules apply to the table (FR-005); the README states
-  that a wide table may widen the page until upgrade.
+- **FR-012**: 003's prose table rules (`[data-ocelle-prose=""] :where(table)`, `:where(th, td)`, `:where(th)` and
+  `:where(caption)`, each at specificity (0,1,0)) beat FR-005's (0,0,0) rules inside a `[data-ocelle-prose]`
+  container. `@ocelle/styles` MUST therefore ship a separate prose override rule set for a data table's table, cells,
+  header cells and caption inside a prose container, at specificity (0,1,0) placed after 003's prose table rules in
+  the stylesheet, or at a higher specificity. It MUST reset every property 003's prose table rules set to the value
+  the data table has outside prose: on the table `display` (to `table`), `overflow-x`, `max-inline-size` and
+  `container-type` (to `normal`, so the table does not collapse in the region's track); on cells `min-inline-size`,
+  `padding`, `border-block-end` and `text-align`; on header cells the font weight, size, figures and rule colour;
+  on the caption `position`, `inset-inline-start` and `max-inline-size`. Inside prose the table then looks exactly as
+  outside, and the element's region is the only sideways scroll box. A consumer rule inside a prose container needs a
+  specificity above (0,1,0), or (0,1,0) placed after `@ocelle/styles`, to win; the README states this. Before the
+  element is defined, the `@ocelle/styles` cell rules apply to the table (FR-005); the README states that a wide table
+  may widen the page until upgrade.
 - **FR-014**: The element MUST re-decide its overflow state after a change of its table, its rows or its cells (an htmx
   swap of the `<tbody>` or of the `<table>`), as the module's `slotchange` and resize triggers allow; a change the
   module does not observe is named in the plan's research from measurement, and the README tells consumers what to do
@@ -372,14 +435,20 @@ the chip variant.
   and content as plain text, with no marker and no list-item role.
 - **FR-021**: Each event MUST show one marker of inline and block size `--ocelle-size-dot`, centred on the first line of
   the event, on the inline-start side, and a connector line from each marker to the next visible event's marker, drawn
-  in token colours. The last visible event has no connector after it. Markers and connectors are decorative: they
-  MUST NOT appear in the accessibility tree.
-- **FR-022**: The list MUST be named by a non-blank host `aria-label` or the timeline's non-blank `label`, under the
-  library's Host ARIA rule; with neither it is unnamed.
+  in token colours. The last visible event has no connector after it. Markers and connectors MUST NOT appear in the
+  accessibility tree. For contrast, the marker is structural (3:1) and the connector decorative, as FR-013's table
+  states.
+- **FR-022**: The list's name MUST be, in order: a non-blank host `aria-label`; else the timeline's non-blank
+  `label`; else none (the list is unnamed). A blank host `aria-label` (empty or only white space) counts as absent, so
+  a non-blank `label` still names the list: the timeline follows the Host ARIA rule of the elements whose role and
+  name sit on a shadow node (the overflow-region elements), not the general rule that a host `aria-label` decides
+  alone, because its name sits on the shadow `<ol>`. The README's Host ARIA section lists the timeline and the chain
+  with those elements.
 - **FR-023**: `ocelle-timeline-event` MUST offer a `time` property (string, unset by default): the event's time as the
   consumer formats it, shown before or above the content in `--ocelle-font-sans` with `--ocelle-figures`, distinct from
   the content by more than colour. The element does not parse or format times. With no `time` there is no time box.
-  The time and the content together are the list item's text, time first.
+  The list item's item text (FR-016) is the time, a space and the content, time first; with no `time` it is the
+  content alone.
 - **FR-024**: `ocelle-timeline-event` and `ocelle-evidence-step` MUST each take a `wrap` property with the one value
   `anywhere`, which sets `overflow-wrap: anywhere` on its content (never on the time); content with
   `data-ocelle-wrap="anywhere"` keeps that behaviour. Without it, content wraps between words. Neither element
@@ -403,8 +472,8 @@ the chip variant.
 - **FR-031**: Each default step MUST show a round marker of inline and block size `--ocelle-size-step` drawn with a
   ring of `--ocelle-ring-step` in a token colour, before its content on the inline-start side.
 - **FR-032**: The list MUST be named as FR-022 states. Connectors, markers and the ordinals inside markers MUST NOT
-  appear in the accessibility tree; each list item's text is the step's content only. The list's own ordered semantics
-  convey position.
+  appear in the accessibility tree; each list item's item text (FR-016) is the step's content only. The list's own
+  ordered semantics convey position.
 - **FR-033**: Each default step's marker MUST show the step's ordinal among the visible steps (1 to N, chip steps
   counted), in `--ocelle-font-sans` with `--ocelle-figures`, fitting two digits inside the marker.
 - **FR-034**: The steps MUST lie in rows from the inline start that wrap onto further lines when the chain's inline size
@@ -413,20 +482,25 @@ the chip variant.
   from one line to the next. A step's content wraps between words inside the step and never widens the chain beyond its
   container; nothing overflows or is cut at 320 px.
 - **FR-035**: `ocelle-evidence-step` MUST offer a `variant` property with the one value `chip` (unset by default; any
-  other value acts as unset; operator decision Q4 (a)). A chip step has no marker or ordinal and shows its content at a
-  smaller type step inside a token-radius outline drawn from `--ocelle-ring-step` (or another existing token the plan
-  names), with compact token padding, so it is visibly smaller than a default step. It MUST NOT import, extend or read
-  any element, token, part or hook of #7's pill tag, and MUST NOT copy its look (#517: the chip is the chain's own). A
-  chip step keeps its list item and its position.
-- **FR-036**: Step content MUST use `--ocelle-font-sans` in a text colour that meets FR-013; marker ring, connectors and
-  the chip outline meet FR-013's 3:1 rule.
+  other value acts as unset; operator decision Q4 (a)). A chip step has no marker or ordinal and shows its content
+  inside an outline of width `--ocelle-ring-step` (or another existing token the plan names) with corner radius
+  `--ocelle-radius-2` (constitution II: the one radius; `--ocelle-radius-pill` is for state pills only and MUST NOT
+  be used), with compact token padding. It is smaller than a default step, measured as: the chip step's rendered
+  block size (outline included) is less than `--ocelle-size-step`, and its content's computed font size is one step
+  below the default step content's on the `--ocelle-font-size-*` scale. It MUST NOT import, extend or read any
+  element, token, part or hook of #7's pill tag (`ocelle-pill-tag`), and its radius is not `--ocelle-radius-pill`
+  (#517: the chip is the chain's own). Whether the chip also has a fill is one of the plan gate's open questions
+  (SPEC-1-06). A chip step keeps its list item and its position.
+- **FR-036**: Step content MUST use `--ocelle-font-sans` in a text colour that meets FR-013; the marker ring and the
+  chip outline meet FR-013's 3:1 rule; the connectors are decorative under FR-013 and visible in forced colours.
 
 ### Tokens
 
 - **FR-040**: A new token MAY be added to `@ocelle/tokens` only where no existing token gives the value (for example a
-  connector width or a chip radius). Each new token MUST go through the token package's existing validation (records,
-  generator, contrast declaration for any foreground colour, and tests) and be listed in the plan with the reason no
-  existing token fits. `--ocelle-tracking-caps` is 009's token and is not re-added here.
+  connector width). No new radius token is added: the chip uses `--ocelle-radius-2` (FR-035). Each new token MUST
+  go through the token package's existing validation (records, generator, contrast declaration for any foreground
+  colour, and tests) and be listed in the plan with the reason no existing token fits. `--ocelle-tracking-caps` is
+  009's token and is not re-added here.
 
 ### Evidence (#7's checklist)
 
@@ -502,7 +576,7 @@ the chip variant.
   interface, `--ocelle-tracking-caps`, 013's README conventions, op 016's affected-plants command) and stops for the
   operator on any difference.
 - The compact cell padding, cell font size, header weight and colours, connector width and chip padding are set in the
-  plan from the existing scale. The spec fixes only their order (data-table cells more compact than 003's base table,
+  plan from the existing scale. The spec fixes only their order (data-table cells more compact than 003's prose table,
   chip step smaller than a default step).
 - Cells align to the inline start. An end-aligned numeric column is not asked for by #13 and would need an API that is
   not a class (a later issue); `--ocelle-figures` keeps digits aligned within a column of equal-length numbers.
