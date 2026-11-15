@@ -160,6 +160,8 @@ export const expectedTokens: readonly ExpectedToken[] = [
   plain("border-width", "shape", "1px", width(1)),
   plain("focus-width", "shape", "3px", width(3)),
   plain("focus-offset", "shape", "2px", width(2)),
+  // 012 (research.md R-12; data-model.md § Tokens): the negative offset that draws a focus ring inside a box, -5 px
+  derived("focus-offset-inset", "shape", "calc(-1 * (var(--ocelle-focus-offset) + var(--ocelle-focus-width)))", "calc(-1 * (2px + 3px))", ["focus-offset", "focus-width"], { property: "outline-offset", used: -5 }),
   plain("bar-width", "shape", "3px", width(3)),
   plain("ring-step", "shape", "1.5px", width(1.5)),
   plain("target-min", "size", "2.75rem", width(44)),

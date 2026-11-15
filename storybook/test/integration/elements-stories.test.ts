@@ -306,3 +306,85 @@ describe("the ocelle-button stories in the built Storybook (012 US1, FR-050)", {
     }
   }
 });
+
+// 012 phase 5 (tasks.md T054; research.md R-13; plan decisions 27 and 30): the `ocelle-action-row` stories of User
+// Story 4 (default, flush, a row with every slot, busy, hover on a default and on a flush row by the pointer parameter,
+// right to left, chrome, the grounds accent-low, inset, hover-bg and state on their grounds, and a non-current row
+// focused by a wrapper that calls its plain `focus()`), each rendering its rows with the story's attributes, each row's
+// inner control rendered, in light and dark, with base.css applied and no request outside the origin; the focused
+// story's one row holds focus in its inner control.
+
+/** One row of a story: the attributes it carries, whether its inner control is rendered and its aria-busy. */
+interface RowSeen {
+  readonly rowId: string | null;
+  readonly presentation: string | null;
+  readonly layout: string | null;
+  readonly ground: string | null;
+  readonly busy: boolean;
+  readonly rendered: boolean;
+  readonly tag: string | null;
+  readonly ariaBusy: string | null;
+}
+
+/** What a row story's page shows: its theme, the base stylesheet, its rows and how many hold focus. */
+function observeRows(page: Page): Promise<unknown> {
+  return page.evaluate(() => ({
+    theme: document.documentElement.dataset.theme,
+    base: {
+      linked: [...document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')].some((link) => link.href.endsWith("/base.css") && link.sheet !== null),
+      scheme: getComputedStyle(document.documentElement).colorScheme,
+    },
+    defined: customElements.get("ocelle-action-row") !== undefined,
+    rows: [...document.querySelectorAll("#storybook-root ocelle-action-row")].map((row) => ({
+      rowId: row.getAttribute("row-id"),
+      presentation: row.getAttribute("presentation"),
+      layout: row.getAttribute("layout"),
+      ground: row.getAttribute("ground"),
+      busy: row.hasAttribute("busy"),
+      rendered: row.shadowRoot?.querySelectorAll('[part="control"]').length === 1,
+      tag: row.shadowRoot?.querySelector('[part="control"]')?.localName ?? null,
+      ariaBusy: row.shadowRoot?.querySelector('[part="control"]')?.getAttribute("aria-busy") ?? null,
+    })),
+    focused: [...document.querySelectorAll("#storybook-root ocelle-action-row")].filter((row) => row.shadowRoot?.activeElement?.getAttribute("part") === "control").length,
+  }));
+}
+
+/** A row of a story with its row id and the attributes given, the others absent. */
+function rowSeen(rowId: string, attributes: Partial<RowSeen> = {}): RowSeen {
+  return { rowId, presentation: null, layout: null, ground: null, busy: false, rendered: true, tag: "button", ariaBusy: null, ...attributes };
+}
+
+/** The three rows of a list story. */
+const three = (attributes: Partial<RowSeen> = {}): RowSeen[] => ["m-41", "m-42", "m-43"].map((id) => rowSeen(id, attributes));
+
+const rowStories: readonly { readonly id: string; readonly rows: readonly RowSeen[]; readonly focused?: number }[] = [
+  { id: "elements-ocelle-action-row--default", rows: three() },
+  { id: "elements-ocelle-action-row--flush", rows: three({ presentation: "flush" }) },
+  { id: "elements-ocelle-action-row--all-slots", rows: [rowSeen("m-42"), rowSeen("m-43", { presentation: "flush" })] },
+  { id: "elements-ocelle-action-row--busy", rows: [rowSeen("m-42", { busy: true, ariaBusy: "true" }), rowSeen("m-43", { presentation: "flush", busy: true, ariaBusy: "true" })] },
+  { id: "elements-ocelle-action-row--hovered", rows: [rowSeen("m-42")] },
+  { id: "elements-ocelle-action-row--flush-hovered", rows: [rowSeen("m-42", { presentation: "flush" })] },
+  { id: "elements-ocelle-action-row--right-to-left", rows: [rowSeen("m-42"), rowSeen("m-43", { presentation: "flush" })] },
+  { id: "elements-ocelle-action-row--chrome", rows: [rowSeen("m-42", { ground: "chrome" }), rowSeen("m-43", { presentation: "flush", ground: "chrome" })] },
+  ...["accent-low", "inset", "hover-bg", "state"].map((ground) => ({ id: `elements-ocelle-action-row--ground-${ground}`, rows: [rowSeen("m-42", { ground }), rowSeen("m-43", { presentation: "flush", ground })] })),
+  { id: "elements-ocelle-action-row--focused", rows: three(), focused: 1 },
+];
+
+describe("the ocelle-action-row stories in the built Storybook (012 US4, FR-050)", { timeout: 60_000 }, () => {
+  for (const { id, rows, focused } of rowStories) {
+    for (const theme of ["light", "dark"] as const) {
+      it(`${id} in ${theme}: renders its ocelle-action-row elements with the story's attributes, each inner control rendered, with base.css applied and no request outside the origin`, async () => {
+        const { page, outside } = await open(id, theme, "ocelle-action-row");
+        expect({ ...((await observeRows(page)) as object), outside }).toEqual({
+          theme,
+          base: { linked: true, scheme: theme },
+          defined: true,
+          rows,
+          focused: focused ?? 0,
+          outside: [],
+        });
+        await page.close();
+      });
+    }
+  }
+});
