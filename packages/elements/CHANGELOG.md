@@ -24,6 +24,12 @@ entry points and the browser build's file path (constitution VII).
   sheet it shows its label above its value. Importing `@ocelle/elements/ocelle-facts.js` also defines it.
 - Entry points `@ocelle/elements/ocelle-facts.js` (defines `ocelle-facts` and `ocelle-fact`) and
   `@ocelle/elements/ocelle-fact.js` (defines `ocelle-fact` only).
+- `ocelle-empty-state`, an empty or loading panel: the consumer's own heading, body and actions in one centred
+  column, with no heading level, role or tab stop of its own; its property `variant` (reflected), `variant="panel"`
+  with the larger rhythm and the lighter heading; its slots `visual`, the `eyebrow` slot (a short upper-case line
+  above the heading), `heading`, the default slot (the body, its margins reset and its children spaced) and
+  `actions`; its part `body`. Entry point `@ocelle/elements/ocelle-empty-state.js` (defines `ocelle-empty-state`
+  only).
 - In the README, the slot convention for icons in controls that later controls follow: the `icon` and `trailing`
   slots, their size, alignment, gap and colour rules and the naming rule.
 - Entry points: `@ocelle/elements` (the package root, defines every element), `@ocelle/elements/ocelle-icon.js`

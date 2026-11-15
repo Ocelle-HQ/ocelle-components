@@ -100,6 +100,88 @@
       ]
     },
     {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
+              "description": "`panel` fills a list or inspector panel with a larger block padding and larger gaps and a lighter heading. Unset,\nor any other value, gives the default variant. Reflected.",
+              "fieldName": "variant",
+              "name": "variant",
+              "type": {
+                "text": "\"panel\" | undefined"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The centred column, with its block padding and every slot in it. The body's content sits in an internal wrapper inside it, which is not a part.",
+              "name": "body"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "An empty or loading panel: the consumer's own heading, body and actions in one centred column, with an optional\nvisual and eyebrow above the heading.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "variant",
+              "default": "undefined",
+              "description": "`panel` fills a list or inspector panel with a larger block padding and larger gaps and a lighter heading. Unset,\nor any other value, gives the default variant. Reflected.",
+              "kind": "field",
+              "name": "variant",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"panel\" | undefined"
+              }
+            }
+          ],
+          "name": "OcelleEmptyState",
+          "slots": [
+            {
+              "description": "An icon or an `ocelle-progress` above the heading. A progress bar spans the column up to the reading measure; an icon stays centred.",
+              "name": "visual"
+            },
+            {
+              "description": "A short line above the heading (for example \"Refused\"), shown small, medium weight, muted and in upper case. Not a heading: the element adds no role.",
+              "name": "eyebrow"
+            },
+            {
+              "description": "The consumer's own heading element. Its level is the consumer's; the element never adds a heading.",
+              "name": "heading"
+            },
+            {
+              "description": "The body. Each element is a block with no block margins, separated from the next by a small gap; put inline content in one `<p>`.",
+              "name": ""
+            },
+            {
+              "description": "Buttons or links. They wrap when narrow.",
+              "name": "actions"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-empty-state"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-empty-state.ts",
+            "name": "OcelleEmptyState"
+          },
+          "kind": "js",
+          "name": "OcelleEmptyState"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-empty-state.ts"
+    },
+    {
       "path": "src/ocelle-fact.ts",
       "kind": "javascript-module",
       "exports": [

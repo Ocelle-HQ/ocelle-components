@@ -1,9 +1,9 @@
 # @ocelle/elements
 
 The Ocelle web components: standards-based custom elements (Lit 3) that work in any page, a server-rendered page
-under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has four elements:
-`ocelle-icon`, with a set of thirteen icons, `ocelle-brand-mark`, the Ocelle rosette, and `ocelle-facts` with its item
-`ocelle-fact`, a label and value sheet.
+under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has five elements:
+`ocelle-icon`, with a set of thirteen icons, `ocelle-brand-mark`, the Ocelle rosette, `ocelle-facts` with its item
+`ocelle-fact`, a label and value sheet, and `ocelle-empty-state`, an empty or loading panel.
 
 ## Entry points
 
@@ -14,6 +14,7 @@ under a strict Content Security Policy, a Svelte shell or a desktop webview. Thi
 | `@ocelle/elements/ocelle-brand-mark.js` | `dist/ocelle-brand-mark.js` | `ocelle-brand-mark` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-facts.js` | `dist/ocelle-facts.js` | `ocelle-facts` and its item `ocelle-fact`; for hosts with a bundler |
 | `@ocelle/elements/ocelle-fact.js` | `dist/ocelle-fact.js` | `ocelle-fact` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-empty-state.js` | `dist/ocelle-empty-state.js` | `ocelle-empty-state` only; for hosts with a bundler |
 | `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |
 | `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |
 
@@ -198,9 +199,75 @@ fact stays hidden; labels appear only after upgrade.
 
 `ocelle-fact` outside `ocelle-facts` shows its label above its value as plain text, with no term or definition.
 
+## `ocelle-empty-state`
+
+```html
+<ocelle-empty-state variant="panel">
+  <ocelle-icon slot="visual" name="folder"></ocelle-icon>
+  <h2 slot="heading">No missions yet</h2>
+  <p>Missions you create appear here.</p>
+  <button slot="actions" type="button">Create mission</button>
+</ocelle-empty-state>
+```
+
+`ocelle-empty-state` shows an empty or loading panel: the consumer's own heading, body and actions in one centred
+column. The heading level is the consumer's: slot your own heading element in `heading`; the element has no `level`
+property and never adds a heading, landmark, live region or tab stop of its own. A slotted heading that is another
+element (a `<p>` styled as a heading) keeps its own role. The element emits no event.
+
+**Slots.** Slots: `visual` (an icon or an `ocelle-progress`, above the heading), `eyebrow` (a short line above the
+heading), `heading` (the consumer's heading element), the default slot (the body) and `actions` (buttons or links,
+which wrap when narrow); `part="body"` is the centred column, with its padding and every slot in it. The body's content
+sits in an internal wrapper inside that column, which is not a part.
+
+**Variants.** `variant="panel"` fills a list or inspector panel: block padding `--ocelle-space-10` instead of
+`--ocelle-space-6`, larger gaps between parts, and the heading at weight 500 (`--ocelle-font-weight-medium`) instead of
+600 (`--ocelle-font-weight-strong`); any other value acts as unset. The panel heading is at weight 500, lighter than
+the default's 600, following the text of spec-kitty-design#510; a heading that was bold in a consumer's card becomes
+500. The heading is at `--ocelle-font-size-lg` in `--ocelle-color-ink`, the body at `--ocelle-font-size-md` in
+`--ocelle-color-ink-muted`, its measure capped at `--ocelle-measure-reading`.
+
+**Gaps.** The first present part starts at the block padding and the last ends at it. Between two present parts the
+gap is set by the upper one: after the visual `--ocelle-space-3` (panel `--ocelle-space-5`), after the heading
+`--ocelle-space-2` (panel `--ocelle-space-3`), after the body `--ocelle-space-4` (panel `--ocelle-space-6`). A part is
+present while something slotted in it renders: an empty slot, or one holding only elements with `hidden` or only
+whitespace, takes no space and adds no gap. Hide slotted content with `hidden` or remove it: content hidden by a class
+or a style rule is not observed. The actions are `--ocelle-space-2` apart and wrap onto more rows when narrow.
+
+**Eyebrow.** The `eyebrow` slot holds a short line above the heading (a `<p>`, for example "Refused"), not a heading:
+the element shows it in `--ocelle-font-sans` at `--ocelle-font-size-xs`, weight 500, `--ocelle-color-ink-muted`, in
+upper case, and adds no role to it. The eyebrow sits `--ocelle-space-1` above a heading (panel `--ocelle-space-2`);
+with no heading it is `--ocelle-space-2` above the body or the actions (panel `--ocelle-space-3`).
+
+**Body.** The element sets the block margins of the body's elements to 0 and separates the body's children by
+`--ocelle-space-2`, in both variants: each slotted element, and each run of slotted text, is a block of its own, so
+text meant to flow as one paragraph with a link or an identifier inside it goes in one `<p>`. A page rule that sets
+margins on the slotted body content wins over the reset. Give a long path or identifier in the body
+`data-ocelle-wrap="anywhere"` of `@ocelle/styles`.
+
+**Cascade.** The element styles slotted content through `::slotted()`, which beats the user-agent styles but not a
+page's own rules: a page rule on the slotted heading, eyebrow or body content wins, by design, since the consumer owns
+its content.
+
+**Progress and loading.** An `ocelle-progress` in `visual` spans the column, up to `--ocelle-measure-reading`, in both
+variants; an icon stays centred. The loading panel is `variant="panel"` with an indeterminate `ocelle-progress` in
+`visual`. A screen that moves focus to a loading block slots its own `<h2 tabindex="-1">` in `heading`, with the bar in
+`visual`, and focuses the heading; do not put a `role` or `tabindex` on the `ocelle-progress` host.
+
+**Ground.** Neither variant paints a ground, a border or a busy look: the element sits on its container's ground. A
+card around it (fill, radius, padding, a dashed or busy-keyed border) is the consumer's own; the dashed refusal card
+belongs to the panel-paint family of spec-kitty-design#509, not to this element. In forced colours the heading and the
+body take the system text colour.
+
+**Tokens.** `ocelle-empty-state` reads the tokens `--ocelle-font-sans`, `--ocelle-font-size-xs`, `--ocelle-font-size-md`,
+`--ocelle-font-size-lg`, `--ocelle-font-weight-medium`, `--ocelle-font-weight-strong`, `--ocelle-color-ink`,
+`--ocelle-color-ink-muted`, `--ocelle-measure-reading`, `--ocelle-space-1`, `--ocelle-space-2`, `--ocelle-space-3`,
+`--ocelle-space-4`, `--ocelle-space-5`, `--ocelle-space-6` and `--ocelle-space-10`.
+
 ## Mapping from kitty-mission-ui
 
-Each `.sk-facts` modifier and state that kitty-mission-ui uses, by role, with the element and variant that replaces it.
+Each `.sk-facts` and `.sk-empty-state` modifier and state that kitty-mission-ui uses, by role, with the element and
+variant that replaces it, or the consumer's own remedy.
 
 | Class family | Role | Element and variant |
 |---|---|---|
@@ -220,6 +287,25 @@ Each `.sk-facts` modifier and state that kitty-mission-ui uses, by role, with th
 | `.sk-facts` | facts group heading | consumer's: the heading stays outside the sheet |
 | `.sk-facts` | facts group omitted | consumer's: leave the sheet out or render an `ocelle-empty-state`; a sheet with no pairs renders nothing |
 | `.sk-facts` | facts workspace marker | consumer's: a `data-*` attribute on the `ocelle-facts` host |
+| `.sk-empty-state` | empty-state panel | `ocelle-empty-state variant="panel"`, the heading at 500 and the larger rhythm, with no chrome of its own; the state wrapper and its `aria-busy` stay the consumer's |
+| `.sk-empty-state` | empty-state regional | `ocelle-empty-state`, default variant, with only the default slot |
+| `.sk-empty-state` | empty-state refusal | `ocelle-empty-state` with the eyebrow in the `eyebrow` slot, an `<h1>` in `heading`, the sentence and the path (with `data-ocelle-wrap="anywhere"`) in the body, and an action; the dashed card is not this element's |
+| `.sk-empty-state` | empty-state heading h1 | the consumer's `<h1>` in the `heading` slot |
+| `.sk-empty-state` | empty-state heading h2 | the consumer's `<h2>` in the `heading` slot |
+| `.sk-empty-state` | empty-state heading paragraph | the consumer's `<p>` in the `heading` slot; a bar named by it takes its text as `label` |
+| `.sk-empty-state` | empty-state no heading | the `heading` slot left empty: a loading panel with `ocelle-progress` in `visual`, or a body-only notice |
+| `.sk-empty-state` | empty-state body multiple | both paragraphs in the default slot: their margins are reset and they are `--ocelle-space-2` apart |
+| `.sk-empty-state` | empty-state body optional | the default slot filled or left empty |
+| `.sk-empty-state` | empty-state action | the `actions` slot; the element gives the gap above it, so drop the consumer's own top margin |
+| `.sk-empty-state` | empty-state action wrapper | the `actions` slot |
+| `.sk-empty-state` | empty-state inline | not this mission: no left-aligned inline variant |
+| `.sk-empty-state` | empty-state busy | an indeterminate `ocelle-progress size="compact"` in `visual`; `aria-busy` stays on the consumer's wrapper, and a busy look is the consumer's card |
+| `.sk-empty-state` | empty-state message | consumer's: its own dashed card around an `ocelle-empty-state` (default variant) |
+| `.sk-empty-state` | empty-state card | consumer's: its own card (fill, radius, inline padding, busy-keyed border) around `ocelle-empty-state variant="panel"`, whose heading is at 500 |
+| `.sk-empty-state` | empty-state card dashed | not this mission: panel and card paint, spec-kitty-design#509 |
+| `.sk-empty-state` | empty-state ops card | consumer's: as the card, its own card around the element, the heading at the element's weight |
+| `.sk-empty-state` | empty-state identifier | consumer's: the value in the body with `data-ocelle-wrap="anywhere"` and its own `title`; no monospace |
+| `.sk-empty-state` | empty-state focus target | consumer's: `tabindex="-1"` on its slotted heading; for a loading block, its `<h2 tabindex="-1">` in `heading` with the bar in `visual` |
 
 ## Slot convention
 

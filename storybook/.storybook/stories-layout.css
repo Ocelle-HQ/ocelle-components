@@ -41,3 +41,17 @@
   display: inline-block;
   max-inline-size: 100%;
 }
+
+/*
+ * The ocelle-empty-state stories' wrappers (013 research.md R-08): a wide block and a 320 px block, each capped at the
+ * viewport so no story scrolls sideways.
+ */
+[data-story="empty-wide"] {
+  inline-size: calc(var(--ocelle-space-10) * 10);
+  max-inline-size: 100%;
+}
+
+[data-story="empty-narrow"] {
+  inline-size: calc(var(--ocelle-space-10) * 5);
+  max-inline-size: 100%;
+}

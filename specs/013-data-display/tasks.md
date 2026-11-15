@@ -316,7 +316,7 @@ order 1 → 2 → 3 → 4:
 
 ### Scaffold
 
-- [ ] T022 [US2] Scaffold commit, recorded by `scaffold.sh 2`:
+- [X] T022 [US2] Scaffold commit, recorded by `scaffold.sh 2`:
   - `packages/elements/src/ocelle-empty-state.ts` with `define`, `@tagname`, `variant` (`"panel" | undefined`, `@default undefined`) and an empty `render()` (the `eyebrow` slot, like the other slots, arrives with the template in green);
   - its exports in `src/index.ts`, `src/browser.ts` and `package.json` (`./ocelle-empty-state.js`);
   - no test file.
@@ -327,8 +327,8 @@ order 1 → 2 → 3 → 4:
 
 ### Tests (red, one commit, test files only)
 
-- [ ] T023 [P] [US2] Driver additions `pressTab()` and `focused()` (contracts/checks.md § Driver additions), in the `Driver` interface, both harnesses and their tests.
-- [ ] T024 [US2] `packages/elements/test/scenarios/empty-state.ts`, with the element-only assertions of contracts/checks.md § Bodies that the platform alone could pass:
+- [X] T023 [P] [US2] Driver additions `pressTab()` and `focused()` (contracts/checks.md § Driver additions), in the `Driver` interface, both harnesses and their tests.
+- [X] T024 [US2] `packages/elements/test/scenarios/empty-state.ts`, with the element-only assertions of contracts/checks.md § Bodies that the platform alone could pass:
   - US2 scenarios 1 to 6 and 8 as shared bodies:
     - US2-1 with consumer markup out of slot order;
     - US2-2 with the heading's geometry in the column;
@@ -341,35 +341,35 @@ order 1 → 2 → 3 → 4:
   - US2-9, hidden slotted content: a hidden action; `hidden` removed; a hidden only-visual; whitespace changed to words.
   - Several actions at 320 px, with a long heading and a long body in the same element: no page overflow, heading and body wrap between words inside the element's content box.
   - Unset `variant` writes no attribute.
-- [ ] T024a [US2] `packages/elements/test/scenarios/empty-state.ts` (continued), with the oracles of contracts/checks.md:
+- [X] T024a [US2] `packages/elements/test/scenarios/empty-state.ts` (continued), with the oracles of contracts/checks.md:
   - US2-10, the `eyebrow` slot (FR-025, IQ-08 (c)): markup written with the eyebrow after the heading; the eyebrow first present part at the block padding, the eyebrow-to-heading gap, its computed type (`--ocelle-font-size-xs`, `--ocelle-font-weight-medium`, `--ocelle-color-ink-muted`, `text-transform: uppercase`), the AX order eyebrow, heading 1, paragraph, button, no role added; the panel's gaps in the same body;
   - US2-11, the body (FR-026, IQ-09 (b)): two `<p>` paragraphs with no user-agent margin and `--ocelle-space-2` between them, the first at the default-slot area's block start and the last at its end, the body-to-actions gap unchanged; one paragraph at both edges. The oracle reads the internal `.text` wrapper's box (or the first and last slotted element's edges against it), not `part="body"`, which is the whole column and holds the heading and the block padding before the first paragraph;
   - the eyebrow present-parts bodies: eyebrow only, eyebrow plus actions (the eyebrow-to-actions gap), in both variants;
   - the visual and eyebrow body (FR-025): a visual, an eyebrow, a heading and a body paragraph written in markup as heading, body, eyebrow, visual; the order visual, eyebrow, heading, body in the column (each part's block start below the previous part's block end) and in the AX tree; the visual-to-eyebrow gap `--ocelle-space-3`, panel `--ocelle-space-5`, in one body;
   - the eyebrow and text body (FR-025): an eyebrow and a body paragraph with no heading; the eyebrow at the block padding and the eyebrow-to-text gap `--ocelle-space-2`, panel `--ocelle-space-3`, in one body;
   - the inline-content body (edge case "Empty-state body with inline content", FR-026): the default slot holding a text run, an `<a>` and a text run directly gives three block boxes, one below the other, separated by `--ocelle-space-2`; paired in the same body with a single `<p>` holding the same text and link on one line box.
-- [ ] T025 [P] [US2] Test files for the empty state:
+- [X] T025 [P] [US2] Test files for the empty state:
   - `packages/elements/test/empty-state.test.ts` (in process) and `packages/elements/test/browser/empty-state.test.ts` (fixture) over T024;
   - `packages/elements/test/entry-empty-state.test.ts`;
   - `entry-root.test.ts` extended.
-- [ ] T026 [P] [US2] `packages/elements/test/node/readme.test.ts`: statements for the `ocelle-empty-state` section, one assertion per statement:
+- [X] T026 [P] [US2] `packages/elements/test/node/readme.test.ts`: statements for the `ocelle-empty-state` section, one assertion per statement:
   - the heading rule (the consumer's own heading, no `level`, FR-056);
   - slots, variants, the cascade note, the loading panel, tokens read.
 
   Also the empty-state mapping-row statements (FR-058), one per row of research R-11's `.sk-empty-state` inventory (T022a), each keyed by the row's role name, with no `sk-` string in test code (operator decision I1, research R-11). If the inventory is missing or has a gap, stop and ask the operator.
-- [ ] T026a [US2] `packages/elements/test/node/readme.test.ts`: statements for the empty-state input decisions, one assertion per statement:
+- [X] T026a [US2] `packages/elements/test/node/readme.test.ts`: statements for the empty-state input decisions, one assertion per statement:
   - the `eyebrow` slot: a short line above the heading, not a heading, its type and gaps (IQ-08 (c));
   - the body: margins reset, `--ocelle-space-2` between children, each a block, so inline content goes in one `<p>`; a page rule on slotted content wins (IQ-09 (b));
   - the panel heading at 500, #510's text (IQ-06 (a));
   - no card, border or busy look on the element; a card around it is the consumer's; the dashed card belongs to the #509 family (IQ-07 (a));
   - a focusable loading heading is the consumer's `<h2 tabindex="-1">` in `heading` with the bar in `visual` (IQ-11 (b));
   - the updated empty-state mapping rows of research R-11 ("empty-state panel", "empty-state refusal", "empty-state heading paragraph", "empty-state body multiple", "empty-state busy", "empty-state message", "empty-state card", "empty-state card dashed", "empty-state ops card", "empty-state focus target"), keyed by role name with no `sk-` string in test code.
-- [ ] T027 [P] [US2] `storybook/test/integration/elements-stories.test.ts`: the empty-state stories of research R-08, present, in light and dark, with no outside request; under reduced motion, no running animation, using the same clock-timed fresh-load read. As in T011, the animation positive arrives in T044; until then the check is paired with the `matchMedia` assertion only.
-- [ ] T028 [US2] Red commit of T023 to T027 with T024a and T026a. Run `red.sh 2 phase`, and check the red log per body.
+- [X] T027 [P] [US2] `storybook/test/integration/elements-stories.test.ts`: the empty-state stories of research R-08, present, in light and dark, with no outside request; under reduced motion, no running animation, using the same clock-timed fresh-load read. As in T011, the animation positive arrives in T044; until then the check is paired with the `matchMedia` assertion only.
+- [X] T028 [US2] Red commit of T023 to T027 with T024a and T026a. Run `red.sh 2 phase`, and check the red log per body.
 
 ### Implementation (green)
 
-- [ ] T029 [US2] `packages/elements/src/ocelle-empty-state.ts` (R-04, data-model § `ocelle-empty-state`):
+- [X] T029 [US2] `packages/elements/src/ocelle-empty-state.ts` (R-04, data-model § `ocelle-empty-state`):
   - `<div part="body">` with the visual, heading, text and actions wrappers;
   - a part is present only if an assigned element's computed `display` is not `none` or it has non-whitespace text, recomputed on `slotchange` and by a `MutationObserver` (`hidden`, text);
   - absent parts are `display: none`;
@@ -380,24 +380,24 @@ order 1 → 2 → 3 → 4:
   - `::slotted(ocelle-progress)` spans the column up to `--ocelle-measure-reading`;
   - no ground painted;
   - forced-colours rules; `:host([hidden])`.
-- [ ] T029a [US2] `packages/elements/src/ocelle-empty-state.ts` (research R-04, data-model § `ocelle-empty-state`):
+- [X] T029a [US2] `packages/elements/src/ocelle-empty-state.ts` (research R-04, data-model § `ocelle-empty-state`):
   - the `eyebrow` slot and wrapper between the visual and the heading, with `has.eyebrow` from the same `slotchange` and `MutationObserver` rules;
   - `::slotted([slot="eyebrow"])` type (`--ocelle-font-sans`, `--ocelle-font-size-xs`, `--ocelle-font-weight-medium`, `--ocelle-color-ink-muted`, `text-transform: uppercase`, `margin: 0`);
   - the eyebrow's margins from R-04's table, with the internal class marking a following heading, in both variants;
   - the body: `::slotted(:not([slot]))` with `margin-block: 0`, the text wrapper `display: flex; flex-direction: column; gap: var(--ocelle-space-2)`.
-- [ ] T030 [US2] Regenerate and commit the manifest with the `ocelle-empty-state` declaration (slots `visual`, `eyebrow`, `heading`, default and `actions`).
-- [ ] T031 [US2] `storybook/stories/empty-state.stories.ts` (`title: "Elements/ocelle-empty-state"`): the stories of research R-08 except panel loading, which comes in phase 3.
-- [ ] T031a [US2] `storybook/stories/empty-state.stories.ts`: the refusal story with an eyebrow (an eyebrow, an `<h1>`, a sentence, a path with `data-ocelle-wrap="anywhere"`, an action) and the several-body-paragraphs story (research R-08). Their baselines are part of T032's `visual:update` run.
-- [ ] T032 [US2] Baselines: run `pnpm run visual:update` in the pinned container (`<n>` added, 0 changed, 0 removed) and commit `storybook/baselines/elements-ocelle-empty-state--*.{light,dark}.png`.
-- [ ] T033 [US2] Documentation:
+- [X] T030 [US2] Regenerate and commit the manifest with the `ocelle-empty-state` declaration (slots `visual`, `eyebrow`, `heading`, default and `actions`).
+- [X] T031 [US2] `storybook/stories/empty-state.stories.ts` (`title: "Elements/ocelle-empty-state"`): the stories of research R-08 except panel loading, which comes in phase 3.
+- [X] T031a [US2] `storybook/stories/empty-state.stories.ts`: the refusal story with an eyebrow (an eyebrow, an `<h1>`, a sentence, a path with `data-ocelle-wrap="anywhere"`, an action) and the several-body-paragraphs story (research R-08). Their baselines are part of T032's `visual:update` run.
+- [X] T032 [US2] Baselines: run `pnpm run visual:update` in the pinned container (`<n>` added, 0 changed, 0 removed) and commit `storybook/baselines/elements-ocelle-empty-state--*.{light,dark}.png`.
+- [X] T033 [US2] Documentation:
   - `packages/elements/README.md`: the `ocelle-empty-state` section and the `.sk-empty-state` mapping rows;
   - `packages/elements/CHANGELOG.md` entry.
-- [ ] T033a [US2] `packages/elements/README.md`: the empty-state statements of T026a (the `eyebrow` slot, the body spacing and its inline-content note, the panel heading, the consumer's card, the focusable loading heading) and the updated `.sk-empty-state` mapping rows of research R-11; the `packages/elements/CHANGELOG.md` entry names the `eyebrow` slot.
-- [ ] T034 [US2] Checks:
+- [X] T033a [US2] `packages/elements/README.md`: the empty-state statements of T026a (the `eyebrow` slot, the body spacing and its inline-content note, the panel heading, the consumer's card, the focusable loading heading) and the updated `.sk-empty-state` mapping rows of research R-11; the `packages/elements/CHANGELOG.md` entry names the `eyebrow` slot.
+- [X] T034 [US2] Checks:
   1. Run the empty-state plants once: the "last present part has no margin" rule removed and the `hidden` observer removed. Record them in `reviews/phase-2/plants.md`. The `::slotted(ocelle-progress)` plant is not run here: the stand-in is not an `ocelle-progress`, so the rule cannot match it; it runs in T052 against the real bar.
   2. Run `gate:manifest`, `gate:style-lint`, `gate:csp`, `gate:prefix`, `gate:test-lint`, `gate:contrast` (unchanged; US2-8 relies on the existing text rows), `gate:storybook-build`, `gate:visual`, `gate:axe`, `gate:plants`, then `gate:mutation -- --base <phase base>`, and record the summary lines.
 
-- [ ] T034a [US2] Run the empty-state plants for the input decisions once, with T034's step 1 (contracts/checks.md § CSS-only behaviours: the eyebrow type rule removed, the eyebrow's heading-dependent class ignored, the body `margin-block: 0` removed, the body gap removed), and record them in `specs/013-data-display/reviews/phase-2/plants.md`.
+- [X] T034a [US2] Run the empty-state plants for the input decisions once, with T034's step 1 (contracts/checks.md § CSS-only behaviours: the eyebrow type rule removed, the eyebrow's heading-dependent class ignored, the body `margin-block: 0` removed, the body gap removed), and record them in `specs/013-data-display/reviews/phase-2/plants.md`.
 
 **Checkpoint**: `tdd-check.sh 2` reports `pass`.
 
