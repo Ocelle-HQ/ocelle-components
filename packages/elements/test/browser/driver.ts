@@ -494,7 +494,7 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
         if (element === null) throw new Error(`no #${id} on the page`);
         const control = element as unknown as { validity?: ValidityState; validationMessage?: string; willValidate?: boolean };
         // An element without a validity (one not upgraded, say) reads as no flag set, no message and not validated.
-        const validity = control.validity ?? ({ valid: false, valueMissing: false, typeMismatch: false, patternMismatch: false, tooLong: false, tooShort: false, rangeUnderflow: false, rangeOverflow: false, stepMismatch: false, badInput: false, customError: false } as ValidityState);
+        const validity = control.validity ?? ({ valid: false, valueMissing: false, typeMismatch: false, patternMismatch: false, tooLong: false, tooShort: false, rangeUnderflow: false, rangeOverflow: false, stepMismatch: false, badInput: false, customError: false });
         return {
           valid: validity.valid,
           valueMissing: validity.valueMissing,

@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
-import { generate, iconNames, normalise, serialise, writeManifest } from "../../scripts/manifest.ts";
+import { fold, generate, iconNames, normalise, serialise, writeManifest } from "../../scripts/manifest.ts";
 import type { Manifest } from "../../scripts/manifest.ts";
 
 // The custom-elements manifest generator (005 FR-007, US1 scenario 11; research.md R-06; reviews/phase-2/spike.md § 2;
@@ -177,6 +177,54 @@ describe("normalise(raw, names): the observed standard attributes (specs/010-fee
     const standard = ["role", "hidden", "form", "aria-invalid", "aria-required", "aria-disabled", "aria-description"];
     (declaration(changed).attributes as Json[]).push(...standard.map((name) => ({ name })), { name: "value", type: { text: "string" }, default: '""', description: "The default value." });
     expect((declaration(normalise(changed, [])).attributes as Json[]).map((attribute) => attribute.name)).toEqual(["name", "label", "value"]);
+  });
+});
+
+describe("fold(raw): the analyzer's output folded onto the element modules (specs/010-feedback-forms FR-034, #27; T036)", () => {
+  const inherited = { name: "Base", module: "src/base.ts" };
+  const lists = ["members", "attributes", "slots", "events", "cssParts", "cssProperties"] as const;
+  const module = (path: string, declarations: Json[]): Json => ({ kind: "javascript-module", path, declarations, exports: [] });
+
+  it("keeps only the element modules, drops inheritedFrom from every list, and replaces a superclass in a dropped module by that class's own, along the chain", () => {
+    const element: Json = { kind: "class", name: "A", customElement: true, superclass: { name: "Base", module: "/src/base.ts" } };
+    for (const key of lists) element[key] = [{ name: `own-${key}` }, { name: `inherited-${key}`, inheritedFrom: inherited }];
+    const out = fold({
+      schemaVersion: "1.0.0",
+      modules: [
+        module("src/ocelle-a.ts", [element]),
+        module("src/base.ts", [{ kind: "class", name: "Base", superclass: { name: "Root", module: "/src/root.ts" } }]),
+        module("src/root.ts", [{ kind: "class", name: "Root", superclass: { name: "LitElement", package: "lit" } }]),
+      ],
+    });
+    const expected: Json = { kind: "class", name: "A", customElement: true, superclass: { name: "LitElement", package: "lit" } };
+    for (const key of lists) expected[key] = [{ name: `own-${key}` }, { name: `inherited-${key}` }];
+    expect(out).toStrictEqual({ schemaVersion: "1.0.0", modules: [module("src/ocelle-a.ts", [expected])] });
+  });
+
+  it("leaves a superclass in an element module, in a package or in a module it was not given as it is, states the lists, and gives a declaration without a superclass none", () => {
+    const out = fold({
+      modules: [
+        module("src/ocelle-a.ts", [
+          { kind: "class", name: "A", superclass: { name: "B", module: "/src/ocelle-b.ts" } },
+          { kind: "class", name: "C", superclass: { name: "Gone", module: "/src/gone.ts" } },
+          { kind: "function", name: "helper" },
+        ]),
+        module("src/ocelle-b.ts", [{ kind: "class", name: "B", superclass: { name: "LitElement", package: "lit" } }]),
+      ],
+    });
+    const declarations = ((out.modules as Json[]).flatMap((each) => each.declarations as Json[]));
+    expect({
+      superclasses: declarations.map((each) => each.superclass),
+      keys: declarations.map((each) => Object.keys(each).sort()),
+    }).toStrictEqual({
+      superclasses: [{ name: "B", module: "/src/ocelle-b.ts" }, { name: "Gone", module: "/src/gone.ts" }, undefined, { name: "LitElement", package: "lit" }],
+      keys: [
+        ["attributes", "cssParts", "cssProperties", "events", "kind", "members", "name", "slots", "superclass"],
+        ["attributes", "cssParts", "cssProperties", "events", "kind", "members", "name", "slots", "superclass"],
+        ["attributes", "cssParts", "cssProperties", "events", "kind", "members", "name", "slots"],
+        ["attributes", "cssParts", "cssProperties", "events", "kind", "members", "name", "slots", "superclass"],
+      ],
+    });
   });
 });
 

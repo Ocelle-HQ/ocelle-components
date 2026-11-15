@@ -583,6 +583,24 @@ the final code, the same 7:00 check is repeated where it becomes measurable. At 
 the `--plan` output that holds a `src/live.ts` entry is run and timed in the same way. At phase 3's end (T041), every
 shard that holds a `src/live.ts` or `src/form-control.ts` entry is, since the error announcer runs on the same timing.
 Each time is recorded in the phase review, and a shard over 7:00 stops the phase for the operator.
+**Element source by mutant count** (phase 3 stop 1, operator decision (b), `reviews/phase-3/decision-stop-1.md`;
+plan decision 11; T041a). At T041 two of the first three 30-line shards of `src/form-control.ts` took 569.4 s and
+534.6 s (`reviews/phase-3/stop-1.md`). An element-source shard costs about 217 s fixed (the gate's setup and the
+`elements` project's dry run under per-test coverage) and about 14 s a valid mutant, so 420 s holds about 14 valid
+mutants. Line spans do not bound that: in run 4's report (`b76d4ee`) single lines hold up to 10 valid mutants
+(`src/form-control.ts:369`) and 12 (`src/ocelle-form-input.ts:36`), and cuts of 15, 10 and 8 lines still leave
+entries of 20, 18 and 15 valid mutants in `src/form-control.ts`. The planner instead counts the mutants at plan time
+with Stryker's instrumenter (`@stryker-mutator/instrumenter` 10.1.1, the version `@stryker-mutator/core` 10.1.1
+uses): it parses the changed files and places every mutant, with no test run and no checker, and on the two files it
+found exactly the 257 and 170 mutants of run 4's report, plus the 2 and 4 that `// Stryker disable` ignores, in about
+0.2 s (a throwaway script, not committed). It cannot tell which mutants the checker will reject or which time out,
+so it counts them all. Element-source files are cut into entries of at most 10 mutants, each closed at the boundary
+the fewest mutants span, and filled into shards of at most 10 mutants that hold element source only; every other
+file keeps the 30-line entries of 007 FR-014 (the rule in full: plan decision 11; `reviews/phase-3/design-change-1.md`).
+The cap leaves a margin under the 14: 217 s + 10 × 14 s = 357 s. On run 4's report the rule gives 35 and 23 entries
+for the two files, the largest estimated at 357 s and 385 s (a one-line entry of 13 mutants, 12 valid), and leaves 9
+valid mutants spanning a cut, as many as the 30-line plan did. T041a re-plans with `--base 2004e82` and times every
+shard holding a `src/form-control.ts` entry; a shard over 7:00 is a new stop.
 
 **The shipped figures under mutation** (operator decision PLAN-FRESH-3-004 (a)). Because every in-process scenario
 replaces `D` and `H` first, no scenario reads the shipped figures, and the mutation gate runs only the in-process
