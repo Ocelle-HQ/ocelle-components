@@ -41,3 +41,10 @@
   `aria-label` counts as absent for the timeline and the chain (FR-022, US2-10, US3-10); the chip's radius and size
   are measurable (FR-035, US3-4). The unread issues #470, #517 and #533 are open questions for the plan gate
   (operator decision SPEC-1-06 (b)), not markers in the spec.
+- Spec check 2 (`reviews/spec/check-2.md`, fixes in `reviews/spec/check-2-fixes.md`): FR-013 names the nine main
+  grounds and says which tokens a structural mark may use (an ink token, whose text declaration covers all nine; not
+  the focus, current, link or state colours), so no mark-colour token is added; US2-8 and US3-8 test the same nine
+  grounds. Notes taken up: the chip's padding and font-size scale (FR-035, US3-4), the full prose reset list (FR-012,
+  US1-10), the step marker's inside as the ordinal's ground (FR-031), header-cell precedence (FR-006), slot
+  re-assignment and two swap/rename scenarios (FR-003, US1-15, US1-16), the pre-upgrade children (Edge Cases,
+  FR-012), tests for behavioural edge cases (FR-052) and no loading state (Edge Cases).
