@@ -7,7 +7,9 @@ in_scope: [7]
 out_of_scope: [1, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 23, 41]
 semver: minor
 spec_prompt: "Build the status elements of issue #7 that mission 012 left open (triage/018-status-elements.md), spec directory specs/018-status-elements, in @ocelle/elements on mission 005's element conventions and slot convention: ocelle-status-indicator (tone; a visible marker that never pulses an empty box, the pulse stopped under prefers-reduced-motion, state never shown by colour alone, spec-kitty-design#498), ocelle-metric (label, display-value; layout=\"row\" and the eyebrow label style on #8's eyebrow tokens as specs/011-layout-headers R-12 defines them, #509) and ocelle-pill-tag (status, title, slotted content, badge use; compact density with line height 1.2 and padding 4/8 and an outlined badge variant set in Schibsted Grotesk with tabular figures because the constitution forbids monospace, #526; an interactive variant with a native button inside that follows mission 012's control conventions FR-001 to FR-006 in specs/012-button-action-row, and a shared ellipsis that shows the full text through #16's ocelle-tooltip exactly as specs/008-overlays/contracts/elements-overlays.md § #7 and #12 specifies, with the token focus ring, #524); one status vocabulary shared with #9's notice tone; without redesigning ocelle-button, ocelle-action-row or ocelle-tooltip; each element meeting #7's Done-when checklist."
-status: proposed
+status: approved
+decided_by: "human:jeroennouwsdev"
+decided_at: 2026-11-15T22:34:17Z
 ---
 
 # Triage 018: Status elements of #7, `ocelle-pill-tag`, `ocelle-status-indicator` and `ocelle-metric`
