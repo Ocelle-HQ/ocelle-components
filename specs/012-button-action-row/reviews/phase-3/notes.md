@@ -86,3 +86,14 @@ finding), `gate:storybook-build` (44 stories, on the tree committed as 6651ed7),
 `gate:mutation -- --base 2014d99`: the first run (on fabffc3) found 15 survivors (above); the second, on e1887f7: 242
 mutants on the changed lines of 3 files (`src/control.ts`, `src/ocelle-button.ts`, `scripts/manifest.ts`), none
 survived; 0 timeouts, 71 compile errors, 0 zero-mutant entries, 0 equivalent records.
+
+`gate:plants`, shard by shard (`OCELLE_VISUAL_ENGINE=docker pnpm run gate:plants -- --shard <k>`, one at a time) on
+e1887f7 and dcb0a5c (docs only between them): all 76 shards "every plant as expected". The container restarted after
+shard 30; the coordinator restarted dockerd and shards 31 to 76 were run afterwards. The slowest shards took 126 s
+(31, `visual`; 40, `visual/fail-token-changed`), the three other-plant shards 82 to 105 s, the error plants 1 to 3 s,
+5879 s in all; no shard came near 10 minutes.
+
+After the restart, on dcb0a5c: `gate:visual` three more times under load (16 `yes > /dev/null`, killed afterwards): 88
+captures matched each time; and the whole suite again, `pnpm test`: 3501 tests in 149 files passed.
+
+Not run here: `tdd-check.sh 3` (the checkpoint), which the review step runs.
