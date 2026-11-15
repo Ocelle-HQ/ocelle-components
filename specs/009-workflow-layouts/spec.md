@@ -771,16 +771,20 @@ goes.
   from a property), and a change of an attribute only (a class or a style swap); after one the host calls
   `remeasure()` (operator decisions, plan squad rounds 2 and 3). The element has this one public method,
   `remeasure(): void`; besides the pass, it re-chooses the tier from a fresh measurement of the element's border box,
-  in the same animation frame. A change of the element's own inline padding or borders alone is seen. Two cases are
+  in the same animation frame. On an element that is not in a document (never connected, or removed) it does nothing
+  (phase 4 review round 3, R3-02). A change of the element's own inline padding or borders alone is seen. Two cases are
   known limitations (operator decision P4, phase 4 review round 2), and the host calls `remeasure()` after a change in
   either:
   - **A percentage inline padding that changes with the host's container**, while the element's content box keeps
-    its size (a content-box host with a definite or capped inline size): the border box changes and no observer
-    reports it, so the tier stays stale until `remeasure()` or the next change the element sees.
+    its size (a content-box host with a definite or capped inline size): the border box changes, and the change may go
+    unseen. The element sees it only when the box the percentage resolves against for its edge box (the nearest
+    positioned ancestor, or else the initial containing block) changes size with the host's container, for example
+    when the host's container is positioned and the host is not; otherwise the tier stays stale until `remeasure()` or
+    the next change the element sees.
   - **A host whose content box is narrower than its own inline padding and borders**, recorded by the same decision.
     Since the round 2 fix (R2-02) the element also sees a change of the padding or borders alone in such a host
     (US3 review scenario "a host whose content box is narrower than its own inline padding and borders"); only a
-    percentage padding in it stays stale, as above.
+    percentage padding in it may go unseen, as above.
 
   Two thresholds apply, each exclusive (the wider layout applies at exactly the threshold):
   - **One column** below `collapse-below`. Default: the new token `--ocelle-list-detail-collapse`, `40rem`.

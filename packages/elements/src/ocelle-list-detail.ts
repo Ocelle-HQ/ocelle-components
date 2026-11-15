@@ -237,9 +237,13 @@ export class OcelleListDetail extends LitElement {
    * Requests a measurement of the intrinsic sizes for the next animation frame, coalesced with any other trigger, for
    * a change the element cannot see: content a slotted element renders in its own shadow root, an attribute-only
    * change, or an image or a font loading. In that frame it also re-chooses the tier from a fresh measurement of the
-   * element's border box, as after a percentage inline padding that changes with the host's container.
+   * element's border box, as after a percentage inline padding that changes with the host's container. On an element
+   * that is not in a document, never connected or removed, it does nothing.
    */
   public remeasure(): void {
+    // Not in a document, the element runs no pass: never connected it has no shadow root yet, and removed it would
+    // measure a detached grid (reviews/phase-4/round-3.md R3-02).
+    if (!this.isConnected) return;
     this.#measure.schedule();
   }
 
@@ -318,7 +322,7 @@ export class OcelleListDetail extends LitElement {
 
   /**
    * After a scheduled pass (a slot change, a light-DOM change or `remeasure()`), measures the host's border box afresh:
-   * the probe's content box read now and the host's inline padding and borders, so a change no observer reports, such
+   * the probe's content box read now and the host's inline padding and borders, so a change that may go unseen, such
    * as a percentage padding that follows the host's container, re-chooses the tier in the same frame.
    */
   #remeasured(): void {
@@ -367,7 +371,10 @@ export class OcelleListDetail extends LitElement {
     const slots = [...this.renderRoot.querySelectorAll("slot")];
     this.#measure.observe(slots.flatMap((slot) => slot.assignedElements()));
     // The children the `inspector` slot is assigned, by their slot attribute: known before the first render too.
-    this.#hasInspector = [...this.children].some((child) => child.slot === "inspector");
+    // Only a change of it asks for an update, so the first render brings no second one (round-3.md R3-03).
+    const hasInspector = [...this.children].some((child) => child.slot === "inspector");
+    if (hasInspector === this.#hasInspector) return;
+    this.#hasInspector = hasInspector;
     this.requestUpdate();
   }
 }

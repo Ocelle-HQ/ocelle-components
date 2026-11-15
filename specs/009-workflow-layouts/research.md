@@ -590,7 +590,7 @@ layout's, whatever tier it shows, so a shrink-to-fit host cannot make the tier a
   its content box, and its border box is observed, so it adds nothing to the host's intrinsic sizes (round-2-fixes.md
   R2-02). After each scheduled pass the element takes `measured` afresh in the same frame callback, so `remeasure()`
   also re-chooses the tier, the host's remedy for a percentage inline padding that changes with its container, which
-  no observer reports (round-2-fixes.md R2-01, FR-025). Observing the host's own border box brought the loop
+  may go unseen (round-2-fixes.md R2-01, round-3-fixes.md R3-04, FR-025). Observing the host's own border box brought the loop
   message below; the blocks' block size never changes. Measured in squad round 2, a pane `ResizeObserver` whose callback set the sizer grew a shrink-to-fit host
   inside the delivery, and the window received "ResizeObserver loop completed with undelivered notifications." with
   the host's new size a frame late; and a width-only widening of a shown pane's content fired no pane observation at

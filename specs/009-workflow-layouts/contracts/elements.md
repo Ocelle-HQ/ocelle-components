@@ -90,7 +90,7 @@ The board module does not define the lane: a host imports both, or the root.
 | `inspector-below` / `inspectorBelow` | property + attribute | `string \| undefined`, absent | no | Inspector stacked below this length; grammar below |
 | `narrow` | property + attribute | `boolean`, `false` | yes | Forces one column (FR-027) |
 | `detail-open` / `detailOpen` | property + attribute | `boolean`, `false` | yes | In one column, shows the detail instead of the list (FR-027) |
-| `remeasure()` | method | `(): void` | | Requests a measurement pass of the intrinsic sizes for the next animation frame, coalesced with any other trigger, for a change the element cannot see (content in a slotted element's shadow root, an attribute-only change, an image or a font loading; FR-025, research.md R-13). In that frame, after the pass, it re-chooses the tier from a fresh measurement of the element's border box, the remedy for the known limitations of § Container-tier convention, "Unseen changes" (a percentage inline padding that changes with the host's container; a host whose content box is narrower than its own inline padding and borders) |
+| `remeasure()` | method | `(): void` | | Requests a measurement pass of the intrinsic sizes for the next animation frame, coalesced with any other trigger, for a change the element cannot see (content in a slotted element's shadow root, an attribute-only change, an image or a font loading; FR-025, research.md R-13). In that frame, after the pass, it re-chooses the tier from a fresh measurement of the element's border box, the remedy for the known limitations of § Container-tier convention, "Unseen changes" (a percentage inline padding that changes with the host's container, which may go unseen; also in a host whose content box is narrower than its own inline padding and borders, a percentage padding there, since a px or em padding or a border change is seen there). On an element that is not in a document, never connected or removed, it does nothing: it runs no pass and re-chooses no tier (phase 4 review round 3, R3-02); a never-connected element's first render schedules its first pass anyway, and a host that changed a removed element calls `remeasure()` after inserting it again |
 | `list` | slot | | | The list pane |
 | (default) | slot | | | The detail pane |
 | `inspector` | slot | | | The optional inspector pane (FR-024) |
@@ -134,10 +134,13 @@ The board module does not define the lane: a host imports both, or the root.
   decision P4, phase 4 review round 2, R2-01); the host calls `remeasure()` after one, which re-chooses the tier from
   a fresh measurement of the border box in the next animation frame, coalesced with the pass:
   - a percentage inline padding that changes with the host's container while the element's content box keeps its
-    size (a content-box host with a definite or capped inline size): no observer reports it, and the tier stays stale
-    until `remeasure()` or the next change the element sees;
+    size (a content-box host with a definite or capped inline size): the change may go unseen. The edge box resolves
+    the percentage against its own containing block (the nearest positioned ancestor, or else the initial containing
+    block), so the element sees the change only when that box changes size with the host's container, for example
+    when the host's container is positioned and the host is not; otherwise the tier stays stale until `remeasure()` or
+    the next change the element sees;
   - a host whose content box is narrower than its own inline padding and borders: since the R2-02 fix a change of a
-    px or em padding or of a border alone is seen there too, and only a percentage padding stays stale, as above.
+    px or em padding or of a border alone is seen there too, and only a percentage padding may go unseen, as above.
 - **Cost.** One pass renders every pane in the measurement grid twice and restores it: about 10 ms (7 to 19 ms) with
   a 1000-row list, measured in plan squad round 3. Attribute changes (a selection's `class` or `aria-selected`) run
   none; light-DOM swaps and text changes run at most one per frame.
