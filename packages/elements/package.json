@@ -10,6 +10,7 @@
     "./ocelle-scroller.js": "./dist/ocelle-scroller.js",
     "./ocelle-workflow-board.js": "./dist/ocelle-workflow-board.js",
     "./ocelle-workflow-lane.js": "./dist/ocelle-workflow-lane.js",
+    "./ocelle-list-detail.js": "./dist/ocelle-list-detail.js",
     "./browser.js": "./dist/browser/ocelle-elements.js",
     "./custom-elements.json": "./custom-elements.json"
   },

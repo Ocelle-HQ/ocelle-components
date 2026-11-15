@@ -100,7 +100,16 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
       }, { id, name, value });
       await settle(page);
     },
-    call: () => Promise.reject(new Error("not implemented")),
+    call: async (id, name) => {
+      await page.evaluate(({ id, name }) => {
+        const element = document.getElementById(id);
+        if (element === null) throw new Error(`no #${id} on the page`);
+        const method = (element as unknown as Record<string, unknown>)[name];
+        if (typeof method !== "function") throw new Error(`#${id} has no method ${name}`);
+        (method as () => unknown).call(element);
+      }, { id, name });
+      await settle(page);
+    },
     attribute: (id, name) => page.evaluate(({ id, name }) => document.getElementById(id)?.getAttribute(name) ?? null, { id, name }),
     style: async (id, property, value) => {
       await page.evaluate(({ id, property, value }) => {

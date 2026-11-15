@@ -33,10 +33,10 @@ function display(id: string, pane: string): string {
   return wrapper === null || wrapper === undefined ? "absent" : getComputedStyle(wrapper).display;
 }
 
-/** Mounts the markup at Frame N's viewport and focuses `focus` by script. */
-async function mounted(tag: string, id: string, focus: string): Promise<string> {
-  await driver.viewport(720, 800);
-  await driver.mount(markup(tag, id));
+/** Mounts the markup at Frame N's viewport (or in Frame R at 1280 px) and focuses `focus` by script. */
+async function mounted(tag: string, id: string, focus: string, frame: "N" | "R" = "N"): Promise<string> {
+  await driver.viewport(frame === "N" ? 720 : 1280, 800);
+  await driver.mount(markup(tag, id).replace('data-frame="N"', `data-frame="${frame}"`));
   document.getElementById(focus)?.focus();
   return active();
 }
@@ -64,5 +64,15 @@ describe("ocelle-list-detail at upgrade (R-14)", () => {
     customElements.define("test-list-detail-outside", class extends OcelleListDetail {});
     await driver.settle();
     expect({ before, after: active(), list: display("o", "list"), detail: display("o", "detail") }).toEqual({ before: "before", after: "before", list: "none", detail: "block" });
+  });
+
+  // A guard added after the green implementation (the first render's own measurement, whose mutants survived the first
+  // mutation run; reviews/phase-4/plants.md § Guards): the first layout is chosen from the element's size at upgrade.
+  it("guard: in Frame R, where the first layout has three columns, focus inside the list is not moved at upgrade, detail-open or not", async () => {
+    const { OcelleListDetail } = await import("../src/ocelle-list-detail.ts");
+    const before = await mounted("test-list-detail-wide", "w", "w-l0", "R");
+    customElements.define("test-list-detail-wide", class extends OcelleListDetail {});
+    await driver.settle();
+    expect({ before, after: active(), list: display("w", "list"), detail: display("w", "detail") }).toEqual({ before: "w-l0", after: "w-l0", list: "block", detail: "block" });
   });
 });

@@ -184,6 +184,147 @@
     {
       "declarations": [
         {
+          "attributes": [
+            {
+              "default": "undefined",
+              "description": "One column below this length: digits with an optional fraction and `px`, `rem` or `em`, or a unitless `0`, after\ntrimming ASCII whitespace; any other value counts as absent, and the default is `--ocelle-list-detail-collapse` as\ncomputed on the element. Not reflected.",
+              "fieldName": "collapseBelow",
+              "name": "collapse-below",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The inspector stacks under the detail below this length, with the grammar of `collapse-below`; the default is\n`--ocelle-list-detail-inspector-collapse` as computed on the element. Not reflected.",
+              "fieldName": "inspectorBelow",
+              "name": "inspector-below",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "false",
+              "description": "Forces the one-column layout whatever the element's measured size. Reflected.",
+              "fieldName": "narrow",
+              "name": "narrow",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "false",
+              "description": "In one column, shows the detail pane, with the inspector stacked under it, instead of the list; in two or three\ncolumns it has no effect. Reflected.",
+              "fieldName": "detailOpen",
+              "name": "detail-open",
+              "type": {
+                "text": "boolean"
+              }
+            }
+          ],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A list beside its detail, with an optional inspector, that shows one pane at a time below its threshold.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "collapse-below",
+              "default": "undefined",
+              "description": "One column below this length: digits with an optional fraction and `px`, `rem` or `em`, or a unitless `0`, after\ntrimming ASCII whitespace; any other value counts as absent, and the default is `--ocelle-list-detail-collapse` as\ncomputed on the element. Not reflected.",
+              "kind": "field",
+              "name": "collapseBelow",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "inspector-below",
+              "default": "undefined",
+              "description": "The inspector stacks under the detail below this length, with the grammar of `collapse-below`; the default is\n`--ocelle-list-detail-inspector-collapse` as computed on the element. Not reflected.",
+              "kind": "field",
+              "name": "inspectorBelow",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "narrow",
+              "default": "false",
+              "description": "Forces the one-column layout whatever the element's measured size. Reflected.",
+              "kind": "field",
+              "name": "narrow",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "attribute": "detail-open",
+              "default": "false",
+              "description": "In one column, shows the detail pane, with the inspector stacked under it, instead of the list; in two or three\ncolumns it has no effect. Reflected.",
+              "kind": "field",
+              "name": "detailOpen",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "description": "Requests a measurement of the intrinsic sizes for the next animation frame, coalesced with any other trigger, for\na change the element cannot see: content a slotted element renders in its own shadow root, an attribute-only\nchange, or an image or a font loading.",
+              "kind": "method",
+              "name": "remeasure",
+              "privacy": "public",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            }
+          ],
+          "name": "OcelleListDetail",
+          "slots": [
+            {
+              "description": "The list pane.",
+              "name": "list"
+            },
+            {
+              "description": "The detail pane.",
+              "name": ""
+            },
+            {
+              "description": "The optional inspector pane.",
+              "name": "inspector"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-list-detail"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-list-detail.ts",
+            "name": "OcelleListDetail"
+          },
+          "kind": "js",
+          "name": "OcelleListDetail"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-list-detail.ts"
+    },
+    {
+      "declarations": [
+        {
           "attributes": [],
           "cssParts": [],
           "cssProperties": [],

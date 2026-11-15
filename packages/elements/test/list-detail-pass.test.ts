@@ -66,4 +66,68 @@ describe("ocelle-list-detail's measurement pass (R-13)", () => {
     await nextFrame();
     expect({ ...counted, later: passCount() - start }).toEqual({ sameFrame: true, passes: 1, later: 1 });
   });
+
+  // Guards added after the green implementation, on paths no red test reached (the mutants of the observer's options,
+  // its reset when the slots change and its stop on disconnection that survived the first mutation run;
+  // reviews/phase-4/plants.md § Guards). The surviving mutants are their proof that they can fail.
+  it("guard: a change of a text node's data two levels inside a pane's slotted element runs one pass (characterData, subtree)", async () => {
+    await driver.viewport(1280, 800);
+    await driver.mount(markup);
+    await nextFrame();
+    const start = passCount();
+    const text = document.getElementById("c-b")?.firstChild;
+    if (text instanceof Text) text.data = "Changed data";
+    await nextFrame();
+    await nextFrame();
+    expect({ text: text instanceof Text, passes: passCount() - start }).toEqual({ text: true, passes: 1 });
+  });
+
+  it("guard: an element that leaves the slots is no longer observed: after its slot attribute names no slot, a change inside it runs no pass", async () => {
+    await driver.viewport(1280, 800);
+    await driver.mount(markup);
+    const inspector = document.getElementById("c-c")?.parentElement;
+    inspector?.setAttribute("slot", "spare");
+    await driver.settle();
+    const start = passCount();
+    const target = document.getElementById("c-c");
+    if (target !== null) target.textContent = "Unassigned";
+    await nextFrame();
+    await nextFrame();
+    expect({ moved: inspector?.getAttribute("slot"), passes: passCount() - start }).toEqual({ moved: "spare", passes: 0 });
+  });
+
+  it("guard: a list-detail removed from the page runs no pass: the pass a change requested just before the removal is cancelled, and a change after it requests none", async () => {
+    await driver.viewport(1280, 800);
+    await driver.mount(markup);
+    await nextFrame();
+    const element = document.getElementById("c");
+    const start = passCount();
+    const before = document.getElementById("c-a");
+    if (before !== null) before.textContent = "Before the removal";
+    await Promise.resolve();
+    element?.remove();
+    await nextFrame();
+    await nextFrame();
+    const cancelled = passCount() - start;
+    const after = element?.querySelector("#c-b");
+    if (after !== null && after !== undefined) after.textContent = "After the removal";
+    await nextFrame();
+    await nextFrame();
+    expect({ removed: element?.isConnected, cancelled, after: passCount() - start }).toEqual({ removed: false, cancelled: 0, after: 0 });
+  });
+
+  it("guard: a list-detail moved to another frame measures again: in Frame N it shows one column, and a change in its detail runs one pass", async () => {
+    await driver.viewport(1280, 800);
+    await driver.mount(`${markup}<div id="narrow" data-frame="N"></div>`);
+    const element = document.getElementById("c");
+    if (element !== null) document.getElementById("narrow")?.append(element);
+    await driver.settle();
+    const detail = element?.shadowRoot?.querySelector(".pane.detail");
+    const start = passCount();
+    const target = document.getElementById("c-b");
+    if (target !== null) target.textContent = "Changed after the move";
+    await nextFrame();
+    await nextFrame();
+    expect({ detail: detail === null || detail === undefined ? "absent" : getComputedStyle(detail).display, passes: passCount() - start }).toEqual({ detail: "none", passes: 1 });
+  });
 });

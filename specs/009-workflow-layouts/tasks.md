@@ -506,7 +506,7 @@ with three columns.
 
 ### Spike (first)
 
-- [ ] T045 [US3] Spike in scratch files only, recorded in `specs/009-workflow-layouts/reviews/phase-4/spike.md`. The
+- [X] T045 [US3] Spike in scratch files only, recorded in `specs/009-workflow-layouts/reviews/phase-4/spike.md`. The
   measurement pass, run in one animation-frame callback, and the sizer, written to the per-instance constructed sheet,
   give US3-12's figures:
   - 1073 px and three columns in a 1196 px flex row;
@@ -525,7 +525,7 @@ with three columns.
 
 ### Tests (red, one commit)
 
-- [ ] T046 [P] [US3] `packages/elements/test/tiers.test.ts` (in-process, pure): the grammar of R-12 after trimming.
+- [X] T046 [P] [US3] `packages/elements/test/tiers.test.ts` (in-process, pure): the grammar of R-12 after trimming.
   - Accepted: `0`, `0px`, `0rem`, `56rem`, `55.5rem`, `880px`, `55em`, `56REM`, `" 56rem "`.
   - Rejected: `+56rem`, `.5rem`, `56.rem`, `5.6e1rem`, `-0`, `-1rem`, `120%`, `80vw`, `110cqi`, `700pt`, `900`,
     `calc(56rem)`, `var(--x)`, `wide`, `" "`, `""`.
@@ -534,7 +534,7 @@ with three columns.
   - The token default parsed with the same grammar, and its fallback to the published values. The constants (40rem,
     60rem) are compared with `packages/tokens/src/source.ts`.
   - The tier choice of data-model § list-detail for every `narrow`, `hasInspector` and size combination.
-- [ ] T047 [US3] `packages/elements/test/scenarios/list-detail.ts`: US3 scenarios 1 to 16 as shared bodies, each frame
+- [X] T047 [US3] `packages/elements/test/scenarios/list-detail.ts`: US3 scenarios 1 to 16 as shared bodies, each frame
   at its viewport. Pairs and plants:
   - **US3-1, US3-2, US3-3:** the tracks, the 1 px `color-rule` borders, and the inspector width including its border
     (1073 px, PLAN-CORRECTNESS-1-003 (a)).
@@ -576,28 +576,28 @@ with three columns.
   - **Edge case "list-detail with an empty list slot"** (analysis C3): with nothing in the `list` slot, in Frame R,
     the list pane is still 288 px wide and the detail takes the rest; with an empty default slot the detail column
     still shows, empty, at its width.
-- [ ] T048 [P] [US3] `packages/elements/test/list-detail-pass.test.ts` (in-process only): the once-per-frame pass.
+- [X] T048 [P] [US3] `packages/elements/test/list-detail-pass.test.ts` (in-process only): the once-per-frame pass.
   - Three `setTimeout(0)` tasks each make a light-DOM change in a pane, before one animation frame, and the test-only
     counter of `src/list-detail-measure.ts` reads exactly one pass.
   - The test first confirms, from the frame record (the `requestAnimationFrame` timestamp seen by each task), that
     all three tasks ran before that same frame. If they did not, the case retries until they do, and never counts
     across two frames (round 3 verify note).
   - Plant: one pass per `MutationObserver` delivery (FR-025, R-13).
-- [ ] T049 [P] [US3] `packages/elements/test/list-detail-upgrade.test.ts` (in-process, mutated): the upgrade rule of
+- [X] T049 [P] [US3] `packages/elements/test/list-detail-upgrade.test.ts` (in-process, mutated): the upgrade rule of
   R-14. Focus inside the list of an un-upgraded one-column element with `detail-open` moves to the detail at upgrade.
   Focus in the pane that stays shown is not moved. Also add the server-rendered fixture page for the same two cases in
   `packages/elements/test/browser/list-detail.test.ts`.
-- [ ] T050 [US3] `packages/elements/test/list-detail.test.ts` (in-process over T047) and
+- [X] T050 [US3] `packages/elements/test/list-detail.test.ts` (in-process over T047) and
   `packages/elements/test/browser/list-detail.test.ts` (fixture over T047). It follows T047, whose bodies it runs, and
   T049, which writes the same browser file.
-- [ ] T051 [P] [US3] `packages/elements/test/entry-list-detail.test.ts`. Extend `entry-root.test.ts` and
+- [X] T051 [P] [US3] `packages/elements/test/entry-list-detail.test.ts`. Extend `entry-root.test.ts` and
   `exports.test.ts`. In `node/manifest.test.ts`, the list-detail entry has:
   - `collapse-below`/`collapseBelow` and `inspector-below`/`inspectorBelow` (`string | undefined`, not reflected);
   - `narrow` and `detail-open`/`detailOpen` (boolean, reflected);
   - the method `remeasure(): void`, described;
   - the `list`, default and `inspector` slots;
   - no events, parts or CSS custom properties.
-- [ ] T052 [P] [US3] `packages/elements/test/node/readme.test.ts`, one assertion per item of FR-034:
+- [X] T052 [P] [US3] `packages/elements/test/node/readme.test.ts`, one assertion per item of FR-034:
   - § `ocelle-list-detail`: its attributes, slots, `remeasure()`, the tokens read, the focus rule, and that the host
     names its own landmarks or headings;
   - § Element conventions, the container-tier convention:
@@ -616,20 +616,20 @@ with three columns.
       through layout alone;
     - and that hosts set `narrow`, `detail-open` and the `*-below` thresholds from a task, not from a `ResizeObserver`
       callback (R-13; round 3 verify note).
-- [ ] T053 [P] [US3] `storybook/test/integration/elements-stories.test.ts`: the six list-detail stories, each
+- [X] T053 [P] [US3] `storybook/test/integration/elements-stories.test.ts`: the six list-detail stories, each
   rendering in light and dark with no `style` attribute and no class on the story's markup and no request outside the
   origin, as in T020 (no CSP count, R-15).
 
 ### Implementation (green)
 
-- [ ] T054 [US3] `packages/elements/src/tiers.ts`: the grammar, resolution, token default and tier choice of R-12 and
+- [X] T054 [US3] `packages/elements/src/tiers.ts`: the grammar, resolution, token default and tier choice of R-12 and
   data-model § list-detail.
-- [ ] T055 [US3] `packages/elements/src/list-detail-measure.ts` (internal, not exported, not in the manifest): the
+- [X] T055 [US3] `packages/elements/src/list-detail-measure.ts` (internal, not exported, not in the manifest): the
   measurement pass, the sizer figures written to the instance's constructed sheet, and the test-only pass counter.
   It is scheduled at most once per animation frame from the `MutationObserver` (`childList`, `characterData`,
   `subtree`, without `attributes`), `slotchange` and `remeasure()`. It runs synchronously before a tier change set
   through a property or attribute, and never from the host `ResizeObserver` (R-13).
-- [ ] T056 [US3] `packages/elements/src/ocelle-list-detail.ts`:
+- [X] T056 [US3] `packages/elements/src/ocelle-list-detail.ts`:
   - properties `collapseBelow`, `inspectorBelow`, `narrow` and `detailOpen` (the last two reflected), and the public
     `remeasure()`;
   - the host `ResizeObserver` measures and chooses the tier only;
@@ -642,15 +642,15 @@ with three columns.
   - the upgrade rule;
   - `:host([hidden])`;
   - `define`.
-- [ ] T057 [US3] `index.ts` and `browser.ts` define and export the element. `package.json` gets the export
+- [X] T057 [US3] `index.ts` and `browser.ts` define and export the element. `package.json` gets the export
   `./ocelle-list-detail.js`. Regenerate `custom-elements.json`.
-- [ ] T058 [US3] `storybook/stories/list-detail.stories.ts`: Three columns; Two columns, inspector stacked; One column,
+- [X] T058 [US3] `storybook/stories/list-detail.stories.ts`: Three columns; Two columns, inspector stacked; One column,
   list; One column, detail; No inspector; Right to left. Frames come from the copy of `frames.css` in
   `stories-layout.css` (T027).
-- [ ] T059 [US3] Produce the baselines with `visual:update` and confirm them in CI, as in T028. Run `gate:axe`.
-- [ ] T060 [US3] README sections of T052, and changelog entries for `ocelle-list-detail`, its entry point,
+- [X] T059 [US3] Produce the baselines with `visual:update` and confirm them in CI, as in T028. Run `gate:axe`.
+- [X] T060 [US3] README sections of T052, and changelog entries for `ocelle-list-detail`, its entry point,
   `remeasure()` and the container-tier convention. The `@ocelle/tokens` changelog names the six tokens (FR-035).
-- [ ] T061 [US3] Run each pairing plant of T047 to T049 once and record them in
+- [X] T061 [US3] Run each pairing plant of T047 to T049 once and record them in
   `specs/009-workflow-layouts/reviews/phase-4/plants.md`. Then run the gates as in T030.
 
 **Checkpoint**: `tdd-check.sh 4` reports `pass`; the review approves.
