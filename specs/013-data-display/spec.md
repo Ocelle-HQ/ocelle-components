@@ -181,6 +181,14 @@ uses them in server-rendered pages under a strict CSP.
 - Second tasks gate, "approve + fix all": the second analysis's findings are resolved by wording and added test
   bodies only, with no new public surface (`reviews/analysis/fixes-2.md`).
 
+**Operator decisions on the phase 3 spike** (2026-11-15; `reviews/phase-3/operator-spike-decisions.md`, evidence in
+`reviews/phase-3/spike.md`):
+
+- US3-3, (a) "Prove the wiring, not the exposure": no read a test can make in Chromium exposes a progressbar's value
+  text, while value, minimum and maximum read correctly. US3-3's test checks the visible `value-text` part ("7 of 12"
+  with `show-label`, absent while indeterminate, kept when clamped), and the README states that the library's tests
+  do not verify the value text's exposure to assistive technology (FR-031, US3-3).
+
 ## Scope
 
 **In scope:** four new custom elements in `@ocelle/elements` (`ocelle-facts` with its child `ocelle-fact`,
@@ -371,7 +379,12 @@ non-text contrast of the fill's mark against the track and the ground in light a
 2. **Given** the same element, **When** `value` changes to 9, **Then** the exposed value is 9 and the fill's inline
    size is 75% of the track at once, with no transition running. No event is emitted (the element has no user intent
    to report).
-3. **Given** a `value-text` of "7 of 12", **When** the tree is read, **Then** the exposed value text is "7 of 12".
+3. **Given** `value="7" max="12" label="Tasks done" value-text="7 of 12"` and `show-label`, **When** it renders,
+   **Then** the visible value text reads "7 of 12", and the accessibility tree holds the progressbar named "Tasks
+   done" with value 7, minimum 0 and maximum 12. While the bar is indeterminate the visible value text is absent, and
+   when the value is clamped it is kept as given. The value text's exposure to assistive technology is not verified by
+   the library's tests, since no read a test can make in Chromium exposes it; the README says so (operator decision
+   on the phase 3 spike, (a)).
 4. **Given** no `value` attribute, **When** it renders, **Then** the bar is indeterminate: the progressbar has a name
    and no current value, and a moving mark shows activity (for the bounded time FR-033 states).
 5. **Given** the indeterminate bar and `prefers-reduced-motion: reduce`, **When** it renders, **Then** no animation
@@ -676,7 +689,9 @@ the exceptions FR-050 and FR-054 name.
   basis carries this (a native `<progress>` in the shadow root, or `role="progressbar"` on an inner node or through
   `ElementInternals`) is settled in the plan's research by measuring the Chromium accessibility tree.
 - **FR-031**: A `value-text` property MUST set the exposed value text. Without it, the exposed value text is the
-  platform's default for the value.
+  platform's default for the value. The library's tests prove the wiring through the visible `value-text` part
+  (US3-3), not the exposure, which no test read in Chromium reaches; the README MUST say that the library's tests do
+  not verify the value text's exposure to assistive technology (operator decision on the phase 3 spike, (a)).
 - **FR-032**: Without a `value`, the bar MUST be indeterminate: no current value is exposed. A `value` that is not a
   finite number is treated as absent, and so is an empty or whitespace-only `value` attribute (`value=""` is
   indeterminate, not 0). Removing the `value` attribute, or setting the property to `null` or `undefined`, after a
