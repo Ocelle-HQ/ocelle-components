@@ -270,6 +270,9 @@ export const expectedTokens: readonly ExpectedToken[] = [
   },
   plain("motion-fast", "motion", "120ms", { property: "transition-duration", used: "0.12s" }),
   plain("motion-base", "motion", "200ms", { property: "transition-duration", used: "0.2s" }),
+  // 012 (research.md R-07; data-model.md § Tokens): one turn of the busy spinner, 0ms under reduced motion, and its angle
+  plain("motion-spin", "motion", "800ms", { property: "transition-duration", used: "0.8s" }),
+  plain("motion-turn", "motion", "1turn", { property: "rotate", used: "360deg" }),
   plain("easing-standard", "motion", "cubic-bezier(0.22, 1, 0.36, 1)", {
     property: "transition-timing-function",
     used: "cubic-bezier(0.22, 1, 0.36, 1)",

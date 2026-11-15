@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { css, json, names } from "../src/generate.ts";
-import { fixture, withRecord } from "./fixture.ts";
+import { fixture, withAdded, withRecord } from "./fixture.ts";
 import { blocks, fontFaceOutline, fourBlocks } from "./stylesheet.ts";
 
 // css() on fixture sources (research.md R-02, R-03, R-12; FR-002, FR-005, FR-006, FR-007): the four blocks in order,
@@ -111,6 +111,26 @@ describe("css()", () => {
     ]);
   });
 
+  // 012 (research.md R-07, PLAN-CORRECTNESS-1-007; plan decision 29; tasks.md T042): the block holds exactly the motion
+  // durations of the source, in source order, each 0ms: a duration (ms) of group motion gets it, an angle (motion-turn),
+  // an easing and a duration of another group do not. A stricter replacement of "exactly two names".
+  it("sets exactly every motion duration of the source to 0ms under reduced motion, in source order, and no motion angle, easing or other group's duration", () => {
+    const source = withAdded(
+      { name: "motion-spin", group: "motion", value: "800ms" },
+      { name: "motion-turn", group: "motion", value: "1turn" },
+      { name: "easing-standard", group: "motion", value: "cubic-bezier(0.22, 1, 0.36, 1)" },
+      { name: "delay-other", group: "shell", value: "50ms" },
+      { name: "motion-slow", group: "motion", value: "1200ms" },
+    );
+    expect([...blocks(css(source)).reducedMotion.entries()]).toEqual([
+      ["--ocelle-motion-fast", "0ms"],
+      ["--ocelle-motion-base", "0ms"],
+      ["--ocelle-motion-spin", "0ms"],
+      ["--ocelle-motion-slow", "0ms"],
+    ]);
+    expect([...blocks(css(withRecord("motion-fast", undefined))).reducedMotion.entries()]).toEqual([["--ocelle-motion-base", "0ms"]]);
+  });
+
   it("declares a derived token as var() of its source, alone or inside a larger value (FR-002)", () => {
     const sheet = blocks(css(fixture));
     expect({
@@ -145,11 +165,13 @@ describe("css()", () => {
     });
   });
 
-  it("writes an empty source as the @font-face and empty blocks, with the reduced-motion block", () => {
+  // 012 (tasks.md T042): the reduced-motion block follows the source's motion durations, so an empty source gives an
+  // empty block (it held the two names whatever the source before; reviews/phase-4/notes.md).
+  it("writes an empty source as the @font-face and empty blocks, with an empty reduced-motion block", () => {
     expect(css([])).toBe(
       fontFace +
         ":root {\n}\n\n@media (prefers-color-scheme: dark) {\n  :root:not([data-theme=\"light\"]) {\n  }\n}\n\n:root[data-theme=\"dark\"] {\n}\n\n" +
-        "@media (prefers-reduced-motion: reduce) {\n  :root {\n    --ocelle-motion-fast: 0ms;\n    --ocelle-motion-base: 0ms;\n  }\n}\n",
+        "@media (prefers-reduced-motion: reduce) {\n  :root {\n  }\n}\n",
     );
   });
 });

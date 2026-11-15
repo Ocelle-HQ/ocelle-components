@@ -3,6 +3,7 @@ import { commands } from "vitest/browser";
 import "../src/ocelle-button.ts";
 import "../src/ocelle-icon.ts";
 import { inProcessDriver } from "./in-process.ts";
+import { busyScenarios, busySinkScenarios } from "./scenarios/busy.ts";
 import { buttonScenarios } from "./scenarios/button.ts";
 import { linkScenarios, linkSinkScenarios } from "./scenarios/link.ts";
 
@@ -28,6 +29,45 @@ describe("ocelle-button, in process (US1)", { timeout: 60_000 }, () => {
 describe("ocelle-button in link mode and its ARIA passthrough, in process (US2)", { timeout: 60_000 }, () => {
   it.each([...linkScenarios, ...linkSinkScenarios])("$name", async ({ run, expected }) => {
     expect(await run(driver)).toEqual(expected);
+  });
+});
+
+// User Story 3 (tasks.md T043): the shared busy bodies of scenarios/busy.ts, with reduced motion and forced colours as
+// each body sets them, and its in-process busy link body on the navigation sink's records.
+describe("a busy ocelle-button, in process (US3)", { timeout: 60_000 }, () => {
+  it.each([...busyScenarios, ...busySinkScenarios])("$name", async ({ run, expected }) => {
+    expect(await run(driver)).toEqual(expected);
+  });
+});
+
+// `busy` reflects (data-model.md § `ocelle-button`; FR-015; tasks.md T043): set from script it reaches the host's
+// attribute and the inner control's busy state, and the attribute reads back as a boolean, false by default.
+describe("ocelle-button's reflected busy property", () => {
+  afterEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  it("is false by default, reflects true as the busy attribute and the inner control's aria-busy, and removes both when set false", async () => {
+    const host = document.createElement("ocelle-button") as HTMLElementTagNameMap["ocelle-button"] & { busy?: boolean };
+    host.textContent = "Save";
+    document.body.append(host);
+    await host.updateComplete;
+    const initial = { busy: host.busy, attribute: host.hasAttribute("busy") };
+    host.busy = true;
+    await host.updateComplete;
+    const set = { attribute: host.getAttribute("busy"), inner: host.shadowRoot?.querySelector('[part="control"]')?.getAttribute("aria-busy") ?? null };
+    host.busy = false;
+    await host.updateComplete;
+    const cleared = { attribute: host.hasAttribute("busy"), inner: host.shadowRoot?.querySelector('[part="control"]')?.getAttribute("aria-busy") ?? null };
+    expect({ initial, set, cleared }).toEqual({ initial: { busy: false, attribute: false }, set: { attribute: "", inner: "true" }, cleared: { attribute: false, inner: null } });
+  });
+
+  it("reads the busy attribute as a boolean", async () => {
+    document.body.innerHTML = '<ocelle-button busy>Save</ocelle-button><ocelle-button>Save</ocelle-button>';
+    const [on, off] = [...document.querySelectorAll("ocelle-button")] as (HTMLElementTagNameMap["ocelle-button"] & { busy?: boolean })[];
+    await on?.updateComplete;
+    await off?.updateComplete;
+    expect({ on: on?.busy, off: off?.busy }).toEqual({ on: true, off: false });
   });
 });
 

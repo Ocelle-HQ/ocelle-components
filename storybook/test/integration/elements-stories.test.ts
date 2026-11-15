@@ -195,6 +195,9 @@ interface ButtonSeen {
   readonly expanded: string | null;
   readonly pressed: string | null;
   readonly current: string | null;
+  // 012 phase 4 (tasks.md T044): the host's busy attribute and the inner control's aria-busy.
+  readonly busy: boolean;
+  readonly ariaBusy: string | null;
 }
 
 /** What a button story's page shows: its theme, the base stylesheet, its buttons and how many hold focus. */
@@ -219,6 +222,8 @@ function observeButtons(page: Page): Promise<unknown> {
       expanded: button.shadowRoot?.querySelector('[part="control"]')?.getAttribute("aria-expanded") ?? null,
       pressed: button.shadowRoot?.querySelector('[part="control"]')?.getAttribute("aria-pressed") ?? null,
       current: button.shadowRoot?.querySelector('[part="control"]')?.getAttribute("aria-current") ?? null,
+      busy: button.hasAttribute("busy"),
+      ariaBusy: button.shadowRoot?.querySelector('[part="control"]')?.getAttribute("aria-busy") ?? null,
     })),
     focused: [...document.querySelectorAll("#storybook-root ocelle-button")].filter((button) => button.shadowRoot?.activeElement?.getAttribute("part") === "control").length,
   }));
@@ -226,7 +231,7 @@ function observeButtons(page: Page): Promise<unknown> {
 
 /** A button of a story with the attributes given, the others absent. */
 function seen(attributes: Partial<ButtonSeen> = {}): ButtonSeen {
-  return { variant: null, size: null, flush: false, ground: null, disabled: false, label: null, rendered: true, href: null, tag: "button", expanded: null, pressed: null, current: null, ...attributes };
+  return { variant: null, size: null, flush: false, ground: null, disabled: false, label: null, rendered: true, href: null, tag: "button", expanded: null, pressed: null, current: null, busy: false, ariaBusy: null, ...attributes };
 }
 
 const variants = [seen({ variant: "primary" }), seen({ variant: "secondary" }), seen({ variant: "quiet" })];
@@ -272,6 +277,15 @@ const buttonStories: readonly { readonly id: string; readonly buttons: readonly 
     buttons: [seen({ flush: true, size: "compact", href: "#home", tag: "a" }), seen({ flush: true, size: "compact", href: "#projects", tag: "a", current: "page" })],
   },
   { id: "elements-ocelle-button--pressed", buttons: [seen({ variant: "quiet", pressed: "true" }), seen({ variant: "quiet", pressed: "false" })] },
+  // 012 phase 4 (tasks.md T044, T048): the busy stories (each variant, with an icon and icon-only, a link, compact),
+  // each busy button reporting aria-busy on its inner control.
+  { id: "elements-ocelle-button--busy", buttons: variants.map((each) => ({ ...each, busy: true, ariaBusy: "true" })) },
+  {
+    id: "elements-ocelle-button--busy-with-icon",
+    buttons: [seen({ variant: "primary", busy: true, ariaBusy: "true" }), seen({ variant: "quiet", label: "Close", busy: true, ariaBusy: "true" })],
+  },
+  { id: "elements-ocelle-button--busy-link", buttons: [seen({ href: "#projects", tag: "a", busy: true, ariaBusy: "true" }), seen({ flush: true, href: "#projects", tag: "a", busy: true, ariaBusy: "true" })] },
+  { id: "elements-ocelle-button--busy-compact", buttons: variants.map((each) => ({ ...each, size: "compact", busy: true, ariaBusy: "true" })) },
 ];
 
 describe("the ocelle-button stories in the built Storybook (012 US1, FR-050)", { timeout: 60_000 }, () => {

@@ -36,6 +36,14 @@ describe("gates/README.md (002 FR-022)", () => {
     for (const plant of ["a-monospace", "b-ochre-pair-not-excluded", "g-forced-colours-override", "g-system-colour-mapping", "source-invalid"]) expect(row("brand-rules")?.[4]).toContain(plant);
   });
 
+  // 012 (plan decision 29; operator decision at phase 4, option (a); tasks.md T042a, T045a): the brand-rules row records
+  // that 012 changed 002's rule (f) to every motion duration of the token source at 0ms, and lists its new plant.
+  it("records in the brand-rules row that 012 changed rule (f) to every motion duration at 0ms, and lists f-motion-spin-missing beside f-motion-not-zero", () => {
+    const row = rows(section("The gates")).find((cells) => cells[0] === "`brand-rules`");
+    expect(row?.[3]).toContain("reduced motion at 0ms for every motion duration of the token source (012 changed 002's rule (f), which named two)");
+    expect(["f-motion-not-zero", "f-motion-spin-missing"].filter((plant) => !(row?.[4] ?? "").includes(`\`${plant}\``))).toEqual([]);
+  });
+
   it("lists manifest in The gates, with its check, command and plants (005 FR-009, research.md R-06)", () => {
     const gates = rows(section("The gates"));
     const row = gates.find((cells) => cells[0] === "`manifest`");

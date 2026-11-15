@@ -314,7 +314,7 @@ describe("generate(root) on the repository's element source", () => {
     ]);
   });
 
-  it('declares ocelle-button with its tag name, class, variant, size, flush, ground (with "chrome"), label and disabled, the click() method, the default and icon slots, the part control and the event ocelle-button-activate with its detail type, each described (012 FR-009, FR-053; contracts/elements-package.md § ocelle-button)', async () => {
+  it('declares ocelle-button with its tag name, class, variant, size, flush, ground (with "chrome"), label, disabled and busy, the click() method, the default and icon slots, the part control and the event ocelle-button-activate with its detail type, each described (012 FR-009, FR-053; contracts/elements-package.md § ocelle-button)', async () => {
     const manifest = await generate(repo);
     const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
     const [button] = modules.find((module) => module.path === "src/ocelle-button.ts")?.declarations ?? [];
@@ -331,6 +331,8 @@ describe("generate(root) on the repository's element source", () => {
       { kind: "field", name: "ground", privacy: "public", type: { text: ground }, default: "undefined", attribute: "ground", reflects: true, described: true },
       { kind: "field", name: "label", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "label", described: true },
       { kind: "field", name: "disabled", privacy: "public", type: { text: "boolean" }, default: "false", attribute: "disabled", reflects: true, described: true },
+      // 012 phase 4 (tasks.md T043, T048; FR-015): busy.
+      { kind: "field", name: "busy", privacy: "public", type: { text: "boolean" }, default: "false", attribute: "busy", reflects: true, described: true },
       // 012 phase 3 (tasks.md T033, T037): the link properties.
       ...["href", "target", "rel", "download"].map((name) => ({ kind: "field", name, privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: name, reflects: true, described: true })),
       { kind: "method", name: "click", return: { type: { text: "void" } }, described: true },
@@ -346,6 +348,7 @@ describe("generate(root) on the repository's element source", () => {
       { name: "ground", fieldName: "ground", type: { text: ground }, default: "undefined", described: true },
       { name: "label", fieldName: "label", type: { text: "string | undefined" }, default: "undefined", described: true },
       { name: "disabled", fieldName: "disabled", type: { text: "boolean" }, default: "false", described: true },
+      { name: "busy", fieldName: "busy", type: { text: "boolean" }, default: "false", described: true },
       ...["href", "target", "rel", "download"].map((name) => ({ name, fieldName: name, type: { text: "string | undefined" }, default: "undefined", described: true })),
     ]);
     expect(described(button?.cssStates)).toEqual([
