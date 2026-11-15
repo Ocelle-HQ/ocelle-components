@@ -171,6 +171,15 @@ describe("normalise(raw, names): what is not an element, and members that are no
   });
 });
 
+describe("normalise(raw, names): the observed standard attributes (specs/010-feedback-forms FR-034; T022a, T030)", () => {
+  it("drops aria-label, role, hidden, form, aria-invalid, aria-required, aria-disabled and aria-description, and keeps an attribute of the element's own without a field", () => {
+    const changed = structuredClone(raw);
+    const standard = ["role", "hidden", "form", "aria-invalid", "aria-required", "aria-disabled", "aria-description"];
+    (declaration(changed).attributes as Json[]).push(...standard.map((name) => ({ name })), { name: "value", type: { text: "string" }, default: '""', description: "The default value." });
+    expect((declaration(normalise(changed, [])).attributes as Json[]).map((attribute) => attribute.name)).toEqual(["name", "label", "value"]);
+  });
+});
+
 describe("iconNames(text of src/icons.ts)", () => {
   it.each([
     { label: "a union, after other statements", text: 'export type Other = "x" | "y";\nexport type IconName = "close" | "menu";\n', names: ["close", "menu"] },
@@ -219,6 +228,89 @@ describe("generate(root) on other element sources", () => {
   });
 });
 
+/** An internal base class in src/base-control.ts: a reflected property, a getter, a method, a focus() override and observed standard attributes. */
+const baseControl = `import { LitElement } from "lit";
+
+/** A base. */
+export class BaseControl extends LitElement {
+  static override properties = { name: { type: String, reflect: true } };
+
+  /** The observed standard attributes. */
+  static override get observedAttributes(): string[] {
+    return [...super.observedAttributes, "aria-label", "form", "aria-invalid"];
+  }
+
+  /**
+   * The name.
+   *
+   * @default ""
+   */
+  declare name: string;
+
+  /** The owning form. */
+  get form(): HTMLFormElement | null {
+    return null;
+  }
+
+  /** Whether it is valid. */
+  checkValidity(): boolean {
+    return true;
+  }
+
+  /** Focuses the inner control. */
+  override focus(options?: FocusOptions): void {
+    super.focus(options);
+  }
+
+  /** A seam. */
+  protected seam(): void {}
+}
+`;
+
+/** An element derived from BaseControl, with a property of its own. */
+const derived = `import { BaseControl } from "./base-control.ts";
+
+/**
+ * An alpha.
+ *
+ * @tagname ocelle-alpha
+ */
+export class Alpha extends BaseControl {
+  static override properties = { label: {} };
+
+  /**
+   * The label.
+   *
+   * @default undefined
+   */
+  declare label: string | undefined;
+}
+`;
+
+describe("generate(root) on an element derived from an internal base class (specs/010-feedback-forms FR-034, #27; PLAN-CORRECTNESS-1-004; T030)", () => {
+  it("folds the base's public members and attributes into the element's entry, focus() included, and adds no module, superclass or inheritedFrom naming the base's source", async () => {
+    const dir = root({ "packages/elements/src/base-control.ts": baseControl, "packages/elements/src/ocelle-alpha.ts": derived });
+    const manifest = await generate(dir);
+    const element = declaration(manifest);
+    const focus = (element.members as Json[] | undefined)?.find((member) => member.name === "focus");
+    expect({
+      paths: (manifest.modules as Json[]).map((module) => module.path),
+      members: ((element.members ?? []) as Json[]).map((member) => member.name),
+      attributes: ((element.attributes ?? []) as Json[]).map((attribute) => attribute.name),
+      focus: { kind: focus?.kind, parameters: focus?.parameters, described: typeof focus?.description === "string" && focus.description !== "" },
+      superclass: element.superclass,
+      mentions: JSON.stringify(manifest).includes("base-control"),
+    }).toEqual({
+      paths: ["src/ocelle-alpha.ts"],
+      members: ["label", "name", "form", "checkValidity", "focus"],
+      attributes: ["label", "name"],
+      focus: { kind: "method", parameters: [{ name: "options", optional: true, type: { text: "FocusOptions" } }], described: true },
+      superclass: { name: "LitElement", package: "lit" },
+      mentions: false,
+    });
+  });
+});
+
 describe("writeManifest(root)", () => {
   it("writes packages/elements/custom-elements.json from the root's element source, as serialise(generate(root))", async () => {
     const dir = root({});
@@ -247,7 +339,7 @@ describe("generate(root) on the repository's element source", () => {
     const manifest = await generate(repo);
     const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
     expect(manifest.schemaVersion).toBe("1.0.0");
-    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-icon.ts", "src/ocelle-notice.ts"]);
+    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-form-input.ts", "src/ocelle-icon.ts", "src/ocelle-notice.ts"]);
     const [icon] = modules.find((module) => module.path === "src/ocelle-icon.ts")?.declarations ?? [];
     expect(icon).toMatchObject({
       kind: "class",
@@ -329,6 +421,85 @@ describe("generate(root) on the repository's element source", () => {
       { name: "size", fieldName: "size", type: { text: sizes }, default: '"regular"', described: true },
       { name: "announce", fieldName: "announce", type: { text: "boolean" }, default: "false", described: true },
     ]);
+  });
+
+  it('declares ocelle-form-input with its tag name and class, the shared members of contracts/elements.md and its own, the value attribute without a field, the event ocelle-form-input-change with its detail type, the parts label, control, description and error, no slot and no CSS property, and no form, aria-*, role or hidden attribute (specs/010-feedback-forms FR-021, FR-029, FR-034; analysis G9, I15, I16, U6)', async () => {
+    const manifest = await generate(repo);
+    const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [entry] = modules.find((module) => module.path === "src/ocelle-form-input.ts")?.declarations ?? [];
+    const described = (value: unknown): boolean => typeof value === "string" && value !== "";
+    const byName = (a: Json, b: Json): number => (String(a.name) < String(b.name) ? -1 : 1);
+    const defined = (value: Json): Json => Object.fromEntries(Object.entries(value).filter(([, each]) => each !== undefined));
+    const member = (each: Json): Json => {
+      const type = each.type as { text?: string } | undefined;
+      const returned = each.return as { type?: { text?: string } } | undefined;
+      const parameters = each.parameters as { name: string; optional?: boolean; type?: { text?: string } }[] | undefined;
+      return defined({
+        kind: each.kind,
+        name: each.name,
+        type: type?.text,
+        default: each.default,
+        attribute: each.attribute,
+        reflects: each.reflects,
+        readonly: each.readonly,
+        returns: returned?.type?.text,
+        parameters: parameters?.map((parameter) => `${parameter.name}${parameter.optional === true ? "?" : ""}: ${String(parameter.type?.text)}`),
+        described: described(each.description),
+      });
+    };
+    const field = (name: string, type: string, value: string, attribute?: string, reflects?: boolean): Json => defined({ kind: "field", name, type, default: value, attribute, reflects, described: true });
+    const getter = (name: string, type: string): Json => ({ kind: "field", name, type, readonly: true, described: true });
+    const method = (name: string, returns: string, parameters?: string[]): Json => defined({ kind: "method", name, returns, parameters, described: true });
+    const types = '"text" | "email" | "url" | "tel" | "search" | "password" | "number"';
+    const optional = (name: string, attribute: string, type = "string | undefined"): Json => field(name, type, "undefined", attribute, true);
+    const members = [
+      field("name", "string", '""', "name", true),
+      field("label", "string", '""', "label", true),
+      field("description", "string", '""', "description", true),
+      field("error", "string", '""', "error", true),
+      field("required", "boolean", "false", "required", true),
+      field("disabled", "boolean", "false", "disabled", true),
+      field("value", "string", '""'),
+      getter("form", "HTMLFormElement | null"),
+      getter("labels", "NodeList"),
+      getter("validity", "ValidityState"),
+      getter("validationMessage", "string"),
+      getter("willValidate", "boolean"),
+      method("checkValidity", "boolean"),
+      method("reportValidity", "boolean"),
+      method("focus", "void", ["options?: FocusOptions"]),
+      field("type", types, '"text"', "type", true),
+      optional("placeholder", "placeholder"),
+      optional("autocomplete", "autocomplete"),
+      optional("inputMode", "inputmode"),
+      optional("pattern", "pattern"),
+      optional("min", "min"),
+      optional("max", "max"),
+      optional("step", "step"),
+      optional("minLength", "minlength", "number | undefined"),
+      optional("maxLength", "maxlength", "number | undefined"),
+      field("readOnly", "boolean", "false", "readonly", true),
+    ];
+    const attribute = (each: Json): Json => defined({ name: each.name, fieldName: each.fieldName, type: (each.type as { text?: string } | undefined)?.text, default: each.default, described: described(each.description) });
+    const attributes = [
+      ...members.filter((each) => each.attribute !== undefined).map((each) => ({ name: each.attribute, fieldName: each.name, type: each.type, default: each.default, described: true })),
+      { name: "value", type: "string", default: '""', described: true },
+    ];
+    const valueAttribute = ((entry?.attributes ?? []) as Json[]).find((each) => each.name === "value");
+    expect(entry).toMatchObject({ kind: "class", name: "OcelleFormInput", tagName: "ocelle-form-input", customElement: true, slots: [], cssProperties: [], superclass: { name: "LitElement", package: "lit" } });
+    expect({
+      members: ((entry?.members ?? []) as Json[]).map(member).sort(byName),
+      attributes: ((entry?.attributes ?? []) as Json[]).map(attribute).sort(byName),
+      valueDescription: String(valueAttribute?.description).includes("default value") && String(valueAttribute?.description).includes("reset"),
+      events: ((entry?.events ?? []) as Json[]).map((event) => ({ name: event.name, type: (event.type as { text?: string } | undefined)?.text, described: described(event.description) })),
+      parts: ((entry?.cssParts ?? []) as Json[]).map((part) => ({ name: part.name, described: described(part.description) })),
+    }).toEqual({
+      members: [...members].sort(byName),
+      attributes: [...attributes].sort(byName),
+      valueDescription: true,
+      events: [{ name: "ocelle-form-input-change", type: "CustomEvent<{ value: string }>", described: true }],
+      parts: ["label", "control", "description", "error"].map((name) => ({ name, described: true })),
+    });
   });
 
   it("rejects a root without an element module, naming the directory", async () => {

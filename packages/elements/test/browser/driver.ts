@@ -7,11 +7,11 @@
 // (`<page>-base.html`), so `mount` with `base` must be called on such a page.
 import { inflateSync } from "node:zlib";
 import type { Page } from "playwright";
-import { axNodes, axSubtree, emulate } from "../commands.ts";
+import { axDetails, axNodes, axSubtree, emulate } from "../commands.ts";
 import { fixtureCapture } from "../live.ts";
 import type { Snapshot } from "../live-reading.ts";
 import { decodePng } from "../pixels.ts";
-import type { Bounds, Box, Drawing, Entries, FixtureDriver, InsertHow, Paint, Part, Placement, Sheets } from "../scenarios/driver.ts";
+import type { Bounds, Box, Drawing, Entries, FixtureDriver, Heard, InsertHow, Paint, Part, Placement, Sheets, Validity } from "../scenarios/driver.ts";
 import type { Served } from "./serve.ts";
 
 /**
@@ -78,6 +78,9 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
       keyed = false;
       seen = served?.submissions().length ?? 0;
       await page.evaluate((html) => {
+        const holder = globalThis as unknown as { ocelleListening?: (() => void)[]; ocelleHeard?: unknown[] };
+        for (const stop of (holder.ocelleListening ?? []).splice(0)) stop();
+        holder.ocelleHeard = [];
         document.adoptedStyleSheets = [];
         document.documentElement.removeAttribute("data-theme");
         document.body.innerHTML = html;
@@ -440,6 +443,117 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
         }
         return path;
       }),
+    // The phase 3 steps (specs/010-feedback-forms T031 to T033).
+    axDetails: async (id) => {
+      const session = await page.context().newCDPSession(page);
+      try {
+        return await axDetails(session, id);
+      } finally {
+        await session.detach();
+      }
+    },
+    listen: async (ids, types) => {
+      await page.evaluate(({ ids, types }) => {
+        const holder = globalThis as unknown as { ocelleListening?: (() => void)[]; ocelleHeard?: unknown[] };
+        const listening = (holder.ocelleListening ??= []);
+        const heard = (holder.ocelleHeard ??= []);
+        const plain = (value: unknown): unknown => (typeof value === "string" || typeof value === "number" || typeof value === "boolean" ? value : null);
+        const nameOf = (target: EventTarget | null): string => (target instanceof Element ? (target.id === "" ? target.localName : target.id) : "");
+        for (const id of ids) {
+          const target = document.getElementById(id);
+          if (target === null) throw new Error(`no #${id} on the page`);
+          for (const type of types) {
+            const listener = (event: Event): void => {
+              const detail = (event as CustomEvent<unknown>).detail;
+              heard.push({
+                type: event.type,
+                at: id,
+                target: nameOf(event.target),
+                value: plain((target as unknown as Record<string, unknown>).value),
+                detail: detail === undefined || detail === null ? null : structuredClone(detail),
+                bubbles: event.bubbles,
+                composed: event.composed,
+              });
+            };
+            target.addEventListener(type, listener);
+            listening.push(() => {
+              target.removeEventListener(type, listener);
+            });
+          }
+        }
+      }, { ids, types });
+    },
+    heard: () =>
+      page.evaluate(() => {
+        const holder = globalThis as unknown as { ocelleHeard?: unknown[] };
+        return (holder.ocelleHeard ?? []).splice(0) as Heard[];
+      }),
+    validity: (id) =>
+      page.evaluate((id): Validity => {
+        const element = document.getElementById(id);
+        if (element === null) throw new Error(`no #${id} on the page`);
+        const control = element as unknown as { validity?: ValidityState; validationMessage?: string; willValidate?: boolean };
+        // An element without a validity (one not upgraded, say) reads as no flag set, no message and not validated.
+        const validity = control.validity ?? ({ valid: false, valueMissing: false, typeMismatch: false, patternMismatch: false, tooLong: false, tooShort: false, rangeUnderflow: false, rangeOverflow: false, stepMismatch: false, badInput: false, customError: false } as ValidityState);
+        return {
+          valid: validity.valid,
+          valueMissing: validity.valueMissing,
+          typeMismatch: validity.typeMismatch,
+          patternMismatch: validity.patternMismatch,
+          tooLong: validity.tooLong,
+          tooShort: validity.tooShort,
+          rangeUnderflow: validity.rangeUnderflow,
+          rangeOverflow: validity.rangeOverflow,
+          stepMismatch: validity.stepMismatch,
+          badInput: validity.badInput,
+          customError: validity.customError,
+          message: control.validationMessage ?? "",
+          willValidate: control.willValidate ?? false,
+        };
+      }, id),
+    ids: (id, name) =>
+      page.evaluate(({ id, name }) => {
+        const element = document.getElementById(id);
+        if (element === null) throw new Error(`no #${id} on the page`);
+        const value = (element as unknown as Record<string, unknown>)[name];
+        if (value === null || value === undefined) return [];
+        if (value instanceof Element) return [value.id];
+        return [...(value as Iterable<Element>)].map((each) => each.id);
+      }, { id, name }),
+    typeOf: (id, name) =>
+      page.evaluate(({ id, name }) => {
+        const element = document.getElementById(id);
+        if (element === null) throw new Error(`no #${id} on the page`);
+        return typeof (element as unknown as Record<string, unknown>)[name];
+      }, { id, name }),
+    has: (id, name) =>
+      page.evaluate(({ id, name }) => {
+        const element = document.getElementById(id);
+        if (element === null) throw new Error(`no #${id} on the page`);
+        return name in element;
+      }, { id, name }),
+    call: async (id, method, ...args) => {
+      const result = await page.evaluate(({ id, method, args }) => {
+        const element = document.getElementById(id);
+        if (element === null) throw new Error(`no #${id} on the page`);
+        const value = (element as unknown as Record<string, (...given: unknown[]) => unknown>)[method]?.(...args);
+        return typeof value === "string" || typeof value === "number" || typeof value === "boolean" ? value : null;
+      }, { id, method, args });
+      await settle(page);
+      return result;
+    },
+    propertyIn: (id, inner, name) =>
+      page.evaluate(({ id, inner, name }) => {
+        const target = document.getElementById(id)?.shadowRoot?.querySelector(inner);
+        if (target === null || target === undefined) return null;
+        const value = (target as unknown as Record<string, unknown>)[name];
+        return typeof value === "string" || typeof value === "number" || typeof value === "boolean" ? value : null;
+      }, { id, inner, name }),
+    pseudoIn: (id, inner, pseudo, property) =>
+      page.evaluate(({ id, inner, pseudo, property }) => {
+        const target = document.getElementById(id)?.shadowRoot?.querySelector(inner);
+        return target === null || target === undefined ? "" : getComputedStyle(target, pseudo).getPropertyValue(property);
+      }, { id, inner, pseudo, property }),
     navigateAwayAndBack: async () => {
       const record = (): void => {
         addEventListener("pageshow", (event) => {
