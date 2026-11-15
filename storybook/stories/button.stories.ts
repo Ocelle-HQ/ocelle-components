@@ -121,3 +121,34 @@ export const RightToLeft: StoryObj = {
   name: "Right to left",
   render: () => `<div dir="rtl"><p><ocelle-button>${folder}Open project</ocelle-button></p><p><ocelle-button flush>${folder}Projects</ocelle-button></p></div>`,
 };
+
+// 012 phase 3 (tasks.md T039; spec US2, FR-050): link mode in each variant and flush, a disabled link, a link that opens
+// a new tab, and the moved states expanded, current and pressed, each reported on the inner control. The links point
+// at fragments of the story page, so a capture never navigates.
+export const Link: StoryObj = {
+  render: () =>
+    '<p><ocelle-button href="#projects">Projects</ocelle-button> <ocelle-button variant="primary" href="#new">New project</ocelle-button> <ocelle-button variant="quiet" href="#docs">Docs</ocelle-button></p><p><ocelle-button flush href="#projects">Projects</ocelle-button></p>',
+};
+
+export const LinkDisabled: StoryObj = {
+  name: "Link, disabled",
+  render: () =>
+    '<p><ocelle-button href="#projects" disabled>Projects</ocelle-button> <ocelle-button variant="primary" href="#new" disabled>New project</ocelle-button> <ocelle-button variant="quiet" href="#docs" disabled>Docs</ocelle-button></p><p><ocelle-button flush href="#projects" disabled>Projects</ocelle-button></p>',
+};
+
+export const LinkNewTab: StoryObj = {
+  name: "Link, new tab",
+  render: () => '<p><ocelle-button href="#docs" target="_blank">Docs</ocelle-button> <ocelle-button variant="quiet" href="#docs" target="_blank">Docs</ocelle-button></p>',
+};
+
+export const Expanded: StoryObj = {
+  render: () => '<p><ocelle-button aria-expanded="true" aria-controls="filters">Filters</ocelle-button> <ocelle-button variant="quiet" aria-haspopup="menu" aria-expanded="false">Account</ocelle-button></p><p id="filters">Status: open</p>',
+};
+
+export const Current: StoryObj = {
+  render: () => '<nav aria-label="Breadcrumb"><ocelle-button flush size="compact" href="#home">Home</ocelle-button> / <ocelle-button flush size="compact" href="#projects" aria-current="page">Projects</ocelle-button></nav><h2>Projects</h2>',
+};
+
+export const Pressed: StoryObj = {
+  render: () => '<p><ocelle-button variant="quiet" aria-pressed="true">Bold</ocelle-button> <ocelle-button variant="quiet" aria-pressed="false">Italic</ocelle-button></p>',
+};
