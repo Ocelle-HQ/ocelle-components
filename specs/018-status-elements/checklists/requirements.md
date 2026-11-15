@@ -50,3 +50,14 @@
   `pulse`, the motion preference changing to no preference); reconnection is read as a new render, not as a restart
   under the SPEC-1-02 decision, and needs no state across disconnection. The notes SPEC-2-03 to SPEC-2-06 are also
   addressed (minimum inline size, default-token limit of 5 s, `aria-pressed="mixed"`, op 016 under Dependencies).
+- Spec check 3 (`reviews/spec/check-3.md`): its two blocking findings are fixed and its operator question answered
+  (`reviews/spec/check-3-fixes.md`). SPEC-3-01: FR-012 lists four cases that start a pulse run, and the list is
+  complete; (d) is the indicator starting to be rendered again (a `display: none` or `hidden` ancestor removed, a
+  closed `<details>` opened), with no state kept; US1-4 and SC-004 match. SPEC-3-02: FR-035 (d) keeps focus on the
+  new inner control at a button/link switch (with the focus ring only if it showed before), and a pill that becomes
+  static while focused loses focus as a removed node does, which the README tells hosts to handle (US4-10, US4-11).
+  SPEC-3-03, operator answer (b): `aria-pressed` is handled as on `ocelle-button` (moved and mirrored in both modes,
+  applied in button mode only; `:state(pressed)` and the pressed look for `true` only). The reconnection reading of
+  FR-012 (b) is confirmed by the operator and recorded under "Operator decisions after spec check 3". The notes
+  SPEC-3-04 to SPEC-3-08 are also addressed (FR-005 states, helper extension constraint, ARIA states left on a static
+  host, mirrors on a pill static at upgrade, README warning on frequent re-rendering).

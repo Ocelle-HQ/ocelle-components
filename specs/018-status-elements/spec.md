@@ -46,6 +46,17 @@ ocelle-action-row or ocelle-tooltip; each element meeting #7's Done-when checkli
 - Success criterion 1 (SPEC-1-05), "(b)": SC-001 reads "every attribute and slot listed under Consumers has an
   equivalent", which a test can check; the full inventory of kitty-mission-ui's uses is left to its migration.
 
+**Operator decisions after spec check 3** (2026-11-15, human:jeroennouwsdev; `reviews/spec/check-3.md`, recorded in
+`reviews/spec/check-3-fixes.md`):
+
+- `aria-pressed` on the pill (SPEC-3-03), "(b) match `ocelle-button`": in link mode `aria-pressed` is moved and
+  mirrored but not applied, so it gives no `:state(pressed)`; `aria-pressed="mixed"` reaches the inner button as
+  written, with no pressed look and no `:state(pressed)` (FR-030, FR-031, FR-035; US4-4, US4-10).
+- Reconnection (FR-012 (b), the reading the check-2 fix asked to confirm): confirmed. A reconnected indicator starts
+  a new pulse run as a fresh render and keeps no state across a disconnection; the README warns that a host that
+  re-inserts or re-renders an indicator more often than every 5 s keeps it pulsing (SPEC-3-08).
+- Spec gate: approved after this final fix.
+
 **Consumers** (constitution VI): kitty-mission-ui's Kitty Desktop and Kitty Dashboard screens, which today use the
 `sk-pill-tag` (32 uses: `status`, `title`, slotted content, badge use), `sk-status-indicator` (2 uses: `tone`) and
 `sk-metric` (2 uses: `label`, `display-value`) equivalents; spec-kitty-design #498, #509, #524 and #526 name the gaps
@@ -104,8 +115,8 @@ state is never carried by colour alone: the indicator has a name, or it sits nex
 defect today (a pulse over an empty box).
 
 **Independent Test**: render the indicator in every tone, with and without `label`, with and without `pulse`, in both
-themes, in forced colours and with reduced motion; move it in the document and change the motion preference while
-`pulse` is set; read its box, computed styles, animation state and the
+themes, in forced colours and with reduced motion; move it in the document, hide and show it (a `hidden` ancestor, a closed
+and opened `<details>`) and change the motion preference while `pulse` is set; read its box, computed styles, animation state and the
 accessibility tree.
 
 **Acceptance Scenarios**:
@@ -124,9 +135,12 @@ accessibility tree.
    stops; **When** `pulse` is set again (removed, then added), **Then** the animation runs again on the same terms;
    **When** the element is removed from the document and inserted again (a move, a re-sort, a keyed re-render) with
    `pulse` set, **Then** one run starts on the same terms; **When** the motion preference changes from `reduce` to no
-   preference while `pulse` is set, **Then** one run starts at that moment on the same terms; and no other change (of
-   `tone`, `label`, any other attribute or the theme) starts or restarts it (FR-012; WCAG 2.2.2). The 5 s limit holds
-   for the default values of the pulse's motion tokens (FR-041).
+   preference while `pulse` is set, **Then** one run starts at that moment on the same terms; **When** a connected
+   indicator with `pulse` set that was not rendered (it or an ancestor `display: none`, the `hidden` attribute
+   included, or inside a closed `<details>`) starts being rendered (a tab panel shown, a `<details>` opened), **Then**
+   one run starts at that moment on the same terms; and no other change starts or restarts it, whatever it is (FR-012
+   lists the four cases in full; WCAG 2.2.2). The 5 s limit holds for the default values of the pulse's motion tokens
+   (FR-041).
 5. **Given** `pulse` and `prefers-reduced-motion: reduce`, **When** it renders, **Then** no animation runs and the dot
    is shown solid; **When** the preference changes to `reduce` while a run is under way, **Then** the run stops at
    once and the dot is shown solid.
@@ -214,7 +228,7 @@ users hear a button (pressed or not) or a link with the pill's name.
 **Why this priority**: it depends on mission 012's control conventions being on `main`.
 
 **Independent Test**: render the interactive pill in button and link mode, enabled and disabled, pressed and not;
-switch its mode after render (static, button, link, in each direction); drive it by pointer and keyboard; read the accessibility tree, the focus ring and the events that reach the host.
+switch its mode after render (static, button, link, in each direction), with and without focus on it; drive it by pointer and keyboard; read the accessibility tree, the focus ring and the events that reach the host.
 
 **Acceptance Scenarios**:
 
@@ -235,8 +249,8 @@ switch its mode after render (static, button, link, in each direction); drive it
    moved to the inner button as 012's FR-004 sets out, the accessibility tree reports the button pressed, and the
    pressed look is applied and `:state(pressed)` matches; **When** the host sets `aria-pressed="false"`, **Then** it
    reports not pressed, without the pressed look or the state; **When** the host sets `aria-pressed="mixed"`, **Then**
-   the inner button reports mixed (applied as written, 012 FR-004) and the pressed look and `:state(pressed)` apply
-   as for `true` (FR-031).
+   the inner button reports mixed (applied as written, 012 FR-004), and neither the pressed look nor
+   `:state(pressed)` applies, as on `ocelle-button` (FR-031; operator decision, SPEC-3-03).
 5. **Given** `disabled`, **When** it renders, **Then** the pill is disabled as 012's FR-003 defines it (out of the tab
    order, reported disabled, not activated, no navigable target in link mode), dispatches neither a `click` to a
    bubble-phase listener nor `ocelle-pill-tag-activate`, and has the disabled look.
@@ -258,10 +272,19 @@ switch its mode after render (static, button, link, in each direction); drive it
    control and mirrored exactly as at upgrade (FR-030, 012 FR-004), and `:state(current)` matches (FR-035).
 10. **Given** a button-mode pill with `aria-pressed="true"` and `aria-current="true"` moved, **When** a link-mode
     `href` is set, **Then** `aria-current` is on the inner link and `:state(current)` still matches, while
-    `aria-pressed` is back on the host as `aria-pressed="true"`, its mirror is gone and `:state(pressed)` no longer
-    matches (a link cannot be pressed; unsupported, as 012's "attribute the element does not list"); **When** the
-    `href` is removed again, **Then** `aria-pressed` is moved to the inner button again and `:state(pressed)` matches
-    (FR-030, FR-035).
+    `aria-pressed` stays moved: it is not on the host, its mirror `data-ocelle-moved-aria-pressed="true"` stays, it is
+    not applied to the inner link, and `:state(pressed)` no longer matches (a link cannot be pressed, 012 FR-009);
+    **When** the `href` is removed again, **Then** the stored `aria-pressed="true"` is applied to the inner button
+    again and `:state(pressed)` matches; **When** the inner control had keyboard focus at either switch, **Then** the
+    new inner control has focus afterwards and the focus ring shows on it (it shows only if it showed before the
+    switch) (FR-030, FR-035; operator decision, SPEC-3-03).
+11. **Given** an interactive pill whose inner control has focus, **When** the pill becomes static, **Then** focus is
+    lost as for a removed node (the pill does not move it), and the README tells hosts that make a focused pill static
+    to move focus themselves (FR-035).
+12. **Given** a pill that is static at upgrade and carries a `data-ocelle-moved-title` mirror (a copy of an
+    interactive pill's markup with `interactive` dropped) and no `title`, **When** it upgrades, **Then** `title` is on
+    the host with the mirror's value and the mirror is gone; **When** the host also has its own `title`, **Then** the
+    host's value stays and the mirror is removed (FR-035).
 
 ---
 
@@ -314,10 +337,20 @@ container width, the text and `disabled`; hover, focus and press Escape; read th
 - `pulse` on a `neutral` indicator: allowed; the vocabulary does not decide which tones pulse, the host does.
 - An indicator with an empty or whitespace-only `label`: treated as no label (decorative).
 - `disabled` on a static pill (neither `interactive` nor a link-mode `href`) has no effect.
-- `aria-pressed` on a link-mode pill: not supported (a link cannot be pressed, 012 FR-009); it stays on the host,
-  where axe flags it, and the README says so; it is moved again if the pill returns to button mode (FR-035).
+- `aria-pressed` on a link-mode pill: moved and mirrored as on `ocelle-button`, but not applied to the link (a link
+  cannot be pressed, 012 FR-009) and giving no `:state(pressed)`; it is applied again if the pill returns to button
+  mode, and the README says it has no effect on a link (FR-030, FR-035; operator decision, SPEC-3-03).
 - A pill whose mode changes after render (a filter that becomes a link, a framework binding `href` to `""`): moved
-  values follow the mode as FR-035 sets out; none is lost.
+  values follow the mode as FR-035 sets out; none is lost. If the inner control had focus at a switch between button
+  and link mode, the new inner control has it afterwards; if the pill becomes static while focused, focus is lost as
+  for a removed node and the README tells hosts to move it (US4-10, US4-11).
+- ARIA states on a static pill, including those FR-035 (a) writes back (for example `aria-pressed="false"`), stay on
+  the host, where axe may flag them (`aria-pressed`, or `aria-label` / `aria-labelledby` on an element with no role).
+  They are the host's to clear: the README tells hosts to remove them (`removeAttribute`) once the pill is static, or
+  to clear them before making it static, and no story shows that state (FR-004, FR-035).
+- A pill that is static at upgrade but carries `data-ocelle-moved-*` mirrors (copied markup, server markup that
+  dropped `interactive`): each mirror is written back as its host attribute unless the host already sets that
+  attribute, and removed (US4-12, FR-035).
 - A disabled interactive pill with a full text that does not fit: it wraps rather than truncates (US5-6, FR-033).
 - Forced colours: status colours are replaced by system colours; the pill keeps a visible border so its extent is
   still seen; the badge keeps its outline.
@@ -348,7 +381,7 @@ container width, the text and `disabled`; hover, focus and press Escape; read th
   the pill this includes: the passthrough attributes it moves (FR-030) and each one's `data-ocelle-moved-*` mirror
   attribute, as 012's FR-053 declares them; the methods `focus()` and `click()` (012 FR-001); the events `click` (the
   native click, documented) and `ocelle-pill-tag-activate` (`detail` `{}`, FR-031); and the custom states `pressed`
-  (button mode) and `current` (link mode) (FR-031). The indicator and the metric have no events, no methods of their
+  (button mode, `aria-pressed="true"`) and `current` (button and link mode) (FR-031). The indicator and the metric have no events, no methods of their
   own and no custom states, and the manifest declares none for them.
 - **FR-006**: The built output of the three elements passes the strict-CSP check.
 - **FR-007**: The elements README gains a section per element (usage, attributes, accessibility notes, the
@@ -365,14 +398,23 @@ container width, the text and `disabled`; hover, focus and press Escape; read th
 - **FR-012**: With `pulse`, an animation runs on a ring drawn around the dot, never on the dot itself; in every frame
   the dot keeps its full opacity and size. Its duration and its iteration count come from motion tokens (FR-041), and
   the whole animation ends at most 5 s after it starts (WCAG 2.2.2); afterwards no animation runs and the dot is
-  shown solid while `pulse` stays set. A run starts in exactly these cases: (a) when `pulse` goes from absent to present while
-  the element is connected; (b) each time the element is connected to a document with `pulse` set (its first render,
-  and every reconnection after a removal or a move; the element keeps no pulse state across a disconnection); and
-  (c) when the motion preference changes from `reduce` to no preference while the element is connected with `pulse`
-  set. No other change (of `tone`, `label`, any other attribute or the theme) starts or restarts a run. Without `pulse`, no animation
-  runs (operator decision, SPEC-1-02). The 5 s limit holds for the default values of the pulse's motion tokens; a
-  host that overrides them keeps their product at or below 5 s, which the README states (as 012 FR-017 does for its
-  spinner).
+  shown solid while `pulse` stays set. A run starts in exactly these four cases, and this list is complete: (a) when
+  `pulse` goes from absent to present while the element is connected and rendered; (b) each time the element is
+  connected to a document with `pulse` set (its first render, and every reconnection after a removal or a move, which
+  is a fresh render: the element keeps no pulse state across a disconnection; operator decision after check 3); (c)
+  when the motion preference changes from `reduce` to no preference while the element is connected with `pulse` set;
+  and (d) each time the element starts being rendered while connected with `pulse` set, having not been rendered
+  because it or an ancestor was `display: none` (the `hidden` attribute included) or inside a closed `<details>` (a
+  hidden tab panel shown, a `<details>` opened, a `hidden` ancestor revealed). Each case keeps no state from earlier
+  runs. A case that occurs while the element is not rendered starts no run of its own; the run starts when (d) occurs.
+  No other change starts or restarts a run: not a change of `tone`, `label` or any other attribute, the theme, the
+  element's size or position, `visibility` or opacity, or scrolling it out of view and back. Without `pulse`, no
+  animation runs (operator decision, SPEC-1-02). The 5 s limit holds for the default values of the pulse's motion
+  tokens, per run; a host that overrides them keeps their product at or below 5 s, which the README states (as 012
+  FR-017 does for its spinner). The README also states that each connection, and each time the indicator is shown
+  again, starts a run, so a host that re-inserts, moves, re-renders or re-shows an indicator more often than every
+  5 s (a polled swap, a live re-sort) keeps it pulsing, and should keep `pulse` off between changes or keep the
+  element in place (SPEC-3-08).
 - **FR-013**: Under `prefers-reduced-motion: reduce` no animation runs, with or without `pulse`, and the dot is shown
   solid; a change of the preference to `reduce` stops a run under way at once (and a change back starts one, FR-012
   (c)).
@@ -430,8 +472,12 @@ container width, the text and `disabled`; hover, focus and press Escape; read th
   `data-ocelle-moved-*` mirrors (FR-004), no ID reference across the shadow root (FR-005), and name passthrough
   (FR-006). The attributes it moves, in both button and link mode, are `aria-label`, `aria-labelledby`,
   `aria-describedby`, `aria-controls`, `aria-current` (with any value, as 012 FR-009 passes it on `ocelle-button`) and
-  `title`; `aria-pressed` is moved in button mode only and is not supported on a link-mode pill (012 FR-009). What
-  happens to them when the mode changes is FR-035. It reuses 012's helpers rather than re-implementing them.
+  `title`, and `aria-pressed`, which, as on `ocelle-button` (012 FR-009 and its data model), is moved and mirrored in
+  both modes but applied to the inner control in button mode only (a link cannot be pressed; operator decision,
+  SPEC-3-03). What happens to them when the mode changes is FR-035. It reuses 012's helpers rather than
+  re-implementing them; where FR-035 needs more of them (writing held values back to the host of a static pill), the
+  plan extends them so that `ocelle-button` and `ocelle-action-row` keep their behaviour and their passthrough tests
+  pass unchanged (SPEC-3-05).
 - **FR-031**: **Activate event.** Each activation of an enabled interactive pill that delivers a `click` to the host
   (a pointer click, Enter or Space in button mode, Enter in link mode, the element's `click()`), in button mode and
   in link mode, also dispatches one `ocelle-pill-tag-activate` `CustomEvent` from the host with `bubbles: true`,
@@ -441,13 +487,13 @@ container width, the text and `disabled`; hover, focus and press Escape; read th
   `click` is still delivered with `defaultPrevented` `true`); in link mode a click with Ctrl, Meta, Shift or Alt
   held dispatches no `ocelle-pill-tag-activate`, its `click` is delivered and the browser's own modifier handling
   applies; a middle click dispatches nothing. A disabled pill, or a static pill, dispatches no
-  `ocelle-pill-tag-activate` (operator decision, SPEC-1-01). In button mode a moved `aria-pressed` with a value other
-  than the off value (`true`, and `mixed`, which reaches the inner button as written and is reported mixed) gives the
-  pressed look and exposes the custom state `:state(pressed)`; `false`, or a cleared value, gives neither. In button
-  and link mode a moved `aria-current` other than the off value exposes `:state(current)`, with no visual mark of its
-  own, as `ocelle-button` does (012 FR-004, FR-009). A custom state follows the value applied to the inner control
-  only: an attribute that is on the host (a static pill, `aria-pressed` on a link-mode pill) gives no custom state.
-  The pill has no other custom state.
+  `ocelle-pill-tag-activate` (operator decision, SPEC-1-01). In button mode a moved `aria-pressed` of `true` gives the
+  pressed look and exposes the custom state `:state(pressed)`; any other value (`false`, `mixed`, which reaches the
+  inner button as written and is reported mixed, or a cleared value) gives neither, as on `ocelle-button` (012's data
+  model; operator decision, SPEC-3-03). In button and link mode a moved `aria-current` present and other than
+  `false` exposes `:state(current)`, with no visual mark of its own, as `ocelle-button` does (012 FR-004, FR-009). A
+  custom state follows the value applied to the inner control only: an attribute on the host of a static pill, or an
+  `aria-pressed` held but not applied in link mode, gives no custom state. The pill has no other custom state.
 - **FR-032**: An interactive pill shows the token focus ring on keyboard focus, in both themes and forced colours, and
   its pointer target is at least 24 px by 24 px in either density (WCAG 2.5.8; in compact density by FR-029's
   minimum block size). It is not a primary action, so
@@ -469,9 +515,18 @@ container width, the text and `disabled`; hover, focus and press Escape; read th
   back to the host as that attribute with the value it last had (an off value such as `aria-pressed="false"`
   included; a value that was cleared is not written back), and its mirror is removed; (b) when it becomes interactive,
   the host's passthrough attributes are moved and mirrored as at upgrade (012 FR-004); (c) on a switch between button
-  and link mode, the values moved in both modes stay moved (to the new inner control), and `aria-pressed` goes back
-  to the host on a switch to link mode, as in (a), and is moved again on a switch to button mode, as in (b). Custom
-  states follow the moved values only (FR-031). No passthrough value is lost or duplicated by a mode change.
+  and link mode, every moved value stays moved and mirrored and is applied to the new inner control as FR-030 sets
+  out for its mode (so `aria-pressed` is held but not applied on the link, and applied again on the button; operator
+  decision, SPEC-3-03). Custom states follow the applied values only (FR-031). No passthrough value is lost or
+  duplicated by a mode change. (d) **Focus**: if the inner control had focus at a switch between button and link
+  mode, the new inner control has focus afterwards, and the focus ring shows on it if, and only if, it showed before
+  the switch (WCAG 2.4.3); when the pill becomes static while its inner control has focus, focus is lost as for a
+  removed node and the pill does not move it, and the README tells hosts that do this to move focus themselves; a
+  pill that becomes interactive does not take focus. (e) **Static at upgrade**: a pill that is static when it
+  upgrades and carries `data-ocelle-moved-*` mirrors writes each mirror back to the host as its attribute, unless the
+  host already sets that attribute (the host's value then wins), and removes the mirror, as in (a) (SPEC-3-07). ARIA
+  states left on a static pill's host, written back by (a) or (e) or set by the host, are the host's to clear (Edge
+  Cases; README).
 
 **Tokens**
 
@@ -512,8 +567,8 @@ container width, the text and `disabled`; hover, focus and press Escape; read th
   contrast check (4.5:1 for text, 3:1 for the dot and the badge border) in both themes.
 - **SC-004**: With reduced motion requested, zero animations run on any indicator; with it not requested, the dot is
   fully visible in 100 % of sampled animation frames, and with the default token values no pulse run lasts longer
-  than 5 s from its start, whether it started by setting `pulse`, by connecting the element or by a change of the
-  motion preference.
+  than 5 s from its start, whether it started by setting `pulse`, by connecting the element, by a change of the
+  motion preference or by the element starting to be rendered (FR-012 (d)).
 - **SC-005**: A keyboard-only user can reach, activate and read the full text of every enabled interactive pill,
   truncated or not, without a pointer; every activation produces exactly one `click` and one
   `ocelle-pill-tag-activate` (none on a modifier click in link mode); the full text of every disabled interactive
