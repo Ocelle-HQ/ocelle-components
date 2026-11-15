@@ -7,7 +7,9 @@ in_scope: [41]
 out_of_scope: [1, 10, 16, 15, 35, 23]
 semver: none
 spec_prompt: "Op for #41 option 1 (triage/016-plants-affected.md): add `gate:plants --affected <base>`, a local selector that judges only the plants a diff from <base> can change (pure rule in gates/lib/plant-runner.ts, unit-tested red first on hand-written diffs, unknown or unmapped paths falling back to the full set), a registry rule and fail plant that forbid `--affected` in the three CI plant jobs, gates/README.md § plants, and the tasks-template and story-skill text so a phase runs `--affected <phase base>` and records its plant list; CI's required Plants check, `plantShards`, the shard sizes and ci.yml are unchanged; sharing one Storybook build across plants is out of scope; selection rule, input map and review check as the operator picks at approval (Q1 to Q4)."
-status: proposed
+status: approved
+decided_by: "human:jeroennouwsdev"
+decided_at: 2026-11-15T17:42:47Z
 ---
 
 # Triage 016: run only the affected plants in a phase (#41)
