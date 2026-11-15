@@ -35,7 +35,7 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 367ms using pnpm v12.16.1
+Done in 525ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /opt/pw-browsers/chromium-1243/chrome-linux64/chrome
 $ node gates/bin/test.ts
@@ -231,7 +231,7 @@ packages/elements/test/notice.test.ts:24: unit-tests: ocelle-notice, in process 
 packages/elements/test/notice.test.ts:24: unit-tests: ocelle-notice, in process (US1) US1-13 one task: three text changes in …: AssertionError: US1-13 one task: announcements: expected { settled: [], rendered: [] } to deeply equal { settled: [ { …(3) } ], …(1) }
 packages/elements/test/notice.test.ts:24: unit-tests: ocelle-notice, in process (US1) US1-13 100 ms apart: changes A to B, th…: AssertionError: US1-13 100 ms apart: announcements: expected { settled: [], rendered: [] } to deeply equal { …(2) }
 packages/elements/test/notice.test.ts:24: unit-tests: ocelle-notice, in process (US1) US1-13 A, B, A: a text that goes from A…: AssertionError: US1-13 A, B, A: expected { region: false, drawn: false } to deeply equal { region: true, drawn: true }
-packages/elements/test/notice.test.ts:24: unit-tests: ocelle-notice, in process (US1) US1-13 10 ms after a write: the earlier…: AssertionError: US1-13 10 ms after a write: the write: gap 216.69999998807907 in [100, 200): expected { gap: false } to deeply equal { gap: true }
+packages/elements/test/notice.test.ts:24: unit-tests: ocelle-notice, in process (US1) US1-13 10 ms after a write: the earlier…: AssertionError: US1-13 10 ms after a write: announcements: expected { settled: [], rendered: [] } to deeply equal { settled: [ …(2) ], …(1) }
 packages/elements/test/notice.test.ts:24: unit-tests: ocelle-notice, in process (US1) US1-13 hold: an announced copy stays in…: AssertionError: US1-13 hold: announcements: expected { settled: [], rendered: [] } to deeply equal { …(2) }
 packages/elements/test/notice.test.ts:24: unit-tests: ocelle-notice, in process (US1) US1-14: with announce removed later cha…: AssertionError: US1-14: announcements: expected { settled: [], rendered: [] } to deeply equal { …(2) }
 packages/elements/test/notice.test.ts:24: unit-tests: ocelle-notice, in process (US1) US1-15 status insertion: a role="status…: AssertionError: US1-15 status insertion: announcements: expected { settled: [], rendered: [] } to deeply equal { settled: [ { …(3) } ], …(1) }

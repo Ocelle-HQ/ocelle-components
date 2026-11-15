@@ -35,14 +35,14 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 535ms using pnpm v12.16.1
+Done in 499ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /opt/pw-browsers/chromium-1243/chrome-linux64/chrome
 $ node gates/bin/test.ts
 packages/elements/test/node/readme.test.ts:205: unit-tests: packages/elements/README.md states: The wait also ends no earlier than `W` of the load state in which the region last became empty, counted from then, so a change right after a first load is written no earlier than the pre-load `W` after the notice was first rendered: AssertionError: expected '# @ocelle/elements The Ocelle web com…' to contain 'The wait also ends no earlier than `W…'
 packages/elements/test/browser/notice.test.ts:45: unit-tests: ocelle-notice on the strict-CSP fixture with the browser build (US1) US1-11 text: when the host replaces a t…: Error: promise rejected "AssertionError: US1-11 text: the write af… { …(4) }" instead of resolving
+packages/elements/test/browser/notice.test.ts:45: unit-tests: ocelle-notice on the strict-CSP fixture with the browser build (US1) US1-11 heading: when the host changes t…: Error: promise rejected "AssertionError: US1-11 heading: announcem… { …(4) }" instead of resolving
 packages/elements/test/browser/notice.test.ts:45: unit-tests: ocelle-notice on the strict-CSP fixture with the browser build (US1) US1-13 one task: three text changes in …: Error: promise rejected "AssertionError: US1-13 one task: the writ… { …(4) }" instead of resolving
-packages/elements/test/browser/notice.test.ts:45: unit-tests: ocelle-notice on the strict-CSP fixture with the browser build (US1) US1-13 10 ms after a write: the earlier…: Error: promise rejected "AssertionError: US1-13 10 ms after a writ… { …(4) }" instead of resolving
 packages/elements/test/browser/plants.test.ts:105: unit-tests: plants (elements-browser project) empty-state start: the wait ignores the empty state's start turns US1-11 text (startDocument) red: Error: promise rejected "AssertionError: US1-11 text: announcement… { …(4) }" instead of resolving
 packages/elements/test/browser/plants.test.ts:105: unit-tests: plants (elements-browser project) empty-state start: the wait ignores the empty state's start turns US1-13 one task (startDocument) red: Error: promise rejected "AssertionError: US1-13 one task: the writ… { …(4) }" instead of resolving
 packages/elements/test/announcer.test.ts:152: unit-tests: the wait's floor from the empty state's start (R-02 step 2; phase 2 stop 2, decision (a)) ends no earlier than W of the load state in which the region's empty state began, counted from its start, and W after the last trigger: AssertionError: empty-state start: the copies at the wait's bounds (W 300 ms, pre-load W 700 ms): expected { …(10) } to deeply equal { …(10) }
