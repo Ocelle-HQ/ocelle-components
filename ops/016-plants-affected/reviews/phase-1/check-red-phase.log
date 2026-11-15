@@ -1,0 +1,76 @@
+Scope: all 5 workspace projects
+✓ Lockfile passes supply-chain policies (verified 3h ago)
+Lockfile is up to date, resolution step is skipped
+Packages are hard linked from the content-addressable store to the virtual store.
+  Content-addressable store is at: /root/.local/share/pnpm/store/v11
+  Virtual store is at:             node_modules/.pnpm
+Packages: +502
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 502, reused 502, downloaded 0, added 502, done
+.../node_modules/rs-module-lexer postinstall$ node postinstall.js
+.../node_modules/rs-module-lexer postinstall: Done
+
+devDependencies:
++ @custom-elements-manifest/analyzer 0.11.0
++ @eslint/js 10.0.1
++ @stryker-mutator/core 10.1.1
++ @stryker-mutator/typescript-checker 10.1.1
++ @stryker-mutator/vitest-runner 10.1.1
++ @types/node 26.6.5
++ @vitest/browser-playwright 5.0.5
++ @vitest/eslint-plugin 1.6.28
++ axe-core 4.14.0
++ eslint 10.13.0
++ jiti 2.7.0
++ parse5 8.0.1
++ playwright 1.64.1
++ pngjs 7.0.0
++ postcss 8.5.31
++ postcss-lit 1.4.1
++ postcss-selector-parser 7.1.7
++ postcss-value-parser 4.2.0
++ stylelint 17.16.0
++ typescript 6.0.3
++ typescript-eslint 8.72.0
++ vite 8.3.5
++ vitest 5.0.5
+
+Done in 253ms using pnpm v12.16.1
+$ node gates/bin/setup-offline.ts
+setup: installed offline; Chromium at /opt/pw-browsers/chromium-1248/chrome-linux64/chrome
+$ node gates/bin/test.ts
+gates/test/integration/plants.test.ts:170: unit-tests: plant job (gates/bin/plants.ts) --affected HEAD judges only the plant whose plant.json changed since HEAD, and names HEAD in its summary: AssertionError: expected { code: 1, stdout: [ …(48) ], …(1) } to deeply equal { code: 1, stdout: [ …(48) ], …(1) }
+gates/test/plant-runner.test.ts:792: unit-tests: affectedPlants (op 016) scenario 1: a plant's plant.json selects that plant and the plant whose baselinesOf names it, and no other: TypeError: (0 , __vite_ssr_import_2__.affectedPlants) is not a function
+gates/test/plant-runner.test.ts:797: unit-tests: affectedPlants (op 016) scenario 2: a gate entry selects every plant of that gate and no other: TypeError: (0 , __vite_ssr_import_2__.affectedPlants) is not a function
+gates/test/plant-runner.test.ts:801: unit-tests: affectedPlants (op 016) scenario 3: a story and a baseline select exactly the repository-content plants, by the first of them: TypeError: (0 , __vite_ssr_import_2__.affectedPlants) is not a function
+gates/test/plant-runner.test.ts:805: unit-tests: affectedPlants (op 016) scenario 4: shared gate source, the lock file or an unmapped path selects the full set, naming the first such path: TypeError: (0 , __vite_ssr_import_2__.affectedPlants) is not a function
+gates/test/plant-runner.test.ts:811: unit-tests: affectedPlants (op 016) scenario 5: a feature's tasks.md and review files select no plant: TypeError: (0 , __vite_ssr_import_2__.affectedPlants) is not a function
+gates/test/plant-runner.test.ts:815: unit-tests: affectedPlants (op 016) selects no plant for an empty list: TypeError: (0 , __vite_ssr_import_2__.affectedPlants) is not a function
+gates/test/plant-runner.test.ts:819: unit-tests: affectedPlants (op 016) selects no plant for each no-plant path: TypeError: (0 , __vite_ssr_import_2__.affectedPlants) is not a function
+gates/test/plant-runner.test.ts:842: unit-tests: affectedPlants (op 016) gives each no-plant path's near miss its own class: TypeError: (0 , __vite_ssr_import_2__.affectedPlants) is not a function
+gates/test/plant-runner.test.ts:876: unit-tests: affectedPlants (op 016) selects the repository-content plants for each repository-content path, and only those that exist: TypeError: (0 , __vite_ssr_import_2__.affectedPlants) is not a function
+gates/test/plant-runner.test.ts:893: unit-tests: affectedPlants (op 016) selects the full set for package configuration and the other unmapped repository paths: TypeError: (0 , __vite_ssr_import_2__.affectedPlants) is not a function
+gates/test/plant-runner.test.ts:898: unit-tests: affectedPlants (op 016) selects the full set for gates/bin/plants.ts and the other gate files that are not a gate's entry, and for the lint configurations: TypeError: (0 , __vite_ssr_import_2__.affectedPlants) is not a function
+gates/test/plant-runner.test.ts:903: unit-tests: affectedPlants (op 016) selects every registry plant for the workflow, and one registry plant for its own files: TypeError: (0 , __vite_ssr_import_2__.affectedPlants) is not a function
+gates/test/plant-runner.test.ts:908: unit-tests: affectedPlants (op 016) selects the plants whose baselinesOf names a deleted plant, and not the deleted plant: TypeError: (0 , __vite_ssr_import_2__.affectedPlants) is not a function
+gates/test/plant-runner.test.ts:914: unit-tests: affectedPlants (op 016) selects the full set for a path under gates/plants/ that is not in a case directory of a registered gate or of the registry: TypeError: (0 , __vite_ssr_import_2__.affectedPlants) is not a function
+gates/test/plant-runner.test.ts:919: unit-tests: affectedPlants (op 016) keeps the first changed path that selected each plant, in the plants' order: TypeError: (0 , __vite_ssr_import_2__.affectedPlants) is not a function
+gates/test/plant-runner.test.ts:924: unit-tests: affectedPlants (op 016) selects the full set for a full-set path given after selected paths: TypeError: (0 , __vite_ssr_import_2__.affectedPlants) is not a function
+gates/test/plant-runner.test.ts:955: unit-tests: repositoryContentPlants and the visual and axe pin (op 016) pins the 48 visual cases, five of them repository content: TypeError: Cannot read properties of undefined (reading 'includes')
+gates/test/plant-runner.test.ts:963: unit-tests: repositoryContentPlants and the visual and axe pin (op 016) pins the 25 axe cases, one of them repository content: TypeError: Cannot read properties of undefined (reading 'includes')
+gates/test/plant-runner.test.ts:967: unit-tests: repositoryContentPlants and the visual and axe pin (op 016) lists the ten repository-content plants in plan order, each an existing plant directory with a plant.json: AssertionError: expected undefined to deeply equal [ 'visual/pass-repository', …(9) ]
+gates/test/plants.test.ts:1170: unit-tests: plants: --affected <base> (op 016) scenario 6: judges only the three selected plants, notes each with its path, and says this is not the Plants check: AssertionError: expected { code: +0, …(4) } to deeply equal { code: +0, …(4) }
+gates/test/plants.test.ts:1180: unit-tests: plants: --affected <base> (op 016) scenario 6: a selected plant that is not as expected fails the run, counted among the plants judged: AssertionError: expected { code: 1, out: [ …(2) ] } to deeply equal { code: 1, out: [ …(2) ] }
+gates/test/plants.test.ts:1190: unit-tests: plants: --affected <base> (op 016) scenario 5: judges no plant when nothing is selected, and exits 0 with the no-plant line: AssertionError: expected { code: +0, …(4) } to deeply equal { code: +0, …(4) }
+gates/test/plants.test.ts:1200: unit-tests: plants: --affected <base> (op 016) scenario 7: --list prints the same notes and the selection's summary, and judges no plant: AssertionError: expected { code: +0, …(4) } to deeply equal { code: +0, …(4) }
+gates/test/plants.test.ts:1210: unit-tests: plants: --affected <base> (op 016) still runs the structural checks of the whole set when nothing is selected, and with --list: AssertionError: expected { code: 1, out: [ …(5) ], …(3) } to deeply equal { code: 1, out: [ …(5) ], …(3) }
+gates/test/plants.test.ts:1216: unit-tests: plants: --affected <base> (op 016) reports affected-in-ci for the repository's ci.yml in this mode and in the single run: AssertionError: expected { code: +0, …(4) } to deeply equal { code: 1, out: [ …(2) ], …(3) }
+gates/test/plants.test.ts:1227: unit-tests: plants: --affected <base> (op 016) judges every plant when a path selects the full set, naming it and its reason: AssertionError: expected { code: +0, …(3) } to deeply equal { code: +0, …(3) }
+gates/test/plants.test.ts:1244: unit-tests: plants: --affected <base> (op 016) with --skip-container skips a selected visual plant and says the run is partial: AssertionError: expected { code: +0, …(4) } to deeply equal { code: +0, …(4) }
+gates/test/plants.test.ts:1259: unit-tests: plants: --affected <base> (op 016) scenario 8: exits 2 naming each argument error, before asking for the changes or running a plant: AssertionError: expected [ { code: +0, …(4) }, …(5) ] to deeply equal [ { code: 2, out: [], …(3) }, …(5) ]
+gates/test/plants.test.ts:1282: unit-tests: plants: --affected <base> (op 016) scenario 8: exits 2 naming the cause when the base does not resolve, and when the changes cannot be read: AssertionError: expected { code: +0, …(4) } to deeply equal { code: 2, out: [], …(3) }
+gates/test/registry.test.ts:322: unit-tests: affectedInCiFindings (op 016) gives one finding per plant job that passes --affected, in the order plants-plan, plants-shard, plants: TypeError: (0 , __vite_ssr_import_2__.affectedInCiFindings) is not a function
+gates/test/registry.test.ts:332: unit-tests: affectedInCiFindings (op 016) finds nothing in a workflow without it, the repository's own included: TypeError: (0 , __vite_ssr_import_2__.affectedInCiFindings) is not a function
+gates/test/registry.test.ts:337: unit-tests: affectedInCiFindings (op 016) finds nothing for --affected in a job that is not a plant job: TypeError: (0 , __vite_ssr_import_2__.affectedInCiFindings) is not a function
+unit-tests: 33 of 3146 tests failed
+[ELIFECYCLE] Test failed. See above for more details.

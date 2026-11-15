@@ -301,3 +301,118 @@ export function plantSeconds(milliseconds: number): string {
 export function plantTimeNote(plant: string, milliseconds: number): string {
   return `note: plant time: ${plant}: ${plantSeconds(milliseconds)} s`;
 }
+
+/**
+ * The plants whose expectation names repository content (op 016, Q3 C; plan.md *Path classes*): a change to a story,
+ * a baseline, the Storybook configuration, element source, token source or the axe exceptions selects these. The
+ * pin in gates/test/plant-runner.test.ts makes each new visual or axe plant be classified here or not.
+ */
+export const repositoryContentPlants: readonly string[] = [
+  // Every repository story in light and dark, against the repository's baselines.
+  "visual/pass-repository",
+  // A token value the repository's stories show, changed against the repository's baselines.
+  "visual/fail-token-changed",
+  // No tree/: its finding names the repository's tokens--colour story.
+  "visual/fail-one-pixel",
+  // No tree/: its finding names the repository's tokens--colour story.
+  "visual/fail-missing-baseline",
+  // No tree/: its finding names the repository's tokens--colour story.
+  "visual/fail-same-pixels-other-bytes",
+  // Every repository story, with the repository's exceptions and the plans they name.
+  "axe/pass-repository",
+  // The repository's Storybook, built as it is.
+  "storybook-build/pass-repository",
+  // The configuration set's element source against its manifest.
+  "manifest/pass-repository",
+  // The configuration set's token source and contrast pairs.
+  "contrast/repository-values",
+  // The configuration set's token source against the brand rules.
+  "brand-rules/repository-values",
+];
+
+/** A feature's plan, `specs/<feature>/plan.md`: the axe plants' roots carry the plans their exceptions name. */
+const specPlan = /^specs\/[^/]+\/plan\.md$/;
+
+/**
+ * Whether no plant reads a path (op 016, plan.md *Path classes* 1): not in any plant's temporary repository, not in
+ * the configuration set of gates/lib/plant-repo.ts, and read by no gate a plant runs.
+ */
+export function noPlantPath(path: string): boolean {
+  if (path.startsWith("specs/")) return !specPlan.test(path);
+  return (
+    /^(?:ops|triage|knowledge|\.claude|\.specify|tooling)\//.test(path) ||
+    path.startsWith("gates/test/") ||
+    path === "gates/README.md" ||
+    /^(?:packages\/[^/]+|storybook)\/test\//.test(path) ||
+    /^(?:packages\/[^/]+\/|storybook\/)?[^/]+\.md$/.test(path)
+  );
+}
+
+/**
+ * Whether a path is repository content (op 016, plan.md *Path classes* 5): what the `repositoryContentPlants` read
+ * of the repository; a package's package.json and tsconfig files are configuration instead.
+ */
+export function repositoryContentPath(path: string): boolean {
+  if (/^packages\/[^/]+\/(?:package\.json|tsconfig[^/]*\.json)$/.test(path)) return false;
+  return (
+    /^storybook\/(?:stories|\.storybook|scripts|baselines)\//.test(path) ||
+    path === "storybook/a11y-exceptions.json" ||
+    specPlan.test(path) ||
+    /^packages\/[^/]+\/src\//.test(path) ||
+    path.startsWith("packages/tokens/") ||
+    path === "packages/elements/custom-elements.json"
+  );
+}
+
+/** One plant of the repository, `<gate>/<case>`, with the case its plant.json's `baselinesOf` names, if any. */
+export interface AffectedPlant {
+  readonly name: string;
+  readonly baselinesOf?: string | undefined;
+}
+
+/** What `affectedPlants` is given: every plant, the registered gate ids, and the changed paths (POSIX, from the root). */
+export interface AffectedInput {
+  readonly plants: readonly AffectedPlant[];
+  readonly gates: readonly string[];
+  readonly changed: readonly string[];
+}
+
+/** Why a path selects the full set. */
+export type FullReason = "shared gate source" | "not mapped";
+
+/** The full set, by the first path that asks for it; or the selected plants in plant order, each by its first path. */
+export type Affected = { readonly full: { readonly path: string; readonly reason: FullReason } } | { readonly plants: ReadonlyMap<string, string> };
+
+/**
+ * The plants a path that is not a no-plant path selects, or the reason it selects the full set (plan.md *Path classes*
+ * 2 to 6, tried in order).
+ */
+function pathPlants(path: string, input: AffectedInput): readonly string[] | FullReason {
+  const names = input.plants.map((plant) => plant.name);
+  const inPlants = /^gates\/plants\/([^/]+)\/([^/]+)\/./.exec(path);
+  if (inPlants !== null && (input.gates.includes(String(inPlants[1])) || inPlants[1] === "plants")) {
+    const [gate, name] = [String(inPlants[1]), String(inPlants[2])];
+    return input.plants.filter((plant) => plant.name === `${gate}/${name}` || (plant.name.startsWith(`${gate}/`) && plant.baselinesOf === name)).map((plant) => plant.name);
+  }
+  const entry = /^gates\/bin\/([^/]+)\.ts$/.exec(path);
+  if (entry !== null && input.gates.includes(String(entry[1]))) return names.filter((name) => name.startsWith(`${String(entry[1])}/`));
+  if (path === ".github/workflows/ci.yml") return names.filter((name) => name.startsWith("plants/"));
+  if (repositoryContentPath(path)) return names.filter((name) => repositoryContentPlants.includes(name));
+  return /^gates\/(?:lib\/|bin\/|eslint\/|stylelint\/|gates\.json$)/.test(path) ? "shared gate source" : "not mapped";
+}
+
+/**
+ * The plants the changed paths can affect (op 016, spec.md OR-001, plan.md *Path classes*): the full set as soon as
+ * one path asks for it, naming that path and why; else the selected plants in plant order, each with the first
+ * changed path that selected it.
+ */
+export function affectedPlants(input: AffectedInput): Affected {
+  const by = new Map<string, string>();
+  for (const path of input.changed) {
+    if (noPlantPath(path)) continue;
+    const selected = pathPlants(path, input);
+    if (typeof selected === "string") return { full: { path, reason: selected } };
+    for (const name of selected) if (!by.has(name)) by.set(name, path);
+  }
+  return { plants: new Map(input.plants.filter((plant) => by.has(plant.name)).map((plant) => [plant.name, String(by.get(plant.name))])) };
+}

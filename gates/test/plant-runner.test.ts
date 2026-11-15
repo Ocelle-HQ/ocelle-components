@@ -921,6 +921,50 @@ describe("affectedPlants (op 016)", () => {
     expect(select(["gates/plants/lint/pass-b/plant.json", "specs/x/tasks.md", "gates/bin/lint.ts"])).toEqual(selected(["lint/fail-a", "gates/bin/lint.ts"], ["lint/pass-b", "gates/plants/lint/pass-b/plant.json"]));
   });
 
+  // Added in the green step for the mutation run: each path is a near miss of one class's pattern, at another place
+  // in the path or with another ending.
+  it("matches each class's pattern from the start of the path and to its end", () => {
+    expect([
+      select(["specs/016-x/specs/abc/plan.md"]),
+      select(["specs/016-x/plan.mdx"]),
+      select(["specs/016-x/plan.md/notes.txt"]),
+      select(["packages/elements/src/tooling/a.ts"]),
+      select(["packages/elements/src/storybook/test/a.ts"]),
+      select(["README.mdx"]),
+      select(["storybook/stories/packages/a/package.json"]),
+      select(["packages/tokens/package.jsonc"]),
+      select(["gates/lib/storybook/stories/a.ts"]),
+      select(["packages/x/specs/abc/plan.md"]),
+      select(["docs/packages/a/src/x.ts"]),
+      select(["docs/gates/plants/lint/fail-a/plant.json"]),
+      select(["docs/gates/bin/lint.ts"]),
+      select(["gates/bin/lint.tsx"]),
+      select(["gates/gates.json5"]),
+    ]).toEqual([
+      selected(),
+      selected(),
+      selected(),
+      contentBy("packages/elements/src/tooling/a.ts"),
+      contentBy("packages/elements/src/storybook/test/a.ts"),
+      full("README.mdx", "not mapped"),
+      contentBy("storybook/stories/packages/a/package.json"),
+      contentBy("packages/tokens/package.jsonc"),
+      full("gates/lib/storybook/stories/a.ts", "shared gate source"),
+      full("packages/x/specs/abc/plan.md", "not mapped"),
+      full("docs/packages/a/src/x.ts", "not mapped"),
+      full("docs/gates/plants/lint/fail-a/plant.json", "not mapped"),
+      full("docs/gates/bin/lint.ts", "not mapped"),
+      full("gates/bin/lint.tsx", "shared gate source"),
+      full("gates/gates.json5", "not mapped"),
+    ]);
+    expect(select(["specs/016-x/plan.md"])).toEqual(contentBy("specs/016-x/plan.md"));
+  });
+
+  it("selects by baselinesOf only the plants of the changed plant's own gate", () => {
+    const path = "gates/plants/visual/pass-below-fold/plant.json";
+    expect(select([path], [...plants, { name: "axe/fail-z", baselinesOf: "pass-below-fold" }])).toEqual(selected(["visual/pass-below-fold", path], ["visual/fail-below-fold", path]));
+  });
+
   it("selects the full set for a full-set path given after selected paths", () => {
     expect(select(["gates/plants/lint/fail-a/plant.json", "gates/bin/contrast.ts", "storybook/stories/a.stories.ts", "storybook/package.json"])).toEqual(full("storybook/package.json", "not mapped"));
   });

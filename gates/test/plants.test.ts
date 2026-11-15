@@ -1100,6 +1100,17 @@ describe("plants: plant times and shards (plan decisions 23 and 24)", () => {
 // Op 016 (#41; spec.md scenarios 5 to 8, OR-003 and OR-004; plan.md *The mode* and *Output*): --affected <base> judges
 // only the plants the changed paths select, after the registry check and the structural checks of the whole set;
 // --list judges none. The changed paths come from a double that records each base it is asked for.
+describe("plants: the registry plant of affected-in-ci (op 016)", () => {
+  // Added in the green step for the mutation run: the registry plants' check applies affectedInCiFindings too.
+  it("judges a registry plant whose plants job passes --affected as caught with the finding at ci.yml", async () => {
+    const files = world();
+    files.set("gates/plants/plants/affected/plant.json", failPlant("ci.yml", "affected-in-ci", "the plants job passes --affected"));
+    files.set("gates/plants/plants/affected/gates.json", registryText);
+    files.set("gates/plants/plants/affected/ci.yml", workflow.replace("      - run: pnpm run gate:plants\n", "      - run: pnpm run gate:plants -- --affected HEAD~1\n"));
+    expect(await result(job(files))).toEqual({ code: 0, out: ["plants: 54 plants of 17 gates and the registry judged, every plant as expected"], err: [] });
+  });
+});
+
 describe("plants: --affected <base> (op 016)", () => {
   interface AffectedRun {
     readonly code: number;
@@ -1252,6 +1263,29 @@ describe("plants: --affected <base> (op 016)", () => {
         "plants: skipped (no container): gates/plants/visual/pass-basic",
       ],
       ran: ["gates/plants/lint/pass-basic"],
+      asked: ["abc123"],
+    });
+  });
+
+  // Added in the green step for the mutation run: the selection reads each plant's baselinesOf from its plant.json,
+  // and a case without one, or with one that is not a plant, names none.
+  it("selects the visual plant whose baselinesOf names a changed plant, and reads past a case without a valid plant.json", async () => {
+    const files = world();
+    files.set("gates/plants/visual/pass-basic/tree/storybook/baselines/a--b.light.png", "png");
+    files.set("gates/plants/visual/fail-below/plant.json", JSON.stringify({ expect: "fail", why: "w", baselinesOf: "pass-basic", findings: [{ location: "a--b/light", rule: "differs" }] }));
+    files.set("gates/plants/lint/fail-no-plant/tree/a.ts", "x");
+    files.set("gates/plants/lint/fail-not-a-plant/plant.json", "[]");
+    const path = "gates/plants/visual/pass-basic/tree/storybook/baselines/a--b.light.png";
+    const run = await affectedJob(files, ["--affected", "abc123", "--list"], { paths: [path] });
+    expect(run).toEqual({
+      code: 1,
+      out: [
+        "gates/plants/lint/fail-no-plant/plant.json: plants: invalid-plant: plant.json is missing",
+        "gates/plants/lint/fail-not-a-plant/plant.json: plants: invalid-plant: plant.json is not an object",
+        "plants: 2 problems in 0 plants (affected since abc123; not the Plants check)",
+      ],
+      err: [`note: affected: visual/fail-below, by ${path}`, `note: affected: visual/pass-basic, by ${path}`],
+      ran: [],
       asked: ["abc123"],
     });
   });
