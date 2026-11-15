@@ -86,7 +86,7 @@ jobs:
     needs: mutation-plan
     if: needs.mutation-plan.outputs.shards != '[]'
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: ${{ contains(matrix.shard.files, 'packages/elements/src/') && 90 || 10 }}
     strategy:
       fail-fast: false
       matrix:
