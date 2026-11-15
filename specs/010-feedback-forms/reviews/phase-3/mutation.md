@@ -93,3 +93,27 @@ Run 4 reports two, both in `connectedCallback()` (`form-control.ts:472`, the bod
 `super.connectedCallback()` removed): run 1 reported the first as well. Without it the element never renders, and the
 first covering test Stryker ran waits on its `updateComplete`. Applied by hand, each fails 40 of the 44 tests of
 `test/form-input-rules.test.ts` within 6 s, on their reads of the shadow root, so neither is a survivor.
+
+## T041a: element source sharded by mutant count (design change 1)
+
+Operator decisions `decision-stop-1.md` (option (b), smaller shards) and `decision-design-change-1.md` (the rule of
+plan decision 11 and the dependency `@stryker-mutator/instrumenter` 10.1.1, pinned exactly).
+
+### Red (`971c431`, `red-commits` `design-1`)
+
+`971c431` changes only `gates/test/mutation-shards.test.ts` (16 new cases) and `gates/test/mutation-fakes.ts` (the
+double of the new tool, `MutationTools["place"]`, beside the file's other doubles; `fakeRepo` gives one that places
+none). `red.sh` accepts only the labels `phase` and `fix-<n>`, so the run was made with red.sh's own steps and
+helpers (`common.sh`: `story_non_test_changes`, `story_run_tests_at` in a detached worktree after
+`pnpm run setup:offline`), the script itself unchanged: `{"label":"design-1","sha":"971c431…","tests_only":true,
+"red":true,"recorded":true,"exit_code":1}`. `red-design-1.log`: "16 of 3787 tests failed", each of the 16 new cases
+on an `AssertionError` against the 30-line planner (the plan it gives, exit 0 where 2 is expected, or the pin
+`undefined` against core's `10.1.1`); no setup, import or type error, and every existing case passes.
+
+### Plant reading
+
+No plant is required. 006 `contracts/plants.md` (with 001's) gives every gate fail, pass and error plants, judged on
+the gate's findings and exit code in a whole-diff run of a plant repository. The change is in `--plan` only: it gives
+no verdict, adds no finding and no rule, and no plant under `gates/plants/mutation/` runs `--plan` (the 17 plants pass
+no `--plan` or `--files`). The whole-diff and `--files` runs are unchanged, so no plant's expectation moves and no plant
+tree under `gates/plants/` changes. A review that finds a rule asking for one adds it.
