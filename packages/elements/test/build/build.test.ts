@@ -41,14 +41,24 @@ describe("the module build (dist/*.js)", () => {
     const own = (specifier: string): boolean => specifier.startsWith("./") && files.includes(specifier.slice(2));
     const lit = (specifier: string): boolean => specifier === "lit" || specifier.startsWith("lit/");
     expect({
-      files: files.filter((name) => ["index.js", "ocelle-icon.js", "ocelle-brand-mark.js", "ocelle-dialog.js", "ocelle-drawer.js", "browser.js"].includes(name)),
+      files: files.filter((name) => ["index.js", "ocelle-icon.js", "ocelle-brand-mark.js", "ocelle-dialog.js", "ocelle-drawer.js", "ocelle-tooltip.js", "browser.js"].includes(name)),
       outside: imported.filter(({ specifier }) => !own(specifier) && !lit(specifier)),
       litImported: imported.some(({ specifier }) => lit(specifier)),
       rootImportsIcon: imported.some(({ name, specifier }) => name === "index.js" && specifier === "./ocelle-icon.js"),
       rootImportsMark: imported.some(({ name, specifier }) => name === "index.js" && specifier === "./ocelle-brand-mark.js"),
       rootImportsDialog: imported.some(({ name, specifier }) => name === "index.js" && specifier === "./ocelle-dialog.js"),
       rootImportsDrawer: imported.some(({ name, specifier }) => name === "index.js" && specifier === "./ocelle-drawer.js"),
-    }).toEqual({ files: ["browser.js", "index.js", "ocelle-brand-mark.js", "ocelle-dialog.js", "ocelle-drawer.js", "ocelle-icon.js"], outside: [], litImported: true, rootImportsIcon: true, rootImportsMark: true, rootImportsDialog: true, rootImportsDrawer: true });
+      rootImportsTooltip: imported.some(({ name, specifier }) => name === "index.js" && specifier === "./ocelle-tooltip.js"),
+    }).toEqual({
+      files: ["browser.js", "index.js", "ocelle-brand-mark.js", "ocelle-dialog.js", "ocelle-drawer.js", "ocelle-icon.js", "ocelle-tooltip.js"],
+      outside: [],
+      litImported: true,
+      rootImportsIcon: true,
+      rootImportsMark: true,
+      rootImportsDialog: true,
+      rootImportsDrawer: true,
+      rootImportsTooltip: true,
+    });
   });
 
   it("dist/ocelle-brand-mark.js imports lit and the registration helper, but neither the package root nor ocelle-icon.js (US1-17)", () => {
@@ -96,6 +106,20 @@ describe("the module build (dist/*.js)", () => {
     }).toEqual({ lit: true, define: true, base: true, root: false, dialog: false });
   });
 
+  // 008 tasks.md T043: the tooltip's module imports Lit and the registration helper; it imports neither the package
+  // root, nor another element, nor the overlays' internal base (which would define ocelle-icon).
+  it("dist/ocelle-tooltip.js imports lit and the registration helper, neither the package root, another element nor ./overlay.js", () => {
+    const tooltip = specifiers(existsSync(join(dist, "ocelle-tooltip.js")) ? readFileSync(join(dist, "ocelle-tooltip.js"), "utf8") : "");
+    expect({
+      exists: existsSync(join(dist, "ocelle-tooltip.js")),
+      lit: tooltip.includes("lit"),
+      define: tooltip.includes("./define.js"),
+      root: tooltip.includes("./index.js"),
+      base: tooltip.includes("./overlay.js"),
+      elements: tooltip.filter((specifier) => specifier.startsWith("./ocelle-")),
+    }).toEqual({ exists: true, lit: true, define: true, root: false, base: false, elements: [] });
+  });
+
   it("dist/ocelle-icon.js imports lit and the registration helper, but neither the package root nor another element", () => {
     const imported = specifiers(existsSync(join(dist, "ocelle-icon.js")) ? readFileSync(join(dist, "ocelle-icon.js"), "utf8") : "");
     expect({
@@ -110,7 +134,7 @@ describe("the module build (dist/*.js)", () => {
 describe("the browser build (dist/browser/ocelle-elements.js)", () => {
   const text = (): string => (existsSync(browserBuild) ? readFileSync(browserBuild, "utf8") : "");
 
-  it("is self-contained: it defines ocelle-icon, ocelle-brand-mark, ocelle-dialog and ocelle-drawer, with no import statement and no dynamic import", () => {
+  it("is self-contained: it defines ocelle-icon, ocelle-brand-mark, ocelle-dialog, ocelle-drawer and ocelle-tooltip, with no import statement and no dynamic import", () => {
     const code = text();
     expect({
       exists: code !== "",
@@ -118,9 +142,10 @@ describe("the browser build (dist/browser/ocelle-elements.js)", () => {
       definesMark: code.includes('"ocelle-brand-mark"'),
       definesDialog: code.includes('"ocelle-dialog"'),
       definesDrawer: code.includes('"ocelle-drawer"'),
+      definesTooltip: code.includes('"ocelle-tooltip"'),
       specifiers: specifiers(code),
       dynamicImport: /\bimport\s*\(/.test(code),
-    }).toEqual({ exists: true, definesIcon: true, definesMark: true, definesDialog: true, definesDrawer: true, specifiers: [], dynamicImport: false });
+    }).toEqual({ exists: true, definesIcon: true, definesMark: true, definesDialog: true, definesDrawer: true, definesTooltip: true, specifiers: [], dynamicImport: false });
   });
 
   it("holds Lit's production build at the locked versions, not its development build, no ssr-dom-shim and no console call", () => {

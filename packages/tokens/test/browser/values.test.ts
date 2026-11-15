@@ -110,6 +110,14 @@ describe("used values under the six theme conditions", { timeout: 60_000 }, () =
     expect([values["dialog-max-inline"], values["dialog-max-block"], values["target-min"]]).toEqual([1248, 768, 44]);
   });
 
+  // 008 (tasks.md T045): the tooltip bubble's maximum inline size is 18rem, 288px at the 16px root.
+  it("the tooltip's maximum inline size, --ocelle-tooltip-max-inline, is 288px (18rem) at 1280 × 800", async () => {
+    const page = await open("light");
+    const values = await read(page, "light");
+    await page.close();
+    expect(values["tooltip-max-inline"]).toBe(288);
+  });
+
   // 008 (tasks.md T033): the drawer's inline size is the sidebar's, 20rem, at the 16px root.
   it("the drawer's inline size, --ocelle-drawer-inline, is 320px (20rem) at 1280 × 800", async () => {
     const page = await open("light");
@@ -126,6 +134,15 @@ describe("reduced motion (FR-007, US1 scenario 7)", { timeout: 60_000 }, () => {
     await page.close();
     expect(values).toEqual(expected(theme, { "motion-fast": "0s", "motion-base": "0s" }));
     expect(values["easing-standard"]).toBe("cubic-bezier(0.22, 1, 0.36, 1)");
+  });
+
+  // 008 (tasks.md T045; research.md R-09, brand rule (f)): the reduced-motion block sets only motion-fast and
+  // motion-base, so the tooltip's hover delay keeps its 500ms.
+  it.each(["light", "dark"] as const)("--ocelle-tooltip-delay stays 500ms (0.5s) under prefers-reduced-motion: reduce in %s", async (theme) => {
+    const page = await open(theme, undefined, "reduce");
+    const values = await read(page, theme);
+    await page.close();
+    expect({ delay: values["tooltip-delay"], fast: values["motion-fast"], base: values["motion-base"] }).toEqual({ delay: "0.5s", fast: "0s", base: "0s" });
   });
 
   it("they are 120ms and 200ms without that request", async () => {

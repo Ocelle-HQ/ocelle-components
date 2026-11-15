@@ -277,7 +277,7 @@ describe("generate(root) on the repository's element source", () => {
     const manifest = await generate(repo);
     const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
     expect(manifest.schemaVersion).toBe("1.0.0");
-    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-dialog.ts", "src/ocelle-drawer.ts", "src/ocelle-icon.ts"]);
+    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-dialog.ts", "src/ocelle-drawer.ts", "src/ocelle-icon.ts", "src/ocelle-tooltip.ts"]);
     const [icon] = modules.find((module) => module.path === "src/ocelle-icon.ts")?.declarations ?? [];
     expect(icon).toMatchObject({
       kind: "class",
@@ -401,6 +401,38 @@ describe("generate(root) on the repository's element source", () => {
     expect(described(drawer?.cssProperties)).toEqual([]);
   });
 
+  // 008 tasks.md T043 (FR-030, FR-045, SC-003; data-model.md § ocelle-tooltip): the tooltip's entry lists text,
+  // placement (reflected), disabled (reflected) and describes (reflected) with their types and defaults, the default
+  // slot and the description slot, the part bubble, and an empty events list (the tooltip dispatches none); no CSS
+  // property and nothing inherited.
+  it('declares ocelle-tooltip with text (default ""), placement ("top" | "bottom" | "start" | "end", default "top", reflected), disabled (default false, reflected) and describes (default false, reflected), the default and description slots, the part bubble, no event and no CSS property, each described', async () => {
+    const manifest = await generate(repo);
+    const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [tooltip] = modules.find((module) => module.path === "src/ocelle-tooltip.ts")?.declarations ?? [];
+    const described = (list: unknown): Record<string, unknown>[] =>
+      ((list ?? []) as Record<string, unknown>[]).map(({ description, ...rest }) => ({ ...rest, described: typeof description === "string" && description !== "" }));
+    const placement = { text: '"top" | "bottom" | "start" | "end"' };
+    expect({ kind: tooltip?.kind, name: tooltip?.name, tagName: tooltip?.tagName, customElement: tooltip?.customElement }).toEqual({ kind: "class", name: "OcelleTooltip", tagName: "ocelle-tooltip", customElement: true });
+    expect(described(tooltip?.members)).toEqual([
+      { kind: "field", name: "text", privacy: "public", type: { text: "string" }, default: '""', attribute: "text", described: true },
+      { kind: "field", name: "placement", privacy: "public", type: placement, default: '"top"', attribute: "placement", reflects: true, described: true },
+      { kind: "field", name: "disabled", privacy: "public", type: { text: "boolean" }, default: "false", attribute: "disabled", reflects: true, described: true },
+      { kind: "field", name: "describes", privacy: "public", type: { text: "boolean" }, default: "false", attribute: "describes", reflects: true, described: true },
+    ]);
+    expect(described(tooltip?.attributes)).toEqual([
+      { name: "text", fieldName: "text", type: { text: "string" }, default: '""', described: true },
+      { name: "placement", fieldName: "placement", type: placement, default: '"top"', described: true },
+      { name: "disabled", fieldName: "disabled", type: { text: "boolean" }, default: "false", described: true },
+      { name: "describes", fieldName: "describes", type: { text: "boolean" }, default: "false", described: true },
+    ]);
+    expect({ events: tooltip?.events, cssProperties: tooltip?.cssProperties }).toEqual({ events: [], cssProperties: [] });
+    expect(described(tooltip?.slots)).toEqual([
+      { name: "", described: true },
+      { name: "description", described: true },
+    ]);
+    expect(described(tooltip?.cssParts)).toEqual([{ name: "bubble", described: true }]);
+  });
+
   it("publishes no src/overlay.ts module and no OcelleOverlay declaration, in generate(root)'s output and in the committed custom-elements.json", async () => {
     const committed = JSON.parse(readFileSync(join(repo, "packages/elements/custom-elements.json"), "utf8")) as Json;
     const internal = (manifest: Json): unknown => {
@@ -410,11 +442,12 @@ describe("generate(root) on the repository's element source", () => {
         declarations: modules.flatMap((module) => ((module.declarations ?? []) as Json[]).map((each) => each.name)).filter((name) => name === "OcelleOverlay"),
         dialog: modules.some((module) => module.path === "src/ocelle-dialog.ts"),
         drawer: modules.some((module) => module.path === "src/ocelle-drawer.ts"),
+        tooltip: modules.some((module) => module.path === "src/ocelle-tooltip.ts"),
       };
     };
     expect({ generated: internal(await generate(repo)), committed: internal(committed) }).toEqual({
-      generated: { modules: [], declarations: [], dialog: true, drawer: true },
-      committed: { modules: [], declarations: [], dialog: true, drawer: true },
+      generated: { modules: [], declarations: [], dialog: true, drawer: true, tooltip: true },
+      committed: { modules: [], declarations: [], dialog: true, drawer: true, tooltip: true },
     });
   });
 
