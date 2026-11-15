@@ -59,3 +59,13 @@
   limited to a row with no `current` and no hover). The items above were re-checked after the fixes. Notes SPEC-3-02,
   SPEC-3-03, SPEC-3-04, SPEC-3-06 and SPEC-3-07 are left open for the plan. The operator approved the spec at the
   gate after this final fix; no further spec check follows. See `reviews/spec/check-3-fixes.md`.
+- Operator decisions at phase 5 (2026-11-15, human:jeroennouwsdev; plan decision 30), recorded in the spec header:
+  the row's description, tags and trailing content are shown beside its inner control and hidden from assistive
+  technology as content, the description and tags reaching it only as the accessible description (FR-034, FR-006,
+  US4-3; FR-034's "named exactly by its title" kept), so axe's `label-content-name-mismatch` (enabled in axe-core
+  4.14.0, not experimental) finds nothing and FR-052 holds on every page; and the row's control owns a hit layer that
+  fills the host and takes every click, the content beside the control included (FR-001, US4-15, § Restyled host),
+  with FR-032's wrap (US4-18) unchanged. The interactive-content edge case gains its axe consequence
+  (`aria-hidden-focus`). The items above were re-checked after the change: the restated fill and the new sibling
+  clicks of US4-15 are measurable; the spec names the hit layer only as the area that takes the row's clicks, at the
+  level it already names the inner control.
