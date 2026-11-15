@@ -1245,6 +1245,10 @@ describe("probablyStatic: the syntax rule (phase 3 stop 2, T041b)", () => {
     "export function make() {",
     '  return class { static { use("nested-block"); } field = "nested-field"; method() { return "nested-method"; } };',
     "}",
+    "export function keyed() {",
+    '  const local = "local-const";',
+    '  return class { [use("nested-key")] = local; };',
+    "}",
     "",
   ].join("\n");
 
@@ -1272,6 +1276,12 @@ describe("probablyStatic: the syntax rule (phase 3 stop 2, T041b)", () => {
     // Inside the function, only the static block (part 1) and the property's initialiser (part 2) flag a mutant; the
     // initialiser's mutant spans it exactly, so it is one of the mutant's enclosing nodes.
     expect(flags(source, '"nested-field"', '"nested-block"', '"nested-method"')).toEqual([true, true, false]);
+  });
+
+  it("does not flag, in a function, a mutant in a const's initialiser, nor one in a class property's computed name", () => {
+    // Only a class property's initialiser is part 2: a variable's initialiser is not, and a property's name is not
+    // its initialiser.
+    expect(flags(source, '"local-const"', '"nested-key"')).toEqual([false, false]);
   });
 });
 
