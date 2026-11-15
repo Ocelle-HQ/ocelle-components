@@ -112,7 +112,8 @@ export interface PlaceCall {
 
 /**
  * A placer of Stryker's mutants that places, on any file, the mutants `byPath` gives its path (none for any other
- * path), records each call in `calls`, and rejects with the error `fails` gives a path, if any.
+ * path), each with the probably-static flag it is given there, or none (phase 3 stop 2, T041b), records each call in
+ * `calls`, and rejects with the error `fails` gives a path, if any.
  */
 export function fakePlacer(
   byPath: Readonly<Record<string, readonly PlacedMutant[]>>,
