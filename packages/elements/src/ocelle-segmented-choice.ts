@@ -200,7 +200,8 @@ export class OcelleSegmentedChoice extends LitElement {
    * changes only a segment's padding or border moves a row break too); otherwise nothing.
    */
   #observe(): void {
-    // Stryker disable next-line CallExpression: equivalent, observing a target again restarts its observation anyway; the call only drops the observations of segments that left and of a group no longer joined, whose deliveries regroup the group's own segments to the states they have
+    // Disconnecting first makes every observation start anew, so each target's size is delivered at the next rendering
+    // (observing a target that is already observed does not deliver it again in Chromium).
     this.#sizes.disconnect();
     // Stryker disable next-line ConditionalExpression,LogicalOperator: equivalent, observing a group that is not joined, or not connected, only delivers sizes whose regroup sets no state (`setRows(…, null)` on segments that have none)
     if (!this.joined || !this.isConnected) return;
