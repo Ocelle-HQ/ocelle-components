@@ -4,11 +4,11 @@
 // (test/browser/*.test.ts, the `elements-browser` project). Every method reads or acts on the page by element `id`;
 // nothing in a body depends on which harness runs it. Elements inside a shadow root are reached by a selector in the
 // element's shadow root.
-import type { AxNode, ForcedColors, Palette } from "../commands.ts";
+import type { AxDetail, AxNode, ForcedColors, Palette } from "../commands.ts";
 import type { DocumentCapture, LiveCapture } from "../live.ts";
 import type { Pixels } from "../pixels.ts";
 
-export type { AxNode, ForcedColors, Palette } from "../commands.ts";
+export type { AxDetail, AxNode, ForcedColors, Palette } from "../commands.ts";
 export type { DocumentCapture, LiveCapture, Snapshot, StopOptions } from "../live.ts";
 export type { Pixels } from "../pixels.ts";
 
@@ -107,10 +107,46 @@ export type Operation =
   | { readonly op: "insert"; readonly container: string; readonly markup: string }
   | { readonly op: "text"; readonly id: string; readonly text: string }
   | { readonly op: "attribute"; readonly id: string; readonly name: string; readonly value: string | null }
-  | { readonly op: "property"; readonly id: string; readonly name: string; readonly value: string | boolean | null }
+  | { readonly op: "property"; readonly id: string; readonly name: string; readonly value: string | number | boolean | null }
   | { readonly op: "move"; readonly id: string; readonly to: string }
   | { readonly op: "remove"; readonly id: string }
   | { readonly op: "focus"; readonly id: string };
+
+/**
+ * One event a `listen` step heard (specs/010-feedback-forms phase 3): its type, the id of the element it was heard on,
+ * the id of its target as the listener saw it (the local name for an element without an id), the `value` property of
+ * the element it was heard on at that moment, its `detail` (a structured copy, null when it has none), and whether it
+ * bubbles and is composed.
+ */
+export interface Heard {
+  readonly type: string;
+  readonly at: string;
+  readonly target: string;
+  readonly value: unknown;
+  readonly detail: unknown;
+  readonly bubbles: boolean;
+  readonly composed: boolean;
+}
+
+/** An element's validity (`validity`'s flags), `validationMessage` and `willValidate`. */
+export interface Validity {
+  readonly valid: boolean;
+  readonly valueMissing: boolean;
+  readonly typeMismatch: boolean;
+  readonly patternMismatch: boolean;
+  readonly tooLong: boolean;
+  readonly tooShort: boolean;
+  readonly rangeUnderflow: boolean;
+  readonly rangeOverflow: boolean;
+  readonly stepMismatch: boolean;
+  readonly badInput: boolean;
+  readonly customError: boolean;
+  readonly message: string;
+  readonly willValidate: boolean;
+}
+
+/** A plain value a `call` step passes to a method. */
+export type Plain = string | number | boolean | null;
 
 export interface MountOptions {
   /** Links `@ocelle/styles`' `base.css` (after `tokens.css`) on the page. */
@@ -253,6 +289,33 @@ export interface Driver {
   click(id: string, at: Point): Promise<void>;
   /** The focused element through shadow roots, outermost first, each as `localName` or `localName#id`. */
   focusPath(): Promise<string[]>;
+  // The phase 3 steps (specs/010-feedback-forms T031 to T033).
+  /** The unignored accessibility nodes of the element with `id` and of its shadow subtree, with descriptions and states. */
+  axDetails(id: string): Promise<AxDetail[]>;
+  /**
+   * Starts recording the events of `types` that reach each element of `ids` (a listener on the element, bubble phase),
+   * in the order they are heard, until the next `mount`.
+   */
+  listen(ids: readonly string[], types: readonly string[]): Promise<void>;
+  /** The events heard since the last `heard` (or `listen`), in order; the record is then emptied. */
+  heard(): Promise<Heard[]>;
+  /** The validity flags, `validationMessage` and `willValidate` of the element with `id`. */
+  validity(id: string): Promise<Validity>;
+  /**
+   * The ids of the elements a property of the element with `id` holds: of the element itself for an element, of each
+   * item for a list (a `NodeList`, say), none for null or undefined.
+   */
+  ids(id: string, name: string): Promise<string[]>;
+  /** `typeof` the property `name` of the element with `id`. */
+  typeOf(id: string, name: string): Promise<string>;
+  /** Whether `name in element` holds for the element with `id`. */
+  has(id: string, name: string): Promise<boolean>;
+  /** Calls the method `method` of the element with `id` with `args` and waits for every element to render; its result as `property` reads one. */
+  call(id: string, method: string, ...args: readonly Plain[]): Promise<unknown>;
+  /** A property of the first element matching `inner` in the shadow root of `id`, as `property` reads one; null without one. */
+  propertyIn(id: string, inner: string, name: string): Promise<unknown>;
+  /** The computed value of `property` of the pseudo-element `pseudo` of the first element matching `inner` in the shadow root of `id`. */
+  pseudoIn(id: string, inner: string, pseudo: string, property: string): Promise<string>;
 }
 
 /** The in-process driver: the shared steps and the steps only the element source can take. */
@@ -265,6 +328,8 @@ export interface InProcessDriver extends Driver {
   registerFirstLoad(containerId: string, markup: string, base: CustomElementConstructor): Promise<string>;
   /** Makes `document.readyState` read `value` until the next `mount` or the next call (null: the real value). */
   readyState(value: DocumentReadyState | null): Promise<void>;
+  /** Whether the element with `id` is an instance of `constructor`. */
+  instanceOf(id: string, constructor: abstract new (...args: never[]) => unknown): Promise<boolean>;
 }
 
 /** The fixture driver: the shared steps, the document mode of the capture and history navigation. */

@@ -2,9 +2,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { commands } from "vitest/browser";
 import { define } from "../src/define.ts";
 import { Announcer, announcerDefaults } from "../src/live.ts";
+import { OcelleFormInput } from "../src/ocelle-form-input.ts";
 import "../src/ocelle-notice.ts";
 import { emptyStartCase, emptyStartMessage } from "./announcer-rules.ts";
 import type { MakeAnnouncer } from "./announcer-rules.ts";
+import { defineFormInputPlants } from "./fixtures/form-input-plants.ts";
 import { loopMarkup } from "./fixtures/live-loop.ts";
 import { plainRegion } from "./fixtures/live-regions.ts";
 import { IgnoresEmptyStart, noticePlants } from "./fixtures/notice-plants.ts";
@@ -14,6 +16,9 @@ import { announcements, regionText } from "./live-reading.ts";
 import { checkShippedTiming } from "./live-timing-check.ts";
 import { caseNamed } from "./live-rules.ts";
 import type { Driver } from "./scenarios/driver.ts";
+import { formInputScenario } from "./scenarios/form-input.ts";
+import type { FormScenario } from "./scenarios/form-input.ts";
+import { restoreInProcess, twinScenario } from "./scenarios/form-twins.ts";
 import { matrixScenarios } from "./scenarios/notice-matrix.ts";
 import { noticeLoadingScenario, noticeScenario } from "./scenarios/notice.ts";
 import type { NoticeScenario } from "./scenarios/notice.ts";
@@ -29,7 +34,10 @@ import type { NoticeScenario } from "./scenarios/notice.ts";
 // (test/scenarios/notice.ts, notice-matrix.ts) run with the plant's tag (test/fixtures/notice-plants.ts) and with
 // `ocelle-notice`; the shipped-timing rows call `checkShippedTiming` with planted values, after the unplanted call.
 // The "empty-state start" row (T025a, phase 2 stop 2) runs the fake-clock rule case of test/announcer-rules.ts with the
-// plant's announcer and with `Announcer`, under the shipped timing's two `D` values.
+// plant's announcer and with `Announcer`, under the shipped timing's two `D` values. Phase 3's rows (T034): the form,
+// naming, error, host ARIA, change event, implicit submission, validity and form value rows and the US2 cells of the
+// rows phase 2 began, each cell an input scenario body (test/scenarios/form-input.ts, form-twins.ts) run with a plant
+// class derived from `ocelle-form-input` (test/fixtures/form-input-plants.ts) and with `ocelle-form-input`.
 interface Row {
   readonly family: string;
   readonly plant: string;
@@ -43,6 +51,22 @@ const reading = { regionText, announcements };
 const driver = inProcessDriver();
 
 for (const [tag, plant] of Object.entries(noticePlants)) define(tag, plant);
+defineFormInputPlants();
+
+/** An input row: the scenario body with the plant's tag, and with `ocelle-form-input`. */
+function inputRow(family: string, plant: string, tag: string, body: FormScenario, message: RegExp): Row {
+  return {
+    family,
+    plant,
+    body: body.name.slice(0, body.name.indexOf(":")),
+    message,
+    planted: () => body.run(driver, tag),
+    unplanted: () => body.run(driver, "ocelle-form-input").then(() => "passed"),
+  };
+}
+
+const input = formInputScenario;
+const restore: FormScenario = { name: restoreInProcess.name, run: (_inProcess, tag) => restoreInProcess.run(driver, tag, OcelleFormInput) };
 
 /** A notice row: the scenario body (by its name's start) with the plant's tag, and with `ocelle-notice`. */
 function noticeRow(family: string, plant: string, tag: string, scenario: NoticeScenario | string, message: RegExp): Row {
@@ -166,6 +190,31 @@ const rows: readonly Row[] = [
   noticeRow("hidden", "announces while hidden (the hidden attribute ignored)", "ocelle-plant-ignores-hidden", "US1-17 first loaded hidden", /^US1-17 first loaded hidden: announcements/),
   noticeRow("hidden", "announces while hidden (the hidden attribute ignored)", "ocelle-plant-ignores-hidden", "US1-17 announced, hidden and revealed", /^US1-17 announced, hidden and revealed: announcements/),
   noticeRow("heading gap", "the heading part not hidden when absent", "ocelle-plant-heading-always", "US1-4, SC-004", /^US1-4, SC-004: heading absent/),
+  // The US2 cells and rows (T034).
+  inputRow("insertion announcement", "announcer created already holding the error (no empty wait)", "ocelle-plant-input-no-wait", input("US2-20 innerHTML"), /^US2-20 innerHTML: announcements/),
+  inputRow("reveal baseline", "the re-check also applies to insertion and reveal", "ocelle-plant-input-keeps-baseline", input("US2-22 first loaded hidden"), /^US2-22 first loaded hidden: announcements/),
+  inputRow("reveal baseline", "the re-check also applies to insertion and reveal", "ocelle-plant-input-keeps-baseline", input("US2-22 announced, hidden and revealed"), /^US2-22 announced, hidden and revealed: announcements/),
+  ...(["innerHTML", "template", "domparser"] as const).map((how) =>
+    inputRow("first load", "the constructor's isConnected rule", "ocelle-plant-input-constructed-connected", input(`US2-20 ${how}`), new RegExp(`^US2-20 ${how}: announcements`)),
+  ),
+  inputRow("first load", "announces on first load", "ocelle-plant-input-never-first-load", input("US2-18"), /^US2-18: announcements/),
+  inputRow("move", "move flag never set", "ocelle-plant-input-no-move", input("US2-20 move"), /^US2-20 move: announcements/),
+  inputRow("hidden", "announces while hidden (the hidden attribute ignored)", "ocelle-plant-input-ignores-hidden", input("US2-22 inserted hidden"), /^US2-22 inserted hidden: announcements/),
+  inputRow("hidden", "announces while hidden (the hidden attribute ignored)", "ocelle-plant-input-ignores-hidden", input("US2-22 first loaded hidden"), /^US2-22 first loaded hidden: announcements/),
+  inputRow("validity", "setValidity({}) always", "ocelle-plant-input-always-valid", input("US2-5:"), /^US2-5: /),
+  inputRow("validity", "setValidity({}) always", "ocelle-plant-input-always-valid", input("US2-6:"), /^US2-6: /),
+  inputRow("error baseline", "clearing does not reset the baseline", "ocelle-plant-input-clear-keeps-baseline", input("US2-10:"), /^US2-10: announcements/),
+  inputRow("error baseline", "no whitespace normalisation", "ocelle-plant-input-raw-error", input("US2-10:"), /^US2-10: announcements/),
+  inputRow("host ARIA", 'ignores host aria-invalid="true"', "ocelle-plant-input-ignores-host-invalid", input("US2-23:"), /^US2-23: /),
+  inputRow("host ARIA", 'lets host "false" clear the element\'s own state', "ocelle-plant-input-host-false-clears", input("US2-23:"), /^US2-23: /),
+  inputRow("naming", "name span not hidden", "ocelle-plant-input-visible-name", input("US2-1:"), /^US2-1: expected/),
+  inputRow("naming", "name not recomputed on label text change", "ocelle-plant-input-unobserved-labels", input("US2-13 rename"), /^US2-13 rename: /),
+  inputRow("change event", "no last-committed guard", "ocelle-plant-input-no-commit-guard", input("US2-3:"), /^US2-3: /),
+  inputRow("implicit submission", "never submits", "ocelle-plant-input-never-submits", twinScenario("US2-21 button:"), /^US2-21 button: /),
+  inputRow("implicit submission", "submits ignoring the one-field rule", "ocelle-plant-input-ignores-one-field", twinScenario("US2-21 two fields"), /^US2-21 two fields: /),
+  inputRow("form value", "forgets setFormValue", "ocelle-plant-input-forgets-form-value", input("US2-2:"), /^US2-2: /),
+  inputRow("form value", "reset keeps the typed value", "ocelle-plant-input-reset-keeps", input("US2-4:"), /^US2-4: /),
+  inputRow("form value", "restore ignored", "ocelle-plant-input-restore-ignored", restore, /^SC-003 restore in process: expected/),
   {
     family: "shipped timing",
     plant: "announcerDefaults with delayLoaded: 0",

@@ -13,6 +13,23 @@ export interface AxNode {
   readonly name: string;
 }
 
+/**
+ * One unignored accessibility node with its description and the states a form control's node carries
+ * (specs/010-feedback-forms US2: "the focused control's node" reports its name, description and invalid state): `host`
+ * marks the node of the element itself; `invalid` is Chromium's token (`"true"`, `"false"`, or `""` when absent), and
+ * an absent boolean state reads false.
+ */
+export interface AxDetail extends AxNode {
+  readonly host: boolean;
+  readonly description: string;
+  readonly invalid: string;
+  readonly required: boolean;
+  readonly disabled: boolean;
+  readonly readonly: boolean;
+  readonly focused: boolean;
+  readonly focusable: boolean;
+}
+
 /** The forced-colours modes and the system palettes the tests emulate. */
 export type ForcedColors = "active" | "none";
 export type Palette = "light" | "dark";
@@ -33,6 +50,8 @@ interface RawAxNode {
   readonly backendDOMNodeId?: number;
   readonly role?: { readonly value?: unknown };
   readonly name?: { readonly value?: unknown };
+  readonly description?: { readonly value?: unknown };
+  readonly properties?: readonly { readonly name: string; readonly value?: { readonly value?: unknown } }[];
 }
 
 interface FrameTree {
@@ -93,6 +112,40 @@ export async function axNodes(session: CDPSession, id: string, frameId?: string)
     .map((node) => ({ role: text(node.role?.value), name: text(node.name?.value) }));
 }
 
+/** The value of the property `name` of `node`, or undefined. */
+function propertyOf(node: RawAxNode, name: string): unknown {
+  return node.properties?.find((property) => property.name === name)?.value?.value;
+}
+
+/**
+ * The unignored accessibility nodes of the element with `id` and of its shadow subtree, as `axNodes` reads them, each
+ * with its description and states (`AxDetail`).
+ */
+export async function axDetails(session: CDPSession, id: string, frameId?: string): Promise<AxDetail[]> {
+  const { root } = (await session.send("DOM.getDocument", { depth: -1, pierce: true })) as { root: DomNode };
+  const document = documentOf(root, frameId);
+  const element = document === undefined ? undefined : byId(document, id);
+  if (element === undefined) return [];
+  const ids = new Set<number>([element.backendNodeId]);
+  for (const shadow of element.shadowRoots ?? []) collect(shadow, ids);
+  const params = frameId === undefined ? {} : { frameId };
+  const { nodes } = (await session.send("Accessibility.getFullAXTree", params)) as { nodes: readonly RawAxNode[] };
+  return nodes
+    .filter((node) => !node.ignored && node.backendDOMNodeId !== undefined && ids.has(node.backendDOMNodeId))
+    .map((node) => ({
+      role: text(node.role?.value),
+      name: text(node.name?.value),
+      host: node.backendDOMNodeId === element.backendNodeId,
+      description: text(node.description?.value),
+      invalid: text(propertyOf(node, "invalid")),
+      required: propertyOf(node, "required") === true,
+      disabled: propertyOf(node, "disabled") === true,
+      readonly: propertyOf(node, "readonly") === true,
+      focused: propertyOf(node, "focused") === true,
+      focusable: propertyOf(node, "focusable") === true,
+    }));
+}
+
 /**
  * The unignored accessibility nodes of the accessibility subtree of the element with `id`, in tree order: its own node
  * and every descendant in the accessibility tree, through ignored nodes, so slotted content and generated content
@@ -143,20 +196,24 @@ export async function emulate(page: Page, mode: ForcedColors, palette?: Palette)
   await page.emulateMedia(scheme === undefined ? { forcedColors: mode } : { forcedColors: mode, colorScheme: scheme });
 }
 
-/** Which nodes `axTree` reads: the element's own and its shadow subtree's (`axNodes`), or its accessibility subtree (`axSubtree`). */
-export type AxScope = "element" | "subtree";
+/**
+ * Which nodes `axTree` reads: the element's own and its shadow subtree's (`axNodes`), or its accessibility subtree
+ * (`axSubtree`); `"details"` reads the nodes of `axNodes` with their descriptions and states (`axDetails`).
+ */
+export type AxScope = "element" | "subtree" | "details";
 
 /**
  * The `axTree(id, scope)` browser command (registered in vitest.config.ts): `axNodes`, or with `"subtree"` `axSubtree`,
  * in the frame of the calling test file.
  */
-export async function axTree(context: BrowserCommandContext, id: string, scope: AxScope = "element"): Promise<AxNode[]> {
+export async function axTree(context: BrowserCommandContext, id: string, scope: AxScope = "element"): Promise<AxNode[] | AxDetail[]> {
   const session = await context.page.context().newCDPSession(context.page);
   try {
     const frame = await context.frame();
     const frameId = await frameIdOf(session, frame.url());
     if (frameId === undefined) throw new Error(`axTree: no frame has the test's URL ${frame.url()}`);
-    return await (scope === "subtree" ? axSubtree : axNodes)(session, id, frameId);
+    const read = { element: axNodes, subtree: axSubtree, details: axDetails }[scope];
+    return await read(session, id, frameId);
   } finally {
     await session.detach();
   }
@@ -173,7 +230,7 @@ declare module "vitest/browser" {
      * The unignored accessibility nodes of the element with `id` and of its shadow subtree, or with `"subtree"` of its
      * accessibility subtree.
      */
-    axTree: (id: string, scope?: AxScope) => Promise<AxNode[]>;
+    axTree: ((id: string, scope?: "element" | "subtree") => Promise<AxNode[]>) & ((id: string, scope: "details") => Promise<AxDetail[]>);
     /** Emulates forced colours with a system palette, or ends the emulation with `"none"`. */
     emulateForcedColors: (mode: ForcedColors, palette?: Palette) => Promise<void>;
   }

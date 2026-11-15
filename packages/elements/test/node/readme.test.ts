@@ -33,6 +33,8 @@ const fragments = [
   // restated for the notice's defaults (specs/010-feedback-forms FR-001; analysis I10, I15)
   "Every element class carries the JSDoc tag `@tagname <tag>`, every public property a description, and every public property that can be set a `@default` tag with the value the property reads before anything sets it, `@default undefined` for an optional one: the manifest takes the tag name and the defaults from them",
   "An element that observes a standard attribute such as `aria-label` adds it to `observedAttributes` without declaring a property, so the manifest does not list it",
+  // the element's own attribute without a property (specs/010-feedback-forms FR-021, FR-034; analysis U6; T034a)
+  "An attribute that is the element's own and has no property of its own, such as `ocelle-form-input`'s `value` (its default value), is declared in the manifest with the class's JSDoc tag `@attribute`, with its type, default and description",
   // styles (FR-003, R-03, R-04, R-09)
   "An element's styles are one `css` tagged template assigned to `static styles`, built only from `--ocelle-*` tokens and the values the `style-lint` gate allows, so every instance adopts one shared stylesheet",
   "No template has a `style` attribute or a `<style>` element",
@@ -74,12 +76,17 @@ const fragments = [
   // host ARIA (FR-034, PLAN-A11Y-SECURITY-1-002 (a), 1-003 (a)), scoped to 005's two elements beside the notice's rules
   // (specs/010-feedback-forms FR-001, FR-009; analysis I10, I14, U10, U11)
   "On `ocelle-icon` and `ocelle-brand-mark`, a host `aria-label` names the element as `label` does, and when present it decides alone: a blank host `aria-label` leaves the element unlabelled even with a `label`",
+  // the form controls' rules beside 005's (specs/010-feedback-forms FR-022; analysis I10, U10, U11, A5; T034a)
+  "On a form control a host `aria-label` that is not blank names the control alone; a blank one, empty or whitespace only, is skipped, and the labels and `label` name the control",
   "On `ocelle-icon` and `ocelle-brand-mark`, when both are set, the host `aria-label` is the name; removing it falls back to `label`",
   "On `ocelle-icon` and `ocelle-brand-mark`, Chromium uses a host `aria-label` as written, surrounding spaces included, so pass it trimmed; the element never rewrites it",
+  "On a form control the control's name is a host `aria-label` with whitespace collapsed and trimmed, while the host's node keeps it as written, surrounding spaces included, so pass it trimmed with single spaces",
   "On `ocelle-icon` and `ocelle-brand-mark`, a host `aria-hidden=\"true\"` hides the element, labelled or not",
   "On `ocelle-icon` and `ocelle-brand-mark`, a host `hidden` attribute removes the element: no box and no node, labelled or not",
   "On `ocelle-notice` a host `aria-hidden=\"true\"` is not supported: hide the notice with a host `hidden` attribute, which gives it no box and announces nothing while it is set",
+  "On a form control a host `aria-hidden=\"true\"` is not supported, since the control stays focusable: hide the control with a host `hidden` attribute instead",
   "On `ocelle-icon` and `ocelle-brand-mark`, a host `role` or `aria-hidden=\"false\"` is not supported: name the element with `label` or `aria-label` instead",
+  "On a form control a host `role` or `aria-hidden=\"false\"` is not supported: name the control with `label`, a `<label>` or `aria-label` instead",
   "`ocelle-notice` takes a host `role` as its section says: `alert` and `status` make it announce, a role that gives its node no live politeness leaves it as without a role, and `log`, other live roles and a host `aria-live`, `aria-atomic`, `aria-relevant` or `aria-hidden=\"false\"` are not supported",
   // the icon set (FR-017, FR-018, FR-029, US2 scenarios 1 and 5)
   "`name` (attribute and property, reflected): the icon's name, exactly as listed in Icons",
@@ -155,6 +162,42 @@ const fragments = [
   "Load the build before any swap or script inserts announcing notices: a notice upgraded by the registration does not announce",
   "Setting `announce`, or a host `role` of `alert` or `status`, on an existing notice announces nothing: its current text is the baseline for the next change",
   "Moving a notice within the page in one task, or a re-render, announces nothing",
+  // the form-control convention (specs/010-feedback-forms FR-020 to FR-028, FR-035, SC-006; research.md R-05, R-06, R-10; T034a)
+  "`ocelle-form-input` and later form-like elements are form-associated custom elements: the native control, its visible label, its description and its error live in one open shadow root, so every ID reference among them stays inside it",
+  "The host takes part in its form through `ElementInternals`: it submits its value under `name` (nothing without `name` or while disabled), joins the form a `form` attribute names, follows a disabled `<fieldset>`, restores its default value on a form reset and its state on history restore, and is associated with an external `<label for>`",
+  "Shared attributes and properties: `name`, `label`, `description`, `error`, `required` and `disabled` (all reflected), and the `value` property",
+  "The host exposes `form`, `labels`, `validity`, `validationMessage`, `willValidate`, `checkValidity()` and `reportValidity()` as a native control does; `focus()` on the host focuses the inner control, and the host is not a tab stop of its own",
+  "The inner control's accessible name is a host `aria-label` that is not blank, alone; otherwise the text of each external `<label>` in `labels` order, then the `label` text, each with whitespace collapsed and trimmed, joined by one space; with none of them the control has no name, and one is required",
+  "The `description` is the control's accessible description, followed by a host `aria-description` and the error",
+  "The host's validity flags and message are the inner control's native constraint validation, and `reportValidity()` focuses the inner control and makes the browser show its message",
+  "The native `input` event of the inner control reaches the host with `value` already updated; each committed change dispatches `ocelle-form-input-change`, a `CustomEvent` with `detail: { value }`, `bubbles` and `composed`; a change by script, by reset or by restore dispatches none",
+  "The host is `display: block` and the control fills its inline size; the element sets no width of its own, so in a filter bar the page sets the element's width or places it as a flex or grid item",
+  "A non-empty `error` is shown under the control in `--ocelle-color-danger`, with the control's boundary in `--ocelle-color-danger` at `--ocelle-bar-width`, makes the control invalid for assistive technology, is added after the description to its accessible description, and is announced politely once each time it changes to a new text",
+  "The error does not block submission or change the form's validity: the host clears it",
+  "An `error` in the page as first loaded is not announced and does not move focus: it is read with the control's description when the user reaches it, so put an error summary or a notice at the top of the page and focus it",
+  "A control inserted after the build has loaded with an `error` announces it politely once, each control its own",
+  "Setting `error` to empty resets the baseline, so the same text set again is announced again; a change of whitespace only is no change; changes closer together than `W` merge",
+  "Only the host's own `hidden` attribute counts as a reveal for a form control: removing it announces the current error once; a control shown through a hidden ancestor announces nothing",
+  "Load the build before any swap or script inserts form controls with `error`: a control upgraded by the registration does not announce",
+  "A host `aria-invalid`, `aria-required` or `aria-disabled` reaches the inner control only with the value `\"true\"`, combined with the element's own `error`, `required` and `disabled`; write only `\"true\"` or nothing: any other value is not supported. Prefer the element's own attributes",
+  "When a visible label is drawn (`label` or an external `<label>`), a host `aria-label` must contain the visible label text; any other combination is not supported",
+  "A host `aria-label` and `aria-description` also stay on the host's node, so Chromium exposes the host as a generic with the same name and description beside the control",
+  "A host `aria-labelledby` and a host `aria-describedby` are not supported: they would reference across the shadow root; use `label`, `aria-label` or `description` instead",
+  "The `form` attribute joins the form it names, as on a native control; it is a standard attribute and the manifest does not list it",
+  "In a form with no submit button that holds a native text input and a form control, Enter in the native input submits, since the browser does not count the custom element as a field that blocks implicit submission; Enter in the form control does not",
+  "For htmx, trigger on `hx-trigger=\"ocelle-form-input-change\"` (or `input`): the native `change` event does not leave the shadow root, and htmx's default trigger for an unknown element is `click`",
+  "Before the definition has loaded, a form control is not in its form's data and is not validated; to hide undefined elements, add a rule such as `ocelle-form-input:not(:defined) { visibility: hidden; }` to the page's own stylesheet",
+  "The form controls are for the main grounds; a control on a state ground, `--ocelle-color-accent-low`, an inset or a hover ground is not supported",
+  "Not measured: restore by autofill, where the browser draws the validation message, the `email` keyboard hint and the masking of `password`",
+  "WebKit is not measured for form controls: its form association and `ElementInternals` are an open limitation",
+  // ocelle-form-input (specs/010-feedback-forms FR-021, FR-029, FR-030, FR-035; T034a)
+  "`ocelle-form-input` is a labelled text field with an optional description and a host-set error, that takes part in its form like a native input",
+  "`type` (attribute and property, reflected): `text` (the default), `email`, `url`, `tel`, `search`, `password` or `number`; any other value behaves as `text` and the property reads `\"text\"`, while the attribute keeps the value as written",
+  "`placeholder`, `autocomplete`, `inputmode` (`inputMode`), `pattern`, `min`, `max` and `step` (strings), `minlength` (`minLength`) and `maxlength` (`maxLength`) (numbers) and `readonly` (`readOnly`, boolean), attributes and reflected properties, pass to the inner field unchanged; an absent one reads `undefined` (`readOnly` reads `false`)",
+  "The input's `value` attribute is its default value, restored on reset; the `value` property is the current value. Changing the attribute changes the current value only while the user has not edited it and no script has set `value` since the last reset",
+  "Pressing Enter in the field dispatches `ocelle-form-input-change` if the value changed, then submits the form as a native input does",
+  "Event: `ocelle-form-input-change`, `detail: { value }`. CSS parts: `label`, `control`, `description` and `error`. Slots: none. No CSS custom property of its own",
+  "`ocelle-form-input` reads the tokens `--ocelle-color-sheet`, `--ocelle-color-control-border`, `--ocelle-color-ink`, `--ocelle-color-ink-muted`, `--ocelle-color-danger`, `--ocelle-color-focus`, `--ocelle-color-disabled-bg`, `--ocelle-color-disabled-ink`, `--ocelle-border-width`, `--ocelle-bar-width`, `--ocelle-radius-2`, `--ocelle-target-min`, `--ocelle-focus-width`, `--ocelle-focus-offset`, `--ocelle-font-size-sm`, `--ocelle-font-weight-strong`, `--ocelle-line-height-normal`, `--ocelle-space-1`, `--ocelle-space-2` and `--ocelle-space-3`",
   // two copies on a page (FR-006, Edge Cases)
   "Two copies of the package on one page, two versions or the browser build beside a bundle of the module build, cannot both define an element: the first definition wins and the second import throws nothing",
 ];
@@ -165,6 +208,7 @@ const entryRows = [
   "| `@ocelle/elements/ocelle-icon.js` | `dist/ocelle-icon.js` | `ocelle-icon` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-brand-mark.js` | `dist/ocelle-brand-mark.js` | `ocelle-brand-mark` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-notice.js` | `dist/ocelle-notice.js` | `ocelle-notice` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-form-input.js` | `dist/ocelle-form-input.js` | `ocelle-form-input` only; for hosts with a bundler |",
   "| `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |",
   "| `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |",
 ];
@@ -209,7 +253,7 @@ describe("packages/elements/README.md", () => {
   it("lists exactly the entry points of package.json's exports in its Entry points table (FR-002)", () => {
     const manifest = JSON.parse(read("package.json")) as { exports?: Record<string, string> };
     expect(tableRows(read("README.md"), "Entry points")).toEqual(entryRows);
-    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-notice.js", "./browser.js", "./custom-elements.json"]);
+    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-notice.js", "./ocelle-form-input.js", "./browser.js", "./custom-elements.json"]);
   });
 
   it("lists the thirteen names of the set, whether each mirrors and the consumer need it meets, in its Icons table (US2-1, FR-018, SC-007)", () => {
@@ -246,6 +290,13 @@ describe("packages/elements/CHANGELOG.md", () => {
     "`@ocelle/elements/ocelle-notice.js`",
     "`tone`, `size` and `announce` (reflected)",
     "the slots `heading` and the default slot (the body), the CSS parts `heading` and `body`, and no event",
+    // ocelle-form-input (specs/010-feedback-forms FR-036; T034a)
+    "`ocelle-form-input`",
+    "`@ocelle/elements/ocelle-form-input.js`",
+    "its attributes and reflected properties `name`, `label`, `description`, `error`, `required`, `disabled`, `type`, `placeholder`, `autocomplete`, `inputmode`, `pattern`, `min`, `max`, `step`, `minlength`, `maxlength` and `readonly`",
+    "the `value` attribute (its default value), the properties `value`, `form`, `labels`, `validity`, `validationMessage` and `willValidate` and the methods `checkValidity()`, `reportValidity()` and `focus()`",
+    "the event `ocelle-form-input-change` with `detail: { value }`, no slot, and the CSS parts `label`, `control`, `description` and `error`",
+    "the form-control convention",
     ...["chevron-start", "chevron-end", "chevron-up", "chevron-down", "arrow-start", "arrow-end", "menu", "close", "folder", "file", "search", "table", "copy"].map((name) => `\`${name}\``),
   ])("names %s under Unreleased / Added (constitution VII, FR-031, SC-008)", (surface) => {
     expect(added).toContain(surface);
