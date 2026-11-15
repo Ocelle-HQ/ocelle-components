@@ -1,5 +1,8 @@
 # Spec Kit Flows Diary
 
+## 2026-11-15
+* **Finding**: every mutation shard with element source repeats the whole elements dry run, because Stryker's dry run under `stryker.elements.config.json` runs every in-process `elements` test whatever the shard holds ([op 015](../../ops/015-mutation-shard-timeout/op.md)). On mission 008's branch 37 elements shards took 430 to 1082 s each on CI ([run 43674498025](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/43674498025)). The dry-run time itself was not relayed: the gate does not print Stryker's "Initial test run succeeded" line, and it is part of each `gate:mutation` step of 399 to 1049 s. The sandbox took 5 m 31 s. Runner minutes grow with each element mission. Candidate for the operator: a cheaper dry run (only the shard's related tests, or one dry run shared by the shards). No issue filed.
+
 ## 2026-11-13
 * **Finding**: mission 006 (#10, PR #24) ran 5 phases with 13 review rounds. The story reviews found 3 blocking findings (phase 1 round 1, phase 4 round 1), and the landing review found 3 more (L1-01 to L1-03), folded through three operator rounds. CI was green on the folded head, 168 of 168 jobs ([run 43515169844](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/43515169844)).
 * **Finding**: Recurred (first: 2026-11-09). Landing notes folded as operator rounds worked for the third mission running. L1-02, L1-03 and L1-07 went to phase 2 (fix-1, review round 3), L1-04 to phase 4 (fix-2, round 4) and L1-01 and L1-05 to phase 5 (fix-1, round 3). Every round was approved first time, and landing round 2 approved with 0 blocking findings. Keep it as the default.

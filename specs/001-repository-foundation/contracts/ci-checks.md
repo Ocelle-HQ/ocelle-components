@@ -37,7 +37,7 @@ that the ruleset requires:
 | Job id | Runs | Checkout and limits |
 |---|---|---|
 | `mutation-plan` | `pnpm run gate:mutation -- --base ${{ github.event.pull_request.base.sha }} --plan`; outputs the shards (the JSON array on stdout, unchanged; the cut count `--plan` writes to stderr only reaches the job log, research.md R-08) | `fetch-depth: 0` |
-| `mutation-shard` | matrix over the plan's shards, skipped when there are none: `pnpm run gate:mutation -- --base ${{ github.event.pull_request.base.sha }} --files <the shard's files>`, the shard's `files` value passed unchanged (its comma-separated entries, `path` or `path:start-end`, research.md R-08) | `fetch-depth: 0`; `timeout-minutes: 10` per shard (FR-013) |
+| `mutation-shard` | matrix over the plan's shards, skipped when there are none: `pnpm run gate:mutation -- --base ${{ github.event.pull_request.base.sha }} --files <the shard's files>`, the shard's `files` value passed unchanged (its comma-separated entries, `path` or `path:start-end`, research.md R-08) | `fetch-depth: 0`; `timeout-minutes: 10` per shard, or 45 for a shard with a `packages/elements/src/` entry (op 015, 2026-11-15; FR-013 amendment) |
 | `plants-plan` | `pnpm --silent run gate:plants -- --plan`, the shard numbers as the job output `shards` (since 006) | |
 | `plants-shard` | matrix `shard: ${{ fromJSON(needs.plants-plan.outputs.shards) }}`, `fail-fast: false`; `df -h /`; the toolset removal step with `df -h /`; `pnpm run gate:plants -- --shard "$SHARD"` with `SHARD` from the matrix and `OCELLE_VISUAL_ENGINE=both`; `df -h /` always; uploads `plant-shard-<k>` (`storybook/.visual/plant-shards/<k>.json`) always and `plants-<k>` (`storybook/.visual/plants/`) on failure (since 006) | |
 
