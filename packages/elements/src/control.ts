@@ -12,6 +12,10 @@
 //   swap removes it); the element's own writes, which equal the stored value, are ignored, so there is no loop.
 // - `resolveIds`: ID references resolved by id in the host's own tree (its document or the shadow root it is in), in
 //   order, ids not found skipped, for element reflection on the inner control (FR-005, research.md R-04).
+// - `controlState`: disabled versus unavailable (FR-003; data-model.md § Shared: the control). Disabled wins; a control
+//   that is not disabled and is unavailable (a busy button, an unavailable row) is unavailable; else it is available.
+//   An unavailable control stays in the tab order, reports `aria-disabled="true"`, is not activated, and in link mode
+//   renders no `href` and `tabindex="0"`, so it stays a focusable node of role `link` (plan decision 9).
 // - `guardHost`: the host guard (plan decision 23, PLAN-FRESH-3-001 (a)). A page rule on the element (its `display`,
 //   `width` or `height`) outranks the element's `:host` styles and can leave host area outside the inner control, so
 //   the element listens for `click` and `auxclick` on the host itself, from its constructor (before any host listener
@@ -38,6 +42,15 @@ export function linkHref(href: string | null | undefined, base: string): string 
     return undefined;
   }
   return url.protocol === "javascript:" ? undefined : href;
+}
+
+/** A control's state (FR-003): available, unavailable (in the tab order, not activated) or disabled. */
+export type ControlState = "available" | "unavailable" | "disabled";
+
+/** The state of a control from its `disabled` and its unavailable condition (a busy button): disabled wins. */
+export function controlState(disabled: boolean, unavailable: boolean): ControlState {
+  if (disabled) return "disabled";
+  return unavailable ? "unavailable" : "available";
 }
 
 /** The element-owned host attribute that mirrors a moved attribute (research.md R-03). */

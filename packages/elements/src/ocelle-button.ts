@@ -1,5 +1,5 @@
-// `ocelle-button` (012 spec US1 and US2, FR-001 to FR-014, FR-018 to FR-023; research.md R-01 to R-06, R-08, R-09,
-// R-12; data-model.md § `ocelle-button`; plan decisions 18 to 20, 22 to 24 and 26): one native `<button type="button">`
+// `ocelle-button` (012 spec US1 to US3, FR-001 to FR-023; research.md R-01 to R-09, R-12; data-model.md
+// § `ocelle-button`; plan decisions 9, 11, 18 to 20, 22 to 24 and 26): one native `<button type="button">`
 // (button mode) or `<a>` (link mode, by src/control.ts `linkHref`) with the part `control` in an open shadow root
 // attached with `delegatesFocus`, laid out by mission 005's slot convention (an `icon` slot before the label). A
 // disabled link has no `href`, `target`, `rel` or `download`, is `role="link" aria-disabled="true"` and is not
@@ -17,6 +17,13 @@
 // a cancelled activate event cancels the click (`preventDefault()`), which a button still delivers. The inner control
 // is always `type="button"`, in a shadow root, so it never submits or resets a form.
 //
+// `busy` (US3) makes the button unavailable (src/control.ts `controlState`; `disabled` wins): the inner control stays in
+// the tab order and keeps focus, reports `aria-disabled="true"` and `aria-busy="true"`, and is not activated (no
+// `ocelle-button-activate`, and the host guard stops the click); a busy link has no `href`, `target`, `rel` or
+// `download` and is `role="link" tabindex="0"`, so it stays focusable. While busy the `icon` slot's wrapper is hidden
+// and the spinner (src/spinner.ts) shown in its place, so with an icon the box keeps its size; with no label the spinner
+// takes no gap, as the icon does.
+//
 // Colours follow research.md R-08's tables (items 3, 4, 4a, 5, 8): the variant, the `ground` the host states and the
 // state (hover, active, disabled), each rule inside `@media not (forced-colors: active)` and written as
 // `:host(:where(...)) .control:where(...)`, so every colour rule has the same specificity and the later rule wins:
@@ -28,9 +35,11 @@
 // (review round 1, R1-01).
 // Importing this module defines `ocelle-button` and no other element.
 import { LitElement, css, html, nothing } from "lit";
-import { MovedAttributes, controlStyles, guardHost, linkHref, resolveIds } from "./control.ts";
+import { MovedAttributes, controlState, controlStyles, guardHost, linkHref, resolveIds } from "./control.ts";
+import type { ControlState } from "./control.ts";
 import { define } from "./define.ts";
 import { iconSlotStyles } from "./icon-slot.ts";
+import { spinner, spinnerStyles } from "./spinner.ts";
 
 /** The host attributes `ocelle-button` moves onto its inner control (FR-009). */
 const moved = ["aria-expanded", "aria-controls", "aria-current", "aria-haspopup", "aria-pressed", "aria-label", "aria-labelledby", "aria-describedby", "title"] as const;
@@ -43,8 +52,8 @@ const references = [
 
 /**
  * A native button in the Ocelle look, or a link that looks like one: three variants, two sizes, a flush look, the
- * ground it sits on, a label, a disabled state, an icon slot, link mode with `href`, and host ARIA moved onto the inner
- * control.
+ * ground it sits on, a label, a disabled and a busy state, an icon slot, link mode with `href`, and host ARIA moved onto
+ * the inner control.
  *
  * @tagname ocelle-button
  * @attr {string} aria-expanded - Moved onto the inner control (the host keeps no copy): `"true"` reports expanded,
@@ -85,14 +94,15 @@ const references = [
  * @cssstate pressed - While the moved `aria-pressed` is `"true"`.
  * @cssstate current - While the moved `aria-current` is set to any value other than `"false"`.
  * @slot - The label.
- * @slot icon - One icon before the label (the slot convention): `--ocelle-icon-size` square, decorative.
+ * @slot icon - One icon before the label (the slot convention): `--ocelle-icon-size` square, decorative; hidden while
+ * busy, the spinner in its place.
  * @csspart control - The inner `<button>`, or the inner `<a>` in link mode.
  * @fires {CustomEvent<Record<string, never>>} ocelle-button-activate - Dispatched from the element on each activation
  * that delivers a `click` (a pointer click, Enter, Space in button mode, `click()`), before the `click` reaches any
  * bubble-phase listener on the element or its ancestors; bubbles, composed and cancelable, `detail` `{}`. Calling
  * `preventDefault()` on it cancels the click's default action (in link mode the navigation; in button mode the
  * `click` is still delivered). Not dispatched for a link-mode click with Ctrl, Meta, Shift or Alt held, nor for a
- * middle click. A disabled button dispatches neither.
+ * middle click. A disabled or busy button dispatches neither.
  */
 export class OcelleButton extends LitElement {
   /** @internal The open shadow root delegates focus to the inner control (research.md R-01). */
@@ -106,6 +116,7 @@ export class OcelleButton extends LitElement {
     // Stryker disable next-line ObjectLiteral: equivalent, {} gives Lit's default options, which are type String's (attribute "label", the default converter, not reflected)
     label: { type: String },
     disabled: { type: Boolean, reflect: true },
+    busy: { type: Boolean, reflect: true },
     href: { type: String, reflect: true },
     target: { type: String, reflect: true },
     rel: { type: String, reflect: true },
@@ -158,6 +169,10 @@ export class OcelleButton extends LitElement {
 
       .icon-row.bare slot[name="icon"]::slotted(*) {
         margin-inline-end: 0 !important;
+      }
+
+      .icon-row.bare .spinner svg {
+        margin-inline-end: 0;
       }
 
       :host([size="compact"]) .control {
@@ -291,6 +306,7 @@ export class OcelleButton extends LitElement {
     `,
     controlStyles,
     iconSlotStyles,
+    spinnerStyles,
   ];
 
   /**
@@ -341,6 +357,16 @@ export class OcelleButton extends LitElement {
    * @default false
    */
   declare disabled: boolean;
+
+  /**
+   * Busy: while a host waits for the result of an action the button is unavailable (in the tab order and focusable,
+   * `aria-disabled`, not activated: no `click`, no `ocelle-button-activate`), reports `aria-busy`, and shows a spinner in
+   * the icon's place (six turns in 4.8 s, then still; still under reduced motion); a busy link has no `href`.
+   * `disabled` wins. Reflected.
+   *
+   * @default false
+   */
+  declare busy: boolean;
 
   /**
    * The link's URL: a non-empty `href` that parses as a URL and is not a `javascript:` URL puts the button in link mode
@@ -398,7 +424,8 @@ export class OcelleButton extends LitElement {
     super();
     this.flush = false;
     this.disabled = false;
-    guardHost(this, () => this.#control(), () => !this.disabled);
+    this.busy = false;
+    guardHost(this, () => this.#control(), () => this.#state() === "available");
     this.#text.observe(this, { characterData: true, childList: true, subtree: true });
   }
 
@@ -431,6 +458,11 @@ export class OcelleButton extends LitElement {
     for (const [name] of references) this.#resolved[name] = resolveIds(this, this.#moved.get(name));
   }
 
+  /** Available, unavailable (busy) or disabled (src/control.ts). */
+  #state(): ControlState {
+    return controlState(this.disabled, this.busy);
+  }
+
   /** The inner `<button>` or `<a>`, once rendered. */
   #control(): HTMLElement | null {
     return this.renderRoot.querySelector<HTMLElement>(".control");
@@ -446,7 +478,7 @@ export class OcelleButton extends LitElement {
 
   /** Dispatches `ocelle-button-activate` for a click on the available inner control; a cancelled one cancels the click. */
   #activate(event: MouseEvent): void {
-    if (this.disabled) return;
+    if (this.#state() !== "available") return;
     if (linkHref(this.href, document.baseURI) !== undefined && (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey)) return;
     const proceed = this.dispatchEvent(new CustomEvent("ocelle-button-activate", { bubbles: true, composed: true, cancelable: true, detail: {} }));
     if (!proceed) event.preventDefault();
@@ -467,14 +499,16 @@ export class OcelleButton extends LitElement {
 
   protected override render(): unknown {
     const value = (name: string): string | typeof nothing => this.#moved.get(name) ?? nothing;
-    const content = html`<span class=${this.#labelled ? "icon-row" : "icon-row bare"}><span class="icon-slot"><slot name="icon"></slot></span><span class="label"><slot @slotchange=${this.#readLabel}></slot></span></span>`;
+    const state = this.#state();
+    const busy = state === "unavailable";
+    const content = html`<span class=${this.#labelled ? "icon-row" : "icon-row bare"}><span class="icon-slot" ?hidden=${busy}><slot name="icon"></slot></span>${spinner(busy)}<span class="label"><slot @slotchange=${this.#readLabel}></slot></span></span>`;
     const href = linkHref(this.href, document.baseURI);
     if (href !== undefined) {
-      const available = !this.disabled;
+      const available = state === "available";
       const rel = this.rel ?? (this.target === "_blank" ? "noopener" : undefined);
-      return html`<a part="control" class="control" href=${available ? href : nothing} target=${available ? (this.target ?? nothing) : nothing} rel=${available ? (rel ?? nothing) : nothing} download=${available ? (this.download ?? nothing) : nothing} role=${available ? nothing : "link"} aria-disabled=${available ? nothing : "true"} aria-label=${this.#name() ?? nothing} aria-expanded=${value("aria-expanded")} aria-current=${this.#current() ?? nothing} aria-haspopup=${value("aria-haspopup")} title=${value("title")} @click=${this.#activate}>${content}</a>`;
+      return html`<a part="control" class="control" href=${available ? href : nothing} target=${available ? (this.target ?? nothing) : nothing} rel=${available ? (rel ?? nothing) : nothing} download=${available ? (this.download ?? nothing) : nothing} role=${available ? nothing : "link"} tabindex=${busy ? "0" : nothing} aria-disabled=${available ? nothing : "true"} aria-busy=${busy ? "true" : nothing} aria-label=${this.#name() ?? nothing} aria-expanded=${value("aria-expanded")} aria-current=${this.#current() ?? nothing} aria-haspopup=${value("aria-haspopup")} title=${value("title")} @click=${this.#activate}>${content}</a>`;
     }
-    return html`<button part="control" class="control" type="button" ?disabled=${this.disabled} aria-label=${this.#name() ?? nothing} aria-expanded=${value("aria-expanded")} aria-current=${this.#current() ?? nothing} aria-haspopup=${value("aria-haspopup")} aria-pressed=${value("aria-pressed")} title=${value("title")} @click=${this.#activate}>${content}</button>`;
+    return html`<button part="control" class="control" type="button" ?disabled=${this.disabled} aria-disabled=${busy ? "true" : nothing} aria-busy=${busy ? "true" : nothing} aria-label=${this.#name() ?? nothing} aria-expanded=${value("aria-expanded")} aria-current=${this.#current() ?? nothing} aria-haspopup=${value("aria-haspopup")} aria-pressed=${value("aria-pressed")} title=${value("title")} @click=${this.#activate}>${content}</button>`;
   }
 
   /** Relates the inner control to the resolved references and sets the custom states from the moved values. */
