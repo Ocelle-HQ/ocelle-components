@@ -584,3 +584,120 @@ to `mutation.log`. No new survivor; the counts equal the runs at `1f91513` and `
   - Each of these rows passes on its own.
 - **Answer:** "Investigate and fix now". An implementer measures these rows under load, finds the timing each relies on, and fixes each one test-first, with a break check. The source changes only if a real bug shows up. tdd-check then runs again.
 - **Not chosen:** re-running and noting the rows for the review; re-running and listing them as a known gap.
+
+## The dialog/drawer rows after the operator's decision (`157c4cf`)
+
+`157c4cf` changes test code only: `packages/elements/test/scenarios/dialog.ts`, and an opt-in `still` pointer step in
+`packages/elements/test/scenarios/driver.ts` and `packages/elements/test/commands.ts`. There is no change to the
+source, the spec, a contract or an expected value. No source bug showed up. No row was renamed: once fixed, each row
+does what its full name says.
+
+### How the rows were measured
+
+- **Load:** 16 busy loops (`while :; do :; done`) on the 4 cores, with a load average of 18 to 19. `stress-ng` is not
+  installed.
+- **Probes:** temporary test files, removed before the commit.
+  - In process: one page, the row's body in a loop, with window listeners in the capture phase for `pointerdown`,
+    `click`, `focusin` and the overlay events, and the panel's animation `currentTime` at each press.
+  - Fixture twin: a fresh `overlays.html` page per run, with a rAF sampler injected through the DevTools protocol.
+- **Fixture names:** both probes select rows by their full names. The dialog's fixture runner still names its tests
+  with `$name` (tasks.md Rules § Full test names, review phase 2 R1-02, optional), so `-t` cannot pick one of its rows
+  by full name. That runner was not changed.
+
+### Row 1: nested in an open ocelle-drawer, opener removed (R-05)
+
+- **Cause, measured in process:** `openInDrawer` clicked `#oi` right after setting the drawer's `open`.
+  - The drawer's entry had then run 33 ms, with `#oi`'s box at x = -104 (off the viewport).
+  - The press reached no element and focus went from `#oi` to the body, so the dialog opened with no opener (20 of 20
+    runs). Its close then focused the drawer's initial target, `ob`.
+  - The row passed, but without testing what it names: a removed opener is never consulted.
+  - With a pause before the click, the outcome depended on the frame in which the centre was read. Up to 32 ms the
+    click missed. From 33 ms it hit `#oi`, where the 67 ms frame leaves `#oi` about 1 px of margin over the
+    ~40 px the panel still moves during the four pointer moves.
+  - Under the full suite's load, a centre read in that window lands beside `#oi` on the moving panel. Focus then goes
+    to the panel and not `ob`, as in tdd-check 4 at `fc08423`.
+  - Busy loops alone did not reproduce the failure: 30 of 30 runs passed in each harness, the click missing
+    `#oi` each time.
+- **Fix:** `openInDrawer` waits until the drawer's panel runs no animation (a bounded poll of 1 000 ms that fails with
+  a message). It then clicks `#oi` and fails with a message unless focus is on `#oi`. This affects all eight
+  "Nested in an open ocelle-drawer" rows.
+- **Red proof:** with the focus check but without the wait, all eight rows failed in process with "the click on #oi
+  left focus on body, so the dialog would open with no opener in the drawer".
+- **Name:** unchanged: "Nested in an open ocelle-drawer: the dialog whose opener (a button of the drawer) is removed
+  before its close: focus on the drawer's initial target (R-05)".
+
+### Row 2: close control (FR-006)
+
+- **Cause, reproduced on the drawer's fixture twin under load (35, 36 and 38 of 40 runs passed):** every failing run
+  gave `size: { inline: false }` and nothing else.
+  - The row reads the control's box right after Shift+Tab, during the drawer's entry slide.
+  - A rAF sampler showed the control's `getBoundingClientRect().width` at 43.99998474121094 or 44.00001525878906 at
+    some frames of the slide, for example at `translate: -13.3%`, while `offsetWidth` stayed 44. The `>= 44` check
+    fails on those frames.
+- **Fix:** the row waits for `kind.settle`, the drawer's bounded wait for the entry to end, before it reads the box.
+  For the dialog this is a no-op: its fade does not move the panel.
+- **Name:** unchanged: "Close control: a native button named by close-label holding the close icon, at least
+  --ocelle-target-min in both axes, the token focus ring when focused by keyboard (FR-006)".
+
+### Row 3: input during the exit, two close-control clicks
+
+- **Cause, measured in process:**
+  - The first click hit the control and started the exit.
+  - On the drawer, the second click came 64 to 100 ms later: a click of its own, or after the four moves of a
+    path step, each of which waits for a frame. By then the slide had moved the control (x = 281) away from the
+    press, which hit the panel at x = 171 (`pointerdown` target the `<dialog>`, exit at 50 to 83 ms).
+  - So on the drawer the row never clicked the control twice.
+  - Under load, a later second press can come after the exit and land on the page, taking focus from the opener. The
+    gate printed no diff for the failure at `296072b`, so this is a reading.
+  - On the dialog both clicks hit the control.
+- **Fix:**
+  - Both clicks are one pointer path at the control's centre. The second is a new `still` step: no move, so its press
+    follows the first click's release at once (2 to 4 ms later, the exit at 0 ms).
+  - The stand-in's new `clicks` command records each click in the page, before any element's listener: on the
+    control or not, the host's `open` attribute, and the inner `<dialog>` open.
+  - `duringExit` judges a run only when both clicks were on the control, the first while open and the second during
+    the exit (`open` gone, the `<dialog>` still open). It runs the body at most 3 times, then fails with the records.
+    It never passes without a judged run.
+  - The same command reports what the old row did: on the drawer it gave
+    `[{"on":true,"open":true,"panel":true},{"on":false,"open":false,"panel":true}]` in each run, in both harnesses.
+- **Name:** unchanged: "Input during the exit, motion on: two close-control clicks: exactly one request and one close,
+  no cancel event, focus on the opener (FR-013, FR-014, R-02, R-06)".
+
+### Break checks (temporary edits of `src/overlay.ts`, reverted, never committed)
+
+Each row was run in both harnesses: in process (`dialog.test.ts`, `drawer.test.ts`), the drawer's fixture twin
+(`test/browser/drawer.test.ts`), and the dialog's fixture twin through the probe (fresh `overlays.html` per run,
+browser build made from the edited source).
+
+- **B1, a removed opener taken as valid** (`opener.isConnected` dropped from `#returnFocus`). Row 1 fails in process
+  and on the fixture with `focus: "body"`; the close event's `focusPath` is `i1`. The old row (`90e21fd`) passed under
+  this break in both harnesses.
+- **B2, a 43 px close control** (`inline-size: calc(var(--ocelle-target-min) - 1px)`). Row 2 fails for the dialog and
+  the drawer in process, on the drawer's fixture twin, and on the dialog's (`size.inline: false`).
+- **B3, a close-control request during the exit** (`#onCloseClick` calls `#request` and not `requestClose`). Row 3
+  fails for the dialog and the drawer in process and on both fixture twins, with a second
+  `…-close-request` (`open: false`, `dialogOpen: true`). Under this break the old row passed for the drawer in both
+  harnesses, because its second click missed the control, and failed for the dialog.
+- **B3', every request during the exit** (`closing` added to `requestClose`'s check). Row 3 fails in every harness for
+  both kinds. The old drawer row also failed here, because its second click on the panel's backdrop asked for a
+  request.
+
+### Stress loops under the same load
+
+- **New rows,** 20 runs each under the 16 busy loops:
+  - in process: row 1 20/20; row 2 20/20 (dialog), 20/20 (drawer); row 3 20/20 (dialog), 20/20 (drawer);
+  - fixture twin: the same, each 20/20.
+- **Before the fix,** under the same load: row 2 on the drawer's fixture twin passed 35/40, 36/40 and 38/40; rows 1
+  and 3 passed 30/30 in each harness, without testing what they name.
+- **Every row of the four files,** `dialog.test.ts`, `drawer.test.ts` and their fixture twins, with the harness and
+  tooltip files: 1756 of 1756 passed. `gate:typecheck`, `gate:lint` and `gate:test-lint`: no finding.
+
+### Full suite at `157c4cf`
+
+- `pnpm test` run 1 (`full-test-157c4cf.log`, 797 s): **5067 of 5067 passed**.
+- `pnpm test` run 2 (`full-test-157c4cf-run2.log`, 763 s): **5067 of 5067 passed**.
+- No other row failed in either run, so no other row was investigated or changed.
+
+### Mutation
+
+None was run again: the source did not change, so every mutant and its record are as at `9a66884`.
