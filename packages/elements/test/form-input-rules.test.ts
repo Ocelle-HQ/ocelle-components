@@ -183,16 +183,15 @@ describe("host ARIA after the first render (FR-022, R-05)", () => {
     expect(names).toEqual(["Title", "Search", "Title", "Title"]);
   });
 
-  it("host aria-invalid, aria-required and aria-disabled \"true\" set and removed reach the field", async () => {
+  it.each(["aria-invalid", "aria-required", "aria-disabled"])("a host %s \"true\" set alone after the first render reaches the field, and another value leaves it", async (name) => {
     const made = await insert('<ocelle-form-input id="t"></ocelle-form-input>');
-    const state = (): unknown => ["aria-invalid", "aria-required", "aria-disabled"].map((name) => field(made).getAttribute(name));
-    const before = state();
-    for (const name of ["aria-invalid", "aria-required", "aria-disabled"]) made.setAttribute(name, "true");
+    const before = field(made).getAttribute(name);
+    made.setAttribute(name, "true");
     await endOfTask();
-    const set = state();
-    for (const name of ["aria-invalid", "aria-required", "aria-disabled"]) made.setAttribute(name, "false");
+    const set = field(made).getAttribute(name);
+    made.setAttribute(name, "false");
     await endOfTask();
-    expect({ before, set, other: state() }).toEqual({ before: [null, null, null], set: ["true", "true", "true"], other: [null, null, null] });
+    expect({ before, set, other: field(made).getAttribute(name) }).toEqual({ before: null, set: "true", other: null });
   });
 
   it("a host aria-description set and changed is the field's description span, after the description", async () => {
