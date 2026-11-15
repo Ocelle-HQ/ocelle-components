@@ -234,17 +234,29 @@ function widths(): { oneRow: number; twoRows: number } {
   return { oneRow: Math.ceil(fourth) + 16, twoRows: Math.ceil(third) + Math.floor((fourth - third) / 2) };
 }
 
-/** Sets the inline size of `#box` wide enough for one row and waits for the group to lay out, then measures `widths`. */
-async function measured(driver: Driver, inPage: InPage): Promise<{ oneRow: number; twoRows: number }> {
-  await driver.resize("box", 640);
-  await driver.afterResizeDelivery("box");
-  return inPage(widths, null);
+/** Waits for a task in the page. */
+function task(): Promise<void> {
+  return new Promise((done) => {
+    setTimeout(done, 0);
+  });
 }
 
-/** Resizes `#box` without waiting for a frame, then waits for the delivery of the resize observations (US3-10). */
-async function resized(driver: Driver, width: number): Promise<void> {
+/**
+ * Resizes `#box` in an ordinary task without waiting for a frame, then waits for the delivery of the resize
+ * observations (US3-10). The wait for a task comes first: the previous `afterResizeDelivery` resolves inside a
+ * `ResizeObserver` callback, and a resize made in that callback's microtask would itself be a resize during the
+ * delivery (changed after the red run, reviews/phase-4/notes.md).
+ */
+async function resized(driver: Driver, inPage: InPage, width: number): Promise<void> {
+  await inPage(task, undefined);
   await driver.resize("box", width);
   await driver.afterResizeDelivery("box");
+}
+
+/** Sets the inline size of `#box` wide enough for one row and waits for the group to lay out, then measures `widths`. */
+async function measured(driver: Driver, inPage: InPage): Promise<{ oneRow: number; twoRows: number }> {
+  await resized(driver, inPage, 640);
+  return inPage(widths, null);
 }
 
 /** A screenshot of `#box`, with its place in the viewport and its device-pixel scale. */
@@ -645,13 +657,13 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
     run: async (driver, inPage) => {
       await mount(driver, inPage, page(segmentsOf(lanes), 'label="Lane filter" value="mine" joined'));
       const { oneRow, twoRows } = await measured(driver, inPage);
-      await resized(driver, twoRows);
+      await resized(driver, inPage, twoRows);
       const wrapped = { rows: await inPage(rows, null), radii: await inPage(radii, null) };
       const s = await shot(driver);
       const [all, , , done] = await boxes(driver, 4);
       const between = all === undefined || done === undefined ? null : lineRun(s, "y", all.x + Math.min(all.width, done.width) / 2, done.y - 2, done.y + 2, lineColours);
       const rowsTouch = all === undefined || done === undefined ? null : Math.round((done.y - (all.y + all.height)) * 100) / 100;
-      await resized(driver, oneRow);
+      await resized(driver, inPage, oneRow);
       return { wrapped: { ...wrapped, between, rowsTouch }, one: { rows: await inPage(rows, null), radii: await inPage(radii, null) }, styles: await inPage(styleAttributes, null) };
     },
     expected: {
@@ -686,11 +698,21 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
       const forcedColours = [highlight, buttonBorder];
       const pressedBox = b[0];
       const mine = b[1];
+      // The bar is read from its computed style, not its pixels: the emulated palette's Highlight is translucent, so the
+      // bar's pixels are Highlight blended with the ground (changed after the red run, reviews/phase-4/notes.md).
+      const bar = {
+        content: await driver.computedPart(seg(0), "::before", "content"),
+        width: await driver.computedPart(seg(0), "::before", "border-block-end-width"),
+        colour: await driver.computedPart(seg(0), "::before", "border-block-end-color"),
+        end: await driver.computedPart(seg(0), "::before", "inset-block-end"),
+        line: await driver.computed(seg(0), "border-bottom-width"),
+      };
       const joined =
         pressedBox === undefined || mine === undefined
           ? null
           : named({
-              bar: lineRun(s, "y", pressedBox.x + pressedBox.width / 2, pressedBox.y + pressedBox.height - 6, pressedBox.y + pressedBox.height + 2, forcedColours),
+              bar,
+              bottom: lineRun(s, "y", pressedBox.x + pressedBox.width / 2, pressedBox.y + pressedBox.height - 2, pressedBox.y + pressedBox.height + 2, forcedColours),
               shared: lineRun(s, "x", mine.y + mine.height / 2, mine.x - 2, mine.x + 2, forcedColours),
               top: lineRun(s, "y", mine.x + mine.width / 2, mine.y - 2, mine.y + 2, forcedColours),
             });
@@ -701,7 +723,7 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
       distinct: true,
       plain: { pressed: { ...(paint("any", "3px", "Highlight") as object), fill: "any" }, other: { ...(paint("any", "1px", "ButtonBorder") as object), fill: "any" } },
       focused: ["3px Highlight", "3px Highlight", "3px Highlight", "3px Highlight"],
-      joined: { bar: { colour: "Highlight", width: 3 }, shared: { colour: "ButtonBorder", width: 1 }, top: { colour: "ButtonBorder", width: 1 } },
+      joined: { bar: { content: '""', width: "3px", colour: "Highlight", end: "0px", line: "1px" }, bottom: { colour: "ButtonBorder", width: 1 }, shared: { colour: "ButtonBorder", width: 1 }, top: { colour: "ButtonBorder", width: 1 } },
     },
   },
   {
@@ -855,7 +877,7 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
       const run = async (change: () => Promise<void>): Promise<unknown> => {
         await mount(driver, inPage, page(segmentsOf(lanes), 'label="Lane filter" value="done" joined'));
         const { twoRows } = await measured(driver, inPage);
-        await resized(driver, twoRows);
+        await resized(driver, inPage, twoRows);
         const before = { rows: await inPage(rows, null), height: (await driver.box("sc")).height };
         await change();
         await driver.afterResizeDelivery("box");
@@ -1122,7 +1144,7 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
       const { oneRow, twoRows } = await measured(driver, inPage);
       const seen: unknown[] = [];
       for (let step = 0; step < 10; step++) {
-        await resized(driver, step % 2 === 0 ? twoRows : oneRow);
+        await resized(driver, inPage, step % 2 === 0 ? twoRows : oneRow);
         seen.push((await inPage(radii, null))[3]);
       }
       await inPage(frames, undefined);

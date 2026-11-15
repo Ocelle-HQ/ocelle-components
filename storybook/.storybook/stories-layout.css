@@ -22,3 +22,9 @@
 [data-story="tabs-wrapped"] ocelle-tabs {
   inline-size: 320px;
 }
+
+/* The joined wrapped segmented-choice story (014 FR-050, FR-029): a group narrower than its four segments, so Done
+ * wraps alone onto a second row. */
+[data-story="segmented-choice-wrapped"] ocelle-segmented-choice {
+  inline-size: 220px;
+}
