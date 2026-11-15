@@ -132,3 +132,11 @@ no new test from the drawer: no drawer row reaches a case the dialog's rows do n
   the repository's stories, whose axe finding above is open. The full `gate:plants` was not run (longer than the
   session allows); the other shards are left to CI.
 - T040 stays open until the operator decides the long-scrolling-body story's scroll edge.
+
+## Full suite
+
+`pnpm test` at `78e5424`: 2 of 4787 tests failed, both in `gates/test/integration/axe.test.ts`, both from the open
+axe finding on the drawer's long-scrolling-body story: "audits the repository's 70 story-themes and exits 0" (exit 1
+with the two findings) and "fails a story with an unlabelled button …" (five lines instead of three: the plant's two
+and the repository's two, then the summary). Every other test passes, the drawer's and dialog's rows in both harnesses
+among them. `tdd-check.sh 3` needs this suite green, so it waits for the operator's decision on that story.
