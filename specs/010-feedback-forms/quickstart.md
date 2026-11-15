@@ -31,8 +31,6 @@ and, for phase 5, #10 (mission 006) merged on `main` with podman or docker avail
    baselines, then `pnpm run gate:visual` and `pnpm run gate:axe` (SC-005).
 8. Mutation: `pnpm run gate:mutation` on the branch; survivors in new code are review findings (SC-007). At the end of
    phases 2 and 3 each planned shard holding `src/live.ts` (phase 3: or `src/form-control.ts`) is also run with
-   `--files` and timed; over 7:00 is a stop (plan decision 11). Since phase 3 stop 1, `--plan` cuts element source
-   (`packages/elements/src/`) into shards of at most 10 mutants, counted before Stryker runs, and every other file
-   into 30-line entries as before (plan decision 11; T041a). Since phase 3 stop 2, a mutant that probably runs when
-   its module loads (in a static class member, a class property's initialiser, or code outside any function) counts
-   as 5 of those 10 (plan decision 11; T041b).
+   `--files` and timed; over 7:00 is a stop (plan decision 11). Phase 3's shards over 7:00 are a known gap instead
+   (plan decision 11): the shard planner change moved to op 017 (#42), and CI's limit for element shards is 45
+   minutes since op 015.

@@ -1,5 +1,11 @@
 # Phase 3 design change 1: element source sharded by mutant count
 
+> **Superseded** by the operator's split decision (`decision-split-shard-change.md`, 2026-11-15; `design-change-3.md`).
+> This change (T041a) does not land in mission 010: it moved to its own op, op 017 (issue #42, branch
+> `claude/042-mutation-shards-by-count`), and its gate code was reverted on this branch in `14538fa`. Mission 010 plans
+> on the 30-line rule of 007 FR-014, with phase 3's element shards over 7:00 recorded as a known gap (plan decision
+> 11). The record below is kept as history.
+
 ## Finding
 
 **Stop 1** (`stop-1.md`). T041 times each planned mutation shard that holds a `src/live.ts` or `src/form-control.ts`
