@@ -113,9 +113,11 @@ Token-only CSS with no new `token-only` allowance. No I/O. No ID reference acros
 7. **Story delay override** (R-16): tooltip stories wrap their markup in `<div data-story="tooltip">`, and
    `stories-layout.css` sets `[data-story="tooltip"] { --ocelle-tooltip-delay: 0ms; }` (operator decision A at T026),
    because #10 runs axe two frames after the pointer move and takes the screenshot at no fixed time after it.
-   The long-scrolling-body dialog story places an empty `<div data-story="dialog-scroll-edge">` across the body's
-   scroll edge, sized by a `[data-story="dialog-scroll-edge"]` rule in the same file, so no paragraph is partly
-   hidden there and axe stays clean with no exception (operator decision, 2026-11-14, measured at T029).
+   Each overlay's long-scrolling-body story places an empty `<div data-story="<element>-scroll-edge">` across the
+   body's scroll edge (`dialog-scroll-edge` for the dialog, `drawer-scroll-edge` for the drawer), sized by its own
+   `[data-story="<element>-scroll-edge"]` block-size rule in the same file, so no paragraph is partly hidden there and
+   axe stays clean with no exception (operator decisions, 2026-11-14 for the dialog, measured at T029; 2026-11-15 for
+   the drawer, measured at T040; decision 24).
 8. **Heading level 2**, fixed (R-08).
 
 Settled in the squad's round 1 (9 to 13 by the operator at the forks, 14 a confirmed fix):
@@ -188,6 +190,32 @@ Settled in Phase 2 by the operator (decided by the operator, 2026-11-14; evidenc
     that the first vetoed sequence in a page may hold the veto on a second press as well. The matrix row "Escape with
     slotted content" (veto then Escape twice) first runs one unasserted warm-up sequence on a stand-in native
     `<dialog>` in the same page, then asserts the `escape` request and the `host` close (T015, T019).
+
+Settled in Phase 3 by the operator (decided by the operator, 2026-11-15; evidence `reviews/phase-3/notes.md`,
+`reviews/phase-3/mutation.log`, `reviews/analysis/fixes-8.md`):
+
+24. **Drawer long-body scroll edge** (R-16, generalised): axe measured `color-contrast-incomplete` (serious) on the
+    paragraph across the drawer body's scroll edge, light and dark, the cause recorded for the dialog at T029. The
+    remedy is the dialog's: the drawer's long-scrolling-body story places an empty, non-text
+    `<div data-story="drawer-scroll-edge">` across that edge, sized only by a `[data-story="drawer-scroll-edge"]`
+    block-size rule in `storybook/.storybook/stories-layout.css`. No `style` attribute, no entry in
+    `storybook/a11y-exceptions.json`, no Complexity Tracking row; the axe expectation stays zero serious or critical
+    findings (T040).
+25. **Elements dry-run limit** (R-15): with the dialog's and the drawer's rows, Stryker's initial test run of
+    `stryker.elements.config.json` (about 760 in-process browser rows of `elements` and `elements-touch`, whatever
+    `--files` names) passes its default 5-minute `dryRunTimeoutMinutes`, so `gate:mutation` exits 2 (measured: 5 m
+    31 s, "Initial test run timed out!"), and CI's elements shards run the same dry run. `stryker.elements.config.json`
+    (repository root) gains `"dryRunTimeoutMinutes": 30`. 30 is the value with which the phase's scratch runs
+    completed (runs 1 and 2, about 16 minutes each in all), and it leaves room for Phase 4's tooltip rows and slower CI
+    runners. The limit bounds only the dry run; the per-mutant limit (`timeoutMS`, `timeoutFactor`) stays at Stryker's
+    default, so 007's "a timeout is a kill" and its FR-012 are untouched. `stryker.config.json` is not changed: its
+    dry run passed within the default (run 3, the whole gate run 1 m 22 s). The pinned test
+    `gates/test/vitest-config.test.ts` ("is stryker.config.json with its own Vitest config and its own report file")
+    is changed red first to expect the key in the elements configuration only (T040). This is a configuration
+    decision under the constitution's gates, not an exception to a principle, so it has no Complexity Tracking row.
+    Open risk, not decided here: CI's `mutation-shard` job has `timeout-minutes: 10` (`.github/workflows/ci.yml`),
+    which an elements shard whose dry run alone takes 5 to 6 minutes may exceed; if CI shows that, it goes to the
+    operator.
 
 ## Risks
 
@@ -270,11 +298,14 @@ packages/elements/
 ├── test/build/build.test.ts, test/build/pack.test.ts   # + the three dist files
 storybook/
 ├── stories/{dialog,drawer,tooltip}.stories.ts     # after #10 (R-16)
-├── .storybook/stories-layout.css  # [data-story="tooltip"] delay override, [data-story="dialog-scroll-edge"] block (R-16)
+├── .storybook/stories-layout.css  # [data-story="tooltip"] delay override, [data-story="dialog-scroll-edge"] and
+│                                  #   [data-story="drawer-scroll-edge"] blocks (R-16)
 └── baselines/…                    # after #10
 vitest.config.ts                   # elements: 1280 × 800, no touch; + elements-touch project (only *.touch.test.ts,
                                    #   same excludes as elements: not test/node, test/build, test/browser); commands (R-14)
 vitest.mutation.elements.config.ts # takes elements and elements-touch (R-14)
+stryker.elements.config.json       # + dryRunTimeoutMinutes 30 (R-15, decision 25)
+gates/test/vitest-config.test.ts   # the pinned elements Stryker config: + dryRunTimeoutMinutes 30, red first (R-15)
 ```
 
 **Structure Decision**: the existing workspace layout. All element code is in `packages/elements/src`, the tokens are in
@@ -300,4 +331,5 @@ vitest.mutation.elements.config.ts # takes elements and elements-touch (R-14)
 
 ## Complexity Tracking
 
-No constitution violation; no row.
+No constitution violation; no row. Decisions 24 and 25 add none: the drawer's scroll-edge block is story layout with
+no axe exception, and the elements dry-run limit is gate configuration that weakens no check (R-15, R-16).

@@ -1,6 +1,6 @@
 {
   "expect": "fail",
-  "why": "A changed token value (color-ink, light) changes every story-theme that shows it: differs on the twenty-eight light story-themes measured in the pinned container (FR-004, US2 scenario 2), the twelve the phase 1 spike listed, the eight of mission 005's stories that show color-ink (all but elements-ocelle-brand-mark--chrome, measured for plan decision 29) and the eight ocelle-dialog stories of mission 008 (measured in phase 2, R-16), and none in dark. A story added later that shows color-ink in light adds its line here (research.md R-07).",
+  "why": "A changed token value (color-ink, light) changes every story-theme that shows it: differs on the thirty-two light story-themes measured in the pinned container (FR-004, US2 scenario 2), the twelve the phase 1 spike listed, the eight of mission 005's stories that show color-ink (all but elements-ocelle-brand-mark--chrome, measured for plan decision 29), the eight ocelle-dialog stories of mission 008 (measured in phase 2, R-16) and the four ocelle-drawer stories on the sheet ground (all but the two on the chrome ground, measured in phase 3), and none in dark. A story added later that shows color-ink in light adds its line here (research.md R-07).",
   "findings": [
     {
       "location": "base-styles--base-page/light",
@@ -60,6 +60,22 @@
     },
     {
       "location": "elements-ocelle-dialog--host-aria-label/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-drawer--start/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-drawer--end/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-drawer--rtl-start/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-drawer--long-scrolling-body/light",
       "rule": "differs"
     },
     {

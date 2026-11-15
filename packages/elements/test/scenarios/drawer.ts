@@ -582,6 +582,120 @@ const backdropRows = [
   ),
 ];
 
+// The border box's edges (R-07, T036) ------------------------------------------------------------------------------
+
+/**
+ * A press and click at one point, outside the panel's border box or not. The border box is the half-open area of the
+ * panel's pixels, [left, right) × [top, bottom): a point on its first or last pixel column or row is inside it, the
+ * pixel next to it outside, on the backdrop. The block-axis edges are reached with the panel shortened and centred by
+ * a host rule on `::part(panel)`.
+ */
+interface Edge {
+  readonly label: string;
+  readonly attrs: string;
+  readonly rules?: string;
+  readonly point: { readonly x: number; readonly y: number };
+  readonly backdrop: boolean;
+  readonly edges: Record<string, number>;
+}
+const shortened = "#dlg::part(panel) { block-size: 400px; margin-block: auto; }";
+const shortEdges = { left: 0, right: 320, top: 200, height: 400 };
+const borderEdges: readonly Edge[] = [
+  { label: 'side="start", the panel\'s last pixel column (x = 319)', attrs: ' side="start"', point: { x: 319, y: 400 }, backdrop: false, edges: against("left") },
+  { label: 'side="start", the backdrop\'s first column beside the panel (x = 320)', attrs: ' side="start"', point: { x: 320, y: 400 }, backdrop: true, edges: against("left") },
+  { label: 'side="start", the panel\'s first pixel column, at the viewport\'s edge (x = 0)', attrs: ' side="start"', point: { x: 0, y: 400 }, backdrop: false, edges: against("left") },
+  { label: 'side="end", the panel\'s first pixel column (x = 960)', attrs: ' side="end"', point: { x: 960, y: 400 }, backdrop: false, edges: against("right") },
+  { label: 'side="end", the backdrop\'s last column beside the panel (x = 959)', attrs: ' side="end"', point: { x: 959, y: 400 }, backdrop: true, edges: against("right") },
+  { label: "a panel 400 px tall, centred by ::part(panel), the backdrop's row above it (y = 199)", attrs: "", rules: shortened, point: { x: 160, y: 199 }, backdrop: true, edges: shortEdges },
+  { label: "a panel 400 px tall, centred by ::part(panel), its first pixel row (y = 200)", attrs: "", rules: shortened, point: { x: 160, y: 200 }, backdrop: false, edges: shortEdges },
+  { label: "a panel 400 px tall, centred by ::part(panel), its last pixel row (y = 599)", attrs: "", rules: shortened, point: { x: 160, y: 599 }, backdrop: false, edges: shortEdges },
+  { label: "a panel 400 px tall, centred by ::part(panel), the backdrop's row below it (y = 600)", attrs: "", rules: shortened, point: { x: 160, y: 600 }, backdrop: true, edges: shortEdges },
+];
+
+const edgeRows = borderEdges.map(({ label: where, attrs: attributes, rules, point, backdrop, edges: expectedEdges }) =>
+  row(
+    `Backdrop, the border box's edges (FR-012, R-07): a primary click at ${where}: ${backdrop ? "outside the border box, the request and the close carry reason backdrop" : "inside the border box, nothing is requested"}`,
+    async (driver) => {
+      await driver.mount(page(basic, { attrs: attributes }));
+      if (rules !== undefined) await driver.rules(rules);
+      await openSettled(driver);
+      const panel = edges(await inspect(driver, "dlg", "dialog"));
+      await driver.pointer([{ ...point, down: true, up: true }]);
+      return { panel, recorded: backdrop ? await events(driver, 2) : await after(driver), state: await state(driver) };
+    },
+    { panel: expectedEdges, recorded: backdrop ? [request("backdrop", "dlg[dialog]"), closeEvent("backdrop", "opener")] : [], state: backdrop ? gone : shown },
+  ),
+);
+
+// The press of a backdrop click (R-07, T036): the primary button's pointerdown of the primary pointer, its own -------
+
+const pressRows = [
+  row(
+    'Backdrop, the press (FR-012, R-07): side="end", a script click() on the panel with no press before it: nothing is requested (a backdrop click needs its own press outside the border box)',
+    async (driver) => {
+      await driver.mount(page(basic, { attrs: ' side="end"' }));
+      await openSettled(driver);
+      await act(driver, { op: "call", id: "dlg", inner: "dialog", method: "click" });
+      return { recorded: await after(driver), state: await state(driver) };
+    },
+    { recorded: [], state: shown },
+  ),
+  row(
+    'Backdrop, the press (FR-012, R-07): side="end", veto, a primary click on the backdrop, then a script click() on the panel: one request only (the second click has no press of its own)',
+    async (driver) => {
+      await driver.mount(page(basic, { attrs: ' side="end"' }));
+      await openSettled(driver);
+      await act(driver, { op: "veto", id: "dlg", event: requestName });
+      await driver.pointer([{ ...backdropPoint("right"), down: true, up: true }]);
+      await act(driver, { op: "call", id: "dlg", inner: "dialog", method: "click" });
+      return { recorded: await after(driver), state: await state(driver) };
+    },
+    { recorded: [request("backdrop", "dlg[dialog]")], state: shown },
+  ),
+  row(
+    "Backdrop, the press (FR-012, R-07): a secondary-button press on the backdrop, then a primary click there while it is held: nothing is requested (the press began with the secondary button)",
+    async (driver) => {
+      await driver.mount(page(basic));
+      await openSettled(driver);
+      const point = backdropPoint("left");
+      await driver.pointer([
+        { ...point, down: true, button: "right" },
+        { ...point, down: true },
+        { ...point, up: true },
+        { ...point, up: true, button: "right" },
+      ]);
+      return { recorded: await after(driver), state: await state(driver) };
+    },
+    { recorded: [], state: shown },
+  ),
+  row(
+    "Backdrop, the press (FR-012, R-07): a primary press on the backdrop, a second, non-primary pointer pressed on body prose, then the primary click released on the backdrop: the request and the close carry reason backdrop (only the primary pointer's press counts)",
+    async (driver) => {
+      await driver.mount(page(prose));
+      await openSettled(driver);
+      const inside = await prosePoint(driver);
+      await driver.pointer([{ ...backdropPoint("left"), down: true }]);
+      await act(driver, { op: "pointerdown", id: "dlg", inner: "dialog", ...inside, isPrimary: false });
+      await driver.pointer([{ ...backdropPoint("left"), up: true }]);
+      return { recorded: await events(driver, 2), state: await state(driver) };
+    },
+    { recorded: [request("backdrop", "dlg[dialog]"), closeEvent("backdrop", "opener")], state: gone },
+  ),
+  row(
+    "Backdrop, the press (FR-012, R-07): a primary press on body prose, a second, non-primary pointer pressed on the backdrop, then the primary click released on the backdrop: nothing is requested (only the primary pointer's press counts)",
+    async (driver) => {
+      await driver.mount(page(prose));
+      await openSettled(driver);
+      const inside = await prosePoint(driver);
+      await driver.pointer([{ ...inside, down: true }]);
+      await act(driver, { op: "pointerdown", id: "dlg", inner: "dialog", ...backdropPoint("left"), isPrimary: false });
+      await driver.pointer([{ ...backdropPoint("left"), up: true }]);
+      return { recorded: await after(driver), state: await state(driver) };
+    },
+    { recorded: [], state: shown },
+  ),
+];
+
 // Motion (US2-5, FR-020, FR-028) -------------------------------------------------------------------------------------
 
 const motionRows = [
@@ -723,7 +837,7 @@ const headingRows = [
 ];
 
 /** Every row of matrix § Drawer but the repeated-Escape case, which runs on a page of its own. */
-export const drawerScenarios: readonly DialogScenario[] = [...inheritedRows, ...placementRows, ...styleRows, ...bodyRows, ...backdropRows, ...motionRows, ...groundRows, ...headingRows];
+export const drawerScenarios: readonly DialogScenario[] = [...inheritedRows, ...placementRows, ...styleRows, ...bodyRows, ...backdropRows, ...edgeRows, ...pressRows, ...motionRows, ...groundRows, ...headingRows];
 
 /**
  * The veto-then-Escape-twice case with slotted content (matrix § Dialog "Escape with slotted content", inherited), with

@@ -1,8 +1,9 @@
 # @ocelle/elements
 
 The Ocelle web components: standards-based custom elements (Lit 3) that work in any page, a server-rendered page
-under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has three elements:
-`ocelle-icon`, with a set of thirteen icons, `ocelle-brand-mark`, the Ocelle rosette, and `ocelle-dialog`, a modal dialog.
+under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has four elements:
+`ocelle-icon`, with a set of thirteen icons, `ocelle-brand-mark`, the Ocelle rosette, `ocelle-dialog`, a modal dialog,
+and `ocelle-drawer`, a modal side drawer.
 
 ## Entry points
 
@@ -12,6 +13,7 @@ under a strict Content Security Policy, a Svelte shell or a desktop webview. Thi
 | `@ocelle/elements/ocelle-icon.js` | `dist/ocelle-icon.js` | `ocelle-icon` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-brand-mark.js` | `dist/ocelle-brand-mark.js` | `ocelle-brand-mark` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-dialog.js` | `dist/ocelle-dialog.js` | `ocelle-dialog` and the `ocelle-icon` it renders; for hosts with a bundler |
+| `@ocelle/elements/ocelle-drawer.js` | `dist/ocelle-drawer.js` | `ocelle-drawer` and the `ocelle-icon` it renders; for hosts with a bundler |
 | `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |
 | `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |
 
@@ -228,6 +230,76 @@ minimum, the panel scrolls as a whole. The body has a definite inline size, so p
 tokens. In forced colours the panel has a `CanvasText` border on a `Canvas` ground, the backdrop is `Canvas`, and the
 close control's focus ring is a `Highlight` outline.
 
+## `ocelle-drawer`
+
+```html
+<ocelle-drawer id="filters" label="Filters" side="end">
+  <form><!-- the filters --></form>
+  <div slot="footer"><button>Reset</button><button>Apply</button></div>
+</ocelle-drawer>
+```
+
+`ocelle-drawer` shows its content modally in a full-height panel against the inline start or end edge of the
+viewport, in a native `<dialog>`: the page behind is inert to pointer, keyboard and the accessibility tree until it
+closes. It has the focus, Escape, close control and event model of `ocelle-dialog`, with the `ocelle-drawer-` events,
+and a click on the backdrop asks to close it. Everything the `ocelle-dialog` section states about focus, Escape,
+closing and forced colours holds for the drawer as well.
+
+- `open`, `label` and `close-label`, the slots and the parts are those of `ocelle-dialog`.
+- `side` (attribute and property, reflected): `start` (the default) or `end`, the inline edge of the viewport in the
+  drawer's direction, so `start` is the left edge under `dir="ltr"` and the right edge under `dir="rtl"`.
+- `ground` (attribute and property, reflected): `sheet` (the default) or `chrome`, the chrome ground
+  `--ocelle-color-chrome` with `--ocelle-color-chrome-ink` in both themes. Any other value of `side` or `ground` gives
+  the default.
+- `heading-hidden` (attribute; property `headingHidden`, reflected): the heading is not painted and takes no space,
+  but stays in the accessibility tree as the drawer's level-2 heading, and the drawer's accessible name is unchanged;
+  the close control stays visible, focusable and in its place at the panel's block start.
+- Events: `ocelle-drawer-close-request` (cancelable; `detail.reason` is `"escape"`, `"close-button"` or `"backdrop"`)
+  when the user asks to close it, and `ocelle-drawer-close` (`detail.reason` is the request's reason, or `"host"` when
+  the host set `open` to false or the platform closed it) once it has left the top layer and focus has returned; both
+  bubble and are composed, and opening dispatches nothing. Cancelling `ocelle-drawer-close-request` keeps the drawer
+  open, with focus inside, on every repetition.
+
+```js
+opener.addEventListener("click", () => { drawer.open = true; });
+drawer.addEventListener("ocelle-drawer-close-request", (e) => { if (hasUnsavedInput()) e.preventDefault(); });
+drawer.addEventListener("ocelle-drawer-close", (e) => { /* e.detail.reason */ });
+```
+
+**Backdrop.** A primary-button click on the backdrop asks to close the drawer with reason `"backdrop"`; a press that
+starts in the panel and ends on the backdrop, or starts on the backdrop and ends in the panel, a click inside the panel
+and a secondary-button click do nothing. A click on the backdrop of an `ocelle-dialog` opened over the drawer closes
+neither.
+
+**Layout.** The drawer is as wide as `--ocelle-drawer-inline` (the sidebar width), never wider than
+`--ocelle-dialog-max-inline`, and as tall as the viewport; it has no `--ocelle-dialog-inline-size`. The two corners on
+the panel's inner edge, the edge facing the page, are rounded with `--ocelle-radius-2`; the two against the viewport's
+edge are square. The body fills the panel between the header and the footer, so the footer sits at the panel's end;
+it keeps the dialog's minimum of three times `--ocelle-target-min`, and when the viewport is too short the panel
+scrolls as a whole.
+
+**Motion.** The drawer slides in from its own edge and back out over `--ocelle-motion-base` with
+`--ocelle-easing-standard`, mirrored under `dir="rtl"`, and not at all under `prefers-reduced-motion: reduce`, whatever
+an ancestor sets on those tokens.
+
+`ocelle-drawer` reads the tokens `--ocelle-color-sheet`, `--ocelle-color-ink`, `--ocelle-color-overlay`,
+`--ocelle-color-chrome`, `--ocelle-color-chrome-ink`, `--ocelle-elevation-raised`, `--ocelle-radius-2`,
+`--ocelle-border-width`, `--ocelle-drawer-inline`, `--ocelle-dialog-max-inline`, `--ocelle-font-sans`,
+`--ocelle-font-size-md`, `--ocelle-font-size-lg`, `--ocelle-font-weight-strong`, `--ocelle-line-height-normal`,
+`--ocelle-line-height-tight`, `--ocelle-space-2`, `--ocelle-space-3`, `--ocelle-space-4`, `--ocelle-space-6`,
+`--ocelle-target-min`, `--ocelle-size-visually-hidden`, `--ocelle-focus-width`, `--ocelle-focus-offset`,
+`--ocelle-color-focus`, `--ocelle-motion-base` and `--ocelle-easing-standard`, and its close icon
+`--ocelle-icon-size`.
+
+#12's personal drawer: the chrome ground, a heading kept for the accessibility tree only, and the personal rail as its
+body.
+
+```html
+<ocelle-drawer label="Personal" ground="chrome" heading-hidden side="start">
+  <ocelle-personal-rail><!-- the personal rail --></ocelle-personal-rail>
+</ocelle-drawer>
+```
+
 ## Slot convention
 
 A control that shows icons follows one slot convention: an `icon` slot before its label and, where it has an end icon
@@ -293,7 +365,9 @@ and no node, labelled or not. A host `role` or `aria-hidden="false"` is not supp
 `aria-label` instead.
 
 With a host `aria-label`, an open `ocelle-dialog` exposes one named node, its modal dialog, named by the host
-`aria-label`; while it is closed, Chromium exposes the host itself as a named generic node.
+`aria-label`; while it is closed, Chromium exposes the host itself as a named generic node. With a host `aria-label`,
+an open `ocelle-drawer` exposes one named node, its modal dialog, named by the host `aria-label`; while it is closed,
+Chromium exposes the host itself as a named generic node.
 
 ## Two copies on a page
 

@@ -690,6 +690,23 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
   dispatched, all read at dispatch by `record()` (R-14). Under reduced motion all of this happens within one update.
 - The phase reviews read the 007 report lines. Any Timeout on this feature's changed lines is named in the review with
   its cause, and a test is added that kills it by assertion where possible.
+- **Dry-run limit of the elements configuration** (operator decision, 2026-11-15; measured in Phase 3,
+  `reviews/phase-3/notes.md` § Mutation, `reviews/phase-3/mutation.log`): Stryker's initial test run under
+  `stryker.elements.config.json` runs every in-process row of `elements` and `elements-touch`, whatever `--files`
+  names. With the dialog's and the drawer's rows (about 760 browser rows, about 2.5 minutes for the dialog's and 3
+  for the drawer's) it passes Stryker's default `dryRunTimeoutMinutes` of 5: `gate:mutation` exits 2 after 5 m 31 s
+  ("Initial test run timed out!"), and CI's elements shards would too. **Decision**: `stryker.elements.config.json`
+  (repository root) sets `"dryRunTimeoutMinutes": 30`, the value the phase's scratch runs completed with (runs 1
+  and 2, about 16 minutes each), with room for Phase 4's tooltip rows and slower CI runners. It bounds the dry run
+  only; the per-mutant limit (`timeoutMS`, `timeoutFactor`) stays at Stryker's default, so 007's "a timeout is a
+  kill" holds and nothing of its FR-012 (no shortened limit, no excluded mutator, no disable comment) is touched.
+  `stryker.config.json` keeps the default: its dry run passed within it (run 3, the whole gate run 1 m 22 s). The
+  pinned test `gates/test/vitest-config.test.ts` ("is stryker.config.json with its own Vitest config and its own
+  report file") expects the elements configuration to be `stryker.config.json` plus its own Vitest config, its own
+  report file and `dryRunTimeoutMinutes: 30`, and `stryker.config.json` to have no `dryRunTimeoutMinutes`; it is
+  changed first and seen red, then the configuration. The planted repositories copy both files
+  (`gates/lib/plant-repo.ts`), so the mutation plants run with the same limit. CI's `mutation-shard` job keeps its
+  `timeout-minutes: 10`; an elements shard that exceeds it is an operator question, not decided here.
 
 ## R-16 Stories against #10 (FR-042) — rechecked against merged `main` (T026)
 
@@ -745,6 +762,17 @@ Rechecked (T026) against #10 as merged into `claude/016-overlays` (merge commit 
   crosses the edge. No entry is added to `storybook/a11y-exceptions.json` and no Complexity Tracking row; the axe gate
   expectation stays zero serious or critical findings. If T029 still measures a `color-contrast-incomplete` node
   after that, stop for the operator.
+- **Scroll edge, any overlay long-body story** (generalised; operator decision, 2026-11-15): the rule above holds for
+  every overlay story with a long scrolling body, not only the dialog's. **Measured at T040** (phase 3,
+  `reviews/phase-3/notes.md` § Stories and baselines): on `elements-ocelle-drawer--long-scrolling-body`, light and
+  dark, axe reports `color-contrast-incomplete` (serious, `p:nth-child(8)`), the paragraph across the drawer body's
+  scroll edge in the 1280 × 800 capture, the same cause as the dialog's. So each such story places an empty block
+  without text, `<div data-story="<element>-scroll-edge">` (`dialog-scroll-edge`, `drawer-scroll-edge`), in the
+  slotted body between two paragraphs, across that edge, sized only by its own `[data-story="<element>-scroll-edge"]`
+  block-size rule in `storybook/.storybook/stories-layout.css` (layout only; no text, no role, no name, no `style`
+  attribute). No entry in `storybook/a11y-exceptions.json`, no Complexity Tracking row, and the axe expectation stays
+  zero serious or critical findings. If the story's task still measures a `color-contrast-incomplete` node after
+  that, stop for the operator.
 - **Baselines**: `storybook/baselines/<story-id>.<theme>.png`, produced by `pnpm run visual:update` in the pinned
   container (README:32-36). CI's captures win over local ones (006 FR-005): CI's files are taken from the `visual`
   artifact of the "Visual regression" job (README:41-43). Each new story and theme needs its baseline.

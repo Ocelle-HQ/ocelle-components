@@ -21,6 +21,13 @@ entry points and the browser build's file path (constitution VII).
   `footer` and `close-button`, its CSS custom property `--ocelle-dialog-inline-size`, and its events
   `ocelle-dialog-close-request` (cancelable) and `ocelle-dialog-close`. Entry point
   `@ocelle/elements/ocelle-dialog.js` (defines `ocelle-dialog` and the `ocelle-icon` it renders).
+- `ocelle-drawer`, a modal side drawer on a native `<dialog>`: a full-height panel against the inline start or end
+  edge of the viewport, as wide as `--ocelle-drawer-inline`, with the dialog's focus, Escape, close control and
+  events, and a click on the backdrop that asks the host to close it; its properties `side`, `ground` and
+  `heading-hidden` (reflected), `open` (reflected), `label` and `close-label`, its default and `footer` slots, its
+  parts `panel`, `heading`, `body`, `footer` and `close-button`, and its events `ocelle-drawer-close-request`
+  (cancelable, with the reason `"backdrop"` as well) and `ocelle-drawer-close`. Entry point
+  `@ocelle/elements/ocelle-drawer.js` (defines `ocelle-drawer` and the `ocelle-icon` it renders).
 - In the README, the slot convention for icons in controls that later controls follow: the `icon` and `trailing`
   slots, their size, alignment, gap and colour rules and the naming rule.
 - Entry points: `@ocelle/elements` (the package root, defines every element), `@ocelle/elements/ocelle-icon.js`

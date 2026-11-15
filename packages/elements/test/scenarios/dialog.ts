@@ -50,6 +50,7 @@ export type Act =
   | { readonly op: "key"; readonly key: string; readonly isComposing: boolean }
   | { readonly op: "inspect"; readonly id: string; readonly inner?: string; readonly pseudo?: string; readonly styles?: readonly string[] }
   | { readonly op: "hit"; readonly x: number; readonly y: number }
+  | { readonly op: "pointerdown"; readonly id: string; readonly inner?: string; readonly x: number; readonly y: number; readonly isPrimary: boolean }
   | { readonly op: "seq"; readonly ops: readonly Act[] };
 
 /** What `inspect` reads of an element (its border box relative to the viewport; `exists` false when there is none). */
@@ -89,8 +90,9 @@ export interface Inspected {
  *   the propagation of, or prevents, Escape), `watch` (records events of an element, in the capture phase, as
  *   `<type>:<cancelable>`) and `log` (returns and clears those records), `dispatch` (a synthetic event, bubbling when
  *   `bubbles` is true, returns whether it was not cancelled), `key` (a synthetic bubbling, composed, cancelable `keydown` on the deep active
- *   element), `inspect`, `hit` (the id or local name of the element at a viewport point), `seq` (commands in one
- *   task). An `inner` selector is looked up in the element's shadow root.
+ *   element), `inspect`, `hit` (the id or local name of the element at a viewport point), `pointerdown` (a synthetic
+ *   bubbling, composed `pointerdown` of a touch pointer's primary button at a viewport point, primary or not, as a
+ *   second finger gives; 008 T036), `seq` (commands in one task). An `inner` selector is looked up in the element's shadow root.
  * - `ocelle-test-closed` and `ocelle-test-closed-delegating`: a closed shadow root holding `<button id="c1">` and
  *   `<button id="c2">`, the second with `delegatesFocus`.
  * - `ocelle-test-opener`: an open shadow root holding `<button id="in">Inner</button>`.
@@ -255,6 +257,12 @@ export function defineDialogStandIns(): void {
         const found = document.elementFromPoint(Number(command.x), Number(command.y));
         return found === null ? null : found.id === "" ? found.localName : found.id;
       }
+      case "pointerdown":
+        return (
+          target(command)?.dispatchEvent(
+            new PointerEvent("pointerdown", { bubbles: true, composed: true, cancelable: true, clientX: Number(command.x), clientY: Number(command.y), button: 0, buttons: 1, pointerType: "touch", pointerId: 7, isPrimary: command.isPrimary === true }),
+          ) ?? null
+        );
       case "seq":
         return (command.ops as Command[]).map(run);
       default:

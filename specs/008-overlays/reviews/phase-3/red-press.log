@@ -1,0 +1,77 @@
+
+ RUN  v5.0.5 /home/user/ocelle-components
+
+ ❯ |elements (chromium)| packages/elements/test/drawer.test.ts (400 tests | 2 failed | 395 skipped) 5621ms
+   ❯ ocelle-drawer, in process (US2) (400)
+     × Backdrop, the press (FR-012, R-07): side="end", veto, a primary click on the backdrop, then a script click() on the panel: one request only (the second click has no press of its own) 1007ms
+     × Backdrop, the press (FR-012, R-07): a primary press on the backdrop, a second, non-primary pointer pressed on body prose, then the primary click released on the backdrop: the request and the close carry reason backdrop (only the primary pointer's press counts) 1712ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |elements (chromium)| packages/elements/test/drawer.test.ts > ocelle-drawer, in process (US2) > Backdrop, the press (FR-012, R-07): side="end", veto, a primary click on the backdrop, then a script click() on the panel: one request only (the second click has no press of its own)
+AssertionError: expected { …(3) } to deeply equal { recorded: [ { …(9) } ], …(2) }
+
+Failure screenshot:
+  - .vitest/attachments/failure-screenshots/drawer.test.ts/ocelle-drawer--in-process--US2----Backdrop--the-press--FR-012--R-07---side--end---veto--a-primary-click-on-the-backdrop--then-a-script-click---on-the-panel--one-request-only--the-second-click-has-no-press-of-its-own-.png
+
+- Expected
++ Received
+
+@@ -15,10 +15,23 @@
+        "focusPath": "dlg[dialog]",
+        "modal": true,
+        "open": true,
+        "type": "ocelle-drawer-close-request",
+      },
++     {
++       "bubbles": true,
++       "cancelable": true,
++       "composed": true,
++       "detail": {
++         "reason": "backdrop",
++       },
++       "dialogOpen": true,
++       "focusPath": "dlg[dialog]",
++       "modal": true,
++       "open": true,
++       "type": "ocelle-drawer-close-request",
++     },
+    ],
+    "state": {
+      "modal": true,
+      "open": true,
+      "topLayer": 1,
+
+ ❯ packages/elements/test/drawer.test.ts:26:33
+     24|   for (const { name, run, expected } of drawerScenarios) {
+     25|     it(name, async () => {
+     26|       expect(await run(driver)).toEqual(expected);
+       |                                 ^
+     27|     });
+     28|   }
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=9efbf8c3:5237:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  |elements (chromium)| packages/elements/test/drawer.test.ts > ocelle-drawer, in process (US2) > Backdrop, the press (FR-012, R-07): a primary press on the backdrop, a second, non-primary pointer pressed on body prose, then the primary click released on the backdrop: the request and the close carry reason backdrop (only the primary pointer's press counts)
+Error: 2 events not recorded within 1 000 ms: []
+ ❯ events packages/elements/test/scenarios/dialog.ts:316:42
+    314|     const recorded = await driver.recorded();
+    315|     if (recorded.length >= count) return recorded;
+    316|     if (Date.now() - start > 1000) throw new Error(`${String(count)} e…
+       |                                          ^
+    317|     await pause(20);
+    318|   }
+ ❯ packages/elements/test/scenarios/drawer.ts:680:26
+ ❯ run packages/elements/test/scenarios/dialog.ts:373:35
+ ❯ packages/elements/test/drawer.test.ts:26:14
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=9efbf8c3:5237:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 3 passed | 395 skipped (400)
+   Start at  23:14:32
+   Duration  6.70s (tests 96%, worker 3%, import 1%)
+

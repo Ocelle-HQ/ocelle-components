@@ -192,6 +192,9 @@ export const records = tokenRecords([
   { name: "dialog-max-inline", group: "shell", value: "calc(100vw - 2 * var(--ocelle-gutter))", ref: ["gutter"] },
   // the viewport's block size minus two gutters (unit from the console prototype, research.md R-05)
   { name: "dialog-max-block", group: "shell", value: "calc(100dvh - 2 * var(--ocelle-gutter))", ref: ["gutter"] },
+  // the drawer's inline size: the sidebar's width, which #12's personal drawer replaces at narrow widths
+  // (spec-kitty-design#450; 008 research.md R-09)
+  { name: "drawer-inline", group: "shell", value: "var(--ocelle-shell-sidebar-width)", ref: ["shell-sidebar-width"] },
   // decision bar
   { name: "bar-block-narrow", group: "shell", value: "calc(2 * var(--ocelle-target-min) + 3 * var(--ocelle-space-2))", ref: ["target-min", "space-2"] },
 
