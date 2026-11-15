@@ -19,10 +19,11 @@
 // run on the bubble part and its painted box; frame times are relative to the first `pointerover` from outside a
 // tracked tooltip (its first entry), or to the `track` command when there was none. So "not shown at 150 ms" and
 // "shown by 450 ms" hold whatever the latency of the harness. A row whose outcome needs the pointer to act before the
-// delay (leave, or move inside the tooltip) reads when it really did, in the page, and is judged only on a run in
-// which that came before the test delay (`beforeDelay`). Names: the tooltip `tip` (and `tip2`), its trigger `trg`
-// (and `trg2`), `before` a page button before the trigger in tree order, the bubble part `tip[div]` in `topLayer()`;
-// the bubble part is `[part="bubble"]` and its painted box the part's only element child, `[part="bubble"] > *`.
+// delay (leave, move inside the tooltip, or click) reads when it really did, in the page, and is judged only on a run
+// in which that came before the test delay, or before the shorter bound the row needs (`beforeDelay`). Names: the
+// tooltip `tip` (and `tip2`), its trigger `trg` (and `trg2`), `before` a page button before the trigger in tree order,
+// the bubble part `tip[div]` in `topLayer()`; the bubble part is `[part="bubble"]` and its painted box the part's only
+// element child, `[part="bubble"] > *`.
 import type { Driver, RecordedEvent } from "./driver.ts";
 import { act, events, inspect, pause, row, sheetDark, state } from "./dialog.ts";
 import type { DialogScenario, Inspected } from "./dialog.ts";
@@ -79,6 +80,12 @@ export interface Frames {
    * the entry, or null without such a move.
    */
   readonly moved: number | null;
+  /**
+   * When the first `click` inside the tracked tooltip after the first entry reached the window (capture phase, before
+   * the trigger's own listeners), in milliseconds from the entry, or null without an entry or a click. A pointer click
+   * that enters the trigger is its own entry: the `pointerover` of its move comes first.
+   */
+  readonly clicked: number | null;
 }
 
 /** What `describedBy` reads: the trigger's `aria-describedby` and the tooltip host's description spans. */
@@ -94,7 +101,9 @@ export interface Described {
  * `{ "error": "…" }` to its `data-result` attribute:
  * - `track`: starts sampling, at once and then at every animation frame, which of the tooltips `ids` show their bubble
  *   and the number of animations on their bubble parts and painted boxes, and records the times of the first entry,
- *   of the last move inside the tooltip and of the first leave; `frames` stops it and returns the samples and times;
+ *   of the last move inside the tooltip, of the first leave and of the first click (which also takes a sample, so a
+ *   bubble shown by the click's focus is seen at the click's own time); `frames` stops it and returns the samples and
+ *   times;
  * - `over`: a synthetic bubbling, composed `pointerover` of `pointerType` on the element `id`;
  * - `keys`: starts recording the `keydown` events that reach the document (capture and bubble phase) and the element
  *   `id` when given; `keylog` returns them and stops;
@@ -124,6 +133,8 @@ export function defineTooltipStandIns(): void {
   let sameTaskGap: number | null = null;
   let left: number | null = null;
   let moved: number | null = null;
+  let clicked: number | null = null;
+  let sampling = false;
   let generation = 0;
   let recording = false;
   const keys: string[] = [];
@@ -156,6 +167,15 @@ export function defineTooltipStandIns(): void {
       const id = hostOf(event);
       const host = id === undefined ? null : document.getElementById(id);
       if (host !== null && entry !== null && left === null && !inside(event.relatedTarget, host)) left = performance.now();
+    },
+    true,
+  );
+  window.addEventListener(
+    "click",
+    (event) => {
+      if (entry === null || clicked !== null || hostOf(event) === undefined) return;
+      clicked = performance.now();
+      if (sampling) samples.push({ t: clicked, open: tracked.filter(isOpen), animations: tracked.reduce((sum, id) => sum + animationsOf(id), 0) });
     },
     true,
   );
@@ -202,15 +222,18 @@ export function defineTooltipStandIns(): void {
         sameTaskGap = null;
         left = null;
         moved = null;
+        clicked = null;
+        sampling = true;
         start = performance.now();
         generation += 1;
         sample(generation);
         return null;
       case "frames": {
         generation += 1;
+        sampling = false;
         const origin = entry ?? start;
         const fromEntry = (time: number | null): number | null => (entry === null || time === null ? null : Math.round((time - entry) * 10) / 10);
-        return { t0: entry === null ? null : entry - start, frames: samples.map((each) => ({ ...each, t: Math.round((each.t - origin) * 10) / 10 })), sameTask, sameTaskGap, left: fromEntry(left), moved: fromEntry(moved) };
+        return { t0: entry === null ? null : entry - start, frames: samples.map((each) => ({ ...each, t: Math.round((each.t - origin) * 10) / 10 })), sameTask, sameTaskGap, left: fromEntry(left), moved: fromEntry(moved), clicked: fromEntry(clicked) };
       }
       case "over":
         return byId(String(command.id)).dispatchEvent(new PointerEvent("pointerover", { bubbles: true, composed: true, pointerType: String(command.pointerType), isPrimary: true }));
@@ -391,24 +414,28 @@ export function never(f: Frames, span: number, id = "tip"): boolean {
 /** The test delay of fixtures/tooltip-delay.css (R-15), and how many runs a row timed against it may take. */
 const testDelay = 300;
 const tries = 3;
+/** The text-field row's bound: its click must come this soon after the entry for "shown before 150 ms" to be judged. */
+const early = 150;
 
 /**
- * For a row whose outcome holds only when the pointer acted before the hover delay: runs `attempt`, which mounts its
- * page, acts and returns its observation with `at`, the page-side time of that act in milliseconds from the first
- * entry (`Frames.left` or `Frames.moved`). A run in which it came before the test delay is judged: its observation is
- * returned. One in which it came at or after the delay judges nothing (the bubble may rightly show by then), so the
- * body runs again, at most `tries` times in all; then the row fails with the measured times, never passing without a
- * judged run. A run in which the page recorded no such time fails at once.
+ * For a row whose outcome holds only when the pointer acted before the hover delay (or before `bound`, a shorter time
+ * the row's outcome needs): runs `attempt`, which mounts its page, acts and returns its observation with `at`, the
+ * page-side time of that act in milliseconds from the first entry (`Frames.left`, `Frames.moved` or
+ * `Frames.clicked`). A run in which it came before `bound` is judged: its observation is returned. One in which it
+ * came at or after `bound` judges nothing (the bubble may rightly show, or not yet show, by then), so the body runs
+ * again, at most `tries` times in all; then the row fails with the measured times, never passing without a judged
+ * run. A run in which the page recorded no such time fails at once.
  */
-export async function beforeDelay(what: string, attempt: () => Promise<{ readonly at: number | null; readonly observed: Record<string, unknown> }>): Promise<Record<string, unknown>> {
+export async function beforeDelay(what: string, attempt: () => Promise<{ readonly at: number | null; readonly observed: Record<string, unknown> }>, bound = testDelay): Promise<Record<string, unknown>> {
   const late: number[] = [];
   for (let run = 0; run < tries; run += 1) {
     const { at, observed } = await attempt();
     if (at === null) throw new Error(`${what}: the page recorded no time for it after the entry`);
-    if (at < testDelay) return observed;
+    if (at < bound) return observed;
     late.push(at);
   }
-  throw new Error(`${what} came at or after the ${String(testDelay)} ms test delay in each of ${String(tries)} runs (${late.join(", ")} ms from the entry): the row has no run it can judge`);
+  const limit = bound === testDelay ? `the ${String(testDelay)} ms test delay` : `${String(bound)} ms from the entry`;
+  throw new Error(`${what} came at or after ${limit} in each of ${String(tries)} runs (${late.join(", ")} ms from the entry): the row has no run it can judge`);
 }
 
 /** A coordinate, or 0 where an absent element gave none, so a pointer move to it is still a valid one. */
@@ -616,20 +643,21 @@ const showRows = [
     { focus: "trg", visible: true, atOnce: true, persisted: true, layer: [tipLayer] },
   ),
   row(
-    "Click focus (FR-031): a pointer click on the button trigger and the pointer moved off at once: focus on the trigger without :focus-visible, no bubble at any frame of a 450 ms wait; then Shift+Tab and Tab back (keyboard focus) show it at once",
-    async (driver) => {
-      await start(driver, page());
-      await track(driver);
-      await driver.click("trg");
-      await driver.pointer([rest]);
-      await pause(450);
-      const f = await frames(driver);
-      const clicked = { focus: await driver.focusPath(), visible: await driver.focusVisible("trg"), never: never(f, 400) };
-      await driver.press("Tab", { shift: true });
-      await driver.press("Tab");
-      return { clicked, keyboard: await bubbleOpen(driver) };
-    },
-    { clicked: { focus: "trg", visible: false, never: true }, keyboard: true },
+    "Click focus (FR-031): a pointer click on the button trigger and the pointer moved off it before the delay: focus on the trigger without :focus-visible, no bubble at any frame of a 450 ms wait from the click; then Shift+Tab and Tab back (keyboard focus) show it at once",
+    async (driver) =>
+      beforeDelay("the move off the trigger", async () => {
+        await start(driver, page());
+        await track(driver);
+        await driver.click("trg");
+        await driver.pointer([rest]);
+        await pause(450);
+        const f = await frames(driver);
+        const clicked = { focus: await driver.focusPath(), visible: await driver.focusVisible("trg"), never: never(f, 400), to450: (f.frames.at(-1)?.t ?? 0) >= 450 };
+        await driver.press("Tab", { shift: true });
+        await driver.press("Tab");
+        return { at: f.left, observed: { clicked, keyboard: await bubbleOpen(driver) } };
+      }),
+    { clicked: { focus: "trg", visible: false, never: true, to450: true }, keyboard: true },
   ),
   row(
     "Late :focus-visible (SPEC-2-03, R-12): click the trigger, move the pointer off both boxes, press Shift: the trigger now matches :focus-visible, yet no bubble at any frame of a 450 ms wait; keyboard focus arriving again (Shift+Tab, Tab) shows it at once",
@@ -687,14 +715,19 @@ const showRows = [
   ),
   row(
     "Text-field trigger (FR-029, US3-10, R-12; stated limit): a clicked <input type=text> trigger matches :focus-visible and shows the bubble at once, before the hover delay",
-    async (driver) => {
-      await start(driver, page({ trigger: '<input id="trg" type="text" aria-label="Search">', text: "Search the workspace" }));
-      await track(driver);
-      await driver.click("trg");
-      const atOnce = await bubbleOpen(driver);
-      const f = await frames(driver);
-      return { focus: await driver.focusPath(), visible: await driver.focusVisible("trg"), atOnce, early: openTimes(f).some((t) => t < 150) };
-    },
+    async (driver) =>
+      beforeDelay(
+        "the click on the text field",
+        async () => {
+          await start(driver, page({ trigger: '<input id="trg" type="text" aria-label="Search">', text: "Search the workspace" }));
+          await track(driver);
+          await driver.click("trg");
+          const atOnce = await bubbleOpen(driver);
+          const f = await frames(driver);
+          return { at: f.clicked, observed: { focus: await driver.focusPath(), visible: await driver.focusVisible("trg"), atOnce, early: openTimes(f).some((t) => t < 150) } };
+        },
+        early,
+      ),
     { focus: "trg", visible: true, atOnce: true, early: true },
   ),
 ];
@@ -913,16 +946,18 @@ const opensRows = (["ocelle-dialog", "ocelle-drawer"] as const).map((tag) =>
 );
 
 const opensPendingRow = row(
-  "Trigger opens an ocelle-dialog before the delay (FR-010, FR-034, R-10): the pointer enters the trigger and clicks it at once, which opens the dialog: the pending bubble does not show, at no frame of a 450 ms wait from the entry",
-  async (driver) => {
-    await start(driver, `<button id="before">Before</button><div id="stage"><ocelle-tooltip id="tip" text="Settings">${button}</ocelle-tooltip></div><ocelle-dialog id="dlg" label="Settings"><button id="inner">Inside</button></ocelle-dialog>${standIns}`);
-    await act(driver, { op: "on", id: "trg", event: "click", then: [{ op: "attr", id: "dlg", name: "open", value: "" }] });
-    await track(driver);
-    await driver.click("trg");
-    await pause(450);
-    return { never: never(await frames(driver), 400), layer: await driver.topLayer(), focus: await driver.focusPath() };
-  },
-  { never: true, layer: [dialogLayer], focus: "inner" },
+  "Trigger opens an ocelle-dialog before the delay (FR-010, FR-034, R-10): the pointer enters the trigger and clicks it before the delay, which opens the dialog: the pending bubble does not show, at no frame of a 450 ms wait from the entry",
+  async (driver) =>
+    beforeDelay("the click that opens the dialog", async () => {
+      await start(driver, `<button id="before">Before</button><div id="stage"><ocelle-tooltip id="tip" text="Settings">${button}</ocelle-tooltip></div><ocelle-dialog id="dlg" label="Settings"><button id="inner">Inside</button></ocelle-dialog>${standIns}`);
+      await act(driver, { op: "on", id: "trg", event: "click", then: [{ op: "attr", id: "dlg", name: "open", value: "" }] });
+      await track(driver);
+      await driver.click("trg");
+      await pause(450);
+      const f = await frames(driver);
+      return { at: f.clicked, observed: { never: never(f, 400), to450: (f.frames.at(-1)?.t ?? 0) >= 450, layer: await driver.topLayer(), focus: await driver.focusPath() } };
+    }),
+  { never: true, to450: true, layer: [dialogLayer], focus: "inner" },
 );
 
 // No bubble: empty text, disabled; hidden when the trigger goes (US3-9, FR-030, Edge Cases) ----------------------------
