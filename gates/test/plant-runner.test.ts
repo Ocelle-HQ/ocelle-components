@@ -1,7 +1,7 @@
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { Plant } from "../lib/plant-judge.ts";
-import { affectedPlants, aloneDecision, containerDecision, engineValue, errorText, failedOwn, gateRunsAtOnce, keptPlantDir, limiter, needsEngine, outputLines, otherShardSize, plantShards, plantTimeNote, plantValues, repositoryContentPlants, resolveLocations, runPlant, shardSize } from "../lib/plant-runner.ts";
+import { affectedPlants, aloneDecision, containerDecision, engineValue, errorText, failedOwn, gateEntryImports, gateRunsAtOnce, keptPlantDir, limiter, needsEngine, outputLines, otherShardSize, plantShards, plantTimeNote, plantValues, repositoryContentPlants, resolveLocations, runPlant, shardSize } from "../lib/plant-runner.ts";
 import type { Affected, BuiltRepo, RunnerTools, TreeView } from "../lib/plant-runner.ts";
 import type { Gate, PlantForm } from "../lib/registry.ts";
 import type { ToolRun } from "../lib/spawn.ts";
@@ -787,6 +787,8 @@ describe("affectedPlants (op 016)", () => {
   const select = (changed: readonly string[], list: typeof plants = plants): unknown => view(affectedPlants({ plants: list, gates, changed }));
   const selected = (...entries: (readonly [string, string])[]): unknown => ({ plants: entries });
   const contentBy = (path: string): unknown => selected(...content.map((plant) => [plant, path] as const));
+  /** A token path (operator round 3, O3-01): the repository-content plants and this list's one other contrast plant. */
+  const tokenBy = (path: string): unknown => selected(["contrast/fail-x", path], ...content.map((plant) => [plant, path] as const));
   const full = (path: string, reason: "shared gate source" | "not mapped"): unknown => ({ full: { path, reason } });
 
   it("scenario 1: a plant's plant.json selects that plant and the plant whose baselinesOf names it, and no other", () => {
@@ -880,14 +882,17 @@ describe("affectedPlants (op 016)", () => {
       "storybook/baselines/tokens--colour.dark.png",
       "storybook/a11y-exceptions.json",
       "packages/styles/src/base.css",
-      "packages/tokens/src/source.ts",
-      "packages/tokens/fonts/schibsted-grotesk.woff2",
       "packages/elements/custom-elements.json",
     ];
     expect(paths.map((path) => select([path]))).toEqual(paths.map(contentBy));
+    // Operator round 3 (O3-01): a token path also selects every contrast plant, here contrast/fail-x.
+    const tokenPaths = ["packages/tokens/src/source.ts", "packages/tokens/fonts/schibsted-grotesk.woff2"];
+    expect(tokenPaths.map((path) => select([path]))).toEqual(tokenPaths.map(tokenBy));
     const fewer = plants.filter((plant) => plant.name !== "visual/fail-one-pixel" && plant.name !== "axe/pass-repository");
     const path = "packages/tokens/src/source.ts";
-    expect(select([path], fewer)).toEqual(selected(...content.filter((plant) => plant !== "visual/fail-one-pixel" && plant !== "axe/pass-repository").map((plant) => [plant, path] as const)));
+    expect(select([path], fewer)).toEqual(
+      selected(["contrast/fail-x", path], ...content.filter((plant) => plant !== "visual/fail-one-pixel" && plant !== "axe/pass-repository").map((plant) => [plant, path] as const)),
+    );
   });
 
   it("selects the full set for package configuration and the other unmapped repository paths", () => {
@@ -948,7 +953,7 @@ describe("affectedPlants (op 016)", () => {
       contentBy("packages/elements/src/storybook/test/a.ts"),
       full("README.mdx", "not mapped"),
       contentBy("storybook/stories/packages/a/package.json"),
-      contentBy("packages/tokens/package.jsonc"),
+      tokenBy("packages/tokens/package.jsonc"),
       full("gates/lib/storybook/stories/a.ts", "shared gate source"),
       full("packages/x/specs/abc/plan.md", "not mapped"),
       full("docs/packages/a/src/x.ts", "not mapped"),
@@ -970,9 +975,103 @@ describe("affectedPlants (op 016)", () => {
   });
 });
 
-// Op 016 (Q3 C; spec.md OR-002 and scenario 10): every visual and axe case directory is pinned here, with the ones whose
-// expectation names repository content, so that a new plant fails this test until someone classifies it.
-describe("repositoryContentPlants and the visual and axe pin (op 016)", () => {
+// Operator round 3 of phase 1 (reviews/phase-1/round-3.md, O3-01 "Widen by gate" and O3-05; spec.md scenarios 12 to
+// 14): element paths also select every manifest plant, token paths every contrast, brand-rules and style-lint plant,
+// and a gate entry the plants of the gates whose entry imports it. The lists are written here, each result whole.
+describe("affectedPlants: element, token and imported gate entry paths (op 016, operator round 3)", () => {
+  const gates = ["prefix", "style-lint", "contrast", "brand-rules", "manifest", "storybook-build", "visual", "axe"];
+  const plants = [
+    { name: "prefix/fail-generic-monospace" },
+    { name: "prefix/pass-name-boundaries" },
+    { name: "style-lint/fail-hex-colour" },
+    { name: "style-lint/pass-var-token" },
+    { name: "contrast/text-below-threshold" },
+    { name: "contrast/repository-values" },
+    { name: "brand-rules/a-monospace" },
+    { name: "brand-rules/repository-values" },
+    { name: "manifest/pass-reordered" },
+    { name: "manifest/fail-stale-property" },
+    { name: "manifest/pass-repository" },
+    { name: "storybook-build/fail-y" },
+    { name: "storybook-build/pass-repository" },
+    { name: "visual/pass-repository" },
+    { name: "visual/fail-token-changed" },
+    { name: "visual/fail-one-pixel" },
+    { name: "visual/fail-missing-baseline" },
+    { name: "visual/fail-same-pixels-other-bytes" },
+    { name: "visual/fail-network" },
+    { name: "axe/fail-empty" },
+    { name: "axe/pass-repository" },
+  ];
+  const view = (result: Affected): unknown => ("full" in result ? result : { plants: [...result.plants] });
+  const select = (changed: readonly string[]): unknown => view(affectedPlants({ plants, gates, changed }));
+  const by = (path: string, names: readonly string[]): (readonly [string, string])[] => names.map((name) => [name, path] as const);
+  const element = (path: string): unknown => ({
+    plants: [
+      ...by(path, ["contrast/repository-values", "brand-rules/repository-values", "manifest/pass-reordered", "manifest/fail-stale-property", "manifest/pass-repository", "storybook-build/pass-repository"]),
+      ...by(path, ["visual/pass-repository", "visual/fail-token-changed", "visual/fail-one-pixel", "visual/fail-missing-baseline", "visual/fail-same-pixels-other-bytes", "axe/pass-repository"]),
+    ],
+  });
+  const contentOnly = (path: string): unknown => ({
+    plants: [
+      ...by(path, ["contrast/repository-values", "brand-rules/repository-values", "manifest/pass-repository", "storybook-build/pass-repository", "visual/pass-repository", "visual/fail-token-changed"]),
+      ...by(path, ["visual/fail-one-pixel", "visual/fail-missing-baseline", "visual/fail-same-pixels-other-bytes", "axe/pass-repository"]),
+    ],
+  });
+  const token = (path: string): unknown => ({
+    plants: [
+      ...by(path, ["style-lint/fail-hex-colour", "style-lint/pass-var-token", "contrast/text-below-threshold", "contrast/repository-values", "brand-rules/a-monospace", "brand-rules/repository-values"]),
+      ...by(path, ["manifest/pass-repository", "storybook-build/pass-repository", "visual/pass-repository", "visual/fail-token-changed", "visual/fail-one-pixel", "visual/fail-missing-baseline"]),
+      ...by(path, ["visual/fail-same-pixels-other-bytes", "axe/pass-repository"]),
+    ],
+  });
+
+  it("scenario 12: an element source file or the element manifest selects the repository-content plants and every manifest plant, and no other", () => {
+    const paths = ["packages/elements/src/ocelle-brand-mark.ts", "packages/elements/custom-elements.json"];
+    expect(paths.map((path) => select([path]))).toEqual(paths.map(element));
+  });
+
+  it("scenario 13: the token source or the contrast pairs select the repository-content plants and every contrast, brand-rules and style-lint plant, and no other", () => {
+    const paths = ["packages/tokens/src/source.ts", "packages/tokens/contrast/pairs.json"];
+    expect(paths.map((path) => select([path]))).toEqual(paths.map(token));
+    expect(select(["packages/tokens/package.json"])).toEqual({ full: { path: "packages/tokens/package.json", reason: "not mapped" } });
+  });
+
+  it("selects the union for an element path and a token path together, each plant with its first path", () => {
+    const [elementPath, tokenPath] = ["packages/elements/src/ocelle-brand-mark.ts", "packages/tokens/src/source.ts"];
+    expect(select([elementPath, tokenPath])).toEqual({
+      plants: [
+        ...by(tokenPath, ["style-lint/fail-hex-colour", "style-lint/pass-var-token", "contrast/text-below-threshold"]),
+        ...by(elementPath, ["contrast/repository-values"]),
+        ...by(tokenPath, ["brand-rules/a-monospace"]),
+        ...by(elementPath, ["brand-rules/repository-values", "manifest/pass-reordered", "manifest/fail-stale-property", "manifest/pass-repository", "storybook-build/pass-repository"]),
+        ...by(elementPath, ["visual/pass-repository", "visual/fail-token-changed", "visual/fail-one-pixel", "visual/fail-missing-baseline", "visual/fail-same-pixels-other-bytes", "axe/pass-repository"]),
+      ],
+    });
+  });
+
+  it("still selects only the repository-content plants for a story, a baseline or the base styles", () => {
+    const paths = ["storybook/stories/icon.stories.ts", "storybook/baselines/tokens--colour.light.png", "packages/styles/src/base.css"];
+    expect(paths.map((path) => select([path]))).toEqual(paths.map(contentOnly));
+  });
+
+  it("matches element and token paths from the start of the path", () => {
+    const paths = ["packages/styles/src/elements/custom-elements.json", "packages/styles/src/packages/tokens/a.ts", "packages/elements-x/src/a.ts", "storybook/stories/packages/elements/src/a.ts"];
+    expect(paths.map((path) => select([path]))).toEqual(paths.map(contentOnly));
+  });
+
+  it("scenario 14: gates/bin/prefix.ts selects every prefix plant and every brand-rules plant, whose entry imports it; gates/bin/brand-rules.ts only brand-rules", () => {
+    expect(select(["gates/bin/prefix.ts"])).toEqual({
+      plants: by("gates/bin/prefix.ts", ["prefix/fail-generic-monospace", "prefix/pass-name-boundaries", "brand-rules/a-monospace", "brand-rules/repository-values"]),
+    });
+    expect(select(["gates/bin/brand-rules.ts"])).toEqual({ plants: by("gates/bin/brand-rules.ts", ["brand-rules/a-monospace", "brand-rules/repository-values"]) });
+  });
+});
+
+// Op 016 (Q3 C; spec.md OR-002 and scenario 10): every visual, axe, manifest, contrast and brand-rules case directory
+// is pinned here (the last three by operator round 3, O3-01), with the ones whose expectation names repository
+// content, so that a new plant fails this test until someone classifies it.
+describe("repositoryContentPlants and the visual, axe, manifest, contrast and brand-rules pin (op 016)", () => {
   const plantsDir = new URL("../plants/", import.meta.url);
   const cases = (gate: string): string[] =>
     readdirSync(new URL(`${gate}/`, plantsDir), { withFileTypes: true })
@@ -994,6 +1093,18 @@ describe("repositoryContentPlants and the visual and axe pin (op 016)", () => {
     "fail-pointer-target-below-fold", "fail-render-throws", "fail-stale-exception", "fail-throws-on-load", "fail-two-low-contrast", "fail-unlabelled-button",
     "fail-unrecorded-exception", "pass-excepted", "pass-excepted-incomplete", "pass-excepted-shadow", "pass-minor-only", "pass-repository", "pass-second-render",
   ];
+  const manifestPin = [
+    "break-missing", "break-not-json", "fail-lost-attribute", "fail-stale-property", "fail-undescribed-attribute", "fail-undescribed-css-part",
+    "fail-undescribed-css-property", "fail-undescribed-event", "fail-undescribed-property", "fail-undescribed-slot", "pass-reordered", "pass-repository",
+  ];
+  const contrastPin = [
+    "empty-list", "excluded-without-reason", "exempt-disabled-ink", "exempt-not-disabled-ink", "figure-mismatch", "missing-required-pair", "non-text-below-threshold",
+    "not-opaque", "repository-values", "required-pair-excluded", "source-throws", "text-below-threshold", "unknown-token", "unparsable-list",
+  ];
+  const brandRulesPin = [
+    "a-monospace", "b-link-equals-accent", "b-ochre-pair-not-excluded", "c-extra-radius", "c-wrong-value", "d-rule-as-boundary", "e-light-chrome",
+    "f-motion-not-zero", "g-forced-colours-override", "g-system-colour-mapping", "generator-throws", "repository-values", "source-invalid", "source-throws",
+  ];
   const classified = (gate: string, pin: readonly string[]): string[] => pin.filter((name) => repositoryContentPlants.includes(`${gate}/${name}`));
 
   it("pins the 48 visual cases, five of them repository content", () => {
@@ -1006,6 +1117,18 @@ describe("repositoryContentPlants and the visual and axe pin (op 016)", () => {
 
   it("pins the 25 axe cases, one of them repository content", () => {
     expect({ count: axePin.length, listed: cases("axe"), content: classified("axe", axePin) }).toEqual({ count: 25, listed: axePin, content: ["pass-repository"] });
+  });
+
+  it("pins the 12 manifest, 14 contrast and 14 brand-rules cases, one of each gate repository content (operator round 3, O3-01)", () => {
+    expect([
+      { count: manifestPin.length, listed: cases("manifest"), content: classified("manifest", manifestPin) },
+      { count: contrastPin.length, listed: cases("contrast"), content: classified("contrast", contrastPin) },
+      { count: brandRulesPin.length, listed: cases("brand-rules"), content: classified("brand-rules", brandRulesPin) },
+    ]).toEqual([
+      { count: 12, listed: manifestPin, content: ["pass-repository"] },
+      { count: 14, listed: contrastPin, content: ["repository-values"] },
+      { count: 14, listed: brandRulesPin, content: ["repository-values"] },
+    ]);
   });
 
   it("lists the ten repository-content plants in plan order, each an existing plant directory with a plant.json", () => {
@@ -1022,5 +1145,35 @@ describe("repositoryContentPlants and the visual and axe pin (op 016)", () => {
       "brand-rules/repository-values",
     ]);
     expect(repositoryContentPlants.filter((plant) => !existsSync(new URL(`${plant}/plant.json`, plantsDir)))).toEqual([]);
+  });
+});
+
+// Operator round 3 of phase 1 (O3-05; spec.md OR-002 and scenario 15, plan.md *Cross-imports of gate entries*): every
+// registered gate entry gates/bin/<id>.ts is read, and each of its relative imports of another registered gate entry
+// (static, type or dynamic) is a pair that gateEntryImports must list, so that class 3 selects the importer's plants.
+describe("gateEntryImports and the cross-import pin (op 016, operator round 3)", () => {
+  const gatesDir = new URL("../", import.meta.url);
+  const ids = (JSON.parse(readFileSync(new URL("gates.json", gatesDir), "utf8")) as { readonly id: string }[]).map((gate) => gate.id);
+  const entries = ids.filter((id) => existsSync(new URL(`bin/${id}.ts`, gatesDir)));
+  /** The registered gate entries a source imports by a relative path: `from "./x.ts"`, `import "./x.ts"` or `import("./x.ts")`. */
+  const importsOf = (source: string): string[] => [...source.matchAll(/(?:\bfrom|\bimport)\s*\(?\s*["']\.\/([^"'/]+)\.ts["']/g)].map((match) => String(match[1]));
+  const pairs = (): { entry: string; importer: string }[] =>
+    entries
+      .flatMap((importer) => importsOf(readFileSync(new URL(`bin/${importer}.ts`, gatesDir), "utf8")).filter((entry) => entry !== importer && ids.includes(entry)).map((entry) => ({ entry, importer })))
+      .filter((pair, index, all) => all.findIndex((other) => other.entry === pair.entry && other.importer === pair.importer) === index)
+      .sort((a, b) => `${a.entry} ${a.importer}`.localeCompare(`${b.entry} ${b.importer}`));
+
+  it("reads every static, type and dynamic relative import, and only of a .ts file in the same directory", () => {
+    expect(importsOf('import { a } from "./prefix.ts";\nimport type { B } from "./visual.ts";\nconst c = await import("./axe.ts");\nimport "./csp.ts";\nimport { d } from "../lib/x.ts";\nimport { e } from "./sub/y.ts";\nimport { f } from "node:fs";')).toEqual([
+      "prefix",
+      "visual",
+      "axe",
+      "csp",
+    ]);
+  });
+
+  it("scenario 15: lists exactly the pairs of registered gate entries that import one another, sorted, today prefix imported by brand-rules", () => {
+    expect(pairs()).toEqual(gateEntryImports);
+    expect(gateEntryImports).toEqual([{ entry: "prefix", importer: "brand-rules" }]);
   });
 });
