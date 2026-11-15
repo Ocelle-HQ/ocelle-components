@@ -175,6 +175,7 @@ export class OcelleFormInput extends FormControl {
 
   override attributeChangedCallback(name: string, old: string | null, value: string | null): void {
     super.attributeChangedCallback(name, old, value);
+    // Stryker disable next-line ConditionalExpression: equivalent, while the value is not dirty it is the default value (the value attribute's every change and a reset set it, and only an edit, a script value or a restore, which make it dirty, change it otherwise), so defaultChanged() for another attribute sets the value and the last committed value they hold
     if (name === "value") this.defaultChanged();
   }
 

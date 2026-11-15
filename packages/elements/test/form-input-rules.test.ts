@@ -161,6 +161,20 @@ describe("the input's own attributes (FR-029)", () => {
     expect({ text, email: made.getAttribute("type") }).toEqual({ text: "text", email: "email" });
   });
 
+  it("a type attribute the page sets is written once: the property Lit sets from it writes nothing back", async () => {
+    const made = await insert('<ocelle-form-input id="t"></ocelle-form-input>');
+    const records: (string | null)[] = [];
+    const observer = new MutationObserver((list) => {
+      for (const record of list) records.push(record.attributeName);
+    });
+    observer.observe(made, { attributes: true });
+    made.setAttribute("type", "email");
+    made.setAttribute("type", "bogus");
+    await endOfTask();
+    observer.disconnect();
+    expect(records).toEqual(["type", "type"]);
+  });
+
   it("a pass-through attribute removed from the host is removed from the field", async () => {
     const made = await insert('<ocelle-form-input id="t" placeholder="P" pattern="[a-z]+" minlength="2"></ocelle-form-input>');
     const set = ["placeholder", "pattern", "minlength"].map((name) => field(made).getAttribute(name));
@@ -275,6 +289,13 @@ describe("the value, its default and the change event (FR-021, FR-024, R-05)", (
     made.setAttribute("value", "b");
     await endOfTask();
     expect({ shown: field(made).value, data: [...new FormData(document.getElementById("f") as HTMLFormElement)] }).toEqual({ shown: "b", data: [["title", "b"]] });
+  });
+
+  it("without a value attribute, the field's change before any edit dispatches no change event", async () => {
+    const made = await insert('<ocelle-form-input id="t"></ocelle-form-input>');
+    const heard = changes(made);
+    changed(made);
+    expect(heard).toEqual([]);
   });
 
   it("the field's change after an edit dispatches one change event; after a script value, a reset, a restore or a default change, none", async () => {
@@ -447,13 +468,14 @@ describe("the error announcement (FR-027, R-06)", () => {
     const held = copy(removed);
     removed.remove();
     await endOfTask();
+    const emptied = copy(removed);
     vi.advanceTimersByTime(H);
     moved.error = "Moved again";
     await endOfTask();
     document.getElementById("d")?.append(moved);
     await endOfTask();
     vi.advanceTimersByTime(W);
-    expect({ held, removed: copy(removed), moved: copy(moved) }).toEqual({ held: "Removed", removed: "", moved: "Moved again" });
+    expect({ held, removed: emptied, moved: copy(moved) }).toEqual({ held: "Removed", removed: "", moved: "Moved again" });
   });
 
   it("removed and inserted again in a later task, the input is an insertion and writes its error again", async () => {
