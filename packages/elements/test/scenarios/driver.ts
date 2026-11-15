@@ -184,6 +184,18 @@ export interface Driver {
    * and waits for every element to render.
    */
   move(id: string, parent: string): Promise<void>;
+  // 011 User Story 4 (US4-10, contracts/checks.md: the README's orientation example run on the page).
+  /**
+   * Runs `code` as an ES module of the page loaded from a same-origin URL (the fixture serves it under the page's
+   * policy, so `script-src 'self'` allows it), and waits until it has run and every element has rendered.
+   */
+  module(code: string): Promise<void>;
+  /**
+   * A number for each element in the shadow root of the element with `id`, depth first in tree order: the same number
+   * for the same node across calls on one page, a new number for a node first seen, so a body can tell kept nodes from
+   * new ones (research.md R-10: the template does not change with orientation).
+   */
+  identities(id: string): Promise<number[]>;
 }
 
 /**

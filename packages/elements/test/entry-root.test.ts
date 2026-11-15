@@ -3,12 +3,13 @@ import * as root from "../src/index.ts";
 
 // The package root (005 FR-002, US1 scenario 17's runtime half; research.md R-02, T014, T052; 011 FR-001, T014):
 // importing only src/index.ts defines every element of the package, `ocelle-icon`, `ocelle-brand-mark` and, since 011,
-// `ocelle-card`, `ocelle-section-header`, `ocelle-page-header` (T027) and `ocelle-context-sidebar` (T034), each as the
+// `ocelle-card`, `ocelle-section-header`, `ocelle-page-header` (T027), `ocelle-context-sidebar` (T034) and
+// `ocelle-personal-rail` (T042), each as the
 // class the root exports (analysis F1 (a): the mark joins in 005 phase 5). This file's own iframe (Vitest browser mode, isolate on) holds only what this import defines.
 describe("importing src/index.ts", () => {
-  it("defines ocelle-icon, ocelle-brand-mark, ocelle-card, ocelle-section-header, ocelle-page-header and ocelle-context-sidebar as the OcelleIcon, OcelleBrandMark, OcelleCard, OcelleSectionHeader, OcellePageHeader and OcelleContextSidebar it exports", () => {
+  it("defines ocelle-icon, ocelle-brand-mark, ocelle-card, ocelle-section-header, ocelle-page-header, ocelle-context-sidebar and ocelle-personal-rail as the OcelleIcon, OcelleBrandMark, OcelleCard, OcelleSectionHeader, OcellePageHeader, OcelleContextSidebar and OcellePersonalRail it exports", () => {
     const exported = root as Record<string, unknown>;
-    expect([exported.OcelleIcon, exported.OcelleBrandMark, exported.OcelleCard, exported.OcelleSectionHeader, exported.OcellePageHeader, exported.OcelleContextSidebar].map((each) => typeof each)).toEqual(["function", "function", "function", "function", "function", "function"]);
+    expect([exported.OcelleIcon, exported.OcelleBrandMark, exported.OcelleCard, exported.OcelleSectionHeader, exported.OcellePageHeader, exported.OcelleContextSidebar, exported.OcellePersonalRail].map((each) => typeof each)).toEqual(["function", "function", "function", "function", "function", "function", "function"]);
     expect({
       icon: customElements.get("ocelle-icon"),
       mark: customElements.get("ocelle-brand-mark"),
@@ -16,6 +17,7 @@ describe("importing src/index.ts", () => {
       header: customElements.get("ocelle-section-header"),
       page: customElements.get("ocelle-page-header"),
       sidebar: customElements.get("ocelle-context-sidebar"),
-    }).toEqual({ icon: exported.OcelleIcon, mark: exported.OcelleBrandMark, card: exported.OcelleCard, header: exported.OcelleSectionHeader, page: exported.OcellePageHeader, sidebar: exported.OcelleContextSidebar });
+      rail: customElements.get("ocelle-personal-rail"),
+    }).toEqual({ icon: exported.OcelleIcon, mark: exported.OcelleBrandMark, card: exported.OcelleCard, header: exported.OcelleSectionHeader, page: exported.OcellePageHeader, sidebar: exported.OcelleContextSidebar, rail: exported.OcellePersonalRail });
   });
 });
