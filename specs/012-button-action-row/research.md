@@ -299,7 +299,9 @@ inner control, so host area that a page rule leaves outside the inner control is
 The row's own activation listener runs after the guard and only when the control is available; in link mode it
 ignores clicks with `ctrlKey`, `metaKey`, `shiftKey` or `altKey` and dispatches nothing for `auxclick` (SPEC-1-09;
 Alt is treated as a modifier, closing check-3 note SPEC-3-02: Chromium may download on Alt-click, which is the
-browser's default the operator chose to leave alone).
+browser's default the operator chose to leave alone). The element prevents nothing on any modifier click, so the
+browser's own modifier handling applies (operator decision at phase 3): on Chromium on Linux, Meta is not a link
+modifier, and a Meta-click navigates the current tab.
 
 **The button's activate event** (operator decision C1 (a), 2026-11-14; plan decision 26): the button's own activation
 listener on the inner control runs after the guard and only when the control is available, as the row's does. On each
@@ -316,7 +318,7 @@ no default action. Cancelable and the cancel path match `ocelle-action-row-activ
 because the button carries no value and the target identifies it. Alternatives: a non-cancelable event (rejected: a
 host could not cancel a link-mode button's navigation from the `ocelle-*` event, as it can a row's); `detail: null`
 (rejected: every other `ocelle-*` event's `detail` is an object); dispatching on modifier clicks too (rejected: the
-row's rule, decision 13, and a cancel there would suppress the new tab the user asked for).
+row's rule, decision 13, and a cancel there would suppress the browser's own handling of the modifier the user held).
 
 **`host.click()`** (PLAN-FRESH-1-003): `HTMLElement.prototype.click()` on the host dispatches a synthetic click at the
 host that never passes through the inner control, so neither the native `disabled` check nor the guard would see it,
