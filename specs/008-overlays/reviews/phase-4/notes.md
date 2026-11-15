@@ -513,3 +513,65 @@ the final runs at `1f91513`.
   - The default 300 ms delay stays covered by the other delay rows.
   - This replaces the operator's earlier rejection of a longer delay, which was made before the timings were measured.
 - **Not chosen:** fewer moves with no pauses; more retries.
+
+## The R-12 leave row after the operator's decision (`9a66884`)
+
+`9a66884` changes `packages/elements/test/scenarios/tooltip.ts` only (no source, default delay, other row or spec
+change). The row's page sets `#tip { --ocelle-tooltip-delay: 1000ms; }` through `start`'s rules, the same way the
+"Hover delay 0" and "Hover delay in seconds" rows override the delay (R-12, contracts/elements-overlays.md), so the
+element needs nothing new. `beforeDelay("the leave", …, longDelay)` keeps the measured leave (`Frames.left`) and
+judges a run only when it came before 1000 ms. The wait after the leave is `pause(1000)` then `pause(500)` (each at
+most 1 000 ms, R-15), and the row asserts frames up to 1500 ms from the entry (`toWait`, was `to450`): 1.5 times the
+delay, as 450 ms is for the 300 ms test delay. Its other assertions are unchanged (`moved`, `beforeLeave: false`,
+`afterLeave: false`). The pauses before the leave are unchanged (35 + 35 ms). The default 300 ms delay stays covered by
+the other delay rows.
+
+### Row changed (old and new full names, measured times)
+
+- Old: "Hover delay, moves inside the tooltip, then leaving before the delay (R-12): the pointer enters the trigger,
+  moves onto its inner span and leaves both boxes before the delay: no bubble at any frame of a 450 ms wait from the
+  entry"
+- New: "Hover delay, moves inside the tooltip, then leaving before the delay (R-12): with --ocelle-tooltip-delay:
+  1000ms on the tooltip, the pointer enters the trigger, moves onto its inner span and leaves both boxes before that
+  delay: no bubble at any frame of a 1500 ms wait from the entry"
+- Times, page-side, in ms from the entry, unloaded, 3 runs in each harness (in process / fixture twin), read with a
+  temporary probe that was then removed: leave at 199.3, 199.8, 199.6 / 183.3, 183.4, 183.5 ms; move inside at
+  116.3, 100.0, 116.8 / 100.1, 100.2, 100.0 ms; last frame at 1765.9, 1766.3, 1766.3 / 1749.6, 1749.5, 1750.0 ms.
+  The leaves that failed tdd-check 4 (385.4, 300.9, 319.9 ms) are well under the new 1000 ms bound.
+
+### Break checks (temporary source edits, reverted, never committed)
+
+Each ran the row in both harnesses (`tooltip.test.ts` in process, `test/browser/tooltip.test.ts` on the fixture,
+built from the edited source). The results were the same in both.
+
+- B1, bubble shown on entry with no delay (`if (delay > 0 && false)` in `#onPointerover`): the row fails,
+  `beforeLeave: true`.
+- B2, the pending delay never ended (`window.clearTimeout(this.#timer)` removed from both `#onPointerout` and
+  `#hide`): the row fails, `afterLeave: true` (the timer shows the bubble at about 1000 ms, inside the 1500 ms
+  window; the old 450 ms window would have missed it at this delay).
+
+### Repeat runs at `9a66884`
+
+- `tooltip.test.ts` (in process): 104 of 104 passed, 3 runs of 3. `test/browser/tooltip.test.ts` (fixture twin):
+  104 of 104 passed, 3 runs of 3.
+- `gate:typecheck`, `gate:lint`, `gate:test-lint`: no finding.
+- `pnpm test` run 1 (`full-test-9a66884.log`, 801 s): **1 of 5067 tests failed**, a dialog-scenario row on the
+  drawer's fixture twin that this change does not touch: "Close control: a native button named by close-label holding
+  the close icon, at least --ocelle-target-min in both axes, the token focus ring when focused by keyboard (FR-006)"
+  (`packages/elements/test/browser/drawer.test.ts`). The gate prints no diff, so which field differed is not in the
+  log. Alone: 3 of 3 passed. Not changed, as decided: it is for the operator.
+- `pnpm test` run 2 (`full-test-9a66884-run2.log`, 783 s): **5067 of 5067 passed**.
+- Every tooltip row passed in both runs, the R-12 leave row included.
+- The suite is therefore not yet green twice in a row at `9a66884`.
+
+### Mutation at `9a66884`
+
+The row kills mutants in the pointer handlers, the timer and `#hide` (B1, B2), so shards 15 to 17 of the final plan
+ran again, `gate:mutation -- --base 78fe475 --files packages/elements/src/ocelle-tooltip.ts:<lines>`, output appended
+to `mutation.log`. No new survivor; the counts equal the runs at `1f91513` and `5d735a8`.
+
+| Shard | Entries | Mutants on changed lines | Survived | Timeouts | Compile errors | Equivalent records | Exit | Time |
+|---|---|---|---|---|---|---|---|---|
+| 15 | `:241-270` | 24 | 0 | 0 | 4 | 0 | 0 | 504 s |
+| 16 | `:271-300` | 39 | 0 | 0 | 10 | 0 | 0 | 518 s |
+| 17 | `:301-330` | 34 | 0 | 0 | 16 | 2 | 0 | 557 s |
