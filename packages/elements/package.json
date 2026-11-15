@@ -10,6 +10,7 @@
     "./ocelle-card.js": "./dist/ocelle-card.js",
     "./ocelle-section-header.js": "./dist/ocelle-section-header.js",
     "./ocelle-page-header.js": "./dist/ocelle-page-header.js",
+    "./ocelle-context-sidebar.js": "./dist/ocelle-context-sidebar.js",
     "./browser.js": "./dist/browser/ocelle-elements.js",
     "./custom-elements.json": "./custom-elements.json"
   },
