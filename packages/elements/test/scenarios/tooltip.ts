@@ -18,7 +18,9 @@
 // frame from its `track` command on, which tracked tooltips have their bubble `:popover-open` and how many animations
 // run on the bubble part and its painted box; frame times are relative to the first `pointerover` from outside a
 // tracked tooltip (its first entry), or to the `track` command when there was none. So "not shown at 150 ms" and
-// "shown by 450 ms" hold whatever the latency of the harness. Names: the tooltip `tip` (and `tip2`), its trigger `trg`
+// "shown by 450 ms" hold whatever the latency of the harness. A row whose outcome needs the pointer to act before the
+// delay (leave, or move inside the tooltip) reads when it really did, in the page, and is judged only on a run in
+// which that came before the test delay (`beforeDelay`). Names: the tooltip `tip` (and `tip2`), its trigger `trg`
 // (and `trg2`), `before` a page button before the trigger in tree order, the bubble part `tip[div]` in `topLayer()`;
 // the bubble part is `[part="bubble"]` and its painted box the part's only element child, `[part="bubble"] > *`.
 import type { Driver, RecordedEvent } from "./driver.ts";
@@ -66,6 +68,17 @@ export interface Frames {
    * placed on top), rounded to 1/10 px, or null when the bubble was not shown then.
    */
   readonly sameTaskGap: number | null;
+  /**
+   * When the pointer first left the tracked tooltip after the first entry (a `pointerout` from it to a node outside
+   * it, which ends the delay, R-12), in milliseconds from the entry, or null without an entry or a leave.
+   */
+  readonly left: number | null;
+  /**
+   * When the pointer last moved inside the tracked tooltip after the first entry and before the leave (a
+   * `pointerover` whose `relatedTarget` is inside it, e.g. from the trigger onto its inner span), in milliseconds from
+   * the entry, or null without such a move.
+   */
+  readonly moved: number | null;
 }
 
 /** What `describedBy` reads: the trigger's `aria-describedby` and the tooltip host's description spans. */
@@ -80,7 +93,8 @@ export interface Described {
  * it runs the command (JSON, `TipCommand`) set as its `do` attribute and writes `{ "result": … }` or
  * `{ "error": "…" }` to its `data-result` attribute:
  * - `track`: starts sampling, at once and then at every animation frame, which of the tooltips `ids` show their bubble
- *   and the number of animations on their bubble parts and painted boxes; `frames` stops it and returns the samples;
+ *   and the number of animations on their bubble parts and painted boxes, and records the times of the first entry,
+ *   of the last move inside the tooltip and of the first leave; `frames` stops it and returns the samples and times;
  * - `over`: a synthetic bubbling, composed `pointerover` of `pointerType` on the element `id`;
  * - `keys`: starts recording the `keydown` events that reach the document (capture and bubble phase) and the element
  *   `id` when given; `keylog` returns them and stops;
@@ -108,6 +122,8 @@ export function defineTooltipStandIns(): void {
   let entry: number | null = null;
   let sameTask: boolean | null = null;
   let sameTaskGap: number | null = null;
+  let left: number | null = null;
+  let moved: number | null = null;
   let generation = 0;
   let recording = false;
   const keys: string[] = [];
@@ -128,7 +144,18 @@ export function defineTooltipStandIns(): void {
     (event) => {
       const id = hostOf(event);
       const host = id === undefined ? null : document.getElementById(id);
-      if (entry === null && host !== null && !inside(event.relatedTarget, host)) entry = performance.now();
+      if (host === null) return;
+      if (entry === null && !inside(event.relatedTarget, host)) entry = performance.now();
+      else if (entry !== null && left === null && inside(event.relatedTarget, host)) moved = performance.now();
+    },
+    true,
+  );
+  window.addEventListener(
+    "pointerout",
+    (event) => {
+      const id = hostOf(event);
+      const host = id === undefined ? null : document.getElementById(id);
+      if (host !== null && entry !== null && left === null && !inside(event.relatedTarget, host)) left = performance.now();
     },
     true,
   );
@@ -173,6 +200,8 @@ export function defineTooltipStandIns(): void {
         entry = null;
         sameTask = null;
         sameTaskGap = null;
+        left = null;
+        moved = null;
         start = performance.now();
         generation += 1;
         sample(generation);
@@ -180,7 +209,8 @@ export function defineTooltipStandIns(): void {
       case "frames": {
         generation += 1;
         const origin = entry ?? start;
-        return { t0: entry === null ? null : entry - start, frames: samples.map((each) => ({ ...each, t: Math.round((each.t - origin) * 10) / 10 })), sameTask, sameTaskGap };
+        const fromEntry = (time: number | null): number | null => (entry === null || time === null ? null : Math.round((time - entry) * 10) / 10);
+        return { t0: entry === null ? null : entry - start, frames: samples.map((each) => ({ ...each, t: Math.round((each.t - origin) * 10) / 10 })), sameTask, sameTaskGap, left: fromEntry(left), moved: fromEntry(moved) };
       }
       case "over":
         return byId(String(command.id)).dispatchEvent(new PointerEvent("pointerover", { bubbles: true, composed: true, pointerType: String(command.pointerType), isPrimary: true }));
@@ -358,6 +388,29 @@ export function never(f: Frames, span: number, id = "tip"): boolean {
   return f.frames.every((each) => !each.open.includes(id)) && (f.frames.at(-1)?.t ?? 0) - first >= span;
 }
 
+/** The test delay of fixtures/tooltip-delay.css (R-15), and how many runs a row timed against it may take. */
+const testDelay = 300;
+const tries = 3;
+
+/**
+ * For a row whose outcome holds only when the pointer acted before the hover delay: runs `attempt`, which mounts its
+ * page, acts and returns its observation with `at`, the page-side time of that act in milliseconds from the first
+ * entry (`Frames.left` or `Frames.moved`). A run in which it came before the test delay is judged: its observation is
+ * returned. One in which it came at or after the delay judges nothing (the bubble may rightly show by then), so the
+ * body runs again, at most `tries` times in all; then the row fails with the measured times, never passing without a
+ * judged run. A run in which the page recorded no such time fails at once.
+ */
+export async function beforeDelay(what: string, attempt: () => Promise<{ readonly at: number | null; readonly observed: Record<string, unknown> }>): Promise<Record<string, unknown>> {
+  const late: number[] = [];
+  for (let run = 0; run < tries; run += 1) {
+    const { at, observed } = await attempt();
+    if (at === null) throw new Error(`${what}: the page recorded no time for it after the entry`);
+    if (at < testDelay) return observed;
+    late.push(at);
+  }
+  throw new Error(`${what} came at or after the ${String(testDelay)} ms test delay in each of ${String(tries)} runs (${late.join(", ")} ms from the entry): the row has no run it can judge`);
+}
+
 /** A coordinate, or 0 where an absent element gave none, so a pointer move to it is still a valid one. */
 const finite = (value: number): number => (Number.isFinite(value) ? value : 0);
 
@@ -425,22 +478,27 @@ const showRows = [
     { delay: delayed, persisted: true, layer: [tipLayer], focus: "body" },
   ),
   row(
-    "Hover delay, moves inside the tooltip before the delay (R-12's delay rule, the matrix's re-entry): the pointer enters the trigger, moves onto its inner span and back at 100 ms intervals: the timer is not restarted, shown by 450 ms from the first entry and not before 150 ms",
-    async (driver) => {
-      await start(driver, page({ trigger: '<button id="trg" aria-label="Projects">Edge <span id="inner">inner text</span> edge</button>' }));
-      const trigger = await inspect(driver, "trg");
-      const inner = await inspect(driver, "inner");
-      const edge = { x: trigger.left + 4, y: trigger.top + trigger.height / 2 };
-      await track(driver);
-      await driver.pointer([edge]);
-      await pause(100);
-      await driver.pointer([centre(inner)]);
-      await pause(100);
-      await driver.pointer([edge]);
-      await pause(300);
-      return { delay: delay(await frames(driver)) };
-    },
-    { delay: delayed },
+    "Hover delay, moves inside the tooltip before the delay (R-12's delay rule, the matrix's re-entry): the pointer enters the trigger, moves onto its inner span and back onto the trigger's edge, both moves before the delay: the timer is not restarted, not shown before the 300 ms delay from the first entry, shown before 300 ms from the move back and by 450 ms",
+    async (driver) =>
+      beforeDelay("the move back onto the trigger", async () => {
+        await start(driver, page({ trigger: '<button id="trg" aria-label="Projects">Edge <span id="inner">inner text</span> edge</button>' }));
+        const trigger = await inspect(driver, "trg");
+        const inner = await inspect(driver, "inner");
+        const edge = { x: trigger.left + 4, y: trigger.top + trigger.height / 2 };
+        await track(driver);
+        await driver.pointer([edge]);
+        await driver.pointer([centre(inner)]);
+        await driver.pointer([edge]);
+        await pause(450);
+        const f = await frames(driver);
+        const back = f.moved ?? 0;
+        const shown = openTimes(f);
+        return {
+          at: f.moved,
+          observed: { entered: f.t0 !== null, beforeDelay: shown.some((t) => t < testDelay), beforeRestart: shown.some((t) => t < back + testDelay), by450: shown.some((t) => t <= 450) },
+        };
+      }),
+    { entered: true, beforeDelay: false, beforeRestart: true, by450: true },
   ),
   row(
     "Hover delay under reduced motion (US3-8, R-09, R-15): with prefers-reduced-motion: reduce the delay is not zeroed: not shown before 150 ms, shown by 450 ms",
@@ -512,21 +570,28 @@ const showRows = [
     { touch: false, mouse: true },
   ),
   row(
-    "Hover delay, moves inside the tooltip, then leaving before the delay (R-12): the pointer enters the trigger, moves onto its inner span and leaves both boxes at 150 ms: no bubble at any frame of a 450 ms wait from the entry",
-    async (driver) => {
-      await start(driver, page({ trigger: '<button id="trg" aria-label="Projects">Edge <span id="inner">inner text</span> edge</button>' }));
-      const trigger = await inspect(driver, "trg");
-      const inner = await inspect(driver, "inner");
-      await track(driver);
-      await driver.pointer([{ x: trigger.left + 4, y: trigger.top + trigger.height / 2 }]);
-      await pause(100);
-      await driver.pointer([centre(inner)]);
-      await pause(50);
-      await driver.pointer([rest]);
-      await pause(450);
-      return { never: never(await frames(driver), 400) };
-    },
-    { never: true },
+    "Hover delay, moves inside the tooltip, then leaving before the delay (R-12): the pointer enters the trigger, moves onto its inner span and leaves both boxes before the delay: no bubble at any frame of a 450 ms wait from the entry",
+    async (driver) =>
+      beforeDelay("the leave", async () => {
+        await start(driver, page({ trigger: '<button id="trg" aria-label="Projects">Edge <span id="inner">inner text</span> edge</button>' }));
+        const trigger = await inspect(driver, "trg");
+        const inner = await inspect(driver, "inner");
+        await track(driver);
+        await driver.pointer([{ x: trigger.left + 4, y: trigger.top + trigger.height / 2 }]);
+        await pause(35);
+        await driver.pointer([centre(inner)]);
+        await pause(35);
+        await driver.pointer([rest]);
+        await pause(450);
+        const f = await frames(driver);
+        const leave = f.left ?? Infinity;
+        const shown = openTimes(f);
+        return {
+          at: f.left,
+          observed: { moved: f.moved !== null, beforeLeave: shown.some((t) => t < leave), afterLeave: shown.some((t) => t >= leave), to450: (f.frames.at(-1)?.t ?? 0) >= 450 },
+        };
+      }),
+    { moved: true, beforeLeave: false, afterLeave: false, to450: true },
   ),
   row(
     "Keyboard focus inside a custom-element trigger (FR-031: the trigger, or a control inside it): Tab onto the inner button of an open shadow root slotted as the trigger shows the bubble at once",
@@ -724,17 +789,19 @@ const overlayEvent = (tag: string, type: "close-request" | "close", reason: stri
 const escapeRows = [
   row(
     "Escape, then a brief hover (FR-033, R-12): shown by keyboard focus and hidden by Escape, focus kept on the trigger; the pointer enters the trigger and leaves both boxes within 100 ms: no bubble at any frame of a 450 ms wait from the entry",
-    async (driver) => {
-      await start(driver, page());
-      await tabFrom(driver);
-      await driver.press("Escape");
-      await track(driver);
-      await driver.hover("trg");
-      await pause(50);
-      await driver.pointer([rest]);
-      await pause(450);
-      return { never: never(await frames(driver), 400), focus: await driver.focusPath(), visible: await driver.focusVisible("trg") };
-    },
+    async (driver) =>
+      beforeDelay("the leave", async () => {
+        await start(driver, page());
+        await tabFrom(driver);
+        await driver.press("Escape");
+        await track(driver);
+        await driver.hover("trg");
+        await pause(50);
+        await driver.pointer([rest]);
+        await pause(450);
+        const f = await frames(driver);
+        return { at: f.left, observed: { never: never(f, 400), focus: await driver.focusPath(), visible: await driver.focusVisible("trg") } };
+      }),
     { never: true, focus: "trg", visible: true },
   ),
   row(
