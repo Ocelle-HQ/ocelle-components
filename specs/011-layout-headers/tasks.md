@@ -80,6 +80,27 @@ reports `pass`; the phase-1 gate set of the checkpoint passes, `mutation` includ
 - [X] T007 [P] Exempt plumbing in `packages/elements/test/scenarios/driver.ts`, `packages/elements/test/in-process.ts` and `packages/elements/test/browser/driver.ts`: DOM append, remove and text-data change of light DOM, Tab presses (Playwright `Tab` on fixtures, `userEvent.tab` in process), viewport and container size, `driver.rules` for token overrides; fixture page templates `packages/elements/test/browser/fixtures/{card,section-header,page-header,context-sidebar,personal-rail}.html`
 - [X] T008 Write `specs/011-layout-headers/reviews/phase-1/tdd-exempt.md`: T001, T002 and T007 have no behaviour (record, measurement, plumbing), with the reason; T003 and T004 are the red commit for T005 and T006
 
+### Fix from the landing review (phase 1 round 2: R2-01, landing L1-04)
+
+The operator fixed the landing notes in this feature on 2026-11-15 (`reviews/phase-1/round-2.md`). R2-01 changes no
+code: `src/slot-state.ts` keeps reading `assignedNodes()` unflattened (research.md R-03); the README gains the
+statement for shell authors. Its red test is the readme test's assertion; no scenario harness applies.
+
+- [ ] T048 R2-01 (landing L1-04), README statement for shell authors on forwarded slots (spec Empty slot and FR-036,
+  research.md R-03, contracts/elements-package.md § Shell authors), test first. **Red**, in a commit that changes only
+  test files (`test(011-layout-headers): phase 1 review round 2 red`, signed off): `packages/elements/test/node/readme.test.ts`
+  (`elements-node`) gains one fragment, its own `states:` test: "A shell that forwards a slot of its own into an
+  element of this package, such as `<slot name="footer" slot="footer"></slot>` in its shadow root, assigns that
+  `<slot>` element to the element's slot. The element counts it as content even when nothing is assigned to the
+  forwarded slot, so the part takes its wrapper, gap, padding or divider with nothing in it. Forward a slot only when
+  it has content, or remove the forwarding `<slot>` when it has none." Run `.specify/extensions/story/scripts/red.sh 1 fix-2`
+  and confirm `"recorded": true` with the failure on that `toContain` (the statement missing), not a load error.
+  **Green**: `packages/elements/README.md` gains a section `## Forwarded slots` holding that paragraph, between
+  `## Slot convention` and `## Host ARIA`; each element's empty-slot paragraph stays as it is. No source, CHANGELOG
+  or story changes, so no mutation run. **Checks**: `pnpm exec vitest run --project elements-node`, `gate:test-lint`,
+  `gate:lint`; `tdd-check.sh 1` reports `pass`. Write `reviews/phase-1/round-2-fixes.md` and commit
+  (`fix(011-layout-headers): phase 1 review round 2`, signed off); reviewed as phase 1 round 3
+
 **Checkpoint**: `tdd-check.sh 1` reports `pass`; every spike item is recorded; gates `typecheck`, `lint`,
 `test-lint`, `test` and `mutation` (phase base; the changed source is `packages/elements/src/slot-state.ts`) pass,
 before the phase-1 review. A surviving mutant in `slot-state.ts` is a blocking review finding unless the review
@@ -121,6 +142,40 @@ zero CSP violations; `pnpm run gate:contrast` reports 169 light / 177 dark / 158
 - [X] T023 [US1] `storybook/stories/section-header.stories.ts` and `storybook/stories/card.stories.ts`: a story per variant and state US1 names (sizes, eyebrow variant, empty and filled slots, densities, inset, header and no header), no `style` attribute; baselines by `pnpm run visual:update`, CI's captures committed when they differ (R-14)
 - [X] T024 [US1] `packages/elements/README.md` (sections for both elements, the amended Styles paragraph, and the Entry points table rows for `@ocelle/elements/ocelle-card.js` and `@ocelle/elements/ocelle-section-header.js` as T016a pins them) and `packages/elements/CHANGELOG.md` with the statements of T016
 - [X] T025 [US1] Evidence in `specs/011-layout-headers/reviews/phase-2/plants.md`: every pairing plant of contracts/checks.md whose rows name US1 scenarios, and the R-17 style plants for both templates, each with the scenarios that failed in each harness; `pnpm run gate:plants` after the contrast counts changed
+
+### Fix from the landing review (phase 2 round 4: R4-01, landing L1-01)
+
+The operator chose to fix L1-01 in this phase on 2026-11-15 (`reviews/phase-2/round-4.md`). One red commit of test
+files only, then the fix.
+
+- [ ] T049 [US1] R4-01 (landing L1-01), the card reads its own `header` slot on `slotchange` (FR-017, research.md
+  R-05 § Forwarded slots, contracts/checks.md § Pairing plants, the forwarded-slot row), test first. **Red**, in a
+  commit that changes only test files (`test(011-layout-headers): phase 2 review round 4 red`, signed off): a shared
+  scenario in `packages/elements/test/scenarios/card.ts`, "R-05 forwarded slot (phase 2 review R4-01)", run by both
+  harnesses, `packages/elements/test/card.test.ts` (`elements`, in process on the source) and
+  `packages/elements/test/browser/card.test.ts` (`elements-browser`, the browser build on `test/browser/fixtures/card.html`
+  under the strict CSP, with zero CSP violations, only allowed requests and no console message). The scenario mounts a
+  wrapper element with an open shadow root holding `<ocelle-card density="compact"><slot name="extra" slot="header"></slot></ocelle-card>`,
+  appends to that card an `ocelle-section-header slot="header"` with an `h3 slot="heading"`, and asserts the header
+  is drawn compact (positive half). It then appends a `span slot="extra"` to the wrapper, so the forwarded slot's
+  content changes, and removes the header's `slot` attribute: the header, now in the card's body, is drawn at the
+  default size (its heading's font size equal to the regular size's token, read by name from the page, US1-1), and
+  setting `slot="header"` again draws it compact. The wrapper's shadow root is built by a driver primitive added to
+  `packages/elements/test/scenarios/driver.ts`, `packages/elements/test/in-process.ts` and
+  `packages/elements/test/browser/driver.ts` (attach an open shadow root with given markup to a mounted element, and
+  append to or change attributes of nodes inside it; exempt plumbing as T007, no `style` attribute, no inline script),
+  or by a test-only wrapper module under `packages/elements/test/fixtures/` served to the fixture page as the test
+  host's file is (`test/browser/global-setup.ts`); either way only files under `packages/elements/test/` change. Run
+  `.specify/extensions/story/scripts/red.sh 2 fix-4` and confirm `"recorded": true` with the failure in both harnesses
+  on the header's size (compact where the default size is expected after it left the slot), not a setup or load
+  error. **Green**: `packages/elements/src/ocelle-card.ts` `#headerChanged` passes the card's own `header` slot to
+  `notifyHeaders` (the `slot[name="header"]` of its render root, as `updated()` reads it, or `event.currentTarget`
+  when the listener is on that slot), never `event.target`; no other file. **Evidence**: in
+  `reviews/phase-2/plants.md` § Review round 4 fix, the forwarded-slot pairing plant (`event.target` restored) with
+  the scenarios that failed in each harness. **Checks**: `pnpm test`, `gate:typecheck`, `gate:lint`, `gate:test-lint`,
+  `gate:csp`, `gate:manifest` (unchanged), `gate:mutation -- --base <reviews/phase-2/base.sha>` with no survivor in
+  `src/ocelle-card.ts`; `tdd-check.sh 2` reports `pass`. Write `reviews/phase-2/round-4-fixes.md` and commit
+  (`fix(011-layout-headers): phase 2 review round 4`, signed off); reviewed as phase 2 round 5
 
 **Checkpoint**: `tdd-check.sh 2` reports `pass`; gates `typecheck`, `lint`, `style-lint`, `test-lint`, `test`, `manifest`, `csp`, `prefix`, `contrast`, `brand-rules`, `storybook-build`, `visual`, `axe`, `mutation` (phase base) pass.
 
@@ -175,6 +230,57 @@ footer at the block end, and survives the two page resets.
 - [X] T039 [US3] `storybook/stories/context-sidebar.stories.ts` (full, no head, no footer, one section, text in the slot, empty sections, hidden sections, the four US3-12 cases each alone) and baselines; README section, the Entry points table row for `@ocelle/elements/ocelle-context-sidebar.js` as T035a pins it, and CHANGELOG
 - [X] T040 [US3] Evidence in `specs/011-layout-headers/reviews/phase-4/`: `plants.md` with the US3 pairing plants and the R-17 style plants; the role probe of contracts/checks.md (`axe.commons.aria.getRole(host) === "navigation"` for a host with `label`, with a host `aria-label` and with neither, with axe-core's version, and the `#private`-field plant reading `null`)
 
+### Fixes from the landing review (phase 4 round 2: R2-01, landing L1-03; R2-02, landing L1-02)
+
+The operator chose to fix L1-03 and L1-02 in this phase on 2026-11-15 (`reviews/phase-4/round-2.md`). T050 and
+T051 share one red commit (`test(011-layout-headers): phase 4 review round 2 red`, test files only, signed off),
+recorded by `.specify/extensions/story/scripts/red.sh 4 fix-2`, and one fix commit
+(`fix(011-layout-headers): phase 4 review round 2`, signed off) with `reviews/phase-4/round-2-fixes.md`; reviewed as
+phase 4 round 3.
+
+- [ ] T050 [US3] R2-01 (landing L1-03), a `template` or `script` in the sidebar's default slot draws no section
+  (FR-021, FR-022, US3-3's template variant, research.md R-09 § never-rendered elements, contracts/checks.md
+  § Pairing plants, the `template` row), test first. **Red**: in `packages/elements/test/scenarios/context-sidebar.ts`,
+  the US3-3 template variant as a shared scenario, run by both harnesses, `packages/elements/test/context-sidebar.test.ts`
+  (`elements`) and `packages/elements/test/browser/context-sidebar.test.ts` (`elements-browser`, the browser build on
+  `test/browser/fixtures/context-sidebar.html` under the strict CSP, with zero CSP violations, only allowed requests
+  and no console message): a sidebar with a head, a footer, two visible `div` sections and a `<template>` (holding an
+  `li`) and a `<script type="application/json">` before the first section, between the two and after the last: the
+  `template` and `script` have no box (zero border box) and their computed `display` is `none`; exactly one divider
+  lies between the two visible sections with `--ocelle-space-4` of padding on both sides, the first visible section
+  has no divider of its own (one divider between it and the head) and the last one divider to the footer, as in
+  US3-3 (the positive half, in the same test); and a sidebar whose default slot holds only a `<template>`, with a
+  head and footer, keeps the head and footer dividers meeting with no padding between them (it counts as content,
+  as with every section hidden). In the same commit, `packages/elements/test/node/readme.test.ts` (`elements-node`)
+  gains one fragment, its own `states:` test: "A `template` or `script` element in the default slot, such as a
+  `<template>` that Alpine.js keeps in the page for `x-if` or `x-for`, is not a section: it is not drawn and gets no
+  padding or divider. Like a hidden section, it still counts as content." Confirm in the red run that the scenario
+  fails in both harnesses on the template's box and divider (a 33 px block with a divider where none is expected), and
+  the readme test on the missing statement, not on setup; a CSP violation for the data block is a stop-and-ask.
+  **Green**: `packages/elements/src/ocelle-context-sidebar.ts`: every section rule, the first-section rule included,
+  also excludes `template` and `script` (`:not(template, script)` beside `:not([slot]):not([hidden])`);
+  `packages/elements/README.md`, the sidebar section: that paragraph after the hidden-section paragraph; the
+  statement "A page rule does not change a section's padding, inline margins, divider or display" stays as it is.
+  **Evidence**: in `reviews/phase-4/plants.md` § Review round 2 fix, the `template` row's two plants and the R-17
+  style plants of the changed rules, with the scenarios that failed in each harness
+- [ ] T051 [US3] R2-02 (landing L1-02), the published declarations do not declare the internals key (FR-034,
+  research.md R-11 § Type declarations, contracts/checks.md § Pairing plants, the declarations row), test first.
+  **Red**, in the same commit as T050: `packages/elements/test/build/build.test.ts` (`elements-build`; the scenario
+  harnesses do not apply) gains one test, after the package's build (`buildPackage()`): `dist/ocelle-context-sidebar.d.ts`
+  and `dist/ocelle-personal-rail.d.ts` each declare `label: string | undefined;` and contain no `internalsKey`, and
+  `dist/naming.d.ts` declares `accessibleName` and contains no `internalsKey` (each "no" paired with its positive in
+  that test). Confirm in the red run that it fails on the `internalsKey` declarations present, not on the build.
+  **Green**: `"stripInternal": true` in `compilerOptions` of `packages/elements/tsconfig.json` only (not
+  `tsconfig.base.json`); no source changes, so `custom-elements.json` and the emitted JavaScript stay as they are.
+  Before committing, confirm that `@internal` is still carried only by `src/naming.ts`'s `internalsKey` and the
+  internals fields of `src/ocelle-context-sidebar.ts` and `src/ocelle-personal-rail.ts`, so nothing else leaves the
+  declarations. **Evidence**: in `reviews/phase-4/plants.md` § Review round 2 fix, the declarations row's two plants
+  (`stripInternal` removed; the field's `@internal` removed) with the test that failed. **Checks for T050 and T051**:
+  `pnpm -r build`, `pnpm test`, `gate:typecheck`, `gate:lint`, `gate:style-lint`, `gate:test-lint`, `gate:csp`,
+  `gate:prefix`, `gate:manifest` (no change), `gate:storybook-build`, `gate:visual` and `gate:axe` (no baseline
+  changes, since no story slots a `template`), `gate:mutation -- --base <reviews/phase-4/base.sha>`;
+  `tdd-check.sh 4` reports `pass`
+
 **Checkpoint**: `tdd-check.sh 4` reports `pass`; the phase-3 gate set passes.
 
 ---
@@ -201,6 +307,30 @@ horizontal, and keeps its orientation at 721, 720, 719 and 320 px.
 - [X] T046 [US4] `storybook/stories/personal-rail.stories.ts` (vertical, horizontal, no bottom, no primary, wrapped at a narrow width, the three US4-11 cases each alone; root `data-story="rail-items"`) with the stand-in item rules in the story stylesheet, no `style` attribute; baselines; README section (the #12 note, the orientation example, the `<a>` item note), the Entry points table row for `@ocelle/elements/ocelle-personal-rail.js` as T043a pins it, and CHANGELOG
 - [X] T047 [US4] Evidence in `specs/011-layout-headers/reviews/phase-5/`: `plants.md` with the US4 pairing plants (including the README `max-width` plant for US4-10 and the `@media` and `@container` flips for US4-4) and the R-17 style plants; the role probe for the rail as in T040
 
+### Fix from the landing review (phase 5 round 2: R2-01, landing L1-05)
+
+The operator chose to fix L1-05 in this phase on 2026-11-15 (`reviews/phase-5/round-2.md`). README only: its red
+test is the readme test's; no scenario harness applies.
+
+- [ ] T052 [US4] R2-01 (landing L1-05), the rail README names `ocelle-nav-item` as not released yet and loses its
+  stray line break (FR-027, FR-036), test first. **Red**, in a commit that changes only test files
+  (`test(011-layout-headers): phase 5 review round 2 red`, signed off): in `packages/elements/test/node/readme.test.ts`
+  (`elements-node`), the fragment "A plain `<a>` does not: give `<a>` items `color: inherit` and a target of at least
+  24 px, or use `ocelle-nav-item` elements." is replaced by the stricter "A plain `<a>` does not: give `<a>` items
+  `color: inherit` and a target of at least 24 px, or use `ocelle-nav-item` elements once they are released; no
+  release of this package ships `ocelle-nav-item` yet." (a stricter statement, not a looser one: it holds
+  the old statement up to its full stop and adds the release statement FR-027 now asks for; the reason is recorded in the round's
+  fix note); and one
+  test reads the README raw, without whitespace flattening, and asserts that it contains "`ocelle-nav-item` is
+  expected to have. The rail sets only the gap" on one line (the stray line break at the landing review's README
+  line 445 removed). "For #12:" stays. Run `.specify/extensions/story/scripts/red.sh 5 fix-2` and confirm
+  `"recorded": true` with both failures on `toContain`, not a load error. **Green**: `packages/elements/README.md`,
+  the rail section only: the sentence as asserted and the paragraph re-wrapped; no source, CHANGELOG or story
+  changes, so no mutation run. **Checks**: `pnpm exec vitest run --project elements-node`, `pnpm exec vitest run
+  --project elements-browser test/browser/personal-rail.test.ts` (US4-10 still finds the README's orientation
+  example), `gate:test-lint`, `gate:lint`; `tdd-check.sh 5` reports `pass`. Write `reviews/phase-5/round-2-fixes.md`
+  and commit (`fix(011-layout-headers): phase 5 review round 2`, signed off); reviewed as phase 5 round 3
+
 **Checkpoint**: `tdd-check.sh 5` reports `pass`; the phase-3 gate set passes; quickstart.md steps 1 to 8 hold.
 
 ---
@@ -218,6 +348,11 @@ horizontal, and keeps its orientation at 721, 720, 719 and 320 px.
 - The pinned element lists (T016a, T028a, T035a, T043a) are re-listed at each phase base, so a phase written after a
   sibling or an earlier phase changed them starts from the lists as they are.
 - Within a phase: the red commit (Tests) first, then Implementation, then the evidence task.
+- Fixes from the landing review (operator decisions at landing, 2026-11-15; `reviews/landing/round-1-tasks.md`):
+  T048 (phase 1), T049 (phase 2), T050 and T051 (phase 4, one unit) and T052 (phase 5) each run as one unit (red,
+  green, checks) under their phase's `red.sh <N> fix-<k>` label, in phase order, one after the other, and each is
+  reviewed as its phase's next round. They touch shared files (`readme.test.ts` in T048, T050 and T052; the README
+  in the same three), so none runs in parallel with another. The landing review runs again after all five.
 
 ## Parallel Opportunities
 
