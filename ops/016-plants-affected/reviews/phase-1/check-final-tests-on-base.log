@@ -1,5 +1,5 @@
 Scope: all 5 workspace projects
-✓ Lockfile passes supply-chain policies (verified 2h ago)
+✓ Lockfile passes supply-chain policies (verified 3h ago)
 Lockfile is up to date, resolution step is skipped
 Packages are hard linked from the content-addressable store to the virtual store.
   Content-addressable store is at: /root/.local/share/pnpm/store/v11
@@ -35,12 +35,13 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 234ms using pnpm v12.16.1
+Done in 254ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /opt/pw-browsers/chromium-1248/chrome-linux64/chrome
 $ node gates/bin/test.ts
 gates/test/integration/plants-robustness.test.ts:178: unit-tests: contrast and brand-rules plants under neighbouring changes has the two gates' plants and the registry's: AssertionError: expected { others: 15, plants: 35 } to deeply equal { others: 15, plants: 36 }
 gates/test/integration/plants.test.ts:170: unit-tests: plant job (gates/bin/plants.ts) --affected HEAD judges only the plant whose plant.json changed since HEAD, and names HEAD in its summary: AssertionError: expected { code: 1, stdout: [ …(48) ], …(1) } to deeply equal { code: 1, stdout: [ …(48) ], …(1) }
+gates/test/integration/plants.test.ts:216: unit-tests: plant job (gates/bin/plants.ts) --affected HEAD judges the plants that hold an untracked file that is not ignored, and not the plant that holds an ignored one: AssertionError: expected { code: 1, stdout: [ …(48) ], …(2) } to deeply equal { code: 1, stdout: [ …(48) ], …(2) }
 gates/test/plant-runner.test.ts:792: unit-tests: affectedPlants (op 016) scenario 1: a plant's plant.json selects that plant and the plant whose baselinesOf names it, and no other: TypeError: (0 , __vite_ssr_import_2__.affectedPlants) is not a function
 gates/test/plant-runner.test.ts:797: unit-tests: affectedPlants (op 016) scenario 2: a gate entry selects every plant of that gate and no other: TypeError: (0 , __vite_ssr_import_2__.affectedPlants) is not a function
 gates/test/plant-runner.test.ts:801: unit-tests: affectedPlants (op 016) scenario 3: a story and a baseline select exactly the repository-content plants, by the first of them: TypeError: (0 , __vite_ssr_import_2__.affectedPlants) is not a function
@@ -77,5 +78,5 @@ gates/test/plants.test.ts:1316: unit-tests: plants: --affected <base> (op 016) s
 gates/test/registry.test.ts:322: unit-tests: affectedInCiFindings (op 016) gives one finding per plant job that passes --affected, in the order plants-plan, plants-shard, plants: TypeError: (0 , __vite_ssr_import_2__.affectedInCiFindings) is not a function
 gates/test/registry.test.ts:332: unit-tests: affectedInCiFindings (op 016) finds nothing in a workflow without it, the repository's own included: TypeError: (0 , __vite_ssr_import_2__.affectedInCiFindings) is not a function
 gates/test/registry.test.ts:337: unit-tests: affectedInCiFindings (op 016) finds nothing for --affected in a job that is not a plant job: TypeError: (0 , __vite_ssr_import_2__.affectedInCiFindings) is not a function
-unit-tests: 38 of 3150 tests failed
+unit-tests: 39 of 3151 tests failed
 [ELIFECYCLE] Test failed. See above for more details.
