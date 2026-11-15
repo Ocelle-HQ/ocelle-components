@@ -421,3 +421,86 @@ again, `gate:mutation -- --base 78fe475 --files packages/elements/src/ocelle-too
   - the text-field trigger row's `early` check.
 - Each of the three rows gets a break check.
 - **Not chosen:** changing only the FR-031 row; leaving it and re-running.
+
+## The immediate-action rows after the operator's decision (`5d735a8`)
+
+`5d735a8` changes `packages/elements/test/scenarios/tooltip.ts` only (no source, delay or spec change). The stand-in
+`ocelle-test-tip` now also records `Frames.clicked`: the first `click` inside the tracked tooltip after the entry,
+read at the window in the capture phase (before the trigger's own listeners), in ms from the entry. That click also
+takes a frame sample, so a bubble shown by the click's focus is seen at the click's own time and not only at the next
+animation frame. `beforeDelay(what, attempt, bound)` takes an optional bound (default the 300 ms test delay); the rest
+of it is unchanged: a run is judged only when the measured time is under the bound, at most 3 runs, then it throws
+with the measured times.
+
+### Rows changed (old and new full names, measured times)
+
+Times are page-side, in ms from the entry, unloaded, 3 runs in each harness (in process, then the fixture twin), read
+with a temporary probe that was then removed.
+
+1. FR-031 click-focus row. Judged through `beforeDelay` on the move off the trigger (`Frames.left`; the click's own
+   move is the entry). It now also asserts frames up to 450 ms from the click (`to450`). Move off at 49.2, 66.3, 66.4
+   / 33.0, 32.7, 33.1 ms.
+   - Old: "Click focus (FR-031): a pointer click on the button trigger and the pointer moved off at once: focus on the
+     trigger without :focus-visible, no bubble at any frame of a 450 ms wait; then Shift+Tab and Tab back (keyboard
+     focus) show it at once"
+   - New: "Click focus (FR-031): a pointer click on the button trigger and the pointer moved off it before the delay:
+     focus on the trigger without :focus-visible, no bubble at any frame of a 450 ms wait from the click; then
+     Shift+Tab and Tab back (keyboard focus) show it at once"
+2. Dialog-pending row. Judged through `beforeDelay` on the click that opens the dialog (`Frames.clicked`). It now also
+   asserts frames up to 450 ms from the entry (`to450`). Click at 5.2, 6.0, 4.9 / 6.9, 7.0, 8.5 ms.
+   - Old: "Trigger opens an ocelle-dialog before the delay (FR-010, FR-034, R-10): the pointer enters the trigger and
+     clicks it at once, which opens the dialog: the pending bubble does not show, at no frame of a 450 ms wait from
+     the entry"
+   - New: "Trigger opens an ocelle-dialog before the delay (FR-010, FR-034, R-10): the pointer enters the trigger and
+     clicks it before the delay, which opens the dialog: the pending bubble does not show, at no frame of a 450 ms
+     wait from the entry"
+3. "Text-field trigger (FR-029, US3-10, R-12; stated limit): a clicked <input type=text> trigger matches :focus-visible
+   and shows the bubble at once, before the hover delay". Name unchanged (it states no time it does not meet). Judged
+   through `beforeDelay` with a 150 ms bound on the click (`Frames.clicked`), so `early` (a shown frame before 150 ms)
+   is judged only on runs whose click came within 150 ms of the entry. Click at 6.9, 7.9, 8.1 / 9.8, 11.9, 16.7 ms.
+
+Every earlier assertion of the three rows is kept, with the same expected values.
+
+### Break checks (temporary source edits, reverted, never committed)
+
+Each ran the three rows in both harnesses (`tooltip.test.ts` in process, `test/browser/tooltip.test.ts` on the
+fixture, which builds the browser build from the edited source). The results were the same in both.
+
+- B1, bubble shown on entry with no delay (`if (delay > 0 && false)` in `#onPointerover`): the FR-031 row fails
+  (`never: false`), the dialog-pending row fails (`never: false`). With the click's frame sample turned off as well, the
+  same two still fail (the animation frames see it too).
+- B2, the pending delay never ended (`window.clearTimeout(this.#timer)` removed from both `#onPointerout` and
+  `#hide`): the FR-031 row fails (`never: false`), the dialog-pending row fails (`never: false`, and the bubble is in
+  the top layer above the dialog). Removing it from `#onPointerout` alone is equivalent: the leave calls `#hide`,
+  which clears the timer, and all three rows pass.
+- B3, focus without `:focus-visible` counted as keyboard focus (`&& true` for `active.matches(":focus-visible")` in
+  `#onFocusin`): the FR-031 row fails (`never: false`); the dialog-pending row fails too (`never: false`).
+- B4, the keyboard-focus show 200 ms late (`window.setTimeout(() => { this.#show(); }, 200)` in `#onFocusin`): the
+  text-field row fails (`atOnce: false`, `early: false`); the FR-031 row fails (`keyboard: false`).
+- B5, no show on keyboard focus (`if (this.#focused && false)`): the text-field row fails (`atOnce: false`,
+  `early: false`); the FR-031 row fails (`keyboard: false`).
+
+### Repeat runs at `5d735a8`
+
+- `tooltip.test.ts` (in process): 104 of 104 passed, 3 runs of 3. `test/browser/tooltip.test.ts` (fixture twin):
+  104 of 104 passed, 3 runs of 3. The touch files (in process and fixture): 2 of 2 each.
+- `gate:typecheck`, `gate:lint`, `gate:test-lint`: no finding.
+- `pnpm test` run 1 (`full-test-5d735a8.log`, 12 m 42 s): **5067 of 5067 passed**.
+- `pnpm test` run 2 (`full-test-5d735a8-run2.log`, 12 m 36 s): **5067 of 5067 passed**.
+- No row this change does not touch failed in either run, so no other row was changed. The drawer row "Input during
+  the exit, motion on: two close-control clicks: exactly one request and one close, no cancel event, focus on the
+  opener (FR-013, FR-014, R-02, R-06)" passed in both runs.
+
+### Mutation at `5d735a8`
+
+The changed rows kill mutants in the overlay hook (`bubbles.dismiss`), the pointer handlers, `#onFocusin`, `#show`
+and `#hide`, so shards 11 and 15 to 17 of the final plan ran again, `gate:mutation -- --base 78fe475 --files
+packages/elements/src/ocelle-tooltip.ts:<lines>`, output appended to `mutation.log`. No new survivor; the counts equal
+the final runs at `1f91513`.
+
+| Shard | Entries | Mutants on changed lines | Survived | Timeouts | Compile errors | Equivalent records | Exit | Time |
+|---|---|---|---|---|---|---|---|---|
+| 11 | `:121-150` | 5 | 0 | 0 | 4 | 0 | 0 | 475 s |
+| 15 | `:241-270` | 24 | 0 | 0 | 4 | 0 | 0 | 516 s |
+| 16 | `:271-300` | 39 | 0 | 0 | 10 | 0 | 0 | 516 s |
+| 17 | `:301-330` | 34 | 0 | 0 | 16 | 2 | 0 | 551 s |
