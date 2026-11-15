@@ -192,3 +192,9 @@ pattern needs it (as 013 amended it), recorded in the spec.
   under B only 020 is affected.
 - **011 lands eyebrow tokens with a different look** from `tracking-caps` and `font-size-xs`: the data table uses
   011's and its header spec changes, not its scope.
+
+## Operator decision (triage gate, 2026-11-15)
+
+- **Q1:** (b), option B. 019 `data-records` (spec `specs/019-data-records`) builds `ocelle-data-table`,
+  `ocelle-event-timeline` and `ocelle-evidence-chain`. 020 `disclosure-code-block` builds `ocelle-disclosure` and
+  `ocelle-code-block` later, in its own session. The operator (jeroennouwsdev) chose this at the gate.
