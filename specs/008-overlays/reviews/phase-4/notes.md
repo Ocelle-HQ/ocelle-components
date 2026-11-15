@@ -283,3 +283,41 @@ touch); the other shards are left to CI.
 - **Question:** axe reports `color-contrast-incomplete` (`elmPartiallyObscuring`) on the long-text tooltip story, light and dark. Which fix?
 - **Answer:** "(a) Rearrange markup". Move the trigger later inside one long paragraph, so the bubble lies wholly inside that paragraph's box.
 - **Not chosen:** (b) a spacer block with its own story rule; (c) an `a11y-exceptions.json` entry.
+
+## T052 after the operator decision (option (a))
+
+- Red row first (`1ce1004`, `storybook/test/integration/elements-stories.test.ts`, "the ocelle-tooltip long-text
+  story's bubble inside one paragraph (008 T052, operator decision)"): in light and dark, the long-text story's
+  painted box lies wholly inside the box of the paragraph that holds the trigger and crosses the box of no other
+  element of the story. Red at `1ce1004` for the decision's reason: `insideParagraph: false`, `crossed: ["p", "p",
+  "p"]` (the three paragraphs above the trigger), both themes.
+- Fix (`4b74cc9`, `storybook/stories/tooltip.stories.ts` only): the long-text story is one `<div
+  data-story="tooltip">` holding one long paragraph, the trigger late in it (sixth line at 1280 × 800). No new CSS rule,
+  no spacer, no `a11y-exceptions.json` entry; the element's source is unchanged, so no mutation run. The row turns
+  green; the other 18 tooltip story rows still pass (the bubble above, centred, on top).
+- `gate:storybook-build`: built 44 stories. `gate:axe`: **88 story-theme runs, 0 serious or critical; 10 notes (0
+  incomplete, 10 excepted)**, the ten being the Prose document's existing exceptions. The long-text story has no
+  finding.
+- Baselines (`296072b`): `pnpm run visual:update` in the pinned container (docker, image `ee15712262f0`) wrote 2 files
+  (0 added, 2 changed, 0 removed): `elements-ocelle-tooltip--long-text.light.png` and `.dark.png`; 88 baseline files.
+  `gate:visual`: 88 captures match their baselines (docker only: no cross-engine comparison).
+- Plants: `--shard 16`, `--shard 19` and `--shard 27`: each "3 plants judged, every plant as expected". The long-text
+  story's `differs` line in `fail-token-changed` still holds (the story still shows `color-ink` in light), so
+  `plant.json` is unchanged. Shard 27's three problems of the open finding are gone.
+- Counts re-checked, unchanged: 44 stories, 88 story-themes, the axe plant run 90, 88 baseline files.
+
+### Full suite at `296072b`
+
+- Run 1 (`full-test-296072b.log`, 14 m 29 s): **2 of 5067 tests failed**, both outside this change: the drawer row
+  "Input during the exit, motion on: two close-control clicks: exactly one request and one close, no cancel event,
+  focus on the opener (FR-013, FR-014, R-02, R-06)" and the tooltip row "Hover delay, moves inside the tooltip, then
+  leaving before the delay (R-12): the pointer enters the trigger, moves onto its inner span and leaves both boxes at
+  150 ms: no bubble at any frame of a 450 ms wait from the entry" (`never: false`). Both axe gate tests now pass.
+- Both rows run alone: 3 of 3 passed each; the whole `tooltip.test.ts` alone: 104 of 104 passed, 3 runs of 3.
+- Run 2 (`full-test-296072b-run2.log`, 12 m 55 s): **1 of 5067 tests failed**, the same tooltip row (`never: false`).
+- Reading: the row leaves the trigger 150 ms after the entry against the 300 ms delay, timed by host-side pauses; under
+  the full suite's load those pauses overrun and the bubble shows before the leave. It passed in the full run at
+  `6904082`. The suite is therefore **not green** at `296072b`, and `tdd-check.sh 4` waits. Not changed here: making
+  that row robust under load (for example a longer delay on its page, or measuring the leave's real time) changes a
+  Phase 4 test and is a question for the operator. T052's own work (baselines, `gate:visual`, `gate:axe`, plants) is
+  done and ticked.
