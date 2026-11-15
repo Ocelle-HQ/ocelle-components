@@ -9,8 +9,8 @@ T042a included, then the green commits.
 
 Commits so far: b58c55f (red, `red.sh 4 phase`: tests only, red, recorded; 121 of 3579 tests failed), fdc5956 (green:
 T045, T045a; the tokens, brand-rules, gates README and plant-runner tests pass), 4ceaefc (the busy button and spinner,
-in progress: T046 to T048 open). **The phase is stopped on the operator question below**, before baselines, plants,
-gate runs and mutation.
+in progress: T046 to T048 open). The phase stopped on the operator question below; the operator answered it (option (a), 2026-11-15) and the
+phase went on.
 
 ## Operator decision at phase 4 (the stop-and-ask, resolved)
 
@@ -88,3 +88,11 @@ weakening), so the phase stops here. Options:
 - **(c) Something else** the operator states.
 
 Either (a) or (b) changes red test code; no expectation is loosened in either.
+
+**Operator decision at phase 4, 2026-11-15: option (a).** The operator authorised exactly these red-test corrections
+after the red commit, and nothing else in the red tests: in each body that measures the spinner (US3-3, US3-4,
+US3-5, US3-7 and the "both disabled and busy" edge case) reduced motion is turned on first, so the body reads the still
+box, every expected value unchanged; US3-5 also asserts that the turning spinner's box never overlaps the label (five
+reads 150 ms apart with motion allowed, each `false`; stricter than before); the "Busy look" body gets a canvas ground
+rule, as the other dark bodies have. Applied in `scenarios/busy.ts` (commit after ef3cdbf); both harnesses then pass
+(in process 157 of 157 with control.test.ts, fixture 101 of 101).

@@ -17,7 +17,9 @@
 // forced colours from research.md R-12's table read as `resolveColour(<keyword>)` (a busy button `ButtonText`, a busy
 // link `LinkText`), the spinner's timing from research.md R-07 (six turns of `--ocelle-motion-spin`, 800 ms, so one run
 // of 4.8 s, linear, once, no fill mode), sizes from the slot convention (the 20 px icon size, the 8 px gap). The
-// spinner is read in the shadow root by its wrapper `.spinner` and its drawing `.spinner svg`. Every body ends with axe
+// spinner is read in the shadow root by its wrapper `.spinner` and its drawing `.spinner svg`. A turning drawing's
+// border box is the box of its rotated drawing, so a body that measures the spinner's layout box measures it still,
+// under reduced motion (operator decision at phase 4, 2026-11-15, reviews/phase-4/notes.md). Every body ends with axe
 // on its page (006's rule selection): no serious or critical result.
 //
 // Every "does not" outcome shares its body with the positive outcome it guards, and its plant is named here (run once
@@ -178,6 +180,7 @@ function forced(palette: Palette): Scenario {
     run: async (driver) => {
       await driver.mount(`<p><ocelle-button id="b" busy>Saving</ocelle-button> <ocelle-button id="l" href="${target}" busy>Projects</ocelle-button></p>`);
       await driver.forcedColors("active", palette);
+      await driver.reducedMotion("reduce");
       const keywords = ["ButtonText", "LinkText", "GrayText"];
       const resolved = await Promise.all(keywords.map((keyword) => driver.resolveColour(keyword)));
       const named = (value: string): string => keywords[resolved.indexOf(value)] ?? value;
@@ -245,6 +248,7 @@ export const busyScenarios: readonly Scenario[] = [
     name: 'US3-3: a busy button\'s inner control reports busy (aria-busy="true") and unavailable (aria-disabled="true", not the disabled attribute), keeps its name and description and stays focusable; the spinner is aria-hidden and adds no node to the tree; its available twin reports neither (FR-003, FR-015, FR-017)',
     run: async (driver) => {
       await driver.mount('<p id="why">Saving the project</p><p><ocelle-button id="b" busy aria-describedby="why">Save</ocelle-button> <ocelle-button id="n" aria-describedby="why">Save</ocelle-button></p>');
+      await driver.reducedMotion("reduce");
       return {
         busy: { inner: await inner(driver, "b"), state: await state(driver, "b"), nodes: await meaningful(driver, "b"), drawn: (await drawing(driver, "b"))?.["aria-hidden"] ?? null, spinner: dimensions(await driver.box("b", spinner)) },
         available: { inner: await inner(driver, "n"), state: await state(driver, "n"), nodes: await meaningful(driver, "n") },
@@ -277,6 +281,7 @@ export const busyScenarios: readonly Scenario[] = [
           `<div dir="${direction}"><p><ocelle-button id="b"><ocelle-icon id="b-icon" slot="icon" name="folder"></ocelle-icon>Open project</ocelle-button></p>` +
             `<p><ocelle-button id="o" label="Close"><ocelle-icon id="o-icon" slot="icon" name="close"></ocelle-icon></ocelle-button></p></div>`,
         );
+        await driver.reducedMotion("reduce");
         const found: Record<string, unknown> = {};
         for (const id of ["b", "o"]) {
           const [host, glyph, idle] = [await driver.box(id), await driver.box(`${id}-icon`), await driver.box(id, spinner)];
@@ -309,21 +314,28 @@ export const busyScenarios: readonly Scenario[] = [
   ),
   ...(["ltr", "rtl"] as const).map(
     (direction): Scenario => ({
-      name: `US3-5 (${direction}): on a busy button without an icon the spinner is ${direction === "ltr" ? "before (left of)" : "after (right of)"} the label, ${String(gap)} px from it, at the icon size, and the boxes of the spinner and the label do not intersect, in the default and the compact size (FR-016)`,
+      name: `US3-5 (${direction}): on a busy button without an icon the spinner is ${direction === "ltr" ? "before (left of)" : "after (right of)"} the label, ${String(gap)} px from it, at the icon size, and the boxes of the spinner and the label do not intersect, still or turning, in the default and the compact size (FR-016)`,
       run: async (driver) => {
         await driver.mount(`<div dir="${direction}"><p><ocelle-button id="d" busy><span id="d-label">Saving</span></ocelle-button></p><p><ocelle-button id="c" size="compact" busy><span id="c-label">Saving</span></ocelle-button></p></div>`);
         const found: Record<string, unknown> = {};
         for (const id of ["d", "c"]) {
-          const box = await driver.box(id, spinner);
           const [text] = await driver.lines(`${id}-label`);
           const label = text === undefined ? { x: 0, y: 0, width: 0, height: 0, display: "" } : { ...text, display: "" };
+          const turning: boolean[] = [];
+          for (let read = 0; read < 5; read += 1) {
+            turning.push(intersect(await driver.box(id, spinner), label));
+            await wait(150);
+          }
+          await driver.reducedMotion("reduce");
+          const box = await driver.box(id, spinner);
+          await driver.reducedMotion("no-preference");
           const left = box.x < label.x;
-          found[id] = { size: dimensions(box), side: left ? "left" : "right", gap: tenth(left ? label.x - (box.x + box.width) : box.x - (label.x + label.width)), intersect: intersect(box, label) };
+          found[id] = { size: dimensions(box), side: left ? "left" : "right", gap: tenth(left ? label.x - (box.x + box.width) : box.x - (label.x + label.width)), intersect: intersect(box, label), turning };
         }
         return { found, axe: await severe(driver) };
       },
       expected: {
-        found: Object.fromEntries(["d", "c"].map((id) => [id, { size: [icon, icon], side: direction === "ltr" ? "left" : "right", gap, intersect: false }])),
+        found: Object.fromEntries(["d", "c"].map((id) => [id, { size: [icon, icon], side: direction === "ltr" ? "left" : "right", gap, intersect: false, turning: [false, false, false, false, false] }])),
         axe: [],
       },
     }),
@@ -410,6 +422,7 @@ export const busyScenarios: readonly Scenario[] = [
       await driver.mount(
         '<div id="wrap"><button id="before" type="button">Before</button> <ocelle-button id="d" disabled busy><ocelle-icon id="d-icon" slot="icon" name="folder"></ocelle-icon>Save</ocelle-button> <ocelle-button id="u" busy><ocelle-icon id="u-icon" slot="icon" name="folder"></ocelle-icon>Save</ocelle-button></div>',
       );
+      await driver.reducedMotion("reduce");
       await driver.events("d", ["click", "auxclick", activate]);
       await driver.click("d");
       await driver.callClick("d");
@@ -518,7 +531,8 @@ export const busyScenarios: readonly Scenario[] = [
           ["quiet", ' variant="quiet"'],
           ["flush", " flush"],
         ] as const;
-        await driver.mount(`${kinds.map(([kind, attributes]) => `<p><ocelle-button id="${kind}-busy"${attributes} busy>Save</ocelle-button> <ocelle-button id="${kind}"${attributes}>Save</ocelle-button></p>`).join("")}<p id="away">Away</p>`);
+        await driver.mount(`<div class="ground">${kinds.map(([kind, attributes]) => `<p><ocelle-button id="${kind}-busy"${attributes} busy>Save</ocelle-button> <ocelle-button id="${kind}"${attributes}>Save</ocelle-button></p>`).join("")}<p id="away">Away</p></div>`);
+        await driver.rules(".ground { background-color: var(--ocelle-color-canvas); color: var(--ocelle-color-ink); padding: 8px; }");
         await driver.theme(theme);
         await driver.hover("away");
         const look = async (id: string): Promise<unknown> => ({ fill: await driver.computed(id, "background-color", control), border: await driver.computed(id, "border-top-color", control), ink: await driver.computed(id, "color", control) });
