@@ -514,7 +514,18 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
     our reading of its release notes, which is **unverified here** (no network access to Kitty Desktop's build).
   - **Risk for the operator** (plan § Risks): a Linux host with an older WebKitGTK shows no bubble (the guard above):
     nothing is painted inline and nothing throws. Its trigger keeps its name (FR-037), so nothing essential is lost.
-    Phase 4's review records the WebKitGTK version Kitty Desktop ships, from its build files, before approval.
+  - **Kitty Desktop's build files** (read by the orchestrator from MOES-Media/kitty-mission-ui at commit `c994c8e`,
+    2026-10-17): `apps/desktop/src-tauri/Cargo.toml` is a compile-only placeholder with no dependencies; its comment
+    says "Tauri and its system packages arrive with #20 (research R-02)", and `main.rs` reads "Kitty Desktop
+    placeholder: builds and exits. The Tauri host arrives with #20." The charter (`.kittify/charter/charter.md`) says
+    Kitty Desktop uses Tauri 2. Its phase-0 research (`kitty-specs/phase0-bootstrap-01M4V5KK/research.md`) says the
+    placeholder has no Tauri dependency, which avoids the webkit2gtk system packages until #20. CI runs on
+    ubuntu-24.04. No WebKitGTK version is pinned anywhere.
+  - **Outcome (T053; operator decision, 2026-11-15)**: **not yet determinable: Kitty Desktop has no webview until
+    kitty-mission-ui #20.** The floor stays Chromium 120 / WebKit 17 (FR-040). When #20 adds Tauri 2 on Linux (the
+    distro's webkit2gtk-4.1), it must choose a WebKitGTK that meets WebKit 17. Our reading is the 2.44 line or later,
+    still **unverified**. The elements README § Engines states the floor, so #20 meets it there. Phase 4 proceeds, and
+    T053 does not block its approval; T053 records this hand-off in `reviews/phase-4/notes.md`.
 
 ## R-11 Placing the bubble without a `style` attribute (FR-035, FR-047, SPEC-1-03, SPEC-1-08)
 

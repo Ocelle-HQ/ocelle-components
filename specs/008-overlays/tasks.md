@@ -438,7 +438,7 @@ the visual and axe gates (after #10).
 
 ### Record (FR-041)
 
-- [ ] T053 [US3] Record the WebKitGTK version Kitty Desktop ships, read from its build files, against WebKit 17 in research R-10 and `reviews/phase-4/notes.md`. If it is below WebKit 17, stop and ask the operator before the phase is approved (plan Risks).
+- [ ] T053 [US3] Record Kitty Desktop's WebKitGTK version against WebKit 17 (FR-041). Outcome, decided by the operator on 2026-11-15 (plan decision 26, spec § Operator decisions in Phase 4) and already in research R-10: **not yet determinable: Kitty Desktop has no webview until kitty-mission-ui #20** (at kitty-mission-ui `c994c8e` its Tauri crate is a compile-only placeholder with no dependencies, and no WebKitGTK version is pinned anywhere). The floor stays Chromium 120 / WebKit 17. Remaining work: write the hand-off in `reviews/phase-4/notes.md`: the outcome and the evidence above; that #20, when it adds Tauri 2 on Linux (the distro's webkit2gtk-4.1), must choose a WebKitGTK that meets WebKit 17 (by R-10's reading the 2.44 line or later, unverified); and that the elements README § Engines states that floor (T044, T049). T053 does not block Phase 4's approval.
 
 **Checkpoint**: a full `pnpm test` passes at HEAD (more than 30 minutes, Environment § Run time; log kept in `reviews/phase-4/`), then `tdd-check.sh 4` reports `pass`.
 

@@ -71,6 +71,17 @@ sources of the requirements below. `#450` and `#503` are spec-kitty/spec-kitty-d
   hidden there, laid out by the storybook's story layout stylesheet; no axe exception is added (FR-042, research
   R-16).
 
+**Operator decisions in Phase 4** (decided by the operator, 2026-11-15; evidence read from MOES-Media/kitty-mission-ui
+at commit `c994c8e`, 2026-10-17, research R-10):
+
+- Kitty Desktop's webview version (T053, FR-041): the floor stays Chromium 120 / WebKit 17 (FR-040). The WebKitGTK
+  version Kitty Desktop ships is not yet determinable: Kitty Desktop has no webview until kitty-mission-ui #20. Its
+  `apps/desktop/src-tauri` crate is a compile-only placeholder with no dependencies, so no Tauri and no webkit2gtk
+  package, and no WebKitGTK version is pinned anywhere. When #20 adds Tauri 2 on Linux (the distro's
+  webkit2gtk-4.1), it must choose a WebKitGTK that meets WebKit 17; by research R-10's reading that is the 2.44 line
+  or later, still unverified. The elements README § Engines states the floor. Phase 4 proceeds, and T053 does not
+  block its approval; T053 records this hand-off in `reviews/phase-4/notes.md`.
+
 ## Consumer need
 
 - **Why the elements exist (#16, spec-kitty-design#503).** "Spec Kitty has no overlay primitives, so consumers cannot
@@ -548,6 +559,8 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
   build targets, if any declare it) MUST follow.
 - **FR-041**: This feature's research MUST record Kitty Desktop's webview engines (WKWebView on macOS, WebKitGTK on
   Linux) against WebKit 17, and the plan MUST name any consumer platform below it as a risk for the operator.
+  Where a consumer has no webview yet, research records that the version is not yet determinable and which consumer
+  change must meet the floor (operator decision, 2026-11-15: Kitty Desktop, kitty-mission-ui #20).
 
 **Evidence (done when)**
 

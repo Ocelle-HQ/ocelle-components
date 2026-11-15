@@ -98,7 +98,7 @@ Token-only CSS with no new `token-only` allowance. No I/O. No ID reference acros
 ## Decisions the operator should see at the plan gate
 
 1. **Engine floor WebKit 17** (operator decision at specify). Risk: Linux WebKitGTK versions are unverified (R-10).
-   Phase 4's review records Kitty Desktop's WebKitGTK version.
+   Kitty Desktop's WebKitGTK version is not yet determinable (operator decision, 2026-11-15, decision 26).
 2. **Token values** (R-09): `drawer-inline` = `shell-sidebar-width` (20rem), `tooltip-delay` = 500 ms,
    `tooltip-max-inline` = 18rem, and the dialog's default inline size `measure-reading`. The last three are library
    choices.
@@ -223,6 +223,13 @@ Settled in Phase 3 by the operator (decided by the operator, 2026-11-15; evidenc
     and resolves `stryker.elements.config.json`, and any related change to the pinned test
     `gates/test/vitest-config.test.ts`, to `main`'s version. What this mission found about the CI limits is recorded
     for op 015 in R-15 ("Notes for op 015"), not as 008 tasks.
+26. **Kitty Desktop's webview: not yet determinable** (R-10, FR-041, T053; operator decision, 2026-11-15): the floor
+    stays Chromium 120 / WebKit 17. At kitty-mission-ui `c994c8e` (2026-10-17) Kitty Desktop's Tauri crate is a
+    compile-only placeholder with no dependencies, and no WebKitGTK version is pinned anywhere, so Kitty Desktop has
+    no webview until kitty-mission-ui #20. When #20 adds Tauri 2 on Linux (the distro's webkit2gtk-4.1), it must
+    choose a WebKitGTK that meets WebKit 17 (by R-10's reading the 2.44 line or later, unverified); the elements
+    README § Engines states the floor. Phase 4 proceeds, and T053 does not block its approval: it records the
+    outcome and this hand-off in `reviews/phase-4/notes.md`.
 
 ## Risks
 
@@ -232,7 +239,8 @@ Settled in Phase 3 by the operator (decided by the operator, 2026-11-15; evidenc
   `keydown` order. Only Chromium is measured, as for every element.
 - **Linux webview below WebKit 17**: no bubble shows. The static sheet hides the bubble by default and shows it only
   through `:popover-open`, and the element does nothing when `showPopover` is absent, so nothing is painted inline and
-  nothing throws (R-10). Names are unaffected.
+  nothing throws (R-10). Names are unaffected. Kitty Desktop has no webview yet: its version is not yet determinable until
+  kitty-mission-ui #20, which must choose a WebKitGTK that meets WebKit 17 (decision 26).
 - **Manifest inheritance** (R-01): measured in T013: inherited properties are missing while the base is outside the
   filter. Taken (decision 22): the filter reads `src/overlay.ts` too and the generator drops that module from the
   published manifest; the pinned `test/node/manifest.test.ts` rule is replaced with a stricter one, red first.
@@ -335,7 +343,7 @@ gates/test/vitest-config.test.ts   # the pinned elements Stryker config: + dryRu
    entry, README section with its fragments, and stories.
 4. **US3 tooltip (P3)**: `ocelle-tooltip.ts`, the `tooltip-delay` and `tooltip-max-inline` tokens, its entry point and
    entry test, README § Engines to WebKit 17 with the `readme.test.ts` floor line changed red first, stories, and the
-   record of Kitty Desktop's webview version.
+   record of Kitty Desktop's webview version (not yet determinable until kitty-mission-ui #20, decision 26).
 5. **Polish**: the R-16 recheck closed out, the quickstart walk-through, the CHANGELOGs.
 
 ## Complexity Tracking
