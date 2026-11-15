@@ -23,3 +23,11 @@ The commit guard refused the T002 scratch commit on `claude/015-measure-elements
 record). Operator's choice: the scratch commit also carries copies of `ops/015-mutation-shard-timeout/op.md` and
 `triage/015-mutation-shard-timeout.md` from the op branch, so the guard finds the approved link. The branch is
 throwaway and its PR is closed unmerged.
+
+## T002 permission refusal (2026-11-15)
+
+Claude Code's permission classifier refused the implementer's T002 command in this session. Operator's choice: the
+operator's orchestrator session (session_01NUfZSc26YwQLeow31d6R6X) builds the scratch branch on 008's head
+`78fe475` itself (the one-line `ci.yml:89` change), pushes it, opens the draft PR, relays the T003 figures and
+closes the PR unmerged. The local scratch branch in this session is dropped. The Op-gate choice that this session
+pushes the scratch branch is superseded.
