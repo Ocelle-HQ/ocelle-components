@@ -30,7 +30,8 @@ import { describe, expect, it } from "vitest";
 // item of FR-034: the own measured size, the grammar and its resolution, the token default and its fallback, exclusive
 // bounds, the forcing boolean, no `container-type`, tier-independent intrinsic sizes, the re-measure triggers, the
 // unseen changes and `remeasure()`, the cost of one pass, the loop message and setting the attributes from a task),
-// its entry point and its CHANGELOG entries.
+// its entry point and its CHANGELOG entries. Since 009 phase 5 (T062): the four frames as the tested screen sizes, WebKit
+// not measured for the layout elements' focus behaviour, the print note and the states that do not apply.
 /** A file's text, relative to the package; empty while it does not exist, so each assertion reports what is missing. */
 function read(file: string): string {
   const url = new URL(`../../${file}`, import.meta.url);
@@ -226,6 +227,18 @@ const fragments = [
   "One pass renders every pane in the measurement grid twice and restores it: about 10 ms (7 to 19 ms) with a 1000-row list. Attribute changes, such as a selection's `class` or `aria-selected`, run none; light-DOM swaps and text changes run at most one per frame",
   "Content a consumer mutates inside its own `ResizeObserver` callback can still make the browser report \"ResizeObserver loop completed with undelivered notifications.\" through layout alone, when the shown layout grows a shrink-to-fit host; the element does not cause it and cannot prevent it",
   "Hosts set `narrow`, `detail-open` and the `*-below` thresholds from a task, not from a `ResizeObserver` callback",
+  // since 009 phase 5 (T062, FR-034): the frames of User Scenarios as the tested screen sizes
+  "The layout elements are tested in four frames that stand for screens, each a block box of a stated inline size on a page whose viewport is wider than the frame, so the element's own measurement is tested, not the viewport's; the figures assume a 16 px root font size",
+  "Frame W, 876 px: the 1280 px window beside a context sidebar, 1280 px less the rail (52 px), the sidebar (320 px) and two gutters (32 px)",
+  "Frame R, 1196 px: the 1280 px window with the rail only",
+  "Frame N, 636 px: the narrow tier, at a 720 px viewport (`--ocelle-shell-collapse-sidebar`, 45rem), where the sidebar has collapsed",
+  "Frame S, 288 px: the 320 px reflow width",
+  // since 009 phase 5 (T062, FR-034; spec User Scenarios, Engines): WebKit and the layout elements' focus behaviour
+  "WebKit is not measured for the layout elements either: the tab stop of `ocelle-scroller` and `ocelle-workflow-board` while they overflow, their arrow keys, their focus handover when overflow ends and `ocelle-list-detail`'s focus moves are untested there",
+  // since 009 phase 5 (T062; spec Edge Cases, Print)
+  "These elements are screen layouts. In print, a board shows its lanes as the browser lays them out, and content off-screen in a scroller is not printed",
+  // since 009 phase 5 (T062; research.md R-15, Not applicable)
+  "Loading, error and disabled states do not apply to `ocelle-scroller`, `ocelle-workflow-board`, `ocelle-workflow-lane` and `ocelle-list-detail`: they are layout elements, with no such state and no story for one",
   // two copies on a page (FR-006, Edge Cases)
   "Two copies of the package on one page, two versions or the browser build beside a bundle of the module build, cannot both define an element: the first definition wins and the second import throws nothing",
 ];
