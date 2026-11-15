@@ -411,6 +411,91 @@
       ]
     },
     {
+      "path": "src/ocelle-personal-rail.ts",
+      "kind": "javascript-module",
+      "exports": [
+        {
+          "name": "OcellePersonalRail",
+          "kind": "js",
+          "declaration": {
+            "name": "OcellePersonalRail",
+            "module": "src/ocelle-personal-rail.ts"
+          }
+        }
+      ],
+      "declarations": [
+        {
+          "tagName": "ocelle-personal-rail",
+          "superclass": {
+            "package": "lit",
+            "name": "LitElement"
+          },
+          "slots": [
+            {
+              "name": "",
+              "description": "The primary items, icon links for example, from the rail's start."
+            },
+            {
+              "name": "bottom",
+              "description": "The bottom group, an account link for example, kept at the rail's end."
+            }
+          ],
+          "name": "OcellePersonalRail",
+          "members": [
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "privacy": "public",
+              "name": "label",
+              "kind": "field",
+              "description": "The name of the navigation landmark, trimmed, used while the host has no `aria-label`; empty or whitespace-only\ncounts as none, and the landmark is then unnamed. Not reflected.",
+              "default": "undefined",
+              "attribute": "label"
+            },
+            {
+              "type": {
+                "text": "\"vertical\" | \"horizontal\" | undefined"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "orientation",
+              "kind": "field",
+              "description": "The layout direction, set by the page or a shell: `vertical` (a column) or `horizontal` (a row that wraps). Not\nset, or any other value, is vertical; the element never changes it itself. Reflected.",
+              "default": "undefined",
+              "attribute": "orientation"
+            }
+          ],
+          "kind": "class",
+          "events": [],
+          "description": "A personal rail: a navigation landmark holding the page's primary items and a bottom group, on the chrome.",
+          "customElement": true,
+          "cssProperties": [],
+          "cssParts": [],
+          "attributes": [
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "name": "label",
+              "fieldName": "label",
+              "description": "The name of the navigation landmark, trimmed, used while the host has no `aria-label`; empty or whitespace-only\ncounts as none, and the landmark is then unnamed. Not reflected.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "\"vertical\" | \"horizontal\" | undefined"
+              },
+              "name": "orientation",
+              "fieldName": "orientation",
+              "description": "The layout direction, set by the page or a shell: `vertical` (a column) or `horizontal` (a row that wraps). Not\nset, or any other value, is vertical; the element never changes it itself. Reflected.",
+              "default": "undefined"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "path": "src/ocelle-section-header.ts",
       "kind": "javascript-module",
       "exports": [

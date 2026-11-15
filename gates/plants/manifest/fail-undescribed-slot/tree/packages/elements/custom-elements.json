@@ -451,6 +451,91 @@
           "attributes": [
             {
               "default": "undefined",
+              "description": "The name of the navigation landmark, trimmed, used while the host has no `aria-label`; empty or whitespace-only\ncounts as none, and the landmark is then unnamed. Not reflected.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The layout direction, set by the page or a shell: `vertical` (a column) or `horizontal` (a row that wraps). Not\nset, or any other value, is vertical; the element never changes it itself. Reflected.",
+              "fieldName": "orientation",
+              "name": "orientation",
+              "type": {
+                "text": "\"vertical\" | \"horizontal\" | undefined"
+              }
+            }
+          ],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A personal rail: a navigation landmark holding the page's primary items and a bottom group, on the chrome.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "label",
+              "default": "undefined",
+              "description": "The name of the navigation landmark, trimmed, used while the host has no `aria-label`; empty or whitespace-only\ncounts as none, and the landmark is then unnamed. Not reflected.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "orientation",
+              "default": "undefined",
+              "description": "The layout direction, set by the page or a shell: `vertical` (a column) or `horizontal` (a row that wraps). Not\nset, or any other value, is vertical; the element never changes it itself. Reflected.",
+              "kind": "field",
+              "name": "orientation",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"vertical\" | \"horizontal\" | undefined"
+              }
+            }
+          ],
+          "name": "OcellePersonalRail",
+          "slots": [
+            {
+              "description": "The primary items, icon links for example, from the rail's start.",
+              "name": ""
+            },
+            {
+              "description": "The bottom group, an account link for example, kept at the rail's end.",
+              "name": "bottom"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-personal-rail"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-personal-rail.ts",
+            "name": "OcellePersonalRail"
+          },
+          "kind": "js",
+          "name": "OcellePersonalRail"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-personal-rail.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
               "description": "The heading's size: `regular` or `compact`. Not set, or any other value, draws regular, or compact when the\nheader is in a compact card's `header` slot; a valid value wins over the card. No effect in the eyebrow variant.\nReflected.",
               "fieldName": "size",
               "name": "size",
