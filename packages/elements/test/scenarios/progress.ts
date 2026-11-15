@@ -167,16 +167,16 @@ export const progressScenarios: readonly Scenario[] = [
     expected: { bars: [exposed("Tasks done", 7, 12)], drawn: true, references: [], host: [] },
   },
   {
-    name: "US3-2: value changed to 9 exposes 9, and the fill is 75% of the track at once, with no animation or transition on the bar (FR-030, PLAN-FRESH-3-003 (b))",
+    name: "US3-2: value changed to 9 exposes 9, and the fill is 75% of the track at once, with no animation or transition on the bar and no event dispatched from the bar or its shadow root during the change (FR-030, PLAN-FRESH-3-003 (b))",
     run: async (driver) => {
       await mount(driver, '<div class="w400"><ocelle-progress id="p" value="7" max="12" label="Tasks done"></ocelle-progress></div>');
       const before = { bars: await bars(driver, "p"), fill: await mark(driver, "p") };
-      await driver.setProperty("p", "value", 9);
-      return { before, after: { bars: await bars(driver, "p"), fill: await mark(driver, "p"), animations: await motion(driver, "p") } };
+      const events = await driver.events("p", () => driver.setProperty("p", "value", 9));
+      return { before, after: { bars: await bars(driver, "p"), fill: await mark(driver, "p"), animations: await motion(driver, "p"), events } };
     },
     expected: {
       before: { bars: [exposed("Tasks done", 7, 12)], fill: filled(0.58) },
-      after: { bars: [exposed("Tasks done", 9, 12)], fill: filled(0.75), animations: [] },
+      after: { bars: [exposed("Tasks done", 9, 12)], fill: filled(0.75), animations: [], events: [] },
     },
   },
   {
@@ -584,7 +584,7 @@ export const progressScenarios: readonly Scenario[] = [
     expected: { widths: [320], running: true },
   },
   {
-    name: "compact long label at 320 px: the track keeps at least --ocelle-measure-cell, the label wraps between words onto more than one line, and the page does not scroll sideways (edge case, analysis G5)",
+    name: "compact long label at 320 px: the track keeps at least --ocelle-measure-cell and stays beside the label (their block ranges overlap), the label wraps between words onto more than one line, and the page does not scroll sideways (edge case, analysis G5)",
     run: async (driver) => {
       await driver.viewport(320, 800);
       await mount(
@@ -599,12 +599,13 @@ export const progressScenarios: readonly Scenario[] = [
       return {
         cell: cell.width > 0,
         track: track.width >= cell.width - 0.5,
+        beside: overlaps(label, track).block,
         wraps: shortLabel.height > 0 && label.height > shortLabel.height * 1.5,
         betweenWords: wrap,
         scrollWidth: await driver.scrollWidth(),
       };
     },
-    expected: { cell: true, track: true, wraps: true, betweenWords: { "overflow-wrap": "normal", "word-break": "normal" }, scrollWidth: 320 },
+    expected: { cell: true, track: true, beside: true, wraps: true, betweenWords: { "overflow-wrap": "normal", "word-break": "normal" }, scrollWidth: 320 },
   },
   {
     name: "no tab stop: from a button before the bar one Tab focuses the button after it, the bar exposed with its name between them (FR-039)",
@@ -658,5 +659,117 @@ export const progressScenarios: readonly Scenario[] = [
       };
     },
     expected: { display: "block", width: inlineBar, line: { block: true, after: true }, drawn: inlineBar },
+  },
+  // Added after green for the mutation run (gate:mutation, phase 3): behaviours of FR-031, FR-032, FR-033 and FR-035
+  // that no red body pinned.
+  {
+    name: "value and max attributes give number properties: value=7 and max=12 read 7 and 12, an empty value and a max that is not a number read undefined (FR-032; contracts/elements.md `number | undefined`)",
+    run: async (driver) => {
+      await mount(driver, '<ocelle-progress id="p" value="7" max="12" label="Tasks done"></ocelle-progress><ocelle-progress id="e" value="" max="abc" label="Loading"></ocelle-progress>');
+      return { value: await driver.property("p", "value"), max: await driver.property("p", "max"), empty: await driver.property("e", "value"), notNumber: await driver.property("e", "max"), bars: await bars(driver, "p") };
+    },
+    expected: { value: 7, max: 12, empty: undefined, notNumber: undefined, bars: [exposed("Tasks done", 7, 12)] },
+  },
+  {
+    name: "an empty label and an empty value text, or both set to null, show no label row parts and give no name, and without show-label a label and value text are not shown, the bar named by its label (FR-030, FR-031, FR-035)",
+    run: async (driver) => {
+      await mount(
+        driver,
+        '<div class="w400"><ocelle-progress id="e" value="7" max="12" label="" value-text="" show-label></ocelle-progress><ocelle-progress id="h" value="7" max="12" label="Tasks done" value-text="7 of 12"></ocelle-progress><ocelle-progress id="s" value="7" max="12" label="Tasks done" value-text="7 of 12" show-label></ocelle-progress><ocelle-progress id="n" value="7" max="12" label="Tasks done" value-text="7 of 12" show-label></ocelle-progress></div>',
+      );
+      await driver.setProperty("n", "label", null);
+      await driver.setProperty("n", "valueText", null);
+      const parts = async (id: string): Promise<unknown> => ({ label: await driver.textOf(id, '[part="label"]'), valueText: await driver.textOf(id, '[part="value-text"]') });
+      return {
+        empty: { parts: await parts("e"), bars: await bars(driver, "e") },
+        nulled: { parts: await parts("n"), bars: await bars(driver, "n") },
+        hidden: { parts: await parts("h"), bars: await bars(driver, "h") },
+        shown: await parts("s"),
+      };
+    },
+    expected: {
+      empty: { parts: { label: null, valueText: null }, bars: [exposed("", 7, 12)] },
+      nulled: { parts: { label: null, valueText: null }, bars: [exposed("", 7, 12)] },
+      hidden: { parts: { label: null, valueText: null }, bars: [exposed("Tasks done", 7, 12)] },
+      shown: { label: "Tasks done", valueText: "7 of 12" },
+    },
+  },
+  {
+    name: "a bar determinate for two frames and then indeterminate again, after the sweep has ended, starts a new episode: its mark sweeps from its own start (FR-033, PLAN-FRESH-3-004 (a))",
+    run: async (driver) => {
+      await mount(driver, '<div class="w400"><ocelle-progress id="i" label="Loading"></ocelle-progress></div>');
+      await driver.frames(2);
+      const started = (await sweep(driver, "i")) !== undefined;
+      await pause(pastWindow);
+      const ended = await motion(driver, "i");
+      await driver.setAttribute("i", "value", "50");
+      await driver.frames(2);
+      await driver.setAttribute("i", "value", null);
+      await driver.frames(1);
+      const running = await sweep(driver, "i");
+      return { started, ended, again: { running: running !== undefined, fresh: running?.currentTime !== null && running?.currentTime !== undefined && running.currentTime < loop } };
+    },
+    expected: { started: true, ended: [], again: { running: true, fresh: true } },
+  },
+  {
+    name: "re-shown within the episode: a bar hidden by its parent and moved, while hidden, into another hidden parent stays in the episode, and shown again after the window it runs nothing and shows the still mark (FR-033, R-06 membership)",
+    run: async (driver) => {
+      await mount(driver, '<div class="w400" id="a"><ocelle-progress id="m" label="Loading"></ocelle-progress></div><div class="w400" id="b" hidden></div>');
+      await driver.frames(2);
+      const started = (await sweep(driver, "m")) !== undefined;
+      await driver.setAttribute("a", "hidden", "");
+      await driver.move("m", "b");
+      await driver.frames(2);
+      await pause(pastWindow);
+      await driver.setAttribute("b", "hidden", null);
+      await driver.frames(2);
+      return { started, shown: { animations: await motion(driver, "m"), mark: await mark(driver, "m") } };
+    },
+    expected: { started: true, shown: { animations: [], mark: still } },
+  },
+  {
+    name: "a swap in one task keeps the episode open: a third bar inserted a second later continues the sweep at the episode's time (FR-033, PLAN-FRESH-2-005 (a))",
+    run: async (driver) => {
+      await mount(driver, '<div class="w400"><ocelle-progress id="first" label="Loading"></ocelle-progress><span id="placeholder"></span></div>');
+      const shown = Date.now();
+      await driver.frames(2);
+      await driver.replace("first", '<ocelle-progress id="second" label="Loading"></ocelle-progress>');
+      await driver.frames(3);
+      await pause(1000 - (Date.now() - shown));
+      await driver.replace("placeholder", '<ocelle-progress id="third" label="Loading"></ocelle-progress>');
+      await driver.frames(1);
+      const third = await sweep(driver, "third");
+      return { running: third !== undefined, continued: (third?.currentTime ?? 0) >= 800 };
+    },
+    expected: { running: true, continued: true },
+  },
+  {
+    name: "a determinate bar moved does not keep the episode open: after the only indeterminate bar is removed, a new indeterminate bar two frames later sweeps from its own start (FR-033, R-06 membership)",
+    run: async (driver) => {
+      await mount(driver, '<div class="w400" id="a"><ocelle-progress id="i" label="Loading"></ocelle-progress><ocelle-progress id="d" value="40" label="Copying"></ocelle-progress><span id="placeholder"></span></div><div class="w400" id="b"></div>');
+      await driver.frames(2);
+      const started = (await sweep(driver, "i")) !== undefined;
+      await pause(pastWindow);
+      await driver.move("d", "b");
+      await driver.remove("i");
+      await driver.frames(2);
+      await driver.replace("placeholder", '<ocelle-progress id="n" label="Loading"></ocelle-progress>');
+      await driver.frames(1);
+      const running = await sweep(driver, "n");
+      return { started, moved: await bars(driver, "d"), fresh: running !== undefined && running.currentTime !== null && running.currentTime < loop };
+    },
+    expected: { started: true, moved: [exposed("Copying", 40, 100)], fresh: true },
+  },
+  {
+    name: "after the window, while the episode lasts, a bar inserted shows the still mark at once: at the first read after its render nothing runs on it (FR-033, PLAN-FRESH-2-005 (a))",
+    run: async (driver) => {
+      await mount(driver, '<div class="w400"><ocelle-progress id="first" label="Loading"></ocelle-progress><span id="placeholder"></span></div>');
+      await driver.frames(2);
+      const started = (await sweep(driver, "first")) !== undefined;
+      await pause(pastWindow);
+      await driver.replace("placeholder", '<ocelle-progress id="late" label="Loading"></ocelle-progress>');
+      return { started, late: { animations: await motion(driver, "late"), mark: await mark(driver, "late") } };
+    },
+    expected: { started: true, late: { animations: [], mark: still } },
   },
 ];

@@ -14,7 +14,9 @@
 // unit `lh` passes only as `1lh`, as the whole value or, inside `calc()`, once per expression as an operand of `+` or
 // `-` in an expression that references an `--ocelle-*` token, a group that holds only `1lh` counting as that `1lh`
 // (OP4-01); and (R-03, R-09) `aspect-ratio` takes only the bare number 1 as its whole value. Since 013 (research.md R-10)
-// `grid-template-columns` takes the tracks `fit-content(<percentage>)` and `minmax(0, <flex>)`, nothing else nested.
+// `grid-template-columns` takes the tracks `fit-content(<percentage>)` and `minmax(0, <flex>)`, nothing else nested;
+// and since 013 phase 3 (R-10) `transform` takes `translateX(<percentage>)`, in a rule or in `@keyframes`, and
+// `animation-iteration-count` a bare positive integer, one per comma-separated item.
 import stylelint from "stylelint";
 import type { Rule } from "stylelint";
 import valueParser from "postcss-value-parser";
@@ -148,8 +150,21 @@ function gridTrack(node: valueParser.FunctionNode): boolean {
 }
 
 /**
+ * Whether a function is the translate 013's sweep allowance admits in `transform` (research.md R-10, PLAN-CORRECTNESS-1-001
+ * (a)): `translateX(<percentage>)`, one percentage argument, nothing nested; any other translate stays raw.
+ */
+function percentageTranslate(node: valueParser.FunctionNode): boolean {
+  const args = node.nodes.filter((child) => child.type !== "space" && child.type !== "comment");
+  const [only] = args;
+  if (node.value.toLowerCase() !== "translatex" || args.length !== 1 || only?.type !== "word") return false;
+  const number = valueParser.unit(only.value);
+  return number !== false && number.unit === "%";
+}
+
+/**
  * The raw parts of a function: a var() fallback and calc() operands are checked; in `grid-template-columns` (outside
- * calc()) the two grid tracks of gridTrack() pass (013 R-10); any other function is raw. `line`
+ * calc()) the two grid tracks of gridTrack() pass, and in `transform` (outside calc()) `translateX(<percentage>)` (013
+ * R-10); any other function is raw. `line`
  * is the `1lh` the enclosing calc() expression admits; an outermost calc() works out its own.
  */
 function functionRaw(node: valueParser.FunctionNode, property: string, inCalc: boolean, line: Node | undefined): string[] {
@@ -160,6 +175,7 @@ function functionRaw(node: valueParser.FunctionNode, property: string, inCalc: b
   }
   if (name === "calc" || (name === "" && inCalc)) return classify(node.nodes, property, true, inCalc ? line : admittedLine(node));
   if (property === "grid-template-columns" && !inCalc && gridTrack(node)) return [];
+  if (property === "transform" && !inCalc && percentageTranslate(node)) return [];
   return [valueParser.stringify(node)];
 }
 
@@ -246,12 +262,39 @@ function aspectRatioRaw(nodes: readonly Node[]): string[] {
   });
 }
 
+/** A positive integer as written: digits only, no leading zero, no sign, no fraction or exponent. */
+const positiveInteger = /^[1-9]\d*$/;
+
+/**
+ * The raw values of an `animation-iteration-count` value (013 research.md R-10, PLAN-A11Y-SECURITY-1-001 (a)): in each
+ * comma-separated item, its one unitless number passes when it is a bare positive integer; an item with more than one
+ * unitless number, a fraction, a sign or an exponent is raw, and every other part is classified as for any property.
+ */
+function iterationCountRaw(nodes: readonly Node[]): string[] {
+  const items: Node[][] = [[]];
+  for (const node of nodes) {
+    if (node.type === "div" && node.value === ",") items.push([]);
+    else items[items.length - 1]?.push(node);
+  }
+  return items.flatMap((item) => {
+    const counts = item.filter((node) => {
+      const number = valueParser.unit(node.value);
+      return number !== false && number.unit === "";
+    });
+    const [count] = counts;
+    const allowed = counts.length === 1 && count !== undefined && positiveInteger.test(count.value) ? count : undefined;
+    // Stryker disable next-line StringLiteral: equivalent, classify() reads the property only for font values and unitless numbers, and no property name but the unitless ones and the fonts changes either
+    return item.flatMap((node) => (node === allowed ? [] : classify([node], "animation-iteration-count", false)));
+  });
+}
+
 /** The raw values (FR-024) in one declaration's value, in source order; empty when the value is token-only. */
 export function rawValues(property: string, value: string, options: RawOptions = {}): string[] {
   const name = property.toLowerCase();
   const nodes = valueParser(value).nodes;
   if (name === "scale") return scaleRaw(nodes);
   if (name === "aspect-ratio") return aspectRatioRaw(nodes);
+  if (name === "animation-iteration-count") return iterationCountRaw(nodes);
   if (options.lineHeight === "token" && name === "line-height") {
     const [only] = nodes;
     return nodes.length === 1 && only !== undefined && tokenLineHeight(only) ? [] : [value.trim()];

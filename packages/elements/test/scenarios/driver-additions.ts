@@ -17,8 +17,9 @@
 // takes an element out of the page; `frames` waits that many animation frames; `replace` swaps an element for parsed
 // markup in one mutation; `changeAttributes` sets and removes attributes in one task, so an observer sees them in one
 // delivery; `textOf` reads a shadow element's text; `rendered` tells shown light-DOM text from text that is not
-// rendered (an unslotted child of a shadow host). `reducedMotion` and the AX value properties have their own tests (test/commands.test.ts),
-// and the loading-episode reset of `mount` is a progress body (scenarios/progress.ts), since it needs the element.
+// rendered (an unslotted child of a shadow host); `events` (review round 1) lists the events script dispatches on an
+// element and in its shadow root during a change, and not those on another element. `reducedMotion` and the AX value
+// properties have their own tests (test/commands.test.ts), and the loading-episode reset of `mount` is a progress body (scenarios/progress.ts), since it needs the element.
 import type { Scenario } from "./icon.ts";
 
 /**
@@ -34,7 +35,10 @@ import type { Scenario } from "./icon.ts";
  *   by the shadow root (the CSSOM, which the fixture's CSP does not govern);
  * - `ocelle-test-frames` (phase 3): counts its own animation frames in `data-count` while connected;
  * - `ocelle-test-attributes` (phase 3): records in `data-deliveries` the number of attribute records of each
- *   delivery of its `MutationObserver`, attribute `data-x` only.
+ *   delivery of its `MutationObserver`, attribute `data-x` only;
+ * - `ocelle-test-emitter` (phase 3 review round 1): an open shadow root holding `<span>`; each change of its
+ *   `data-ping` attribute dispatches `ocelle-test-ping` (a composed CustomEvent) on the host, then `inner-ping` on the
+ *   `<span>`.
  */
 export function defineDriverHelpers(): void {
   if (customElements.get("ocelle-test-deferred") !== undefined) return;
@@ -141,6 +145,22 @@ export function defineDriverHelpers(): void {
           requestAnimationFrame(step);
         };
         requestAnimationFrame(step);
+      }
+    },
+  );
+  customElements.define(
+    "ocelle-test-emitter",
+    class extends HTMLElement {
+      static readonly observedAttributes = ["data-ping"];
+
+      constructor() {
+        super();
+        this.attachShadow({ mode: "open" }).innerHTML = "<span>Inner</span>";
+      }
+
+      attributeChangedCallback(): void {
+        this.dispatchEvent(new CustomEvent("ocelle-test-ping", { bubbles: true, composed: true }));
+        this.shadowRoot?.querySelector("span")?.dispatchEvent(new Event("inner-ping", { bubbles: true }));
       }
     },
   );
@@ -353,5 +373,27 @@ export const driverAdditionScenarios: readonly Scenario[] = [
       };
     },
     expected: { term: "Term", missing: null, slotted: { innerText: "Shown", rects: 1 }, unslotted: { innerText: "", rects: 0 } },
+  },
+  {
+    name: "property: a property's value is read as the page holds it, a number as a number and an unset one as undefined",
+    run: async (driver) => {
+      await driver.mount('<input id="field" type="number" value="7">');
+      return { valueAsNumber: await driver.property("field", "valueAsNumber"), value: await driver.property("field", "value"), missing: await driver.property("field", "notAProperty") };
+    },
+    expected: { valueAsNumber: 7, value: "7", missing: undefined },
+  },
+  {
+    name: "events: the events script dispatches on an element and in its shadow root while a change runs are listed in order, not those on another element, and a change that dispatches none on it gives an empty list",
+    run: async (driver) => {
+      await driver.mount('<ocelle-test-emitter id="watched"></ocelle-test-emitter><ocelle-test-emitter id="other"></ocelle-test-emitter>');
+      const during = await driver.events("watched", async () => {
+        await driver.setAttribute("watched", "data-ping", "1");
+        await driver.setAttribute("other", "data-ping", "1");
+      });
+      const quiet = await driver.events("watched", () => driver.setAttribute("other", "data-ping", "2"));
+      const other = await driver.events("other", () => driver.setAttribute("other", "data-ping", "3"));
+      return { during, quiet, other };
+    },
+    expected: { during: ["ocelle-test-ping", "inner-ping"], quiet: [], other: ["ocelle-test-ping", "inner-ping"] },
   },
 ];

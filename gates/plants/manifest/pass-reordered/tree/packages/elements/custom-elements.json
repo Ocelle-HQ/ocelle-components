@@ -468,6 +468,200 @@
           ]
         }
       ]
+    },
+    {
+      "path": "src/ocelle-progress.ts",
+      "kind": "javascript-module",
+      "exports": [
+        {
+          "name": "OcelleProgress",
+          "kind": "js",
+          "declaration": {
+            "name": "OcelleProgress",
+            "module": "src/ocelle-progress.ts"
+          }
+        }
+      ],
+      "declarations": [
+        {
+          "tagName": "ocelle-progress",
+          "superclass": {
+            "package": "lit",
+            "name": "LitElement"
+          },
+          "slots": [],
+          "name": "OcelleProgress",
+          "members": [
+            {
+              "type": {
+                "text": "number | undefined"
+              },
+              "privacy": "public",
+              "name": "value",
+              "kind": "field",
+              "description": "The current amount, from 0 to `max`: below 0 counts as 0, above `max` as `max`. Unset, `null`, an empty or\nwhitespace-only attribute, or a value that is not a finite number makes the bar indeterminate. Not reflected.",
+              "default": "undefined",
+              "attribute": "value"
+            },
+            {
+              "type": {
+                "text": "number | undefined"
+              },
+              "privacy": "public",
+              "name": "max",
+              "kind": "field",
+              "description": "The maximum. Unset, not a finite number, or 0 or less counts as 100. Not reflected.",
+              "default": "undefined",
+              "attribute": "max"
+            },
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "privacy": "public",
+              "name": "valueText",
+              "kind": "field",
+              "description": "Words for the current value, for example \"7 of 12\", exposed (and shown with `show-label`) while the bar is\ndeterminate, as given. Unset lets the platform announce the value. Not reflected.",
+              "default": "undefined",
+              "attribute": "value-text"
+            },
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "privacy": "public",
+              "name": "label",
+              "kind": "field",
+              "description": "The accessible name, as text (no rich label). A bar needs a name: set `label`, or a host `aria-label`, which\noverrides it. To name a bar after a nearby heading, pass the heading's text. Not reflected.",
+              "default": "undefined",
+              "attribute": "label"
+            },
+            {
+              "type": {
+                "text": "boolean | undefined"
+              },
+              "privacy": "public",
+              "name": "showLabel",
+              "kind": "field",
+              "description": "Shows the label as text above the bar (beside it in compact), and the value text while determinate. Unset hides\nboth; the name and value are exposed either way.",
+              "default": "undefined",
+              "attribute": "show-label"
+            },
+            {
+              "type": {
+                "text": "\"compact\" | undefined"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "size",
+              "kind": "field",
+              "description": "`compact` is a thin bar with the label beside it. Unset, or any other value, gives the default size. Reflected.",
+              "default": "undefined",
+              "attribute": "size"
+            },
+            {
+              "type": {
+                "text": "\"tinted\" | undefined"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "ground",
+              "kind": "field",
+              "description": "`tinted` draws the track's boundary in the accent-strong colour, for a bar on an inset, accent-low, hover or state\nground. Unset is for the canvas, sheet, pane, panel, inspector and rail grounds. Reflected.",
+              "default": "undefined",
+              "attribute": "ground"
+            }
+          ],
+          "kind": "class",
+          "events": [],
+          "description": "A progress bar: determinate with a `value`, indeterminate without one. Name it with `label`.",
+          "customElement": true,
+          "cssProperties": [],
+          "cssParts": [
+            {
+              "name": "track",
+              "description": "The track, the full inline size of the bar."
+            },
+            {
+              "name": "fill",
+              "description": "The filled part: the determinate extent from the inline start, or the indeterminate mark."
+            },
+            {
+              "name": "label",
+              "description": "The visible label, with `show-label`."
+            },
+            {
+              "name": "value-text",
+              "description": "The visible value text, with `show-label` while determinate, at the inline end of the label row."
+            }
+          ],
+          "attributes": [
+            {
+              "type": {
+                "text": "number | undefined"
+              },
+              "name": "value",
+              "fieldName": "value",
+              "description": "The current amount, from 0 to `max`: below 0 counts as 0, above `max` as `max`. Unset, `null`, an empty or\nwhitespace-only attribute, or a value that is not a finite number makes the bar indeterminate. Not reflected.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "number | undefined"
+              },
+              "name": "max",
+              "fieldName": "max",
+              "description": "The maximum. Unset, not a finite number, or 0 or less counts as 100. Not reflected.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "name": "value-text",
+              "fieldName": "valueText",
+              "description": "Words for the current value, for example \"7 of 12\", exposed (and shown with `show-label`) while the bar is\ndeterminate, as given. Unset lets the platform announce the value. Not reflected.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "name": "label",
+              "fieldName": "label",
+              "description": "The accessible name, as text (no rich label). A bar needs a name: set `label`, or a host `aria-label`, which\noverrides it. To name a bar after a nearby heading, pass the heading's text. Not reflected.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "boolean | undefined"
+              },
+              "name": "show-label",
+              "fieldName": "showLabel",
+              "description": "Shows the label as text above the bar (beside it in compact), and the value text while determinate. Unset hides\nboth; the name and value are exposed either way.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "\"compact\" | undefined"
+              },
+              "name": "size",
+              "fieldName": "size",
+              "description": "`compact` is a thin bar with the label beside it. Unset, or any other value, gives the default size. Reflected.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "\"tinted\" | undefined"
+              },
+              "name": "ground",
+              "fieldName": "ground",
+              "description": "`tinted` draws the track's boundary in the accent-strong colour, for a bar on an inset, accent-low, hover or state\nground. Unset is for the canvas, sheet, pane, panel, inspector and rail grounds. Reflected.",
+              "default": "undefined"
+            }
+          ]
+        }
+      ]
     }
   ]
 }

@@ -26,3 +26,26 @@ describe("ocelle-progress, in process (US3)", { timeout: 30_000 }, () => {
     expect(await run(driver)).toEqual(expected);
   });
 });
+
+describe("a bar changed out of the document, in process (013 R-06 membership)", { timeout: 30_000 }, () => {
+  it("a bar removed after its sweep and made indeterminate again while out of the document does not keep the episode open: a bar inserted two frames later sweeps from its own start", async () => {
+    await driver.mount('<div id="region"><ocelle-progress id="first" value="40" label="Copying"></ocelle-progress></div>');
+    const first = document.getElementById("first") as HTMLElement & { value: number | undefined; updateComplete: Promise<unknown> };
+    first.value = undefined;
+    await first.updateComplete;
+    await driver.frames(2);
+    const started = (await driver.animations("first")).some((each) => each.playState === "running");
+    await new Promise((resolve) => setTimeout(resolve, 4600));
+    first.remove();
+    first.value = 50;
+    await first.updateComplete;
+    first.value = undefined;
+    await first.updateComplete;
+    await driver.frames(2);
+    document.getElementById("region")?.insertAdjacentHTML("beforeend", '<ocelle-progress id="second" label="Loading"></ocelle-progress>');
+    await (document.getElementById("second") as unknown as { updateComplete: Promise<unknown> }).updateComplete;
+    await driver.frames(1);
+    const running = (await driver.animations("second")).find((each) => each.playState === "running");
+    expect({ started, running: running !== undefined, fresh: running?.currentTime !== null && running?.currentTime !== undefined && running.currentTime < 1400 }).toEqual({ started: true, running: true, fresh: true });
+  });
+});

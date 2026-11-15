@@ -277,12 +277,33 @@ export function inProcessDriver(): Driver {
       }
       await settle();
     },
+    property: (id, name) => Promise.resolve((element(id) as unknown as Record<string, unknown>)[name]),
     textOf: (id, inner) => Promise.resolve(element(id).shadowRoot?.querySelector(inner)?.textContent ?? null),
     rendered: (id) => {
       const target = element(id);
       const range = document.createRange();
       range.selectNodeContents(target);
       return Promise.resolve({ innerText: target.innerText, rects: range.getClientRects().length });
+    },
+    events: async (id, during) => {
+      const target = element(id);
+      const seen: string[] = [];
+      const native = Object.getOwnPropertyDescriptor(EventTarget.prototype, "dispatchEvent");
+      if (native === undefined) throw new Error("no EventTarget.prototype.dispatchEvent");
+      const dispatch = native.value as (this: EventTarget, event: Event) => boolean;
+      Object.defineProperty(EventTarget.prototype, "dispatchEvent", {
+        ...native,
+        value: function (this: EventTarget, event: Event): boolean {
+          if (this === target || (this instanceof Node && this.getRootNode() === target.shadowRoot)) seen.push(event.type);
+          return dispatch.call(this, event);
+        },
+      });
+      try {
+        await during();
+      } finally {
+        Object.defineProperty(EventTarget.prototype, "dispatchEvent", native);
+      }
+      return seen;
     },
   };
 }

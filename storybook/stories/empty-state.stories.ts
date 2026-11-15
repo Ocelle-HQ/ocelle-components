@@ -1,7 +1,7 @@
 // The ocelle-empty-state stories (013 FR-050, US2; research.md R-08): the default and panel variants, a heading only,
 // actions only, several actions in a 320 px wrapper, the refusal block with an eyebrow and several body paragraphs, in
-// light and dark through the preview's theme global. The panel loading story, with an indeterminate `ocelle-progress`
-// in `visual`, comes with the progress element. The elements are imported from the package source by relative path,
+// light and dark through the preview's theme global, and since 013 phase 3 the panel loading story, with an
+// indeterminate `ocelle-progress` in `visual` (captured on the still mark: #10's contexts reduce motion). The elements are imported from the package source by relative path,
 // as the other element stories are, so the Storybook needs no built dist/. Wrapper widths are data-story rules in
 // .storybook/stories-layout.css, each capped at the viewport; no markup has a style attribute, no story declares a
 // pointer state, and all text is Latin script. The action buttons are slotted light-DOM content, whose font base.css
@@ -9,6 +9,7 @@
 import type { Meta, StoryObj } from "@storybook/html-vite";
 import "../../packages/elements/src/ocelle-empty-state.ts";
 import "../../packages/elements/src/ocelle-icon.ts";
+import "../../packages/elements/src/ocelle-progress.ts";
 
 const meta: Meta = { title: "Elements/ocelle-empty-state" };
 export default meta;
@@ -27,6 +28,11 @@ const noMissions =
 export const Default: StoryObj = { render: () => state("empty-wide", noMissions) };
 
 export const Panel: StoryObj = { render: () => state("empty-wide", noMissions, ' variant="panel"') };
+
+export const PanelLoading: StoryObj = {
+  name: "Panel loading",
+  render: () => state("empty-wide", '<ocelle-progress slot="visual" label="Loading missions"></ocelle-progress><h2 slot="heading">Loading missions</h2>', ' variant="panel"'),
+};
 
 export const HeadingOnly: StoryObj = { name: "Heading only", render: () => state("empty-wide", '<h2 slot="heading">Nothing to review</h2>') };
 

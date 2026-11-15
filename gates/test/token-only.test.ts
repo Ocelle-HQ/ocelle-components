@@ -918,6 +918,10 @@ describe("rawValues: the transform and animation-iteration-count allowance (013 
     { property: "animation-iteration-count", value: "3" },
     { property: "animation-iteration-count", value: "1" },
     { property: "animation-iteration-count", value: "12" },
+    // Added after green for the mutation run: spaces and a comment inside the translate, and one count per item.
+    { property: "transform", value: "translateX( 50% )" },
+    { property: "transform", value: "translateX(/* the mark */ 175%)" },
+    { property: "animation-iteration-count", value: "3, 2" },
   ])("$property: $value is token-only (only the control 4px after it is raw)", ({ property, value }) => {
     expect({ value: rawValues(property, value), control: rawValues(property, `${value} 4px`) }).toEqual({ value: [], control: ["4px"] });
   });
@@ -942,6 +946,11 @@ describe("rawValues: the transform and animation-iteration-count allowance (013 
     { value: "-1", raw: ["-1"] },
     { value: "3 2", raw: ["3", "2"] },
     { value: "1e1", raw: ["1e1"] },
+    // Added after green for the mutation run: each comma-separated item is judged on its own.
+    { value: "3, 2.5", raw: ["2.5"] },
+    { value: "3, 2 1", raw: ["2", "1"] },
+    { value: "3 / 2", raw: ["3", "2"] },
+    { value: '3 "," 2', raw: ["3", "2"] },
   ])("animation-iteration-count: $value is raw: $raw, while 3 passes", ({ value, raw }) => {
     expect({ value: rawValues("animation-iteration-count", value), allowed: rawValues("animation-iteration-count", "3") }).toEqual({ value: raw, allowed: [] });
   });

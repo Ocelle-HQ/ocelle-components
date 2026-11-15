@@ -1,6 +1,6 @@
 {
   "expect": "fail",
-  "why": "A changed token value (color-ink, light) changes every story-theme that shows it: differs on the forty-eight light story-themes measured in the pinned container (FR-004, US2 scenario 2), the twelve the phase 1 spike listed, the eight of mission 005's stories that show color-ink (all but elements-ocelle-brand-mark--chrome, measured for plan decision 29) and the twenty-two ocelle-facts stories of mission 013 (measured in its phase 1), the six ocelle-empty-state stories with a heading (measured in its phase 2; the actions-only story shows no color-ink), and none in dark. A story added later that shows color-ink in light adds its line here (research.md R-07).",
+  "why": "A changed token value (color-ink, light) changes every story-theme that shows it: differs on the fifty-three light story-themes measured in the pinned container (FR-004, US2 scenario 2), the twelve the phase 1 spike listed, the eight of mission 005's stories that show color-ink (all but elements-ocelle-brand-mark--chrome, measured for plan decision 29) and the twenty-two ocelle-facts stories of mission 013 (measured in its phase 1), the six ocelle-empty-state stories with a heading (measured in its phase 2; the actions-only story shows no color-ink), the panel-loading story (its heading) and the four ocelle-progress stories with a visible label (labelled, labelled compact, value text, right to left; measured in its phase 3, the bars without a visible label show no color-ink), and none in dark. A story added later that shows color-ink in light adds its line here (research.md R-07).",
   "findings": [
     {
       "location": "base-styles--base-page/light",
@@ -192,6 +192,26 @@
     },
     {
       "location": "tokens--motion/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-empty-state--panel-loading/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-progress--labelled/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-progress--labelled-compact/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-progress--value-text/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-progress--right-to-left/light",
       "rule": "differs"
     }
   ]

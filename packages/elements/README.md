@@ -1,9 +1,10 @@
 # @ocelle/elements
 
 The Ocelle web components: standards-based custom elements (Lit 3) that work in any page, a server-rendered page
-under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has five elements:
+under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has six elements:
 `ocelle-icon`, with a set of thirteen icons, `ocelle-brand-mark`, the Ocelle rosette, `ocelle-facts` with its item
-`ocelle-fact`, a label and value sheet, and `ocelle-empty-state`, an empty or loading panel.
+`ocelle-fact`, a label and value sheet, `ocelle-empty-state`, an empty or loading panel, and `ocelle-progress`, a
+progress bar.
 
 ## Entry points
 
@@ -15,6 +16,7 @@ under a strict Content Security Policy, a Svelte shell or a desktop webview. Thi
 | `@ocelle/elements/ocelle-facts.js` | `dist/ocelle-facts.js` | `ocelle-facts` and its item `ocelle-fact`; for hosts with a bundler |
 | `@ocelle/elements/ocelle-fact.js` | `dist/ocelle-fact.js` | `ocelle-fact` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-empty-state.js` | `dist/ocelle-empty-state.js` | `ocelle-empty-state` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-progress.js` | `dist/ocelle-progress.js` | `ocelle-progress` only; for hosts with a bundler |
 | `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |
 | `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |
 
@@ -264,10 +266,78 @@ body take the system text colour.
 `--ocelle-color-ink-muted`, `--ocelle-measure-reading`, `--ocelle-space-1`, `--ocelle-space-2`, `--ocelle-space-3`,
 `--ocelle-space-4`, `--ocelle-space-5`, `--ocelle-space-6` and `--ocelle-space-10`.
 
+## `ocelle-progress`
+
+```html
+<ocelle-progress value="7" max="12" label="Tasks done"></ocelle-progress>
+<ocelle-progress label="Loading plan"></ocelle-progress>
+```
+
+`ocelle-progress` is a progress bar: with a `value` it is determinate, its fill growing from the inline start (the
+right under `dir="rtl"`); without one it is indeterminate. The determinate bar is for work with a known amount, and
+the indeterminate bar for loading a region, or running work, with no known end; for a state, such as a row that is
+running, use `ocelle-status-indicator`. `ocelle-progress` emits no event and adds no tab stop.
+
+**Naming.** Name every bar: set `label`, the accessible name, as text. A host `aria-label` also names it and overrides
+`label`, but makes axe report a false `aria-prohibited-attr` in your own audit; prefer `label`. To name a bar after a
+nearby heading, pass the heading's text as `label`; the element takes no ID reference. A bar with neither `label` nor
+a host `aria-label` has no name: that is a consumer error, which the element does not correct. axe does not check the
+bar's name, since it does not read the element's internals: check the name in your own tests. The label is text only:
+there is no slot for a rich label.
+
+**Host.** The host is the progressbar: a `role` on it replaces the progressbar and a `tabindex` makes it a tab stop, so
+set neither. For a loading block that takes focus, put your own `<h2 tabindex="-1">` in an `ocelle-empty-state`'s
+`heading` slot, with the bar in `visual`. The host is a block and fills its container's inline size. To place a bar
+inside a line of text, set its `display` (for example `inline-block`) and an inline size from outside. The element has
+no slot: text inside it (a "7/12" fallback) shows only before the element is defined, and after that it is neither
+shown nor exposed; the bar keeps its own name and value.
+
+**Values.** `max` defaults to 100; a `max` that is not a number above 0 counts as 100. A `value` below 0 is shown and
+exposed as 0, and above `max` as `max`. An unset, empty or whitespace-only `value`, a `value` that is not a finite
+number, and the property set to `null` or `undefined` make the bar indeterminate: no current value is exposed.
+`value-text` gives the words for the current value (for example "7 of 12"): it is exposed while the bar is
+determinate, kept as given when the value is clamped, and not used while the bar is indeterminate. Without it the
+platform announces the value itself; the element formats no number. The library's tests do not verify the value
+text's exposure to assistive technology: no read a test can make in Chromium reports it. They check the visible value
+text, and the bar's name and value in the accessibility tree.
+
+**Label.** `show-label` shows the label as text above the bar, or beside it with `size="compact"`, with the value text
+when the bar is determinate; both use tabular figures and are hidden from assistive technology, which reads the name
+and value from the bar itself. The value text sits at the inline end of the label row: at the default size the row is
+above the bar, the label at its inline start; in compact the row holds the label, the bar and the value text, in that
+order. A long label wraps between words, and the bar keeps at least `--ocelle-measure-cell`.
+
+**Sizes.** The track is `--ocelle-space-2` high, and `--ocelle-space-1` with `size="compact"`; any other value acts as
+unset.
+
+**Motion.** The indeterminate bar's mark sweeps across the track three times, 4.2 s in all at the default tokens, and
+then rests as the still mark, a partial fill in the middle of the track, with nothing running: the motion ends by
+itself in less than 5 s (WCAG 2.2.2). The sweep lasts `--ocelle-motion-base` × 21 in all: overriding
+`--ocelle-motion-base` above 238 ms takes it past 5 s. There is one sweep per loading episode: a bar inserted, replaced
+in one task, re-shown or made indeterminate again while the episode lasts continues the episode's sweep, and after the
+sweep has ended shows the still mark at once. The episode ends when no indeterminate bar is on the page at a frame; the
+next indeterminate bar starts a new episode with its own sweep. Keep one bar, or swap it in one task, across one
+continuous wait: a bar removed and inserted again a frame or more later starts a new sweep. Under
+`prefers-reduced-motion: reduce` nothing runs on the bar and the still mark shows at once. The fill has no transition:
+its inline size changes at once with each value.
+
+**Colour.** The fill is `--ocelle-color-accent` with an `--ocelle-color-accent-strong` edge on every side, so the
+filled part is never marked by ochre alone; the track is `--ocelle-color-inset` and clips the mark.
+`ground="tinted"` draws the track's boundary in `--ocelle-color-accent-strong`: use it for a bar on `color-inset`,
+`color-accent-low`, `color-hover-bg` or a state ground, and in a row that can be hovered or selected. Unset, the
+boundary is `--ocelle-color-control-border`, for `color-canvas`, `color-sheet`, `color-pane`, `color-panel`,
+`color-inspector` and `color-rail`. Any other value of `ground` acts as unset. In forced colours the track has a
+system-colour outline and the fill is `Highlight`.
+
+**Tokens.** `ocelle-progress` reads the tokens `--ocelle-color-accent`, `--ocelle-color-accent-strong`,
+`--ocelle-color-inset`, `--ocelle-color-control-border`, `--ocelle-color-ink`, `--ocelle-color-ink-muted`,
+`--ocelle-font-size-sm`, `--ocelle-figures`, `--ocelle-space-1`, `--ocelle-space-2`, `--ocelle-radius-1`,
+`--ocelle-border-width`, `--ocelle-measure-cell`, `--ocelle-motion-base` and `--ocelle-easing-standard`.
+
 ## Mapping from kitty-mission-ui
 
-Each `.sk-facts` and `.sk-empty-state` modifier and state that kitty-mission-ui uses, by role, with the element and
-variant that replaces it, or the consumer's own remedy.
+Each `.sk-facts`, `.sk-empty-state` and `.sk-progress` modifier and state that kitty-mission-ui uses, by role, with the
+element and variant that replaces it, or the consumer's own remedy.
 
 | Class family | Role | Element and variant |
 |---|---|---|
@@ -306,6 +376,24 @@ variant that replaces it, or the consumer's own remedy.
 | `.sk-empty-state` | empty-state ops card | consumer's: as the card, its own card around the element, the heading at the element's weight |
 | `.sk-empty-state` | empty-state identifier | consumer's: the value in the body with `data-ocelle-wrap="anywhere"` and its own `title`; no monospace |
 | `.sk-empty-state` | empty-state focus target | consumer's: `tabindex="-1"` on its slotted heading; for a loading block, its `<h2 tabindex="-1">` in `heading` with the bar in `visual` |
+| `.sk-progress` | progress default | `ocelle-progress` with `value`, `max`, `label` and `show-label` |
+| `.sk-progress` | progress narrow | `ocelle-progress`; the track fills the host's inline size |
+| `.sk-progress` | progress compact | `ocelle-progress size="compact"` |
+| `.sk-progress` | progress indeterminate | `ocelle-progress` with no `value` |
+| `.sk-progress` | progress determinate | `ocelle-progress` with `value` and `max` |
+| `.sk-progress` | progress meta | `value-text` with `show-label`, the consumer passing the formatted percentage (the element formats no number), at the inline end of the label row |
+| `.sk-progress` | progress external text | `value-text` with `show-label`, or the consumer's own text beside the element |
+| `.sk-progress` | progress label | `ocelle-progress` with `label` and `show-label`; the label is text only, with no slot |
+| `.sk-progress` | progress labelled by heading | consumer's: the heading's text passed as `label`, with no ID reference |
+| `.sk-progress` | progress aria-label | `label` without `show-label`, or a host `aria-label` |
+| `.sk-progress` | progress fallback text | consumer's: the element draws the bar itself; text inside it shows only before upgrade and is neither shown nor exposed after it |
+| `.sk-progress` | progress heading | consumer's: its own `<h2 tabindex="-1">` in an `ocelle-empty-state`'s `heading` slot with the bar in `visual`; no `role` or `tabindex` on the host |
+| `.sk-progress` | progress inline | `ocelle-progress`, a block host given `display: inline-block` and an inline size by the consumer |
+| `.sk-progress` | progress in empty-state | `ocelle-empty-state`'s `visual` slot |
+| `.sk-progress` | progress in busy region | `ocelle-progress` placed directly; `aria-busy` stays on the consumer's region |
+| `.sk-progress` | progress slotted | `ocelle-progress` in another element's slot; nothing is needed from the element |
+| `.sk-progress` | progress grid layout | `ocelle-progress` with `show-label` at the default size: the label at the inline start and the value text at the inline end of the row above the bar, which spans the full width below; the consumer no longer places the parts |
+| `.sk-progress` | progress centred | `ocelle-empty-state`'s `visual` slot, which centres the bar and spans it up to the reading measure |
 
 ## Slot convention
 

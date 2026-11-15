@@ -234,6 +234,8 @@ export interface Driver {
    * waits for every element to render (013 phase 3: a value set and removed before a frame).
    */
   changeAttributes(id: string, changes: readonly (readonly [string, string | null])[]): Promise<void>;
+  /** The value of the property `name` of the element with `id`, as the page holds it (013 phase 3: a converted attribute). */
+  property(id: string, name: string): Promise<unknown>;
   /** The text content of the first element matching `inner` in the shadow root of the element with `id`, or null when there is none. */
   textOf(id: string, inner: string): Promise<string | null>;
   /**
@@ -241,4 +243,10 @@ export interface Driver {
    * rects of a range over its contents (0 when none of it is rendered).
    */
   rendered(id: string): Promise<{ readonly innerText: string; readonly rects: number }>;
+  /**
+   * Runs `during` and returns the types of the events script dispatched (`EventTarget.prototype.dispatchEvent`, wrapped
+   * on the page for the duration of `during` and restored after it) on the element with `id`, on its shadow root or on
+   * a node in its shadow root, in order (013 phase 3 review round 1, R1-01: US3-2's "no event is emitted").
+   */
+  events(id: string, during: () => Promise<void>): Promise<string[]>;
 }
