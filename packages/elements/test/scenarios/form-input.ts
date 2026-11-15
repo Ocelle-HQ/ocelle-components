@@ -727,12 +727,15 @@ export const formInputScenarios: readonly FormScenario[] = [
         await settleAnnouncement(driver);
         await driver.setAttribute("t", "error", "Title is taken");
         await settleAnnouncement(driver);
-        // The first-load host's tag is the fresh one firstLoad gave it, so the path is compared by id.
-        const focus = (await driver.focusPath()).map((each) => each.slice(each.indexOf("#")));
+        // The host entry is the first-load host's: the scenario's tag on the fixture pages, a fresh
+        // ocelle-first-load-N-T subclass tag in process (in-process.ts registerFirstLoad). Either form is accepted in
+        // both harnesses, every other tag fails; the inner entry is exact, so focus is on the native input.
+        const host = new RegExp(`^(?:${tag}|ocelle-first-load-\\d+-\\d+)#t$`, "u");
+        const focus = (await driver.focusPath()).map((each, index) => (index === 0 && host.test(each) ? "<first-load host>#t" : each));
         state = { error: drawn(await driver.box("t", parts.error)), description: (await field(driver, "t")).description, focus };
       });
       announced(driver, only(snapshots, ["t"]), [polite("Title is taken", "t")], "Edge case, error while focused: announcements");
-      assert.deepEqual(state, { error: true, description: "Title is taken", focus: ["#t", "#control"] }, "Edge case, error while focused");
+      assert.deepEqual(state, { error: true, description: "Title is taken", focus: ["<first-load host>#t", "input#control"] }, "Edge case, error while focused");
     },
   },
   {
