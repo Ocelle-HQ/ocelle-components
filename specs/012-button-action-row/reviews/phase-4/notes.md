@@ -96,3 +96,46 @@ box, every expected value unchanged; US3-5 also asserts that the turning spinner
 reads 150 ms apart with motion allowed, each `false`; stricter than before); the "Busy look" body gets a canvas ground
 rule, as the other dark bodies have. Applied in `scenarios/busy.ts` (commit after ef3cdbf); both harnesses then pass
 (in process 157 of 157 with control.test.ts, fixture 101 of 101).
+
+## Visual baselines
+
+The eight busy baselines (`elements-ocelle-button--{busy,busy-with-icon,busy-link,busy-compact}`, light and dark) and
+the two `tokens--motion` baselines (which now list `motion-spin` and `motion-turn`, a change by design of T045) were
+written only by `OCELLE_VISUAL_ENGINE=docker pnpm run visual:update` in #10's pinned container ("wrote 10 files (8
+added, 2 changed, 0 removed)"; 2443172), and checked with `gate:visual` (96 captures match, "docker only: no
+cross-engine comparison"). No podman cross-engine check was possible in this environment; CI confirms the baselines at
+landing. No baseline PNG was hand-edited or hand-picked.
+
+Under load (16 `yes > /dev/null` processes), `OCELLE_VISUAL_ENGINE=docker pnpm run gate:visual` ran three times: 96
+captures matched each time; the processes were killed afterwards.
+
+## Gate runs (T049)
+
+- `gate:typecheck`, `gate:lint` (283 files), `gate:style-lint` (15 files), `gate:test-lint`, `gate:brand-rules` (7 rules,
+  0 findings on the phase 4 tree), `gate:manifest` (3 elements, no finding): pass.
+- `gate:storybook-build`: 48 stories. `gate:visual`: 96 captures match. `gate:axe`: 96 story-theme runs, 0 serious or
+  critical; 10 notes (0 incomplete, 10 excepted). `gate:contrast` unchanged (no colour token changed).
+- `gate:mutation -- --base 55ec410` (3 shards, `gates/bin/brand-rules.ts` in the default-config scope beside the tokens
+  source and generator): 115 mutants on the changed lines of 6 files, none survived; 8 timeouts, 32 compile errors, 0
+  zero-mutant entries, 0 equivalent records; 7 min 25 s. The 8 timeouts are all on the duration regex
+  (`brand-rules.ts:31`, `generate.ts:269`): the anchors dropped and the fraction part changed (`\d` for `\d+`, `\D+`). No
+  test feeds a fractional or prefixed millisecond value, so these are reported here as Timeout (pass, R-14), not
+  proven killed.
+- `gate:plants`, shard by shard (`OCELLE_VISUAL_ENGINE=docker pnpm run gate:plants -- --shard <k>`, one at a time): all 76
+  shards "every plant as expected"; shards 1 to 3 judged 77, 76 and 76 other plants (with `brand-rules/f-motion-not-zero`
+  and `brand-rules/f-motion-spin-missing`, 32.5 s and 27.8 s), the slowest shard 158 s (40,
+  `visual/fail-token-changed`), 7241 s in all; no shard near 10 minutes.
+- The element plants: reviews/phase-4/plants.md, every one bit.
+- Whole suite, `pnpm test` on 2443172 + fail-token-changed: **3578 of 3579 pass; 1 fails**:
+  `gates/test/integration/plants-robustness.test.ts:178` "has the two gates' plants and the registry's" pins 35
+  contrast and brand-rules plants; the new plant `f-motion-spin-missing` makes 36. This pin changes by design and
+  belonged in the red commit (T042a: "any pinned brand-rules plant count in gates/test/integration/ changed first"); I
+  missed it there. Changing it now is a test change after the red commit outside the operator's authorised
+  corrections, so it is an operator question (T049 left open).
+
+## Operator question 2 (stop-and-ask): the plants-robustness pin
+
+- **(a) Recommended:** change the pin from 35 to 36 in a separate signed-off test commit, recorded here as a missed
+  red-commit pin (the count of plants that this phase adds by design); then rerun the suite and close T049.
+- **(b)** Amend nothing; leave the failing pin for the reviewer to decide.
+- **(c)** Something else the operator states.
