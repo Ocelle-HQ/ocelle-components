@@ -12,6 +12,10 @@
 //   four dividers of US3-3; plant: the first-section rule dropped;
 // - hidden sections draw no box, padding or divider (US3-3) beside the one divider between the two visible ones;
 //   plants: `:not([hidden])` dropped from the section rules, and from the first-section rule only;
+// - a `template` or `script` in the default slot draws no box, padding or divider (US3-3's template variant) beside
+//   the one divider between the two visible sections, and a slot of only a `template` keeps the head and footer
+//   dividers, meeting; plants: `:not(template, script)` dropped from the section rules, and from the first-section
+//   rule only;
 // - a page reset does not change a section's padding, inline margins, divider or display (US3-3) beside the same four
 //   dividers and padding as with no page rule; plant: each `!important` dropped in turn;
 // - no UA margin on slotted `p` and `ul` content, a hidden edge element taking no trim (FR-008) beside each border box
@@ -378,6 +382,41 @@ export const contextSidebarScenarios: Scenario[] = [
         ["none", 0],
         ["none", 0],
       ],
+    },
+  },
+  {
+    name: "US3-3, template and script (phase 4 review R2-01): a <template> and a <script type=\"application/json\"> before the first section, between the two visible sections and after the last have no box and display none, one divider lies between the visible two with --ocelle-space-4 padding on both sides and the first visible one has no divider of its own; with only a <template> in the default slot, the head and footer dividers stay and meet with no padding between them, as with every section hidden (FR-021, FR-022)",
+    run: async (driver) => {
+      const never = (id: string, where: string): string => `<template id="${id}-t-${where}"><li>Later</li></template><script id="${id}-j-${where}" type="application/json">{"later":true}</script>`;
+      const mixed = head("tpl") + never("tpl", "before") + section("tpl", 1) + never("tpl", "between") + section("tpl", 2) + never("tpl", "after") + footer("tpl");
+      const only = head("only") + '<template id="only-t"><li>Later</li></template>' + footer("only");
+      await driver.mount(box("tpl", sidebar("tpl", mixed)) + box("only", sidebar("only", only)) + probe);
+      for (const id of ["tpl", "only"]) await driver.size(`${id}-box`, 320, null);
+      const nevers = ["before", "between", "after"].flatMap((where) => [`tpl-t-${where}`, `tpl-j-${where}`]).concat(["only-t"]);
+      const read = await boxes(driver, ["only", "only-head", "only-footer"]);
+      const rule = await tokenPx(driver, "border-width");
+      const space = await tokenPx(driver, "space-4");
+      const headEnd = pick(read, "only-head").y + pick(read, "only-head").height;
+      const runs = await runsOf(driver, "only", await tokenColour(driver, "color-rule"));
+      return {
+        mixed: await layoutOf(driver, "tpl", { head: "tpl-head", sections: ids("tpl", 2), footer: "tpl-footer" }),
+        never: await inOrder(nevers, async (id) => {
+          const found = await driver.box(id);
+          return [found.display, found.width, found.height];
+        }),
+        only: {
+          dividers: runs.map((run) => ({
+            atHeadPadding: tenth(pick(read, "only").y + run.at - (headEnd + space)),
+            thickness: tenth(run.thickness) === tenth(2 * rule) ? "two border-widths" : `${String(run.thickness)}px`,
+          })),
+          meet: await lengthIs(driver, pick(read, "only-footer").y - (headEnd + space + 2 * rule), "space-4"),
+        },
+      };
+    },
+    expected: {
+      mixed: layoutExpected({ head: true, sections: ids("tpl", 2), footer: true }),
+      never: Array.from({ length: 7 }, () => ["none", 0, 0]),
+      only: { dividers: [{ atHeadPadding: 0, thickness: "two border-widths" }], meet: "space-4" },
     },
   },
   {

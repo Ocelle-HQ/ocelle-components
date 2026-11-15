@@ -158,6 +158,30 @@ describe("the module build's personal-rail module", () => {
   });
 });
 
+// 011 phase 4 review R2-02 (landing L1-02; FR-034, research.md R-11 § Type declarations; T051): the published type
+// declarations, like the manifest, do not declare the internals key: the landmark classes' declarations declare
+// `label` and no `internalsKey` (neither the `[internalsKey]` member nor its import), and the naming module's declare
+// `accessibleName` and no `internalsKey` export. Each "no" sits beside its positive in the same assertion.
+describe("the module build's type declarations", () => {
+  const declarations = (file: string): string => (existsSync(join(dist, file)) ? readFileSync(join(dist, file), "utf8") : "");
+
+  it("dist/ocelle-context-sidebar.d.ts and dist/ocelle-personal-rail.d.ts declare label and no internalsKey, and dist/naming.d.ts declares accessibleName and no internalsKey", () => {
+    const read = (file: string, positive: string): { readonly declares: boolean; readonly internalsKey: boolean } => {
+      const text = declarations(file);
+      return { declares: text.includes(positive), internalsKey: text.includes("internalsKey") };
+    };
+    expect({
+      sidebar: read("ocelle-context-sidebar.d.ts", "label: string | undefined;"),
+      rail: read("ocelle-personal-rail.d.ts", "label: string | undefined;"),
+      naming: read("naming.d.ts", "export declare function accessibleName("),
+    }).toEqual({
+      sidebar: { declares: true, internalsKey: false },
+      rail: { declares: true, internalsKey: false },
+      naming: { declares: true, internalsKey: false },
+    });
+  });
+});
+
 describe("the browser build (dist/browser/ocelle-elements.js)", () => {
   const text = (): string => (existsSync(browserBuild) ? readFileSync(browserBuild, "utf8") : "");
 
