@@ -156,6 +156,23 @@ option (a) each):
   The rule keeps rejecting a duration that is not `0ms` under reduced motion and now also rejects a missing
   `motion-spin`. This changes 002's rule (f) for every later feature; the plan records it (plan decision 29).
 
+**Operator decisions at phase 5** (2026-11-15, human:jeroennouwsdev; the phase 5 implementer's stop-and-ask, plan
+decision 30):
+
+- Row content and axe, "(b) take the description, tags and trailing content out of the inner control": axe-core
+  4.14.0 runs `label-content-name-mismatch` (tagged `wcag21a` and `wcag253`, not experimental), so a row whose inner
+  control held its description and tags and was named only by its title drew a serious finding, against FR-052. The
+  row's description, tags and trailing content are no longer inside its inner control: they are shown beside it and
+  hidden from assistive technology as content, and the description and tags reach it only as the row's accessible
+  description (FR-034). The inner control's visible text is only its title, which is also its name (FR-034 kept), so
+  axe reports no serious or critical finding on the row, on this library's pages and on consumers' pages alike.
+- Row fill, "(c) a hit layer": the inner control (icon and title) and the description, tags and trailing content stay
+  in one wrapping layout, so FR-032's row-layout wrap (US4-18) is unchanged. The inner control owns a layer that
+  covers the whole host and takes every pointer click on it, the description, tags and trailing content included, and
+  draws the row's surface, border, focus ring and current bar. For the row, FR-001's fill, US4-15 and the restyled
+  host's outside points are stated for that layer ("the control's hit layer fills the host"). The card layout follows
+  the same model.
+
 **Issues**: #7, in part (triage record `triage/012-button-action-row.md`, approved by the operator on 2026-11-13).
 This feature builds the two action controls of #7. `ocelle-pill-tag`, `ocelle-status-indicator` and `ocelle-metric`
 stay in #7 for a later status mission. The body of #7 (read on 2026-11-13) is the source of the requirements below.
@@ -218,12 +235,13 @@ sibling, and in a two-column grid whose other cell is taller).
 outranks the element's `:host` styles. Scenarios that say "restyled" place the element in a 400 px wide container
 under each of three page rules on the element: `display: block`, `display: flex; width: 100%`, and `display: block;
 height: 90px`. Their *outside points* are the points 4 px inside the host's inline-end edge at its block centre and
-4 px inside its bottom edge at its inline centre that lie outside the inner control's box under that rule. For the
-button both points lie outside under each rule (measured, PLAN-FRESH-3-001); for the row, whose inner control may be
-an `<a>` that fills a block host's width, the phase's red commit lists them by hand per mode and rule from a spike, and
-under `display: block; height: 90px` the bottom point lies outside for every element and mode. Each scenario first
-asserts, from the two boxes, that its listed points lie outside the inner control, then clicks each of them, and
-clicks the inner control's centre as the positive case.
+4 px inside its bottom edge at its inline centre that lie outside the inner control's box under that rule (for the
+row, outside the box of the control's hit layer, FR-001). For the button both points lie outside under each rule
+(measured, PLAN-FRESH-3-001); for the row, whose hit layer may fill a block host's width, the phase's red commit lists
+them by hand per mode and rule from a spike, and under `display: block; height: 90px` the bottom point lies outside
+for every element and mode. Each scenario first asserts, from the two boxes, that its listed points lie outside the
+inner control (the row: its hit layer), then clicks each of them, and clicks the inner control's centre as the
+positive case.
 
 ### User Story 1 - `ocelle-button` (Priority: P1)
 
@@ -467,7 +485,9 @@ the event and its payload, the accessibility tree and the boxes in a shrink-wrap
 3. **Given** a row with a title, a slotted description and slotted tags, **When** the tree is read, **Then** it is one
    node, role `button`, in the tab order once, named exactly by its title text (the description and tags text are not
    in the name), or by FR-034's name passthrough when set, and its accessible description is the slotted
-   description's text followed by the slotted tags' text (FR-034).
+   description's text followed by the slotted tags' text (FR-034); the description, tags and trailing content appear
+   in no other node of the tree, and axe reports no serious or critical finding on the row (in particular no
+   `label-content-name-mismatch`: the control's visible text is its title; operator decision at phase 5).
 4. **Given** `label="Open mission 42"` on the row, **When** the tree is read, **Then** the row is named "Open mission
    42"; the host's `aria-label` wins over `label`; a host `aria-labelledby` naming an element in the host's tree names
    the row with that element's text (FR-005, FR-034); with both `aria-labelledby` and `aria-label` set,
@@ -517,10 +537,14 @@ the event and its payload, the accessibility tree and the boxes in a shrink-wrap
 14. **Given** a row with slotted description and tag elements, **When** rendered, **Then** each slotted element's box
     fits its text (it is not sized as an icon); only the `icon` and `trailing` slots size their elements as icons.
 15. **Given** two `layout="card"` rows in a two-column grid, the second with a title that wraps so its cell is taller,
-    and a row stretched in a `display: flex` row beside a taller sibling, **When** rendered, **Then** each row's inner
-    control is as tall as its host (both cards' inner boxes as tall as their grid cells); **When** a pointer clicks 4 px
-    inside the shorter card's host bottom edge, **Then** exactly one `ocelle-action-row-activate` event is dispatched
-    (FR-001).
+    and a row stretched in a `display: flex` row beside a taller sibling, **When** rendered, **Then** each row's
+    control's hit layer fills its host (its box equals the host's box in both axes, so both cards' hit layers are as
+    tall as their grid cells); **When** a pointer clicks 4 px inside the shorter card's host bottom edge, **Then**
+    exactly one `ocelle-action-row-activate` event is dispatched (FR-001); **Given** a row with a slotted description,
+    two slotted tags and a trailing icon, in each layout, **When** a pointer clicks the centre of the description's
+    box, of a tag's box and of the trailing icon's box, **Then** each click dispatches exactly one
+    `ocelle-action-row-activate` event (the click passes through the inner control, FR-001; operator decision at
+    phase 5).
 16. **Given** `title="Open the mission"` on a row's host, **When** the tree is read, **Then** the row is one node with a
     role or a name (as in US1-1), the host has no `title` attribute and no named `generic` node appears for it (an
     unnamed one is allowed); with no slotted description or tags the row's
@@ -618,7 +642,9 @@ tree, the navigation result and the line boxes of the tags.
   reports it as `button-name` (or `link-name` in link mode) (a host mistake, documented; the element adds no fallback
   text).
 - **Interactive content slotted into a row or a button** (a link, a button, an input): invalid nesting; documented as
-  unsupported; the element does not detect it.
+  unsupported; the element does not detect it. In a row's `description`, `tags` or `trailing` slot it is also hidden
+  from assistive technology with the rest of that content and takes no pointer click (FR-001, FR-034), so axe reports
+  `aria-hidden-focus` for it (the README states it).
 - **`href=""`** on a button or row: treated as no `href` (button mode). An `href` with a `javascript:` scheme (as the
   URL parser reads it, so `JAVASCRIPT:`, `java\tscript:` and a leading space or control character count) is not
   rendered as a navigable target (button mode, no `href`) so built output stays CSP-clean. An `href` that is not a
@@ -664,9 +690,9 @@ tree, the navigation result and the line boxes of the tags.
   (htmx's idiomorph `morph` swap, Turbo 8 page-refresh morphs), which removes every attribute the server markup lacks,
   keeps them (FR-004, US2-13). A mirror a host writes while the element holds no value for it is unsupported
   (documented).
-- **A host stretched by its layout** (a flex row, a grid cell): the inner control fills it, so every point of the host
-  is the control; a button stretched by a flex row grows to the row's height (FR-001; a host that does not want that
-  sets `align-self` on the element).
+- **A host stretched by its layout** (a flex row, a grid cell): the inner control fills it (on the row, the control's
+  hit layer does), so every point of the host is the control; a button stretched by a flex row grows to the row's height
+  (FR-001; a host that does not want that sets `align-self` on the element).
 - **A host restyled by a page rule** (`ocelle-button { display: block }`, a full-width utility class,
   `display: flex; width: 100%`, a fixed `height`): supported; FR-001 states the rule (US1-17, US3-11, US5-6, US5-12).
 - **An empty `description` or `tags` element** (`<span slot="description"></span>`, as a server template renders a
@@ -691,7 +717,11 @@ tree, the navigation result and the line boxes of the tags.
   never carries a role. The element's `focus()` focuses the inner control and its `click()` clicks the inner control,
   so a click started by `click()` gets the same guarantees as any other click (FR-003). The inner control fills the
   host's box in both axes, so a host stretched by its layout (a flex row, a grid cell) has no area outside the inner
-  control and every pointer click on the host reaches the inner control (operator decision, PLAN-FRESH-2-001). The
+  control and every pointer click on the host reaches the inner control (operator decision, PLAN-FRESH-2-001). On the
+  row, whose description, tags and trailing content are shown beside its inner control and not inside it (FR-034),
+  the control's hit layer fills the host: the inner control owns a layer that covers the host's whole box and takes
+  every pointer click on it, on that content included, so each such click passes through the inner control
+  (operator decision at phase 5). The
   guarantee does not rest on that layout alone: a page rule on the element (its `display`, `width` or `height`)
   outranks the element's `:host` styles and can leave host area outside the inner control, so each element also
   listens for `click` and `auxclick` on the host itself, registered when the element is constructed (before any host
@@ -749,8 +779,9 @@ tree, the navigation result and the line boxes of the tags.
   and WebKit releases with the features used (operator decision, PLAN-FRESH-1-008).
 - **FR-006**: **Name passthrough.** The inner control's accessible name is, in order of precedence (the order of
   Accessible Name 1.2): the host's `aria-labelledby` (FR-005), the host's `aria-label` (FR-004), the element's `label`
-  property, and otherwise the element's content, which for a control that holds more than its name is its name part
-  only (the row's title, FR-034). Slotted icons never contribute (mission 005 slot convention).
+  property, and otherwise the inner control's content, which holds only the control's name part and decorative
+  content (on the row, its icon and title; the row's description, tags and trailing content are shown beside the
+  inner control, FR-034). Slotted icons never contribute (mission 005 slot convention).
 - **FR-007**: Both elements follow mission 005's element conventions (module and registration, properties, styles,
   manifest, stories, files and tests) and slot convention, and their styles use only `--ocelle-*` tokens and the
   values the `style-lint` gate allows.
@@ -908,7 +939,12 @@ tree, the navigation result and the line boxes of the tags.
   contributes nothing, and within a non-empty slot an assigned element without non-whitespace text contributes
   nothing either, so with both slots empty the row has no slot description and a moved `title` describes it
   (PLAN-FRESH-3-004). When the host sets
-  `aria-describedby`, that wins (FR-005) and neither slot contributes (operator decision, SPEC-2-04).
+  `aria-describedby`, that wins (FR-005) and neither slot contributes (operator decision, SPEC-2-04). The
+  description, tags and trailing content are not inside the row's inner control: they are shown beside it, in the
+  same layout (FR-032, FR-038), and are hidden from assistive technology as content, so the description and tags
+  reach it only as this accessible description and the trailing content not at all. The inner control holds the icon
+  and the title, so its visible text is exactly its name when no host name or `label` is set (a `label` or host name
+  should contain the visible title, WCAG 2.5.3; the README states it) (operator decision at phase 5).
 - **FR-035**: `busy` (boolean, reflected) sets `aria-busy="true"` on the inner control and does not block activation.
 - **FR-036**: On hover (and not when unavailable) the row's surface becomes `--ocelle-color-hover-bg` and, on a
   `default`-presentation row, its border becomes a hover-border token; a `flush` row gets no border on hover
@@ -981,7 +1017,7 @@ tree, the navigation result and the line boxes of the tags.
 ### Key Entities
 
 - **Inner control**: the one native `<button>` or `<a>` an element renders; carries role, name, description, states
-  and focus.
+  and focus. On the row it holds the icon and the title and owns the hit layer that fills the host (FR-001, FR-034).
 - **Control state**: enabled, disabled, unavailable (busy button, unavailable row), busy (row), current.
 - **Activate events**: `ocelle-action-row-activate`, payload `{ rowId: string }`, and `ocelle-button-activate`, payload
   `{}`; each bubbling, composed, cancelable.

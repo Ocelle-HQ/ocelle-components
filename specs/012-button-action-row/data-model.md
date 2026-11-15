@@ -14,10 +14,10 @@ from properties and moved host attributes, and the transitions the tests cover.
 | `mirrors` | `moved` | for each entry, the host attribute `data-ocelle-moved-<attribute>` = the stored value as written; deleting an entry removes its mirror; at `connectedCallback`, a mirror whose attribute the host does not set is read back into `moved` (a host attribute present wins and rewrites the mirror); the mirrors are observed: a mirror removed or changed while `moved` holds its entry is restored from the stored value (a morphing swap removes them), the element's own writes are ignored; a mirror written while no entry is held is not read until the next upgrade (R-03, PLAN-FRESH-2-002, PLAN-FRESH-3-002) |
 | `states` | `moved` (button only) | `ElementInternals.states`: `expanded` ⇔ `moved["aria-expanded"] === "true"`; `pressed` ⇔ `moved["aria-pressed"] === "true"`; `current` ⇔ `moved["aria-current"]` present and not `"false"` (R-03) |
 | `references` | `moved["aria-controls" \| "aria-labelledby" \| "aria-describedby"]` | ids split on whitespace, looked up in `getRootNode()`, missing ids skipped, order kept; resolved on set and on `connectedCallback` (R-04) |
-| `nameSource` | `references.labelledby`, `moved["aria-label"]`, `label`, content | first present wins: labelledby elements, then the moved `aria-label` (as written), then the trimmed non-empty `label`, else content. Content: the button's inner control content; for the row, the inner control's `ariaLabelledByElements` = its own shadow `[part=title]` wrapper. Whenever a higher source is present, the internal reference is replaced (labelledby) or cleared (`aria-label`, `label`) (R-05) |
+| `nameSource` | `references.labelledby`, `moved["aria-label"]`, `label`, content | first present wins: labelledby elements, then the moved `aria-label` (as written), then the trimmed non-empty `label`, else content. Content: the inner control's content, which on the button is its default slot and on the row its icon and title only (the description, tags and trailing wrappers are siblings of the inner control, plan decision 30); no internal reference. Whenever a higher source is present it replaces the lower one (`ariaLabelledByElements` set, or cleared for `aria-label` and `label`) (R-05) |
 | `state` | `disabled`, `busy` (button) / `unavailable`, `busy` (row) | `disabled` → disabled; else button `busy` or row `unavailable` → unavailable; else available. Row `busy` does not change `state` |
 | `ground` | `ground` attribute | absent or unknown → main (bordered variants and the default row use `control-border`); `accent-low`, `inset`, `hover-bg`, `state` → `accent-strong` (R-08); `chrome` → the chrome look of R-08 item 4a (`chrome-ink` text, `chrome-muted` border, `chrome-hover` hover, `chrome-active` active, `chrome-ink` hover border) |
-| layout | host `display` | button `inline-grid`, row `grid` with `min-inline-size: min-content`; the inner control is the single grid item, stretched in both axes, so its box equals the host's (R-01, PLAN-FRESH-2-001). A page rule on the element may override `display` or size and leave host area outside the inner control; the host guard below covers it, so no guarantee depends on this row (PLAN-FRESH-3-001) |
+| layout | host `display` | button `inline-grid`, row `grid` with `min-inline-size: min-content`; on the button the inner control is the single grid item, stretched in both axes, so its box equals the host's (R-01, PLAN-FRESH-2-001); on the row the single grid item is the shadow layout wrapper and the inner control's hit layer covers it, so the hit layer's box equals the host's (plan decision 30; § `ocelle-action-row`, Shadow structure). A page rule on the element may override `display` or size and leave host area outside the inner control; the host guard below covers it, so no guarantee depends on this row (PLAN-FRESH-3-001) |
 
 States and what each guarantees:
 
@@ -97,10 +97,43 @@ unavailable state (the guard stops the `click` first). Manifest: `CustomEvent<Re
 Moved host attributes (declared with `@attr`): `aria-label`, `aria-labelledby`, `aria-describedby`, `title`; each with
 its mirror `data-ocelle-moved-<attribute>` (four, declared). `click()`: forwards to the inner control.
 
-Name: per `nameSource`; with no host name and no `label`, the title wrapper `[part=title]` (so the description and the
-tags never join the name).
+Shadow structure (plan decision 30; R-01, R-10, R-12), in an open shadow root with `delegatesFocus`:
 
-Description: `ariaDescribedByElements` of the inner control = the moved `aria-describedby` references when present;
+```text
+div.layout            host's single stretched grid item; position: relative; isolation: isolate;
+                      flex-wrap (row) or grid (card); padding, minimum block size; .link in link mode
+├─ (row layout) lead group: flex 1 1 auto, min-inline-size: min-content
+│  ├─ button|a.control  part "control"; the inner control; non-positioned; draws nothing itself
+│  │  ├─ span.hit       the hit layer: position: absolute; inset: 0 (against div.layout); z-index: -1;
+│  │  │  │              surface, border (default row), focus ring (.control:focus-visible .hit),
+│  │  │  │              hover surface and border, forced-colours border and outlines
+│  │  │  └─ span.bar    the current bar, only while current is set (position: absolute, in the inline padding)
+│  │  ├─ span.icon-slot  slot "icon" (hidden when empty)
+│  │  └─ span[part=title]  default slot; overflow-wrap: anywhere
+│  └─ span[part=description]  slot "description"; aria-hidden="true"; pointer-events: none; own ink; hidden when empty
+└─ (row layout) end group: flex 0 0 auto, wraps as a whole
+   ├─ span[part=tags]     slot "tags"; aria-hidden="true"; pointer-events: none; own ink; hidden when empty
+   └─ span.trailing       slot "trailing"; aria-hidden="true"; pointer-events: none; own ink; hidden when empty
+```
+
+In card layout the same elements are placed by the wrapper's grid (the inner control with the trailing wrapper at the
+end of the title line, then the description, then the tags); the two group elements take `display: contents` there.
+The hit layer paints beneath the title and every sibling (they paint over its surface) and is the topmost hit target
+at every point of `div.layout` outside the icon and the title, because the siblings take no pointer events; so every
+click on the row's content box has the inner control in its composed path (US4-15). The ring's inline bands and the
+bar lie in the wrapper's inline padding, which no sibling or title box enters (R-10, R-12).
+
+Sibling ink (R-10 § Sibling ink): the description, tags and trailing wrappers inherit nothing from the inner control
+and set their colour from the host's state and the mode: description and tags `color-ink-soft` (`chrome-muted` with
+`ground="chrome"`), trailing as the title; `disabled-ink` with `unavailable`; under forced colours `ButtonText`
+(button mode), `LinkText` (`.layout.link`) or `GrayText` (unavailable).
+
+Name: per `nameSource`; with no host name and no `label`, the inner control's content, its icon (decorative) and its
+title (so the description, the tags and the trailing content never join the name, and the control's visible text is
+its name).
+
+Description (the description and tags elements' only way to assistive technology, since their wrappers are
+`aria-hidden`): `ariaDescribedByElements` of the inner control = the moved `aria-describedby` references when present;
 otherwise the elements assigned to the `description` slot, then those of the `tags` slot (assigned elements, flattened;
 text nodes slotted directly are wrapped by nothing and so do not count: hosts slot elements, documented), keeping only
 the elements with non-whitespace text (`textContent.trim() !== ""`), and `null` when none is kept, so a moved `title`
@@ -111,10 +144,12 @@ empty when no assigned element has non-whitespace text. An empty slot's wrapper 
 Emptiness and the description are recomputed on `slotchange` and on a `MutationObserver` on the host (`childList`,
 `characterData`, `subtree`), since text written into a slotted element fires no `slotchange` (R-04).
 
-Drawing (R-10, R-12): inline padding `space-3` in both presentations and every state; title and description
-wrappers `overflow-wrap: anywhere`, description and tags ink `color-ink-soft` (`chrome-muted` with `ground="chrome"`);
-focus ring inside the row (`outline-offset: var(--ocelle-focus-offset-inset)`), its band 2 to 5 px inside the border
-edge; the current bar a shadow `<span class="bar">`, absolutely positioned in the inline padding 7 to 10 px inside the
+Drawing (R-10, R-12): inline padding `space-3` on `div.layout` in both presentations and every state (plus the
+border width on a default row, whose border `span.hit` draws); title and description wrappers `overflow-wrap:
+anywhere`, description and tags ink `color-ink-soft` (`chrome-muted` with `ground="chrome"`) set on their own
+wrappers; surface, border and hover drawn by `span.hit`; focus ring inside the row on `span.hit`
+(`outline-offset: var(--ocelle-focus-offset-inset)`), its band 2 to 5 px inside the border edge; the current bar a
+shadow `<span class="bar">` inside `span.hit`, absolutely positioned in the inline padding 7 to 10 px inside the
 border edge (`inset-inline-start: calc(var(--ocelle-focus-width) + 2 * var(--ocelle-focus-offset))`, less
 `--ocelle-border-width` on a default row), so a gap of the row's surface separates it from the ring, `bar-width` wide,
 `color-current` (`disabled-ink` when unavailable; `Highlight`/`GrayText` with `forced-color-adjust: none` under forced

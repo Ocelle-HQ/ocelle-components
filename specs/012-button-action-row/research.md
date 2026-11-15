@@ -1,7 +1,8 @@
 # Research: Action Controls, `ocelle-button` and `ocelle-action-row`
 
 **Feature**: [spec.md](spec.md) | **Plan**: [plan.md](plan.md) | **Date**: 2026-11-13 (squad rounds 1, 2 and 3 fixes,
-and the merge of feature 006 into this branch, applied the same day)
+and the merge of feature 006 into this branch, applied the same day; the operator decisions at phase 5 of 2026-11-15,
+plan decision 30, applied to R-01, R-04, R-05, R-10 and R-12)
 
 Measurements were taken on 2026-11-13 in this container with Chromium 153.0.8010.12
 (`/opt/pw-browsers/chromium-1243/chrome-linux64/chrome`, the build `OCELLE_CHROMIUM_PATH` points at here; the pinned
@@ -18,7 +19,11 @@ MDN's browser-compat-data 8.1.9 (read 2026-11-13). Squad findings are cited by i
 convention (`icon-row`, `iconSlotStyles`). The host is `display: inline-grid` (button) or `display: grid` (row, with
 `min-inline-size: min-content`, R-10), and the inner control is its single grid item, stretched in both axes (the
 default `justify-self` and `align-self` of a grid item), so the inner control always fills the host's box
-(PLAN-FRESH-2-001 (a)). The host gets no tabindex and no role. `ocelle-button.focus()` and `ocelle-action-row.focus()` focus the inner control (a host,
+(PLAN-FRESH-2-001 (a)). **The row is the exception** (operator decisions at phase 5, (b) and (c), plan decision 30):
+its single stretched grid item is a shadow layout wrapper `<div class="layout">`, which holds the inner control (icon
+and title only) and, as the control's siblings, the description, tags and trailing wrappers (R-10); the inner control
+owns a hit layer, an empty shadow `<span class="hit">` absolutely positioned (`inset: 0`) against the layout wrapper,
+so **the control's hit layer fills the host** where the button's inner control does. The host gets no tabindex and no role. `ocelle-button.focus()` and `ocelle-action-row.focus()` focus the inner control (a host,
 and #16's dialog returning focus to its opener, call it). Each element overrides `click()` to call the inner control's
 `click()` (R-06, PLAN-FRESH-1-003).
 
@@ -39,6 +44,35 @@ lies outside the control. A button stretched by a flex row therefore grows to th
 centred, R-09); a host that does not want that sets `align-self` on the element. The scenarios US1-15, US3-10,
 US4-15 and US5-6 (stretched case) click 4 px inside the host's bottom edge, each with a plant restoring
 `inline-block` or `block`.
+
+**The row's hit layer (operator decision at phase 5, (c))**: the row's inner control no longer holds the description,
+tags and trailing content (R-05), so it cannot fill the host and keep FR-032's content-sized wrap in pure CSS; the
+measurement of "fills" moves to its hit layer. Structure:
+- the layout wrapper is the host's single stretched grid item, `position: relative` and `isolation: isolate` (a
+  stacking context), and is the flex-wrap (row) or grid (card) container of R-10; the hit layer's containing block is
+  this shadow wrapper, never the host, so a page rule on the host's `position` cannot move or grow the layer beyond
+  the row (an `inset: 0` layer against a page ancestor would take clicks meant for the page);
+- the inner control is a non-positioned item of that layout (so it is not the layer's containing block) and draws
+  nothing itself; the hit layer inside it has `z-index: -1` in the wrapper's stacking context, so it paints beneath
+  every sibling and beneath the title, and carries the row's surface, border, inside focus ring and current bar
+  (R-12);
+- the description, tags and trailing wrappers are `aria-hidden="true"` and `pointer-events: none` (inherited by their
+  slotted elements through the flat tree), so for hit testing the layer is the topmost target at every point of the
+  wrapper outside the icon and the title, which are inside the control: every pointer click on the host's content box
+  lands on the inner control or its layer, and its composed path passes through the inner control. Hover follows: a
+  pointer anywhere over the row matches `.control:hover`.
+The hit layer is "above the siblings" in the operator's decision for hit testing; it is painted beneath them, since a
+layer painted above them would hide their text with the surface it carries. Measured in the phase 5 spike (T049a,
+before the red commit): the layer's box equals the host's box in both axes in a grid of cards and a stretched flex
+row, in button and link mode (a `<button>` and an `<a>` with an absolute child whose containing block is an ancestor);
+a click at the centre of the description, of a tag and of the trailing icon has the inner control in its composed path
+and dispatches one event; axe `color-contrast` gives no violation and no incomplete result for the title, description
+and tags text over the layer (US5-4 forbids an incomplete result on a current row; FR-052 covers every page). Any of
+these failing is a stop-and-ask. US4-15 asserts the layer's box against the host's (plant: the layer positioned
+against the inner control, so it covers only the icon and title) and the clicks on the siblings (plant: siblings
+without `pointer-events: none`, so the host guard stops the click and nothing is dispatched). Slotted content that
+sets its own `pointer-events` takes its clicks itself; the host guard stops them (the composed path misses the inner
+control), so it never activates the row (README).
 
 **A restyled host, measured (PLAN-FRESH-3-001 (a))**: `:host { display: ... }` is the lowest-priority rule for the
 host's own box; any author rule on the element in the page wins. With `:host { display: inline-grid }`, a disabled
@@ -61,8 +95,9 @@ outside the inner control never activates the element, available or not, and a h
 `display` and size (README). The scenarios US1-17, US3-11, US5-6 (restyled case) and US5-12 click the outside points
 of spec § "Restyled host" under `display: block`, `display: flex; width: 100%` and `display: block; height: 90px`, and
 the inner control's centre as the positive case; plant: no host listener. Which points lie outside the inner control
-is measured for the button (both, under each rule); for the row, whose link-mode `<a>` may fill a block host's width,
-the phase's spike lists them by hand per mode and rule, and the scenario asserts the list from the boxes before
+is measured for the button (both, under each rule); for the row, the points are those outside its hit layer's box
+(the layer fills the layout wrapper, which a page rule on the host's `display` or height can leave smaller than the
+host), the phase 6 spike lists them by hand per mode and rule, and the scenario asserts the list from the boxes before
 clicking.
 
 **Its limits (stated in the README)**: the host listener sees a click at the host in the at-target phase, so it covers
@@ -226,7 +261,11 @@ elements are assigned in order to the inner control's `ariaControlsElements`, `a
 `connectedCallback`. The row's own description (FR-034) is built the same way: the inner control's
 `ariaDescribedByElements` is set to the elements assigned to the `description` slot followed by those of the `tags`
 slot that have non-whitespace text (`null` when none has), unless a host `aria-describedby` was moved, which then
-wins.
+wins. Since the operator decisions at phase 5 (plan decision 30) those slotted elements are shown in `aria-hidden`
+wrappers beside the inner control, not inside it, so this reference is their only way to assistive technology; a
+hidden element referenced directly still gives its text to the description (Accessible Name 1.2), which the phase 5
+spike (T049a) measures with the wrappers `aria-hidden` (description "Due Friday Blocked Design"; no node of its own
+for the description or a tag).
 
 **Empty slotted elements (PLAN-FRESH-3-004)**: measured by the refuter (CDP full AX tree) on an inner `<button
 title="Open the mission">` named by its `[part=title]` wrapper: with `ariaDescribedByElements` set to `[]` or `null`
@@ -269,24 +308,44 @@ or leaving the WebKit figure unknown (round 1 options (b) and (c), not chosen).
 2. else a moved `aria-label` (not blank, R-03) becomes the inner control's `aria-label` and `ariaLabelledByElements`
    is cleared;
 3. else a trimmed non-empty `label` becomes the inner control's `aria-label` and `ariaLabelledByElements` is cleared;
-4. else content. For the button, content is the inner control's content (the default slot; slotted icons are
-   decorative and contribute nothing, mission 005). For the row, whose inner control also holds the description, tags
-   and trailing slots, name from content would read all of them (lens probes: "Mission 42 Due Friday Blocked";
-   `aria-hidden` on the description wrapper does not remove slotted text from the name), so the row sets the inner
-   control's `ariaLabelledByElements` to its own shadow `[part=title]` wrapper (same shadow root), which holds only the
-   default slot (measured: name "Mission 42", description "Due Friday Blocked") (PLAN-CORRECTNESS-1-002).
+4. else content: the inner control's content. For the button, that is the default slot; slotted icons are
+   decorative and contribute nothing (mission 005). For the row, it is the icon and the title only, because the
+   description, tags and trailing wrappers are not inside the inner control (operator decision at phase 5, (b); plan
+   decision 30): they are `aria-hidden` shadow siblings of it (R-01, R-10), and the description and tags reach
+   assistive technology only through the inner control's `ariaDescribedByElements` (R-04). So the row is named from
+   its content like the button, with no internal reference: name "Mission 42", description "Due Friday Blocked
+   Design" (to be measured in the phase 5 spike, T049a, with the wrappers `aria-hidden`; Accessible Name 1.2 includes
+   a hidden element's text when it is referenced directly, as `ariaDescribedByElements` does).
 
-The internal reference is replaced or cleared whenever a higher source is present, so FR-006's order holds. Measured:
-with both `ariaLabelledByElements` and `aria-label` on the inner button, labelledby wins (Accessible Name 1.2).
-Mission 005's `naming.ts` (`expose`) is image-specific and is not reused; a new internal module `control.ts` holds the
-shared control logic (R-12). The control conventions state the general rule: a control whose inner control holds
-content that is not its name names itself from its name part.
+**Superseded (PLAN-CORRECTNESS-1-002)**: the row's inner control first held the description, tags and trailing
+slots, so name from content read all of them (lens probes: "Mission 42 Due Friday Blocked"; `aria-hidden` on the
+description wrapper did not remove slotted text from the name), and the row set the inner control's
+`ariaLabelledByElements` to its own shadow `[part=title]` wrapper (measured: name "Mission 42", description "Due
+Friday Blocked"). The phase 5 draft did that and met a serious axe violation on every row with description or tag
+text (below), so the structure changed instead; the title wrapper keeps the part `title` and is no name reference.
 
-**Label in name (PLAN-A11Y-SECURITY-1-011)**: a `label` or host `aria-label` wins over visible content. 006's axe rule
-set does not run experimental rules, so `label-content-name-mismatch` never checks WCAG 2.5.3 (Level A). The control
-conventions (FR-008) and the README therefore state that when content is visible, `label` and a host `aria-label`
-contain the visible text, ideally at its start; every story that sets a name on a control with visible text follows
-it (as US4-4's "Open mission 42" on "Mission 42").
+The name sources above are replaced or cleared whenever a higher source is present, so FR-006's order holds.
+Measured: with both `ariaLabelledByElements` and `aria-label` on the inner button, labelledby wins (Accessible Name
+1.2). Mission 005's `naming.ts` (`expose`) is image-specific and is not reused; a new internal module `control.ts`
+holds the shared control logic (R-12). The control conventions state the general rule: a control's inner control
+holds only its name part and decorative content; content that describes it is shown beside the inner control and
+reaches assistive technology as its description.
+
+**Label in name (PLAN-A11Y-SECURITY-1-011; corrected at phase 5)**: a `label` or host `aria-label` wins over visible
+content. This section said that 006's axe rule set does not run experimental rules and so `label-content-name-mismatch`
+never checks WCAG 2.5.3 (Level A). That is **wrong** for axe-core 4.14.0: the rule is enabled, tagged `cat.semantics`,
+`wcag21a` and `wcag253`, and not tagged `experimental`, so 006's selection (`gates/lib/axe-rules.ts`) runs it in the
+element tests and in the story `axe` gate (measured by the phase 5 implementer, Chromium 156: 13 failing draft tests,
+each with exactly one serious `label-content-name-mismatch` at the row's inner control). The rule applies to a widget
+named by `aria-label` or `aria-labelledby` (axe reads `ariaLabelledByElements` too) and compares the name with the
+control's visible text, read for on-screen visibility, so `aria-hidden` on content inside the control does not change
+it. Consequences: the row's inner control holds no visible text but its title (above), so with no host name and no
+`label` the rule does not apply (named from content), and with one it compares against the title alone; a `label` or
+host `aria-label` that does not contain the visible text is a serious finding on the host's page, on either element.
+The control conventions (FR-008) and the README therefore state that when content is visible, `label` and a host
+`aria-label` contain the visible text, ideally at its start; every story that sets a name on a control with visible
+text follows it (as US4-4's "Open mission 42" on "Mission 42"), and the axe runs of the element tests and the story
+gate check it.
 
 ## R-06 Stopping activation ("not activated")
 
@@ -545,24 +604,48 @@ var(--ocelle-target-min)` in every presentation and layout (SPEC-1-08).
 
 ## R-10 Row layout and width
 
-**Decision**: the row's inner control is a flex container (`row` layout: `flex-wrap: wrap`, the icon/title/description
-group `flex: 1 1 auto` with `min-inline-size: min-content`, the tags-and-trailing group `flex: 0 0 auto` wrapping as a
-whole, FR-032; `card` layout: a two-row grid, title line with trailing at its end, then description, then tags). Its
-inline padding is `--ocelle-space-3` in both presentations and every state (the `flush` row's was `--ocelle-space-2`
-before PLAN-FRESH-2-005 (b)): the focus ring's band (2 to 5 px inside the border edge), the gap and the current bar
-(7 to 10 px inside the border edge, R-12) all lie in it, so the bar is never behind text and toggling `current`
-moves no content box. The flush row's compact density is its block padding (`--ocelle-space-1`) and text scale
-(FR-031), which stay. The title wrapper (part `title`) and the description wrapper set `overflow-wrap: anywhere` in both
-layouts (PLAN-CORRECTNESS-1-011): a long unbreakable identifier wraps inside the row, and the min-content width stays
-at least one character, so FR-040 still holds. The tags slot's container is `display: flex; flex-wrap: wrap; gap:
-var(--ocelle-space-1)` and each slotted tag gets `::slotted(*) { overflow-wrap: normal; word-break: normal; }` so a
-tag never breaks inside a word, except a tag wider than the card, which gets `max-inline-size: 100%` and
-`overflow-wrap: anywhere` (US5-8). The host is `display: grid; min-inline-size: min-content` with the inner control as
-its single stretched item (R-01; FR-040): a grid container is block-level, so it stretches inline in a block parent
-as `display: block` did, and the inner control follows the host's block size in a grid of cards (US4-15). Each
-slot's wrapper (icon, description, tags, trailing) gets the `hidden` attribute while its slot is empty, by FR-031's
-definition (for `description` and `tags`: no assigned element with non-whitespace text, R-04), so an empty slot takes
-no space and adds no gap.
+**Decision** (structure revised by the operator decisions at phase 5, plan decision 30): the row's shadow layout
+wrapper (`.layout`, R-01), not its inner control, is the layout container, and the inner control (icon and title) is
+one of its items beside the description, tags and trailing wrappers, which are `aria-hidden="true"` and
+`pointer-events: none`. `row` layout: the wrapper is `display: flex; flex-wrap: wrap`; a lead group holding the inner
+control and the description wrapper is `flex: 1 1 auto` with `min-inline-size: min-content`, and the group of the
+tags and trailing wrappers is `flex: 0 0 auto`, wrapping as a whole (FR-032, US4-18: the same flex-wrap as before, so
+the wrap stays pure CSS and unchanged). `card` layout: the wrapper is a two-row grid, the title line (the inner
+control, with the trailing wrapper at its end), then the description, then the tags; the same wrappers, the same
+hit layer and the same `aria-hidden` and `pointer-events` rules as the row layout (the card follows the same model).
+The layout wrapper's inline padding is `--ocelle-space-3` in both presentations and every state (the `flush` row's
+was `--ocelle-space-2` before PLAN-FRESH-2-005 (b)), plus `--ocelle-border-width` on a `default` row, whose border the
+hit layer draws inside the wrapper's box (R-12), so content starts 12 px (flush) or 13 px (default) in, as before. The
+focus ring's band (2 to 5 px inside the border edge), the gap and the current bar (7 to 10 px inside the border edge,
+R-12) all lie in that inline padding, which no sibling and no part of the inner control's content enters, so neither
+the ring's inline bands nor the bar overlap the description, tags, trailing or title boxes, the bar is never behind
+text, and toggling `current` moves no content box. The ring's block-start and block-end bands lie in the block
+padding; the phase 5 spike (T049a) measures on a flush row (block padding `--ocelle-space-1`, 4 px, against a band
+2 to 5 px in) that no sibling or title box reaches the band, and a box that does is a stop-and-ask. The flush row's
+compact density is its block padding (`--ocelle-space-1`) and text scale (FR-031), which stay. The minimum block size
+(FR-031) is on the layout wrapper, so the hit layer has it too. The title wrapper (part `title`) and the description
+wrapper set `overflow-wrap: anywhere` in both layouts (PLAN-CORRECTNESS-1-011): a long unbreakable identifier wraps
+inside the row, and the min-content width stays at least one character, so FR-040 still holds. The tags slot's
+container is `display: flex; flex-wrap: wrap; gap: var(--ocelle-space-1)` and each slotted tag gets `::slotted(*) {
+overflow-wrap: normal; word-break: normal; }` so a tag never breaks inside a word, except a tag wider than the card,
+which gets `max-inline-size: 100%` and `overflow-wrap: anywhere` (US5-8). The host is `display: grid;
+min-inline-size: min-content` with the layout wrapper as its single stretched item (R-01; FR-040): a grid container is
+block-level, so it stretches inline in a block parent as `display: block` did, and the layout wrapper, and with it the
+hit layer, follows the host's block size in a grid of cards (US4-15). Each slot's wrapper (icon, description, tags,
+trailing) gets the `hidden` attribute while its slot is empty, by FR-031's definition (for `description` and `tags`:
+no assigned element with non-whitespace text, R-04), so an empty slot takes no space and adds no gap.
+
+**Sibling ink** (operator decision at phase 5): the description, tags and trailing wrappers are not inside the inner
+control, so they inherit no colour from it; each sets its own, keyed on the host's reflected state and on the mode,
+which the element marks on the layout wrapper (`.layout.link`, internal, no public surface):
+- description and tags `--ocelle-color-ink-soft` (`--ocelle-color-chrome-muted` with `:host([ground="chrome"])`,
+  US4-17); trailing as the title (`--ocelle-color-ink`, `--ocelle-color-chrome-ink` on chrome);
+- `:host([unavailable])`: description, tags and trailing `--ocelle-color-disabled-ink`, as the title (US5-7);
+- under `@media (forced-colors: active)`: the R-12 table's text colour per state, set on each wrapper as on the inner
+  control (`ButtonText` in button mode, `LinkText` in link mode, `GrayText` when unavailable).
+US4-17, US5-7 and the forced-colours scenarios read the computed colour of the description and tags wrappers (and of
+the trailing icon) beside the title's (plant: sibling colours removed, so they fall back to the host's inherited
+colour).
 
 The slot convention's size rules are scoped to the icon slots (PLAN-A11Y-SECURITY-1-002): `src/icon-slot.ts` has an
 unscoped `::slotted(*)` that sets inline and block size to the icon size, `max-inline-size: none` and `flex: none`, all
@@ -640,14 +723,18 @@ inside `@media not (forced-colors: active)`).
 **Focus ring**: `outline` longhands (mission 005 finding: the shorthand with `var()` fails in Chromium):
 `outline-style: solid`, `outline-width: var(--ocelle-focus-width)`, `outline-color: var(--ocelle-color-focus)`, on
 `:focus-visible` of the inner control. On the button, `outline-offset: var(--ocelle-focus-offset)` (outside). On the
-row the ring is drawn **inside** (PLAN-A11Y-SECURITY-1-006 (a)): `outline-offset: var(--ocelle-focus-offset-inset)`,
+row the ring is drawn **inside** (PLAN-A11Y-SECURITY-1-006 (a)) and by the hit layer (R-01, plan decision 30), the box
+that fills the host: `.control:focus-visible .hit` gets the outline, the inner control itself none, and
+`outline-offset: var(--ocelle-focus-offset-inset)`,
 a new token `calc(-1 * (var(--ocelle-focus-offset) + var(--ocelle-focus-width)))` (-5 px; `ref: ["focus-offset",
 "focus-width"]`, group shape), so the ring is never clipped by a scroll container's edge nor covered by the next row
 (measured by the lens: an outer ring in an `overflow: auto` list loses both inline sides, and a positioned next row
 covers its block-end side). The ring's band is 2 to 5 px inside the row's border edge. Scenarios place rows in an
 `overflow: auto` list, edge to edge and positioned, and read ring pixels on all four sides of a focused row without
 `current` (plant: no ring), so no bar pixel can stand in for the ring; the current-row case is below. The former
-README padding note is dropped.
+README padding note is dropped. The layer paints beneath the row's content (R-01), so the ring's inline bands lie in
+the row's inline padding (R-10) and overlap no sibling (description, tags, trailing) and no title box; its block bands
+lie in the block padding (R-10's spike check on a flush row).
 
 **The button's ring and clipping containers (PLAN-FRESH-2-009)**: the button keeps its ring outside; an inside ring is
 not viable on a zero-padding flush button (it would cover the label). A flush button sits at its container's
@@ -659,9 +746,15 @@ example `padding-inline` of that size with a matching negative margin); `readme.
 **Current bar (PLAN-A11Y-SECURITY-1-007)**: in forced colours, backgrounds are forced to `Canvas` and `box-shadow` to
 none (lens probe), a border would move the flush row's content (FR-031), and a pseudo-element painted behind text
 draws axe's serious `color-contrast` incomplete (006 research). The bar is therefore a shadow `<span class="bar">`
-inside the inner control (`position: relative`): `position: absolute; inset-block: 0; inline-size:
-var(--ocelle-bar-width); background-color: var(--ocelle-color-current)`, rendered only while `current` is set. It
-lies in the row's inline padding (R-10), never behind text, and takes no layout space.
+inside the hit layer (R-01; the layer, absolutely positioned, is its containing block; plan decision 30):
+`position: absolute; inset-block: 0; inline-size: var(--ocelle-bar-width); background-color:
+var(--ocelle-color-current)`, rendered only while `current` is set. It lies in the row's inline padding (R-10), never
+behind text and never under a sibling (description, tags, trailing) or the title, and takes no layout space. The hit
+layer also draws the row's surface (`background-color`, the current `accent-low` and the hover surface included) and
+the `default` row's border, so the bar's place measured from the layer's padding edge is the place measured before
+from the inner control's. The text of the title and of the siblings is painted over the layer's surface, not under
+it, and the phase 5 spike (T049a) and phase 6 spike (T060) measure axe `color-contrast` for it on a plain and on a
+current row: no violation and no incomplete result (US5-4, FR-052), else a stop-and-ask.
 
 **Bar and ring distinct (PLAN-FRESH-2-005 (b))**: `color-focus` and `color-current` are both `accent-strong`. With the
 bar at `inset-inline-start: 0` it occupied 1 to 4 px inside the border edge (0 to 3 px on a flush row), overlapping
@@ -686,7 +779,10 @@ layout space. While focused, the solid focus ring replaces it.
 
 **Forced colours, per element and state** (PLAN-TESTABILITY-1-007). Inside `@media (forced-colors: active)` the
 elements set these system colours explicitly (Chromium keeps author system colours under forced colours); "text"
-covers the label, the title, the description and the spinner (`currentColor`):
+covers the label, the title, the description, the tags, the trailing icon and the spinner (`currentColor`). On the
+row the description, tags and trailing wrappers are siblings of the inner control and inherit nothing from it (plan
+decision 30), so each wrapper sets the row's text colour itself, keyed on `:host([unavailable])` and on the mode the
+element marks on its layout wrapper (R-10 § Sibling ink); "border" and "other" are drawn by the row's hit layer:
 
 | Element, state | Text | Border | Other |
 |---|---|---|---|

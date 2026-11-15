@@ -8,7 +8,8 @@ fix, 2026-11-13; one operator decision at planning added to its header and FR-00
 and the operator's fork decisions of 2026-11-13 applied to the spec and every design artifact, `reviews/plan/round-1/`,
 `reviews/plan/round-2/`, `reviews/plan/round-3/`; feature 006 (#10) merged into this branch at 37dd501, operator
 decision 2026-11-13; the analysis after `/speckit-tasks` and the operator's decision on its C1 of 2026-11-14 applied
-to the spec and every design artifact, `reviews/analysis/fixes-1.md`).
+to the spec and every design artifact, `reviews/analysis/fixes-1.md`; the operator decisions at phase 4 and phase 5
+of 2026-11-15 applied the same way, decisions 29 and 30).
 
 ## Summary
 
@@ -23,7 +24,9 @@ move under reduced motion). Each activation that delivers a `click` also dispatc
 area outside the control, and a host listener stops any click that did not pass through the inner control, so a page
 that restyles the element's `display` or size opens no bypass either.
 `ocelle-action-row` renders the same kind of inner control as a row or a card, with icon, title, description, tags and
-trailing slots, named by its title only, and dispatches `ocelle-action-row-activate` with `{ rowId }`; it has flush
+trailing slots, named by its title only: the inner control holds the icon and the title, the description, tags and
+trailing content are `aria-hidden` siblings in the same layout (the description reaching assistive technology as the
+accessible description), and the control's hit layer fills the host and takes every click (decision 30), and dispatches `ocelle-action-row-activate` with `{ rowId }`; it has flush
 and default presentations, `current` with a bar drawn so it survives forced colours and stays apart from the focus
 ring, `unavailable` and `busy`, and its focus ring is drawn inside the row. A shared internal module `control.ts` carries the control conventions later
 controls follow: link versus button (by the URL parser), disabled versus unavailable (neither keeps an `href`), an
@@ -85,7 +88,7 @@ phase 2),
 |---|---|
 | I. Names, events, no I/O, small interface, manifest | Tags `ocelle-button`, `ocelle-action-row`; events `ocelle-action-row-activate` and `ocelle-button-activate`, each `bubbles` and `composed` (and `cancelable`); the button dispatches its activate event beside the native `click`, so each element's user intent goes out as an `ocelle-*` event (operator decision C1 (a), 2026-11-14, decision 26). No I/O: navigation is the native link's. Interfaces in contracts/elements-package.md; every property, attribute (the moved ARIA attributes, `title` and the element-owned `data-ocelle-moved-*` mirrors included, with descriptions, R-15), slot, part, custom state and the event's `detail` type in the manifest (FR-053). |
 | II. Tokens only, brand rules | Element CSS from tokens only, no new lint allowance: the spinner's angle is the new `motion-turn` token and its factor a number inside `calc()` (R-07). `--ocelle-color-rule` never a boundary; control borders per #5 rule 1, selected by the `ground` attribute; controls on the top bar and rails use the dark chrome tokens through `ground="chrome"` (R-08 item 4a); the primary button keeps an `accent-strong` border because the ochre fill measures 2.37 to 2.98:1 on light grounds (R-08), so ochre fill is never the only mark; one radius (`radius-2` button, `radius-row` row); no monospace; `font: inherit` on inner controls. |
-| III. Accessible by construction | One inner control that fills its host, and a host guard that stops any click not passing through it, so neither a stretched host nor a page rule on the element's `display` or size leaves an area that bypasses the guard (R-01); host ARIA and `title` moved onto it, so the state appears once and axe has nothing to review on the host, and mirrored so copies of the live DOM keep it, with mirrors restored after a morphing swap (R-03); the row's description references only slotted elements with text, so an empty slotted element neither hides a moved `title` nor takes space (R-04); ID references never cross a shadow root (R-04); name order per Accessible Name 1.2, the row named by its title only (R-05), label-in-name stated (WCAG 2.5.3); keyboard: native button (Enter, Space) and link (Enter) behaviour, no composite pattern to roam; Tab and Shift+Tab tested; token focus ring on `:focus-visible`, drawn inside a row so scroll containers and adjacent rows cannot clip or cover it, with the current bar apart from it (R-12), and a documented clearance for a flush button in a clipping container; default size and every row meet `--ocelle-target-min`, compact meets 24 px (WCAG 2.5.8); the spinner runs 4.8 s and stops (WCAG 2.2.2) and does not move under reduced motion (R-07); forced colours: a system colour per element and state, the current bar and flush hover drawn so they survive (R-12); contrast rows for every pair, hover and active included, on the main, state and chrome grounds (R-08); axe in the element tests (006's rule selection, imported) and the `axe` gate on every story in the phase that adds it (R-13). |
+| III. Accessible by construction | One inner control that fills its host (on the row, the control's hit layer fills it and takes every click, its description, tags and trailing content being `aria-hidden` siblings, so the control's visible text is its title and axe's `label-content-name-mismatch` has nothing to report, decision 30), and a host guard that stops any click not passing through it, so neither a stretched host nor a page rule on the element's `display` or size leaves an area that bypasses the guard (R-01); host ARIA and `title` moved onto it, so the state appears once and axe has nothing to review on the host, and mirrored so copies of the live DOM keep it, with mirrors restored after a morphing swap (R-03); the row's description references only slotted elements with text, so an empty slotted element neither hides a moved `title` nor takes space (R-04); ID references never cross a shadow root (R-04); name order per Accessible Name 1.2, the row named by its title only (R-05), label-in-name stated (WCAG 2.5.3); keyboard: native button (Enter, Space) and link (Enter) behaviour, no composite pattern to roam; Tab and Shift+Tab tested; token focus ring on `:focus-visible`, drawn inside a row so scroll containers and adjacent rows cannot clip or cover it, with the current bar apart from it (R-12), and a documented clearance for a flush button in a clipping container; default size and every row meet `--ocelle-target-min`, compact meets 24 px (WCAG 2.5.8); the spinner runs 4.8 s and stops (WCAG 2.2.2) and does not move under reduced motion (R-07); forced colours: a system colour per element and state, the current bar and flush hover drawn so they survive (R-12); contrast rows for every pair, hover and active included, on the main, state and chrome grounds (R-08); axe in the element tests (006's rule selection, imported) and the `axe` gate on every story in the phase that adds it (R-13). |
 | IV. Strict CSP, offline | Adopted stylesheets only; the spinner is inline SVG with presentation attributes; no `javascript:` URL rendered, decided by the URL parser (R-02); every scenario also runs on the strict-CSP fixture with zero violations; axe on the fixture is served same-origin. |
 | V. Storybook, behaviour tests | A story per variant and state in light and dark (R-13), each with a committed baseline made in the pinned container in the phase that adds it (006 is on this branch); a focus story for each element, by programmatic focus or, failing that, `focus({ focusVisible: true })` (decision 27); interaction tests assert the `click` and both activate events with every flag, the target at every listener and one dispatch serial, from pointer, `click()` and every keyboard path (FR-051). |
 | VI. Consumer-driven, own code | Needs from #7 and spec-kitty-design #493, #495, #496, #501, #504, #508, #509, #518, #525, #528, #532; consumers #12 (breadcrumb items, and its top-bar menu button with `aria-haspopup` and `ground="chrome"`, so it is not hand-rolled) and #14. Nothing copied from Spec Kitty. |
@@ -173,11 +176,14 @@ phase 2),
     current bar stays drawn (in disabled ink) so the position in the list is still visible; `aria-current` stays.
 17. **Manifest** (R-15, round 1 fork PLAN-CORRECTNESS-1-006 (a)): the moved attributes are declared with descriptions;
     the normaliser drops a standard attribute only when the element does not declare it (005's output unchanged).
-18. **The inner control fills the host** (R-01, R-10, round 2 fork PLAN-FRESH-2-001 (a)): host `display: inline-grid`
-    (button) and `display: grid; min-inline-size: min-content` (row), the inner control the single stretched grid
-    item. A click anywhere on a stretched host reaches the inner control, so the guard and the row's activation see
-    it; cards in a grid draw equal heights; a button stretched by a flex row grows tall. Plants restore
-    `inline-block`/`block`. A page rule on the element can override the host's `display`; decision 23's host guard covers that
+18. **The inner control fills the host** (R-01, R-10, round 2 fork PLAN-FRESH-2-001 (a); for the row, restated by
+    decision 30): host `display: inline-grid` (button) and `display: grid; min-inline-size: min-content` (row). On the
+    button the inner control is the single stretched grid item. On the row **the control's hit layer fills the host**:
+    the single stretched grid item is the shadow layout wrapper, and the inner control's hit layer (`inset: 0`
+    against that wrapper) covers it. A click anywhere on a stretched host reaches the inner control (on the row, over
+    the description, tags and trailing content too), so the guard and the row's activation see it; cards in a grid
+    draw equal heights; a button stretched by a flex row grows tall. Plants restore `inline-block`/`block` (and, on
+    the row, the layer positioned against the inner control). A page rule on the element can override the host's `display`; decision 23's host guard covers that
     case, so no guarantee rests on the grid alone.
 19. **Moved values are mirrored** (R-03, round 2 fork PLAN-FRESH-2-002 (a)): one element-owned host attribute
     `data-ocelle-moved-<attribute>` per moved value, read back at upgrade, declared in the manifest (MINOR), so
@@ -211,7 +217,10 @@ phase 2),
     empty when no assigned element has non-whitespace text; only elements with text are referenced as the description
     (`null` when none, so a moved `title` describes the row), and an empty slot's wrapper is hidden. Recomputed on
     `slotchange` and by a `MutationObserver` on the host's light children (text written into a slotted span fires no
-    `slotchange`). US4-6 and US4-16 gain empty-span cases.
+    `slotchange`). US4-6 and US4-16 gain empty-span cases. Since decision 30 the wrappers are `aria-hidden` siblings of
+    the inner control, so the referenced elements reach assistive technology only through `ariaDescribedByElements`
+    (a directly referenced hidden element still gives its text, measured in the phase 5 spike), and a hidden empty
+    wrapper still takes no space and adds no gap in the shared layout.
 26. **The button's activate event** (operator decision C1 (a), 2026-11-14; analysis fixes 1): constitution I asks for
     user intents as `ocelle-*` CustomEvents, so besides the native `click` the button dispatches
     `new CustomEvent("ocelle-button-activate", { bubbles: true, composed: true, cancelable: true, detail: {} })` from
@@ -257,6 +266,50 @@ phase 2),
     `motion-spin`. The `gates/README.md` `brand-rules` row records the change to 002's rule (f) and lists the new
     plant. No principle is relaxed (constitution II keeps its reduced-motion rule, now for every duration), so no
     Complexity Tracking row is needed.
+30. **Row content beside the inner control, and its hit layer** (operator decisions at phase 5, 2026-11-15,
+    human:jeroennouwsdev, two multiple-choice answers: (b) and (c); spec "Operator decisions at phase 5"; R-01, R-04,
+    R-05, R-10, R-12; the phase 5 implementer's stop-and-ask, recorded in `reviews/phase-5/notes.md`).
+    *Finding*: axe-core 4.14.0 enables `label-content-name-mismatch`, tagged `cat.semantics`, `wcag21a` and `wcag253`
+    and not `experimental`, so 006's rule selection runs it; R-05 had said it was experimental and never ran. A row
+    whose inner control held the description and tags, named only by its title (FR-034), got one serious violation
+    (13 draft tests, every row with description or tag text), against FR-052, and so would every consumer page.
+    *Decision 1, option (b)*: the description, tags and trailing wrappers leave the inner control and become
+    `aria-hidden="true"` shadow siblings of it; the description and tags reach assistive technology only through the
+    inner control's `ariaDescribedByElements` (R-04); the inner control holds the icon and the title, so its visible
+    text is its title, which is also its name (FR-034 kept), and it is named from content with no internal title
+    reference (R-05; the `[part=title]` wrapper keeps its part). axe stays at 0 serious or critical findings, on
+    consumers' pages too. Rejected: (a) an FR-052 exception with `a11y-exceptions.json` entries; (c) naming the row
+    from all its content (reverses FR-034 and SPEC-2-04).
+    *Decision 2, option (c)* (the fork the planner found: FR-032's content-sized wrap cannot stay pure CSS if the
+    inner control's own box must fill the host): the inner control (icon and title) and the description, tags and
+    trailing wrappers stay in one flex-wrap layout, a shadow layout wrapper that is the host's single stretched grid
+    item (R-10), so FR-032 and US4-18 stay pure CSS and unchanged. An absolutely positioned shadow span inside the
+    inner control, the hit layer, covers the whole host (`inset: 0` against the layout wrapper, its containing block,
+    never the host, so a page rule on the host's `position` cannot spread it over the page). It takes every pointer
+    click on the host, so the composed path passes through the inner control: the siblings have `pointer-events:
+    none`, and the layer is painted beneath them and the title (`z-index: -1` in the wrapper's stacking context; a
+    layer painted above them would hide their text under the surface it carries), so for hit testing it sits above
+    them. It carries the row's surface, border, inside focus ring and current bar (R-12). FR-001's fill sentence,
+    R-01's fill measurement, decision 18 and US4-15 now say, for the row, "the control's hit layer fills the host";
+    the restyled host's outside points are outside the layer. The card layout follows the same model (R-10).
+    *Within the decision*: the siblings inherit no colour from the inner control, so the description, tags and
+    trailing wrappers set their own ink, keyed on the host's reflected state and the mode (marked on the layout
+    wrapper): `color-ink-soft` description and tags, `chrome-muted` with `ground="chrome"` (US4-17), disabled ink
+    when unavailable (US5-7) and R-12's forced-colours text per mode and state (R-10 § Sibling ink). The ring's inline
+    bands and the current bar stay inside the row's inline padding and overlap no sibling and no title box (R-10,
+    R-12). The README says interactive content in the `description`, `tags` or `trailing` slot is unsupported and would
+    also draw axe's `aria-hidden-focus`, and that slotted content setting its own `pointer-events` takes clicks the
+    row then ignores (host guard). The phase 5 spike (T049a, new, before the red commit) measures the layer's box,
+    the clicks on the siblings, the accessible description with `aria-hidden` wrappers, the ring's block bands on a
+    flush row, and axe `color-contrast` for the title and sibling text over the layer (no violation, no incomplete
+    result); the phase 6 spike (T060) measures the same `color-contrast` on a current row (US5-4 forbids an incomplete
+    result there; FR-052 covers every page). A spike result against this is a stop-and-ask. Plants: the description
+    wrapper back inside the inner control (name and axe); the layer positioned against the inner control (US4-15's
+    box); siblings without `pointer-events: none` (US4-15's sibling clicks); sibling colours removed (US4-17, US5-7,
+    forced colours). The public surface is unchanged: the layout wrapper and the hit layer are no parts; the part
+    `control` is the inner control (icon and title), so a host's `::part(control)` styles no longer reach the row's
+    surface or border (README). No principle is relaxed and no exception is recorded, so no Complexity Tracking row
+    is needed.
 
 ## Project Structure
 
@@ -367,8 +420,12 @@ one at a time.
    forced-colours rules, the README's 833 ms note for a spin override; busy stories with their baselines and the axe
    gate; US3 scenarios 1 to 11 (US3-11 the restyled busy button; no `ocelle-button-activate` while busy, one after
    `busy` is removed) and this phase's edge-case rows.
-5. **US4 `ocelle-action-row`** (P4): `ocelle-action-row.ts` on `control.ts` (the `grid` host filled by the inner
-   control, button mode, link mode for activation, `click()`), the activate event, the name from the title wrapper,
+5. **US4 `ocelle-action-row`** (P4): spike first (decision 30: the hit layer's box and the clicks on the siblings,
+   the description with `aria-hidden` wrappers, the ring's block bands on a flush row, axe `color-contrast` over the
+   layer); `ocelle-action-row.ts` on `control.ts` (the `grid` host with the layout wrapper as its single item, the
+   inner control holding icon and title and its hit layer filling the host, the description, tags and trailing
+   wrappers as `aria-hidden` siblings with `pointer-events: none` and their own ink, button mode, link mode for
+   activation, `click()`), the activate event, the name from content (icon and title),
    the description from slots with text only and the slot emptiness of decision 25 (`slotchange` and a
    `MutationObserver`), `title` and the mirrors (with the morph step), flush and default presentations, row layout
    and wrap,
@@ -379,10 +436,12 @@ one at a time.
    non-current row, decision 27) with their baselines and the axe gate; US4 scenarios 1 to 18 (US4-18 the row-layout
    wrap, check-3 note SPEC-3-04) and this phase's edge-case rows.
 6. **US5 Row states and card** (P5): link-row activation order and `preventDefault`, modifier, Alt and middle clicks
-   (sink and fixture bodies), `current` and its bar apart from the ring (R-12's method, with hover precedence, forced
-   colours and the chrome surface), `unavailable` (no `href` on a link row, decision 9; with `current`, decision 16;
+   (sink and fixture bodies), `current` and its bar apart from the ring (R-12's method, drawn by the hit layer, with
+   hover precedence, forced colours and the chrome surface; the spike measures axe `color-contrast` on a current row,
+   decision 30), `unavailable` (no `href` on a link row, decision 9; with `current`, decision 16;
    a stretched unavailable row), the restyled rows (decision 23; a spike first lists by hand which outside points
-   lie outside the inner control per mode and page rule), card layout, tags wrapping, title gap and part; stories
+   lie outside the row's hit layer per mode and page rule), card layout on decision 30's model (the same wrappers and
+   hit layer), tags wrapping, title gap and part; stories
    (with `current="true"`) with their baselines and the axe gate; US5 scenarios 1 to 12 and this phase's edge-case rows. The phase's review records a CI run of the branch
    at the full story count with every Plants shard's time (each under 10 minutes) and the run's total (R-13).
 
