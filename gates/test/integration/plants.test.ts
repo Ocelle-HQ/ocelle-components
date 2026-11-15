@@ -209,4 +209,51 @@ describe("plant job (gates/bin/plants.ts)", () => {
     },
     timeout,
   );
+
+  // Op 016 (spec.md Edge Cases, OR-003; phase 1 review round 1, R1-01): untracked files that are not ignored count as
+  // changed, ignored ones do not. plantsRoot() is committed with a .gitignore, then two plants each get a new untracked
+  // file (two, so the NUL split of git's list matters) and a third gets an ignored one: only the two are judged.
+  it(
+    "--affected HEAD judges the plants that hold an untracked file that is not ignored, and not the plant that holds an ignored one",
+    async () => {
+      const root = plantsRoot();
+      const git = (...args: string[]): void => {
+        execFileSync("git", ["-c", "user.name=t", "-c", "user.email=t@example.invalid", "-c", "commit.gpgsign=false", ...args], { cwd: root, env: baseEnv(), stdio: "ignore" });
+      };
+      write(join(root, ".gitignore"), "*.ignored\n");
+      git("init", "-q");
+      git("add", "-A");
+      git("commit", "-q", "-m", "plants root");
+      const untracked = ["gates/plants/mutation/error-unresolvable-base/notes.txt", "gates/plants/signoff/fail-no-trailer/notes.txt"];
+      for (const path of untracked) write(join(root, path), "An untracked file, not ignored.\n");
+      write(join(root, "gates/plants/pins/error-invalid-json/scratch.ignored"), "An ignored file.\n");
+      const ran = await runGate("gates/bin/plants.ts", ["--root", root, "--affected", "HEAD"], { cwd: tempDir("cwd"), env: baseEnv() });
+      expect({ code: ran.code, stdout: ran.stdout, notes: ran.stderr.filter((line) => !line.startsWith("note: plant time: ")), times: times(ran.stderr) }).toEqual({
+        code: 1,
+        stdout: [
+          ...missing("typecheck", []),
+          ...missing("lint", []),
+          ...missing("style-lint", []),
+          ...missing("unit-tests", []),
+          ...missing("test-lint", []),
+          ...missing("mutation", ["error"]),
+          ...missing("csp", []),
+          ...missing("prefix", []),
+          ...missing("config-copies", ["pass"]),
+          ...missing("pins", ["error"]),
+          ...missing("signoff", ["fail"]),
+          ...missing("contrast", []),
+          ...missing("brand-rules", []),
+          ...missing("manifest", []),
+          ...missing("storybook-build", []),
+          ...missing("visual", []),
+          ...missing("axe", []),
+          "plants: 47 problems in 2 plants (affected since HEAD; not the Plants check)",
+        ],
+        notes: [`note: affected: mutation/error-unresolvable-base, by ${String(untracked[0])}`, `note: affected: signoff/fail-no-trailer, by ${String(untracked[1])}`],
+        times: ["note: plant time: mutation/error-unresolvable-base: <s> s", "note: plant time: signoff/fail-no-trailer: <s> s"],
+      });
+    },
+    timeout,
+  );
 });

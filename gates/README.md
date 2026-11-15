@@ -80,7 +80,8 @@ every `visual` and `axe` case, so a new one must be classified there. Every othe
 (`gates/lib/`, `gates/gates.json`, `gates/bin/plants.ts` and the other non-gate entries, `gates/eslint/`,
 `gates/stylelint/`) and anything unmapped, selects the full set. Known limit: token values, `base.css`, the fonts and
 element source also reach the visual plants' own stories and the `unit-tests` and `mutation` plants, which the
-selection leaves out; only CI's full set judges those. The registry check fails (`affected-in-ci`) when a step of
+selection leaves out; and a gate entry another entry imports (`gates/bin/prefix.ts`, which `brand-rules` imports)
+selects only its own gate's plants, not the importer's; only CI's full set judges those. The registry check fails (`affected-in-ci`) when a step of
 any of the three CI plant jobs passes `--affected`.
 
 In CI the job `plants-plan` ("Plants plan") prints the plan. The matrix job `plants-shard` ("Plants shard") first

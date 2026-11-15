@@ -1,28 +1,318 @@
 # Plants of phase 1
 
 - base: 80ea82594a0d29800fc692a87041dbadabdd20a2
-- command: pnpm run gate:plants -- --affected 80ea82594a0d29800fc692a87041dbadabdd20a2 --list
+- command: OCELLE_VISUAL_ENGINE=docker pnpm run gate:plants -- --affected 80ea82594a0d29800fc692a87041dbadabdd20a2
 - exit: 0
 
 ```text
-$ node gates/bin/plants.ts -- --affected 80ea82594a0d29800fc692a87041dbadabdd20a2 --list
+$ node gates/bin/plants.ts -- --affected 80ea82594a0d29800fc692a87041dbadabdd20a2
 note: affected: every plant, by gates/bin/plants.ts (shared gate source)
-plants: affected since 80ea82594a0d29800fc692a87041dbadabdd20a2: 302 of 302 plants selected, none judged (--list)
+note: plant time: signoff/error-empty-range: 0.1 s
+note: plant time: signoff/fail-no-trailer: 0.3 s
+note: plant time: signoff/fail-trailer-mismatch: 0.4 s
+note: plant time: signoff/pass-agent-self-signoff: 0.5 s
+note: plant time: signoff/pass-unsigned-merge: 0.6 s
+note: plant time: contrast/empty-list: 0.7 s
+note: plant time: contrast/excluded-without-reason: 0.9 s
+note: plant time: unit-tests/error-no-test-file: 1.0 s
+note: plant time: contrast/exempt-disabled-ink: 1.0 s
+note: plant time: contrast/exempt-not-disabled-ink: 1.2 s
+note: plant time: contrast/figure-mismatch: 1.2 s
+note: plant time: contrast/missing-required-pair: 1.4 s
+note: plant time: contrast/non-text-below-threshold: 1.4 s
+note: plant time: contrast/not-opaque: 1.6 s
+note: plant time: contrast/repository-values: 1.6 s
+note: plant time: contrast/required-pair-excluded: 1.8 s
+note: plant time: contrast/text-below-threshold: 1.8 s
+note: plant time: contrast/unparsable-list: 1.9 s
+note: plant time: contrast/unknown-token: 1.9 s
+note: plant time: brand-rules/a-monospace: 2.1 s
+note: plant time: brand-rules/b-link-equals-accent: 2.1 s
+note: plant time: brand-rules/b-ochre-pair-not-excluded: 2.3 s
+note: plant time: brand-rules/c-extra-radius: 2.4 s
+note: plant time: brand-rules/c-wrong-value: 2.6 s
+note: plant time: brand-rules/d-rule-as-boundary: 2.6 s
+note: plant time: brand-rules/e-light-chrome: 2.8 s
+note: plant time: brand-rules/repository-values: 2.8 s
+note: plant time: brand-rules/source-invalid: 3.0 s
+note: plant time: manifest/break-missing: 3.4 s
+note: plant time: prefix/pass-outside-packages: 3.5 s
+note: plant time: manifest/pass-repository: 3.5 s
+note: plant time: unit-tests/fail-gates-test: 4.8 s
+note: plant time: unit-tests/pass-gates-only: 6.3 s
+note: plant time: typecheck/fail-gate-source: 6.3 s
+note: plant time: test-lint/fail-gate-test: 7.3 s
+note: plant time: style-lint/fail-styles-outside-src: 7.4 s
+note: plant time: prefix/fail-storybook-html-multiline-monospace: 7.6 s
+note: plant time: prefix/fail-storybook-monospace: 7.7 s
+note: plant time: pins/error-invalid-json: 7.8 s
+note: plant time: pins/fail-allow-builds-entry: 8.0 s
+note: plant time: pins/fail-allow-builds-missing: 8.2 s
+note: plant time: pins/fail-allow-builds-other-version: 8.4 s
+note: plant time: pins/fail-allow-builds-unpinned-approval: 8.6 s
+note: plant time: pins/fail-allow-builds-unpinned-fsevents: 8.9 s
+note: plant time: pins/fail-dangerously-allow-all-builds: 9.1 s
+note: plant time: pins/fail-lockfile-outdated: 9.2 s
+note: plant time: pins/fail-node-linker-hoisted: 9.4 s
+note: plant time: pins/fail-node-version-missing: 9.6 s
+note: plant time: pins/fail-node-version-not-exact: 9.8 s
+note: plant time: pins/fail-package-manager-missing: 10.0 s
+note: plant time: pins/fail-package-manager-not-exact: 10.2 s
+note: plant time: pins/fail-public-hoist-pattern: 10.4 s
+note: plant time: pins/fail-release-age-exclude: 10.6 s
+note: plant time: pins/fail-release-age-missing: 10.8 s
+note: plant time: pins/fail-release-age-short: 11.0 s
+note: plant time: pins/fail-release-age-strict-false: 11.1 s
+note: plant time: pins/fail-release-age-strict-missing: 11.4 s
+note: plant time: pins/fail-shamefully-hoist: 11.6 s
+note: plant time: pins/fail-workspace-caret: 11.8 s
+note: plant time: pins/fail-workspace-star: 12.1 s
+note: plant time: pins/fail-workspace-tilde: 12.3 s
+note: plant time: pins/fail-workspace-version-differs: 12.6 s
+note: plant time: lint/fail-gate-source: 12.9 s
+note: plant time: pins/pass-approved-build: 12.9 s
+note: plant time: pins/pass-matching: 13.1 s
+note: plant time: manifest/break-not-json: 13.4 s
+note: plant time: manifest/fail-lost-attribute: 13.6 s
+note: plant time: manifest/pass-reordered: 14.0 s
+note: plant time: typecheck/error-missing-reference: 16.7 s
+note: plant time: typecheck/fail-test-code: 17.4 s
+note: plant time: typecheck/fail-implicit-any: 19.9 s
+note: plant time: typecheck/pass-fixture-excluded: 20.6 s
+note: plant time: unit-tests/error-throws-while-loading: 21.9 s
+note: plant time: typecheck/pass-strict-file: 22.8 s
+note: plant time: unit-tests/fail-styles-test: 24.2 s
+note: plant time: unit-tests/fail-elements-chromium: 24.8 s
+note: plant time: unit-tests/fail-tokens-colocated: 25.6 s
+note: plant time: unit-tests/fail-tokens-test: 26.1 s
+note: plant time: unit-tests/pass-styles-only: 27.5 s
+note: plant time: unit-tests/pass-elements-only: 28.3 s
+note: plant time: unit-tests/pass-tokens-only: 28.9 s
+note: plant time: style-lint/element-property-clash: 29.5 s
+note: plant time: style-lint/error-unparsable: 30.1 s
+note: plant time: style-lint/fail-aspect-calc: 30.7 s
+note: plant time: style-lint/fail-aspect-ratio-other: 31.3 s
+note: plant time: style-lint/fail-calc-operand: 31.9 s
+note: plant time: style-lint/fail-element-property-misspelt: 32.4 s
+note: plant time: style-lint/fail-element-stylesheet: 33.1 s
+note: plant time: style-lint/fail-element-template: 33.6 s
+note: plant time: style-lint/fail-font-family: 34.2 s
+note: plant time: style-lint/fail-font-weight: 34.7 s
+note: plant time: style-lint/fail-hex-colour: 35.3 s
+note: plant time: style-lint/fail-lh-calc-factor: 35.8 s
+note: plant time: style-lint/fail-lh-multiple: 36.4 s
+note: plant time: style-lint/fail-lh-calc-twice: 36.9 s
+note: plant time: style-lint/fail-lh-multiple-calc: 37.5 s
+note: plant time: style-lint/fail-lh-paren-factor: 38.0 s
+note: plant time: style-lint/fail-ms-time: 38.6 s
+note: plant time: style-lint/fail-named-colour: 39.1 s
+note: plant time: style-lint/fail-rem-length: 39.7 s
+note: plant time: style-lint/fail-rgb-colour: 40.2 s
+note: plant time: style-lint/fail-scale-calc: 40.9 s
+note: plant time: style-lint/fail-scale-factor: 41.3 s
+note: plant time: style-lint/fail-scale-length: 42.1 s
+note: plant time: style-lint/fail-styles-calc-line-height: 42.4 s
+note: plant time: style-lint/fail-styles-font-without-line-height: 43.2 s
+note: plant time: style-lint/fail-styles-literal-line-height: 43.6 s
+note: plant time: style-lint/fail-styles-normal-line-height: 44.4 s
+note: plant time: style-lint/fail-styles-other-token-line-height: 44.7 s
+note: plant time: style-lint/fail-styles-percent-line-height: 45.6 s
+note: plant time: style-lint/fail-styles-stylesheet: 45.9 s
+note: plant time: style-lint/fail-unitless-number: 46.6 s
+note: plant time: style-lint/fail-unknown-token: 46.9 s
+note: plant time: style-lint/fail-var-fallback: 47.7 s
+note: plant time: style-lint/pass-anchor-name: 48.0 s
+note: plant time: style-lint/pass-aspect-square: 48.8 s
+note: plant time: style-lint/pass-calc-tokens: 49.1 s
+note: plant time: style-lint/pass-element-property: 49.9 s
+note: plant time: style-lint/pass-empty-string: 50.2 s
+note: plant time: style-lint/pass-fr: 51.0 s
+note: plant time: style-lint/pass-known-token: 51.3 s
+note: plant time: style-lint/pass-line-height: 52.2 s
+note: plant time: style-lint/pass-one-line: 52.4 s
+note: plant time: style-lint/pass-one-line-calc: 53.3 s
+note: plant time: style-lint/pass-percentage: 53.5 s
+note: plant time: style-lint/pass-scale-mirror: 54.4 s
+note: plant time: style-lint/pass-story: 54.7 s
+note: plant time: style-lint/pass-styles-line-height-token: 55.5 s
+note: plant time: style-lint/pass-system-colour: 55.8 s
+note: plant time: style-lint/pass-test-code: 56.7 s
+note: plant time: style-lint/pass-token-definitions: 57.0 s
+note: plant time: style-lint/pass-var-keyword-fallback: 57.9 s
+note: plant time: style-lint/pass-var-token: 58.1 s
+note: plant time: test-lint/error-unparsable: 59.0 s
+note: plant time: style-lint/pass-zero: 59.1 s
+note: plant time: test-lint/fail-assertion-outside-test: 59.9 s
+note: plant time: test-lint/fail-colocated-element-test: 60.1 s
+note: plant time: test-lint/fail-conditional-assertion: 60.8 s
+note: plant time: test-lint/fail-focused: 60.9 s
+note: plant time: test-lint/fail-no-assertion: 61.7 s
+note: plant time: test-lint/fail-not-awaited: 61.9 s
+note: plant time: test-lint/fail-skipped: 62.7 s
+note: plant time: test-lint/fail-snapshot-only: 62.8 s
+note: plant time: test-lint/pass-real-assertion: 63.8 s
+note: plant time: lint/error-unparsable: 69.2 s
+note: plant time: lint/fail-floating-promise: 70.3 s
+note: plant time: lint/pass-fixture-excluded: 75.5 s
+note: plant time: csp/error-unparsable: 76.2 s
+note: plant time: lint/pass-voided-promise: 76.7 s
+note: plant time: csp/fail-eval: 76.9 s
+note: plant time: csp/fail-event-handler: 77.3 s
+note: plant time: csp/fail-function-call: 77.4 s
+note: plant time: csp/fail-indirect-eval: 77.8 s
+note: plant time: csp/fail-inline-script: 78.0 s
+note: plant time: csp/fail-new-function: 78.4 s
+note: plant time: csp/fail-set-interval-string: 78.6 s
+note: plant time: csp/fail-set-timeout-string: 79.0 s
+note: plant time: csp/fail-style-attribute: 79.1 s
+note: plant time: csp/fail-style-attribute-after-newline: 79.5 s
+note: plant time: csp/fail-style-element: 79.7 s
+note: plant time: csp/fail-svg-slash-onload: 80.1 s
+note: plant time: csp/pass-external-script: 80.3 s
+note: plant time: csp/pass-function-timer: 80.6 s
+note: plant time: csp/pass-inline-script-in-source: 80.8 s
+note: plant time: csp/pass-look-alike-names: 81.2 s
+note: plant time: csp/pass-storybook-out-of-scope: 81.3 s
+note: plant time: prefix/error-invalid-utf8: 81.3 s
+note: plant time: prefix/fail-custom-property-test-code: 81.4 s
+note: plant time: prefix/fail-element-name: 81.5 s
+note: plant time: prefix/fail-element-name-upper-case: 81.6 s
+note: plant time: prefix/fail-event-name-built-output: 81.7 s
+note: plant time: prefix/fail-generic-monospace: 81.7 s
+note: plant time: prefix/fail-named-monospace: 81.8 s
+note: plant time: prefix/pass-name-boundaries: 81.9 s
+note: plant time: config-copies/error-copy-missing: 82.0 s
+note: plant time: contrast/source-throws: 82.1 s
+note: plant time: brand-rules/g-forced-colours-override: 82.2 s
+note: plant time: brand-rules/f-motion-not-zero: 82.4 s
+note: plant time: brand-rules/generator-throws: 82.4 s
+note: plant time: brand-rules/g-system-colour-mapping: 82.6 s
+note: plant time: brand-rules/source-throws: 82.6 s
+note: plant time: manifest/fail-stale-property: 83.2 s
+note: plant time: manifest/fail-undescribed-attribute: 83.2 s
+note: plant time: manifest/fail-undescribed-css-part: 83.8 s
+note: plant time: manifest/fail-undescribed-css-property: 83.8 s
+note: plant time: manifest/fail-undescribed-event: 84.4 s
+note: plant time: manifest/fail-undescribed-property: 84.4 s
+note: plant time: pins/fail-caret-range: 84.7 s
+note: plant time: pins/fail-tilde-range: 84.9 s
+note: plant time: manifest/fail-undescribed-slot: 84.9 s
+note: plant time: test-lint/pass-fixture-excluded: 85.9 s
+note: plant time: unit-tests/pass-fixture-not-run: 86.1 s
+note: plant time: mutation/error-unresolvable-base: 86.3 s
+note: plant time: config-copies/fail-one-setting-differs: 86.4 s
+note: plant time: config-copies/pass-equal-copies: 86.6 s
+note: plant time: config-copies/fail-test-pathspec-narrowed: 86.9 s
+note: plant time: mutation/error-dry-run-fails: 104.7 s
+note: plant time: mutation/fail-gate-source-survivor: 106.4 s
+note: plant time: mutation/fail-disable-all: 122.5 s
+note: plant time: mutation/error-zero-mutant-failing-test: 123.7 s
+note: plant time: mutation/fail-element-source-no-coverage: 146.3 s
+note: plant time: mutation/fail-element-source-survivor: 147.2 s
+note: plant time: mutation/fail-record-without-reason: 165.5 s
+note: plant time: mutation/fail-no-test-runs: 167.5 s
+note: plant time: mutation/fail-unchecked-line: 185.9 s
+note: plant time: mutation/pass-compile-error: 188.3 s
+note: plant time: mutation/pass-fully-checked: 205.7 s
+note: plant time: mutation/pass-element-source: 211.0 s
+note: plant time: mutation/pass-test-only-change: 211.3 s
+note: plant time: mutation/pass-reasoned-record: 222.7 s
+note: plant time: mutation/pass-zero-mutant: 227.7 s
+note: plant time: mutation/fail-mixed-survivors: 253.7 s
+note: plant time: storybook-build/error-config-unreadable: 0.9 s
+note: plant time: storybook-build/error-missing-dependencies: 0.1 s
+note: plant time: storybook-build/error-no-build-script: 0.2 s
+note: plant time: storybook-build/fail-empty-index: 1.7 s
+note: plant time: storybook-build/fail-not-csf: 1.2 s
+note: plant time: storybook-build/fail-syntax-error: 1.2 s
+note: plant time: storybook-build/fail-unresolved-import: 1.6 s
+note: plant time: storybook-build/pass-repository: 1.9 s
+note: plant time: storybook-build/pass-type-error-only: 1.9 s
+note: plant time: visual/error-build-fails: 2.2 s
+note: plant time: visual/error-host: 2.4 s
+note: plant time: visual/error-index-pin: 0.8 s
+note: plant time: visual/error-no-engine: 0.2 s
+note: plant time: visual/error-tag-pin: 0.2 s
+note: plant time: visual/fail-beacon: 54.9 s
+note: plant time: visual/fail-below-fold: 64.8 s
+note: plant time: visual/fail-cache-api: 59.8 s
+note: plant time: visual/fail-clipboard-write: 58.5 s
+note: plant time: visual/fail-closed-shadow-root: 59.7 s
+note: plant time: visual/fail-cookie: 60.1 s
+note: plant time: visual/fail-exec-copy: 59.2 s
+note: plant time: visual/fail-font-file-missing: 59.5 s
+note: plant time: visual/fail-font-not-loaded: 58.7 s
+note: plant time: visual/fail-hover-style-changed: 63.2 s
+note: plant time: visual/fail-indexeddb: 56.7 s
+note: plant time: visual/fail-input-system-font: 56.8 s
+note: plant time: visual/fail-local-storage: 54.1 s
+note: plant time: visual/fail-missing-baseline: 53.7 s
+note: plant time: visual/fail-network: 57.0 s
+note: plant time: visual/fail-one-pixel: 57.0 s
+note: plant time: visual/fail-other-font: 58.0 s
+note: plant time: visual/fail-overflow-changed: 58.7 s
+note: plant time: visual/fail-pointer-target-below-fold: 56.0 s
+note: plant time: visual/fail-pointer-target-missing: 56.8 s
+note: plant time: visual/fail-popover-changed: 58.5 s
+note: plant time: visual/fail-press-style-changed: 62.4 s
+note: plant time: visual/fail-random: 63.0 s
+note: plant time: visual/fail-render-throws: 64.7 s
+note: plant time: visual/fail-same-origin-fetch: 62.7 s
+note: plant time: visual/fail-same-pixels-other-bytes: 62.2 s
+note: plant time: visual/fail-session-storage: 61.5 s
+note: plant time: visual/fail-storage-left-by-worker: 59.5 s
+note: plant time: visual/fail-storage-property: 58.5 s
+note: plant time: visual/fail-stray-baseline: 58.7 s
+note: plant time: visual/fail-throws-on-load: 60.8 s
+note: plant time: visual/fail-token-changed: 75.3 s
+note: plant time: visual/fail-websocket: 60.3 s
+note: plant time: visual/fail-xhr: 56.7 s
+note: plant time: visual/pass-animation-and-caret: 58.9 s
+note: plant time: visual/pass-below-fold: 59.0 s
+note: plant time: visual/pass-focus-below-fold: 57.0 s
+note: plant time: visual/pass-hover-and-press: 57.2 s
+note: plant time: visual/pass-input-font: 56.1 s
+note: plant time: visual/pass-overflow-and-popover: 55.9 s
+note: plant time: visual/pass-repository: 54.8 s
+note: plant time: visual/pass-second-render: 55.8 s
+note: plant time: visual/pass-unused-face: 55.2 s
+note: plant time: axe/error-bad-exceptions: 0.6 s
+note: plant time: axe/error-build-fails: 1.6 s
+note: plant time: axe/error-exception-plan-not-a-plan: 0.5 s
+note: plant time: axe/fail-closed-shadow-root: 28.0 s
+note: plant time: axe/fail-empty: 28.2 s
+note: plant time: axe/fail-excepted-second-node: 28.9 s
+note: plant time: axe/fail-hover-near-fold: 29.2 s
+note: plant time: axe/fail-hover-reveals-unlabelled: 29.1 s
+note: plant time: axe/fail-incomplete: 29.5 s
+note: plant time: axe/fail-no-box: 28.0 s
+note: plant time: axe/fail-open-shadow-unlabelled: 28.9 s
+note: plant time: axe/fail-outside-root: 30.7 s
+note: plant time: axe/fail-pointer-target-below-fold: 29.9 s
+note: plant time: axe/fail-render-throws: 31.2 s
+note: plant time: axe/fail-stale-exception: 29.9 s
+note: plant time: axe/fail-throws-on-load: 28.6 s
+note: plant time: axe/fail-two-low-contrast: 29.5 s
+note: plant time: axe/fail-unlabelled-button: 29.1 s
+note: plant time: axe/fail-unrecorded-exception: 29.6 s
+note: plant time: axe/pass-excepted: 29.7 s
+note: plant time: axe/pass-excepted-incomplete: 31.5 s
+note: plant time: axe/pass-excepted-shadow: 30.1 s
+note: plant time: axe/pass-minor-only: 29.9 s
+note: plant time: axe/pass-repository: 28.5 s
+note: plant time: axe/pass-second-render: 29.8 s
+note: plant time: plants/fail-affected-in-plant-check: 0.0 s
+note: plant time: plants/fail-gate-without-entry: 0.0 s
+note: plant time: plants/fail-gate-without-job: 0.0 s
+note: plant time: plants/fail-skip-container-in-ci: 0.0 s
+note: plant time: plants/fail-shard-in-plant-check: 0.0 s
+note: plant time: plants/fail-skip-container-in-shard: 0.0 s
+note: plant time: plants/pass-matching: 0.0 s
+note: plant time: plants/pass-split-plant-jobs: 0.0 s
+plants: affected since 80ea82594a0d29800fc692a87041dbadabdd20a2: 302 of 302 plants judged, every plant as expected; not the Plants check
 ```
 
-This phase changes shared gate source, so the selection is the full set (the first such path in sorted order is
-`gates/bin/plants.ts`; `gates/lib/plant-runner.ts` and `gates/lib/registry.ts` would select it too). The full set
-was judged as tasks.md T017 asks: `--plan` (28 shards), then `--shard k` for k = 1 to 28 one at a time, then the
-verdict. Shards 1 to 3 and 20 to 28 ran with the default engine; shards 4 to 19 (the visual plants) first exited 2
-for want of podman (`both` engines; the container has docker only) and were run again with
-`OCELLE_VISUAL_ENGINE=docker`, each exiting 0. `plants/fail-affected-in-plant-check` is in shard 2's report, judged
-as expected (caught).
-
-## Verdict
-
-- command: pnpm --silent run gate:plants -- --verdict storybook/.visual/plant-shards
-- exit: 0
-
-```text
-plants: 302 plants of 17 gates and the registry judged, every plant as expected
-```
+Run again after the review round 1 fixes. The phase changes shared gate source, so the selection is the full set
+(`gates/bin/plants.ts` is the first such path in sorted order). This time the full set was judged in one run with
+`--affected`. `OCELLE_VISUAL_ENGINE=docker` was set because the container has docker but not podman, the second
+engine of `both`.

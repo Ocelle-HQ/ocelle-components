@@ -659,13 +659,13 @@ function realTools(root: string, io: Io): PlantTools {
       // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "--affected HEAD judges only the plant whose plant.json changed since HEAD, and names HEAD in its summary"
       if (resolved.exitCode !== 0) return { cause: `--affected ${base} does not resolve to a commit; pass the phase's base.sha` };
       // NUL-separated paths, so git quotes none; a rename is a deleted and an added path, and untracked files count.
-      // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "--affected HEAD judges only the plant whose plant.json changed since HEAD, and names HEAD in its summary"
+      // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "--affected HEAD judges only the plant whose plant.json changed since HEAD, and names HEAD in its summary" and gates/test/integration/plants.test.ts "--affected HEAD judges the plants that hold an untracked file that is not ignored, and not the plant that holds an ignored one"
       const runs = [await git(["diff", "--name-only", "--no-renames", "--no-ext-diff", "--relative", "-z", base, "--"]), await git(["ls-files", "--others", "--exclude-standard", "-z"])];
       // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "--affected HEAD judges only the plant whose plant.json changed since HEAD, and names HEAD in its summary"
       const failed = runs.find((ran) => ran.exitCode !== 0);
       // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "--affected HEAD judges only the plant whose plant.json changed since HEAD, and names HEAD in its summary"
       if (failed !== undefined) return { cause: `git failed (${String(failed.stderr.trim().split("\n")[0])})` };
-      // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "--affected HEAD judges only the plant whose plant.json changed since HEAD, and names HEAD in its summary"
+      // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "--affected HEAD judges only the plant whose plant.json changed since HEAD, and names HEAD in its summary" and gates/test/integration/plants.test.ts "--affected HEAD judges the plants that hold an untracked file that is not ignored, and not the plant that holds an ignored one"
       return { paths: [...new Set(runs.flatMap((ran) => ran.stdout.split("\0")).filter((path) => path !== ""))].sort() };
     },
   };
