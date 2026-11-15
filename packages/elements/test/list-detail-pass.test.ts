@@ -188,5 +188,35 @@ describe("ocelle-list-detail's measurement pass (R-13)", () => {
     });
     expect({ tiers: [...new Set(seen)], frames: seen.filter((entry) => !entry.startsWith("change: ")).length, changes: seen.some((entry) => entry.startsWith("change: ")) }).toEqual({ tiers: ["three", "change: three"], frames: 6, changes: true });
   });
-});
 
+  // Added in phase 4's review round 3 (reviews/phase-4/round-3.md R3-02, operator decision G1), red before the fix: a
+  // call of `remeasure()` on an element that is not in a document does nothing. Never connected, the element has no
+  // shadow root yet, and the pass it requested threw in the next animation frame; removed, the pass would measure a
+  // detached grid, whose figures are 0 px. A pass runs at neither, and the window reports no error.
+  it("review R3-02: remeasure() on a list-detail that is not in a document runs no pass and reports no error, never connected or removed from the page", async () => {
+    await driver.viewport(1280, 800);
+    await driver.mount(markup);
+    await nextFrame();
+    await nextFrame();
+    const loose = document.createElement("ocelle-list-detail");
+    const removed = document.querySelector("ocelle-list-detail");
+    removed?.remove();
+    const errors: string[] = [];
+    const record = (event: ErrorEvent): void => {
+      errors.push(event.message);
+      event.preventDefault();
+    };
+    window.addEventListener("error", record);
+    const start = passCount();
+    loose.remeasure();
+    const neverConnected = { shadow: loose.shadowRoot === null };
+    await nextFrame();
+    await nextFrame();
+    const afterLoose = passCount() - start;
+    removed?.remeasure();
+    await nextFrame();
+    await nextFrame();
+    window.removeEventListener("error", record);
+    expect({ ...neverConnected, removed: removed?.isConnected, passes: { loose: afterLoose, removed: passCount() - start - afterLoose }, errors, messages: await driver.messages() }).toEqual({ shadow: true, removed: false, passes: { loose: 0, removed: 0 }, errors: [], messages: [] });
+  });
+});
