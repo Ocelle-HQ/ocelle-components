@@ -4,9 +4,6 @@ Lockfile is up to date, resolution step is skipped
 Packages are hard linked from the content-addressable store to the virtual store.
   Content-addressable store is at: /root/.local/share/pnpm/store/v11
   Virtual store is at:             node_modules/.pnpm
-Update available! 12.16.1 → 12.21.0.
-Changelog: https://pnpm.io/v/12.21.0
-To update, run: curl -fsSL https://get.pnpm.io/install.sh | sh -
 Packages: +502
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 Progress: resolved 502, reused 502, downloaded 0, added 502, done
@@ -38,7 +35,7 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 290ms using pnpm v12.16.1
+Done in 357ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /opt/pw-browsers/chromium-1243/chrome-linux64/chrome
 $ node gates/bin/test.ts
