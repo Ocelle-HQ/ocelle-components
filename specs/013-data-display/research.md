@@ -920,9 +920,13 @@ on the line of the text around it at 12rem.
 - Both are `aria-hidden="true"`, because the host already carries the name and value text, and the visible text must
   not be read twice.
 - Without `value-text`, no number is shown: the element does not format numbers (SPEC-2-01).
-- In compact, the row is `display: flex; flex-wrap: wrap; align-items: center; gap: var(--ocelle-space-2)`, holding
+- In compact, the row is `display: flex; flex-wrap: nowrap; align-items: center; gap: var(--ocelle-space-2)`, holding
   the label, the track (`flex: 1`) and the value text, in that order, so the value text is at the row's inline end
-  (IQ-13 (b)). A long label wraps and the bar keeps `min-inline-size: var(--ocelle-measure-cell)`.
+  (IQ-13 (b)). A long label wraps inside its own item and the bar keeps `min-inline-size: var(--ocelle-measure-cell)`.
+  Amended in phase 3 (review round 1, R1-05) from `flex-wrap: wrap`: with `wrap`, a label longer than the row takes
+  a flex line of its own and the bar drops below it, so it is no longer beside the bar (spec edge case "Long progress
+  label beside a compact bar"; FR-035, the compact row holds the label, bar and value text). The compact long-label
+  body reads the label's and track's block ranges overlapping, which fails with `wrap`.
 - Bodies: US3-10 asserts, at the default size with `value-text`, the label's inline start at the track's inline start
   and the value text's inline end at the track's inline end; US3-9 asserts, in compact, the value text's box after the
   track's on the same line. Plant: the value text's `margin-inline-start: auto` removed (it follows the label), which

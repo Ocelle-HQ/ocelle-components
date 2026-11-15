@@ -285,5 +285,25 @@ export function inProcessDriver(): Driver {
       range.selectNodeContents(target);
       return Promise.resolve({ innerText: target.innerText, rects: range.getClientRects().length });
     },
+    events: async (id, during) => {
+      const target = element(id);
+      const seen: string[] = [];
+      const native = Object.getOwnPropertyDescriptor(EventTarget.prototype, "dispatchEvent");
+      if (native === undefined) throw new Error("no EventTarget.prototype.dispatchEvent");
+      const dispatch = native.value as (this: EventTarget, event: Event) => boolean;
+      Object.defineProperty(EventTarget.prototype, "dispatchEvent", {
+        ...native,
+        value: function (this: EventTarget, event: Event): boolean {
+          if (this === target || (this instanceof Node && this.getRootNode() === target.shadowRoot)) seen.push(event.type);
+          return dispatch.call(this, event);
+        },
+      });
+      try {
+        await during();
+      } finally {
+        Object.defineProperty(EventTarget.prototype, "dispatchEvent", native);
+      }
+      return seen;
+    },
   };
 }

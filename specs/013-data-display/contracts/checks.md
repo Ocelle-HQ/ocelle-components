@@ -419,6 +419,12 @@ first phase that uses it:
 | `pressTab()`, `focused()` | presses Tab; returns the focused element through shadow roots | 2 |
 | `reducedMotion(mode)` | the command `emulateReducedMotion`: `page.emulateMedia({ reducedMotion })` in `emulate()`, so forced colours do not clear it; reset in each progress test file's `afterEach`; its test asserts `matchMedia` after the command, after a later `emulateForcedColors` call, and after the reset | 3 |
 | `animations(id)` | running animations and transitions on the element and its shadow subtree, with kind (`CSSAnimation` or `CSSTransition`), target part, animated property, play state and end time | 3 |
+| `changeAttributes(id, changes)` | sets and removes attributes of one element in order, in one task, then waits for every element to render; its body shows a set-then-removed attribute reaches an observer as one delivery of two records | 3 |
+| `textOf(id, inner)` | the text content of the first shadow element matching `inner`, or null; its body reads a shadow `dt` and a missing element | 3 |
+| `rendered(id)` | the element's `innerText` and the client-rect count of a range over its contents; its body tells slotted from unslotted light-DOM text | 3 |
+| `property(id, name)` | a property's value as the page holds it; its body reads a number input's `valueAsNumber`, `value` and a missing property | 3 |
+| `events(id, during)` | runs `during` with `EventTarget.prototype.dispatchEvent` wrapped on the page, restores it, and returns the types of the events dispatched on the element, its shadow root or a node in it, in order (review round 1, R1-01: US3-2's "no event is emitted"); its body shows a host CustomEvent and a shadow event listed, another element's not | 3 |
+| `animations(id)` and `setProperty` widened | `animations(id)` also reports each entry's `currentTime`; `setProperty` also takes a number, a boolean or null (US3-6's `null`) | 3 |
 | AX value properties | `AxNode`, `axNodes` and `axSubtree` carry `value`, `valuemin`, `valuemax` and `valuetext`; `value`, `valuemin` and `valuemax` tested present and absent on a native `<progress>` and an ElementInternals bar; `valuetext` reads `""` in Chromium and is not asserted (phase 3 spike) | 3 |
 
 ## Contrast (SC-004, PLAN-CORRECTNESS-1-007 (b))

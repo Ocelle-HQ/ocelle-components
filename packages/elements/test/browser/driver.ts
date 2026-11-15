@@ -351,5 +351,38 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
         range.selectNodeContents(element);
         return { innerText: element.innerText, rects: range.getClientRects().length };
       }, id),
+    events: async (id, during) => {
+      await page.evaluate((id) => {
+        const target = document.getElementById(id);
+        if (target === null) throw new Error(`no #${id} on the page`);
+        const native = Object.getOwnPropertyDescriptor(EventTarget.prototype, "dispatchEvent");
+        if (native === undefined) throw new Error("no EventTarget.prototype.dispatchEvent");
+        const dispatch = native.value as (this: EventTarget, event: Event) => boolean;
+        const seen: string[] = [];
+        Reflect.set(window, Symbol.for("ocelle.test.events"), { native, seen });
+        Object.defineProperty(EventTarget.prototype, "dispatchEvent", {
+          ...native,
+          value: function (this: EventTarget, event: Event): boolean {
+            if (this === target || (this instanceof Node && this.getRootNode() === target.shadowRoot)) seen.push(event.type);
+            return dispatch.call(this, event);
+          },
+        });
+      }, id);
+      const stop = (): Promise<string[]> =>
+        page.evaluate(() => {
+          const key = Symbol.for("ocelle.test.events");
+          const recording = Reflect.get(window, key) as { readonly native: PropertyDescriptor; readonly seen: string[] };
+          Object.defineProperty(EventTarget.prototype, "dispatchEvent", recording.native);
+          Reflect.deleteProperty(window, key);
+          return recording.seen;
+        });
+      try {
+        await during();
+      } catch (error) {
+        await stop();
+        throw error;
+      }
+      return await stop();
+    },
   };
 }

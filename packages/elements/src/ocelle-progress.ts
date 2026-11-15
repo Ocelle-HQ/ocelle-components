@@ -279,7 +279,7 @@ export class OcelleProgress extends LitElement {
   }
 
   override disconnectedCallback(): void {
-    // Stryker disable next-line CallExpression: equivalent, Lit's own disconnection only notifies reactive controllers, which this element has none of
+    // Stryker disable next-line CallExpression: equivalent, Lit's own disconnection notifies reactive controllers, which this element has none of, and disconnects its child part (setConnected(false)), which only reaches directives, and the template has only class and @animationstart bindings and no directive
     super.disconnectedCallback();
     this.#leave();
   }
@@ -301,7 +301,7 @@ export class OcelleProgress extends LitElement {
     requestAnimationFrame(() => {
       if (open.bars.size > 0) return;
       const holder = document as unknown as Record<symbol, Episode | undefined>;
-      // Stryker disable next-line ConditionalExpression: equivalent, the record captured at leaving is the document's until a frame callback deletes it, and no bar opens another between two callbacks of one frame
+      // Stryker disable next-line ConditionalExpression: equivalent in effect, the record captured at leaving is the document's until a frame callback deletes it; a record opened between two callbacks of one frame (a page frame callback inserting a bar) belongs to a bar whose new mark animation re-joins at its animationstart in the next frame, so the shared start moves by at most one frame
       if (holder[episodeKey] === open) Reflect.deleteProperty(holder, episodeKey);
     });
   }

@@ -167,16 +167,16 @@ export const progressScenarios: readonly Scenario[] = [
     expected: { bars: [exposed("Tasks done", 7, 12)], drawn: true, references: [], host: [] },
   },
   {
-    name: "US3-2: value changed to 9 exposes 9, and the fill is 75% of the track at once, with no animation or transition on the bar (FR-030, PLAN-FRESH-3-003 (b))",
+    name: "US3-2: value changed to 9 exposes 9, and the fill is 75% of the track at once, with no animation or transition on the bar and no event dispatched from the bar or its shadow root during the change (FR-030, PLAN-FRESH-3-003 (b))",
     run: async (driver) => {
       await mount(driver, '<div class="w400"><ocelle-progress id="p" value="7" max="12" label="Tasks done"></ocelle-progress></div>');
       const before = { bars: await bars(driver, "p"), fill: await mark(driver, "p") };
-      await driver.setProperty("p", "value", 9);
-      return { before, after: { bars: await bars(driver, "p"), fill: await mark(driver, "p"), animations: await motion(driver, "p") } };
+      const events = await driver.events("p", () => driver.setProperty("p", "value", 9));
+      return { before, after: { bars: await bars(driver, "p"), fill: await mark(driver, "p"), animations: await motion(driver, "p"), events } };
     },
     expected: {
       before: { bars: [exposed("Tasks done", 7, 12)], fill: filled(0.58) },
-      after: { bars: [exposed("Tasks done", 9, 12)], fill: filled(0.75), animations: [] },
+      after: { bars: [exposed("Tasks done", 9, 12)], fill: filled(0.75), animations: [], events: [] },
     },
   },
   {
@@ -584,7 +584,7 @@ export const progressScenarios: readonly Scenario[] = [
     expected: { widths: [320], running: true },
   },
   {
-    name: "compact long label at 320 px: the track keeps at least --ocelle-measure-cell, the label wraps between words onto more than one line, and the page does not scroll sideways (edge case, analysis G5)",
+    name: "compact long label at 320 px: the track keeps at least --ocelle-measure-cell and stays beside the label (their block ranges overlap), the label wraps between words onto more than one line, and the page does not scroll sideways (edge case, analysis G5)",
     run: async (driver) => {
       await driver.viewport(320, 800);
       await mount(
@@ -599,12 +599,13 @@ export const progressScenarios: readonly Scenario[] = [
       return {
         cell: cell.width > 0,
         track: track.width >= cell.width - 0.5,
+        beside: overlaps(label, track).block,
         wraps: shortLabel.height > 0 && label.height > shortLabel.height * 1.5,
         betweenWords: wrap,
         scrollWidth: await driver.scrollWidth(),
       };
     },
-    expected: { cell: true, track: true, wraps: true, betweenWords: { "overflow-wrap": "normal", "word-break": "normal" }, scrollWidth: 320 },
+    expected: { cell: true, track: true, beside: true, wraps: true, betweenWords: { "overflow-wrap": "normal", "word-break": "normal" }, scrollWidth: 320 },
   },
   {
     name: "no tab stop: from a button before the bar one Tab focuses the button after it, the bar exposed with its name between them (FR-039)",

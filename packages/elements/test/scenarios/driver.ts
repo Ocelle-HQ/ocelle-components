@@ -243,4 +243,10 @@ export interface Driver {
    * rects of a range over its contents (0 when none of it is rendered).
    */
   rendered(id: string): Promise<{ readonly innerText: string; readonly rects: number }>;
+  /**
+   * Runs `during` and returns the types of the events script dispatched (`EventTarget.prototype.dispatchEvent`, wrapped
+   * on the page for the duration of `during` and restored after it) on the element with `id`, on its shadow root or on
+   * a node in its shadow root, in order (013 phase 3 review round 1, R1-01: US3-2's "no event is emitted").
+   */
+  events(id: string, during: () => Promise<void>): Promise<string[]>;
 }
