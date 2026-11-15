@@ -1606,6 +1606,17 @@ const describesRows = [
 
 const describesMoreRows = [
   row(
+    'describes lifecycle (R-13: the tooltip removes only its own id): without describes, a host aria-describedby=" x  y " on the trigger is left exactly as written through updates and a slot change',
+    async (driver) => {
+      await start(driver, `${page({ text: "Saves a draft", trigger: '<button id="trg" aria-describedby=" x  y ">Save</button>' })}<p id="x">Ex</p><p id="y">Why</p>`);
+      await driver.setAttribute("tip", "text", "Saves a copy");
+      const updated = await driver.attribute("trg", "aria-describedby");
+      await tip(driver, { op: "insert", id: "tip", markup: '<button id="trg2">Keep</button>', first: true });
+      return { updated, slotted: await driver.attribute("trg", "aria-describedby") };
+    },
+    { updated: " x  y ", slotted: " x  y " },
+  ),
+  row(
     "describes lifecycle (FR-036, R-13): the trigger removed with nothing slotted after it: the span is removed and nothing thrown; a new trigger slotted later is described",
     async (driver) => {
       await start(driver, page({ text: "Saves a draft", attrs: " describes", trigger: '<button id="trg">Save</button>' }));
