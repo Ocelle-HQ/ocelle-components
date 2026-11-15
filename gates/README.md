@@ -179,20 +179,6 @@ lines of one file; the 10-entry and 250-line shard bounds and the rule that two 
 shard stand (operator decision, 2026-11-11, "30-line entries, all files": with the TypeScript checker on, three of
 the four 60-line entries of `packages/tokens/src/source.ts` took 188 s, 251 s and 283 s on the sandbox against
 mission 007's bound of 176 s; `specs/007-mutation-gate-strictness/evidence/README.md`).
-Amendment 2026-11-15 (mission 010, phase 3 stop 1, operator decision (b); `specs/010-feedback-forms/plan.md` decision 11,
-`specs/010-feedback-forms/reviews/phase-3/design-change-1.md`): element source, the changed files under
-`packages/elements/src/` that `stryker.elements.config.json` mutates, is cut by mutant count, not by lines, since its
-shards cost about 217 s fixed and 14 s a mutant and one line can hold 10 mutants or more. `--plan` counts, with
-Stryker's own instrumenter (`@stryker-mutator/instrumenter`, pinned at `@stryker-mutator/core`'s version), the mutants
-Stryker would place on each such file's changed lines: compile errors count (the planner cannot know them), mutants a
-`// Stryker disable` comment ignores do not, and a mutant counts in an entry only when it lies wholly inside the
-entry's lines. A file of at most 10 such mutants is one entry, its path, however many lines changed; a file of more is
-cut into entries `path:start-end` of at most 10, each grown over the changed lines until the next would take it over
-10 and closed at the latest of the line boundaries inside it that the fewest mutants span (a line of more than 10 is
-an entry alone). These entries fill shards of at most 10 mutants and 10 entries, two of one file never in one shard,
-and never beside an entry of another file, since such a shard would run both configurations. Every other file keeps
-the 30-line entries and the 10-entry, 250-line shards. A changed element file the instrumenter cannot parse is exit 2
-naming it.
 `--plan` reports the number of shards and of cuts it made on stderr, in one line,
 `mutation: plan: <s> shards, <c> cuts within files (...)`, and the JSON on stdout stays the one array the job
 reads. Each `mutation-shard` job passes its shard's entries unchanged to `--files` and runs under a 10-minute limit. `.github/workflows/cache.yml`
