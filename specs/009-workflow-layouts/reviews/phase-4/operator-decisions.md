@@ -12,3 +12,12 @@
   - force-push the fold with lease to `claude/015-workflow-layouts`.
 
   It covers nothing else. Every other gate and question still goes to the operator as multiple choice.
+- **P4** (`reviews/phase-4/round-2.md` R2-01 and R2-02), "Fix R2-02, document R2-01":
+  - **R2-02:** the fix round takes the edge box out of the element's intrinsic sizes, red first in both harnesses.
+    min-content is then the narrowest tier's and max-content the widest tier's again (contracts/elements.md:124).
+  - **R2-01:** its two cases are recorded as known limitations in FR-025, the contract's container-tier convention
+    and the README:
+    - a percentage inline padding that changes with the host's container;
+    - a host whose content box is narrower than its own inline padding and borders.
+  - **The host's remedy:** `remeasure()` is made to re-choose the tier from a fresh measurement, red first. A host
+    calls it after such a change.
