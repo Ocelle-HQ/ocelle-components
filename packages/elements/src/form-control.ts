@@ -527,6 +527,7 @@ export abstract class FormControl extends LitElement {
   }
 
   protected override updated(changed: PropertyValues): void {
+    // Stryker disable next-line CallExpression: equivalent, LitElement's updated() does nothing
     super.updated(changed);
     this.observeLabels();
     this.syncValidity();

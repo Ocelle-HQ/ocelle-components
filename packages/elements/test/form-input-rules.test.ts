@@ -129,6 +129,11 @@ describe("the shared properties (FR-021)", () => {
     }).toEqual({ hidden: [true, true, true], top: 0, bottom: 0 });
   });
 
+  it("a named input with no value is in its form's data with an empty value", async () => {
+    await insert('<form id="f"><ocelle-form-input id="t" name="title"></ocelle-form-input></form>');
+    expect([...new FormData(document.getElementById("f") as HTMLFormElement)]).toEqual([["title", ""]]);
+  });
+
   it("checkValidity() of the host reports the field's constraints", async () => {
     const made = await insert('<ocelle-form-input id="t" required></ocelle-form-input>');
     const empty = made.checkValidity();
@@ -159,6 +164,13 @@ describe("the input's own attributes (FR-029)", () => {
     made.removeAttribute("type");
     made.type = "email";
     expect({ text, email: made.getAttribute("type") }).toEqual({ text: "text", email: "email" });
+  });
+
+  it("type set by the property to an unknown value keeps it as written in the attribute, while type reads text", async () => {
+    const made = await insert('<ocelle-form-input id="t" type="email"></ocelle-form-input>');
+    (made as unknown as { type: string }).type = "bogus";
+    await endOfTask();
+    expect({ attribute: made.getAttribute("type"), type: made.type, field: field(made).type }).toEqual({ attribute: "bogus", type: "text", field: "text" });
   });
 
   it("a type attribute the page sets is written once: the property Lit sets from it writes nothing back", async () => {
@@ -476,6 +488,36 @@ describe("the error announcement (FR-027, R-06)", () => {
     await endOfTask();
     vi.advanceTimersByTime(W);
     expect({ held, removed: emptied, moved: copy(moved) }).toEqual({ held: "Removed", removed: "", moved: "Moved again" });
+  });
+
+  it("moved after its error was written, the held copy is not announced again: it stays past the minimum hold", async () => {
+    container.innerHTML = '<div id="d"></div><ocelle-form-input id="t" error="Title is taken"></ocelle-form-input>';
+    await endOfTask();
+    const made = control();
+    vi.advanceTimersByTime(W);
+    document.getElementById("d")?.append(made);
+    await endOfTask();
+    vi.advanceTimersByTime(W + 1);
+    expect(copy(made)).toBe("Title is taken");
+  });
+
+  it("another attribute changed during the wait does not restart it", async () => {
+    const made = await insert('<ocelle-form-input id="t"></ocelle-form-input>');
+    made.setAttribute("error", "Title is taken");
+    vi.advanceTimersByTime(W / 2);
+    made.setAttribute("label", "Title");
+    vi.advanceTimersByTime(W / 2);
+    expect(copy(made)).toBe("Title is taken");
+  });
+
+  it("an error that goes back to the text last written within the wait writes nothing at the end of it", async () => {
+    const made = await insert('<ocelle-form-input id="t" error="Title is taken"></ocelle-form-input>');
+    vi.advanceTimersByTime(W + H);
+    made.setAttribute("error", "Title is wrong");
+    vi.advanceTimersByTime(W / 3);
+    made.setAttribute("error", "Title is taken");
+    vi.advanceTimersByTime(2 * W);
+    expect(copy(made)).toBe("");
   });
 
   it("removed and inserted again in a later task, the input is an insertion and writes its error again", async () => {
