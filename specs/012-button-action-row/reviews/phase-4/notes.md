@@ -139,3 +139,12 @@ captures matched each time; the processes were killed afterwards.
   red-commit pin (the count of plants that this phase adds by design); then rerun the suite and close T049.
 - **(b)** Amend nothing; leave the failing pin for the reviewer to decide.
 - **(c)** Something else the operator states.
+
+**Operator decision at phase 4, 2026-11-15, second stop-and-ask: option (a).** The pin of
+`gates/test/integration/plants-robustness.test.ts` (contrast and brand-rules plants) goes from 35 to 36 for
+`f-motion-spin-missing`, in its own test commit (08246ac), changing nothing else in any test: a pin that changes by design
+and was missed in the red commit.
+
+After it, the whole suite, `pnpm test` on 08246ac: **3579 tests passed in 149 files**. A first rerun gave 5 failures, all
+in `gates/test/integration/visual.test.ts` with exit 2: dockerd had stopped in the container (`docker info` failed). I
+restarted dockerd as root as the environment notes say, and the rerun above passed. T049 is done.

@@ -202,7 +202,7 @@ spinner is still under reduced motion and ends within 4.8 s.
 - [X] T046 [US3] `packages/elements/src/spinner.ts`: inline SVG arc, `stroke="currentColor"`, `aria-hidden="true"`, rotation `calc(var(--ocelle-motion-turn) * 6)` over `calc(var(--ocelle-motion-spin) * 6)`, ending still; `animation: none` under `prefers-reduced-motion: reduce`
 - [X] T047 [US3] `packages/elements/src/control.ts`: the unavailable state (guard on `click` and `auxclick`, `aria-disabled`, unavailable link without `href` and with `tabindex="0"`); `packages/elements/src/ocelle-button.ts`: `busy` reflected, `aria-busy`, the icon wrapper hidden and the spinner in its place, `disabled` wins
 - [X] T048 [US3] README, CHANGELOG, busy stories and baselines; `custom-elements.json` regenerated
-- [ ] T049 [US3] Plants recorded in `reviews/phase-4/plants.md` (with `f-motion-not-zero` and `f-motion-spin-missing` run once each, each giving exactly its finding); gates as T029 (with `gate:contrast` unchanged) and `gate:brand-rules` (0 findings on the phase 4 tree), then plants and mutation, `gates/bin/brand-rules.ts` in the default-config scope beside the tokens source (expect Timeout mutants on the spinner and guard: reported, pass, listed in the review, R-14)
+- [X] T049 [US3] Plants recorded in `reviews/phase-4/plants.md` (with `f-motion-not-zero` and `f-motion-spin-missing` run once each, each giving exactly its finding); gates as T029 (with `gate:contrast` unchanged) and `gate:brand-rules` (0 findings on the phase 4 tree), then plants and mutation, `gates/bin/brand-rules.ts` in the default-config scope beside the tokens source (expect Timeout mutants on the spinner and guard: reported, pass, listed in the review, R-14)
 
 **Checkpoint**: `tdd-check.sh 4` reports `pass`.
 
