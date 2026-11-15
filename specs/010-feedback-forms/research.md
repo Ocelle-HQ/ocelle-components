@@ -583,40 +583,15 @@ the final code, the same 7:00 check is repeated where it becomes measurable. At 
 the `--plan` output that holds a `src/live.ts` entry is run and timed in the same way. At phase 3's end (T041), every
 shard that holds a `src/live.ts` or `src/form-control.ts` entry is, since the error announcer runs on the same timing.
 Each time is recorded in the phase review, and a shard over 7:00 stops the phase for the operator.
-**Element source by mutant count** (phase 3 stop 1, operator decision (b), `reviews/phase-3/decision-stop-1.md`;
-plan decision 11; T041a). At T041 two of the first three 30-line shards of `src/form-control.ts` took 569.4 s and
-534.6 s (`reviews/phase-3/stop-1.md`). An element-source shard costs about 217 s fixed (the gate's setup and the
-`elements` project's dry run under per-test coverage) and about 14 s a valid mutant, so 420 s holds about 14 valid
-mutants. Line spans do not bound that: in run 4's report (`b76d4ee`) single lines hold up to 10 valid mutants
-(`src/form-control.ts:369`) and 12 (`src/ocelle-form-input.ts:36`), and cuts of 15, 10 and 8 lines still leave
-entries of 20, 18 and 15 valid mutants in `src/form-control.ts`. The planner instead counts the mutants at plan time
-with Stryker's instrumenter (`@stryker-mutator/instrumenter` 10.1.1, the version `@stryker-mutator/core` 10.1.1
-uses): it parses the changed files and places every mutant, with no test run and no checker, and on the two files it
-found exactly the 257 and 170 mutants of run 4's report, plus the 2 and 4 that `// Stryker disable` ignores, in about
-0.2 s (a throwaway script, not committed). It cannot tell which mutants the checker will reject or which time out,
-so it counts them all. Element-source files are cut into entries of at most 10 mutants, each closed at the boundary
-the fewest mutants span, and filled into shards of at most 10 mutants that hold element source only; every other
-file keeps the 30-line entries of 007 FR-014 (the rule in full: plan decision 11; `reviews/phase-3/design-change-1.md`).
-The cap leaves a margin under the 14: 217 s + 10 × 14 s = 357 s. On run 4's report the rule gives 35 and 23 entries
-for the two files, the largest estimated at 357 s and 385 s (a one-line entry of 13 mutants, 12 valid), and leaves 9
-valid mutants spanning a cut, as many as the 30-line plan did. T041a re-plans with `--base 2004e82` and times every
-shard holding a `src/form-control.ts` entry; a shard over 7:00 is a new stop.
-**Probably-static mutants weighted** (phase 3 stop 2, operator decision (a), `reviews/phase-3/decision-stop-2.md`;
-plan decision 11; T041b). On T041a's plan, shards 9 and 10 of `src/form-control.ts` took 439.5 s, 448.4 s and
-435.6 s with 9 valid mutants each (`reviews/phase-3/stop-2.md`). All 9 are static in run 4's report, meaning class
-fields run when the module loads, and Stryker runs a static mutant against the whole in-process suite. That costs
-about 25 s a static mutant, against 2 to 6 s for another (shards of 10 others took 240.5 s to 277.5 s). The
-instrumenter does not mark static mutants. The planner instead reads the syntax: it parses each changed element file
-with the pinned `typescript`, as `gates/bin/csp.ts` does, and takes a mutant as probably static when it lies in a
-`static` class member (a static method's or accessor's body included), in a class property's initialiser, or outside
-any function. Such a mutant counts as 5 against the caps of 10, which are unchanged, so a shard holds at most 2 of
-them. Under the cap no shard is then estimated over 217 s + 10 × 6 s = 277 s. A single line weighing more than 10 is
-an entry alone, bounded by its own mutants; the heaviest on run 4's report is 342 s. On run 4's report the rule
-catches all 70 static mutants of the two files (58 valid) and wrongly flags 8 (instance property initialisers), and
-it leaves the same 9 valid mutants spanning a cut. It does not catch a function body that another module calls at
-load, such as `src/define.ts`'s `define`, which is not changed here. The rule in full, its check and the figures are
-in plan decision 11 and `reviews/phase-3/design-change-2.md`. T041b re-plans and times every element shard holding a
-probably-static mutant and the highest-estimated others; a shard over 7:00 is a new stop.
+**Known gap at phase 3** (operator decision, `reviews/phase-3/decision-split-shard-change.md`; plan decision 11;
+`reviews/phase-3/design-change-3.md`). On the 30-line plan of 007 FR-014, two of the first three shards holding
+`src/form-control.ts` took 569.4 s and 534.6 s (`reviews/phase-3/stop-1.md`), and by estimate eight of the 19 are
+over 420 s. Of the planner changes designed for that (element source cut by mutant count, T041a; probably-static
+mutants weighted, T041b), the first still left shards of static mutants at 435.6 s to 448.4 s
+(`reviews/phase-3/stop-2.md`). Both moved to their own op, op 017 (issue #42), and were reverted here (`14538fa`).
+Mission 010 keeps the 30-line plan and lands without the rule; the shards over 7:00 are recorded as a known gap, which
+CI covers since op 015 (`ce1d9c7` on `main`) with a 45-minute limit for a mutation shard holding element source. At
+T041 this record replaces the shard timing against 7:00; the whole-diff `gate:mutation` must still exit 0.
 
 **The shipped figures under mutation** (operator decision PLAN-FRESH-3-004 (a)). Because every in-process scenario
 replaces `D` and `H` first, no scenario reads the shipped figures, and the mutation gate runs only the in-process

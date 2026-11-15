@@ -546,3 +546,29 @@ under the cap is 277 s, as the design gives; none is over 420 s.
 `src/ocelle-form-input.ts:54-73` (ObjectLiteral, static), `:168-174` and `:217-225` (BlockStatement) and `:233-265`
 (StringLiteral). The other 8 are compile errors (BlockStatement), 2 more than T041a's plan left
 (`src/form-control.ts:53-55` and `src/ocelle-form-input.ts:76-78`).
+
+## Split and revert
+
+Operator decision `decision-split-shard-change.md` (2026-11-15): the element-shard planner change of T041a and T041b
+(design changes 1 and 2) is split out of mission 010 into its own op, op 017 (issue #42, branch
+`claude/042-mutation-shards-by-count`). `14538fa` reverts it on this branch: `gates/lib/mutation/shards.ts`,
+`gates/bin/mutation.ts`, `gates/test/mutation-shards.test.ts`, `gates/test/mutation-fakes.ts`, the
+`@stryker-mutator/instrumenter` development dependency and the `gates/README.md` amendment are as they were at
+`666bb70`, before `971c431`. History is kept, so op 017 can start from `971c431`, `0d99aa5`, `5c2ef49`, `9a91a92` and
+`253292f`. The sections § T041a and § T041b above, `stop-2.md`, the red logs and the `design-1` and `design-2` lines
+of `red-commits` stay as history; they are not evidence for mission 010.
+
+Mission 010 continues on the 30-line shard plan of 007 FR-014. Phase 3's element shards over 7:00 are a known gap
+(plan decision 11; `design-change-3.md`): on the 30-line plan, 569.4 s and 534.6 s measured and eight of 19
+`src/form-control.ts` shards estimated over 420 s (`stop-1.md`); on T041a's plan, 435.6 s to 448.4 s for shards of
+static mutants (`stop-2.md`). CI covers the gap with op 015's 45-minute limit for a mutation shard holding element
+source (`ce1d9c7` on `main`). T041 is finished without the 7:00 shard rule.
+
+Whole-diff run after the revert, `pnpm run gate:mutation -- --base 2004e82`:
+
+| Run | At | Wall-clock | Result |
+|---|---|---|---|
+| 5 | `14538fa` | 26:46 | **exit 0**: 496 mutants on the changed lines of 4 files, none survived; 2 timeouts, 110 compile errors; 5 equivalent records |
+
+It matches run 4 (`b76d4ee`): with the gate change reverted, the diff against `2004e82` holds the same four changed
+source files. The plants stand as recorded at `b76d4ee` (`plants.md`).
