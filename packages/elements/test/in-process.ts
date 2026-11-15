@@ -100,6 +100,9 @@ function listen(ids: readonly string[]): void {
   };
 }
 
+/** The numbers `identities` gave the shadow nodes it has seen. */
+const identities = new Map<Element, number>();
+
 export function inProcessDriver(): Driver {
   return {
     mount: async (markup, options = {}) => {
@@ -262,6 +265,28 @@ export function inProcessDriver(): Driver {
     },
     move: async (id, parent) => {
       element(parent).append(element(id));
+      await settle();
+    },
+    identities: (id) => {
+      const root = element(id).shadowRoot;
+      if (root === null) return Promise.resolve([]);
+      return Promise.resolve(
+        [...root.querySelectorAll("*")].map((node) => {
+          const known = identities.get(node);
+          if (known !== undefined) return known;
+          identities.set(node, identities.size + 1);
+          return identities.size;
+        }),
+      );
+    },
+    module: async (code) => {
+      // A blob URL is of the test page's origin; this page has no CSP.
+      const url = URL.createObjectURL(new Blob([code], { type: "text/javascript" }));
+      try {
+        await import(/* @vite-ignore */ url);
+      } finally {
+        URL.revokeObjectURL(url);
+      }
       await settle();
     },
   };
