@@ -30,6 +30,31 @@ slot read). Both runs bite with every plant.
 | L16 | US3-15 (T047) | `packages/elements/src/ocelle-list-detail.ts`: `:host([hidden])` removed | `elements packages/elements/test/list-detail.test.ts`: 1 failed | 42 passed (43); fails: US3-15: a hidden list-detail has no box…<br>first run, on `45a828e`: 1 failed | 36 passed (37) |
 | L17 | the once-per-frame pass (T048) | `packages/elements/src/list-detail-measure.ts`: one pass per `MutationObserver` delivery (each request asks for its own animation frame) | `elements packages/elements/test/list-detail-pass.test.ts`: 1 failed | 4 passed (5); fails: runs once in the frame after three light-DOM changes made in three tasks before that frame, and once more for a change in a later frame<br>first run, on `45a828e`: 1 failed (1) |
 
+## Plants of the review fixes (rounds 1 and 2)
+
+Added in round 2 (round-2.md R2-03): the plants of the review fixes are recorded here, not only in the round's fixes
+note, and each `listDetailFixes` scenario and each review guard of `list-detail-pass.test.ts` names its plant beside
+it. L18 and L19 are round 1's (round-1-fixes.md), run again on the round 2 code; L20 to L26 are new. Every plant was
+run on the round 2 fix's working tree with the same runner as above (an exact text replacement, the named files run
+in process in `elements`: `list-detail.test.ts`, `list-detail-pass.test.ts` and `list-detail-upgrade.test.ts`, 61
+tests, 62 with the L27 guard), and each touched file restored byte for byte and compared with a saved copy before the next.
+
+| # | Guard | Plant | Result |
+|---|---|---|---|
+| L18 | US3-12 "a mutation inside a ResizeObserver callback" (R1-03's design) | `ocelle-list-detail.ts`: the host's own border box observed (`this.#resize.observe(this, { box: "border-box" })`) in place of the edge box | 4 failed of 61: US3-12, a mutation inside a ResizeObserver callback (the loop message); US3-16; US3 review R2-01, a percentage inline padding (now seen, so not stale); the pass test review R2-01. Round 1's run also failed the US3-12 1196 px row, dialog and content-change cases; since round 2 the fresh measurement after each pass corrects the host's border box in the frame of the pass, so those cases no longer tell this plant apart, and the loop case still does |
+| L19 | US3 review R1-03 | `ocelle-list-detail.ts`: the edge box not observed | 2 failed of 61: US3 review R1-03; US3 review R2-01, a host whose content box is narrower than its own inline padding and borders |
+| L20 | US3 review R2-02 | `ocelle-list-detail.ts`: the edge box in flow (`position: absolute` removed) | 1 failed of 61: US3 review R2-02 (`empty: 600`, `letters: 592`: the floor back) |
+| L21 | US3 review R1-02 | `ocelle-list-detail.ts`: the focused pane read from `document.activeElement` | 1 failed of 61: US3 review R1-02 |
+| L22 | US3 review R2-01, percentage padding, and the pass test review R2-01 | `list-detail-measure.ts`: the step after a scheduled pass not run (`this.#after()` removed) | 2 failed of 61: US3 review R2-01, a percentage inline padding (stale after `remeasure()`); the pass test review R2-01 (`two` at the end of the frame) |
+| L23 | US3 review R1-03 and R2-01, narrow host | `ocelle-list-detail.ts`: the edge box observed in its content box (always 0 px wide) | 2 failed of 61: US3 review R1-03; US3 review R2-01, a host whose content box is narrower |
+| L24 | US3 review R2-01, narrow host (no overflow) | `ocelle-list-detail.ts`: the edge box 1 px tall | 1 failed of 61: US3 review R2-01, a host whose content box is narrower (the positioned scroll container then scrolls past the host's 240 px border box) |
+| L25 | US3 review R2-02, the empty max-content case | `ocelle-list-detail.ts`: no pass scheduled at the first render | 1 failed of 61: US3 review R2-02 (an empty list-detail never runs a pass, so its sizer keeps the `<svg>` default 300 px: 702 px, not 691) |
+| L26 | the pass test guard "a list-detail inserted from a task in Frame R keeps three columns through its first pass" | `ocelle-list-detail.ts`: the fresh measurement after a pass reads no content box (it keeps the last one the observer reported) | 1 failed of 61: that guard (the grid shows `one` and then `three` again within the first frame, before the observer first reports). Without the guard this plant survived every test; the guard was added after green and the plant is its proof |
+| L27 | the scenario guard "a slot change after the first render measures again" | `ocelle-list-detail.ts`: no pass scheduled at a slot change (`this.#measure.schedule()` removed from `#slotChanged`) | 1 failed of 62: that guard (`after: 1073`, not 1196). The first mutation run of the round 2 fix reported this mutant surviving: since the first render schedules a pass (L25), the slot change at the first render no longer told it apart, and no test changed a slot later in a shrink-to-fit host. The guard was added after green; the surviving mutant is its proof |
+
+Every plant bites. The round 2 red tests (`7c640bb`) failed on the code before the fix for the defects themselves
+(red-fix-2.log), and L20, L22 and L25 are the round 2 fix undone one part at a time.
+
 ## Judgement
 
 All seventeen plants bite: each makes the scenario it guards fail, in process, on the green code and on the final code.

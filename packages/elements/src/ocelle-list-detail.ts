@@ -2,13 +2,15 @@
 // data-model.md § list-detail): a list beside its detail, with an optional inspector, that collapses to one column by
 // its own measured inline size or when the host sets `narrow`. Its shadow root holds two zero-height `aria-hidden`
 // blocks, observed by one `ResizeObserver`: the probe, whose content box is the host's content box and gives the
-// element's inline size with the host's inline padding and borders added, and the edge box, which inherits those
-// padding and borders, so its content box changes when they change alone (reviews/phase-4/round-1-fixes.md R1-03). A
-// block-size change of the element notifies neither, so content a slotted element appends from its own `ResizeObserver`
-// brings no loop message (reviews/phase-4/spike.md). After them, one grid with an `aria-hidden` sizer and three pane
-// wrappers, one per slot. The `inspector` slot is always rendered, so its `slotchange` shows an inspector added after
-// the first render (R-11); whether an inspector is present is read from the host's light-DOM children, so the first
-// layout knows it. Focus is read from the element's own root, the document or a host component's shadow root. The tier
+// element's inline size with the host's inline padding and borders added, and the edge box, out of flow and 0 px wide,
+// which inherits those padding and borders, so its border box changes when they change alone and it adds nothing to the
+// element's intrinsic sizes (reviews/phase-4/round-1-fixes.md R1-03, round-2-fixes.md R2-02). A block-size change of
+// the element notifies neither, so content a slotted element appends from its own `ResizeObserver` brings no loop
+// message (reviews/phase-4/spike.md). After each scheduled pass the element measures its border box afresh, so
+// `remeasure()` also re-chooses the tier (round-2-fixes.md R2-01). After the two blocks, one grid with an `aria-hidden`
+// sizer and three pane wrappers, one per slot. The `inspector` slot is always rendered, so its `slotchange` shows an
+// inspector added after the first render (R-11); whether an inspector is present is read from the host's light-DOM
+// children, so the first layout knows it. Focus is read from the element's own root, the document or a host component's shadow root. The tier
 // is chosen from the measured size, the thresholds and `narrow` (src/tiers.ts) and rendered as the grid's `data-tier`;
 // the panes a tier hides are `display: none`. The intrinsic sizes come from the measurement pass
 // (src/list-detail-measure.ts), whose figures are the sizer's inline size and the grid's minimum; the panes are
@@ -66,7 +68,9 @@ export class OcelleListDetail extends LitElement {
     }
 
     .edges {
+      position: absolute;
       box-sizing: content-box;
+      inline-size: 0;
       block-size: 0;
       padding-inline: inherit;
       border-inline-width: inherit;
@@ -201,19 +205,19 @@ export class OcelleListDetail extends LitElement {
    */
   declare detailOpen: boolean;
 
-  readonly #measure = new ListDetailMeasure(() => this.renderRoot.querySelector<HTMLElement>(".grid"));
-  // The probe's content box is the host's content box; the edge box only tells of a change of the host's inline padding
-  // or borders, whose computed values are added (a percentage padding resolves against another box in the edge box).
+  readonly #measure = new ListDetailMeasure(
+    () => this.renderRoot.querySelector<HTMLElement>(".grid"),
+    () => {
+      this.#remeasured();
+    },
+  );
+  // The probe's content box is the host's content box; the edge box's border box is the host's inline padding and
+  // borders, and only tells of a change of them, whose computed values are added (a percentage padding resolves against
+  // another box in the edge box, its containing block).
   readonly #resize = new ResizeObserver((entries) => {
     const probe = entries.find((entry) => entry.target.classList.contains("probe"))?.contentBoxSize[0]?.inlineSize;
     if (probe !== undefined) this.#content = probe;
-    const style = getComputedStyle(this);
-    const edges = ["padding-inline-start", "padding-inline-end", "border-inline-start-width", "border-inline-end-width"].reduce((sum, name) => sum + Number.parseFloat(style.getPropertyValue(name)), 0);
-    const size = this.#content + edges;
-    // Stryker disable next-line ConditionalExpression: equivalent, an update with the size in force chooses the same tier
-    if (size === this.#measured) return;
-    this.#measured = size;
-    this.requestUpdate();
+    this.#resized();
   });
   #measured = 0;
   #content = 0;
@@ -232,7 +236,8 @@ export class OcelleListDetail extends LitElement {
   /**
    * Requests a measurement of the intrinsic sizes for the next animation frame, coalesced with any other trigger, for
    * a change the element cannot see: content a slotted element renders in its own shadow root, an attribute-only
-   * change, or an image or a font loading.
+   * change, or an image or a font loading. In that frame it also re-chooses the tier from a fresh measurement of the
+   * element's border box, as after a percentage inline padding that changes with the host's container.
    */
   public remeasure(): void {
     this.#measure.schedule();
@@ -285,6 +290,8 @@ export class OcelleListDetail extends LitElement {
 
   protected override firstUpdated(): void {
     this.#observeShadow();
+    // The first pass, also for an element with nothing slotted, whose slots never report a change.
+    this.#measure.schedule();
   }
 
   protected override updated(): void {
@@ -296,6 +303,27 @@ export class OcelleListDetail extends LitElement {
     if (pane === null) return;
     pane.setAttribute("tabindex", "-1");
     pane.focus();
+  }
+
+  /** Takes the host's border-box inline size as the probe's content box plus the host's inline padding and borders. */
+  #resized(): void {
+    const style = getComputedStyle(this);
+    const edges = ["padding-inline-start", "padding-inline-end", "border-inline-start-width", "border-inline-end-width"].reduce((sum, name) => sum + Number.parseFloat(style.getPropertyValue(name)), 0);
+    const size = this.#content + edges;
+    // Stryker disable next-line ConditionalExpression: equivalent, an update with the size in force chooses the same tier
+    if (size === this.#measured) return;
+    this.#measured = size;
+    this.requestUpdate();
+  }
+
+  /**
+   * After a scheduled pass (a slot change, a light-DOM change or `remeasure()`), measures the host's border box afresh:
+   * the probe's content box read now and the host's inline padding and borders, so a change no observer reports, such
+   * as a percentage padding that follows the host's container, re-chooses the tier in the same frame.
+   */
+  #remeasured(): void {
+    for (const probe of this.renderRoot.querySelectorAll(".probe")) this.#content = Number.parseFloat(getComputedStyle(probe).inlineSize);
+    this.#resized();
   }
 
   /**
@@ -330,7 +358,8 @@ export class OcelleListDetail extends LitElement {
 
   /** Observes the probe, the edge box and the slotted elements, once the shadow root holds them. */
   #observeShadow(): void {
-    for (const block of this.renderRoot.querySelectorAll(".probe, .edges")) this.#resize.observe(block);
+    for (const probe of this.renderRoot.querySelectorAll(".probe")) this.#resize.observe(probe);
+    for (const edges of this.renderRoot.querySelectorAll(".edges")) this.#resize.observe(edges, { box: "border-box" });
     this.#observeSlots();
   }
 
