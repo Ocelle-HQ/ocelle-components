@@ -42,3 +42,11 @@
   The "native click only" decision is superseded by `ocelle-pill-tag-activate` (FR-031); the pulse ends within 5 s
   (FR-012); the compact interactive pill has a 24 px minimum block size (FR-029, FR-043); every pill variant is a
   state pill (Terms, FR-003); SC-001 is testable against the recorded attributes and slots.
+- Spec check 2 (`reviews/spec/check-2.md`): its two blocking findings are fixed (`reviews/spec/check-2-fixes.md`).
+  SPEC-2-01: mode changes after render are stated in FR-035 (passthrough values live on the host while the mode does
+  not move them and on the inner control, mirrored, while it does; `aria-current` is moved in both interactive modes
+  as 012 FR-009 does; `aria-pressed` on a link-mode pill is unsupported and stays on the host), with US4-8 to US4-10.
+  SPEC-2-02: FR-012 and US1-4 list the three cases that start a pulse run (setting `pulse`, each connection with
+  `pulse`, the motion preference changing to no preference); reconnection is read as a new render, not as a restart
+  under the SPEC-1-02 decision, and needs no state across disconnection. The notes SPEC-2-03 to SPEC-2-06 are also
+  addressed (minimum inline size, default-token limit of 5 s, `aria-pressed="mixed"`, op 016 under Dependencies).

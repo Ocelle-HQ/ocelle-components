@@ -62,6 +62,11 @@ this feature closes. The `sk-*` library is read as requirements only; nothing is
 - **Mission 011 / #8** (`specs/011-layout-headers`): the eyebrow tokens of its R-12 (`font-size-eyebrow`,
   `font-weight-eyebrow`, `tracking-eyebrow`, `color-eyebrow`). If 011 has not landed when user story 2 starts, this
   feature adds those four tokens exactly as R-12 defines them.
+- **Op 016 / #41** (`ops/016-plants-affected`, branch `origin/claude/041-plants-affected`, approved, not merged):
+  supplies `pnpm run gate:plants -- --affected <base>` (and `--list`), which judges only the plants a phase's diff can
+  affect, and the record file `reviews/phase-<N>/plants.md` each phase writes and its reviewer checks. It changes no
+  element, attribute, token or package and nothing in this spec's behaviour; this feature's phases run their local
+  plant check with it once it is on `main` (Assumptions). CI's required Plants check is unchanged by it.
 - **On `main`**: mission 005 (element conventions, slot convention, manifest gate), mission 006 (Storybook harness,
   baselines, story axe), mission 007 and op 015 (mutation rules).
 - **Not changed here**: `ocelle-button`, `ocelle-action-row`, `ocelle-tooltip` and their interfaces. If one of them
@@ -99,7 +104,8 @@ state is never carried by colour alone: the indicator has a name, or it sits nex
 defect today (a pulse over an empty box).
 
 **Independent Test**: render the indicator in every tone, with and without `label`, with and without `pulse`, in both
-themes, in forced colours and with reduced motion; read its box, computed styles, animation state and the
+themes, in forced colours and with reduced motion; move it in the document and change the motion preference while
+`pulse` is set; read its box, computed styles, animation state and the
 accessibility tree.
 
 **Acceptance Scenarios**:
@@ -115,10 +121,15 @@ accessibility tree.
    dot, while the dot itself stays fully opaque at its full size in every frame; the animation runs a fixed number of
    iterations taken from a motion token, ends no later than 5 s after it started, and afterwards no animation runs and
    the dot is shown solid while `pulse` is still set; **When** `pulse` is removed before then, **Then** the animation
-   stops; **When** `pulse` is set again (removed, then added), **Then** the animation runs again on the same terms,
-   and no other change (of `tone` or `label`) restarts it (WCAG 2.2.2).
+   stops; **When** `pulse` is set again (removed, then added), **Then** the animation runs again on the same terms;
+   **When** the element is removed from the document and inserted again (a move, a re-sort, a keyed re-render) with
+   `pulse` set, **Then** one run starts on the same terms; **When** the motion preference changes from `reduce` to no
+   preference while `pulse` is set, **Then** one run starts at that moment on the same terms; and no other change (of
+   `tone`, `label`, any other attribute or the theme) starts or restarts it (FR-012; WCAG 2.2.2). The 5 s limit holds
+   for the default values of the pulse's motion tokens (FR-041).
 5. **Given** `pulse` and `prefers-reduced-motion: reduce`, **When** it renders, **Then** no animation runs and the dot
-   is shown solid.
+   is shown solid; **When** the preference changes to `reduce` while a run is under way, **Then** the run stops at
+   once and the dot is shown solid.
 6. **Given** forced-colours mode, **When** it renders in any tone, **Then** the dot is drawn in a system colour and
    is visible against the system background.
 7. **Given** a `tone` that is not in the vocabulary, **When** it renders, **Then** it looks exactly like `neutral` and
@@ -188,7 +199,8 @@ long text, both themes and forced colours; read boxes, computed styles, the acce
 6. **Given** an icon in the `icon` slot, **When** it renders, **Then** the icon sits before the text as mission 005's
    slot convention sets out and adds nothing to the accessibility tree.
 7. **Given** `title="Blocked since Monday"` on a static pill, **When** it renders, **Then** the attribute stays on the
-   host and the element does not move or change it.
+   host and the element does not move or change it; this also holds for a pill that was interactive before and has
+   become static (US4-8, FR-035).
 
 ---
 
@@ -202,7 +214,7 @@ users hear a button (pressed or not) or a link with the pill's name.
 **Why this priority**: it depends on mission 012's control conventions being on `main`.
 
 **Independent Test**: render the interactive pill in button and link mode, enabled and disabled, pressed and not;
-drive it by pointer and keyboard; read the accessibility tree, the focus ring and the events that reach the host.
+switch its mode after render (static, button, link, in each direction); drive it by pointer and keyboard; read the accessibility tree, the focus ring and the events that reach the host.
 
 **Acceptance Scenarios**:
 
@@ -221,17 +233,35 @@ drive it by pointer and keyboard; read the accessibility tree, the focus ring an
    `ocelle-pill-tag-activate` is dispatched and the browser's own modifier handling applies (FR-031).
 4. **Given** `aria-pressed="true"` on the host of a button-mode pill, **When** it renders, **Then** the attribute is
    moved to the inner button as 012's FR-004 sets out, the accessibility tree reports the button pressed, and the
-   pressed look is applied; **When** the host sets `aria-pressed="false"`, **Then** it reports not pressed.
+   pressed look is applied and `:state(pressed)` matches; **When** the host sets `aria-pressed="false"`, **Then** it
+   reports not pressed, without the pressed look or the state; **When** the host sets `aria-pressed="mixed"`, **Then**
+   the inner button reports mixed (applied as written, 012 FR-004) and the pressed look and `:state(pressed)` apply
+   as for `true` (FR-031).
 5. **Given** `disabled`, **When** it renders, **Then** the pill is disabled as 012's FR-003 defines it (out of the tab
    order, reported disabled, not activated, no navigable target in link mode), dispatches neither a `click` to a
    bubble-phase listener nor `ocelle-pill-tag-activate`, and has the disabled look.
 6. **Given** keyboard focus on the inner control, **When** focus is visible, **Then** the focus ring is drawn from
    `--ocelle-focus-width` and `--ocelle-focus-offset` and the focus colour token, in both themes and in forced
    colours.
-7. **Given** an interactive pill in either density, with a one-character text and with a long one, **When** its
-   target is measured, **Then** the area that takes a pointer click is at least 24 px by 24 px; in `compact` density
-   its block size is at least the 24 px minimum-block-size token (FR-043) and its block padding at least
-   `--ocelle-space-1`.
+7. **Given** an interactive pill in either density, with a one-character text (for example a compact badge reading
+   "3") and with a long one, **When** its target is measured, **Then** the area that takes a pointer click is at
+   least 24 px by 24 px; its block size and its inline size are each at least the 24 px minimum-target-size token
+   (FR-043), and in `compact` density its block padding is at least `--ocelle-space-1`.
+8. **Given** an interactive pill (button or link mode) whose host had `title="Blocked since Monday"`,
+   `aria-describedby="hint"` and `aria-pressed="true"` (button mode) moved to the inner control, **When** the pill
+   becomes static (`interactive` removed and `href` removed or set to a value that is not link mode, such as `""`),
+   **Then** each moved value is back on the host as an attribute with the value it last had, the matching
+   `data-ocelle-moved-*` mirrors are gone, no custom state matches, and the static pill shows the `title` natively
+   (FR-035).
+9. **Given** a static pill with `title`, `aria-label` and `aria-current="page"` on the host, **When** it becomes
+   interactive (`interactive` set, or a link-mode `href` set), **Then** those attributes are moved to the inner
+   control and mirrored exactly as at upgrade (FR-030, 012 FR-004), and `:state(current)` matches (FR-035).
+10. **Given** a button-mode pill with `aria-pressed="true"` and `aria-current="true"` moved, **When** a link-mode
+    `href` is set, **Then** `aria-current` is on the inner link and `:state(current)` still matches, while
+    `aria-pressed` is back on the host as `aria-pressed="true"`, its mirror is gone and `:state(pressed)` no longer
+    matches (a link cannot be pressed; unsupported, as 012's "attribute the element does not list"); **When** the
+    `href` is removed again, **Then** `aria-pressed` is moved to the inner button again and `:state(pressed)` matches
+    (FR-030, FR-035).
 
 ---
 
@@ -284,6 +314,10 @@ container width, the text and `disabled`; hover, focus and press Escape; read th
 - `pulse` on a `neutral` indicator: allowed; the vocabulary does not decide which tones pulse, the host does.
 - An indicator with an empty or whitespace-only `label`: treated as no label (decorative).
 - `disabled` on a static pill (neither `interactive` nor a link-mode `href`) has no effect.
+- `aria-pressed` on a link-mode pill: not supported (a link cannot be pressed, 012 FR-009); it stays on the host,
+  where axe flags it, and the README says so; it is moved again if the pill returns to button mode (FR-035).
+- A pill whose mode changes after render (a filter that becomes a link, a framework binding `href` to `""`): moved
+  values follow the mode as FR-035 sets out; none is lost.
 - A disabled interactive pill with a full text that does not fit: it wraps rather than truncates (US5-6, FR-033).
 - Forced colours: status colours are replaced by system colours; the pill keeps a visible border so its extent is
   still seen; the badge keeps its outline.
@@ -331,11 +365,17 @@ container width, the text and `disabled`; hover, focus and press Escape; read th
 - **FR-012**: With `pulse`, an animation runs on a ring drawn around the dot, never on the dot itself; in every frame
   the dot keeps its full opacity and size. Its duration and its iteration count come from motion tokens (FR-041), and
   the whole animation ends at most 5 s after it starts (WCAG 2.2.2); afterwards no animation runs and the dot is
-  shown solid while `pulse` stays set. The animation starts each time `pulse` goes from absent to present (and when
-  the element first renders with `pulse`); no other change restarts it. Without `pulse`, no animation runs (operator
-  decision, SPEC-1-02).
+  shown solid while `pulse` stays set. A run starts in exactly these cases: (a) when `pulse` goes from absent to present while
+  the element is connected; (b) each time the element is connected to a document with `pulse` set (its first render,
+  and every reconnection after a removal or a move; the element keeps no pulse state across a disconnection); and
+  (c) when the motion preference changes from `reduce` to no preference while the element is connected with `pulse`
+  set. No other change (of `tone`, `label`, any other attribute or the theme) starts or restarts a run. Without `pulse`, no animation
+  runs (operator decision, SPEC-1-02). The 5 s limit holds for the default values of the pulse's motion tokens; a
+  host that overrides them keeps their product at or below 5 s, which the README states (as 012 FR-017 does for its
+  spinner).
 - **FR-013**: Under `prefers-reduced-motion: reduce` no animation runs, with or without `pulse`, and the dot is shown
-  solid.
+  solid; a change of the preference to `reduce` stops a run under way at once (and a change back starts one, FR-012
+  (c)).
 - **FR-014**: With a non-empty (after trimming) `label`, the element exposes exactly one accessibility node of role
   `img` named by the label. With no label, the element is hidden from the accessibility tree entirely, and the README
   states that a host must then place text naming the state next to it (state is never shown by colour alone).
@@ -380,16 +420,18 @@ container width, the text and `disabled`; hover, focus and press Escape; read th
   gate. Forced colours keep a visible border on both variants.
 - **FR-029**: `density="compact"` sets inline padding `--ocelle-space-2` and line height `--ocelle-line-height-snug`.
   On a static pill its block padding is exactly `--ocelle-space-1`. On an interactive pill its block padding is at
-  least `--ocelle-space-1` and its block size at least the 24 px minimum-block-size token (FR-043), so its pointer
-  target meets FR-032 whatever its font size (operator decision, SPEC-1-03). The default density keeps the spacing
+  least `--ocelle-space-1` (operator decision, SPEC-1-03). An interactive pill, in either density, has a block size
+  and an inline size each at least the 24 px minimum-target-size token (FR-043), so its pointer target meets FR-032
+  whatever its font size and however short its text (a one-character compact badge included). The default density keeps the spacing
   the plan sets from tokens.
 - **FR-030**: An interactive pill (`interactive`, or a non-empty `href` that is link mode) follows mission 012's
   FR-001 to FR-006 as written: one native inner control (`<button type="button">` in button mode, `<a>` in link
   mode, FR-002 deciding the mode), `disabled` as FR-003 defines it, ARIA passthrough by moving attributes with
   `data-ocelle-moved-*` mirrors (FR-004), no ID reference across the shadow root (FR-005), and name passthrough
-  (FR-006). The attributes it moves are `aria-label`, `aria-labelledby`, `aria-describedby`, `aria-controls`,
-  `aria-pressed` (button mode), `aria-current` (link mode) and `title`. It reuses 012's helpers rather than
-  re-implementing them.
+  (FR-006). The attributes it moves, in both button and link mode, are `aria-label`, `aria-labelledby`,
+  `aria-describedby`, `aria-controls`, `aria-current` (with any value, as 012 FR-009 passes it on `ocelle-button`) and
+  `title`; `aria-pressed` is moved in button mode only and is not supported on a link-mode pill (012 FR-009). What
+  happens to them when the mode changes is FR-035. It reuses 012's helpers rather than re-implementing them.
 - **FR-031**: **Activate event.** Each activation of an enabled interactive pill that delivers a `click` to the host
   (a pointer click, Enter or Space in button mode, Enter in link mode, the element's `click()`), in button mode and
   in link mode, also dispatches one `ocelle-pill-tag-activate` `CustomEvent` from the host with `bubbles: true`,
@@ -399,10 +441,13 @@ container width, the text and `disabled`; hover, focus and press Escape; read th
   `click` is still delivered with `defaultPrevented` `true`); in link mode a click with Ctrl, Meta, Shift or Alt
   held dispatches no `ocelle-pill-tag-activate`, its `click` is delivered and the browser's own modifier handling
   applies; a middle click dispatches nothing. A disabled pill, or a static pill, dispatches no
-  `ocelle-pill-tag-activate` (operator decision, SPEC-1-01). In button mode `aria-pressed="true"` (moved to the inner
-  button) gives the pressed look and exposes the custom state `:state(pressed)`; in link mode a set `aria-current`
-  (moved to the inner link) exposes `:state(current)`, with no visual mark of its own, as `ocelle-button` does
-  (012 FR-004, FR-009). The pill has no other custom state.
+  `ocelle-pill-tag-activate` (operator decision, SPEC-1-01). In button mode a moved `aria-pressed` with a value other
+  than the off value (`true`, and `mixed`, which reaches the inner button as written and is reported mixed) gives the
+  pressed look and exposes the custom state `:state(pressed)`; `false`, or a cleared value, gives neither. In button
+  and link mode a moved `aria-current` other than the off value exposes `:state(current)`, with no visual mark of its
+  own, as `ocelle-button` does (012 FR-004, FR-009). A custom state follows the value applied to the inner control
+  only: an attribute that is on the host (a static pill, `aria-pressed` on a link-mode pill) gives no custom state.
+  The pill has no other custom state.
 - **FR-032**: An interactive pill shows the token focus ring on keyboard focus, in both themes and forced colours, and
   its pointer target is at least 24 px by 24 px in either density (WCAG 2.5.8; in compact density by FR-029's
   minimum block size). It is not a primary action, so
@@ -417,27 +462,39 @@ container width, the text and `disabled`; hover, focus and press Escape; read th
   (`text` set to the full text, `disabled` while not truncated, no `describes`), so the full text is shown on hover and
   keyboard focus only while truncated, with the tooltip's own WCAG 1.4.13 behaviour. The inner control keeps its own
   accessible name (FR-030); the tooltip adds nothing to the accessibility tree.
+- **FR-035**: **Mode changes.** The pill's mode (static, button, link) follows `interactive` and `href` (FR-002) and
+  is re-evaluated whenever either changes. A passthrough attribute (FR-030) lives in exactly one place at a time:
+  moved to the inner control, with its `data-ocelle-moved-*` mirror, while the current mode moves it; on the host,
+  with no mirror, while it does not. So: (a) when the pill becomes static, each value it holds as moved is written
+  back to the host as that attribute with the value it last had (an off value such as `aria-pressed="false"`
+  included; a value that was cleared is not written back), and its mirror is removed; (b) when it becomes interactive,
+  the host's passthrough attributes are moved and mirrored as at upgrade (012 FR-004); (c) on a switch between button
+  and link mode, the values moved in both modes stay moved (to the new inner control), and `aria-pressed` goes back
+  to the host on a switch to link mode, as in (a), and is moved again on a switch to button mode, as in (b). Custom
+  states follow the moved values only (FR-031). No passthrough value is lost or duplicated by a mode change.
 
 **Tokens**
 
 - **FR-040**: `@ocelle/tokens` gains `--ocelle-line-height-snug` with the value 1.2, validated and documented like the
   other line-height tokens.
 - **FR-041**: The indicator's pulse takes its duration and its iteration count from motion tokens (FR-012); where no
-  existing token suits, the plan adds one, and their product is at most 5 s. A token added here follows the token
-  set's reduced-motion rule as it stands on `main` when the token is added.
+  existing token suits, the plan adds one, and with their default values their product is at most 5 s (FR-012). A
+  token added here follows the token set's reduced-motion rule as it stands on `main` when the token is added; the
+  plan confirms that the token validator accepts an iteration-count (unitless) token in the motion group, or states
+  the change it needs.
 - **FR-042**: If mission 011 has not landed when the metric is built, the four eyebrow tokens are added exactly as
   011's R-12 defines them; if it has, they are used as they are.
-- **FR-043**: The interactive compact pill's minimum block size comes from a token whose value is 24 px (WCAG 2.5.8's
-  minimum); if no existing token has that meaning, the plan adds one to `@ocelle/tokens`, validated and documented
-  like the other size tokens (FR-029; operator decision, SPEC-1-03).
+- **FR-043**: The interactive pill's minimum block size and minimum inline size (FR-029) come from one token whose
+  value is 24 px (WCAG 2.5.8's minimum); if no existing token has that meaning, the plan adds one to
+  `@ocelle/tokens`, validated and documented like the other size tokens (FR-029; operator decision, SPEC-1-03).
 
 ### Key Entities
 
 - **Status vocabulary**: five named states with their foreground and ground tokens; used by the indicator and the
   pill; the values and token pairs are shared with #9's notice, the default (`neutral` here, `info` on the notice) is
   per element.
-- **Pill**: full text, label, status, variant, density, mode (static, button, link), disabled, pressed, current,
-  truncated; activation reported by the native `click` and `ocelle-pill-tag-activate` (payload `{}`, bubbling,
+- **Pill**: full text, label, status, variant, density, mode (static, button, link; re-evaluated on every change of
+  `interactive` or `href`, with the passthrough values following it, FR-035), disabled, pressed, current, truncated; activation reported by the native `click` and `ocelle-pill-tag-activate` (payload `{}`, bubbling,
   composed, cancelable).
 - **Metric**: a label and a display value, laid out stacked or in a row.
 
@@ -454,7 +511,9 @@ container width, the text and `disabled`; hover, focus and press Escape; read th
 - **SC-003**: Every status-vocabulary pairing of foreground and ground used by these elements passes the automated
   contrast check (4.5:1 for text, 3:1 for the dot and the badge border) in both themes.
 - **SC-004**: With reduced motion requested, zero animations run on any indicator; with it not requested, the dot is
-  fully visible in 100 % of sampled animation frames, and no pulse runs longer than 5 s from its start.
+  fully visible in 100 % of sampled animation frames, and with the default token values no pulse run lasts longer
+  than 5 s from its start, whether it started by setting `pulse`, by connecting the element or by a change of the
+  motion preference.
 - **SC-005**: A keyboard-only user can reach, activate and read the full text of every enabled interactive pill,
   truncated or not, without a pointer; every activation produces exactly one `click` and one
   `ocelle-pill-tag-activate` (none on a modifier click in link mode); the full text of every disabled interactive
@@ -476,7 +535,7 @@ container width, the text and `disabled`; hover, focus and press Escape; read th
 - The pill's `title` (static) keeps the browser's native behaviour, which is the host's choice; the README points to
   the interactive pill and its tooltip for an accessible full text.
 - Behaviour is measured in Chromium only, as in missions 005 and 012; WebKit is a stated limitation.
-- Implementation waits for missions 012 and 008 (and op 016's affected-plants mode) to be on `main`; user stories 1
+- Implementation waits for missions 012 and 008 (and op 016's affected-plants mode, Dependencies) to be on `main`; user stories 1
   to 3 do not need 012 or 008, but the whole mission is implemented after both land.
 - The kitty-mission-ui usage inventory is read from #7 as triage 012 recorded it (counts and attribute names only);
   the spec-kitty-design issues #498, #509, #524 and #526 were not read in full. SC-001 is checked against the
