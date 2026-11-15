@@ -73,7 +73,7 @@ pinned Playwright image; `CI` and `GITHUB_ACTIONS` unset.
 
 ## Mutation (T037)
 
-### The gate cannot run the elements configuration as it stands (operator decision needed)
+### The elements configuration's dry-run limit (decided 2026-11-15, T040)
 
 `gate:mutation -- --base 4aaf9e4 --files packages/elements/src/ocelle-drawer.ts,packages/elements/src/overlay.ts,packages/elements/src/index.ts`
 exits 2 ("Stryker wrote no report … Something went wrong in the initial test run"): Stryker's own log says "Initial
@@ -89,10 +89,20 @@ To do the phase's mutation work all the same, the runs below drive the gate's ow
 `gates/bin/mutation.ts`, its git, read and remove tools unchanged) from a scratch script outside the repository whose
 only difference is `--dryRunTimeoutMinutes 30` on Stryker's command line. Output in `mutation.log`.
 
+**Decided** (operator, 2026-11-15; plan decision 25, R-15): `stryker.elements.config.json` gains
+`"dryRunTimeoutMinutes": 30` and nothing else; `stryker.config.json` is unchanged. Red first: the pinned test in
+`gates/test/vitest-config.test.ts` expects the key in the elements configuration only and no `dryRunTimeoutMinutes` in
+`stryker.config.json` (`426b6e3`, `red-dry-run.log`: 1 failed, on the missing key), then the configuration
+(`1868fb5`), and the test passes. Run 4 is the gate itself, unmodified, at `1868fb5`: it exits 0 with no survivor, the
+same 84 mutants and 17 compile errors as run 2, so the phase's mutation result no longer rests on the scratch runner
+(runs 1 and 2 stay as the record of how the survivors were found). Every report line is in `mutation.log` run 4. The
+open risk the decision names, CI's `mutation-shard` job at `timeout-minutes: 10`, is not changed here.
+
 | Run | Commit | Entries | Mutants on changed lines | Survived | Timeouts | Compile errors | Records |
 |---|---|---|---|---|---|---|---|
 | 1 | `7ad34c2` | `ocelle-drawer.ts`, `overlay.ts`, `index.ts` (scratch runner) | 83 | 4 | 0 | 17 | 0 |
 | 2 | `fae8680` | the same (scratch runner) | 84 | 0 | 0 | 17 | 0 |
+| 4 | `1868fb5` | `ocelle-drawer.ts`, `overlay.ts`, `index.ts` (the gate itself, `dryRunTimeoutMinutes` 30 in the configuration; 16 m 1 s, exit 0) | 84 | 0 | 0 | 17 | 0 |
 | 3 | `fae8680` | the six gate files (comment lines only, zero mutants) and `packages/tokens/src/source.ts` (the gate itself) | 6 | 0 | 0 | 2 | 277 (the gate files' process-boundary records) |
 
 No equivalent-mutant record was added. The own-close count and the toggle path of the base (review phase 2 R1-01) got
@@ -109,6 +119,9 @@ no new test from the drawer: no drawer row reaches a case the dialog's rows do n
 | the same rows found two faults of `7ad34c2` | a script `click()` after a vetoed backdrop click requested again (the record outlived its click); a non-primary press inside cleared the primary's press outside (`red-press.log`: 2 red) | `fae8680`: only the primary pointer's press is recorded, and a click consumes it |
 
 ## Stories and baselines (T039, T040)
+
+The axe finding below was decided by the operator on 2026-11-15 (plan decision 24) and resolved in T040; see
+"Scroll edge (T040)" at the end of this section. The lines up to there are the record of T039.
 
 - `storybook/stories/drawer.stories.ts`: the six stories of data-model § Stories (start, end, rtl start, chrome
   ground, chrome ground with heading-hidden, long scrolling body). `gate:storybook-build`: built 35 stories.
@@ -131,7 +144,27 @@ no new test from the drawer: no drawer row reaches a case the dialog's rows do n
   expected, and so did shard 19 (`visual/pass-repository`). Shard 27 (`axe/pass-repository`) was not run: it audits
   the repository's stories, whose axe finding above is open. The full `gate:plants` was not run (longer than the
   session allows); the other shards are left to CI.
-- T040 stays open until the operator decides the long-scrolling-body story's scroll edge.
+
+### Scroll edge (T040, `c67f60d`)
+
+- The long-scrolling-body story places an empty `<div data-story="drawer-scroll-edge"></div>` after the sixth
+  paragraph, sized only by a `[data-story="drawer-scroll-edge"] { block-size: 10rem; }` rule in
+  `storybook/.storybook/stories-layout.css` (no text, role, name or `style` attribute; no `a11y-exceptions.json` entry).
+- Measured on the host at 1280 × 800: the body's scroll edge is at 737.8 px; the block spans 676 to 836 px, so the edge
+  falls inside it, 62 px below its top and 98 px above its bottom; the sixth paragraph ends at 660 px and the seventh
+  starts at 852 px, below the viewport. A first placement after the seventh paragraph was measured and dropped: there
+  the block started at 762 px, below the edge, axe passed (the paragraph it reported lay below the edge inside the
+  viewport, and the block pushed it out), but the seventh paragraph (676 to 746 px) still crossed the edge and the
+  capture did not change (`visual:update` wrote 0 files), which is not the block across the edge that T040 states.
+- `gate:axe`: 70 story-theme runs, 0 serious or critical; 10 notes (the Prose document's excepted nodes).
+- `visual:update` in the pinned container (docker): 2 files changed, 0 added, 0 removed:
+  `elements-ocelle-drawer--long-scrolling-body.light.png` and `.dark.png` (the body now shows six paragraphs and the
+  empty block). The baseline set is unchanged (70 files), so the `fail-token-changed` lines are unchanged; shard 16
+  judged every plant as expected after the change (the story in light still shows `color-ink`).
+- `gate:visual`: 70 captures match their baselines (docker only). `gate:storybook-build`: built 35 stories.
+  `gate:plants -- --shard 27` (`axe/pass-excepted-shadow`, `axe/pass-minor-only`, `axe/pass-repository`): every plant
+  as expected. The full `gate:plants` was not run; the other shards are left to CI.
+- The storybook and storybook-integration projects (T038's story tests among them): 160 passed.
 
 ## Full suite
 
@@ -140,3 +173,6 @@ axe finding on the drawer's long-scrolling-body story: "audits the repository's 
 with the two findings) and "fails a story with an unlabelled button …" (five lines instead of three: the plant's two
 and the repository's two, then the summary). Every other test passes, the drawer's and dialog's rows in both harnesses
 among them. `tdd-check.sh 3` needs this suite green, so it waits for the operator's decision on that story.
+
+`pnpm test` at `1868fb5` (after T040's scroll-edge block and dry-run limit): 4787 tests passed in 153 files, exit 0
+(11 m 16 s).

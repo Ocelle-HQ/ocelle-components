@@ -359,3 +359,30 @@ real	1m22.294s
 user	2m42.601s
 sys	0m13.087s
 exit 0
+
+## Run 4, at 1868fb5: the gate itself, unmodified, the elements configuration with "dryRunTimeoutMinutes": 30 (plan decision 25)
+$ node gates/bin/mutation.ts -- --base 4aaf9e4 --files packages/elements/src/ocelle-drawer.ts,packages/elements/src/overlay.ts,packages/elements/src/index.ts
+packages/elements/src/ocelle-drawer.ts:113: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-drawer.ts:114: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-drawer.ts:117: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-drawer.ts:121: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-drawer.ts:124: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-drawer.ts:129: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-drawer.ts:130: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-drawer.ts:141: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-drawer.ts:143: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-drawer.ts:143: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-drawer.ts:143: mutation: compile-error: EqualityOperator: replaced by event.composedPath()[0] === panel
+packages/elements/src/overlay.ts:454: mutation: compile-error: LogicalOperator: replaced by this.#state === "opening" && this.#state === "shown"
+packages/elements/src/overlay.ts:454: mutation: compile-error: EqualityOperator: replaced by this.#state !== "opening"
+packages/elements/src/overlay.ts:454: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/overlay.ts:454: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/overlay.ts:454: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/overlay.ts:557: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/index.ts: mutation: zero-mutants: no mutant on the changed lines
+mutation: 84 mutants on the changed lines of 3 files, none survived; 0 timeouts, 17 compile errors, 1 zero-mutant entry; 0 equivalent records
+
+real	16m0.975s
+user	11m9.436s
+sys	1m31.845s
+exit 0
