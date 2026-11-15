@@ -7,7 +7,9 @@ in_scope: [35]
 out_of_scope: [1, 8, 9, 11, 15, 16, 20, 23]
 semver: none
 spec_prompt: "Op for #35 (triage/015-mutation-shard-timeout.md): before the first element mission PR (009, #15), (1) stryker.elements.config.json gains dryRunTimeoutMinutes 30 (taken over from mission 008, stryker.config.json unchanged; red first in gates/test/vitest-config.test.ts) and (2) CI's mutation-shard timeout-minutes in .github/workflows/ci.yml (red first in gates/test/ci-workflow.test.ts) is raised for shards of packages/elements/src source to a value derived from a CI measurement of elements shards, with the shape, measurement and value rule the operator picks at approval (recommended: elements-only limit; measured on a draft PR of 008's branch plus this op's workflow; worst elements shard job time x 1.5 rounded up to 5 minutes, never below 45); 001 FR-013, SC-005 and contracts/ci-checks.md amended in place, gates/README.md updated if it states the limit; no change to shard split, entry bounds, the gate code or per-mutant limits."
-status: proposed
+status: approved
+decided_by: "human:jeroennouwsdev"
+decided_at: 2026-11-15T03:44:48Z
 ---
 
 # Triage 015: CI mutation shards time out on the elements dry run (#35)
