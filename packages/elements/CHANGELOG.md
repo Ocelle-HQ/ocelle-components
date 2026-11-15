@@ -37,5 +37,17 @@ entry points and the browser build's file path (constitution VII).
   build define `ocelle-button` too.
 - In the README, the control conventions that later controls follow: one inner control that fills its host, the host
   guard, the disabled state, the name order and the primary action.
+- `ocelle-button` link mode (mission 012): with an `href` that parses as a URL and is not a `javascript:` URL, the
+  inner control is an `<a>` that looks like the button; its properties `href`, `target`, `rel` and `download`
+  (reflected); `rel="noopener"` for `target="_blank"` without `rel`; a disabled link has no `href`. In link mode a
+  cancelled `ocelle-button-activate` cancels the navigation, and a Ctrl, Meta, Shift or Alt click dispatches none.
+- `ocelle-button` moves the host attributes `aria-expanded`, `aria-controls`, `aria-current`, `aria-haspopup`,
+  `aria-pressed`, `aria-label`, `aria-labelledby`, `aria-describedby` and `title` onto its inner control, each with an
+  element-owned mirror `data-ocelle-moved-<attribute>` that copies of the live DOM keep and that the element restores
+  after a morph; the moved states are the custom states `:state(expanded)`, `:state(pressed)` and `:state(current)`.
+- In the README, the control conventions gain link versus button, the moved host ARIA (with a recipe per stack) and
+  the two surfaces of "current", and the `ocelle-button` section the markup of three consumer compositions.
+- The engine floor, raised to Chromium 135 and WebKit 17.4 for ARIA element reflection and custom states (from
+  Chromium 120 and WebKit 16.4).
 - The slot convention's size rules now apply to the `icon` and `trailing` slots only, so an element in a control's
   other slots keeps its own box; `ocelle-icon` and `ocelle-brand-mark` render as before.

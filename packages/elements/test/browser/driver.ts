@@ -219,7 +219,11 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
     },
     callClick: async (id) => {
       await page.evaluate(clickElement, id);
-      await settle(page);
+      // A link's click() starts its navigation at once (012 phase 3, US2-1's fixture body): the page that would settle
+      // is gone, which is the outcome the body then reads; any other failure is reported.
+      await settle(page).catch((error: unknown) => {
+        if (!String(error).includes("Execution context was destroyed")) throw error;
+      });
     },
     hover: async (id, options) => {
       await pointer(page, page.mainFrame(), "hover", id, options);
