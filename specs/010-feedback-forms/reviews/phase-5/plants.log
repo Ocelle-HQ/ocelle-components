@@ -393,3 +393,98 @@ gates/plants/storybook-build/fail-empty-index: plants: not-caught: expected exit
 gates/plants/visual/fail-token-changed: plants: not-caught: findings differ: unexpected elements-ocelle-form-input--empty/light differs, elements-ocelle-form-input--placeholder/light differs, elements-ocelle-form-input--filled/light differs, elements-ocelle-form-input--with-description/light differs, elements-ocelle-form-input--with-error/light differs, elements-ocelle-form-input--required/light differs, elements-ocelle-form-input--disabled/light differs, elements-ocelle-form-input--read-only/light differs, elements-ocelle-form-input--focused/light differs, elements-ocelle-form-input--hover/light differs, elements-ocelle-form-select--empty/light differs, elements-ocelle-form-select--placeholder/light differs, elements-ocelle-form-select--filled/light differs, elements-ocelle-form-select--with-description/light differs, elements-ocelle-form-select--with-error/light differs, elements-ocelle-form-select--required/light differs, elements-ocelle-form-select--disabled/light differs, elements-ocelle-form-select--focused/light differs, elements-ocelle-form-select--hover/light differs, elements-ocelle-form-select--option-groups/light differs, elements-ocelle-notice--info/light differs, elements-ocelle-notice--success/light differs, elements-ocelle-notice--warning/light differs, elements-ocelle-notice--danger/light differs, elements-ocelle-notice--neutral/light differs, elements-ocelle-notice--regular-size/light differs, elements-ocelle-notice--compact-size/light differs, elements-ocelle-notice--with-heading/light differs, elements-ocelle-notice--without-heading/light differs, elements-ocelle-notice--announcing/light differs
 plants: 2 problems in 301 plants
 [ELIFECYCLE] Command failed with exit code 1.
+### --- rerun after stop 2 decision, at 84bfbfe (OCELLE_VISUAL_ENGINE=docker) ---
+### shard 1
+$ node gates/bin/plants.ts -- --shard 1
+$ node gates/bin/plants.ts -- --shard 1
+note: plant time: contrast/empty-list: 0.4 s
+note: plant time: signoff/fail-trailer-mismatch: 0.5 s
+note: plant time: contrast/non-text-below-threshold: 0.8 s
+note: plant time: contrast/exempt-not-disabled-ink: 1.0 s
+note: plant time: contrast/unknown-token: 1.3 s
+note: plant time: brand-rules/c-extra-radius: 1.6 s
+note: plant time: unit-tests/error-no-test-file: 1.8 s
+note: plant time: contrast/required-pair-excluded: 1.9 s
+note: plant time: brand-rules/a-monospace: 2.2 s
+note: plant time: brand-rules/e-light-chrome: 2.2 s
+note: plant time: brand-rules/source-invalid: 2.6 s
+note: plant time: prefix/pass-outside-packages: 2.9 s
+note: plant time: manifest/pass-repository: 3.4 s
+note: plant time: unit-tests/fail-gates-test: 4.5 s
+note: plant time: prefix/fail-storybook-html-multiline-monospace: 4.7 s
+note: plant time: unit-tests/pass-gates-only: 5.1 s
+note: plant time: pins/fail-node-linker-hoisted: 5.1 s
+note: plant time: pins/fail-package-manager-missing: 5.3 s
+note: plant time: pins/fail-release-age-exclude: 5.3 s
+note: plant time: pins/fail-release-age-strict-false: 5.5 s
+note: plant time: pins/pass-matching: 5.5 s
+note: plant time: pins/error-invalid-json: 5.6 s
+note: plant time: pins/fail-workspace-tilde: 5.7 s
+note: plant time: typecheck/fail-test-code: 9.7 s
+note: plant time: typecheck/error-missing-reference: 14.3 s
+note: plant time: lint/pass-voided-promise: 14.8 s
+note: plant time: unit-tests/fail-tokens-test: 15.8 s
+note: plant time: test-lint/error-unparsable: 17.3 s
+note: plant time: test-lint/fail-conditional-assertion: 18.6 s
+note: plant time: test-lint/fail-snapshot-only: 19.9 s
+note: plant time: test-lint/fail-no-assertion: 21.7 s
+note: plant time: manifest/fail-lost-attribute: 22.7 s
+note: plant time: lint/fail-floating-promise: 22.9 s
+note: plant time: csp/fail-set-interval-string: 23.5 s
+note: plant time: csp/fail-eval: 23.6 s
+note: plant time: csp/fail-indirect-eval: 24.2 s
+note: plant time: csp/pass-external-script: 24.4 s
+note: plant time: prefix/fail-custom-property-test-code: 24.6 s
+note: plant time: prefix/fail-event-name-built-output: 24.8 s
+note: plant time: csp/pass-look-alike-names: 25.0 s
+note: plant time: style-lint/fail-font-weight: 26.7 s
+note: plant time: style-lint/fail-element-stylesheet: 26.7 s
+note: plant time: style-lint/element-property-clash: 28.1 s
+note: plant time: style-lint/fail-lh-paren-factor: 28.2 s
+note: plant time: style-lint/fail-lh-calc-twice: 29.8 s
+note: plant time: style-lint/fail-aspect-ratio-other: 29.8 s
+note: plant time: style-lint/fail-rem-length: 31.3 s
+note: plant time: style-lint/fail-scale-factor: 31.4 s
+note: plant time: style-lint/fail-styles-other-token-line-height: 32.9 s
+note: plant time: style-lint/fail-styles-font-without-line-height: 33.1 s
+note: plant time: style-lint/fail-styles-stylesheet: 34.4 s
+note: plant time: style-lint/pass-calc-tokens: 34.7 s
+note: plant time: style-lint/pass-one-line: 36.2 s
+note: plant time: style-lint/pass-fr: 36.3 s
+note: plant time: style-lint/pass-scale-mirror: 37.7 s
+note: plant time: style-lint/fail-var-fallback: 37.9 s
+note: plant time: csp/fail-style-attribute-after-newline: 38.6 s
+note: plant time: style-lint/pass-system-colour: 39.3 s
+note: plant time: brand-rules/g-system-colour-mapping: 39.5 s
+note: plant time: style-lint/pass-var-keyword-fallback: 40.1 s
+note: plant time: manifest/fail-undescribed-css-part: 40.4 s
+note: plant time: pins/fail-allow-builds-other-version: 40.4 s
+note: plant time: pins/fail-caret-range: 40.7 s
+note: plant time: pins/fail-tilde-range: 40.9 s
+note: plant time: config-copies/fail-one-setting-differs: 41.1 s
+note: plant time: manifest/fail-undescribed-property: 41.3 s
+note: plant time: mutation/fail-no-test-runs: 80.0 s
+note: plant time: mutation/fail-element-source-survivor: 81.4 s
+note: plant time: mutation/pass-reasoned-record: 106.8 s
+note: plant time: mutation/pass-compile-error: 112.4 s
+note: plant time: mutation/error-zero-mutant-failing-test: 125.4 s
+note: plant time: storybook-build/error-config-unreadable: 1.5 s
+note: plant time: storybook-build/fail-empty-index: 2.8 s
+note: plant time: storybook-build/fail-unresolved-import: 2.0 s
+note: plant time: plants/fail-shard-in-plant-check: 0.0 s
+note: plant time: plants/pass-matching: 0.0 s
+plants: shard 1 of 28: 76 plants judged, every plant as expected
+### shard 1 exit 0 133s
+### shard 16
+$ node gates/bin/plants.ts -- --shard 16
+$ node gates/bin/plants.ts -- --shard 16
+note: plant time: visual/fail-token-changed: 204.3 s
+note: plant time: visual/fail-websocket: 146.2 s
+note: plant time: visual/fail-xhr: 149.1 s
+plants: shard 16 of 28: 3 plants judged, every plant as expected
+### shard 16 exit 0 500s
+### verdict
+$ node gates/bin/plants.ts -- --verdict storybook/.visual/plant-shards
+$ node gates/bin/plants.ts -- --verdict storybook/.visual/plant-shards
+plants: 301 plants of 17 gates and the registry judged, every plant as expected
+### verdict exit 0

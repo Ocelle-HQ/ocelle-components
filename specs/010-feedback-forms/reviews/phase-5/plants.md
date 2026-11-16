@@ -26,3 +26,20 @@ Neither is a gate that stopped biting: both plants are fixtures that list the re
 Every other plant was judged as expected, the `visual` and `axe` pass plants among them, which capture and audit the
 repository's 102 story-themes with the new baselines. The fix of both plants lies outside the files phase 5 may change
 (T066), so it is a stop for the operator: `stop-2.md`.
+
+## Rerun after the operator's decision on stop 2
+
+By `decision-stop-2.md` (option (a)), `84bfbfe` adds the empty `notice`, `form-input` and `form-select` story files to
+`storybook-build/fail-empty-index/tree/storybook/stories/` and the 30 `elements-ocelle-{notice,form-input,form-select}--<story>/light`
+`differs` findings to `visual/fail-token-changed/plant.json` (its `why` at fifty light story-themes), and widens T066's
+file list to name them; no test assertion changed.
+
+Rerun on 2026-11-16 at `84bfbfe`, same container and settings (`OCELLE_CHROMIUM_PATH` to Chromium 153 build 1243,
+`OCELLE_VISUAL_ENGINE=docker`), the two shards that held the problems and then the verdict over all 28 shard results
+(the other 26 from the run above; no plant in them changed); the output is appended to `plants.log`.
+
+| Run | Result |
+|---|---|
+| `gate:plants -- --shard 1` | exit 0, "plants: shard 1 of 28: 76 plants judged, every plant as expected" (133 s) |
+| `gate:plants -- --shard 16` | exit 0, "plants: shard 16 of 28: 3 plants judged, every plant as expected" (500 s; `visual/fail-token-changed` 204.3 s) |
+| `gate:plants -- --verdict storybook/.visual/plant-shards` | **exit 0, "plants: 301 plants of 17 gates and the registry judged, every plant as expected"** |

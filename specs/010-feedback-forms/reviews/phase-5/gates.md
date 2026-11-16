@@ -26,6 +26,14 @@ change only `specs/`).
 | `gate:mutation -- --base 77dfda1` (whole diff) | exit 0, "mutation: nothing to mutate: no package or gate source line changed since 77dfda1": the phase's diff holds story files, test files, baselines and records only; story files are outside the mutation scope (`gates/lib/mutation/ranges.ts`, `**/*.stories.ts` excluded) |
 | `gate:plants` (`OCELLE_VISUAL_ENGINE=docker`) | **exit 1, "plants: 2 problems in 301 plants"**: `storybook-build/fail-empty-index` and `visual/fail-token-changed` not caught. See `plants.md` and `stop-2.md` |
 
+### After the operator's decision on stop 2 (at `84bfbfe`)
+
+| Gate | Result |
+|---|---|
+| `gate:plants` (`OCELLE_VISUAL_ENGINE=docker`; shards 1 and 16 rerun, then the verdict over all 28) | exit 0, "plants: 301 plants of 17 gates and the registry judged, every plant as expected" (`plants.md`) |
+| `gate:unit-tests` | exit 0, "unit-tests: 4005 tests passed in 161 files" |
+| `gate:signoff -- --range 77dfda1..HEAD` | exit 0, "signoff: 11 commits checked, no finding" (at `84bfbfe`) |
+
 ## Timing
 
 The single `gate:plants` run (all plants in one process) was stopped by its 7000 s time limit (started 09:33:46 UTC,
