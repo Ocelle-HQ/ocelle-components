@@ -53,7 +53,7 @@ describe("axe gate (gates/bin/axe.ts)", () => {
     async () => {
       const at = await root("repository");
       const ran = await gate(at);
-      expect(ran).toEqual({ code: 0, stdout: ["axe: 42 story-theme runs, 0 serious or critical; 10 notes (0 incomplete, 10 excepted)"], stderr: excepted });
+      expect(ran).toEqual({ code: 0, stdout: ["axe: 102 story-theme runs, 0 serious or critical; 10 notes (0 incomplete, 10 excepted)"], stderr: excepted });
     },
     timeout,
   );
@@ -65,7 +65,7 @@ describe("axe gate (gates/bin/axe.ts)", () => {
       const ran = await gate(at);
       expect(ran).toEqual({
         code: 1,
-        stdout: ["unlabelled--button/light: axe: button-name: critical: #plant-unlabelled", "unlabelled--button/dark: axe: button-name: critical: #plant-unlabelled", "axe: 2 findings in 44 story-theme runs"],
+        stdout: ["unlabelled--button/light: axe: button-name: critical: #plant-unlabelled", "unlabelled--button/dark: axe: button-name: critical: #plant-unlabelled", "axe: 2 findings in 104 story-theme runs"],
         stderr: excepted,
       });
     },
