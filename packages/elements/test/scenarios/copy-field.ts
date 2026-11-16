@@ -32,8 +32,11 @@ export interface CopyFieldScenario {
 }
 
 const command = "pnpm --filter @ocelle/elements run manifest";
-/** A 300-character command with no space (US4-2). */
-const longCommand = "pnpm-exec-".repeat(30);
+/**
+ * A 300-character command with no space (US4-2) and no other break opportunity (no hyphen or punctuation), so only
+ * `overflow-wrap: anywhere` can wrap it (made stricter after the plant run, reviews/phase-5/notes.md).
+ */
+const longCommand = `${"ocelle0123456789".repeat(18)}abcdefghijkl`;
 const copied = "Copied to clipboard";
 const failed = "Could not copy: the bridge is unavailable";
 const fontFamily = '"Schibsted Grotesk", "Helvetica Neue", Arial, system-ui, sans-serif';
@@ -386,11 +389,11 @@ export const copyFieldScenarios: readonly CopyFieldScenario[] = [
   ),
   {
     // Plants: `white-space: normal` (runs collapsed) on the text; the text trimmed.
-    name: "FR-032: the text keeps its whitespace runs as written and the request carries them, the text wrapping anywhere",
+    name: "FR-032: the text keeps its whitespace runs as written, leading and trailing ones included, and the request carries them, the text wrapping anywhere",
     fixture: true,
     run: async (driver, inPage) => {
       await mount(driver, inPage, page(""));
-      await driver.setProperty("cf", "value", "pnpm  run   build\ttwice");
+      await driver.setProperty("cf", "value", "  pnpm  run   build\ttwice  ");
       await inPage(recordRequests, null);
       await clickControl(driver, inPage);
       await inPage(frames, undefined);
@@ -400,7 +403,7 @@ export const copyFieldScenarios: readonly CopyFieldScenario[] = [
         requests: await inPage(recordedRequests, null),
       };
     },
-    expected: { wrap: ["pre-wrap", "anywhere"], shown: "pnpm  run   build\ttwice", requests: [request("pnpm  run   build\ttwice")] },
+    expected: { wrap: ["pre-wrap", "anywhere"], shown: "  pnpm  run   build\ttwice  ", requests: [request("  pnpm  run   build\ttwice  ")] },
   },
   {
     // Plants: a `navigator.clipboard.writeText` call in the click handler; a `document.execCommand("copy")` call; two
@@ -756,7 +759,7 @@ export const copyFieldScenarios: readonly CopyFieldScenario[] = [
   },
   {
     // Plants: the request's text read at dispatch rather than at the activation; one request for two activations.
-    name: "FR-035: each activation emits one request with the value at the moment of activation: a host that changes value in the activation's task still gets the old text, and two activations give two requests",
+    name: "FR-035: each activation emits one request with the value at the moment of activation: a host that changes value in the activation's task still gets the old text, and two activations give two requests, the two clicks of a double click within one frame included",
     fixture: true,
     run: async (driver, inPage) => {
       await mount(driver, inPage, page(withCommand));
@@ -777,20 +780,33 @@ export const copyFieldScenarios: readonly CopyFieldScenario[] = [
       await clickControl(driver, inPage);
       await clickControl(driver, inPage);
       await inPage(frames, undefined);
-      return { changed, twice: await inPage(recordedRequests, null) };
+      const twice = await inPage(recordedRequests, null);
+      await clickAt(driver, inPage, '[part~="copy-control"]', 2);
+      await inPage(frames, undefined);
+      return { changed, twice, double: await inPage(recordedRequests, null) };
     },
-    expected: { changed: [request(command)], twice: [request(command), request("pnpm run changed"), request("pnpm run changed")] },
+    expected: {
+      changed: [request(command)],
+      twice: [request(command), request("pnpm run changed"), request("pnpm run changed")],
+      double: [request(command), request("pnpm run changed"), request("pnpm run changed"), request("pnpm run changed"), request("pnpm run changed")],
+    },
   },
   {
     // Plant: no `isConnected` check before the dispatch.
-    name: "FR-035: a field removed from the page in the activation's task emits no request, beside its earlier activation that did",
+    name: "FR-035: a field removed from the page in the activation's task emits no request, neither to the document nor to a listener on the field itself, beside its earlier activation that did",
     fixture: true,
     run: async (driver, inPage) => {
       await mount(driver, inPage, page(withCommand));
       await inPage(recordRequests, null);
+      await inPage(() => {
+        const field = document.getElementById("cf");
+        const own: string[] = [];
+        (window as unknown as { __own: string[] }).__own = own;
+        field?.addEventListener("ocelle-copy-field-request", (event) => own.push(event.type));
+      }, null);
       await clickControl(driver, inPage);
       await inPage(frames, undefined);
-      const first = await inPage(recordedRequests, null);
+      const first = { document: await inPage(recordedRequests, null), own: await inPage(() => [...(window as unknown as { __own: string[] }).__own], null) };
       await inPage(() => {
         document.addEventListener(
           "click",
@@ -804,9 +820,17 @@ export const copyFieldScenarios: readonly CopyFieldScenario[] = [
       await clickControl(driver, inPage);
       await inPage(frames, undefined);
       await inPage(frames, undefined);
-      return { first, removed: await inPage(() => document.getElementById("cf") === null, null), after: await inPage(recordedRequests, null) };
+      return {
+        first,
+        removed: await inPage(() => document.getElementById("cf") === null, null),
+        after: { document: await inPage(recordedRequests, null), own: await inPage(() => [...(window as unknown as { __own: string[] }).__own], null) },
+      };
     },
-    expected: { first: [request(command)], removed: true, after: [request(command)] },
+    expected: {
+      first: { document: [request(command)], own: ["ocelle-copy-field-request"] },
+      removed: true,
+      after: { document: [request(command)], own: ["ocelle-copy-field-request"] },
+    },
   },
   {
     // Plants: the status not shown when set without a request; a blank status shown; the field emitting on a status set.
@@ -830,7 +854,7 @@ export const copyFieldScenarios: readonly CopyFieldScenario[] = [
   {
     // Plants: clearing `status` on every `value` set (the first render's set included); not clearing on a later change;
     // clearing on a set of the same value; reflecting `status`.
-    name: "Edge Cases: with value and status both in the markup the status is shown at first render; a later value change clears it (the property reads empty, the region is emptied) while the status attribute stays as written; a set of the same value clears nothing; a new status attribute is read again (FR-042)",
+    name: "Edge Cases: with value and status both in the markup, in either order, the status is shown at first render; a later value change clears it (the property reads empty, the region is emptied) while the status attribute stays as written; a set of the same value clears nothing; a new status attribute is read again (FR-042)",
     fixture: true,
     run: async (driver, inPage) => {
       await mount(driver, inPage, page(`${withCommand} status="${copied}"`));
@@ -840,9 +864,12 @@ export const copyFieldScenarios: readonly CopyFieldScenario[] = [
       await driver.setAttribute("cf", "value", "pnpm run build");
       const changed = { status: await inPage(statusOf, null), region: await inPage(regionText, null), attribute: await driver.attribute("cf", "status"), tree: await tree(driver) };
       await driver.setAttribute("cf", "status", "Copied again");
-      return { first, same, changed, again: { status: await inPage(statusOf, null), region: await inPage(regionText, null) } };
+      const again = { status: await inPage(statusOf, null), region: await inPage(regionText, null) };
+      await mount(driver, inPage, page(`status="${copied}" ${withCommand}`));
+      return { first, same, changed, again, statusFirst: { tree: await tree(driver), status: await inPage(statusOf, null) } };
     },
     expected: {
+      statusFirst: { tree: exposed({ status: copied }), status: copied },
       first: { tree: exposed({ status: copied }), status: copied },
       same: { status: copied, region: copied },
       changed: { status: "", region: "", attribute: copied, tree: exposed({ text: "pnpm run build" }) },
