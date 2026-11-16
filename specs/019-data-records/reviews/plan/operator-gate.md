@@ -18,3 +18,6 @@
   the time's line.
 - **Q-E, marked-up times (#470):** "Yes: named time slot". A named `time` slot that takes precedence over the `time`
   attribute; a spec change to FR-023 (and the contract, manifest, data model and tests) before tasks are generated.
+- **Q-G, an event with a `time` attribute and an empty, white-space-only or hidden slotted time
+  (`reviews/plan/gate-answers.md`):** (a) the attribute applies; the slot takes precedence only when it has visible
+  non-blank text, as FR-023, US2-13 and R-10 are written (2026-11-16, human:jeroennouwsdev).
