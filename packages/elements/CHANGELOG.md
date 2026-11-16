@@ -41,6 +41,12 @@ entry points and the browser build's file path (constitution VII).
   `icon` slot.
 - Entry points `@ocelle/elements/ocelle-segmented-choice.js` (defines `ocelle-segmented-choice` and `ocelle-segment`)
   and `@ocelle/elements/ocelle-segment.js` (defines `ocelle-segment` only).
+- `ocelle-copy-field`, a command or identifier with a flush Copy control that never touches the clipboard: activating
+  the control emits `ocelle-copy-field-request` with `detail` `{ text }` after the next rendering update, and the host
+  reports the outcome in `status`, shown in a polite live region; its properties `value`, `status` and `copyLabel`
+  (attribute `copy-label`), and its parts `value` and `copy-control`, whose box, accessible name and events stay when
+  the control becomes `ocelle-button`.
+- Entry point `@ocelle/elements/ocelle-copy-field.js` (defines `ocelle-copy-field` and `ocelle-icon`).
 - The engine floor is Chromium 125 and WebKit 17.4, raised from Chromium 120 and WebKit 16.4 for the custom states
   (`:state()`) of `ocelle-segment`.
 - In the README, the slot convention for icons in controls that later controls follow: the `icon` and `trailing`

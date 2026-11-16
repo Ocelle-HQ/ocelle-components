@@ -270,25 +270,25 @@ reaches the tree as empty → text.
 
 ### Spike (first)
 
-- [ ] T075 [US4] Spike R-07 recorded in `specs/014-selection-input/reviews/phase-5/spike.md`: `Accessibility.nodesUpdated` delivers the empty-region update before the refill for deferred dispatch and not for synchronous dispatch; on a spike page with no clipboard permission granted, the reject control (write with no click) and the resolve control (write in the click handler) hold, then a write from the deferred request is recorded with `navigator.userActivation.isActive`; stop-and-ask per the list above
+- [X] T075 [US4] Spike R-07 recorded in `specs/014-selection-input/reviews/phase-5/spike.md`: `Accessibility.nodesUpdated` delivers the empty-region update before the refill for deferred dispatch and not for synchronous dispatch; on a spike page with no clipboard permission granted, the reject control (write with no click) and the resolve control (write in the click handler) hold, then a write from the deferred request is recorded with `navigator.userActivation.isActive`; stop-and-ask per the list above
 
 ### Scaffold
 
-- [ ] T076 [US4] `scaffold.sh`: `packages/elements/src/ocelle-copy-field.ts`; `index.ts`, `browser.ts`; `exports`
+- [X] T076 [US4] `scaffold.sh`: `packages/elements/src/ocelle-copy-field.ts`; `index.ts`, `browser.ts`; `exports`
 
 ### Tests (red, one commit)
 
-- [ ] T077 [P] [US4] `packages/elements/test/scenarios/copy-field.ts`: US4-1 to US4-12 with the clipboard observer, the live-region MutationObserver, US4-6's synchronous listener with `activationRecord` and `axUpdates` (plants: synchronous dispatch, microtask dispatch, dispatch in the element's own frame callback), disabled control emits nothing, flush border and target size, `accent-strong` divider against the inset well. The spec's Edge Cases for the copy field, by name (analysis G1): `status` set with no request (shown in the live region like any status); the `status` attribute not reflected after the element clears `status` (the property reads `""`, the attribute stays as written; contracts § Pairings); host `hidden` (no box, no node); a second definition of `ocelle-copy-field` (the first wins, nothing thrown)
-- [ ] T078 [P] [US4] `packages/elements/test/copy-field.test.ts`, `packages/elements/test/browser/copy-field.test.ts`, `fixtures/copy-field.html`; `entry-ocelle-copy-field.test.ts` (defines `ocelle-icon` too); `entry-root.test.ts`
-- [ ] T079 [P] [US4] `storybook/stories/copy-field.stories.ts` (short, wrapped long command, with a status, empty, focused Copy control (US4-9); FR-050) and the story test; `selection-pairs.test.ts`; `readme.test.ts` gains the copy field, the `copy-control` surface (box, name, events), the future `ocelle-button` swap as a PATCH (FR-044), and the request outside the click's task with the user-activation note
-- [ ] T080 [US4] `red.sh 5`
+- [X] T077 [P] [US4] `packages/elements/test/scenarios/copy-field.ts`: US4-1 to US4-12 with the clipboard observer, the live-region MutationObserver, US4-6's synchronous listener with `activationRecord` and `axUpdates` (plants: synchronous dispatch, microtask dispatch, dispatch in the element's own frame callback), disabled control emits nothing, flush border and target size, `accent-strong` divider against the inset well. The spec's Edge Cases for the copy field, by name (analysis G1): `status` set with no request (shown in the live region like any status); the `status` attribute not reflected after the element clears `status` (the property reads `""`, the attribute stays as written; contracts § Pairings); host `hidden` (no box, no node); a second definition of `ocelle-copy-field` (the first wins, nothing thrown)
+- [X] T078 [P] [US4] `packages/elements/test/copy-field.test.ts`, `packages/elements/test/browser/copy-field.test.ts`, `fixtures/copy-field.html`; `entry-ocelle-copy-field.test.ts` (defines `ocelle-icon` too); `entry-root.test.ts`
+- [X] T079 [P] [US4] `storybook/stories/copy-field.stories.ts` (short, wrapped long command, with a status, empty, focused Copy control (US4-9); FR-050) and the story test; `selection-pairs.test.ts`; `readme.test.ts` gains the copy field, the `copy-control` surface (box, name, events), the future `ocelle-button` swap as a PATCH (FR-044), and the request outside the click's task with the user-activation note
+- [X] T080 [US4] `red.sh 5`
 
 ### Implementation (green)
 
-- [ ] T081 [US4] `packages/elements/src/ocelle-copy-field.ts` (R-07): group role, `part="value"` text, imperative live-region text, native button `part="copy-control"` with `ocelle-icon name="copy"`, deferred request with status cleared first
-- [ ] T082 [US4] Manifest; README copy-field section; CHANGELOG
-- [ ] T083 [US4] Baselines for the copy-field stories with `pnpm run visual:update` in #10's pinned container under docker (`storybook/baselines/`), with any shared baseline (the token stories included) that changes, inspected and committed with the reason in the commit message; move the story-theme counts of `gates/test/integration/visual.test.ts` and add the new light stories that show `color-ink` to `gates/plants/visual/fail-token-changed/plant.json`; record in `reviews/phase-5/notes.md` that no podman cross-engine check was possible and CI confirms the baselines at landing (operator decision 2026-11-14, `reviews/phase-2/operator-decisions.md`; FR-053, SC-007)
-- [ ] T084 [US4] Plants recorded in `reviews/phase-5/plants.md`; the gates of T028
+- [X] T081 [US4] `packages/elements/src/ocelle-copy-field.ts` (R-07): group role, `part="value"` text, imperative live-region text, native button `part="copy-control"` with `ocelle-icon name="copy"`, deferred request with status cleared first
+- [X] T082 [US4] Manifest; README copy-field section; CHANGELOG
+- [X] T083 [US4] Baselines for the copy-field stories with `pnpm run visual:update` in #10's pinned container under docker (`storybook/baselines/`), with any shared baseline (the token stories included) that changes, inspected and committed with the reason in the commit message; move the story-theme counts of `gates/test/integration/visual.test.ts` and add the new light stories that show `color-ink` to `gates/plants/visual/fail-token-changed/plant.json`; record in `reviews/phase-5/notes.md` that no podman cross-engine check was possible and CI confirms the baselines at landing (operator decision 2026-11-14, `reviews/phase-2/operator-decisions.md`; FR-053, SC-007)
+- [X] T084 [US4] Plants recorded in `reviews/phase-5/plants.md`; the gates of T028
 
 **Checkpoint**: `tdd-check.sh 5` reports `pass`.
 
