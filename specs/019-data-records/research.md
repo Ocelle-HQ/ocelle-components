@@ -178,10 +178,19 @@ target with the same table outside prose (SPEC-3-01).
 
 **003's existing test (PLAN-CORRECTNESS-1-005).** `packages/styles/test/source.test.ts` (lines 192 to 203) pins the
 prose slice to its exact position and requires `rules(root).slice(start)` to equal `[wrap]`, so any rule added after
-the wrap rule fails it. Phase 1's red commit changes that test: its rule table gains the data-table block, its prose
-override and the pre-upgrade list-item rules (R-08), transcribed with their declarations, after the wrap rule, and the
-last-rule assertion becomes "the wrap rule, then the data-table rules, in that order". The red commit's message names
-this change and its reason (Principle VIII: an existing test changed for a planned addition, not to pass). The new
+the wrap rule fails it. Each phase's red commit changes that test for the rules its own green adds, so every green
+passes it (PLAN-CORRECTNESS-1-005, PLAN-FRESH-1-004):
+
+- Phase 1's red: the rule table gains block 1 (the data-table rules) and block 2 (the prose override), transcribed
+  with their declarations, after the wrap rule, and the last-rule assertion becomes "the wrap rule, then block 1,
+  then block 2, in that order".
+- Phase 2's red: the table gains the timeline's pre-upgrade list-item rule (R-08, block 3's first rule) after block 2,
+  and the assertion becomes "the wrap rule, block 1, block 2, then the timeline rule".
+- Phase 3's red: the table gains the chain's pre-upgrade rule after the timeline's, and the assertion becomes the
+  final order "the wrap rule, block 1, block 2, block 3 (the timeline rule, then the chain rule)".
+
+Each red commit's message names this change and its reason (Principle VIII: an existing test changed for a planned
+addition, not to pass). The new
 styles tests follow the package's own layout: browser bodies in `packages/styles/test/browser/data-table.test.ts`, the
 override's node test in `packages/styles/test/prose-override.test.ts` (the package has no `test/node/`).
 

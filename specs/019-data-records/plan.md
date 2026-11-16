@@ -67,8 +67,8 @@ data table uses `OverflowRegion` (R-02), and the timeline and chain import its `
 - `@ocelle/styles` tests in the package's own layout: browser bodies in `test/browser/data-table.test.ts` (the
   data-table block, the override and the pre-upgrade list rules); a node test `test/prose-override.test.ts` that the
   override restates every property of every 003 prose rule that can match a table part (R-06); a contrast node test
-  `test/data-table-pairs.test.ts` (R-13); and the change to 003's `test/source.test.ts` that phase 1's red commit
-  makes (R-06).
+  `test/data-table-pairs.test.ts` (R-13); and the change to 003's `test/source.test.ts` that each phase's red commit
+  makes for the rules its green adds (R-06).
 - `packages/elements/test/node/records-pairs.test.ts`, the contrast node check for the five templates (R-13).
 - The story test in `storybook-integration`, extended per phase with 320 px reflow per container story.
 - #10's gates on the stories: `storybook-build`, `visual` (light and dark baselines from the pinned container) and
@@ -109,7 +109,7 @@ Q-A to Q-C, Q-E, Q-F and decision 1 for the operator at the plan gate. No except
 | V. Storybook, behaviour tests | A story per variant and state, light and dark ([contracts/checks.md](contracts/checks.md) § Stories). The item elements' states are stories in their container's file. Their behaviour outside the container is proven by browser bodies only, as 013 did for `ocelle-fact`. FR-050 names that as the spec's own rule, not an exception. Every spec'd state has a story, the hidden item, the unnamed overflowing table, the table-less data table and the empty containers included (PLAN-CORRECTNESS-1-007, operator decision (a)). |
 | VI. Consumer-driven, own code | Needs: kitty-mission-ui's `.sk-data-table` family and the Desktop V2 primitives (#470, #517, #533). The issues are unread, so their points are the plan gate's questions Q-A to Q-C and Q-E (spec SPEC-1-06 (b)). The inventory is an operator input before each red commit (R-16). Nothing is copied, and the README mapping names roles only. |
 | VII. Semver | **MINOR**: five elements, five entry points and three `base.css` blocks. CHANGELOG entries go in `@ocelle/elements` and `@ocelle/styles`. `@ocelle/tokens` is unchanged. |
-| VIII. Test-first, non-vacuous | A scaffold comes before each red commit. The red commit holds the phase's scenario bodies, the driver test, the node and styles tests and the story-test extension (operator decision I3), and `red.sh` keeps one red record per phase. The red log is read per body: every scenario body fails on an assertion, never on an import or setup error, and each body the platform alone could pass carries a paired assertion only the element gives (contracts/checks.md). Phase 1's red commit changes one existing test, 003's `source.test.ts`, for the planned `base.css` additions, and its message says so (R-06). Item-text bodies also assert a non-empty text (FR-016). Each CSS-only behaviour has a named element plant or a stated reason, because Stryker does not mutate `css` templates or `base.css`; element plants mutate green source, so they run after green, are never committed, and are recorded in `reviews/phase-<N>/element-plants.md` (contracts/checks.md § Element plants). Spikes run before the scaffolds of phases 1 to 3, and a failing spike result goes to the operator. |
+| VIII. Test-first, non-vacuous | A scaffold comes before each red commit. The red commit holds the phase's scenario bodies, the driver test, the node and styles tests and the story-test extension (operator decision I3), and `red.sh` keeps one red record per phase. The red log is read per body: every scenario body fails on an assertion, never on an import or setup error, and each body the platform alone could pass carries a paired assertion only the element gives (contracts/checks.md). Each phase's red commit changes one existing test, 003's `source.test.ts`, for the `base.css` rules that phase's green adds (phase 1 blocks 1 and 2, phase 2 the timeline's pre-upgrade rule, phase 3 the chain's), and its message says so (R-06). Item-text bodies also assert a non-empty text (FR-016). Each CSS-only behaviour has a named element plant or a stated reason, because Stryker does not mutate `css` templates or `base.css`; element plants mutate green source, so they run after green, are never committed, and are recorded in `reviews/phase-<N>/element-plants.md` (contracts/checks.md § Element plants). Spikes run before the scaffolds of phases 1 to 3, and a failing spike result goes to the operator. |
 | Licence, supply chain | No new dependency or asset. |
 | Workflow gates | No gate changes. The gates run unchanged; the gate plants run by op 016's selection locally and in full in CI (R-15). |
 
@@ -268,7 +268,8 @@ Every phase with stories also does the following:
      - The element as a default flex item and as a `1fr` grid item at 320 px (R-02).
      - The five elements in 013's define-twice fixture (two copies of the package: the first definition wins); the
        data table's entry goes in here, and phases 2 and 3 add theirs to the same body.
-     - The change to 003's `packages/styles/test/source.test.ts` (R-06), named with its reason in the commit message.
+     - The change to 003's `packages/styles/test/source.test.ts` (R-06): blocks 1 and 2 after the wrap rule, the
+       last-rule assertion "the wrap rule, block 1, block 2"; named with its reason in the commit message.
      - The `@ocelle/styles` browser tests, the prose-override node test and the data-table contrast node test.
      - The data table's part of `test/node/records-pairs.test.ts` (R-13).
      - README statements for the data-table section, the conventions amendment (FR-056), its mapping rows, the Host
@@ -288,6 +289,9 @@ Every phase with stories also does the following:
      - The `time` bodies of R-10: set, changed and cleared by property after mount, `time=""` and `time=" "`.
      - Edge-case bodies: an event outside the timeline, an empty timeline (no `<ol>`), `aria-hidden` items, `lang` and
        `dir` on an event, order kept, no live region, pre-upgrade (the `base.css` list-item rule), 640 px.
+     - The change to 003's `packages/styles/test/source.test.ts` (R-06): the timeline's pre-upgrade rule after block 2,
+       the last-rule assertion "the wrap rule, block 1, block 2, the timeline rule"; named with its reason in the
+       commit message.
      - The timeline's entries in the define-twice body and in `test/node/records-pairs.test.ts`.
      - README statements (the section, the Host ARIA list, the overflow-region users of `resolveName`, "Before
        upgrade", the attribute-only `time` limit of Q-E), mapping rows and the story-test extension.
@@ -305,6 +309,9 @@ Every phase with stories also does the following:
      - The in-process no-`ResizeObserver`-loop test with its synthetic self-check (R-12).
      - Edge-case bodies: a step outside the chain, an empty chain, mixed chips, a link in a step (FR-011), `lang` and
        `dir`, pre-upgrade, 640 px.
+     - The change to 003's `packages/styles/test/source.test.ts` (R-06): the chain's pre-upgrade rule after the
+       timeline's, the final last-rule assertion "the wrap rule, block 1, block 2, block 3 (timeline rule, chain
+       rule)"; named with its reason in the commit message.
      - The chain's entries in the define-twice body and in `test/node/records-pairs.test.ts`.
      - The no-pill node test, README statements ("Before upgrade" among them), mapping rows and the story-test
        extension.

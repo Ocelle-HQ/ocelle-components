@@ -2,7 +2,9 @@
 
 `packages/styles/src/base.css` gains three blocks, after 003's identifier-wrap rule: the data-table rules, the prose
 override that follows them, and the two pre-upgrade list-item rules. Research R-06, R-07 and R-08 have the values and
-the reasons. 003's `packages/styles/test/source.test.ts` transcribes them after the wrap rule (R-06).
+the reasons. 003's `packages/styles/test/source.test.ts` transcribes them after the wrap rule, in the order wrap, block 1, block 2,
+block 3 (the timeline rule, then the chain rule); phase 1's red adds blocks 1 and 2, phase 2's red the timeline rule
+and phase 3's red the chain rule, each in the phase whose green adds the rule (R-06).
 
 ## Block 1: the data-table rules, at specificity (0,0,0)
 
