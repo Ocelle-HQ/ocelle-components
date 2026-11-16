@@ -193,3 +193,24 @@ code that ran.
 - The two quickstart hand checks (T055) need a person. T055 stays open (`- [ ]` in `tasks.md`): steps 1 to 5 and 7
   ran and passed, step 6 ran in its phase-scoped form only, and the hand checks have no result.
 - `tdd-check.sh 5` is not run here; the checkpoint runs it before the review.
+
+## Operator decisions after the Phase 5 implementation (2026-11-16)
+
+Asked in this session as multiple-choice questions:
+
+1. **red-commits deletion:** "Accept, keep the log".
+   - red.sh's only failure was an unchanged row under load, so it was not a red.
+   - `red-phase.log` and these notes record that failure.
+   - The break checks are the test-first evidence, and tdd-check reports `exempt`.
+2. **R-12 re-entry row:** "Longer delay on this row".
+   - The same remedy as the leave row: a 1000 ms delay on this row's page only.
+   - The bounds are scaled and the restart check is kept.
+   - Break checks: a missing delay, and a restarted timer.
+3. **T055:** "Fix docs, defer to land".
+   - The planner fixes quickstart step 6 to include `--base`.
+   - The planner corrects R-16's citation from `storybook/.storybook/main.ts:49` to `:23`.
+   - Deferred to /ocelle-land and the PR as known gaps:
+     - the mission-wide mutation run (60 shards);
+     - the two hand checks;
+     - WebKit.
+   - T055 is ticked with these stated.
