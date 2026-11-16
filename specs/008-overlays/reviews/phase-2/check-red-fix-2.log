@@ -35,7 +35,7 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 405ms using pnpm v12.16.1
+Done in 402ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /opt/pw-browsers/chromium-1243/chrome-linux64/chrome
 $ node gates/bin/test.ts
@@ -59,6 +59,6 @@ packages/elements/test/drawer.test.ts:25: unit-tests: ocelle-drawer, in process 
 packages/elements/test/drawer.test.ts:25: unit-tests: ocelle-drawer, in process (US2) Closing under reduced motion, then reopened in the host's continuation of updateComplete: no close event, the overlay stays shown; one Escape then gives exactly one request and one close (FR-014, R-06): AssertionError: expected { reopened: { …(2) }, …(2) } to deeply equal { …(3) }
 packages/elements/test/drawer.test.ts:25: unit-tests: ocelle-drawer, in process (US2) Opened, then moved before it is shown, re-inserted in a later task: open true, shown and :modal with initial focus, no event; open = false then gives one close with reason host (FR-004): AssertionError: expected { Object (moved, recorded, ...) } to deeply equal { Object (moved, recorded, ...) }
 packages/elements/test/drawer.test.ts:25: unit-tests: ocelle-drawer, in process (US2) Opened while out of the document, re-inserted in a later task: open true, shown and :modal with initial focus, no event; open = false then gives one close with reason host (FR-004): AssertionError: expected { Object (moved, recorded, ...) } to deeply equal { Object (moved, recorded, ...) }
-packages/elements/test/tooltip.test.ts:29: unit-tests: ocelle-tooltip, in process (US3) Escape, then a brief hover (FR-033, R-12): shown by keyboard focus and hidden by Escape, focus kept on the trigger; the pointer enters the trigger and leaves both boxes within 100 ms: no bubble at any frame of a 450 ms wait from the entry: Error: the leave came at or after 100 ms from the entry in each of 3 runs (200.5, 110.7, 183.5 ms from the entry): the row has no run it can judge
+packages/elements/test/tooltip.test.ts:29: unit-tests: ocelle-tooltip, in process (US3) Escape, then a brief hover (FR-033, R-12): shown by keyboard focus and hidden by Escape, focus kept on the trigger; the pointer enters the trigger and leaves both boxes within 100 ms: no bubble at any frame of a 450 ms wait from the entry: Error: the leave came at or after 100 ms from the entry in each of 3 runs (115.5, 100.1, 132.1 ms from the entry): the row has no run it can judge
 unit-tests: 21 of 5103 tests failed
 [ELIFECYCLE] Test failed. See above for more details.
