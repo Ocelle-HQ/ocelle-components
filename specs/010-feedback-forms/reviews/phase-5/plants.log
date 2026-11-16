@@ -1,0 +1,395 @@
+### shard 1: shard 1 exit 1 106s
+$ node gates/bin/plants.ts -- --shard 1
+note: plant time: contrast/empty-list: 0.2 s
+note: plant time: contrast/exempt-not-disabled-ink: 0.5 s
+note: plant time: contrast/non-text-below-threshold: 0.7 s
+note: plant time: contrast/required-pair-excluded: 0.9 s
+note: plant time: contrast/unknown-token: 1.2 s
+note: plant time: unit-tests/error-no-test-file: 1.2 s
+note: plant time: brand-rules/a-monospace: 1.4 s
+note: plant time: brand-rules/e-light-chrome: 1.4 s
+note: plant time: brand-rules/c-extra-radius: 1.6 s
+note: plant time: brand-rules/source-invalid: 1.7 s
+note: plant time: signoff/fail-trailer-mismatch: 1.8 s
+note: plant time: prefix/pass-outside-packages: 2.0 s
+note: plant time: manifest/pass-repository: 2.5 s
+note: plant time: unit-tests/fail-gates-test: 3.4 s
+note: plant time: prefix/fail-storybook-html-multiline-monospace: 3.6 s
+note: plant time: pins/fail-node-linker-hoisted: 3.8 s
+note: plant time: unit-tests/pass-gates-only: 3.9 s
+note: plant time: pins/fail-package-manager-missing: 4.0 s
+note: plant time: pins/fail-release-age-exclude: 4.1 s
+note: plant time: pins/fail-release-age-strict-false: 4.2 s
+note: plant time: pins/fail-workspace-tilde: 4.3 s
+note: plant time: pins/pass-matching: 4.4 s
+note: plant time: pins/fail-allow-builds-other-version: 4.5 s
+note: plant time: pins/error-invalid-json: 4.6 s
+note: plant time: manifest/fail-lost-attribute: 5.3 s
+note: plant time: typecheck/error-missing-reference: 8.4 s
+note: plant time: typecheck/fail-test-code: 9.1 s
+note: plant time: lint/fail-floating-promise: 16.3 s
+note: plant time: lint/pass-voided-promise: 17.0 s
+note: plant time: style-lint/fail-element-stylesheet: 17.8 s
+note: plant time: style-lint/element-property-clash: 18.2 s
+note: plant time: style-lint/fail-aspect-ratio-other: 19.2 s
+note: plant time: style-lint/fail-lh-calc-twice: 19.6 s
+note: plant time: style-lint/fail-font-weight: 20.5 s
+note: plant time: style-lint/fail-lh-paren-factor: 20.9 s
+note: plant time: style-lint/fail-rem-length: 21.9 s
+note: plant time: style-lint/fail-styles-other-token-line-height: 22.3 s
+note: plant time: style-lint/fail-styles-font-without-line-height: 23.3 s
+note: plant time: style-lint/fail-var-fallback: 23.7 s
+note: plant time: style-lint/fail-styles-stylesheet: 24.5 s
+note: plant time: style-lint/fail-scale-factor: 25.0 s
+note: plant time: style-lint/pass-calc-tokens: 25.9 s
+note: plant time: style-lint/pass-fr: 26.2 s
+note: plant time: style-lint/pass-scale-mirror: 27.1 s
+note: plant time: style-lint/pass-one-line: 27.6 s
+note: plant time: style-lint/pass-system-colour: 28.4 s
+note: plant time: style-lint/pass-var-keyword-fallback: 28.9 s
+note: plant time: unit-tests/fail-tokens-test: 29.8 s
+note: plant time: test-lint/error-unparsable: 29.9 s
+note: plant time: test-lint/fail-conditional-assertion: 31.0 s
+note: plant time: test-lint/fail-snapshot-only: 31.0 s
+note: plant time: prefix/fail-custom-property-test-code: 31.2 s
+note: plant time: prefix/fail-event-name-built-output: 31.5 s
+note: plant time: test-lint/fail-no-assertion: 32.0 s
+note: plant time: csp/fail-eval: 32.1 s
+note: plant time: csp/fail-indirect-eval: 32.7 s
+note: plant time: csp/fail-set-interval-string: 32.7 s
+note: plant time: csp/fail-style-attribute-after-newline: 33.3 s
+note: plant time: csp/pass-external-script: 33.3 s
+note: plant time: brand-rules/g-system-colour-mapping: 33.6 s
+note: plant time: csp/pass-look-alike-names: 34.0 s
+note: plant time: manifest/fail-undescribed-css-part: 34.3 s
+note: plant time: pins/fail-caret-range: 34.5 s
+note: plant time: manifest/fail-undescribed-property: 34.7 s
+note: plant time: pins/fail-tilde-range: 34.7 s
+note: plant time: config-copies/fail-one-setting-differs: 34.9 s
+note: plant time: mutation/error-zero-mutant-failing-test: 56.1 s
+note: plant time: mutation/fail-no-test-runs: 59.2 s
+note: plant time: mutation/fail-element-source-survivor: 84.9 s
+note: plant time: mutation/pass-compile-error: 85.3 s
+note: plant time: mutation/pass-reasoned-record: 99.8 s
+note: plant time: storybook-build/error-config-unreadable: 1.0 s
+note: plant time: storybook-build/fail-empty-index: 2.2 s
+note: plant time: storybook-build/fail-unresolved-import: 1.8 s
+note: plant time: plants/pass-matching: 0.0 s
+note: plant time: plants/fail-shard-in-plant-check: 0.0 s
+gates/plants/storybook-build/fail-empty-index: plants: not-caught: expected exit 1 with the plant's 1 finding, got exit 0
+plants: 1 problem in 76 plants
+[ELIFECYCLE] Command failed with exit code 1.
+### shard 2: shard 2 exit 0 101s
+$ node gates/bin/plants.ts -- --shard 2
+note: plant time: signoff/error-empty-range: 0.2 s
+note: plant time: contrast/excluded-without-reason: 0.3 s
+note: plant time: contrast/figure-mismatch: 0.5 s
+note: plant time: contrast/not-opaque: 0.5 s
+note: plant time: contrast/unparsable-list: 0.7 s
+note: plant time: brand-rules/b-link-equals-accent: 0.8 s
+note: plant time: brand-rules/c-wrong-value: 1.0 s
+note: plant time: signoff/pass-agent-self-signoff: 1.1 s
+note: plant time: manifest/break-missing: 1.3 s
+note: plant time: typecheck/fail-gate-source: 4.7 s
+note: plant time: style-lint/fail-styles-outside-src: 6.2 s
+note: plant time: prefix/fail-storybook-monospace: 6.4 s
+note: plant time: pins/fail-allow-builds-unpinned-approval: 6.7 s
+note: plant time: pins/fail-node-version-missing: 6.9 s
+note: plant time: pins/fail-dangerously-allow-all-builds: 7.2 s
+note: plant time: pins/fail-package-manager-not-exact: 7.5 s
+note: plant time: pins/fail-release-age-missing: 7.7 s
+note: plant time: pins/fail-release-age-strict-missing: 7.9 s
+note: plant time: pins/fail-workspace-caret: 8.2 s
+note: plant time: pins/fail-workspace-version-differs: 8.4 s
+note: plant time: pins/fail-allow-builds-entry: 8.6 s
+note: plant time: lint/fail-gate-source: 8.7 s
+note: plant time: unit-tests/error-throws-while-loading: 10.1 s
+note: plant time: unit-tests/fail-styles-test: 11.6 s
+note: plant time: typecheck/pass-fixture-excluded: 12.1 s
+note: plant time: unit-tests/pass-styles-only: 13.5 s
+note: plant time: unit-tests/pass-elements-only: 14.9 s
+note: plant time: style-lint/error-unparsable: 15.0 s
+note: plant time: style-lint/fail-calc-operand: 16.2 s
+note: plant time: style-lint/fail-element-template: 16.3 s
+note: plant time: style-lint/fail-lh-multiple: 17.7 s
+note: plant time: style-lint/fail-hex-colour: 17.8 s
+note: plant time: style-lint/fail-ms-time: 19.1 s
+note: plant time: style-lint/fail-scale-length: 19.2 s
+note: plant time: style-lint/fail-rgb-colour: 20.6 s
+note: plant time: style-lint/fail-styles-literal-line-height: 20.6 s
+note: plant time: style-lint/pass-anchor-name: 22.0 s
+note: plant time: style-lint/fail-unitless-number: 22.0 s
+note: plant time: style-lint/pass-one-line-calc: 23.5 s
+note: plant time: style-lint/pass-known-token: 23.6 s
+note: plant time: style-lint/pass-element-property: 24.8 s
+note: plant time: style-lint/pass-story: 24.9 s
+note: plant time: style-lint/pass-var-token: 26.2 s
+note: plant time: style-lint/pass-test-code: 26.2 s
+note: plant time: test-lint/fail-assertion-outside-test: 27.3 s
+note: plant time: test-lint/fail-focused: 27.4 s
+note: plant time: prefix/fail-element-name: 27.7 s
+note: plant time: prefix/fail-generic-monospace: 28.0 s
+note: plant time: test-lint/fail-not-awaited: 28.6 s
+note: plant time: csp/fail-event-handler: 28.7 s
+note: plant time: csp/fail-inline-script: 29.4 s
+note: plant time: csp/fail-set-timeout-string: 29.5 s
+note: plant time: csp/pass-function-timer: 30.1 s
+note: plant time: csp/fail-style-element: 30.1 s
+note: plant time: brand-rules/generator-throws: 30.4 s
+note: plant time: brand-rules/source-throws: 30.7 s
+note: plant time: csp/pass-storybook-out-of-scope: 30.7 s
+note: plant time: contrast/source-throws: 31.0 s
+note: plant time: brand-rules/f-motion-not-zero: 31.1 s
+note: plant time: manifest/fail-undescribed-css-property: 32.0 s
+note: plant time: manifest/fail-undescribed-slot: 32.0 s
+note: plant time: manifest/fail-stale-property: 32.8 s
+note: plant time: test-lint/pass-fixture-excluded: 33.2 s
+note: plant time: config-copies/fail-test-pathspec-narrowed: 33.5 s
+note: plant time: mutation/error-dry-run-fails: 55.0 s
+note: plant time: mutation/fail-gate-source-survivor: 56.8 s
+note: plant time: mutation/fail-disable-all: 76.5 s
+note: plant time: mutation/pass-test-only-change: 77.2 s
+note: plant time: mutation/fail-record-without-reason: 77.9 s
+note: plant time: mutation/pass-element-source: 96.3 s
+note: plant time: storybook-build/error-missing-dependencies: 0.2 s
+note: plant time: storybook-build/fail-not-csf: 1.6 s
+note: plant time: storybook-build/pass-repository: 2.3 s
+note: plant time: plants/fail-gate-without-entry: 0.0 s
+note: plant time: plants/fail-skip-container-in-ci: 0.0 s
+note: plant time: plants/pass-split-plant-jobs: 0.0 s
+plants: shard 2 of 28: 76 plants judged, every plant as expected
+### shard 3: shard 3 exit 0 136s
+$ node gates/bin/plants.ts -- --shard 3
+note: plant time: signoff/pass-unsigned-merge: 0.2 s
+note: plant time: signoff/fail-no-trailer: 0.2 s
+note: plant time: contrast/exempt-disabled-ink: 0.4 s
+note: plant time: contrast/missing-required-pair: 0.4 s
+note: plant time: contrast/text-below-threshold: 0.7 s
+note: plant time: brand-rules/b-ochre-pair-not-excluded: 0.7 s
+note: plant time: brand-rules/d-rule-as-boundary: 1.0 s
+note: plant time: brand-rules/repository-values: 1.0 s
+note: plant time: contrast/repository-values: 1.2 s
+note: plant time: pins/fail-allow-builds-unpinned-fsevents: 1.5 s
+note: plant time: pins/fail-allow-builds-missing: 1.7 s
+note: plant time: pins/fail-public-hoist-pattern: 1.9 s
+note: plant time: pins/fail-lockfile-outdated: 2.1 s
+note: plant time: test-lint/fail-gate-test: 2.3 s
+note: plant time: pins/fail-release-age-short: 2.3 s
+note: plant time: pins/fail-shamefully-hoist: 2.5 s
+note: plant time: pins/fail-node-version-not-exact: 2.6 s
+note: plant time: pins/fail-workspace-star: 2.7 s
+note: plant time: pins/pass-approved-build: 2.8 s
+note: plant time: manifest/break-not-json: 3.2 s
+note: plant time: typecheck/fail-implicit-any: 6.5 s
+note: plant time: typecheck/pass-strict-file: 7.3 s
+note: plant time: lint/pass-fixture-excluded: 14.7 s
+note: plant time: lint/error-unparsable: 15.2 s
+note: plant time: style-lint/fail-font-family: 16.2 s
+note: plant time: style-lint/fail-aspect-calc: 16.6 s
+note: plant time: style-lint/fail-lh-calc-factor: 17.7 s
+note: plant time: style-lint/fail-element-property-misspelt: 18.1 s
+note: plant time: style-lint/fail-named-colour: 19.3 s
+note: plant time: style-lint/fail-lh-multiple-calc: 19.8 s
+note: plant time: style-lint/fail-styles-calc-line-height: 20.7 s
+note: plant time: style-lint/fail-styles-normal-line-height: 21.3 s
+note: plant time: style-lint/fail-scale-calc: 22.1 s
+note: plant time: style-lint/fail-styles-percent-line-height: 22.7 s
+note: plant time: style-lint/pass-aspect-square: 23.6 s
+note: plant time: style-lint/fail-unknown-token: 24.1 s
+note: plant time: style-lint/pass-empty-string: 25.0 s
+note: plant time: style-lint/pass-percentage: 25.5 s
+note: plant time: style-lint/pass-line-height: 26.3 s
+note: plant time: style-lint/pass-styles-line-height-token: 26.9 s
+note: plant time: style-lint/pass-token-definitions: 27.7 s
+note: plant time: style-lint/pass-zero: 28.3 s
+note: plant time: unit-tests/fail-tokens-colocated: 30.0 s
+note: plant time: manifest/pass-reordered: 30.8 s
+note: plant time: unit-tests/fail-elements-chromium: 31.0 s
+note: plant time: test-lint/fail-skipped: 32.1 s
+note: plant time: unit-tests/pass-tokens-only: 32.2 s
+note: plant time: test-lint/pass-real-assertion: 33.2 s
+note: plant time: test-lint/fail-colocated-element-test: 33.3 s
+note: plant time: csp/fail-function-call: 34.1 s
+note: plant time: csp/error-unparsable: 34.2 s
+note: plant time: csp/fail-style-attribute: 34.9 s
+note: plant time: csp/fail-new-function: 35.0 s
+note: plant time: csp/fail-svg-slash-onload: 35.7 s
+note: plant time: csp/pass-inline-script-in-source: 35.7 s
+note: plant time: prefix/error-invalid-utf8: 36.0 s
+note: plant time: prefix/fail-element-name-upper-case: 36.0 s
+note: plant time: prefix/fail-named-monospace: 36.3 s
+note: plant time: brand-rules/g-forced-colours-override: 36.4 s
+note: plant time: manifest/fail-undescribed-event: 37.3 s
+note: plant time: manifest/fail-undescribed-attribute: 37.3 s
+note: plant time: config-copies/error-copy-missing: 37.6 s
+note: plant time: prefix/pass-name-boundaries: 37.6 s
+note: plant time: mutation/error-unresolvable-base: 38.2 s
+note: plant time: config-copies/pass-equal-copies: 38.5 s
+note: plant time: unit-tests/pass-fixture-not-run: 39.1 s
+note: plant time: mutation/fail-unchecked-line: 71.7 s
+note: plant time: mutation/fail-element-source-no-coverage: 72.9 s
+note: plant time: mutation/pass-zero-mutant: 94.9 s
+note: plant time: mutation/pass-fully-checked: 98.9 s
+note: plant time: mutation/fail-mixed-survivors: 132.1 s
+note: plant time: storybook-build/error-no-build-script: 0.2 s
+note: plant time: storybook-build/fail-syntax-error: 1.5 s
+note: plant time: storybook-build/pass-type-error-only: 2.3 s
+note: plant time: plants/fail-gate-without-job: 0.0 s
+note: plant time: plants/fail-skip-container-in-shard: 0.0 s
+plants: shard 3 of 28: 76 plants judged, every plant as expected
+### shard 4: shard 4 exit 0 7s
+$ node gates/bin/plants.ts -- --shard 4
+note: plant time: visual/error-build-fails: 2.5 s
+note: plant time: visual/error-host: 3.0 s
+note: plant time: visual/error-index-pin: 0.7 s
+plants: shard 4 of 28: 3 plants judged, every plant as expected
+### shard 5: shard 5 exit 0 137s
+$ node gates/bin/plants.ts -- --shard 5
+note: plant time: visual/error-no-engine: 0.3 s
+note: plant time: visual/error-tag-pin: 0.3 s
+note: plant time: visual/fail-beacon: 135.7 s
+plants: shard 5 of 28: 3 plants judged, every plant as expected
+### shard 6: shard 6 exit 0 420s
+$ node gates/bin/plants.ts -- --shard 6
+note: plant time: visual/fail-below-fold: 143.2 s
+note: plant time: visual/fail-cache-api: 137.9 s
+note: plant time: visual/fail-clipboard-write: 138.6 s
+plants: shard 6 of 28: 3 plants judged, every plant as expected
+### shard 7: shard 7 exit 0 409s
+$ node gates/bin/plants.ts -- --shard 7
+note: plant time: visual/fail-closed-shadow-root: 136.2 s
+note: plant time: visual/fail-cookie: 136.2 s
+note: plant time: visual/fail-exec-copy: 135.5 s
+plants: shard 7 of 28: 3 plants judged, every plant as expected
+### shard 8: shard 8 exit 0 413s
+$ node gates/bin/plants.ts -- --shard 8
+note: plant time: visual/fail-font-file-missing: 137.1 s
+note: plant time: visual/fail-font-not-loaded: 136.0 s
+note: plant time: visual/fail-hover-style-changed: 140.1 s
+plants: shard 8 of 28: 3 plants judged, every plant as expected
+### shard 9: shard 9 exit 0 419s
+$ node gates/bin/plants.ts -- --shard 9
+note: plant time: visual/fail-indexeddb: 135.1 s
+note: plant time: visual/fail-input-system-font: 141.2 s
+note: plant time: visual/fail-local-storage: 141.7 s
+plants: shard 9 of 28: 3 plants judged, every plant as expected
+### shard 10: shard 10 exit 0 416s
+$ node gates/bin/plants.ts -- --shard 10
+note: plant time: visual/fail-missing-baseline: 140.6 s
+note: plant time: visual/fail-network: 136.3 s
+note: plant time: visual/fail-one-pixel: 138.8 s
+plants: shard 10 of 28: 3 plants judged, every plant as expected
+### shard 11: shard 11 exit 0 423s
+$ node gates/bin/plants.ts -- --shard 11
+note: plant time: visual/fail-other-font: 136.7 s
+note: plant time: visual/fail-overflow-changed: 141.0 s
+note: plant time: visual/fail-pointer-target-below-fold: 144.2 s
+plants: shard 11 of 28: 3 plants judged, every plant as expected
+### shard 12: shard 12 exit 0 419s
+$ node gates/bin/plants.ts -- --shard 12
+note: plant time: visual/fail-pointer-target-missing: 136.4 s
+note: plant time: visual/fail-popover-changed: 139.2 s
+note: plant time: visual/fail-press-style-changed: 143.4 s
+plants: shard 12 of 28: 3 plants judged, every plant as expected
+### shard 13: shard 13 exit 0 396s
+$ node gates/bin/plants.ts -- --shard 13
+note: plant time: visual/fail-random: 132.1 s
+note: plant time: visual/fail-render-throws: 128.6 s
+note: plant time: visual/fail-same-origin-fetch: 133.9 s
+plants: shard 13 of 28: 3 plants judged, every plant as expected
+### shard 14: shard 14 exit 0 410s
+$ node gates/bin/plants.ts -- --shard 14
+note: plant time: visual/fail-same-pixels-other-bytes: 136.4 s
+note: plant time: visual/fail-session-storage: 137.2 s
+note: plant time: visual/fail-storage-left-by-worker: 136.5 s
+plants: shard 14 of 28: 3 plants judged, every plant as expected
+### shard 15: shard 15 exit 0 418s
+$ node gates/bin/plants.ts -- --shard 15
+note: plant time: visual/fail-storage-property: 143.3 s
+note: plant time: visual/fail-stray-baseline: 138.2 s
+note: plant time: visual/fail-throws-on-load: 136.0 s
+plants: shard 15 of 28: 3 plants judged, every plant as expected
+### shard 16: shard 16 exit 1 456s
+$ node gates/bin/plants.ts -- --shard 16
+note: plant time: visual/fail-token-changed: 179.7 s
+note: plant time: visual/fail-websocket: 136.1 s
+note: plant time: visual/fail-xhr: 138.9 s
+gates/plants/visual/fail-token-changed: plants: not-caught: findings differ: unexpected elements-ocelle-form-input--empty/light differs, elements-ocelle-form-input--placeholder/light differs, elements-ocelle-form-input--filled/light differs, elements-ocelle-form-input--with-description/light differs, elements-ocelle-form-input--with-error/light differs, elements-ocelle-form-input--required/light differs, elements-ocelle-form-input--disabled/light differs, elements-ocelle-form-input--read-only/light differs, elements-ocelle-form-input--focused/light differs, elements-ocelle-form-input--hover/light differs, elements-ocelle-form-select--empty/light differs, elements-ocelle-form-select--placeholder/light differs, elements-ocelle-form-select--filled/light differs, elements-ocelle-form-select--with-description/light differs, elements-ocelle-form-select--with-error/light differs, elements-ocelle-form-select--required/light differs, elements-ocelle-form-select--disabled/light differs, elements-ocelle-form-select--focused/light differs, elements-ocelle-form-select--hover/light differs, elements-ocelle-form-select--option-groups/light differs, elements-ocelle-notice--info/light differs, elements-ocelle-notice--success/light differs, elements-ocelle-notice--warning/light differs, elements-ocelle-notice--danger/light differs, elements-ocelle-notice--neutral/light differs, elements-ocelle-notice--regular-size/light differs, elements-ocelle-notice--compact-size/light differs, elements-ocelle-notice--with-heading/light differs, elements-ocelle-notice--without-heading/light differs, elements-ocelle-notice--announcing/light differs
+plants: 1 problem in 3 plants
+[ELIFECYCLE] Command failed with exit code 1.
+### shard 17: shard 17 exit 0 416s
+$ node gates/bin/plants.ts -- --shard 17
+note: plant time: visual/pass-animation-and-caret: 136.2 s
+note: plant time: visual/pass-below-fold: 136.3 s
+note: plant time: visual/pass-focus-below-fold: 143.3 s
+plants: shard 17 of 28: 3 plants judged, every plant as expected
+### shard 18: shard 18 exit 0 410s
+$ node gates/bin/plants.ts -- --shard 18
+note: plant time: visual/pass-hover-and-press: 141.7 s
+note: plant time: visual/pass-input-font: 133.5 s
+note: plant time: visual/pass-overflow-and-popover: 134.0 s
+plants: shard 18 of 28: 3 plants judged, every plant as expected
+### shard 19: shard 19 exit 0 409s
+$ node gates/bin/plants.ts -- --shard 19
+note: plant time: visual/pass-repository: 137.7 s
+note: plant time: visual/pass-second-render: 132.6 s
+note: plant time: visual/pass-unused-face: 138.4 s
+plants: shard 19 of 28: 3 plants judged, every plant as expected
+### shard 20: shard 20 exit 0 4s
+$ node gates/bin/plants.ts -- --shard 20
+note: plant time: axe/error-bad-exceptions: 0.7 s
+note: plant time: axe/error-build-fails: 2.1 s
+note: plant time: axe/error-exception-plan-not-a-plan: 0.8 s
+plants: shard 20 of 28: 3 plants judged, every plant as expected
+### shard 21: shard 21 exit 0 256s
+$ node gates/bin/plants.ts -- --shard 21
+note: plant time: axe/fail-closed-shadow-root: 84.4 s
+note: plant time: axe/fail-empty: 83.3 s
+note: plant time: axe/fail-excepted-second-node: 87.8 s
+plants: shard 21 of 28: 3 plants judged, every plant as expected
+### shard 22: shard 22 exit 0 266s
+$ node gates/bin/plants.ts -- --shard 22
+note: plant time: axe/fail-hover-near-fold: 88.3 s
+note: plant time: axe/fail-hover-reveals-unlabelled: 89.1 s
+note: plant time: axe/fail-incomplete: 87.6 s
+plants: shard 22 of 28: 3 plants judged, every plant as expected
+### shard 23: shard 23 exit 0 262s
+$ node gates/bin/plants.ts -- --shard 23
+note: plant time: axe/fail-no-box: 87.5 s
+note: plant time: axe/fail-open-shadow-unlabelled: 88.0 s
+note: plant time: axe/fail-outside-root: 85.9 s
+plants: shard 23 of 28: 3 plants judged, every plant as expected
+### shard 24: shard 24 exit 0 269s
+$ node gates/bin/plants.ts -- --shard 24
+note: plant time: axe/fail-pointer-target-below-fold: 90.3 s
+note: plant time: axe/fail-render-throws: 89.6 s
+note: plant time: axe/fail-stale-exception: 88.6 s
+plants: shard 24 of 28: 3 plants judged, every plant as expected
+### shard 25: shard 25 exit 0 274s
+$ node gates/bin/plants.ts -- --shard 25
+note: plant time: axe/fail-throws-on-load: 90.3 s
+note: plant time: axe/fail-two-low-contrast: 92.9 s
+note: plant time: axe/fail-unlabelled-button: 90.1 s
+plants: shard 25 of 28: 3 plants judged, every plant as expected
+### shard 26: shard 26 exit 0 271s
+$ node gates/bin/plants.ts -- --shard 26
+note: plant time: axe/fail-unrecorded-exception: 89.3 s
+note: plant time: axe/pass-excepted: 90.8 s
+note: plant time: axe/pass-excepted-incomplete: 90.3 s
+plants: shard 26 of 28: 3 plants judged, every plant as expected
+### shard 27: shard 27 exit 0 271s
+$ node gates/bin/plants.ts -- --shard 27
+note: plant time: axe/pass-excepted-shadow: 89.5 s
+note: plant time: axe/pass-minor-only: 91.6 s
+note: plant time: axe/pass-repository: 89.8 s
+plants: shard 27 of 28: 3 plants judged, every plant as expected
+### shard 28: shard 28 exit 0 93s
+$ node gates/bin/plants.ts -- --shard 28
+note: plant time: axe/pass-second-render: 92.1 s
+plants: shard 28 of 28: 1 plant judged, every plant as expected
+### verdict
+$ node gates/bin/plants.ts -- --verdict storybook/.visual/plant-shards
+gates/plants/storybook-build/fail-empty-index: plants: not-caught: expected exit 1 with the plant's 1 finding, got exit 0
+gates/plants/visual/fail-token-changed: plants: not-caught: findings differ: unexpected elements-ocelle-form-input--empty/light differs, elements-ocelle-form-input--placeholder/light differs, elements-ocelle-form-input--filled/light differs, elements-ocelle-form-input--with-description/light differs, elements-ocelle-form-input--with-error/light differs, elements-ocelle-form-input--required/light differs, elements-ocelle-form-input--disabled/light differs, elements-ocelle-form-input--read-only/light differs, elements-ocelle-form-input--focused/light differs, elements-ocelle-form-input--hover/light differs, elements-ocelle-form-select--empty/light differs, elements-ocelle-form-select--placeholder/light differs, elements-ocelle-form-select--filled/light differs, elements-ocelle-form-select--with-description/light differs, elements-ocelle-form-select--with-error/light differs, elements-ocelle-form-select--required/light differs, elements-ocelle-form-select--disabled/light differs, elements-ocelle-form-select--focused/light differs, elements-ocelle-form-select--hover/light differs, elements-ocelle-form-select--option-groups/light differs, elements-ocelle-notice--info/light differs, elements-ocelle-notice--success/light differs, elements-ocelle-notice--warning/light differs, elements-ocelle-notice--danger/light differs, elements-ocelle-notice--neutral/light differs, elements-ocelle-notice--regular-size/light differs, elements-ocelle-notice--compact-size/light differs, elements-ocelle-notice--with-heading/light differs, elements-ocelle-notice--without-heading/light differs, elements-ocelle-notice--announcing/light differs
+plants: 2 problems in 301 plants
+[ELIFECYCLE] Command failed with exit code 1.
