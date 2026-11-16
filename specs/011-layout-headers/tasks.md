@@ -312,7 +312,7 @@ horizontal, and keeps its orientation at 721, 720, 719 and 320 px.
 The operator chose to fix L1-05 in this phase on 2026-11-15 (`reviews/phase-5/round-2.md`). README only: its red
 test is the readme test's; no scenario harness applies.
 
-- [ ] T052 [US4] R2-01 (landing L1-05), the rail README names `ocelle-nav-item` as not released yet and loses its
+- [X] T052 [US4] R2-01 (landing L1-05), the rail README names `ocelle-nav-item` as not released yet and loses its
   stray line break (FR-027, FR-036), test first. **Red**, in a commit that changes only test files
   (`test(011-layout-headers): phase 5 review round 2 red`, signed off): in `packages/elements/test/node/readme.test.ts`
   (`elements-node`), the fragment "A plain `<a>` does not: give `<a>` items `color: inherit` and a target of at least

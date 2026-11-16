@@ -13,3 +13,5 @@ Operator round at landing (PR #44), task T052 (`reviews/landing/round-1-tasks.md
 | `pnpm exec vitest run --project elements-node` | 251 passed |
 | `pnpm exec vitest run --project elements-browser test/browser/personal-rail.test.ts` | 28 passed (US4-10 still finds the README's orientation example) |
 | `gate:test-lint` (207 files), `gate:lint` (304 files) | pass |
+
+T052 was not ticked in `tasks.md` by the fix commit 33d7df1; the tick was added afterwards in a bookkeeping commit, its work checked present first.
