@@ -24,3 +24,7 @@ browser build Vite's default), so it is a run-time feature of the elements and i
 (README § Engines); the suites ran on Chromium 153 (build 1243).
 
 No feature is newer than the floor, so the floor is unchanged and no operator stop is needed.
+
+Rechecked at `e0b1c77`, after the element suites: the indicator box's class that follows the disabled state (`5908fa7`,
+the Chromium accessibility-tree workaround of US2-11) uses Lit's `classMap`, which the input already uses, and adds no
+platform feature.

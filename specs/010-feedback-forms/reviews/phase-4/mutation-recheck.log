@@ -1,0 +1,22 @@
+ORIG: 'child.localName === "option" || child.localName === "optgroup"' -> 'false'
+30:47 ConditionalExpression | rules: Tests 7 failed | 3 passed (10) | scenarios: Tests 17 failed | 22 passed | 15 skipped (54)
+ORIG: '[\n    FormControl.styles,\n    css`\n      .field {\n        position: relative;\n        color: var(--ocelle-color-in -> '[]'
+46:44 ArrayDeclaration | rules: Tests 10 passed (10) | scenarios: Tests 10 failed | 29 passed | 15 skipped (54)
+ORIG: '(child: Element): boolean => child.localName === "option" || child.localName === "optgroup"' -> '() => undefined'
+30:18 ArrowFunction | rules: Tests 7 failed | 3 passed (10) | scenarios: Tests 17 failed | 22 passed | 15 skipped (54)
+ORIG: '`\n      .field {\n        position: relative;\n        color: var(--ocelle-color-ink);\n      }\n\n      [part="contro -> '``'
+48:8 StringLiteral | rules: Tests 10 passed (10) | scenarios: Tests 2 failed | 37 passed | 15 skipped (54)
+ORIG: '{ invalid: this.errorText() !== "" }' -> '{}'
+189:24 ObjectLiteral | rules: Tests 10 passed (10) | scenarios: Tests 2 failed | 37 passed | 15 skipped (54)
+ORIG: 'this.errorText() !== ""' -> 'true'
+189:35 ConditionalExpression | rules: Tests 10 passed (10) | scenarios: Tests 2 failed | 37 passed | 15 skipped (54)
+ORIG: 'this.errorText() !== ""' -> 'this.errorText() === ""'
+189:35 EqualityOperator | rules: Tests 10 passed (10) | scenarios: Tests 2 failed | 37 passed | 15 skipped (54)
+ORIG: '"true"' -> '""'
+194:44 StringLiteral | rules: Tests 10 passed (10) | scenarios: Tests 1 failed | 38 passed | 15 skipped (54)
+ORIG: 'this.hasUpdated && this.control().selectedIndex !== -1' -> 'this.hasUpdated || this.control().selectedIndex !== -1'
+timeout-recheck 151:22 LogicalOperator | rules: Tests 9 failed | 1 passed (10) | scenarios: | 603 s
+ORIG: '{ field: true, off: this.effectivelyDisabled() }' -> '{}'
+timeout-recheck 186:39 ObjectLiteral | rules: Tests 10 passed (10) | scenarios: Tests 3 failed | 34 passed | 15 skipped (52) | 39 s
+ORIG: 'true' -> 'false'
+timeout-recheck 186:48 BooleanLiteral | rules: Tests 10 passed (10) | scenarios: Tests 1 failed | 36 passed | 15 skipped (52) | 38 s
