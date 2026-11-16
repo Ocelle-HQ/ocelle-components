@@ -890,6 +890,34 @@ export const copyFieldScenarios: readonly CopyFieldScenario[] = [
     expected: { status: "", region: "", attribute: copied, requests: [request(command)] },
   },
   {
+    // Plants: another default for `status` or `copyLabel` (the property read before any set); the mutation run's
+    // survivors on the field initialisers (reviews/phase-5/notes.md).
+    name: "the properties' defaults: with no attribute value and status read empty and copyLabel reads Copy, beside the control named Copy and the region empty",
+    fixture: true,
+    run: async (driver, inPage) => {
+      await mount(driver, inPage, page(""));
+      const defaults = await inPage(() => {
+        const field = document.getElementById("cf") as unknown as Record<string, unknown> | null;
+        return field === null ? null : [field.value, field.status, field.copyLabel];
+      }, null);
+      return { defaults, region: await inPage(regionText, null), tree: await tree(driver) };
+    },
+    expected: { defaults: ["", "", "Copy"], region: "", tree: exposed({ text: "", disabled: true }) },
+  },
+  {
+    // Plants: the `status` attribute's removal not handled (the property reads null and the setter throws, or the
+    // removal shows another text); the mutation run's survivors on `attributeChangedCallback` (reviews/phase-5/notes.md).
+    name: "removing the status attribute clears the status: the property reads empty and the region is emptied, beside the status the attribute showed",
+    fixture: true,
+    run: async (driver, inPage) => {
+      await mount(driver, inPage, page(`${withCommand} status="${copied}"`));
+      const shown = { status: await inPage(statusOf, null), region: await inPage(regionText, null) };
+      await driver.setAttribute("cf", "status", null);
+      return { shown, removed: { status: await inPage(statusOf, null), region: await inPage(regionText, null), tree: await tree(driver) }, messages: await driver.messages() };
+    },
+    expected: { shown: { status: copied, region: copied }, removed: { status: "", region: "", tree: exposed() }, messages: [] },
+  },
+  {
     // Plant: reflecting `value` or `copyLabel`.
     name: "the value and copyLabel properties are not reflected: property sets show the text and name the control and leave the attributes as written",
     fixture: true,
