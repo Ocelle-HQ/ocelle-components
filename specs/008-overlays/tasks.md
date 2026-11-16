@@ -255,6 +255,91 @@ the driver as it was.
 - [X] T028 [US1] Green: `storybook/stories/dialog.stories.ts` with the stories of data-model § Stories (no 320 × 256 story: #10 has no per-story viewport, R-16). The long-scrolling-body and prose-with-a-table stories are designed so no text is clipped at a scroll edge (a table narrow enough for the panel; R-16, operator decision C). The long-scrolling-body story places an empty `<div data-story="dialog-scroll-edge">` in the slotted body between two paragraphs, across the body's scroll edge in the 1280 × 800 capture, so no paragraph's box crosses that edge (operator decision, 2026-11-14, measured at T029); it is laid out only by a `[data-story="dialog-scroll-edge"]` rule (block size) added to `storybook/.storybook/stories-layout.css` with a comment in the file's style: no text, no role, no name, no `style` attribute, no exception entry (R-16).
 - [X] T029 [US1] Produce the baselines in the pinned container (`pnpm run visual:update`), then run `gate:storybook-build` (`built 29 stories`), `gate:visual` and `gate:axe`. The axe expectation is zero serious or critical findings with no entry added to `storybook/a11y-exceptions.json`: the long-scrolling-body story's `color-contrast-incomplete` (`elmPartiallyObscured`, whichever paragraph's box sat across the body's scroll edge inside the 800 px viewport) is removed by T028's `dialog-scroll-edge` block (R-16, operator decision 2026-11-14). If `gate:axe` still reports any `color-contrast-incomplete` node, stop for the operator (R-16, decision C); no exception entry is added without that decision. Commit the baselines. CI's captures win over local ones (006 FR-005): take the files of the `visual` artifact. Then add a `differs` line to `gates/plants/visual/fail-token-changed/plant.json` for each new light story-theme that shows `color-ink`, measured in the pinned container as 006 T046s did (R-16), commit it with the baselines, and run `gate:plants`.
 
+### Fixes from the landing review (phase 2 round 2: R2-01, landing L1-01; R2-02, landing L1-03)
+
+The operator chose on 2026-11-16 to fix both findings now, in this phase, which owns `packages/elements/src/overlay.ts`
+(`reviews/phase-2/round-2.md`: "Fix both now (Recommended)"; `reviews/landing/round-1-tasks.md`). T058 and T059 share
+one red commit (`test(008-overlays): phase 2 review round 2 red`, test files only, signed off), recorded by
+`.specify/extensions/story/scripts/red.sh 2 fix-2` (the label is the review round, as in Phase 1's `fix-1`), and one
+fix commit (`fix(008-overlays): phase 2 review round 2`, signed off) with `reviews/phase-2/round-2-fixes.md` (one row
+per finding, `| ID | Resolution | Red test | Where |`), the red log and `red-commits`; reviewed as phase 2 round 3. The
+new rows go into `overlayScenarios(kind)` in `packages/elements/test/scenarios/dialog.ts` (`removalRows` and
+`nestedRows`), which `scenarios/drawer.ts` inherits, so every row runs for `ocelle-dialog` and `ocelle-drawer` in both
+harnesses: `packages/elements/test/dialog.test.ts` and `test/drawer.test.ts` (`elements`, in process on the source)
+and `test/browser/dialog.test.ts` and `test/browser/drawer.test.ts` (`elements-browser`, the browser build on
+`overlays.html` under the strict CSP, with zero CSP violations, only allowed requests and no console message). Each row
+is named by its full name (Rules § Full test names) and ends with the FR-047 counts. A host continuation on
+`updateComplete` needs one new op of the stand-in act element `ocelle-test-act` (`defineDialogStandIns`):
+`{ op: "settled", id, then }`, which runs `then` in `byId(id).updateComplete.then(…)` (exempt plumbing in a test file,
+no `style` attribute, no inline script).
+
+- [ ] T058 [US1] R2-01 (landing L1-01), the no-motion end of a close is cancellable and the stack loses only the
+  overlay that leaves it (FR-022, FR-023, FR-014, R-05a § Leaving the stack, R-06's no-motion bullet, spec Edge Cases
+  "Removed or reopened while closing, with no motion", matrix § Dialog "Closing under reduced motion, then removed or
+  reopened"), test first.
+  - **Red rows**, each under reduced motion (`driver.reducedMotion(true)` before the mount) and again with motion on
+    (`--ocelle-motion-base` at its token value) as the positive half in the same table, `[true, false].map(…)` as
+    `staleRows` does; `recorded` is every `…-close-request` and `…-close` on any overlay of the page, from `record()`:
+    - "Closing under reduced motion, then removed in the host's continuation of updateComplete: no close event, open
+      false, no top-layer entry, the page not inert (FR-022, R-05a, R-06)": mount, open `dlg`, then in one `seq`
+      `set open false` and `settled` → `remove dlg`; after a pause of 100 ms: `recorded` `[]`, the property `open`
+      false, `topLayer()` `[]`, a click on `after` focuses it;
+    - "Closing under reduced motion, then reopened in the host's continuation of updateComplete: no close event, the
+      overlay stays shown (FR-014, R-06)": as above with `settled` → `set open true`; after the next task and frame:
+      `recorded` `[]`, `state` `shown` (open, `:modal`, one top-layer entry); then one Escape gives exactly
+      `[request("escape", …), closeEvent("escape", …)]`, so the close that was cancelled ended nothing;
+    - "Stacked: an inner overlay closed under reduced motion and removed in the host's continuation, then a second
+      inner one opened over the outer: the outer stays on the stack, Escape with focus on the body closes only the top
+      one (FR-023, R-05a)", in `nestedRows` (outer `dlg` with two slotted inner overlays of `kind.tag`, `in1` and
+      `in2`, each with a button): open `dlg`, open `in1` over it, then `set in1 open false` and `settled` → `remove in1`;
+      open `in2`; blur to the body; one Escape: `recorded` exactly one request and one close, both on `in2`, with
+      reason `escape`; the outer dispatched nothing and is open and `:modal`; `topLayer()` is the outer's dialog only;
+      a second Escape with focus on the body dispatches the outer's `…-close-request` with reason `escape`.
+  - Run `red.sh 2 fix-2` (with T059's row in the same commit) and confirm `"recorded": true`, failing in both
+    harnesses and for both elements under reduced motion only: a `…-close` with reason `host` recorded after the
+    removal and after the reopen, and in the stacked row the Escape acting on the outer; the motion-on halves pass.
+    A load, setup or timeout failure is not red: fix the row and amend.
+  - **Required fix** (`packages/elements/src/overlay.ts` only): the end of a close scheduled with no motion
+    (`#animate`'s `this.updateComplete.then(done)`) is cancellable like the animation: each close (and each entry)
+    takes a token that `#reopen`, `disconnectedCallback` and the platform-close path clear, and `done` runs only for
+    the current token while the overlay is still in the state that scheduled it. `#leave` does nothing when the
+    overlay is not on the stack (`indexOf` -1), so `stack.splice(-1, 1)` can never take another overlay. The comment
+    at the exit ("every change of state during the exit cancels its animation") then holds for both paths. Keep
+    `#closeOwn`'s counting as it is: the equivalent-mutant records at the `#ownCloses` lines rest on it (landing
+    round 1, Test quality).
+  - **Mutation re-run**: `pnpm run gate:mutation -- --base 6788697 --plan` (`reviews/phase-2/base.sha`), then
+    `gate:mutation -- --base 6788697 --files packages/elements/src/overlay.ts` (shard by shard with `--files
+    packages/elements/src/overlay.ts:<lines>` if the plan cuts it), output appended to `reviews/phase-2/mutation.log`,
+    with the results in `reviews/phase-2/notes.md` § Mutation. No survivor in `overlay.ts`, unless recorded as
+    equivalent with its reason and notes file (007 R-08); every existing `Stryker disable` record in `overlay.ts`,
+    the ones at the `#ownCloses` and toggle lines included, is re-derived against the changed code and kept, changed
+    or removed accordingly.
+- [ ] T059 [US1] R2-02 (landing L1-03), a show the update could not make because the host was out of the document is
+  made when it is connected again (FR-004, spec Edge Cases "Opened, then moved before it is shown", as distinct from
+  "Moved while open"; R-05a § A show the update could not make; matrix § Dialog "Opened, then moved before it is
+  shown"), test first, in T058's red commit.
+  - **Red row**, in `removalRows`, for both elements, with its variants in one table: "Opened, then moved before it is
+    shown, re-inserted in a later task: open true, shown and :modal with initial focus, no event (FR-004)": mount, then
+    in one `seq` `set dlg open true` and `remove dlg`; a pause of 50 ms (the update runs while it is out); `reinsert
+    dlg`; after the next task and frame: the attribute `open` present, `state` `shown` (open, `:modal`, one top-layer
+    entry), focus on the initial target (`b1`), `recorded` `[]`; then `open = false` gives one `…-close` with reason
+    `host`. Variants in the same table: `remove` first, then `set open true` while out, re-inserted in a later task
+    (the same expected values); and `set open true`, `remove`, `reinsert` in one `seq` (the same task; expected to
+    pass at red, the positive half).
+  - In the red run the later-task variants fail in both harnesses and for both elements on `state` (the panel neither
+    open nor `:modal`, no top-layer entry) with `open` still true; that is the defect, not a setup error.
+  - **Required fix** (`packages/elements/src/overlay.ts` only): when the overlay is connected with `open` true and
+    its state `closed` (the show was not made), it makes the show then, for example `connectedCallback` calls
+    `requestUpdate()` so `updated()` runs `#show()`; the state checks of `updated()` stay the source of truth, so a
+    connection of a closed overlay with `open` false or of a shown one changes nothing. `open` is not reset to false:
+    the overlay was never shown, so the move closes nothing (spec Edge Cases). No README change: its **Closing**
+    paragraph speaks of removing an *open* dialog, which stays true.
+  - **Mutation re-run**: with T058's (one run covers both changes).
+  - **Checks** for T058 and T059: `pnpm exec vitest run --project elements --project elements-browser` (the dialog and
+    drawer suites), then a full `pnpm test` in the background with its log in `reviews/phase-2/`; `gate:typecheck`,
+    `gate:lint`, `gate:test-lint`, `gate:csp`, `gate:manifest` (unchanged); the mutation run above; `tdd-check.sh 2`
+    reports `pass` and its `tdd-check.json` is kept.
+
 **Checkpoint**: `tdd-check.sh 2` reports `pass`.
 
 ---
@@ -476,6 +561,9 @@ the visual and axe gates (after #10).
 - **Stories**: every story task (T026 to T029, T038 to T040, T050 to T052) waits until #10 is merged, and so does
   each red commit that holds one (T020, T034, T046). T026 runs first and once, before any story test is written.
 - Within a red commit, the [P] tasks touch different files.
+- **Landing fixes** (`reviews/landing/round-1-tasks.md`): T058 and T059 run after Phase 5, in Phase 2, as one red
+  commit (`red.sh 2 fix-2`) and one fix commit; they are reviewed as phase 2 round 3, and then the landing review runs
+  again.
 
 ## Parallel Opportunities
 

@@ -214,6 +214,16 @@ modal, level. Device: the default context (`elements`, `visit()`) matches `(hove
 - **Moved while open** (operator decision, R-05a): open, remove, re-insert in the same task, and in a later task:
   `open` false, the dialog not `:modal` and not open, the page not inert, no event, FR-047 counts; then `open = true`
   shows it modally with initial focus.
+- **Closing under reduced motion, then removed or reopened** (landing review L1-01, R-05a, R-06), each also with motion
+  on as its positive half: `open = false`, then, in the host's continuation of that update's `updateComplete`, (a)
+  `remove()`: no event, `open` false, no top-layer entry, the page not inert; (b) `open = true`: no `…-close`, the
+  dialog shown and `:modal` after the next task and frame. (c) Stacked: an inner overlay slotted in an open outer one
+  is closed and removed as in (a), a second inner one is opened over the outer, and with focus on the body one Escape
+  gives one request and one close on the second inner one only; the outer dispatches nothing and stays open and
+  `:modal`, and the next Escape with focus on the body requests the outer's close.
+- **Opened, then moved before it is shown** (landing review L1-03, FR-004): `open = true` and `remove()` in one task,
+  and `remove()` then `open = true` while out of the document; re-inserted in a later task: `open` true, the dialog
+  shown and `:modal` with initial focus, no event; re-inserted in the same task: the same.
 - **Rapid toggle**: `open` true and false in one task; re-open during the exit with motion on: the animation is
   cancelled, the dialog stays `:modal`, no close event.
 - **Input during the exit** (motion on, R-02, R-06): after a request that is not cancelled, within the exit: Escape
@@ -261,7 +271,8 @@ modal, level. Device: the default context (`elements`, `visit()`) matches `(hove
   - open at first render, (a) and (b) (the before-definition case in process in `test/drawer-upgrade.test.ts`, which
     imports `src/ocelle-drawer.ts` only after the mount, and on the fixture page `overlays-upgrade.html`; focus back on
     the page button);
-  - removed, moved, rapid toggle, input during the exit, stale native `close` event;
+  - removed, moved, closing under reduced motion then removed or reopened (with the stacked case), opened then moved
+    before it is shown, rapid toggle, input during the exit, stale native `close` event;
   - forced colours;
   - accessibility tree, including the host `aria-label` open and closed and no node for the end sentinel.
 

@@ -367,6 +367,14 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
   `open = true` is ignored, R-03), leaves the overlay stack, drops its opener and sets `open` to false, with no event
   and no focus move. A close in progress ends the same way, without its `…-close`. Re-inserted, the element is
   closed; the host sets `open = true` to show it again (initial focus and a fresh opener as for any open).
+- **Leaving the stack** (landing review L1-01, operator decision 2026-11-16): leaving the overlay stack removes this
+  overlay only. An overlay that is not on the stack (it already left it) leaves nothing, so a second leave can never
+  take the overlay beneath off the stack (FR-022, FR-023).
+- **A show the update could not make** (landing review L1-03, operator decision 2026-11-16): `open = true` with the
+  host removed before the update (or set while the host is out of the document) cannot show it, since `showModal()`
+  needs a connected element. The overlay was never shown, so nothing is closed and `open` stays true; when the element
+  is connected again the show is made then, with initial focus and a fresh opener. `open` stays the single source of
+  truth (FR-004; spec Edge Cases, "Opened, then moved before it is shown").
 - The README states it: a host that moves an open overlay in the DOM (a morph, a keyed reorder, a portal) reopens it
   afterwards. The spec's edge case "Moved while open" and FR-022 say the same.
 
@@ -377,6 +385,11 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
     (R-05), then `…-close` is dispatched.
   - The close event therefore fires when the element has left the top layer.
   - Under reduced motion the duration is 0 and all of it happens in the same task after the next update.
+  - That end, after the next update, is cancelled by the same changes as a running exit animation (a reopen, a
+    platform close, a removal): it ends only the close that scheduled it, and only while that close is still in
+    progress. A host continuation on the same `updateComplete` that removes the overlay or sets `open = true` runs
+    first, and the scheduled end then does nothing: no `…-close`, no second leave of the stack (landing review L1-01,
+    operator decision 2026-11-16; spec Edge Cases, "Removed or reopened while closing, with no motion").
   - Setting `open` again during an exit cancels the animation: the dialog stays shown, and no close event is
     dispatched for the cancelled close.
   - During the exit (`closing`) user input asks for nothing (squad round 2, PLAN-FRESH-2-003): Escape and a

@@ -311,6 +311,19 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
 - **Moved while open.** An open overlay removed and re-inserted (a morph, a keyed reorder, a portal), in the same task
   or later, is closed after the move, with `open` false and no event; the host sets `open` again to show it (operator
   decision).
+- **Opened, then moved before it is shown.** The host sets `open = true` and the element is removed before it is shown
+  (before its next update, for example by a morph or a portal in the same task), or `open` is set to true while the
+  element is out of the document. The overlay was never shown, so the move closes nothing: `open` stays true, nothing
+  is shown while it is out of the document, and once it is in the document again it is shown modally with initial
+  focus (FR-007), with no event. This differs from "Moved while open", where the move closes an overlay that was shown
+  (FR-004; landing review L1-03, operator decision 2026-11-16).
+- **Removed or reopened while closing, with no motion.** Under `prefers-reduced-motion: reduce`, or with a zero or
+  missing `--ocelle-motion-base`, a close has no exit animation, but it is still in progress until it ends after the
+  next update (R-06). A host that sets `open = false`, awaits the element's `updateComplete` and then removes the
+  overlay or sets `open = true` again gets what it gets with motion on: a removal dispatches no `…-close` (FR-022), a
+  reopen dispatches no `…-close` and the overlay stays shown (FR-014), and an overlay beneath it stays on the stack,
+  so the next Escape, close control or backdrop click acts on the topmost overlay only (FR-023) (landing review
+  L1-01, operator decision 2026-11-16).
 - **Two overlays.** A dialog opened from inside an open drawer stacks above it; Escape and its close affect only the
   topmost; focus returns into the drawer. A click on the dialog's backdrop, which lies over the drawer, closes
   neither and dispatches no request on either (FR-012, FR-023).
@@ -387,7 +400,9 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
   `--ocelle-elevation-raised`, radius `--ocelle-radius-2` (the dialog's four corners; the drawer's two corners on its inner edge, the edge facing
   the page, take `--ocelle-radius-2` and the two on the edge against the viewport stay square, 0; operator decision).
 - **FR-004**: Each MUST expose a reflected boolean `open` property and attribute as the single source of truth for
-  being shown: setting it shows or closes the element, and the element sets it to false whenever it closes.
+  being shown: setting it shows or closes the element, and the element sets it to false whenever it closes. An `open`
+  set to true that could not show the element because it was out of the document shows it once it is in the
+  document again (Edge Cases, "Opened, then moved before it is shown").
 - **FR-005**: Each MUST take its accessible name from a `label` property, rendered as the visible heading inside the
   same shadow root as the `<dialog>` (no ID reference crosses a shadow root), with the elements README § Host ARIA
   rule: a host `aria-label` names the element and decides alone. The host has no role, so the closed host's exposure
@@ -470,7 +485,9 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
   not hide that boundary, and the close control MUST show a visible focus indicator.
 - **FR-022**: Removing an open (or closing) overlay from the document MUST leave no inert content, top-layer entry or
   backdrop, MUST set `open` to false and MUST dispatch no event (operator decision); re-inserted, the element is closed
-  until the host sets `open` again.
+  until the host sets `open` again. This holds with and without motion: a close in progress when the overlay is
+  removed never dispatches its `…-close` later, and the removal takes only this overlay off the stack, never another
+  (Edge Cases, "Removed or reopened while closing, with no motion").
 - **FR-023**: A second overlay opened from inside an open one MUST stack above it; Escape, the close control and the
   backdrop act only on the topmost; on its close, focus returns into the overlay beneath (FR-009).
 - **FR-047** (all three elements): Positioning the bubble, and any runtime styling of the dialog, drawer or bubble,
