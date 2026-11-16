@@ -134,12 +134,11 @@ The second run (on `47ce03a`), `mutation.log`, exits 0:
 ## Plants (T084)
 
 `plants.md` records 64 plants, each applied alone to `47ce03a`, run once and reverted.
-- 63 make a test fail.
-- One does not: *the region in the Lit template*, which contracts § Pairings names for US4-5. It is not a defect of
-  that outcome under Lit 3 and the deferred dispatch: Lit commits a text binding only when the value changes, and every
-  read of the region comes after Lit's update. The pairing's other plant, *the region's text written
-  unconditionally*, makes US4-5 fail, so the guard is real. `plants.md` gives the reasoning; the contract row is left
-  for the review.
+- 63 made a test fail on their run; with the review round 1 body, all 64 do.
+- One did not: *the region in the Lit template*, which contracts § Pairings names for US4-5. The first record said it
+  was no defect of the region's outcomes. Review round 1 (R1-01) refuted that: a clear and a same-text set in one task
+  are batched by Lit, and the region is never emptied. The round-1 body *FR-041, FR-042: a clear and a set of the same
+  status in one task …* now fails under the plant (`plants.md`).
 - Six plants did not bite on their first run. Five bodies were made stricter (above), and one plant form was not a
   defect: a `transparent` divider is repainted by forced colours. That plant now sets the divider's width to 0.
 

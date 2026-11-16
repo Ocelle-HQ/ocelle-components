@@ -6,26 +6,30 @@ R-11, R-15 and R-16, and the plants named beside each body of `packages/elements
 runner checked after each plant that the source file was the same byte for byte as before it.
 
 The runs used `pnpm exec vitest run --project <project> <file> -t <scenario>` with `OCELLE_CHROMIUM_PATH` set. A failing
-test name is cut at 110 characters. Every plant in the table made at least one test fail, except the one discussed
-first below.
+test name is cut at 110 characters. Every plant in the table made at least one test fail. The Lit-template row was
+run again in review round 1, against the whole file with the new body (below).
 
-## A contract plant that is not a defect of its outcome
+## The region in the Lit template (corrected in review round 1, R1-01)
 
 *The region in the Lit template* is one of the two plants contracts § Pairings names for "repeated status does not
 mutate the region" (US4-5). The plant renders the region's text from `status` in the Lit template, with an update
-requested on each set, instead of the element's own text node. It does not make US4-5 fail, and it makes no other
-copy-field body fail either (a run of the whole file, 29 bodies, passed).
+requested on each set, instead of the element's own text node.
 
-- **Why it does not bite.** Lit 3 commits a text binding only when its value changes, so a repeated set of the same
-  text mutates nothing there either. R-07's argument against a Lit-rendered region is a read *in the same task* as a
-  set: the region would still hold the old text. No body reads the region in that task. The request is deferred by a
-  frame and a task, and Lit's update runs in the microtask after the setting listener. So under the deferred dispatch
-  every outcome the spec states for the region, US4-6's empty-then-text history included, is the same with the plant.
-- **The guard is real.** The pairing's other plant, *the region's text written unconditionally*, makes US4-5 fail, so
-  "repeated status does not mutate the region" can fail.
-- **What this leaves.** The imperative text node is R-07's design and stays. The contract's naming of this plant for
-  US4-5 is wrong under Lit 3; the row's second plant is the one that proves the guard. This is recorded here for the
-  review; the contract is not changed in this phase.
+- **First record, withdrawn.** On its first runs the plant made no copy-field body fail, and this file said it was no
+  defect of any outcome the spec states for the region. Review round 1 (R1-01) refuted that. When the field clears
+  `status` (FR-042) and the host sets the same text in the same task, with no microtask checkpoint between them, Lit
+  batches the two sets into one update. Its text binding then skips the unchanged value, so the region is never
+  emptied. FR-041 says a text set after a clear goes into the empty region again, and R-07 writes the region outside
+  Lit for exactly this reason. No body had a clear and a set in one task: in every clearing body they were in
+  different tasks, or a microtask checkpoint fell between them (the clear inside a real click's listener).
+- **The body now.** *FR-041, FR-042: a clear and a set of the same status in one task …* (review round 1) runs in both
+  harnesses. It clears in two ways, each followed by the same-text set in one page script: a `value` change, and the
+  host's own `status = ""`. A MutationObserver with `characterDataOldValue` must record the text going from the old
+  text to empty and from empty to the text again. A repeated set in a later task beside it must mutate nothing (US4-5).
+  The body passes on the source.
+- **The plant now.** Run against the whole in-process file on the source of `47ce03a` with the new body, the plant
+  makes exactly that body fail: 1 failed, 29 passed of 30. The row is in the table below. The pairing's other plant,
+  *the region's text written unconditionally*, still makes US4-5 fail. The contract row is unchanged.
 
 ## Plants corrected after their first run
 
@@ -68,7 +72,7 @@ in the table below.
 | the request without composed | `packages/elements/src/ocelle-copy-field.ts` | `copy-field.test.ts` (elements) | US4-3: a click on the Copy control emits exactly one ocelle-copy-field-request with detail { text } the value  (1 failed, 28 skipped (29)) |
 | preventDefault() on every keydown of the field | `packages/elements/src/ocelle-copy-field.ts` | `copy-field.test.ts` (elements) | US4-4: Tab reaches the Copy control after the button before the field; Enter emits one request and Space anoth (1 failed, 28 skipped (29)) |
 | the region's text written unconditionally (a repeated set mutates it) | `packages/elements/src/ocelle-copy-field.ts` | `copy-field.test.ts` (elements) | US4-5: the region is present and empty from first render; a listener that sets status to Copied to clipboard o (1 failed, 28 skipped (29)) |
-| the region in the Lit template (rendered from status) | `packages/elements/src/ocelle-copy-field.ts` | `copy-field.test.ts` (elements) | none (1 passed, 28 skipped (29)) |
+| the region in the Lit template (rendered from status); run in review round 1 on the whole file | `packages/elements/src/ocelle-copy-field.ts` | `copy-field.test.ts` (elements) | FR-041, FR-042: a clear and a set of the same status in one task, with no microtask checkpoint between them, empt (1 failed, 29 passed (30)) |
 | the status shown outside the region (the text node in the field) | `packages/elements/src/ocelle-copy-field.ts` | `copy-field.test.ts` (elements) | US4-5: the region is present and empty from first render; a listener that sets status to Copied to clipboard o (1 failed, 28 skipped (29)) |
 | synchronous dispatch | `packages/elements/src/ocelle-copy-field.ts` | `copy-field.test.ts` (elements) | US4-6: with a status shown and a synchronous host listener that sets the same text again, an activation clears (1 failed, 28 skipped (29)) |
 | dispatch in a microtask | `packages/elements/src/ocelle-copy-field.ts` | `copy-field.test.ts` (elements) | US4-6: with a status shown and a synchronous host listener that sets the same text again, an activation clears (1 failed, 28 skipped (29)) |

@@ -877,6 +877,54 @@ export const copyFieldScenarios: readonly CopyFieldScenario[] = [
     },
   },
   {
+    // Plant: the region in the Lit template (rendered from `status`): Lit batches a clear and a set of the same text in
+    // one task into one update, and its text binding skips the unchanged value, so the region is never emptied (review
+    // round 1, R1-01).
+    name: "FR-041, FR-042: a clear and a set of the same status in one task, with no microtask checkpoint between them, empty the region and fill it again (a value change then the set; the host's own clear then the set), each recorded as a text mutation from the old text to empty and from empty to the text, beside a repeated set in a later task that mutates nothing",
+    fixture: true,
+    run: async (driver, inPage) => {
+      await mount(driver, inPage, page(`${withCommand} status="${copied}"`));
+      const watch = (): void => {
+        const scope = window as unknown as { __old?: { observer: MutationObserver; records: (string | null)[] } };
+        scope.__old?.observer.disconnect();
+        const region = document.getElementById("cf")?.shadowRoot?.querySelector('[role="status"]');
+        const record = { observer: new MutationObserver((list) => record.records.push(...list.map((each) => (each.type === "characterData" ? each.oldValue : each.type)))), records: [] as (string | null)[] };
+        if (region !== null && region !== undefined) record.observer.observe(region, { subtree: true, childList: true, characterData: true, characterDataOldValue: true });
+        scope.__old = record;
+      };
+      const taken = (): (string | null)[] => {
+        const record = (window as unknown as { __old?: { observer: MutationObserver; records: (string | null)[] } }).__old;
+        if (record === undefined) return ["not watched"];
+        record.records.push(...record.observer.takeRecords().map((each) => (each.type === "characterData" ? each.oldValue : each.type)));
+        return record.records.splice(0);
+      };
+      await inPage(watch, null);
+      await inPage((text: string) => {
+        const field = document.getElementById("cf") as HTMLElement & { value: string; status: string };
+        field.value = "pnpm run build";
+        field.status = text;
+      }, copied);
+      await inPage(frames, undefined);
+      const valueChange = { oldValues: await inPage(taken, null), region: await inPage(regionText, null) };
+      await inPage((text: string) => {
+        const field = document.getElementById("cf") as HTMLElement & { status: string };
+        field.status = "";
+        field.status = text;
+      }, copied);
+      await inPage(frames, undefined);
+      const hostClear = { oldValues: await inPage(taken, null), region: await inPage(regionText, null) };
+      await driver.setProperty("cf", "status", copied);
+      await inPage(frames, undefined);
+      return { valueChange, hostClear, repeated: { oldValues: await inPage(taken, null), region: await inPage(regionText, null) }, tree: await tree(driver) };
+    },
+    expected: {
+      valueChange: { oldValues: [copied, ""], region: copied },
+      hostClear: { oldValues: [copied, ""], region: copied },
+      repeated: { oldValues: [], region: copied },
+      tree: exposed({ text: "pnpm run build", status: copied }),
+    },
+  },
+  {
     // Plant: reflecting `status` (the attribute rewritten to the empty value by the request's clear).
     name: "Edge Cases: a status attribute written in the markup is not reflected: after a request clears status the property reads empty and the attribute stays as written (FR-042)",
     fixture: true,
