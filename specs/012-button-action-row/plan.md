@@ -287,10 +287,14 @@ phase 2),
     inner control, the hit layer, covers the whole host (`inset: 0` against the layout wrapper, its containing block,
     never the host, so a page rule on the host's `position` cannot spread it over the page). It takes every pointer
     click on the host, so the composed path passes through the inner control: the siblings have `pointer-events:
-    none`, and the layer is painted beneath them and the title (`z-index: -1` in the wrapper's stacking context; a
-    layer painted above them would hide their text under the surface it carries), so for hit testing it sits above
-    them. It carries the row's surface, border, inside focus ring and current bar (R-12). FR-001's fill sentence,
-    R-01's fill measurement, decision 18 and US4-15 now say, for the row, "the control's hit layer fills the host";
+    none`, and the layer is painted beneath them and the title (positive stacking: the layout wrapper is `position:
+    relative; z-index: 0`, a stacking context with no `isolation: isolate`, the layer is at `z-index: 0` in it, and
+    the icon wrapper, the title and the sibling wrappers are at `position: relative; z-index: 1`; a layer painted
+    above them would hide their text under the surface it carries, and a layer at `z-index: -1` draws axe's
+    `color-contrast` incomplete, see the note of 2026-11-16), so for hit testing it sits above them. It carries the
+    row's surface (`background-color: Canvas` under forced colours), border, inside focus ring and current bar (R-12).
+    FR-001's fill sentence, R-01's fill measurement, decision 18 and US4-15 now say, for the row, "the control's hit
+    layer fills the host";
     the restyled host's outside points are outside the layer. The card layout follows the same model (R-10).
     *Within the decision*: the siblings inherit no colour from the inner control, so the description, tags and
     trailing wrappers set their own ink, keyed on the host's reflected state and the mode (marked on the layout
@@ -310,6 +314,18 @@ phase 2),
     `control` is the inner control (icon and title), so a host's `::part(control)` styles no longer reach the row's
     surface or border (README). No principle is relaxed and no exception is recorded, so no Complexity Tracking row
     is needed.
+    *Note, 2026-11-16, human:jeroennouwsdev* (operator decision at phase 5, multiple choice: accept the
+    implementation and align the wording): the phase 5 spike (T049a; `reviews/phase-5/spike.md` check (5) and
+    `reviews/phase-5/notes.md`) measured this decision's first wording, the hit layer at `z-index: -1` in a layout
+    wrapper with `isolation: isolate` (and again with `z-index: 0` on the wrapper). axe-core 4.14.0 gave every title,
+    description and tag text a serious `color-contrast` incomplete result (`bgOverlap`): its element stack puts the
+    layer above the text, though Chromium paints it beneath, against FR-052 and T049a. The positive stacking stated
+    above keeps the same painting and hit-testing order (the layer paints beneath the icon, the title and every
+    sibling, and takes every click outside the icon and the title), and axe gives 0 results of any impact on every
+    spike page; checks (1) to (4) gave the same figures with it. Under forced colours the layer sets
+    `background-color: Canvas`, as `a.control` does in `controlStyles`: without it axe read the dark palette's text
+    over an unknown background and reported `color-contrast`. R-01, R-10, R-12, the data model, T049a, T056, T060 and
+    T064 say the same. No principle is relaxed and no exception is recorded.
 
 ## Project Structure
 
