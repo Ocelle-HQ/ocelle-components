@@ -1,9 +1,9 @@
 # @ocelle/elements
 
 The Ocelle web components: standards-based custom elements (Lit 3) that work in any page, a server-rendered page
-under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has three elements:
-`ocelle-icon`, with a set of thirteen icons, `ocelle-brand-mark`, the Ocelle rosette, and `ocelle-button`, the first
-control, which follows the control conventions below.
+under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has four elements:
+`ocelle-icon`, with a set of thirteen icons, `ocelle-brand-mark`, the Ocelle rosette, and two controls that follow the
+control conventions below: `ocelle-button` and `ocelle-action-row`.
 
 ## Entry points
 
@@ -13,6 +13,7 @@ control, which follows the control conventions below.
 | `@ocelle/elements/ocelle-icon.js` | `dist/ocelle-icon.js` | `ocelle-icon` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-brand-mark.js` | `dist/ocelle-brand-mark.js` | `ocelle-brand-mark` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-button.js` | `dist/ocelle-button.js` | `ocelle-button` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-action-row.js` | `dist/ocelle-action-row.js` | `ocelle-action-row` only; for hosts with a bundler |
 | `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |
 | `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |
 
@@ -271,6 +272,71 @@ control of `ocelle-copy-field` (a flush icon button named by `label`). A consume
 `--ocelle-color-chrome-muted`, `--ocelle-color-chrome-hover`, `--ocelle-color-chrome-active`,
 `--ocelle-color-disabled-bg`, `--ocelle-color-disabled-ink`). While busy it also reads the motion tokens
 `--ocelle-motion-spin` and `--ocelle-motion-turn`. It has no CSS custom property of its own.
+
+## `ocelle-action-row`
+
+An activatable row: a leading icon, a title, a description, tags and a trailing icon, activated by pointer or keyboard
+with one `ocelle-action-row-activate` event that carries the row's id, so a host listens once for a whole list.
+
+```html
+<ocelle-action-row row-id="m-42">
+  <ocelle-icon slot="icon" name="folder"></ocelle-icon>
+  Mission 42
+  <span slot="description">Due Friday</span>
+  <span slot="tags">Blocked</span><span slot="tags">Design</span>
+  <ocelle-icon slot="trailing" name="arrow-end"></ocelle-icon>
+</ocelle-action-row>
+```
+
+- `row-id` (property `rowId`, reflected): the row's id, which `ocelle-action-row-activate` carries as `detail.rowId`
+  (`""` when absent).
+- `label` (attribute and property, not reflected): the accessible name, trimmed; empty or whitespace-only counts as
+  none.
+- `layout` (attribute and property, reflected): `row` (the default) puts the icon, the title and the description on
+  one line with the tags and the trailing icon, which move together to a second line when the line cannot hold them.
+- `presentation` (attribute and property, reflected): `default` (a bordered row on `--ocelle-color-sheet`,
+  `--ocelle-radius-row`) or `flush` (no border and no surface, the block padding `--ocelle-space-1` and the compact
+  text scale); any other value renders `default`.
+- `ground` (attribute and property, reflected): as on `ocelle-button`, it selects the default row's border:
+  `--ocelle-color-control-border` on the main grounds, `--ocelle-color-accent-strong` with `accent-low`, `inset`,
+  `hover-bg` or `state`; `ground="chrome"` gives no fill, a `--ocelle-color-chrome-muted` border, the title in
+  `--ocelle-color-chrome-ink` and the description and tags in `--ocelle-color-chrome-muted`.
+- `href` and `target`, `rel` (attributes and properties, reflected): link mode (Link versus button), with the
+  `noopener` rule of `ocelle-button`; the row has no `download`.
+- `busy` (boolean attribute and property, reflected): the row's content is updating; its inner control reports
+  `aria-busy="true"`, and activation still dispatches the event: on a row, busy does not mean unavailable.
+- Slots: the default slot (the title), `icon` and `trailing` (the slot convention), `description` and `tags`
+  (elements). CSS parts: `control`, `title`, `description`, `tags`.
+
+Each activation (a pointer click, Enter or Space, the element's `click()`) dispatches `ocelle-action-row-activate` from
+the element: a `CustomEvent` with `bubbles: true`, `composed: true`, `cancelable: true` and `detail` `{ rowId }`.
+
+The row is named by its title (the default slot), then by `label` or the host's `aria-label` or `aria-labelledby` in
+the name order; its accessible description is the text of the `description` slot followed by that of the `tags` slot,
+unless the host sets `aria-describedby`. A `description` or `tags` element without non-whitespace text (an empty
+`<span slot="description"></span>`, as a server template renders a missing value) contributes nothing and takes no
+space; text written into it later is picked up. `ocelle-action-row` moves `aria-label`, `aria-labelledby`,
+`aria-describedby` and `title` (Host ARIA is moved); a moved `title` describes the row when nothing else does.
+
+The description, tags and trailing content are shown beside the row's control and hidden from assistive technology as
+content: the description and tags reach it as the row's accessible description. A layer of the control covers the
+whole row and takes every click on it, the description, tags and trailing icon included. Interactive content (a link,
+a button, an input) in the `description`, `tags` or `trailing` slot is not supported: it is hidden from assistive
+technology there, and axe reports it as `aria-hidden-focus`. Slotted content that sets its own `pointer-events` takes
+the clicks on it, which the row then ignores (they do not pass through its control). The part `control` is the row's
+icon-and-title control, not its surface: `::part(control)` styles do not reach the row's surface or border.
+
+The host is a grid container (`grid` for `ocelle-action-row`, with `min-inline-size: min-content`, so a
+shrink-wrapping container never makes it 0 wide). Every row is at least `--ocelle-target-min` (44 px) tall in every
+presentation and layout, with the inline padding `--ocelle-space-3`. The title and the description wrap anywhere when
+a word does not fit, so a long identifier never makes the row wider than its container. On hover the surface becomes
+`--ocelle-color-hover-bg` (`--ocelle-color-chrome-hover` on chrome) and a default row's border
+`--ocelle-color-hover-border` (`--ocelle-color-chrome-ink` on chrome); a flush row gets no border and nothing moves.
+A flush row's hover shows no change where the ground has the hover colour, as a flush button's. The title is in
+`--ocelle-color-ink`, the description and tags in `--ocelle-color-ink-soft`. The focus ring is drawn inside the row
+(`--ocelle-focus-offset-inset`), so a scroll container's edge or the next row never clips or covers it. In forced
+colours the text and the border are `ButtonText` (`LinkText` in link mode), the hover border and the focus ring
+`Highlight`, and a flush row's hover a dashed `Highlight` outline. It has no CSS custom property of its own.
 
 ## Control conventions
 

@@ -48,27 +48,33 @@ US4-15 and US5-6 (stretched case) click 4 px inside the host's bottom edge, each
 **The row's hit layer (operator decision at phase 5, (c))**: the row's inner control no longer holds the description,
 tags and trailing content (R-05), so it cannot fill the host and keep FR-032's content-sized wrap in pure CSS; the
 measurement of "fills" moves to its hit layer. Structure:
-- the layout wrapper is the host's single stretched grid item, `position: relative` and `isolation: isolate` (a
-  stacking context), and is the flex-wrap (row) or grid (card) container of R-10; the hit layer's containing block is
-  this shadow wrapper, never the host, so a page rule on the host's `position` cannot move or grow the layer beyond
+- the layout wrapper is the host's single stretched grid item, `position: relative; z-index: 0` (a stacking context; no
+  `isolation: isolate`), and is the flex-wrap (row) or grid (card) container of R-10; the hit layer's containing block
+  is this shadow wrapper, never the host, so a page rule on the host's `position` cannot move or grow the layer beyond
   the row (an `inset: 0` layer against a page ancestor would take clicks meant for the page);
 - the inner control is a non-positioned item of that layout (so it is not the layer's containing block) and draws
-  nothing itself; the hit layer inside it has `z-index: -1` in the wrapper's stacking context, so it paints beneath
-  every sibling and beneath the title, and carries the row's surface, border, inside focus ring and current bar
-  (R-12);
+  nothing itself; the hit layer inside it has `z-index: 0` in the wrapper's stacking context, and the icon wrapper,
+  the title and the description, tags and trailing wrappers are `position: relative; z-index: 1`, so it paints
+  beneath every sibling and beneath the icon and the title, and carries the row's surface (`background-color:
+  Canvas` under forced colours, R-12), border, inside focus ring and current bar (R-12);
 - the description, tags and trailing wrappers are `aria-hidden="true"` and `pointer-events: none` (inherited by their
   slotted elements through the flat tree), so for hit testing the layer is the topmost target at every point of the
   wrapper outside the icon and the title, which are inside the control: every pointer click on the host's content box
   lands on the inner control or its layer, and its composed path passes through the inner control. Hover follows: a
   pointer anywhere over the row matches `.control:hover`.
 The hit layer is "above the siblings" in the operator's decision for hit testing; it is painted beneath them, since a
-layer painted above them would hide their text with the surface it carries. Measured in the phase 5 spike (T049a,
-before the red commit): the layer's box equals the host's box in both axes in a grid of cards and a stretched flex
-row, in button and link mode (a `<button>` and an `<a>` with an absolute child whose containing block is an ancestor);
-a click at the centre of the description, of a tag and of the trailing icon has the inner control in its composed path
-and dispatches one event; axe `color-contrast` gives no violation and no incomplete result for the title, description
-and tags text over the layer (US5-4 forbids an incomplete result on a current row; FR-052 covers every page). Any of
-these failing is a stop-and-ask. US4-15 asserts the layer's box against the host's (plant: the layer positioned
+layer painted above them would hide their text with the surface it carries. The stacking is positive (plan decision 30's
+note of 2026-11-16): with the layer at `z-index: -1` (the first wording, the wrapper with `isolation: isolate`), the
+phase 5 spike found a serious axe `color-contrast` incomplete result (`bgOverlap`) on every title, description and tag
+text, because axe's element stack puts a negative layer above the text though Chromium paints it beneath; with the layer
+at `z-index: 0` and the content at `z-index: 1`, axe's stack puts the text on top and gives 0 results. Measured in the
+phase 5 spike (T049a, before the red commit): the layer's box equals the host's box in both axes in a grid of cards and
+a stretched flex row, in button and link mode (a `<button>` and an `<a>` with an absolute child whose containing block
+is an ancestor); a click at the centre of the description, of a tag and of the trailing icon has the inner control in
+its composed path and dispatches one event; axe `color-contrast` gives no violation and no incomplete result for the
+title, description and tags text over the layer (US5-4 forbids an incomplete result on a current row; FR-052 covers
+every page). Any of these failing is a stop-and-ask. US4-15 asserts the layer's box against the host's (plant: the
+layer positioned
 against the inner control, so it covers only the icon and title) and the clicks on the siblings (plant: siblings
 without `pointer-events: none`, so the host guard stops the click and nothing is dispatched). Slotted content that
 sets its own `pointer-events` takes its clicks itself; the host guard stops them (the composed path misses the inner
@@ -612,7 +618,8 @@ control and the description wrapper is `flex: 1 1 auto` with `min-inline-size: m
 tags and trailing wrappers is `flex: 0 0 auto`, wrapping as a whole (FR-032, US4-18: the same flex-wrap as before, so
 the wrap stays pure CSS and unchanged). `card` layout: the wrapper is a two-row grid, the title line (the inner
 control, with the trailing wrapper at its end), then the description, then the tags; the same wrappers, the same
-hit layer and the same `aria-hidden` and `pointer-events` rules as the row layout (the card follows the same model).
+hit layer, the same stacking (R-01) and the same `aria-hidden` and `pointer-events` rules as the row layout (the card
+follows the same model).
 The layout wrapper's inline padding is `--ocelle-space-3` in both presentations and every state (the `flush` row's
 was `--ocelle-space-2` before PLAN-FRESH-2-005 (b)), plus `--ocelle-border-width` on a `default` row, whose border the
 hit layer draws inside the wrapper's box (R-12), so content starts 12 px (flush) or 13 px (default) in, as before. The
@@ -750,11 +757,12 @@ inside the hit layer (R-01; the layer, absolutely positioned, is its containing 
 `position: absolute; inset-block: 0; inline-size: var(--ocelle-bar-width); background-color:
 var(--ocelle-color-current)`, rendered only while `current` is set. It lies in the row's inline padding (R-10), never
 behind text and never under a sibling (description, tags, trailing) or the title, and takes no layout space. The hit
-layer also draws the row's surface (`background-color`, the current `accent-low` and the hover surface included) and
-the `default` row's border, so the bar's place measured from the layer's padding edge is the place measured before
-from the inner control's. The text of the title and of the siblings is painted over the layer's surface, not under
-it, and the phase 5 spike (T049a) and phase 6 spike (T060) measure axe `color-contrast` for it on a plain and on a
-current row: no violation and no incomplete result (US5-4, FR-052), else a stop-and-ask.
+layer also draws the row's surface (`background-color`, the current `accent-low` and the hover surface included;
+`Canvas` under forced colours) and the `default` row's border, so the bar's place measured from the layer's padding
+edge is the place measured before from the inner control's. The text of the title and of the siblings is painted
+over the layer's surface, not under it (positive stacking, R-01), and the phase 5 spike (T049a) and phase 6 spike
+(T060) measure axe `color-contrast` for it on a plain and on a current row: no violation and no incomplete result
+(US5-4, FR-052), else a stop-and-ask.
 
 **Bar and ring distinct (PLAN-FRESH-2-005 (b))**: `color-focus` and `color-current` are both `accent-strong`. With the
 bar at `inset-inline-start: 0` it occupied 1 to 4 px inside the border edge (0 to 3 px on a flush row), overlapping
@@ -782,7 +790,10 @@ elements set these system colours explicitly (Chromium keeps author system colou
 covers the label, the title, the description, the tags, the trailing icon and the spinner (`currentColor`). On the
 row the description, tags and trailing wrappers are siblings of the inner control and inherit nothing from it (plan
 decision 30), so each wrapper sets the row's text colour itself, keyed on `:host([unavailable])` and on the mode the
-element marks on its layout wrapper (R-10 § Sibling ink); "border" and "other" are drawn by the row's hit layer:
+element marks on its layout wrapper (R-10 § Sibling ink); "border" and "other" are drawn by the row's hit layer, which
+also sets its surface to `background-color: Canvas` in every state (as `a.control` does in `controlStyles`; without it
+axe read the dark palette's text over an unknown background and reported `color-contrast`, plan decision 30's note of
+2026-11-16):
 
 | Element, state | Text | Border | Other |
 |---|---|---|---|

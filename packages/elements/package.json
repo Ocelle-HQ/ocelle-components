@@ -8,6 +8,7 @@
     "./ocelle-icon.js": "./dist/ocelle-icon.js",
     "./ocelle-brand-mark.js": "./dist/ocelle-brand-mark.js",
     "./ocelle-button.js": "./dist/ocelle-button.js",
+    "./ocelle-action-row.js": "./dist/ocelle-action-row.js",
     "./browser.js": "./dist/browser/ocelle-elements.js",
     "./custom-elements.json": "./custom-elements.json"
   },

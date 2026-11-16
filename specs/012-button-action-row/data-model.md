@@ -100,25 +100,33 @@ its mirror `data-ocelle-moved-<attribute>` (four, declared). `click()`: forwards
 Shadow structure (plan decision 30; R-01, R-10, R-12), in an open shadow root with `delegatesFocus`:
 
 ```text
-div.layout            host's single stretched grid item; position: relative; isolation: isolate;
-                      flex-wrap (row) or grid (card); padding, minimum block size; .link in link mode
+div.layout            host's single stretched grid item; position: relative; z-index: 0 (a stacking context,
+                      no isolation: isolate); flex-wrap (row) or grid (card); padding, minimum block size;
+                      .link in link mode
 ├─ (row layout) lead group: flex 1 1 auto, min-inline-size: min-content
 │  ├─ button|a.control  part "control"; the inner control; non-positioned; draws nothing itself
-│  │  ├─ span.hit       the hit layer: position: absolute; inset: 0 (against div.layout); z-index: -1;
+│  │  ├─ span.hit       the hit layer: position: absolute; inset: 0 (against div.layout); z-index: 0;
 │  │  │  │              surface, border (default row), focus ring (.control:focus-visible .hit),
-│  │  │  │              hover surface and border, forced-colours border and outlines
+│  │  │  │              hover surface and border, forced-colours surface (background-color: Canvas),
+│  │  │  │              border and outlines
 │  │  │  └─ span.bar    the current bar, only while current is set (position: absolute, in the inline padding)
-│  │  ├─ span.icon-slot  slot "icon" (hidden when empty)
-│  │  └─ span[part=title]  default slot; overflow-wrap: anywhere
-│  └─ span[part=description]  slot "description"; aria-hidden="true"; pointer-events: none; own ink; hidden when empty
+│  │  ├─ span.icon-slot  slot "icon" (hidden when empty); position: relative; z-index: 1
+│  │  └─ span[part=title]  default slot; overflow-wrap: anywhere; position: relative; z-index: 1
+│  └─ span[part=description]  slot "description"; aria-hidden="true"; pointer-events: none; own ink;
+│                             hidden when empty; position: relative; z-index: 1
 └─ (row layout) end group: flex 0 0 auto, wraps as a whole
-   ├─ span[part=tags]     slot "tags"; aria-hidden="true"; pointer-events: none; own ink; hidden when empty
-   └─ span.trailing       slot "trailing"; aria-hidden="true"; pointer-events: none; own ink; hidden when empty
+   ├─ span[part=tags]     slot "tags"; aria-hidden="true"; pointer-events: none; own ink; hidden when empty;
+   │                      position: relative; z-index: 1
+   └─ span.trailing       slot "trailing"; aria-hidden="true"; pointer-events: none; own ink; hidden when empty;
+                          position: relative; z-index: 1
 ```
 
 In card layout the same elements are placed by the wrapper's grid (the inner control with the trailing wrapper at the
 end of the title line, then the description, then the tags); the two group elements take `display: contents` there.
-The hit layer paints beneath the title and every sibling (they paint over its surface) and is the topmost hit target
+The hit layer paints beneath the icon, the title and every sibling (they are at `z-index: 1` over its `z-index: 0` in
+`div.layout`'s stacking context, so they paint over its surface and axe's element stack puts their text on top; a
+layer at `z-index: -1` drew a serious axe `color-contrast` incomplete result, `bgOverlap`, on every title,
+description and tag text in the phase 5 spike, plan decision 30's note of 2026-11-16) and is the topmost hit target
 at every point of `div.layout` outside the icon and the title, because the siblings take no pointer events; so every
 click on the row's content box has the inner control in its composed path (US4-15). The ring's inline bands and the
 bar lie in the wrapper's inline padding, which no sibling or title box enters (R-10, R-12).

@@ -44,7 +44,8 @@ nothing loads from a CDN, and two new merge checks (Contrast, Brand rules) keep 
     `--ocelle-gutter`
   - shape: `--ocelle-radius-1`, `--ocelle-radius-2`, `--ocelle-radius-row`, `--ocelle-radius-shell`,
     `--ocelle-radius-pill`, `--ocelle-border-width`, `--ocelle-focus-width`, `--ocelle-focus-offset`,
-    `--ocelle-bar-width`, `--ocelle-ring-step`
+    `--ocelle-bar-width`, `--ocelle-ring-step`, and for the inside focus ring of `ocelle-action-row` (012)
+    `--ocelle-focus-offset-inset` (`calc(-1 * (var(--ocelle-focus-offset) + var(--ocelle-focus-width)))`, -5 px)
   - size: `--ocelle-target-min`, `--ocelle-icon-size`, `--ocelle-size-dot`, `--ocelle-size-step`,
     `--ocelle-size-avatar`, `--ocelle-size-rail-item`, `--ocelle-size-visually-hidden`
   - shell: `--ocelle-shell-topbar-height`, `--ocelle-shell-rail-width`, `--ocelle-shell-sidebar-width`,
@@ -62,4 +63,5 @@ nothing loads from a CDN, and two new merge checks (Contrast, Brand rules) keep 
   overridden), `--ocelle-color-accent-hover` (a primary control's hover fill), `--ocelle-color-active-bg` (the pressed
   surface of a secondary, quiet or flush control) and `--ocelle-color-chrome-active` (the pressed surface on the
   chrome grounds); their contrast pairs, and `color-accent-strong` declared on every main and chrome ground, join the
-  contrast check.
+  contrast check. `--ocelle-color-ink-soft` is declared on the five state grounds too, for the description and
+  tags of `ocelle-action-row` (012).
