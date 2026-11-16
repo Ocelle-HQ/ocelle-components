@@ -1,0 +1,186 @@
+Chromium 153.0.8010.12
+
+=== A1 dl>slot / fact dt+dd (fact host default display:inline)
+        heading "Facts"
+          StaticText "Facts"
+        generic
+          DescriptionList
+            [ignored] none (uninteresting)
+              term "Owner"
+                StaticText "Owner"
+              definition
+                StaticText "Ada"
+            [ignored] none (uninteresting)
+              term "A considerably longer label"
+                StaticText "A considerably longer label"
+              definition
+                [ignored] none (uninteresting)
+                  StaticText "abc-123"
+layout {"terms":["x=8 w=67 y=80","x=91 w=517 y=80"],"defs":["x=48 w=27 y=98","x=131 w=477 y=98"]}
+axe focused violations: definition-list(serious,1) [["ocelle-facts","dl"]]; dlitem(serious,4) [["ocelle-fact[label=\"Owner\"]","dt"]] [["ocelle-fact[label=\"Owner\"]","dd"]] [["ocelle-fact[label=\"A considerably longer label\"]","dt"]]
+axe focused passes: 
+axe full serious/critical: definition-list(serious,1); dlitem(serious,4)
+axe full minor/moderate: none
+
+=== A1c dl>slot / fact dt+dd, fact :host{display:contents} (grid on shadow dl)
+        heading "Facts"
+          StaticText "Facts"
+        generic
+          [ignored] none (uninteresting)
+            DescriptionList
+              [ignored] none (uninteresting)
+                term "Owner"
+                  StaticText "Owner"
+                definition
+                  StaticText "Ada"
+              [ignored] none (uninteresting)
+                term "A considerably longer label"
+                  StaticText "A considerably longer label"
+                definition
+                  [ignored] none (uninteresting)
+                    StaticText "abc-123"
+layout {"terms":["x=8 w=176 y=80","x=8 w=176 y=98"],"defs":["x=200 w=408 y=80","x=200 w=408 y=98"]}
+axe focused violations: definition-list(serious,1) [["ocelle-facts","dl"]]; dlitem(serious,4) [["ocelle-fact[label=\"Owner\"]","dt"]] [["ocelle-fact[label=\"Owner\"]","dd"]] [["ocelle-fact[label=\"A considerably longer label\"]","dt"]]
+axe focused passes: 
+axe full serious/critical: definition-list(serious,1); dlitem(serious,4)
+axe full minor/moderate: none
+
+=== A1s dl>slot / fact dt+dd, fact subgrid
+        heading "Facts"
+          StaticText "Facts"
+        generic
+          [ignored] none (uninteresting)
+            DescriptionList
+              [ignored] none (uninteresting)
+                term "Owner"
+                  StaticText "Owner"
+                definition
+                  StaticText "Ada"
+              [ignored] none (uninteresting)
+                term "A considerably longer label"
+                  StaticText "A considerably longer label"
+                definition
+                  [ignored] none (uninteresting)
+                    StaticText "abc-123"
+layout {"terms":["x=8 w=176 y=80","x=8 w=176 y=98"],"defs":["x=200 w=408 y=80","x=200 w=408 y=98"]}
+axe focused violations: definition-list(serious,1) [["ocelle-facts","dl"]]; dlitem(serious,4) [["ocelle-fact[label=\"Owner\"]","dt"]] [["ocelle-fact[label=\"Owner\"]","dd"]] [["ocelle-fact[label=\"A considerably longer label\"]","dt"]]
+axe focused passes: 
+axe full serious/critical: definition-list(serious,1); dlitem(serious,4)
+axe full minor/moderate: none
+
+=== A2a facts shadow <div> (no role) / fact role=term + role=definition, display:contents
+        heading "Facts"
+          StaticText "Facts"
+        generic
+          [ignored] none (uninteresting)
+            [ignored] none (uninteresting)
+              [ignored] none (uninteresting)
+                term "Owner"
+                  StaticText "Owner"
+                definition
+                  StaticText "Ada"
+              [ignored] none (uninteresting)
+                term "A considerably longer label"
+                  StaticText "A considerably longer label"
+                definition
+                  [ignored] none (uninteresting)
+                    StaticText "abc-123"
+layout {"terms":["x=8 w=176 y=80","x=8 w=176 y=98"],"defs":["x=200 w=408 y=80","x=200 w=408 y=98"]}
+axe focused violations: none
+axe focused passes: aria-allowed-role,aria-roles
+axe full serious/critical: none
+axe full minor/moderate: none
+
+=== A2b facts internals.role=list / fact internals.role=listitem, shadow role=term + role=definition, subgrid
+        heading "Facts"
+          StaticText "Facts"
+        generic
+          list
+            [ignored] none (uninteresting)
+              listitem
+                term "Owner"
+                  StaticText "Owner"
+                definition
+                  StaticText "Ada"
+              listitem
+                term "A considerably longer label"
+                  StaticText "A considerably longer label"
+                definition
+                  [ignored] none (uninteresting)
+                    StaticText "abc-123"
+layout {"terms":["x=8 w=176 y=80","x=8 w=176 y=98"],"defs":["x=200 w=408 y=80","x=200 w=408 y=98"]}
+axe focused violations: none
+axe focused passes: aria-allowed-role,aria-roles
+axe full serious/critical: none
+axe full minor/moderate: none
+
+=== A2c facts internals.role=associationlist (ARIA 1.3 draft) / fact internals.role=associationlistitemkey? -> shadow role=associationlistitemkey/value
+        heading "Facts"
+          StaticText "Facts"
+        generic
+          [ignored] none (uninteresting)
+            [ignored] none (uninteresting)
+              [ignored] none (uninteresting)
+                generic
+                  StaticText "Owner"
+                generic
+                  StaticText "Ada"
+              [ignored] none (uninteresting)
+                generic
+                  StaticText "A considerably longer label"
+                generic
+                  [ignored] none (uninteresting)
+                    StaticText "abc-123"
+layout {"terms":["x=8 w=176 y=80","x=8 w=176 y=98"],"defs":["x=200 w=408 y=80","x=200 w=408 y=98"]}
+axe focused violations: aria-roles(critical,4) [["ocelle-fact[label=\"Owner\"]","div[role=\"associationlistitemkey\"]"]] [["ocelle-fact[label=\"Owner\"]","div[role=\"associationlistitemvalue\"]"]] [["ocelle-fact[label=\"A considerably longer label\"]","div[role=\"associationlistitemkey\"]"]]
+axe focused passes: 
+axe full serious/critical: aria-roles(critical,4)
+axe full minor/moderate: none
+
+=== A3 dl>slot / fact dt+dd, fact display:contents + internals.role=none
+        heading "Facts"
+          StaticText "Facts"
+        generic
+          [ignored] none (uninteresting)
+            DescriptionList
+              [ignored] none (presentationalRole)
+                term "Owner"
+                  StaticText "Owner"
+                definition
+                  StaticText "Ada"
+              [ignored] none (presentationalRole)
+                term "A considerably longer label"
+                  StaticText "A considerably longer label"
+                definition
+                  [ignored] none (uninteresting)
+                    StaticText "abc-123"
+layout {"terms":["x=8 w=176 y=80","x=8 w=176 y=98"],"defs":["x=200 w=408 y=80","x=200 w=408 y=98"]}
+axe focused violations: definition-list(serious,1) [["ocelle-facts","dl"]]; dlitem(serious,4) [["ocelle-fact[label=\"Owner\"]","dt"]] [["ocelle-fact[label=\"Owner\"]","dd"]] [["ocelle-fact[label=\"A considerably longer label\"]","dt"]]
+axe focused passes: 
+axe full serious/critical: definition-list(serious,1); dlitem(serious,4)
+axe full minor/moderate: none
+
+=== A5 facts manual slot assignment: shadow <dl><dt>label</dt><dd><slot (assigned fact)></dd>...; fact shadow <slot>
+        heading "Facts"
+          StaticText "Facts"
+        generic
+          [ignored] none (uninteresting)
+            DescriptionList
+              term "Owner"
+                StaticText "Owner"
+              definition
+                [ignored] none (uninteresting)
+                  [ignored] none (uninteresting)
+                    StaticText "Ada"
+              term "A considerably longer label"
+                StaticText "A considerably longer label"
+              definition
+                [ignored] none (uninteresting)
+                  [ignored] none (uninteresting)
+                    [ignored] none (uninteresting)
+                      StaticText "abc-123"
+layout {"terms":["x=8 w=176 y=80","x=8 w=176 y=98"],"defs":["x=200 w=408 y=80","x=200 w=408 y=98"]}
+axe focused violations: none
+axe focused passes: definition-list,dlitem
+axe full serious/critical: none
+axe full minor/moderate: none

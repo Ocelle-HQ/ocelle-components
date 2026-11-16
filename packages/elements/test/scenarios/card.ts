@@ -189,7 +189,7 @@ export const cardScenarios: Scenario[] = [
       });
       await driver.mount(cards.join("") + card("plain", slotted("plain") + para("plain")) + probe);
       await driver.theme(theme);
-      for (const density of densities) await driver.setProperty(`${density}-script`, "inset", true as unknown as string);
+      for (const density of densities) await driver.setProperty(`${density}-script`, "inset", true);
       const ids = densities.flatMap((density) => ["empty", "named", "script"].map((way) => ({ density, id: `${density}-${way}` })));
       const inset = await inOrder(ids, async ({ density, id }) => ({ frame: await frame(driver, id, density, "color-inset"), flow: await flow(driver, id, density, `${id}-body`) }));
       const reflected = await Promise.all(densities.map((density) => driver.attribute(`${density}-script`, "inset")));
@@ -375,7 +375,7 @@ export const cardScenarios: Scenario[] = [
         upgraded: [await driver.attribute("bare", "density"), await driver.attribute("bare", "inset")],
       };
       await driver.setProperty("bare", "density", "compact");
-      await driver.setProperty("bare", "inset", true as unknown as string);
+      await driver.setProperty("bare", "inset", true);
       return { ...observed, reflected: [await driver.attribute("bare", "density"), await driver.attribute("bare", "inset")] };
     },
     expected: {

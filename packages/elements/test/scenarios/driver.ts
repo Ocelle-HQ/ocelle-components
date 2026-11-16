@@ -4,10 +4,10 @@
 // (test/browser/*.test.ts, the `elements-browser` project). Every method reads or acts on the page by element `id`;
 // nothing in a body depends on which harness runs it. Elements inside a shadow root are reached by a selector in the
 // element's shadow root.
-import type { ActiveElement, AxNode, ForcedColors, Palette, TextBox } from "../commands.ts";
+import type { ActiveElement, AxNode, ForcedColors, Palette, ReducedMotion, TextBox } from "../commands.ts";
 import type { Pixels } from "../pixels.ts";
 
-export type { ActiveElement, AxNode, ForcedColors, Palette, TextBox } from "../commands.ts";
+export type { ActiveElement, AxNode, ForcedColors, Palette, ReducedMotion, TextBox } from "../commands.ts";
 export type { Pixels } from "../pixels.ts";
 
 /** An element's border box, relative to the viewport, and its computed `display`. */
@@ -71,6 +71,27 @@ export interface Sheets {
   readonly styleElements: number;
 }
 
+/** One element of a shadow root's element tree: its local name and its element children (`structure`). */
+export interface TreeNode {
+  readonly name: string;
+  readonly children: readonly TreeNode[];
+}
+
+/**
+ * One current animation or transition on an element or in its shadow root (`getAnimations()`, 013 phase 3): its kind,
+ * the `part` of its target (the target's `part` attribute, `host` for the element itself, else the target's local
+ * name), the property it animates (a transition's `transitionProperty`, else the properties of its keyframes, joined
+ * by a comma), its play state, its effect's computed end time and its current time, in ms.
+ */
+export interface Running {
+  readonly kind: string;
+  readonly part: string;
+  readonly property: string;
+  readonly playState: string;
+  readonly endTime: number;
+  readonly currentTime: number | null;
+}
+
 export interface MountOptions {
   /** Links `@ocelle/styles`' `base.css` (after `tokens.css`) on the page. */
   readonly base?: boolean;
@@ -79,11 +100,16 @@ export interface MountOptions {
 export interface Driver {
   /**
    * Replaces the page's body with `markup` (no `style` attribute: the fixture's CSP would block it) and waits until
-   * every `ocelle-*` element in it has rendered. Also starts a new list of messages (`messages`).
+   * every `ocelle-*` element in it has rendered. Also starts a new list of messages (`messages`). Before it replaces
+   * the body it deletes the document's loading-episode record (`Symbol.for("ocelle.progress.sweepStart")`, 013
+   * research.md R-06), so every mount starts as a fresh page would.
    */
   mount(markup: string, options?: MountOptions): Promise<void>;
-  /** Sets a property of the element with `id` (undefined deletes the value) and waits for it to render. */
-  setProperty(id: string, name: string, value: string | undefined): Promise<void>;
+  /**
+   * Sets a property of the element with `id` (undefined deletes the value; since 013 phase 3 a number, a boolean or
+   * null may be set as well) and waits for it to render.
+   */
+  setProperty(id: string, name: string, value: string | number | boolean | null | undefined): Promise<void>;
   /** Sets an attribute of the element with `id` (null removes it) and waits for it to render. */
   setAttribute(id: string, name: string, value: string | null): Promise<void>;
   /** An attribute of the element with `id`, or null. */
@@ -169,7 +195,7 @@ export interface Driver {
   scrollWidth(): Promise<number>;
   /** Each text node under the element with `id`, its box and its clipping ancestors (test/commands.ts `readTextBoxes`). */
   textBoxes(id: string): Promise<TextBox[]>;
-  // Event recording and DOM moves of 011 research.md R-05, R-13 (phase 2).
+  // Event recording of 011 research.md R-05, R-13 (phase 2); its DOM move is `move` of the 013 additions below.
   /**
    * Starts recording every event dispatched by script (`EventTarget.prototype.dispatchEvent`, which a custom element's
    * own `dispatchEvent` calls) whose target is an element with one of `ids` or a node in the shadow tree of one, and
@@ -179,11 +205,6 @@ export interface Driver {
   listen(ids: readonly string[]): Promise<void>;
   /** Stops the recording `listen` started and returns what it recorded, as `<id>: <type>` in dispatch order. */
   heard(): Promise<string[]>;
-  /**
-   * Moves the element with `id` (the same node, not a copy) to the end of the children of the element with `parent`,
-   * and waits for every element to render.
-   */
-  move(id: string, parent: string): Promise<void>;
   // 011 User Story 4 (US4-10, contracts/checks.md: the README's orientation example run on the page).
   /**
    * Runs `code` as an ES module of the page loaded from a same-origin URL (the fixture serves it under the page's
@@ -215,6 +236,80 @@ export interface Driver {
   shadowAttribute(id: string, inner: string, name: string, value: string | null): Promise<void>;
   /** The computed value of a CSS property of the element matching `inner` in the shadow root of the element with `id`. */
   shadowComputed(id: string, inner: string, property: string): Promise<string>;
+  // The additions of 013 phase 1 (contracts/checks.md § Driver additions; tasks.md T003); 013 also uses `viewport`,
+  // `scrollWidth` and `remove` above, which 011 added too, and `move` below serves 011 phase 2 as well.
+  /**
+   * The layout-settle wait (013 research.md R-02; operator decision "(a) Defer + 2-frame wait"): waits for every
+   * `ocelle-*` element's update, then reads the border box of the element with `id` and of the first `dl` of its shadow
+   * root once per animation frame, each read after the frame's rendering (so after its `ResizeObserver` delivery), and
+   * returns the number of frames waited once two consecutive frames give the same geometry with no update pending,
+   * comparing from the second frame on; it rejects after 10 frames.
+   */
+  layout(id: string): Promise<number>;
+  /**
+   * Selects the rendered text of the element with `id` (its light-DOM content), performs a user copy (the platform's
+   * copy shortcut) and returns the `text/plain` the copy put on the clipboard, read from the `clipboardData` of a user
+   * paste into a scratch text field; the copy event's own `clipboardData` is empty while it is dispatched.
+   */
+  copy(id: string): Promise<string>;
+  /** Appends the element with `id` to the element with `parentId`, or to the body when it is null, and waits for every element to render. */
+  move(id: string, parentId: string | null): Promise<void>;
+  /**
+   * Sets the data of the first text node child of the element with `id` (a `characterData` change, not a `childList`
+   * one) and waits for every element to render.
+   */
+  text(id: string, value: string): Promise<void>;
+  /** Opens the `dialog` with `id` as a modal (`showModal()`) or the popover with `id` (`showPopover()`), and waits for every element to render. */
+  open(id: string): Promise<void>;
+  /** The border boxes of every element matching `inner` in the shadow root of the element with `id`, in tree order. */
+  boxes(id: string, inner: string): Promise<Box[]>;
+  /**
+   * The computed values of `properties` of every element matching `inner` in the shadow root of the element with `id`
+   * (of the element itself when `inner` is null), in tree order, each a record by property name.
+   */
+  styles(id: string, inner: string | null, properties: readonly string[]): Promise<Record<string, string>[]>;
+  /** The element children, as a tree, of the first element matching `inner` in the shadow root of the element with `id` (of the shadow root itself when `inner` is null); empty when there is none. */
+  structure(id: string, inner: string | null): Promise<TreeNode[]>;
+  // The additions of 013 phase 2 (contracts/checks.md § Driver additions; tasks.md T023).
+  /** Presses Tab, as a user does, and waits for every element to render. */
+  pressTab(): Promise<void>;
+  /**
+   * The focused element, followed through open shadow roots to the innermost one: its `id`, or `<local name>` when it
+   * has none; null when nothing on the page has focus (the body).
+   */
+  focused(): Promise<string | null>;
+  // The additions of 013 phase 3 (contracts/checks.md § Driver additions; tasks.md T037).
+  /** Emulates `prefers-reduced-motion: reduce`, or ends it with `"no-preference"`, and waits for every element to render. */
+  reducedMotion(mode: ReducedMotion): Promise<void>;
+  /** The current animations and transitions on the element with `id` and in its shadow root, in tree order. */
+  animations(id: string): Promise<Running[]>;
+  /** Waits `count` animation frames. */
+  frames(count: number): Promise<void>;
+  /**
+   * Replaces the element with `id` with the nodes parsed from `markup`, in one task (as an htmx swap does), and waits
+   * for every element to render.
+   */
+  replace(id: string, markup: string): Promise<void>;
+  /**
+   * Sets (or, with null, removes) the attributes `changes` of the element with `id` in order, all in one task, and then
+   * waits for every element to render (013 phase 3: a value set and removed before a frame).
+   */
+  changeAttributes(id: string, changes: readonly (readonly [string, string | null])[]): Promise<void>;
+  /** The value of the property `name` of the element with `id`, as the page holds it (013 phase 3: a converted attribute). */
+  property(id: string, name: string): Promise<unknown>;
+  /** The text content of the first element matching `inner` in the shadow root of the element with `id`, or null when there is none. */
+  textOf(id: string, inner: string): Promise<string | null>;
+  /**
+   * How the light-DOM content of the element with `id` renders: the element's `innerText`, and the number of client
+   * rects of a range over its contents (0 when none of it is rendered).
+   */
+  rendered(id: string): Promise<{ readonly innerText: string; readonly rects: number }>;
+  /**
+   * Runs `during` and returns the types of the events script dispatched (`EventTarget.prototype.dispatchEvent`, wrapped
+   * on the page for the duration of `during` and restored after it) on the element with `id`, on its shadow root or on
+   * a node in its shadow root, in order (013 phase 3 review round 1, R1-01: US3-2's "no event is emitted").
+   */
+  events(id: string, during: () => Promise<void>): Promise<string[]>;
 }
 
 /**

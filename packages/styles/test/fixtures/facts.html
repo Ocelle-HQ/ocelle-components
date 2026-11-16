@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Facts hooks and the facts rule before upgrade</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="base.css">
+</head>
+<body>
+<main id="main">
+<div id="compact" data-ocelle-density="compact">
+<p id="compact-p">Compact</p>
+<div id="regular" data-ocelle-density="regular"><p id="regular-p">Regular</p></div>
+</div>
+<p id="outside">Outside</p>
+<ocelle-facts id="sheet"><ocelle-fact id="first" label="Owner">Ada Lovelace</ocelle-fact><ocelle-fact id="second" label="Status">Running</ocelle-fact><ocelle-fact id="hidden" label="Secret" hidden>Hidden value</ocelle-fact></ocelle-facts>
+<div id="plain"><ocelle-fact id="loose" label="Loose">Not in a sheet</ocelle-fact></div>
+</main>
+</body>
+</html>

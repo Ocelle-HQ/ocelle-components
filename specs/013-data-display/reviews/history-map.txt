@@ -1,0 +1,24 @@
+# History fold phase-1 of claude/013-data-display: old commit -> new commit (pre-fold head kept as refs/ocelle/prefold/phase-1/claude/013-data-display, 4ff2c578ec273a50f44ed43289115c8d02c63575).
+eb3dff44e228640e85adf4c976ab93f2553a8d8d bf82dacf16a916a4fe4fea125bbb4265db6db642
+b244f4bdd6a23f020037df2157b3c82b60ece61d 5dbab1dc57b4e07970fa830f81c0da12ca900da0
+935ac40a02cd2590edd98ba13d649a30bffbed1f a77da1d8ef9fcb3562b67baeeacbdddb0a044bd3
+4ff2c578ec273a50f44ed43289115c8d02c63575 9fc5225dc35ea83c85185679f06ec126e0d2a71a
+
+# History fold phase-2 of claude/013-data-display: old commit -> new commit (pre-fold head kept as refs/ocelle/prefold/phase-2/claude/013-data-display, da5ca13f5b0ee86842688b9b70c88c0fbc7432dd).
+c137b573bb7a7f0f37e737dc02e49cff40e43362 3ca8df724bc87024f19c5320d72a278546230251
+03b8d24f029400e4cf67b8d81becda751889bb4e efbe7296a87a97ed72817a60ae5b4c04a2243182
+96784d395dcb83b124819f967b753948fdf8387a 07d5b6547dd09e7de43479031a457fe5f4841bf3
+da5ca13f5b0ee86842688b9b70c88c0fbc7432dd c5ceb8db0dd94e62d2730ca02d88ad239efc3206
+
+# History fold phase-3 of claude/013-data-display: old commit -> new commit (pre-fold head kept as refs/ocelle/prefold/phase-3/claude/013-data-display, e112e6a271b3b832188797a58048378e46785340).
+ce953466826a007d6270f9b40b89284584c5c7a4 7ebb87a23bb5cdc8a013c5602032d9fa855a0394
+e4589b3b2f6a05d371b421871da5d11477d6f6a6 2c013b63df265411c9beb8c206ae8f0c01d09c85
+30449fef3c5b221fa3be84539473b9f785bf36f1 466634d8615d8241dd7698200ae5ebeff4c9f373
+e7c38e3796d584a68e70cb0ab85a88766f88f40e 1c37b3b72b3945c2d94e29b56d82f4abf4c6055f
+e112e6a271b3b832188797a58048378e46785340 5118b31cfc75e812ef620cac35944610109daa95
+
+# History fold phase-4 of claude/013-data-display: old commit -> new commit (pre-fold head kept as refs/ocelle/prefold/phase-4/claude/013-data-display, 8efba6597c0de1e0e094091f3fae86fe0822f11b).
+8efba6597c0de1e0e094091f3fae86fe0822f11b 8ce9426c67515b2bceea755195192da4d1fe6205
+
+# History fold landing of claude/013-data-display: old commit -> new commit (pre-fold head kept as refs/ocelle/prefold/landing/claude/013-data-display, a61bddd7ccb2759fe82a5731beecb69ebe585e1e).
+a61bddd7ccb2759fe82a5731beecb69ebe585e1e ae8bb01192d24d719706dfe1d238ef3fcd6ea168

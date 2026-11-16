@@ -84,6 +84,13 @@ const fragments = [
   "It works in any container, inside prose and compact regions included, and keeps the size and line height of the text around it",
   "It sets no font property, so an identifier that needs tabular figures combines it with `data-ocelle-value`",
   "The identifier-wrap family uses no token: `overflow-wrap: anywhere` is a keyword",
+  // 013 phase 1: the facts value hooks of the density rules and the facts rule before upgrade (FR-008, FR-012;
+  // research.md R-03, R-07; tasks.md T009)
+  "`data-ocelle-density=\"compact\"` also sets the value hooks of `ocelle-facts`: `--ocelle-facts-value-size` to `--ocelle-font-size-sm` and `--ocelle-facts-value-line-height` to `--ocelle-line-height-compact`, so fact values inside the region take the compact scale",
+  "`data-ocelle-density=\"regular\"` sets them back to `--ocelle-font-size-fact` and `--ocelle-line-height-normal`",
+  "Before the elements are defined, `base.css` shows each `ocelle-fact` child of an undefined `ocelle-facts` as a block, one value per line: `:where(ocelle-facts:not(:defined) > ocelle-fact:not([hidden])) { display: block; }`",
+  "The whole selector is inside `:where()`, so its specificity is (0,0,0) and any page rule overrides it, and a fact with `hidden` keeps the user-agent `display: none`",
+  "Labels are attributes, so they appear only once the elements are defined",
 ];
 
 /** The hook table of the README (FR-004): each hook's attribute, its values and its family, exactly. */
@@ -148,6 +155,10 @@ describe("packages/styles/CHANGELOG.md", () => {
 
   it("names the data-ocelle-prose hook under Unreleased / Added (constitution VII, FR-004)", () => {
     expect(added).toMatch(/^- `data-ocelle-prose`/m);
+  });
+
+  it("names the facts value hooks and the facts rule before upgrade under Unreleased / Added (013 R-07, constitution VII)", () => {
+    expect({ hooks: /^- The `ocelle-facts` value hooks/m.test(added), upgrade: /^- `ocelle-facts` before upgrade/m.test(added) }).toEqual({ hooks: true, upgrade: true });
   });
 
   it("names the data-ocelle-wrap hook under Unreleased / Added, so each of the four hooks is named (constitution VII, FR-004)", () => {

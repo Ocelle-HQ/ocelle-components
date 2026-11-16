@@ -1,9 +1,11 @@
 # @ocelle/elements
 
 The Ocelle web components: standards-based custom elements (Lit 3) that work in any page, a server-rendered page
-under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has seven elements:
-`ocelle-icon`, with a set of thirteen icons, `ocelle-brand-mark`, the Ocelle rosette, and the layout elements
-`ocelle-section-header`, `ocelle-card`, `ocelle-page-header`, `ocelle-context-sidebar` and `ocelle-personal-rail`.
+under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has eleven elements:
+`ocelle-icon`, with a set of thirteen icons, `ocelle-brand-mark`, the Ocelle rosette, the layout elements
+`ocelle-section-header`, `ocelle-card`, `ocelle-page-header`, `ocelle-context-sidebar` and `ocelle-personal-rail`,
+`ocelle-facts` with its item `ocelle-fact`, a label and value sheet, `ocelle-empty-state`, an empty or loading panel,
+and `ocelle-progress`, a progress bar.
 
 ## Entry points
 
@@ -17,6 +19,10 @@ under a strict Content Security Policy, a Svelte shell or a desktop webview. Thi
 | `@ocelle/elements/ocelle-page-header.js` | `dist/ocelle-page-header.js` | `ocelle-page-header` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-context-sidebar.js` | `dist/ocelle-context-sidebar.js` | `ocelle-context-sidebar` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-personal-rail.js` | `dist/ocelle-personal-rail.js` | `ocelle-personal-rail` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-facts.js` | `dist/ocelle-facts.js` | `ocelle-facts` and its item `ocelle-fact`; for hosts with a bundler |
+| `@ocelle/elements/ocelle-fact.js` | `dist/ocelle-fact.js` | `ocelle-fact` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-empty-state.js` | `dist/ocelle-empty-state.js` | `ocelle-empty-state` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-progress.js` | `dist/ocelle-progress.js` | `ocelle-progress` only; for hosts with a bundler |
 | `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |
 | `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |
 
@@ -40,7 +46,8 @@ map:
 <ocelle-icon name="close"></ocelle-icon>
 ```
 
-An element written in the HTML before the script loads upgrades when it does; until then its box is empty. A page under
+An element written in the HTML before the script loads upgrades when it does; until then an element without
+light-DOM content has an empty box, and one with light-DOM content shows that content as plain inline text. A page under
 `script-src 'self'` cannot load the module build directly: nothing can map its bare `lit` import there (an inline
 import map is an inline script). Both builds run under `default-src 'none'; script-src 'self'; style-src 'self'` with
 no exception: no inline script, no inline style, no `eval`, no network request.
@@ -474,6 +481,263 @@ In forced colours the rail's divider is drawn in a system colour, and a horizont
 `ocelle-personal-rail` has no event, CSS part or CSS custom property and adds no tab stop. The host itself is its one
 navigation landmark, with no other landmark inside it.
 
+## `ocelle-facts`
+
+```html
+<ocelle-facts>
+  <ocelle-fact label="Owner">Ada Lovelace</ocelle-fact>
+  <ocelle-fact label="Status">Running</ocelle-fact>
+  <ocelle-fact label="Mission id" wrap="anywhere">01JD8Y4K3QW7E5V0R2T9N6M1XC</ocelle-fact>
+</ocelle-facts>
+```
+
+`ocelle-facts` shows label and value pairs as one description list: each pair is an `ocelle-fact` child, its label the
+`label` attribute and its value the fact's content, which the sheet never copies or rewrites. A screen reader hears each
+label with its value. A fact with no label keeps an empty label box and an empty term; a fact with no content keeps an
+empty value box and an empty definition.
+
+**Layout.** With `layout` unset the sheet is two columns while its own inline size, as laid out in two columns, is at
+least `--ocelle-facts-stack-below`, and one column, each value below its label, below it. In two columns the label
+column is as wide as the widest label, up to half the sheet, and longer labels wrap inside it; the value column takes
+the rest and its content never widens it. `--ocelle-facts-stack-below` takes an absolute length; a percentage, 0 or an
+invalid value falls back to the default, `calc(var(--ocelle-space-10) * 6)` (24rem). Set it on the sheet or an
+ancestor. `layout="columns"` keeps two columns and `layout="stacked"` one column at any size; any other value acts as
+unset. In a shrink-to-fit host (a dialog, a popover, a float, a flex item) the two-column size is the content's own, so
+a sheet with short content stacks even where the host has room: set `layout` or give the sheet an inline size. The
+sheet re-decides when it is resized, when the threshold changes, when its pairs or their content change (value text
+included) and when the window is resized. After a resize the old layout can show for one frame. It does not observe
+every change of the space it is offered: in a consumer's CSS grid `auto` track whose neighbour can be removed, the
+layout may stay as it was; set `layout` or give the sheet an inline size there (for `layout="grid"`, an inline size).
+
+**Grid.** `layout="grid"` shows each pair as a cell, its label above its value: four columns from twice
+`--ocelle-facts-stack-below`, two from it, one below it, as one description list. The cells have equal widths and fill
+each row from the inline start; a row may end with empty columns. In a shrink-to-fit host a grid sheet is four tracks
+wide, each as wide as its widest cell: give it an inline size there. Set `wrap="anywhere"` on machine values in a grid
+cell. The sheet paints no ground, divider or border; the surface is the container's.
+
+**Children.** Only `ocelle-fact` children are pairs: other children, and facts with `hidden` or `aria-hidden="true"`,
+are neither shown nor exposed; `lang` and `dir` on a fact apply to its label. A link or a button in a value keeps its
+own tab stop and focus ring; the sheet adds none.
+
+**Values.** `wrap="anywhere"` on a fact breaks a long identifier in its value anywhere; the label keeps word wrapping,
+and copying gives the value unchanged. A value element with `data-ocelle-wrap="anywhere"` of `@ocelle/styles` does the
+same. In every layout an unbroken value without `wrap="anywhere"` can overflow its value box or cell, so machine values
+take `wrap="anywhere"`. The sheet never truncates a value: `break-word`, break-anywhere and an ellipsis all map to
+`wrap="anywhere"`, with the full value shown. Digests are the consumer's text: the sheet does not group or rewrite
+them.
+
+**Density.** `density="compact"` tightens the row gap and changes no type; in a `data-ocelle-density="compact"` region
+of `@ocelle/styles` the values take the region's size and line height through `--ocelle-facts-value-size` and
+`--ocelle-facts-value-line-height`. A nested `regular` region returns them to the default.
+
+**Restyling.** Do not set `grid-template-columns` through `ocelle-facts::part(list)`: it overrides every layout. In a
+consumer's CSS grid, set `min-inline-size: 0` on the `ocelle-facts` host, so a long value cannot widen the track.
+Labels are at weight 500 (`--ocelle-font-weight-medium`); `ocelle-facts::part(label)` sets another weight.
+
+**Before upgrade.** Before the elements are defined, `@ocelle/styles` shows each value on its own line and a hidden
+fact stays hidden; labels appear only after upgrade.
+
+**Tokens.** `ocelle-facts` reads the tokens `--ocelle-font-sans`, `--ocelle-font-size-sm`, `--ocelle-font-size-fact`,
+`--ocelle-font-weight-medium`, `--ocelle-font-weight-regular`, `--ocelle-color-ink`, `--ocelle-color-ink-muted`,
+`--ocelle-figures`, `--ocelle-line-height-normal`, `--ocelle-space-1`, `--ocelle-space-3`, `--ocelle-space-4` and
+`--ocelle-space-10`.
+
+`ocelle-fact` outside `ocelle-facts` shows its label above its value as plain text, with no term or definition.
+
+## `ocelle-empty-state`
+
+```html
+<ocelle-empty-state variant="panel">
+  <ocelle-icon slot="visual" name="folder"></ocelle-icon>
+  <h2 slot="heading">No missions yet</h2>
+  <p>Missions you create appear here.</p>
+  <button slot="actions" type="button">Create mission</button>
+</ocelle-empty-state>
+```
+
+`ocelle-empty-state` shows an empty or loading panel: the consumer's own heading, body and actions in one centred
+column. The heading level is the consumer's: slot your own heading element in `heading`; the element has no `level`
+property and never adds a heading, landmark, live region or tab stop of its own. A slotted heading that is another
+element (a `<p>` styled as a heading) keeps its own role. The element emits no event.
+
+**Slots.** Slots: `visual` (an icon or an `ocelle-progress`, above the heading), `eyebrow` (a short line above the
+heading), `heading` (the consumer's heading element), the default slot (the body) and `actions` (buttons or links,
+which wrap when narrow); `part="body"` is the centred column, with its padding and every slot in it. The body's content
+sits in an internal wrapper inside that column, which is not a part.
+
+**Variants.** `variant="panel"` fills a list or inspector panel: block padding `--ocelle-space-10` instead of
+`--ocelle-space-6`, larger gaps between parts, and the heading at weight 500 (`--ocelle-font-weight-medium`) instead of
+600 (`--ocelle-font-weight-strong`); any other value acts as unset. The panel heading is at weight 500, lighter than
+the default's 600, following the text of spec-kitty-design#510; a heading that was bold in a consumer's card becomes
+500. The heading is at `--ocelle-font-size-lg` in `--ocelle-color-ink`, the body at `--ocelle-font-size-md` in
+`--ocelle-color-ink-muted`, its measure capped at `--ocelle-measure-reading`.
+
+**Gaps.** The first present part starts at the block padding and the last ends at it. Between two present parts the
+gap is set by the upper one: after the visual `--ocelle-space-3` (panel `--ocelle-space-5`), after the heading
+`--ocelle-space-2` (panel `--ocelle-space-3`), after the body `--ocelle-space-4` (panel `--ocelle-space-6`). A part is
+present while something slotted in it renders: an empty slot, or one holding only elements with `hidden` or only
+whitespace, takes no space and adds no gap. Hide slotted content with `hidden` or remove it: content hidden by a class
+or a style rule is not observed. The actions are `--ocelle-space-2` apart and wrap onto more rows when narrow.
+
+**Eyebrow.** The `eyebrow` slot holds a short line above the heading (a `<p>`, for example "Refused"), not a heading:
+the element shows it in `--ocelle-font-sans` at `--ocelle-font-size-xs`, weight 500, `--ocelle-color-ink-muted`, in
+upper case, and adds no role to it. The eyebrow sits `--ocelle-space-1` above a heading (panel `--ocelle-space-2`);
+with no heading it is `--ocelle-space-2` above the body or the actions (panel `--ocelle-space-3`).
+
+**Body.** The element sets the block margins of the body's elements to 0 and separates the body's children by
+`--ocelle-space-2`, in both variants: each slotted element, and each run of slotted text, is a block of its own, so
+text meant to flow as one paragraph with a link or an identifier inside it goes in one `<p>`. A page rule that sets
+margins on the slotted body content wins over the reset. Give a long path or identifier in the body
+`data-ocelle-wrap="anywhere"` of `@ocelle/styles`.
+
+**Cascade.** The element styles slotted content through `::slotted()`, which beats the user-agent styles but not a
+page's own rules: a page rule on the slotted heading, eyebrow or body content wins, by design, since the consumer owns
+its content.
+
+**Progress and loading.** An `ocelle-progress` in `visual` spans the column, up to `--ocelle-measure-reading`, in both
+variants; an icon stays centred. The loading panel is `variant="panel"` with an indeterminate `ocelle-progress` in
+`visual`. A screen that moves focus to a loading block slots its own `<h2 tabindex="-1">` in `heading`, with the bar in
+`visual`, and focuses the heading; do not put a `role` or `tabindex` on the `ocelle-progress` host.
+
+**Ground.** Neither variant paints a ground, a border or a busy look: the element sits on its container's ground. A
+card around it (fill, radius, padding, a dashed or busy-keyed border) is the consumer's own; the dashed refusal card
+belongs to the panel-paint family of spec-kitty-design#509, not to this element. In forced colours the heading and the
+body take the system text colour.
+
+**Tokens.** `ocelle-empty-state` reads the tokens `--ocelle-font-sans`, `--ocelle-font-size-xs`, `--ocelle-font-size-md`,
+`--ocelle-font-size-lg`, `--ocelle-font-weight-medium`, `--ocelle-font-weight-strong`, `--ocelle-color-ink`,
+`--ocelle-color-ink-muted`, `--ocelle-measure-reading`, `--ocelle-space-1`, `--ocelle-space-2`, `--ocelle-space-3`,
+`--ocelle-space-4`, `--ocelle-space-5`, `--ocelle-space-6` and `--ocelle-space-10`.
+
+## `ocelle-progress`
+
+```html
+<ocelle-progress value="7" max="12" label="Tasks done"></ocelle-progress>
+<ocelle-progress label="Loading plan"></ocelle-progress>
+```
+
+`ocelle-progress` is a progress bar: with a `value` it is determinate, its fill growing from the inline start (the
+right under `dir="rtl"`); without one it is indeterminate. The determinate bar is for work with a known amount, and
+the indeterminate bar for loading a region, or running work, with no known end; for a state, such as a row that is
+running, use `ocelle-status-indicator`. `ocelle-progress` emits no event and adds no tab stop.
+
+**Naming.** Name every bar: set `label`, the accessible name, as text. A host `aria-label` also names it and overrides
+`label`, but makes axe report a false `aria-prohibited-attr` in your own audit; prefer `label`. To name a bar after a
+nearby heading, pass the heading's text as `label`; the element takes no ID reference. A bar with neither `label` nor
+a host `aria-label` has no name: that is a consumer error, which the element does not correct. axe does not check the
+bar's name, since it does not read the element's internals: check the name in your own tests. The label is text only:
+there is no slot for a rich label.
+
+**Host.** The host is the progressbar: a `role` on it replaces the progressbar and a `tabindex` makes it a tab stop, so
+set neither. For a loading block that takes focus, put your own `<h2 tabindex="-1">` in an `ocelle-empty-state`'s
+`heading` slot, with the bar in `visual`. The host is a block and fills its container's inline size. To place a bar
+inside a line of text, set its `display` (for example `inline-block`) and an inline size from outside. The element has
+no slot: text inside it (a "7/12" fallback) shows only before the element is defined, and after that it is neither
+shown nor exposed; the bar keeps its own name and value.
+
+**Values.** `max` defaults to 100; a `max` that is not a number above 0 counts as 100. A `value` below 0 is shown and
+exposed as 0, and above `max` as `max`. An unset, empty or whitespace-only `value`, a `value` that is not a finite
+number, and the property set to `null` or `undefined` make the bar indeterminate: no current value is exposed.
+`value-text` gives the words for the current value (for example "7 of 12"): it is exposed while the bar is
+determinate, kept as given when the value is clamped, and not used while the bar is indeterminate. Without it the
+platform announces the value itself; the element formats no number. The library's tests do not verify the value
+text's exposure to assistive technology: no read a test can make in Chromium reports it. They check the visible value
+text, and the bar's name and value in the accessibility tree.
+
+**Label.** `show-label` shows the label as text above the bar, or beside it with `size="compact"`, with the value text
+when the bar is determinate; both use tabular figures and are hidden from assistive technology, which reads the name
+and value from the bar itself. The value text sits at the inline end of the label row: at the default size the row is
+above the bar, the label at its inline start; in compact the row holds the label, the bar and the value text, in that
+order. A long label wraps between words, and the bar keeps at least `--ocelle-measure-cell`.
+
+**Sizes.** The track is `--ocelle-space-2` high, and `--ocelle-space-1` with `size="compact"`; any other value acts as
+unset.
+
+**Motion.** The indeterminate bar's mark sweeps across the track three times, 4.2 s in all at the default tokens, and
+then rests as the still mark, a partial fill in the middle of the track, with nothing running: the motion ends by
+itself in less than 5 s (WCAG 2.2.2). The sweep lasts `--ocelle-motion-base` × 21 in all: overriding
+`--ocelle-motion-base` above 238 ms takes it past 5 s. There is one sweep per loading episode: a bar inserted, replaced
+in one task, re-shown or made indeterminate again while the episode lasts continues the episode's sweep, and after the
+sweep has ended shows the still mark at once. The episode ends when no indeterminate bar is on the page at a frame; the
+next indeterminate bar starts a new episode with its own sweep. Keep one bar, or swap it in one task, across one
+continuous wait: a bar removed and inserted again a frame or more later starts a new sweep. Under
+`prefers-reduced-motion: reduce` nothing runs on the bar and the still mark shows at once. The fill has no transition:
+its inline size changes at once with each value.
+
+**Colour.** The fill is `--ocelle-color-accent` with an `--ocelle-color-accent-strong` edge on every side, so the
+filled part is never marked by ochre alone; the track is `--ocelle-color-inset` and clips the mark.
+`ground="tinted"` draws the track's boundary in `--ocelle-color-accent-strong`: use it for a bar on `color-inset`,
+`color-accent-low`, `color-hover-bg` or a state ground, and in a row that can be hovered or selected. Unset, the
+boundary is `--ocelle-color-control-border`, for `color-canvas`, `color-sheet`, `color-pane`, `color-panel`,
+`color-inspector` and `color-rail`. Any other value of `ground` acts as unset. In forced colours the track has a
+system-colour outline and the fill is `Highlight`.
+
+**Tokens.** `ocelle-progress` reads the tokens `--ocelle-color-accent`, `--ocelle-color-accent-strong`,
+`--ocelle-color-inset`, `--ocelle-color-control-border`, `--ocelle-color-ink`, `--ocelle-color-ink-muted`,
+`--ocelle-font-size-sm`, `--ocelle-figures`, `--ocelle-space-1`, `--ocelle-space-2`, `--ocelle-radius-1`,
+`--ocelle-border-width`, `--ocelle-measure-cell`, `--ocelle-motion-base` and `--ocelle-easing-standard`.
+
+## Mapping from kitty-mission-ui
+
+Each `.sk-facts`, `.sk-empty-state` and `.sk-progress` modifier and state that kitty-mission-ui uses, by role, with the
+element and variant that replaces it, or the consumer's own remedy.
+
+| Class family | Role | Element and variant |
+|---|---|---|
+| `.sk-facts` | facts stacked | `ocelle-facts` with `layout` unset (it stacks below the threshold) or `layout="stacked"`; in a consumer's CSS grid, `min-inline-size: 0` on the host |
+| `.sk-facts` | facts two-col | `ocelle-facts` with `layout="columns"`, or unset at or above the threshold; drop the track override and do not restyle the columns through `::part(list)` |
+| `.sk-facts` | facts compact | `ocelle-facts density="compact"` |
+| `.sk-facts` | facts term | `ocelle-fact`'s `label`, rendered as the sheet's term (`part="label"`) |
+| `.sk-facts` | facts term regular | consumer's: `ocelle-facts::part(label)` with `font-weight: var(--ocelle-font-weight-regular)` |
+| `.sk-facts` | facts value mono | not supported: no monospace; values are sans with tabular figures, the small size through `--ocelle-facts-value-size` or a compact region |
+| `.sk-facts` | facts value wrap | `ocelle-fact wrap="anywhere"` |
+| `.sk-facts` | facts value ellipsis | `ocelle-fact wrap="anywhere"`, with the full value shown (no truncation) |
+| `.sk-facts` | facts value identifier | `ocelle-fact wrap="anywhere"`, or a value element with `data-ocelle-wrap="anywhere"` |
+| `.sk-facts` | facts value tooltip | consumer's: a `title` on its own value content, optional with the full value shown |
+| `.sk-facts` | facts value pill | consumer's: pills are inline content in the fact's value |
+| `.sk-facts` | facts value action | consumer's: a button in the value keeps its own tab stop |
+| `.sk-facts` | facts row optional | consumer's: leave the `ocelle-fact` out or set `hidden` on it |
+| `.sk-facts` | facts group heading | consumer's: the heading stays outside the sheet |
+| `.sk-facts` | facts group omitted | consumer's: leave the sheet out or render an `ocelle-empty-state`; a sheet with no pairs renders nothing |
+| `.sk-facts` | facts workspace marker | consumer's: a `data-*` attribute on the `ocelle-facts` host |
+| `.sk-empty-state` | empty-state panel | `ocelle-empty-state variant="panel"`, the heading at 500 and the larger rhythm, with no chrome of its own; the state wrapper and its `aria-busy` stay the consumer's |
+| `.sk-empty-state` | empty-state regional | `ocelle-empty-state`, default variant, with only the default slot |
+| `.sk-empty-state` | empty-state refusal | `ocelle-empty-state` with the eyebrow in the `eyebrow` slot, an `<h1>` in `heading`, the sentence and the path (with `data-ocelle-wrap="anywhere"`) in the body, and an action; the dashed card is not this element's |
+| `.sk-empty-state` | empty-state heading h1 | the consumer's `<h1>` in the `heading` slot |
+| `.sk-empty-state` | empty-state heading h2 | the consumer's `<h2>` in the `heading` slot |
+| `.sk-empty-state` | empty-state heading paragraph | the consumer's `<p>` in the `heading` slot; a bar named by it takes its text as `label` |
+| `.sk-empty-state` | empty-state no heading | the `heading` slot left empty: a loading panel with `ocelle-progress` in `visual`, or a body-only notice |
+| `.sk-empty-state` | empty-state body multiple | both paragraphs in the default slot: their margins are reset and they are `--ocelle-space-2` apart |
+| `.sk-empty-state` | empty-state body optional | the default slot filled or left empty |
+| `.sk-empty-state` | empty-state action | the `actions` slot; the element gives the gap above it, so drop the consumer's own top margin |
+| `.sk-empty-state` | empty-state action wrapper | the `actions` slot |
+| `.sk-empty-state` | empty-state inline | not this mission: no left-aligned inline variant |
+| `.sk-empty-state` | empty-state busy | an indeterminate `ocelle-progress size="compact"` in `visual`; `aria-busy` stays on the consumer's wrapper, and a busy look is the consumer's card |
+| `.sk-empty-state` | empty-state message | consumer's: its own dashed card around an `ocelle-empty-state` (default variant) |
+| `.sk-empty-state` | empty-state card | consumer's: its own card (fill, radius, inline padding, busy-keyed border) around `ocelle-empty-state variant="panel"`, whose heading is at 500 |
+| `.sk-empty-state` | empty-state card dashed | not this mission: panel and card paint, spec-kitty-design#509 |
+| `.sk-empty-state` | empty-state ops card | consumer's: as the card, its own card around the element, the heading at the element's weight |
+| `.sk-empty-state` | empty-state identifier | consumer's: the value in the body with `data-ocelle-wrap="anywhere"` and its own `title`; no monospace |
+| `.sk-empty-state` | empty-state focus target | consumer's: `tabindex="-1"` on its slotted heading; for a loading block, its `<h2 tabindex="-1">` in `heading` with the bar in `visual` |
+| `.sk-progress` | progress default | `ocelle-progress` with `value`, `max`, `label` and `show-label` |
+| `.sk-progress` | progress narrow | `ocelle-progress`; the track fills the host's inline size |
+| `.sk-progress` | progress compact | `ocelle-progress size="compact"` |
+| `.sk-progress` | progress indeterminate | `ocelle-progress` with no `value` |
+| `.sk-progress` | progress determinate | `ocelle-progress` with `value` and `max` |
+| `.sk-progress` | progress meta | `value-text` with `show-label`, the consumer passing the formatted percentage (the element formats no number), at the inline end of the label row |
+| `.sk-progress` | progress external text | `value-text` with `show-label`, or the consumer's own text beside the element |
+| `.sk-progress` | progress label | `ocelle-progress` with `label` and `show-label`; the label is text only, with no slot |
+| `.sk-progress` | progress labelled by heading | consumer's: the heading's text passed as `label`, with no ID reference |
+| `.sk-progress` | progress aria-label | `label` without `show-label`, or a host `aria-label` |
+| `.sk-progress` | progress fallback text | consumer's: the element draws the bar itself; text inside it shows only before upgrade and is neither shown nor exposed after it |
+| `.sk-progress` | progress heading | consumer's: its own `<h2 tabindex="-1">` in an `ocelle-empty-state`'s `heading` slot with the bar in `visual`; no `role` or `tabindex` on the host |
+| `.sk-progress` | progress inline | `ocelle-progress`, a block host given `display: inline-block` and an inline size by the consumer |
+| `.sk-progress` | progress in empty-state | `ocelle-empty-state`'s `visual` slot |
+| `.sk-progress` | progress in busy region | `ocelle-progress` placed directly; `aria-busy` stays on the consumer's region |
+| `.sk-progress` | progress slotted | `ocelle-progress` in another element's slot; nothing is needed from the element |
+| `.sk-progress` | progress grid layout | `ocelle-progress` with `show-label` at the default size: the label at the inline start and the value text at the inline end of the row above the bar, which spans the full width below; the consumer no longer places the parts |
+| `.sk-progress` | progress centred | `ocelle-empty-state`'s `visual` slot, which centres the bar and spans it up to the reading measure |
+
 ## Slot convention
 
 A control that shows icons follows one slot convention: an `icon` slot before its label and, where it has an end icon
@@ -563,7 +827,9 @@ newest feature the elements use:
 - The `lh` unit: Chromium 109 (the slot convention);
 - The `scale` property: Chromium 104 (the mirroring);
 - Constructable stylesheets (`adoptedStyleSheets`): Chromium 73, WebKit 16.4 (every element's styles; below it Lit
-  falls back to `<style>` elements, which the strict CSP blocks).
+  falls back to `<style>` elements, which the strict CSP blocks);
+- Manual slot assignment (`slotAssignment: "manual"`, `HTMLSlotElement.assign()`): Chromium 86, WebKit 16.4
+  (`ocelle-facts`). The floor does not change.
 
 An element that uses a feature newer than the floor raises the floor in this section, the one list of the floor
 features, and records the feature in its own feature's research.
@@ -577,8 +843,8 @@ Every element of this library is written the same way, so a later element follow
 question.
 
 **Module and registration.** Each element lives in its own module, `src/<tag>.ts`, which ends with one
-`define("<tag>", <Class>)` call: importing the module defines that element and no other, and importing the package root
-defines every element. `define` (`src/define.ts`, internal) defines a tag only while it is free: a second definition of
+`define("<tag>", <Class>)` call: importing the module defines that element and no other, except that a container module
+also imports its item element, and importing the package root defines every element. `define` (`src/define.ts`, internal) defines a tag only while it is free: a second definition of
 the same tag does nothing and throws nothing. The module exports the class and declares it in
 `HTMLElementTagNameMap`; `src/index.ts` re-exports it.
 
@@ -604,6 +870,13 @@ properties, each list stated even when empty. An `--ocelle-*` token of `@ocelle/
 inheritance is not one of the element's CSS custom properties and is not in its manifest entry. This README names the
 tokens each element reads, and overriding a token is the way to change what the element takes from it. An element's
 own hook is a CSS custom property named `--ocelle-<element>-<property>`, which matches no token name.
+
+**Slotted items.** A container element renders its items' structure in its own shadow root and assigns each item
+there by manual slot assignment; its items are its direct children of one item element, and its module imports that
+item element. Other children are not shown. `ocelle-facts` and `ocelle-fact` are the first container and item.
+
+**Identifier wrap.** An element whose values can hold machine identifiers takes a `wrap` property with the one value
+`anywhere`, which sets `overflow-wrap: anywhere` on the value only, never on a label.
 
 **Stories.** Every element has a story per variant and per state in `storybook/stories/<element>.stories.ts`, in light
 and dark, and its stories pass the `csp` and `prefix` gates' Storybook checks.

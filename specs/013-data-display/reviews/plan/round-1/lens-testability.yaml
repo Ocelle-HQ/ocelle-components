@@ -1,0 +1,230 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: testability
+# What was checked: spec.md, plan.md, research.md, data-model.md, contracts/elements.md, contracts/checks.md,
+# quickstart.md, spike/RESULTS.md and spike/b-out.txt, constitution VIII; against the repository's harness
+# (packages/elements/test/in-process.ts, test/commands.ts, test/scenarios/driver.ts, test/icon.test.ts), the story
+# scripts (.specify/extensions/story/scripts/tdd-check.sh, scaffold.sh), the token generator
+# (packages/tokens/src/generate.ts) and 005's records (research.md § mutation, reviews/phase-4/round-1.md R1-03).
+# No browser probe could be run: node_modules is not installed in this container.
+findings:
+  - id: PLAN-TESTABILITY-1-001
+    severity: 3
+    title: "No scaffold is planned, so every red commit fails on a missing module, not on missing behaviour"
+    evidence:
+      - artifact: "plan.md § Phases: each phase is 'spike' then 'red' then 'green'; the words scaffold or scaffold.sh appear nowhere in plan.md, research.md or contracts/checks.md (grep)"
+      - artifact: "plan.md § Project Structure: the in-process test files test/{facts,empty-state,progress}.test.ts and entry-*.test.ts, and contracts/checks.md § Contrast: the pairing test reads the built dist/ocelle-progress.js"
+      - code: "packages/elements/test/icon.test.ts:3 imports '../src/ocelle-icon.ts' directly; the new test files will import '../src/ocelle-facts.ts' etc., which do not exist at the phase base"
+      - code: ".specify/extensions/story/scripts/scaffold.sh:3-4 'so the red tests that follow fail on their assertions, not on a missing module'; tdd-check.sh check 3 runs the final tests against the scaffold because 'against the base a missing module alone makes them fail'"
+      - code: ".specify/memory/constitution.md VIII 'the failure MUST be the missing behaviour, not a syntax, import or setup error'"
+    claim: |
+      Without a scaffold commit each phase's red run fails at import (the element module, the package entry, the
+      dist file for the pairing test). The red record then proves nothing about any scenario, which Principle VIII
+      forbids, and tdd-check.sh's check 2 (final tests against base) is satisfied by the same import error, so it
+      cannot catch a vacuous body either. 005 used scaffold.sh for exactly this; this plan drops it silently.
+    remedies:
+      - "Add a scaffold step to each of phases 1 to 3 in plan.md § Phases: the new modules with their define call, declared properties and an empty render (no behaviour), their exports, index/browser entries and a dist entry, recorded by scaffold.sh before the red commit; state that the red log must show each scenario body failing on an assertion."
+
+  - id: PLAN-TESTABILITY-1-002
+    severity: 3
+    title: "Several scenarios assert platform defaults of light-DOM content and can pass without the element"
+    evidence:
+      - artifact: "spec.md US2-1 'a heading of level 3 ... the paragraph and the button, in that order', US2-2 'the heading is level 2', US2-6 'focus reaches the button', FR-011 'a link keeps its own tab stop', US1-4 'the copied text is the identifier unchanged'"
+      - artifact: "spec.md SC-006 'Every acceptance scenario has at least one test that fails against the code before its phase'"
+      - artifact: "contracts/checks.md § Scenario bodies: the only vacuity guard is 'Does not outcomes are paired' and five plant candidates; none of these scenarios is listed"
+      - code: ".specify/extensions/story/scripts/tdd-check.sh: checks 2 and 3 use the exit code of the whole run of the final test files, so one failing body hides any number of bodies that pass on the old code"
+    claim: |
+      An h2 or h3, a paragraph and a button written in source order, inside an undefined `ocelle-empty-state`, already
+      give the AX tree, heading level and tab order US2-1, US2-2 and US2-6 ask for; a link in an undefined
+      `ocelle-fact` keeps its tab stop; and an identifier's text is unchanged whether or not any element exists. Each
+      of these bodies, as worded, passes before the phase (or against a scaffold that renders slots), so SC-006 fails
+      for them, and the suite-level checks do not show it. The plan pairs "does not" outcomes but has no rule for
+      positive outcomes that the platform provides by default.
+    remedies:
+      - "In contracts/checks.md, list the scenarios whose outcome is a light-DOM default (US1-4, US2-1, US2-2, US2-6, FR-011's link) and require each body to also assert an outcome only the element gives: for US2-1 write the consumer markup in an order different from the slot order (actions, body, heading, visual) so the AX order proves the slotting; for US2-2/US2-6 assert the heading or button is laid out in the element's column (geometry); for US1-4 see PLAN-TESTABILITY-1-012. Require the red log to be checked per body against SC-006."
+
+  - id: PLAN-TESTABILITY-1-003
+    severity: 3
+    title: "The test settle point runs before the ResizeObserver callback, so the stacking tests and their plant are unreliable"
+    evidence:
+      - artifact: "research.md R-02 § Before first layout: 'US1-2 and US1-3 read the layout after updateComplete and one animation frame. The stacked decision is made in the callback'"
+      - code: "packages/elements/test/in-process.ts:35-39 settle() awaits updateComplete then one requestAnimationFrame; test/browser/driver.ts:18-23 does the same"
+      - code: "HTML Standard, update the rendering: animation frame callbacks run before style and layout and before 'broadcast active resize observations'; the test resumes in the microtask after its rAF callback, so the first ResizeObserver callback (and the Lit update it requests) has not run when the body reads the layout"
+    claim: |
+      With the planned mechanism the `stacked` class is set in the ResizeObserver callback, which fires after the
+      animation-frame callbacks of the same frame. A body that mounts at 320 px and reads geometry after settle() sees
+      the two-column grid. US1-2 and US1-3 then fail on correct code, or pass only by timing luck. Worse, the named
+      plant "probe removed (US1-2 must fail)" fails for the timing reason too, so the plant proves nothing about the
+      oracle.
+    remedies:
+      - "State in research R-02 and contracts/checks.md how the driver waits for the resize decision (for example a second animation frame after the observer's update, or polling until two consecutive frames give the same layout), measure it in phase 1's spike in both harnesses, and require the probe-removed plant to be run after the wait is in place, with a body that resizes the host from 600 px to 300 px and back so the observer path is exercised after first layout."
+
+  - id: PLAN-TESTABILITY-1-004
+    severity: 3
+    title: "The Chromium AX-tree oracle for FR-004 cannot tell the axe-failing structure from the chosen one"
+    evidence:
+      - artifact: "spike/RESULTS.md § A: 'Chromium's tree is valid for A1 (ignored generic wrappers are transparent). axe fails A1 and A3'; the A1 trimmed tree is DescriptionList > [ignored] > term, definition, the same unignored sequence as A5"
+      - artifact: "contracts/checks.md § Plants: 'manual assignment replaced by <dl><slot> (US1-6 must fail on structure)'; plan.md Complexity Tracking: no axe run on the stories until #10 lands"
+      - code: "packages/elements/test/commands.ts axSubtree walks through ignored nodes and keeps unignored ones, which would give term, definition, term, definition for A1 exactly as for A5"
+    claim: |
+      FR-004 requires no serious or critical axe finding, including `definition-list` and `dlitem`. The only structure
+      difference between A1 (axe fails) and A5 (axe passes) is in the flat DOM, not in Chromium's unignored AX tree.
+      Until #10 lands nothing in this mission runs axe, and an AX-tree body read with subtree scope passes on the A1
+      plant. Whether the plant fails depends on the reader's scope by accident. A later change that puts any element
+      between the `<dl>` and its dt/dd would break axe and no test would see it.
+    remedies:
+      - "Add to US1-6's body a flat-tree structure assertion that mirrors axe's rules: the `<dl>` in the facts shadow root has only dt and dd element children, in alternating order, one pair per fact; name the `<dl><slot>` plant against that assertion."
+      - "Or run axe-core (the version #10 pins, 4.14.0) on the facts fixture page in the elements-browser harness with the definition-list and dlitem rules, accepting it as a new dev dependency recorded in the plan."
+
+  - id: PLAN-TESTABILITY-1-005
+    severity: 3
+    title: "The description-list body cannot check which value sits under which term"
+    evidence:
+      - artifact: "spec.md FR-004 'terms are the labels and definitions are the values, each definition after its term, in source order'"
+      - code: "packages/elements/test/commands.ts:11-14 AxNode is {role, name}; axNodes (element scope) keeps only the element's and its shadow roots' nodes, 'not its light-DOM children', so the slotted values are absent; a definition's name is not computed from its content"
+      - artifact: "plan.md and contracts/checks.md do not say which scope US1-6 reads"
+    claim: |
+      With the element scope the body sees `DescriptionList, term "Owner", definition "", term …, definition ""`: the
+      values never appear, so a fault that assigns child i to slot i+1, or reverses the assignment, passes. The
+      assignment loop in `updated()` is the core of R-01, and its index mutants would survive or be killed only by
+      geometry by chance.
+    remedies:
+      - "Specify in contracts/checks.md that US1-6, US1-7, US1-10 and the dynamic reorder body read the AX subtree (axSubtree) and assert each definition's StaticText is its own fact's value, with values distinct per pair, and name a plant that assigns the slots in reverse order."
+
+  - id: PLAN-TESTABILITY-1-006
+    severity: 3
+    title: "The AX reader exposes no value, min, max or value text, so US3-1 to US3-4 have no oracle and 'no current value' is vacuous"
+    evidence:
+      - code: "packages/elements/test/commands.ts:11-14 AxNode has role and name only; spike/harness.js:17,25 had to read node.value and properties valuemin, valuemax, valuetext separately"
+      - artifact: "plan.md § Technical Context and Scale: '1 browser command' (emulateReducedMotion); contracts/checks.md § Browser commands names no change to axTree"
+      - artifact: "research.md R-05 'Measuring valuetext': fallback 'the aria-valuetext reflection read from internals ... used only if both platform reads fail, and review is told'"
+    claim: |
+      US3-1 (value 7, minimum 0, maximum 12), US3-2 (value 9), US3-3 (value text), US3-4 (no current value), US3-6
+      (clamped exposed value) and the SPEC-2-02 bodies need the AX value properties, which the existing reader drops.
+      With the current reader "no current value" holds for every node, so US3-4 would pass against a bar that
+      exposes a value. The internals fallback asserts what the element's own code wrote into a private object, which
+      needs a test hook into the unit and is not exposure: it is the "assertion on the unit's own state" VIII forbids
+      as a stand-in for observable behaviour.
+    remedies:
+      - "Plan an extension of AxNode/axNodes/axSubtree to carry value, valuemin, valuemax and valuetext (both harnesses), with its own commands test, and require every absence assertion (US3-4, value-text ignored while indeterminate) to sit in a body that reads the same property present for a determinate bar."
+      - "Drop the internals-reflection fallback: if phase 3's spike finds no platform oracle for valuetext, take US3-3 back to the operator instead of weakening the oracle."
+
+  - id: PLAN-TESTABILITY-1-007
+    severity: 2
+    title: "emulateReducedMotion through a separate CDP session can be undone by the forced-colours command or by its own detach"
+    evidence:
+      - artifact: "research.md R-08 and contracts/checks.md § Browser commands: 'emulateReducedMotion, which sets prefers-reduced-motion through CDP Emulation.setEmulatedMedia'"
+      - code: "packages/elements/test/commands.ts:141-144 emulate() uses Playwright page.emulateMedia for forced colours and colour scheme; commands.ts:160-161 the CDP session pattern detaches in finally"
+      - code: "packages/elements/test/icon.test.ts:12-14 afterEach resets only forced colours; 005 phase 4 review R1-01 was an emulation leaking into later tests"
+    claim: |
+      Playwright tracks the emulated media itself and resends its state on page.emulateMedia; a value set behind its
+      back on another CDP session may be overwritten by the next emulateForcedColors call, or cleared when the command
+      detaches its session. US3-5 combined with forced colours (US3-8's still mark) would then run with motion
+      silently not reduced, and nothing resets it between tests. A command unit test that only checks right after the
+      call would not see either failure.
+    remedies:
+      - "Implement it as Playwright page.emulateMedia({ reducedMotion }) inside the same emulate() helper, reset it in each progress test file's afterEach, and have test/commands.test.ts assert matchMedia('(prefers-reduced-motion: reduce)').matches after the command, still after an emulateForcedColors call, and false after the reset."
+
+  - id: PLAN-TESTABILITY-1-008
+    severity: 3
+    title: "Mutation testing cannot reach the CSS that carries most of this mission's behaviour, and the plan says it can"
+    evidence:
+      - artifact: "research.md R-08 § Mutation: 'The indeterminate animation is CSS text inside a css template, so it gives Stryker string mutants that the computed-style assertions kill (the animation name, duration and none under reduced motion)'"
+      - code: "specs/005-icons-brand-mark/reviews/phase-4/round-1.md:24 (R1-03): 'Stryker cannot mutate a declaration inside a css template'"
+      - artifact: "contracts/checks.md § Plants: five candidates only (probe, <dl><slot>, slotchange flags, animation: none, accent-strong shadow)"
+    claim: |
+      The stacking grid and its 50% label cap, the compact row gap, the stacked label-to-value gap, the empty-state
+      default and panel gaps, padding and weights, the actions wrap, the fill's inline-start growth and RTL mirror,
+      the forced-colours rules, the compact block size and the reduced-motion still mark are all declarations in
+      `css` templates. Mutation testing gives no evidence on any of them, so SC-006's "no surviving mutant" is met
+      trivially for this code, and a computed-style body that reads a value equal to a UA default or to the
+      unconfigured state cannot be caught by a mutant.
+    remedies:
+      - "Correct R-08's claim, and in contracts/checks.md give each CSS-only behaviour either a named plant (the declaration removed or changed) that its body must fail on, or a stated reason why its expected value differs from the browser default and the other variant (for example panel gaps asserted as different from default gaps in the same body)."
+
+  - id: PLAN-TESTABILITY-1-009
+    severity: 2
+    title: "The reduced-motion plant is behaviourally equivalent, because the loop duration is already 0 ms under reduced motion"
+    evidence:
+      - artifact: "contracts/checks.md § Plants: 'progress: animation: none removed under reduced motion (US3-5 must fail)'; research.md R-06: duration calc(var(--ocelle-motion-base) * 7), 'resolves to 0 ms under reduced motion'"
+      - code: "packages/tokens/src/generate.ts:281 sets --ocelle-motion-base to 0ms inside @media (prefers-reduced-motion: reduce)"
+    claim: |
+      With `animation: none` removed, the mark's animation has a 0 ms iteration and therefore a 0 ms active duration:
+      nothing moves, and an oracle of "running animations" (getAnimations) sees none. The plant then fails only a
+      body that reads the computed `animation-name` text, which is a proxy, not the outcome US3-5 and SC-005 state.
+      The behaviour that can actually regress under reduced motion is the parked still mark (30% inset, 40% wide),
+      which no plant names.
+    remedies:
+      - "Write US3-5 against running animations and transitions (shadowRoot.getAnimations with subtree, or document.getAnimations) paired in the same body with a positive read without reduced motion, plus the still mark's geometry; replace the plant with 'the reduced-motion parking rule removed' (US3-5 must fail on the still mark) and record animation: none as an equivalent change."
+
+  - id: PLAN-TESTABILITY-1-010
+    severity: 2
+    title: "SC-002 and SC-005 are story-level criteria with no planned check"
+    evidence:
+      - artifact: "spec.md SC-002 'At 320 px CSS width, every facts story's page scroll width equals the viewport width'; SC-005 'Under reduced motion, no story of the four elements has a running animation or transition'"
+      - artifact: "research.md R-08 § Story test and contracts/checks.md § Story test: the story test checks presence in the built index, render in light and dark, no CSP violation and no outside request; nothing at 320 px or under reduced motion"
+      - artifact: "quickstart.md 'Expected: the spec's SC-002 to SC-007 hold' with no step that measures SC-002 or SC-005"
+    claim: |
+      The element tests prove reflow and reduced motion on their own fixtures, not on the stories, and #10's visual
+      gate captures with reduced motion but does not assert either property. As planned, no test fails if a facts
+      story (for example the 'link in value' or 'right-to-left' one) overflows at 320 px or if a story's animation
+      runs under reduced motion.
+    remedies:
+      - "Extend the story test in each phase's red commit: load every facts story at a 320 px viewport and assert scroll width equals viewport width, and load every story with reduced motion emulated and assert no running animation or transition, each paired with a positive (the story's element rendered with non-zero size)."
+
+  - id: PLAN-TESTABILITY-1-011
+    severity: 2
+    title: "The fallback for an unexposed empty term changes a spec requirement through review, to an oracle that is not in the AX tree"
+    evidence:
+      - artifact: "research.md R-01 § Missing halves: 'If it does not, US1-10's assertion becomes \"the definition follows its (empty) row\" and the plan's reading goes to review'"
+      - artifact: "spec.md FR-003 'A pair with no label ... exposes an empty term'; US1-10 'the description list holds an empty term followed by that value's definition'"
+    claim: |
+      If Chromium prunes an empty `<dt>`, FR-003 and US1-10 cannot be met as written; rewriting the assertion is a
+      requirement change, which belongs to the operator (as SPEC-1-04 did for FR-004), not to review. "Follows its
+      (empty) row" is a layout fact, so the body would no longer test the exposure FR-003 requires.
+    remedies:
+      - "State in research R-01 that if phase 1's spike finds the empty term pruned, the result goes to the operator with FR-003 and US1-10 before the red commit, and the body keeps an AX-tree oracle for whatever the operator decides."
+
+  - id: PLAN-TESTABILITY-1-012
+    severity: 2
+    title: "US1-4's copy check has no stated oracle and no plant, and as usually written cannot fail"
+    evidence:
+      - artifact: "plan.md § Phases 1 red: 'US1-4's copy check'; contracts/checks.md names no oracle or plant for it"
+      - artifact: "research.md R-03: 'Copying gives the text unchanged (US1-4): nothing is inserted'"
+    claim: |
+      Selection.toString() or textContent of the consumer's light DOM returns the identifier unchanged whatever the
+      element does with CSS, and also when the element does not exist. The realistic fault (a wrap implemented by
+      inserting U+200B, a soft hyphen or <wbr> into the value, or a rendered copy of the text) is what the body must
+      catch, and nothing in the plan shows it can.
+    remedies:
+      - "Specify the oracle (a user copy through the keyboard with the copy event's clipboardData, or clipboard read with permission in the fixture harness) over the rendered value, pair it in the same body with the wrap assertion of US1-3, and name a plant that inserts U+200B every 16 characters that US1-4 must fail on."
+
+  - id: PLAN-TESTABILITY-1-013
+    severity: 2
+    title: "The driver needs several new capabilities the plan does not count"
+    evidence:
+      - code: "packages/elements/test/scenarios/driver.ts:79-147 Driver has no viewport size, no page scroll width, no keyboard (Tab), no selection or copy, no animation read and no AX value properties; grep of packages/elements/test finds no viewport, keyboard, getAnimations or scrollWidth helper; test/browser/serve.ts:127 fixes the viewport at 1280x800"
+      - artifact: "plan.md § Scale/Scope '1 browser command'; contracts/checks.md § Browser commands lists only emulateReducedMotion"
+    claim: |
+      US1-2, US1-3, the 640 px case and FR-053 need a viewport change and a page scroll width; US2-6 and FR-011 need
+      a Tab press and the focused element; US1-4 a copy; US3-5 and the transition edge case a running-animation read;
+      US3-1 to US3-4 the AX value properties. Each must exist in both harnesses (shared bodies) and each is test
+      infrastructure that can itself be wrong. Unplanned, tasks will add them ad hoc inside red commits without their
+      own tests, as 005 required for axTree and emulateForcedColors.
+    remedies:
+      - "List the driver additions in contracts/checks.md (viewport, scrollWidth, press Tab and read the focused element, copy, running animations, AX value properties), each implemented in both harnesses with a commands or driver test, and count them in plan.md § Scale/Scope."
+
+  - id: PLAN-TESTABILITY-1-014
+    severity: 1
+    title: "Moving an existing ocelle-fact into or out of ocelle-facts has no scenario body"
+    evidence:
+      - artifact: "research.md R-01: 'ocelle-fact decides in connectedCallback. Moving a fact into or out of ocelle-facts disconnects and reconnects it, which runs that decision again'"
+      - artifact: "contracts/checks.md § Extra scenario bodies: dynamic add, remove, reorder, label change, and ocelle-fact outside ocelle-facts; no move between the two"
+    claim: |
+      The re-parenting path is the one place where a stale shadow root (a leftover `<span part=label>` beside the
+      term, so the label is shown and exposed twice) is likely, and the plan's claim that reconnection fixes it is not
+      measured. The `inFacts` decision's mutants are only killed in one direction by the listed bodies.
+    remedies:
+      - "Add a body that mounts an ocelle-fact outside, moves it into an ocelle-facts, and checks the AX subtree has one term and no extra label text, then moves it out and checks the plain rendering."

@@ -12,6 +12,10 @@
     "./ocelle-page-header.js": "./dist/ocelle-page-header.js",
     "./ocelle-context-sidebar.js": "./dist/ocelle-context-sidebar.js",
     "./ocelle-personal-rail.js": "./dist/ocelle-personal-rail.js",
+    "./ocelle-facts.js": "./dist/ocelle-facts.js",
+    "./ocelle-fact.js": "./dist/ocelle-fact.js",
+    "./ocelle-empty-state.js": "./dist/ocelle-empty-state.js",
+    "./ocelle-progress.js": "./dist/ocelle-progress.js",
     "./browser.js": "./dist/browser/ocelle-elements.js",
     "./custom-elements.json": "./custom-elements.json"
   },
