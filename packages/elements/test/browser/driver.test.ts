@@ -1,5 +1,6 @@
 import type { Browser, Page } from "playwright";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
+import { defineDriverHelpers, driverAdditionScenarios } from "../scenarios/driver-additions.ts";
 import { fixtureDriver } from "./driver.ts";
 import { clean, launch, serve, visit } from "./serve.ts";
 import type { Served, Visit } from "./serve.ts";
@@ -13,6 +14,11 @@ import type { Served, Visit } from "./serve.ts";
 // the shadow host is defined through the protocol with a constructed sheet, so the page's CSP sees no inline style.
 // Every test also asserts the page's recorders clean: no CSP violation, no request outside the allowed list, no
 // failed request and no console message or uncaught error.
+//
+// The driver additions of 013 phase 1 on the strict-CSP fixture (contracts/checks.md § Driver additions; tasks.md
+// T003): every shared body of scenarios/driver-additions.ts on its own `facts.html` page, its helper elements defined
+// through `page.evaluate` (the DevTools protocol, which the page's CSP does not govern), with zero CSP violations, no
+// request outside the allowed list, no failed request and no console message, as every fixture test asserts.
 const built = inject("elementsFixture");
 let served: Served | undefined;
 let browser: Browser | undefined;
@@ -296,14 +302,14 @@ describe("the fixture driver", { timeout: 60_000 }, () => {
     expect({ observed: [atMount, prevented, await driver.lastKeyPrevented()], recorded: await page.finish() }).toEqual({ observed: [false, true, false], recorded: clean });
   });
 
-  it("reducedMotion(on) switches prefers-reduced-motion between reduce and no-preference", async () => {
+  it("reducedMotion(mode) switches prefers-reduced-motion between reduce and no-preference", async () => {
     const page = await open();
     const driver = fixtureDriver(page.page, page.log);
     await driver.mount("<p>motion</p>");
     const matches = (): Promise<boolean[]> => page.page.evaluate(() => [matchMedia("(prefers-reduced-motion: reduce)").matches, matchMedia("(prefers-reduced-motion: no-preference)").matches]);
-    await driver.reducedMotion(true);
+    await driver.reducedMotion("reduce");
     const on = await matches();
-    await driver.reducedMotion(false);
+    await driver.reducedMotion("no-preference");
     expect({ observed: [on, await matches()], recorded: await page.finish() }).toEqual({
       observed: [
         [true, false],
@@ -425,5 +431,15 @@ describe("the fixture driver", { timeout: 60_000 }, () => {
       ],
       recorded: clean,
     });
+  });
+});
+
+describe("the driver additions on the strict-CSP fixture (013 T003)", { timeout: 60_000 }, () => {
+  it.each(driverAdditionScenarios)("$name", async ({ run, expected }) => {
+    const { browser, origin } = started();
+    const page = await visit(browser, origin, "facts.html");
+    await page.page.evaluate(defineDriverHelpers);
+    const observed = await run(fixtureDriver(page.page, page.log));
+    expect({ observed, recorded: await page.finish() }).toEqual({ observed: expected, recorded: clean });
   });
 });

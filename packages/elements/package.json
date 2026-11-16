@@ -11,6 +11,10 @@
     "./ocelle-workflow-board.js": "./dist/ocelle-workflow-board.js",
     "./ocelle-workflow-lane.js": "./dist/ocelle-workflow-lane.js",
     "./ocelle-list-detail.js": "./dist/ocelle-list-detail.js",
+    "./ocelle-facts.js": "./dist/ocelle-facts.js",
+    "./ocelle-fact.js": "./dist/ocelle-fact.js",
+    "./ocelle-empty-state.js": "./dist/ocelle-empty-state.js",
+    "./ocelle-progress.js": "./dist/ocelle-progress.js",
     "./browser.js": "./dist/browser/ocelle-elements.js",
     "./custom-elements.json": "./custom-elements.json"
   },

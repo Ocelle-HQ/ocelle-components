@@ -35,12 +35,15 @@ The input names the phase: `phase=<N>` or a bare number. If it names none, stop 
    findings (naming, docs), and say so in the fix note.
 4. Make the changes the findings require. If you disagree with a finding, leave the code as it is and give the
    reason, so the next review round can decide. Never weaken a test to make a finding go away.
-5. Run the project's fast checks that exist; all tests must pass.
+5. Run the project's fast checks that exist; all tests must pass. If `plants_command` is set in
+   `.specify/extensions/story/story-config.yml`, run `<plants_command> -- --affected $(cat
+   FEATURE_DIR/reviews/phase-<N>/base.sha)` again and replace `FEATURE_DIR/reviews/phase-<N>/plants.md` with the new
+   run, in the form the implement command gives; the exit must be 0.
 6. Write `FEATURE_DIR/reviews/phase-<N>/round-<k>-fixes.md` with one row per finding:
    `| ID | Resolution | Red test | Where |`, where Resolution is `fixed`, `disputed: <reason>` or
    `deferred: <reason>` (notes only; a blocking finding is never deferred).
-7. Commit the fixes, the note and the new evidence under `FEATURE_DIR/reviews/phase-<N>/` (red logs, `red-commits`)
-   together: `fix(<feature>): phase <N> review round <k>`, signed off. Do not push.
+7. Commit the fixes, the note and the new evidence under `FEATURE_DIR/reviews/phase-<N>/` (red logs, `red-commits`,
+   `plants.md`) together: `fix(<feature>): phase <N> review round <k>`, signed off. Do not push.
    Do not edit the review file and do not write a verdict: the next review round decides.
 
 ## Report

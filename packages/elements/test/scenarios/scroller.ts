@@ -352,7 +352,7 @@ const focusBox = (driver: Driver, id: string): Promise<string[]> => driver.tabWa
 /** US1-5's keys on the focused box in one direction under one motion setting. */
 async function arrowKeys(driver: Driver, direction: "ltr" | "rtl", reduced: boolean): Promise<unknown> {
   await page(driver, `${before}${strip("s", links("k", 12), ' label="Filters"', ` dir="${direction}"`)}`);
-  await driver.reducedMotion(reduced);
+  await driver.reducedMotion(reduced ? "reduce" : "no-preference");
   await focusBox(driver, "s");
   const sign = direction === "ltr" ? 1 : -1;
   const toward = direction === "ltr" ? "ArrowRight" : "ArrowLeft";
@@ -383,7 +383,7 @@ async function arrowKeys(driver: Driver, direction: "ltr" | "rtl", reduced: bool
     await driver.settle();
     modified.push({ key, scrollLeft: [...new Set((await held.stop()).filter((each) => each !== "keydown").map((each) => each.replace("resize: ", "")))], prevented: await driver.lastKeyPrevented() });
   }
-  await driver.reducedMotion(false);
+  await driver.reducedMotion("no-preference");
   return { first, returned, atStart, atEnd, homeEnd, modified };
 }
 
@@ -592,14 +592,14 @@ export const scrollerScenarios: readonly Scenario[] = [
     run: async (driver) => {
       const observe = async (reduced: boolean): Promise<unknown> => {
         await page(driver, `${before}${strip("s", '<span class="solid"></span>')}`);
-        await driver.reducedMotion(reduced);
+        await driver.reducedMotion(reduced ? "reduce" : "no-preference");
         await focusBox(driver, "s");
         const record = await driver.frameRecord(boxOf("s"), { computed: "mask-image" });
         await driver.press("ArrowRight");
         const frames = (await record.stop()).filter((each) => !each.startsWith("resize: "));
         const key = frames.indexOf("keydown");
         const [was, now] = [new Set(frames.slice(0, key)), new Set(frames.slice(key + 1))];
-        await driver.reducedMotion(false);
+        await driver.reducedMotion("no-preference");
         return {
           transition: [await driver.computed(boxOf("s"), "transition-duration"), await driver.computed(boxOf("s"), "animation-name")],
           before: was.size,

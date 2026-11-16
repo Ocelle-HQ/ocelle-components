@@ -5,6 +5,11 @@ import { describe, expect, it } from "vitest";
 // `mutation-plan` sets the plan's JSON as its output, and each `mutation-shard` job passes its shard's `files` value
 // to `--files` unchanged, so line-range entries `path:start-end` reach the gate as the plan printed them (phase 3
 // round 9, O9-01). The value reaches the script through the environment, never pasted into it.
+// Op 015 (#35, operator decisions Q1 A to Q3 A, ops/015-mutation-shard-timeout/reviews/triage/operator-decisions.md):
+// a shard whose files value names packages/elements/src/ runs under N minutes, every other shard under 10. N = 45 is
+// the Q3 A rule applied to the CI measurement in ops/015-mutation-shard-timeout/measurement/README.md (run
+// 43674498025, worst elements shard 18 m 02 s), and it exceeds the elements dry-run limit of
+// stryker.elements.config.json.
 const workflow = readFileSync(new URL("../../.github/workflows/ci.yml", import.meta.url), "utf8");
 
 /** The lines of one job of the workflow, from its key to the line before the next job's key. */
@@ -35,7 +40,7 @@ describe("ci.yml mutation jobs (phase 3 round 9, O9-01)", () => {
       "    needs: mutation-plan",
       "    if: needs.mutation-plan.outputs.shards != '[]'",
       "    runs-on: ubuntu-24.04",
-      "    timeout-minutes: 10",
+      "    timeout-minutes: ${{ contains(matrix.shard.files, 'packages/elements/src/') && 45 || 10 }}",
       "    strategy:",
       "      fail-fast: false",
       "      matrix:",
@@ -47,6 +52,19 @@ describe("ci.yml mutation jobs (phase 3 round 9, O9-01)", () => {
       "          FILES: ${{ matrix.shard.files }}",
       '        run: pnpm run gate:mutation -- --base "$BASE" --files "$FILES"',
     ]);
+  });
+
+  it("mutation-shard gives a shard with element source a limit of at least 45 minutes, above the elements dry-run limit (op 015)", () => {
+    const limitLine = /^ {4}timeout-minutes: \$\{\{ contains\(matrix\.shard\.files, 'packages\/elements\/src\/'\) && ([1-9]\d*) \|\| 10 \}\}$/;
+    const matches = job("mutation-shard")
+      .map((line) => limitLine.exec(line))
+      .filter((match) => match !== null);
+    expect(matches).toHaveLength(1);
+    const minutes = Number(matches[0]?.[1]);
+    const elements = JSON.parse(readFileSync(new URL("../../stryker.elements.config.json", import.meta.url), "utf8")) as { dryRunTimeoutMinutes: unknown };
+    expect(typeof elements.dryRunTimeoutMinutes).toBe("number");
+    expect(minutes).toBeGreaterThanOrEqual(45);
+    expect(minutes).toBeGreaterThan(elements.dryRunTimeoutMinutes as number);
   });
 });
 

@@ -12,7 +12,7 @@ const driver = inProcessDriver();
 
 afterEach(async () => {
   await driver.forcedColors("none");
-  await driver.reducedMotion(false);
+  await driver.reducedMotion("no-preference");
 });
 
 describe("ocelle-scroller, in process (US1)", { timeout: 60_000 }, () => {

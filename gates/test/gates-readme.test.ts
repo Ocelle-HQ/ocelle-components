@@ -166,3 +166,30 @@ describe("gates/README.md (006 FR-023)", () => {
     expect(["narrows SPEC-1-05", "connect-src 'self'", "The Storybook page's header", "The narrowed static scope"].filter((text) => readme.includes(text))).toEqual([]);
   });
 });
+
+describe("gates/README.md (013 R-10)", () => {
+  it("states the style-lint allowance of fit-content(<percentage>) and minmax(0, <flex>) in grid-template-columns only, with its plants pass-grid-fit-content, fail-fit-content-length and fail-minmax-auto", () => {
+    const row = rows(section("The gates")).find((cells) => cells[0] === "`style-lint`") ?? [];
+    const check = row[3] ?? "";
+    const plants = row[4] ?? "";
+    expect({
+      allowance: ["`fit-content(<percentage>)`", "`minmax(0, <flex>)`", "`grid-template-columns`"].filter((text) => !check.includes(text)),
+      plants: ["pass-grid-fit-content", "fail-fit-content-length", "fail-minmax-auto"].filter((plant) => !plants.includes(plant)),
+      directories: ["pass-grid-fit-content", "fail-fit-content-length", "fail-minmax-auto"].filter((plant) => !readdirSync(new URL("../plants/style-lint/", import.meta.url)).includes(plant)),
+    }).toEqual({ allowance: [], plants: [], directories: [] });
+  });
+});
+
+describe("gates/README.md (013 R-10, phase 3)", () => {
+  it("states the style-lint allowance of translateX(<percentage>) in transform and a bare positive integer in animation-iteration-count, with its plants pass-translate-percentage, fail-translate-length, pass-iteration-count and fail-iteration-count-fraction", () => {
+    const row = rows(section("The gates")).find((cells) => cells[0] === "`style-lint`") ?? [];
+    const check = row[3] ?? "";
+    const plants = row[4] ?? "";
+    const names = ["pass-translate-percentage", "fail-translate-length", "pass-iteration-count", "fail-iteration-count-fraction"];
+    expect({
+      allowance: ["`translateX(<percentage>)`", "`transform`", "`animation-iteration-count`", "a bare positive integer"].filter((text) => !check.includes(text)),
+      plants: names.filter((plant) => !plants.includes(plant)),
+      directories: names.filter((plant) => !readdirSync(new URL("../plants/style-lint/", import.meta.url)).includes(plant)),
+    }).toEqual({ allowance: [], plants: [], directories: [] });
+  });
+});

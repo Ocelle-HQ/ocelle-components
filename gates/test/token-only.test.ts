@@ -896,3 +896,139 @@ describe("ocelle/token-only: inside linear-gradient()", () => {
     ]);
   });
 });
+
+// The grid allowance of 013 (research.md R-10, PLAN-CORRECTNESS-1-001 (a); tasks.md T008, T008a): in
+// `grid-template-columns` only, a track may be `fit-content(<percentage>)` (the facts label column, capped) or
+// `minmax(0, <flex>)` (the value column, and each of the grid layout's four tracks written out). Any other argument,
+// any other property, a nested function and `repeat()` stay raw. Each finding shares its test with the allowed value
+// it guards, so the allowance and its limits are seen together.
+describe("rawValues: the grid-template-columns allowance (013 R-10)", () => {
+  const allowed = "fit-content(50%) minmax(0, 1fr)";
+
+  it.each([
+    { value: "fit-content(50%) minmax(0, 1fr)" },
+    { value: "minmax(0, 1fr)" },
+    { value: "minmax(0, 2.5fr)" },
+    { value: "fit-content(33.3%)" },
+    { value: "minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr)" },
+    { value: "minmax(0, 1fr) minmax(0, 1fr)" },
+    { value: "minmax(0, /* the value column */ 1fr)" },
+    { value: "fit-content(/* the label column */ 50%)" },
+  ])("grid-template-columns: $value is token-only (only the control 4px after it is raw)", ({ value }) => {
+    expect({ value: rawValues("grid-template-columns", value), control: rawValues("grid-template-columns", `${value} 4px`), upper: rawValues("GRID-TEMPLATE-COLUMNS", value) }).toEqual({ value: [], control: ["4px"], upper: [] });
+  });
+
+  it.each([
+    { value: "fit-content(200px)", raw: ["fit-content(200px)"] },
+    { value: "fit-content(0)", raw: ["fit-content(0)"] },
+    { value: "fit-content(50%, 1fr)", raw: ["fit-content(50%, 1fr)"] },
+    { value: "minmax(auto, 50%)", raw: ["minmax(auto, 50%)"] },
+    { value: "minmax(0, 200px)", raw: ["minmax(0, 200px)"] },
+    { value: "minmax(0, 50%)", raw: ["minmax(0, 50%)"] },
+    { value: "minmax(1px, 1fr)", raw: ["minmax(1px, 1fr)"] },
+    { value: "minmax(0, 1fr, 2fr)", raw: ["minmax(0, 1fr, 2fr)"] },
+    { value: "minmax(0, calc(1fr))", raw: ["minmax(0, calc(1fr))"] },
+    { value: "fit-content(calc(50%))", raw: ["fit-content(calc(50%))"] },
+    { value: "fit-content(var(--ocelle-space-4))", raw: ["fit-content(var(--ocelle-space-4))"] },
+    { value: "minmax(0, fit-content(50%))", raw: ["minmax(0, fit-content(50%))"] },
+    { value: "repeat(4, minmax(0, 1fr))", raw: ["repeat(4, minmax(0, 1fr))"] },
+    { value: "fit-content(50%) minmax(0, 200px)", raw: ["minmax(0, 200px)"] },
+    { value: "max(0, 1fr)", raw: ["max(0, 1fr)"] },
+    { value: "minmax(0 / 1fr)", raw: ["minmax(0 / 1fr)"] },
+  ])("grid-template-columns: $value is raw: $raw, while fit-content(50%) minmax(0, 1fr) passes", ({ value, raw }) => {
+    expect({ value: rawValues("grid-template-columns", value), allowed: rawValues("grid-template-columns", allowed) }).toEqual({ value: raw, allowed: [] });
+  });
+
+  it.each([
+    { property: "grid-template-rows", value: "minmax(0, 1fr)" },
+    { property: "grid-template-rows", value: "fit-content(50%)" },
+    { property: "grid-auto-columns", value: "minmax(0, 1fr)" },
+    { property: "width", value: "fit-content(50%)" },
+    { property: "inline-size", value: "minmax(0, 1fr)" },
+    { property: "grid-template", value: "minmax(0, 1fr) / fit-content(50%)" },
+  ])("$property: $value stays raw in any other property, while grid-template-columns passes it", ({ property, value }) => {
+    expect({ other: rawValues(property, value).length > 0, columns: rawValues("grid-template-columns", allowed) }).toEqual({ other: true, columns: [] });
+  });
+
+  it("reports the facts tracks of an element template not at all, and fit-content(200px) and repeat() at their lines", async () => {
+    const code =
+      "const css = String.raw;\nexport const styles = css`\n  dl {\n    grid-template-columns: fit-content(50%) minmax(0, 1fr);\n  }\n  .grid {\n    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);\n  }\n  .bad {\n    grid-template-columns: fit-content(200px);\n  }\n  .worse {\n    grid-template-columns: repeat(4, minmax(0, 1fr));\n  }\n`;\n";
+    const { results } = await stylelint.lint({ code, codeFilename: "x.ts", config: { plugins: [plugin], rules: { [ruleName]: true }, customSyntax: "postcss-lit" } });
+    expect(results[0]?.warnings.map(({ line, text }) => ({ line, text }))).toEqual([
+      { line: 10, text: "grid-template-columns: raw fit-content(200px); use a --ocelle-* token (FR-024) (ocelle/token-only)" },
+      { line: 13, text: "grid-template-columns: raw repeat(4, minmax(0, 1fr)); use a --ocelle-* token (FR-024) (ocelle/token-only)" },
+    ]);
+  });
+});
+
+// The sweep allowance of 013 phase 3 (research.md R-10, PLAN-CORRECTNESS-1-001 (a), PLAN-A11Y-SECURITY-1-001 (a); tasks.md
+// T042): in `transform`, in a rule or in `@keyframes`, `translateX(<percentage>)` (one percentage argument) passes, and
+// in `animation-iteration-count` a bare positive integer passes. Any other function, argument or property stays raw;
+// `infinite` was already an identifier. Each finding shares its test with the allowed value it guards.
+describe("rawValues: the transform and animation-iteration-count allowance (013 R-10)", () => {
+  it.each([
+    { property: "transform", value: "translateX(-175%)" },
+    { property: "transform", value: "translateX(175%)" },
+    { property: "transform", value: "translateX(0%)" },
+    { property: "transform", value: "translateX(12.5%)" },
+    { property: "TRANSFORM", value: "TRANSLATEX(50%)" },
+    { property: "animation-iteration-count", value: "3" },
+    { property: "animation-iteration-count", value: "1" },
+    { property: "animation-iteration-count", value: "12" },
+    // Added after green for the mutation run: spaces and a comment inside the translate, and one count per item.
+    { property: "transform", value: "translateX( 50% )" },
+    { property: "transform", value: "translateX(/* the mark */ 175%)" },
+    { property: "animation-iteration-count", value: "3, 2" },
+  ])("$property: $value is token-only (only the control 4px after it is raw)", ({ property, value }) => {
+    expect({ value: rawValues(property, value), control: rawValues(property, `${value} 4px`) }).toEqual({ value: [], control: ["4px"] });
+  });
+
+  it.each([
+    { value: "translateX(8px)", raw: ["translateX(8px)"] },
+    { value: "translateX(0)", raw: ["translateX(0)"] },
+    { value: "translateY(50%)", raw: ["translateY(50%)"] },
+    { value: "translate(50%)", raw: ["translate(50%)"] },
+    { value: "translate3d(50%, 0, 0)", raw: ["translate3d(50%, 0, 0)"] },
+    { value: "translateX(50%, 10%)", raw: ["translateX(50%, 10%)"] },
+    { value: "translateX(calc(50%))", raw: ["translateX(calc(50%))"] },
+    { value: "translateX(var(--ocelle-space-4))", raw: ["translateX(var(--ocelle-space-4))"] },
+    { value: "translateX(50%) rotate(45deg)", raw: ["rotate(45deg)"] },
+    { value: "scale(2)", raw: ["scale(2)"] },
+  ])("transform: $value is raw: $raw, while translateX(175%) passes", ({ value, raw }) => {
+    expect({ value: rawValues("transform", value), allowed: rawValues("transform", "translateX(175%)") }).toEqual({ value: raw, allowed: [] });
+  });
+
+  it.each([
+    { value: "2.5", raw: ["2.5"] },
+    { value: "-1", raw: ["-1"] },
+    { value: "3 2", raw: ["3", "2"] },
+    { value: "1e1", raw: ["1e1"] },
+    // Added after green for the mutation run: each comma-separated item is judged on its own.
+    { value: "3, 2.5", raw: ["2.5"] },
+    { value: "3, 2 1", raw: ["2", "1"] },
+    { value: "3 / 2", raw: ["3", "2"] },
+    { value: '3 "," 2', raw: ["3", "2"] },
+  ])("animation-iteration-count: $value is raw: $raw, while 3 passes", ({ value, raw }) => {
+    expect({ value: rawValues("animation-iteration-count", value), allowed: rawValues("animation-iteration-count", "3") }).toEqual({ value: raw, allowed: [] });
+  });
+
+  it.each([
+    { property: "translate", value: "translateX(50%)" },
+    { property: "background-position", value: "translateX(50%)" },
+    { property: "animation", value: "sweep 3" },
+    { property: "column-count", value: "3" },
+    { property: "transition-delay", value: "3" },
+  ])("$property: $value stays raw in any other property, while transform and animation-iteration-count pass theirs", ({ property, value }) => {
+    expect({ other: rawValues(property, value).length > 0, transform: rawValues("transform", "translateX(-175%)"), count: rawValues("animation-iteration-count", "3") }).toEqual({ other: true, transform: [], count: [] });
+  });
+
+  it("reports the sweep's keyframes and iteration count of an element template not at all, and translateX(8px) and a fractional count at their lines", async () => {
+    const code =
+      "const css = String.raw;\nexport const styles = css`\n  @keyframes sweep {\n    from { transform: translateX(-175%); }\n    to { transform: translateX(175%); }\n  }\n  .mark {\n    animation-iteration-count: 3;\n  }\n  .bad {\n    transform: translateX(8px);\n    animation-iteration-count: 2.5;\n  }\n`;\n";
+    const { results } = await stylelint.lint({ code, codeFilename: "x.ts", config: { plugins: [plugin], rules: { [ruleName]: true }, customSyntax: "postcss-lit" } });
+    expect(results[0]?.warnings.map(({ line, text }) => ({ line, text }))).toEqual([
+      { line: 11, text: "transform: raw translateX(8px); use a --ocelle-* token (FR-024) (ocelle/token-only)" },
+      { line: 12, text: "animation-iteration-count: raw 2.5; use a --ocelle-* token (FR-024) (ocelle/token-only)" },
+    ]);
+  });
+});

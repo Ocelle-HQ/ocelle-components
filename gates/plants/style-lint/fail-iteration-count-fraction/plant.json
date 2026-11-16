@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "animation-iteration-count: 2.5 is raw: the allowance takes a bare positive integer only, so a change admitting every number is caught (013 research.md R-10).",
+  "findings": [
+    {
+      "location": "packages/elements/src/x.ts:6",
+      "rule": "ocelle/token-only",
+      "message": "2.5"
+    }
+  ]
+}

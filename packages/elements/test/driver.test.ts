@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import "../src/ocelle-icon.ts";
 import { inProcessDriver } from "./in-process.ts";
+import { defineDriverHelpers, driverAdditionScenarios } from "./scenarios/driver-additions.ts";
 
 // The driver's own methods, in process, each proven against a plain page (009 research.md R-17; T005, T010).
 // `viewport()` resizes the test's iframe from Vitest's 414 × 896 default. Since phase 2 (T010) every method the US1
@@ -9,10 +10,14 @@ import { inProcessDriver } from "./in-process.ts";
 // `messages()` and `sheets()` (which 005 added; their plants are in reviews/phase-2/plants.md). The pages are plain
 // markup and a shadow host defined below; each test observes the page itself, not through the method it proves.
 // test/browser/driver.test.ts proves the fixture driver's.
+// The driver additions of 013 phase 1 in process (contracts/checks.md § Driver additions; tasks.md T003): the shared
+// bodies of scenarios/driver-additions.ts on the in-process driver, with their helper elements defined in this file's
+// frame. The same bodies run on the strict-CSP fixture in test/browser/driver.test.ts.
 const driver = inProcessDriver();
+defineDriverHelpers();
 
 afterEach(async () => {
-  await driver.reducedMotion(false).catch(() => undefined);
+  await driver.reducedMotion("no-preference").catch(() => undefined);
 });
 
 /**
@@ -195,11 +200,11 @@ describe("the in-process driver", () => {
     expect([atMount, prevented, await driver.lastKeyPrevented()]).toEqual([false, true, false]);
   });
 
-  it("reducedMotion(on) switches prefers-reduced-motion between reduce and no-preference", async () => {
+  it("reducedMotion(mode) switches prefers-reduced-motion between reduce and no-preference", async () => {
     await driver.mount("<p>motion</p>");
-    await driver.reducedMotion(true);
+    await driver.reducedMotion("reduce");
     const on = [matchMedia("(prefers-reduced-motion: reduce)").matches, matchMedia("(prefers-reduced-motion: no-preference)").matches];
-    await driver.reducedMotion(false);
+    await driver.reducedMotion("no-preference");
     expect([on, [matchMedia("(prefers-reduced-motion: reduce)").matches, matchMedia("(prefers-reduced-motion: no-preference)").matches]]).toEqual([
       [true, false],
       [false, true],
@@ -286,5 +291,11 @@ describe("the in-process driver", () => {
       { elements: 2, perRoot: [1], distinct: 1, styleElements: 0 },
       { elements: 3, perRoot: [1], distinct: 2, styleElements: 0 },
     ]);
+  });
+});
+
+describe("the driver additions, in process (013 T003)", () => {
+  it.each(driverAdditionScenarios)("$name", async ({ run, expected }) => {
+    expect(await run(driver)).toEqual(expected);
   });
 });
