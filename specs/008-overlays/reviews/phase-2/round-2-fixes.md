@@ -1,0 +1,20 @@
+# Phase 2 review, round 2: fixes
+
+Operator round at landing (`round-2.md`; landing review `reviews/landing/round-1.md` L1-01, L1-03; tasks T058, T059).
+One red commit for both, `4a864bf` (`red-fix-2.log`, `red-commits` `fix-2`): `pnpm test` failed on exactly 20 tests,
+the five red rows below for `ocelle-dialog` and `ocelle-drawer` in both harnesses (`test/dialog.test.ts`,
+`test/drawer.test.ts`, `test/browser/dialog.test.ts`, `test/browser/drawer.test.ts`), each on its assertion; the
+motion-on halves and the same-task variant passed.
+
+| ID | Resolution | Red test | Where |
+|----|------------|----------|-------|
+| R2-01 | fixed: the end of a close scheduled with no motion is now cancellable like the exit animation. `#animate`'s no-motion path takes a token per entry or exit (`#pending`) and runs `done` only while that token is current; one helper, `#stop()`, cancels the running animation and clears the token, and replaces every former cancel pair: `disconnectedCallback`, `#reopen`, `#begin` and both platform-close branches of `#onClose`. The close's own end also runs `#finish` only while `open` is still false: a host's `open = true` in the continuation of the same `updateComplete` comes before the scheduled end, but its update (where `#reopen` runs) comes after it, so without that check the cancelled close would still dispatch its `…-close` (the reopen rows failed on exactly that after the token alone). `#leave` now removes this overlay, and only it, from the stack (`stack.filter((each) => each !== this)` spliced in place), so an overlay that is not on it leaves nothing and `splice(-1, 1)` can no longer take the overlay beneath. `#closeOwn`'s counting is unchanged. | `4a864bf`: "Closing under reduced motion, then removed in the host's continuation of updateComplete: …" (a `…-close` with reason `host` recorded after the removal); "Closing under reduced motion, then reopened in the host's continuation of updateComplete: …" (a `…-close` with reason `host` recorded after the reopen); "Stacked: an inner overlay closed under reduced motion and removed in the host's continuation, …" (a `…-close` with reason `host` from the removed inner overlay, and focus returned to the body instead of the outer's `ob`, because the second leave had popped the outer off the stack). Each with its "with motion on" half, which passed. | packages/elements/src/overlay.ts (`#pending`, `#stop`, `#animate`, `#begin`, `#reopen`, `disconnectedCallback`, `#onClose`, `#leave`); packages/elements/test/scenarios/dialog.ts (`removalRows`, `nestedRows`, stand-in op `settled`) |
+| R2-02 | fixed: `connectedCallback` now calls `requestUpdate()` after Lit's own, so a show that the update could not make while the host was out of the document is made by `updated()` once it is connected again; `open` is not reset. The state checks of `updated()` stay the only decision, so a connection of a closed overlay with `open` false, or of a shown one, changes nothing (the "Moved while open" rows pass unchanged). The call is unconditional, which leaves no condition to mutate. | `4a864bf`: "Opened, then moved before it is shown, re-inserted in a later task: …" and "Opened while out of the document, re-inserted in a later task: …" (`open` true but the panel neither open nor `:modal`, no top-layer entry, focus on the opener, and no close on `open = false`); "Opened, then moved before it is shown, re-inserted in the same task: …" is the positive half and passed. | packages/elements/src/overlay.ts (`connectedCallback`); packages/elements/test/scenarios/dialog.ts (`removalRows`) |
+
+Notes:
+
+- The stacked row with nested overlays shows the corrupted stack as the focus return to the body and the stray
+  `…-close`, not as the outer acting on Escape: the outer's own Escape check sees the open `:modal` inner panel in its
+  content (`#watcherAbove`) and does nothing. The landing probe's sibling overlays showed the Escape on the outer.
+- `browser/dialog.test.ts` names its tests with `$name` (40 characters), as before this round; the full names are in
+  `test/dialog.test.ts`, which the mutation runs use.

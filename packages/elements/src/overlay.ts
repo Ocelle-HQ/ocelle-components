@@ -269,6 +269,8 @@ export class OcelleOverlay extends LitElement {
   #opener: Element | null = null;
   #ownCloses = 0;
   #animation: Animation | undefined;
+  /** The end of an entry or exit scheduled with no motion, until it runs or a change of state cancels it (R-06). */
+  #pending: object | undefined;
   #below = new Set<HTMLDialogElement>();
   #asideFor: HTMLDialogElement | null = null;
   // Stryker disable next-line BooleanLiteral: equivalent, measured before any key reaches the panel: by the body's resize observer when it gets its box at showModal() (T025, reviews/phase-2/notes.md)
@@ -304,13 +306,19 @@ export class OcelleOverlay extends LitElement {
     this.requestUpdate();
   }
 
+  override connectedCallback(): void {
+    super.connectedCallback();
+    // R-05a: a show the update could not make while the host was out of the document is made now; the state checks of
+    // `updated()` decide, so a connection of a closed overlay with `open` false, or of a shown one, changes nothing.
+    this.requestUpdate();
+  }
+
   override disconnectedCallback(): void {
     // Stryker disable next-line CallExpression: equivalent, Lit's own disconnection serves reactive controllers and async directives, and the overlays use neither (T025, reviews/phase-2/notes.md)
     super.disconnectedCallback();
     // R-05a: an open or closing overlay closes silently, with no event and no focus move.
     if (this.#state === "closed") return;
-    this.#animation?.cancel();
-    this.#animation = undefined;
+    this.#stop();
     this.#closeOwn();
     this.#leave();
     this.#opener = null;
@@ -409,8 +417,7 @@ export class OcelleOverlay extends LitElement {
   }
 
   #reopen(): void {
-    this.#animation?.cancel();
-    this.#animation = undefined;
+    this.#stop();
     this.#state = "shown";
   }
 
@@ -469,13 +476,13 @@ export class OcelleOverlay extends LitElement {
   #begin(reason: CloseReason): void {
     this.#state = "closing";
     this.#reason = reason;
-    this.#animation?.cancel();
-    this.#animation = undefined;
+    this.#stop();
     this.open = false;
-    // Every change of state during the exit cancels its animation (a reopen, a platform close, a removal), so the end
-    // of the exit is the end of this close.
+    // Every change of state during the exit cancels its animation, or with no motion its scheduled end (a reopen, a
+    // platform close, a removal), so the end of the exit is the end of this close. A host's `open = true` whose update
+    // has not run yet (it reopens) comes before a scheduled end on the same `updateComplete`: that close is cancelled.
     this.#animate(false, () => {
-      this.#finish();
+      if (!this.open) this.#finish();
     });
   }
 
@@ -502,10 +509,9 @@ export class OcelleOverlay extends LitElement {
     dialog.close();
   }
 
-  /** Leaves the overlay stack. */
+  /** Leaves the overlay stack: this overlay, and never another; nothing when it is not on it (R-05a). */
   #leave(): void {
-    // Called only while open or closing, so it is on the stack.
-    stack.splice(stack.indexOf(this), 1);
+    stack.splice(0, stack.length, ...stack.filter((each) => each !== this));
     this.#listen(false);
     OcelleOverlay.#syncTop();
   }
@@ -537,14 +543,28 @@ export class OcelleOverlay extends LitElement {
     return entering ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 1 }, { opacity: 0 }];
   }
 
-  /** Runs the entry or exit animation, then `done`; with no motion, `done` runs after the next update (R-06). */
+  /** Cancels the running animation, and the end scheduled with no motion, so neither ends anything (R-06). */
+  #stop(): void {
+    this.#animation?.cancel();
+    this.#animation = undefined;
+    this.#pending = undefined;
+  }
+
+  /**
+   * Runs the entry or exit animation, then `done`; with no motion, `done` runs after the next update unless a change
+   * of state cancelled it first (`#stop`), as a host's continuation of the same `updateComplete` can (R-06).
+   */
   #animate(entering: boolean, done: () => void): void {
     const dialog = this.#dialog;
     const style = getComputedStyle(this);
     const duration = milliseconds(style.getPropertyValue("--ocelle-motion-base"));
     const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (dialog === null || reduced || still(duration)) {
-      void this.updateComplete.then(done);
+      const token = {};
+      this.#pending = token;
+      void this.updateComplete.then(() => {
+        if (this.#pending === token) done();
+      });
       return;
     }
     const easing = style.getPropertyValue("--ocelle-easing-standard") || "linear";
@@ -650,13 +670,11 @@ export class OcelleOverlay extends LitElement {
       // A platform close (R-03): reason host, nothing to close.
       this.#state = "closing";
       this.#reason = "host";
-      this.#animation?.cancel();
-      this.#animation = undefined;
+      this.#stop();
       this.open = false;
       this.#finish();
     } else if (this.#state === "closing") {
-      this.#animation?.cancel();
-      this.#animation = undefined;
+      this.#stop();
       this.#finish();
     }
   }
