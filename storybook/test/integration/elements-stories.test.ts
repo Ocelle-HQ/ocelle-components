@@ -229,6 +229,56 @@ describe("the ocelle-scroller stories in the built Storybook (009 FR-032, T020)"
   }
 });
 
+/** The scroll figures of the story's one scroller's box: its scroll range and its distance from the start. */
+function scrollFigures(page: Page): Promise<{ readonly range: number; readonly at: number }> {
+  return page.evaluate(() => {
+    const box = document.querySelector("#storybook-root ocelle-scroller")?.shadowRoot?.querySelector<HTMLElement>(".region-box");
+    return { range: (box?.scrollWidth ?? 0) - (box?.clientWidth ?? 0), at: Math.abs(box?.scrollLeft ?? 0) };
+  });
+}
+
+// Since 009 phase 2's operator round 3 (O3-01, T067; research.md R-15): the strip can grow after the story's first
+// scroll write (CI run 43791016532: a font loading late left "Overflowing at the end" short of its end). The case grows
+// it deterministically: once the first position is observed, it appends sentence-length chips (no style attribute, no
+// class) to the story's scroller, so that the scroll range grows by at least 200 px, and waits two animation frames. The
+// end story is then at its end and the middle story within 1 px of half the new range, with nothing styled and no
+// request outside the origin.
+const growing = [
+  { id: "elements-ocelle-scroller--overflowing-in-the-middle", share: 0.5 },
+  { id: "elements-ocelle-scroller--overflowing-at-the-end", share: 1 },
+] as const;
+
+describe("the mid-scroll ocelle-scroller stories hold their share of the scroll range when the strip grows after the first write (009 R-15, O3-01, T067)", { timeout: 60_000 }, () => {
+  for (const { id, share } of growing) {
+    for (const theme of ["light", "dark"] as const) {
+      it(`${id} in ${theme}: after sentence-length chips are appended, the scroll position is ${String(share)} of the new scroll range within 1 px`, async () => {
+        const { page, outside } = await open(id, theme, "ocelle-scroller");
+        const first = await scrollFigures(page);
+        await page.evaluate(() => {
+          const scroller = document.querySelector("#storybook-root ocelle-scroller");
+          for (const text of ["Assigned to the release train", "Waiting for the design review", "Blocked by the accessibility audit"]) {
+            const chip = document.createElement("button");
+            chip.type = "button";
+            chip.textContent = text;
+            scroller?.append(" ", chip);
+          }
+        });
+        await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+        const grown = await scrollFigures(page);
+        const { styled } = (await observeScrollers(page)) as { styled: unknown };
+        expect({
+          first: Math.abs(first.at - first.range * share) <= 1,
+          grewBy200: grown.range - first.range >= 200,
+          held: Math.abs(grown.at - grown.range * share) <= 1,
+          styled,
+          outside,
+        }).toEqual({ first: true, grewBy200: true, held: true, styled: [], outside: [] });
+        await page.close();
+      });
+    }
+  }
+});
+
 /** What a board or lane story's page shows: its theme, its boards' and lanes' state, and any style attribute or class on its markup. */
 function observeWorkflow(page: Page, element: string): Promise<unknown> {
   return page.evaluate((element) => {
