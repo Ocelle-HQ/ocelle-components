@@ -131,6 +131,18 @@ decision 1, task T059a):
   WebKit 16.4 to Chromium 125 / WebKit 17.4 (FR-029, FR-056; plan research R-06). No segment host carries a row
   attribute. The options "no, keep the floor" and "wait for the answer" were declined.
 
+**Operator decision during phase 6** (2026-11-16, human:jeroennouwsdev; `reviews/phase-6/operator-decisions.md`
+decision 1, on the T090 spike in `reviews/phase-6/spike.md`):
+
+- The link is named like the tabs (the spike's option (c)). With a host `aria-label`, Chromium names the role-less
+  link host as a generic around the link in every measured form that leaves the attribute on the host, so a
+  forwarded host `aria-label` always gives two named nodes. `ocelle-link` therefore takes its accessible name from its
+  text, or from a new `label` attribute and property (not reflected, trimmed, blank counts as none) that names the
+  link instead: a host `aria-label` is not forwarded to the link, the element writes no attribute on its host, and the
+  README tells hosts to name the link with `label`, which must contain the visible text (FR-045, User Story 5
+  scenario 8). Options (a), moving the attribute off the host, (b), accepting two named nodes, and (d), naming from
+  the text only, were declined.
+
 **Dependency on #10 (not merged).** The Storybook workbench of #10 (branch `claude/010-storybook-workbench`,
 `specs/006-storybook-workbench`) gives the `visual` gate (baselines in a pinned container, light and dark), the `axe`
 gate (axe on every story, serious and critical findings fail) and its contributor note (006 FR-025). Its design is
@@ -632,9 +644,16 @@ navigate" means the URL, its fragment included, is unchanged (scenario 14).
    (`--ocelle-focus-width`, `--ocelle-color-focus`, `--ocelle-focus-offset`) is drawn around each line's fragment.
 7. **Given** forced-colours mode, **Then** the link is drawn in the system `LinkText` colour, underlined, and the focus
    ring is visible.
-8. **Given** a host `aria-label` on the link, **Then** it is the link's name; the link's own text is the name otherwise.
-   In both cases the paragraph holds exactly one named node for the link (the link itself): no second node, generic
-   or other, carries the host `aria-label`.
+8. **Given** `<p>See <ocelle-link label="the mission log, opens in the viewer">the mission log</ocelle-link> for
+   details.</p>` (a name that starts with the visible text and extends it), **Then** `label` is the link's name; the
+   link's own text is the name otherwise (no `label`, or a blank one). In both cases the paragraph holds exactly one
+   named node for the link (the link itself): no second node, generic or other, carries the name. **When** `label` is
+   then changed, **Then** the link's name follows it. **Given** a host `aria-label="Other name"` beside that `label`,
+   and changed after first render, **Then** the link is still named from `label` and no link is named by the host
+   `aria-label`; **given** a host `aria-label` and no `label`, **Then** the link is named by its text. In each case
+   the host's `aria-label` reads as the host wrote it (the element writes no host attribute; FR-045). The README tells
+   hosts to name the link with `label`, which must contain the visible text. Paired with the link named "the mission
+   log" from its text alone, in the same test.
 9. **Given** an `href` whose URL, resolved against the document base, has a protocol other than `http:`, `https:` or
    the document's own protocol: `javascript:alert(1)`, the whitespace-padded `" javascript:alert(1)"`,
    `"java<TAB>script:alert(1)"` (a tab character inside the scheme) and `data:text/html,x`, **When** each is
@@ -927,9 +946,14 @@ navigate" means the URL, its fragment included, is unchanged (scenario 14).
 
 **Link (User Story 5)**
 
-- **FR-045**: `ocelle-link` is inline in running text, exposed as a link named by its text (or a host `aria-label`),
-  in the tab order, drawn in `--ocelle-color-link` with an underline and in `--ocelle-color-link-hover` on hover, and in
-  forced colours in `LinkText` with an underline.
+- **FR-045**: `ocelle-link` is inline in running text, exposed as a link in the tab order, drawn in
+  `--ocelle-color-link` with an underline and in `--ocelle-color-link-hover` on hover, and in forced colours in
+  `LinkText` with an underline. The link is named by `label` (attribute and property, not reflected, trimmed; blank
+  counts as none) when set, and by its text otherwise, with exactly one named node for the link (User Story 5
+  scenario 8). As for the tabs (FR-006's tabs exception; operator decision during phase 6), a host `aria-label` on
+  `ocelle-link`, written before or after first render, is not forwarded and does not name the link; the element
+  writes no attribute on its host, and the README tells hosts to name the link with `label`, which must contain the
+  visible text (WCAG 2.5.3).
 - **FR-046**: Enter and a primary-button click activate it; Space does not. Each plain activation emits one cancelable
   `ocelle-link-activate` with `{ href }`: the `href` attribute as written, or `null` without one. With `href`, a
   modified activation (Ctrl, Meta or Shift held on a click or Enter, or a middle-button click) emits no event, and

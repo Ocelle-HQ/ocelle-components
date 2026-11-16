@@ -74,7 +74,9 @@ lines are reports, not findings; entries are at most 30 changed lines.
   decision 1).
 - **T090 spikes (phase 6)**: the `file:` page cannot load the browser build or navigate under
   `--allow-file-access-from-files` (R-09, plan decision 6); the link host with a host `aria-label` exposes other than
-  one named link (R-08, plan decision 7).
+  one named link (R-08, plan decision 7). The first did not hold; the second held and is decided
+  (`reviews/phase-6/operator-decisions.md` decision 1): `ocelle-link` is named from its text or from a new `label`
+  set as the anchor's `aria-label`, a host `aria-label` is not forwarded (FR-045, US5-8).
 - **The engine-floor raise (T059a, before phase 4 starts)** (plan decision 1; operator decisions Q2 (c) and, second
   analysis, Q3 (b)): **decided yes** at the stop (2026-11-15, `reviews/phase-4/decision-1.md`, recorded in research
   R-06 Status). kitty-mission-ui supports WebKit 17.4 and Chromium 125 or later; the floor is raised to Chromium 125 /
@@ -296,7 +298,8 @@ reaches the tree as empty → text.
 
 ## Phase 6: User Story 5 - Follow or act on a link in running text: `ocelle-link` (Priority: P5)
 
-**Goal**: US5 scenarios 1 to 14; FR-045 to FR-049; native anchor, plain activations intercepted, navigation only to
+**Goal**: US5 scenarios 1 to 14; FR-045 to FR-049; native anchor named from its text or `label` (a host `aria-label`
+not forwarded; FR-045, operator decision during phase 6), plain activations intercepted, navigation only to
 allowed resolved protocols.
 
 **Independent Test**: on the strict-CSP fixture, links with and without `href` are activated by Enter and click,
@@ -305,7 +308,7 @@ the `file:` copy navigates to its `file:` target.
 
 ### Spikes (first)
 
-- [ ] T090 [US5] Spikes recorded in `specs/014-selection-input/reviews/phase-6/spike.md`: the `file:` fixture loads the browser build and navigates under `--allow-file-access-from-files` (R-09); the link host with a host `aria-label` exposes exactly one named link (R-08); stop-and-ask per the list above
+- [X] T090 [US5] Spikes recorded in `specs/014-selection-input/reviews/phase-6/spike.md`: the `file:` fixture loads the browser build and navigates under `--allow-file-access-from-files` (R-09); the link host with a host `aria-label` exposes exactly one named link (R-08); stop-and-ask per the list above. Done (`f947d58`): R-09 confirmed; the R-08 stop held and the operator chose option (c) (`reviews/phase-6/operator-decisions.md` decision 1): the link is named from its text or `label`, a host `aria-label` is not forwarded (FR-045, US5-8, R-08)
 
 ### Scaffold
 
@@ -314,18 +317,18 @@ the `file:` copy navigates to its `file:` target.
 ### Tests (red, one commit)
 
 - [ ] T092 [P] [US5] `packages/elements/test/link-target.test.ts`: `navigationTarget(href, baseURI, documentProtocol)` for `http:`, `https:`, the document's own protocol, `javascript:` padded and tab-split, `data:`, protocol-relative, custom-scheme `<base>`, `""` and fragments (FR-047)
-- [ ] T093 [P] [US5] `packages/elements/test/scenarios/link.ts`: US5-1 to US5-14 with "Observing navigation" (fragments in process; cross-document on the fixture; US5-11's base inserted after load; `context.on("page")` for US5-13), modified activations emit nothing, Space not handled, per-fragment focus ring. The spec's Edge Cases for the link, by name (analysis G1): host `hidden` (no box, no node); a second definition of `ocelle-link` (the first wins, nothing thrown)
+- [ ] T093 [P] [US5] `packages/elements/test/scenarios/link.ts`: US5-1 to US5-14 with "Observing navigation" (fragments in process; cross-document on the fixture; US5-11's base inserted after load; `context.on("page")` for US5-13), modified activations emit nothing, Space not handled, per-fragment focus ring. US5-8 on the `label` path (contracts § Pairings): the link named by a `label` that starts with the visible text and following a later `label` change, exactly one named node in the paragraph (plant: `label` set as the host's `aria-label` instead of the anchor's), named by its text with no or a blank `label`; a host `aria-label` beside `label`, written at first render and changed after, and a host `aria-label` with no `label`, do not name the link and read back as the host wrote them (plant: forwarding the host `aria-label` to `part="anchor"`), paired with the link named from its text alone. The spec's Edge Cases for the link, by name (analysis G1): host `hidden` (no box, no node); a second definition of `ocelle-link` (the first wins, nothing thrown)
 - [ ] T093a [P] [US5] `packages/elements/test/scenarios/tabs.ts`: US2-22's body with the real element, in this phase's red commit (T096), run in both harnesses (`test/tabs.test.ts`, `test/browser/tabs.test.ts`): the selected panel holds only an `ocelle-link` (its focusable anchor inside its shadow root); Tab on the selected tab focuses the link's anchor and the panel itself is not a tab stop (no `tabindex` on the panel), paired in the same body with the panel holding one `<button>` that the host removes, after which Tab from the selected tab focuses the panel. The phase 3 stand-in body (`x-shadow-link`, an open shadow root with `delegatesFocus`) stays (phase 3 review R1-04, `reviews/phase-3/notes.md` "Stand-ins")
 - [ ] T094 [P] [US5] `packages/elements/test/link.test.ts`, `packages/elements/test/browser/link.test.ts`, `fixtures/link.html`, `fixtures/link-target.html`; `packages/elements/test/browser-file/link-file.test.ts` with `browser-file/fixtures/` (policy in a `<meta>` element; US5-12); `entry-ocelle-link.test.ts`; `entry-root.test.ts`
-- [ ] T095 [P] [US5] `storybook/stories/link.stories.ts` (in a paragraph, wrapped across lines, focused, hover via #10's pointer parameter, host label containing the visible text) and the story test asserting no `label-content-name-mismatch` (plant: a label without the visible text); `readme.test.ts` gains the link, the `detail.href` warning, the label-in-name rule, and these statements (analysis G2): a host that navigates itself applies the same resolved-protocol check (FR-047); hosts that need other schemes handle the event (US5-9); a user's modified activation keeps the browser's new tab or window; a modified activation of a link without `href` does nothing; a host that wants to open a new window itself handles the event (FR-049)
+- [ ] T095 [P] [US5] `storybook/stories/link.stories.ts` (in a paragraph, wrapped across lines, focused, hover via #10's pointer parameter, a `label` containing the visible text) and the story test asserting no `label-content-name-mismatch` (plant: a story `label` without the visible text); `readme.test.ts` gains the link, the statement that the link is named with `label` and a host `aria-label` does not name it (FR-045), the `detail.href` warning, the label-in-name rule for `label`, and these statements (analysis G2): a host that navigates itself applies the same resolved-protocol check (FR-047); hosts that need other schemes handle the event (US5-9); a user's modified activation keeps the browser's new tab or window; a modified activation of a link without `href` does nothing; a host that wants to open a new window itself handles the event (FR-049)
 - [ ] T096 [US5] `red.sh 6`
 
 ### Implementation (green)
 
-- [ ] T097 [US5] `packages/elements/src/link-target.ts` and `packages/elements/src/ocelle-link.ts` (R-08): `part="anchor"`, `delegatesFocus`, `href` on the anchor only when allowed, `role="link"` and `tabindex="0"` otherwise, plain-activation interception (Alt included) with Enter handled on keydown for anchors without `href`, cancelable event, `location.assign` of the allowed target, host `aria-label` forwarded
-- [ ] T098 [US5] Manifest; README link section with every statement T095 checks (the `detail.href` warning, the label-in-name rule, FR-047's resolved-protocol check for hosts, US5-9's other schemes, FR-049's three statements); CHANGELOG
+- [ ] T097 [US5] `packages/elements/src/link-target.ts` and `packages/elements/src/ocelle-link.ts` (R-08): `part="anchor"`, `delegatesFocus`, `href` on the anchor only when allowed, `role="link"` and `tabindex="0"` otherwise, plain-activation interception (Alt included) with Enter handled on keydown for anchors without `href`, cancelable event, `location.assign` of the allowed target, `label` (not reflected, trimmed, blank as none) set as the anchor's `aria-label` and removed when blank, following changes; no host `aria-label` read, forwarded or in `observedAttributes`; no host attribute written (FR-045, R-08)
+- [ ] T098 [US5] Manifest (with `label`, contracts § `ocelle-link`); README link section with every statement T095 checks (name the link with `label`; a host `aria-label` does not name it; the `detail.href` warning, the label-in-name rule for `label`, FR-047's resolved-protocol check for hosts, US5-9's other schemes, FR-049's three statements); CHANGELOG
 - [ ] T099 [US5] Baselines for the link stories with `pnpm run visual:update` in #10's pinned container under docker (`storybook/baselines/`), with any shared baseline (the token stories included) that changes, inspected and committed with the reason in the commit message; move the story-theme counts of `gates/test/integration/visual.test.ts` and add the new light stories that show `color-ink` to `gates/plants/visual/fail-token-changed/plant.json`; record in `reviews/phase-6/notes.md` that no podman cross-engine check was possible and CI confirms the baselines at landing (operator decision 2026-11-14, `reviews/phase-2/operator-decisions.md`; FR-053, SC-007)
-- [ ] T100 [US5] Plants recorded in `reviews/phase-6/plants.md`; the gates of T028 plus `vitest run --project elements-browser-file`
+- [ ] T100 [US5] Plants recorded in `reviews/phase-6/plants.md`, the `label` path's included (contracts § Pairings: `label` set as the host's `aria-label`; forwarding the host `aria-label` to `part="anchor"`; a story `label` without the visible text); the gates of T028 plus `vitest run --project elements-browser-file`
 
 **Checkpoint**: `tdd-check.sh 6` reports `pass`.
 

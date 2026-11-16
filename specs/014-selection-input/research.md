@@ -489,21 +489,42 @@ anchor:
 Space is not handled (FR-046). An empty `href` is an `href` and resolves to the document's own URL; a fragment `href`
 resolves to a same-document URL and `location.assign` navigates within the document (SPEC-2-08, US5-14).
 
-**Host exposure** (PLAN-A11Y-SECURITY-1-006). Host `aria-label` is forwarded to the anchor (constitution III, mission
-005 Host ARIA), observed for changes. A role-less host carrying `aria-label` is exposed by Chromium as a named generic
-around the link (lens probe), a second named node. Phase 6's spike probes the host's exposure and picks the form that
-leaves exactly one named node for the link: candidates are the host itself being the link through its internals (with
-the anchor kept as the native activation and focus target) and a form that keeps the name off the host's node; the
-spike records the tree of each. US5-8 asserts exactly one named node in the paragraph; plant: the plain forward. If
-no form gives one named node, the phase stops and the operator decides.
+**Host exposure** (PLAN-A11Y-SECURITY-1-006; FR-045 as amended by the operator decision during phase 6). The host
+has no role. The anchor is named by its slotted text, or by the link's `label` (attribute and property, not
+reflected, trimmed, blank as none): the element sets `label` as the anchor's `aria-label` when it is non-blank and
+removes the anchor's `aria-label` otherwise, following each change. The element does not read, forward or observe the
+host's `aria-label` (no `observedAttributes` entry for it on `ocelle-link`) and writes no attribute on its host
+(mission 005's rule). With `label` alone the paragraph has exactly one named node, the focused link (generic "" →
+link "the mission log, opens in the viewer", phase 6 spike): the "exactly one named node" holds because the element
+never forwards a host `aria-label`, so it never adds a second name. A host `aria-label` a page writes anyway stays on
+the host and is the page's own attribute; it does not name the link (US5-8; plant: forwarding the host `aria-label` to
+the anchor, written at first render or after). US5-8 asserts exactly one named node in the paragraph for the
+`label` and the text cases; plant: the `label` written on the host (as `aria-label`) instead of the anchor.
 
-**Label in name** (PLAN-FRESH-2-005). A forwarded host `aria-label` that does not contain the link's visible text
-fails WCAG 2.5.3 (Label in Name, level A) and is axe-core 4.14.0's `label-content-name-mismatch`, impact serious, on
-by default and so in #10's rule set (round-2 lens probe: `aria-label="Docs"` on a link reading "here"). The element
-does not rewrite the label; the README's link section states that a host `aria-label` must contain the visible text,
-best starting with it (e.g. text "the mission log", label "the mission log, opens in the viewer"). US5-8's fixture and
-every story with a host label use such a label. Phase 6's story test runs #10's rule set on the link stories and
-asserts no `label-content-name-mismatch` finding; plant: a story label without the visible text.
+**Spike result and decision (T090, `reviews/phase-6/spike.md`; `reviews/phase-6/operator-decisions.md` decision 1).**
+Chromium 153 names a role-less link host from its `aria-label`, as it named the tabs host in phase 3, so the forwarded
+design gave two named nodes (a generic and the link, both "the mission log, opens in the viewer"). Not forwarding left
+the named generic around a link named by its text; internals role `none` or `presentation`,
+`:host { display: contents }` (alone and with `none`), and internals role `generic` or `group` all kept the named host
+node. An internals `link` role on the host gave two links; with the anchor's role suppressed to `generic` it gave one
+named link, but the focus then lands on a generic, not a link, and axe-core 4.14.0 reports `aria-roles` (critical).
+The only form with one named node that is also the focused link, the element moving the host's `aria-label` onto the
+anchor and removing it from the host, breaks mission 005's rule that an element never writes its host's attributes.
+The operator chose option (c): `ocelle-link` is named from its text or from `label`, as `ocelle-tabs` is named from
+`label`, and its README says so; options (a), moving the attribute, (b), accepting two named nodes, and (d), naming
+from the text only, were declined. That not forwarding a host `aria-label` is an exception to constitution III's
+"ARIA state set on a host (… an accessible name) reaches the real inner control" is recorded in plan.md Complexity
+Tracking, which extends the tabs' exception to the link with the same sunset. The same spike confirmed R-09 (the
+`file:` fixture loads the browser build and navigates).
+
+**Label in name** (PLAN-FRESH-2-005). A `label` that does not contain the link's visible text fails WCAG 2.5.3 (Label
+in Name, level A) and is axe-core 4.14.0's `label-content-name-mismatch`, impact serious, on by default and so in
+#10's rule set (round-2 lens probe: `aria-label="Docs"` on a link reading "here"; `label` reaches the anchor as its
+`aria-label`, so the rule reads it the same way). The element does not rewrite the label; the README's link section
+states that `label` must contain the visible text, best starting with it (e.g. text "the mission log", label "the
+mission log, opens in the viewer"). US5-8's fixture and every story with a `label` use such a label. Phase 6's story
+test runs #10's rule set on the link stories and asserts no `label-content-name-mismatch` finding; plant: a story
+`label` without the visible text.
 
 **Focus ring and underline** (PLAN-CORRECTNESS-1-019). The ring is an `outline` of `--ocelle-focus-width` in
 `--ocelle-color-focus` at `--ocelle-focus-offset` on the anchor; an inline box's outline is drawn per line fragment by
