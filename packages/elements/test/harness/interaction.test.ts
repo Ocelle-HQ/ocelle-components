@@ -6,12 +6,13 @@ import { interactionScenarios } from "../scenarios/harness.ts";
 
 // The interaction methods of the driver (012 research.md R-11, tasks.md T001) in process: the shared bodies of
 // scenarios/harness.ts on plain pages, a native button and link, and on `ocelle-test-host` where a method takes `inner`.
-// The same bodies run on the strict-CSP fixture in test/browser/harness.test.ts. Ending forced colours after each test
-// also ends reduced motion, so no emulation leaks into the next test of this page.
+// The same bodies run on the strict-CSP fixture in test/browser/harness.test.ts. Forced colours and reduced motion are
+// each ended after each test (operator decision A1, 2026-11-16), so no emulation leaks into the next test of this page.
 const driver = inProcessDriver();
 
 afterEach(async () => {
   await commands.emulateForcedColors("none");
+  await commands.emulateReducedMotion("no-preference");
 });
 
 describe("focus, press, click, hover, pointer, tabOrder, activeInner and computed with inner, in process", () => {

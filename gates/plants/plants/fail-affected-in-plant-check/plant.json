@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "The plants job of ci.yml passes --affected, so the Plants check would judge only the plants a diff selects: the registry check fails on it (op 016, affected-in-ci).",
+  "findings": [
+    {
+      "location": "ci.yml",
+      "rule": "affected-in-ci",
+      "message": "the plants job passes --affected"
+    }
+  ]
+}

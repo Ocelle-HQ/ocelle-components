@@ -20,6 +20,7 @@ const driver = inProcessDriver();
 
 afterEach(async () => {
   await commands.emulateForcedColors("none");
+  await commands.emulateReducedMotion("no-preference");
   document.body.innerHTML = "";
 });
 

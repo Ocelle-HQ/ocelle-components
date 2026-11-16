@@ -30,6 +30,8 @@ const axTree: BrowserCommand<[id: string, scope?: "element" | "subtree"]> = asyn
 const emulateForcedColors: BrowserCommand<[mode: "active" | "none", palette?: "light" | "dark"]> = async (context, mode, palette) => {
   await (await elementCommands()).emulateForcedColors(context, mode, palette);
 };
+// 013 phase 3 (research.md R-08, contracts/checks.md § Driver additions): reduced motion through the same
+// `page.emulateMedia` helper as forced colours, so neither clears the other.
 const emulateReducedMotion: BrowserCommand<[mode: "reduce" | "no-preference"]> = async (context, mode) => {
   await (await elementCommands()).emulateReducedMotion(context, mode);
 };
@@ -96,10 +98,10 @@ export default defineConfig({
       {
         // The in-process element tests (005 research.md R-11): browser mode, element source; mutated by
         // stryker.elements.config.json (R-12). The node, build and fixture tests run in their own projects below. The
-        // axTree and emulateForcedColors commands read Chromium's accessibility tree over CDP and switch forced colours
-        // for the shared scenario bodies (packages/elements/test/commands.ts); 012's press, hover, pointer,
-        // emulateReducedMotion, axe and axState drive the keyboard and mouse, read one accessibility node and run axe
-        // (012 research.md R-11). Each test file keeps its own iframe and custom-element registry (isolate, the default).
+        // axTree, emulateForcedColors and emulateReducedMotion commands read Chromium's accessibility tree over CDP and
+        // switch forced colours and reduced motion for the shared scenario bodies (packages/elements/test/commands.ts);
+        // 012's press, hover, pointer, axe and axState drive the keyboard and mouse, read one accessibility node and run
+        // axe (012 research.md R-11). Each test file keeps its own iframe and custom-element registry (isolate, the default).
         test: {
           name: "elements",
           include: ["packages/elements/**/*.test.ts"],

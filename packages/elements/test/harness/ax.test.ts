@@ -11,6 +11,7 @@ const driver = inProcessDriver();
 
 afterEach(async () => {
   await commands.emulateForcedColors("none");
+  await commands.emulateReducedMotion("no-preference");
 });
 
 describe("axState, current and reducedMotion, in process", () => {

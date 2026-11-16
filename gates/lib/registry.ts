@@ -177,3 +177,16 @@ export function shardInPlantCheckFindings(workflow: string, workflowPath: string
   const partial = (jobLines(workflow).get(plantJob) ?? []).some((line) => /--(?:shard|plan)\b/.test(line));
   return partial ? [{ location: { path: workflowPath }, gate: "plants", rule: "shard-in-plant-check", message: "the plants job passes --shard or --plan, so the Plants check would judge one shard or none" }] : [];
 }
+
+/**
+ * A finding for each of the three plant jobs (plants-plan, plants-shard, plants) a step of which passes `--affected`
+ * (op 016, spec.md OR-004): the required Plants check judges every plant, never a diff's selection.
+ */
+export function affectedInCiFindings(workflow: string, workflowPath: string): Finding[] {
+  const jobs = jobLines(workflow);
+  // Stryker disable next-line ArrayDeclaration: equivalent, a job's lines start empty, and a placeholder line holds no --affected
+  const passes = (job: string): boolean => (jobs.get(job) ?? []).some((line) => line.includes("--affected"));
+  return [...plantHelperJobs, plantJob]
+    .filter(passes)
+    .map((job) => ({ location: { path: workflowPath }, gate: "plants", rule: "affected-in-ci", message: `the ${job} job passes --affected, so CI would judge only the plants a diff selects` }));
+}

@@ -12,6 +12,7 @@ const driver = inProcessDriver();
 
 afterEach(async () => {
   await commands.emulateForcedColors("none");
+  await commands.emulateReducedMotion("no-preference");
 });
 
 /** The sink's record of an activation of `#link`, with nothing held and nothing prevented unless `changes` says so. */

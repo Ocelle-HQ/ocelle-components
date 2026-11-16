@@ -348,7 +348,7 @@ export const axScenarios: readonly HarnessScenario[] = [
     expected: { here: { attribute: "page", property: "page" }, there: { attribute: null, property: null }, inner: { attribute: null, property: null } },
   },
   {
-    name: 'reducedMotion("reduce") makes (prefers-reduced-motion: reduce) match, "no-preference" ends it, and forcedColors("none") resets it too',
+    name: 'reducedMotion("reduce") makes (prefers-reduced-motion: reduce) match, "no-preference" ends it, and forcedColors("none") leaves it alone (operator decision A1, 2026-11-16)',
     host: false,
     run: async (driver) => {
       await driver.mount(buttons);
@@ -362,7 +362,7 @@ export const axScenarios: readonly HarnessScenario[] = [
       await driver.forcedColors("none");
       return { before, reduced, ended, reset: await driver.computed("plain", "color") };
     },
-    expected: { before: "rgb(4, 4, 4)", reduced: "rgb(8, 8, 8)", ended: "rgb(4, 4, 4)", reset: "rgb(4, 4, 4)" },
+    expected: { before: "rgb(4, 4, 4)", reduced: "rgb(8, 8, 8)", ended: "rgb(4, 4, 4)", reset: "rgb(8, 8, 8)" },
   },
 ];
 

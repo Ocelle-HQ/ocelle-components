@@ -1,0 +1,53 @@
+Relayed verbatim by cross-session message from the operator's orchestrator session (session_01NUfZSc26YwQLeow31d6R6X), queued 2026-11-15T04:17:45Z, received by the op 015 /ocelle-run session 2026-11-15T04:17:52Z.
+
+From the orchestrator session (session_01NUfZSc26YwQLeow31d6R6X): T003 results.
+
+Run: draft PR #36 (closed unmerged after this message), run 43674498025, https://github.com/Ocelle-HQ/ocelle-components/actions/runs/43674498025. Head 860bdd2877dd7c554400f39269e1049ba95d20cf = 008's 78fe47542f77137d4fb2d45642f89029993a8af3 + the one-line ci.yml:89 change. Measured by the orchestrator session, run 2026-11-15 03:55–04:14 UTC on ubuntu-24.04 runners.
+
+Headline: 37 elements-only shards, all success, none survived. Worst job W = 1082 s (18 m 02 s; gate:mutation step 1049 s), job 132691675983, files packages/elements/src/overlay.ts:331-360. Next: 916 s (overlay.ts:61-90), 885 s (ocelle-drawer.ts:31-60), 870 s (overlay.ts:361-390). 27 of 37 exceeded 600 s, so the current 10-minute limit would have cancelled most of them. With your rule N = max(45, ceil(1.5 × 18.03 / 5) × 5) = max(45, 30) = 45 minutes.
+
+Dry-run lines: NOT available. gates/bin/mutation.ts prints only its own "mutation:" lines, not Stryker's "Initial test run succeeded" line (whole gate step read on 7 jobs, tails on the rest). Record as a gap; the dry run is inside the step time.
+
+Per elements shard: job id | conclusion | job time (started→completed) | gate:mutation step | files (GitHub truncates long names with "...") | mutation line
+132691675787 | success | 574 | 543 | focusable.ts:91-120 | 44 mutants, none survived; 0 timeouts, 28 compile errors
+132691675800 | success | 455 | 419 | ocelle-drawer.ts:61-90 | 0 mutants, 1 zero-mutant entry
+132691675804 | success | 703 | 672 | focusable.ts:61-90 | 83 mutants, none survived; 12 CE
+132691675816 | success | 654 | 621 | ocelle-dialog.ts:31-52,ocelle-drawer.... | 3 mutants, none survived; 1 zero-mutant entry
+132691675832 | success | 678 | 647 | focusable.ts:31-60 | 31, none survived; 4 CE
+132691675833 | success | 626 | 591 | focusable.ts:151-180 | 39, none; 17 CE; 1 equivalent
+132691675846 | success | 489 | 457 | focusable.ts:181-186,index.ts,package... | 8, none; 5 CE; 2 zero-mutant
+132691675848 | success | 623 | 584 | focusable.ts:121-150 | 53, none; 18 CE; 1 eq
+132691675852 | success | 720 | 685 | ocelle-drawer.ts:91-120 | 14, none; 3 CE
+132691675896 | success | 794 | 758 | ocelle-drawer.ts:121-150 | 48, none; 8 CE
+132691675926 | success | 622 | 590 | overlay.ts:91-120 | 3, none; 1 CE
+132691675940 | success | 623 | 591 | overlay.ts:571-600 | 40, none; 13 CE
+132691675946 | success | 775 | 737 | overlay.ts:301-330 | 19, none; 3 CE; 2 eq
+132691675964 | success | 870 | 835 | overlay.ts:361-390 | 56, none; 22 CE
+132691675965 | success | 430 | 399 | overlay.ts:181-210 | 0, 1 zero-mutant
+132691675968 | success | 885 | 856 | ocelle-drawer.ts:31-60 | 8, none
+132691675972 | success | 657 | 624 | overlay.ts:391-420 | 36, none; 21 CE; 2 eq
+132691675975 | success | 707 | 666 | overlay.ts:721-750 | 28, none; 3 CE
+132691675983 | success | 1082 | 1049 | overlay.ts:331-360 | 25, none; 3 CE; 4 eq
+132691675987 | success | 447 | 414 | overlay.ts:211-240 | 0, 1 zero-mutant
+132691675988 | success | 456 | 422 | overlay.ts:121-150 | 0, 1 zero-mutant
+132691675997 | success | 612 | 580 | overlay.ts:451-480 | 39, none; 15 CE
+132691676011 | success | 709 | 674 | overlay.ts:631-660 | 35, none; 10 CE; 2 eq
+132691676014 | success | 648 | 617 | overlay.ts:601-630 | 54, none; 27 CE
+132691676021 | success | 725 | 689 | overlay.ts:421-450 | 24, none; 10 CE
+132691676027 | success | 439 | 407 | overlay.ts:151-180 | 0, 1 zero-mutant
+132691676028 | success | 648 | 614 | overlay.ts:691-720 | 49, none; 22 CE; 1 eq
+132691676032 | success | 916 | 883 | overlay.ts:61-90 | 28, none; 5 CE; 2 eq
+132691676033 | success | 739 | 704 | overlay.ts:31-60 | 27, none; 15 CE
+132691676041 | success | 641 | 608 | overlay.ts:271-300 | 14, none; 4 CE; 1 eq
+132691676054 | success | 688 | 652 | overlay.ts:541-570 | 17, none; 4 CE
+132691676070 | success | 737 | 702 | overlay.ts:511-540 | 45, none; 27 CE
+132691676080 | success | 478 | 447 | ocelle-drawer.ts:151-155,overlay.ts:1... | 8, none; 4 CE; 1 zero-mutant
+132691676081 | success | 655 | 621 | overlay.ts:481-510 | 17, none; 5 CE; 1 eq
+132691676084 | success | 473 | 435 | overlay.ts:241-270 | 2, none; 2 CE; 1 eq
+132691676104 | success | 612 | 577 | overlay.ts:661-690 | 24, none; 10 CE; 3 eq
+132691676119 | success | 835 | 786 | overlay.ts:751-780 | 23, none; 10 CE; 1 eq
+(All "0 timeouts". Paths above are under packages/elements/src/.)
+
+Failed shards, all caused by the measurement commit itself, not by 008: they run the default stryker.config.json, whose initial test run includes gates/test/ci-workflow.test.ts:30/38, which pins "    timeout-minutes: 10" and so fails on #36 ("mutation: could not run: Stryker wrote no report (There were failed tests in the initial test run.)"). Jobs (job s / step s): 132691675809 gates/lib/story-page.ts:112-176 (67/38); 132691675811 gates/bin/axe.ts:44-148 (81/46); 132691675814 gates/lib/visual-host.ts:180-207,gates/visual/capture.ts,packages/elements/script... (85/51); 132691675815 gates/bin/axe.ts:150-164,gates/bin/visual.ts,gates/lib/story-page.ts:44-109 (88/52); 132691675827 story-page.ts:178-244 (76/44); 132691675869 story-page.ts:246-509 (82/48); 132691675947 story-page.ts:514-540,storybook-serve.ts,visual-hos... (91/62); 132691676007 packages/elements/src/overlay.ts:781-798,packages/tokens/src/source.ts (85/57) — so overlay.ts:781-798 was NOT measured. Unit tests failed on exactly that test, 1 of 4787 (job time about 17.5 min on CI); Plants failed for the same reason. Sign-off failed on 008's own commit 07cf18b (unrelated; 008 handles it at landing).
+
+Note for your design: a mixed shard (elements + non-elements files) runs under the default config, and the shard limit expression keys on packages/elements/src/ in the files value, so it would get the elements limit too.

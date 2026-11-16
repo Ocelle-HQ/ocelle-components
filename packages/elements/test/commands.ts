@@ -10,20 +10,34 @@
 // fixture page's main frame): `press`, `pointer` (hover, click with `force: true`, press and release of the mouse),
 // `axState` (one element's accessibility node), `emulateMotion` and `audit` (axe-core with 006's rule selection,
 // gates/lib/axe-rules.ts). They are the browser commands `press`, `hover`, `pointer`, `emulateReducedMotion`, `axe`
-// and `axState` below. Ending forced colours (`emulate(page, "none")`) also ends reduced motion, so the one reset
-// helper of a test file leaves no emulation behind.
+// and `axState` below. Ending forced colours (`emulate(page, "none")`) leaves reduced motion alone (013 research.md
+// R-08; operator decision A1, 2026-11-16), so a test file's reset ends both.
 import { createRequire } from "node:module";
 import type { CDPSession, Frame, Locator, Page } from "playwright";
 import type { BrowserCommandContext } from "vitest/node";
 import { ruleMeta, ruleOptions } from "../../../gates/lib/axe-rules.ts";
 import type { AxeRule } from "../../../gates/lib/axe-rules.ts";
-import type { AxeResult, AxState, ClickOptions, Modifier, Motion } from "./scenarios/driver.ts";
+import type { AxeResult, AxState, ClickOptions, Modifier } from "./scenarios/driver.ts";
 
-/** One unignored accessibility node: its role and its computed name. */
+/**
+ * One unignored accessibility node: its role and its computed name, for a heading its level (013 US2-1, US2-2), and for
+ * a range node (a progressbar, a slider) its value properties (013 phase 3, contracts/checks.md § Driver additions):
+ * `value` when the node has a current value, and `valuemin`, `valuemax` and `valuetext` as Chromium reports them.
+ * `valuetext` reads `""` in Chromium whatever the page sets (reviews/phase-3/spike.md), so no test asserts a value text
+ * on it.
+ */
 export interface AxNode {
   readonly role: string;
   readonly name: string;
+  readonly level?: number;
+  readonly value?: number;
+  readonly valuemin?: number;
+  readonly valuemax?: number;
+  readonly valuetext?: string;
 }
+
+/** The reduced-motion modes the tests emulate. */
+export type ReducedMotion = "reduce" | "no-preference";
 
 /** The forced-colours modes and the system palettes the tests emulate. */
 export type ForcedColors = "active" | "none";
@@ -46,6 +60,7 @@ interface RawAxNode {
   readonly backendDOMNodeId?: number;
   readonly role?: { readonly value?: unknown };
   readonly name?: { readonly value?: unknown };
+  readonly value?: { readonly value?: unknown };
   readonly description?: { readonly value?: unknown };
   readonly properties?: readonly RawAxProperty[];
 }
@@ -63,6 +78,25 @@ interface FrameTree {
 /** A protocol value as text: a string as it is, anything else as the empty string. */
 function text(value: unknown): string {
   return typeof value === "string" ? value : "";
+}
+
+/**
+ * A node as the readers report it: role and name, a heading's `level` property (013 US2-1, US2-2), and a range node's
+ * value properties, each only when Chromium reports it (013 phase 3).
+ */
+function reported(node: RawAxNode): AxNode {
+  const role = text(node.role?.value);
+  const property = (name: string): unknown => node.properties?.find((each) => each.name === name)?.value.value;
+  const level = property("level");
+  const named = role === "heading" && typeof level === "number" ? { role, name: text(node.name?.value), level } : { role, name: text(node.name?.value) };
+  const values: { value?: number; valuemin?: number; valuemax?: number; valuetext?: string } = {};
+  const value = node.value?.value;
+  if (typeof value === "number") values.value = value;
+  const [min, max, valueText] = [property("valuemin"), property("valuemax"), property("valuetext")];
+  if (typeof min === "number") values.valuemin = min;
+  if (typeof max === "number") values.valuemax = max;
+  if (typeof valueText === "string") values.valuetext = valueText;
+  return { ...named, ...values };
 }
 
 function inner(node: DomNode): readonly DomNode[] {
@@ -110,7 +144,7 @@ export async function axNodes(session: CDPSession, id: string, frameId?: string)
   const { nodes } = (await session.send("Accessibility.getFullAXTree", params)) as { nodes: readonly RawAxNode[] };
   return nodes
     .filter((node) => !node.ignored && node.backendDOMNodeId !== undefined && ids.has(node.backendDOMNodeId))
-    .map((node) => ({ role: text(node.role?.value), name: text(node.name?.value) }));
+    .map(reported);
 }
 
 /**
@@ -131,7 +165,7 @@ export async function axSubtree(session: CDPSession, id: string, frameId?: strin
   const found: AxNode[] = [];
   const walk = (node: RawAxNode): void => {
     const role = text(node.role?.value);
-    if (!node.ignored && role !== "InlineTextBox") found.push({ role, name: text(node.name?.value) });
+    if (!node.ignored && role !== "InlineTextBox") found.push(reported(node));
     for (const child of node.childIds ?? []) {
       const next = byNodeId.get(child);
       if (next !== undefined) walk(next);
@@ -156,19 +190,15 @@ async function frameIdOf(session: CDPSession, url: string): Promise<string | und
 /**
  * Emulates forced colours (`active` with a light or dark system palette) or ends the emulation (`none`). Ending it also
  * puts the page back in the light colour scheme the fixture contexts start in (browser/serve.ts), so a dark palette
- * never leaks into later tests on the same page (005 phase 4 review R1-01), and ends reduced motion (012 R-11).
+ * never leaks into later tests on the same page (005 phase 4 review R1-01). It leaves reduced motion alone (013
+ * research.md R-08; operator decision A1, 2026-11-16): `emulateMotion` ends that.
  */
 export async function emulate(page: Page, mode: ForcedColors, palette?: Palette): Promise<void> {
   if (mode === "none") {
-    await page.emulateMedia({ forcedColors: "none", colorScheme: "light", reducedMotion: "no-preference" });
+    await page.emulateMedia({ forcedColors: "none", colorScheme: "light" });
     return;
   }
   await page.emulateMedia(palette === undefined ? { forcedColors: mode } : { forcedColors: mode, colorScheme: palette });
-}
-
-/** Emulates the reduced-motion preference (`reduce` or `no-preference`). */
-export async function emulateMotion(page: Page, mode: Motion): Promise<void> {
-  await page.emulateMedia({ reducedMotion: mode });
 }
 
 /** The element with `id` in `frame`, or the first element matching `inner` in its shadow root. */
@@ -290,6 +320,15 @@ export async function audit(frame: Frame, load: () => Promise<unknown>, rules: R
   );
 }
 
+/**
+ * Emulates `prefers-reduced-motion` (013 research.md R-08, PLAN-CORRECTNESS-1-013): through Playwright's own
+ * `reducedMotion` option of `page.emulateMedia`, beside `emulate()`, so a later forced-colours call keeps it (every
+ * `emulateMedia` call sends all the media features, the reduced motion Playwright holds among them).
+ */
+export async function emulateMotion(page: Page, mode: ReducedMotion): Promise<void> {
+  await page.emulateMedia({ reducedMotion: mode });
+}
+
 /** Which nodes `axTree` reads: the element's own and its shadow subtree's (`axNodes`), or its accessibility subtree (`axSubtree`). */
 export type AxScope = "element" | "subtree";
 
@@ -314,8 +353,8 @@ export async function emulateForcedColors(context: BrowserCommandContext, mode: 
   await emulate(context.page, mode, palette);
 }
 
-/** The `emulateReducedMotion(mode)` browser command (registered in vitest.config.ts). */
-export async function emulateReducedMotion(context: BrowserCommandContext, mode: Motion): Promise<void> {
+/** The `emulateReducedMotion(mode)` browser command (registered in vitest.config.ts; 012, 013 phase 3). */
+export async function emulateReducedMotion(context: BrowserCommandContext, mode: ReducedMotion): Promise<void> {
   await emulateMotion(context.page, mode);
 }
 
@@ -361,10 +400,10 @@ declare module "vitest/browser" {
      * accessibility subtree.
      */
     axTree: (id: string, scope?: AxScope) => Promise<AxNode[]>;
-    /** Emulates forced colours with a system palette, or ends the emulation (and reduced motion) with `"none"`. */
+    /** Emulates forced colours with a system palette, or ends the emulation with `"none"`. */
     emulateForcedColors: (mode: ForcedColors, palette?: Palette) => Promise<void>;
-    /** Emulates the reduced-motion preference. */
-    emulateReducedMotion: (mode: Motion) => Promise<void>;
+    /** Emulates `prefers-reduced-motion: reduce`, or ends it with `"no-preference"` (012, 013 phase 3). */
+    emulateReducedMotion: (mode: ReducedMotion) => Promise<void>;
     /** Presses `key` with `modifiers` held. */
     press: (key: string, modifiers?: readonly Modifier[]) => Promise<void>;
     /** Moves the mouse to the element with `id` (or its shadow element `inner`). */

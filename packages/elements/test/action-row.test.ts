@@ -15,6 +15,7 @@ const driver = inProcessDriver();
 
 afterEach(async () => {
   await commands.emulateForcedColors("none");
+  await commands.emulateReducedMotion("no-preference");
 });
 
 describe("ocelle-action-row, in process (US4)", { timeout: 60_000 }, () => {
