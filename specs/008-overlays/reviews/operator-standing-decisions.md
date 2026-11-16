@@ -23,3 +23,9 @@
   - take main's `gates/test/vitest-config.test.ts`;
   - regenerate any conflicting baseline PNG in the pinned container.
 - **Reported as:** a known gap in ALL PHASES DONE.
+
+## Feature gate approved (2026-11-16)
+
+- **Decided by:** the operator, asked in this session as a multiple-choice question.
+- **Answer:** "Approve". The operator approved the feature at cfef8c0 (all 5 phases reviewed, approved, folded and pushed).
+- **Next:** ALL PHASES DONE goes to the orchestrator, and the orchestrator opens the draft PR.
