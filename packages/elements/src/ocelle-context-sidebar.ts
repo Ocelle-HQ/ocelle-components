@@ -11,7 +11,8 @@
 // one layout column (`flex: 1 0 auto`) holds three wrappers: the head, the sections (the default slot) and the footer,
 // which `margin-block-start: auto` keeps at the block end. The head and footer are padded `--ocelle-space-4`; the
 // sections wrapper has inline padding only, so text in the default slot gets the inline inset and no block padding.
-// Each section (an element in the default slot that is not `hidden`) is a block padded `--ocelle-space-4`, with
+// Each section (an element in the default slot that is not `hidden`, nor a `template` or `script`, which keep the
+// user agent's `display: none`; landing review L1-03) is a block padded `--ocelle-space-4`, with
 // negative inline margins that make its `border-block-start` span the sidebar, and every section but the first visible
 // one carries that divider. Those four declarations are `!important`, so a page reset does not remove them; the
 // section's block margins are a normal `margin-block: 0`, which a page rule beats (FR-008, FR-022). The dividers
@@ -91,7 +92,7 @@ export class OcelleContextSidebar extends LitElement {
       display: none;
     }
 
-    ::slotted(:not([slot]):not([hidden])) {
+    ::slotted(:not([slot]):not([hidden]):not(template, script)) {
       display: block !important;
       padding: var(--ocelle-space-4) !important;
       margin-block: 0;
@@ -99,7 +100,7 @@ export class OcelleContextSidebar extends LitElement {
       border-block-start: var(--ocelle-border-width) solid var(--ocelle-color-rule) !important;
     }
 
-    ::slotted(:nth-child(1 of :not([slot]):not([hidden]))) {
+    ::slotted(:nth-child(1 of :not([slot]):not([hidden]):not(template, script))) {
       border-block-start: none !important;
     }
 

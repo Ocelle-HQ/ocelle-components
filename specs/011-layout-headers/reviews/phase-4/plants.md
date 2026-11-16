@@ -138,3 +138,33 @@ manifest then lists a member `[internalsKey]`.
 | Plant | In process (`elements`) | Fixture (`elements-browser`) |
 |---|---|---|
 | a comment line changed | 0 | 0 |
+
+## Review round 2 fix
+
+The fix for R2-01 adds `:not(template, script)` to the two section rules of `src/ocelle-context-sidebar.ts` (the
+section rule and the first-section rule); the fix for R2-02 adds `"stripInternal": true` to
+`packages/elements/tsconfig.json`. Planted with the method above, on the fix code with the `fix-2` red commit's tests
+(`4da65c9`), on 2026-11-16 in this container, by a script that applies each plant, runs the suites with Vitest's JSON
+reporter and restores the file. The scenario plants run `test/context-sidebar.test.ts` (`elements`) and
+`test/browser/context-sidebar.test.ts` (`elements-browser`, the browser build rebuilt from the planted source); the
+declarations plants run `test/build/build.test.ts` (`elements-build`, after the package's build). The R-17 style plants
+cover every declaration of the two changed rules. A control run with no plant (a comment line changed) failed no test
+in any of the three projects. Every plant makes at least one test fail in each harness it applies to.
+
+| Plant | In process (`elements`) | Fixture (`elements-browser`) |
+|---|---|---|
+| pairing: `:not(template, script)` dropped from the section rule | 1: US3-3, template and script (phase 4 rev… | 1: US3-3, template and script (phase 4 rev… |
+| pairing: `:not(template, script)` dropped from the first-section rule only | 1: US3-3, template and script (phase 4 rev… | 1: US3-3, template and script (phase 4 rev… |
+| style: section rule `display: block !important;` | 3: US3-3, ocelle-section-header and span s…; US3-3, a ul reset (ul { margin: 0; padd…; US3-3, a reset of every element (* { ma… | 3: US3-3, ocelle-section-header and span s…; US3-3, a ul reset (ul { margin: 0; padd…; US3-3, a reset of every element (* { ma… |
+| style: section rule `padding: var(--ocelle-space-4) !important;` | 16: US3-3, light: a sidebar with a head, th…; US3-3, dark: a sidebar with a head, thr…; US3-3, ocelle-section-header and span s…; and 13 more | 15: US3-3, light: a sidebar with a head, th…; US3-3, dark: a sidebar with a head, thr…; US3-3, ocelle-section-header and span s…; and 12 more |
+| style: section rule `margin-block: 0;` | 3: US3-3, FR-008: with a ul and a p as sec…; US3-3, a ul reset (ul { margin: 0; padd…; US3-3, a reset of every element (* { ma… | 3: US3-3, FR-008: with a ul and a p as sec…; US3-3, a ul reset (ul { margin: 0; padd…; US3-3, a reset of every element (* { ma… |
+| style: section rule `margin-inline: calc(-1 * var(--ocelle-space-4)) !important;` | 20: US3-3, light: a sidebar with a head, th…; US3-3, dark: a sidebar with a head, thr…; US3-3, ocelle-section-header and span s…; and 17 more | 20: US3-3, light: a sidebar with a head, th…; US3-3, dark: a sidebar with a head, thr…; US3-3, ocelle-section-header and span s…; and 17 more |
+| style: section rule `border-block-start: var(--ocelle-border-width) solid var(--ocelle-color-rule) !important;` | 18: US3-3, light: a sidebar with a head, th…; US3-3, dark: a sidebar with a head, thr…; US3-3, ocelle-section-header and span s…; and 15 more | 18: US3-3, light: a sidebar with a head, th…; US3-3, dark: a sidebar with a head, thr…; US3-3, ocelle-section-header and span s…; and 15 more |
+| style: first-section rule `border-block-start: none !important;` | 17: US3-3, light: a sidebar with a head, th…; US3-3, dark: a sidebar with a head, thr…; US3-3, ocelle-section-header and span s…; and 14 more | 17: US3-3, light: a sidebar with a head, th…; US3-3, dark: a sidebar with a head, thr…; US3-3, ocelle-section-header and span s…; and 14 more |
+| control: a comment line changed | 0 | 0 (and 0 in `elements-build`) |
+
+| Declarations plant | Build (`elements-build`) |
+|---|---|
+| `stripInternal` removed from packages/elements/tsconfig.json | 1: dist/ocelle-context-sidebar.d.ts and dist/ocelle-personal-rail.d.ts declare label and no internalsKey, and dist/naming.d.ts declares accessibleName and no internalsKey |
+| `@internal` removed from the sidebar's internals field | 1: dist/ocelle-context-sidebar.d.ts and dist/ocelle-personal-rail.d.ts declare label and no internalsKey, and dist/naming.d.ts declares accessibleName and no internalsKey |
+| `@internal` removed from the rail's internals field | 1: dist/ocelle-context-sidebar.d.ts and dist/ocelle-personal-rail.d.ts declare label and no internalsKey, and dist/naming.d.ts declares accessibleName and no internalsKey |
