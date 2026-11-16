@@ -186,7 +186,8 @@ code that ran.
 - The re-entry row ("Hover delay, moves inside the tooltip before the delay …") can fail under full-suite load with
   "no run it can judge" (red step above: moves back at 334, 354.2 and 470.3 ms). Its moves are timed by the host, so
   under load they can come after the 300 ms delay in all three runs. Not changed here. Whether to change its timing
-  is a question for the operator.
+  is a question for the operator. Decided (decision 2 below) and done in `a36d8a1`: see § The R-12 re-entry row
+  after the operator's decision.
 - R-16's `storybook/.storybook/main.ts:49` should read `:23` (T054).
 - Out of scope per T057: `dismiss` ending pending delays, and a WebKit 17 row for a pending delay under a modal (no
   WebKit harness in the elements suites).
@@ -214,3 +215,65 @@ Asked in this session as multiple-choice questions:
      - the two hand checks;
      - WebKit.
    - T055 is ticked with these stated.
+
+## The R-12 re-entry row after the operator's decision (`a36d8a1`)
+
+`a36d8a1` changes `packages/elements/test/scenarios/tooltip.ts` only (no source, default delay, other row or spec
+change), following the R-12 leave row (`reviews/phase-4/notes.md` § The R-12 leave row after the operator's decision).
+The row's page sets `#tip { --ocelle-tooltip-delay: 1000ms; }` through `start`'s rules, as the leave row does.
+`beforeDelay("the move back onto the trigger", …, longDelay)` keeps the measured move back (`Frames.moved`) and judges
+a run only when it came before 1000 ms. The moves are unchanged (entry at the trigger's edge, the inner span's centre,
+the edge again, no pause between). The wait after them is `pause(1000)` then `pause(500)` (each at most 1 000 ms,
+R-15), the leave row's `longWait`. The bounds are scaled: `beforeDelay` is no bubble before 1000 ms from the entry,
+`beforeRestart` is shown before the move back plus 1000 ms (the restart check, kept), and `byWait` (was `by450`) is
+shown by 1500 ms from the entry. `longDelay` and `longWait` are the leave row's constants; their comment now names
+both rows. The default 300 ms delay stays covered by the other delay rows.
+
+### Row changed (old and new full names, measured times)
+
+- Old: "Hover delay, moves inside the tooltip before the delay (R-12's delay rule, the matrix's re-entry): the pointer
+  enters the trigger, moves onto its inner span and back onto the trigger's edge, both moves before the delay: the
+  timer is not restarted, not shown before the 300 ms delay from the first entry, shown before 300 ms from the move
+  back and by 450 ms"
+- New: "Hover delay, moves inside the tooltip before the delay (R-12's delay rule, the matrix's re-entry): with
+  --ocelle-tooltip-delay: 1000ms on the tooltip, the pointer enters the trigger, moves onto its inner span and back
+  onto the trigger's edge, both moves before that delay: the timer is not restarted, over a 1500 ms wait from the
+  first entry: not shown before 1000 ms from the first entry, shown before 1000 ms from the move back and by 1500 ms
+  from the first entry"
+- Times, page-side, in ms from the entry, unloaded, 3 runs in each harness (in process / fixture twin), read with a
+  temporary probe that was then removed: move back at 134.1, 149.9, 133.0 / 133.3, 133.2, 133.2 ms; first frame
+  showing the bubble at 1016.6, 1016.7, 1016.9 / 1016.3, 1016.5, 1016.5 ms; last frame at 1682.9, 1699.7, 1683.1 /
+  1683.0, 1682.9, 1682.9 ms. A restarted timer would show the bubble at about 1133 ms or later, after the
+  `beforeRestart` bound. The moves back that failed red.sh (334, 354.2, 470.3 ms) are well under the new 1000 ms bound.
+
+### Break checks (temporary source edits, reverted, never committed)
+
+Each ran the row in both harnesses (`tooltip.test.ts` in process, `test/browser/tooltip.test.ts` on the fixture,
+built from the edited source) with the new row. The results were the same in both.
+
+- B1, no delay (`if (delay > 0 && false)` in `#onPointerover`): the row fails, `beforeDelay: true`.
+- B2, the timer restarted on re-entry (in `#onPointerover`, the `this.#inside(event.relatedTarget)` return removed and
+  `window.clearTimeout(this.#timer)` added before the new `setTimeout`): the row fails, `beforeRestart: false`
+  (`byWait` stays true: the restarted timer still shows the bubble inside the 1500 ms window).
+
+### Repeat runs at `a36d8a1`
+
+- `tooltip.test.ts` (in process) and `test/browser/tooltip.test.ts` (fixture twin), run together: 208 of 208 passed
+  (104 in each), 3 runs of 3.
+- `gate:typecheck`, `gate:lint`, `gate:test-lint`: no finding.
+- `pnpm test` run 1 (`full-test-a36d8a1.log`, 718 s): **5067 of 5067 passed** in 159 files, exit 0.
+- `pnpm test` run 2 (`full-test-a36d8a1-run2.log`, 721 s): **5067 of 5067 passed** in 159 files, exit 0.
+- The commits after `a36d8a1` that hold these logs change only `specs/008-overlays/`, so the code that ran is the
+  code they hold.
+
+### Mutation at `a36d8a1`
+
+The row kills mutants in `#onPointerover` (B1, B2), so shards 15 to 17 ran again, `gate:mutation -- --base 78fe475
+--files packages/elements/src/ocelle-tooltip.ts:<lines>`, output appended to `mutation.log`. No new survivor; the
+counts equal the phase 4 runs at `9a66884`.
+
+| Shard | Entries | Mutants on changed lines | Survived | Timeouts | Compile errors | Equivalent records | Exit | Time |
+|---|---|---|---|---|---|---|---|---|
+| 15 | `:241-270` | 24 | 0 | 0 | 4 | 0 | 0 | 508 s |
+| 16 | `:271-300` | 39 | 0 | 0 | 10 | 0 | 0 | 519 s |
+| 17 | `:301-330` | 34 | 0 | 0 | 16 | 2 | 0 | 551 s |
