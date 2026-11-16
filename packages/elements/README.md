@@ -373,6 +373,28 @@ features, and records the feature in its own feature's research.
 
 Only Chromium is measured. WebKit (Kitty Desktop on macOS and Linux) is not: its accessibility tree, forced colours and
 mirroring are an open limitation.
+WebKit is not measured for the layout elements either: the tab stop of `ocelle-scroller` and `ocelle-workflow-board`
+while they overflow, their arrow keys, their focus handover when overflow ends and `ocelle-list-detail`'s focus moves
+are untested there.
+
+## Layout elements: screens, print and states
+
+The layout elements are tested in four frames that stand for screens, each a block box of a stated inline size on a
+page whose viewport is wider than the frame, so the element's own measurement is tested, not the viewport's; the
+figures assume a 16 px root font size:
+
+- Frame W, 876 px: the 1280 px window beside a context sidebar, 1280 px less the rail (52 px), the sidebar (320 px)
+  and two gutters (32 px).
+- Frame R, 1196 px: the 1280 px window with the rail only.
+- Frame N, 636 px: the narrow tier, at a 720 px viewport (`--ocelle-shell-collapse-sidebar`, 45rem), where the
+  sidebar has collapsed.
+- Frame S, 288 px: the 320 px reflow width.
+
+These elements are screen layouts. In print, a board shows its lanes as the browser lays them out, and content
+off-screen in a scroller is not printed.
+
+Loading, error and disabled states do not apply to `ocelle-scroller`, `ocelle-workflow-board`, `ocelle-workflow-lane`
+and `ocelle-list-detail`: they are layout elements, with no such state and no story for one.
 
 ## Element conventions
 
