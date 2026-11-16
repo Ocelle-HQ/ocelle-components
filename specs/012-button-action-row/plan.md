@@ -106,7 +106,7 @@ phase 2),
    it.
 2. **Moved list and styling hooks** (round 1 forks PLAN-A11Y-SECURITY-1-004 (a), PLAN-FRESH-1-009 (a)): the button
    also moves `aria-haspopup` and `aria-pressed`; it exposes `:state(expanded)`, `:state(pressed)` and
-   `:state(current)` for host styling.
+   `:state(current)` for host styling (`:state(pressed)` in button mode only, decision 32).
 3. **Engine floor Chromium 135 and WebKit 17.4** (R-04, round 1 fork PLAN-FRESH-1-008 (a)): element reflection
    (Chromium 135, WebKit 16.4) and custom states (Chromium 125, WebKit 17.4), from MDN browser-compat-data; no fallback.
 4. **`delegatesFocus` and `click()`** (R-01, R-06): `element.focus()` focuses the inner control; `element.click()`
@@ -172,8 +172,12 @@ phase 2),
     element mission cannot add stories under the current design. Phase 6 corrects the figures in `gates/README.md` and
     006's row (T068). Checked against the merged code: nothing this design relies on differs from the branch design
     (R-13 lists what changed at 006's landing and why none of it matters here).
-16. **Unavailable current row** (check-3 note SPEC-3-07): the unavailable look wins (disabled ink, no hover), and the
-    current bar stays drawn (in disabled ink) so the position in the list is still visible; `aria-current` stays.
+16. **Unavailable current row** (check-3 note SPEC-3-07; reading (i) confirmed by the operator, decision 31): the row
+    keeps its current surface (`accent-low`, or `chrome-hover` with `ground="chrome"`; `Canvas` under forced colours),
+    it does not drop to the idle surface; the unavailable look wins for the rest: its title, description, tags and
+    trailing content take the disabled ink (`GrayText` under forced colours) and it shows no hover; the current bar
+    stays drawn, in disabled ink (`GrayText` under forced colours), so the position in the list is still visible;
+    `aria-current` stays.
 17. **Manifest** (R-15, round 1 fork PLAN-CORRECTNESS-1-006 (a)): the moved attributes are declared with descriptions;
     the normaliser drops a standard attribute only when the element does not declare it (005's output unchanged).
 18. **The inner control fills the host** (R-01, R-10, round 2 fork PLAN-FRESH-2-001 (a); for the row, restated by
@@ -326,6 +330,53 @@ phase 2),
     `background-color: Canvas`, as `a.control` does in `controlStyles`: without it axe read the dark palette's text
     over an unknown background and reported `color-contrast`. R-01, R-10, R-12, the data model, T049a, T056, T060 and
     T064 say the same. No principle is relaxed and no exception is recorded.
+    *Amended by decision 31* (phase 6, 2026-11-16): while the row is unavailable, the description, tags and trailing
+    wrappers also carry `aria-disabled="true"`, so axe treats their disabled ink as part of the inactive control.
+31. **Unavailable sibling wrappers and the unavailable current row** (operator decisions at phase 6, 2026-11-16,
+    human:jeroennouwsdev, two multiple-choice answers: (a) and reading (i); spec "Operator decisions at phase 6";
+    decisions 16 and 30; R-10, R-12; the phase 6 implementer's stop-and-ask, recorded in `reviews/phase-6/notes.md`).
+    *Finding* (spike T060, `reviews/phase-6/spike.md` check (4)): axe-core 4.14.0's `color-contrast` skips text with
+    `aria-disabled="true"` on it or on an ancestor in the flattened tree. The title is inside the inner control, which
+    is `aria-disabled` while the row is unavailable, so axe skips it; since decision 30 the description, tags and
+    trailing wrappers are siblings of that control, so axe checked their `--ocelle-color-disabled-ink` text as active
+    text. That ink is below 4.5:1 on several row surfaces (light: `accent-low` 4.27, `inset` and `hover-bg` 4.07,
+    `rail` 4.38, `chrome` 3.37, `chrome-hover` 3.04; dark: `accent-low` 3.75, `inset` 3.84, `hover-bg` 4.12,
+    `chrome-hover` 4.39). Of 72 unavailable pages (every slot, with and without `current`, default and flush, nine
+    grounds, light and dark) 52 drew one serious `color-contrast` violation on the slotted description and tags: every
+    unavailable current row, every unavailable flush row off canvas and sheet, and every unavailable chrome row;
+    against T060, FR-052 and T063. Plain, hovered and focused current rows gave 0 results of any impact (US5-4 holds).
+    *Decision 1, option (a)*: while `unavailable` is set, the description, tags and trailing wrappers carry
+    `aria-disabled="true"` (removed when it is cleared). They are already `aria-hidden` and have no accessibility
+    node, so axe treats their text as part of the inactive control, as WCAG 1.4.3 and FR-042 already do. Measured by
+    the implementer as a trial edit: all 72 pages give 0 axe results of any impact, with no `aria-allowed-attr`
+    result; the accessibility tree, name, description, disabled state, focusability and `aria-current` of a current
+    row are unchanged in button and link mode, available and unavailable. The sibling ink (R-10 § Sibling ink) and
+    forced colours (R-12) are unchanged. Rejected: (b) the siblings keep their available ink while unavailable
+    (changes US5-7); (c) an FR-052 exception with `a11y-exceptions.json` entries (consumers' pages would show the
+    finding).
+    *Decision 2, reading (i) of decision 16*: a row that is both unavailable and current keeps its current surface
+    (`accent-low`, or `chrome-hover` with `ground="chrome"`), with disabled ink, a disabled-ink bar and no hover;
+    reading (ii), the idle surface, is rejected. Decision 16 now states it.
+    Tests: T061 gains axe on unavailable rows with description and tags (with and without `current`, default and
+    flush, on canvas, `accent-low` and `ground="chrome"`, light and dark: 0 results of any impact; plant: wrappers
+    without `aria-disabled`) and the unavailable current row's surface (kept, unchanged on hover); T063's unavailable
+    and unavailable current stories give 0 serious or critical axe results; T064 implements both. No principle is
+    relaxed and no exception is recorded, so no Complexity Tracking row is needed.
+32. **`:state(pressed)` is button mode only** (operator decision at phase 6, 2026-11-16, human:jeroennouwsdev,
+    multiple choice: "fix in phase 6"; a finding routed from mission 018 by the orchestrator; spec FR-004, FR-009,
+    US2-12; R-03). *Finding*: FR-009 allows `aria-pressed` in button mode only and the inner `<a>` never carries it,
+    but `ocelle-button` set the `pressed` custom state from the moved value in either mode, and phase 3's US2-12 test
+    (T031) asserted that, so a host `:state(pressed)` rule could show a pressed look on a link that reports no
+    pressed state. *Decision*: a link has no pressed state; in link mode the element never sets `pressed`, whatever
+    the moved `aria-pressed` (the value stays stored and mirrored, so a switch back to button mode applies it and sets
+    the state again). Mission 018's pill follows the same rule. US2-12's link-mode expectation is replaced by a
+    stricter one in phase 6's red commit (constitution VIII: "a test that turns out wrong is replaced by a stricter
+    one with the reason recorded"; the reason is this decision): a link-mode button with `aria-pressed="true"` does
+    not match `:state(pressed)` in each step, and a button-mode one with `aria-pressed="true"` stops matching when an
+    `href` switches it to link mode and matches again when the `href` is cleared. The README's custom-states sentence,
+    its `readme.test.ts` line and the `@cssstate pressed` description say "in button mode". Plant: `pressed` state in
+    any mode. Tasks T061a and T064a; T066 runs the plant. No principle is relaxed and no exception is recorded, so no
+    Complexity Tracking row is needed.
 
 ## Project Structure
 
@@ -454,7 +505,8 @@ one at a time.
 6. **US5 Row states and card** (P5): link-row activation order and `preventDefault`, modifier, Alt and middle clicks
    (sink and fixture bodies), `current` and its bar apart from the ring (R-12's method, drawn by the hit layer, with
    hover precedence, forced colours and the chrome surface; the spike measures axe `color-contrast` on a current row,
-   decision 30), `unavailable` (no `href` on a link row, decision 9; with `current`, decision 16;
+   decision 30), `unavailable` (no `href` on a link row, decision 9; the sibling wrappers `aria-disabled`, decision 31;
+   with `current`, the current surface kept, decisions 16 and 31;
    a stretched unavailable row), the restyled rows (decision 23; a spike first lists by hand which outside points
    lie outside the row's hit layer per mode and page rule), card layout on decision 30's model (the same wrappers and
    hit layer), tags wrapping, title gap and part; stories

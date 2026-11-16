@@ -173,6 +173,22 @@ decision 30):
   host's outside points are stated for that layer ("the control's hit layer fills the host"). The card layout follows
   the same model.
 
+**Operator decisions at phase 6** (2026-11-16, human:jeroennouwsdev; the phase 6 implementer's stop-and-ask, plan
+decision 31):
+
+- Unavailable rows and axe, "(a) mark the content beside the control as disabled too": axe-core 4.14.0 skips the
+  contrast of a disabled control's own text, but the description, tags and trailing content now sit beside the inner
+  control (phase 5), so axe checked their disabled ink as active text and drew a serious finding on most unavailable
+  rows, against FR-052. While a row is unavailable, that content is marked disabled along with the control, so axe
+  treats it as part of the inactive component, as WCAG 1.4.3 and FR-042 already do; the accessibility tree is
+  unchanged.
+- Unavailable and current together, reading (i): the row keeps its current surface, and its text and bar take the
+  disabled ink, with no hover (edge case "`unavailable` and `current` together").
+- `:state(pressed)` on a link, "fix in phase 6" (2026-11-16, a finding routed from mission 018): a link has no
+  pressed state, so in link mode `ocelle-button` never exposes the `pressed` custom state, whatever the host's
+  `aria-pressed`; a host style on `:state(pressed)` can no longer show a pressed look on a link that reports no
+  pressed state (FR-004, FR-009, US2-12; plan decision 32). Mission 018's pill follows the same rule.
+
 **Issues**: #7, in part (triage record `triage/012-button-action-row.md`, approved by the operator on 2026-11-13).
 This feature builds the two action controls of #7. `ocelle-pill-tag`, `ocelle-status-indicator` and `ocelle-metric`
 stay in #7 for a later status mission. The body of #7 (read on 2026-11-13) is the source of the requirements below.
@@ -396,7 +412,9 @@ the host's custom states, the mirrors and the navigation result.
     `"false"` reports not pressed (button mode; FR-009).
 12. **Given** `aria-expanded="true"`, `aria-pressed="true"` or `aria-current="page"` moved from the host, **When** a host
     style rule uses `ocelle-button:state(expanded)`, `:state(pressed)` or `:state(current)`, **Then** it matches;
-    after the off value or `""` is set, it no longer matches (FR-004).
+    after the off value or `""` is set, it no longer matches (FR-004). `:state(pressed)` is button mode only: a
+    link-mode button with `aria-pressed="true"` never matches it, and a button-mode one stops matching when it
+    switches to link mode (an `href` is set) and matches again when it switches back (FR-009).
 13. **Given** `aria-label="Close"` and `aria-current="page"` moved from the host, **When** a copy is made from the live
     DOM, by parsing the host's `outerHTML` into a new container and by `cloneNode(true)`, **Then** each copy's inner
     control is named "Close" and reports `aria-current="page"`, the copy matches `:state(current)`, and neither copy
@@ -613,7 +631,9 @@ tree, the navigation result and the line boxes of the tags.
    is dispatched, a link row navigates nowhere (not in the current tab, not in a new tab or window), and no `click`
    reaches a bubble-phase listener on the element or its ancestors.
 7. **Given** an unavailable row, **When** rendered, **Then** its title and description use the disabled ink token,
-   its hover does not change the surface, and in forced colours it uses `GrayText`.
+   its hover does not change the surface, and in forced colours it uses `GrayText`; axe reports no serious or critical
+   finding on it, with or without description and tags, on every ground it is placed on (FR-042's exemption,
+   FR-052).
 8. **Given** `layout="card"` with several slotted tags, **When** the card is narrower than the tags' total width,
    **Then** the tags wrap onto new lines only between tags, and within the tags region no tag's text is broken inside
    a word, except a single tag longer than the card's width, which may break inside a word. (The title's wrapping is
@@ -667,7 +687,10 @@ tree, the navigation result and the line boxes of the tags.
 - **Row with an icon and an empty title**: named by `label` or the host's name passthrough (FR-034); with neither it
   has no accessible name and axe reports it, as in "Empty label and no icon". The row keeps its minimum block size
   (FR-031).
-- **`unavailable` and `current` together**: both are reported; the unavailable look wins visually.
+- **`unavailable` and `current` together**: both are reported; the unavailable look wins visually, except for the
+  surface: the row keeps its current surface (`--ocelle-color-accent-low`, or `--ocelle-color-chrome-hover` with
+  `ground="chrome"`), its text and the current bar take the disabled ink (`GrayText` in forced colours), and hovering
+  changes nothing.
 - **A row with `busy` and `unavailable`**: both reported; no event.
 - **Very long titles and unbreakable identifiers** in a row title or description: the row's own styles wrap them
   anywhere when needed (they do not rely on `base.css`'s identifier wrapping, which does not reach the shadow root),
@@ -759,7 +782,8 @@ tree, the navigation result and the line boxes of the tags.
   changes nothing (operator decision, PLAN-CORRECTNESS-1-001); the README states this and gives one recipe per stack
   (React, Lit, Svelte, htmx and Thymeleaf) that binds the off value. Because host attribute selectors no longer match
   a moved state, the button exposes custom states (`:state(expanded)`, `:state(pressed)`, `:state(current)`) a host
-  styles from (operator decision, PLAN-FRESH-1-009). So that a copy made from the live DOM (`cloneNode(true)`,
+  styles from (operator decision, PLAN-FRESH-1-009); `:state(pressed)` is exposed in button mode only, as
+  `aria-pressed` is applied (FR-009; operator decision at phase 6). So that a copy made from the live DOM (`cloneNode(true)`,
   `innerHTML` or `outerHTML`, htmx's history snapshot) keeps the moved values, the element mirrors each stored value
   into a host attribute it owns, `data-ocelle-moved-<attribute>` (for example `data-ocelle-moved-aria-label`), removes
   the mirror when the value is cleared, and at upgrade reads a mirror back as the stored value of an attribute the
@@ -805,7 +829,9 @@ tree, the navigation result and the line boxes of the tags.
   mode only; not allowed on a link), `aria-label`, `aria-labelledby`, `aria-describedby` (operator decision,
   PLAN-A11Y-SECURITY-1-004) and `title` (the native tooltip, and the description or name fallback of Accessible Name
   1.2, on the inner control; operator decision, PLAN-FRESH-2-006), with their `data-ocelle-moved-*` mirror attributes
-  (FR-004); the custom states `expanded`, `pressed`, `current` (FR-004); the `focus()` and `click()`
+  (FR-004); the custom states `expanded`, `pressed` (button mode only, like `aria-pressed`: a link has no pressed
+  state, so in link mode the element never sets `pressed`, whatever the host's `aria-pressed`; operator decision at
+  phase 6), `current` (FR-004); the `focus()` and `click()`
   methods (FR-001); the default slot (the label) and the `icon` slot; the native `click` event and the event
   `ocelle-button-activate` (FR-023; operator decision C1 (a), 2026-11-14); and the CSS part `control` (the inner
   control). `aria-current` is passed through with any value and draws no visual mark
@@ -1003,7 +1029,9 @@ tree, the navigation result and the line boxes of the tags.
   a link-mode button) and the row's `ocelle-action-row-activate` with `bubbles`, `composed`, `cancelable` and
   `detail`, from pointer and every keyboard path.
 - **FR-052**: Keyboard paths (Tab, Shift+Tab, Enter, Space) and the accessibility tree (role, name, description,
-  states) are tested for every state, and axe reports no serious or critical finding on any story or test page.
+  states) are tested for every state, and axe reports no serious or critical finding on any story or test page,
+  unavailable rows with description and tags included (their disabled ink is exempt as part of the inactive
+  component, FR-042).
 - **FR-053**: The custom-elements manifest lists every public property, attribute (the passthrough attributes
   and `title` and their `data-ocelle-moved-*` mirrors included, each with a description; operator decisions,
   PLAN-CORRECTNESS-1-006, PLAN-FRESH-2-002, PLAN-FRESH-2-006), event (with its `detail` type),

@@ -52,7 +52,8 @@ changing an event's payload, is a MAJOR change (constitution VII).
    `aria-describedby`) are resolved in the host's own tree (its document or the shadow root it is in) when set and
    when the element is connected; an element added later with the same id is picked up only when the attribute is set
    again. Since host attribute selectors no longer match, moved states are exposed as custom states
-   (`:state(expanded)`, `:state(pressed)`, `:state(current)` on the button). Any other `aria-*` on the host is
+   (`:state(expanded)`, `:state(pressed)`, `:state(current)` on the button; `:state(pressed)` in button mode only, plan
+   decision 32). Any other `aria-*` on the host is
    unsupported: it stays on the host and axe flags it; adding one to an element's list is a MINOR change.
 5. **Name order.** `aria-labelledby`, then `aria-label`, then `label`, then content; slotted icons never name. A
    control's inner control holds only its name and decorative content; content that describes it is shown beside
@@ -92,7 +93,7 @@ changing an event's payload, is a MAJOR change (constitution VII).
 | property, attribute (reflected) | `target`, `rel`, `download` | string | — | link mode only; `_blank` without `rel` → `noopener` |
 | moved host attribute | `aria-expanded`, `aria-controls`, `aria-current`, `aria-haspopup`, `aria-pressed`, `aria-label`, `aria-labelledby`, `aria-describedby`, `title` | | | see convention 4; declared in the manifest with descriptions; `aria-pressed` in button mode only; `title` is the inner control's tooltip and description (or name when nothing else names it) |
 | element-owned host attribute | `data-ocelle-moved-<attribute>` for each moved attribute (nine) | string | | the mirror of convention 4; declared; hosts do not write it; restored by the element when removed or changed while it holds the value |
-| custom state | `expanded`, `pressed`, `current` | | | moved `aria-expanded="true"`, `aria-pressed="true"`, `aria-current` other than `"false"` |
+| custom state | `expanded`, `pressed`, `current` | | | moved `aria-expanded="true"`, `aria-pressed="true"` (button mode only; never in link mode, plan decision 32), `aria-current` other than `"false"` |
 | method | `click()` | | | clicks the inner control |
 | slot | (default) | | | the label |
 | slot | `icon` | | | one icon before the label (mission 005 slot convention); hidden while busy (the spinner runs six turns in 4.8 s, then stays still; with a host override of `--ocelle-motion-spin`, one turn must stay at or below 833 ms to keep the 5 s limit) |
