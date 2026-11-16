@@ -13,3 +13,11 @@
   constitution VII, named in both CHANGELOGs and READMEs.
 - **Scope of the fix pass:** "Fix medium + low": resolve every medium finding and every low finding with a concrete
   remedy; the optional lows (C2, I5, D1) at the planner's judgement, with the outcome recorded.
+
+## Tasks gate
+
+- **Date:** 2026-11-16, human:jeroennouwsdev
+- **Shown:** analysis-status present, 1 critical, 0 high, 5 medium, 10 low, coverage 100 (counts from before the fix
+  pass); C1 resolved per (c), I7 per (a), all medium and low findings resolved in `fixes.md` (C2 left for a
+  constitution amendment, D1 in part); 78 tasks, 35 stories, 70 baselines.
+- **Decision:** approve. Implementation waits until missions 009 (#15) and 013 are on `main`; T001 then rechecks.
