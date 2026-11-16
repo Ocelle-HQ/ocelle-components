@@ -37,8 +37,11 @@ interface SignedRepo {
   readonly tools: string;
 }
 
-/** A temporary repository whose fold rewrites the phase base, with signing on; `signer` is set after the setup commits. */
-function signedRepo(signer: Signer): SignedRepo {
+/**
+ * A temporary repository whose fold rewrites the phase base, with signing on; `signer` is set after the setup commits.
+ * `objectFormat` "sha256" makes a SHA-256 repository, whose signed commits carry a gpgsig-sha256 header.
+ */
+function signedRepo(signer: Signer, objectFormat: "sha1" | "sha256" = "sha1"): SignedRepo {
   const root = tempDir("fold-signed");
   const tools = tempDir("fold-tools");
   const env = { ...baseEnv(), GIT_CONFIG_GLOBAL: "/dev/null", GIT_CONFIG_NOSYSTEM: "1" };
@@ -65,7 +68,7 @@ function signedRepo(signer: Signer): SignedRepo {
     chmodSync(join(tools, `signer-${name}`), 0o755);
   }
   writeFileSync(join(tools, "key"), "a throwaway signing key file\n");
-  git("init", "-q", "-b", "work");
+  git("init", "-q", `--object-format=${objectFormat}`, "-b", "work");
   git("config", "user.name", "T");
   git("config", "user.email", "t@example.invalid");
   git("config", "gpg.format", "ssh");
@@ -95,6 +98,26 @@ function unsigningGit(tools: string): string {
     'if [[ -z "${tree:-}" ]]; then exec "$real" "$@"; fi',
     'args=(); for a in "$@"; do [[ "$a" == -S* ]] && continue; args+=("$a"); [[ "$a" == commit-tree ]] && args+=(--no-gpg-sign); done',
     'exec "$real" "${args[@]}"',
+    "",
+  ].join("\n");
+  writeFileSync(join(dir, "git"), script);
+  chmodSync(join(dir, "git"), 0o755);
+  return dir;
+}
+
+/**
+ * A `git` that adds --no-gpg-sign to `git commit` only (its first argument), so the remap commit succeeds unsigned while
+ * commit-tree still signs the rebuilt commits (op 021 review round 1, R1-02).
+ */
+function unsignedRemapGit(tools: string): string {
+  const dir = join(tools, "bin-remap");
+  mkdirSync(dir);
+  const real = execFileSync("bash", ["-c", "command -v git"], { encoding: "utf8" }).trim();
+  const script = [
+    "#!/usr/bin/env bash",
+    `real=${JSON.stringify(real)}`,
+    'if [[ "${1:-}" == commit ]]; then shift; exec "$real" commit --no-gpg-sign "$@"; fi',
+    'exec "$real" "$@"',
     "",
   ].join("\n");
   writeFileSync(join(dir, "git"), script);
@@ -277,6 +300,60 @@ describe("history fold (tooling/speckit/bin/fold-history.sh)", () => {
         state: state(r),
         prefold: prefold(r),
       }).toEqual({ status: 2, ok: false, onMain: true, state: before, prefold: "" });
+    },
+    timeout,
+  );
+
+  it(
+    "refuses with exit 2 a range that holds a commit reachable from origin/main when there is no local main (op 021, scenario 5, R1-01)",
+    () => {
+      const r = signedRepo("ok");
+      r.git("update-ref", "refs/remotes/origin/main", r.unkept);
+      const before = state(r);
+      const ran = runFold(r);
+      expect({
+        status: ran.status,
+        ok: ran.ok,
+        localMain: r.git("for-each-ref", "--format=%(refname)", "refs/heads/main"),
+        onMain: ran.problems.some((p) => p.includes("on main")),
+        state: state(r),
+        prefold: prefold(r),
+      }).toEqual({ status: 2, ok: false, localMain: "", onMain: true, state: before, prefold: "" });
+    },
+    timeout,
+  );
+
+  it(
+    "rolls back with exit 1 and no prefold ref when the remap commit succeeds but is not signed (op 021, FR-004, R1-02)",
+    () => {
+      const r = signedRepo("ok");
+      const before = state(r);
+      const ran = runFold(r, unsignedRemapGit(r.tools));
+      expect({ status: ran.status, ok: ran.ok, state: state(r), prefold: prefold(r) }).toEqual({
+        status: 1,
+        ok: false,
+        state: before,
+        prefold: "",
+      });
+    },
+    timeout,
+  );
+
+  it(
+    "signs every commit of the folded range in a SHA-256 repository, whose signature header is gpgsig-sha256 (op 021, edge case, R1-03)",
+    () => {
+      const r = signedRepo("ok", "sha256");
+      const ran = runFold(r);
+      const newBase = readFileSync(join(r.root, `${reviews}/base.sha`), "utf8").trim();
+      const range = r.git("rev-list", `${r.foldBase}..HEAD`).split("\n");
+      expect({
+        status: ran.status,
+        ok: ran.ok,
+        rewritten: newBase !== r.phaseBase,
+        objectFormat: r.git("rev-parse", "--show-object-format"),
+        commits: range.length,
+        unsigned: range.filter((sha) => !signed(r, sha)),
+      }).toEqual({ status: 0, ok: true, rewritten: true, objectFormat: "sha256", commits: 4, unsigned: [] });
     },
     timeout,
   );
