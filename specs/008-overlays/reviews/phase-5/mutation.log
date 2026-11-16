@@ -61,3 +61,21 @@ packages/elements/src/ocelle-tooltip.ts:321: mutation: compile-error: StringLite
 packages/elements/src/ocelle-tooltip.ts:322: mutation: compile-error: OptionalChaining: replaced by this.#bubble.hidePopover
 mutation: 34 mutants on the changed lines of 1 file, none survived; 0 timeouts, 16 compile errors, 0 zero-mutant entries; 2 equivalent records
 exit 0, 551 s
+
+$ pnpm run gate:mutation -- --base 9a44e8e --plan  (at 584dfed plus the R1-01 comment fix, uncommitted)
+$ node gates/bin/mutation.ts -- --base 9a44e8e --plan
+[{"files":"packages/elements/src/bubble.ts,packages/elements/src/ocelle-tooltip.ts","lines":12}]
+mutation: plan: 1 shard, 0 cuts within files (a mutant spanning a cut is mutated in no shard, see gates/README.md)
+
+$ pnpm run gate:mutation -- --base 9a44e8e --files packages/elements/src/bubble.ts,packages/elements/src/ocelle-tooltip.ts  (same tree, run 1, without OCELLE_CHROMIUM_PATH and the Playwright browser path set)
+$ node gates/bin/mutation.ts -- --base 9a44e8e --files packages/elements/src/bubble.ts,packages/elements/src/ocelle-tooltip.ts
+mutation: could not run: Stryker wrote no report (Unexpected error occurred while running Stryker Error: Something went wrong in the initial test run); run pnpm test and check stryker.config.json
+[ELIFECYCLE] Command failed with exit code 2.
+exit 2, 29 s
+
+$ pnpm run gate:mutation -- --base 9a44e8e --files packages/elements/src/bubble.ts,packages/elements/src/ocelle-tooltip.ts  (run 2, same tree, browser environment set, tree unchanged during the run)
+$ node gates/bin/mutation.ts -- --base 9a44e8e --files packages/elements/src/bubble.ts,packages/elements/src/ocelle-tooltip.ts
+packages/elements/src/bubble.ts: mutation: zero-mutants: no mutant on the changed lines
+packages/elements/src/ocelle-tooltip.ts: mutation: zero-mutants: no mutant on the changed lines
+mutation: 0 mutants on the changed lines of 2 files, none survived; 0 timeouts, 0 compile errors, 2 zero-mutant entries; 0 equivalent records
+exit 0, 458 s

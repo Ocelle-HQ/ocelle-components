@@ -17,3 +17,6 @@ fail for it. No red commit is recorded for this phase (`red-commits` is absent; 
   `red.sh 5 phase`'s full run; that run's one failure was an unchanged row (`notes.md` § T057, red step). The break
   checks in `notes.md` § T057, break checks, are the test-first evidence. Each was a temporary source or test change,
   never committed, run against the old row (at the phase base `9a44e8e`) and the new row in both harnesses.
+- **Phase 5 review round 1, R1-01** (`packages/elements/src/bubble.ts`:1-8 and :12, `packages/elements/src/ocelle-tooltip.ts`:138-141):
+  the change is comment text only. Stryker makes no mutant of a comment, so no test can fail. The planned mutation
+  shard for both files reports `zero-mutants` for each (`mutation.log`, `notes.md` § Review round 1, R1-01 fix).

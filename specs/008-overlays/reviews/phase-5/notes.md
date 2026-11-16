@@ -284,3 +284,28 @@ counts equal the phase 4 runs at `9a66884`.
 - **Answer:** "Fix R1-01 now, rest to land".
 - **R1-01:** both comments are fixed before the fold, comment-only, with a tdd-exempt line. They are in `src/bubble.ts` and `src/ocelle-tooltip.ts`:138-139. The fix: a pending hover delay is ended by the trigger's `pointerout`, or by removal of the tooltip, not by `focusout`. `dismiss` does clear the timer of the shown tooltip.
 - **R1-02, R1-03 and R1-04:** these go to /ocelle-land as optional items.
+
+## Review round 1, R1-01 fix (comment only)
+
+Per the operator decision above. No code changed; only the comments in `packages/elements/src/bubble.ts` (the module
+comment, :1-8, and the `dismiss` member doc, :12) and `packages/elements/src/ocelle-tooltip.ts` (the `bubbles.dismiss`
+comment, now :138-141). Each claim, checked against the code (line numbers of `ocelle-tooltip.ts` before the fix):
+
+- A pending hover delay starts only in `#onPointerover` (:258-268), which sets `#hovered = true`.
+- `#onPointerout` (:270-275) is the one handler that clears `#hovered`, and it clears the timer. The tooltip's removal
+  ends the delay too: `disconnectedCallback` calls `#hide` (:223), which calls `clearTimeout` (:316).
+- `#onFocusout` (:285-288) calls `#hide` only when `!this.#hovered`, so `focusout` never ends a pending hover delay.
+- `dismiss` (:140-143) calls `#hide` on the shown tooltip: it hides the bubble (R-10 "hide current") and, through
+  `#hide`'s `clearTimeout`, ends that tooltip's own pending timer (shown by keyboard focus, then hovered).
+- The comment says "of what an opening overlay brings", because other paths that do not come from an overlay also
+  call `#hide`: `disabled` or an empty `text` (`updated`, :239), a new trigger (`#onSlotchange`, :388), and a trigger
+  gone or disabled while shown (`#follow`, :335).
+
+Checks, on the fixed tree:
+
+- `gate:typecheck` and `gate:lint` (300 files): no finding.
+- `gate:mutation -- --base 9a44e8e --plan`: one shard, `bubble.ts,ocelle-tooltip.ts`, 12 lines. Run: both files
+  `zero-mutants`, exit 0, 458 s (`mutation.log`). A first run without the browser environment set failed in Stryker's
+  initial test run and is logged too.
+- `tooltip.test.ts` and `test/browser/tooltip.test.ts`, run together once: 208 of 208 passed.
+- Exemption line added to `tdd-exempt.md`.
