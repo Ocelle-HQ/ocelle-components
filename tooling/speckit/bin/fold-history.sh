@@ -16,6 +16,9 @@
 # to a new one).
 #
 # Leaves HEAD on the folded history and keeps the old head as refs/ocelle/prefold/<label>/<branch>. Never pushes.
+# Signing (op 021): when commit.gpgsign is on, every rebuilt commit is made with `git commit-tree -S`; a rebuilt or
+# remap commit without a gpgsig header, or a signing failure, leaves the branch on the old head with no prefold ref.
+# A range holding commits reachable from origin/main or main is refused (exit 2) before anything is built.
 # Prints {"ok":true|false,"old_head":..,"new_head":..,"commits_before":n,"commits_after":n,"problems":[..]}.
 # Exit 0 when ok, 1 when a verification failed (HEAD is reset to the old head), 2 when it could not run.
 set -euo pipefail
@@ -31,6 +34,13 @@ old_head=$(git rev-parse HEAD)
 base=$(git rev-parse "$base^{commit}")
 git merge-base --is-ancestor "$base" "$old_head" || die "pr-base is not an ancestor of HEAD"
 [[ -z "$(git rev-list --merges "$base..$old_head")" ]] || die "history has merge commits; fold before merging main"
+sign=(); [[ "$(git config --bool commit.gpgsign || true)" == true ]] && sign=(-S)
+# Never rewrite main's commits: refuse a range that holds a commit reachable from origin/main or main (no fetch).
+mains=(); for r in refs/remotes/origin/main refs/heads/main; do git rev-parse -q --verify "$r^{commit}" >/dev/null && mains+=("$r"); done
+if (( ${#mains[@]} )); then
+  on_main=$(( $(git rev-list --count "$base..$old_head") - $(git rev-list --count "$base..$old_head" --not "${mains[@]}") ))
+  (( on_main == 0 )) || die "$on_main commits of pr-base..HEAD are on main; pick a base after them"
+fi
 
 # Commits the evidence needs, as full SHAs.
 declare -A keep=()
@@ -70,7 +80,8 @@ emit_group() {
   an=$(git log -1 --format=%an "$last"); ae=$(git log -1 --format=%ae "$last"); ad=$(git log -1 --format=%aD "$last")
   cn=$(git log -1 --format=%cn "$last"); ce=$(git log -1 --format=%ce "$last")
   parent=$(printf '%s\n' "$body" | GIT_AUTHOR_NAME="$an" GIT_AUTHOR_EMAIL="$ae" GIT_AUTHOR_DATE="$ad" \
-    GIT_COMMITTER_NAME="$cn" GIT_COMMITTER_EMAIL="$ce" git commit-tree "$tree" -p "$parent")
+    GIT_COMMITTER_NAME="$cn" GIT_COMMITTER_EMAIL="$ce" git commit-tree "${sign[@]}" "$tree" -p "$parent") \
+    || die "could not build the folded commit for $last (git commit-tree failed; is the signing key usable?)"
   map[$last]=$parent; new_count=$((new_count + 1)); group=()
 }
 for c in "${commits[@]}"; do
@@ -87,6 +98,10 @@ for s in "${!keep[@]}"; do
   [[ "$(git rev-parse "$s^{tree}")" == "$(git rev-parse "${map[$s]}^{tree}")" ]] || problems+=("tree differs for $s")
 done
 [[ "$(git rev-parse "$parent^{tree}")" == "$(git rev-parse "$old_head^{tree}")" ]] || problems+=("folded head tree differs from the old head")
+has_sig() { git cat-file commit "$1" | grep -qE '^gpgsig(-sha256)? '; }
+if (( ${#sign[@]} )); then
+  for n in "${map[@]}"; do has_sig "$n" || problems+=("folded commit $n is not signed"); done
+fi
 if (( ${#problems[@]} )); then
   printf '{"ok":false,"old_head":"%s","problems":[%s]}\n' "$old_head" "$(printf '"%s",' "${problems[@]}" | sed 's/,$//')"; exit 1
 fi
@@ -117,8 +132,13 @@ map_file="$feature/reviews/history-map.txt"
   echo "# History fold $label of $branch: old commit -> new commit (pre-fold head kept as refs/ocelle/prefold/$label/$branch, $old_head)."
   for c in "${commits[@]}"; do [[ -n "${map[$c]+x}" ]] && echo "$c ${map[$c]}"; done; } >> "$map_file"
 git add "$feature/reviews"
-GIT_EDITOR=true git commit -q -s -m "chore($label): remap evidence SHAs after the history fold" \
-  -m "base.sha, scaffold.sha and red-commits of every phase, and the base line of its plants.md, now name the folded commits; reviews/history-map.txt maps old to new. Review files, and plants.md's command and output, keep the SHAs they were written with; the map resolves them."
+if ! GIT_EDITOR=true git commit -q -s -m "chore($label): remap evidence SHAs after the history fold" \
+  -m "base.sha, scaffold.sha and red-commits of every phase, and the base line of its plants.md, now name the folded commits; reviews/history-map.txt maps old to new. Review files, and plants.md's command and output, keep the SHAs they were written with; the map resolves them." \
+  || { (( ${#sign[@]} )) && ! has_sig HEAD; }; then
+  git reset -q --hard "$old_head"
+  git update-ref -d "refs/ocelle/prefold/$label/$branch"
+  printf '{"ok":false,"old_head":"%s","problems":["the remap commit could not be signed"]}\n' "$old_head"; exit 1
+fi
 new_head=$(git rev-parse HEAD)
 # A phase's plants.md may differ only in its `- base:` line: one line out, one line in.
 base_line_only() { local changes
