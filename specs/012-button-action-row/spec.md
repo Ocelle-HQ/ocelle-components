@@ -184,6 +184,10 @@ decision 31):
   unchanged.
 - Unavailable and current together, reading (i): the row keeps its current surface, and its text and bar take the
   disabled ink, with no hover (edge case "`unavailable` and `current` together").
+- `:state(pressed)` on a link, "fix in phase 6" (2026-11-16, a finding routed from mission 018): a link has no
+  pressed state, so in link mode `ocelle-button` never exposes the `pressed` custom state, whatever the host's
+  `aria-pressed`; a host style on `:state(pressed)` can no longer show a pressed look on a link that reports no
+  pressed state (FR-004, FR-009, US2-12; plan decision 32). Mission 018's pill follows the same rule.
 
 **Issues**: #7, in part (triage record `triage/012-button-action-row.md`, approved by the operator on 2026-11-13).
 This feature builds the two action controls of #7. `ocelle-pill-tag`, `ocelle-status-indicator` and `ocelle-metric`
@@ -408,7 +412,9 @@ the host's custom states, the mirrors and the navigation result.
     `"false"` reports not pressed (button mode; FR-009).
 12. **Given** `aria-expanded="true"`, `aria-pressed="true"` or `aria-current="page"` moved from the host, **When** a host
     style rule uses `ocelle-button:state(expanded)`, `:state(pressed)` or `:state(current)`, **Then** it matches;
-    after the off value or `""` is set, it no longer matches (FR-004).
+    after the off value or `""` is set, it no longer matches (FR-004). `:state(pressed)` is button mode only: a
+    link-mode button with `aria-pressed="true"` never matches it, and a button-mode one stops matching when it
+    switches to link mode (an `href` is set) and matches again when it switches back (FR-009).
 13. **Given** `aria-label="Close"` and `aria-current="page"` moved from the host, **When** a copy is made from the live
     DOM, by parsing the host's `outerHTML` into a new container and by `cloneNode(true)`, **Then** each copy's inner
     control is named "Close" and reports `aria-current="page"`, the copy matches `:state(current)`, and neither copy
@@ -776,7 +782,8 @@ tree, the navigation result and the line boxes of the tags.
   changes nothing (operator decision, PLAN-CORRECTNESS-1-001); the README states this and gives one recipe per stack
   (React, Lit, Svelte, htmx and Thymeleaf) that binds the off value. Because host attribute selectors no longer match
   a moved state, the button exposes custom states (`:state(expanded)`, `:state(pressed)`, `:state(current)`) a host
-  styles from (operator decision, PLAN-FRESH-1-009). So that a copy made from the live DOM (`cloneNode(true)`,
+  styles from (operator decision, PLAN-FRESH-1-009); `:state(pressed)` is exposed in button mode only, as
+  `aria-pressed` is applied (FR-009; operator decision at phase 6). So that a copy made from the live DOM (`cloneNode(true)`,
   `innerHTML` or `outerHTML`, htmx's history snapshot) keeps the moved values, the element mirrors each stored value
   into a host attribute it owns, `data-ocelle-moved-<attribute>` (for example `data-ocelle-moved-aria-label`), removes
   the mirror when the value is cleared, and at upgrade reads a mirror back as the stored value of an attribute the
@@ -822,7 +829,9 @@ tree, the navigation result and the line boxes of the tags.
   mode only; not allowed on a link), `aria-label`, `aria-labelledby`, `aria-describedby` (operator decision,
   PLAN-A11Y-SECURITY-1-004) and `title` (the native tooltip, and the description or name fallback of Accessible Name
   1.2, on the inner control; operator decision, PLAN-FRESH-2-006), with their `data-ocelle-moved-*` mirror attributes
-  (FR-004); the custom states `expanded`, `pressed`, `current` (FR-004); the `focus()` and `click()`
+  (FR-004); the custom states `expanded`, `pressed` (button mode only, like `aria-pressed`: a link has no pressed
+  state, so in link mode the element never sets `pressed`, whatever the host's `aria-pressed`; operator decision at
+  phase 6), `current` (FR-004); the `focus()` and `click()`
   methods (FR-001); the default slot (the label) and the `icon` slot; the native `click` event and the event
   `ocelle-button-activate` (FR-023; operator decision C1 (a), 2026-11-14); and the CSS part `control` (the inner
   control). `aria-current` is passed through with any value and draws no visual mark

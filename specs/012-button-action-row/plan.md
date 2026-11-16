@@ -106,7 +106,7 @@ phase 2),
    it.
 2. **Moved list and styling hooks** (round 1 forks PLAN-A11Y-SECURITY-1-004 (a), PLAN-FRESH-1-009 (a)): the button
    also moves `aria-haspopup` and `aria-pressed`; it exposes `:state(expanded)`, `:state(pressed)` and
-   `:state(current)` for host styling.
+   `:state(current)` for host styling (`:state(pressed)` in button mode only, decision 32).
 3. **Engine floor Chromium 135 and WebKit 17.4** (R-04, round 1 fork PLAN-FRESH-1-008 (a)): element reflection
    (Chromium 135, WebKit 16.4) and custom states (Chromium 125, WebKit 17.4), from MDN browser-compat-data; no fallback.
 4. **`delegatesFocus` and `click()`** (R-01, R-06): `element.focus()` focuses the inner control; `element.click()`
@@ -362,6 +362,21 @@ phase 2),
     without `aria-disabled`) and the unavailable current row's surface (kept, unchanged on hover); T063's unavailable
     and unavailable current stories give 0 serious or critical axe results; T064 implements both. No principle is
     relaxed and no exception is recorded, so no Complexity Tracking row is needed.
+32. **`:state(pressed)` is button mode only** (operator decision at phase 6, 2026-11-16, human:jeroennouwsdev,
+    multiple choice: "fix in phase 6"; a finding routed from mission 018 by the orchestrator; spec FR-004, FR-009,
+    US2-12; R-03). *Finding*: FR-009 allows `aria-pressed` in button mode only and the inner `<a>` never carries it,
+    but `ocelle-button` set the `pressed` custom state from the moved value in either mode, and phase 3's US2-12 test
+    (T031) asserted that, so a host `:state(pressed)` rule could show a pressed look on a link that reports no
+    pressed state. *Decision*: a link has no pressed state; in link mode the element never sets `pressed`, whatever
+    the moved `aria-pressed` (the value stays stored and mirrored, so a switch back to button mode applies it and sets
+    the state again). Mission 018's pill follows the same rule. US2-12's link-mode expectation is replaced by a
+    stricter one in phase 6's red commit (constitution VIII: "a test that turns out wrong is replaced by a stricter
+    one with the reason recorded"; the reason is this decision): a link-mode button with `aria-pressed="true"` does
+    not match `:state(pressed)` in each step, and a button-mode one with `aria-pressed="true"` stops matching when an
+    `href` switches it to link mode and matches again when the `href` is cleared. The README's custom-states sentence,
+    its `readme.test.ts` line and the `@cssstate pressed` description say "in button mode". Plant: `pressed` state in
+    any mode. Tasks T061a and T064a; T066 runs the plant. No principle is relaxed and no exception is recorded, so no
+    Complexity Tracking row is needed.
 
 ## Project Structure
 

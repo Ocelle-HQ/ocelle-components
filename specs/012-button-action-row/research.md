@@ -244,7 +244,8 @@ row's mirror case (phase 5) adds the same morph step for `aria-label`.
 
 **Styling hooks (PLAN-FRESH-1-009 (a))**: since a host selector `ocelle-button[aria-expanded="true"]` no longer
 matches, the button exposes the moved states as custom states through `ElementInternals.states`: `expanded` while the
-moved `aria-expanded` is `"true"`, `pressed` while the moved `aria-pressed` is `"true"`, and `current` while the moved
+moved `aria-expanded` is `"true"`, `pressed` while the moved `aria-pressed` is `"true"` and the button is in button
+mode (a link has no pressed state, as `aria-pressed` is applied in button mode only; plan decision 32), and `current` while the moved
 `aria-current` is set to any value other than `"false"`. A host writes `ocelle-button:state(expanded) ocelle-icon`.
 The row keeps its reflected `current` attribute as its hook (it needs no custom state). `:state()` needs Chromium 125
 and WebKit 17.4 (MDN browser-compat-data 8.1.9), which raises the README's WebKit floor (R-04).

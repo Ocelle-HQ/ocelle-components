@@ -76,3 +76,8 @@
   "`unavailable` and `current` together", reading (i) of plan decision 16). US5-7, the edge case and FR-052 gain a
   sentence each. The items above were re-checked after the change: both additions are measurable (axe results, the
   surface's computed colour) and add no implementation detail beyond the level the spec already names.
+- Operator decision at phase 6 (2026-11-16, human:jeroennouwsdev; "fix in phase 6", a finding routed from mission 018;
+  plan decision 32), recorded in the spec header: `:state(pressed)` is button mode only, as `aria-pressed` is, so a
+  link-mode button never exposes it. FR-004, FR-009 and US2-12 gain a sentence each. The items above were re-checked:
+  the addition is measurable (whether a host rule on `:state(pressed)` matches, in each mode and across a mode
+  switch) and closes the gap where the spec said nothing about the state on a link.
