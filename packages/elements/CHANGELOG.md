@@ -32,6 +32,17 @@ entry points and the browser build's file path (constitution VII).
   `ocelle-tab-panel`, a panel of the tabs, shown while its tab is selected.
 - Entry points `@ocelle/elements/ocelle-tabs.js` (defines `ocelle-tabs`, `ocelle-tab` and `ocelle-tab-panel`),
   `@ocelle/elements/ocelle-tab.js` and `@ocelle/elements/ocelle-tab-panel.js` (each defines its element only).
+- `ocelle-segmented-choice`, a toolbar of `ocelle-segment` toggle buttons with exactly one pressed, one tab stop, focus
+  moving on the arrow keys (wrapping), Home and End, pressing on Enter, Space and a click, and the `joined` variant
+  (reflected), whose touching segments share one line and whose rows are rounded at their ends by the element itself
+  when it wraps; its properties `value`, `label` and `joined`, and its event `ocelle-segmented-choice-change` with
+  `detail` `{ value }`.
+- `ocelle-segment`, a segment of the segmented choice, with its properties `value` and `disabled` (reflected) and its
+  `icon` slot.
+- Entry points `@ocelle/elements/ocelle-segmented-choice.js` (defines `ocelle-segmented-choice` and `ocelle-segment`)
+  and `@ocelle/elements/ocelle-segment.js` (defines `ocelle-segment` only).
+- The engine floor is Chromium 125 and WebKit 17.4, raised from Chromium 120 and WebKit 16.4 for the custom states
+  (`:state()`) of `ocelle-segment`.
 - In the README, the slot convention for icons in controls that later controls follow: the `icon` and `trailing`
   slots, their size, alignment, gap and colour rules and the naming rule.
 - Entry points: `@ocelle/elements` (the package root, defines every element), `@ocelle/elements/ocelle-icon.js`

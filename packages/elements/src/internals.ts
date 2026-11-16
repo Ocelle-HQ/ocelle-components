@@ -16,3 +16,11 @@ export function attachInternalsTo(element: HTMLElement): ElementInternals {
   Object.defineProperty(element, internalsKey, { value: internals });
   return internals;
 }
+
+/**
+ * The module-private symbol of `ocelle-segment`'s internal method that sets its joined row states (014 research.md R-06,
+ * operator decision PLAN-CORRECTNESS-1-015 (a)): the parent cannot reach a segment's internals, so it calls this method,
+ * and only when the segment has it, so an un-upgraded segment or one from another copy of the package is left
+ * unrounded and nothing throws. Not surface: neither the manifest nor the README lists it.
+ */
+export const rowStates: unique symbol = Symbol("rowStates");

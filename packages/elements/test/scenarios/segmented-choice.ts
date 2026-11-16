@@ -234,17 +234,29 @@ function widths(): { oneRow: number; twoRows: number } {
   return { oneRow: Math.ceil(fourth) + 16, twoRows: Math.ceil(third) + Math.floor((fourth - third) / 2) };
 }
 
-/** Sets the inline size of `#box` wide enough for one row and waits for the group to lay out, then measures `widths`. */
-async function measured(driver: Driver, inPage: InPage): Promise<{ oneRow: number; twoRows: number }> {
-  await driver.resize("box", 640);
-  await driver.afterResizeDelivery("box");
-  return inPage(widths, null);
+/** Waits for a task in the page. */
+function task(): Promise<void> {
+  return new Promise((done) => {
+    setTimeout(done, 0);
+  });
 }
 
-/** Resizes `#box` without waiting for a frame, then waits for the delivery of the resize observations (US3-10). */
-async function resized(driver: Driver, width: number): Promise<void> {
+/**
+ * Resizes `#box` in an ordinary task without waiting for a frame, then waits for the delivery of the resize
+ * observations (US3-10). The wait for a task comes first: the previous `afterResizeDelivery` resolves inside a
+ * `ResizeObserver` callback, and a resize made in that callback's microtask would itself be a resize during the
+ * delivery (changed after the red run, reviews/phase-4/notes.md).
+ */
+async function resized(driver: Driver, inPage: InPage, width: number): Promise<void> {
+  await inPage(task, undefined);
   await driver.resize("box", width);
   await driver.afterResizeDelivery("box");
+}
+
+/** Sets the inline size of `#box` wide enough for one row and waits for the group to lay out, then measures `widths`. */
+async function measured(driver: Driver, inPage: InPage): Promise<{ oneRow: number; twoRows: number }> {
+  await resized(driver, inPage, 640);
+  return inPage(widths, null);
 }
 
 /** A screenshot of `#box`, with its place in the viewport and its device-pixel scale. */
@@ -291,6 +303,18 @@ function lineRun(s: Shot, axis: "x" | "y", at: number, from: number, to: number,
     return { colour, width: length / s.scale };
   }
   return { colour: "none", width: 0 };
+}
+
+/**
+ * The opaque colour `top` (a computed `rgb()` or `rgba()`) paints over the opaque `ground`: each channel
+ * `alpha × top + (1 − alpha) × ground`, rounded, as `rgb(r, g, b)`.
+ */
+function over(top: string, ground: string): string {
+  const channels = (colour: string): number[] => (colour.match(/[\d.]+/g) ?? []).map(Number);
+  const [r = 0, g = 0, b = 0, alpha = 1] = channels(top);
+  const [gr = 0, gg = 0, gb = 0] = channels(ground);
+  const mix = (front: number, back: number): string => String(Math.round(alpha * front + (1 - alpha) * back));
+  return `rgb(${mix(r, gr)}, ${mix(g, gg)}, ${mix(b, gb)})`;
 }
 
 const accentLight = tokenColour("color-accent-strong", "light");
@@ -645,13 +669,13 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
     run: async (driver, inPage) => {
       await mount(driver, inPage, page(segmentsOf(lanes), 'label="Lane filter" value="mine" joined'));
       const { oneRow, twoRows } = await measured(driver, inPage);
-      await resized(driver, twoRows);
+      await resized(driver, inPage, twoRows);
       const wrapped = { rows: await inPage(rows, null), radii: await inPage(radii, null) };
       const s = await shot(driver);
       const [all, , , done] = await boxes(driver, 4);
       const between = all === undefined || done === undefined ? null : lineRun(s, "y", all.x + Math.min(all.width, done.width) / 2, done.y - 2, done.y + 2, lineColours);
       const rowsTouch = all === undefined || done === undefined ? null : Math.round((done.y - (all.y + all.height)) * 100) / 100;
-      await resized(driver, oneRow);
+      await resized(driver, inPage, oneRow);
       return { wrapped: { ...wrapped, between, rowsTouch }, one: { rows: await inPage(rows, null), radii: await inPage(radii, null) }, styles: await inPage(styleAttributes, null) };
     },
     expected: {
@@ -662,7 +686,9 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
   },
   {
     // Plants: the pressed paint as an inset box-shadow only (forced colours compute it to none: no Highlight edge); the
-    // boundaries left to forced colours' default (no ButtonBorder).
+    // boundaries kept out of forced colours (`forced-color-adjust: none` with their `control-border` lines); the joined
+    // bar's forced-colours rule hiding it (`display: none`, `visibility: hidden`) or taking it out of its place
+    // (`position: static`).
     name: "US3-11: in forced colours every boundary is ButtonBorder, the default pressed segment shows a 3 px Highlight border, the joined pressed segment a 3 px Highlight bar on its block-end edge inside its box, and a focused segment a Highlight ring (FR-008)",
     fixture: true,
     run: async (driver, inPage) => {
@@ -671,7 +697,7 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
       const highlight = await driver.resolveColour("Highlight");
       const buttonBorder = await driver.resolveColour("ButtonBorder");
       const canvas = await driver.resolveColour("Canvas");
-      const named = (value: unknown): unknown => JSON.parse(JSON.stringify(value).split(highlight).join("Highlight").split(buttonBorder).join("ButtonBorder")) as unknown;
+      const named = (value: unknown): unknown => JSON.parse(JSON.stringify(value).split(over(highlight, canvas)).join("Highlight over Canvas").split(highlight).join("Highlight").split(buttonBorder).join("ButtonBorder")) as unknown;
       const fill = (value: unknown): unknown => ({ ...(value as Record<string, unknown>), fill: "any" });
       const plain = { pressed: named(fill(await inPage(paintOf, 0))), other: named(fill(await inPage(paintOf, 1))) };
       await driver.focus(seg(0));
@@ -686,22 +712,36 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
       const forcedColours = [highlight, buttonBorder];
       const pressedBox = b[0];
       const mine = b[1];
+      // The bar is read from its computed style and from its pixels. The emulated palette's Highlight is translucent
+      // (rgba(5, 0, 73, 0.8) in process), so the bar's pixels are Highlight composited over the ground behind it, the
+      // forced Canvas: the pixel read looks for that colour, which is neither the ground's nor a line's (changed after
+      // the red run, and the pixel read restored in review round 1, R1-01; reviews/phase-4/notes.md).
+      const painted = over(highlight, canvas);
+      const bar = {
+        content: await driver.computedPart(seg(0), "::before", "content"),
+        width: await driver.computedPart(seg(0), "::before", "border-block-end-width"),
+        colour: await driver.computedPart(seg(0), "::before", "border-block-end-color"),
+        end: await driver.computedPart(seg(0), "::before", "inset-block-end"),
+        line: await driver.computed(seg(0), "border-bottom-width"),
+      };
       const joined =
         pressedBox === undefined || mine === undefined
           ? null
           : named({
-              bar: lineRun(s, "y", pressedBox.x + pressedBox.width / 2, pressedBox.y + pressedBox.height - 6, pressedBox.y + pressedBox.height + 2, forcedColours),
+              bar,
+              bottom: lineRun(s, "y", pressedBox.x + pressedBox.width / 2, pressedBox.y + pressedBox.height - 2, pressedBox.y + pressedBox.height + 2, forcedColours),
+              paint: lineRun(s, "y", pressedBox.x + pressedBox.width / 2, pressedBox.y + pressedBox.height - 8, pressedBox.y + pressedBox.height + 2, [painted]),
               shared: lineRun(s, "x", mine.y + mine.height / 2, mine.x - 2, mine.x + 2, forcedColours),
               top: lineRun(s, "y", mine.x + mine.width / 2, mine.y - 2, mine.y + 2, forcedColours),
             });
       await driver.forcedColors("none");
-      return { distinct: highlight !== canvas && buttonBorder !== highlight, plain, focused, joined };
+      return { distinct: highlight !== canvas && buttonBorder !== highlight && painted !== canvas && painted !== buttonBorder, plain, focused, joined };
     },
     expected: {
       distinct: true,
       plain: { pressed: { ...(paint("any", "3px", "Highlight") as object), fill: "any" }, other: { ...(paint("any", "1px", "ButtonBorder") as object), fill: "any" } },
       focused: ["3px Highlight", "3px Highlight", "3px Highlight", "3px Highlight"],
-      joined: { bar: { colour: "Highlight", width: 3 }, shared: { colour: "ButtonBorder", width: 1 }, top: { colour: "ButtonBorder", width: 1 } },
+      joined: { bar: { content: '""', width: "3px", colour: "Highlight", end: "0px", line: "1px" }, bottom: { colour: "ButtonBorder", width: 1 }, paint: { colour: "Highlight over Canvas", width: 3 }, shared: { colour: "ButtonBorder", width: 1 }, top: { colour: "ButtonBorder", width: 1 } },
     },
   },
   {
@@ -847,15 +887,15 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
     },
   },
   {
-    // Plants: regrouping on the group's resize only (the text change and the host rule then leave the rounding of the
-    // old rows); regrouping only after a child batch (the host rule, which no mutation reports, is then missed).
+    // Plants: observing the group only, or the segments' content boxes (the host rule, which changes only Mine's
+    // padding, is then missed); no regroup on the observations.
     name: "US3-18: joined on two rows, a text change of Mine at the same container width and group block size moves Blocked to row 2, and Mine, Blocked and Done are rounded for the new rows; a host rule that widens Mine with no DOM change does the same; read at the next delivery of the resize observations (FR-029)",
     fixture: true,
     run: async (driver, inPage) => {
       const run = async (change: () => Promise<void>): Promise<unknown> => {
         await mount(driver, inPage, page(segmentsOf(lanes), 'label="Lane filter" value="done" joined'));
         const { twoRows } = await measured(driver, inPage);
-        await resized(driver, twoRows);
+        await resized(driver, inPage, twoRows);
         const before = { rows: await inPage(rows, null), height: (await driver.box("sc")).height };
         await change();
         await driver.afterResizeDelivery("box");
@@ -1114,7 +1154,7 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
     expected: { changed: true, same: 0, tree: exposed("Lane filter", lanes, 1), events: [] },
   },
   {
-    // Plants: row states changing margins or borders (a resize loop); the observer left connected to removed segments.
+    // Plant: row states changing margins (a regroup then moves the row break, a resize loop).
     name: "Edge Cases: while the container resizes continuously (ten steps between one row and two rows) the rounding follows each step at its delivery, with no console message, no ResizeObserver loop error and no error event",
     fixture: true,
     run: async (driver, inPage) => {
@@ -1122,7 +1162,7 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
       const { oneRow, twoRows } = await measured(driver, inPage);
       const seen: unknown[] = [];
       for (let step = 0; step < 10; step++) {
-        await resized(driver, step % 2 === 0 ? twoRows : oneRow);
+        await resized(driver, inPage, step % 2 === 0 ? twoRows : oneRow);
         seen.push((await inPage(radii, null))[3]);
       }
       await inPage(frames, undefined);
@@ -1173,8 +1213,8 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
     },
   },
   {
-    // Plant: the joined group observing only the segments present at first render (an appended segment is then not
-    // rounded as the new last).
+    // Plant: regrouping and observing only at render, not on a child batch (an appended segment is then not rounded as
+    // the new last).
     name: "joined: a segment appended at the end becomes the row's last and takes the end rounding, the former last is squared, at the same group size or not",
     fixture: true,
     run: async (driver, inPage) => {
@@ -1207,7 +1247,9 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
     expected: { inTask: { value: "blocked", pressed: "true" }, tree: exposed("Lane filter", ["All", "Mine", "Blocked"], 2), events: [] },
   },
   {
-    // Plants: `label` not trimmed or a blank label naming the group; the host `aria-label` not deciding alone.
+    // Plants: `label` not trimmed or a blank label naming the group; the element removing a blank host `aria-label`.
+    // (A defect only in the internals' name does not make the "decides alone" read fail: Chromium names the host from
+    // a present `aria-label` itself; plants.md.)
     name: "FR-006: the toolbar's name is the trimmed label, a blank label leaves it unnamed, a later label change follows; a host aria-label names it and decides alone, a blank one leaves it unnamed beside a label, and removing it falls back to the label",
     fixture: true,
     run: async (driver, inPage) => {
@@ -1295,7 +1337,8 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
     expected: { kept: "all", tree: exposed("Lane filter", lanes, 3), value: "todo", events: [] },
   },
   {
-    // Plant: the remembered value left out of the first render (a value attribute naming a disabled segment).
+    // Plant: no first enabled segment pressed on first render when the value names a disabled segment (both the host
+    // set's and the batch's pick of the first enabled segment dropped).
     name: "FR-027: on first render with a value no enabled segment has the first enabled segment is pressed, and with a value naming an enabled segment that segment is, with no event",
     fixture: true,
     run: async (driver, inPage) => {
@@ -1438,5 +1481,102 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
       return { moved, kept, disabled, left: await driver.activeElement() };
     },
     expected: { moved: seg(1), kept: after, disabled: { focus: seg(2), value: "blocked" }, left: before },
+  },
+  {
+    // Added after the mutation run (reviews/phase-4/notes.md). Mutant: `aria-label` not observed (a host
+    // `aria-label` removed after a render that read it then leaves its text as the name).
+    name: "FR-006: a host aria-label present while the label changes, then removed, leaves the toolbar named by the new label",
+    fixture: true,
+    run: async (driver, inPage) => {
+      await mount(driver, inPage, page(segmentsOf(["All"]), 'label="Lane filter" aria-label="Filter by lane"'));
+      const host = (await tree(driver))[0];
+      await driver.setProperty("sc", "label", "Lanes");
+      const relabelled = (await tree(driver))[0];
+      await driver.setAttribute("sc", "aria-label", null);
+      return { host, relabelled, removed: (await tree(driver))[0] };
+    },
+    expected: {
+      host: { role: "toolbar", name: "Filter by lane", orientation: "horizontal" },
+      relabelled: { role: "toolbar", name: "Filter by lane", orientation: "horizontal" },
+      removed: { role: "toolbar", name: "Lanes", orientation: "horizontal" },
+    },
+  },
+  {
+    // Added after the mutation run. Mutant: the group not observed when `joined` is set after render (a later resize
+    // then leaves the rounding of one row).
+    name: "joined set after render: a later resize to two rows rounds each row on its own at the delivery, beside the one-row rounding at the set",
+    fixture: true,
+    run: async (driver, inPage) => {
+      await mount(driver, inPage, page(segmentsOf(lanes), 'label="Lane filter" value="mine"'));
+      const { twoRows } = await measured(driver, inPage);
+      await driver.setAttribute("sc", "joined", "");
+      await driver.afterResizeDelivery("box");
+      const set = await inPage(radii, null);
+      await resized(driver, inPage, twoRows - 8);
+      return { set, wrapped: { rows: await inPage(rows, null), radii: await inPage(radii, null) } };
+    },
+    expected: { set: [startRound, square, square, endRound], wrapped: { rows: [0, 0, 0, 1], radii: [startRound, square, endRound, bothRound] } },
+  },
+  {
+    // Added after the mutation run. Mutant: every element child taken as a segment (the text before the segments then
+    // pressed and the tab stop).
+    name: "a child of the group that is not a segment gets no state and is not pressed or a tab stop, beside the first segment pressed and taking the tab stop",
+    fixture: true,
+    run: async (driver, inPage) => {
+      await mount(driver, inPage, page(`<span id="note">Lanes:</span>${segmentsOf(["All", "Mine"])}`));
+      await driver.focus("before");
+      await driver.press("Tab");
+      return {
+        note: await inPage(() => ["aria-pressed", "aria-disabled", "tabindex"].map((name) => document.getElementById("note")?.getAttribute(name) ?? null), null),
+        tree: await tree(driver),
+        value: await inPage(valueOf, "sc"),
+        tabindexes: await inPage(tabindexes, "sc"),
+        focus: await driver.activeElement(),
+      };
+    },
+    expected: { note: [null, null, null], tree: exposed("Lane filter", ["All", "Mine"]), value: "all", tabindexes: ["0", "-1"], focus: seg(0) },
+  },
+  {
+    // Added after the mutation run. Mutant: a segment that leaves a joined group keeping its joined state (square
+    // corners and the negative margins outside the group).
+    name: "a segment that leaves a joined group loses the joined look: its corners are radius-2 and it has no negative margin, beside the same segment squared with a -1 px margin inside",
+    fixture: true,
+    run: async (driver, inPage) => {
+      await mount(driver, inPage, page(segmentsOf(["All", "Mine", "Blocked"]), 'label="Lane filter" value="all" joined'));
+      await measured(driver, inPage);
+      const look = (selector: string): unknown => {
+        const mine = document.querySelector(selector);
+        if (mine === null) return null;
+        const style = getComputedStyle(mine);
+        return { margin: style.marginInlineStart, radii: [style.borderStartStartRadius, style.borderStartEndRadius, style.borderEndEndRadius, style.borderEndStartRadius] };
+      };
+      const inside = await inPage(look, "#sc > ocelle-segment:nth-child(2)");
+      await inPage(() => {
+        const mine = document.querySelectorAll("#sc > ocelle-segment")[1];
+        if (mine !== undefined) document.body.append(mine);
+      }, null);
+      await inPage(frames, undefined);
+      return { inside, left: await inPage(look, "body > ocelle-segment") };
+    },
+    expected: { inside: { margin: "-1px", radii: square }, left: { margin: "0px", radii: bothRound } },
+  },
+  {
+    // Added after the second mutation run (reviews/phase-4/notes.md). Mutant: the segments not observed again after a
+    // child batch (a reorder at the same group size, which resizes nothing, then leaves the old rounding).
+    name: "joined: a reorder at the same group size, Done moved before All, regroups at the next delivery: Done takes the start rounding and Blocked the end rounding",
+    fixture: true,
+    run: async (driver, inPage) => {
+      await mount(driver, inPage, page(segmentsOf(lanes), 'label="Lane filter" value="mine" joined'));
+      await measured(driver, inPage);
+      const before = { height: (await driver.box("sc")).height, radii: await inPage(radii, null) };
+      await inPage(task, undefined);
+      await driver.mutate("sc", [{ move: 3, before: 0 }]);
+      await driver.afterResizeDelivery("box");
+      return { before, after: { sameHeight: (await driver.box("sc")).height === before.height, names: (await tree(driver)).slice(1).map((node) => node.name), radii: await inPage(radii, null) } };
+    },
+    expected: {
+      before: { height: 44, radii: [startRound, square, square, endRound] },
+      after: { sameHeight: true, names: ["Done", "All", "Mine", "Blocked"], radii: [startRound, square, square, endRound] },
+    },
   },
 ];

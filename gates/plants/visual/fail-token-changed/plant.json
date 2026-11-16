@@ -1,6 +1,6 @@
 {
   "expect": "fail",
-  "why": "A changed token value (color-ink, light) changes every story-theme that shows it: differs on the thirty-five light story-themes measured in the pinned container (FR-004, US2 scenario 2), the twelve the phase 1 spike listed, the eight of mission 005's stories that show color-ink (all but elements-ocelle-brand-mark--chrome, measured for plan decision 29), the seven listbox stories of 014 (every option's text is color-ink) and the eight tabs stories of 014 (every tab's text is color-ink), and none in dark. A story added later that shows color-ink in light adds its line here (research.md R-07).",
+  "why": "A changed token value (color-ink, light) changes every story-theme that shows it: differs on the forty-four light story-themes measured in the pinned container (FR-004, US2 scenario 2), the twelve the phase 1 spike listed, the eight of mission 005's stories that show color-ink (all but elements-ocelle-brand-mark--chrome, measured for plan decision 29), the seven listbox stories of 014 (every option's text is color-ink) the eight tabs stories of 014 (every tab's text is color-ink) and the nine segmented-choice stories of 014 (every segment's text is color-ink), and none in dark. A story added later that shows color-ink in light adds its line here (research.md R-07).",
   "findings": [
     {
       "location": "base-styles--base-page/light",
@@ -140,6 +140,42 @@
     },
     {
       "location": "elements-ocelle-tabs--tab-with-icon/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-segmented-choice--default/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-segmented-choice--joined-one-row/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-segmented-choice--joined-wrapped/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-segmented-choice--pressed/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-segmented-choice--disabled-segment/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-segmented-choice--focused-segment/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-segmented-choice--hovered-segment/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-segmented-choice--hovered-joined-segment/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-segmented-choice--segment-with-icon/light",
       "rule": "differs"
     }
   ]

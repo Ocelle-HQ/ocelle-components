@@ -1,0 +1,74 @@
+# Red evidence for the aria-label fix (phase 4, found by the mutation run)
+# HEAD 2ef22f28e5fbd6514e95cee6ca93820f5e4b097f (tests) on the green source of 0f13127; run 2026-11-15T14:16:55Z
+$ pnpm exec vitest run --project elements packages/elements/test/segmented-choice.test.ts -t 'host aria-label present while'
+ RUN  v5.0.5 /home/user/ocelle-components
+ ❯ |elements (chromium)| packages/elements/test/segmented-choice.test.ts (61 tests | 1 failed | 60 skipped) 320ms
+   ❯ ocelle-segmented-choice and ocelle-segment, in process (US3) (61)
+     × FR-006: a host aria-label present while the label changes, then removed, leaves the toolbar named by the new label 318ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  |elements (chromium)| packages/elements/test/segmented-choice.test.ts > ocelle-segmented-choice and ocelle-segment, in process (US3) > FR-006: a host aria-label present while the label changes, then removed, leaves the toolbar named by the new label
+AssertionError: expected { …(2) } to deeply equal { …(2) }
+Failure screenshot:
+- Expected
++ Received
+@@ -10,11 +10,11 @@
+        "name": "Filter by lane",
+        "orientation": "horizontal",
+        "role": "toolbar",
+      },
+      "removed": {
+-       "name": "Lanes",
++       "name": "Filter by lane",
+        "orientation": "horizontal",
+        "role": "toolbar",
+      },
+    },
+  }
+ ❯ packages/elements/test/segmented-choice.test.ts:32:70
+     30|     it(name, async () => {
+     31|       const observed = await run(driver, inPage);
+     32|       expect({ observed, clipboard: await driver.clipboardCalls() }).t…
+       |                                                                      ^
+     33|     });
+     34|   }
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=6d50fd6a:5237:20
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+ Test Files  1 failed (1)
+      Tests  1 failed | 60 skipped (61)
+   Start at  14:16:56
+   Duration  1.77s (tests 42%, import 31%, worker 28%)
+$ pnpm exec vitest run --project elements-browser packages/elements/test/browser/segmented-choice.test.ts -t 'host aria-label present while'
+ RUN  v5.0.5 /home/user/ocelle-components
+ ❯ |elements-browser| packages/elements/test/browser/segmented-choice.test.ts (60 tests | 1 failed | 59 skipped) 663ms
+   ❯ ocelle-segmented-choice and ocelle-segment on the strict-CSP fixture with the browser build (US3) (60)
+     × FR-006: a host aria-label present while the label changes, then removed, leaves the toolbar named by the new label 412ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  |elements-browser| packages/elements/test/browser/segmented-choice.test.ts > ocelle-segmented-choice and ocelle-segment on the strict-CSP fixture with the browser build (US3) > FR-006: a host aria-label present while the label changes, then removed, leaves the toolbar named by the new label
+AssertionError: expected { …(3) } to deeply equal { …(3) }
+- Expected
++ Received
+@@ -10,11 +10,11 @@
+        "name": "Filter by lane",
+        "orientation": "horizontal",
+        "role": "toolbar",
+      },
+      "removed": {
+-       "name": "Lanes",
++       "name": "Filter by lane",
+        "orientation": "horizontal",
+        "role": "toolbar",
+      },
+    },
+    "recorded": {
+ ❯ packages/elements/test/browser/segmented-choice.test.ts:49:70
+     47|       const observed = await run(driver, inPage);
+     48|       const clipboard = await driver.clipboardCalls();
+     49|       expect({ observed, clipboard, recorded: await page.finish() }).t…
+       |                                                                      ^
+     50|     });
+     51|   }
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+ Test Files  1 failed (1)
+      Tests  1 failed | 59 skipped (60)
+   Start at  14:16:59
+   Duration  2.87s (tests 51%, import 36%, transform 13%)

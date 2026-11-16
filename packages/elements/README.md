@@ -2,7 +2,9 @@
 
 The Ocelle web components: standards-based custom elements (Lit 3) that work in any page, a server-rendered page
 under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has `ocelle-icon`, with a set
-of thirteen icons, `ocelle-brand-mark`, the Ocelle rosette, and `ocelle-listbox` with its `ocelle-option` children.
+of thirteen icons, `ocelle-brand-mark`, the Ocelle rosette, `ocelle-listbox` with its `ocelle-option` children,
+`ocelle-tabs` with its `ocelle-tab` and `ocelle-tab-panel` children, and `ocelle-segmented-choice` with its
+`ocelle-segment` children.
 
 ## Entry points
 
@@ -16,6 +18,8 @@ of thirteen icons, `ocelle-brand-mark`, the Ocelle rosette, and `ocelle-listbox`
 | `@ocelle/elements/ocelle-tabs.js` | `dist/ocelle-tabs.js` | `ocelle-tabs`, `ocelle-tab` and `ocelle-tab-panel`; for hosts with a bundler |
 | `@ocelle/elements/ocelle-tab.js` | `dist/ocelle-tab.js` | `ocelle-tab` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-tab-panel.js` | `dist/ocelle-tab-panel.js` | `ocelle-tab-panel` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-segmented-choice.js` | `dist/ocelle-segmented-choice.js` | `ocelle-segmented-choice` and `ocelle-segment`; for hosts with a bundler |
+| `@ocelle/elements/ocelle-segment.js` | `dist/ocelle-segment.js` | `ocelle-segment` only; for hosts with a bundler |
 | `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |
 | `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |
 
@@ -261,6 +265,77 @@ neighbours.
 `--ocelle-focus-offset`, `--ocelle-bar-width`, `--ocelle-target-min`, `--ocelle-space-2`, `--ocelle-space-3` and
 `--ocelle-icon-size`.
 
+## `ocelle-segmented-choice`
+
+`ocelle-segmented-choice` is a toolbar of `ocelle-segment` toggle buttons, exactly one of them pressed: the host writes
+the segments as its children, in the page's own markup, and the group is one tab stop with arrow keys between the
+segments. It is for a few mutually exclusive options, such as a filter or a view switch.
+
+```html
+<ocelle-segmented-choice label="Lane filter" value="all" joined>
+  <ocelle-segment value="all">All</ocelle-segment>
+  <ocelle-segment value="mine"><ocelle-icon slot="icon" name="folder"></ocelle-icon>Mine</ocelle-segment>
+  <ocelle-segment value="blocked">Blocked</ocelle-segment>
+  <ocelle-segment value="done">Done</ocelle-segment>
+</ocelle-segmented-choice>
+```
+
+`value` (attribute and property, not reflected): the pressed segment's value. Exactly one segment is pressed whenever a
+segment is enabled: on first render the segment whose value `value` names, else the first enabled segment. Setting
+`value` to a value an enabled segment has presses the first such segment; setting it to `""` or to a value no enabled
+segment has keeps the press. A host set never emits an event, and setting the current value changes nothing. A
+non-empty `value` that no enabled segment has is remembered until a segment with that value appears or is enabled,
+which is then pressed, with no event; the next user press or host set forgets it.
+
+`label` (attribute and property, not reflected): the toolbar's accessible name, trimmed; a host `aria-label` names it
+too and, when present, decides alone (see Host ARIA).
+
+`joined` (boolean, reflected): the joined variant. The segments touch, one shared line of `--ocelle-border-width` lies
+between neighbours and between rows, and only each row's first segment has rounded start corners and each row's last
+segment rounded end corners. The group recomputes the rounding itself when it wraps or unwraps: no host script,
+observer or `style` attribute is needed. It observes its own size and its segments' sizes while joined, and regroups
+when its segments change.
+
+`ocelle-segmented-choice-change` with `detail` `{ value }`: the user pressed another segment with Enter, Space or a
+click; `value` already reads the new value when it is dispatched. It bubbles and is composed.
+
+Keys, on a segment: ArrowRight and ArrowDown move focus to the next enabled segment, ArrowLeft and ArrowUp to the
+previous one (ArrowLeft and ArrowRight swapped under right-to-left), wrapping at the ends; Home and End to the first and
+last enabled segment. The arrows move focus only. Enter and Space press the focused segment. The group handles no
+other key: Escape and letters reach the page unhandled, and Tab leaves the group. Only the pressed segment is in the
+tab order. A pressed segment cannot be un-pressed by the user.
+
+When the pressed segment is removed or disabled, the next enabled segment after it is pressed, else the nearest one
+before it, with no event; focus moves with the press when the segment had focus. With every segment disabled, or none,
+no segment is pressed and `value` reads `""`.
+
+`ocelle-segment`: `value` (attribute and property, reflected) and `disabled` (boolean, reflected). A segment with no
+`value`, or a blank one, has its index among the segments as its value, as a string; the default is not written to the
+attribute. A segment's `icon` slot takes a leading icon by the slot convention; the icon adds nothing to the segment's
+name. An `ocelle-segment` is only meaningful inside an `ocelle-segmented-choice`: outside one it has no role and no tab
+stop.
+
+The segmented choice writes `aria-pressed`, `aria-disabled` and `tabindex` on its segments; a host's own values of
+these are overwritten. Keep segment values unique: a host set presses the first segment with the value. The segmented
+choice has no `disabled` of its own; disable every segment to disable it.
+
+In the default variant the segments stand `--ocelle-space-2` apart, each with a border of `--ocelle-border-width` in
+`--ocelle-color-control-border` and the radius `--ocelle-radius-2`; the pressed segment is filled
+`--ocelle-color-accent-low` with a border of `--ocelle-bar-width` in `--ocelle-color-accent-strong`. In the joined
+variant the lines around the pressed segment, and around a hovered one, are `--ocelle-color-accent-strong` at the same
+width, and the pressed segment is filled `--ocelle-color-accent-low` with a bar of `--ocelle-bar-width` in
+`--ocelle-color-accent-strong` along its block-end edge inside its box; in forced colours the bar and the default
+pressed border are `Highlight` and every line is `ButtonBorder`; the segmented choice is for the main grounds. Each
+segment's box is at least `--ocelle-target-min` high and its label wraps; a hovered enabled segment is filled
+`--ocelle-color-hover-bg` with `--ocelle-color-accent-strong` lines. A keyboard-focused segment shows the token focus
+ring on all four sides, above its neighbours.
+
+`ocelle-segmented-choice` and `ocelle-segment` read the tokens `--ocelle-color-ink`, `--ocelle-color-hover-bg`,
+`--ocelle-color-accent-low`, `--ocelle-color-accent-strong`, `--ocelle-color-control-border`,
+`--ocelle-color-disabled-ink`, `--ocelle-color-focus`, `--ocelle-focus-width`, `--ocelle-focus-offset`,
+`--ocelle-border-width`, `--ocelle-bar-width`, `--ocelle-radius-2`, `--ocelle-target-min`, `--ocelle-space-2`,
+`--ocelle-space-3` and `--ocelle-icon-size`.
+
 ## Slot convention
 
 A control that shows icons follows one slot convention: an `icon` slot before its label and, where it has an end icon
@@ -336,9 +411,11 @@ then the first copy's.
 
 ## Engines
 
-Engine floor: Chromium 120+ and WebKit 16.4+, with no `window.ShadyCSS` polyfill on the page. Each figure is the
+Engine floor: Chromium 125+ and WebKit 17.4+, with no `window.ShadyCSS` polyfill on the page. Each figure is the
 newest feature the elements use:
 
+- Custom states (`:state()` and `ElementInternals.states`): Chromium 125, WebKit 17.4 (the joined segmented choice's
+  rows);
 - `:dir()`: Chromium 120, WebKit 16.4 (the inline-direction icons' mirroring);
 - `@media not (forced-colors: active)` (Media Queries 4's `not (…)` without a media type): Chromium 104, WebKit 16.4
   (the brand mark's variants);

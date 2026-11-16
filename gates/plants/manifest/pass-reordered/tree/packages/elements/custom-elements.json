@@ -370,6 +370,201 @@
       ]
     },
     {
+      "path": "src/ocelle-segment.ts",
+      "kind": "javascript-module",
+      "exports": [
+        {
+          "name": "OcelleSegment",
+          "kind": "js",
+          "declaration": {
+            "name": "OcelleSegment",
+            "module": "src/ocelle-segment.ts"
+          }
+        }
+      ],
+      "declarations": [
+        {
+          "tagName": "ocelle-segment",
+          "superclass": {
+            "package": "lit",
+            "name": "LitElement"
+          },
+          "slots": [
+            {
+              "name": "",
+              "description": "The segment's label."
+            },
+            {
+              "name": "icon",
+              "description": "A leading icon, by the slot convention; it adds nothing to the segment's name."
+            }
+          ],
+          "name": "OcelleSegment",
+          "members": [
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "disabled",
+              "kind": "field",
+              "description": "Whether the segment is disabled: it cannot be pressed, the keys and the tab stop skip it, and it stays focusable,\nso a focused segment that becomes disabled keeps focus until the press moves. Reflected.",
+              "default": "false",
+              "attribute": "disabled"
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "value",
+              "kind": "field",
+              "description": "The segment's value, reported by the segmented choice's `value` and events: the `value` attribute as written (not\ntrimmed), or, when it is missing or blank, the segment's index among its parent's segments, as a string, which is\nnot written to the attribute. Reflected.",
+              "default": "the segment's index, as a string",
+              "attribute": "value"
+            }
+          ],
+          "kind": "class",
+          "events": [],
+          "description": "A segment of an `ocelle-segmented-choice`: its content is its label, with an optional leading icon.",
+          "customElement": true,
+          "cssProperties": [],
+          "cssParts": [],
+          "attributes": [
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "name": "disabled",
+              "fieldName": "disabled",
+              "description": "Whether the segment is disabled: it cannot be pressed, the keys and the tab stop skip it, and it stays focusable,\nso a focused segment that becomes disabled keeps focus until the press moves. Reflected.",
+              "default": "false"
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "value",
+              "fieldName": "value",
+              "description": "The segment's value, reported by the segmented choice's `value` and events: the `value` attribute as written (not\ntrimmed), or, when it is missing or blank, the segment's index among its parent's segments, as a string, which is\nnot written to the attribute. Reflected.",
+              "default": "the segment's index, as a string"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "src/ocelle-segmented-choice.ts",
+      "kind": "javascript-module",
+      "exports": [
+        {
+          "name": "OcelleSegmentedChoice",
+          "kind": "js",
+          "declaration": {
+            "name": "OcelleSegmentedChoice",
+            "module": "src/ocelle-segmented-choice.ts"
+          }
+        }
+      ],
+      "declarations": [
+        {
+          "tagName": "ocelle-segmented-choice",
+          "superclass": {
+            "package": "lit",
+            "name": "LitElement"
+          },
+          "slots": [
+            {
+              "name": "",
+              "description": "The `ocelle-segment` children."
+            }
+          ],
+          "name": "OcelleSegmentedChoice",
+          "members": [
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "privacy": "public",
+              "name": "label",
+              "kind": "field",
+              "description": "The toolbar's accessible name, trimmed; empty or whitespace-only counts as none, and a host `aria-label` decides\nover it. Not reflected.",
+              "default": "undefined",
+              "attribute": "label"
+            },
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "joined",
+              "kind": "field",
+              "description": "The joined variant: the segments touch with one shared line between neighbours and between rows, and only each\nrow's first and last segments have rounded outer corners, recomputed by the element when it wraps. Reflected.",
+              "default": "false",
+              "attribute": "joined"
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "privacy": "public",
+              "name": "value",
+              "kind": "field",
+              "description": "The pressed segment's value; `\"\"` only while no segment is enabled. Setting it presses the first enabled segment\nwith the value; `\"\"` or a value no enabled segment has keeps the press, and a non-empty such value is remembered\nuntil a segment with it appears or is enabled. A set never emits an event; setting the current value changes\nnothing. Not reflected.",
+              "default": "the first enabled segment's value",
+              "attribute": "value"
+            }
+          ],
+          "kind": "class",
+          "events": [
+            {
+              "type": {
+                "text": "CustomEvent<{ value: string }>"
+              },
+              "name": "ocelle-segmented-choice-change",
+              "description": "The user pressed another segment (Enter, Space or a click); `value` already reads it."
+            }
+          ],
+          "description": "A toolbar of `ocelle-segment` toggle buttons, exactly one pressed; one tab stop, keyboard and pointer pressing, and a\njoined variant that rounds each row's ends itself.",
+          "customElement": true,
+          "cssProperties": [],
+          "cssParts": [],
+          "attributes": [
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "name": "label",
+              "fieldName": "label",
+              "description": "The toolbar's accessible name, trimmed; empty or whitespace-only counts as none, and a host `aria-label` decides\nover it. Not reflected.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "name": "joined",
+              "fieldName": "joined",
+              "description": "The joined variant: the segments touch with one shared line between neighbours and between rows, and only each\nrow's first and last segments have rounded outer corners, recomputed by the element when it wraps. Reflected.",
+              "default": "false"
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "value",
+              "fieldName": "value",
+              "description": "The pressed segment's value; `\"\"` only while no segment is enabled. Setting it presses the first enabled segment\nwith the value; `\"\"` or a value no enabled segment has keeps the press, and a non-empty such value is remembered\nuntil a segment with it appears or is enabled. A set never emits an event; setting the current value changes\nnothing. Not reflected.",
+              "default": "the first enabled segment's value"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "path": "src/ocelle-tab-panel.ts",
       "kind": "javascript-module",
       "exports": [
