@@ -12,8 +12,9 @@
 // the count from the effect each run has on the grid, so nothing test-only ships in dist/ or the browser build
 // (research.md R-13). A pass on an element that is not rendered writes nothing and stays pending until the element's
 // `ResizeObserver` sees it rendered again and calls `resume()` (landing pass O5-01; data-model.md § list-detail "Not
-// rendered"). Internal: not exported from the package root, not an entry point and
-// not in the manifest.
+// rendered"). An observation with no box marks the pass pending too (`suspend()`), so becoming rendered always runs
+// one pass, also after a change made while hidden that the element cannot see (reviews/phase-4/round-6.md R6-01).
+// Internal: not exported from the package root, not an entry point and not in the manifest.
 
 /** The measurement of one list-detail: its stylesheet of figures, its observer and its frame request. */
 export class ListDetailMeasure {
@@ -59,6 +60,15 @@ export class ListDetailMeasure {
       this.measure();
       this.#after();
     });
+  }
+
+  /**
+   * Marks the pass pending for an element that has no box (in a closed `<dialog>`, under a `display: none` ancestor or
+   * `hidden`), so that becoming rendered again runs one pass: a change made while it had no box may be one it cannot
+   * see, such as a class swap (R6-01). The element calls it from its `ResizeObserver`.
+   */
+  suspend(): void {
+    this.#pending = true;
   }
 
   /**

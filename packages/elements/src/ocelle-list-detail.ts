@@ -216,10 +216,13 @@ export class OcelleListDetail extends LitElement {
   // The probe's content box is the host's content box; the edge box's border box is the host's inline padding and
   // borders, and only tells of a change of them, whose computed values are added (a percentage padding resolves against
   // another box in the edge box, its containing block).
-  // Not rendered, the element keeps its measured size and its tier, and once rendered again it requests the pass it
-  // left pending for the next frame (O5-01).
+  // Not rendered, the element keeps its measured size and its tier and leaves a pass pending, and once rendered again
+  // it requests that pass for the next frame, so becoming rendered always measures afresh (O5-01, R6-01).
   readonly #resize = new ResizeObserver((entries) => {
-    if (!this.#rendered()) return;
+    if (!this.#rendered()) {
+      this.#measure.suspend();
+      return;
+    }
     this.#measure.resume();
     const probe = entries.find((entry) => entry.target.classList.contains("probe"))?.contentBoxSize[0]?.inlineSize;
     if (probe !== undefined) this.#content = probe;
