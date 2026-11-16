@@ -547,6 +547,55 @@ the visual and axe gates (after #10).
     With no red commit, `tdd-exempt.md` also gets a line for R1-02 and R1-03: the rows were made stricter against code that already meets them, so they could not fail before a fix; the break checks above, in `notes.md`, are their test-first evidence.
     Then commit the comment. Run `elements` and `elements-browser` (the tooltip rows), `gate:typecheck`, `gate:lint` and `gate:test-lint`, and `gate:mutation -- --base <phase base> --plan` (it plans no shard for `bubble.ts`'s comment; if it plans one, run it and record the result in `notes.md` § Mutation).
 
+### Fixes from the landing review (phase 5 round 2: R2-01)
+
+The operator chose on 2026-11-16 to give the row the 1000 ms delay the other R-12 rows got (`reviews/phase-5/round-2.md`:
+"Give it the 1000 ms delay (Recommended)"). Phase 5 owns the row (T057 R1-03). This is a test-only stabilisation of a
+row the code already meets, so it has no red commit and no `red.sh` run: the evidence is a hand-applied break, as for
+T057. One commit (`test(008-overlays): phase 5 review round 2`, signed off) holds the row change in
+`packages/elements/test/scenarios/tooltip.ts` (no source, default delay, other row or spec change),
+`reviews/phase-5/round-2-fixes.md` (one row per finding, `| ID | Resolution | Break check | Where |`), the break-check
+logs in `reviews/phase-5/break-checks/`, a section in `reviews/phase-5/notes.md` and a line in
+`reviews/phase-5/tdd-exempt.md`; reviewed as phase 5 round 3. The row runs in both harnesses:
+`packages/elements/test/tooltip.test.ts` (`elements`, in process on the source) and
+`packages/elements/test/browser/tooltip.test.ts` (`elements-browser`, the browser build on the strict-CSP fixture).
+
+- [ ] T060 [US3] R2-01, "Escape, then a brief hover (FR-033, R-12)" (`tooltip.ts`, about :845 to :860) gets its own
+  1000 ms delay, the remedy of the R-12 leave and re-entry rows (`reviews/phase-5/notes.md` § The R-12 re-entry row
+  after the operator's decision, `a36d8a1`; `reviews/phase-4/notes.md` § The R-12 leave row after the operator's
+  decision).
+  - **Page**: the row's page sets `#tip { --ocelle-tooltip-delay: 1000ms; }` (written with `longDelay`) through
+    `start`'s rules, as the leave row does. Keyboard focus shows the bubble at once whatever the delay, so `tabFrom` and Escape
+    are unchanged.
+  - **Bounds and waits**, scaled as in the leave row, with its constants `longDelay` (1000) and `longWait` (1500):
+    `beforeDelay("the leave", …, longDelay)`, so a run is judged only when its page-side leave came before the
+    1000 ms delay (was 100); the moves are unchanged (`hover`, `pause(50)`, the move to `rest`); the wait after the
+    leave is `pause(1000)` then `pause(longWait - 1000)` (each at most 1 000 ms, R-15); `never` is no bubble at any
+    frame of the whole record, and a new `toWait` holds when the last frame's `t` is at least `longWait` from the entry
+    (the span measured from the entry, as phase 5 round 1 R1-02 suggested, not from the first sample). The comment on
+    `longDelay` and `longWait` names this row as well.
+  - **Name and expected values**: "Escape, then a brief hover (FR-033, R-12): with --ocelle-tooltip-delay: 1000ms on
+    the tooltip, shown by keyboard focus and hidden by Escape, focus kept on the trigger; the pointer enters the
+    trigger and leaves both boxes before that delay: no bubble at any frame of a 1500 ms wait from the entry";
+    expected `{ never: true, toWait: true, focus: "trg", visible: true }`. Record the old and new full names and the
+    measured times (leave and last frame, ms from the entry, 3 runs in each harness, read with a temporary probe that
+    is then removed) in `notes.md`.
+  - **Break checks** (temporary changes, reverted, never committed), each run on the new row in both harnesses with
+    `pnpm exec vitest run --project elements --project elements-browser packages/elements/test/tooltip.test.ts
+    packages/elements/test/browser/tooltip.test.ts -t "Escape, then a brief hover" --reporter=verbose`, logs in
+    `reviews/phase-5/break-checks/` (colour codes stripped), `git status` clean but for the review files after each:
+    - the Escape dismissal broken: in `#onKeydown` of `packages/elements/src/ocelle-tooltip.ts`, the `this.#hide()`
+      call removed (the key is still stopped), so Escape no longer hides the bubble: the row must fail, `never: false`;
+    - the existing break of T057 R1-03 (a), `window.clearTimeout(this.#timer)` removed from `#onPointerout`: the row
+      must fail, `never: false` (the delay the leave did not end shows the bubble at about 1000 ms, inside the 1500 ms
+      wait);
+    - test side: a pause of more than 1000 ms before the leave (for example `pause(1000)` and `pause(50)`): the row
+      must fail with `beforeDelay`'s "no run it can judge" message, not pass.
+    `tdd-exempt.md` gets a line for R2-01: a test-only stabilisation of a row the code already meets cannot fail before
+    a fix; the break checks above, in `notes.md` and `round-2-fixes.md`, are its test-first evidence.
+  - **Checks**: the tooltip test files in both harnesses (the command above without `-t`), then a full `pnpm test` in
+    the background with its log in `reviews/phase-5/`.
+
 **Checkpoint**: a full `pnpm test` passes at HEAD (log kept in `reviews/phase-5/`), then `tdd-check.sh 5` runs before the review, as in the other phases, and its `tdd-check.json` is kept. It reports `pass` when `red.sh 5 phase` recorded a red commit; with none, `tdd-exempt.md` (T056's reason and T057's lines above, with the break checks in `notes.md`) makes it report `exempt`, and the review reads the break checks as the test-first evidence.
 
 ---
@@ -563,7 +612,8 @@ the visual and axe gates (after #10).
 - Within a red commit, the [P] tasks touch different files.
 - **Landing fixes** (`reviews/landing/round-1-tasks.md`): T058 and T059 run after Phase 5, in Phase 2, as one red
   commit (`red.sh 2 fix-2`) and one fix commit; they are reviewed as phase 2 round 3, and then the landing review runs
-  again.
+  again. T060 (`reviews/phase-5/round-2.md`) runs after them, in Phase 5, as one test-only commit with break checks
+  and no red commit; it is reviewed as phase 5 round 3.
 
 ## Parallel Opportunities
 
