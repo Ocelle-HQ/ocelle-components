@@ -11,7 +11,7 @@
 // not an entry point: not exported from index.ts or browser.ts, and its members reach the manifest through the elements
 // derived from it (scripts/manifest.ts folds them in).
 import { LitElement, css, html } from "lit";
-import type { PropertyDeclarations, PropertyValues, TemplateResult } from "lit";
+import type { CSSResultGroup, PropertyDeclarations, PropertyValues, TemplateResult } from "lit";
 import { registering } from "./define.ts";
 import { Announcer, afterTask, collapse, readyState } from "./live.ts";
 import type { Politeness, Reading } from "./live.ts";
@@ -54,7 +54,7 @@ export abstract class FormControl extends LitElement {
     return [...super.observedAttributes, ...hostAria, "hidden"];
   }
 
-  static override styles = css`
+  static override styles: CSSResultGroup = css`
     :host {
       display: block;
     }
@@ -303,8 +303,8 @@ export abstract class FormControl extends LitElement {
     super.focus(options);
   }
 
-  /** The native control (the subclass renders it as `part="control"`). */
-  protected abstract control(): HTMLInputElement;
+  /** The native control (the subclass renders it as `part="control"`): an `<input>` or a `<select>`. */
+  protected abstract control(): HTMLInputElement | HTMLSelectElement;
 
   /** The control's default value, restored on reset (not `defaultValue`, which the element does not expose). */
   protected abstract initialValue(): string;

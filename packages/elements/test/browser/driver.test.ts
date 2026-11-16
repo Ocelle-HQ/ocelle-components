@@ -413,5 +413,14 @@ describe("the driver steps on the strict-CSP fixture pages", { timeout: 60_000 }
       const seen = await page.page.evaluate(() => ({ marker: (globalThis as unknown as { marker?: string }).marker ?? null, url: location.pathname }));
       expect({ persisted, seen, recorded: await page.finish() }).toEqual({ persisted: false, seen: { marker: null, url: "/no-store/live.html" }, recorded: clean });
     });
+
+    it("after a key step, navigateAwayAndBack() leaves no key step: submit(formId) submits the page shown again", async () => {
+      const { visit: page, driver } = await open("form-restore.html", [...scripts, "no-store/form-restore.html", "about:blank"]);
+      await page.page.goto(new URL("/no-store/form-restore.html", page.page.url()).href, { waitUntil: "load" });
+      await driver.press("n", "ArrowDown");
+      await driver.navigateAwayAndBack();
+      await page.page.fill("#n", "Fix lane");
+      expect({ submitted: await driver.submit("g"), recorded: await page.finish() }).toEqual({ submitted: [["title", "Fix lane"]], recorded: clean });
+    });
   });
 });
