@@ -43,6 +43,7 @@ export type Act =
   | { readonly op: "call"; readonly id: string; readonly inner?: string; readonly method: string }
   | { readonly op: "veto"; readonly id: string; readonly event: string }
   | { readonly op: "on"; readonly id: string; readonly event: string; readonly then: readonly Act[] }
+  | { readonly op: "settled"; readonly id: string; readonly then: readonly Act[] }
   | { readonly op: "escape"; readonly id: string; readonly mode: "stop" | "prevent" }
   | { readonly op: "watch"; readonly id: string; readonly inner?: string; readonly events: readonly string[] }
   | { readonly op: "log" }
@@ -98,7 +99,9 @@ export interface Inspected {
  * - `ocelle-test-act`: runs the command (JSON, `Act`) set as its `do` attribute and writes `{ "result": … }` or
  *   `{ "error": "…" }` to its `data-result` attribute. `focus`, `remove` (kept for `reinsert`, which puts the element
  *   back where it was), `set` (a property), `attr` (an attribute), `call` (a method without arguments), `veto` (a
- *   listener that cancels the event), `on` (runs commands from a listener), `escape` (a keydown listener that stops
+ *   listener that cancels the event), `on` (runs commands from a listener), `settled` (runs commands in the host's
+ *   continuation of the element's `updateComplete`, as `el.open = false; await el.updateComplete; …` does; 008
+ *   tasks.md T058), `escape` (a keydown listener that stops
  *   the propagation of, or prevents, Escape), `watch` (records events of an element, in the capture phase, as
  *   `<type>:<cancelable>`) and `log` (returns and clears those records), `dispatch` (a synthetic event, bubbling when
  *   `bubbles` is true, returns whether it was not cancelled), `key` (a synthetic bubbling, composed, cancelable `keydown` on the deep active
@@ -207,6 +210,13 @@ export function defineDialogStandIns(): void {
       case "on": {
         const then = command.then as Command[];
         byId(String(command.id)).addEventListener(String(command.event), () => {
+          for (const each of then) run(each);
+        });
+        return null;
+      }
+      case "settled": {
+        const then = command.then as Command[];
+        void (byId(String(command.id)) as unknown as { readonly updateComplete: Promise<unknown> }).updateComplete.then(() => {
           for (const each of then) run(each);
         });
         return null;
@@ -1632,6 +1642,43 @@ export function overlayScenarios(kind: OverlayKind) {
       },
       { last: closeEvent("escape", "ob"), focus: "ob" },
     ),
+    // An inner overlay whose close is ended by its removal leaves the stack once, and the outer stays on it (008
+    // tasks.md T058, landing review L1-01); motion on is the positive half.
+    ...([true, false] as const).map((reduced) =>
+      row(
+        `Stacked: an inner overlay closed ${reduced ? "under reduced motion" : "with motion on"} and removed in the host's continuation, then a second inner one opened over the outer: the outer stays on the stack, Escape with focus on the body closes only the top one (FR-023, R-05a)`,
+        async (driver) => {
+          if (reduced) await driver.reducedMotion(true);
+          await driver.mount(
+            `<button id="opener">Open</button><${kind.tag} id="dlg" label="Outer"><button id="ob">Outer button</button><${kind.tag} id="in1" label="Inner one"><button id="i1">I1</button></${kind.tag}><${kind.tag} id="in2" label="Inner two"><button id="i2">I2</button></${kind.tag}></${kind.tag}><ocelle-test-act id="act"></ocelle-test-act>`,
+          );
+          await act(driver, { op: "focus", id: "opener" });
+          await driver.setAttribute("dlg", "open", "");
+          await act(driver, { op: "watch", id: "dlg", events: both });
+          await driver.record("in1", both);
+          await driver.record("in2", both);
+          await driver.setAttribute("in1", "open", "");
+          await act(driver, { op: "seq", ops: [{ op: "set", id: "in1", name: "open", value: false }, { op: "settled", id: "in1", then: [{ op: "remove", id: "in1" }] }] });
+          await pause(100);
+          await driver.setAttribute("in2", "open", "");
+          await act(driver, { op: "blur" });
+          await driver.press("Escape");
+          await events(driver, 2);
+          const recorded = await after(driver);
+          const outerEvents = await act(driver, { op: "log" });
+          const first = { recorded, outerEvents, outer: { open: (await driver.attribute("dlg", "open")) !== null, modal: (await inspect(driver, "dlg", "dialog")).modal }, layer: await driver.topLayer(), focus: await driver.focusPath() };
+          await driver.record("dlg", both);
+          await act(driver, { op: "blur" });
+          await driver.press("Escape");
+          const second = (await events(driver, recorded.length + 1)).slice(recorded.length, recorded.length + 1);
+          return { first, second };
+        },
+        {
+          first: { recorded: [request("escape", "body"), closeEvent("escape", "ob")], outerEvents: [], outer: { open: true, modal: true }, layer: [{ element: "dlg[dialog]", modal: true, popoverOpen: false }], focus: "ob" },
+          second: [request("escape", "body")],
+        },
+      ),
+    ),
   ];
 
   const firstRenderRows = [
@@ -1688,6 +1735,75 @@ export function overlayScenarios(kind: OverlayKind) {
           return { moved, pageFocus, recorded, reopened: { state: await state(driver), focus: await driver.focusPath() } };
         },
         { moved: { attribute: null, modal: false, open: false, layer: 0 }, pageFocus: "after", recorded: [], reopened: { state: shown, focus: "b1" } },
+      ),
+    ),
+    // The end of a close with no motion is cancelled by a removal or a reopen in the host's continuation of the
+    // update's updateComplete, as the exit animation is (008 tasks.md T058, landing review L1-01); motion on is the
+    // positive half.
+    ...([true, false] as const).map((reduced) =>
+      row(
+        `Closing ${reduced ? "under reduced motion" : "with motion on"}, then removed in the host's continuation of updateComplete: no close event, open false, no top-layer entry, the page not inert (FR-022, R-05a, R-06)`,
+        async (driver) => {
+          if (reduced) await driver.reducedMotion(true);
+          await driver.mount(page(basic));
+          await open(driver);
+          await act(driver, { op: "seq", ops: [{ op: "set", id: "dlg", name: "open", value: false }, { op: "settled", id: "dlg", then: [{ op: "remove", id: "dlg" }] }] });
+          await pause(100);
+          const property = (await inspect(driver, "dlg")).open;
+          const layer = await driver.topLayer();
+          await click(driver, "after");
+          return { property, layer, focus: await driver.focusPath(), recorded: await after(driver) };
+        },
+        { property: false, layer: [], focus: "after", recorded: [] },
+      ),
+    ),
+    ...([true, false] as const).map((reduced) =>
+      row(
+        `Closing ${reduced ? "under reduced motion" : "with motion on"}, then reopened in the host's continuation of updateComplete: no close event, the overlay stays shown; one Escape then gives exactly one request and one close (FR-014, R-06)`,
+        async (driver) => {
+          if (reduced) await driver.reducedMotion(true);
+          await driver.mount(page(basic));
+          await open(driver);
+          await act(driver, { op: "seq", ops: [{ op: "set", id: "dlg", name: "open", value: false }, { op: "settled", id: "dlg", then: [{ op: "set", id: "dlg", name: "open", value: true }] }] });
+          await pause(100);
+          await driver.setAttribute("act", "data-wait", "");
+          const reopened = { recorded: await driver.recorded(), state: await state(driver) };
+          await driver.press("Escape");
+          await events(driver, 2);
+          return { reopened, recorded: await after(driver) };
+        },
+        { reopened: { recorded: [], state: shown }, recorded: [request("escape", "b1"), closeEvent("escape", "opener")] },
+      ),
+    ),
+    // A show that the update could not make because the host was out of the document is made once it is connected
+    // again; `open` stays true, as the overlay was never shown (008 tasks.md T059, landing review L1-03). The same task
+    // is the positive half.
+    ...(
+      [
+        { label: "Opened, then moved before it is shown, re-inserted in a later task", ops: [[{ op: "set", id: "dlg", name: "open", value: true }, { op: "remove", id: "dlg" }], [{ op: "reinsert", id: "dlg" }]] },
+        { label: "Opened while out of the document, re-inserted in a later task", ops: [[{ op: "remove", id: "dlg" }, { op: "set", id: "dlg", name: "open", value: true }], [{ op: "reinsert", id: "dlg" }]] },
+        { label: "Opened, then moved before it is shown, re-inserted in the same task", ops: [[{ op: "set", id: "dlg", name: "open", value: true }, { op: "remove", id: "dlg" }, { op: "reinsert", id: "dlg" }]] },
+      ] satisfies { readonly label: string; readonly ops: readonly (readonly Act[])[] }[]
+    ).map(({ label, ops }) =>
+      row(
+        `${label}: open true, shown and :modal with initial focus, no event; open = false then gives one close with reason host (FR-004)`,
+        async (driver) => {
+          await driver.mount(page(basic));
+          await act(driver, { op: "focus", id: "opener" });
+          await driver.record("dlg", both);
+          for (const [index, each] of ops.entries()) {
+            if (index > 0) await pause(50);
+            await act(driver, { op: "seq", ops: each });
+          }
+          await pause(100);
+          await driver.setAttribute("act", "data-wait", "");
+          const moved = { attribute: await driver.attribute("dlg", "open"), state: await state(driver), focus: await driver.focusPath(), recorded: await driver.recorded() };
+          await driver.setAttribute("dlg", "open", null);
+          // A bounded poll that does not throw, so a show that was never made fails on its observation.
+          await eventually(async () => (await driver.recorded()).length > 0);
+          return { moved, recorded: await driver.recorded() };
+        },
+        { moved: { attribute: "", state: shown, focus: "b1", recorded: [] }, recorded: [closeEvent("host", "opener")] },
       ),
     ),
   ];
