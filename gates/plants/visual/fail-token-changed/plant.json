@@ -1,6 +1,6 @@
 {
   "expect": "fail",
-  "why": "A changed token value (color-ink, light) changes every story-theme that shows it: differs on the twenty light story-themes measured in the pinned container (FR-004, US2 scenario 2), the twelve the phase 1 spike listed and the eight of mission 005's stories that show color-ink (all but elements-ocelle-brand-mark--chrome, measured for plan decision 29), and none in dark. A story added later that shows color-ink in light adds its line here (research.md R-07).",
+  "why": "A changed token value (color-ink, light) changes every story-theme that shows it: differs on the fifty light story-themes measured in the pinned container (FR-004, US2 scenario 2), the twelve the phase 1 spike listed, the eight of mission 005's stories that show color-ink (all but elements-ocelle-brand-mark--chrome, measured for plan decision 29) and the thirty of mission 010's notice, form-input and form-select stories (all of them), and none in dark. A story added later that shows color-ink in light adds its line here (research.md R-07).",
   "findings": [
     {
       "location": "base-styles--base-page/light",
@@ -31,6 +31,86 @@
       "rule": "differs"
     },
     {
+      "location": "elements-ocelle-form-input--empty/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-form-input--placeholder/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-form-input--filled/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-form-input--with-description/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-form-input--with-error/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-form-input--required/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-form-input--disabled/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-form-input--read-only/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-form-input--focused/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-form-input--hover/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-form-select--empty/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-form-select--placeholder/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-form-select--filled/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-form-select--with-description/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-form-select--with-error/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-form-select--required/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-form-select--disabled/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-form-select--focused/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-form-select--hover/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-form-select--option-groups/light",
+      "rule": "differs"
+    },
+    {
       "location": "elements-ocelle-icon--close/light",
       "rule": "differs"
     },
@@ -48,6 +128,46 @@
     },
     {
       "location": "elements-ocelle-icon--set-right-to-left/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-notice--info/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-notice--success/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-notice--warning/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-notice--danger/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-notice--neutral/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-notice--regular-size/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-notice--compact-size/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-notice--with-heading/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-notice--without-heading/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-notice--announcing/light",
       "rule": "differs"
     },
     {
