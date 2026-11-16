@@ -42,7 +42,8 @@ ocelle-action-row or ocelle-tooltip; each element meeting #7's Done-when checkli
   from a token, so its block padding is at least 4 px rather than exactly 4 px; US3-4's exact 4 px holds for the
   static pill only (US3-4, US4-7, FR-029, FR-032, FR-043).
 - Pill radius (SPEC-1-04), "(a)": every `ocelle-pill-tag` variant (the `pill` and the `badge`, static or interactive,
-  filter toggles included) counts as a "state pill" for constitution II's pill-radius rule; FR-003 stays as written.
+  filter toggles included) counts as a "state pill" for constitution II's pill-radius rule; FR-003 stays as written
+  (amended at the tasks gate for the indicator's dot only, I1).
 - Success criterion 1 (SPEC-1-05), "(b)": SC-001 reads "every attribute and slot listed under Consumers has an
   equivalent", which a test can check; the full inventory of kitty-mission-ui's uses is left to its migration.
 
@@ -101,6 +102,16 @@ applied in `reviews/plan/round-3/fixes-1.md`):
 - The `Truncated` story's bubble (PLAN-FRESH-3-003), "(b)": the `Truncated` baseline shows the focused truncated pill
   with its ring and no tooltip bubble; the tooltip's bubble is proven by the US5 scenarios alone (plan, R-12).
 
+**Operator decisions at the tasks gate** (human:jeroennouwsdev, 2026-11-16; `analysis-report.md`, recorded in
+`reviews/analysis/tasks-gate.md`, applied in `reviews/analysis/fixes-1.md`):
+
+- Indicator dot radius (I1): plan decision 3 is confirmed. The status indicator's dot is a state mark and uses
+  `--ocelle-radius-pill`, so it counts as a state pill for constitution II's pill-radius rule, with the pulse ring
+  drawn around it as part of the same mark (Terms, "State pill"; FR-003).
+- Analysis findings: all fixed before implementation; among them, user story 3 uses mission 012's `linkHref` and
+  nothing else of 012's, and its tests are static-only, their interactive twins being user story 4's (I2;
+  Assumptions).
+
 **Consumers** (constitution VI): kitty-mission-ui's Kitty Desktop and Kitty Dashboard screens, which today use the
 `sk-pill-tag` (32 uses: `status`, `title`, slotted content, badge use), `sk-status-indicator` (2 uses: `tone`) and
 `sk-metric` (2 uses: `label`, `display-value`) equivalents; spec-kitty-design #498, #509, #524 and #526 name the gaps
@@ -117,11 +128,11 @@ this feature closes. The `sk-*` library is read as requirements only; nothing is
 - **Mission 011 / #8** (`specs/011-layout-headers`): the eyebrow tokens of its R-12 (`font-size-eyebrow`,
   `font-weight-eyebrow`, `tracking-eyebrow`, `color-eyebrow`). If 011 has not landed when user story 2 starts, this
   feature adds those four tokens exactly as R-12 defines them.
-- **Op 016 / #41** (`ops/016-plants-affected`, branch `origin/claude/041-plants-affected`, approved, not merged):
-  supplies `pnpm run gate:plants -- --affected <base>` (and `--list`), which judges only the plants a phase's diff can
+- **Op 016 / #41** (`ops/016-plants-affected`, on `main` at `c4c0af45`, merged as #45; it reaches this branch with
+  the merge of 012 and 008): supplies `pnpm run gate:plants -- --affected <base>` (and `--list`), which judges only the plants a phase's diff can
   affect, and the record file `reviews/phase-<N>/plants.md` each phase writes and its reviewer checks. It changes no
   element, attribute, token or package and nothing in this spec's behaviour; this feature's phases run their local
-  plant check with it once it is on `main` (Assumptions). CI's required Plants check is unchanged by it.
+  plant check with it (Assumptions). CI's required Plants check is unchanged by it.
 - **On `main`**: mission 005 (element conventions, slot convention, manifest gate), mission 006 (Storybook harness,
   baselines, story axe), mission 007 and op 015 (mutation rules).
 - **Not changed here**: `ocelle-button`, `ocelle-action-row`, `ocelle-tooltip` and their interfaces. If one of them
@@ -142,7 +153,9 @@ Terms used below:
   reads `"neutral"`).
 - **State pill** (constitution II, "the pill radius is for state pills only"): every `ocelle-pill-tag`, whatever its
   variant (`pill` or `badge`) and mode (static, button or link), a count badge and a filter toggle included
-  (operator decision, SPEC-1-04).
+  (operator decision, SPEC-1-04); and the dot of `ocelle-status-indicator`, a state mark drawn as a circle with the
+  pill radius, with the pulse ring around it as part of the same mark (operator decision at the tasks gate, I1; plan
+  decision 3).
 - **Full text** of a pill: the text content of its default slot, with leading and trailing whitespace removed and
   runs of whitespace collapsed to one space.
 - **Truncated**: an interactive pill whose full text does not fit on its one line in the inline size it is given, so
@@ -198,7 +211,7 @@ accessibility tree.
 8. **Given** a host `aria-label` on the indicator, present or blank, with and without `label`, **When** it renders,
    **Then** the element's own accessibility semantics (role `img` with the label's name, or hidden) follow `label`
    alone exactly as without the attribute, and what Chromium's accessibility tree then shows for the attribute is
-   pinned by a test; the README says a host `aria-label` is unsupported (FR-014; operator decision,
+   pinned by a test, with the value the phase-1 spike measured on a stand-in before the element exists; a host `aria-label` is unsupported (FR-014; README rule (ii), FR-012; operator decision,
    PLAN-CORRECTNESS-1-005).
 
 ---
@@ -244,8 +257,9 @@ with `<ocelle-pill-tag variant="badge">3</ocelle-pill-tag>`, and a dense table w
 the pill radius and the status colours; the badge is outlined, in Schibsted Grotesk with tabular figures. A long
 label wraps onto further lines inside the pill; it is never cut off.
 
-**Why this priority**: 32 uses, no dependency; the static pill is the bulk of the use and can land before 012 and
-008.
+**Why this priority**: 32 uses; the static pill is the bulk of the use. It needs nothing of 008 and, of 012, only
+`linkHref` (to tell a static pill from an interactive one); its tests are static-only, and the interactive twins of
+its checks are user story 4's (operator decision at the tasks gate, I2).
 
 **Independent Test**: render every status in each variant and density, with and without a leading icon, short and
 long text, both themes and forced colours; read boxes, computed styles, the accessibility tree and the focus order.
@@ -270,7 +284,7 @@ long text, both themes and forced colours; read boxes, computed styles, the acce
    slot convention sets out and adds nothing to the accessibility tree.
 7. **Given** `title="Blocked since Monday"` on a static pill, **When** it renders, **Then** the attribute stays on the
    host and the element does not move or change it; this also holds for a pill that was interactive before and has
-   become static (US4-8, FR-035).
+   become static (US4-8, FR-035), which user story 4's tests prove, since only it has the interactive mode.
 8. **Given** a one-word static pill (for example `<ocelle-pill-tag status="warning">Blocked</ocelle-pill-tag>`), in
    either variant and density, beside a long name in a flex row too narrow for both at their natural widths, **When**
    it renders, **Then** its word stays whole on one line (the pill is not shrunk below its longest word) and the flex
@@ -399,10 +413,10 @@ container width, the text and `disabled`; hover, focus and press Escape; read th
 - A tone, status, variant, density or layout set to an unknown value falls back to its default silently.
 - `pulse` on a `neutral` indicator: allowed; the vocabulary does not decide which tones pulse, the host does.
 - An indicator with an empty or whitespace-only `label`: treated as no label (decorative).
-- A host `aria-label` on an indicator: unsupported and not read; `label` alone decides its semantics, and the README
-  says so (US1-8, FR-014).
+- A host `aria-label` on an indicator: unsupported and not read; `label` alone decides its semantics (US1-8, FR-014;
+  README rule (ii), FR-012).
 - `pulse` removed and set again within one task (a framework writing both in one render): the changes coalesce and no
-  new run starts; the README tells hosts to set it again in a later task (FR-012 (a)).
+  new run starts (FR-012 (a); README rule (vi), FR-012).
 - `disabled` on a static pill (neither `interactive` nor a link-mode `href`) has no effect.
 - `aria-pressed` on a link-mode pill: moved and mirrored and, as on `ocelle-button`, not applied to the link (a link
   cannot be pressed, 012 FR-009); by the pill's own rule it gives no `:state(pressed)` (`ocelle-button` as merged
@@ -440,7 +454,7 @@ container width, the text and `disabled`; hover, focus and press Escape; read th
   inline-size cap and so on a line of its own, its first text line on that line's baseline (operator decision,
   PLAN-FRESH-3-001).
 - A pulsing indicator inside a `<details>` that is closed and opened: opening it starts no run; a run under way when
-  it closed goes on while it is closed and may end unseen; the README says so (FR-012 (d); operator decision,
+  it closed goes on while it is closed and may end unseen (FR-012 (d); README rule (viii), FR-012; operator decision,
   PLAN-FRESH-2-001).
 
 ## Requirements *(mandatory)*
@@ -458,8 +472,9 @@ container width, the text and `disabled`; hover, focus and press Escape; read th
   is `neutral` (the notice's `info` default is its own and is not changed here). An unknown value stays in the
   attribute as written and the property reads `"neutral"`. Nothing in this feature introduces a sixth value.
 - **FR-003**: All styling uses `--ocelle-*` tokens only (constitution II); no element uses a monospace family; the
-  pill radius is used only by the pill tag, every variant and mode of which is a state pill (Terms; operator
-  decision, SPEC-1-04).
+  pill radius is used only by state pills (Terms): the pill tag, every variant and mode of which is one (operator
+  decision, SPEC-1-04), and the status indicator's dot, a state mark, with its pulse ring (operator decision at the
+  tasks gate, I1; plan decision 3).
 - **FR-004**: Each element has a story per variant and per state, in light and dark, with committed baselines made in
   mission 006's pinned container, and story-level axe reports no serious or critical finding on any story.
 - **FR-005**: The custom-elements manifest declares every public property, attribute, event (with its `detail`
@@ -486,7 +501,7 @@ container width, the text and `disabled`; hover, focus and press Escape; read th
   the whole animation ends at most 5 s after it starts (WCAG 2.2.2); afterwards no animation runs and the dot is
   shown solid while `pulse` stays set. A run starts in exactly these four cases, and this list is complete: (a) when
   `pulse` goes from absent to present while the element is connected and rendered, as a rendered change (a removal
-  and re-addition within one task coalesce into no change and start no run, which the README states; operator
+  and re-addition within one task coalesce into no change and start no run, README rule (vi) below; operator
   decision, PLAN-CORRECTNESS-1-014); (b) each time the element is connected to a document with `pulse` set (its first
   render, and every reconnection after a removal or a move, which is a fresh render: the element keeps no pulse state
   across a disconnection; operator decision after check 3); a state-preserving move (`moveBefore()`) is not a
@@ -504,24 +519,33 @@ container width, the text and `disabled`; hover, focus and press Escape; read th
   No other change starts or restarts a run: not a change of `tone`, `label` or any other attribute, the theme, the
   element's size or position, `visibility` or opacity, or scrolling it out of view and back. Without `pulse`, no
   animation runs (operator decision, SPEC-1-02). The 5 s limit holds for the default values of the pulse's motion
-  tokens, per run; a host that overrides them keeps their product at or below 5 s, which the README states (as 012
-  FR-017 does for its spinner). The README also states that each connection, and each time the indicator is shown
-  again, starts a run, so a host that re-inserts, moves, re-renders or re-shows an indicator more often than every
-  5 s (a polled swap, a live re-sort) keeps it pulsing, and should keep `pulse` off between changes or keep the
-  element in place (SPEC-3-08). It states too that a `<details>` opened around a pulsing indicator starts no run
-  (PLAN-FRESH-2-001).
+  tokens, per run (as 012 FR-017 does for its spinner).
+  **The indicator's README rules.** This list is the single source of them: FR-014, FR-016, the Edge Cases,
+  contracts/elements-status.md and the tasks refer to it and do not restate it (analysis finding D1). The README
+  states: (i) without a `label`, the host places text naming the state next to the indicator, since state is never
+  shown by colour alone (FR-014); (ii) `label` is the one way to name it, and a host `aria-label` is unsupported and
+  not read (FR-014, US1-8; PLAN-CORRECTNESS-1-005); (iii) it is not a busy or progress signal, #13's
+  `ocelle-progress` is (FR-016); (iv) a host that overrides the pulse's motion tokens keeps their product at or below
+  5 s; (v) each connection, and each time the indicator is shown again, starts a run, so a host that re-inserts,
+  moves, re-renders or re-shows an indicator more often than every 5 s (a polled swap, a live re-sort) keeps it
+  pulsing, and should keep `pulse` off between changes or keep the element in place (SPEC-3-08); (vi) removing and
+  setting `pulse` again within one task starts no run, so a host sets it again in a later task
+  (PLAN-CORRECTNESS-1-014); (vii) a state-preserving move (`moveBefore()`) and a reveal from `hidden="until-found"`
+  start no run (PLAN-CORRECTNESS-1-013); (viii) opening a `<details>` around a pulsing indicator starts no run: a run
+  under way when it closed goes on while it is closed and may end unseen (PLAN-FRESH-2-001).
 - **FR-013**: Under `prefers-reduced-motion: reduce` no animation runs, with or without `pulse`, and the dot is shown
   solid; a change of the preference to `reduce` stops a run under way at once (and a change back starts one, FR-012
   (c)).
 - **FR-014**: With a non-empty (after trimming) `label`, the element exposes exactly one accessibility node of role
-  `img` named by the label. With no label, the element is hidden from the accessibility tree entirely, and the README
-  states that a host must then place text naming the state next to it (state is never shown by colour alone). `label`
-  is the only name source: the element does not read a host `aria-label`, which is unsupported (the README says so);
-  what Chromium exposes for one is pinned by US1-8 (operator decision, PLAN-CORRECTNESS-1-005).
+  `img` named by the label. With no label, the element is hidden from the accessibility tree entirely, and a host
+  must then place text naming the state next to it (state is never shown by colour alone; README rule (i), FR-012).
+  `label` is the only name source: the element does not read a host `aria-label`, which is unsupported (README rule
+  (ii), FR-012); what Chromium exposes for one is pinned by US1-8 (operator decision, PLAN-CORRECTNESS-1-005).
 - **FR-015**: In forced-colours mode the dot is drawn in a system colour and stays visible against the system
   background.
 - **FR-016**: The indicator does not signal loading or busy state to assistive technology (no `aria-busy`, no live
-  region); a busy region is the host's, and #13's `ocelle-progress` is the element for progress. The README says so.
+  region); a busy region is the host's, and #13's `ocelle-progress` is the element for progress (README rule (iii),
+  FR-012).
 
 **`ocelle-metric`**
 
@@ -694,8 +718,10 @@ container width, the text and `disabled`; hover, focus and press Escape; read th
 - The pill's `title` (static) keeps the browser's native behaviour, which is the host's choice; the README points to
   the interactive pill and its tooltip for an accessible full text.
 - Behaviour is measured in Chromium only, as in missions 005 and 012; WebKit is a stated limitation.
-- Implementation waits for missions 012 and 008 (and op 016's affected-plants mode, Dependencies) to be on `main`; user stories 1
-  to 3 do not need 012 or 008, but the whole mission is implemented after both land.
+- Implementation waits for missions 012 and 008 to be on `main` (op 016's affected-plants mode already is,
+  Dependencies). User stories 1 and 2 need neither; user story 3 needs only 012's `linkHref` (to tell a static pill
+  from an interactive one) and nothing of 008, and its checks are static-only, their interactive twins being user
+  story 4's (operator decision at the tasks gate, I2). The whole mission is implemented after both land.
 - The kitty-mission-ui usage inventory is read from #7 as triage 012 recorded it (counts and attribute names only);
   the spec-kitty-design issues #498, #509, #524 and #526 were not read in full. SC-001 is checked against the
   recorded attributes and slots; the full inventory of the 36 uses and their modifiers is kitty-mission-ui's

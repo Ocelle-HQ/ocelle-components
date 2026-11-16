@@ -19,14 +19,8 @@ each re-exported from `@ocelle/elements`.
 | part | `dot` | | | the solid dot, never animated |
 | part | `ring` | | | the pulse ring, present while `pulse` |
 
-No events, methods, slots or custom states. README: the host names the state in adjacent text when there is no
-`label`; `label` is the one way to name it and a host `aria-label` is unsupported (what Chromium then exposes, as
-pinned by US1-8); the indicator is not a busy or progress signal (#13's `ocelle-progress`); re-inserting or re-showing
-it more often than every 5 s keeps it pulsing; removing and setting `pulse` within one task starts no new run (set it
-again in a later task); a state-preserving move (`moveBefore()`) and a reveal from `hidden="until-found"` are not
-start cases, and neither is opening a `<details>` around a pulsing indicator (a run under way when it closed goes on
-while it is closed, and none starts when it opens; operator decision, PLAN-FRESH-2-001); overriding the motion tokens
-must keep their product ≤ 5 s.
+No events, methods, slots or custom states. README: the indicator's README rules (i) to (viii) of spec.md FR-012,
+which is their single source (not restated here; analysis finding D1); `readme.test.ts` asserts each (T016).
 
 ## `ocelle-metric`
 
@@ -43,7 +37,7 @@ must keep their product ≤ 5 s.
 | part | `value` | | | the `dd` |
 
 No events, methods, slots or custom states. README: the browser's find in page matches a metric's label twice, the
-visible label and the invisible written copy that names the term (a known limitation, R-05, unless the T001 probe finds
+visible label and the invisible written copy that names the term (a known limitation, R-05, unless the T002 probe finds
 a hiding that find skips); in a flex row a metric is not shrunk below its longest word, and a host that wants it to
 shrink further sets `min-inline-size: 0` on it (its words then break inside it).
 

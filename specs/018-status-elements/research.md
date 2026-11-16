@@ -4,7 +4,8 @@ Facts are as of `main` at `ce1d9c72` and the dependency branches read with `git 
 `origin/claude/007-actions-status` (mission 012, `549409b`), `origin/claude/016-overlays` (mission 008, `9a44e8e`),
 `origin/claude/008-layout-headers` (mission 011, `4e559b1`), `origin/claude/009-feedback-forms` (mission 010,
 `94af87b`) and `origin/claude/041-plants-affected` (op 016). Implementation starts only after 012, 008 and op 016 are
-on `main`; task T001 re-reads every fact marked **(recheck)** against `main` as it is then.
+on `main`; task T001 re-reads every fact marked **(recheck)** against `main` as it is then, and the phase-1 spikes
+(T002) measure those that are behaviour rather than code.
 
 ## R-01 Dependencies and the order they are taken in
 
@@ -73,15 +74,18 @@ branch for an unknown value. #9's notice keeps its own `info` default (FR-002).
 (new token, 0.5rem = 8 px, R-10). Radius literals such as `50%` are forbidden, so the dot uses
 `--ocelle-radius-pill`, which on a square box draws a circle. This is a
 state mark, so it is a state pill's use under constitution II (Terms, "State pill", by the same reading as SPEC-1-04;
-**plan decision 3** for the operator). Fill `background: var(--ocelle-color-<status>)`, no opacity, no transform on
+**plan decision 3**, confirmed by the operator at the tasks gate, analysis finding I1, and now written into the spec's
+Terms and FR-003, the pulse ring of R-04 included). Fill `background: var(--ocelle-color-<status>)`, no opacity, no transform on
 the dot ever. Accessibility through `ElementInternals` and 005's `expose(internals, name, drawable)` from `naming.ts`:
 with a trimmed non-empty `label`, role `img` with that name; otherwise `ariaHidden = "true"`. The name comes from
 `label` alone: the element calls `expose(internals, label.trim() || undefined, true)`, does not observe `aria-label`
 and never passes a host `aria-label` to 005's `accessibleName` (**plan decision 4**, operator decision on
 PLAN-CORRECTNESS-1-005, (b)). A host `aria-label` on the indicator is unsupported: the README says so and that `label`
 is the one way to name it. Chromium names an element from its own `aria-label` attribute whatever its internals set,
-so what Chromium then exposes for `aria-label` with and without `label`, present and blank, is measured in the US1
-red step and pinned by US1-8 (the element neither reads nor changes it).
+so what Chromium then exposes for `aria-label` with and without `label`, present and blank, is measured by the
+phase-1 spike T002 on a stand-in (a custom element whose `ElementInternals` sets role `img` and, or not, a name, with
+a host `aria-label` present and blank), recorded in `reviews/phase-1/spikes.md`, and pinned by US1-8 with that value
+written by hand (the element neither reads nor changes it; analysis finding U1).
 
 Forced colours: `@media (forced-colors: active) { .dot { background: CanvasText; } .ring { border-color: CanvasText;
 } }` with `forced-color-adjust: none` on the dot so the system colour is the one drawn.
@@ -115,7 +119,7 @@ script:
   the README says changes within one task coalesce, and a scenario pins the no-restart case.
 - (b) connection: an element inserted into a document gets a fresh style, and CSS animations start; there is no state
   across a disconnection. A state-preserving move (`moveBefore()`, in the Chromium floor of R-14) keeps the running
-  animation and is not a start case (FR-012 (b) as amended); the T001 spike measures it and a scenario pins what it
+  animation and is not a start case (FR-012 (b) as amended); the T002 spike measures it and a scenario pins what it
   shows (the run under way continues, the same animation object, its current time not reset).
 - (c) `reduce` → no preference: `animation-name` changes from `none` to `ocelle-pulse`, which starts a new animation;
   the reverse change cancels the running one at once (FR-013).
@@ -128,7 +132,7 @@ script:
   after `open = true` `getAnimations()` is empty, so no run starts; a `<details>` closed for less than one run lets the
   run go on and shows its remainder on opening. Detecting the opening would need an `IntersectionObserver` and script
   state per pulsing indicator (the only signal on close and open, probe2), which the pulse does not have; so the pulse
-  stays CSS-only and the README states that opening a `<details>` starts no run. The T001 spike re-measures (d) for
+  stays CSS-only and the README states that opening a `<details>` starts no run. The T002 spike re-measures (d) for
   `hidden` and an ancestor's `display: none`, and the `<details>` behaviour (closed for less and for more than one run,
   and an indicator connected or given `pulse` inside a closed `<details>`) on the merged Chromium, and the scenarios pin
   what it shows (**recheck**). `hidden="until-found"` hides with `content-visibility` too and is not a start case
@@ -177,7 +181,7 @@ PLAN-A11Y-SECURITY-1-001, (a)): the visible `.eyebrow` span, `aria-hidden`, carr
 var(--ocelle-tracking-eyebrow)` and `color: var(--ocelle-color-eyebrow)`; the `.written` span holds the label as
 written, untransformed, and is hidden visually with token-only CSS (`position: absolute; inline-size: 0; block-size: 0;
 overflow: hidden; white-space: nowrap`, every value a keyword or 0; the `dt` is `position: relative`), so the term's
-name is the written text. A T001 probe confirms on Chromium's tree that the term is named by the written text and the
+name is the written text. A T002 probe confirms on Chromium's tree that the term is named by the written text and the
 copy adds no other node (**recheck**); if the zero-size copy is pruned from the tree, the phase-3 tasks use the
 smallest token-only hiding the probe shows to be kept, and the operator is told. Value: `font-variant-numeric:
 var(--ocelle-figures)`, the family inherited from the base styles (Schibsted Grotesk). `stack`: block flow; `row`: the
@@ -198,7 +202,7 @@ Find in page (squad round 2, PLAN-FRESH-2-006): the written copy is text in the 
 matches a metric's label twice, the visible uppercase span (find is case-insensitive) and the zero-size copy, whose
 highlight cannot be seen (the round's probe4: `window.find('Open missions')` matches twice in one metric). This is a
 known limitation, recorded here and in the README and pinned by a scenario in `scenarios/metric.ts` (two matches per
-label, the second inside the `.written` span). The T001 probe of the term's name also tries the token-only hidings it
+label, the second inside the `.written` span). The T002 probe of the term's name also tries the token-only hidings it
 can find for one that find-in-page skips while the term keeps the written name and no other node is added; if one is
 found, phase 3 adopts it, the scenario pins one match instead, and the operator is told.
 
@@ -383,7 +387,7 @@ var(--ocelle-color-<status>)` drawn inside the border, from tokens:
   the `GrayText` look of § Disabled (the `:not([disabled])`, matching "no inset cue" when disabled). System colour
   keywords are what `ocelle-button`'s own forced-colours rule already uses (`ocelle-button.ts` 301-304), so
   gate:style-lint takes them as it takes that rule. Author system colours are kept under forced colours as 012's
-  `Highlight` hover border is; a T001 probe confirms it for `background-color` in Chromium's forced-colours emulation,
+  `Highlight` hover border is; a T002 probe confirms it for `background-color` in Chromium's forced-colours emulation,
   and if the fill is forced to the canvas colour the rule adds `forced-color-adjust: none` on the pressed control
   (every colour it then shows is a system colour, so the user's theme still decides them);
 - link mode adds no underline (a pill is a state mark; its role is announced).
@@ -472,10 +476,10 @@ inner control inside `ocelle-tooltip`, which learns its new trigger from its own
 (278-282). The slot change is signalled after the synchronous commit, so a `focus()` called in `updated()` would reach
 the tooltip while it still holds the removed control, and a focused truncated pill would lose its tooltip. So
 `updated()` queues the refocus in a microtask, which runs after the slotchange the commit signalled (the squad's probe
-order: slotchange, then later microtasks); the T001 spike confirms the order with the real tooltip, and if it does not
+order: slotchange, then later microtasks); the T002 spike confirms the order with the real tooltip, and if it does not
 hold, the refocus waits for the tooltip's `slotchange` event on the shadow root. Chromium's `:focus-visible` heuristic
 keeps the ring for a programmatic focus that moves from an element that matched `:focus-visible`, and not otherwise
-(**recheck** in the T001 spike, as 012's decision 27 did; if the heuristic does not hold once the old control is
+(**recheck** in the T002 spike, as 012's decision 27 did; if the heuristic does not hold once the old control is
 removed, use `focus({ focusVisible })` with the recorded match). A scenario switches a keyboard-focused truncated pill
 between button and link mode in both directions and asserts focus, ring and shown tooltip on the new control.
 Becoming static while focused: no call; focus falls to the body.
@@ -514,7 +518,7 @@ geometry, since `scrollWidth` and `clientWidth` are integers and the ellipsis is
 (`getBoundingClientRect()`, unclipped layout geometry), compared with the text span's content box from its own
 `getBoundingClientRect()`; overflow is true when the text's inline end passes the span's (the inline start in a
 right-to-left pill) by more than 0. The harness step proves the measure on a stand-in (an overflow of 0.1 px is
-overflow, an exact fit is not) before any element uses it (**recheck** in T001 that the Range rect is unclipped under
+overflow, an exact fit is not) before any element uses it (**recheck** in the T002 spike that the Range rect is unclipped under
 `text-overflow: ellipsis`; if not, the phase-6 tasks use the smallest fractional measure the spike shows).
 
 Re-evaluation, each trigger with a scenario that changes truncation through it alone (contracts/checks.md § US5):
@@ -532,6 +536,12 @@ Re-evaluation, each trigger with a scenario that changes truncation through it a
 exactly before the load and overflows after it with the span already at its maximum, a stated limit in the README
 (the next width or text change corrects it). `variant` needs no trigger of its own: it reaches `updated()` like any
 property.
+
+A pill that becomes truncated while its control has focus: 008's tooltip opens its bubble on a `focusin` while
+enabled (`ocelle-tooltip.ts` 277-282, 301-309), so enabling it on a focused trigger may show nothing until focus
+leaves and re-enters. The T002 spike measures it on a stand-in (an `ocelle-tooltip` whose trigger is focused while
+the tooltip is disabled and is then enabled, and the same after a blur and a refocus), recorded in
+`reviews/phase-1/spikes.md`; the README rule of T057 states what it measured (analysis finding U1).
 
 Observer lifecycle (one rule, R-08's transitions): the observers exist iff the pill is connected and interactive. They
 are created in `updated()` when the pill is connected, interactive and has none (so on the first render of an
@@ -666,7 +676,8 @@ $(cat reviews/phase-N/base.sha)`, recorded in `reviews/phase-N/plants.md` in op 
 007's verdicts and op 015's time limit. A full `gate:plants` is never run locally. Node 26.13.0 and
 `OCELLE_CHROMIUM_PATH` as the frontend findings say. Op 016 as merged is rechecked by T001 (R-01) before the task
 list is used: if its command, its `--list` output or its record format differ from what is written here, the tasks are
-amended first.
+amended first. Phase 7 (polish, documentation only) runs its affected plants against phase 2's `base.sha`, not its
+own, so that the run covers the whole feature's diff (plan, phase 7; analysis finding I4).
 
 ## R-14 Engine floor
 

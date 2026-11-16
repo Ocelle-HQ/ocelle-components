@@ -26,7 +26,8 @@ attribute conventions). FR-002, R-02.
 
 Derived: *named* = `label.trim() !== ""` → role `img`, name `label.trim()`; else `aria-hidden`. *Pulsing* = a CSS
 animation on the ring, which exists iff `pulse` and the element is rendered and motion is not reduced; it runs
-`motion-pulse-count` iterations of `motion-pulse` and ends (FR-012). No script state.
+`motion-pulse-count` iterations of `motion-pulse` and ends (FR-012). No script state. The dot and the ring take
+`--ocelle-radius-pill`, the indicator's dot being a state mark (FR-003, plan decision 3, confirmed at the tasks gate).
 
 Pulse run lifecycle (CSS, R-04):
 
@@ -36,7 +37,7 @@ Pulse run lifecycle (CSS, R-04):
 [running|ended] --pulse removed, rendered--> [no ring]
 [running] --reduced motion on--> [no animation]  --reduced motion off (c)--> [running]
 pulse removed and set within one task --> no transition (one Lit update, ring kept)
-moveBefore() (state-preserving move), hidden="until-found" revealed --> as the T001 spike shows, pinned; not a start case
+moveBefore() (state-preserving move), hidden="until-found" revealed --> as the T002 spike shows, pinned; not a start case
 <details> closed --> no transition: [running] goes on while closed and may reach [ended] unseen
 <details> opened --> no transition: no run starts (Chromium 153, squad round 2), pinned; not a start case
 any other change (tone, label, theme, size, position, visibility, scroll) --> no transition

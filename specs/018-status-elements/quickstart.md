@@ -3,7 +3,8 @@
 ## Prerequisites
 
 - Missions 012 and 008 and op 016 merged into the branch (from `main`, by `/ocelle-land`); T001 done (including the
-  recheck of the tasks against op 016 as merged) and the phase-1 harness self-tests passing.
+  recheck of the tasks against op 016 as merged), T002's spikes recorded in `reviews/phase-1/spikes.md`, and the
+  phase-1 harness self-tests passing.
 - Node 26.13.0 and pnpm 12.16.1 as pinned; `pnpm install --frozen-lockfile`.
 - Chromium: `export OCELLE_CHROMIUM_PATH=/opt/pw-browsers/chromium-1243/chrome-linux64/chrome` (or as the frontend
   findings say for the container at hand).
@@ -20,6 +21,7 @@ pnpm run gate:contrast && pnpm run gate:brand-rules
 OCELLE_VISUAL_ENGINE=docker pnpm run visual:update   # only in a phase that adds or changes stories
 pnpm run gate:storybook-build && OCELLE_VISUAL_ENGINE=docker pnpm run gate:visual && pnpm run gate:axe
 # the affected plants only (op 016's mode); the full plant set is never run locally
+# (phase N's own base; in phase 7, polish, phase 2's base, so the run covers the whole feature)
 OCELLE_VISUAL_ENGINE=docker pnpm run gate:plants -- --affected "$(cat specs/018-status-elements/reviews/phase-N/base.sha)"
 pnpm run gate:mutation                          # alone, never beside plants
 ```
@@ -27,7 +29,8 @@ pnpm run gate:mutation                          # alone, never beside plants
 ## Expected outcomes
 
 - Every scenario of [contracts/checks.md](contracts/checks.md) passes in process and on the CSP fixture, with zero CSP
-  violations and no serious or critical axe finding.
+  violations and no serious or critical axe finding; the SC-001 bodies of `test/scenarios/consumers.ts` run through
+  `test/consumers.test.ts`.
 - `custom-elements.json` lists every member of [contracts/elements-status.md](contracts/elements-status.md);
   `gate:manifest` reports nothing stale.
 - In the Storybook: the indicator stories show solid dots, `Tones` with and without `pulse` (captures run with reduced
