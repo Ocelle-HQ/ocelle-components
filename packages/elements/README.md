@@ -4,7 +4,7 @@ The Ocelle web components: standards-based custom elements (Lit 3) that work in 
 under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has `ocelle-icon`, with a set
 of thirteen icons, `ocelle-brand-mark`, the Ocelle rosette, `ocelle-listbox` with its `ocelle-option` children,
 `ocelle-tabs` with its `ocelle-tab` and `ocelle-tab-panel` children, `ocelle-segmented-choice` with its
-`ocelle-segment` children, and `ocelle-copy-field`.
+`ocelle-segment` children, `ocelle-copy-field` and `ocelle-link`.
 
 ## Entry points
 
@@ -21,6 +21,7 @@ of thirteen icons, `ocelle-brand-mark`, the Ocelle rosette, `ocelle-listbox` wit
 | `@ocelle/elements/ocelle-segmented-choice.js` | `dist/ocelle-segmented-choice.js` | `ocelle-segmented-choice` and `ocelle-segment`; for hosts with a bundler |
 | `@ocelle/elements/ocelle-segment.js` | `dist/ocelle-segment.js` | `ocelle-segment` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-copy-field.js` | `dist/ocelle-copy-field.js` | `ocelle-copy-field` and `ocelle-icon`; for hosts with a bundler |
+| `@ocelle/elements/ocelle-link.js` | `dist/ocelle-link.js` | `ocelle-link` only; for hosts with a bundler |
 | `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |
 | `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |
 
@@ -415,6 +416,65 @@ the ring `Highlight`. The copy field is for the main grounds.
 `--ocelle-border-width`, `--ocelle-radius-2`, `--ocelle-target-min`, `--ocelle-space-1`, `--ocelle-space-2`,
 `--ocelle-space-3` and `--ocelle-icon-size`.
 
+## `ocelle-link`
+
+`ocelle-link` is a link inside running text: it is drawn inline in `--ocelle-color-link` with an underline, in
+`--ocelle-color-link-hover` under the pointer, and shows the token focus ring around each line it wraps onto. It always
+tells the host it was activated, with `ocelle-link-activate`; without `href` it never navigates, and with `href` it
+navigates unless the host cancels the event.
+
+```html
+<p>See <ocelle-link href="missions/014.html">the mission log</ocelle-link> for details.</p>
+<p>Open <ocelle-link label="the task board, opens in the viewer">the task board</ocelle-link> beside the log.</p>
+<script type="module">
+  document.addEventListener("ocelle-link-activate", (event) => {
+    if (event.detail.href === null) {
+      event.preventDefault();
+      viewer.open("task-board");
+    }
+  });
+</script>
+```
+
+`href` (attribute and property, reflected): the link's target, as written. Without it the link is still a link in the
+tab order and only emits its event.
+
+`label` (attribute and property, not reflected): the link's accessible name instead of its text, trimmed; blank counts
+as none. Name the link with `label`: a host `aria-label` on `ocelle-link` does not name the link (the element does not
+forward it, and it would name the host as a second node around the link). A `label` must contain the link's visible
+text, best starting with it (text "the mission log", label "the mission log, opens in the viewer"): a name without the
+visible text fails WCAG 2.5.3, Label in Name, and the `axe` gate's `label-content-name-mismatch`.
+
+`ocelle-link-activate` with `detail` `{ href }`: the user activated the link with Enter or a primary-button click;
+`href` is the `href` attribute as written, or `null` without one. It bubbles, is composed and is cancelable: a host
+that routes the activation itself calls `preventDefault()`. `detail.href` is the attribute as written and is not
+validated: it may be a `javascript:` or `data:` URL. The element refuses those, and any scheme other than `http:`,
+`https:` and the document's own, only for its own navigation.
+
+With `href`, after the event and unless a listener cancelled it, the link resolves `href` against the document's base
+URL at that moment and navigates to it only when the resolved protocol is `http:`, `https:` or the document's own
+protocol. The check is on the resolved URL, so spaces before the scheme or a tab inside it do not bypass it. An empty
+`href` is an `href`, and a fragment navigates within the document. A host that navigates itself from the event applies
+the same check: resolve `detail.href` against `document.baseURI` and navigate only when the resolved protocol is
+`http:`, `https:` or the document's own. A host that needs another scheme (an app's own scheme on a page served over
+`http:`, say) handles the event: it cancels it and navigates or acts itself.
+
+Only plain activations emit: Enter, or a primary-button click, with no modifier or with Alt alone. A user's modified
+activation (Ctrl, Meta or Shift held on a click or on Enter, or a middle-button click) emits nothing and keeps the
+browser's own behaviour, a new tab or window. A modified activation of a link without `href` does nothing: it emits no
+event and the page does not navigate. The link has no `target`, `download` or `rel`. A host that wants to open a new
+window itself handles the event: it cancels it and opens the window.
+
+Keys: the link is one tab stop. Enter activates it; Space does not, and scrolls the page as on any link. It handles no
+other key. The link's focusable anchor is in its shadow root (`delegatesFocus`); a parent that counts its focusable
+content, such as a tab panel, counts the link.
+
+CSS part: `anchor`, the link's anchor. In forced colours the link is `LinkText`, underlined, and its focus ring
+`Highlight`. The link is for the main grounds.
+
+`ocelle-link` reads the tokens `--ocelle-color-link`, `--ocelle-color-link-hover`, `--ocelle-color-focus`,
+`--ocelle-focus-width` and `--ocelle-focus-offset`.
+
 ## Slot convention
 
 A control that shows icons follows one slot convention: an `icon` slot before its label and, where it has an end icon
@@ -475,8 +535,10 @@ leaves the element unlabelled even with a `label`. When both are set, the host `
 falls back to `label`. Chromium uses a host `aria-label` as written, surrounding spaces included, so pass it trimmed;
 the element never rewrites it. An unknown icon name exposes nothing, named or not.
 
-The exception is `ocelle-tabs`, whose tablist is a part inside its shadow root rather than the host: it is named by
-`label` only, and a host `aria-label` on it does not name the tablist (see `ocelle-tabs`).
+The exceptions are `ocelle-tabs`, whose tablist is a part inside its shadow root rather than the host: it is named by
+`label` only, and a host `aria-label` on it does not name the tablist (see `ocelle-tabs`); and `ocelle-link`, whose
+link is the anchor inside its shadow root: it is named by its text or by `label`, and a host `aria-label` on it does
+not name the link (see `ocelle-link`).
 
 A host `aria-hidden="true"` hides the element, labelled or not. A host `hidden` attribute removes the element: no box
 and no node, labelled or not. A host `role` or `aria-hidden="false"` is not supported: name the element with `label` or

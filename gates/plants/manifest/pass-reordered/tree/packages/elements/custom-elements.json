@@ -296,6 +296,100 @@
       ]
     },
     {
+      "path": "src/ocelle-link.ts",
+      "kind": "javascript-module",
+      "exports": [
+        {
+          "name": "OcelleLink",
+          "kind": "js",
+          "declaration": {
+            "name": "OcelleLink",
+            "module": "src/ocelle-link.ts"
+          }
+        }
+      ],
+      "declarations": [
+        {
+          "tagName": "ocelle-link",
+          "superclass": {
+            "package": "lit",
+            "name": "LitElement"
+          },
+          "slots": [
+            {
+              "name": "",
+              "description": "The link's text."
+            }
+          ],
+          "name": "OcelleLink",
+          "members": [
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "href",
+              "kind": "field",
+              "description": "The link's target, as written: the anchor carries it while it resolves to an allowed protocol, and the event's\n`detail.href` reports it. Without it the link only emits its event. Reflected.",
+              "default": "undefined",
+              "attribute": "href"
+            },
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "privacy": "public",
+              "name": "label",
+              "kind": "field",
+              "description": "The link's accessible name instead of its text, trimmed; blank counts as none. It must contain the visible text.\nA host `aria-label` does not name the link. Not reflected.",
+              "default": "undefined",
+              "attribute": "label"
+            }
+          ],
+          "kind": "class",
+          "events": [
+            {
+              "type": {
+                "text": "CustomEvent<{ href: string | null }>"
+              },
+              "name": "ocelle-link-activate",
+              "description": "The user activated the link with Enter or a primary-button click (no modifier, or Alt alone): `href` is the `href` attribute as written, not validated, or `null` without one. Cancelable: a cancelled event stops the link's own navigation. A modified activation (Ctrl, Meta or Shift held, or a middle click) emits nothing."
+            }
+          ],
+          "description": "A link in running text that tells the host it was activated, and navigates to an allowed `href` unless the host\ncancels.",
+          "customElement": true,
+          "cssProperties": [],
+          "cssParts": [
+            {
+              "name": "anchor",
+              "description": "The link's anchor: the native `<a>` that is focused and activated."
+            }
+          ],
+          "attributes": [
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "name": "href",
+              "fieldName": "href",
+              "description": "The link's target, as written: the anchor carries it while it resolves to an allowed protocol, and the event's\n`detail.href` reports it. Without it the link only emits its event. Reflected.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "name": "label",
+              "fieldName": "label",
+              "description": "The link's accessible name instead of its text, trimmed; blank counts as none. It must contain the visible text.\nA host `aria-label` does not name the link. Not reflected.",
+              "default": "undefined"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "path": "src/ocelle-listbox.ts",
       "kind": "javascript-module",
       "exports": [

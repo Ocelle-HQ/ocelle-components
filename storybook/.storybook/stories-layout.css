@@ -33,3 +33,8 @@
 [data-story="copy-field-wrapped"] ocelle-copy-field {
   inline-size: 320px;
 }
+
+/* The wrapped link story (014 FR-050, FR-048): a sentence 240 px wide, so its long link wraps onto three lines (with two, axe-core 4.14.0 reports a serious color-contrast incomplete, reviews/phase-6/notes.md). */
+[data-story="link-wrapped"] p {
+  inline-size: 240px;
+}

@@ -1,6 +1,7 @@
 // The package root (005 FR-002, research.md R-02; 014 research.md R-16): importing it defines every element of the
 // package, `ocelle-icon`, `ocelle-brand-mark`, `ocelle-listbox`, `ocelle-option`, `ocelle-tabs`, `ocelle-tab`,
-// `ocelle-tab-panel`, `ocelle-segmented-choice` and `ocelle-segment`, and exports their classes.
+// `ocelle-tab-panel`, `ocelle-segmented-choice`, `ocelle-segment`, `ocelle-copy-field` and `ocelle-link`, and exports
+// their classes.
 export { OcelleBrandMark } from "./ocelle-brand-mark.ts";
 export { OcelleCopyField } from "./ocelle-copy-field.ts";
 export { OcelleIcon } from "./ocelle-icon.ts";
