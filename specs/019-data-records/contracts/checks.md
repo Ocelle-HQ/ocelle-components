@@ -89,8 +89,11 @@ stays op 016's gate-plant record in its set form, which the review compares line
 | `:host { min-inline-size: 0 }` removed (R-02) | the flex-item and grid-item bodies |
 | `:host .region-box { container-type: inline-size; }` added (R-02, R-07) | the shrink-to-fit bodies |
 | The caption's `max-inline-size` cap removed (R-07) | the 320 px caption bodies |
-| The measured box size never written, so the cap falls back to `--ocelle-measure-container` (R-07) | the narrow-column caption body |
-| The caption's `contain: inline-size` removed (R-07) | the long-caption shrink-to-fit body, the no-loop check |
+| The measured box size never written, so the cap falls back to `--ocelle-measure-container` (R-07) | the narrow-column caption body, whose table overflows at both 400 and 600 px (`data-fade="end"` asserted at rest first) and whose caption is longer than the box at both widths (PLAN-FRESH-3-003) |
+| The observer moved back to `.region-box`, writing synchronously in its callback (R-07, PLAN-FRESH-3-001) | the no-loop check around the block host on first load with a caption that rewraps between the fallback and the measured cap |
+| The end fade subtracted from the cap unconditionally (`--data-table-end-fade` set on `.region-box` whatever its `data-fade`; R-07, PLAN-FRESH-3-002) | the one-long-word narrow-table body (no tab stop, no `data-fade`), the fitting-table caption body (wraps at the table's width) |
+| `--data-table-end-fade` never set (R-07) | the 320 px at-rest caption body (line boxes inside the unmasked extent) |
+| `contain: inline-size` added to the caption (R-07, PLAN-FRESH-3-002 (b)) | the one-long-word narrow-table body |
 | The caption made sticky with `inset-inline-start: var(--ocelle-scroller-fade-size)` (Q-F (a)) | the caption bodies at rest and scrolled (start equal to the table's) |
 | The caption text read as `textContent` (R-04) | the `hidden`, `aria-hidden` and `img alt` caption bodies |
 | The observer without `characterData` (R-04) | US1-16, the `text` run |

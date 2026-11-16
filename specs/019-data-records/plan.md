@@ -23,7 +23,10 @@ history and evidence chain.
   (R-02). No box sets `container-type`, so the element keeps its table's width in a shrink-to-fit host such as a
   dialog (R-02, R-07). The caption is not sticky until 009's module has an option, requested of 009's owner, that
   keeps a pinned start box out of the start fade (R-17; Q-F decided (b)). Until then it scrolls with the table, starts
-  at the table's start edge, and is capped by the box's measured width, so it wraps inside the box at rest (R-07).
+  at the table's start edge, and is capped by the box's measured width, less the end fade only while it shows, so it
+  wraps inside the box at rest. The width is read through an empty `block-size: 0` measuring element, so writing the
+  cap raises no `ResizeObserver` loop, and the caption has no inline size containment, so its longest word widens a
+  fitting table instead of making it overflow (R-07).
 - **Timeline and chain.** Each renders a shadow `<ol role="list">` with one `<li role="listitem">` per visible item,
   assigned manually (R-08). Each list is named on the `<ol>`, and a blank host `aria-label` counts as absent (R-09).
   The name comes from 009's exported `resolveName`. Markers, connectors and ordinals are `aria-hidden`; markers and
@@ -91,7 +94,8 @@ engine-floor feature: manual slot assignment (013) and the module's features (00
 - Each class adopts one shared stylesheet. The data table also gets the module's one per-instance sheet (009) and its
   own per-instance sheet, which holds the measured caption width (R-07).
 - Per container: one `MutationObserver`. The chain also has one `ResizeObserver`, on its list and its items. The data
-  table has one `ResizeObserver` of its own, on `.region-box`, for the caption's cap (R-07).
+  table has one `ResizeObserver` of its own, on its `block-size: 0` measuring element (not on `.region-box`), for
+  the caption's cap (R-07).
 
 **Constraints**: strict CSP with no exception; token-only styles with no new `style-lint` allowance (every value is a
 token, a keyword, a system colour in forced colours, `0`, a `%` (which `token-only.ts` allows: the table's
@@ -261,8 +265,10 @@ Every phase with stories also does the following:
      - the swaps of a `tbody` or the whole table, a cell edit and a late web font, each against a fresh load;
      - the caption at 320 px, not sticky and capped by the measured box width, and the measured property reaching the
        slotted caption through the flat tree (R-07);
-     - the element in a `<dialog>`, an inline-block and a start-aligned column flex: never 0 px wide, and no
-       `ResizeObserver` loop error (R-02, R-07);
+     - the element in a `<dialog>`, an inline-block and a start-aligned column flex: never 0 px wide, one observer
+       callback, a stable width (the cap equals the table's width, so no shrink step) and no `ResizeObserver` loop
+       error; and no loop error in a block host on first load with a caption that rewraps between the fallback and the
+       measured cap, in the narrow-column resize, or when a `hidden` host is shown (R-02, R-07);
      - the prose override in Chromium;
      - print to PDF.
    - **Red.**
@@ -277,12 +283,17 @@ Every phase with stories also does the following:
        pair of consecutive rows, none below the last, R-06), row and corner headers, a `colspan` header, pre-upgrade,
        640 px.
      - The caption bodies of R-07: at 320 px at rest (inside the unmasked extent, start equal to the table's), scrolled
-       to the middle and the end (start still equal to the table's), a fitting table, a narrow column resized from 400
-       to 600 px, and the no-`ResizeObserver`-loop check around the shrink-to-fit bodies.
+       to the middle and the end (start still equal to the table's), a fitting table (no `data-fade`, a long caption
+       wrapping at the table's width), a narrow column resized from 400 to 600 px whose table overflows and whose
+       caption is longer than the box at both widths (`data-fade="end"` asserted at rest before the line boxes), and
+       the no-`ResizeObserver`-loop check around a block host on first load with a caption that rewraps between the
+       fallback and the measured cap, the narrow-column resize, a `hidden` host shown, and the shrink-to-fit bodies.
      - The element as a default flex item and as a `1fr` grid item at 320 px (R-02).
      - The shrink-to-fit bodies of R-02: in an open `<dialog>`, an inline-block and a start-aligned column flex, the
-       host as wide as the table plus the ring room (never 0 px), the caption not narrower than its longest word, a
-       long caption wrapping at a narrow table's width.
+       host as wide as the table plus the ring room on both sides (never 0 px), the caption not narrower than its
+       longest word, a long caption wrapping at a narrow table's width, and a two-column narrow table in an
+       inline-block whose caption's words are wider than the grid: the table widens to the longest word and the
+       region does not overflow (no tab stop, no `data-fade`).
      - The five elements in 013's define-twice fixture (two copies of the package: the first definition wins); the
        data table's entry goes in here, and phases 2 and 3 add theirs to the same body.
      - The change to 003's `packages/styles/test/source.test.ts` (R-06): blocks 1 and 2 after the wrap rule, the
@@ -294,7 +305,8 @@ Every phase with stories also does the following:
        Sizing line (a wrapper that is the flex or grid item needs `min-inline-size: 0`; in a shrink-to-fit host the
        data table takes its table's width and overflows only when its own inline size is bounded), the caption rules
        (the `hidden` attribute, not CSS, hides part of a caption from the name; the caption scrolls with the table
-       until 009's option lands).
+       until 009's option lands; its longest word widens the table, and in a bounded host a caption word wider than
+       the box overflows it and the region scrolls).
      - The story-test extension.
    - **Green.** `ocelle-data-table.ts`, the `base.css` blocks, exports and the manifest, the stories with baselines,
      the README (section, conventions, overflow-region users, Host ARIA list, sizing, prose specificity, the

@@ -36,13 +36,20 @@ states (branch; rechecked by T001).
 - `:host { display: block; min-inline-size: 0; }`, so the element shrinks as a default flex item or a grid item and
   its region overflows instead of the page (R-02, FR-009);
 - `:host([hidden]) { display: none; }`;
-- `:host .region-track { inline-size: fit-content; }` (R-03, decision 1).
+- `:host .region-track { inline-size: fit-content; }` (R-03, decision 1);
+- `:host .box-size { block-size: 0; }`, the measuring element below (R-07, PLAN-FRESH-3-001 (a));
+- `:host .region-box[data-fade="end"], :host .region-box[data-fade="both"] { --data-table-end-fade:
+  var(--ocelle-scroller-fade-size); }`, so the caption's cap subtracts the end fade only while it shows (R-07,
+  PLAN-FRESH-3-002 (b)).
 
 No box sets `container-type` (PLAN-FRESH-2-001): inline size containment would make the element 0 px wide in a
 shrink-to-fit host (R-02). The element adopts one per-instance constructed sheet of its own, after
-`overflowRegionStyles`, holding `.region-track { --data-table-box-size: <n>px; }`. Its own `ResizeObserver` on
-`.region-box` writes the box's client inline size there (R-07). The property is internal (no `--ocelle-` prefix, not
-in the manifest, not a documented hook).
+`overflowRegionStyles`, holding `.region-track { --data-table-box-size: <n>px; }`. Its own `ResizeObserver` observes
+the measuring element `.box-size`, an empty `block-size: 0` node after `.region-frame`, and writes `.region-box`'s
+client inline size there (R-07). It does not observe `.region-box`: the written cap rewraps the caption, which changes
+the box's block size and would raise a `ResizeObserver` loop error (PLAN-FRESH-3-001). The measuring element is one
+internal node outside 009's structure; nothing of the module changes (FR-008). Both properties are internal (no
+`--ocelle-` prefix, not in the manifest, not documented hooks).
 
 The README's Sizing line has two parts. A wrapper that is itself the flex or grid item, around the element, needs
 `min-inline-size: 0` too. In a shrink-to-fit host (a dialog, an inline-block, a start-aligned flex) the data table
@@ -57,6 +64,7 @@ takes its table's width and overflows only when its own inline size is bounded, 
   <div class="region-edge start" aria-hidden="true"></div>
   <div class="region-edge end" aria-hidden="true"></div>
 </div>
+<div class="box-size" aria-hidden="true"></div>   <!-- the caption cap's measuring element, block size 0 -->
 ```
 
 ## Behaviour
@@ -84,9 +92,11 @@ takes its table's width and overflows only when its own inline size is bounded, 
 ## Caption and the start fade (R-07, R-17)
 
 The caption is capped by the box's measured width (`--data-table-box-size`, falling back to
-`--ocelle-measure-container` before the first measurement and before upgrade), less the end fade and the track's ring
-room, so it wraps inside the box's unmasked width at rest. Its `contain: inline-size` keeps its text out of the
-table's intrinsic width, so the measurement cannot feed back (R-07). 009's start fade masks the box's start edge, so
+`--ocelle-measure-container` before the first measurement and before upgrade), less the track's ring room on both
+sides and less the end fade only while it shows, so it wraps inside the box's unmasked width at rest and a fitting
+table's cap is the table's own width. The caption has no inline size containment: its longest word widens the table,
+as CSS tables do, so a fitting table never overflows because of its caption (PLAN-FRESH-3-002 (b)). The observer
+watches the measuring element, whose size the cap cannot change, so the measurement cannot feed back (R-07). 009's start fade masks the box's start edge, so
 a caption pinned at `inset-inline-start: 0` would fade there. The data table asks 009's owner for a module option
 that keeps a pinned start box out of the start fade (R-17) and does not change the module. Until that option is on
 `main`, the caption is not sticky (Q-F, decided (b) by PLAN-FRESH-2-002's option (c)). It scrolls with the table, starts

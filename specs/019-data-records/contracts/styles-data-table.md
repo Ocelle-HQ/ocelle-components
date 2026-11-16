@@ -14,7 +14,7 @@ table of an `ocelle-data-table` is selected, whether the element is defined or n
 | Selector (inside `:where()`) | Purpose |
 |---|---|
 | `ocelle-data-table > table` | `border-collapse`, `inline-size: 100%`, `margin: 0`, sans, figures |
-| `ocelle-data-table > table > caption` | caption type, colour, `text-align: start`, `position: static` (not sticky until 009's option of R-17; Q-F (b)), `contain: inline-size`, `max-inline-size: calc(var(--data-table-box-size, var(--ocelle-measure-container)) - var(--ocelle-scroller-fade-size) - var(--ocelle-focus-offset) - var(--ocelle-focus-width))`: the box's measured width less the end fade and the ring room (R-07) |
+| `ocelle-data-table > table > caption` | caption type, colour, `text-align: start`, `position: static` (not sticky until 009's option of R-17; Q-F (b)), no inline size containment (its longest word widens the table, PLAN-FRESH-3-002 (b)), `max-inline-size: calc(var(--data-table-box-size, var(--ocelle-measure-container)) - 2 * (var(--ocelle-focus-offset) + var(--ocelle-focus-width)) - var(--data-table-end-fade, 0 * var(--ocelle-scroller-fade-size)))`: the box's measured width less the ring room on both sides and less the end fade only while it shows (the data table sets `--data-table-end-fade` on `.region-box[data-fade="end"]` and `[data-fade="both"]`), so a fitting table's cap is its own width (R-07) |
 | `ocelle-data-table > table > :is(thead, tbody, tfoot) > tr > :is(td, th)` | compact padding, `sm` / `line-height-compact`, `ink-soft`, row rule, `text-align: start`, `vertical-align: top` |
 | `… > thead > tr > th`, `… th[scope="col"]`, `… th[scope="colgroup"]` | eyebrow header: `xs`, medium (Q-B), upper case, `tracking-caps`, `ink-muted`, `rule-strong` rule |
 | `… th[scope="row"]`, `… th[scope="rowgroup"]`, `… > :is(tbody, tfoot) > tr > th:not([scope])` | row header: `sm`, medium, `ink`, no case or tracking |
@@ -35,7 +35,7 @@ each property 003's prose rules set, with the value block 1 gives. It also sets 
 | table | `display: table`, `overflow-x: visible`, `max-inline-size: none`, `container-type: normal`, `margin-block: 0`, `border-collapse: collapse` |
 | cells | `min-inline-size: auto`, block 1's padding, rule and `text-align` |
 | header cells | block 1's font size, weight, figures and rule colour, by selection |
-| caption | block 1's `max-inline-size` cap, `position: static`, `inset-inline-start: auto`, `contain: inline-size`, `text-align`, font size and line height |
+| caption | block 1's `max-inline-size` cap, `position: static`, `inset-inline-start: auto`, `text-align`, font size and line height |
 
 A node test (`packages/styles/test/prose-override.test.ts`) selects every `[data-ocelle-prose=""]` rule in `base.css`
 whose selector can match a table, caption, row group, row, column or cell, pseudo-classes included (for example
