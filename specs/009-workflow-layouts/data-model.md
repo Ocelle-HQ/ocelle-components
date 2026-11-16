@@ -64,6 +64,12 @@ node or text change (an image or a font loading), content rendered inside a slot
 attribute-only change; the host calls `remeasure()` after one (FR-025). The same remedy covers the known limitation of
 `measured` above, a percentage inline padding that changes with the host's container.
 
+**Not rendered (FR-025; landing pass, O5-01).** While the element has no box (a closed `<dialog>`, a `display: none`
+ancestor, `hidden`), a pass writes no figure and `pending` stays set, and a fresh measurement does not replace
+`measured` from the probe, whose computed inline size is then `auto`; the tier stays as it was. When the probe's
+`ResizeObserver` sees the element become rendered, the element requests a pass for the next animation frame (set
+`pending`, request a frame if none is), never running it inside that delivery, and takes `measured` afresh after it.
+
 **Focus rule (R-14).** If a change of `tier` or `detail-open` hides the pane that holds focus (the active element of
 the element's own root, the document or a host component's shadow root; reviews/phase-4/round-1-fixes.md R1-02),
 the shown pane's wrapper gets `tabindex="-1"` and focus after the update, and loses the attribute on its `focusout`.

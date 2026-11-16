@@ -590,7 +590,19 @@ layout's, whatever tier it shows, so a shrink-to-fit host cannot make the tier a
   its content box, and its border box is observed, so it adds nothing to the host's intrinsic sizes (round-2-fixes.md
   R2-02). After each scheduled pass the element takes `measured` afresh in the same frame callback, so `remeasure()`
   also re-chooses the tier, the host's remedy for a percentage inline padding that changes with its container, which
-  may go unseen (round-2-fixes.md R2-01, round-3-fixes.md R3-04, FR-025). Observing the host's own border box brought the loop
+  may go unseen (round-2-fixes.md R2-01, round-3-fixes.md R3-04, FR-025).
+
+  **Not rendered (landing review L1-01, operator round phase 4 round 5, O5-01).** An element in a closed `<dialog>`,
+  under a `display: none` ancestor or with `hidden` has no box: the pass reads 0 px for both figures, and the probe
+  reads `auto`, which parses to `NaN`. Found at landing: the first-render pass of such an element wrote 0 px, the
+  probe's later delivery only re-chose the tier, and a shrink-to-fit host showed it 0 px wide in one column until
+  `remeasure()`. So a pass that finds the grid without a box (`getClientRects().length === 0`) writes no figure and
+  leaves the pass pending; `remeasure()` (and any fresh measurement) does not replace `measured` from a probe that is
+  not rendered; and when the probe's `ResizeObserver` sees the element become rendered (no box before, a box now),
+  it requests a fresh pass for the next animation frame, coalesced with any pending one, never running it inside the
+  delivery. The element then gives the figures it gives when rendered from the start.
+
+  Observing the host's own border box brought the loop
   message below; the blocks' block size never changes. Measured in squad round 2, a pane `ResizeObserver` whose callback set the sizer grew a shrink-to-fit host
   inside the delivery, and the window received "ResizeObserver loop completed with undelivered notifications." with
   the host's new size a frame late; and a width-only widening of a shown pane's content fired no pane observation at
@@ -682,7 +694,9 @@ layout's, whatever tier it shows, so a shrink-to-fit host cannot make the tier a
   `setTimeout(0)` tasks before one frame each change the list's text, and the next frame runs one pass; a change in
   the frame after runs one more. The count is read from a test-only pass counter in the element's internal
   scheduling module (`src/list-detail-measure.ts`), which is not exported from the package and not in the manifest,
-  so this case runs in-process only. Plant: one pass per `MutationObserver` delivery (three passes).
+  so this case runs in-process only. Amended at the landing pass (landing review L1-05, operator round phase 2 round 3,
+  O3-05): the counter stays out of the shipped build (`dist/` and the browser build); the in-process test reaches it
+  through a test-only hook, and a build-output test proves it is absent. Plant: one pass per `MutationObserver` delivery (three passes).
 - **Frame record (PLAN-TESTABILITY-1-006).** A screenshot samples whatever frame it captures, so it cannot catch one
   leaked frame. From just before the `slotchange` (or the resize) until settle, a `requestAnimationFrame` loop and a
   `ResizeObserver` on the grid record, in every frame, the grid's column count and each pane's box. The pass condition
@@ -796,7 +810,12 @@ layout's, whatever tier it shows, so a shrink-to-fit host cannot make the tier a
 - **Not applicable.** Loading, error and disabled states do not apply to layout elements; the README says so.
 - **Mid-scroll stories.** A story at "middle" or "end" sets the scroll position after the element's `updateComplete`,
   inside its render function (a returned element with a `connectedCallback`-time promise, no timers). #10's
-  double-capture determinism check (`nondeterministic`) proves it.
+  double-capture determinism check (`nondeterministic`) proves it. Amended at the landing pass (operator round phase 2
+  round 3, O3-01): setting the position once is not enough, because the strip can grow after that first update (CI
+  run 43791016532: a font loading late left "Overflowing at the end" short of its end). Each such story holds its
+  share of the scroll range (half for "middle", all of it for "end") once the layout settles: when the box's scroll
+  range changes after the first write, before the capture, it writes the position for the new range again, still
+  with no timer. The story test grows the strip after the first write and asserts the position (T067).
 - **Baselines.** Each phase produces its stories' baselines with `pnpm run visual:update` in the pinned container
   under docker, which this sandbox can start (#10's assumption, "Container in this environment"). They are confirmed
   by a CI run of the branch. When CI's captures differ, the CI artifact's files are committed, as #10's note says.

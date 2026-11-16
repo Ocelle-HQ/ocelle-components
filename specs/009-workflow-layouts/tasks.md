@@ -13,6 +13,10 @@
 Amended after the analysis (`analysis-report.md`; operator decisions in `reviews/analysis/operator-decisions.md`;
 fixes in `reviews/analysis/fixes-1.md`). No task ID changed.
 
+Amended at the landing pass of PR #46 (2026-11-16): the landing review `reviews/landing/round-1.md` and the operator
+rounds `reviews/phase-2/round-3.md` (O3-01 to O3-05) and `reviews/phase-4/round-5.md` (O5-01) add T067 to T082, under
+phases 2 and 4. No earlier task ID changed.
+
 **Tests**: required. Constitution Principle VIII applies to every phase. The phase flow is:
 
 1. `base.sh`, then an optional `scaffold.sh`;
@@ -356,6 +360,89 @@ Its fitting twin is none of these. `ocelle-test-overflow-host` passes US1-1, US1
   run, one at a time: `pnpm run gate:style-lint`, `gate:csp`, `gate:prefix`, `gate:manifest`, `gate:plants`, and
   `gate:mutation -- --base <phase base>`.
 
+### Fix 3: operator round from the landing pass (`reviews/phase-2/round-3.md`, O3-01 to O3-05)
+
+The source is the landing review `reviews/landing/round-1.md` (L1-02 to L1-05) and the CI failure that O3-01 quotes.
+The red commit holds test files only and goes through `red.sh` as `fix-3`; the fix note is
+`reviews/phase-2/round-3-fixes.md`, and round 4 reviews it. O3-05's counter is list-detail code (phase 4), fixed in
+this round's commits as the operator asked; the fix note says so.
+
+#### Tests (red, one commit)
+
+- [ ] T067 [P] [US1] O3-01, `storybook/test/integration/elements-stories.test.ts`: for
+  `elements-ocelle-scroller--overflowing-in-the-middle` and `--overflowing-at-the-end`, in light and dark, a case
+  that grows the strip after the story's first scroll write, deterministically: once the first position is observed,
+  the test appends sentence-length chips (no `style` attribute, no class) to the story's `ocelle-scroller` from
+  `page.evaluate`, so that the scroll range grows by at least 200 px, then waits two animation frames. Acceptance:
+  the end story is at its end (`scrollWidth − clientWidth − |scrollLeft| ≤ 1`) and the middle story within 1 px of
+  half the new range, with the story's `styled: []` and `outside: []` unchanged. Against HEAD it fails on that
+  position assertion when run locally (record the run in `red-fix-3.log`), not only in CI (research.md R-15).
+- [ ] T068 [P] [US1] O3-02, `packages/elements/test/browser/scrollbar.test.ts` (classic scrollbars, launched with
+  `ignoreDefaultArgs: ["--hide-scrollbars"]`): an `ocelle-workflow-board` labelled "Board" in Frame W at 1280 px with
+  five lanes that fit, not a tab stop and with no role; then a card's inner block in the last lane grows to 600 px
+  inline size. Acceptance, after `settle()`: the board's box has `tabindex="0"` and `role="region"` named "Board",
+  and its scroll range (`scrollWidth − clientWidth`) is 443 px within 1 px; this is the case where only the box's
+  border box changes (FR-014's contained lanes). With the mutant `this.#observer.observe(box)` (dropping
+  `{ box: "border-box" }`) applied in a copy, the test fails; record that plant run in
+  `reviews/phase-2/plants.md` (landing review L1-02).
+- [ ] T069 [P] [US1] O3-03, `packages/elements/test/fixtures/overflow-host.ts` and
+  `packages/elements/test/overflow-host.test.ts`: the test host gains a fixture-only way to render a new
+  `.region-box` in place of the old one (and none at all), keeping the replaced box rendered in its shadow root
+  outside the frame so that it can still be measured. Cases, with content that overflows, in the in-process harness:
+  - after the swap, the old box has no `tabindex`, `role` or `aria-label`, and the new box is `tabindex="0"`, a
+    `group` named by the label, scrolled by ArrowRight 40 px;
+  - growing or scrolling the old box afterwards changes no output (`overflowing`, `fadeAttribute`) and puts no
+    attribute back on it: it is unobserved and its `scroll` and `slotchange` listeners are gone;
+  - with no box rendered, the old box loses its attributes, and a box rendered again is followed again.
+
+  Plant: the current code (the old box left observed, its attributes as last set), which each case fails
+  (contracts/overflow-region.md § Lifecycle `hostUpdated`).
+- [ ] T070 [P] [US1] O3-03 and O3-04, `packages/elements/test/node/readme.test.ts`: the README § Element conventions
+  "Lifecycle" statement of the overflow-region module, replaced by one that matches the contract's § Lifecycle: on
+  connect it adds its host listeners and its `ResizeObserver`; after each update it follows the box, and on a new box
+  it lets go of the old one (unobserved, its `tabindex`, `role` and `aria-label` removed) and the new box takes them
+  over; on disconnect it disconnects the observer and removes its host listeners, and the box's attributes stay as
+  last set; it emits no event. Red against the current README (phase 2 review R2-02, landing review L1-04).
+- [ ] T071 [P] [US3] O3-05, `packages/elements/test/node/build-output.test.ts` (new, node project): after
+  `pnpm --filter @ocelle/elements run build`, neither `dist/list-detail-measure.js` nor
+  `dist/browser/ocelle-elements.js` holds `passCount` or the module-level pass counter, and `dist/index.js` exports
+  neither. Red against HEAD. `test/list-detail-pass.test.ts` keeps its exact count of one pass and its plant (one pass
+  per `MutationObserver` delivery) still bites; only how it reads the count may change (landing review L1-05).
+
+#### Implementation (green)
+
+- [ ] T072 [US1] O3-01, `storybook/stories/scroller.stories.ts` (`scrolled()`): the middle and end stories hold
+  their share of the scroll range once the layout settles. After the first write, when the box's scroll range
+  changes before the capture, the story writes the position for the new range again, with no timer (research.md
+  R-15). Update the file's header comment. Acceptance: T067 passes; `pnpm run gate:visual` passes against the
+  committed baselines with #10's double-capture check reporting no `nondeterministic` story (if a capture changes,
+  produce it with `visual:update` under docker and confirm it in CI, as in T028); a CI run of the branch passes job
+  Unit tests, both stories in both themes.
+- [ ] T073 [US1] O3-02, `packages/elements/src/overflow-region.ts:357-358`: remove the `ObjectLiteral` equivalent
+  record on `observe(box, { box: "border-box" })`, or rewrite it to name T068's test (file and test name) as the
+  cover the in-process run cannot give, without the claim of equivalence. Acceptance: `gate:mutation` counts the
+  mutant as killed or as a recorded non-in-process cover that names a test that fails with it (T068's plant run),
+  never as equivalent.
+- [ ] T074 [US1] O3-03, `packages/elements/src/overflow-region.ts` `hostUpdated` (and `#follow`): on a new box, or
+  none, unobserve the old box and its track, take off its `scroll` and `slotchange` listeners and the old frame's
+  `focusout` listener, and remove its `tabindex`, `role` and `aria-label`; then follow the new box, whose first
+  observer delivery writes the state there (contracts/overflow-region.md § Lifecycle). Acceptance: T069 passes in
+  process, and every existing scroller, board and overflow-host case still passes in both harnesses.
+- [ ] T075 [US1] O3-03 and O3-04, wording: `packages/elements/README.md` § Element conventions "Lifecycle" as T070
+  pins it, and the JSDoc and Stryker records of `hostConnected`, `hostUpdated` and `hostDisconnected` in
+  `src/overflow-region.ts` so that none says the module removes every listener on disconnect, nor that it "moves"
+  the observer without letting go of the old box. The contract wording is already fixed (this amendment). Acceptance:
+  T070 passes; a search of the README and `src/overflow-region.ts` for "removes its listeners" finds nothing.
+- [ ] T076 [US3] O3-05, `packages/elements/src/list-detail-measure.ts:403-408` and `test/list-detail-pass.test.ts`:
+  move the pass count behind a test-only hook so that nothing of it reaches `dist/` or the browser build (for
+  example a hook the in-process test installs, which the shipped module only calls when present, or a count the test
+  takes from an observable effect of each pass), without weakening T048's test. Acceptance: T071 passes; T048's test
+  still reads exactly one pass for three tasks before one frame and one more in the next frame, and its plant still
+  bites (recorded in `reviews/phase-2/plants.md`); `gate:manifest` reports no change.
+- [ ] T077 [US1] Run the plants of T068 and T069 and T048's plant once and record them in
+  `specs/009-workflow-layouts/reviews/phase-2/plants.md`. Then run, one at a time: `pnpm run gate:unit-tests`,
+  `gate:visual`, `gate:axe`, `gate:csp`, `gate:manifest`, `gate:plants`, and `gate:mutation -- --base <phase base>`.
+
 **Checkpoint**: `tdd-check.sh 2` reports `pass`; the review approves.
 
 ---
@@ -653,6 +740,55 @@ with three columns.
 - [X] T061 [US3] Run each pairing plant of T047 to T049 once and record them in
   `specs/009-workflow-layouts/reviews/phase-4/plants.md`. Then run the gates as in T030.
 
+### Fix 4: operator round from the landing pass (`reviews/phase-4/round-5.md`, O5-01)
+
+The source is the landing review `reviews/landing/round-1.md` (L1-01). The red commit holds test files only and goes
+through `red.sh` as `fix-4`; the fix note is `reviews/phase-4/round-5-fixes.md`, and round 6 reviews it.
+
+#### Tests (red, one commit)
+
+- [ ] T078 [US3] O5-01, `packages/elements/test/scenarios/list-detail.ts` (shared bodies, run by
+  `test/list-detail.test.ts` and `test/browser/list-detail.test.ts`), beside US3-12, with US3-12's three panes, at a
+  1280 px viewport. Each case is compared with its twin rendered from the start on the same page, and asserts the
+  width, `data-tier`, the per-instance sheet's figures, the same column count on each of ten frames, and an empty
+  `driver.messages()`:
+  - upgraded inside a closed `<dialog class="dialog">`, then opened with `showModal()`: US3-12's dialog result,
+    1073 px and three columns;
+  - upgraded inside a `display: none` inline-block wrapper, which is then shown: the twin's width and tier;
+  - a `hidden` flex item of the 1196 px row, which is then shown: 1073 px and three columns;
+  - a host with the `hidden` attribute in the 1196 px row, which is then removed: 1073 px and three columns;
+  - shown at 1073 px in three columns, then its wrapper hidden; while hidden, the list's text changes and the host
+    calls `remeasure()`. Ten frames later the sheet's figures and `data-tier` are those before hiding, and no figure
+    is `NaN` or the 0 px of the missing box. Shown again, after settle, it has the figures of its new content.
+
+  Each fails against HEAD on an assertion (the first four stay at 0 px in one column, the last writes `NaN`). Plants:
+  no pass scheduled when the element becomes rendered (the first four); a pass that writes the figures it reads with
+  no box, and `remeasure()` that sets the measured size from a non-rendered probe (the last) (spec FR-025, US3-12,
+  the pairing table; research.md R-13 "Not rendered").
+- [ ] T079 [P] [US3] O5-01, `packages/elements/test/node/readme.test.ts`: the container-tier convention and
+  § `ocelle-list-detail` state that becoming rendered (a dialog opened, an ancestor or the host shown) is a
+  re-measure trigger with no `remeasure()` call needed, and that a pass or `remeasure()` while the element is not
+  rendered writes nothing (FR-025, FR-034; contracts/elements.md § Container-tier convention "Not rendered").
+
+#### Implementation (green)
+
+- [ ] T080 [US3] O5-01, `packages/elements/src/list-detail-measure.ts:67-87` and
+  `packages/elements/src/ocelle-list-detail.ts:217-221, 295-299, 329`:
+  - a pass that finds the grid without a box (`getClientRects().length === 0`) writes no figure and stays pending;
+  - the probe's `ResizeObserver`, when it sees the element become rendered, requests a pass for the next animation
+    frame through the scheduler (coalesced, never run inside the delivery);
+  - `#remeasured` does not overwrite the measured size when the probe is not rendered (its computed inline size is
+    `auto`), so the tier stays.
+
+  Acceptance: T078 passes in both harnesses; every US3 case, T048's one-pass count and T049 still pass
+  (data-model.md § list-detail "Not rendered").
+- [ ] T081 [US3] `packages/elements/README.md` as T079 pins it (the container-tier convention's triggers and
+  § `ocelle-list-detail`, where it names a dialog as a shrink-to-fit host), and the `packages/elements/CHANGELOG.md`
+  entry of `ocelle-list-detail` if it lists the triggers. Acceptance: T079 passes.
+- [ ] T082 [US3] Run T078's plants once and record them in `specs/009-workflow-layouts/reviews/phase-4/plants.md`.
+  Then run the gates as in T030, and `gate:mutation -- --base <phase base>` with no surviving mutant on the changed
+  lines.
+
 **Checkpoint**: `tdd-check.sh 4` reports `pass`; the review approves.
 
 ---
@@ -701,6 +837,9 @@ reports `pass`.
 - **Phase 4 (US3)** depends on Phase 1 and on the driver (T021), not on the module or the board. It may follow Phase
   2 directly, but `/ocelle-run` runs phases in order.
 - **Phase 5** comes after all stories.
+- **Landing fixes.** Phase 2's fix 3 (T067 to T077) and phase 4's fix 4 (T078 to T082) follow the landing review
+  and run one after the other, each red commit before its green tasks. T076 changes phase 4's
+  `list-detail-measure.ts`, so fix 4's T080 builds on it.
 - **Within a phase:** spike (phase 4) → tests (one red commit) → implementation → stories → baselines → records →
   plants and gates.
 
@@ -711,6 +850,7 @@ reports `pass`.
   follows T013.
 - Phase 3: T031 and T034 to T037. T033 follows T032, whose bodies it runs.
 - Phase 4: T046, T048, T049 and T051 to T053. T050 follows T047 (its bodies) and T049 (the same browser file).
+- Phase 2 fix 3: T067 to T071 (separate files). Phase 4 fix 4: T078 and T079.
 - Never in parallel: browser suites, mutation, plants and `visual:update` (one heavy job at a time).
 
 ## Implementation Strategy
