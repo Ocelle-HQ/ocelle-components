@@ -1,9 +1,10 @@
 # @ocelle/elements
 
 The Ocelle web components: standards-based custom elements (Lit 3) that work in any page, a server-rendered page
-under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has four elements:
+under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has five elements:
 `ocelle-icon`, with a set of thirteen icons, `ocelle-brand-mark`, the Ocelle rosette, `ocelle-notice`, a message box
-that can announce itself, and `ocelle-form-input`, a labelled text field that takes part in its form.
+that can announce itself, `ocelle-form-input`, a labelled text field that takes part in its form, and
+`ocelle-form-select`, a labelled native select for closed choices that takes part in its form.
 
 ## Entry points
 
@@ -14,6 +15,7 @@ that can announce itself, and `ocelle-form-input`, a labelled text field that ta
 | `@ocelle/elements/ocelle-brand-mark.js` | `dist/ocelle-brand-mark.js` | `ocelle-brand-mark` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-notice.js` | `dist/ocelle-notice.js` | `ocelle-notice` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-form-input.js` | `dist/ocelle-form-input.js` | `ocelle-form-input` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-form-select.js` | `dist/ocelle-form-select.js` | `ocelle-form-select` only; for hosts with a bundler |
 | `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |
 | `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |
 
@@ -336,6 +338,59 @@ disabled colours when disabled; the description is in `--ocelle-color-ink-muted`
 `--ocelle-color-ink-muted`. The field inherits the host's font. In forced colours the boundary is `CanvasText`, the
 focus ring `Highlight`, and the error keeps its boundary at `--ocelle-bar-width`. Long unbroken text in the label, the
 description or the error wraps at any character.
+
+## `ocelle-form-select`
+
+```html
+<form method="get" action="/board">
+  <ocelle-form-select name="lane" label="Lane" description="Only cards in this lane are shown">
+    <option value="">All lanes</option>
+    <optgroup label="Active">
+      <option value="todo">To do</option>
+      <option value="doing" selected>Doing</option>
+    </optgroup>
+    <option value="done">Done</option>
+  </ocelle-form-select>
+  <button>Filter</button>
+</form>
+```
+
+`ocelle-form-select` is a labelled native select for closed choices, with an optional description and a host-set
+error, that takes part in its form like a native select. It follows the form-control convention above. Attributes and
+reflected properties: `name`, `label`, `description`, `error`, `required` and `disabled`. Properties: `value`, `form`,
+`labels`, `validity`, `validationMessage` and `willValidate`. Methods: `checkValidity()`, `reportValidity()` and
+`focus()`.
+
+- Its choices are its light-DOM `<option>` and `<optgroup>` children, written as for a native `<select>`: the native
+  select inside mirrors their order, labels, values, `selected` (the default selection, restored on reset) and
+  `disabled`, and follows every later change to them. The light-DOM children are not rendered and not exposed, so a
+  server-rendered page needs no script to fill the select. One choice only: there is no `multiple` and no `size`.
+- A host `value` attribute is ignored: the default selection is the last option marked `selected`, or the first
+  enabled option without one. The `value` property is the current choice; setting it to a value no option has selects
+  nothing and reads `""`, as on a native select. There is no `defaultValue` property. With nothing selected (no
+  option, or such a value), the select submits nothing, as a native select.
+- When the chosen option is removed, the choice falls back to the first enabled option, as on a native select, with
+  no event.
+- The native select's own keys are unchanged: ArrowDown and ArrowUp change the choice, and typing a letter selects the
+  next option whose label starts with it. Each change the user makes dispatches `ocelle-form-select-change`.
+- The open-list indicator is the `chevron-down` icon of the set, drawn in `currentColor` at `--ocelle-icon-size` at
+  the inline end of the select, decorative and visible in forced colours; it takes no pointer events, so a click on it
+  reaches the select. Importing `@ocelle/elements/ocelle-form-select.js` defines `ocelle-form-select` only: the select
+  draws its indicator itself and does not define `ocelle-icon`.
+
+Event: `ocelle-form-select-change`, `detail: { value }`. CSS parts: `label`, `control`, `description` and `error`.
+Slots: none. No CSS custom property of its own. For htmx, trigger on `hx-trigger="ocelle-form-select-change"` (or
+`input`). `ocelle-form-select` reads the tokens `--ocelle-color-sheet`, `--ocelle-color-control-border`,
+`--ocelle-color-ink`, `--ocelle-color-ink-muted`, `--ocelle-color-danger`, `--ocelle-color-focus`,
+`--ocelle-color-disabled-bg`, `--ocelle-color-disabled-ink`, `--ocelle-border-width`, `--ocelle-bar-width`,
+`--ocelle-radius-2`, `--ocelle-target-min`, `--ocelle-focus-width`, `--ocelle-focus-offset`, `--ocelle-font-size-sm`,
+`--ocelle-font-weight-strong`, `--ocelle-line-height-normal`, `--ocelle-space-1`, `--ocelle-space-2`,
+`--ocelle-space-3` and `--ocelle-icon-size`, the last for its indicator. The label, the select, the description and the
+error are drawn as for `ocelle-form-input`; the select leaves room for the indicator at its inline end.
+
+Before the definition has loaded, a select's `<option>` children may show as text, as the browser draws an unknown
+element's content; the rule above for undefined elements hides them. Not measured for `ocelle-form-select`: that
+Alt+Down or Space opens the list, and how the browser draws the open list.
 
 ## Slot convention
 

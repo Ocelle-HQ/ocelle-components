@@ -33,6 +33,13 @@ export interface ControlKind {
   readonly roles: readonly string[];
   /** The markup of a host of tag `tag` with `attributes` (as written), holding `value` as its value when one is given. */
   readonly markup: (tag: string, attributes: string, value?: string) => string;
+  /** The markup of the native control the inner one is, with `attributes` and holding `value`: the element's twin. */
+  readonly native: (attributes: string, value?: string) => string;
+  /**
+   * Whether Chromium's accessibility tree gives a native control of this kind the `required` state, from `required` or
+   * `aria-required="true"` (measured: an `<input>` has it, a `<select>`'s combobox has neither).
+   */
+  readonly requiredExposed: boolean;
 }
 
 export interface FormScenario {
@@ -67,6 +74,8 @@ export const inputKind: ControlKind = {
   inner: "input",
   roles: ["textbox", "searchbox", "spinbutton"],
   markup: (tag, attributes, value) => el(tag, value === undefined ? attributes : `${attributes} value="${value}"`, ""),
+  native: (attributes, value) => `<input ${value === undefined ? attributes : `${attributes} value="${value}"`}>`,
+  requiredExposed: true,
 };
 
 /** A first-load control of `kind`: the literal tag `firstLoad` replaces. */
@@ -703,16 +712,39 @@ export const formInputScenarios: readonly FormScenario[] = [
         const each = await field(driver, id, kind);
         return { invalid: each.invalid, required: each.required, disabled: each.disabled, focusable: each.focusable };
       };
+      // The required and aria-disabled states as the inner control carries them, and its native twins' nodes: a kind
+      // whose native control Chromium's tree gives no required state (`requiredExposed`) is checked on the attributes
+      // that reach it; and Chromium's tree does not tell a select's `aria-disabled=""` from `"true"` (measured), so the
+      // value that reaches it is read here.
+      const carried = async (id: string): Promise<unknown> => {
+        const attributes = (await driver.elements(id)).find((part) => part.name === kind.inner)?.attributes ?? {};
+        return { required: attributes.required ?? null, ariaRequired: attributes["aria-required"] ?? null, ariaDisabled: attributes["aria-disabled"] ?? null };
+      };
+      const hosts = { i: await node("i"), r: await node("r"), d: await node("d"), it: await node("it"), rt: await node("rt"), dt: await node("dt"), constraint: (await driver.validity("rt")).valid };
+      const inner = { r: await carried("r"), rt: await carried("rt"), d: await carried("d"), dt: await carried("dt") };
+      await driver.mount(kind.native('id="nr" aria-label="B" aria-required="false" required', "x") + kind.native('id="nrt" aria-label="E" aria-required="true"'));
+      const twin = async (id: string): Promise<unknown> => {
+        const each = (await driver.axDetails(id)).find((each) => each.host);
+        return { required: each?.required ?? null, invalid: each?.invalid ?? null };
+      };
+      const required = kind.requiredExposed;
       assert.deepEqual(
-        { i: await node("i"), r: await node("r"), d: await node("d"), it: await node("it"), rt: await node("rt"), dt: await node("dt"), constraint: (await driver.validity("rt")).valid },
+        { ...hosts, inner, twins: { r: await twin("nr"), rt: await twin("nrt") } },
         {
           i: { invalid: "true", required: false, disabled: false, focusable: true },
-          r: { invalid: "false", required: true, disabled: false, focusable: true },
+          r: { invalid: "false", required, disabled: false, focusable: true },
           d: { invalid: "false", required: false, disabled: true, focusable: false },
           it: { invalid: "true", required: false, disabled: false, focusable: true },
-          rt: { invalid: "false", required: true, disabled: false, focusable: true },
+          rt: { invalid: "false", required, disabled: false, focusable: true },
           dt: { invalid: "false", required: false, disabled: true, focusable: true },
           constraint: true,
+          inner: {
+            r: { required: "", ariaRequired: null, ariaDisabled: null },
+            rt: { required: null, ariaRequired: "true", ariaDisabled: null },
+            d: { required: null, ariaRequired: null, ariaDisabled: null },
+            dt: { required: null, ariaRequired: null, ariaDisabled: "true" },
+          },
+          twins: { r: { required, invalid: "false" }, rt: { required, invalid: "false" } },
         },
         "US2-23",
       );

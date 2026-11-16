@@ -570,6 +570,8 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
       await page.evaluate(record);
       await page.goto("about:blank");
       await page.goBack({ waitUntil: "load" });
+      // The page shown again is a new document: a key step taken on the one left has no submission to take.
+      keyed = false;
       return page.evaluate(() => (globalThis as unknown as { ocellePageshow?: boolean }).ocellePageshow === true);
     },
   };
