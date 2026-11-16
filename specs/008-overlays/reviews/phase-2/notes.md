@@ -288,6 +288,34 @@ navigation scopes and `scopes.push`) were the same loop reached with one element
 focused checked radio is no candidate of the navigation order, and the explicit move from it compared it with itself.
 `before()`'s own test (`c8ad511`) ends that walk, and the rows' assertions kill those mutants (run 1: 0 Timeouts).
 
+### Review round 2 (T058, T059): the re-run
+
+`gate:mutation -- --base 6788697` (`--plan`: 61 shards, 28 of them in `overlay.ts`), run on `overlay.ts` at the fix
+`f741f55` in two `--files` runs cut at the Closing section (line 460), output appended to `mutation.log`:
+
+| Run | Entries | Mutants on changed lines | Survived, NoCoverage | Timeouts | Compile errors | Records |
+|---|---|---|---|---|---|---|
+| A | `src/overlay.ts:1-459` | 255 | 1: `:420` CallExpression, `#reopen`'s `this.#stop()` removed | 0 | 92 | 11 |
+| B | `src/overlay.ts:460-822` | 410 | 1: `:673` CallExpression, the platform close's `this.#stop()` removed | 2 | 158 | 8 |
+| C (final) | `src/overlay.ts:1-459` | 255 | 0 | 0 | 92 | 11 |
+| D (final) | `src/overlay.ts:460-822` | 410 | 0 | 2 | 158 | 8 |
+
+- `:420`: with the close's end now also requiring `open` false, a reopen during a motion-on exit dispatched no close
+  without the cancel, but the exit animation ran on to its end (the panel faded out, then showed again). The row
+  "Rapid toggle: re-open during the exit, motion on" read the animations only after 350 ms, past the 200 ms exit. It
+  now also reads them at once after the reopen (`atReopen: 0`); against the mutant it read 1 (3 of 3 runs).
+- `:673`: a platform close during the entry left the entry animation running on the closed panel. New row "Platform
+  close during a 1 000 ms entry: …" (`entryExitRows`, both elements, both harnesses): no animation on the closed
+  panel; against the mutant one was left (2 of 2 runs).
+- The two Timeouts are `before()`'s, as in the final runs above (`:806`, `:812` now).
+- Every `Stryker disable` record in `overlay.ts` was re-derived against the changed code and kept as it is: the fix
+  adds no state check and does not touch `#closeOwn`'s counting, so the `#ownCloses` records (`:507`, `:662`) still
+  hold (a queued own `close` event let through finds the dialog open again or the overlay closed; no path now runs
+  `#finish` a second time in `closing`); the opening-to-shown records (`:412`, `:414`) still hold (the entry's
+  scheduled end is gated by the token as well, and no new check names one state without the other); the others are on
+  code the fix did not change. The fix's own lines needed no record: the token, `#stop`, `#leave`'s filter, the
+  close's `open` check and the unconditional `requestUpdate()` in `connectedCallback` have no surviving mutant.
+
 ## Stories and baselines (T028, T029)
 
 - `storybook/stories/dialog.stories.ts`: eight stories; the long-body story's `dialog-scroll-edge` block, sized by
