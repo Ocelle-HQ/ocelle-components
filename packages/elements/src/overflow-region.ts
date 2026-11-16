@@ -289,6 +289,8 @@ export class OverflowRegion implements ReactiveController {
   });
 
   #box: HTMLElement | null = null;
+  /** The track of the box it follows, as observed. */
+  #track: Element | null = null;
   #label: string | undefined;
   /** The fades the focus fallback suppresses, and the `scrollLeft` written then. */
   // Stryker disable next-line BooleanLiteral: equivalent for the start, which fades only more than 1 px from scroll position 0, reached by a scroll event that ends the suppression (the end is killed by the fade scenarios)
@@ -323,6 +325,10 @@ export class OverflowRegion implements ReactiveController {
     this.#apply();
   }
 
+  /**
+   * Adds the three listeners on the host (`keydown`, `focusin`, `focusout`), adopts the per-instance sheet once, and on
+   * a reconnection follows again the box it followed (its observer and its listeners).
+   */
   hostConnected(): void {
     const root = this.#host.shadowRoot;
     if (root !== null && !root.adoptedStyleSheets.includes(this.#sheet)) root.adoptedStyleSheets = [...root.adoptedStyleSheets, this.#sheet];
@@ -332,14 +338,25 @@ export class OverflowRegion implements ReactiveController {
     if (this.#box !== null) this.#follow(this.#box);
   }
 
+  /**
+   * Re-reads `box()`. On a new box, or none, it first lets go of the old one (`#release`), then follows the new one,
+   * whose first observer delivery writes the state and the box's attributes there (contracts/overflow-region.md
+   * § Lifecycle).
+   */
   hostUpdated(): void {
     const box = this.#boxOf();
-    // Stryker disable next-line ConditionalExpression: equivalent, following the same box again observes it again and adds the same listeners, which are no-ops
+    // Stryker disable next-line ConditionalExpression: equivalent, releasing and following the same box again unobserves and observes it again and takes off and adds back the same listeners, and the host's setLabel after each update (in updated(), which Lit runs after hostUpdated) writes back the attributes the release removed
     if (box === this.#box) return;
+    if (this.#box !== null) this.#release(this.#box);
     this.#box = box;
     if (box !== null) this.#follow(box);
   }
 
+  /**
+   * Disconnects the observer and takes the three listeners off the host. The box's `scroll` and `slotchange` listeners
+   * and its frame's `focusout` listener stay on those nodes: a disconnected host's box gets no user scroll, and
+   * `hostConnected` adds the same functions again, which leaves them single. The box keeps its attributes as last set.
+   */
   // Stryker disable next-line all: equivalent, a disconnected host gets no event, and connecting again observes the box afresh and adds the same listeners, which adding again would leave single anyway
   hostDisconnected(): void {
     // Stryker disable next-line all: equivalent, as above
@@ -354,9 +371,10 @@ export class OverflowRegion implements ReactiveController {
 
   /** Observes the box (its border box, so a scrollbar that comes or goes is seen) and its track, and listens to it. */
   #follow(box: HTMLElement): void {
-    // Stryker disable next-line ObjectLiteral: in process the scrollbar is an overlay of 0 px, so the border box and the content box change together; the classic scrollbar case is test/browser/scrollbar.test.ts (elements-browser, not mutated)
+    // Stryker disable next-line ObjectLiteral: not killed in process, where the scrollbar is an overlay of 0 px, so the border box and the content box change together; covered by elements-browser (not mutated): test/browser/scrollbar.test.ts "a card's inner block that grows past the board's end makes the board a tab stop and a region named \"Board\", scrollable by 443 px, though only the box's border box changed", which fails with this mutant (reviews/phase-2/plants.md)
     this.#observer.observe(box, { box: "border-box" });
     const track = box.querySelector(".region-track");
+    this.#track = track;
     if (track !== null) this.#observer.observe(track);
     // Stryker disable next-line ObjectLiteral,BooleanLiteral: equivalent, a passive listener only promises not to call preventDefault, which this one never does
     box.addEventListener("scroll", this.#onScroll, { passive: true });
@@ -365,6 +383,21 @@ export class OverflowRegion implements ReactiveController {
     // nor the track's size (009 phase 2 review R1-03).
     box.addEventListener("slotchange", this.#onSlotChange);
     box.closest(".region-frame")?.addEventListener("focusout", this.#onFrameOut);
+  }
+
+  /**
+   * Lets go of a box the host no longer renders as its scroll box: unobserves it and its track, takes its `scroll` and
+   * `slotchange` listeners and its frame's `focusout` listener off, and removes its `tabindex`, `role` and `aria-label`.
+   */
+  #release(box: HTMLElement): void {
+    this.#observer.unobserve(box);
+    if (this.#track !== null) this.#observer.unobserve(this.#track);
+    box.removeEventListener("scroll", this.#onScroll);
+    box.removeEventListener("slotchange", this.#onSlotChange);
+    box.closest(".region-frame")?.removeEventListener("focusout", this.#onFrameOut);
+    box.removeAttribute("tabindex");
+    box.removeAttribute("role");
+    box.removeAttribute("aria-label");
   }
 
   /**

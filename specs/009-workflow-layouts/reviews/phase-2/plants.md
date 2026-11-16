@@ -83,3 +83,16 @@ box, no measured block size). The file was restored with `git checkout` and chec
 
 The plant bites: Chromium fades the scrollbar when the fade layer covers it, and the measured two-layer geometry
 keeps it unmasked. The phase continues (P1).
+
+## Operator round 3 plants (T068, T069, T048, T077)
+
+Run on the working tree of the round's green fix, on top of the red commit `fc3a136`. Each plant was applied as an
+exact text replacement, the named Vitest project and file run, and the file restored byte for byte from a copy taken
+before the change (checked with `cmp`). Nothing planted was committed. The logs are beside this file.
+
+| # | Test | Plant | Result |
+|---|---|---|---|
+| F3-1 | T068 `test/browser/scrollbar.test.ts` "a card's inner block that grows past the board's end makes the board a tab stop and a region named "Board", scrollable by 443 px, though only the box's border box changed" (Chromium without `--hide-scrollbars`) | `packages/elements/src/overflow-region.ts` `#follow`: `this.#observer.observe(box, { box: "border-box" })` replaced by `this.#observer.observe(box)` (the box's content box; landing review L1-02's mutant), on the code of `454528a` | `elements-browser packages/elements/test/browser/scrollbar.test.ts`: 1 failed, 4 passed (5); `grown` is `{ tabindex: null, role: null, name: null, range: 443, bar: true }` where `{ tabindex: "0", role: "region", name: "Board", range: 443, bar: true }` is expected: the scrollbar shows and the box scrolls 443 px, but it is not a tab stop and has no role. Without the plant the case passes (5 of 5). Log: `plant-fix-3-T068.log` |
+| F3-2 | T069 `test/overflow-host.test.ts`, the three swap cases | the module as it was before the fix (the old box left observed, listened to and with its attributes as last set) | the red run of `fc3a136` (`red-fix-3.log`): all three fail on their assertions (the old box keeps `tabindex="0"`, `role="group"`, `aria-label="Filters"`; growing, scrolling or slotting into the old box measures the followed box and turns its unseen overflow into `data-fade="end"` and a tab stop) |
+| F3-3 | the guard added after green in `test/overflow-host.test.ts` ("after the swap, a focusout in the old frame leaves a tabindex the host set on that frame") | `#release`: `removeEventListener("focusout", this.#onFrameOut)` on the old frame replaced by `removeEventListener("", this.#onFrameOut)` (the mutant that survived the round's first mutation run) | `elements packages/elements/test/overflow-host.test.ts`: 1 failed, 7 passed (8); the old frame's `tabindex` is `null` where `"0"` is expected. Log: `plant-fix-3-frame-listener.log` |
+| F3-4 (L17 again) | T048 `test/list-detail-pass.test.ts`, which now counts passes from their effect on the grid (T076) | `packages/elements/src/list-detail-measure.ts` `schedule()`: the `if (this.#frame !== undefined) return;` guard removed (one pass per `MutationObserver` delivery, each request asking for its own animation frame) | `elements packages/elements/test/list-detail-pass.test.ts`: 2 failed, 6 passed (8); fails: "runs once in the frame after three light-DOM changes…" (`passes` 3 where 1 is expected) and "review R2-01: remeasure() re-chooses the tier…" (`passes` 2 where 1 is expected). The plant still bites with the new count. Log: `plant-fix-3-L17.log` |

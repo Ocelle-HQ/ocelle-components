@@ -8,16 +8,10 @@
 // pass for the next animation frame, at most once per frame and never inside a `ResizeObserver` delivery; the element
 // runs it synchronously before a tier or `detail-open` change set through a property or attribute. After a scheduled
 // pass, in the same animation-frame callback, the element's own `after` step runs (it measures its border box afresh;
-// reviews/phase-4/round-2-fixes.md R2-01). The pass counter is
-// for the tests that count passes (test/list-detail-pass.test.ts). Internal: not exported from the package root, not
-// an entry point and not in the manifest.
-
-let passes = 0;
-
-/** The number of measurement passes run on the page since this module loaded (test-only). */
-export function passCount(): number {
-  return passes;
-}
+// reviews/phase-4/round-2-fixes.md R2-01). The module keeps no count of its runs: test/list-detail-pass.test.ts takes
+// the count from the effect each run has on the grid, so nothing test-only ships in dist/ or the browser build
+// (research.md R-13). Internal: not exported from the package root, not an entry point and
+// not in the manifest.
 
 /** The measurement of one list-detail: its stylesheet of figures, its observer and its frame request. */
 export class ListDetailMeasure {
@@ -67,7 +61,6 @@ export class ListDetailMeasure {
   measure(): void {
     const grid = this.#grid();
     if (grid === null) return;
-    passes += 1;
     // The element renders the grid with its tier, so the attribute is always there to restore.
     const tier = String(grid.getAttribute("data-tier"));
     grid.setAttribute("data-tier", "max");

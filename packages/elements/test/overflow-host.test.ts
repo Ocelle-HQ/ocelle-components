@@ -111,6 +111,23 @@ describe("ocelle-test-overflow-host, a new box in place of the old one (O3-03, T
     });
   });
 
+  // Guard added after the green fix, on a path no red case reached: the mutant that takes no `focusout` listener off the
+  // old frame (its event type "" in the removal) survived the round's mutation run and is its proof that it can fail
+  // (reviews/phase-2/plants.md). The module's frame listener removes the frame's `tabindex` on any focusout in it; after
+  // letting go of the box, it leaves a `tabindex` that the host put on the old frame alone.
+  it("guard: after the swap, a focusout in the old frame leaves a tabindex the host set on that frame: the old frame's focusout listener is gone", async () => {
+    await mountSwap("a", wide("a", 3) + wide("b", 3));
+    await driver.setAttribute("h", "current", "b");
+    const frame = boxNamed("a").parentElement;
+    frame?.setAttribute("tabindex", "0");
+    frame?.focus();
+    await driver.settle();
+    const focused = host().shadowRoot?.activeElement === frame;
+    document.getElementById("before")?.focus();
+    await driver.settle();
+    expect({ focused, left: host().shadowRoot?.activeElement ?? null, tabindex: frame?.getAttribute("tabindex") ?? null }).toEqual({ focused: true, left: null, tabindex: "0" });
+  });
+
   it("with no box, the old box loses its tab stop, role and name; a box rendered again is followed again", async () => {
     await mountSwap("a", wide("a", 3) + wide("b", 3));
     const followed = attributesOf("a");
