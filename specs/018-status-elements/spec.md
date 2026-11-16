@@ -434,7 +434,7 @@ container width, the text and `disabled`; hover, focus and press Escape; read th
   inside the box; the README says so (operator decision, PLAN-FRESH-2-002; PLAN-FRESH-3-005).
 - A short static pill in a grid track or in a flex column that stretches its items: the visible pill keeps the width of
   its text plus its padding and border, the same as in a block container, and is not stretched to the track; only its
-  host may be (US3-8; PLAN-FRESH-3-002). An interactive pill fills its stretched host as 012's FR-001 requires (FR-030).
+  host may be (§ US3 "stretched host" in contracts/checks.md; PLAN-FRESH-3-002). An interactive pill fills its stretched host as 012's FR-001 requires (FR-030).
 - A one-line pill, static or interactive, inline in text or in a flex row aligned by baseline, with and without an
   icon: the pill's text sits on the baseline of the text around it at the same font size. A pill that wraps is at its
   inline-size cap and so on a line of its own, its first text line on that line's baseline (operator decision,

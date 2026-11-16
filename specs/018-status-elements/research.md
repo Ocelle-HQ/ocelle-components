@@ -240,7 +240,9 @@ box-sizing: border-box`, selected as `.pill:not(.control)` so it never reaches t
 012's FR-001 requires (R-07). Probed on Chromium 153: "Blocked" is 75.8 px in the grid track and the column, as in a
 block container; the 34-letter word still breaks inside a 100 px pill in a block container and a grid track (100.0 ×
 58.3 px); the 220 px flex row is unchanged (75.8 px, one line). Without `box-sizing: border-box` the capped pill is
-126 px in a 100 px track, so it is needed.
+126 px in a 100 px track (176 px in the 150 px row beside "Name"), sticking out of its host and container, so it is
+needed; the long-word twins of US3-8 catch its removal by asserting the `.pill` box inside the host and the container
+(squad round 3, verify 1).
 
 Baseline (squad round 3, operator decision on PLAN-FRESH-3-001, (a)): 005's `iconSlotStyles` sets `.icon-row {
 align-items: flex-start }`, so no item takes part in baseline alignment and the row's baseline is synthesized from its
