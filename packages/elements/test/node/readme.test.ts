@@ -176,6 +176,23 @@ const fragments = [
   "Each segment's box is at least `--ocelle-target-min` high",
   "A segment's `icon` slot takes a leading icon by the slot convention; the icon adds nothing to the segment's name",
   "The segmented choice has no `disabled` of its own; disable every segment to disable it",
+  // ocelle-copy-field (014 US4, FR-031 to FR-044, FR-056; research.md R-07, R-15, R-16)
+  "`ocelle-copy-field` shows a command or identifier the user may copy, with a Copy control flush at its inline end. It never writes or reads the clipboard: activating the Copy control emits `ocelle-copy-field-request`, the host writes the clipboard (through a desktop bridge or the page's clipboard API) and reports the outcome in its own words by setting `status`",
+  "`value` (attribute and property, not reflected): the text shown and requested, as written. It wraps at any point when it does not fit, never scrolls sideways, keeps its whitespace runs, is drawn in the sans with tabular figures on `--ocelle-color-inset` and stays selectable. With an empty or missing `value` the Copy control is disabled and emits nothing",
+  "The text is plain text; a host that shows a digest in groups of four formats `value` itself",
+  "`copy-label` (attribute and property `copyLabel`, not reflected): the Copy control's accessible name, trimmed; without it, or blank, the control is named \"Copy\"",
+  "`status` (attribute and property, not reflected): the host's outcome text, shown as the content of the field's one polite live region (`role=\"status\"`) after the Copy control. The region is present and empty from first render; a blank `status` shows nothing. Setting the text the region already holds changes nothing. The field draws no colour or icon of its own for success or failure: the words are the host's",
+  "The field clears `status` (the property reads `\"\"` and the region is emptied) when a new request starts and when `value` changes after first render; it changes `status` in no other way and emits nothing on its own. A `status` attribute the host wrote stays as written and is read again only when it changes",
+  "`ocelle-copy-field-request` with `detail` `{ text }`: the user activated the Copy control with a click, Enter or Space; `text` is `value` at the activation. It bubbles and is composed, and is not cancelable",
+  "The request is not dispatched in the activation's task: the field clears `status` at once, then dispatches the request after the next rendering update, once the emptied live region has reached the accessibility tree, so a screen reader hears the host's new text even when it is the same as before. Each activation emits one request; a field removed from the page before the dispatch emits none",
+  "A host that writes the clipboard from the page (`navigator.clipboard.writeText(event.detail.text)`) receives the request outside the click's task, a frame later, and must check its engines' user-activation rules for clipboard writes: Chromium still counts the click's activation then, and WebKit is not measured. A host that writes the clipboard through a desktop bridge is not affected",
+  "Name the field with a host `aria-label`: it is exposed as a group holding the text and the Copy control, unnamed without one. A host `aria-label` names the group, not the control",
+  "Keys: the Copy control is one tab stop, and Enter and Space activate it, as on any button. The field handles no other key: Escape and letters reach the page unhandled",
+  "CSS parts: `value` (the text) and `copy-control` (the Copy control). `copy-control` guarantees its box (its position, its size and the rules a host sets on it), its accessible name and the events its activation leads to, not which element carries it: a native `<button>` today. Rules a host writes against `:disabled`, `:focus-visible` or the inner border of the native button are outside that surface",
+  "The Copy control will become `ocelle-button` (#7) in a later change once that element has merged. The `value` and `copy-control` parts, the control's accessible name and its events stay, so the swap is a PATCH under the surface stated here",
+  "The field's outer border is `--ocelle-border-width` in `--ocelle-color-control-border` with the radius `--ocelle-radius-2`. The Copy control sits flush at the field's inline end, inside that border, filled `--ocelle-color-sheet`, with one line of `--ocelle-border-width` in `--ocelle-color-accent-strong` between it and the text: no gap and no double line. The control is at least `--ocelle-target-min` in both dimensions and shows the token focus ring when focused by keyboard. In forced colours the boundaries are `ButtonBorder`, the icon is `ButtonText` and the ring `Highlight`. The copy field is for the main grounds",
+  "Importing `ocelle-copy-field` defines `ocelle-icon` too, for its copy icon",
+  "`ocelle-copy-field` reads the tokens `--ocelle-font-sans`, `--ocelle-figures`, `--ocelle-color-ink`, `--ocelle-color-inset`, `--ocelle-color-sheet`, `--ocelle-color-control-border`, `--ocelle-color-accent-strong`, `--ocelle-color-disabled-ink`, `--ocelle-color-focus`, `--ocelle-focus-width`, `--ocelle-focus-offset`, `--ocelle-border-width`, `--ocelle-radius-2`, `--ocelle-target-min`, `--ocelle-space-1`, `--ocelle-space-2`, `--ocelle-space-3` and `--ocelle-icon-size`",
   // two copies on a page (FR-006, Edge Cases)
   "Two copies of the package on one page, two versions or the browser build beside a bundle of the module build, cannot both define an element: the first definition wins and the second import throws nothing",
 ];
@@ -192,6 +209,7 @@ const entryRows = [
   "| `@ocelle/elements/ocelle-tab-panel.js` | `dist/ocelle-tab-panel.js` | `ocelle-tab-panel` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-segmented-choice.js` | `dist/ocelle-segmented-choice.js` | `ocelle-segmented-choice` and `ocelle-segment`; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-segment.js` | `dist/ocelle-segment.js` | `ocelle-segment` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-copy-field.js` | `dist/ocelle-copy-field.js` | `ocelle-copy-field` and `ocelle-icon`; for hosts with a bundler |",
   "| `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |",
   "| `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |",
 ];
@@ -236,7 +254,7 @@ describe("packages/elements/README.md", () => {
   it("lists exactly the entry points of package.json's exports in its Entry points table (FR-002)", () => {
     const manifest = JSON.parse(read("package.json")) as { exports?: Record<string, string> };
     expect(tableRows(read("README.md"), "Entry points")).toEqual(entryRows);
-    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-listbox.js", "./ocelle-option.js", "./ocelle-tabs.js", "./ocelle-tab.js", "./ocelle-tab-panel.js", "./ocelle-segmented-choice.js", "./ocelle-segment.js", "./browser.js", "./custom-elements.json"]);
+    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-listbox.js", "./ocelle-option.js", "./ocelle-tabs.js", "./ocelle-tab.js", "./ocelle-tab-panel.js", "./ocelle-segmented-choice.js", "./ocelle-segment.js", "./ocelle-copy-field.js", "./browser.js", "./custom-elements.json"]);
   });
 
   it("lists the thirteen names of the set, whether each mirrors and the consumer need it meets, in its Icons table (US2-1, FR-018, SC-007)", () => {
@@ -290,6 +308,12 @@ describe("packages/elements/CHANGELOG.md", () => {
     "`joined`",
     "`@ocelle/elements/ocelle-segmented-choice.js`",
     "`@ocelle/elements/ocelle-segment.js`",
+    // 014 phase 5 (FR-058, research.md R-16)
+    "`ocelle-copy-field`",
+    "`ocelle-copy-field-request`",
+    "`copy-label`",
+    "`copy-control`",
+    "`@ocelle/elements/ocelle-copy-field.js`",
     ...["chevron-start", "chevron-end", "chevron-up", "chevron-down", "arrow-start", "arrow-end", "menu", "close", "folder", "file", "search", "table", "copy"].map((name) => `\`${name}\``),
   ])("names %s under Unreleased / Added (constitution VII, FR-031, SC-008)", (surface) => {
     expect(added).toContain(surface);
