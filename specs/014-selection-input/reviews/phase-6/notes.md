@@ -79,7 +79,7 @@ axe runs; it is an axe-core limitation with slotted text, for an upstream report
 
 ## Tests changed after the red commit
 
-None so far. The red commit was amended once before `red.sh` recorded it: the file: suite's wait for the element's
+None: the green commit `3ceacb6` and the commits after it change no test file. The red commit was amended once before `red.sh` recorded it: the file: suite's wait for the element's
 definition was unbounded, so on the scaffold its two tests timed out instead of failing on their assertions. The wait
 is now bounded to 5 s. The recorded red commit is `2794722`.
 
@@ -116,3 +116,61 @@ The baselines were inspected:
 - the focused story's ring is drawn around the link's one fragment;
 - the hovered story's link is drawn in `link-hover`, underlined;
 - the label story looks as the paragraph story (the label is not visible).
+
+## The mutation gate (T100)
+
+The first run of `pnpm run gate:mutation -- --base 493142e` (on `3ceacb6`) reported 4 findings in
+`src/ocelle-link.ts`. `cf475d4` (`refactor(...)`) handles them; there was no behaviour defect among them.
+
+- **Removed by simplifying the source.** The anchor's refresh in `updated()` and the one in `attributeChangedCallback`
+  each survived alone, because each covered the other: `href` reflects, so every `href` change reaches the attribute.
+  The refresh in `updated()` is removed; the attribute path is now the one refresh after render, and R-08's anchor
+  body kills its removal (`plants.md`, *the anchor's state not refreshed on an href change*).
+- **Equivalent records** (2), each applied by hand first: the in-process link and entry suites (21 tests) and the
+  fixture link suite (25 tests) pass with each mutant.
+  - `if (event.button !== 0) return;` with the condition forced `false`: Chromium fires `click` for the primary button
+    only (a middle click is an `auxclick`), so no click with another button reaches the handler. The check stays for
+    the engines that are not measured, on its own line; the record names forced `false` as equivalent, and forced
+    `true`, which Stryker disables with it, as killed (US5-3 fails with it, run by hand).
+  - The `label` entry of `static properties` as `{}`: Lit's default options are type `String`'s (attribute `label`, the
+    default converter, not reflected), the same record as `ocelle-tabs`' `label`.
+
+The second run (on `cf475d4`), `mutation.log`, exits 0:
+- 115 mutants on the changed lines of 3 files, none survived;
+- 1 timeout (`ocelle-link.ts:151`, a `StringLiteral`);
+- 27 compile errors: type-checker rejections, such as a condition forced `true` before `location.assign(target)` with
+  `target` typed `string | null`;
+- 1 zero-mutant entry (`src/index.ts`, an export line);
+- 2 equivalent records, above.
+
+## Plants (T100)
+
+`plants.md` records 53 plants, each applied alone to `cf475d4`, run once and reverted; every one made a test fail.
+- Two plant forms did not bite on their first run, and neither was the defect its name states: *resolving once at
+  render* cached a `null` target with `??=`, which assigns again at every refused activation, and the `:host` display
+  plant only reordered two rules whose specificity already decides. Their corrected forms bite (`plants.md`).
+- *Navigating on every activation* for a link without `href` reloads the document: in process it reloads the Vitest
+  runner's frame, which ends the run with an error rather than an assertion, so its record is the fixture run, where
+  US5-2 and US5-3 fail.
+- Every contract row of the link and US2-22's row bite (`plants.md`, "The contract's link rows").
+
+## The gate run (T100)
+
+The gates were run one at a time on the code of `cf475d4`, with
+`OCELLE_CHROMIUM_PATH=/opt/pw-browsers/chromium-1243/chrome-linux64/chrome` and `OCELLE_VISUAL_ENGINE=docker`. The
+commit after it adds only these records.
+
+| Gate | Result |
+|---|---|
+| typecheck, lint (320 files), test-lint (217 files), style-lint (25 files), brand-rules (7 rules), pins (5 manifests), config-copies, prefix (302 files) | exit 0, no finding |
+| contrast | exit 0: 166 pairs in light, 174 in dark, 155 required per theme. The link adds no pair: every pair of its R-15 row is already checked |
+| manifest | exit 0: 11 elements |
+| csp | exit 0: 30 files |
+| signoff `--range 493142e..HEAD` | exit 0: 7 commits, no finding |
+| unit-tests | exit 0: 4027 tests in 168 files |
+| `vitest run --project elements-browser-file` | exit 0: 2 tests (US5-12) |
+| storybook-build | exit 0: 55 stories |
+| visual | exit 0: 110 captures match their baselines (docker only, no cross-engine comparison; no podman in this session) |
+| axe | exit 0: 110 story-theme runs, 0 serious or critical; 22 notes, all excepted (the Prose document's ten and the scrolling listbox story's twelve); no new exception |
+| `mutation -- --base 493142e` | exit 0: 115 mutants on the changed lines of 3 files, none survived; 1 timeout, 27 compile errors, 1 zero-mutant entry, 2 equivalent records (`mutation.log`) |
+| plants | exit 0: 301 plants of 17 gates and the registry, every plant as expected; this includes `visual/fail-token-changed` with the five link findings, `storybook-build/fail-empty-index` with the link stories' empty copy and the manifest plants with the link's module |
