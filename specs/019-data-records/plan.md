@@ -24,8 +24,9 @@ history and evidence chain.
   dialog (R-02, R-07). The caption is not sticky until 009's module has an option, requested of 009's owner, that
   keeps a pinned start box out of the start fade (R-17; Q-F decided (b)). Until then it scrolls with the table, starts
   at the table's start edge, and is capped by the box's measured width, less the end fade only while it shows, so it
-  wraps inside the box at rest. The width is read through an empty `block-size: 0` measuring element, so writing the
-  cap raises no `ResizeObserver` loop, and the caption has no inline size containment, so its longest word widens a
+  wraps inside the box at rest. The exact (unrounded) width is read through an empty `block-size: 0` measuring
+  element, and the end fade's share is written one animation frame after the fade changes, outside 009's
+  `ResizeObserver` delivery, so writing the cap raises no `ResizeObserver` loop, and the caption has no inline size containment, so its longest word widens a
   fitting table instead of making it overflow (R-07).
 - **Timeline and chain.** Each renders a shadow `<ol role="list">` with one `<li role="listitem">` per visible item,
   assigned manually (R-08). Each list is named on the `<ol>`, and a blank host `aria-label` counts as absent (R-09).
@@ -95,7 +96,8 @@ engine-floor feature: manual slot assignment (013) and the module's features (00
   own per-instance sheet, which holds the measured caption width (R-07).
 - Per container: one `MutationObserver`. The chain also has one `ResizeObserver`, on its list and its items. The data
   table has one `ResizeObserver` of its own, on its `block-size: 0` measuring element (not on `.region-box`), for
-  the caption's cap (R-07).
+  the caption's cap, and at most one pending animation frame request per instance, for the end fade's share of the
+  cap (R-07).
 
 **Constraints**: strict CSP with no exception; token-only styles with no new `style-lint` allowance (every value is a
 token, a keyword, a system colour in forced colours, `0`, a `%` (which `token-only.ts` allows: the table's
@@ -268,7 +270,11 @@ Every phase with stories also does the following:
      - the element in a `<dialog>`, an inline-block and a start-aligned column flex: never 0 px wide, one observer
        callback, a stable width (the cap equals the table's width, so no shrink step) and no `ResizeObserver` loop
        error; and no loop error in a block host on first load with a caption that rewraps between the fallback and the
-       measured cap, in the narrow-column resize, or when a `hidden` host is shown (R-02, R-07);
+       measured cap, in the narrow-column resize, when a `hidden` host is shown, or when a cell edit takes a
+       block-host table from fitting to overflowing and back with a caption that rewraps across the end fade's depth
+       (one end fade write per change); the one-long-word inline-block with a caption text (or test-only
+       `letter-spacing`) whose box width has a fractional part between 0.1 and 0.4 px, written unrounded (R-02,
+       R-07);
      - the prose override in Chromium;
      - print to PDF.
    - **Red.**
@@ -286,8 +292,11 @@ Every phase with stories also does the following:
        to the middle and the end (start still equal to the table's), a fitting table (no `data-fade`, a long caption
        wrapping at the table's width), a narrow column resized from 400 to 600 px whose table overflows and whose
        caption is longer than the box at both widths (`data-fade="end"` asserted at rest before the line boxes), and
-       the no-`ResizeObserver`-loop check around a block host on first load with a caption that rewraps between the
-       fallback and the measured cap, the narrow-column resize, a `hidden` host shown, and the shrink-to-fit bodies.
+       the end-fade body (a 400 px block-host table that fits, a cell edit making it overflow and the edit undone:
+       `data-fade="end"` at rest and a two-line caption inside the unmasked extent, then no `data-fade` and one line),
+       and the no-`ResizeObserver`-loop check around a block host on first load with a caption that rewraps between
+       the fallback and the measured cap, the narrow-column resize, a `hidden` host shown, both edits of the end-fade
+       body, and the shrink-to-fit bodies (the one-long-word body with its rounding-down precondition asserted first).
      - The element as a default flex item and as a `1fr` grid item at 320 px (R-02).
      - The shrink-to-fit bodies of R-02: in an open `<dialog>`, an inline-block and a start-aligned column flex, the
        host as wide as the table plus the ring room on both sides (never 0 px), the caption not narrower than its

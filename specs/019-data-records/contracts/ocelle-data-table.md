@@ -37,17 +37,23 @@ states (branch; rechecked by T001).
   its region overflows instead of the page (R-02, FR-009);
 - `:host([hidden]) { display: none; }`;
 - `:host .region-track { inline-size: fit-content; }` (R-03, decision 1);
-- `:host .box-size { block-size: 0; }`, the measuring element below (R-07, PLAN-FRESH-3-001 (a));
-- `:host .region-box[data-fade="end"], :host .region-box[data-fade="both"] { --data-table-end-fade:
-  var(--ocelle-scroller-fade-size); }`, so the caption's cap subtracts the end fade only while it shows (R-07,
-  PLAN-FRESH-3-002 (b)).
+- `:host .box-size { block-size: 0; }`, the measuring element below (R-07, PLAN-FRESH-3-001 (a)).
+
+No shadow rule selects on `data-fade`: the end fade's share of the caption's cap is written by script one animation
+frame after the fade changes (below; R-07, PLAN-FRESH-3-002 (b), verify 1).
 
 No box sets `container-type` (PLAN-FRESH-2-001): inline size containment would make the element 0 px wide in a
 shrink-to-fit host (R-02). The element adopts one per-instance constructed sheet of its own, after
-`overflowRegionStyles`, holding `.region-track { --data-table-box-size: <n>px; }`. Its own `ResizeObserver` observes
-the measuring element `.box-size`, an empty `block-size: 0` node after `.region-frame`, and writes `.region-box`'s
-client inline size there (R-07). It does not observe `.region-box`: the written cap rewraps the caption, which changes
-the box's block size and would raise a `ResizeObserver` loop error (PLAN-FRESH-3-001). The measuring element is one
+`overflowRegionStyles`, holding `.region-track { --data-table-box-size: <n>px; --data-table-end-fade: … }`. Its own
+`ResizeObserver` observes the measuring element `.box-size`, an empty `block-size: 0` node after `.region-frame`, and
+writes its unrounded inline size there (the entry's `contentBoxSize[0].inlineSize`, equal to `.region-box`'s exact
+width, never the rounded `clientWidth`; R-07). It does not observe `.region-box`: the written cap rewraps the caption,
+which changes the box's block size and would raise a `ResizeObserver` loop error (PLAN-FRESH-3-001). When the
+rendered `data-fade` moves into or out of `end` or `both`, `updated()` requests one animation frame (at most one
+pending, cancelled on disconnect), whose callback reads the box's current `data-fade` and sets
+`--data-table-end-fade: var(--ocelle-scroller-fade-size)` while the end fade shows or removes it otherwise. It is
+never written in the task in which the fade changes, because that task is inside 009's `ResizeObserver` delivery and
+the rewrap would raise the loop error (PLAN-FRESH-3-002 verify 1). The measuring element is one
 internal node outside 009's structure; nothing of the module changes (FR-008). Both properties are internal (no
 `--ocelle-` prefix, not in the manifest, not documented hooks).
 
@@ -96,7 +102,9 @@ The caption is capped by the box's measured width (`--data-table-box-size`, fall
 sides and less the end fade only while it shows, so it wraps inside the box's unmasked width at rest and a fitting
 table's cap is the table's own width. The caption has no inline size containment: its longest word widens the table,
 as CSS tables do, so a fitting table never overflows because of its caption (PLAN-FRESH-3-002 (b)). The observer
-watches the measuring element, whose size the cap cannot change, so the measurement cannot feed back (R-07). 009's start fade masks the box's start edge, so
+watches the measuring element, whose size the cap cannot change, and writes its exact width, and the end fade's share
+is written one frame after the fade changes, outside any `ResizeObserver` delivery, so neither write can feed back
+(R-07). For that one frame the caption may run under a newly shown end fade. 009's start fade masks the box's start edge, so
 a caption pinned at `inset-inline-start: 0` would fade there. The data table asks 009's owner for a module option
 that keeps a pinned start box out of the start fade (R-17) and does not change the module. Until that option is on
 `main`, the caption is not sticky (Q-F, decided (b) by PLAN-FRESH-2-002's option (c)). It scrolls with the table, starts

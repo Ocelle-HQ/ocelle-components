@@ -91,9 +91,11 @@ stays op 016's gate-plant record in its set form, which the review compares line
 | The caption's `max-inline-size` cap removed (R-07) | the 320 px caption bodies |
 | The measured box size never written, so the cap falls back to `--ocelle-measure-container` (R-07) | the narrow-column caption body, whose table overflows at both 400 and 600 px (`data-fade="end"` asserted at rest first) and whose caption is longer than the box at both widths (PLAN-FRESH-3-003) |
 | The observer moved back to `.region-box`, writing synchronously in its callback (R-07, PLAN-FRESH-3-001) | the no-loop check around the block host on first load with a caption that rewraps between the fallback and the measured cap |
-| The end fade subtracted from the cap unconditionally (`--data-table-end-fade` set on `.region-box` whatever its `data-fade`; R-07, PLAN-FRESH-3-002) | the one-long-word narrow-table body (no tab stop, no `data-fade`), the fitting-table caption body (wraps at the table's width) |
+| The end fade subtracted from the cap unconditionally (`--data-table-end-fade` written whatever the box's `data-fade`; R-07, PLAN-FRESH-3-002) | the one-long-word narrow-table body (no tab stop, no `data-fade`), the fitting-table caption body (wraps at the table's width) |
 | `--data-table-end-fade` never set (R-07) | the 320 px at-rest caption body (line boxes inside the unmasked extent) |
 | `contain: inline-size` added to the caption (R-07, PLAN-FRESH-3-002 (b)) | the one-long-word narrow-table body |
+| The box size written as `.region-box`'s `clientWidth` (rounded) instead of the entry's unrounded inline size (R-07, PLAN-FRESH-3-002 verify 1) | the no-loop check around the one-long-word narrow-table body, whose precondition (the box's unrounded width has a fractional part between 0.1 and 0.4 px) is asserted first |
+| The end fade written in the task in which the fade changes (synchronously in `updated()`, or by a shadow rule on `.region-box[data-fade="end"]` and `[data-fade="both"]`; R-07, PLAN-FRESH-3-002 verify 1) | the no-loop check around the end-fade body (a block-host table taken from fitting to overflowing by a cell edit, its caption rewrapping across the fade's depth) |
 | The caption made sticky with `inset-inline-start: var(--ocelle-scroller-fade-size)` (Q-F (a)) | the caption bodies at rest and scrolled (start equal to the table's) |
 | The caption text read as `textContent` (R-04) | the `hidden`, `aria-hidden` and `img alt` caption bodies |
 | The observer without `characterData` (R-04) | US1-16, the `text` run |

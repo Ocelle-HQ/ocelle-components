@@ -70,7 +70,9 @@ containment (R-07), so its longest word widens the table, as CSS tables do, and 
 because of its caption. Phase 1's red commit has one more shrink-to-fit body: a two-column narrow table ("Ok" and "3")
 whose caption, "Deployment approvals pending", has words wider than the grid, in an inline-block. It asserts that the region does not overflow (the box has no tab stop, no `role` and no
 `data-fade`), that the table is as wide as the caption's longest word within 0.5 px, and that the host is the table
-plus the ring room on both sides. In a host whose inline size is bounded, a caption word wider than the box less the
+plus the ring room on both sides. It is one of the no-loop bodies of R-07, with the precondition that the box's
+unrounded width rounds down, so it also guards the unrounded box size write (PLAN-FRESH-3-002 verify 1). In a host
+whose inline size is bounded, a caption word wider than the box less the
 ring room overflows the box as any unbreakable content does, and the region scrolls; the README states this with the
 caption rules.
 
@@ -251,18 +253,40 @@ prose table's query container). The data table bounds its caption without a quer
   first load, whenever the caption's line count differs between the fallback cap and the measured one; the same page
   observing a `block-size: 0` sibling gave one callback, no error and the same cap. 009's observer belongs to the
   module and is not reached into. This observer sizes the caption only, so R-05's overflow triggers are unchanged. On
-  each callback the observer writes `.region-box`'s client inline size, in px, as the inherited custom
-  property `--data-table-box-size` on `.region-track`. It writes it into the element's own per-instance constructed
+  each callback the observer writes the measuring element's unrounded inline size (the entry's
+  `contentBoxSize[0].inlineSize`, in px, not transformed), which is `.region-box`'s exact width: 009's box has no
+  inline padding or border and, with no bounded block size, no vertical scrollbar. It never writes `clientWidth`,
+  which rounds to a whole pixel (PLAN-FRESH-3-002 verify 1, "No feedback" below). The value is written as the
+  inherited custom property `--data-table-box-size` on `.region-track`. It writes it into the element's own per-instance constructed
   stylesheet, adopted after `overflowRegionStyles` (`replaceSync` once, then `setProperty`, as 009's module does for
   its mask figures). There is no `style` attribute, so strict CSP holds. The slotted table and its caption inherit the
   property through the flat tree. The property is internal: it has no `--ocelle-` prefix, it is not a token, not
   manifest surface and not a documented hook, and `token-only` checks `--ocelle-*` names only, so it needs no new
   allowance.
-- **The end fade, only while it shows (PLAN-FRESH-3-002, operator decision (b)).** The data table's own shadow
-  styles set the inherited internal property `--data-table-end-fade: var(--ocelle-scroller-fade-size)` on
-  `:host .region-box[data-fade="end"]` and `:host .region-box[data-fade="both"]`, and nothing on any other box, so it
-  reaches the track, the slotted table and its caption only while the end fade shows. It has no `--ocelle-` prefix and
-  is not surface, as `--data-table-box-size`.
+- **The end fade, only while it shows, written one frame later (PLAN-FRESH-3-002, operator decision (b); verify 1).**
+  The cap subtracts the end fade only while `.region-box` has `data-fade="end"` or `data-fade="both"`. The element
+  writes the inherited internal property `--data-table-end-fade` on `.region-track` in the same per-instance sheet:
+  `var(--ocelle-scroller-fade-size)` while the end fade shows, and the property removed otherwise. No shadow rule on
+  `.region-box[data-fade=…]` sets it, and it is never written in the task in which the fade changes. 009's module
+  decides the fade in its own `ResizeObserver` callback on `.region-box`, and the element renders the new `data-fade`
+  in Lit's update, a microtask inside that delivery. A cap that changed there would rewrap the caption and change
+  `.region-box`'s block size at the depth just delivered, and the platform raises the "ResizeObserver loop" error. The
+  squad measured that in headless Chrome: a 400 px block host whose table fits, a caption one line long at the 390 px
+  cap and two lines at 358 px, and a cell edit that makes the table overflow gave "ResizeObserver loop completed with
+  undelivered notifications."; the same page with the fade subtracted unconditionally gave none. A `tbody` or table
+  swap, a late web font, a `hidden` host shown or any change that toggles the end fade while the host's inline size
+  stays put takes the same path. So `updated()` compares the rendered fade's end state with the one last written and,
+  when they differ, requests one animation frame (at most one pending request per instance, cancelled on disconnect).
+  The frame callback reads `.region-box`'s current `data-fade` and writes or removes the property. Animation frame
+  callbacks run before the frame's layout and its `ResizeObserver` gathering, so the rewrap reaches 009's observer as
+  a fresh notification in that frame, not as a change inside a delivery. The cap changes only how the caption wraps:
+  a table that overflows by its grid still overflows, a fitting table's caption contribution stays within the box less
+  the ring room, and a caption word that overflows a bounded box still overflows it, so 009 leaves `data-fade` as it
+  is and there is no second write. A scroll that moves the fade between `both` and `start` takes the same deferred
+  write, outside any delivery. The cost is one frame: for the frame in which the end fade first shows the caption may
+  run under it, and for the frame in which it goes the caption is up to the fade's depth narrower than its cap. After
+  `settle` (two animation frames) both are gone. The property has no `--ocelle-` prefix and is not surface, as
+  `--data-table-box-size`.
 - **The cap.** Block 1 and the prose override cap the caption at `max-inline-size: calc(var(--data-table-box-size,
   var(--ocelle-measure-container)) - 2 * (var(--ocelle-focus-offset) + var(--ocelle-focus-width)) -
   var(--data-table-end-fade, 0 * var(--ocelle-scroller-fade-size)))`. That is the box's visible width, less the
@@ -273,18 +297,32 @@ prose table's query container). The data table bounds its caption without a quer
 - **No feedback.** The caption has no inline size containment (PLAN-FRESH-3-002 (b); round 2's `contain:
   inline-size` is dropped). Its min-content width, its longest word, takes part in the table's width as CSS tables
   give it, so a fitting table is never made to overflow by a caption word; its max-content width does not, so a long
-  caption over a narrow table wraps at the table's width. In a fitting shrink-to-fit host the measured cap equals the
-  table's width, which the caption's min-content contribution already fits, so the write shrinks nothing and the
-  host's width is stable after one write. In a bounded host the measuring element's inline size does not depend on
-  the table. Neither axis of the observed node changes when the cap is written, so there is no loop. Phase 1's spike
-  confirms both: one callback, no error and a stable width in each shrink-to-fit host. A caption word wider than a
-  bounded box less the ring room overflows the box as unbreakable cell content does, and the region scrolls; the
-  README states it (R-02).
+  caption over a narrow table wraps at the table's width. Three paths that could feed a write back into a
+  `ResizeObserver` delivery are closed:
+  - *The observed node.* Neither axis of `.box-size` depends on the caption or the table, so the box size write never
+    changes the node the element's observer watches (PLAN-FRESH-3-001). A rewrap does change `.region-box`'s block
+    size, but `.region-box` is deeper than `.box-size`, so 009's observer receives it in the same frame.
+  - *The exact width.* The written width is unrounded, so in a fitting shrink-to-fit host the cap equals the table's
+    width exactly, which the caption's min-content contribution already fits: the write shrinks nothing and the
+    host's width is stable after one write. A `clientWidth` write would round to a whole pixel. When the box's width
+    has a fraction under 0.5 px and the table's width is set by the caption's longest word, the cap would come out
+    under that word, `max-inline-size` would clamp the caption's min-content contribution, and the table, the host and
+    `.box-size` would shrink after the write: a loop error on first load. The squad measured that in headless Chrome
+    with the one-long-word body of R-02 (an inline-block, cells "a" and "b", caption "Deployment approvals pending":
+    box 95.4 then 95.0 px, table 85.4 then 85.0 px, the loop error); writing the exact width gave one callback and no
+    error.
+  - *The end fade.* It is written one animation frame after the fade changes, outside any delivery (above).
+
+  In a bounded host the measuring element's inline size does not depend on the table. Phase 1's spike confirms all
+  three: one callback, no error and a stable width in each shrink-to-fit host, and one end fade write per fade change
+  in a block host. A caption word wider than a bounded box less the ring room overflows the box as unbreakable cell
+  content does, and the region scrolls; the README states it (R-02).
 - **The flat tree.** The caption is slotted content (a descendant of the slotted table), so both properties must
   reach it through the flat tree. Phase 1's spike measures this in Chromium, and that no `ResizeObserver` loop error
   is raised in a block host on first load with a caption that rewraps between the fallback and the measured cap, in
-  the narrow-column resize, when a `hidden` host is shown, and in the three shrink-to-fit hosts of R-02. A failure
-  goes to the operator.
+  the narrow-column resize, when a `hidden` host is shown, when a cell edit takes a block-host table from fitting to
+  overflowing and back with a caption that rewraps across the end fade's depth, and in the shrink-to-fit hosts of
+  R-02, the one-long-word body with a box width that rounds down among them. A failure goes to the operator.
 - **Before upgrade.** Outside the element (pre-upgrade) both properties are unset. The fallback
   `--ocelle-measure-container` (`100cqi`) resolves against the nearest query container or, with none, the small
   viewport, and the end fade falls back to zero. That bounds the caption at the viewport's width less the ring room.
@@ -304,13 +342,24 @@ Phase 1's red commit has these caption bodies:
   body first asserts `data-fade="end"` at rest (`scrollLeft` 0), then that every caption line box lies inside the
   box's unmasked extent. With a fitting table the caption lies inside the box whatever the cap is, so the table must
   overflow for the body to prove that the cap follows the measured box and not the viewport.
+- **The end fade toggled by content** (PLAN-FRESH-3-002 verify 1). A 400 px block host whose table fits and fills the box, with a
+  caption one line long at the fitting cap (the box less the ring room, 390 px) and two lines at that cap less the end
+  fade's depth (358 px).
+  A cell's text is edited so the table overflows. After `settle` the body asserts `data-fade="end"` at rest
+  (`scrollLeft` 0), that the caption has two line boxes, and that each lies inside the box's unmasked extent. The edit
+  is then undone, and after `settle` the box has no `data-fade` and the caption has one line box again.
 - **No loop.** The in-process test records `error` events and `console.error`, and asserts none carries
-  "ResizeObserver loop", around each of these (PLAN-FRESH-3-001): a block host on first load whose caption wraps to
-  a different line count at the fallback cap and at the measured cap (a caption one line long at the table's width and
-  two lines at the measured cap); the narrow-column resize; a `hidden` host shown; and the three shrink-to-fit bodies
-  of R-02. It uses the recorder and synthetic self-check that R-12 describes; phase 1 builds them in
-  `packages/elements/test/data-table.test.ts`, and phase 3 reuses them. The element plant "the observer back on
-  `.region-box`, writing synchronously" must fail it (contracts/checks.md).
+  "ResizeObserver loop", around each of these (PLAN-FRESH-3-001, PLAN-FRESH-3-002 verify 1): a block host on first
+  load whose caption wraps to a different line count at the fallback cap and at the measured cap (a caption one line
+  long at the table's width and two lines at the measured cap); the narrow-column resize; a `hidden` host shown; the
+  end-fade body above, both edits; and the shrink-to-fit bodies of R-02, the one-long-word body among them. That
+  body first asserts, as a precondition, that the box's unrounded inline size has a fractional part between 0.1 and
+  0.4 px, so a rounded write would land under the caption's longest word; phase 1's spike picks the caption text (or a
+  test-only `letter-spacing` on it) that gives this in the test font. It uses the recorder and synthetic self-check
+  that R-12 describes; phase 1 builds them in `packages/elements/test/data-table.test.ts`, and phase 3 reuses them.
+  Three element plants must fail it (contracts/checks.md): "the observer back on `.region-box`, writing
+  synchronously" (the first-load body), "the box size written as `clientWidth`" (the one-long-word body) and "the end
+  fade written in the task in which the fade changes" (the end-fade body).
 
 The spec edge case "never cut at 320 px (it wraps)" is then measured, not only spiked.
 
