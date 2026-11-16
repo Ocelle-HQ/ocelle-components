@@ -44,3 +44,8 @@
 - **Answer:** "Keep main's, convert ours".
 - **The clash:** main (mission 013, 23ba5c5) and this branch both add a browser command `emulateReducedMotion`. Main's takes `(mode: "reduce" | "no-preference")`; the branch's takes `(on: boolean)`.
 - **What changes:** the merge keeps main's command. The branch's calls are rewritten: `true` becomes `"reduce"` and `false` becomes `"no-preference"`. In the other conflicting files the merge keeps both sides, and `vitest-config.test.ts` follows the decision above.
+
+## Re-sign done, landing fold skipped (2026-11-16, landing #47)
+
+- **Re-sign:** the operator chose "Go ahead, push after checks". 07cf18b was re-signed with `reviews/landing/resign-history.sh`: the archive ref `archive/claude/016-overlays-pre-resign` holds the old head e80215d, and the remap commit is 69561d6. gate:signoff and tdd-check (phases 1-4 pass, phase 5 exempt) were green, recorded in 8d27bc9, before the force-push with lease.
+- **Fold:** asked whether to fold the 24 landing commits since the phase 5 fold, the operator chose "Skip the fold". The PR is squash-merged.
