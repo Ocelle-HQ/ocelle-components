@@ -57,6 +57,23 @@ ocelle-action-row or ocelle-tooltip; each element meeting #7's Done-when checkli
   re-inserts or re-renders an indicator more often than every 5 s keeps it pulsing (SPEC-3-08).
 - Spec gate: approved after this final fix.
 
+**Operator decisions at plan squad round 1** (human:jeroennouwsdev; `reviews/plan/round-1/refute.md`, applied in
+`reviews/plan/round-1/fixes-1.md`):
+
+- Indicator naming (PLAN-CORRECTNESS-1-005), "(b)": `label` is the only name source; a host `aria-label` is
+  unsupported and not read, the README says so, and a scenario pins what Chromium then exposes (FR-014, US1-8).
+- `aria-pressed` in link mode (PLAN-CORRECTNESS-1-007), "(a)": the pill gives no `:state(pressed)` in link mode as its
+  own rule; `ocelle-button` as merged sets the state from the held value in link mode too, a difference recorded for
+  mission 012 and not changed here (FR-031, US4-10, Edge Cases). The SPEC-3-03 premise "match `ocelle-button`" holds
+  for applying `aria-pressed` (not on a link), not for the state.
+- Start cases of the pulse (PLAN-CORRECTNESS-1-013), "(a)": a state-preserving move (`moveBefore()`) and a reveal from
+  `hidden="until-found"` are not start cases; their behaviour is pinned by tests after the setup spike (FR-012 (b),
+  (d); US1-4).
+- Same-task `pulse` toggles (PLAN-CORRECTNESS-1-014), "(b)": FR-012 (a) counts rendered changes only; a removal and
+  re-addition within one task coalesce and start no run, the README says so and a test pins it (FR-012 (a); US1-4).
+- The metric label's name (PLAN-A11Y-SECURITY-1-001), "(a)": FR-022 and US2-2 stand; the plan draws the uppercase
+  label `aria-hidden` and names the term by a visually hidden copy as written.
+
 **Consumers** (constitution VI): kitty-mission-ui's Kitty Desktop and Kitty Dashboard screens, which today use the
 `sk-pill-tag` (32 uses: `status`, `title`, slotted content, badge use), `sk-status-indicator` (2 uses: `tone`) and
 `sk-metric` (2 uses: `label`, `display-value`) equivalents; spec-kitty-design #498, #509, #524 and #526 name the gaps
@@ -132,15 +149,16 @@ accessibility tree.
    dot, while the dot itself stays fully opaque at its full size in every frame; the animation runs a fixed number of
    iterations taken from a motion token, ends no later than 5 s after it started, and afterwards no animation runs and
    the dot is shown solid while `pulse` is still set; **When** `pulse` is removed before then, **Then** the animation
-   stops; **When** `pulse` is set again (removed, then added), **Then** the animation runs again on the same terms;
-   **When** the element is removed from the document and inserted again (a move, a re-sort, a keyed re-render) with
-   `pulse` set, **Then** one run starts on the same terms; **When** the motion preference changes from `reduce` to no
-   preference while `pulse` is set, **Then** one run starts at that moment on the same terms; **When** a connected
-   indicator with `pulse` set that was not rendered (it or an ancestor `display: none`, the `hidden` attribute
-   included, or inside a closed `<details>`) starts being rendered (a tab panel shown, a `<details>` opened), **Then**
-   one run starts at that moment on the same terms; and no other change starts or restarts it, whatever it is (FR-012
-   lists the four cases in full; WCAG 2.2.2). The 5 s limit holds for the default values of the pulse's motion tokens
-   (FR-041).
+   stops; **When** `pulse` is set again (removed and rendered, then added in a later task), **Then** the animation runs
+   again on the same terms, while a removal and re-addition within one task start no run; **When** the element is
+   removed from the document and inserted again (a move, a re-sort, a keyed re-render) with `pulse` set, **Then** one
+   run starts on the same terms, while a state-preserving move (`moveBefore()`) keeps the run under way; **When** the
+   motion preference changes from `reduce` to no preference while `pulse` is set, **Then** one run starts at that moment
+   on the same terms; **When** a connected indicator with `pulse` set that was not rendered (it or an ancestor `display:
+   none`, the `hidden` attribute in its hidden state included, or inside a closed `<details>`) starts being rendered (a
+   tab panel shown, a `<details>` opened), **Then** one run starts at that moment on the same terms; and no other change
+   starts or restarts it, whatever it is (FR-012 lists the four cases in full; WCAG 2.2.2). The 5 s limit holds for the
+   default values of the pulse's motion tokens (FR-041).
 5. **Given** `pulse` and `prefers-reduced-motion: reduce`, **When** it renders, **Then** no animation runs and the dot
    is shown solid; **When** the preference changes to `reduce` while a run is under way, **Then** the run stops at
    once and the dot is shown solid.
@@ -148,6 +166,11 @@ accessibility tree.
    is visible against the system background.
 7. **Given** a `tone` that is not in the vocabulary, **When** it renders, **Then** it looks exactly like `neutral` and
    no error is thrown.
+8. **Given** a host `aria-label` on the indicator, present or blank, with and without `label`, **When** it renders,
+   **Then** the element's own accessibility semantics (role `img` with the label's name, or hidden) follow `label`
+   alone exactly as without the attribute, and what Chromium's accessibility tree then shows for the attribute is
+   pinned by a test; the README says a host `aria-label` is unsupported (FR-014; operator decision,
+   PLAN-CORRECTNESS-1-005).
 
 ---
 
@@ -273,7 +296,8 @@ switch its mode after render (static, button, link, in each direction), with and
 10. **Given** a button-mode pill with `aria-pressed="true"` and `aria-current="true"` moved, **When** a link-mode
     `href` is set, **Then** `aria-current` is on the inner link and `:state(current)` still matches, while
     `aria-pressed` stays moved: it is not on the host, its mirror `data-ocelle-moved-aria-pressed="true"` stays, it is
-    not applied to the inner link, and `:state(pressed)` no longer matches (a link cannot be pressed, 012 FR-009);
+    not applied to the inner link, and `:state(pressed)` no longer matches (a link cannot be pressed, 012 FR-009; the
+    state rule is the pill's own, FR-031);
     **When** the `href` is removed again, **Then** the stored `aria-pressed="true"` is applied to the inner button
     again and `:state(pressed)` matches; **When** the inner control had keyboard focus at either switch, **Then** the
     new inner control has focus afterwards and the focus ring shows on it (it shows only if it showed before the
@@ -336,9 +360,14 @@ container width, the text and `disabled`; hover, focus and press Escape; read th
 - A tone, status, variant, density or layout set to an unknown value falls back to its default silently.
 - `pulse` on a `neutral` indicator: allowed; the vocabulary does not decide which tones pulse, the host does.
 - An indicator with an empty or whitespace-only `label`: treated as no label (decorative).
+- A host `aria-label` on an indicator: unsupported and not read; `label` alone decides its semantics, and the README
+  says so (US1-8, FR-014).
+- `pulse` removed and set again within one task (a framework writing both in one render): the changes coalesce and no
+  new run starts; the README tells hosts to set it again in a later task (FR-012 (a)).
 - `disabled` on a static pill (neither `interactive` nor a link-mode `href`) has no effect.
-- `aria-pressed` on a link-mode pill: moved and mirrored as on `ocelle-button`, but not applied to the link (a link
-  cannot be pressed, 012 FR-009) and giving no `:state(pressed)`; it is applied again if the pill returns to button
+- `aria-pressed` on a link-mode pill: moved and mirrored and, as on `ocelle-button`, not applied to the link (a link
+  cannot be pressed, 012 FR-009); by the pill's own rule it gives no `:state(pressed)` (`ocelle-button` as merged
+  does; operator decision, PLAN-CORRECTNESS-1-007); it is applied again if the pill returns to button
   mode, and the README says it has no effect on a link (FR-030, FR-035; operator decision, SPEC-3-03).
 - A pill whose mode changes after render (a filter that becomes a link, a framework binding `href` to `""`): moved
   values follow the mode as FR-035 sets out; none is lost. If the inner control had focus at a switch between button
@@ -399,13 +428,18 @@ container width, the text and `disabled`; hover, focus and press Escape; read th
   the dot keeps its full opacity and size. Its duration and its iteration count come from motion tokens (FR-041), and
   the whole animation ends at most 5 s after it starts (WCAG 2.2.2); afterwards no animation runs and the dot is
   shown solid while `pulse` stays set. A run starts in exactly these four cases, and this list is complete: (a) when
-  `pulse` goes from absent to present while the element is connected and rendered; (b) each time the element is
-  connected to a document with `pulse` set (its first render, and every reconnection after a removal or a move, which
-  is a fresh render: the element keeps no pulse state across a disconnection; operator decision after check 3); (c)
+  `pulse` goes from absent to present while the element is connected and rendered, as a rendered change (a removal
+  and re-addition within one task coalesce into no change and start no run, which the README states; operator
+  decision, PLAN-CORRECTNESS-1-014); (b) each time the element is connected to a document with `pulse` set (its first
+  render, and every reconnection after a removal or a move, which is a fresh render: the element keeps no pulse state
+  across a disconnection; operator decision after check 3); a state-preserving move (`moveBefore()`) is not a
+  reconnection here and keeps the run under way (operator decision, PLAN-CORRECTNESS-1-013); (c)
   when the motion preference changes from `reduce` to no preference while the element is connected with `pulse` set;
   and (d) each time the element starts being rendered while connected with `pulse` set, having not been rendered
-  because it or an ancestor was `display: none` (the `hidden` attribute included) or inside a closed `<details>` (a
-  hidden tab panel shown, a `<details>` opened, a `hidden` ancestor revealed). Each case keeps no state from earlier
+  because it or an ancestor was `display: none` (the `hidden` attribute in its hidden state included) or inside a closed
+  `<details>` (a hidden tab panel shown, a `<details>` opened, a `hidden` ancestor revealed); a reveal from
+  `hidden="until-found"` is not a start case (operator decision, PLAN-CORRECTNESS-1-013). What a `moveBefore()` move
+  and an `until-found` reveal do is pinned by tests. Each case keeps no state from earlier
   runs. A case that occurs while the element is not rendered starts no run of its own; the run starts when (d) occurs.
   No other change starts or restarts a run: not a change of `tone`, `label` or any other attribute, the theme, the
   element's size or position, `visibility` or opacity, or scrolling it out of view and back. Without `pulse`, no
@@ -420,7 +454,9 @@ container width, the text and `disabled`; hover, focus and press Escape; read th
   (c)).
 - **FR-014**: With a non-empty (after trimming) `label`, the element exposes exactly one accessibility node of role
   `img` named by the label. With no label, the element is hidden from the accessibility tree entirely, and the README
-  states that a host must then place text naming the state next to it (state is never shown by colour alone).
+  states that a host must then place text naming the state next to it (state is never shown by colour alone). `label`
+  is the only name source: the element does not read a host `aria-label`, which is unsupported (the README says so);
+  what Chromium exposes for one is pinned by US1-8 (operator decision, PLAN-CORRECTNESS-1-005).
 - **FR-015**: In forced-colours mode the dot is drawn in a system colour and stays visible against the system
   background.
 - **FR-016**: The indicator does not signal loading or busy state to assistive technology (no `aria-busy`, no live
@@ -445,11 +481,11 @@ container width, the text and `disabled`; hover, focus and press Escape; read th
 
 - **FR-025**: Attributes and properties: `status` (status vocabulary, default `neutral`), `variant` (`pill`, the
   default, or `badge`), `density` (`default` or `compact`), `interactive` (boolean), `href` (string), `disabled`
-  (boolean), all reflected; and `label` (string, not reflected), which names the inner control of an interactive pill
-  in 012's FR-006 precedence, trimmed, empty or whitespace-only counting as none (as 012's FR-013 defines it).
-  `label` changes only the accessible name: the visible text and the tooltip text stay the full text (FR-034). On a
-  static pill `label` has no effect. Unknown `variant` and `density` values fall back to their defaults and stay in
-  the attribute as written.
+  (boolean), all reflected; and `label` (attribute and property, string, not reflected), which names the inner control
+  of an interactive pill in 012's FR-006 precedence, trimmed, empty or whitespace-only counting as none (as 012's FR-013
+  defines it). `label` changes only the accessible name: the visible text and the tooltip text stay the full text
+  (FR-034). On a static pill `label` has no effect. Unknown `variant` and `density` values fall back to their defaults
+  and stay in the attribute as written.
 - **FR-026**: Content: the default slot holds the pill's text; the `icon` slot follows mission 005's slot convention.
   Slotted icons are decorative and add nothing to the accessibility tree.
 - **FR-027**: A static pill (neither `interactive` nor a link-mode `href`) is not focusable, has no role of its own,
@@ -478,22 +514,24 @@ container width, the text and `disabled`; hover, focus and press Escape; read th
   re-implementing them; where FR-035 needs more of them (writing held values back to the host of a static pill), the
   plan extends them so that `ocelle-button` and `ocelle-action-row` keep their behaviour and their passthrough tests
   pass unchanged (SPEC-3-05).
-- **FR-031**: **Activate event.** Each activation of an enabled interactive pill that delivers a `click` to the host
-  (a pointer click, Enter or Space in button mode, Enter in link mode, the element's `click()`), in button mode and
-  in link mode, also dispatches one `ocelle-pill-tag-activate` `CustomEvent` from the host with `bubbles: true`,
-  `composed: true`, `cancelable: true` and `detail` `{}`, on the same terms as 012's `ocelle-button-activate`
-  (012 FR-023): it is dispatched before that `click` reaches any bubble-phase listener on the host or its ancestors;
-  `preventDefault()` on it cancels the `click`'s default action (in link mode no navigation; in button mode the
-  `click` is still delivered with `defaultPrevented` `true`); in link mode a click with Ctrl, Meta, Shift or Alt
-  held dispatches no `ocelle-pill-tag-activate`, its `click` is delivered and the browser's own modifier handling
-  applies; a middle click dispatches nothing. A disabled pill, or a static pill, dispatches no
-  `ocelle-pill-tag-activate` (operator decision, SPEC-1-01). In button mode a moved `aria-pressed` of `true` gives the
-  pressed look and exposes the custom state `:state(pressed)`; any other value (`false`, `mixed`, which reaches the
-  inner button as written and is reported mixed, or a cleared value) gives neither, as on `ocelle-button` (012's data
-  model; operator decision, SPEC-3-03). In button and link mode a moved `aria-current` present and other than
-  `false` exposes `:state(current)`, with no visual mark of its own, as `ocelle-button` does (012 FR-004, FR-009). A
-  custom state follows the value applied to the inner control only: an attribute on the host of a static pill, or an
-  `aria-pressed` held but not applied in link mode, gives no custom state. The pill has no other custom state.
+- **FR-031**: **Activate event.** Each activation of an enabled interactive pill that delivers a `click` to the host (a
+  pointer click, Enter or Space in button mode, Enter in link mode, the element's `click()`), in button mode and in link
+  mode, also dispatches one `ocelle-pill-tag-activate` `CustomEvent` from the host with `bubbles: true`, `composed:
+  true`, `cancelable: true` and `detail` `{}`, on the same terms as 012's `ocelle-button-activate` (012 FR-023): it is
+  dispatched before that `click` reaches any bubble-phase listener on the host or its ancestors; `preventDefault()` on
+  it cancels the `click`'s default action (in link mode no navigation; in button mode the `click` is still delivered
+  with `defaultPrevented` `true`); in link mode a click with Ctrl, Meta, Shift or Alt held dispatches no
+  `ocelle-pill-tag-activate`, its `click` is delivered and the browser's own modifier handling applies; a middle click
+  dispatches nothing. A disabled pill, or a static pill, dispatches no `ocelle-pill-tag-activate` (operator decision,
+  SPEC-1-01). In button mode a moved `aria-pressed` of `true` gives the pressed look and exposes the custom state
+  `:state(pressed)`; any other value (`false`, `mixed`, which reaches the inner button as written and is reported mixed,
+  or a cleared value) gives neither, as on `ocelle-button` (012's data model; operator decision, SPEC-3-03). In link
+  mode no `aria-pressed` value gives the pressed look or `:state(pressed)`: this is the pill's own rule (`ocelle-button`
+  as merged sets its state from the held value in link mode too; operator decision, PLAN-CORRECTNESS-1-007). In button
+  and link mode a moved `aria-current` present and other than `false` exposes `:state(current)`, with no visual mark of
+  its own, as `ocelle-button` does (012 FR-004, FR-009). A custom state follows the value applied to the inner control
+  only: an attribute on the host of a static pill, or an `aria-pressed` held but not applied in link mode, gives no
+  custom state. The pill has no other custom state.
 - **FR-032**: An interactive pill shows the token focus ring on keyboard focus, in both themes and forced colours, and
   its pointer target is at least 24 px by 24 px in either density (WCAG 2.5.8; in compact density by FR-029's
   minimum block size). It is not a primary action, so
@@ -583,7 +621,8 @@ container width, the text and `disabled`; hover, focus and press Escape; read th
   own, FR-002); kitty-mission-ui states such as "running" or "blocked" map onto
   it in the consumer (for example running → `info` with `pulse`). A further value needs its own consumer and a later
   feature.
-- `label` on the indicator is the one way to name it; slotted content is not supported on the indicator.
+- `label` on the indicator is the one way to name it; a host `aria-label` and slotted content are not supported on the
+  indicator (US1-8).
 - The metric's display value is a pre-formatted string from the host; the element formats nothing.
 - The pill has no `unavailable` state and no `size` beyond `density`; 012's unavailable state is adopted later if a
   consumer asks.
