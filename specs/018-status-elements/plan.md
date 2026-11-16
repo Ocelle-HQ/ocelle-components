@@ -23,7 +23,10 @@ scenarios need (R-11). Per-phase plant runs are always the affected plants (op 0
 plant set is never run locally. Revised after plan squad round 1 (`reviews/plan/round-1/fixes-1.md`) and round 2
 (`reviews/plan/round-2/fixes-1.md`: a `<details>` opened is not a start case, a static pill or metric keeps its
 longest word in a flex row, the flex-row sibling rule, hover and active stories, the `Truncated` baseline's bubble, and
-the metric's find-in-page limitation).
+the metric's find-in-page limitation) and round 3 (`reviews/plan/round-3/fixes-1.md`: a one-line pill on the
+surrounding text's baseline, a short static pill not stretched by a grid track or a flex column, `flex: none` on the
+sibling recommended, the overflow of a capped long word beside a sibling, and a `Truncated` baseline with the ring and
+no bubble).
 
 ## Technical Context
 
@@ -64,7 +67,7 @@ tokens, 21 stories with light and dark baselines, a phase-1 harness step.
 | II. Tokens only, brand rules | All values tokens, every declaration written to pass `gate:style-lint` (no `0s` delay, the ring grown by `inset` from `size-indicator`, the visually hidden label copy from keywords and 0, R-04, R-05); new tokens listed (R-10); no monospace (badge in Schibsted Grotesk with `--ocelle-figures`); the pill radius only on state pills, every pill variant being one (operator decision SPEC-1-04) and the indicator dot a state mark under the same reading (plan decision 3); `color-rule` never used; no ochre text or fill; `color-accent-strong` only as the resting border of an interactive pill on its state ground, as 002's rule for controls on state grounds requires (R-07). |
 | III. Accessible by construction | Indicator: role `img` with its label or hidden, `label` the only name source (R-03), state never by colour alone (README), pulse ≤ 5 s and none under reduced motion (2.2.2, R-04), forced colours. Metric: term and definition, the term named by the label as written while it is shown uppercase, its written copy a second, invisible find-in-page match recorded as a limitation (R-05); a static pill or metric not shrunk below its longest word in a flex row (R-05, R-06). Pill: one native inner control on 012's conventions that fills the host, ARIA moved and no ID reference across the shadow root (R-07), a static pill inert for clicks and focus (R-06, R-07), focus and the tooltip kept across a mode switch (2.4.3, R-08), token focus ring kept inside a clipping container, a resting control border, a disabled look beyond text colour and system colours for a disabled link in forced colours, a pressed look kept distinct in forced colours (a `Highlight` fill, R-07), 24 px targets (2.5.8), full text by tooltip only while truncated, measured to the sub-pixel, and never needed while disabled (1.4.13, R-09). Contrast: every pair used already checked (R-06, R-07); axe on every story. |
 | IV. Strict CSP, offline | Adopted stylesheets, the pill's interactive host sheet included (added and removed in `adoptedStyleSheets`, R-07); no inline style; every scenario also on the strict-CSP fixture; `gate:csp` on built output. |
-| V. Storybook, behaviour tests | A story per variant and state in light and dark with baselines from 006's pinned container (R-12), the hover and active looks of the interactive pill and badge included through 006's pointer parameter, one pill per such story; the `Truncated` baseline's open tooltip stated; interaction tests for `click` and `ocelle-pill-tag-activate` with every flag, order and every keyboard path (contracts/checks.md). |
+| V. Storybook, behaviour tests | A story per variant and state in light and dark with baselines from 006's pinned container (R-12), the hover and active looks of the interactive pill and badge included through 006's pointer parameter, one pill per such story; the `Truncated` baseline showing the focus ring and no tooltip bubble, focused as 012's `StoryFocus` does so that it does not race 006's capture, the bubble proven by scenarios (R-12); interaction tests for `click` and `ocelle-pill-tag-activate` with every flag, order and every keyboard path (contracts/checks.md). |
 | VI. Consumer-driven, own code | #7 and spec-kitty-design #498, #509, #524, #526; kitty-mission-ui's recorded attributes (SC-001). Nothing copied from Spec Kitty. |
 | VII. Semver | Additions only (MINOR): three elements and entry points, an event, custom states, mirror attributes, tokens; three additive methods and one additive, defaulted parameter on internal helpers; changelog entries in both packages. |
 | VIII. Test-first, non-vacuous | Each phase starts with one red commit holding its scenario bodies, node tests, story test entries and token expectations (I3), recorded by `red.sh`; new driver methods self-tested on stand-ins in phase 1 before any element (R-11); every "does not" paired with a positive assertion and a measured plant (contracts/checks.md § bodies), negatives read after the layout settles and the tooltip delay passes; each SC-001 row in the phase of its element, so each is seen failing; each truncation trigger proven alone; CSS-only pulse avoids timer mutants; element and token source mutated with 007's verdicts and op 015's limit, equivalent mutants recorded with reasons (R-09, R-13). |
@@ -98,7 +101,9 @@ header too.
    `1lh`, so a pill with and without an icon has one height. A static pill's host is `inline-block`, its row capped
    and its text `overflow-wrap: break-word`, so a flex row does not shrink it below its longest word; the
    `inline-grid` host and the `min-inline-size: 0` chain are the interactive host sheet's (operator decision on
-   PLAN-FRESH-2-002, (a); R-06, R-07).
+   PLAN-FRESH-2-002, (a); R-06, R-07). The static `.pill:not(.control)` is `inline-size: fit-content;
+   max-inline-size: 100%; box-sizing: border-box`, so a grid track or a flex column that stretches the host does not
+   stretch the visible pill (PLAN-FRESH-3-002); the interactive control still fills its host (012 FR-001).
 6. **Interactive looks** (R-07; operator decisions on PLAN-A11Y-SECURITY-1-005 (a) and -006 (a)): an interactive
    `pill` has a resting `color-accent-strong` border, a badge its status border; hover takes the status colour on a
    pill's border and the status ground as a badge's fill; active and pressed add an inset `bar-width` cue, and a pressed
@@ -132,6 +137,17 @@ header too.
 14. **Siblings of a truncating pill in a flex row** (R-09; operator decision on PLAN-FRESH-2-003, (a)): the element
     does not take the overflow for itself; the sibling keeps its size only if it is `flex: none` or the pill is given
     `flex: 1 1 0` by the host, which the README and the contract say and a check pins beside the shared-shrink twin.
+    The README recommends `flex: none` (or `flex-shrink: 0`) on the sibling: `flex: 1 1 0` also stretches a fitting
+    pill's visible box to the remaining width, since the control fills its host, which the README states and the
+    check pins with the measured width (squad round 3, PLAN-FRESH-3-004).
+15. **The pill's text baseline** (R-06, R-07; operator decision on PLAN-FRESH-3-001, (a)): the pill's own static
+    styles, in every mode, override 005's row alignment as `.icon-row { align-items: baseline } .icon-slot {
+    align-self: flex-start }`, so a one-line pill, static or interactive, sits on the baseline of the text around it;
+    § US3 and § US4 baseline bodies measure it. 005's `iconSlotStyles` and `ocelle-button` are not changed; the same
+    offset on `ocelle-button` goes to mission 012 or 005 as a triage note, filed by the orchestrator.
+16. **The `Truncated` baseline** (R-12; operator decision on PLAN-FRESH-3-003, (b)): the story focuses its truncated
+    pill after `updateComplete`, as 012's `StoryFocus` does, and its baseline shows the ring and no tooltip bubble; the
+    bubble is proven by the § US5 scenarios alone, and the baseline does not depend on 008's bubble styling.
 
 ## Project Structure
 
@@ -211,16 +227,17 @@ never the full set locally), recorded in `reviews/phase-N/plants.md`; the phase'
    scenarios US2-1 … US2-7 and § US2 bodies (the flex row, find in page); SC-001's metric row.
 4. **US3 static `ocelle-pill-tag`** (P3): token `line-height-snug`; the element in static mode, entry point, manifest
    (static members), README; stories `Statuses`, `Badge`, `Compact`, `WithIcon`, `LongTextWraps`; scenarios
-   US3-1 … US3-8 and § US3 bodies; SC-001's pill rows.
+   US3-1 … US3-8 and § US3 bodies (the stretched grid track and flex column, the long word beside a sibling, the
+   baseline, plan decision 15); SC-001's pill rows.
 5. **US4 interactive pill** (P4): token `target-small`; `MovedAttributes.capture()`, `release()`, `adoptMirrors()`
    and `guardHost`'s `active` parameter (red first in `control.test.ts`, 012's cases untouched); button and link
    modes, activate event, passthrough and mode changes with focus, looks, the interactive host sheet; manifest (moved
    attributes, mirrors, `label` attribute, methods, events, states, `control` part); README rules; stories `Button`,
    `Pressed`, `Link`, `Disabled`, `Focus`, `PillHovered`, `BadgeHovered`, `PillActive`, `BadgeActive`; scenarios
-   US4-1 … US4-12 and § US4 bodies.
+   US4-1 … US4-12 and § US4 bodies (the interactive baseline included).
 6. **US5 truncation and tooltip** (P5): truncation state, fractional measure and observers, the tooltip wrapper,
-   disabled wrapping; stories `Truncated` (focused only once the tooltip is enabled, its baseline showing the open
-   bubble, R-12), `DisabledWraps`; scenarios US5-1 … US5-6 and § US5 bodies; the observer
+   disabled wrapping; stories `Truncated` (focused after `updateComplete`, its baseline showing the ring and no
+   bubble, plan decision 16, R-12; the phase-6 review checks both captured themes for that), `DisabledWraps`; scenarios US5-1 … US5-6 and § US5 bodies; the observer
    teardown mutants recorded as equivalent with their reason.
 7. **Polish**: README cross-links and engines check, CHANGELOG review, quickstart run end to end, full gate set
    (plants still in `--affected` mode against phase 2's base), SC-001 to SC-006 checked.

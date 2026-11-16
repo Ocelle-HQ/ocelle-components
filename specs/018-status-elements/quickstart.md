@@ -35,11 +35,12 @@ pnpm run gate:mutation                          # alone, never beside plants
   pills, interactive pills with their resting border, a hovered pill (its border in the status colour) and a hovered
   badge (the status-ground fill), an active pill and badge (the inset cue), pressed pills and badges, disabled
   interactive pills, and in `Truncated` unfocused truncated and fitting pills above one truncated pill that is focused
-  inside a clipping container with its ring whole and 008's tooltip bubble open above it, over no other example (the
-  story focuses it only once its tooltip is enabled; a change to 008's bubble re-baselines this story). 21 stories in
+  inside a clipping container with its ring whole and no tooltip bubble in either theme (the story focuses it after
+  `updateComplete`, as 012's `StoryFocus` does; the bubble is proven by the US5 scenarios). 21 stories in
   all, each in light and dark.
 - By hand in Chromium (not a gate): an indicator with `pulse` pulses about 4.8 s and stops; hovering or tabbing to a
   truncated interactive pill shows its full text in the tooltip, Escape hides it; a screen reader reads a metric's
   label as written; the find bar matches a metric's label twice, once on an invisible copy (a known limitation, R-05);
-  a pulsing indicator inside a `<details>` does not pulse again when the `<details>` is opened.
+  a pulsing indicator inside a `<details>` does not pulse again when the `<details>` is opened; a pill in a sentence
+  sits on the sentence's baseline, and a short static pill in a grid cell keeps the width of its text.
 - Mutation: no surviving mutant in new or changed source without a recorded equivalent.

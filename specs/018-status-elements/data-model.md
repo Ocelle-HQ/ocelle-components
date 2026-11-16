@@ -88,7 +88,11 @@ Derived:
 - **interactive host sheet** (the focus-ring clearance cap and margin; the host's `display: inline-grid` and the
   `min-inline-size: 0` chain on host, control, `.icon-row` and text span; the disabled pill's `overflow-wrap:
   anywhere`, R-07) is in `adoptedStyleSheets` iff mode ≠ static. While static the host is `inline-block` with no
-  `min-inline-size: 0` anywhere, so a flex row does not shrink it below its longest word (R-06).
+  `min-inline-size: 0` anywhere, so a flex row does not shrink it below its longest word, and the `.pill` (selected as
+  `.pill:not(.control)`) is `inline-size: fit-content; max-inline-size: 100%; box-sizing: border-box`, so a stretched
+  host does not stretch the visible pill (R-06). In every mode the pill's own styles set `.icon-row { align-items:
+  baseline }` and `.icon-slot { align-self: flex-start }`, so a one-line pill sits on the surrounding baseline (R-06,
+  plan decision 15).
 
 Mode transitions (FR-035, R-08). Every passthrough step runs synchronously in the `interactive`/`href`
 `attributeChangedCallback` that changes the mode; rendering follows in Lit's update.

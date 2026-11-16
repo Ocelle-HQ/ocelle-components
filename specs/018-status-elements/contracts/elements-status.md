@@ -96,8 +96,13 @@ or text change. Flex rows (operator decisions on PLAN-FRESH-2-002 and PLAN-FRESH
 shrunk below its longest word, so a one-word pill stays on one line, and a host that wants it to shrink further sets
 `min-inline-size: 0` on it (the word then breaks inside the pill); an enabled interactive pill shrinks to truncate, and
 the flex row shares that shrink with its siblings by their flex bases, so a sibling keeps its size only if the host
-gives it `flex: none` or gives the pill `flex: 1 1 0` (the pill then takes the remaining room); otherwise the sibling
-shrinks too, down to its longest word.
+gives it `flex: none` or gives the pill `flex: 1 1 0`; otherwise the sibling shrinks too, down to its longest word.
+`flex: none` (or `flex-shrink: 0`) on the sibling is the recommended way: `flex: 1 1 0` on the pill also stretches a
+fitting pill's visible box to the whole remaining width, since the control fills its host (PLAN-FRESH-3-004). A static
+pill's cap is its container's whole inline size, so beside a sibling a long unbroken word can make the row overflow by
+the sibling's width unless the host sets `min-inline-size: 0` on the pill (PLAN-FRESH-3-005). A short static pill in a
+grid track or a stretching flex column keeps the width of its text; a one-line pill sits on the surrounding text's
+baseline (PLAN-FRESH-3-001, -002).
 
 ## `@ocelle/tokens`
 

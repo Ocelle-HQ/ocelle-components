@@ -87,7 +87,19 @@ ocelle-action-row or ocelle-tooltip; each element meeting #7's Done-when checkli
   wants the old shrinking sets `min-inline-size: 0` (Edge Cases, FR-024, FR-027, US2-7, US3-8).
 - The sibling of a truncating pill in a flex row (PLAN-FRESH-2-003), "(a)": the sibling keeps its size only if it is
   `flex: none` or the pill takes the remaining room through `flex: 1 1 0`; otherwise the flex row shares the shrink
-  between them. The README says so and a check pins both (plan, contracts).
+  between them. The README says so and a check pins both (plan, contracts). Since squad round 3 (PLAN-FRESH-3-004) the
+  README recommends `flex: none` on the sibling and states that `flex: 1 1 0` also stretches a fitting pill's visible
+  box to the remaining width, which a check pins.
+
+**Operator decisions at plan squad round 3** (human:jeroennouwsdev, 2026-11-16; `reviews/plan/round-3/refute.md`,
+applied in `reviews/plan/round-3/fixes-1.md`):
+
+- The baseline of a one-line pill (PLAN-FRESH-3-001), "(a)": a one-line pill, static or interactive, sits on the
+  baseline of the text around it, inline in text and in a baseline-aligned flex row, with and without an icon; the
+  pill overrides mission 005's row alignment in its own styles to do so (Edge Cases; plan, contracts). The same offset
+  on `ocelle-button` goes to mission 012 or 005 as a note; `ocelle-button` is not changed here.
+- The `Truncated` story's bubble (PLAN-FRESH-3-003), "(b)": the `Truncated` baseline shows the focused truncated pill
+  with its ring and no tooltip bubble; the tooltip's bubble is proven by the US5 scenarios alone (plan, R-12).
 
 **Consumers** (constitution VI): kitty-mission-ui's Kitty Desktop and Kitty Dashboard screens, which today use the
 `sk-pill-tag` (32 uses: `status`, `title`, slotted content, badge use), `sk-status-indicator` (2 uses: `tone`) and
@@ -416,8 +428,17 @@ container width, the text and `disabled`; hover, focus and press Escape; read th
   the box rather than overflow it. In a flex row a word sets the item's minimum inline size: the row does not shrink a
   static pill or a metric below its longest word, so a one-word pill such as "Blocked" stays whole beside a long name
   (US2-7, US3-8); a pill's longest word is capped at the container's full inline size, beyond which it breaks inside the
-  pill. A host that wants a static pill or a metric to shrink further in a flex row sets `min-inline-size: 0` on it, and
-  its words then break inside the box; the README says so (operator decision, PLAN-FRESH-2-002).
+  pill. The cap is the whole container's inline size, not the room its siblings leave, so a flex row holding a sibling
+  and a pill whose word reaches the cap overflows by the sibling's width; a host that wants it inside the row, or wants
+  a static pill or a metric to shrink further in a flex row, sets `min-inline-size: 0` on it, and its words then break
+  inside the box; the README says so (operator decision, PLAN-FRESH-2-002; PLAN-FRESH-3-005).
+- A short static pill in a grid track or in a flex column that stretches its items: the visible pill keeps the width of
+  its text plus its padding and border, the same as in a block container, and is not stretched to the track; only its
+  host may be (US3-8; PLAN-FRESH-3-002). An interactive pill fills its stretched host as 012's FR-001 requires (FR-030).
+- A one-line pill, static or interactive, inline in text or in a flex row aligned by baseline, with and without an
+  icon: the pill's text sits on the baseline of the text around it at the same font size. A pill that wraps is at its
+  inline-size cap and so on a line of its own, its first text line on that line's baseline (operator decision,
+  PLAN-FRESH-3-001).
 - A pulsing indicator inside a `<details>` that is closed and opened: opening it starts no run; a run under way when
   it closed goes on while it is closed and may end unseen; the README says so (FR-012 (d); operator decision,
   PLAN-FRESH-2-001).
@@ -530,7 +551,8 @@ container width, the text and `disabled`; hover, focus and press Escape; read th
   Slotted icons are decorative and add nothing to the accessibility tree.
 - **FR-027**: A static pill (neither `interactive` nor a link-mode `href`) is not focusable, has no role of its own,
   exposes its text as plain text, and wraps a full text that does not fit onto further lines; it never truncates. A
-  flex row around it does not shrink it below its longest word (Edge Cases, US3-8).
+  flex row around it does not shrink it below its longest word (Edge Cases, US3-8), and a grid track or a flex column
+  that stretches it does not stretch its visible box (Edge Cases).
   `title` and ARIA attributes on a static pill's host are left where they are.
 - **FR-028**: The `pill` variant fills with `--ocelle-color-<status>-bg`, sets its text in `--ocelle-color-<status>`,
   and has `--ocelle-radius-pill` corners. The `badge` variant has no fill of its own, a border in

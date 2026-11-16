@@ -226,9 +226,38 @@ line. A 34-letter word in a 100 px block container or grid track breaks inside t
 with an `inline-grid` host, or without the row cap, keeps the word on one line and overflows the pill (a grid item's
 and an `inline-flex` row's automatic minimum is the word), which is why the static host is not a grid. In a 150 px
 flex row the long word sets the pill's minimum up to the row's full inline size (the host's `max-inline-size: 100%`)
-and breaks there. A wrapped static pill inline in text sits on the baseline of its last line (inline-block); a static
-pill in a flex row that stretches its items keeps its own block size inside the stretched host. A host that wants the
-round-1 shrinking sets `min-inline-size: 0` on the pill, and the word then breaks inside the pill (README, US3-8).
+and breaks there; the cap is the whole row's inline size, not the room a sibling leaves, so with "Name" before it in
+the 150 px row the 150 px pill's right edge is at 192.7 px and the row overflows by the sibling's width (squad round 3,
+PLAN-FRESH-3-005), which the Edge Cases state and US3-8's body pins beside a `min-inline-size: 0` twin that fits. A
+static pill in a flex row that stretches its items keeps its own block size inside the stretched host. A host that
+wants the round-1 shrinking sets `min-inline-size: 0` on the pill, and the word then breaks inside the pill (README,
+US3-8).
+
+Stretched hosts (squad round 3, PLAN-FRESH-3-002): a grid item and a stretched flex item are blockified and stretched,
+and a block `.pill` fills its host, so "Blocked" in a 200 px grid track or a 200 px column flex was a 200.0 × 26.1 px bar
+with its text ending at 62.8 px. The static `.pill` therefore also has `inline-size: fit-content; max-inline-size: 100%;
+box-sizing: border-box`, selected as `.pill:not(.control)` so it never reaches the interactive control, whose stretch
+012's FR-001 requires (R-07). Probed on Chromium 153: "Blocked" is 75.8 px in the grid track and the column, as in a
+block container; the 34-letter word still breaks inside a 100 px pill in a block container and a grid track (100.0 ×
+58.3 px); the 220 px flex row is unchanged (75.8 px, one line). Without `box-sizing: border-box` the capped pill is
+126 px in a 100 px track, so it is needed.
+
+Baseline (squad round 3, operator decision on PLAN-FRESH-3-001, (a)): 005's `iconSlotStyles` sets `.icon-row {
+align-items: flex-start }`, so no item takes part in baseline alignment and the row's baseline is synthesized from its
+first item, the empty or SVG-holding 1lh `.icon-slot`, at its bottom edge (CSS Flexbox § 8.5): with 005's alignment the
+pill's text sat 3.1 px above the surrounding text (probe p5, 14 px text: 21.0 against 24.1 px in a paragraph, 61.1
+against 64.2 with an icon, 189.6 against 192.7 in an `align-items: baseline` flex row; probe p6, the interactive box of
+R-07: 25.0 against 28.0). The pill's own static styles, which apply in every mode, therefore override the row as
+`.icon-row { align-items: baseline } .icon-slot { align-self: flex-start }`: the text item gives the row its baseline
+while the 1lh icon slot stays at the start, centred on the first line as 005 requires, and the pill's height does not
+change. Probed with the override: 21.0 / 21.0, 61.1 / 61.1, 189.6 / 189.6, and 25.0 / 25.0 in the interactive box. A
+one-line pill, static or interactive, inline in text or in a baseline-aligned flex row, thus sits on the surrounding
+baseline. A pill that wraps is at its `max-inline-size: 100%` and so on a line of its own; its first text line is on
+that line's baseline (the inline-block's one line box holds the `.icon-row`, whose baseline is the text's first line).
+The § US3 and § US4 baseline bodies measure it (contracts/checks.md). `ocelle-button` uses the same row and very likely
+has the same offset; this plan does not change it, and the orchestrator files a note to mission 012 or 005 (plan
+decision 15).
+
 Shadow root (static mode):
 
 ```html
@@ -270,13 +299,14 @@ the dot on the main grounds (non-text 3:1 is weaker than the text 4.5:1 already 
 today: **no new contrast rows** for the status vocabulary. A badge or indicator placed on a state ground (inside a
 notice) is outside the checked set; the README says so.
 
-**Rationale**: every value a token (the keywords, `0` and `100%`); forced colours handled by the transparent-border
-idiom; no new contrast surface; one structure (`.pill` > `.icon-row`) in every mode, with the host's display and
-minimum set per mode.
+**Rationale**: every value a token (the keywords, `0` and `100%`; `fit-content` and `border-box` are keywords, which
+`token-only.ts` passes); forced colours handled by the transparent-border idiom; no new contrast surface; one structure
+(`.pill` > `.icon-row`) in every mode, with the host's display and minimum set per mode.
 
 **Alternatives**: keeping the round-1 box and telling hosts to give a static pill `flex: none` in a flex row (option
 (b) of PLAN-FRESH-2-002, not chosen); `break-word` with the round-1 `inline-grid` host (a long word overflows the pill
-in a block container, see the probes above).
+in a block container, see the probes above); keeping 005's row alignment and recording the 3 px baseline offset as a
+known limitation (option (b) of PLAN-FRESH-3-001, not chosen).
 
 ## R-07 `ocelle-pill-tag`, interactive: 012's conventions reused
 
@@ -287,7 +317,10 @@ every `controlStyles` rule selects (012 `control.ts` 157-194), so the token focu
 the forced-colours table apply. The inner control is the host's one stretched grid item (the interactive host
 sheet's `display: inline-grid`, as `ocelle-button.ts` 134), so it fills the host in both axes and a host stretched by a
 flex row or a grid cell has no area outside it (012 FR-001, adopted by FR-030); the tooltip host between them is `display: contents`, so
-the control is the grid item.
+the control is the grid item. The static `.pill:not(.control)` sizing of R-06 (`inline-size: fit-content`) does not
+match the control, so the control still fills a stretched host; the row's baseline override of R-06 does apply, so a
+one-line interactive pill sits on the surrounding baseline (probe p6 with the override: 25.0 / 25.0 px); the § US4
+baseline body measures an enabled pill, whose text span has `overflow: hidden` for truncation, and a disabled one.
 
 Reused from 012's `control.ts` as merged: `linkHref` decides the mode (FR-002 of 012), `controlState(disabled, false)`
 (the pill has no unavailable state), `MovedAttributes` for `aria-label`, `aria-labelledby`, `aria-describedby`,
@@ -466,7 +499,12 @@ word (squad round 2's probe3 on Chromium 153, a 200 px row: the pill truncates a
 51.6 × 36 px against its natural 90.2 × 17 px; the pill's 10 px of inline margin, decision 11, adds to the overflow
 shared out). The element does not settle this. The README and the contract say that the sibling keeps its size only if
 it is `flex: none`, or if the pill takes the remaining room through `flex: 1 1 0` set by the host, and the checks.md
-fixture sets each explicitly beside a twin row with neither that pins the shared shrink.
+fixture sets each explicitly beside a twin row with neither that pins the shared shrink. The two routes are not equal
+(squad round 3, PLAN-FRESH-3-004): the control fills its stretched host (R-07, 012 FR-001), so `flex: 1 1 0` also
+stretches a fitting pill's visible box to the remaining width (probe p7, a 300 px row beside "Mission name": "Blocked"
+with `flex: 1 1 0` has a 213.6 px control, with the sibling `flex: none` instead 75.8 px). The README therefore
+recommends `flex: none` (or `flex-shrink: 0`) on the sibling and states the stretch of the `flex: 1 1 0` route, and
+the checks.md row pins the stretched width.
 
 `truncated` (internal reactive state) is `!disabled && overflow`, where *overflow* is measured with fractional
 geometry, since `scrollWidth` and `clientWidth` are integers and the ellipsis is drawn on a sub-pixel overflow: a
@@ -593,19 +631,21 @@ each with light and dark baselines made with
 `OCELLE_VISUAL_ENGINE=docker pnpm run visual:update` in 006's pinned container (dockerd started as root; conflicting
 PNGs regenerated, never hand-picked).
 
-`Truncated` (squad round 2, PLAN-FRESH-2-005): a row of enabled interactive pills in a narrow container, truncated and
-fitting, none focused, and below them, alone, one truncated pill in an `overflow: hidden` container (R-07) that a
-story-only wrapper focuses. 008's tooltip shows its bubble at once on a `focusin` whose target matches
-`:focus-visible` (`ocelle-tooltip.ts` 4-5, 277-282) and does nothing while `disabled` (304), and the pill enables it only
-once the `ResizeObserver` has measured truncation (R-09), so a wrapper that focused after `updateComplete` alone, as
-012's `StoryFocus` does, would focus before the tooltip is enabled and the baseline would show no bubble. The wrapper
-therefore waits for `updateComplete`, then for the `ocelle-tooltip` in the pill's shadow root to have `disabled` false
-(re-reading after each animation frame and `updateComplete`), and only then calls the pill's plain `focus()`, which
-006's capture shows as `:focus-visible` (012's phase-2 spike). The baseline shows the focused pill with its ring whole
-inside the clipping container **and 008's open bubble** above it (`placement` `top`, the default), in the top layer, so
-the story leaves the room above the focused pill free and the bubble covers no other example. The baseline thus
-depends on 008's bubble styling: a change to it re-baselines `Truncated` in light and dark, which the phase-6 review
-and the README's story notes state.
+`Truncated` (squad round 2, PLAN-FRESH-2-005; revised at squad round 3, operator decision on PLAN-FRESH-3-003, (b)):
+a row of enabled interactive pills in a narrow container, truncated and fitting, none focused, and below them, alone,
+one truncated pill in an `overflow: hidden` container (R-07) that a story-only wrapper focuses after `updateComplete`,
+as 012's `StoryFocus` does (`button.stories.ts` 17-28), with the pill's plain `focus()`, which 006's capture shows as
+`:focus-visible` (012's phase-2 spike). The baseline shows the focused pill with its ring whole inside the clipping
+container and **no tooltip bubble**. The open bubble is not part of any baseline: round 2's wrapper, which waited for
+the tooltip's `disabled` to turn false before focusing, finished frames after the render that `storyRendered` reports
+and so raced 006's `settle()` (`gates/lib/story-page.ts`: readiness, then scrollBack, pointer, `document.fonts.ready`
+and two animation frames), and nothing in the capture waits for a story-only element. With the focus after
+`updateComplete`, the focus lands before the pill's `ResizeObserver` has measured truncation and enabled the tooltip
+(R-09), and 008's tooltip shows its bubble only on a `focusin` while enabled (`ocelle-tooltip.ts` 277-282, 301-309), so
+no bubble opens in the capture. The tooltip's bubble, its text and its showing on focus and hover are proven by the
+§ US5 scenarios alone (contracts/checks.md), and the baseline does not depend on 008's bubble styling. The phase-6
+review checks that both captured themes show the ring and no bubble; a bubble in either capture is a finding, not a
+re-baseline.
 
 **Risk**: 012's plan estimates about 4 stories of headroom to the plant split count (76 at `shardSize` 1) after 012,
 and asks for a triage record on a plant design that does not grow with the story count. 21 stories exceed it. T001
