@@ -1,0 +1,5 @@
+# History fold phase-1 of claude/051-fold-signing: old commit -> new commit (pre-fold head kept as refs/ocelle/prefold/phase-1/claude/051-fold-signing, fc90e12a36d1d1869de873ba10a9c1a6f2e6c4bd).
+c38d610ab7c6f1628ab9433ca9d9d37b809a1aba 65a0c7f81d8832b5af031a17e09ffc412d155101
+d078a4abde4d71c39a0a3f8610f2d386b7c39bd3 e589baf93db5601944b7ebb3a0aa65ccd6b118a2
+63d4745e77fce51f8ed73b984ac4e5258000e745 09b6f7e3c97285694a8ab51548251213a2164e52
+fc90e12a36d1d1869de873ba10a9c1a6f2e6c4bd 31fdd8af47f4e6d47b01ffb66febb1cac85757c9
