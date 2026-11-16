@@ -7,7 +7,9 @@ in_scope: [51]
 out_of_scope: [1]
 semver: none
 spec_prompt: "Op for #51 (triage/021-fold-signing.md): make tooling/speckit/bin/fold-history.sh sign every commit it rebuilds (git commit-tree -S when commit.gpgsign is on), fail (exit 1, branch reset to the old head, no prefold ref, no remap commit) when a rebuilt commit lacks a gpgsig header while commit.gpgsign is on, and refuse or exclude any commit of <base>..HEAD that is reachable from main, so main's commits are never rewritten; red first in gates/test/integration/fold-history.test.ts with a throwaway SSH signing key; branches already folded unsigned are left as they are; the mission 011 and 008 re-sign scripts, the skills and the Sign-off gate are unchanged."
-status: proposed
+status: approved
+decided_by: "human:jeroennouwsdev"
+decided_at: 2026-11-16T16:57:18Z
 ---
 
 # Triage 021: sign the commits the history fold rebuilds (#51)
