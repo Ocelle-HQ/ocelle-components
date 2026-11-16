@@ -365,6 +365,10 @@ padding and no block padding, but it is not a section and gets no divider of its
 of its own, no box, padding or divider, but it still counts as content: a sidebar whose sections are all hidden keeps
 the dividers around its empty default slot, so remove sections from the slot rather than hide them all.
 
+A `template` or `script` element in the default slot, such as a `<template>` that Alpine.js keeps in the page for
+`x-if` or `x-for`, is not a section: it is not drawn and gets no padding or divider. Like a hidden section, it still
+counts as content.
+
 A page rule does not change a section's padding, inline margins, divider or display: the sidebar sets them
 `!important`, as the slot convention does, so a page reset such as `ul { margin: 0; padding: 0 }` leaves them in
 place. A section's block margins are the page's to set.
