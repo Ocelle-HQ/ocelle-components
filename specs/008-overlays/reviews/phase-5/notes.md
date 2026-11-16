@@ -309,3 +309,53 @@ Checks, on the fixed tree:
   initial test run and is logged too.
 - `tooltip.test.ts` and `test/browser/tooltip.test.ts`, run together once: 208 of 208 passed.
 - Exemption line added to `tdd-exempt.md`.
+
+## Review round 2, R2-01 fix (T060)
+
+The operator round at landing (`round-2.md`) found the row "Escape, then a brief hover (FR-033, R-12)" failing under
+full-suite load: its leave came at or after the 100 ms bound in each of 3 runs. The fix follows the R-12 leave row
+(`reviews/phase-4/notes.md` § The R-12 leave row after the operator's decision) and the re-entry row (§ The R-12
+re-entry row after the operator's decision, `a36d8a1`), and changes `packages/elements/test/scenarios/tooltip.ts`
+only (no source, default delay, spec or other row change). The row's page sets `#tip { --ocelle-tooltip-delay:
+1000ms; }` (written with `longDelay`) through `start`'s rules. Keyboard focus shows the bubble at once whatever the
+delay, so `tabFrom` and Escape are unchanged. `beforeDelay("the leave", …, longDelay)` judges a run only when its
+page-side leave came before 1000 ms (was 100). The moves are unchanged (`hover`, `pause(50)`, the move to `rest`).
+The wait after the leave is `pause(1000)` then `pause(longWait - 1000)` (each at most 1 000 ms, R-15). `never` is no
+bubble at any frame of the whole record (`never(f, 0)`), and the new `toWait` holds when the last frame's `t` is at
+least `longWait` (1500 ms) from the entry, the span measured from the entry as round 1 R1-02 suggested. The comment
+on `longDelay` and `longWait` now names this row as well.
+
+### Row changed (old and new full names, measured times)
+
+- Old: "Escape, then a brief hover (FR-033, R-12): shown by keyboard focus and hidden by Escape, focus kept on the
+  trigger; the pointer enters the trigger and leaves both boxes within 100 ms: no bubble at any frame of a 450 ms
+  wait from the entry", expected `{ never: true, focus: "trg", visible: true }`.
+- New: "Escape, then a brief hover (FR-033, R-12): with --ocelle-tooltip-delay: 1000ms on the tooltip, shown by
+  keyboard focus and hidden by Escape, focus kept on the trigger; the pointer enters the trigger and leaves both boxes
+  before that delay: no bubble at any frame of a 1500 ms wait from the entry", expected `{ never: true, toWait: true,
+  focus: "trg", visible: true }`.
+- Times, page-side, in ms from the entry, unloaded, 3 runs in each harness (in process / fixture twin), read with a
+  temporary probe that was then removed: leave at 83.0, 99.4, 83.0 / 83.3, 83.2, 82.9 ms; last frame at 1649.5,
+  1665.8, 1649.5 / 1649.3, 1649.7, 1649.5 ms. A delay the leave did not end would show the bubble at about 1083 ms,
+  inside the window. The leaves that failed under load came after 100 ms; they are well under the new 1000 ms bound.
+
+### Break checks (temporary changes, reverted, never committed)
+
+Each ran the new row in both harnesses with `pnpm exec vitest run --project elements --project elements-browser
+packages/elements/test/tooltip.test.ts packages/elements/test/browser/tooltip.test.ts -t "Escape, then a brief hover"
+--reporter=verbose` (the fixture twin built from the edited source), logs in `break-checks/` (colour codes
+stripped). `git status` was clean but for the review files after each. The results were the same in both harnesses.
+
+- B1, the Escape dismissal broken (`this.#hide()` removed from `#onKeydown`, the key still stopped): the row fails,
+  `never: false` (`break-checks/r2-01-b1-no-escape-hide.log`).
+- B2, T057 R1-03 (a)'s break (`window.clearTimeout(this.#timer)` removed from `#onPointerout`): the row fails,
+  `never: false`, the delay the leave did not end showing the bubble inside the 1500 ms wait
+  (`break-checks/r2-01-b2-no-clear-on-leave.log`).
+- B3, test side (`pause(1000)` added before the `pause(50)` before the leave): the row fails with "the leave came at
+  or after 1000 ms from the entry in each of 3 runs (1083, 1083, 1083 / 1083.2, 1083.5, 1082.8 ms from the entry):
+  the row has no run it can judge" (`break-checks/r2-01-b3-late-leave.log`), not a pass.
+
+### Checks
+
+- `tooltip.test.ts` (in process) and `test/browser/tooltip.test.ts` (fixture twin), run together: 208 of 208 passed.
+- `gate:typecheck`, `gate:lint`, `gate:test-lint`: no finding.
