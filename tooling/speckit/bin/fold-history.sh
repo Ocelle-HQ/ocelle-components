@@ -24,7 +24,7 @@
 set -euo pipefail
 base=${1:-}; feature=${2:-}; label=${3:-landing}
 die() { printf '{"ok":false,"problems":["%s"]}\n' "$1"; exit 2; }
-[[ "$base" =~ ^[0-9a-f]{7,40}$ ]] && git cat-file -e "$base^{commit}" 2>/dev/null || die "pr-base must be a commit sha"
+[[ "$base" =~ ^[0-9a-f]{7,64}$ ]] && git cat-file -e "$base^{commit}" 2>/dev/null || die "pr-base must be a commit sha"
 [[ -n "$feature" && -d "$feature/reviews" ]] || die "feature-dir must hold reviews/"
 [[ "$label" =~ ^[a-z0-9][a-z0-9-]*$ ]] || die "label must be lower-case letters, digits and hyphens"
 cd "$(git rev-parse --show-toplevel)"
