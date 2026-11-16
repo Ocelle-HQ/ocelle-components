@@ -378,9 +378,9 @@ describe("generate(root) on the repository's element source", () => {
   });
 
   // 012 phase 5 (tasks.md T053; FR-030, FR-053; contracts/elements-package.md § ocelle-action-row): the row's
-  // properties (current and unavailable come with phase 6), the moved attributes and their mirrors, the slots, parts and
-  // the event with its detail type, each described.
-  it('declares ocelle-action-row with its tag name, class, rowId (row-id), label, layout ("row" | "card"), presentation ("default" | "flush"), ground (with "chrome"), href, target, rel and busy, the click() method, the moved aria-label, aria-labelledby, aria-describedby and title with their mirrors, the default, icon, description, tags and trailing slots, the parts control, title, description and tags, and the event ocelle-action-row-activate with its detail type, each described (012 FR-030, FR-053)', async () => {
+  // properties (with phase 6's current and unavailable, tasks.md T062), the moved attributes and their mirrors, the
+  // slots, parts and the event with its detail type, each described.
+  it('declares ocelle-action-row with its tag name, class, rowId (row-id), label, layout ("row" | "card"), presentation ("default" | "flush"), ground (with "chrome"), href, target, rel, current ("page" | "true"), unavailable and busy, the click() method, the moved aria-label, aria-labelledby, aria-describedby and title with their mirrors, the default, icon, description, tags and trailing slots, the parts control, title, description and tags, and the event ocelle-action-row-activate with its detail type, each described (012 FR-030, FR-053)', async () => {
     const manifest = await generate(repo);
     const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
     const [row] = modules.find((module) => module.path === "src/ocelle-action-row.ts")?.declarations ?? [];
@@ -399,6 +399,8 @@ describe("generate(root) on the repository's element source", () => {
       { kind: "field", name: "presentation", privacy: "public", type: { text: presentation }, default: "undefined", attribute: "presentation", reflects: true, described: true },
       { kind: "field", name: "ground", privacy: "public", type: { text: ground }, default: "undefined", attribute: "ground", reflects: true, described: true },
       ...["href", "target", "rel"].map((name) => ({ kind: "field", name, privacy: "public", type: { text }, default: "undefined", attribute: name, reflects: true, described: true })),
+      { kind: "field", name: "current", privacy: "public", type: { text: '"page" | "true" | undefined' }, default: "undefined", attribute: "current", reflects: true, described: true },
+      { kind: "field", name: "unavailable", privacy: "public", type: { text: "boolean" }, default: "false", attribute: "unavailable", reflects: true, described: true },
       { kind: "field", name: "busy", privacy: "public", type: { text: "boolean" }, default: "false", attribute: "busy", reflects: true, described: true },
       { kind: "method", name: "click", return: { type: { text: "void" } }, described: true },
     ]);
@@ -411,11 +413,28 @@ describe("generate(root) on the repository's element source", () => {
       { name: "presentation", fieldName: "presentation", type: { text: presentation }, default: "undefined", described: true },
       { name: "ground", fieldName: "ground", type: { text: ground }, default: "undefined", described: true },
       ...["href", "target", "rel"].map((name) => ({ name, fieldName: name, type: { text }, default: "undefined", described: true })),
+      { name: "current", fieldName: "current", type: { text: '"page" | "true" | undefined' }, default: "undefined", described: true },
+      { name: "unavailable", fieldName: "unavailable", type: { text: "boolean" }, default: "false", described: true },
       { name: "busy", fieldName: "busy", type: { text: "boolean" }, default: "false", described: true },
     ]);
     expect(described(row?.slots)).toEqual(["", "icon", "description", "tags", "trailing"].map((name) => ({ name, described: true })));
     expect(described(row?.cssParts)).toEqual(["control", "title", "description", "tags"].map((name) => ({ name, described: true })));
     expect(described(row?.events)).toEqual([{ name: "ocelle-action-row-activate", type: { text: "CustomEvent<{ rowId: string }>" }, described: true }]);
+  });
+
+  // Plan decisions 30 and 32 (phase 5 review R1-01; tasks.md T062, T064a): the part `control` is described as the
+  // row's icon-and-title control, not its surface, and the button's `pressed` state as button mode only.
+  it("describes the row's part control as its icon-and-title control, not its surface, and the button's pressed state as button mode only (plan decisions 30, 32)", async () => {
+    const manifest = await generate(repo);
+    const declarations = (manifest.modules as { declarations: Record<string, unknown>[] }[]).flatMap((module) => module.declarations);
+    const row = declarations.find((declaration) => declaration.tagName === "ocelle-action-row");
+    const button = declarations.find((declaration) => declaration.tagName === "ocelle-button");
+    const parts = (row?.cssParts ?? []) as { name: string; description: string }[];
+    const states = (button?.cssStates ?? []) as { name: string; description: string }[];
+    expect({ control: parts.find((part) => part.name === "control")?.description, pressed: states.find((state) => state.name === "pressed")?.description }).toEqual({
+      control: "The row's icon-and-title control: the inner `<button>`, or the inner `<a>` in link mode. It is not the row's surface: the description, tags and trailing content are beside it, and `::part(control)` styles do not reach the row's surface or border.",
+      pressed: 'While the moved `aria-pressed` is `"true"`, in button mode only: a link has no pressed state.',
+    });
   });
 
   it("rejects a root without an element module, naming the directory", async () => {

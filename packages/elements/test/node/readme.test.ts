@@ -177,7 +177,7 @@ const fragments = [
   "The element restores a mirror that is removed or changed while it holds the value, so a morphing swap (htmx's idiomorph `morph` swap, Turbo 8 page-refresh morphs), which removes every attribute the server markup lacks, keeps the mirrors",
   "Hosts never write or remove a mirror: one written while the element holds no value for it is not read until the next upgrade",
   "With htmx, a swap that replaces the element moves the new element's attributes at upgrade; a morphing swap sets the changed attributes on the live element, which moves them, and the element restores the mirrors the morph removes; htmx's history restore keeps the moved values through the mirrors",
-  "Since a host attribute selector no longer matches a moved state, `ocelle-button` exposes custom states: `:state(expanded)` while the moved `aria-expanded` is `\"true\"`, `:state(pressed)` while the moved `aria-pressed` is `\"true\"`, and `:state(current)` while the moved `aria-current` is anything but `\"false\"`, for example `ocelle-button:state(expanded) ocelle-icon`",
+  "Since a host attribute selector no longer matches a moved state, `ocelle-button` exposes custom states: `:state(expanded)` while the moved `aria-expanded` is `\"true\"`, `:state(pressed)` while the moved `aria-pressed` is `\"true\"` in button mode, and `:state(current)` while the moved `aria-current` is anything but `\"false\"`, for example `ocelle-button:state(expanded) ocelle-icon`",
   "ID references (`aria-controls`, `aria-labelledby`, `aria-describedby`) are resolved by id in the host's own tree (its document, or the shadow root it is in) when they are set and when the element is connected, and related to the inner control by element reference, never by copying the id into the shadow root; ids not found are skipped, an element in another shadow root is not resolved, and an element added later with the id is picked up only when the attribute is set again",
   "Any other `aria-*` attribute on the host is not supported: it stays on the host and axe flags it",
   "This is the controls' own rule: `ocelle-icon` and `ocelle-brand-mark` keep their host `aria-label` rule (Host ARIA), so the two families differ",
@@ -219,6 +219,16 @@ const fragments = [
   "The title and the description wrap anywhere when a word does not fit, so a long identifier never makes the row wider than its container",
   "The focus ring is drawn inside the row (`--ocelle-focus-offset-inset`), so a scroll container's edge or the next row never clips or covers it",
   "`ocelle-action-row` moves `aria-label`, `aria-labelledby`, `aria-describedby` and `title` (Host ARIA is moved); a moved `title` describes the row when nothing else does",
+  // 012 phase 6 (tasks.md T062, T065; contracts/elements-package.md § ocelle-action-row; plan decisions 13, 16, 21, 30
+  // and 31): the row's link activation, current, unavailable and card layout
+  "In link mode the event is dispatched before the navigation, and calling `preventDefault()` on it cancels the navigation. A click with Ctrl, Meta, Shift or Alt held, or a middle click, dispatches no event and the element prevents nothing: the browser's own modifier handling applies (on Chromium on Linux a Meta-click navigates the current tab)",
+  "`current` (attribute and property, reflected): `page` or `true` marks the current item: the inner control reports `aria-current` with that value and the row shows the current mark, an `--ocelle-color-accent-low` surface (`--ocelle-color-chrome-hover` with `ground=\"chrome\"`) and a bar in `--ocelle-color-current`, `--ocelle-bar-width` wide, at the inline start; any other value is not current",
+  "The bar is drawn 7 px inside the row's edge, apart from the focus ring, so on a focused current row the ring and the bar stay two marks. The current mark stays on hover; in forced colours the bar is `Highlight`",
+  "`unavailable` (boolean attribute and property, reflected): the row is unavailable (the control conventions): its inner control stays in the tab order with `aria-disabled=\"true\"`, keeps its name and description and is not activated by any click or key; a link row has no `href`. Its title, description, tags and trailing icon are in `--ocelle-color-disabled-ink` (`GrayText` in forced colours), and hovering it changes nothing",
+  "An unavailable current row keeps its current surface and `aria-current`, with the bar in `--ocelle-color-disabled-ink`",
+  "While the row is unavailable its description, tags and trailing wrappers carry `aria-disabled=\"true\"` too, so a checker reads their text as part of the inactive control",
+  "`layout=\"card\"`: the icon and the title on the first line with the trailing icon at its end, then the description, then the tags, each `--ocelle-space-1` below the line above; the title is the part `title`, so a host can adjust it",
+  "Tags wrap only between tags: a tag's text is not broken inside a word, except a tag wider than the row, which may break",
   // two copies on a page (FR-006, Edge Cases)
   "Two copies of the package on one page, two versions or the browser build beside a bundle of the module build, cannot both define an element: the first definition wins and the second import throws nothing",
 ];
@@ -337,6 +347,10 @@ describe("packages/elements/CHANGELOG.md", () => {
     "`ocelle-action-row-activate`",
     "`row-id`, `layout`, `presentation`, `ground`, `href`, `target`, `rel` and `busy` (reflected) and `label`",
     "`--ocelle-focus-offset-inset`",
+    // 012 phase 6 (tasks.md T064a, T065)
+    "`current` and `unavailable` (reflected)",
+    "`layout=\"card\"`",
+    "`:state(pressed)` only in button mode",
     ...["chevron-start", "chevron-end", "chevron-up", "chevron-down", "arrow-start", "arrow-end", "menu", "close", "folder", "file", "search", "table", "copy"].map((name) => `\`${name}\``),
   ])("names %s under Unreleased / Added (constitution VII, FR-031, SC-008)", (surface) => {
     expect(added).toContain(surface);

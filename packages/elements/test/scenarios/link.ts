@@ -609,7 +609,7 @@ export const linkScenarios: readonly Scenario[] = [
     },
   },
   {
-    name: 'US2-12: host rules on ocelle-button:state(expanded), :state(pressed) and :state(current) match while the moved aria-expanded and aria-pressed are "true" and aria-current is any value but "false"; after "false" or "" they no longer match; :state(pressed) follows the moved aria-pressed in link mode too, where the inner <a> carries no aria-pressed (FR-004)',
+    name: 'US2-12: host rules on ocelle-button:state(expanded), :state(pressed) and :state(current) match while the moved aria-expanded and aria-pressed are "true" and aria-current is any value but "false"; after "false" or "" they no longer match; a link has no pressed state: a link-mode host with aria-pressed="true" never matches :state(pressed) and its inner <a> carries no aria-pressed, and a button-mode host with aria-pressed="true" stops matching once an href makes it a link and matches again once the href is removed (FR-004, FR-009; plan decision 32)',
     run: async (driver) => {
       await driver.mount('<ocelle-button id="e" aria-expanded="true">A</ocelle-button> <ocelle-button id="p" aria-pressed="true">B</ocelle-button> <ocelle-button id="c" aria-current="page">C</ocelle-button> <ocelle-button id="n">N</ocelle-button> <ocelle-button id="lp" href="#here" aria-pressed="true">L</ocelle-button>');
       await driver.rules(stateRules);
@@ -624,14 +624,28 @@ export const linkScenarios: readonly Scenario[] = [
       await driver.setAttribute("c", "aria-current", "");
       await driver.setAttribute("e", "aria-expanded", "");
       await driver.setAttribute("lp", "aria-pressed", "");
-      return { set, off, again, empty: await all(), link: await inner(driver, "lp"), axe: await severe(driver) };
+      const empty = await all();
+      const link = await inner(driver, "lp");
+      await driver.mount('<ocelle-button id="sw" aria-pressed="true">S</ocelle-button>');
+      await driver.rules(stateRules);
+      const button = { states: await states(driver, "sw"), inner: await inner(driver, "sw") };
+      await driver.setAttribute("sw", "href", "#here");
+      const linked = { states: await states(driver, "sw"), inner: await inner(driver, "sw") };
+      await driver.setAttribute("sw", "href", null);
+      const back = { states: await states(driver, "sw"), inner: await inner(driver, "sw") };
+      return { set, off, again, empty, link, switched: { button, linked, back }, axe: await severe(driver) };
     },
     expected: {
-      set: { e: ["expanded"], p: ["pressed"], c: ["current"], n: [], lp: ["pressed"] },
+      set: { e: ["expanded"], p: ["pressed"], c: ["current"], n: [], lp: [] },
       off: { e: [], p: [], c: [], n: [], lp: [] },
-      again: { e: ["expanded"], p: [], c: ["current"], n: [], lp: ["pressed"] },
+      again: { e: ["expanded"], p: [], c: ["current"], n: [], lp: [] },
       empty: { e: [], p: [], c: [], n: [], lp: [] },
       link: { tag: "a", href: "#here" },
+      switched: {
+        button: { states: ["pressed"], inner: { tag: "button", type: "button", "aria-pressed": "true" } },
+        linked: { states: [], inner: { tag: "a", href: "#here" } },
+        back: { states: ["pressed"], inner: { tag: "button", type: "button", "aria-pressed": "true" } },
+      },
       axe: [],
     },
   },

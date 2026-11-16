@@ -4,6 +4,7 @@ import "../src/ocelle-action-row.ts";
 import "../src/ocelle-icon.ts";
 import { inProcessDriver } from "./in-process.ts";
 import { actionRowScenarios } from "./scenarios/action-row.ts";
+import { rowStateScenarios, rowStateSinkScenarios } from "./scenarios/row-states.ts";
 
 // User Story 4's browser scenarios for `ocelle-action-row`, in process on the element source (012 research.md R-11;
 // tasks.md T051): the shared bodies of scenarios/action-row.ts on the in-process driver, light and dark, forced colours
@@ -22,6 +23,14 @@ describe("ocelle-action-row, in process (US4)", { timeout: 60_000 }, () => {
   });
 });
 
+// User Story 5 (tasks.md T062): the shared bodies of scenarios/row-states.ts (the row's states and the card layout),
+// and its in-process link-row bodies on the navigation sink's records.
+describe("ocelle-action-row's states and card layout, in process (US5)", { timeout: 60_000 }, () => {
+  it.each([...rowStateScenarios, ...rowStateSinkScenarios])("$name", async ({ run, expected }) => {
+    expect(await run(driver)).toEqual(expected);
+  });
+});
+
 /** The row with the properties of data-model.md § `ocelle-action-row` that phase 5 gives it, typed here so the test reads them whatever the element declares. */
 type Row = HTMLElementTagNameMap["ocelle-action-row"] & {
   rowId?: string | undefined;
@@ -33,6 +42,8 @@ type Row = HTMLElementTagNameMap["ocelle-action-row"] & {
   target?: string | undefined;
   rel?: string | undefined;
   busy?: boolean;
+  current?: string | undefined;
+  unavailable?: boolean;
 };
 
 function created(): Row {
@@ -93,6 +104,36 @@ describe("ocelle-action-row's reflected properties", () => {
 // parses as a URL and is not a `javascript:` URL renders an inner `<a>` with the `href` as written, its `target` and
 // `rel`, and `rel="noopener"` for `target="_blank"` without `rel`; otherwise an inner `<button type="button">` with
 // none of them. In process only: the fixture's link bodies are phase 6's (US5-1, US5-2).
+// User Story 5's reflected properties (data-model.md § `ocelle-action-row`; FR-030, FR-037, FR-039; tasks.md T062):
+// `current` reflects as written and `unavailable` as a boolean, false by default; the inner control follows each.
+describe("ocelle-action-row's reflected current and unavailable properties", () => {
+  afterEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  it("reflects current as written and unavailable as a boolean (false by default), each followed by the inner control, and removes them when set to undefined and false", async () => {
+    const host = created();
+    await host.updateComplete;
+    const initial = { unavailable: host.unavailable, attribute: host.hasAttribute("unavailable") };
+    Object.assign(host, { current: "page", unavailable: true });
+    await host.updateComplete;
+    const control = (): Element | null | undefined => host.shadowRoot?.querySelector('[part="control"]');
+    const set = { current: host.getAttribute("current"), unavailable: host.getAttribute("unavailable"), ariaCurrent: control()?.getAttribute("aria-current") ?? null, ariaDisabled: control()?.getAttribute("aria-disabled") ?? null };
+    Object.assign(host, { current: undefined, unavailable: false });
+    await host.updateComplete;
+    const cleared = { current: host.hasAttribute("current"), unavailable: host.hasAttribute("unavailable"), ariaCurrent: control()?.hasAttribute("aria-current"), ariaDisabled: control()?.hasAttribute("aria-disabled") };
+    document.body.innerHTML = '<ocelle-action-row current="true" unavailable>A</ocelle-action-row>';
+    const parsed = document.querySelector("ocelle-action-row") as Row;
+    await parsed.updateComplete;
+    expect({ initial, set, cleared, parsed: { current: parsed.current, unavailable: parsed.unavailable } }).toEqual({
+      initial: { unavailable: false, attribute: false },
+      set: { current: "page", unavailable: "", ariaCurrent: "page", ariaDisabled: "true" },
+      cleared: { current: false, unavailable: false, ariaCurrent: false, ariaDisabled: false },
+      parsed: { current: "true", unavailable: true },
+    });
+  });
+});
+
 describe("ocelle-action-row's link mode", () => {
   afterEach(() => {
     document.body.innerHTML = "";
