@@ -288,7 +288,7 @@ reaches the tree as empty → text.
 - [X] T081 [US4] `packages/elements/src/ocelle-copy-field.ts` (R-07): group role, `part="value"` text, imperative live-region text, native button `part="copy-control"` with `ocelle-icon name="copy"`, deferred request with status cleared first
 - [X] T082 [US4] Manifest; README copy-field section; CHANGELOG
 - [X] T083 [US4] Baselines for the copy-field stories with `pnpm run visual:update` in #10's pinned container under docker (`storybook/baselines/`), with any shared baseline (the token stories included) that changes, inspected and committed with the reason in the commit message; move the story-theme counts of `gates/test/integration/visual.test.ts` and add the new light stories that show `color-ink` to `gates/plants/visual/fail-token-changed/plant.json`; record in `reviews/phase-5/notes.md` that no podman cross-engine check was possible and CI confirms the baselines at landing (operator decision 2026-11-14, `reviews/phase-2/operator-decisions.md`; FR-053, SC-007)
-- [ ] T084 [US4] Plants recorded in `reviews/phase-5/plants.md`; the gates of T028
+- [X] T084 [US4] Plants recorded in `reviews/phase-5/plants.md`; the gates of T028
 
 **Checkpoint**: `tdd-check.sh 5` reports `pass`.
 

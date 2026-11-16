@@ -52,7 +52,22 @@ triple click takes the line ends with it.
 
 ## Tests changed after the red commit
 
-None so far. The red commit's bodies, expected values and pairings pass unchanged on the green source.
+The green commit `55adcf3` changed no test: the red commit's bodies, expected values and pairings passed unchanged on
+the green source. Two test-only commits came after it. Each made a body stricter or added one, and none removed or
+loosened an assertion.
+
+- `15a9d66`, stricter bodies from the plant run. Five named plants did not bite on their first run, because the
+  bodies were weaker than their guards (`plants.md`, "Plants corrected after their first run"):
+  - US4-2's 300-character command had hyphens, where a line may break without `overflow-wrap`. It is now letters and
+    digits only.
+  - FR-032's value now has leading and trailing whitespace runs too.
+  - FR-035 now also double-clicks the Copy control (two activations within one frame) and expects two requests.
+  - FR-035's removed field: a listener on the field itself records the requests too. A detached element's event never
+    reaches the `document`, so the document listener alone could not see a dispatch.
+  - The Edge Cases body with `value` and `status` in the markup now also writes `status` first.
+  Every changed body passes on the green source in both harnesses, and each corrected plant bites.
+- `eebbb4f`, two bodies from the mutation run (below): the properties' defaults, and the removal of the `status`
+  attribute.
 
 ## The red run
 
@@ -89,3 +104,61 @@ The baselines were inspected:
 - the status story shows "Copied to clipboard" under the field, at its inline end;
 - the empty story's control is drawn in `disabled-ink`;
 - the focused story's ring is drawn on all four sides of the control.
+
+## The mutation gate (T084)
+
+The first run of `pnpm run gate:mutation -- --base 75965e1` (on `15a9d66`) reported 10 findings in
+`src/ocelle-copy-field.ts`. The commits after it handle them; there was no behaviour defect among them.
+
+- **Killed by new bodies** (`eebbb4f`, both harnesses). Each mutant was applied by hand and fails the new body, and both
+  bodies pass on the source:
+  - the `#status` initialiser and the constructor's `copyLabel` default, read by the properties' defaults body;
+  - `attributeChangedCallback`'s `status` branch (its condition and its `""` fallback, and the NoCoverage mutant on the
+    fallback), read by the removal of the `status` attribute.
+- **Removed by simplifying the source** (`47ce03a`, `refactor(...)`): the `value` setter requests an update with no
+  property name. The template reads the private value and no update hook reads the changed properties, so the name was
+  an equivalent `StringLiteral` mutant.
+- **Equivalent records** (2), each a `Stryker disable next-line ObjectLiteral,BooleanLiteral` comment naming only those
+  mutants, on the `value` and `status` entries of `static properties`. With `{}` or `noAccessor: false`, Lit wraps the
+  class's own accessor, which only adds an update request that renders the same template. All four mutants were applied
+  by hand, and every copy-field body passed (29 of 29).
+
+The second run (on `47ce03a`), `mutation.log`, exits 0:
+- 83 mutants on the changed lines of 2 files, none survived;
+- 0 timeouts;
+- 12 compile errors: type-checker rejections, such as `{}` for a method body that must return a value, or the
+  `typeof` guard of the label helper made `true`, after which `.trim()` is called on `unknown`;
+- 1 zero-mutant entry (`src/index.ts`, an export line);
+- 2 equivalent records, above.
+
+## Plants (T084)
+
+`plants.md` records 64 plants, each applied alone to `47ce03a`, run once and reverted.
+- 63 make a test fail.
+- One does not: *the region in the Lit template*, which contracts § Pairings names for US4-5. It is not a defect of
+  that outcome under Lit 3 and the deferred dispatch: Lit commits a text binding only when the value changes, and every
+  read of the region comes after Lit's update. The pairing's other plant, *the region's text written
+  unconditionally*, makes US4-5 fail, so the guard is real. `plants.md` gives the reasoning; the contract row is left
+  for the review.
+- Six plants did not bite on their first run. Five bodies were made stricter (above), and one plant form was not a
+  defect: a `transparent` divider is repainted by forced colours. That plant now sets the divider's width to 0.
+
+## The gate run (T084)
+
+The gates were run one at a time on the code of `47ce03a`, with
+`OCELLE_CHROMIUM_PATH=/opt/pw-browsers/chromium-1243/chrome-linux64/chrome` and `OCELLE_VISUAL_ENGINE=docker`. The
+commit after it adds only these records.
+
+| Gate | Result |
+|---|---|
+| typecheck, lint (311 files), test-lint (210 files), style-lint (23 files), brand-rules (7 rules), pins (5 manifests), config-copies, prefix (285 files) | exit 0, no finding |
+| contrast | exit 0: 166 pairs in light, 174 in dark, 155 required per theme. The copy field adds no pair: every pair of its R-15 row is already checked |
+| manifest | exit 0: 10 elements |
+| signoff `--range 75965e1..HEAD` | exit 0, no finding |
+| unit-tests | exit 0: 3917 tests in 163 files |
+| csp | exit 0: 28 files |
+| storybook-build | exit 0: 50 stories |
+| visual | exit 0: 100 captures match their baselines (docker only, no cross-engine comparison; no podman in this session) |
+| axe | exit 0: 100 story-theme runs, 0 serious or critical; 22 notes, all excepted (the Prose document's ten and the scrolling listbox story's twelve); no new exception |
+| `mutation -- --base 75965e1` | exit 0: 83 mutants on the changed lines of 2 files, none survived; 0 timeouts, 12 compile errors, 1 zero-mutant entry, 2 equivalent records (`mutation.log`) |
+| plants | exit 0: 301 plants of 17 gates and the registry, every plant as expected; this includes `visual/fail-token-changed` with the four copy-field findings and `storybook-build/fail-empty-index` with the copy-field stories' empty copy |
