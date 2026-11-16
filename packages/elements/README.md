@@ -446,10 +446,10 @@ shell that wants the rail horizontal inside its drawer and vertical in its colum
 tier, with an exclusive bound in its own query; the rail does not care where the value comes from. It emits no event.
 
 The rail sizes no item: items are sized by themselves, at `--ocelle-size-rail-item` (40 px), the size #12's
-`ocelle-nav-item` is expected to have.
-The rail sets only the gap, the items' centring and the chrome ink as its colour, which an item takes when it
-inherits colour. A plain `<a>` does not: give `<a>` items `color: inherit` and a target of at least 24 px, or use
-`ocelle-nav-item` elements.
+`ocelle-nav-item` is expected to have. The rail sets only the gap, the items' centring and the chrome ink as its
+colour, which an item takes when it inherits colour. A plain `<a>` does not: give `<a>` items `color: inherit` and a
+target of at least 24 px, or use `ocelle-nav-item` elements once they are released; no release of this package ships
+`ocelle-nav-item` yet.
 
 `ocelle-personal-rail` reads the tokens `--ocelle-color-chrome`, `--ocelle-color-chrome-ink`,
 `--ocelle-color-chrome-muted`, `--ocelle-border-width`, `--ocelle-shell-rail-width`, `--ocelle-space-1` and
