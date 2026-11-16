@@ -277,3 +277,10 @@ counts equal the phase 4 runs at `9a66884`.
 | 15 | `:241-270` | 24 | 0 | 0 | 4 | 0 | 0 | 508 s |
 | 16 | `:271-300` | 39 | 0 | 0 | 10 | 0 | 0 | 519 s |
 | 17 | `:301-330` | 34 | 0 | 0 | 16 | 2 | 0 | 551 s |
+
+## Operator decision on the Phase 5 review notes (2026-11-16)
+
+- **Decided by:** the operator, asked in this session as a multiple-choice question.
+- **Answer:** "Fix R1-01 now, rest to land".
+- **R1-01:** both comments are fixed before the fold, comment-only, with a tdd-exempt line. They are in `src/bubble.ts` and `src/ocelle-tooltip.ts`:138-139. The fix: a pending hover delay is ended by the trigger's `pointerout`, or by removal of the tooltip, not by `focusout`. `dismiss` does clear the timer of the shown tooltip.
+- **R1-02, R1-03 and R1-04:** these go to /ocelle-land as optional items.
