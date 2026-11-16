@@ -90,7 +90,7 @@ The board module does not define the lane: a host imports both, or the root.
 | `inspector-below` / `inspectorBelow` | property + attribute | `string \| undefined`, absent | no | Inspector stacked below this length; grammar below |
 | `narrow` | property + attribute | `boolean`, `false` | yes | Forces one column (FR-027) |
 | `detail-open` / `detailOpen` | property + attribute | `boolean`, `false` | yes | In one column, shows the detail instead of the list (FR-027) |
-| `remeasure()` | method | `(): void` | | Requests a measurement pass of the intrinsic sizes for the next animation frame, coalesced with any other trigger, for a change the element cannot see (content in a slotted element's shadow root, an attribute-only change, an image or a font loading; FR-025, research.md R-13). In that frame, after the pass, it re-chooses the tier from a fresh measurement of the element's border box, the remedy for the known limitations of § Container-tier convention, "Unseen changes" (a percentage inline padding that changes with the host's container, which may go unseen; also in a host whose content box is narrower than its own inline padding and borders, a percentage padding there, since a px or em padding or a border change is seen there). On an element that is not in a document, never connected or removed, it does nothing: it runs no pass and re-chooses no tier (phase 4 review round 3, R3-02); a never-connected element's first render schedules its first pass anyway, and a host that changed a removed element calls `remeasure()` after inserting it again |
+| `remeasure()` | method | `(): void` | | Requests a measurement pass of the intrinsic sizes for the next animation frame, coalesced with any other trigger, for a change the element cannot see (content in a slotted element's shadow root, an attribute-only change, an image or a font loading; FR-025, research.md R-13). In that frame, after the pass, it re-chooses the tier from a fresh measurement of the element's border box, the remedy for the known limitations of § Container-tier convention, "Unseen changes" (a percentage inline padding that changes with the host's container, which may go unseen; also in a host whose content box is narrower than its own inline padding and borders, a percentage padding there, since a px or em padding or a border change is seen there). On an element that is not in a document, never connected or removed, it does nothing: it runs no pass and re-chooses no tier (phase 4 review round 3, R3-02); a never-connected element's first render schedules its first pass anyway, and a host that changed a removed element calls `remeasure()` after inserting it again. On an element in a document that is not rendered (no box: a closed `<dialog>`, a `display: none` ancestor, `hidden`) the pass it requests writes no figure and stays pending, and it leaves the measured size and the tier as they were; the element measures afresh by itself when it becomes rendered (§ Container-tier convention, "Not rendered"; O5-01) |
 | `list` | slot | | | The list pane |
 | (default) | slot | | | The detail pane |
 | `inspector` | slot | | | The optional inspector pane (FR-024) |
@@ -128,6 +128,14 @@ The board module does not define the lane: a host imports both, or the root.
   pass for the next animation frame, at most one per frame. A tier change set by a property or attribute runs the
   pass first, synchronously. Nothing writes the figures inside a `ResizeObserver` callback, whose writes would resize
   a shrink-to-fit host within the delivery; a mutation made inside one is measured a frame later.
+- **Not rendered (landing pass, O5-01).** Becoming rendered is a trigger: when the element, first rendered or changed
+  while it had no box (in a closed `<dialog>`, under a `display: none` ancestor, with `hidden`), gets a box again
+  (the dialog opened, the ancestor or the host shown), its `ResizeObserver` schedules one pass for the next animation
+  frame, coalesced as above and never run inside the delivery; the element then has the size and tier it has when
+  rendered from the start, with no `remeasure()` call. A pass on an element with no box (its grid has no client
+  rects) writes nothing and stays pending, and a fresh measurement of a probe that is not rendered (computed inline
+  size `auto`) does not replace the measured size, so the tier does not change and no figure becomes `NaN`, or the
+  0 px of the missing box. Becoming rendered is therefore not among the unseen changes below.
 - **Unseen changes.** A size change with no light-DOM node or text change in a pane (an image or a font loading),
   content a slotted element renders in its own shadow root, and an attribute-only change wait for the next trigger;
   the host calls `remeasure()` after one (FR-025). Two changes of the border box are known limitations (operator
@@ -172,6 +180,7 @@ The board module does not define the lane: a host imports both, or the root.
 Frames are sized by the same `[data-frame]` rules as the tests: `storybook/.storybook/stories-layout.css` holds a copy
 of them, checked against the one source, `packages/elements/test/fixtures/frames.css`, by a `storybook-integration`
 test (research.md R-15, R-17). No story uses a `style` attribute or a class; the story tests assert it on each story's
-markup (research.md R-15). The
+markup (research.md R-15). The middle and end scroller stories hold their share of the scroll range once the layout
+settles, also when the strip grows after their first update (research.md R-15, O3-01). The
 board and lane stories' nested scroller has an item-specific `label` ("Tags of WP-12"). Default-lane stories render on
 `color-canvas`.

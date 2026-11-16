@@ -116,9 +116,9 @@ module adopts no other per-instance sheet.
 
 | Hook | What the module does |
 |---|---|
-| `hostConnected` | adds its listeners (`keydown`, `focusin`, `focusout`, passive `scroll`), starts its `ResizeObserver`, and adopts its per-instance sheet once (appended to `shadowRoot.adoptedStyleSheets`) |
-| `hostUpdated` | re-reads `box()`. On a new box it moves the observer and the attributes to it. It observes `box` (with `{ box: "border-box" }`, so a scrollbar that appears or goes is seen) and `box.querySelector(".region-track")`, and listens to `slotchange` on the box, where it bubbles from every slot inside the track (it is not composed, so it stops at the host's shadow root) |
-| `hostDisconnected` | disconnects the observer and removes its listeners. The box's attributes stay as last set |
+| `hostConnected` | adds its listeners (`keydown`, `focusin` and `focusout` on the host; on the box it follows, a passive `scroll` and `slotchange`, and `focusout` on its frame), starts its `ResizeObserver` on the box it follows (from the first `hostUpdated` on; on a reconnection, the box it already followed), and adopts its per-instance sheet once (appended to `shadowRoot.adoptedStyleSheets`) |
+| `hostUpdated` | re-reads `box()`. On a new box (a different node, or none) it first lets go of the old one: it unobserves the old box and its track, removes the old box's `scroll` and `slotchange` listeners and the old frame's `focusout` listener, and removes the old box's `tabindex`, `role` and `aria-label`. Then it follows the new box, and the observer's first delivery for it writes the state and the attributes there, so the new box takes over the tab stop, the role and the name (landing review L1-03, operator round phase 2 round 3, O3-03). It observes `box` (with `{ box: "border-box" }`, so a scrollbar that appears or goes is seen) and `box.querySelector(".region-track")`, and listens to `slotchange` on the box, where it bubbles from every slot inside the track (it is not composed, so it stops at the host's shadow root) |
+| `hostDisconnected` | disconnects the observer and removes the three listeners it added on the host (`keydown`, `focusin`, `focusout`). The box's `scroll` and `slotchange` listeners and the frame's `focusout` listener stay on those nodes: a disconnected host's box gets no user scroll, and `hostConnected` adds the same functions again, which leaves them single. The box's attributes stay as last set (phase 2 review R1-02 and R2-02, landing review L1-04, O3-04) |
 
 **When the state updates (SPEC-1-07).**
 

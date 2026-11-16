@@ -126,6 +126,16 @@ again:
 - **One lane** (F7): worded as US2-3 words it, the board's inline size less its ring room on each inline side
   (Edge Cases "One lane, or no lanes").
 
+**Operator decisions at the landing pass** (2026-11-16, human:MOES-Media; landing review `reviews/landing/round-1.md`,
+operator rounds `reviews/phase-2/round-3.md` and `reviews/phase-4/round-5.md`). These amend the text again:
+
+- **A list-detail that first renders while not rendered** (L1-01, O5-01, "Fix it, red first (Recommended)"): becoming
+  rendered (a closed `<dialog>` opened, a `display: none` ancestor or a `hidden` host shown) is a re-measure trigger,
+  and a pass, or `remeasure()`, on an element that is not rendered writes nothing. It is not a further known
+  limitation (FR-025, FR-034, US3-12).
+- **A new scroll box** (L1-03, O3-03): when the host renders a different scroll box, the overflow region lets go of
+  the old one and its tab stop, role and name move to the new one (FR-011; contracts/overflow-region.md § Lifecycle).
+
 ## Consumer need
 
 - **Board and pipeline screens.** Kitty Desktop's board and pipeline screens build on the Spec Kitty class families
@@ -229,6 +239,9 @@ test, and its plan names a planted defect that makes it fail:
 | Content a slotted element renders in its shadow root, and an attribute-only change of pane content, do not change the intrinsic sizes on their own (US3-12, FR-025) | After the host calls `remeasure()`, the element shows the figure of its new content | `remeasure()` as a no-op; `attributes` observed |
 | Content a slotted element appends from its own `ResizeObserver` callback brings no "ResizeObserver loop" message (US3-12, FR-025) | After settle the element shows the figure of its new content | The pass run in the `MutationObserver` callback |
 | Mutations made in several tasks before one frame run no second measurement pass in that frame (FR-025; counted by a test-only pass counter, plan R-13) | A mutation in a later frame runs a pass in that frame | One pass per `MutationObserver` delivery |
+| A pass or `remeasure()` on a list-detail that is not rendered writes no figure and does not change its column count (US3-12, FR-025) | Once it is rendered again, a fresh pass gives it the figures of its content | A pass that writes the figures it reads with no box (0 px), or `remeasure()` that sets the measured size from a non-rendered probe (`NaN`) |
+| A list-detail first rendered while not rendered does not stay at 0 px in one column once shown (US3-12, FR-025) | Its twin rendered from the start shows the same width and column count | No pass scheduled when the element becomes rendered |
+| A scroll box the host has replaced keeps no tab stop, role or name and is no longer observed (FR-011; contracts/overflow-region.md § Lifecycle) | The new box is a tab stop and a named group while it overflows | The old box left observed and its attributes left as last set |
 | Focus is not moved when it was not in the pane that is hidden (US3-6, FR-028) | When focus was in that pane, it moves to the start of the shown pane | Focus moved on every switch |
 | The page has no horizontal scroll at 320 px (US2-9, US3-9, SC-006) | Inside the same page, the overflowing board scrolls by itself | A board without its own overflow: the page then scrolls |
 
@@ -545,6 +558,14 @@ goes.
     element appending a 35rem block that does not wrap from its own `ResizeObserver` callback once it is observed with
     a non-zero inline size, **When** the host sets `detail-open`, **Then** after settle the element is 1153 px wide
     and shows the detail in one column, and the page reports no error.
+    **Given** the same element first rendered while it is not rendered, in a closed `<dialog>`, inside a
+    `display: none` inline-block wrapper, or as a `hidden` flex item of the 1196 px row, **When** the host opens the
+    dialog with `showModal()` or shows the wrapper or the item, **Then** after settle it has the width and the column
+    count of its twin rendered from the start (the dialog: 1073 px and three columns), the same on each of ten frames,
+    and the page reports no error. **Given** the element shown at 1073 px in three columns, then hidden, **When** the
+    host changes its list's text and calls `remeasure()` while it is hidden, **Then** its measured figures and its
+    column count stay as they were (no figure becomes `NaN`, or the 0 px of the missing box), and once it is shown again it takes the figures of
+    its new content (landing pass, O5-01).
 13. **Given** `dir="rtl"`, **When** the element is drawn in three columns, **Then** the list is at the right and the
     inspector at the left, with the borders between them.
 14. **Given** the element and each pane, **When** the tree is read, **Then** the element adds no landmark or role of
@@ -675,7 +696,9 @@ goes.
   - **Effects.** On the scroll box and the module's own shadow nodes only: the tab stop, the role and the name
     (FR-002, FR-010), focus clearance (FR-001) and the focus handover (FR-004). Nothing is written to the host. The
     host re-renders when an output changes.
-  - **Lifecycle.** It starts observing when the host is connected and stops when it is disconnected.
+  - **Lifecycle.** It starts observing when the host is connected and stops when it is disconnected. When the host
+    renders a different scroll box, it follows the new box and lets go of the old one: the old box is no longer
+    observed and loses the tab stop, the role and the name, which the new box takes over (landing pass, O3-03).
 
   It emits no event. The plan writes this interface as a contract (`contracts/overflow-region.md`). A test-only
   element built on the module proves that the module, not `ocelle-scroller`, carries the behaviour (US1-16).
@@ -772,7 +795,13 @@ goes.
   `remeasure()` (operator decisions, plan squad rounds 2 and 3). The element has this one public method,
   `remeasure(): void`; besides the pass, it re-chooses the tier from a fresh measurement of the element's border box,
   in the same animation frame. On an element that is not in a document (never connected, or removed) it does nothing
-  (phase 4 review round 3, R3-02). A change of the element's own inline padding or borders alone is seen. Two cases are
+  (phase 4 review round 3, R3-02). An element that is in a document but not rendered (it has no box: inside a closed
+  `<dialog>`, under a `display: none` ancestor, or with the `hidden` attribute) cannot be measured. A pass then writes
+  no figure, keeps the figures in force and stays pending, and `remeasure()` leaves the measured size and the tier as
+  they were. When the element becomes rendered (the dialog opened, the ancestor or the host shown), its intrinsic
+  sizes are measured afresh in the next animation frame, never inside the `ResizeObserver` delivery that saw the
+  change, and it then has the size and the layout it has when rendered from the start; the host need not call
+  `remeasure()` (landing pass, operator round phase 4 round 5, O5-01). A change of the element's own inline padding or borders alone is seen. Two cases are
   known limitations (operator decision P4, phase 4 review round 2), and the host calls `remeasure()` after a change in
   either:
   - **A percentage inline padding that changes with the host's container**, while the element's content box keeps
@@ -862,8 +891,9 @@ goes.
     `container-type` is set on a host that may shrink to fit, and the element's intrinsic sizes do not depend on the
     tier it shows (max-content of its widest tier, min-content of its narrowest), so a shrink-to-fit host cannot make
     the tier alternate. The intrinsic sizes are re-measured on slot changes and light-DOM content mutations, at most
-    once per animation frame and never inside a `ResizeObserver` callback, before a host-set tier change, and when
-    the host calls `remeasure()`. The unseen changes (no light-DOM node or text change: images, fonts, content
+    once per animation frame and never inside a `ResizeObserver` callback, before a host-set tier change, when the
+    element becomes rendered, and when the host calls `remeasure()`; while the element is not rendered, a pass writes
+    nothing. The unseen changes (no light-DOM node or text change: images, fonts, content
     rendered in a slotted element's shadow root, attribute-only changes) wait for the next of these, and the host
     calls `remeasure()` after one. Content mutated inside a consumer's own `ResizeObserver` callback can still make
     the browser report its "ResizeObserver loop" message, through layout alone, when the shown layout grows a
