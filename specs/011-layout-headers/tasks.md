@@ -148,7 +148,7 @@ zero CSP violations; `pnpm run gate:contrast` reports 169 light / 177 dark / 158
 The operator chose to fix L1-01 in this phase on 2026-11-15 (`reviews/phase-2/round-4.md`). One red commit of test
 files only, then the fix.
 
-- [ ] T049 [US1] R4-01 (landing L1-01), the card reads its own `header` slot on `slotchange` (FR-017, research.md
+- [X] T049 [US1] R4-01 (landing L1-01), the card reads its own `header` slot on `slotchange` (FR-017, research.md
   R-05 § Forwarded slots, contracts/checks.md § Pairing plants, the forwarded-slot row), test first. **Red**, in a
   commit that changes only test files (`test(011-layout-headers): phase 2 review round 4 red`, signed off): a shared
   scenario in `packages/elements/test/scenarios/card.ts`, "R-05 forwarded slot (phase 2 review R4-01)", run by both
