@@ -127,12 +127,17 @@ not the element behind it (operator decision PLAN-CORRECTNESS-1-017 (a)); the RE
 | Kind | Name | Type | Default |
 |---|---|---|---|
 | property / attribute | `href` | string (reflected) | `undefined` |
+| property / attribute | `label` | string (not reflected) | `undefined`; trimmed, blank counts as none; names the link instead of its text (FR-045, operator decision during phase 6) |
 | event | `ocelle-link-activate` | `{ href: string \| null }`, cancelable | |
 | slot | (default) | | |
 | part | `anchor` | | |
 
-Host `aria-label` forwarded to the anchor, with exactly one named node in the tree (R-08); it must contain the link's
-visible text (WCAG 2.5.3), which the README states (R-08 Label in name). The README states that `detail.href` is the
+The host has no role. `part="anchor"` is the link, named by its text, or by `label` when it is non-blank: the
+element sets `label` as the anchor's `aria-label` and follows its changes, with exactly one named node in the tree
+(R-08; FR-045, operator decision during phase 6, as FR-006's tabs exception). A host `aria-label` on `ocelle-link` is
+not forwarded, not observed and does not name the link; the element writes no attribute on its host. The README's
+link section says to name the link with `label` (not a host `aria-label`) and that `label` must contain the link's
+visible text (WCAG 2.5.3, R-08 Label in name); the documentation test checks both (US5-8). The README states that `detail.href` is the
 attribute as written and not validated.
 
 ## Pairings: "does not" outcomes and their plants
@@ -190,8 +195,9 @@ recorded in `reviews/phase-N/plants.md` (research R-11).
 | Space on the link emits nothing, its default not prevented (US5-2) | Enter emits | Space handled on the link | page taller than the viewport |
 | modified activation emits nothing (US5-13) | a plain click emits | emitting on every click | |
 | modified activation's default not prevented (US5-13) | a plain click's default prevented | `preventDefault()` on every click | `window` bubble listener; `context.on("page")` |
-| exactly one named node for the link (US5-8) | the link named by the host `aria-label` | forwarding the label and leaving the host named | label starting with the visible text (R-08) |
-| no `label-content-name-mismatch` on the link stories (US5-8, WCAG 2.5.3; PLAN-FRESH-2-005) | the host label is the link's name | a story label without the visible text | #10's rule set on the link stories |
+| exactly one named node for the link (US5-8) | the link named by `label`, then by its text with no `label` | `label` set as the host's `aria-label` instead of the anchor's | `label` starting with the visible text (R-08), changed after render |
+| a host `aria-label` on `ocelle-link` does not name the link (US5-8, FR-045) | the link named from `label`, and from its text without one | forwarding the host `aria-label` to `part="anchor"` (at first render or on a later change) | host `aria-label="Other name"` beside `label`, then changed after render; and a host `aria-label` with no `label` (link named by its text); the host's `aria-label` read back as written |
+| no `label-content-name-mismatch` on the link stories (US5-8, WCAG 2.5.3; PLAN-FRESH-2-005) | the story's `label` is the link's name | a story `label` without the visible text | #10's rule set on the link stories |
 | a cancelled fragment link does not change the fragment (US5-14) | an uncancelled one does | ignoring `defaultPrevented` | in process, `location.hash` read |
 | no mutation on a set of the current value (Edge Cases, US1-18, US2-17) | an earlier set mutates the states | rewriting `aria-selected` / `aria-pressed` on every set | MutationObserver over the parent's subtree |
 | no transition (Edge Cases "Motion") | the selected paint changes | a `transition` on the selected paint | computed `transition-duration` read |
