@@ -560,7 +560,7 @@ logs in `reviews/phase-5/break-checks/`, a section in `reviews/phase-5/notes.md`
 `packages/elements/test/tooltip.test.ts` (`elements`, in process on the source) and
 `packages/elements/test/browser/tooltip.test.ts` (`elements-browser`, the browser build on the strict-CSP fixture).
 
-- [ ] T060 [US3] R2-01, "Escape, then a brief hover (FR-033, R-12)" (`tooltip.ts`, about :845 to :860) gets its own
+- [x] T060 [US3] R2-01, "Escape, then a brief hover (FR-033, R-12)" (`tooltip.ts`, about :845 to :860) gets its own
   1000 ms delay, the remedy of the R-12 leave and re-entry rows (`reviews/phase-5/notes.md` § The R-12 re-entry row
   after the operator's decision, `a36d8a1`; `reviews/phase-4/notes.md` § The R-12 leave row after the operator's
   decision).
