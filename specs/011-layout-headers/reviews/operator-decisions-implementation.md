@@ -62,3 +62,13 @@ Recorded by the orchestrator; each is the operator's answer (human:jeroennouwsde
     scripted rewrite of the earlier history would break the landing rule that only the fold script rewrites. The
     history is kept, the check is recorded as a PR defect the operator accepted, and the squash commit on main carries
     its own sign-off. An earlier choice, "Refold from PR base", was withdrawn when the fold script refused the merge.
+11. **2026-11-16, Sign-off is re-established by a scripted re-sign** (supersedes decision 10). The orchestrator
+    (session_01NUfZSc26YwQLeow31d6R6X) relayed that Sign-off is a required check in the ruleset on `main`, so the red
+    check cannot be accepted; the operator chose "Scripted rebuild". `reviews/landing/resign-history.sh` rebuilds
+    `3828d2f..HEAD` (the PR base) with `git commit-tree`, oldest first: every commit keeps its tree, author,
+    committer, dates and message, and the merge 767c097 keeps its outside parent. Only 3a7bc81 gains a
+    `Signed-off-by` line for its author. The script verifies trees, identities, dates, messages and the commit
+    count, keeps the old head as `refs/ocelle/prefold/resign/<branch>`, remaps `base.sha`, `scaffold.sha` and
+    `red-commits` and appends the old -> new map to `reviews/history-map.txt`, as `fold-history.sh` does. It runs
+    after the landing fold and before `main` is merged; the pre-re-sign head is kept on the remote as an archive
+    ref. The rule that only `fold-history.sh` rewrites a mission branch stands, with this one approved exception.
