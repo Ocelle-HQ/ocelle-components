@@ -270,7 +270,8 @@ switch its mode after render (static, button, link, in each direction), with and
    `ocelle-pill-tag-activate` is dispatched and the browser's own modifier handling applies (FR-031).
 4. **Given** `aria-pressed="true"` on the host of a button-mode pill, **When** it renders, **Then** the attribute is
    moved to the inner button as 012's FR-004 sets out, the accessibility tree reports the button pressed, and the
-   pressed look is applied and `:state(pressed)` matches; **When** the host sets `aria-pressed="false"`, **Then** it
+   pressed look is applied (in forced colours too, where it stays distinct from the unpressed look) and
+   `:state(pressed)` matches; **When** the host sets `aria-pressed="false"`, **Then** it
    reports not pressed, without the pressed look or the state; **When** the host sets `aria-pressed="mixed"`, **Then**
    the inner button reports mixed (applied as written, 012 FR-004), and neither the pressed look nor
    `:state(pressed)` applies, as on `ocelle-button` (FR-031; operator decision, SPEC-3-03).
@@ -382,7 +383,8 @@ container width, the text and `disabled`; hover, focus and press Escape; read th
   attribute, and removed (US4-12, FR-035).
 - A disabled interactive pill with a full text that does not fit: it wraps rather than truncates (US5-6, FR-033).
 - Forced colours: status colours are replaced by system colours; the pill keeps a visible border so its extent is
-  still seen; the badge keeps its outline.
+  still seen; the badge keeps its outline; a pressed interactive pill or badge is still told apart from an unpressed
+  one (US4-4, FR-031).
 - Right-to-left documents: the icon slot, the row layout and the ellipsis follow the inline direction.
 - Very long unbroken words in a static pill or a metric value: they break inside the box rather than overflow it.
 
@@ -523,7 +525,8 @@ container width, the text and `disabled`; hover, focus and press Escape; read th
   with `defaultPrevented` `true`); in link mode a click with Ctrl, Meta, Shift or Alt held dispatches no
   `ocelle-pill-tag-activate`, its `click` is delivered and the browser's own modifier handling applies; a middle click
   dispatches nothing. A disabled pill, or a static pill, dispatches no `ocelle-pill-tag-activate` (operator decision,
-  SPEC-1-01). In button mode a moved `aria-pressed` of `true` gives the pressed look and exposes the custom state
+  SPEC-1-01). In button mode a moved `aria-pressed` of `true` gives the pressed look, which stays distinct from the
+  unpressed look in forced colours and does not change the pill's box, and exposes the custom state
   `:state(pressed)`; any other value (`false`, `mixed`, which reaches the inner button as written and is reported mixed,
   or a cleared value) gives neither, as on `ocelle-button` (012's data model; operator decision, SPEC-3-03). In link
   mode no `aria-pressed` value gives the pressed look or `:state(pressed)`: this is the pill's own rule (`ocelle-button`

@@ -70,6 +70,7 @@ extended in phase 1, each with a self-test on a plain stand-in page (no `ocelle-
 | looks, resting and pressed | an interactive `pill` at rest has a `color-accent-strong` border, a static twin a transparent one; an interactive badge hovered and pressed has the `color-<status>-bg` fill, at rest none; pressed shows the inset bar-width cue, not pressed none | resting border removed; badge fill removed |
 | US4-5, disabled look | enabled vs disabled neutral pill, both modes: border `color-accent-strong` vs `color-disabled-ink`, ground `color-neutral-bg` vs `color-disabled-bg` (computed), text `color-neutral` vs `color-disabled-ink` | the disabled border rule removed |
 | forced colours | a disabled pill in button and in link mode computes `GrayText` text and border; an enabled link twin `LinkText`; the focus ring on the button and on the link computes `Highlight` | the `:host([disabled]) .control` forced-colours rule removed |
+| forced colours, pressed | under forced colours, a pressed button-mode `pill` and `badge` compute background `Highlight`, text `HighlightText` and border `Highlight` (each read against a probe element styled with that system colour in the same mode); their unpressed twins compute a background other than `Highlight` and text `ButtonText`; the control's box is the same pressed and unpressed; a pressed and `disabled` pill computes `GrayText` text and border and no `Highlight` background | the forced-colours pressed rule removed; its `:not([disabled])` dropped |
 | US4-6, ring | the focus ring on both controls from the focus tokens (the `control` class present) | the `control` class dropped |
 | US4-7, target | the control's box ≥ `target-small` (value from `expected.ts`) in both axes; on a one-character compact badge a click at each corner inset 1 px delivers one `click` and one `ocelle-pill-tag-activate`; a click 1 px outside delivers none | `min-block-size` removed |
 | FR-001 of 012, stretched host | a pill host stretched by a flex row (and a grid cell): the control's box equals the host's, and a click 1 px inside the host's edge delivers one `click` and one activate | the host not `inline-grid` |
@@ -116,7 +117,7 @@ on disconnection have no public observable; the phase-6 review records them with
 | ARIA states left on a static pill | `pill-tag.ts` (§ US3 seven names) and `readme.test.ts` (the rule); no story |
 | static at upgrade with mirrors | `pill-tag-interactive.ts` (US4-12) |
 | disabled interactive pill with long text | `pill-tag-truncation.ts` (US5-6) |
-| forced colours | each element's scenario file; § US4 forced colours |
+| forced colours | each element's scenario file; § US4 forced colours and forced colours, pressed |
 | right-to-left | `pill-tag.ts`, `metric.ts`, `pill-tag-truncation.ts` (ellipsis at the inline end; the measure at the inline start) |
 | long unbroken words | `pill-tag.ts`, `metric.ts` |
 

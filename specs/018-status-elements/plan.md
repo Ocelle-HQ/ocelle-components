@@ -49,7 +49,7 @@ interactive pill, none for static pills, indicators or metrics (R-09).
 1.4.13 (III), red-first and mutation-tested (VIII), plants run locally only in op 016's `--affected` mode (R-13).
 
 **Scale/Scope**: 3 elements, 1 internal module, 3 additive helper methods and 1 additive helper parameter, 5 to 9
-tokens, 18 stories with light and dark baselines, a phase-1 harness step.
+tokens, 17 stories with light and dark baselines, a phase-1 harness step.
 
 ## Constitution Check
 
@@ -59,7 +59,7 @@ tokens, 18 stories with light and dark baselines, a phase-1 harness step.
 |---|---|
 | I. Names, events, no I/O, small interface, manifest | Tags `ocelle-status-indicator`, `ocelle-metric`, `ocelle-pill-tag`; the pill's user intent goes out as `ocelle-pill-tag-activate` (`bubbles`, `composed`, `cancelable`) beside the native `click`, on the same terms as `ocelle-button-activate` (operator decision SPEC-1-01). No I/O: observers only read layout. Every member in the manifest, mirrors and custom states included (contracts/elements-status.md, R-15). |
 | II. Tokens only, brand rules | All values tokens, every declaration written to pass `gate:style-lint` (no `0s` delay, the ring grown by `inset` from `size-indicator`, the visually hidden label copy from keywords and 0, R-04, R-05); new tokens listed (R-10); no monospace (badge in Schibsted Grotesk with `--ocelle-figures`); the pill radius only on state pills, every pill variant being one (operator decision SPEC-1-04) and the indicator dot a state mark under the same reading (plan decision 3); `color-rule` never used; no ochre text or fill; `color-accent-strong` only as the resting border of an interactive pill on its state ground, as 002's rule for controls on state grounds requires (R-07). |
-| III. Accessible by construction | Indicator: role `img` with its label or hidden, `label` the only name source (R-03), state never by colour alone (README), pulse ≤ 5 s and none under reduced motion (2.2.2, R-04), forced colours. Metric: term and definition, the term named by the label as written while it is shown uppercase (R-05). Pill: one native inner control on 012's conventions that fills the host, ARIA moved and no ID reference across the shadow root (R-07), a static pill inert for clicks and focus (R-06, R-07), focus and the tooltip kept across a mode switch (2.4.3, R-08), token focus ring kept inside a clipping container, a resting control border, a disabled look beyond text colour and system colours for a disabled link in forced colours, 24 px targets (2.5.8), full text by tooltip only while truncated, measured to the sub-pixel, and never needed while disabled (1.4.13, R-09). Contrast: every pair used already checked (R-06, R-07); axe on every story. |
+| III. Accessible by construction | Indicator: role `img` with its label or hidden, `label` the only name source (R-03), state never by colour alone (README), pulse ≤ 5 s and none under reduced motion (2.2.2, R-04), forced colours. Metric: term and definition, the term named by the label as written while it is shown uppercase (R-05). Pill: one native inner control on 012's conventions that fills the host, ARIA moved and no ID reference across the shadow root (R-07), a static pill inert for clicks and focus (R-06, R-07), focus and the tooltip kept across a mode switch (2.4.3, R-08), token focus ring kept inside a clipping container, a resting control border, a disabled look beyond text colour and system colours for a disabled link in forced colours, a pressed look kept distinct in forced colours (a `Highlight` fill, R-07), 24 px targets (2.5.8), full text by tooltip only while truncated, measured to the sub-pixel, and never needed while disabled (1.4.13, R-09). Contrast: every pair used already checked (R-06, R-07); axe on every story. |
 | IV. Strict CSP, offline | Adopted stylesheets, the pill's interactive host sheet included (added and removed in `adoptedStyleSheets`, R-07); no inline style; every scenario also on the strict-CSP fixture; `gate:csp` on built output. |
 | V. Storybook, behaviour tests | A story per variant and state in light and dark with baselines from 006's pinned container (R-12); interaction tests for `click` and `ocelle-pill-tag-activate` with every flag, order and every keyboard path (contracts/checks.md). |
 | VI. Consumer-driven, own code | #7 and spec-kitty-design #498, #509, #524, #526; kitty-mission-ui's recorded attributes (SC-001). Nothing copied from Spec Kitty. |
@@ -93,12 +93,14 @@ round are recorded in spec.md's header and in `reviews/plan/round-1/fixes-1.md`.
 6. **Interactive looks** (R-07; operator decisions on PLAN-A11Y-SECURITY-1-005 (a) and -006 (a)): an interactive
    `pill` has a resting `color-accent-strong` border, a badge its status border; hover takes the status colour on a
    pill's border and the status ground as a badge's fill; active and pressed add an inset `bar-width` cue, and a pressed
-   badge keeps the status-ground fill; no state changes the box; no underline in link mode.
+   badge keeps the status-ground fill; no state changes the box; no underline in link mode. In forced colours, where
+   the inset cue and the status fill are dropped, a pressed and enabled control fills with `Highlight` and sets its
+   text and border in `HighlightText` and `Highlight`, so pressed stays distinct from unpressed with the box unchanged.
 7. **Disabled look** (R-07, settled): text and border `color-disabled-ink` on `color-disabled-bg` (a declared, exempt
    pair), and `GrayText` for a disabled pill of either mode in forced colours; no stop.
 8. **`title` on an interactive pill** (R-09): moved and applied as 012 FR-004 says, so a truncated pill with a `title`
    shows both; the README tells hosts not to set it.
-9. **Story count and plant shards** (R-12): 18 stories (`Pulse` folded into `Tones`, operator decision on
+9. **Story count and plant shards** (R-12): 17 stories (`Pulse` folded into `Tones`, operator decision on
    PLAN-TESTABILITY-1-011, (b)), more than the headroom 012 estimates to the plant split count; if no plant design
    that does not grow with the story count has landed by T001, the run stops and asks.
 10. **012 helper extension** (R-08): three additive `MovedAttributes` methods, `capture()`, `release()` and
@@ -177,7 +179,8 @@ never the full set locally), recorded in `reviews/phase-N/plants.md`; the phase'
    and the task list against op 016 as merged (its command, `--list` output and record format), and records them in
    `reviews/phase-1/recheck.md`; spikes, recorded: R-04 (d) (`<details>`), `moveBefore()` and `hidden="until-found"`
    (R-04 (b), (d)), R-05's term name with the visually hidden copy, R-08 (focus-visible after a programmatic focus,
-   and the refocus order relative to the tooltip's slotchange), R-09's fractional measure under `text-overflow:
+   and the refocus order relative to the tooltip's slotchange), R-07's forced-colours pressed fill (an author
+   `Highlight` background kept under forced-colours emulation), R-09's fractional measure under `text-overflow:
    ellipsis`; stops on any interface difference. Then the harness step (red first): the driver methods of
    contracts/checks.md § Test harness with their self-tests on stand-ins, in both harnesses.
 2. **US1 `ocelle-status-indicator`** (P1, MVP): `status.ts`; tokens `size-indicator`, `motion-pulse`,

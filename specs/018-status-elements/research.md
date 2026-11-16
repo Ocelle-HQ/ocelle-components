@@ -288,6 +288,20 @@ var(--ocelle-color-<status>)` drawn inside the border, from tokens:
 - active (pointer down): the hover look plus the inset bar-width cue;
 - pressed (`:state(pressed)`): the inset bar-width cue permanently, and on a badge the `--ocelle-color-<status>-bg`
   fill too; the scenarios pin equal boxes pressed and unpressed, and the `Pressed` story shows pill and badge;
+- pressed in forced colours: forced colours set `box-shadow` to `none` and replace the status fill with a system
+  colour, and 012's `controlStyles` table has no pressed rule (`control.ts` 157-194: hover, active, focus and disabled
+  only), so without a rule of its own a pressed pill or badge would look exactly like an unpressed one there
+  (constitution III). The pill adds `@media (forced-colors: active) { :host(:state(pressed):not([disabled])) .control
+  { background-color: Highlight; color: HighlightText; border-color: Highlight; } }`, the system pair for a selected
+  item, which the user's theme keeps in contrast. It changes colours only, so the box stays the same; the slotted icon
+  follows through `currentColor`; the focus ring (`Highlight`, outside the control at `--ocelle-focus-offset`) stays
+  apart from the fill by the offset gap; hover and active keep 012's `Highlight` border; a disabled pressed pill keeps
+  the `GrayText` look of § Disabled (the `:not([disabled])`, matching "no inset cue" when disabled). System colour
+  keywords are what `ocelle-button`'s own forced-colours rule already uses (`ocelle-button.ts` 301-304), so
+  gate:style-lint takes them as it takes that rule. Author system colours are kept under forced colours as 012's
+  `Highlight` hover border is; a T001 probe confirms it for `background-color` in Chromium's forced-colours emulation,
+  and if the fill is forced to the canvas colour the rule adds `forced-color-adjust: none` on the pressed control
+  (every colour it then shows is a system colour, so the user's theme still decides them);
 - link mode adds no underline (a pill is a state mark; its role is announced).
 Every colour pair above is one the contrast gate already checks (`color-<status>` text on its ground and the main
 grounds, `color-accent-strong` non-text on the state grounds), so no contrast row is added.
@@ -502,13 +516,13 @@ and a second row with `pulse`; captured under reduced motion with animations dis
 state coverage for `pulse`, no visual evidence for FR-011 or FR-012, which the US1-4 scenarios prove) and `Labelled`;
 metric `Stack`, `Row`, `EmptyValue`; pill `Statuses`, `Badge`, `Compact`, `WithIcon`, `LongTextWraps`; interactive
 `Button`, `Pressed` (pill and badge, pressed and not), `Link`, `Disabled`, `Focus`; truncation `Truncated` (with a
-focused truncated pill in a clipping container, R-07), `DisabledWraps`: **18 stories** (the separate `Pulse` story is
+focused truncated pill in a clipping container, R-07), `DisabledWraps`: **17 stories** (the separate `Pulse` story is
 folded into `Tones`, operator decision on PLAN-TESTABILITY-1-011, (b)), each with light and dark baselines made with
 `OCELLE_VISUAL_ENGINE=docker pnpm run visual:update` in 006's pinned container (dockerd started as root; conflicting
 PNGs regenerated, never hand-picked).
 
 **Risk**: 012's plan estimates about 4 stories of headroom to the plant split count (76 at `shardSize` 1) after 012,
-and asks for a triage record on a plant design that does not grow with the story count. 18 stories exceed it. T001
+and asks for a triage record on a plant design that does not grow with the story count. 17 stories exceed it. T001
 reads the split count and the story total on `main` then; if this feature's stories would exceed it and no such op
 has landed, the run stops and asks the operator (**plan decision 9**). Op 016's `--affected` mode limits the local
 plant runs to the plants a phase's diff can affect, so the local cost is the phase's, not the whole set's.
