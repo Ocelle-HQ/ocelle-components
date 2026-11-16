@@ -83,6 +83,25 @@ Equivalent record: `list-detail-measure.ts`'s initial `#pending = false` (the fi
 before the probe's first observation, and a pass requested while one is requested is coalesced). Simplified instead:
 `#rendered()` reads the one probe (`querySelector`), not every probe (`some` and `every` were equivalent).
 
+## Plants of the round 6 fix (R6-01)
+
+Run once on the fix's working tree with the same runner (an exact text replacement; in process in `elements`:
+`list-detail.test.ts`, `list-detail-pass.test.ts`, `list-detail-upgrade.test.ts` and `list-detail-first-render.test.ts`,
+72 tests), the touched file restored byte for byte and compared with a saved copy afterwards. The red commit `6f66c61`
+failed on the code before the fix for the defect itself (red-fix-5.log: 3 of 3800, the new case in both harnesses and
+guard 1).
+
+| # | Guard | Plant | Result |
+|---|---|---|---|
+| L32 | US3-12 "hidden, changed unseen, then shown (R6-01)"; the pass guard O5-01 (`again`) | `ocelle-list-detail.ts`: the fix undone, the observer's not-rendered branch returns without `this.#measure.suspend()` (becoming rendered requests a pass only when a skipped pass left one pending) | 2 failed of 72: the R6-01 case (shown again, its minimum stays `480px`, not `560px`); the pass guard O5-01 (`again` 0, not 1) |
+
+Guard 1 of `list-detail-pass.test.ts` changed in the red commit: it now hides and shows in separate frames, so the
+observer sees the element with no box, and expects one pass (`again: 1`); it pinned the narrower trigger that R6-01
+rejects. Guard 2 (reinsertion runs no pass until `remeasure()`) holds unchanged: `disconnectedCallback` disconnects the
+observer synchronously, so a removed element gets no no-box observation, and the observation on reinsertion sees it
+rendered with nothing pending. Mutation: `--base HEAD` (`6f66c61`) 7 mutants, none survived; `--base 2caad68` 336
+mutants, none survived. No guard and no equivalent record was added.
+
 ## Judgement
 
 All seventeen plants bite: each makes the scenario it guards fail, in process, on the green code and on the final code.
