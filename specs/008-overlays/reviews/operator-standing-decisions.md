@@ -37,3 +37,10 @@
 - **Why:** main's version pins the mutation projects without the branch's `elements-touch` project, so two of its tests fail on the merge.
 - **What the branch's version holds:** op 015's two assertions, plus the branch's R-14 tests.
 - **What changes:** for this file only, this replaces the 2026-11-15 rule "take main's version". `stryker.elements.config.json` merges cleanly and still equals main's.
+
+## Merge resolution for emulateReducedMotion (2026-11-16, landing #47, landing note L2-01)
+
+- **Decided by:** the operator, asked in this session as a multiple-choice question.
+- **Answer:** "Keep main's, convert ours".
+- **The clash:** main (mission 013, 23ba5c5) and this branch both add a browser command `emulateReducedMotion`. Main's takes `(mode: "reduce" | "no-preference")`; the branch's takes `(on: boolean)`.
+- **What changes:** the merge keeps main's command. The branch's calls are rewritten: `true` becomes `"reduce"` and `false` becomes `"no-preference"`. In the other conflicting files the merge keeps both sides, and `vitest-config.test.ts` follows the decision above.
