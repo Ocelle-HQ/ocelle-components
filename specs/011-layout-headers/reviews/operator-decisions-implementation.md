@@ -62,3 +62,23 @@ Recorded by the orchestrator; each is the operator's answer (human:jeroennouwsde
     scripted rewrite of the earlier history would break the landing rule that only the fold script rewrites. The
     history is kept, the check is recorded as a PR defect the operator accepted, and the squash commit on main carries
     its own sign-off. An earlier choice, "Refold from PR base", was withdrawn when the fold script refused the merge.
+11. **2026-11-16, Sign-off is re-established by a scripted re-sign** (supersedes decision 10). The orchestrator
+    (session_01NUfZSc26YwQLeow31d6R6X) relayed that Sign-off is a required check in the ruleset on `main`, so the red
+    check cannot be accepted; the operator chose "Scripted rebuild". `reviews/landing/resign-history.sh` rebuilds
+    `3828d2f..HEAD` (the PR base) with `git commit-tree`, oldest first: every commit keeps its tree, author,
+    committer, dates and message, and the merge 767c097 keeps its outside parent. Only 3a7bc81 gains a
+    `Signed-off-by` line for its author. The script verifies trees, identities, dates, messages and the commit
+    count, keeps the old head as `refs/ocelle/prefold/resign/<branch>`, remaps `base.sha`, `scaffold.sha` and
+    `red-commits` and appends the old -> new map to `reviews/history-map.txt`, as `fold-history.sh` does. It runs
+    after the landing fold and before `main` is merged; the pre-re-sign head is kept on the remote as an archive
+    ref. The rule that only `fold-history.sh` rewrites a mission branch stands, with this one approved exception.
+12. **2026-11-16, the re-sign is redone with commit signatures kept** (the operator's decision in the orchestrator's
+    session, session_01NUfZSc26YwQLeow31d6R6X, after mission 008 found the flaw; confirmed here: "Redo with signing
+    kept"). The first run of decision 11's script rebuilt every commit with signing switched off, so of the branch's
+    commits 73 of 97 carried an SSH signature before it and 3 of 76 after it (head 285ae9d, kept on the remote as
+    `archive/claude/008-layout-headers-resign-unsigned`). The script now signs every rebuilt commit
+    (`commit-tree -S`) and fails if one lacks a `gpgsig` header, and it excludes `origin/main` from every revision
+    list so commits of main that came in through a merge are never rebuilt. The landing fold and the re-sign are
+    redone from 567e476 (`archive/claude/008-layout-headers-pre-resign`), the merge parent 3828d2f is kept, and the
+    remap, `gate:signoff` and the red/green check of every phase are re-run before the force-push with lease, which
+    the operator approved.
