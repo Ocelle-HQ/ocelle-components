@@ -19,3 +19,6 @@ e112e6a271b3b832188797a58048378e46785340 5118b31cfc75e812ef620cac35944610109daa9
 
 # History fold phase-4 of claude/013-data-display: old commit -> new commit (pre-fold head kept as refs/ocelle/prefold/phase-4/claude/013-data-display, 8efba6597c0de1e0e094091f3fae86fe0822f11b).
 8efba6597c0de1e0e094091f3fae86fe0822f11b 8ce9426c67515b2bceea755195192da4d1fe6205
+
+# History fold landing of claude/013-data-display: old commit -> new commit (pre-fold head kept as refs/ocelle/prefold/landing/claude/013-data-display, a61bddd7ccb2759fe82a5731beecb69ebe585e1e).
+a61bddd7ccb2759fe82a5731beecb69ebe585e1e ae8bb01192d24d719706dfe1d238ef3fcd6ea168
