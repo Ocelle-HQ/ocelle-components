@@ -46,6 +46,8 @@ const baseLayer: readonly RuleEntry[] = [
   { media: [], selectors: [":where(img, picture, video, canvas, svg)"], declarations: [["max-inline-size", "100%"], ["block-size", "auto"]] },
   { media: [], selectors: [":where(button, input, select, textarea)"], declarations: [["font", "inherit"]] },
   { media: [], selectors: [":where(code, pre, kbd, samp)"], declarations: [["font-family", "var(--ocelle-font-sans)"], ["font-variant-numeric", "var(--ocelle-figures)"]] },
+  // 013 (research.md R-01, R-07): ocelle-facts before upgrade, each fact not hidden a block, (0,0,0).
+  { media: [], selectors: [":where(ocelle-facts:not(:defined) > ocelle-fact:not([hidden]))"], declarations: [["display", "block"]] },
   focus,
   forcedFocus,
 ];
@@ -59,6 +61,9 @@ const compactScale: readonly RuleEntry[] = [
     declarations: [
       ["font-size", "var(--ocelle-font-size-sm)"],
       ["line-height", "var(--ocelle-line-height-compact)"],
+      // 013 (research.md R-03): the facts value hooks in a compact region.
+      ["--ocelle-facts-value-size", "var(--ocelle-font-size-sm)"],
+      ["--ocelle-facts-value-line-height", "var(--ocelle-line-height-compact)"],
     ],
   },
   {
@@ -67,6 +72,9 @@ const compactScale: readonly RuleEntry[] = [
     declarations: [
       ["font-size", "var(--ocelle-font-size-md)"],
       ["line-height", "var(--ocelle-line-height-normal)"],
+      // 013 (research.md R-03): the facts value hooks back to the regular scale.
+      ["--ocelle-facts-value-size", "var(--ocelle-font-size-fact)"],
+      ["--ocelle-facts-value-line-height", "var(--ocelle-line-height-normal)"],
     ],
   },
   {

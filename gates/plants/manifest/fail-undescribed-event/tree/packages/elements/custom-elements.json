@@ -103,6 +103,292 @@
           "attributes": [
             {
               "default": "undefined",
+              "description": "`panel` fills a list or inspector panel with a larger block padding and larger gaps and a lighter heading. Unset,\nor any other value, gives the default variant. Reflected.",
+              "fieldName": "variant",
+              "name": "variant",
+              "type": {
+                "text": "\"panel\" | undefined"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The centred column, with its block padding and every slot in it. The body's content sits in an internal wrapper inside it, which is not a part.",
+              "name": "body"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "An empty or loading panel: the consumer's own heading, body and actions in one centred column, with an optional\nvisual and eyebrow above the heading.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "variant",
+              "default": "undefined",
+              "description": "`panel` fills a list or inspector panel with a larger block padding and larger gaps and a lighter heading. Unset,\nor any other value, gives the default variant. Reflected.",
+              "kind": "field",
+              "name": "variant",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"panel\" | undefined"
+              }
+            }
+          ],
+          "name": "OcelleEmptyState",
+          "slots": [
+            {
+              "description": "An icon or an `ocelle-progress` above the heading. A progress bar spans the column up to the reading measure; an icon stays centred.",
+              "name": "visual"
+            },
+            {
+              "description": "A short line above the heading (for example \"Refused\"), shown small, medium weight, muted and in upper case. Not a heading: the element adds no role.",
+              "name": "eyebrow"
+            },
+            {
+              "description": "The consumer's own heading element. Its level is the consumer's; the element never adds a heading.",
+              "name": "heading"
+            },
+            {
+              "description": "The body. Each element is a block with no block margins, separated from the next by a small gap; put inline content in one `<p>`.",
+              "name": ""
+            },
+            {
+              "description": "Buttons or links. They wrap when narrow.",
+              "name": "actions"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-empty-state"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-empty-state.ts",
+            "name": "OcelleEmptyState"
+          },
+          "kind": "js",
+          "name": "OcelleEmptyState"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-empty-state.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
+              "description": "The label (term) of this pair. Unset or empty gives an empty term. Reflected.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "`anywhere` breaks a long identifier value anywhere instead of overflowing. The label keeps word wrapping. Unset\nwraps between words. Reflected.",
+              "fieldName": "wrap",
+              "name": "wrap",
+              "type": {
+                "text": "\"anywhere\" | undefined"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The label, rendered only outside `ocelle-facts`.",
+              "name": "label"
+            }
+          ],
+          "cssProperties": [
+            {
+              "description": "As on `ocelle-facts`, for a fact outside a sheet: the value's font size, `--ocelle-font-size-fact` by default.",
+              "name": "--ocelle-facts-value-size"
+            },
+            {
+              "description": "As on `ocelle-facts`, for a fact outside a sheet: the value's line height, `--ocelle-line-height-normal` by default.",
+              "name": "--ocelle-facts-value-line-height"
+            }
+          ],
+          "customElement": true,
+          "description": "One label and value pair of an `ocelle-facts` sheet: the label is the `label` attribute and the value is the\nelement's content. Outside a sheet it shows its label above its value.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "label",
+              "default": "undefined",
+              "description": "The label (term) of this pair. Unset or empty gives an empty term. Reflected.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "wrap",
+              "default": "undefined",
+              "description": "`anywhere` breaks a long identifier value anywhere instead of overflowing. The label keeps word wrapping. Unset\nwraps between words. Reflected.",
+              "kind": "field",
+              "name": "wrap",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"anywhere\" | undefined"
+              }
+            }
+          ],
+          "name": "OcelleFact",
+          "slots": [
+            {
+              "description": "The value.",
+              "name": ""
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-fact"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-fact.ts",
+            "name": "OcelleFact"
+          },
+          "kind": "js",
+          "name": "OcelleFact"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-fact.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
+              "description": "Row spacing: `compact` tightens the gaps for dense screens. Unset gives the default spacing. It does not change\nthe type: in a `data-ocelle-density=\"compact\"` region the values take the region's scale. Reflected.",
+              "fieldName": "density",
+              "name": "density",
+              "type": {
+                "text": "\"compact\" | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "`columns` keeps two columns and `stacked` one column at any size. `grid` shows each pair as a cell, label above\nvalue, in four, two or one columns from the sheet's own inline size (four from twice `--ocelle-facts-stack-below`,\ntwo from it, one below it). Unset, or any other value, switches automatically on the sheet's own two-column inline\nsize; set it for a sheet in a dialog, popover or other shrink-to-fit host, where a short sheet would otherwise\nstack. Reflected.",
+              "fieldName": "layout",
+              "name": "layout",
+              "type": {
+                "text": "\"columns\" | \"stacked\" | \"grid\" | undefined"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The description list grid. Do not set its columns: a `grid-template-columns` rule here overrides every layout.",
+              "name": "list"
+            },
+            {
+              "description": "Each term (label). Carries the fact's `lang` and `dir`.",
+              "name": "label"
+            },
+            {
+              "description": "Each definition (value) box.",
+              "name": "value"
+            }
+          ],
+          "cssProperties": [
+            {
+              "description": "With `layout` unset, below this inline size (the sheet's own, as laid out in two columns) each value stacks under its label; with `layout=\"grid\"`, below it the cells take one column and from twice it four (the sheet's own size as laid out in four columns). An absolute length; a percentage, 0 or an invalid value falls back to the default, 24rem from tokens (`calc(var(--ocelle-space-10) * 6)`).",
+              "name": "--ocelle-facts-stack-below"
+            },
+            {
+              "description": "The values' font size, `--ocelle-font-size-fact` by default. Set by `@ocelle/styles`' density hook (`--ocelle-font-size-sm` in a compact region).",
+              "name": "--ocelle-facts-value-size"
+            },
+            {
+              "description": "The values' line height, `--ocelle-line-height-normal` by default. Set by `@ocelle/styles`' density hook (`--ocelle-line-height-compact` in a compact region).",
+              "name": "--ocelle-facts-value-line-height"
+            }
+          ],
+          "customElement": true,
+          "description": "A label and value sheet: one description list of its `ocelle-fact` children, in two columns, stacked or as a grid of\ncells.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "density",
+              "default": "undefined",
+              "description": "Row spacing: `compact` tightens the gaps for dense screens. Unset gives the default spacing. It does not change\nthe type: in a `data-ocelle-density=\"compact\"` region the values take the region's scale. Reflected.",
+              "kind": "field",
+              "name": "density",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"compact\" | undefined"
+              }
+            },
+            {
+              "attribute": "layout",
+              "default": "undefined",
+              "description": "`columns` keeps two columns and `stacked` one column at any size. `grid` shows each pair as a cell, label above\nvalue, in four, two or one columns from the sheet's own inline size (four from twice `--ocelle-facts-stack-below`,\ntwo from it, one below it). Unset, or any other value, switches automatically on the sheet's own two-column inline\nsize; set it for a sheet in a dialog, popover or other shrink-to-fit host, where a short sheet would otherwise\nstack. Reflected.",
+              "kind": "field",
+              "name": "layout",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"columns\" | \"stacked\" | \"grid\" | undefined"
+              }
+            }
+          ],
+          "name": "OcelleFacts",
+          "slots": [
+            {
+              "description": "The pairs, `ocelle-fact` elements, in source order. Other children, and facts with `hidden` or `aria-hidden=\"true\"`, are not shown.",
+              "name": ""
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-facts"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-facts.ts",
+            "name": "OcelleFacts"
+          },
+          "kind": "js",
+          "name": "OcelleFacts"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-facts.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
               "description": "The icon's name, one of the set; any other value draws nothing and keeps the box. Reflected.",
               "fieldName": "name",
               "name": "name",
@@ -217,6 +503,200 @@
       ],
       "kind": "javascript-module",
       "path": "src/ocelle-plant.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
+              "description": "The current amount, from 0 to `max`: below 0 counts as 0, above `max` as `max`. Unset, `null`, an empty or\nwhitespace-only attribute, or a value that is not a finite number makes the bar indeterminate. Not reflected.",
+              "fieldName": "value",
+              "name": "value",
+              "type": {
+                "text": "number | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The maximum. Unset, not a finite number, or 0 or less counts as 100. Not reflected.",
+              "fieldName": "max",
+              "name": "max",
+              "type": {
+                "text": "number | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "Words for the current value, for example \"7 of 12\", exposed (and shown with `show-label`) while the bar is\ndeterminate, as given. Unset lets the platform announce the value. Not reflected.",
+              "fieldName": "valueText",
+              "name": "value-text",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The accessible name, as text (no rich label). A bar needs a name: set `label`, or a host `aria-label`, which\noverrides it. To name a bar after a nearby heading, pass the heading's text. Not reflected.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "Shows the label as text above the bar (beside it in compact), and the value text while determinate. Unset hides\nboth; the name and value are exposed either way.",
+              "fieldName": "showLabel",
+              "name": "show-label",
+              "type": {
+                "text": "boolean | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "`compact` is a thin bar with the label beside it. Unset, or any other value, gives the default size. Reflected.",
+              "fieldName": "size",
+              "name": "size",
+              "type": {
+                "text": "\"compact\" | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "`tinted` draws the track's boundary in the accent-strong colour, for a bar on an inset, accent-low, hover or state\nground. Unset is for the canvas, sheet, pane, panel, inspector and rail grounds. Reflected.",
+              "fieldName": "ground",
+              "name": "ground",
+              "type": {
+                "text": "\"tinted\" | undefined"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The track, the full inline size of the bar.",
+              "name": "track"
+            },
+            {
+              "description": "The filled part: the determinate extent from the inline start, or the indeterminate mark.",
+              "name": "fill"
+            },
+            {
+              "description": "The visible label, with `show-label`.",
+              "name": "label"
+            },
+            {
+              "description": "The visible value text, with `show-label` while determinate, at the inline end of the label row.",
+              "name": "value-text"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A progress bar: determinate with a `value`, indeterminate without one. Name it with `label`.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "value",
+              "default": "undefined",
+              "description": "The current amount, from 0 to `max`: below 0 counts as 0, above `max` as `max`. Unset, `null`, an empty or\nwhitespace-only attribute, or a value that is not a finite number makes the bar indeterminate. Not reflected.",
+              "kind": "field",
+              "name": "value",
+              "privacy": "public",
+              "type": {
+                "text": "number | undefined"
+              }
+            },
+            {
+              "attribute": "max",
+              "default": "undefined",
+              "description": "The maximum. Unset, not a finite number, or 0 or less counts as 100. Not reflected.",
+              "kind": "field",
+              "name": "max",
+              "privacy": "public",
+              "type": {
+                "text": "number | undefined"
+              }
+            },
+            {
+              "attribute": "value-text",
+              "default": "undefined",
+              "description": "Words for the current value, for example \"7 of 12\", exposed (and shown with `show-label`) while the bar is\ndeterminate, as given. Unset lets the platform announce the value. Not reflected.",
+              "kind": "field",
+              "name": "valueText",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "label",
+              "default": "undefined",
+              "description": "The accessible name, as text (no rich label). A bar needs a name: set `label`, or a host `aria-label`, which\noverrides it. To name a bar after a nearby heading, pass the heading's text. Not reflected.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "show-label",
+              "default": "undefined",
+              "description": "Shows the label as text above the bar (beside it in compact), and the value text while determinate. Unset hides\nboth; the name and value are exposed either way.",
+              "kind": "field",
+              "name": "showLabel",
+              "privacy": "public",
+              "type": {
+                "text": "boolean | undefined"
+              }
+            },
+            {
+              "attribute": "size",
+              "default": "undefined",
+              "description": "`compact` is a thin bar with the label beside it. Unset, or any other value, gives the default size. Reflected.",
+              "kind": "field",
+              "name": "size",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"compact\" | undefined"
+              }
+            },
+            {
+              "attribute": "ground",
+              "default": "undefined",
+              "description": "`tinted` draws the track's boundary in the accent-strong colour, for a bar on an inset, accent-low, hover or state\nground. Unset is for the canvas, sheet, pane, panel, inspector and rail grounds. Reflected.",
+              "kind": "field",
+              "name": "ground",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"tinted\" | undefined"
+              }
+            }
+          ],
+          "name": "OcelleProgress",
+          "slots": [],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-progress"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-progress.ts",
+            "name": "OcelleProgress"
+          },
+          "kind": "js",
+          "name": "OcelleProgress"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-progress.ts"
     }
   ],
   "readme": "",

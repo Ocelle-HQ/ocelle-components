@@ -1,0 +1,114 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: a11y-security
+# Checked without a finding: no ID reference across a shadow root in any of the four designs (R-01 A5, R-05 B3);
+# the CSSOM write of the fill's inline size is outside style-src under CSP Level 3 (only parsed style attributes,
+# setAttribute("style") and <style> are governed), and the constitution's CSP has no trusted-types directive; the
+# fact label reaches the <dt> through a Lit text binding (escaped, no unsafeHTML); no element performs I/O; no new
+# dependency (the spike's axe-core is a packed tarball under specs/, not a workspace dependency); no element is
+# focusable or interactive, so no keyboard model or target size applies beyond slotted consumer content; the
+# reduced-motion token path (packages/tokens/src/generate.ts:281 sets motion-fast and motion-base to 0ms) makes
+# calc(var(--ocelle-motion-base) * 7) 0 ms; the zero-block-size probe does not add scrollable overflow at 320 px in
+# Chromium (probe below).
+findings:
+  - id: PLAN-A11Y-SECURITY-1-001
+    severity: 3
+    title: "Indeterminate bar loops forever with no pause, stop or hide: WCAG 2.2.2 is not addressed"
+    evidence:
+      - artifact: "research.md § R-06 Indeterminate: \"animated with transform: translateX() ... animation-duration: calc(var(--ocelle-motion-base) * 7) (1400 ms), --ocelle-easing-standard and infinite\""
+      - artifact: "spec.md FR-033: \"the indeterminate bar is for loading a region (or running work) with no known end\"; plan.md Constitution Check III: only \"the indeterminate animation stops under reduced motion\""
+      - code: "WCAG 2.2 SC 2.2.2 (Level A) and its Understanding document: moving content that starts automatically, lasts more than 5 s and is shown beside other content needs a mechanism to pause, stop or hide it; a preload animation is exempt as essential only 'if interaction cannot occur during that phase for all users'. prefers-reduced-motion is an OS preference, not a mechanism on the page, and is off for most users who need 2.2.2 (attention and reading difficulties)."
+    claim: |
+      The plan's only motion control is prefers-reduced-motion. FR-033 and the README text it requires send consumers
+      to the indeterminate bar for "running work with no known end", which in Kitty is a mission run lasting minutes,
+      shown beside an interactive page. That is moving content lasting well over 5 s while the user can interact,
+      so the essential-preload exemption does not hold and the element, as designed, makes every such consumer page
+      fail 2.2.2 (Level A, so also AA). The constitution (III) requires WCAG 2.2 AA from every element, and nothing in
+      the plan, Complexity Tracking or the README contents records this.
+    remedies:
+      - "Bound the motion in CSS: a finite animation-iteration-count whose total is under 5 s (for example 3 loops of 1400 ms), ending with animation-fill-mode on the reduced-motion still mark, so a long-running indeterminate bar becomes still by itself. Add a scenario body that reads the computed animation-iteration-count and the still state after the animations end (getAnimations().finished), and a plant (infinite restored)."
+      - "Narrow the contract instead: FR-033 and the README say the indeterminate bar is only for a preload phase in which the loaded region cannot be used, and running work of unknown length uses #7's status indicator; record the 2.2.2 reasoning in research R-06 and the README section."
+  - id: PLAN-A11Y-SECURITY-1-002
+    severity: 3
+    title: "Progress track boundary is below 3:1 on inset, accent-low and hover-bg grounds, against the library's own boundary rule; hover-bg is not even listed"
+    evidence:
+      - artifact: "research.md § R-06 Track boundary: \"On color-inset and color-accent-low grounds it is 2.80 and 2.94 (light) and 2.95 and 2.88 (dark) ... This is no constitution exception\"; plan.md decision 4 lists inset and accent-low only"
+      - code: "packages/tokens/src/source.ts:50 comment on color-control-border: \"on accent-low, inset, hover-bg and the state grounds controls use color-accent-strong (#5 rule 1)\"; source.ts:55 declares control-border on canvas, sheet, pane, panel, inspector, rail only; source.ts:22 lists color-hover-bg among the main grounds"
+      - code: "probe (WCAG relative luminance from source.ts values): control-border on hover-bg light #E2DDD3 = 2.80, dark #2A261F = 3.17; on inset light 2.80, dark 2.95; on accent-low light 2.94, dark 2.88. Track fill color-inset on an inset or hover-bg ground is 1.00:1, so the outline is the only mark of the track's extent there."
+    claim: |
+      A determinate bar's information is the fill's proportion of the track; a sighted low-vision user can judge
+      "7 of 12" only if the track's end is visible. WCAG 1.4.11 covers the graphical parts needed to understand the
+      content, and aria-valuemax (the plan's argument) serves screen-reader users only. On inset, accent-low and
+      hover-bg grounds (a progress bar in a selected or hovered list row, or in a digest well, the main kitty-mission-ui
+      placements) the track is the ground colour and its only edge is 2.80 to 2.95:1. The library already has a rule
+      for exactly this case (control boundaries on those grounds switch to accent-strong), which the plan ignores, and
+      the plan omits hover-bg from both the decision and the README note. Calling a known AA shortfall "no constitution
+      exception" bypasses constitution V's Complexity Tracking requirement.
+    remedies:
+      - "Follow #5 rule 1: on inset, accent-low, hover-bg and the state grounds the track boundary uses color-accent-strong (already declared non-text on those grounds), selected by a ground hook or an attribute the consumer sets (for example ground=\"raised\"), with contrast rows or a pairing test tying the track to those grounds."
+      - "Draw the track boundary in a token already >= 3:1 on all nine main grounds (for example color-ink-muted, declared text on every main ground, so >= 4.5:1) and drop the inset/accent-low note."
+      - "If the shortfall is kept, record it as a constitution III exception in Complexity Tracking with hover-bg included, scope, rationale and sunset, for the operator's approval."
+  - id: PLAN-A11Y-SECURITY-1-003
+    severity: 3
+    title: "Host attributes on ocelle-fact (hidden, aria-hidden, lang, dir) do not reach the label the sheet renders, leaving orphan or mis-languaged terms"
+    evidence:
+      - artifact: "research.md § R-01: ocelle-facts renders <dt part=\"label\">${child.label}</dt> in its own shadow root for every ocelle-fact child; the MutationObserver uses attributeFilter: [\"label\"] only"
+      - artifact: "data-model.md § ocelle-facts Derived values: \"pairs: the ocelle-fact children in source order\" (no filter); spec.md FR-001 requires :host([hidden]) { display: none; } on each element, ocelle-fact included"
+      - code: "README.md:192-194 (Host ARIA): \"A host hidden attribute removes the element: no box and no node\"; \"A host aria-hidden=\\\"true\\\" hides the element\""
+    claim: |
+      With the A5 structure the label lives in the sheet's <dt>, outside the fact. A consumer who hides a pair with
+      <ocelle-fact hidden> (the library's documented way to remove an element) gets the fact host display:none inside
+      its <dd>, but the <dt> stays: a visible label with an empty value, and an orphan term in the description list.
+      Toggling hidden later is not even observed, so the sheet never re-renders. aria-hidden="true" on a fact hides
+      the definition and leaves the term exposed. lang or dir on a fact (WCAG 3.1.2 Language of Parts, AA, and
+      bidirectional labels) apply to the value but not to the label, so a screen reader speaks the label in the wrong
+      language. None of these states is in the plan's scenario list.
+    remedies:
+      - "Define the rule in R-01 and the data model: a fact with hidden (or aria-hidden=\"true\") is not a pair (no dt, no dd, not assigned); the sheet copies the fact's lang and dir onto its <dt>; the observer's attributeFilter adds hidden, aria-hidden, lang and dir (on direct children only, see the subtree note). Add scenario bodies (hidden toggled after render, lang on a fact read from the AX tree or computed lang of the dt) and state the rule in the README's Host ARIA notes for ocelle-fact."
+  - id: PLAN-A11Y-SECURITY-1-004
+    severity: 2
+    title: "A malformed, zero or percentage --ocelle-facts-stack-below silently disables stacking, so the sheet no longer reflows at 320 px"
+    evidence:
+      - artifact: "research.md § R-02: the probe is inline-size: var(--ocelle-facts-stack-below); block-size: 0; visibility: hidden; position: absolute, and the sheet stacks when the host is narrower than the probe; contracts/elements.md declares the hook as a public CSS property of type length"
+      - code: "probe in headless Chromium 1243 at a 320 px viewport (scratchpad probe.js): hook 24rem -> probe 384 px, page scrollWidth 320; hook '24 rem' (invalid at computed-value time) -> probe 0 px; hook 50% with a positioned host -> probe 152 px (half the host, so the host is never below it); the same probe with block-size 1px -> page scrollWidth 392 (overflow), so the no-overflow result depends on the zero block size, measured in Chromium only"
+    claim: |
+      The hook is public and consumer-set. Any value that does not resolve to an absolute length (a typo, 0, a
+      percentage, an unresolvable var()) makes the probe 0 px or proportional to the host, and the sheet then never
+      stacks: at 320 px it stays two columns with a value column of a few dozen pixels, which is the WCAG 1.4.10
+      failure FR-005 and FR-009 exist to prevent, with no error anywhere. Separately, the probe's not widening the
+      page relies on an unstated property (a zero-area box adds no scrollable overflow in Chromium); WebKit is
+      unmeasured and any later change to block-size breaks SC-002.
+    remedies:
+      - "In R-02: when the probe measures 0 (or not finite), fall back to the default threshold resolved from tokens; document that the hook takes an absolute length only and that percentages are not supported; add scenario bodies for an invalid and a percentage hook at 320 px asserting the stacked layout, and keep the zero block size as a stated requirement with a 320 px scrollWidth assertion that includes the probe (plant: block-size 1px)."
+  - id: PLAN-A11Y-SECURITY-1-005
+    severity: 2
+    title: "Nothing checks that a progress bar on a story or in a consumer page is named, and the documented host aria-label path fails consumers' own axe runs"
+    evidence:
+      - artifact: "research.md § R-05 Costs of B3: \"axe ... cannot check the bar's name on any story\"; \"a story that sets a host aria-label gets a false aria-prohibited-attr\"; R-08 empty-state stories include \"panel loading (with an indeterminate ocelle-progress)\""
+      - code: "spike/RESULTS.md § B: B3 host aria-label only -> axe aria-prohibited-attr (serious); no name -> axe silent (no role attr)"
+      - artifact: "contracts/elements.md ocelle-progress: aria-label is an observed attribute that names the bar; README.md:189 Host ARIA makes host aria-label a first-class naming path"
+    claim: |
+      With B3, an unnamed ocelle-progress anywhere (the empty-state panel-loading story, a future story, a consumer
+      page) passes every automated check: axe sees no role, and the AX-tree tests cover only the progress scenario
+      fixtures. Constitution III's "axe reports no serious or critical finding on any story" therefore gives no
+      assurance for 1.1.1/4.1.2 naming of this element. Conversely kitty-mission-ui and the console, which run their
+      own axe, get a serious aria-prohibited-attr on every bar named the Host ARIA way, which invites them to remove
+      the name. The README contents in contracts/elements.md say only that axe does not check the name.
+    remedies:
+      - "Extend the story test (elements-stories.test.ts) to read the AX tree of every story that contains ocelle-progress and assert each progressbar node has a non-empty name, with a plant (a story's label removed); in the README, recommend label as the naming path for ocelle-progress and state that a host aria-label triggers axe's aria-prohibited-attr false positive in consumers' audits."
+  - id: PLAN-A11Y-SECURITY-1-006
+    severity: 1
+    title: "Forced colours: forced-color-adjust: none on the fill keeps the non-system accent-strong inset edge"
+    evidence:
+      - artifact: "research.md § R-06 Fill: box-shadow: inset 0 0 0 var(--ocelle-border-width) var(--ocelle-color-accent-strong) on every fill and mark; Forced colours: \"forced-color-adjust: none on the fill only, so Highlight survives\" with no box-shadow reset"
+      - artifact: "spec.md US3-8: \"the track's outline and the filled part are both visible in system colours\""
+      - code: "CSS Color Adjustment 1 § 3.1: box-shadow is forced to none only for elements whose forced-color-adjust is auto; with none, author colours are kept"
+    claim: |
+      Under forced colours the fill opts out of adjustment, so its 1 px accent-strong (#8F5E0F / #E0A23A) edge is
+      painted inside the user's high-contrast palette: a non-system colour, against US3-8's wording, and on some
+      palettes a low-contrast brown seam on Highlight. A computed-colour test of the fill's background alone would not
+      see it.
+    remedies:
+      - "Inside @media (forced-colors: active) set the fill's box-shadow to none (or to an inset edge in a system colour such as CanvasText), and extend the US3-8 body to assert the fill's computed box-shadow uses no non-system colour."

@@ -87,6 +87,11 @@ For dense operational screens: lists, facts, ids and timestamps.
   `rem` token keeps its value (`--ocelle-target-min` stays 44 px). The focus ring is unchanged.
 - `data-ocelle-density="regular"` returns a region nested in a compact one to the regular scale:
   `--ocelle-font-size-md` (16 px) with `--ocelle-line-height-normal` (1.45).
+- `data-ocelle-density="compact"` also sets the value hooks of `ocelle-facts`: `--ocelle-facts-value-size` to
+  `--ocelle-font-size-sm` and `--ocelle-facts-value-line-height` to `--ocelle-line-height-compact`, so fact values
+  inside the region take the compact scale. `data-ocelle-density="regular"` sets them back to
+  `--ocelle-font-size-fact` and `--ocelle-line-height-normal`. The hooks are custom properties, so they inherit through
+  the element's shadow root and the nearest region wins.
 - `data-ocelle-value` takes the empty value (a bare attribute has it) or `ink`. `data-ocelle-value=""` sets the value
   text style: `--ocelle-font-sans` at `--ocelle-font-size-sm` with `font-variant-numeric: var(--ocelle-figures)`, in
   `--ocelle-color-ink-muted`. `data-ocelle-value="ink"` sets the same style in `--ocelle-color-ink`. It is 14 px
@@ -98,6 +103,14 @@ For dense operational screens: lists, facts, ids and timestamps.
 Tokens the compact scale uses: `--ocelle-font-size-sm`, `--ocelle-line-height-compact`, `--ocelle-font-size-md`,
 `--ocelle-line-height-normal`, `--ocelle-font-sans`, `--ocelle-figures`, `--ocelle-color-ink-muted` and
 `--ocelle-color-ink`.
+
+## Facts before upgrade
+
+Before the elements are defined, `base.css` shows each `ocelle-fact` child of an undefined `ocelle-facts` as a block,
+one value per line: `:where(ocelle-facts:not(:defined) > ocelle-fact:not([hidden])) { display: block; }`. The whole
+selector is inside `:where()`, so its specificity is (0,0,0) and any page rule overrides it, and a fact with `hidden`
+keeps the user-agent `display: none`. Labels are attributes, so they appear only once the elements are defined. The
+rule stops matching when `ocelle-facts` is defined.
 
 ## Prose
 

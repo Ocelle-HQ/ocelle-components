@@ -8,12 +8,18 @@ import type { BrowserCommand, BrowserCommandContext } from "vitest/node";
 interface ElementCommands {
   readonly axTree: (context: BrowserCommandContext, id: string, scope?: "element" | "subtree") => Promise<unknown>;
   readonly emulateForcedColors: (context: BrowserCommandContext, mode: "active" | "none", palette?: "light" | "dark") => Promise<void>;
+  readonly emulateReducedMotion: (context: BrowserCommandContext, mode: "reduce" | "no-preference") => Promise<void>;
 }
 const elementCommandsUrl = new URL("./packages/elements/test/commands.ts", import.meta.url).href;
 const elementCommands = async (): Promise<ElementCommands> => (await import(elementCommandsUrl)) as ElementCommands;
 const axTree: BrowserCommand<[id: string, scope?: "element" | "subtree"]> = async (context, id, scope) => (await elementCommands()).axTree(context, id, scope);
 const emulateForcedColors: BrowserCommand<[mode: "active" | "none", palette?: "light" | "dark"]> = async (context, mode, palette) => {
   await (await elementCommands()).emulateForcedColors(context, mode, palette);
+};
+// 013 phase 3 (research.md R-08, contracts/checks.md § Driver additions): reduced motion through the same
+// `page.emulateMedia` helper as forced colours, so neither clears the other.
+const emulateReducedMotion: BrowserCommand<[mode: "reduce" | "no-preference"]> = async (context, mode) => {
+  await (await elementCommands()).emulateReducedMotion(context, mode);
 };
 
 // Plants and gate-test fixtures are inputs of the gates and their tests, never tests of this repository
@@ -67,8 +73,8 @@ export default defineConfig({
       {
         // The in-process element tests (005 research.md R-11): browser mode, element source; mutated by
         // stryker.elements.config.json (R-12). The node, build and fixture tests run in their own projects below. The
-        // axTree and emulateForcedColors commands read Chromium's accessibility tree over CDP and switch forced colours
-        // for the shared scenario bodies (packages/elements/test/commands.ts). Each test file keeps its own iframe and
+        // axTree, emulateForcedColors and emulateReducedMotion commands read Chromium's accessibility tree over CDP and
+        // switch forced colours and reduced motion for the shared scenario bodies (packages/elements/test/commands.ts). Each test file keeps its own iframe and
         // custom-element registry (isolate, the default).
         test: {
           name: "elements",
@@ -79,7 +85,7 @@ export default defineConfig({
             provider: playwright({ launchOptions }),
             headless: true,
             instances: [{ browser: "chromium" }],
-            commands: { axTree, emulateForcedColors },
+            commands: { axTree, emulateForcedColors, emulateReducedMotion },
           },
         },
       },

@@ -1,0 +1,15 @@
+x-cq | dialog showModal(): {"hostW":0,"hostH":98,"label":{"x":640,"y":311,"w":63},"value":{"x":640,"y":355,"w":63},"layout":"stacked"}
+x-cq | dialog showModal() width:300px: {"hostW":300,"hostH":44,"label":{"x":490,"y":338,"w":300},"value":{"x":490,"y":364,"w":300},"layout":"stacked"}
+x-cq | flex item (parent display:flex, no child width): {"hostW":0,"hostH":98,"label":{"x":8,"y":8,"w":63},"value":{"x":8,"y":52,"w":63},"layout":"stacked"}
+x-cq | block 600px: {"hostW":600,"hostH":18,"label":{"x":8,"y":8,"w":79},"value":{"x":95,"y":8,"w":513},"layout":"row"}
+x-cq | block 300px: {"hostW":300,"hostH":44,"label":{"x":8,"y":8,"w":300},"value":{"x":8,"y":34,"w":300},"layout":"stacked"}
+x-wrap | dialog showModal(): {"hostW":255,"hostH":40,"label":{"x":513,"y":340,"w":160},"value":{"x":513,"y":362,"w":255},"layout":"stacked"}
+x-wrap | dialog showModal() width:300px: {"hostW":300,"hostH":40,"label":{"x":490,"y":340,"w":160},"value":{"x":490,"y":362,"w":300},"layout":"stacked"}
+x-wrap | flex item (parent display:flex, no child width): {"hostW":255,"hostH":40,"label":{"x":8,"y":8,"w":160},"value":{"x":8,"y":30,"w":255},"layout":"stacked"}
+x-wrap | block 600px: {"hostW":600,"hostH":18,"label":{"x":8,"y":8,"w":160},"value":{"x":184,"y":8,"w":424},"layout":"row"}
+x-wrap | block 300px: {"hostW":300,"hostH":40,"label":{"x":8,"y":8,"w":160},"value":{"x":8,"y":30,"w":300},"layout":"stacked"}
+x-grid | dialog showModal(): {"hostW":255,"hostH":18,"label":{"x":513,"y":351,"w":79},"value":{"x":607,"y":351,"w":160},"layout":"row"}
+x-grid | dialog showModal() width:300px: {"hostW":300,"hostH":18,"label":{"x":490,"y":351,"w":79},"value":{"x":585,"y":351,"w":205},"layout":"row"}
+x-grid | flex item (parent display:flex, no child width): {"hostW":255,"hostH":18,"label":{"x":8,"y":8,"w":79},"value":{"x":103,"y":8,"w":160},"layout":"row"}
+x-grid | block 600px: {"hostW":600,"hostH":18,"label":{"x":8,"y":8,"w":79},"value":{"x":103,"y":8,"w":505},"layout":"row"}
+x-grid | block 300px: {"hostW":300,"hostH":18,"label":{"x":8,"y":8,"w":79},"value":{"x":103,"y":8,"w":205},"layout":"row"}
