@@ -18,3 +18,21 @@ Notes:
   content (`#watcherAbove`) and does nothing. The landing probe's sibling overlays showed the Escape on the outer.
 - `browser/dialog.test.ts` names its tests with `$name` (40 characters), as before this round; the full names are in
   `test/dialog.test.ts`, which the mutation runs use.
+
+Checks (at the fix, with the two mutation-driven test changes below):
+
+- `pnpm exec vitest run --project elements --project elements-browser`: 1993 of 1993 passed (before the test changes).
+- `gate:typecheck`, `gate:lint` (300 files), `gate:test-lint` (204 files), `gate:csp` (16 files), `gate:manifest` (5
+  elements): no finding.
+- Full `pnpm test`: 5107 of 5107 passed (`check-fix-2-full-test.log`). A first full run on `f741f55` had one failure,
+  the tooltip row "Escape, then a brief hover (FR-033, R-12): …", which judged none of its 3 runs because the pointer
+  leave came 133 to 202 ms after the entry (a machine-load row; `ocelle-tooltip.ts` is not changed); the next run
+  passed in full.
+- Mutation (`notes.md` § Mutation, "Review round 2"): `overlay.ts` in two `--files` runs from `--base 6788697`, none
+  survived in the final runs. The first runs left two survivors, both a `this.#stop()` call removed; they were killed
+  by test changes, without changing the source again:
+  - the row "Rapid toggle: re-open during the exit, motion on: …" now also reads the panel's animations at once after
+    the reopen (`atReopen: 0`);
+  - a new row, "Platform close during a 1 000 ms entry: …", requires no animation left on the closed panel.
+  Each failed against its mutant and passes on the fix.
+

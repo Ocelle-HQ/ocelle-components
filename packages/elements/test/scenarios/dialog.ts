@@ -1827,11 +1827,13 @@ export function overlayScenarios(kind: OverlayKind) {
         await open(driver);
         await driver.press("Escape");
         await driver.setAttribute("dlg", "open", "");
+        // Read at once, within the 200 ms exit: the reopen cancelled the exit animation, it does not run to its end.
+        const atReopen = (await driver.animations("dlg", "dialog")).length;
         const recorded = await after(driver);
         const animations = await driver.animations("dlg", "dialog");
-        return { recorded, state: await state(driver), running: animations.length };
+        return { atReopen, recorded, state: await state(driver), running: animations.length };
       },
-      { recorded: [request("escape", "b1")], state: shown, running: 0 },
+      { atReopen: 0, recorded: [request("escape", "b1")], state: shown, running: 0 },
     ),
   ];
 
@@ -2281,6 +2283,19 @@ export function overlayScenarios(kind: OverlayKind) {
         return { exiting, recorded: await driver.recorded(), animations: await driver.animations("dlg", "dialog"), state: await state(driver), focus: await driver.focusPath() };
       },
       { exiting: ["running"], recorded: [request("escape", "b1"), closeEvent("escape", "opener")], animations: [], state: gone, focus: "opener" },
+    ),
+    row(
+      "Platform close during a 1 000 ms entry: the inner close() through the shadow root cancels the entry animation: no animation left on the closed panel, one close with reason host (FR-016, R-03, R-06)",
+      async (driver) => {
+        await driver.mount(`<div id="wrap">${page(basic)}</div>`);
+        await driver.rules("#wrap { --ocelle-motion-base: 1000ms; }");
+        await open(driver);
+        const entering = (await driver.animations("dlg", "dialog")).map((each) => each.playState);
+        await act(driver, { op: "call", id: "dlg", inner: "dialog", method: "close" });
+        const recorded = await events(driver, 1);
+        return { entering, recorded, animations: await driver.animations("dlg", "dialog"), state: await state(driver), focus: await driver.focusPath() };
+      },
+      { entering: ["running"], recorded: [closeEvent("host", "opener")], animations: [], state: gone, focus: "opener" },
     ),
     row(
       "Motion: an ancestor sets --ocelle-easing-standard to initial (no value): the entry runs with linear easing over --ocelle-motion-base (FR-020, R-06)",

@@ -273,7 +273,7 @@ is named by its full name (Rules § Full test names) and ends with the FR-047 co
 `{ op: "settled", id, then }`, which runs `then` in `byId(id).updateComplete.then(…)` (exempt plumbing in a test file,
 no `style` attribute, no inline script).
 
-- [ ] T058 [US1] R2-01 (landing L1-01), the no-motion end of a close is cancellable and the stack loses only the
+- [X] T058 [US1] R2-01 (landing L1-01), the no-motion end of a close is cancellable and the stack loses only the
   overlay that leaves it (FR-022, FR-023, FR-014, R-05a § Leaving the stack, R-06's no-motion bullet, spec Edge Cases
   "Removed or reopened while closing, with no motion", matrix § Dialog "Closing under reduced motion, then removed or
   reopened"), test first.
@@ -314,7 +314,7 @@ no `style` attribute, no inline script).
     equivalent with its reason and notes file (007 R-08); every existing `Stryker disable` record in `overlay.ts`,
     the ones at the `#ownCloses` and toggle lines included, is re-derived against the changed code and kept, changed
     or removed accordingly.
-- [ ] T059 [US1] R2-02 (landing L1-03), a show the update could not make because the host was out of the document is
+- [X] T059 [US1] R2-02 (landing L1-03), a show the update could not make because the host was out of the document is
   made when it is connected again (FR-004, spec Edge Cases "Opened, then moved before it is shown", as distinct from
   "Moved while open"; R-05a § A show the update could not make; matrix § Dialog "Opened, then moved before it is
   shown"), test first, in T058's red commit.
