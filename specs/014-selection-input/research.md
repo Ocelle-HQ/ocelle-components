@@ -11,9 +11,12 @@ is named where it applies.
 ## R-01 Roles and states: `ElementInternals` for roles, host attributes for states
 
 **Decision.** Every element sets its own role through `ElementInternals` (`internals.role`), as mission 005's
-`naming.ts` does: `listbox` (`ocelle-listbox`), `option`, `tab`, `tabpanel`, `toolbar` with `ariaOrientation`
-`"horizontal"` (`ocelle-segmented-choice`, operator decision PLAN-A11Y-SECURITY-1-008 (a)), `button` (segment) and
-`group` (copy field). The selection states the paint is keyed on are written by the parent as ARIA attributes on the
+`naming.ts` does: `listbox` (`ocelle-listbox`), `option`, `tab`, `tabpanel`, `toolbar` (`ocelle-segmented-choice`,
+exposed as a horizontal toolbar, operator decision PLAN-A11Y-SECURITY-1-008 (a)), `button` (segment) and `group` (copy
+field). The toolbar's orientation is not set explicitly: phase 4 first set `ariaOrientation` `"horizontal"` on the
+internals, and the refactor a1323c4 dropped it, because horizontal is a toolbar's implicit orientation in ARIA and
+Chromium exposes it so. The exposed outcome is unchanged: US3-1 and every `exposed(...)` read
+`orientation: "horizontal"` from the accessibility tree, and they pass (`reviews/phase-4/round-1.md` R1-03). The selection states the paint is keyed on are written by the parent as ARIA attributes on the
 child hosts: `aria-selected="true|false"` on options and tabs, `aria-pressed="true|false"` on segments,
 `aria-disabled="true"` on a disabled child. Styles key on them (`:host([aria-selected="true"])`,
 `:host([aria-pressed="true"])`), so the paint and the exposed state cannot disagree (spec "Selected-state paint",
@@ -249,12 +252,20 @@ be asynchronous to the task; not chosen.
 ## R-06 Joined segmented choice rows: `ResizeObserver` inside the element and custom states (engine floor)
 
 **Decision.** `ocelle-segmented-choice` with `joined` observes its own box and every segment's box with one
-`ResizeObserver` (observers of itself and its children, no I/O; FR-029 forbids only a *consumer* observer), and also
-regroups after each child batch of R-05 (PLAN-CORRECTNESS-1-006): a label, icon or font-load change that moves the
-row break without resizing the group, and a segment added or removed at the same group size, are seen. The grouping
-puts segments into rows by their `offsetTop` and sets custom states on each segment: `row-start`, `row-end`,
-`first-row`, `last-row`. Segment styles round corners with `:host(:state(row-start))` etc. No `style` attribute is
-ever written (constitution IV; US3-10 pairs this with the measured radii).
+`ResizeObserver` (observers of itself and its children, no I/O; FR-029 forbids only a *consumer* observer; the group
+as a content box, each segment as a border box), and also regroups after each child batch of R-05
+(PLAN-CORRECTNESS-1-006): a label, icon or font-load change that moves the row break without resizing the group, and a
+segment added or removed at the same group size, are seen. The regroup after a batch is not run in the batch's
+microtask: since the refactor a1323c4 the batch observes the group and its segments again, a new observation delivers
+their sizes at the next rendering, and that delivery regroups. The outcome is unchanged, because that delivery is in
+the frame that renders the batch, which is where US3-10 and US3-18 measure the radii (the reorder body covers it;
+`reviews/phase-4/round-1.md` R1-03). The grouping puts segments into rows by their `offsetTop` and sets three custom
+states on each segment: `joined` while the group is joined (the segment's own sheet cannot see the parent's
+attribute), `row-start` on the first segment of a row and `row-end` on the last. There are no `first-row` or
+`last-row` states: US3-10 rounds each row on its own, at both ends of the row, so a first or last row would change no
+paint (`reviews/phase-4/round-1.md` R1-02). Segment styles round corners with `:host(:state(joined):state(row-start))`
+and `:host(:state(joined):state(row-end))`. No `style` attribute is ever written (constitution IV; US3-10 pairs this
+with the measured radii).
 
 **Shared lines** (PLAN-FRESH-1-005). Every segment draws a full border of `--ocelle-border-width` and every segment
 has the same negative block-start and inline-start margins of one `--ocelle-border-width` (the group pads its own
