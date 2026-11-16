@@ -1,5 +1,6 @@
-// The ocelle-action-row stories (012 spec US4, FR-050; research.md R-13; plan decisions 27 and 30; tasks.md T058): one
-// story per presentation and state of User Story 4, in light and dark through the preview's theme global. Hover is
+// The ocelle-action-row stories (012 spec US4, US5, FR-050; research.md R-13; plan decisions 27, 30 and 31; tasks.md
+// T058, T065): one story per presentation and state of User Stories 4 and 5 (current, unavailable, link rows and the
+// card layout), in light and dark through the preview's theme global. Hover is
 // declared with 006's pointer parameter, on the one row of its story; the focused story's wrapper calls the second
 // row's plain `focus()` once it has rendered, the method the phase 2 spike measured to show `:focus-visible` in 006's
 // pinned capture (reviews/phase-2/spike.md). The grounds come from the generated swatch stylesheet's rule for each
@@ -13,7 +14,7 @@ import "../../packages/elements/src/ocelle-icon.ts";
 const meta: Meta = { title: "Elements/ocelle-action-row" };
 export default meta;
 
-/** A story-only wrapper that focuses the second `ocelle-action-row` it holds once that has rendered (plan decision 27). */
+/** A story-only wrapper that focuses the second `ocelle-action-row` it holds once that has rendered (plan decision 27); the current focused story uses it too. */
 class StoryRowFocus extends HTMLElement {
   connectedCallback(): void {
     void customElements.whenDefined("ocelle-action-row").then(async () => {
@@ -77,3 +78,44 @@ export const GroundHoverBg: StoryObj = { name: "Ground hover-bg", render: () => 
 export const GroundState: StoryObj = { name: "Ground state", render: () => ground("color-warning-bg", pair(' ground="state"')) };
 
 export const Focused: StoryObj = { render: () => `<story-row-focus>${list()}</story-row-focus>` };
+
+// User Story 5 (tasks.md T065): the current mark, the unavailable look, link rows and the card layout, each with a
+// description and tags, so their axe runs cover the text over the hit layer (plan decisions 30 and 31).
+
+/** A list of three rows with every slot, the second current. */
+const currentList = ["41", "42", "43"].map((at) => `<ocelle-action-row row-id="m-${at}"${at === "42" ? ' current="page"' : ""}>${slots.replace("Mission 42", `Mission ${at}`)}</ocelle-action-row>`).join("");
+
+/** A card's tags: enough to wrap onto several lines in the story's 1280 px frame. */
+const manyTags = ["Blocked", "Design", "Needs review", "Backend", "Frontend", "Ops", "Security", "Docs", "Release 1.0", "Accessibility", "Tokens", "Storybook", "Visual", "Mutation"]
+  .flatMap((tag) => [tag, `${tag} follow-up`])
+  .map((tag) => `<span slot="tags">${tag}</span>`)
+  .join("");
+
+export const CurrentPage: StoryObj = { name: "Current page", render: () => pair(' current="page"') };
+
+export const CurrentTrue: StoryObj = { name: "Current true", render: () => pair(' current="true"') };
+
+export const CurrentHovered: StoryObj = {
+  name: "Current, hovered",
+  parameters: { ocelle: { pointer: { hover: "ocelle-action-row" } } },
+  render: () => `<ocelle-action-row row-id="m-42" current="page">${slots}</ocelle-action-row>`,
+};
+
+export const CurrentFocused: StoryObj = { name: "Current, focused", render: () => `<story-row-focus>${currentList}</story-row-focus>` };
+
+export const Unavailable: StoryObj = { render: () => pair(" unavailable") };
+
+export const UnavailableCurrent: StoryObj = { name: "Unavailable, current", render: () => pair(' unavailable current="page"') };
+
+export const LinkRow: StoryObj = { name: "Link row", render: () => pair(' href="#missions"') };
+
+export const Card: StoryObj = { render: () => pair(' layout="card"') };
+
+export const CardWithManyTags: StoryObj = {
+  name: "Card with many tags",
+  render: () => `<ocelle-action-row row-id="m-42" layout="card">${folder}Mission 42<span slot="description">Due Friday</span>${manyTags}${arrow}</ocelle-action-row>`,
+};
+
+export const CardRightToLeft: StoryObj = { name: "Card, right to left", render: () => `<div dir="rtl">${pair(' layout="card"')}</div>` };
+
+export const ChromeCurrent: StoryObj = { name: "Chrome, current", render: () => ground("color-chrome", pair(' ground="chrome" current="page"')) };

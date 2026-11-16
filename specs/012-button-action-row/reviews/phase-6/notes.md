@@ -82,3 +82,67 @@ the red commit's own diff.
 
 **Also, T067 cannot be done in this run.** T067 pushes the branch and records a CI run. Pushing is outside my
 permissions here, so T067 will stay open for whoever may push.
+
+## Red run
+
+`red.sh 6 phase` on 14ca8d5 reported `tests_only: true`, `red: true`, `recorded: true`: 109 of 3824 tests failed
+(red-phase.log). Every failure is the missing behaviour:
+- assertion mismatches on the absent current mark, unavailable state, link-row cancel and modifier handling, card
+  layout, wrapper `aria-disabled`, reflection and US2-12's link-mode pressed state;
+- the driver's own `no .bar in the shadow root` on a row that draws no bar (as phase 4's `no .spinner svg`);
+- the README, CHANGELOG and manifest tests, the eleven story tests (stories not built yet) and the pinned counts.
+
+There was no import, syntax or setup error; I grepped the log for `Cannot find`, `SyntaxError`, `Failed to load` and
+`Failed to resolve`.
+
+A draft run of the whole suite before the red commit, with the code beside the tests, passed: 3824 tests in 152 files.
+So no pin was missed. The pinned counts in the red commit are:
+- 72 stories (`storybook-build`);
+- 144 story-themes (`visual`, three places, and `axe`);
+- 146 axe plant-repo runs;
+- 144 baselines (`plant-repo`).
+
+The manifest stays at 4 elements, and no token or contrast pair changed.
+
+**US2-12 replaced by a stricter test** (constitution VIII; plan decision 32, operator decision at phase 6). The phase 3
+test asserted `:state(pressed)` on a link-mode host. FR-009 forbids `aria-pressed` on a link, and the operator ruled
+that a link has no pressed state.
+- The link-mode host `lp` now matches no `:state(pressed)` in `set`, `off`, `again` and `empty`.
+- A new step checks that a button-mode host stops matching once `href` is set, and matches again once it is removed.
+- readme.test.ts's custom-states sentence gains "in button mode".
+
+These two are the only changes to existing tests, as authorised.
+
+## Green notes
+
+- **Card grid without raw numbers.** Style-lint (token-only) rejects raw grid numbers (`grid-row: 1`,
+  `minmax(0, 1fr)`). The card grid uses names only: `grid-template-areas: "title trailing"`,
+  `grid-template-columns: [full-start] 1fr auto [full-end]` and `grid-column: full`. Strings, identifiers and `fr` are
+  already allowed, so no new allowance was needed.
+- **A cancelled activate event and the click.** The row calls `preventDefault()` on the originating click in both
+  modes, as the button does (FR-023). That cancels a link's navigation and changes nothing visible on a `<button>`.
+- **Manifest plants' copies.** The eight copies of `custom-elements.json` under `gates/plants/manifest/*/tree` were
+  regenerated from the new manifest with each plant's own defect reapplied:
+  - `fail-lost-attribute` with its attribute removed;
+  - the six `fail-undescribed-*` plants with their extra module;
+  - `pass-reordered` with its keys reversed.
+  The script first reproduced the old copies byte for byte from the old manifest. `break-not-json` is unchanged.
+- **T068.** The figures in `gates/README.md` and in 006's Complexity Tracking row are corrected for the repository's
+  72 stories after 012:
+  - about 588 s per size-1 `visual` shard;
+  - 4 stories of headroom to the split count of 76;
+  - about 11.9 Plants runner-hours per CI run (73 × 588 s).
+  **The operator's request (operator decision at phase 2, plan decision 15, research R-13):** when this feature lands,
+  open a triage record for a plant design whose shard time does not grow with the repository's story count.
+
+## Visual baselines
+
+The 22 row baselines (`elements-ocelle-action-row--*`, 11 stories in light and dark) were written only by
+`OCELLE_VISUAL_ENGINE=docker pnpm run visual:update` in #10's pinned container.
+- The first run reported "wrote 22 files (22 added, 0 changed, 0 removed)".
+- A second run after the card-grid style-lint change wrote nothing ("0 files").
+- The "card with many tags" story then got more tags, so that it wraps in the 1280 px frame. Its two baselines were
+  rewritten by the same command ("2 changed").
+
+No baseline was hand-edited. No podman cross-engine check was possible in this environment; CI confirms the
+baselines at landing.

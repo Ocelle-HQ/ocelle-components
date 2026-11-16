@@ -59,6 +59,13 @@ entry points and the browser build's file path (constitution VII).
   `tags`; the event `ocelle-action-row-activate` (`CustomEvent`, bubbles, composed, cancelable, `detail`
   `{ rowId }`); the moved host attributes `aria-label`, `aria-labelledby`, `aria-describedby` and `title` with their
   mirrors; the focus ring drawn inside the row with the new token `--ocelle-focus-offset-inset` of `@ocelle/tokens`.
+- `ocelle-action-row`'s states and card layout (mission 012): its properties `current` and `unavailable` (reflected);
+  `current` (`page` or `true`) sets `aria-current` and draws the current mark, a surface and a bar apart from the focus
+  ring; `unavailable` keeps the row in the tab order with `aria-disabled` and activates nothing (an unavailable link row
+  has no `href`); `layout="card"` puts the description and the tags below the title line, the tags wrapping only
+  between tags. A link row dispatches its event before the navigation, a cancelled event cancels it, and a modifier or
+  middle click dispatches nothing.
+- `ocelle-button` sets `:state(pressed)` only in button mode: a link has no pressed state.
 - The entry point `@ocelle/elements/ocelle-action-row.js` (defines `ocelle-action-row` only); the package root and the
   browser build define `ocelle-action-row` too.
 - The engine floor, raised to Chromium 135 and WebKit 17.4 for ARIA element reflection and custom states (from

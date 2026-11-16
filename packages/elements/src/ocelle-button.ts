@@ -7,7 +7,7 @@
 // inner control (src/control.ts `MovedAttributes`): ID references by element reflection resolved in the host's tree,
 // the name from `aria-labelledby`, then `aria-label`, then `label`, then the content; `aria-pressed` in button mode only;
 // `aria-current="false"` applied as no current state; the moved states as custom states (`expanded`, `pressed`,
-// `current`). In link mode a click with Ctrl, Meta, Shift or Alt held dispatches no `ocelle-button-activate`, and a
+// `current`; `pressed` in button mode only, plan decision 32). In link mode a click with Ctrl, Meta, Shift or Alt held dispatches no `ocelle-button-activate`, and a
 // cancelled activate event cancels the navigation. The host is
 // `display: inline-grid` and the inner control its single stretched grid item, so a host stretched by a flex row or a
 // grid has no area outside the control; the inner control is `inline-flex`, so a page rule that makes the host a block
@@ -91,7 +91,7 @@ const references = [
  * not write or remove it.
  * @attr {string} data-ocelle-moved-title - Element-owned mirror of the moved `title`; hosts do not write or remove it.
  * @cssstate expanded - While the moved `aria-expanded` is `"true"`.
- * @cssstate pressed - While the moved `aria-pressed` is `"true"`.
+ * @cssstate pressed - While the moved `aria-pressed` is `"true"`, in button mode only: a link has no pressed state.
  * @cssstate current - While the moved `aria-current` is set to any value other than `"false"`.
  * @slot - The label.
  * @slot icon - One icon before the label (the slot convention): `--ocelle-icon-size` square, decorative; hidden while
@@ -522,7 +522,8 @@ export class OcelleButton extends LitElement {
     }
     const states: readonly (readonly [string, boolean])[] = [
       ["expanded", this.#moved.get("aria-expanded") === "true"],
-      ["pressed", this.#moved.get("aria-pressed") === "true"],
+      // A link has no pressed state (plan decision 32): `pressed` is set in button mode only.
+      ["pressed", linkHref(this.href, document.baseURI) === undefined && this.#moved.get("aria-pressed") === "true"],
       ["current", this.#current() !== undefined],
     ];
     for (const [state, on] of states) {
