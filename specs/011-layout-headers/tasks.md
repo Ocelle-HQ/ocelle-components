@@ -86,7 +86,7 @@ The operator fixed the landing notes in this feature on 2026-11-15 (`reviews/pha
 code: `src/slot-state.ts` keeps reading `assignedNodes()` unflattened (research.md R-03); the README gains the
 statement for shell authors. Its red test is the readme test's assertion; no scenario harness applies.
 
-- [ ] T048 R2-01 (landing L1-04), README statement for shell authors on forwarded slots (spec Empty slot and FR-036,
+- [X] T048 R2-01 (landing L1-04), README statement for shell authors on forwarded slots (spec Empty slot and FR-036,
   research.md R-03, contracts/elements-package.md § Shell authors), test first. **Red**, in a commit that changes only
   test files (`test(011-layout-headers): phase 1 review round 2 red`, signed off): `packages/elements/test/node/readme.test.ts`
   (`elements-node`) gains one fragment, its own `states:` test: "A shell that forwards a slot of its own into an
