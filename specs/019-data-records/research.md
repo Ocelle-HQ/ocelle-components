@@ -246,7 +246,8 @@ prose table's query container). The data table bounds its caption without a quer
   (PLAN-FRESH-3-001, operator decision (a)). The measuring element is an empty `<div class="box-size"
   aria-hidden="true">` in the data table's shadow root, a sibling after `.region-frame` and outside 009's structure,
   styled `:host .box-size { block-size: 0; }`. Its inline size is the host's content width, which equals
-  `.region-box`'s in every host, and its size depends on neither the caption nor the table's block size. It adds
+  `.region-box`'s in every host. Its block size never depends on the caption or the table; its inline size does not
+  in a bounded host, and in a shrink-to-fit host it follows the table's width ("No feedback" below). It adds
   one internal node and changes nothing of 009's module (FR-008). The observer does not watch `.region-box`: the cap
   it writes rewraps the caption, which changes the box's block size, and a write that changes the observed box raises
   the "ResizeObserver loop" error on `window`. The squad measured that in headless Chrome on a plain block host on
@@ -299,9 +300,12 @@ prose table's query container). The data table bounds its caption without a quer
   give it, so a fitting table is never made to overflow by a caption word; its max-content width does not, so a long
   caption over a narrow table wraps at the table's width. Three paths that could feed a write back into a
   `ResizeObserver` delivery are closed:
-  - *The observed node.* Neither axis of `.box-size` depends on the caption or the table, so the box size write never
-    changes the node the element's observer watches (PLAN-FRESH-3-001). A rewrap does change `.region-box`'s block
-    size, but `.region-box` is deeper than `.box-size`, so 009's observer receives it in the same frame.
+  - *The observed node.* `.box-size`'s block size is 0 and never depends on the caption or the table, so a rewrap
+    never changes it (PLAN-FRESH-3-001). Its inline size does not depend on the caption or the table in a bounded
+    host, so there the box size write never changes the node the element's observer watches. In a shrink-to-fit
+    host its inline size follows the table's width, which the caption's longest word can set, and the write leaves
+    it unchanged only because the width written is exact (the next bullet). A rewrap does change `.region-box`'s
+    block size, but `.region-box` is deeper than `.box-size`, so 009's observer receives it in the same frame.
   - *The exact width.* The written width is unrounded, so in a fitting shrink-to-fit host the cap equals the table's
     width exactly, which the caption's min-content contribution already fits: the write shrinks nothing and the
     host's width is stable after one write. A `clientWidth` write would round to a whole pixel. When the box's width
