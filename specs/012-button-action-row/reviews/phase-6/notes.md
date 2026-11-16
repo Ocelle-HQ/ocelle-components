@@ -146,3 +146,70 @@ The 22 row baselines (`elements-ocelle-action-row--*`, 11 stories in light and d
 
 No baseline was hand-edited. No podman cross-engine check was possible in this environment; CI confirms the
 baselines at landing.
+
+## Gate runs (T066), on cf36bbf
+
+- **Element plants:** plants.md. Every plant bit.
+- **`gate:storybook-build`:** 72 stories.
+- **`OCELLE_VISUAL_ENGINE=docker gate:visual`:** 144 captures match (docker only: no cross-engine comparison).
+- **`gate:visual` under load:** 16 `yes > /dev/null` processes, three runs, each "144 captures match".
+  - A count taken one second after `pkill -9 -x yes` still showed 16. A second `pkill -9 -x yes` and a later
+    `pgrep -x yes` showed 0 left.
+- **`gate:axe`:** 144 story-theme runs, 0 serious or critical; 10 notes (0 incomplete, 10 excepted, the Prose
+  document's). So the current, unavailable, unavailable current and card stories with description or tag text are at
+  0 findings (T063, decisions 30 and 31).
+- **`gate:plants`, shard by shard:** `OCELLE_VISUAL_ENGINE=docker pnpm run gate:plants -- --shard <k>`, one at a
+  time. All 76 shards report "every plant as expected".
+  - Shards 1 to 3 judged 77, 76 and 76 other plants, in 128 s, 107 s and 101 s.
+  - The visual shards took about 180 to 197 s each and the axe shards about 118 to 123 s.
+  - The slowest was shard 40 (`visual/fail-token-changed`), 234 s.
+  - 11,121 s in all, and no shard near 10 minutes.
+  - The first background loop reached its two-hour limit during shard 45. A second loop ran shards 45 to 76; the
+    summary counts each shard once.
+- **Whole suite, `pnpm test`, with docker up:** 3824 tests passed in 152 files.
+- **Static gates, all pass:**
+
+  | Gate | Result |
+  |---|---|
+  | `gate:typecheck` | no type error |
+  | `gate:lint` | 290 files, no finding |
+  | `gate:test-lint` | 196 files, no finding |
+  | `gate:style-lint` | 16 files, no finding |
+  | `gate:csp` | 14 files, no finding |
+  | `gate:prefix` | 310 files, no finding |
+  | `gate:pins` | 5 manifests, no finding |
+  | `gate:manifest` | 4 elements, no finding |
+  | `gate:contrast` | 198 pairs in light, 206 in dark, 187 required per theme |
+  | `gate:brand-rules` | 7 rules checked |
+  | `gate:config-copies` | identical |
+  | `gate:signoff -- --range 89a1369..HEAD` | 4 commits, no finding |
+
+- **`gate:mutation -- --base 89a1369`: fails, with 1 surviving mutant.** 77 mutants on the changed lines of 2 files
+  (`src/ocelle-action-row.ts`, `src/ocelle-button.ts`); 0 timeouts, 9 compile errors, 0 zero-mutant entries; 334 s.
+  See the operator question below.
+- I did not run tdd-check; the review step runs it.
+
+## Operator question 2 (stop-and-ask): a mutant that survives the red tests
+
+The survivor is in `src/ocelle-action-row.ts:624`:
+
+```ts
+if (linkHref(this.href, document.baseURI) !== undefined && (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey)) return;
+```
+
+It is `ConditionalExpression: replaced by true`, which drops the link-mode check, so a Ctrl, Meta, Shift or Alt click
+on a **button-mode** row would dispatch no `ocelle-action-row-activate`. The data model says a button-mode row
+dispatches on any click ("any click in button mode, which Enter, Space and `row.click()` produce"), and FR-033 limits
+the modifier exception to link mode. No test of the red commit clicks a button-mode row with a modifier held. So the
+mutant is observable, not equivalent.
+
+Options:
+- **(a) Recommended.** One in-process test, in its own signed-off test commit, recorded here as a test added after
+  the red commit for a survivor (as phases 2 and 5 did). A Ctrl, Meta, Shift and Alt click on a button-mode row each
+  give one `click` and one `ocelle-action-row-activate`. No existing or red test would change. Then run
+  `gate:mutation -- --base 89a1369` again.
+- **(b)** Add no test, and record the survivor for the reviewer as a known gap (it is not equivalent, so the review
+  would treat it as blocking under constitution VIII).
+- **(c)** Something else that you state.
+
+T066 stays open until the mutation gate passes, and T067 stays open because it needs a push.
