@@ -1,3 +1,8 @@
 # History fold phase-1 of claude/041-plants-affected: old commit -> new commit (pre-fold head kept as refs/ocelle/prefold/phase-1/claude/041-plants-affected, a82166091297b822565b03d06f5a980539779156).
 268b1e4dbfb5ada1cea01ee228ac922685651cd4 2d4c9a4126e92190f887a5f3dd2e2a3d298efbdc
 a82166091297b822565b03d06f5a980539779156 6be222463599375bfae36c88198debba074c6c25
+
+# History fold landing of claude/041-plants-affected: old commit -> new commit (pre-fold head kept as refs/ocelle/prefold/landing/claude/041-plants-affected, eb159a5a0a2dba41bdb72f667058586bf843c29e).
+5d0394fda73178bb11bfb2157e318b16e5476219 b73d4d6feec6eaa83e7371ed3bcaaa70d4ec5d32
+b9dc41097f34f6b8632870a9baf0c751a3fe5a2b 8b1d2a973fd797249b442fda13407a096586d681
+eb159a5a0a2dba41bdb72f667058586bf843c29e 0c472614af2c666a669fe9a60fcaa5affcb21bca
