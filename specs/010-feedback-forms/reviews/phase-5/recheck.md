@@ -27,3 +27,13 @@ assumption that named the pre-merge branch.
 
 **T060**: still merges `main` before `base.sh 5`. If #10's harness files change on `main` after 3828d2f, T060 repeats
 this comparison for those changes and appends the result here.
+
+**T060, 2026-11-16**: `main` not merged, by operator decision (`decision-t060-merge.md`; the merge is deferred to
+landing). The recorded base `77dfda1` (`base.sha`) holds #10's harness (`3828d2f` and the merge `8c53b7a` are its
+ancestors; `storybook/README.md`, `gates/lib/story-page.ts` and the plant `pass-focus-below-fold` present) and the
+elements of phases 2 to 4 (`src/ocelle-notice.ts`, `src/form-control.ts`, `src/ocelle-form-input.ts`,
+`src/ocelle-form-select.ts`). Since `8c53b7a` the branch has not changed `storybook/`, `gates/lib/story-page.ts` or
+`gates/lib/capture-plan.ts`; the local `origin/main` ref (`c4c0af4`, not fetched again) changes none of them after
+`3828d2f`, and its only `specs/006-storybook-workbench` change is op 016's `affected-in-ci` amendment to
+`contracts/gates.md` and `contracts/plants.md`, which touches no R-08 item. The comparison above stands; no phase 5
+task changes.
