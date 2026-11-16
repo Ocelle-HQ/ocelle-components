@@ -29,3 +29,11 @@
 - **Decided by:** the operator, asked in this session as a multiple-choice question.
 - **Answer:** "Approve". The operator approved the feature at cfef8c0 (all 5 phases reviewed, approved, folded and pushed).
 - **Next:** ALL PHASES DONE goes to the orchestrator, and the orchestrator opens the draft PR.
+
+## Merge resolution for gates/test/vitest-config.test.ts (2026-11-16, landing #47)
+
+- **Decided by:** the operator, asked in this session as a multiple-choice question about landing finding L1-02.
+- **Answer:** "Take the branch's version".
+- **Why:** main's version pins the mutation projects without the branch's `elements-touch` project, so two of its tests fail on the merge.
+- **What the branch's version holds:** op 015's two assertions, plus the branch's R-14 tests.
+- **What changes:** for this file only, this replaces the 2026-11-15 rule "take main's version". `stryker.elements.config.json` merges cleanly and still equals main's.
