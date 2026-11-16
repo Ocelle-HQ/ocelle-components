@@ -58,7 +58,9 @@ mission's stories added on top. The shard jobs have no timeout, so nothing faile
 for mission 013, with a follow-up op that re-splits the plants shards and bounds the cleanup step. This pull request
 makes no change to the shards.
 
-Status: **open** (operator: accept for this mission too, or hold for the follow-up op).
+The operator accepted it for this mission on 2026-11-16 (decision 13, "Accept, same follow-up op").
+
+Status: **done** (accepted by the operator; the follow-up op is mission 013's).
 
 ## 3. Required checks on `main`
 
