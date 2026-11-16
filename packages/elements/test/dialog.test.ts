@@ -14,10 +14,11 @@ import { defineDialogStandIns, dialogScenarios } from "./scenarios/dialog.ts";
 defineDialogStandIns();
 const driver = inProcessDriver();
 
-// The reset helper ends forced colours and reduced motion together (test/commands.ts `emulate`), so no emulation
-// leaks into the next body; a body that resizes the viewport restores it itself.
+// The reset helper ends forced colours and reduced motion (013's `emulateReducedMotion`, which forced colours leave
+// alone), so no emulation leaks into the next body; a body that resizes the viewport restores it itself.
 afterEach(async () => {
   await commands.emulateForcedColors("none");
+  await commands.emulateReducedMotion("no-preference");
 });
 
 // Each test is named by its row's full name: Vitest shortens a `$name` interpolation to 40 characters, which gave

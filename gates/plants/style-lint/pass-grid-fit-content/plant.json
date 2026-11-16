@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "The facts tracks fit-content(50%) minmax(0, 1fr) in an element's css template pass: grid-template-columns takes fit-content(<percentage>) and minmax(0, <flex>) (013 research.md R-10, PLAN-CORRECTNESS-1-001 (a))."
+}

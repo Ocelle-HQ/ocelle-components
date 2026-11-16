@@ -545,14 +545,14 @@ const showRows = [
     "Hover delay under reduced motion (US3-8, R-09, R-15): with prefers-reduced-motion: reduce the delay is not zeroed: not shown before 150 ms, shown by 450 ms",
     async (driver) => {
       await start(driver, page());
-      await driver.reducedMotion(true);
+      await driver.reducedMotion("reduce");
       try {
         await track(driver);
         await driver.hover("trg");
         await pause(450);
         return { reduced: (await driver.device()).reducedMotion, delay: delay(await frames(driver)) };
       } finally {
-        await driver.reducedMotion(false);
+        await driver.reducedMotion("no-preference");
       }
     },
     { reduced: true, delay: delayed },
@@ -1337,7 +1337,7 @@ const clampRows = (
 const neitherRow = row(
   'Neither side fits (FR-035, R-11; analysis A2): placement="top" around a trigger centred in a 1280 × 120 viewport with a text whose bubble is taller than the space above and below less the gutter: the bubble stays on top, its block end space-2 above the trigger, not flipped; its cross axis inside the viewport less the gutter',
   async (driver) => {
-    await driver.setViewport(1280, 120);
+    await driver.viewport(1280, 120);
     try {
       await start(driver, page({ text: `${longText}, and keeps the filters until you reset them` }));
       await tabFrom(driver);
@@ -1350,7 +1350,7 @@ const neitherRow = row(
         crossInside: box.left >= gutter - 0.5 && box.right <= 1280 - gutter + 0.5,
       };
     } finally {
-      await driver.setViewport(1280, 800);
+      await driver.viewport(1280, 800);
     }
   },
   { tooTall: true, onTop: true, crossInside: true },
@@ -1422,10 +1422,10 @@ const followRows = [
       await tabFrom(driver);
       const before = await placed(driver);
       try {
-        await driver.setViewport(1000, 600);
+        await driver.viewport(1000, 600);
         return { before, after: await placed(driver), open: await bubbleOpen(driver) };
       } finally {
-        await driver.setViewport(1280, 800);
+        await driver.viewport(1280, 800);
       }
     },
     { before: "above", after: "above", open: true },
@@ -1520,7 +1520,7 @@ const motionRows = [
       await pause(950);
       const hover = await frames(driver);
       await driver.pointer([rest]);
-      const afterHide = [...(await driver.animations("tip", bubblePart)), ...(await driver.animations("tip", painted))];
+      const afterHide = [...(await driver.ownAnimations("tip", bubblePart)), ...(await driver.ownAnimations("tip", painted))];
       await tabFrom(driver);
       await track(driver);
       await pause(300);

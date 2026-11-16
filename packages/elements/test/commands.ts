@@ -5,17 +5,20 @@
 // `axTree` and `emulateForcedColors` below (registered in vitest.config.ts), the fixture suites through a Playwright
 // CDP session on their page.
 //
-// 008 adds (research.md R-14): `axTree` also gives a node's description, its modal flag and its level where Chromium
-// reports them; `emulateReducedMotion(on)`; `pointerPath(steps)`, which drives `page.mouse`, and `touchTap(x, y)`,
-// which drives `page.touchscreen`, both at points of the test's frame with the frame's offset and scale in the runner
-// page added. Ending forced colours (`emulate(page, "none")`) also ends reduced motion, so the reset helper of each
-// test file leaves no emulation behind.
+// 008 adds (research.md R-14): `axTree` also gives a node's description and its modal flag where Chromium reports
+// them; `pointerPath(steps)`, which drives `page.mouse`, and `touchTap(x, y)`, which drives `page.touchscreen`, both at
+// points of the test's frame with the frame's offset and scale in the runner page added. Reduced motion is 013's
+// `emulateReducedMotion(mode)`, which forced colours leave alone, so each test file's reset helper ends both.
 import type { CDPSession, Page } from "playwright";
 import type { BrowserCommandContext } from "vitest/node";
 
 /**
- * One unignored accessibility node: its role and its computed name, and where Chromium reports them its computed
- * description (when not empty), its `modal` flag and its `level`; a node without one has no such key.
+ * One unignored accessibility node: its role and its computed name, for a heading its level (013 US2-1, US2-2), and
+ * where Chromium reports them its computed description (when not empty) and its `modal` flag (008 R-14); and for a
+ * range node (a progressbar, a slider) its value properties (013 phase 3, contracts/checks.md § Driver additions):
+ * `value` when the node has a current value, and `valuemin`, `valuemax` and `valuetext` as Chromium reports them.
+ * `valuetext` reads `""` in Chromium whatever the page sets (reviews/phase-3/spike.md), so no test asserts a value text
+ * on it. A node without one of these has no such key.
  */
 export interface AxNode {
   readonly role: string;
@@ -23,7 +26,14 @@ export interface AxNode {
   readonly description?: string;
   readonly modal?: boolean;
   readonly level?: number;
+  readonly value?: number;
+  readonly valuemin?: number;
+  readonly valuemax?: number;
+  readonly valuetext?: string;
 }
+
+/** The reduced-motion modes the tests emulate. */
+export type ReducedMotion = "reduce" | "no-preference";
 
 /** The forced-colours modes and the system palettes the tests emulate. */
 export type ForcedColors = "active" | "none";
@@ -46,7 +56,8 @@ interface RawAxNode {
   readonly role?: { readonly value?: unknown };
   readonly name?: { readonly value?: unknown };
   readonly description?: { readonly value?: unknown };
-  readonly properties?: readonly { readonly name: string; readonly value: { readonly value?: unknown } }[];
+  readonly value?: { readonly value?: unknown };
+  readonly properties?: readonly { readonly name: string; readonly value?: { readonly value?: unknown } }[];
 }
 
 interface FrameTree {
@@ -59,19 +70,26 @@ function text(value: unknown): string {
   return typeof value === "string" ? value : "";
 }
 
-/** The `AxNode` of a protocol node: role and name, and the description, modal flag and level it has. */
-function axNode(node: RawAxNode): AxNode {
-  const description = text(node.description?.value);
-  const property = (name: string): unknown => node.properties?.find((each) => each.name === name)?.value.value;
-  const modal = property("modal");
+/**
+ * A node as the readers report it: role and name, a heading's `level` property (013 US2-1, US2-2), the description and
+ * modal flag it has (008 R-14), and a range node's value properties, each only when Chromium reports it (013 phase 3).
+ */
+function reported(node: RawAxNode): AxNode {
+  const role = text(node.role?.value);
+  const property = (name: string): unknown => node.properties?.find((each) => each.name === name)?.value?.value;
   const level = property("level");
-  return {
-    role: text(node.role?.value),
-    name: text(node.name?.value),
-    ...(description === "" ? {} : { description }),
-    ...(typeof modal === "boolean" ? { modal } : {}),
-    ...(typeof level === "number" ? { level } : {}),
-  };
+  const named = role === "heading" && typeof level === "number" ? { role, name: text(node.name?.value), level } : { role, name: text(node.name?.value) };
+  const description = text(node.description?.value);
+  const modal = property("modal");
+  const described = { ...(description === "" ? {} : { description }), ...(typeof modal === "boolean" ? { modal } : {}) };
+  const values: { value?: number; valuemin?: number; valuemax?: number; valuetext?: string } = {};
+  const value = node.value?.value;
+  if (typeof value === "number") values.value = value;
+  const [min, max, valueText] = [property("valuemin"), property("valuemax"), property("valuetext")];
+  if (typeof min === "number") values.valuemin = min;
+  if (typeof max === "number") values.valuemax = max;
+  if (typeof valueText === "string") values.valuetext = valueText;
+  return { ...named, ...described, ...values };
 }
 
 function inner(node: DomNode): readonly DomNode[] {
@@ -119,7 +137,7 @@ export async function axNodes(session: CDPSession, id: string, frameId?: string)
   const { nodes } = (await session.send("Accessibility.getFullAXTree", params)) as { nodes: readonly RawAxNode[] };
   return nodes
     .filter((node) => !node.ignored && node.backendDOMNodeId !== undefined && ids.has(node.backendDOMNodeId))
-    .map(axNode);
+    .map(reported);
 }
 
 /**
@@ -140,7 +158,7 @@ export async function axSubtree(session: CDPSession, id: string, frameId?: strin
   const found: AxNode[] = [];
   const walk = (node: RawAxNode): void => {
     const role = text(node.role?.value);
-    if (!node.ignored && role !== "InlineTextBox") found.push(axNode(node));
+    if (!node.ignored && role !== "InlineTextBox") found.push(reported(node));
     for (const child of node.childIds ?? []) {
       const next = byNodeId.get(child);
       if (next !== undefined) walk(next);
@@ -165,20 +183,11 @@ async function frameIdOf(session: CDPSession, url: string): Promise<string | und
 /**
  * Emulates forced colours (`active` with a light or dark system palette) or ends the emulation (`none`). Ending it also
  * puts the page back in the light colour scheme the fixture contexts start in (browser/serve.ts), so a dark palette
- * never leaks into later tests on the same page (005 phase 4 review R1-01), and ends reduced motion (008 R-14), so the
- * one reset helper of a test file resets both.
+ * never leaks into later tests on the same page (005 phase 4 review R1-01).
  */
 export async function emulate(page: Page, mode: ForcedColors, palette?: Palette): Promise<void> {
-  if (mode === "none") {
-    await page.emulateMedia({ forcedColors: "none", colorScheme: "light", reducedMotion: "no-preference" });
-    return;
-  }
-  await page.emulateMedia(palette === undefined ? { forcedColors: mode } : { forcedColors: mode, colorScheme: palette });
-}
-
-/** Emulates `prefers-reduced-motion: reduce`, or with false `no-preference`. */
-export async function emulateMotion(page: Page, on: boolean): Promise<void> {
-  await page.emulateMedia({ reducedMotion: on ? "reduce" : "no-preference" });
+  const scheme = mode === "none" ? "light" : palette;
+  await page.emulateMedia(scheme === undefined ? { forcedColors: mode } : { forcedColors: mode, colorScheme: scheme });
 }
 
 /** One step of a pointer path: a point, and a press or release of `button` (`left`) there. */
@@ -219,6 +228,15 @@ async function frameMap(context: BrowserCommandContext): Promise<(x: number, y: 
   return (x, y) => ({ x: box.x + x * scale, y: box.y + y * scale });
 }
 
+/**
+ * Emulates `prefers-reduced-motion` (013 research.md R-08, PLAN-CORRECTNESS-1-013): through Playwright's own
+ * `reducedMotion` option of `page.emulateMedia`, beside `emulate()`, so a later forced-colours call keeps it (every
+ * `emulateMedia` call sends all the media features, the reduced motion Playwright holds among them).
+ */
+export async function emulateMotion(page: Page, mode: ReducedMotion): Promise<void> {
+  await page.emulateMedia({ reducedMotion: mode });
+}
+
 /** Which nodes `axTree` reads: the element's own and its shadow subtree's (`axNodes`), or its accessibility subtree (`axSubtree`). */
 export type AxScope = "element" | "subtree";
 
@@ -243,9 +261,9 @@ export async function emulateForcedColors(context: BrowserCommandContext, mode: 
   await emulate(context.page, mode, palette);
 }
 
-/** The `emulateReducedMotion(on)` browser command (registered in vitest.config.ts). */
-export async function emulateReducedMotion(context: BrowserCommandContext, on: boolean): Promise<void> {
-  await emulateMotion(context.page, on);
+/** The `emulateReducedMotion(mode)` browser command (registered in vitest.config.ts; 013 phase 3). */
+export async function emulateReducedMotion(context: BrowserCommandContext, mode: ReducedMotion): Promise<void> {
+  await emulateMotion(context.page, mode);
 }
 
 /** The `pointerPath(steps)` browser command (registered in vitest.config.ts): `page.mouse` through points of the test's frame. */
@@ -268,8 +286,8 @@ declare module "vitest/browser" {
     axTree: (id: string, scope?: AxScope) => Promise<AxNode[]>;
     /** Emulates forced colours with a system palette, or ends the emulation with `"none"`. */
     emulateForcedColors: (mode: ForcedColors, palette?: Palette) => Promise<void>;
-    /** Emulates `prefers-reduced-motion: reduce`, or ends it with false. */
-    emulateReducedMotion: (on: boolean) => Promise<void>;
+    /** Emulates `prefers-reduced-motion: reduce`, or ends it with `"no-preference"` (013 phase 3). */
+    emulateReducedMotion: (mode: ReducedMotion) => Promise<void>;
     /** Moves the real pointer through points of this frame, pressing and releasing where a step says so. */
     pointerPath: (steps: readonly PathStep[]) => Promise<void>;
     /** A real touch tap at a point of this frame (a context with `hasTouch` only). */

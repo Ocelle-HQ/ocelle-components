@@ -84,7 +84,7 @@ async function settle(driver: Driver): Promise<void> {
   const hosts = (await driver.topLayer()).map((each) => /^([\w-]+)\[dialog\]$/.exec(each.element)?.[1]).filter((id): id is string => id !== undefined);
   for (const id of hosts) {
     for (const start = Date.now(); ; ) {
-      if ((await driver.attribute(id, "open")) === null || (await driver.animations(id, "dialog")).length === 0) break;
+      if ((await driver.attribute(id, "open")) === null || (await driver.ownAnimations(id, "dialog")).length === 0) break;
       if (Date.now() - start > 1000) throw new Error(`the entry of #${id} did not end within 1 000 ms`);
       await pause(20);
     }
@@ -257,13 +257,13 @@ const placementRows = [
     row(
       `Size (US2-3, FR-026): side="${side}" at 320 × 800, where --ocelle-drawer-inline exceeds the cap: the panel's inline size equals the computed dialog-max-inline, 288 px`,
       async (driver) => {
-        await driver.setViewport(320, 800);
+        await driver.viewport(320, 800);
         try {
           await driver.mount(page(basic, { attrs: ` side="${side}"` }));
           await open(driver);
           return (await inspect(driver, "dlg", "dialog", ["inline-size", "max-inline-size"])).styles;
         } finally {
-          await driver.setViewport(1280, 800);
+          await driver.viewport(1280, 800);
         }
       },
       { "inline-size": cappedInline, "max-inline-size": cappedInline },
@@ -421,7 +421,7 @@ const bodyRows = [
     row(
       `Long body, short viewport 320 × 256 (FR-018, WCAG 1.4.10, R-18): side="${side}": the panel's block size is 256 px, the body keeps its minimum block size and its last content is reachable by scrolling`,
       async (driver) => {
-        await driver.setViewport(320, 256);
+        await driver.viewport(320, 256);
         try {
           await driver.mount(page(paragraphs, { attrs: ` side="${side}"`, footer: '<button id="f1">F1</button><button id="f2">Second action</button>' }));
           await openSettled(driver);
@@ -437,7 +437,7 @@ const bodyRows = [
           });
           return { block: Math.round(panel.height), minimum: body.height, overflows: body.scrollHeight > body.clientHeight, focused, atEnd };
         } finally {
-          await driver.setViewport(1280, 800);
+          await driver.viewport(1280, 800);
         }
       },
       { block: 256, minimum: bodyMinimum, overflows: true, focused: "dlg[div]", atEnd: true },
@@ -705,10 +705,10 @@ const motionRows = [
       async (driver) => {
         await driver.mount(page(basic, { attrs: attrs(placement) }));
         await open(driver);
-        const entry = (await driver.animations("dlg", "dialog")).map(({ playState, ...rest }) => ({ ...rest, running: playState === "running" }));
+        const entry = (await driver.ownAnimations("dlg", "dialog")).map(({ playState, ...rest }) => ({ ...rest, running: playState === "running" }));
         await pause(300);
         await driver.press("Escape");
-        const exit = (await driver.animations("dlg", "dialog")).map(({ playState, ...rest }) => ({ ...rest, running: playState === "running" }));
+        const exit = (await driver.ownAnimations("dlg", "dialog")).map(({ playState, ...rest }) => ({ ...rest, running: playState === "running" }));
         return { entry, exit, recorded: await events(driver, 2) };
       },
       {
@@ -722,12 +722,12 @@ const motionRows = [
     row(
       `Motion under reduced motion (FR-020, SC-008): side="${side}": no animation on open or close, the whole close in one update`,
       async (driver) => {
-        await driver.reducedMotion(true);
+        await driver.reducedMotion("reduce");
         await driver.mount(page(basic, { attrs: ` side="${side}"` }));
         await open(driver);
-        const entry = await driver.animations("dlg", "dialog");
+        const entry = await driver.ownAnimations("dlg", "dialog");
         await driver.press("Escape");
-        const exit = await driver.animations("dlg", "dialog");
+        const exit = await driver.ownAnimations("dlg", "dialog");
         return { entry, exit, recorded: await driver.recorded() };
       },
       { entry: [], exit: [], recorded: [request("escape", "b1"), closeEvent("escape", "opener")] },

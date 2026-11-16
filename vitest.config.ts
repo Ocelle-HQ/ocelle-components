@@ -15,7 +15,7 @@ interface PathStep {
 interface ElementCommands {
   readonly axTree: (context: BrowserCommandContext, id: string, scope?: "element" | "subtree") => Promise<unknown>;
   readonly emulateForcedColors: (context: BrowserCommandContext, mode: "active" | "none", palette?: "light" | "dark") => Promise<void>;
-  readonly emulateReducedMotion: (context: BrowserCommandContext, on: boolean) => Promise<void>;
+  readonly emulateReducedMotion: (context: BrowserCommandContext, mode: "reduce" | "no-preference") => Promise<void>;
   readonly pointerPath: (context: BrowserCommandContext, steps: readonly PathStep[]) => Promise<void>;
   readonly touchTap: (context: BrowserCommandContext, x: number, y: number) => Promise<void>;
 }
@@ -25,10 +25,12 @@ const axTree: BrowserCommand<[id: string, scope?: "element" | "subtree"]> = asyn
 const emulateForcedColors: BrowserCommand<[mode: "active" | "none", palette?: "light" | "dark"]> = async (context, mode, palette) => {
   await (await elementCommands()).emulateForcedColors(context, mode, palette);
 };
-// 008 research.md R-14: reduced motion, real pointer paths and touch taps for the overlay scenarios.
-const emulateReducedMotion: BrowserCommand<[on: boolean]> = async (context, on) => {
-  await (await elementCommands()).emulateReducedMotion(context, on);
+// 013 phase 3 (research.md R-08, contracts/checks.md § Driver additions): reduced motion through the same
+// `page.emulateMedia` helper as forced colours, so neither clears the other.
+const emulateReducedMotion: BrowserCommand<[mode: "reduce" | "no-preference"]> = async (context, mode) => {
+  await (await elementCommands()).emulateReducedMotion(context, mode);
 };
+// 008 research.md R-14: real pointer paths and touch taps for the overlay scenarios.
 const pointerPath: BrowserCommand<[steps: readonly PathStep[]]> = async (context, steps) => {
   await (await elementCommands()).pointerPath(context, steps);
 };
@@ -40,7 +42,6 @@ const elementBrowserCommands = { axTree, emulateForcedColors, emulateReducedMoti
 // The element browser projects run at the fixture's 1280 × 800 (008 research.md R-14), the default one as a mouse
 // device and elements-touch as a touch device (`hasTouch`); both exclude the node, build and fixture suites.
 const elementViewport = { width: 1280, height: 800 };
-
 
 // Plants and gate-test fixtures are inputs of the gates and their tests, never tests of this repository
 // (FR-028, research.md R-10): every project excludes them.
@@ -94,11 +95,11 @@ export default defineConfig({
       {
         // The in-process element tests (005 research.md R-11): browser mode, element source; mutated by
         // stryker.elements.config.json (R-12). The node, build and fixture tests run in their own projects below. The
-        // axTree and emulateForcedColors commands read Chromium's accessibility tree over CDP and switch forced colours
-        // for the shared scenario bodies (packages/elements/test/commands.ts). Each test file keeps its own iframe and
-        // custom-element registry (isolate, the default). 008 (R-14): a 1280 × 800 viewport, as on the fixture, a mouse
-        // device; the touch rows (`test/*.touch.test.ts`) run in elements-touch instead; the commands also emulate
-        // reduced motion and drive the real pointer.
+        // axTree, emulateForcedColors and emulateReducedMotion commands read Chromium's accessibility tree over CDP and
+        // switch forced colours and reduced motion for the shared scenario bodies (packages/elements/test/commands.ts).
+        // Each test file keeps its own iframe and custom-element registry (isolate, the default). 008 (R-14): a
+        // 1280 × 800 viewport, as on the fixture, a mouse device; the touch rows (`test/*.touch.test.ts`) run in
+        // elements-touch instead; the commands also drive the real pointer.
         test: {
           name: "elements",
           include: ["packages/elements/**/*.test.ts"],

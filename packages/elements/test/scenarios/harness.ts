@@ -361,12 +361,12 @@ export const harnessScenarios: readonly HarnessScenario[] = [
     },
   },
   {
-    name: "animations(): none before, then the shadow part's running animation with its duration, easing and keyframes, and none on the host itself",
+    name: "ownAnimations(): none before, then the shadow part's running animation with its duration, easing and keyframes, and none on the host itself",
     run: async (driver) => {
       await driver.mount('<ocelle-harness-motion id="mo"></ocelle-harness-motion>');
-      const before = await driver.animations("mo", ".panel");
+      const before = await driver.ownAnimations("mo", ".panel");
       await driver.setAttribute("mo", "act", "animate");
-      return { before, panel: await driver.animations("mo", ".panel"), host: await driver.animations("mo") };
+      return { before, panel: await driver.ownAnimations("mo", ".panel"), host: await driver.ownAnimations("mo") };
     },
     expected: {
       before: [],
@@ -414,24 +414,24 @@ export const harnessScenarios: readonly HarnessScenario[] = [
     },
   },
   {
-    name: "viewport() and setViewport(): 1280 × 800, a short 320 × 256 viewport, and back",
+    name: "viewportSize() and viewport(width, height): 1280 × 800, a short 320 × 256 viewport, and back",
     run: async (driver) => {
-      const initial = await driver.viewport();
-      await driver.setViewport(320, 256);
-      const short = await driver.viewport();
-      await driver.setViewport(initial.width, initial.height);
-      return { initial, short, restored: await driver.viewport() };
+      const initial = await driver.viewportSize();
+      await driver.viewport(320, 256);
+      const short = await driver.viewportSize();
+      await driver.viewport(initial.width, initial.height);
+      return { initial, short, restored: await driver.viewportSize() };
     },
     expected: { initial: { width: 1280, height: 800 }, short: { width: 320, height: 256 }, restored: { width: 1280, height: 800 } },
   },
   {
-    name: "reducedMotion(on): off by default, set, then reset",
+    name: "reducedMotion(mode): off by default, set, then reset",
     run: async (driver) => {
       await driver.mount("<p>Motion</p>");
       const initial = (await driver.device()).reducedMotion;
-      await driver.reducedMotion(true);
+      await driver.reducedMotion("reduce");
       const on = (await driver.device()).reducedMotion;
-      await driver.reducedMotion(false);
+      await driver.reducedMotion("no-preference");
       return { initial, on, off: (await driver.device()).reducedMotion };
     },
     expected: { initial: false, on: true, off: false },

@@ -10,7 +10,38 @@
           "name": "OcelleButton",
           "tagName": "ocelle-button",
           "customElement": true,
-          "cssProperties": [{ "name": "--ocelle-button-gap", "description": "Space between the icon and the label." }]
+          "cssProperties": [
+            {
+              "name": "--ocelle-button-gap",
+              "description": "Space between the icon and the label."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/ocelle-facts.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "name": "OcelleFacts",
+          "tagName": "ocelle-facts",
+          "customElement": true,
+          "cssProperties": [
+            {
+              "name": "--ocelle-facts-stack-below",
+              "description": "The threshold below which the pairs stack."
+            },
+            {
+              "name": "--ocelle-facts-value-size",
+              "description": "The values' font size."
+            },
+            {
+              "name": "--ocelle-facts-value-line-height",
+              "description": "The values' line height."
+            }
+          ]
         }
       ]
     }

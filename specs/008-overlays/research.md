@@ -657,12 +657,16 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
   - `touchTap(id)`: a real touch tap on the element's centre;
   - `focusPath()`: the deep active element as id plus inner selector, or `"body"`;
   - `focusVisible(id, inner?)`: whether the element matches `:focus-visible`;
-  - `reducedMotion(on)`;
-  - `viewport()` (size) and `setViewport(width, height)` (for the short-viewport rows);
+  - `reducedMotion(mode)`, with `"reduce"` or `"no-preference"` (mission 013's driver method and its
+    `emulateReducedMotion(mode)` command, kept at the merge of #43; this branch's `(on)` calls were converted, and
+    forced colours leave reduced motion alone, so each reset helper ends both);
+  - `viewportSize()` (size) and 013's `viewport(width, height)` (for the short-viewport rows; this branch's
+    `viewport()` and `setViewport(width, height)` were renamed and converted at the merge of #43);
   - `record(id, eventNames)` and `recorded()`: events with `detail`, `cancelable`, `bubbles` and `composed`, and,
     read synchronously inside the listener, the host's `open`, whether the inner `<dialog>` is open and `:modal`, and
     `focusPath()` at that moment, recorded in the page;
-  - `animations(id, inner?)`: for each animation on the element or its shadow part, its timing (duration, easing),
+  - `ownAnimations(id, inner?)` (named `animations` before the merge of #43, whose own `animations(id)` reads the
+    element and its whole shadow root): for each animation on the element or its shadow part, its timing (duration, easing),
     keyframes and `playState` (read through `getAnimations()`, which writes nothing);
   - `topLayer()`: which overlay and popover elements are open, in stacking order (`:modal`, `:popover-open`);
   - `styleAttributes()` and `styleElements()`: FR-047's counts over the document and every open shadow root, as a

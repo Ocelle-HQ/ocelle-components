@@ -25,3 +25,8 @@ All notable changes to `@ocelle/styles`. The package follows semantic versioning
 - `data-ocelle-wrap`: the identifier wrap with `anywhere`: `overflow-wrap: anywhere` on the element, so a long
   identifier breaks anywhere instead of widening its grid column, and copies unchanged. It sets no font property.
   Any other value has no effect.
+- The `ocelle-facts` value hooks: in a `data-ocelle-density="compact"` region `--ocelle-facts-value-size` and
+  `--ocelle-facts-value-line-height` are the compact size and line height, and in a `regular` region the default
+  ones, so fact values follow the region's scale.
+- `ocelle-facts` before upgrade: each `ocelle-fact` child of an undefined `ocelle-facts` is a block, one value per line,
+  at specificity (0,0,0); a hidden fact stays hidden.

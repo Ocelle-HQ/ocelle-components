@@ -79,11 +79,11 @@ the driver as it was.
   - `focusPath()`: into an open shadow root and into an iframe;
   - `focusVisible()`: after Tab and after a click;
   - `record(id, names)`: the state at dispatch (`open`, `:modal`, `focusPath`);
-  - `animations()`: duration, easing and keyframes of a WAAPI animation;
+  - `animations()` (`ownAnimations()` since the merge of #43): duration, easing and keyframes of a WAAPI animation;
   - `pointer(path)`: stopping at a point;
   - `touchTap()`: pointer type `touch`, touch context only;
-  - `viewport()`: 1280 × 800;
-  - `reducedMotion(on)`: set, then reset;
+  - `viewport()` (`viewportSize()` since the merge of #43): 1280 × 800;
+  - `reducedMotion(on)` (`reducedMotion(mode)`, `"reduce"` or `"no-preference"`, since the merge of #43): set, then reset;
   - `axTree`: `description`, `modal` and `level`;
   - device: the default context matches `(hover: hover)` and `(pointer: fine)` with `maxTouchPoints` 0; the touch
     context has `maxTouchPoints` above 0.
@@ -277,7 +277,7 @@ no `style` attribute, no inline script).
   overlay that leaves it (FR-022, FR-023, FR-014, R-05a § Leaving the stack, R-06's no-motion bullet, spec Edge Cases
   "Removed or reopened while closing, with no motion", matrix § Dialog "Closing under reduced motion, then removed or
   reopened"), test first.
-  - **Red rows**, each under reduced motion (`driver.reducedMotion(true)` before the mount) and again with motion on
+  - **Red rows**, each under reduced motion (`driver.reducedMotion(true)`, `driver.reducedMotion("reduce")` since the merge of #43, before the mount) and again with motion on
     (`--ocelle-motion-base` at its token value) as the positive half in the same table, `[true, false].map(…)` as
     `staleRows` does; `recorded` is every `…-close-request` and `…-close` on any overlay of the page, from `record()`:
     - "Closing under reduced motion, then removed in the host's continuation of updateComplete: no close event, open

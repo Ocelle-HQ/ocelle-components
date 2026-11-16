@@ -19,9 +19,11 @@ import { commands, page, userEvent } from "vitest/browser";
 import baseText from "../../styles/src/base.css?raw";
 import { css } from "../../tokens/src/generate.ts";
 import { source } from "../../tokens/src/source.ts";
+import { runningOf } from "./animations.ts";
 import delayText from "./fixtures/tooltip-delay.css?raw";
+import { layoutWait } from "./layout-wait.ts";
 import { decodePng } from "./pixels.ts";
-import type { Box, Driver, Drawing, Paint, Part, Placement, Sheets } from "./scenarios/driver.ts";
+import type { Box, Driver, Drawing, Paint, Part, Placement, Sheets, TreeNode } from "./scenarios/driver.ts";
 import { probe } from "./scenarios/probe.ts";
 
 function sheet(text: string): CSSStyleSheet {
@@ -97,6 +99,7 @@ export function inProcessDriver(): Driver {
       messages.length = 0;
       document.documentElement.removeAttribute("data-theme");
       probe().reset();
+      Reflect.deleteProperty(document, Symbol.for("ocelle.progress.sweepStart"));
       document.body.innerHTML = markup;
       await settle();
     },
@@ -232,24 +235,139 @@ export function inProcessDriver(): Driver {
     },
     focusPath: () => Promise.resolve(probe().focusPath()),
     focusVisible: (id, inner) => Promise.resolve(probe().focusVisible(id, inner)),
-    reducedMotion: async (on) => {
-      await commands.emulateReducedMotion(on);
-      await settle();
-    },
-    viewport: () => Promise.resolve({ width: window.innerWidth, height: window.innerHeight }),
-    setViewport: async (width, height) => {
-      await page.viewport(width, height);
-      await settle();
-    },
+    viewportSize: () => Promise.resolve({ width: window.innerWidth, height: window.innerHeight }),
     device: () => Promise.resolve(probe().device()),
     record: (id, names) => {
       probe().record(id, names);
       return Promise.resolve();
     },
     recorded: () => Promise.resolve(probe().recorded()),
-    animations: (id, inner) => Promise.resolve(probe().animations(id, inner)),
+    ownAnimations: (id, inner) => Promise.resolve(probe().animations(id, inner)),
     topLayer: () => Promise.resolve(probe().topLayer()),
     styleAttributes: () => Promise.resolve(probe().styleAttributes()),
     styleElements: () => Promise.resolve(probe().styleElements()),
+    viewport: async (width, height) => {
+      await page.viewport(width, height);
+      await settle();
+    },
+    scrollWidth: () => Promise.resolve(document.documentElement.scrollWidth),
+    layout: (id) => layoutWait(id),
+    copy: async (id) => {
+      const range = document.createRange();
+      range.selectNodeContents(element(id));
+      const selection = getSelection();
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+      await userEvent.copy();
+      const field = document.createElement("textarea");
+      document.body.append(field);
+      let pasted = "";
+      field.addEventListener("paste", (event) => {
+        pasted = event.clipboardData?.getData("text/plain") ?? "";
+      });
+      field.focus();
+      await userEvent.paste();
+      field.remove();
+      getSelection()?.removeAllRanges();
+      return pasted;
+    },
+    move: async (id, parentId) => {
+      (parentId === null ? document.body : element(parentId)).append(element(id));
+      await settle();
+    },
+    text: async (id, value) => {
+      const node = [...element(id).childNodes].find((child) => child.nodeType === Node.TEXT_NODE);
+      if (node === undefined) throw new Error(`no text node in #${id}`);
+      (node as Text).data = value;
+      await settle();
+    },
+    open: async (id) => {
+      const target = element(id);
+      if (target instanceof HTMLDialogElement) target.showModal();
+      else target.showPopover();
+      await settle();
+    },
+    boxes: (id, inner) =>
+      Promise.resolve(
+        [...(element(id).shadowRoot?.querySelectorAll(inner) ?? [])].map((each) => {
+          const rect = each.getBoundingClientRect();
+          return { x: rect.x, y: rect.y, width: rect.width, height: rect.height, display: getComputedStyle(each).display };
+        }),
+      ),
+    styles: (id, inner, properties) => {
+      const host = element(id);
+      const targets = inner === null ? [host] : [...(host.shadowRoot?.querySelectorAll(inner) ?? [])];
+      return Promise.resolve(targets.map((each) => Object.fromEntries(properties.map((property) => [property, getComputedStyle(each).getPropertyValue(property)]))));
+    },
+    structure: (id, inner) => {
+      const root = element(id).shadowRoot;
+      const start = inner === null ? root : (root?.querySelector(inner) ?? null);
+      const tree = (of: Element | ShadowRoot): TreeNode[] => [...of.children].map((child) => ({ name: child.localName, children: tree(child) }));
+      return Promise.resolve(start === null ? [] : tree(start));
+    },
+    pressTab: async () => {
+      await userEvent.tab();
+      await settle();
+    },
+    focused: () => {
+      let current = document.activeElement;
+      while (current?.shadowRoot?.activeElement !== null && current?.shadowRoot?.activeElement !== undefined) current = current.shadowRoot.activeElement;
+      if (current === null || current === document.body) return Promise.resolve(null);
+      return Promise.resolve(current.id === "" ? `<${current.localName}>` : current.id);
+    },
+      reducedMotion: async (mode) => {
+      await commands.emulateReducedMotion(mode);
+      await settle();
+    },
+    animations: (id) => Promise.resolve(runningOf(id)),
+    remove: (id) => {
+      element(id).remove();
+      return Promise.resolve();
+    },
+    frames: async (count) => {
+      for (let frame = 0; frame < count; frame++) await new Promise((resolve) => requestAnimationFrame(resolve));
+    },
+    replace: async (id, markup) => {
+      const template = document.createElement("template");
+      template.innerHTML = markup;
+      element(id).replaceWith(template.content);
+      await settle();
+    },
+      changeAttributes: async (id, changes) => {
+      const target = element(id);
+      for (const [name, value] of changes) {
+        if (value === null) target.removeAttribute(name);
+        else target.setAttribute(name, value);
+      }
+      await settle();
+    },
+    property: (id, name) => Promise.resolve((element(id) as unknown as Record<string, unknown>)[name]),
+    textOf: (id, inner) => Promise.resolve(element(id).shadowRoot?.querySelector(inner)?.textContent ?? null),
+    rendered: (id) => {
+      const target = element(id);
+      const range = document.createRange();
+      range.selectNodeContents(target);
+      return Promise.resolve({ innerText: target.innerText, rects: range.getClientRects().length });
+    },
+    events: async (id, during) => {
+      const target = element(id);
+      const seen: string[] = [];
+      const native = Object.getOwnPropertyDescriptor(EventTarget.prototype, "dispatchEvent");
+      if (native === undefined) throw new Error("no EventTarget.prototype.dispatchEvent");
+      const dispatch = native.value as (this: EventTarget, event: Event) => boolean;
+      Object.defineProperty(EventTarget.prototype, "dispatchEvent", {
+        ...native,
+        value: function (this: EventTarget, event: Event): boolean {
+          if (this === target || (this instanceof Node && this.getRootNode() === target.shadowRoot)) seen.push(event.type);
+          return dispatch.call(this, event);
+        },
+      });
+      try {
+        await during();
+      } finally {
+        Object.defineProperty(EventTarget.prototype, "dispatchEvent", native);
+      }
+      return seen;
+    },
   };
 }

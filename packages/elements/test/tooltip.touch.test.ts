@@ -14,6 +14,7 @@ const driver = inProcessDriver();
 
 afterEach(async () => {
   await commands.emulateForcedColors("none");
+  await commands.emulateReducedMotion("no-preference");
 });
 
 describe("ocelle-tooltip, in process, touch context (US3-10)", { timeout: 30_000 }, () => {

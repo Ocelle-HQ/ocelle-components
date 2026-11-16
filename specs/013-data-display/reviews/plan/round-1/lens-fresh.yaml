@@ -1,0 +1,151 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: fresh
+findings:
+  - id: PLAN-FRESH-1-001
+    severity: 3
+    title: "The ResizeObserver threshold stacks almost every facts sheet in a dialog, popover or flex item, and the layout depends on history"
+    evidence:
+      - artifact: "research.md § R-02 'Why this holds in a shrink-to-fit host': 'If that width is below the threshold the element stacks, and its stacked max-content is no wider, so the state is stable: there is no oscillation.'"
+      - artifact: "research.md § R-02 'Problem': flex-wrap rejected because 'it stacks in a shrink-to-fit dialog even when there is room'"
+      - code: "Probe in Chromium 153.0.8010.12 (/usr/bin/google-chrome via playwright-core): a plain fit-content(50%)/minmax(0,1fr) grid with a ResizeObserver comparing the host's width to a 24rem probe, as R-02 describes. In a showModal() dialog and in a default flex item on a 1200 px viewport, a sheet 'Owner / Ada Lovelace' is 89 px wide and stacked."
+      - code: "Same probe, dialog, label 'A label of some length', value 'ocelle-mission-0042 created by ada': loaded at 1200 px it is 388 px wide and two-column; loaded at 360 px it is 227 px and stacked, and after resizing to 1200 px it stays 227 px and stacked. Loaded at 1200, narrowed to 360 and widened back to 1200: stacked. The same content in the same 1200 px viewport has two layouts."
+    claim: |
+      The chosen mechanism compares the threshold (24rem) with the host's own resolved inline size. In a shrink-to-fit
+      host that size is the content's max-content, so any sheet whose two-column max-content is under 384 px (most
+      facts sheets: short labels, dates, owners) stacks in every dialog, popover, float and flex item, however much room
+      there is. That is the exact defect R-02 cites to reject flex-wrap. Worse, once stacked, the stacked max-content
+      (widest single label or value) is narrower than the two-column one, so a sheet that stacked during a narrow moment
+      (a window resize, a dialog opened on a small viewport, a panel animating open) never returns to two columns even
+      when the space comes back. The "stability" R-02 claims is hysteresis: the layout is not a function of the space
+      available. Spec FR-005 ("while its own inline size ... is at least a threshold") and US1-1 ("in a container at
+      least as wide as the threshold") were written for a block context and do not say which width rules in a
+      shrink-to-fit host; the plan's spike list (R-02 'To measure in phase 1's spike') measures only FR-009's lower
+      bound there, not this.
+    remedies:
+      - "Decide the switch on the space available to the element rather than its resolved size (for example the containing block's content-box inline size, or 'two columns fit' measured from the label column's and widest value's max-content against the available space), so the result is the same from any history; add a body that loads narrow, widens, and asserts two columns, and one with a short sheet in a dialog at 1280 px asserting two columns."
+      - "Keep the mechanism, but amend FR-005/FR-009 and the README to say that in a shrink-to-fit host a sheet narrower than the threshold always stacks and that the consumer gives the element an inline size there; add the history test so the path-dependence is at least pinned and reviewed."
+  - id: PLAN-FRESH-1-002
+    severity: 3
+    title: "#531 and #535 are in the repository; #531 is already implemented by 003's compact scale, which facts' fixed value size and line height override"
+    evidence:
+      - artifact: "research.md § R-03 'Upstream issues (SPEC-1-12)': 'could not be read from this session ... FR-008's #531 clause therefore keeps the spec's default'; plan.md § Decisions 5: 'If the operator can supply #531's text, the compact value size is rechecked.'"
+      - code: "specs/003-base-styles/sources/spec-kitty-design-issues.md:5 and :17 hold #535 and #531 'Copied verbatim ... on 2026-11-09'. #531 asks for a 14 px / 1.5 compact screen scale and a value text style at small size, muted or body colour, for 'fact values'."
+      - code: "packages/styles/README.md:79-96 § Compact scale ('For dense operational screens: lists, facts, ids and timestamps'): data-ocelle-density=\"compact\" sets --ocelle-font-size-sm (14 px) with --ocelle-line-height-compact (1.5) on a region and its descendants; data-ocelle-value sets the 14 px value style. packages/tokens/src/source.ts:136 line-height-compact 1.5."
+      - artifact: "research.md § R-03 'Type': values set --ocelle-font-size-fact (1.0625rem, source.ts:128) and line-height: var(--ocelle-line-height-normal) explicitly; 'Compact density keeps --ocelle-font-size-fact'. data-model.md: ocelle-facts has its own density attribute."
+    claim: |
+      The spec (header paragraph) requires research to read #531 for FR-008 and #535 for FR-007. Both texts were already
+      in the repository, and #531 has been answered by 003: a compact region scale and a value style that kitty-mission-ui
+      uses on exactly the screens these facts sheets sit on (E-37). The plan sets the value's font size and line height
+      explicitly inside the shadow root, so a facts sheet inside a data-ocelle-density="compact" region shows 17 px values
+      at 1.45 under 14 px labels, in a 14 px / 1.5 screen, and the sheet's own density="compact" is a second, unrelated
+      density switch that does not follow the region. The operator is asked at the plan gate to supply text the plan
+      could have read, and FR-008's "unless the plan's reading of #531 shows it asks otherwise" was never exercised.
+    remedies:
+      - "Read #531 and #535 from specs/003-base-styles/sources/spec-kitty-design-issues.md in R-03, drop plan Decision 5's request, and state how ocelle-facts composes with 003's compact scale: either values and labels inherit the region's size and line height inside a data-ocelle-density=\"compact\" region (and density=\"compact\" only tightens gaps), or the plan records why facts values stay at font-size-fact there, as a spec change for the operator under FR-008."
+      - "Add a body: an ocelle-facts inside a data-ocelle-density=\"compact\" region, asserting the chosen computed value size and line height."
+  - id: PLAN-FRESH-1-003
+    severity: 3
+    title: "A hidden ocelle-fact still renders its label row; the sheet copies the label out of the fact and ignores the fact's hidden, lang and dir"
+    evidence:
+      - artifact: "research.md § R-01 Consequences: the MutationObserver watches childList and 'attributeFilter: [\"label\"]'; the sheet renders <dt part=\"label\">${child.label}</dt> for each ocelle-fact child"
+      - artifact: "spec.md FR-001: every element holds ':host([hidden]) { display: none; }'"
+      - code: "packages/elements/README.md:193-194 § Host ARIA: 'A host hidden attribute removes the element: no box and no node, labelled or not.'"
+    claim: |
+      With manual assignment the term lives in ocelle-facts' shadow root and only the value travels with the ocelle-fact
+      host. A consumer hiding an optional pair with <ocelle-fact hidden> (the common way to toggle an optional fact, and
+      what many templating layers emit) gets display:none on the fact host inside the <dd>, but the <dt> is still
+      rendered: a visible label with an empty value and an exposed term with an empty definition. The observer does not
+      watch hidden, so even a re-render would not help unless the sheet filters on it. The same split loses the fact's
+      lang and dir (a label in another language or script is rendered outside the element that carries the attribute)
+      and a host aria-hidden. This contradicts the library-wide rule that hidden removes the element, and no planned
+      body exercises it.
+    remedies:
+      - "Specify that ocelle-facts skips (renders no dt/dd for) a child with the hidden attribute, observe hidden (and lang, dir) in the attributeFilter, and copy lang/dir onto the rendered <dt>; add bodies: hidden at first render, hidden toggled later, and a fact with lang on its label."
+  - id: PLAN-FRESH-1-004
+    severity: 3
+    title: "The indeterminate mark is translated past the track with no clip, so a moving bar makes the page scroll sideways"
+    evidence:
+      - artifact: "research.md § R-06 'Indeterminate': mark 40% wide, 'transform: translateX() from -100% to 250%'; § R-06 'Track' lists block-size, background, radius, box-shadow and min-inline-size, and no overflow rule"
+      - code: "Probe in Chromium 153: a full-width 8 px track (position:relative, no overflow rule) with a 40% mark animated translateX(-100%) to 250% at a 320 px viewport: documentElement.scrollWidth goes from 320 to 435 while it runs."
+      - artifact: "research.md § R-08: the indeterminate story is captured under reduced motion, where the mark is still; contracts/checks.md has no progress reflow body"
+    claim: |
+      translateX(250%) of a 40%-wide mark puts its end at 140% of the track; transforms count in scrollable overflow, so
+      any bar near the viewport's inline end (a full-width bar in a loading panel, a dense row) gives the page a
+      horizontal scrollbar that grows and shrinks with the animation (WCAG 1.4.10 at 320 px, and the spec's "nothing
+      overflows the element or the page horizontally" edge case). The mark also paints outside the rounded track. Every
+      oracle that would see it is blind: the story is captured still under reduced motion, and the only scroll-width
+      checks planned are facts' and the empty state's several-actions case.
+    remedies:
+      - "Add 'overflow: clip' (or hidden) to the track in R-06, and a progress body at a 320 px viewport with motion not reduced that samples documentElement.scrollWidth across the loop (or at a forced animation time) and asserts it equals the viewport width; plant: the clip removed."
+  - id: PLAN-FRESH-1-005
+    severity: 2
+    title: "In the loading panel the bar is 12ch wide: the centred column shrinks the slotted progress to its min-inline-size"
+    evidence:
+      - artifact: "research.md § R-04: centred column with 'align-items: center', '<div class=\"visual\"><slot name=\"visual\"></slot></div>'; § R-06: the track has only 'min-inline-size: var(--ocelle-measure-cell)' as an inline size"
+      - code: "packages/tokens/src/source.ts:188 measure-cell = 12ch. Probe in Chromium 153: a flex column with align-items:center in a 600 px panel, a block-level bar whose track has min-inline-size:12ch: the bar is 96 px wide."
+    claim: |
+      The loading panel (US2-7, the README mapping of .sk-empty-state loading) is the main reason the panel variant and
+      the progress element meet, yet nothing in the spec or plan says how wide the bar is there. As designed it is a
+      96 px stub in a 600 px panel, set by a floor token meant for prose table cells. The 'panel loading' story would
+      baseline that width once #10 lands, without any requirement ever having chosen it.
+    remedies:
+      - "State the bar's inline size in the visual slot (for example: a slotted ocelle-progress stretches to the column's reading measure, or to a named token width) in R-04/R-06 and FR-021/FR-022, and assert it in US2-7's body."
+  - id: PLAN-FRESH-1-006
+    severity: 2
+    title: "Per-wrapper margins leave a leading gap when an earlier part is absent, and the gap for a skipped pair is undefined"
+    evidence:
+      - artifact: "research.md § R-04: 'Gaps: visual to heading --ocelle-space-3, heading to text --ocelle-space-2, text to actions --ocelle-space-4. These are per-wrapper margin-block-start, not one gap'; an empty part's wrapper is display:none"
+      - artifact: "spec.md FR-023 'An empty slot MUST take no space and add no gap'; R-08 stories 'heading only' and 'actions only'"
+    claim: |
+      If the heading wrapper carries the visual-to-heading margin, a heading with no visual starts 0.75rem low; if the
+      actions wrapper carries the text-to-actions margin, 'actions only' starts 1rem low and 'heading + actions' uses the
+      text gap for a pair FR-021 never names. Hiding the absent wrapper does not remove the margin of the next one, so
+      FR-023 fails for leading absences, and the gap between non-adjacent parts (visual to text, heading to actions) is
+      unspecified in both variants. US2-5 tests only trailing absences (no body, no actions), where the bug cannot show.
+    remedies:
+      - "Specify in R-04 that the first visible part has no block-start margin and that each gap is chosen by the previous visible part (name the value for every pair that can become adjacent, in both variants); add bodies for 'heading only', 'actions only' and 'visual + text, no heading' that measure the first part's offset from the padding edge."
+  - id: PLAN-FRESH-1-007
+    severity: 2
+    title: "The contrast change misses the required-pair count and A.8's hand transcription, and duplicates rows color-focus already checks"
+    evidence:
+      - artifact: "contracts/checks.md § Contrast 'Pinned counts': only '328 entries (160 light, 168 dark) to 340 (166 and 174)'; plan.md § Phases 3 red 'the contrast counts in the pinned tests (328 → 340)'"
+      - code: "gates/bin/contrast.ts:101-103 prints '(N required per theme)' from requiredPairs(source); adding six grounds to color-accent-strong's declaration in source.ts makes 149 → 155. Pinned '149 required per theme' at gates/test/contrast.test.ts:80-81, gates/test/integration/token-gates.test.ts:13,16, gates/test/integration/plants-robustness.test.ts:116-128, gates/bin/contrast.ts:116; gates/test/contrast-required.test.ts:7-67 hand-transcribes spec A.8 as 149 triples per theme and 298 total; packages/tokens/src/source.ts:4 comment '149 required pairs per theme'."
+      - code: "packages/tokens/contrast/pairs.json already has color-focus (value var(--ocelle-color-accent-strong), source.ts:76-80) checked on every main ground, e.g. light color-focus on color-canvas 4.80, dark 8.30: the same colours as the 12 proposed rows."
+    claim: |
+      Changing the declared grounds changes the required set, so the red commit as listed would leave seven pinned
+      strings and the A.8 transcription failing for reasons the plan does not name, and amends 002's Appendix A.8 without
+      saying so. Separately, the 12 rows check colour pairs that are already checked under color-focus; the extra
+      @ocelle/tokens change (records, CHANGELOG, pinned tests) buys no new contrast evidence, only a second name.
+    remedies:
+      - "List every pinned figure that moves (155 required per theme, 310 total, contrast-required.test.ts's A.8 rows, source.ts:4) in contracts/checks.md and record the A.8 amendment."
+      - "Drop the 12 rows and the source.ts change: tie the progress pairing test to the existing color-focus rows (same value through ref) or to a test asserting accent-strong equals color-focus's resolved value, leaving @ocelle/tokens unchanged."
+  - id: PLAN-FRESH-1-008
+    severity: 2
+    title: "The track-boundary note omits hover-bg and the state grounds, where a progress in a hovered row or a notice also falls below 3:1"
+    evidence:
+      - artifact: "research.md § R-06 'Track boundary': 'On color-inset and color-accent-low grounds it is 2.80 and 2.94 (light) and 2.95 and 2.88 (dark)'; plan.md § Decisions 4 names inset and accent-low only"
+      - code: "packages/tokens/contrast/pairs.json:37 light color-control-border on color-hover-bg 2.80 (excluded, '#5 rule 1 extended: a control on color-hover-bg is bordered with color-accent-strong'); :42 on color-neutral-bg 2.91. source.ts:13-23: hover-bg is one of the main grounds."
+    claim: |
+      Progress bars in dense list rows (74 class uses, US3 'In a dense row') sit on color-hover-bg while hovered, and the
+      repository's own rule (#5 rule 1, extended by the operator) already says boundaries there are drawn in
+      color-accent-strong because control-border fails. The operator is asked to accept a below-3:1 track on two grounds
+      when it is at least four, and the existing remedy is not offered as an alternative.
+    remedies:
+      - "Extend R-06 and Decision 4 to hover-bg and neutral-bg (and check the other state grounds), and offer the operator the repository's rule as the alternative: the track outline in color-accent-strong on those grounds (or always), with its contrast against the fill's edge stated."
+  - id: PLAN-FRESH-1-009
+    severity: 2
+    title: "Before upgrade, a server-rendered facts sheet shows values run together with no labels"
+    evidence:
+      - artifact: "spec.md § Consumers: 'The Ocelle web console uses them in server-rendered pages under a strict CSP'; FR-003: the label is the label attribute and the value is light-DOM content"
+      - artifact: "research.md § R-01: labels exist only in ocelle-facts' shadow <dt>; no pre-upgrade or :not(:defined) state appears in spec, plan or quickstart"
+    claim: |
+      Until the module script runs (deferred modules, a slow network, a script error), a Thymeleaf page shows each
+      ocelle-fact as an inline run of its value text with no label, all on one line: a status, an owner and a digest
+      concatenated. Description-list markup in the old .sk-facts degraded to readable label/value pairs. The design
+      makes the labels attribute-only, so no consumer CSS can show them before upgrade without attr() tricks, and nobody
+      has decided whether that is acceptable for the console.
+    remedies:
+      - "Record the pre-upgrade state in the plan and README (what a consumer sees, and a recommended ocelle-facts:not(:defined) rule, for example in @ocelle/styles, that at least puts each fact on its own line), or ask the operator whether the console needs a no-JS fallback."

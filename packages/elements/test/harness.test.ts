@@ -10,10 +10,11 @@ import { defineStandIns, harnessScenarios } from "./scenarios/harness.ts";
 defineStandIns();
 const driver = inProcessDriver();
 
-// The reset helper ends forced colours and reduced motion together (test/commands.ts `emulate`), so no emulation
-// leaks into the next body.
+// The reset helper ends forced colours and reduced motion (013's `emulateReducedMotion`, which forced colours leave
+// alone), so no emulation leaks into the next body.
 afterEach(async () => {
   await commands.emulateForcedColors("none");
+  await commands.emulateReducedMotion("no-preference");
 });
 
 describe("the harness self-tests, in process (R-14)", () => {

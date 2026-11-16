@@ -41,3 +41,61 @@
 [data-story="tooltip"] {
   --ocelle-tooltip-delay: 0ms;
 }
+
+/*
+ * The ocelle-facts stories' wrappers (013 research.md R-08): a wide, a 600 px and a 300 px block, a strip as wide as
+ * the four-column grid wants, and a shrink-to-fit host, each capped at the viewport so no story scrolls sideways.
+ */
+[data-story="facts-wide"] {
+  inline-size: calc(var(--ocelle-space-10) * 12);
+  max-inline-size: 100%;
+}
+
+[data-story="facts-strip"] {
+  inline-size: calc(var(--ocelle-space-10) * 16);
+  max-inline-size: 100%;
+}
+
+[data-story="facts-medium"] {
+  inline-size: calc(var(--ocelle-space-10) * 9 + var(--ocelle-space-6));
+  max-inline-size: 100%;
+}
+
+[data-story="facts-narrow"] {
+  inline-size: calc(var(--ocelle-space-10) * 5 - var(--ocelle-space-5));
+  max-inline-size: 100%;
+}
+
+[data-story="facts-shrink"] {
+  display: inline-block;
+  max-inline-size: 100%;
+}
+
+/*
+ * The ocelle-empty-state stories' wrappers (013 research.md R-08): a wide block and a 320 px block, each capped at the
+ * viewport so no story scrolls sideways.
+ */
+[data-story="empty-wide"] {
+  inline-size: calc(var(--ocelle-space-10) * 10);
+  max-inline-size: 100%;
+}
+
+[data-story="empty-narrow"] {
+  inline-size: calc(var(--ocelle-space-10) * 5);
+  max-inline-size: 100%;
+}
+
+/*
+ * The ocelle-progress stories' wrappers (013 research.md R-08): a block as wide as the facts threshold, and the same
+ * block on the inset ground for the tinted story, each capped at the viewport so no story scrolls sideways.
+ */
+[data-story="progress-wide"] {
+  inline-size: calc(var(--ocelle-space-10) * 6);
+  max-inline-size: 100%;
+}
+
+[data-story="progress-inset"] {
+  inline-size: calc(var(--ocelle-space-10) * 6);
+  max-inline-size: 100%;
+  background-color: var(--ocelle-color-inset);
+}

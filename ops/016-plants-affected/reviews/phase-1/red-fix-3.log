@@ -1,0 +1,51 @@
+Scope: all 5 workspace projects
+✓ Lockfile passes supply-chain policies (verified 5h ago)
+Lockfile is up to date, resolution step is skipped
+Packages are hard linked from the content-addressable store to the virtual store.
+  Content-addressable store is at: /root/.local/share/pnpm/store/v11
+  Virtual store is at:             node_modules/.pnpm
+Packages: +502
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 502, reused 502, downloaded 0, added 502, done
+.../node_modules/rs-module-lexer postinstall$ node postinstall.js
+.../node_modules/rs-module-lexer postinstall: Done
+
+devDependencies:
++ @custom-elements-manifest/analyzer 0.11.0
++ @eslint/js 10.0.1
++ @stryker-mutator/core 10.1.1
++ @stryker-mutator/typescript-checker 10.1.1
++ @stryker-mutator/vitest-runner 10.1.1
++ @types/node 26.6.5
++ @vitest/browser-playwright 5.0.5
++ @vitest/eslint-plugin 1.6.28
++ axe-core 4.14.0
++ eslint 10.13.0
++ jiti 2.7.0
++ parse5 8.0.1
++ playwright 1.64.1
++ pngjs 7.0.0
++ postcss 8.5.31
++ postcss-lit 1.4.1
++ postcss-selector-parser 7.1.7
++ postcss-value-parser 4.2.0
++ stylelint 17.16.0
++ typescript 6.0.3
++ typescript-eslint 8.72.0
++ vite 8.3.5
++ vitest 5.0.5
+
+Done in 392ms using pnpm v12.16.1
+$ node gates/bin/setup-offline.ts
+setup: installed offline; Chromium at /opt/pw-browsers/chromium-1248/chrome-linux64/chrome
+$ node gates/bin/test.ts
+gates/test/integration/fold-history.test.ts:19: unit-tests: history fold (tooling/speckit/bin/fold-history.sh) remaps the base SHA on the - base: line of a phase's plants.md with base.sha, and changes no other line of it: AssertionError: expected { ok: true, rewritten: true, …(2) } to deeply equal { ok: true, rewritten: true, …(2) }
+gates/test/plant-runner.test.ts:878: unit-tests: affectedPlants (op 016) selects the repository-content plants for each repository-content path, and only those that exist: AssertionError: expected [ Array(2) ] to deeply equal [ …(2) ]
+gates/test/plant-runner.test.ts:931: unit-tests: affectedPlants (op 016) matches each class's pattern from the start of the path and to its end: AssertionError: expected [ { plants: [] }, …(14) ] to deeply equal [ { plants: [] }, …(14) ]
+gates/test/plant-runner.test.ts:1029: unit-tests: affectedPlants: element, token and imported gate entry paths (op 016, operator round 3) scenario 12: an element source file or the element manifest selects the repository-content plants and every manifest plant, and no other: AssertionError: expected [ Array(2) ] to deeply equal [ …(2) ]
+gates/test/plant-runner.test.ts:1034: unit-tests: affectedPlants: element, token and imported gate entry paths (op 016, operator round 3) scenario 13: the token source or the contrast pairs select the repository-content plants and every contrast, brand-rules and style-lint plant, and no other: AssertionError: expected [ Array(2) ] to deeply equal [ …(2) ]
+gates/test/plant-runner.test.ts:1040: unit-tests: affectedPlants: element, token and imported gate entry paths (op 016, operator round 3) selects the union for an element path and a token path together, each plant with its first path: AssertionError: expected { Object (plants) } to deeply equal { plants: [ [ …(2) ], …(15) ] }
+gates/test/plant-runner.test.ts:1063: unit-tests: affectedPlants: element, token and imported gate entry paths (op 016, operator round 3) scenario 14: gates/bin/prefix.ts selects every prefix plant and every brand-rules plant, whose entry imports it; gates/bin/brand-rules.ts only brand-rules: AssertionError: expected { plants: [ [ …(2) ], [ …(2) ] ] } to deeply equal { Object (plants) }
+gates/test/plant-runner.test.ts:1175: unit-tests: gateEntryImports and the cross-import pin (op 016, operator round 3) scenario 15: lists exactly the pairs of registered gate entries that import one another, sorted, today prefix imported by brand-rules: AssertionError: expected [ { entry: 'prefix', …(1) } ] to deeply equal undefined
+unit-tests: 8 of 3161 tests failed
+[ELIFECYCLE] Test failed. See above for more details.

@@ -1648,7 +1648,7 @@ export function overlayScenarios(kind: OverlayKind) {
       row(
         `Stacked: an inner overlay closed ${reduced ? "under reduced motion" : "with motion on"} and removed in the host's continuation, then a second inner one opened over the outer: the outer stays on the stack, Escape with focus on the body closes only the top one (FR-023, R-05a)`,
         async (driver) => {
-          if (reduced) await driver.reducedMotion(true);
+          if (reduced) await driver.reducedMotion("reduce");
           await driver.mount(
             `<button id="opener">Open</button><${kind.tag} id="dlg" label="Outer"><button id="ob">Outer button</button><${kind.tag} id="in1" label="Inner one"><button id="i1">I1</button></${kind.tag}><${kind.tag} id="in2" label="Inner two"><button id="i2">I2</button></${kind.tag}></${kind.tag}><ocelle-test-act id="act"></ocelle-test-act>`,
           );
@@ -1744,7 +1744,7 @@ export function overlayScenarios(kind: OverlayKind) {
       row(
         `Closing ${reduced ? "under reduced motion" : "with motion on"}, then removed in the host's continuation of updateComplete: no close event, open false, no top-layer entry, the page not inert (FR-022, R-05a, R-06)`,
         async (driver) => {
-          if (reduced) await driver.reducedMotion(true);
+          if (reduced) await driver.reducedMotion("reduce");
           await driver.mount(page(basic));
           await open(driver);
           await act(driver, { op: "seq", ops: [{ op: "set", id: "dlg", name: "open", value: false }, { op: "settled", id: "dlg", then: [{ op: "remove", id: "dlg" }] }] });
@@ -1761,7 +1761,7 @@ export function overlayScenarios(kind: OverlayKind) {
       row(
         `Closing ${reduced ? "under reduced motion" : "with motion on"}, then reopened in the host's continuation of updateComplete: no close event, the overlay stays shown; one Escape then gives exactly one request and one close (FR-014, R-06)`,
         async (driver) => {
-          if (reduced) await driver.reducedMotion(true);
+          if (reduced) await driver.reducedMotion("reduce");
           await driver.mount(page(basic));
           await open(driver);
           await act(driver, { op: "seq", ops: [{ op: "set", id: "dlg", name: "open", value: false }, { op: "settled", id: "dlg", then: [{ op: "set", id: "dlg", name: "open", value: true }] }] });
@@ -1828,9 +1828,9 @@ export function overlayScenarios(kind: OverlayKind) {
         await driver.press("Escape");
         await driver.setAttribute("dlg", "open", "");
         // Read at once, within the 200 ms exit: the reopen cancelled the exit animation, it does not run to its end.
-        const atReopen = (await driver.animations("dlg", "dialog")).length;
+        const atReopen = (await driver.ownAnimations("dlg", "dialog")).length;
         const recorded = await after(driver);
-        const animations = await driver.animations("dlg", "dialog");
+        const animations = await driver.ownAnimations("dlg", "dialog");
         return { atReopen, recorded, state: await state(driver), running: animations.length };
       },
       { atReopen: 0, recorded: [request("escape", "b1")], state: shown, running: 0 },
@@ -1890,7 +1890,7 @@ export function overlayScenarios(kind: OverlayKind) {
       row(
         `Stale native close event: the host sets open = true in the …-close listener${reduced ? ", under reduced motion" : ", motion on"}: after the next task and frame shown, :modal, open true, exactly one close (R-03)`,
         async (driver) => {
-          if (reduced) await driver.reducedMotion(true);
+          if (reduced) await driver.reducedMotion("reduce");
           await driver.mount(page(basic));
           await open(driver);
           await act(driver, { op: "on", id: "dlg", event: closeName, then: [{ op: "set", id: "dlg", name: "open", value: true }] });
@@ -1925,10 +1925,10 @@ export function overlayScenarios(kind: OverlayKind) {
       async (driver) => {
         await driver.mount(page(basic));
         await open(driver);
-        const entry = (await driver.animations("dlg", "dialog")).map(({ playState, ...rest }) => ({ ...rest, running: playState === "running" }));
+        const entry = (await driver.ownAnimations("dlg", "dialog")).map(({ playState, ...rest }) => ({ ...rest, running: playState === "running" }));
         await pause(300);
         await driver.press("Escape");
-        const exit = (await driver.animations("dlg", "dialog")).map(({ playState, ...rest }) => ({ ...rest, running: playState === "running" }));
+        const exit = (await driver.ownAnimations("dlg", "dialog")).map(({ playState, ...rest }) => ({ ...rest, running: playState === "running" }));
         const during = { attribute: await driver.attribute("dlg", "open"), modal: (await inspect(driver, "dlg", "dialog")).modal };
         return { entry, exit, during, recorded: await events(driver, 2) };
       },
@@ -1943,13 +1943,13 @@ export function overlayScenarios(kind: OverlayKind) {
       row(
         `Motion under reduced motion${ancestor === "" ? "" : `, ${ancestor}`}: no animation on open or close, the whole close in one update (FR-020, SC-008)`,
         async (driver) => {
-          await driver.reducedMotion(true);
+          await driver.reducedMotion("reduce");
           await driver.mount(`<div id="wrap">${page(basic)}</div>`);
           if (ancestor !== "") await driver.rules("#wrap { --ocelle-motion-base: 200ms; }");
           await open(driver);
-          const entry = await driver.animations("dlg", "dialog");
+          const entry = await driver.ownAnimations("dlg", "dialog");
           await driver.press("Escape");
-          const exit = await driver.animations("dlg", "dialog");
+          const exit = await driver.ownAnimations("dlg", "dialog");
           const recorded = await driver.recorded();
           return { entry, exit, recorded };
         },
@@ -2004,7 +2004,7 @@ export function overlayScenarios(kind: OverlayKind) {
     row(
       "Short viewport 320 × 256 (US1-10, WCAG 1.4.10, R-18): the body keeps its minimum block size and its last content is reachable by scrolling",
       async (driver) => {
-        await driver.setViewport(320, 256);
+        await driver.viewport(320, 256);
         try {
           await driver.mount(page(paragraphs, { footer: '<button id="f1">F1</button><button id="f2">Second action</button>' }));
           await open(driver);
@@ -2019,7 +2019,7 @@ export function overlayScenarios(kind: OverlayKind) {
           });
           return { minimum: body.height, overflows: body.scrollHeight > body.clientHeight, focused, atEnd };
         } finally {
-          await driver.setViewport(1280, 800);
+          await driver.viewport(1280, 800);
         }
       },
       { minimum: bodyMinimum, overflows: true, focused: "dlg[div]", atEnd: true },
@@ -2053,7 +2053,7 @@ export function overlayScenarios(kind: OverlayKind) {
           await open(driver);
           const panel = await inspect(driver, "dlg", "dialog", panelStyles);
           const backdrop = await inspect(driver, "dlg", "dialog", ["background-color"], "::backdrop");
-          const viewport = await driver.viewport();
+          const viewport = await driver.viewportSize();
           return {
             styles: panel.styles,
             backdrop: backdrop.styles["background-color"],
@@ -2098,14 +2098,14 @@ export function overlayScenarios(kind: OverlayKind) {
     row(
       "Sizes (US1-10, FR-024): at 320 × 800 the panel's inline size equals the computed dialog-max-inline, 288 px",
       async (driver) => {
-        await driver.setViewport(320, 800);
+        await driver.viewport(320, 800);
         try {
           await driver.mount(page(basic));
           await open(driver);
           const panel = await inspect(driver, "dlg", "dialog", ["inline-size", "max-inline-size"]);
           return panel.styles;
         } finally {
-          await driver.setViewport(1280, 800);
+          await driver.viewport(1280, 800);
         }
       },
       { "inline-size": "288px", "max-inline-size": "288px" },
@@ -2251,7 +2251,7 @@ export function overlayScenarios(kind: OverlayKind) {
       async (driver) => {
         await driver.mount(page(basic));
         await open(driver);
-        const entering = (await driver.animations("dlg", "dialog")).map((each) => each.playState);
+        const entering = (await driver.ownAnimations("dlg", "dialog")).map((each) => each.playState);
         await act(driver, { op: "call", id: "dlg", inner: close, method: "click" });
         return { entering, recorded: await events(driver, 2), state: await state(driver), focus: await driver.focusPath() };
       },
@@ -2263,7 +2263,7 @@ export function overlayScenarios(kind: OverlayKind) {
         await driver.mount(page(basic));
         await open(driver);
         await pause(300);
-        const entering = await driver.animations("dlg", "dialog");
+        const entering = await driver.ownAnimations("dlg", "dialog");
         await act(driver, { op: "call", id: "dlg", inner: close, method: "click" });
         return { entering, recorded: await events(driver, 2), state: await state(driver), focus: await driver.focusPath() };
       },
@@ -2277,10 +2277,10 @@ export function overlayScenarios(kind: OverlayKind) {
         await open(driver);
         await pause(1100);
         await driver.press("Escape");
-        const exiting = (await driver.animations("dlg", "dialog")).map((each) => each.playState);
+        const exiting = (await driver.ownAnimations("dlg", "dialog")).map((each) => each.playState);
         await act(driver, { op: "call", id: "dlg", inner: "dialog", method: "close" });
         await pause(300);
-        return { exiting, recorded: await driver.recorded(), animations: await driver.animations("dlg", "dialog"), state: await state(driver), focus: await driver.focusPath() };
+        return { exiting, recorded: await driver.recorded(), animations: await driver.ownAnimations("dlg", "dialog"), state: await state(driver), focus: await driver.focusPath() };
       },
       { exiting: ["running"], recorded: [request("escape", "b1"), closeEvent("escape", "opener")], animations: [], state: gone, focus: "opener" },
     ),
@@ -2290,10 +2290,10 @@ export function overlayScenarios(kind: OverlayKind) {
         await driver.mount(`<div id="wrap">${page(basic)}</div>`);
         await driver.rules("#wrap { --ocelle-motion-base: 1000ms; }");
         await open(driver);
-        const entering = (await driver.animations("dlg", "dialog")).map((each) => each.playState);
+        const entering = (await driver.ownAnimations("dlg", "dialog")).map((each) => each.playState);
         await act(driver, { op: "call", id: "dlg", inner: "dialog", method: "close" });
         const recorded = await events(driver, 1);
-        return { entering, recorded, animations: await driver.animations("dlg", "dialog"), state: await state(driver), focus: await driver.focusPath() };
+        return { entering, recorded, animations: await driver.ownAnimations("dlg", "dialog"), state: await state(driver), focus: await driver.focusPath() };
       },
       { entering: ["running"], recorded: [closeEvent("host", "opener")], animations: [], state: gone, focus: "opener" },
     ),
@@ -2303,7 +2303,7 @@ export function overlayScenarios(kind: OverlayKind) {
         await driver.mount(`<div id="wrap">${page(basic)}</div>`);
         await driver.rules("#wrap { --ocelle-easing-standard: initial; }");
         await open(driver);
-        return { entry: (await driver.animations("dlg", "dialog")).map(({ duration, easing }) => ({ duration, easing })) };
+        return { entry: (await driver.ownAnimations("dlg", "dialog")).map(({ duration, easing }) => ({ duration, easing })) };
       },
       { entry: [{ duration: motionBase, easing: "linear" }] },
     ),
@@ -2359,7 +2359,7 @@ export function overlayScenarios(kind: OverlayKind) {
         await open(driver);
         await act(driver, { op: "seq", ops: [{ op: "set", id: "dlg", name: "open", value: false }, { op: "set", id: "dlg", name: "open", value: true }] });
         await driver.setAttribute("act", "data-wait", "");
-        const entry = (await driver.animations("dlg", "dialog")).map(({ playState, keyframes }) => ({ running: playState === "running", keyframes }));
+        const entry = (await driver.ownAnimations("dlg", "dialog")).map(({ playState, keyframes }) => ({ running: playState === "running", keyframes }));
         return { entry, recorded: await after(driver), state: await state(driver), focus: await driver.focusPath() };
       },
       { entry: [{ running: true, keyframes: kind.entry }], recorded: [], state: shown, focus: "b1" },
@@ -2370,10 +2370,10 @@ export function overlayScenarios(kind: OverlayKind) {
         await driver.mount(`<div id="wrap">${page(basic)}</div>`);
         await driver.rules("#wrap { --ocelle-motion-base: 0.3s; }");
         await open(driver);
-        const entry = (await driver.animations("dlg", "dialog")).map((each) => each.duration);
+        const entry = (await driver.ownAnimations("dlg", "dialog")).map((each) => each.duration);
         await pause(400);
         await driver.press("Escape");
-        const exit = (await driver.animations("dlg", "dialog")).map((each) => each.duration);
+        const exit = (await driver.ownAnimations("dlg", "dialog")).map((each) => each.duration);
         return { entry, exit, recorded: await events(driver, 2) };
       },
       { entry: [300], exit: [300], recorded: [request("escape", "b1"), closeEvent("escape", "opener")] },
@@ -2427,9 +2427,9 @@ export function overlayScenarios(kind: OverlayKind) {
         await driver.mount(`<div id="wrap">${page(basic)}</div>`);
         await driver.rules("#wrap { --ocelle-motion-base: -200ms; }");
         await open(driver);
-        const entry = await driver.animations("dlg", "dialog");
+        const entry = await driver.ownAnimations("dlg", "dialog");
         await driver.press("Escape");
-        const exit = await driver.animations("dlg", "dialog");
+        const exit = await driver.ownAnimations("dlg", "dialog");
         return { entry, exit, recorded: await driver.recorded(), messages: await driver.messages() };
       },
       { entry: [], exit: [], recorded: [request("escape", "b1"), closeEvent("escape", "opener")], messages: [] },
@@ -2462,7 +2462,7 @@ export function overlayScenarios(kind: OverlayKind) {
     row(
       "Stale native close event, then a platform close: the host reopens in the …-close listener, then the inner close() through the shadow root: a second close, with reason host (FR-014, FR-016, R-03)",
       async (driver) => {
-        await driver.reducedMotion(true);
+        await driver.reducedMotion("reduce");
         await driver.mount(page(basic));
         await open(driver);
         await act(driver, { op: "on", id: "dlg", event: closeName, then: [{ op: "set", id: "dlg", name: "open", value: true }] });
@@ -2535,7 +2535,7 @@ export function overlayScenarios(kind: OverlayKind) {
           await driver.mount(page('<p>Line 1 of a body.</p><p>Line 2 of a body.</p><p>Line 3 of a body.</p><p>Line 4 of a body.</p><p>Line 5 of a body.</p>', { footer: shortFooter }));
           await open(driver);
           const before = (await inspect(driver, "dlg", '[part="body"]')).attributes.tabindex ?? null;
-          await driver.setViewport(320, 256);
+          await driver.viewport(320, 256);
           let after: string | undefined;
           for (const start = Date.now(); after === undefined && Date.now() - start < 1000; ) {
             await pause(20);
@@ -2543,7 +2543,7 @@ export function overlayScenarios(kind: OverlayKind) {
           }
           return { before, after: after ?? null };
         } finally {
-          await driver.setViewport(1280, 800);
+          await driver.viewport(1280, 800);
         }
       },
       { before: null, after: "0" },
@@ -2593,7 +2593,7 @@ export function overlayScenarios(kind: OverlayKind) {
           await driver.mount(page('<p>Line 1 of a body.</p><p>Line 2 of a body.</p><p>Line 3 of a body.</p><p>Line 4 of a body.</p><p>Line 5 of a body.</p>', { footer: shortFooter }));
           await open(driver);
           const before = (await inspect(driver, "dlg", '[part="body"]')).attributes.tabindex ?? null;
-          await driver.setViewport(1280, 256);
+          await driver.viewport(1280, 256);
           let after: string | undefined;
           for (const start = Date.now(); after === undefined && Date.now() - start < 1000; ) {
             await pause(20);
@@ -2601,7 +2601,7 @@ export function overlayScenarios(kind: OverlayKind) {
           }
           return { before, after: after ?? null };
         } finally {
-          await driver.setViewport(1280, 800);
+          await driver.viewport(1280, 800);
         }
       },
       { before: null, after: "0" },
@@ -2656,7 +2656,7 @@ export function overlayScenarios(kind: OverlayKind) {
     row(
       "Short viewport 320 × 256 (FR-018, R-18): the body held at its minimum block size becomes a Tab stop when the host adds content that overflows it, and stops being one when the host shortens that content",
       async (driver) => {
-        await driver.setViewport(320, 256);
+        await driver.viewport(320, 256);
         try {
           // The long paragraph is assigned to no slot until the host takes its slot attribute away.
           await driver.mount(page(`<p id="line">One line.</p><p id="long" slot="later">${"A long paragraph that overflows the body at its minimum block size. ".repeat(12)}</p>`, { footer: shortFooter }));
@@ -2671,7 +2671,7 @@ export function overlayScenarios(kind: OverlayKind) {
           await act(driver, { op: "set", id: "long", name: "textContent", value: "Short." });
           return { before: { height: before.height, tabindex: before.attributes.tabindex ?? null }, added: added ?? null, shortened: await bodyTabindexGone(driver) };
         } finally {
-          await driver.setViewport(1280, 800);
+          await driver.viewport(1280, 800);
         }
       },
       { before: { height: bodyMinimum, tabindex: null }, added: "0", shortened: null },
@@ -2679,7 +2679,7 @@ export function overlayScenarios(kind: OverlayKind) {
     row(
       "Short viewport 320 × 256 (FR-018, R-18): the body held at its minimum block size stops being a Tab stop when the host shortens the one paragraph that overflowed it",
       async (driver) => {
-        await driver.setViewport(320, 256);
+        await driver.viewport(320, 256);
         try {
           await driver.mount(page(`<p id="long">${"A long paragraph that overflows the body at its minimum block size. ".repeat(12)}</p>`, { footer: shortFooter }));
           await open(driver);
@@ -2687,7 +2687,7 @@ export function overlayScenarios(kind: OverlayKind) {
           await act(driver, { op: "set", id: "long", name: "textContent", value: "Short." });
           return { before: { height: before.height, tabindex: before.attributes.tabindex }, after: await bodyTabindexGone(driver) };
         } finally {
-          await driver.setViewport(1280, 800);
+          await driver.viewport(1280, 800);
         }
       },
       { before: { height: bodyMinimum, tabindex: "0" }, after: null },
@@ -2701,9 +2701,9 @@ export function overlayScenarios(kind: OverlayKind) {
         await driver.mount(`<div id="wrap">${page(basic)}</div>`);
         await driver.rules("#wrap { --ocelle-motion-base: 300; }");
         await open(driver);
-        const entry = await driver.animations("dlg", "dialog");
+        const entry = await driver.ownAnimations("dlg", "dialog");
         await driver.press("Escape");
-        const exit = await driver.animations("dlg", "dialog");
+        const exit = await driver.ownAnimations("dlg", "dialog");
         return { entry, exit, recorded: await driver.recorded() };
       },
       { entry: [], exit: [], recorded: [request("escape", "b1"), closeEvent("escape", "opener")] },
@@ -2944,7 +2944,7 @@ async function openInDrawer(driver: Driver): Promise<void> {
   await driver.click("opener");
   await driver.setAttribute("drw", "open", "");
   await act(driver, { op: "watch", id: "drw", events: drawerEvents });
-  for (const start = Date.now(); (await driver.animations("drw", "dialog")).length > 0; ) {
+  for (const start = Date.now(); (await driver.ownAnimations("drw", "dialog")).length > 0; ) {
     if (Date.now() - start > 1000) throw new Error("the entry of #drw did not end within 1 000 ms");
     await pause(20);
   }
