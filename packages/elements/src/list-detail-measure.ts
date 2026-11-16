@@ -10,7 +10,9 @@
 // pass, in the same animation-frame callback, the element's own `after` step runs (it measures its border box afresh;
 // reviews/phase-4/round-2-fixes.md R2-01). The module keeps no count of its runs: test/list-detail-pass.test.ts takes
 // the count from the effect each run has on the grid, so nothing test-only ships in dist/ or the browser build
-// (research.md R-13). Internal: not exported from the package root, not an entry point and
+// (research.md R-13). A pass on an element that is not rendered writes nothing and stays pending until the element's
+// `ResizeObserver` sees it rendered again and calls `resume()` (landing pass O5-01; data-model.md § list-detail "Not
+// rendered"). Internal: not exported from the package root, not an entry point and
 // not in the manifest.
 
 /** The measurement of one list-detail: its stylesheet of figures, its observer and its frame request. */
@@ -25,6 +27,8 @@ export class ListDetailMeasure {
     this.schedule();
   });
   #frame: number | undefined;
+  // Stryker disable next-line BooleanLiteral: equivalent, the first pass runs in an animation frame before the probe's first observation, and a pass requested while one is requested is coalesced
+  #pending = false;
   #max: number | undefined;
   #min: number | undefined;
 
@@ -57,10 +61,27 @@ export class ListDetailMeasure {
     });
   }
 
-  /** Runs the pass now: lays the panes out in the measurement tiers, reads the figures, restores the tier and writes the figures that changed. */
+  /**
+   * Requests the pass a not-rendered element left pending, for the next animation frame, once the element is rendered
+   * again; the element calls it from its `ResizeObserver`, so the pass never runs inside that delivery.
+   */
+  resume(): void {
+    if (this.#pending) this.schedule();
+  }
+
+  /**
+   * Runs the pass now: lays the panes out in the measurement tiers, reads the figures, restores the tier and writes the
+   * figures that changed. On a grid with no box (the element in a closed `<dialog>`, under a `display: none` ancestor
+   * or `hidden`) it writes nothing and stays pending, since it would read 0 px for both figures (O5-01).
+   */
   measure(): void {
     const grid = this.#grid();
     if (grid === null) return;
+    if (grid.getClientRects().length === 0) {
+      this.#pending = true;
+      return;
+    }
+    this.#pending = false;
     // The element renders the grid with its tier, so the attribute is always there to restore.
     const tier = String(grid.getAttribute("data-tier"));
     grid.setAttribute("data-tier", "max");

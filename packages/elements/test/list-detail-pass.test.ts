@@ -242,4 +242,68 @@ describe("ocelle-list-detail's measurement pass (R-13)", () => {
     window.removeEventListener("error", record);
     expect({ ...neverConnected, removed: removed?.isConnected, passes: { loose: afterLoose, removed: passes() - afterLoose }, errors, messages: await driver.messages() }).toEqual({ shadow: true, removed: false, passes: { loose: 0, removed: 0 }, errors: [], messages: [] });
   });
+
+  // Guard added after the landing-pass fix (operator round phase 4 round 5, O5-01; reviews/phase-4/plants.md § Plants
+  // of the landing-pass fix): a pass on an element that is not rendered stays pending, and the element's
+  // `ResizeObserver` requests it once the element is rendered again, but only then. The mutants that survived without
+  // it (the pending pass requested at every observation, or left pending after a pass) are its proof: a resize of a
+  // rendered element is not a re-measure trigger (FR-025, research.md R-13), and each extra pass costs a full layout of
+  // every pane.
+  it("guard O5-01: a list-detail resized while rendered runs no pass; hidden, a change runs no pass until it is shown, then exactly one; hidden and shown again with nothing pending, it runs none", async () => {
+    await driver.viewport(1280, 800);
+    await driver.mount(`<div id="w">${markup}</div>`);
+    await nextFrame();
+    await nextFrame();
+    const passes = passCounter();
+    await driver.style("c", "inline-size", "1000px");
+    await nextFrame();
+    await nextFrame();
+    const resized = passes();
+    await driver.style("w", "display", "none");
+    const target = document.getElementById("c-b");
+    if (target !== null) target.textContent = "Changed while hidden";
+    await nextFrame();
+    await nextFrame();
+    const hidden = passes() - resized;
+    await driver.style("w", "display", "block");
+    await nextFrame();
+    await nextFrame();
+    const shown = passes() - resized - hidden;
+    await driver.style("w", "display", "none");
+    await driver.style("w", "display", "block");
+    await nextFrame();
+    await nextFrame();
+    expect({ resized, hidden, shown, again: passes() - resized - hidden - shown, messages: await driver.messages() }).toEqual({ resized: 0, hidden: 0, shown: 1, again: 0, messages: [] });
+  });
+
+  // Guard added after the landing-pass fix, for the same reason: since a pass on a grid with no box writes nothing, a
+  // removed element's pass is no longer seen in the frame after the removal, so the mutants of the stop on
+  // disconnection survived (the requested pass not cancelled, the observer left on). Such a pass would stay pending and
+  // run when the element is inserted again; per the contract (R3-02) a host that changed a removed element calls
+  // `remeasure()` after inserting it, and that call runs the one pass.
+  it("guard O5-01: a list-detail removed with a change before and after the removal, then inserted again, runs no pass until the host calls remeasure(), and then one", async () => {
+    await driver.viewport(1280, 800);
+    await driver.mount(markup);
+    await nextFrame();
+    await nextFrame();
+    const element = document.querySelector("ocelle-list-detail");
+    const frame = element?.parentElement;
+    const passes = passCounter();
+    const before = document.getElementById("c-a");
+    if (before !== null) before.textContent = "Before the removal";
+    await Promise.resolve();
+    element?.remove();
+    const after = element?.querySelector("#c-b");
+    if (after !== null && after !== undefined) after.textContent = "After the removal";
+    await nextFrame();
+    await nextFrame();
+    if (element !== null) frame?.append(element);
+    await nextFrame();
+    await nextFrame();
+    const inserted = passes();
+    element?.remeasure();
+    await nextFrame();
+    await nextFrame();
+    expect({ connected: element?.isConnected, inserted, remeasured: passes() - inserted }).toEqual({ connected: true, inserted: 0, remeasured: 1 });
+  });
 });
