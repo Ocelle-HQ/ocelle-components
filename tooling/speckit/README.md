@@ -31,7 +31,7 @@ Both use the same commands, scripts and record files, so run summaries and the d
 is ready, or on a contributor PR: viability triage, bring the branch up to date by merging `main` (never a rebase,
 which would break the red/green evidence SHAs), classify every red check, a fresh `reviewer-renata` landing review
 (scope role `landing`), test-first folds through operator rounds, an evidence-preserving history fold of what came after the last phase fold (`bin/fold-history.sh`: keeps
-every base, scaffold and red commit and its parent, folds the rest, remaps the evidence SHAs and verifies the trees;
+every base, scaffold and red commit and its parent, folds the rest, remaps the evidence SHAs and verifies the trees; signs every commit it rebuilds when `commit.gpgsign` is on and refuses an unsigned result or a range that holds main's commits;
 `/ocelle-run` runs it after each approved phase, with the label `phase-N`, and pushes the pre-fold head as
 `archive/<branch>-prefold-phase-N`),
 deliverable hygiene, then hand-off. The operator merges.
