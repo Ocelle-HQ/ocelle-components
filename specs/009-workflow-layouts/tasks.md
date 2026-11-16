@@ -747,7 +747,7 @@ through `red.sh` as `fix-4`; the fix note is `reviews/phase-4/round-5-fixes.md`,
 
 #### Tests (red, one commit)
 
-- [ ] T078 [US3] O5-01, `packages/elements/test/scenarios/list-detail.ts` (shared bodies, run by
+- [X] T078 [US3] O5-01, `packages/elements/test/scenarios/list-detail.ts` (shared bodies, run by
   `test/list-detail.test.ts` and `test/browser/list-detail.test.ts`), beside US3-12, with US3-12's three panes, at a
   1280 px viewport. Each case is compared with its twin rendered from the start on the same page, and asserts the
   width, `data-tier`, the per-instance sheet's figures, the same column count on each of ten frames, and an empty
@@ -765,14 +765,14 @@ through `red.sh` as `fix-4`; the fix note is `reviews/phase-4/round-5-fixes.md`,
   no pass scheduled when the element becomes rendered (the first four); a pass that writes the figures it reads with
   no box, and `remeasure()` that sets the measured size from a non-rendered probe (the last) (spec FR-025, US3-12,
   the pairing table; research.md R-13 "Not rendered").
-- [ ] T079 [P] [US3] O5-01, `packages/elements/test/node/readme.test.ts`: the container-tier convention and
+- [X] T079 [P] [US3] O5-01, `packages/elements/test/node/readme.test.ts`: the container-tier convention and
   § `ocelle-list-detail` state that becoming rendered (a dialog opened, an ancestor or the host shown) is a
   re-measure trigger with no `remeasure()` call needed, and that a pass or `remeasure()` while the element is not
   rendered writes nothing (FR-025, FR-034; contracts/elements.md § Container-tier convention "Not rendered").
 
 #### Implementation (green)
 
-- [ ] T080 [US3] O5-01, `packages/elements/src/list-detail-measure.ts:67-87` and
+- [X] T080 [US3] O5-01, `packages/elements/src/list-detail-measure.ts:67-87` and
   `packages/elements/src/ocelle-list-detail.ts:217-221, 295-299, 329`:
   - a pass that finds the grid without a box (`getClientRects().length === 0`) writes no figure and stays pending;
   - the probe's `ResizeObserver`, when it sees the element become rendered, requests a pass for the next animation
@@ -782,10 +782,10 @@ through `red.sh` as `fix-4`; the fix note is `reviews/phase-4/round-5-fixes.md`,
 
   Acceptance: T078 passes in both harnesses; every US3 case, T048's one-pass count and T049 still pass
   (data-model.md § list-detail "Not rendered").
-- [ ] T081 [US3] `packages/elements/README.md` as T079 pins it (the container-tier convention's triggers and
+- [X] T081 [US3] `packages/elements/README.md` as T079 pins it (the container-tier convention's triggers and
   § `ocelle-list-detail`, where it names a dialog as a shrink-to-fit host), and the `packages/elements/CHANGELOG.md`
   entry of `ocelle-list-detail` if it lists the triggers. Acceptance: T079 passes.
-- [ ] T082 [US3] Run T078's plants once and record them in `specs/009-workflow-layouts/reviews/phase-4/plants.md`.
+- [X] T082 [US3] Run T078's plants once and record them in `specs/009-workflow-layouts/reviews/phase-4/plants.md`.
   Then run the gates as in T030, and `gate:mutation -- --base <phase base>` with no surviving mutant on the changed
   lines.
 

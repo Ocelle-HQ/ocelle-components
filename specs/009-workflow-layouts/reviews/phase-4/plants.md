@@ -55,6 +55,34 @@ tests, 62 with the L27 guard), and each touched file restored byte for byte and 
 Every plant bites. The round 2 red tests (`7c640bb`) failed on the code before the fix for the defects themselves
 (red-fix-2.log), and L20, L22 and L25 are the round 2 fix undone one part at a time.
 
+## Plants of the landing-pass fix (operator round 5, O5-01; T082)
+
+T078's plants, each run once on the fix's working tree with the same runner (an exact text replacement; in process in
+`elements`: `list-detail.test.ts`, `list-detail-pass.test.ts`, `list-detail-upgrade.test.ts` and
+`list-detail-first-render.test.ts`, 71 tests), each touched file restored byte for byte and compared with a saved copy
+before the next. The red commit `243bd28` failed on the code before the fix for the defects themselves (red-fix-4.log:
+the five O5-01 cases in both harnesses and the three README fragments). L31 is not one of T078's named plants: it is
+the third part of the fix undone, the observer's not-rendered guard, and the last case is its guard.
+
+| # | Guard | Plant | Result |
+|---|---|---|---|
+| L28 | US3-12 "not rendered at first" (four cases) and "hidden then remeasured" | `ocelle-list-detail.ts`: no pass scheduled when the element becomes rendered (`this.#measure.resume()` removed from the observer) | 6 failed of 71: the four first-render cases (300 px, the sizer's unmeasured `<svg>` default, in one column, min `0px`); the hidden case (shown again, its minimum stays `480px`, not `560px`); the pass guard O5-01 (no pass once shown) |
+| L29 | US3-12 "hidden then remeasured", and the four first-render cases | `list-detail-measure.ts`: a pass that writes the figures it reads with no box (the `getClientRects()` guard removed) | 6 failed of 71: the four first-render cases (0 px in one column, the figures `0px`); the hidden case (`0px` while hidden, `y`'s figures changed, the loop message); the pass guard O5-01 |
+| L30 | US3-12 "hidden then remeasured" | `ocelle-list-detail.ts`: `remeasure()` sets the measured size from a non-rendered probe (the guard in `#remeasured` removed: `NaN`) | 5 failed of 71: the hidden case (the two-column `y` shows `three` while hidden, from `NaN`); the four first-render cases (the window's "ResizeObserver loop" message once shown, the tier re-chosen from `NaN`) |
+| L31 | US3-12 "hidden then remeasured" | `ocelle-list-detail.ts`: the observer takes the size of a probe that is not rendered (the early return replaced by `if (this.#rendered()) this.#measure.resume();`) | 1 failed of 71: the hidden case (`x` and `y` show `one` while hidden, from the missing box's 0 px) |
+
+Guards added after green (the surviving mutants of the first `gate:mutation -- --base HEAD` and `--base 2caad68` runs
+are their proof; red-first does not apply to them):
+
+| Guard | Where | Mutants it kills |
+|---|---|---|
+| A list-detail resized while rendered runs no pass; hidden, a change runs none until it is shown, then one; hidden and shown again with nothing pending, none | `list-detail-pass.test.ts` | `list-detail-measure.ts`: the pending pass requested at every observation (`if (this.#pending)` replaced by `true`), or left pending after a pass (`this.#pending = false` replaced by `true`) |
+| A list-detail removed with a change before and after the removal, then inserted again, runs no pass until the host calls `remeasure()`, and then one | `list-detail-pass.test.ts` | `list-detail-measure.ts` `disconnect()` emptied or its observer left on, `ocelle-list-detail.ts` `this.#measure.disconnect()` removed: since a pass on a grid with no box writes nothing, the removal guard above no longer saw them; the skipped pass then stays pending and runs at reinsertion |
+
+Equivalent record: `list-detail-measure.ts`'s initial `#pending = false` (the first pass runs in an animation frame
+before the probe's first observation, and a pass requested while one is requested is coalesced). Simplified instead:
+`#rendered()` reads the one probe (`querySelector`), not every probe (`some` and `every` were equivalent).
+
 ## Judgement
 
 All seventeen plants bite: each makes the scenario it guards fail, in process, on the green code and on the final code.

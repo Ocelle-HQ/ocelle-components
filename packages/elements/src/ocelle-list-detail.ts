@@ -6,7 +6,9 @@
 // which inherits those padding and borders, so its border box changes when they change alone and it adds nothing to the
 // element's intrinsic sizes (reviews/phase-4/round-1-fixes.md R1-03, round-2-fixes.md R2-02). A block-size change of
 // the element notifies neither, so content a slotted element appends from its own `ResizeObserver` brings no loop
-// message (reviews/phase-4/spike.md). After each scheduled pass the element measures its border box afresh, so
+// message (reviews/phase-4/spike.md). While the element is not rendered, the observer and the fresh measurement leave
+// the measured size and the tier as they were, and once it is rendered again the observer requests the pass that was
+// left pending (landing pass O5-01). After each scheduled pass the element measures its border box afresh, so
 // `remeasure()` also re-chooses the tier (round-2-fixes.md R2-01). After the two blocks, one grid with an `aria-hidden`
 // sizer and three pane wrappers, one per slot. The `inspector` slot is always rendered, so its `slotchange` shows an
 // inspector added after the first render (R-11); whether an inspector is present is read from the host's light-DOM
@@ -214,7 +216,11 @@ export class OcelleListDetail extends LitElement {
   // The probe's content box is the host's content box; the edge box's border box is the host's inline padding and
   // borders, and only tells of a change of them, whose computed values are added (a percentage padding resolves against
   // another box in the edge box, its containing block).
+  // Not rendered, the element keeps its measured size and its tier, and once rendered again it requests the pass it
+  // left pending for the next frame (O5-01).
   readonly #resize = new ResizeObserver((entries) => {
+    if (!this.#rendered()) return;
+    this.#measure.resume();
     const probe = entries.find((entry) => entry.target.classList.contains("probe"))?.contentBoxSize[0]?.inlineSize;
     if (probe !== undefined) this.#content = probe;
     this.#resized();
@@ -238,7 +244,9 @@ export class OcelleListDetail extends LitElement {
    * a change the element cannot see: content a slotted element renders in its own shadow root, an attribute-only
    * change, or an image or a font loading. In that frame it also re-chooses the tier from a fresh measurement of the
    * element's border box, as after a percentage inline padding that changes with the host's container. On an element
-   * that is not in a document, never connected or removed, it does nothing.
+   * that is not in a document, never connected or removed, it does nothing. On an element that is not rendered (in a
+   * closed `<dialog>`, under a `display: none` ancestor or `hidden`) the pass writes nothing and the tier stays; the
+   * element measures itself afresh once it is rendered.
    */
   public remeasure(): void {
     // Not in a document, the element runs no pass: never connected it has no shadow root yet, and removed it would
@@ -326,8 +334,16 @@ export class OcelleListDetail extends LitElement {
    * as a percentage padding that follows the host's container, re-chooses the tier in the same frame.
    */
   #remeasured(): void {
+    // A probe that is not rendered computes its inline size as `auto`, which would make the measured size `NaN`.
+    if (!this.#rendered()) return;
     for (const probe of this.renderRoot.querySelectorAll(".probe")) this.#content = Number.parseFloat(getComputedStyle(probe).inlineSize);
     this.#resized();
+  }
+
+  /** Whether the element is rendered: its probe has a box, which it lacks in a closed `<dialog>`, under a `display: none` ancestor or `hidden`. */
+  #rendered(): boolean {
+    // Called only once the probe is rendered into the shadow root (from its observer and after a scheduled pass).
+    return this.renderRoot.querySelector(".probe")?.getClientRects().length !== 0;
   }
 
   /**

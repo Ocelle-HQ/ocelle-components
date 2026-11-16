@@ -312,7 +312,10 @@ threshold or when the host sets `narrow`. It follows the container-tier conventi
   the element cannot see (the container-tier convention lists them), and in that frame re-chooses the tier from a fresh
   measurement of the element's border box. On an element that is not in a document, never connected or removed, it
   does nothing: a never-connected element measures itself at its first render anyway, and after changing a removed
-  element, call `remeasure()` once it is inserted again.
+  element, call `remeasure()` once it is inserted again. On an element in a document that is not rendered, with no box
+  (in a closed `<dialog>`, under a `display: none` ancestor or with `hidden`), a pass or a call of `remeasure()` writes
+  nothing and leaves the figures and the tier as they were; once the element is rendered (the dialog opened, the
+  ancestor or the host shown) it measures itself afresh, with no call of `remeasure()` needed.
 - **Slots.** It has three slots: `list`, the list pane; the default slot, the detail pane; and `inspector`, the optional
   inspector pane. An empty `inspector` slot adds no track, no border and no space.
 - **Tokens.** `ocelle-list-detail` reads the tokens `--ocelle-list-track-width`, `--ocelle-shell-inspector-width`,
@@ -492,6 +495,13 @@ element with tiers.
   `ResizeObserver` callback, after a slot change or a light-DOM node or text change in any pane, shown or hidden,
   after a call of `remeasure()`, and, synchronously, before a tier change the host sets through an attribute or a
   property. The figures go into the element's one per-instance sheet (Styles).
+- Becoming rendered is a re-measure trigger too: an element first rendered or changed while it had no box, in a
+  closed `<dialog>`, under a `display: none` ancestor or with `hidden`, measures its intrinsic sizes afresh in the next
+  animation frame once it is rendered (the dialog opened, the ancestor or the host shown), never inside the
+  `ResizeObserver` callback that sees it, and then has the size and the tier it has when rendered from the start; the
+  host need not call `remeasure()`. A dialog is therefore a shrink-to-fit host whether it starts open or closed.
+- While the element is not rendered, a pass or a call of `remeasure()` writes nothing: the figures, the measured size
+  and the tier stay as they were, and no figure becomes `NaN` or the 0 px of the missing box.
 - Changes with no light-DOM node or text change are not seen and wait for the next of these: an image or a font
   loading, content a slotted element renders in its own shadow root, and an attribute-only change such as a class
   swap; the host calls `remeasure()` after one.
