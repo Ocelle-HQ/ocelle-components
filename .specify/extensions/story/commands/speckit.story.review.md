@@ -53,6 +53,11 @@ The input names the phase: `phase=<N>` or a bare number. If it names none, stop 
    - **Plan:** the structure and decisions of `plan.md` are followed.
    - **Checks:** run the project's checks that exist (typecheck, lint, unit, interaction, visual, axe, CSP). A
      failing check is a blocking finding.
+   - **Plants:** if `plants_command` is set in `.specify/extensions/story/story-config.yml`, read
+     `FEATURE_DIR/reviews/phase-<N>/plants.md` and check that its base equals `base.sha`. Then run
+     `<plants_command> -- --affected <base.sha> --list`, which judges no plant, and compare its `note: affected:`
+     lines with the record. Each of these is a blocking finding: a missing `plants.md`, another base, a different
+     selection, or a recorded exit other than 0. Do not judge the plants again.
    - **Earlier rounds:** every blocking finding of the previous round is resolved as the fix note claims, and a
      behavioural fix came with a red test (`red-commits` has a `fix-<round>` entry).
 6. Classify each finding as `blocking` (must change before the phase is accepted) or `note`. Do not invent
