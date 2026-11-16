@@ -289,10 +289,10 @@ export const listDetailScenarios: readonly ListDetailScenario[] = [
       const narrow = await panes(driver, "w");
       await driver.setAttribute("w", "narrow", null);
       const restored = await panes(driver, "w");
-      await driver.setProperty("w", "narrow", true as unknown as string);
-      await driver.setProperty("w", "detailOpen", true as unknown as string);
+      await driver.setProperty("w", "narrow", true);
+      await driver.setProperty("w", "detailOpen", true);
       const reflected = { narrow: await driver.attribute("w", "narrow"), detailOpen: await driver.attribute("w", "detail-open"), panes: await panes(driver, "w") };
-      await driver.setProperty("w", "narrow", false as unknown as string);
+      await driver.setProperty("w", "narrow", false);
       return { narrow, restored, reflected, cleared: await driver.attribute("w", "narrow") };
     },
     expected: { narrow: oneList(876), restored: twoW, reflected: { narrow: "", detailOpen: "", panes: oneDetail(876) }, cleared: null },
@@ -803,7 +803,7 @@ export const listDetailScenarios: readonly ListDetailScenario[] = [
       );
       await driver.tabWalk("before", "a-l0");
       await driver.setAttribute("a", "narrow", "");
-      await driver.setProperty("a", "detailOpen", true as unknown as string);
+      await driver.setProperty("a", "detailOpen", true);
       await driver.setAttribute("b", "detail-open", "");
       await driver.style("c-frame", "inline-size", "400px");
       await driver.setProperty("s-detail", "innerHTML", '<div class="w35"></div>');
