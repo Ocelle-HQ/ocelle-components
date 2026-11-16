@@ -30,7 +30,8 @@ import { describe, expect, it } from "vitest";
 // item of FR-034: the own measured size, the grammar and its resolution, the token default and its fallback, exclusive
 // bounds, the forcing boolean, no `container-type`, tier-independent intrinsic sizes, the re-measure triggers, the
 // unseen changes and `remeasure()`, the cost of one pass, the loop message and setting the attributes from a task),
-// its entry point and its CHANGELOG entries. Since 009 phase 5 (T062): the four frames as the tested screen sizes, WebKit
+// its entry point and its CHANGELOG entries. Since the landing pass (O5-01, T079): becoming rendered as a re-measure
+// trigger, and a pass or `remeasure()` on an element that is not rendered writing nothing, in both places. Since 009 phase 5 (T062): the four frames as the tested screen sizes, WebKit
 // not measured for the layout elements' focus behaviour, the print note and the states that do not apply.
 /** A file's text, relative to the package; empty while it does not exist, so each assertion reports what is missing. */
 function read(file: string): string {
@@ -203,6 +204,8 @@ const fragments = [
   "`narrow` (attribute and property, reflected): forces the one-column layout whatever the element's size",
   "`detail-open` (attribute, and property `detailOpen`, reflected): in one column, shows the detail pane, with the inspector stacked under it, instead of the list; in two or three columns it has no effect",
   "`remeasure()`: requests a measurement of the element's intrinsic sizes for the next animation frame, for a change the element cannot see (the container-tier convention lists them), and in that frame re-chooses the tier from a fresh measurement of the element's border box. On an element that is not in a document, never connected or removed, it does nothing: a never-connected element measures itself at its first render anyway, and after changing a removed element, call `remeasure()` once it is inserted again",
+  // since the landing pass (operator round phase 4 round 5, O5-01; T079): not rendered
+  "On an element in a document that is not rendered, with no box (in a closed `<dialog>`, under a `display: none` ancestor or with `hidden`), a pass or a call of `remeasure()` writes nothing and leaves the figures and the tier as they were; once the element is rendered (the dialog opened, the ancestor or the host shown) it measures itself afresh, with no call of `remeasure()` needed",
   "It has three slots: `list`, the list pane; the default slot, the detail pane; and `inspector`, the optional inspector pane. An empty `inspector` slot adds no track, no border and no space",
   "`ocelle-list-detail` reads the tokens `--ocelle-list-track-width`, `--ocelle-shell-inspector-width`, `--ocelle-list-detail-collapse`, `--ocelle-list-detail-inspector-collapse`, `--ocelle-color-rule`, `--ocelle-border-width`, `--ocelle-focus-width` and `--ocelle-color-focus`",
   "The list pane is `--ocelle-list-track-width` wide, the inspector `--ocelle-shell-inspector-width`, its border included, and the detail takes the rest; a 1 px `--ocelle-color-rule` border, decorative only, runs between adjacent panes, in `CanvasText` in forced colours",
@@ -220,6 +223,9 @@ const fragments = [
   "No `container-type` is set on a host that may shrink to fit, such as a flex item, a dialog or a table cell: it would collapse to 0 px there",
   "The element's intrinsic inline sizes do not depend on the tier it shows: its max-content size is that of its widest tier and its min-content size that of its narrowest, so a shrink-to-fit host cannot make the tier alternate",
   "The intrinsic sizes are measured in one pass, at most once per animation frame and never inside a `ResizeObserver` callback, after a slot change or a light-DOM node or text change in any pane, shown or hidden, after a call of `remeasure()`, and, synchronously, before a tier change the host sets through an attribute or a property",
+  // since the landing pass (operator round phase 4 round 5, O5-01; T079): becoming rendered is a trigger
+  "Becoming rendered is a re-measure trigger too: an element first rendered or changed while it had no box, in a closed `<dialog>`, under a `display: none` ancestor or with `hidden`, measures its intrinsic sizes afresh in the next animation frame once it is rendered (the dialog opened, the ancestor or the host shown), never inside the `ResizeObserver` callback that sees it, and then has the size and the tier it has when rendered from the start; the host need not call `remeasure()`",
+  "While the element is not rendered, a pass or a call of `remeasure()` writes nothing: the figures, the measured size and the tier stay as they were, and no figure becomes `NaN` or the 0 px of the missing box",
   "Changes with no light-DOM node or text change are not seen and wait for the next of these: an image or a font loading, content a slotted element renders in its own shadow root, and an attribute-only change such as a class swap; the host calls `remeasure()` after one",
   // the known limitations and their remedy (phase 4 review round 2, R2-01 and R2-02; operator decision P4)
   "The element's own inline padding and borders are added to each and are no floor of either",

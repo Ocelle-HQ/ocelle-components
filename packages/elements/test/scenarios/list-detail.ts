@@ -195,6 +195,30 @@ async function shrinkToFit(driver: Driver, markup: string): Promise<unknown> {
   return { width: Math.round((await driver.box("s")).width), layout: await layout(driver, "s"), tiers: tierSet(recorded), frames: frameReadings(recorded).length >= 10, messages: await driver.messages() };
 }
 
+/** The wrappers of the not-rendered cases (O5-01): an inline-block, and `gone`, which takes the box away. */
+const notRenderedRules = "\n.ib { display: inline-block; }\n.gone { display: none; }";
+
+/** The `data-tier` of the element's grid, read from its shadow root. */
+async function gridTier(driver: Driver, id: string): Promise<string | undefined> {
+  return (await driver.elements(id)).find((part) => part.attributes.class === "grid")?.attributes["data-tier"];
+}
+
+/**
+ * The element's inline size, its layout, its grid's `data-tier` and the per-instance sheet's two figures as the
+ * element's shadow nodes compute them: the sizer's inline size and the grid's minimum (research.md R-13).
+ */
+async function measuredState(driver: Driver, id: string): Promise<unknown> {
+  return {
+    width: Math.round((await driver.box(id)).width),
+    layout: await layout(driver, id),
+    tier: await gridTier(driver, id),
+    figures: { sizer: await driver.computed({ id, inner: ".sizer" }, "inline-size"), min: await driver.computed({ id, inner: ".grid" }, "min-inline-size") },
+  };
+}
+
+/** US3-12's element with the 30rem detail block, rendered: 1073 px in three columns, its one-column minimum the 480 px block. */
+const threeAt1073 = { width: 1073, layout: "three", tier: "three", figures: { sizer: "1073px", min: "480px" } };
+
 export const listDetailScenarios: readonly ListDetailScenario[] = [
   ...(["light", "dark"] as const).map(
     (theme): ListDetailScenario => ({
@@ -639,6 +663,84 @@ export const listDetailScenarios: readonly ListDetailScenario[] = [
       return { width: Math.round((await driver.box("s")).width), layout: await layout(driver, "s"), appended: (await driver.box("s-detail")).height, messages: await driver.messages() };
     },
     expected: { width: 1153, layout: "one: detail", appended: 64, messages: [] },
+  },
+  // Added at the landing pass (operator round phase 4 round 5, O5-01; landing review L1-01; T078), red before the fix:
+  // a list-detail first rendered while not rendered (no box), then rendered, has the figures and the tier of its twin
+  // rendered from the start on the same page; a pass or remeasure() while it is not rendered writes nothing. Plant
+  // (the first four): no pass scheduled when the element becomes rendered (they stay at 0 px in one column, or keep
+  // the sizer's default size, unmeasured).
+  ...(
+    [
+      [
+        "upgraded inside a closed <dialog>, opened with showModal()",
+        `<dialog open class="dialog">${listDetail("t", "", sized("t"))}</dialog><dialog id="s-w" class="dialog">${listDetail("s", "", sized("s"))}</dialog>`,
+        { call: "showModal" },
+      ],
+      [
+        "upgraded inside a display: none inline-block wrapper, which is then shown",
+        `<div><div class="ib">${listDetail("t", "", sized("t"))}</div></div><div><div id="s-w" class="ib gone">${listDetail("s", "", sized("s"))}</div></div>`,
+        { attribute: "class", value: "ib" },
+      ],
+      [
+        "upgraded inside a hidden flex item of the 1196 px row, which is then shown",
+        `<div class="row"><div>${listDetail("t", "", sized("t"))}</div></div><div class="row"><div id="s-w" hidden>${listDetail("s", "", sized("s"))}</div></div>`,
+        { attribute: "hidden", value: null },
+      ],
+      [
+        "upgraded with the hidden attribute as a flex item of the 1196 px row, which is then removed",
+        `<div class="row">${listDetail("t", "", sized("t"))}</div><div class="row">${listDetail("s", " hidden", sized("s"))}</div>`,
+        { attribute: "hidden", value: null, on: "s" },
+      ],
+    ] as const
+  ).map(
+    ([how, markup, show]): ListDetailScenario => ({
+      name: `US3-12, not rendered at first (O5-01): ${how}, the element has the width, data-tier and per-instance figures of its twin rendered from the start on the same page, 1073 px (18rem + 30rem + 19rem plus 1 px) in three columns, the same on each of ten frames, with no error (FR-025)`,
+      base: false,
+      run: async (driver) => {
+        await page(driver, "R", markup, { extra: notRenderedRules });
+        if ("call" in show) await driver.call("s-w", show.call);
+        else await driver.setAttribute("on" in show ? show.on : "s-w", show.attribute, show.value);
+        await driver.settle();
+        const record = await driver.frameRecord("s", tierReading("s"));
+        await frames(driver, 10);
+        const recorded = await record.stop();
+        return { s: await measuredState(driver, "s"), t: await measuredState(driver, "t"), tiers: tierSet(recorded), frames: frameReadings(recorded).length >= 10, messages: await driver.messages() };
+      },
+      expected: { s: threeAt1073, t: threeAt1073, tiers: ["three"], frames: true, messages: [] },
+    }),
+  ),
+  {
+    // Plants: a pass that writes the figures it reads with no box (0 px while hidden); remeasure() that sets the
+    // measured size from a non-rendered probe (`NaN`: the two-column element `y` then shows three columns while hidden);
+    // no pass scheduled when the element becomes rendered (the new list content's 560 px minimum is never measured).
+    name: "US3-12, hidden then remeasured (O5-01): shown at 1073 px in three columns in the 1196 px row (and a twin in Frame W in two columns), then its wrapper hidden; while hidden the list's content changes and the host calls remeasure(); ten frames later the figures and data-tier are those before hiding, none NaN or 0 px; shown again, after settle, it has the figures of its new content (the 35rem list block: 560 px minimum), 1073 px in three columns, with no error (FR-025)",
+    base: false,
+    run: async (driver) => {
+      await page(driver, "R", `<div id="x-w"><div class="row">${listDetail("x", "", sized("x"))}</div>${framed("y", "W")}</div>`, { extra: notRenderedRules });
+      const figures = async (id: string): Promise<{ tier: string | undefined; sizer: string; min: string }> => ({
+        tier: await gridTier(driver, id),
+        sizer: await driver.computed({ id, inner: ".sizer" }, "inline-size"),
+        min: await driver.computed({ id, inner: ".grid" }, "min-inline-size"),
+      });
+      const shown = { x: await measuredState(driver, "x"), y: await figures("y") };
+      await driver.setAttribute("x-w", "class", "gone");
+      await driver.setProperty("x-list", "innerHTML", '<div class="w35"></div>');
+      await driver.setProperty("y-lt", "textContent", "Records of the week");
+      await driver.call("x", "remeasure");
+      await driver.call("y", "remeasure");
+      await frames(driver, 10);
+      const hidden = { x: await figures("x"), y: await figures("y") };
+      await driver.setAttribute("x-w", "class", null);
+      await driver.settle();
+      return { shown: shown.x, hidden: { x: hidden.x, y: { tier: hidden.y.tier, figures: hidden.y.sizer === shown.y.sizer && hidden.y.min === shown.y.min } }, yTier: shown.y.tier, again: await measuredState(driver, "x"), messages: await driver.messages() };
+    },
+    expected: {
+      shown: threeAt1073,
+      hidden: { x: { tier: "three", sizer: "1073px", min: "480px" }, y: { tier: "two", figures: true } },
+      yTier: "two",
+      again: { ...threeAt1073, figures: { sizer: "1073px", min: "560px" } },
+      messages: [],
+    },
   },
   {
     name: "US3-13: under dir=rtl in Frame R the three columns run from the right: the list at the right, the inspector at the left, with the 1 px borders on the inline-start side (the right) of the detail and of the inspector (FR-023)",
