@@ -8,6 +8,7 @@ import type { BrowserCommand, BrowserCommandContext } from "vitest/node";
 interface ElementCommands {
   readonly axTree: (context: BrowserCommandContext, id: string, scope?: "element" | "subtree") => Promise<unknown>;
   readonly emulateForcedColors: (context: BrowserCommandContext, mode: "active" | "none", palette?: "light" | "dark") => Promise<void>;
+  readonly emulateReducedMotion: (context: BrowserCommandContext, mode: "reduce" | "no-preference") => Promise<void>;
 }
 // The live-region capture's commands (specs/010-feedback-forms contracts/testing.md § Live-region capture;
 // packages/elements/test/live.ts), loaded as the element commands are, when a command runs.
@@ -30,6 +31,11 @@ const liveStart: BrowserCommand<[containerId: string, delays: LiveDelays]> = asy
 const liveStop: BrowserCommand<[options?: { readonly atLeast?: number }]> = async (context, options) => (await liveCommands()).liveStop(context, options);
 const emulateForcedColors: BrowserCommand<[mode: "active" | "none", palette?: "light" | "dark"]> = async (context, mode, palette) => {
   await (await elementCommands()).emulateForcedColors(context, mode, palette);
+};
+// 013 phase 3 (research.md R-08, contracts/checks.md § Driver additions): reduced motion through the same
+// `page.emulateMedia` helper as forced colours, so neither clears the other.
+const emulateReducedMotion: BrowserCommand<[mode: "reduce" | "no-preference"]> = async (context, mode) => {
+  await (await elementCommands()).emulateReducedMotion(context, mode);
 };
 
 // Plants and gate-test fixtures are inputs of the gates and their tests, never tests of this repository
@@ -83,15 +89,17 @@ export default defineConfig({
       {
         // The in-process element tests (005 research.md R-11): browser mode, element source; mutated by
         // stryker.elements.config.json (R-12). The node, build and fixture tests run in their own projects below. The
-        // axTree and emulateForcedColors commands read Chromium's accessibility tree over CDP and switch forced colours
-        // for the shared scenario bodies (packages/elements/test/commands.ts). Each test file keeps its own iframe and
-        // custom-element registry (isolate, the default). Its files run one at a time (specs/010-feedback-forms phase 2
-        // stop 1, operator decision (b), reviews/phase-2/decision-stop-1.md): the in-process timing files (the notice
-        // suites, the plants file, the capture and timing files) measure gaps in fractions of the test W = 100 ms, and
-        // two pages of this project running at once overshot drive.after by more than 2W/3.
+        // axTree, emulateForcedColors and emulateReducedMotion commands read Chromium's accessibility tree over CDP and
+        // switch forced colours and reduced motion for the shared scenario bodies (packages/elements/test/commands.ts).
+        // Each test file keeps its own iframe and custom-element registry (isolate, the default). Its files run one at
+        // a time (specs/010-feedback-forms phase 2 stop 1, operator decision (b), reviews/phase-2/decision-stop-1.md):
+        // the in-process timing files (the notice suites, the plants file, the capture and timing files) measure gaps
+        // in fractions of the test W = 100 ms, and two pages of this project running at once overshot drive.after by
+        // more than 2W/3.
         // Lit's directives the elements import, bundled before the run, so Vite does not find them during a test file
-        // and reload it (specs/010-feedback-forms phase 3: ocelle-form-input imports class-map and live).
-        optimizeDeps: { include: ["lit/directives/class-map.js", "lit/directives/live.js"] },
+        // and reload it (specs/010-feedback-forms phase 3: ocelle-form-input imports class-map and live; 013:
+        // ocelle-facts imports if-defined).
+        optimizeDeps: { include: ["lit/directives/class-map.js", "lit/directives/if-defined.js", "lit/directives/live.js"] },
         test: {
           name: "elements",
           include: ["packages/elements/**/*.test.ts"],
@@ -102,7 +110,7 @@ export default defineConfig({
             provider: playwright({ launchOptions }),
             headless: true,
             instances: [{ browser: "chromium" }],
-            commands: { axTree, emulateForcedColors, liveStart, liveStop },
+            commands: { axTree, emulateForcedColors, emulateReducedMotion, liveStart, liveStop },
           },
         },
       },

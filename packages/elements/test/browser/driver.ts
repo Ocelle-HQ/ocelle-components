@@ -7,11 +7,13 @@
 // (`<page>-base.html`), so `mount` with `base` must be called on such a page.
 import { inflateSync } from "node:zlib";
 import type { Page } from "playwright";
-import { axDetails, axNodes, axSubtree, emulate } from "../commands.ts";
+import { runningOf } from "../animations.ts";
+import { axDetails, axNodes, axSubtree, emulate, emulateMotion } from "../commands.ts";
+import { layoutWait } from "../layout-wait.ts";
 import { fixtureCapture } from "../live.ts";
 import type { Snapshot } from "../live-reading.ts";
 import { decodePng } from "../pixels.ts";
-import type { Bounds, Box, Drawing, Entries, FixtureDriver, Heard, InsertHow, Paint, Part, Placement, Sheets, Validity } from "../scenarios/driver.ts";
+import type { Bounds, Box, Drawing, Entries, FixtureDriver, Heard, InsertHow, Paint, Part, Placement, Sheets, TreeNode, Validity } from "../scenarios/driver.ts";
 import type { Served } from "./serve.ts";
 
 /**
@@ -83,6 +85,7 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
         holder.ocelleHeard = [];
         document.adoptedStyleSheets = [];
         document.documentElement.removeAttribute("data-theme");
+        Reflect.deleteProperty(document, Symbol.for("ocelle.progress.sweepStart"));
         document.body.innerHTML = html;
       }, markup);
       await settle(page);
@@ -333,7 +336,7 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
         const element = document.getElementById(id);
         if (element === null) throw new Error(`no #${id} on the page`);
         const value = (element as unknown as Record<string, unknown>)[name];
-        return typeof value === "string" || typeof value === "number" || typeof value === "boolean" ? value : null;
+        return typeof value === "string" || typeof value === "number" || typeof value === "boolean" || value === undefined ? value : null;
       }, { id, name }),
     computedIn: (id, inner, property) =>
       page.evaluate(({ id, inner, property }) => {
@@ -573,6 +576,178 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
       // The page shown again is a new document: a key step taken on the one left has no submission to take.
       keyed = false;
       return page.evaluate(() => (globalThis as unknown as { ocellePageshow?: boolean }).ocellePageshow === true);
+    },
+    viewport: async (width, height) => {
+      await page.setViewportSize({ width, height });
+      await settle(page);
+    },
+    scrollWidth: () => page.evaluate(() => document.documentElement.scrollWidth),
+    layout: (id) => page.evaluate(layoutWait, id),
+    copy: async (id) => {
+      await page.evaluate((id) => {
+        const element = document.getElementById(id);
+        if (element === null) throw new Error(`no #${id} on the page`);
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        const selection = getSelection();
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+      }, id);
+      await page.keyboard.press("ControlOrMeta+C");
+      await page.evaluate(() => {
+        const field = document.createElement("textarea");
+        field.id = "ocelle-driver-paste";
+        document.body.append(field);
+        field.addEventListener("paste", (event) => {
+          field.dataset.pasted = event.clipboardData?.getData("text/plain") ?? "";
+        });
+        field.focus();
+      });
+      await page.keyboard.press("ControlOrMeta+V");
+      return page.evaluate(() => {
+        const field = document.getElementById("ocelle-driver-paste");
+        const pasted = field?.dataset.pasted ?? "";
+        field?.remove();
+        getSelection()?.removeAllRanges();
+        return pasted;
+      });
+    },
+    move: async (id, parentId) => {
+      await page.evaluate(({ id, parentId }) => {
+        const element = document.getElementById(id);
+        const parent = parentId === null ? document.body : document.getElementById(parentId);
+        if (element === null || parent === null) throw new Error(`no #${id} or #${String(parentId)} on the page`);
+        parent.append(element);
+      }, { id, parentId });
+      await settle(page);
+    },
+    text: async (id, value) => {
+      await page.evaluate(({ id, value }) => {
+        const node = [...(document.getElementById(id)?.childNodes ?? [])].find((child) => child.nodeType === Node.TEXT_NODE);
+        if (node === undefined) throw new Error(`no text node in #${id}`);
+        (node as Text).data = value;
+      }, { id, value });
+      await settle(page);
+    },
+    open: async (id) => {
+      await page.evaluate((id) => {
+        const target = document.getElementById(id);
+        if (target === null) throw new Error(`no #${id} on the page`);
+        if (target instanceof HTMLDialogElement) target.showModal();
+        else target.showPopover();
+      }, id);
+      await settle(page);
+    },
+    boxes: (id, inner) =>
+      page.evaluate(({ id, inner }): Box[] =>
+        [...(document.getElementById(id)?.shadowRoot?.querySelectorAll(inner) ?? [])].map((each) => {
+          const rect = each.getBoundingClientRect();
+          return { x: rect.x, y: rect.y, width: rect.width, height: rect.height, display: getComputedStyle(each).display };
+        }), { id, inner }),
+    styles: (id, inner, properties) =>
+      page.evaluate(({ id, inner, properties }) => {
+        const host = document.getElementById(id);
+        if (host === null) throw new Error(`no #${id} on the page`);
+        const targets = inner === null ? [host] : [...(host.shadowRoot?.querySelectorAll(inner) ?? [])];
+        return targets.map((each) => Object.fromEntries(properties.map((property) => [property, getComputedStyle(each).getPropertyValue(property)])));
+      }, { id, inner, properties }),
+    structure: (id, inner) =>
+      page.evaluate(({ id, inner }): TreeNode[] => {
+        const root = document.getElementById(id)?.shadowRoot ?? null;
+        const start = inner === null ? root : (root?.querySelector(inner) ?? null);
+        const tree = (of: Element | ShadowRoot): TreeNode[] => [...of.children].map((child) => ({ name: child.localName, children: tree(child) }));
+        return start === null ? [] : tree(start);
+      }, { id, inner }),
+    pressTab: async () => {
+      await page.keyboard.press("Tab");
+      await settle(page);
+    },
+    focused: () =>
+      page.evaluate(() => {
+        let current = document.activeElement;
+        while (current?.shadowRoot?.activeElement !== null && current?.shadowRoot?.activeElement !== undefined) current = current.shadowRoot.activeElement;
+        if (current === null || current === document.body) return null;
+        return current.id === "" ? `<${current.localName}>` : current.id;
+      }),
+      reducedMotion: async (mode) => {
+      await emulateMotion(page, mode);
+      await settle(page);
+    },
+    animations: (id) => page.evaluate(runningOf, id),
+    remove: async (id) => {
+      await page.evaluate((id) => {
+        const element = document.getElementById(id);
+        if (element === null) throw new Error(`no #${id} on the page`);
+        element.remove();
+      }, id);
+    },
+    frames: async (count) => {
+      await page.evaluate(async (count) => {
+        for (let frame = 0; frame < count; frame++) await new Promise((resolve) => requestAnimationFrame(resolve));
+      }, count);
+    },
+    replace: async (id, markup) => {
+      await page.evaluate(({ id, markup }) => {
+        const element = document.getElementById(id);
+        if (element === null) throw new Error(`no #${id} on the page`);
+        const template = document.createElement("template");
+        template.innerHTML = markup;
+        element.replaceWith(template.content);
+      }, { id, markup });
+      await settle(page);
+    },
+      changeAttributes: async (id, changes) => {
+      await page.evaluate(({ id, changes }) => {
+        const element = document.getElementById(id);
+        if (element === null) throw new Error(`no #${id} on the page`);
+        for (const [name, value] of changes) {
+          if (value === null) element.removeAttribute(name);
+          else element.setAttribute(name, value);
+        }
+      }, { id, changes });
+      await settle(page);
+    },
+    textOf: (id, inner) => page.evaluate(({ id, inner }) => document.getElementById(id)?.shadowRoot?.querySelector(inner)?.textContent ?? null, { id, inner }),
+    rendered: (id) =>
+      page.evaluate((id) => {
+        const element = document.getElementById(id);
+        if (element === null) throw new Error(`no #${id} on the page`);
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        return { innerText: element.innerText, rects: range.getClientRects().length };
+      }, id),
+    events: async (id, during) => {
+      await page.evaluate((id) => {
+        const target = document.getElementById(id);
+        if (target === null) throw new Error(`no #${id} on the page`);
+        const native = Object.getOwnPropertyDescriptor(EventTarget.prototype, "dispatchEvent");
+        if (native === undefined) throw new Error("no EventTarget.prototype.dispatchEvent");
+        const dispatch = native.value as (this: EventTarget, event: Event) => boolean;
+        const seen: string[] = [];
+        Reflect.set(window, Symbol.for("ocelle.test.events"), { native, seen });
+        Object.defineProperty(EventTarget.prototype, "dispatchEvent", {
+          ...native,
+          value: function (this: EventTarget, event: Event): boolean {
+            if (this === target || (this instanceof Node && this.getRootNode() === target.shadowRoot)) seen.push(event.type);
+            return dispatch.call(this, event);
+          },
+        });
+      }, id);
+      const stop = (): Promise<string[]> =>
+        page.evaluate(() => {
+          const key = Symbol.for("ocelle.test.events");
+          const recording = Reflect.get(window, key) as { readonly native: PropertyDescriptor; readonly seen: string[] };
+          Object.defineProperty(EventTarget.prototype, "dispatchEvent", recording.native);
+          Reflect.deleteProperty(window, key);
+          return recording.seen;
+        });
+      try {
+        await during();
+      } catch (error) {
+        await stop();
+        throw error;
+      }
+      return await stop();
     },
   };
   // Every step ends at its own page time, from which `after` measures.

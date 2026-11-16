@@ -164,3 +164,10 @@ helper jobs, not gate jobs; it fails (`skip-container-in-ci`) when a step of any
 `--skip-container` (research.md R-07), and (`shard-in-plant-check`) when a step of the `plants` job contains `--shard`
 or `--plan`, since the required check would then judge one shard or none. That CI compares docker with podman does not
 rest on the workflow text: the gate requires both engines whenever `CI` or `GITHUB_ACTIONS` is `true` (research.md R-06).
+
+**Amendment (2026-11-15, op 016, `ops/016-plants-affected`).** The registry check also fails (`affected-in-ci`) when
+a step of any of the three plant jobs, `plants-plan`, `plants-shard` or `plants`, passes `--affected`: one finding on
+`ci.yml` for each such job, in that order, with the message `the <job> job passes --affected, so CI would judge only
+the plants a diff selects`. `--affected <base> [--list]` is a phase's local mode of `gate:plants` (contracts/plants.md
+§ Shards, amendment of the same date); in CI it would make the required check judge only the plants a diff selects.
+The registry plant `fail-affected-in-plant-check` proves the rule.

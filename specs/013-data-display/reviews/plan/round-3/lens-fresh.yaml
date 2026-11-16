@@ -1,0 +1,97 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 3
+lens: fresh
+findings:
+  - id: PLAN-FRESH-3-001
+    severity: 3
+    title: "Round 2's stacking mechanism is still history-dependent: a stacked sheet in a shrink-to-fit host never re-decides when its two-column measure changes"
+    evidence:
+      - artifact: "research.md § R-02 Mechanism: 'One `ResizeObserver` observes the host and both probes (below). Its callback reads the threshold from the probes and, when `layout` is unset, the measure'; data-model.md `stacked`: 'Recomputed in the callback of one `ResizeObserver` that observes the host and both probes ... and on a change of `layout`'; R-01 Consequences: the `MutationObserver` re-renders on `childList` of the host and on `label`/`hidden`/`aria-hidden`/`lang`/`dir` of a child, and does not re-decide `stacked`, and no observer sees character data inside a value"
+      - artifact: "spec.md FR-005: 'the layout depends only on the content and the space, never on the element's previous state'; FR-009: 'the same content in the same space gives the same layout'"
+      - code: "Probe (headless Chromium 1243 via /opt/node-tools playwright; scratchpad lotte/probe.cjs): a vanilla copy of R-02 (grid `fit-content(50%) minmax(0, 1fr)`, column gap 16 px, a `stacked` class giving `minmax(0, 1fr)`, a 384 px probe, one ResizeObserver on host and probe whose callback removes `stacked`, reads the host's content-box inline size and re-applies `stacked` below 384) in a `showModal()` dialog. Space change: pair ('Created by op', 'Ada Lovelace and Charles Babbage') loaded at a 1200 px viewport is 395 px and in two columns; loaded at 360 px it is stacked (measure 322, capped by the dialog) and its stacked size is 272 px; widened to 1200 px it stays 272 px and stacked, because the host's own size never changes and the observer never fires (2 callbacks in total). Content change: pair ('Created by operator', same value) loaded at 1280 px is 439 px in two columns; the same sheet loaded with label 'Id' (stacked, 272 px) and then relabelled 'Created by operator' stays 272 px and stacked."
+    claim: |
+      While the sheet is stacked in a shrink-to-fit host, the host's size is its stacked max-content
+      (the widest label or value), not the two-column measure. Whenever the two-column measure changes but the widest
+      single item does not, the host does not resize, the ResizeObserver does not fire, and `stacked` is never
+      re-decided. Two common cases hit this. In the first, the space the host offers grows (a window widened, a
+      dialog reopened at another width, a fixed flex sibling shrinking) while the stacked content was not capped. In
+      the second, the content changes without changing the widest item: a label change, a fact added, or value text
+      updated by Svelte or htmx. Value character data is not even observed. The same content in the same space then
+      gives two columns or one depending on history. This is the defect rounds 1 and 2 set out to remove (FR-005,
+      FR-009), and the probe above reproduces it. The planned spike and bodies would not catch it. The "loaded at
+      360 px then widened" body names no content, and the short sheet the plan uses elsewhere ("Owner / Ada
+      Lovelace", 173 px) stacks at every width, so it passes. As planned, the failure would surface mid-run in phase
+      1, or after the mission has shipped.
+    remedies:
+      - "Re-decide `stacked` on every event that can change the two-column measure, not only on a host resize. That means: every re-render from the facts MutationObserver; character data and child-list changes inside a fact's value (add `characterData: true` to the observer, keep `subtree`, and accept records whose target lies inside a pair); a ResizeObserver on the host's parent element as well as the host (this covers the flex row, the grid track and the table cell); `window` and `visualViewport` resize (this covers dialogs and popovers, whose offered space is the viewport); and `document.fonts` `loadingdone`. State each trigger in R-02 and data-model.md. Add named bodies and spike rows with the probe's content: 'Created by op / Ada Lovelace and Charles Babbage' in a dialog loaded at 360 px and widened to 1200 px gives the layout of a load at 1200 px, and a stacked sheet in a 1280 px dialog relabelled from 'Id' to 'Created by operator' gives the layout of a fresh load. Plant: the extra triggers removed, which both bodies must fail."
+      - "Take it to the operator as a narrowing of FR-009 (the operator's requirement): the automatic switch is guaranteed state-independent only in a block container. In a shrink-to-fit or shared host the README requires `layout`, and the bodies assert that requirement rather than history independence there."
+
+  - id: PLAN-FRESH-3-002
+    severity: 2
+    title: "The measure pass removes a Lit-rendered class by hand, and Lit will not put it back when the state does not change"
+    evidence:
+      - artifact: "research.md § R-02 Mechanism: 'if the `<dl>` is stacked, the callback removes the `stacked` class, reads the host's content-box inline size ..., and sets the state'; § When the layout is read: 'the `stacked` class is set in the observer callback and followed by a Lit update'; data-model.md Rendered: `<dl part=\"list\" class=\"{stacked}\">`, a template binding"
+      - code: "Lit 3 (lit-html AttributePart._$setValue): a binding is committed only when the new value differs from the part's last committed value, not from the DOM; ReactiveElement.requestUpdate skips an update when hasChanged (notEqual) is false. If the callback removes the class from the DOM and the decision stays 'stacked', the property does not change, no update runs, and the committed value is still 'stacked', so the class is never restored."
+    claim: |
+      The design mixes a hand-made DOM change with a Lit template binding on the same attribute. In the commonest
+      callback, a stacked sheet that stays stacked (any resize of a narrow sheet, any probe callback), the class is
+      removed, the decision is the same, and Lit has nothing to update. The `<dl>` is left in two columns while the
+      element's state says stacked. Whether this happens depends on how the implementer reads "sets the state", and
+      the plan's bodies only catch it if one of them resizes a sheet that stays stacked.
+    remedies:
+      - "Say in R-02 and data-model.md that the measure pass never leaves the DOM different from the rendered state. Either the `stacked` class is owned only by the callback (not a template binding) and the callback re-adds it unconditionally after the read, or the pass measures without touching the `<dl>` (for example, the callback sets `stacked` through Lit only, and a separate always-two-column measuring rule on a zero-block-size element supplies the read). Add a body: a 300 px sheet resized to 290 px stays one column after the layout wait, with the plant 'class not restored after the measure'."
+
+  - id: PLAN-FRESH-3-003
+    severity: 2
+    title: "The fill's 200 ms width transition contradicts the progress oracles that read the fill at once"
+    evidence:
+      - artifact: "research.md § R-06 Fill: 'A width transition uses `--ocelle-motion-base` and `--ocelle-easing-standard`'; § Leaving the determinate state: `fill.style.removeProperty(\"inline-size\")`, so the stylesheet's 40% mark applies"
+      - artifact: "spec.md US3-2: 'When `value` changes to 9, Then ... the fill's inline size is 75% of the track'; contracts/checks.md § Extra scenario bodies: 'a `value` set, then removed: the mark is 40% of the track, with and without reduced motion'; § One sweep per page: 'A second body makes a bar determinate and then indeterminate again after the window and asserts no running animation at once'; § Driver additions `animations(id)`: 'running animations and transitions'"
+      - code: "packages/tokens/src/source.ts:226 `motion-base` is 200ms (0ms only under reduced motion); packages/elements/test/in-process.ts adopts the generated tokens on the document, and `settle()` (lines 35-39) waits for updateComplete and one requestAnimationFrame, about 16 ms into a 200 ms transition"
+    claim: |
+      With the planned transition, a value change from 7 to 9 reads mid-transition after `settle()`, not at 75%.
+      Removing the value starts a CSS transition from the last fraction to 40%. The value-removed body therefore reads
+      neither 40% nor the still mark's geometry without reduced motion, and the after-window body sees a running
+      CSSTransition through `animations()`, so it fails against a correct element. Nothing in the plan waits for the
+      transition, puts the bodies under reduced motion, or limits the transition to determinate-to-determinate
+      changes. The implementer will either see red bodies that green code cannot pass, or drop the transition or
+      weaken the oracles in green. Neither path is in the plan.
+    remedies:
+      - "Limit the transition to the determinate state, through a class the element sets only while determinate. Leaving that state removes `transition-property` in the same style change, so no transition starts on the switch to indeterminate (CSS Transitions: the after-change style decides). In US3-2, assert the fill at 75% after the transition's `finished`, or after a wait on `animations()` returning none, and say this in contracts/checks.md § Oracles. Keep 'no running animation at once' only for the determinate-to-indeterminate body, which the scoped transition then satisfies. Add a plant 'transition not scoped to the determinate state', which the value-removed body must fail."
+      - "Drop the width transition (the spec says 'if any'): R-06 and the edge case 'Rapid value changes' say the fill jumps, and US3-2's read stands as written."
+
+  - id: PLAN-FRESH-3-004
+    severity: 2
+    title: "One sweep per document means kitty-mission-ui's Svelte and Tauri shells show the moving mark only in the first 4.2 s of an app session"
+    evidence:
+      - artifact: "research.md § R-06 One sweep per page: the page start is recorded once per document under `Symbol.for(\"ocelle.progress.sweepStart\")` and never reset outside tests; 'Cost, accepted with the option. A genuinely new operation later on the same page also shows only the still mark.' Spec edge case: 'A later, unrelated loading region on the same page therefore shows the still mark without a sweep.'"
+      - artifact: "spec.md Consumers: kitty-mission-ui (Kitty Desktop and Kitty Dashboard) replaces 74 `.sk-progress` uses; .specify/memory/constitution.md Principle I: elements work in 'a Svelte shell, a Tauri webview'; US3 'While a plan is loading with no known end, the bar is indeterminate'; US3-4 'a moving mark shows activity'"
+      - code: "reviews/plan/round-2/refute.md row PLAN-FRESH-2-005 and lens-fresh.yaml 2-005 argue from htmx polling of a server-rendered page. Neither mentions single-page shells, in which the document lives as long as the app (client-side navigation never makes a new document), so 'the same page' is the whole session."
+    claim: |
+      The operator weighed option (a)'s cost as "a later operation on the same page". For the first consumer, that
+      page is the whole Kitty Desktop or Dashboard session. The first indeterminate bar after launch (usually the
+      initial load) uses up the page's only sweep. Every loading panel after that, on every route, for hours, shows
+      only the still mark. The moving mark that US3 and US3-4 promise is then effectively never seen by the 74
+      `.sk-progress` uses the mission exists to replace, and the still mark is all those users get. This is a
+      consumer consequence the round 2 decision did not state, so it should go back to the operator, not be
+      settled by review.
+    remedies:
+      - "Reset per loading episode instead of per document: the page start is cleared when, at a frame boundary, no indeterminate bar is connected and shown. An htmx swap replaces the node within one task, and a re-show from `display: none` keeps the node connected, so neither resets the sweep, and the 2.2.2 bound for one continuous loading episode stands. A new operation after the previous one has ended gets its own sweep. Add a body (bar removed, one frame, new bar: a running sweep) and keep US3-14."
+      - "Keep option (a) and state the consequence: the spec edge case, R-06 and the README say that in a single-page or webview shell the sweep runs once per app session. The operator confirms this for kitty-mission-ui, with the inventory of R-11 showing how many of the 74 uses are indeterminate."
+      - "Return to round 2's option (c): one sweep per stable region (for example the nearest connected `ocelle-empty-state`) or per consumer-set key, which adds public surface."
+
+  - id: PLAN-FRESH-3-005
+    severity: 1
+    title: "The story test's 'within the first iteration' guard cannot apply to the reduced-motion read, which has no animation to time"
+    evidence:
+      - artifact: "contracts/checks.md § Story test: 'the read records the mark animation's `currentTime` and fails as \"read outside the first iteration\" when it is 1400 ms or more ... The reduced-motion read uses the same fresh load, so \"no running animation\" is not the result of a sweep that already ended'"
+      - artifact: "research.md § R-06 Reduced motion: under reduced motion the mark has `animation: none` and a 0 ms duration, so no mark animation exists and no page start is recorded"
+    claim: |
+      Under reduced motion the mark has no animation, so there is no `currentTime` to record, and the guard cannot
+      fail for the read it was written to protect. Suppose the emulation silently does not apply (the case
+      PLAN-CORRECTNESS-1-013 found) and the read lands after 4.2 s on a slow machine. The read then passes as "no
+      running animation" for the wrong reason, which is the vacuous pass PLAN-FRESH-2-009 meant to rule out.
+    remedies:
+      - "Time the reduced-motion read by the clock, not the animation: record `performance.now()` at the story's first render and fail the read as 'outside the first iteration' when it comes 1400 ms or more after that. Also assert `matchMedia(\"(prefers-reduced-motion: reduce)\").matches` in the same read, so a missing emulation fails loudly."

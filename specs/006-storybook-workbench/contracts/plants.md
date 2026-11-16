@@ -138,6 +138,13 @@ runs `gate:plants -- --shard 1`: `shard-in-plant-check` on that file) and `pass-
 `plants-shard` are not taken for gate jobs). `fail-skip-container-in-ci` keeps its single `plants` job: the rule still
 covers it.
 
+**Amendment (2026-11-15, op 016, `ops/016-plants-affected`).** Added: `fail-affected-in-plant-check` (the
+`pass-split-plant-jobs` registry and workflow, with ` --affected HEAD~1` added to the `plants` job's `gate:plants`
+step: `affected-in-ci` on `ci.yml`). The registry check gains the rule `affected-in-ci`: a step of any of the three
+plant jobs (`plants-plan`, `plants-shard`, `plants`) that passes `--affected`, one finding per job in that order, with
+the message `the <job> job passes --affected, so CI would judge only the plants a diff selects` (contracts/gates.md
+§ The registry, amendment of the same date).
+
 ## Plant runner changes
 
 - `plant.json` gains the optional key `engine` (`both`, `host`, `missing`), valid only for plants of the `visual`
@@ -182,6 +189,16 @@ covers it.
 | `--plan` | computes `plantShards` on the repository's plants | the shard numbers as one JSON line, `[1,2,…,n]` | |
 | `--shard <k>` | judges exactly the plants of shard `k` (no registry check, no structural check of the whole set), as the single run would (concurrency, Storybook plants one at a time, the engine probe, `--skip-container`, the captures copy), and writes the report | `plants: shard <k> of <n>: <m> plants judged, every plant as expected` (findings and `plants: <p> problems in <m> plants` as the single run, exit 1) | `k` not in `1..n` (`there is no shard <k>; the plan has <n>`) |
 | `--verdict <dir>` | the registry check, the structural checks of the whole set (unknown gate, a gate without a fail, pass or breaking plant, an invalid `plant.json`), `plantShards` recomputed, and the reports in `<dir>` | the single run's summary line, `plants: <n> plants of <g> gates and the registry judged, every plant as expected`, `<n>` counting every shard's plants | a shard `1..n` with no report (`shard <k> of <n> reported no result`), a report that is not valid or names a shard outside `1..n` or an `of` other than `n`, a report whose plants are not exactly its shard's (`shard <k> judged other plants than the partition gives it: <plant>`), a report with a skipped or not-run plant (as the single run's causes) |
+
+**Amendment (2026-11-15, op 016, `ops/016-plants-affected`).** `gate:plants` gains a fourth mode, for a phase's local
+run only, never CI and never the Plants verdict:
+
+| Mode | Does | stdout on success | Exit 2 (besides the single run's causes) |
+|---|---|---|---|
+| `--affected <base> [--list]` | reads the paths changed since `<base>` (`git diff --name-only --no-renames <base>` against the working tree, plus the untracked files that are not ignored), selects plants by the path classes of `affectedPlants` (`gates/lib/plant-runner.ts`; `ops/016-plants-affected/plan.md` *Path classes*), runs the registry check and the structural checks of the whole set, and judges only the selected plants; with `--list` it judges none. Each selected plant is noted on stderr as `note: affected: <gate>/<case>, by <path>`, or the full set as `note: affected: every plant, by <path> (<reason>)` | `plants: affected since <base>: <m> of <t> plants judged, every plant as expected; not the Plants check`; with nothing selected `plants: affected since <base>: no plant selected, 0 of <t> plants judged; not the Plants check`; with `--list` `plants: affected since <base>: <m> of <t> plants selected, none judged (--list)` (problems: `plants: <p> problems in <m> plants (affected since <base>; not the Plants check)`, exit 1; `ops/016-plants-affected/plan.md` *Output*) | `--affected` with `--plan`, `--shard` or `--verdict`; `--affected` without a base; `--list` without `--affected`; a base that does not resolve to a commit; a failing `git` (`git failed (<first stderr line>)`) |
+
+The registry check fails (`affected-in-ci`) when a step of any of the three plant jobs passes `--affected`
+(§ `plants` (the registry), amendment of the same date).
 
 `--verdict` prints, as findings, the registry check's findings, the structural problems, and every problem line the
 reports hold (exit 1, summary `plants: <p> problems in <n> plants`), as the single run would have printed them.

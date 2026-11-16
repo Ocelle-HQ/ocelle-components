@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import { brandPairs, fr026Foregrounds, styleTemplate } from "../node/brand-pairs-check.ts";
 import type { PairEntry } from "../node/brand-pairs-check.ts";
+import { expectedPainted, progressPairsCheck, styleTemplate as progressTemplate } from "../node/progress-pairs-check.ts";
 import { buildPackage, elements } from "./package-build.ts";
 
 // The two builds as the package ships them (005 FR-001, FR-002, FR-004, FR-016, FR-029, FR-033; US1 scenario 17's
@@ -77,18 +78,104 @@ describe("the module build (dist/*.js)", () => {
   });
 });
 
+// 013 (T007; contracts/elements.md § Modules and exports, PLAN-CORRECTNESS-1-012 (a)): the container import rule. A
+// container module imports its item element and no other element: dist/ocelle-facts.js imports ./ocelle-fact.js and
+// no other element module, and dist/ocelle-fact.js imports none; the sheet's shipped stylesheet holds its two-column
+// tracks (R-03) and the threshold's default (R-02).
+describe("the module build of ocelle-facts and ocelle-fact (013)", () => {
+  const read = (name: string): string => (existsSync(join(dist, name)) ? readFileSync(join(dist, name), "utf8") : "");
+
+  it("dist/ocelle-facts.js imports lit, the registration helper and ./ocelle-fact.js, and no other element module nor the root", () => {
+    const imported = specifiers(read("ocelle-facts.js"));
+    expect({
+      lit: imported.includes("lit"),
+      define: imported.includes("./define.js"),
+      root: imported.includes("./index.js"),
+      elements: imported.filter((specifier) => specifier.startsWith("./ocelle-")),
+    }).toEqual({ lit: true, define: true, root: false, elements: ["./ocelle-fact.js"] });
+  });
+
+  it("dist/ocelle-fact.js imports lit and the registration helper, and no element module nor the root", () => {
+    const imported = specifiers(read("ocelle-fact.js"));
+    expect({
+      lit: imported.includes("lit"),
+      define: imported.includes("./define.js"),
+      root: imported.includes("./index.js"),
+      elements: imported.filter((specifier) => specifier.startsWith("./ocelle-")),
+    }).toEqual({ lit: true, define: true, root: false, elements: [] });
+  });
+
+  it("dist/ocelle-facts.js ships the two-column tracks fit-content(50%) minmax(0, 1fr), the four grid tracks and the threshold's default calc(var(--ocelle-space-10) * 6)", () => {
+    const code = read("ocelle-facts.js").replace(/\s+/g, " ");
+    expect({
+      columns: code.includes("grid-template-columns: fit-content(50%) minmax(0, 1fr)"),
+      grid: code.includes("grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr)"),
+      threshold: code.includes("calc(var(--ocelle-space-10) * 6)"),
+    }).toEqual({ columns: true, grid: true, threshold: true });
+  });
+});
+
+// 013 phase 2 (T025; contracts/elements.md § Modules and exports; research.md R-04): dist/ocelle-empty-state.js imports
+// no element module, and its shipped stylesheet spans a slotted `ocelle-progress` across the column up to the reading
+// measure, the rule phase 2's stand-in cannot reach (its plant runs in phase 3 against the real bar).
+describe("the module build of ocelle-empty-state (013)", () => {
+  const read = (name: string): string => (existsSync(join(dist, name)) ? readFileSync(join(dist, name), "utf8") : "");
+
+  it("dist/ocelle-empty-state.js imports lit and the registration helper, and no element module nor the root", () => {
+    const imported = specifiers(read("ocelle-empty-state.js"));
+    expect({
+      lit: imported.includes("lit"),
+      define: imported.includes("./define.js"),
+      root: imported.includes("./index.js"),
+      elements: imported.filter((specifier) => specifier.startsWith("./ocelle-")),
+    }).toEqual({ lit: true, define: true, root: false, elements: [] });
+  });
+
+  it("dist/ocelle-empty-state.js ships ::slotted(ocelle-progress) with inline-size 100% and max-inline-size var(--ocelle-measure-reading)", () => {
+    const code = read("ocelle-empty-state.js").replace(/\s+/g, " ");
+    expect({
+      rule: /::slotted\(ocelle-progress\) \{ inline-size: 100%; max-inline-size: var\(--ocelle-measure-reading\);? \}/.test(code),
+    }).toEqual({ rule: true });
+  });
+});
+
+// 013 phase 3 (T040, T041; contracts/elements.md § Modules and exports; contracts/checks.md § Contrast):
+// dist/ocelle-progress.js imports no element module, and its shipped stylesheet paints the same tokens as the source,
+// each pair the bar makes a checked row of pairs.json (the stylesheet as shipped).
+describe("the module build of ocelle-progress (013)", () => {
+  const read = (name: string): string => (existsSync(join(dist, name)) ? readFileSync(join(dist, name), "utf8") : "");
+
+  it("dist/ocelle-progress.js imports lit and the registration helper, and no element module nor the root", () => {
+    const imported = specifiers(read("ocelle-progress.js"));
+    expect({
+      lit: imported.includes("lit"),
+      define: imported.includes("./define.js"),
+      root: imported.includes("./index.js"),
+      elements: imported.filter((specifier) => specifier.startsWith("./ocelle-")),
+    }).toEqual({ lit: true, define: true, root: false, elements: [] });
+  });
+
+  it("the css template of dist/ocelle-progress.js paints the mark and edge in color-accent-strong, the track in color-inset and its boundary in color-control-border or, tinted, color-accent-strong, each pair a checked row of pairs.json", () => {
+    const pairs = JSON.parse(readFileSync(join(elements, "..", "tokens", "contrast", "pairs.json"), "utf8")) as PairEntry[];
+    expect(progressPairsCheck(progressTemplate(read("ocelle-progress.js")), pairs)).toEqual({ painted: expectedPainted, missing: [] });
+  });
+});
+
 describe("the browser build (dist/browser/ocelle-elements.js)", () => {
   const text = (): string => (existsSync(browserBuild) ? readFileSync(browserBuild, "utf8") : "");
 
-  it("is self-contained: it defines ocelle-icon and ocelle-brand-mark, with no import statement and no dynamic import", () => {
+  it("is self-contained: it defines ocelle-icon, ocelle-brand-mark, ocelle-facts, ocelle-fact, ocelle-empty-state and ocelle-progress, with no import statement and no dynamic import", () => {
     const code = text();
     expect({
       exists: code !== "",
       definesIcon: code.includes('"ocelle-icon"'),
       definesMark: code.includes('"ocelle-brand-mark"'),
+      definesFacts: code.includes('"ocelle-facts"') && code.includes('"ocelle-fact"'),
+      definesEmptyState: code.includes('"ocelle-empty-state"'),
+      definesProgress: code.includes('"ocelle-progress"'),
       specifiers: specifiers(code),
       dynamicImport: /\bimport\s*\(/.test(code),
-    }).toEqual({ exists: true, definesIcon: true, definesMark: true, specifiers: [], dynamicImport: false });
+    }).toEqual({ exists: true, definesIcon: true, definesMark: true, definesFacts: true, definesEmptyState: true, definesProgress: true, specifiers: [], dynamicImport: false });
   });
 
   it("holds Lit's production build at the locked versions, not its development build, no ssr-dom-shim and no console call", () => {
