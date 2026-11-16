@@ -21,6 +21,24 @@
     },
     {
       "kind": "javascript-module",
+      "path": "src/ocelle-dialog.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "name": "OcelleDialog",
+          "tagName": "ocelle-dialog",
+          "customElement": true,
+          "cssProperties": [
+            {
+              "name": "--ocelle-dialog-inline-size",
+              "description": "The dialog's preferred inline size."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
       "path": "src/ocelle-facts.ts",
       "declarations": [
         {
