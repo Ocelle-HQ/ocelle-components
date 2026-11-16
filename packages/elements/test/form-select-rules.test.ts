@@ -99,6 +99,15 @@ describe("ocelle-form-select's rules", () => {
     expect({ value: element.value, index: inner(element).selectedIndex }).toEqual({ value: "", index: -1 });
   });
 
+  it("a change of an option's text in the same task as a change of the host's own label attribute is mirrored", async () => {
+    await insert('<ocelle-form-select id="s" label="Lane"><option id="o" value="todo">To do</option></ocelle-form-select>');
+    const element = byId("s", OcelleFormSelect);
+    element.setAttribute("label", "Lanes");
+    byId("o", HTMLOptionElement).textContent = "Doing";
+    await endOfTask();
+    expect([...inner(element).options].map((each) => each.text)).toEqual(["Doing"]);
+  });
+
   it("once chosen, a choice is kept when an option is added before it, and when its option is removed falls back to the first enabled option, with no event; chosen again after it is put back, it dispatches a change", async () => {
     await insert(
       '<ocelle-form-select id="s"><option id="a" value="a" disabled>A</option><option value="b">B</option><option id="c" value="c">C</option></ocelle-form-select>' +

@@ -712,14 +712,16 @@ export const formInputScenarios: readonly FormScenario[] = [
         const each = await field(driver, id, kind);
         return { invalid: each.invalid, required: each.required, disabled: each.disabled, focusable: each.focusable };
       };
-      // The required state as the inner control carries it, and its native twins' nodes: a kind whose native control
-      // Chromium's tree gives no required state (`requiredExposed`) is checked on the attributes that reach it.
+      // The required and aria-disabled states as the inner control carries them, and its native twins' nodes: a kind
+      // whose native control Chromium's tree gives no required state (`requiredExposed`) is checked on the attributes
+      // that reach it; and Chromium's tree does not tell a select's `aria-disabled=""` from `"true"` (measured), so the
+      // value that reaches it is read here.
       const carried = async (id: string): Promise<unknown> => {
         const attributes = (await driver.elements(id)).find((part) => part.name === kind.inner)?.attributes ?? {};
-        return { required: attributes.required ?? null, ariaRequired: attributes["aria-required"] ?? null };
+        return { required: attributes.required ?? null, ariaRequired: attributes["aria-required"] ?? null, ariaDisabled: attributes["aria-disabled"] ?? null };
       };
       const hosts = { i: await node("i"), r: await node("r"), d: await node("d"), it: await node("it"), rt: await node("rt"), dt: await node("dt"), constraint: (await driver.validity("rt")).valid };
-      const inner = { r: await carried("r"), rt: await carried("rt") };
+      const inner = { r: await carried("r"), rt: await carried("rt"), d: await carried("d"), dt: await carried("dt") };
       await driver.mount(kind.native('id="nr" aria-label="B" aria-required="false" required', "x") + kind.native('id="nrt" aria-label="E" aria-required="true"'));
       const twin = async (id: string): Promise<unknown> => {
         const each = (await driver.axDetails(id)).find((each) => each.host);
@@ -736,7 +738,12 @@ export const formInputScenarios: readonly FormScenario[] = [
           rt: { invalid: "false", required, disabled: false, focusable: true },
           dt: { invalid: "false", required: false, disabled: true, focusable: true },
           constraint: true,
-          inner: { r: { required: "", ariaRequired: null }, rt: { required: null, ariaRequired: "true" } },
+          inner: {
+            r: { required: "", ariaRequired: null, ariaDisabled: null },
+            rt: { required: null, ariaRequired: "true", ariaDisabled: null },
+            d: { required: null, ariaRequired: null, ariaDisabled: null },
+            dt: { required: null, ariaRequired: null, ariaDisabled: "true" },
+          },
           twins: { r: { required, invalid: "false" }, rt: { required, invalid: "false" } },
         },
         "US2-23",
