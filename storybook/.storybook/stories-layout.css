@@ -28,3 +28,8 @@
 [data-story="segmented-choice-wrapped"] ocelle-segmented-choice {
   inline-size: 220px;
 }
+
+/* The wrapped copy-field story (014 FR-050, FR-032): a field 320 px wide, so its long command wraps onto several lines. */
+[data-story="copy-field-wrapped"] ocelle-copy-field {
+  inline-size: 320px;
+}

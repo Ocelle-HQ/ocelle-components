@@ -100,6 +100,118 @@
       ]
     },
     {
+      "path": "src/ocelle-copy-field.ts",
+      "kind": "javascript-module",
+      "exports": [
+        {
+          "name": "OcelleCopyField",
+          "kind": "js",
+          "declaration": {
+            "name": "OcelleCopyField",
+            "module": "src/ocelle-copy-field.ts"
+          }
+        }
+      ],
+      "declarations": [
+        {
+          "tagName": "ocelle-copy-field",
+          "superclass": {
+            "package": "lit",
+            "name": "LitElement"
+          },
+          "slots": [],
+          "name": "OcelleCopyField",
+          "members": [
+            {
+              "type": {
+                "text": "string"
+              },
+              "privacy": "public",
+              "name": "copyLabel",
+              "kind": "field",
+              "description": "The Copy control's accessible name, trimmed; empty or whitespace-only gives the default. Not reflected.",
+              "default": "\"Copy\"",
+              "attribute": "copy-label"
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "privacy": "public",
+              "name": "value",
+              "kind": "field",
+              "description": "The text shown and requested, as written. A change after first render clears `status`. With an empty value the\nCopy control is disabled and emits nothing. Not reflected.",
+              "default": "\"\"",
+              "attribute": "value"
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "privacy": "public",
+              "name": "status",
+              "kind": "field",
+              "description": "The host's outcome text, shown as the content of the field's polite live region; blank shows nothing. The field\nclears it (the property then reads `\"\"`) when a request starts and when `value` changes after first render.\nSetting the text the region already holds changes nothing. Not reflected: a `status` attribute stays as written.",
+              "default": "\"\"",
+              "attribute": "status"
+            }
+          ],
+          "kind": "class",
+          "events": [
+            {
+              "type": {
+                "text": "CustomEvent<{ text: string }>"
+              },
+              "name": "ocelle-copy-field-request",
+              "description": "The user activated the Copy control (a click, Enter or Space): `text` is `value` at the activation. Dispatched after the next rendering update, outside the activation's task, once the cleared `status` has reached the accessibility tree; not cancelable. The field never writes the clipboard: the host does, and reports the outcome in `status`."
+            }
+          ],
+          "description": "A command or identifier with a flush Copy control that asks the host to copy it; the host reports the outcome in\n`status`, which the field shows in a polite live region.",
+          "customElement": true,
+          "cssProperties": [],
+          "cssParts": [
+            {
+              "name": "value",
+              "description": "The text, on the inset well. Public surface: it stays when the Copy control becomes `ocelle-button`."
+            },
+            {
+              "name": "copy-control",
+              "description": "The Copy control. It guarantees its box (its position, its size and the rules a host sets on it), its accessible name and the events its activation leads to, not which element carries it (a native button today, `ocelle-button` later)."
+            }
+          ],
+          "attributes": [
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "value",
+              "fieldName": "value",
+              "description": "The text shown and requested, as written. A change after first render clears `status`. With an empty value the\nCopy control is disabled and emits nothing. Not reflected.",
+              "default": "\"\""
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "status",
+              "fieldName": "status",
+              "description": "The host's outcome text, shown as the content of the field's polite live region; blank shows nothing. The field\nclears it (the property then reads `\"\"`) when a request starts and when `value` changes after first render.\nSetting the text the region already holds changes nothing. Not reflected: a `status` attribute stays as written.",
+              "default": "\"\""
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "copy-label",
+              "fieldName": "copyLabel",
+              "description": "The Copy control's accessible name, trimmed; empty or whitespace-only gives the default. Not reflected.",
+              "default": "\"Copy\""
+            }
+          ]
+        }
+      ]
+    },
+    {
       "path": "src/ocelle-icon.ts",
       "kind": "javascript-module",
       "exports": [
