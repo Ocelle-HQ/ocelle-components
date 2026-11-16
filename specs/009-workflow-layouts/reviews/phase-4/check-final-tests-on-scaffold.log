@@ -35,7 +35,7 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 296ms using pnpm v12.16.1
+Done in 380ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /opt/pw-browsers/chromium-1248/chrome-linux64/chrome
 $ node gates/bin/test.ts
@@ -142,6 +142,7 @@ packages/elements/test/browser/list-detail.test.ts:37: unit-tests: ocelle-list-d
 packages/elements/test/browser/list-detail.test.ts:37: unit-tests: ocelle-list-detail on the strict-CSP fixture with the browser build (US3) US3-12, not rendered at first (O5-01): …: page.evaluate: Error: no reading target {"id":"s","inner":".grid"} on the page
 packages/elements/test/browser/list-detail.test.ts:37: unit-tests: ocelle-list-detail on the strict-CSP fixture with the browser build (US3) US3-12, not rendered at first (O5-01): …: page.evaluate: Error: no reading target {"id":"s","inner":".grid"} on the page
 packages/elements/test/browser/list-detail.test.ts:37: unit-tests: ocelle-list-detail on the strict-CSP fixture with the browser build (US3) US3-12, hidden then remeasured (O5-01):…: page.evaluate: Error: no target {"id":"x","inner":".sizer"} on the page
+packages/elements/test/browser/list-detail.test.ts:37: unit-tests: ocelle-list-detail on the strict-CSP fixture with the browser build (US3) US3-12, hidden, changed unseen, then sh…: page.evaluate: Error: no target {"id":"x","inner":".sizer"} on the page
 packages/elements/test/browser/list-detail.test.ts:37: unit-tests: ocelle-list-detail on the strict-CSP fixture with the browser build (US3) US3-13: under dir=rtl in Frame R the th…: page.evaluate: Error: no target {"id":"t","inner":".pane.detail"} on the page
 packages/elements/test/browser/list-detail.test.ts:37: unit-tests: ocelle-list-detail on the strict-CSP fixture with the browser build (US3) US3-14: the element adds no role, landm…: AssertionError: expected { …(2) } to deeply equal { …(2) }
 packages/elements/test/browser/list-detail.test.ts:37: unit-tests: ocelle-list-detail on the strict-CSP fixture with the browser build (US3) US3-15: a hidden list-detail has no box…: AssertionError: expected { observed: { …(3) }, …(1) } to deeply equal { observed: { …(3) }, …(1) }
@@ -180,8 +181,8 @@ packages/elements/test/list-detail-pass.test.ts:142: unit-tests: ocelle-list-det
 packages/elements/test/list-detail-pass.test.ts:161: unit-tests: ocelle-list-detail's measurement pass (R-13) review R2-01: remeasure() re-chooses the tier from a fresh measurement of the host's border box in the first animation frame after the call, in one pass with a light-DOM change made in the same task: a content-box host 600 px wide with 2% inline padding and collapse-below 640px, whose container narrows from 1000 px to 500 px, shows one column by the end of that frame: TypeError: element?.remeasure is not a function
 packages/elements/test/list-detail-pass.test.ts:184: unit-tests: ocelle-list-detail's measurement pass (R-13) guard: a list-detail inserted from a task in Frame R keeps three columns through its first pass: the grid's data-tier, read after every change of it and in each of six frames, is always three: AssertionError: expected { tiers: [ 'none' ], frames: 6, …(1) } to deeply equal { tiers: [ 'three', …(1) ], …(2) }
 packages/elements/test/list-detail-pass.test.ts:219: unit-tests: ocelle-list-detail's measurement pass (R-13) review R3-02: remeasure() on a list-detail that is not in a document runs no pass and reports no error, never connected or removed from the page: TypeError: loose.remeasure is not a function
-packages/elements/test/list-detail-pass.test.ts:252: unit-tests: ocelle-list-detail's measurement pass (R-13) guard O5-01: a list-detail resized while rendered runs no pass; hidden, a change runs no pass until it is shown, then exactly one; hidden and shown again with nothing pending, it runs none: AssertionError: expected { resized: +0, hidden: +0, …(3) } to deeply equal { resized: +0, hidden: +0, …(3) }
-packages/elements/test/list-detail-pass.test.ts:284: unit-tests: ocelle-list-detail's measurement pass (R-13) guard O5-01: a list-detail removed with a change before and after the removal, then inserted again, runs no pass until the host calls remeasure(), and then one: TypeError: element?.remeasure is not a function
+packages/elements/test/list-detail-pass.test.ts:254: unit-tests: ocelle-list-detail's measurement pass (R-13) guard O5-01: a list-detail resized while rendered runs no pass; hidden, a change runs no pass until it is shown, then exactly one; hidden and shown again with no change, it runs exactly one: AssertionError: expected { resized: +0, hidden: +0, …(3) } to deeply equal { resized: +0, hidden: +0, …(3) }
+packages/elements/test/list-detail-pass.test.ts:288: unit-tests: ocelle-list-detail's measurement pass (R-13) guard O5-01: a list-detail removed with a change before and after the removal, then inserted again, runs no pass until the host calls remeasure(), and then one: TypeError: element?.remeasure is not a function
 packages/elements/test/list-detail-upgrade.test.ts:47: unit-tests: ocelle-list-detail at upgrade (R-14) with focus inside the list of the un-upgraded element, defining it by importing its module shows the detail and moves focus to the detail pane, which holds it by script with tabindex -1: AssertionError: expected { before: 'u-l0', after: 'u-l0', …(3) } to deeply equal { before: 'u-l0', …(4) }
 packages/elements/test/list-detail-upgrade.test.ts:55: unit-tests: ocelle-list-detail at upgrade (R-14) with focus inside the detail, which the first layout shows, upgrading moves no focus: AssertionError: expected { before: 's-d0', after: 'body', …(2) } to deeply equal { before: 's-d0', after: 's-d0', …(2) }
 packages/elements/test/list-detail-upgrade.test.ts:63: unit-tests: ocelle-list-detail at upgrade (R-14) with focus outside the element, upgrading moves no focus: AssertionError: expected { before: 'before', …(3) } to deeply equal { before: 'before', …(3) }
@@ -223,6 +224,7 @@ packages/elements/test/list-detail.test.ts:19: unit-tests: ocelle-list-detail, i
 packages/elements/test/list-detail.test.ts:19: unit-tests: ocelle-list-detail, in process (US3) US3-12, not rendered at first (O5-01): …: Error: no .grid in the shadow root of #s
 packages/elements/test/list-detail.test.ts:19: unit-tests: ocelle-list-detail, in process (US3) US3-12, not rendered at first (O5-01): …: Error: no .grid in the shadow root of #s
 packages/elements/test/list-detail.test.ts:19: unit-tests: ocelle-list-detail, in process (US3) US3-12, hidden then remeasured (O5-01):…: Error: no .sizer in the shadow root of #x
+packages/elements/test/list-detail.test.ts:19: unit-tests: ocelle-list-detail, in process (US3) US3-12, hidden, changed unseen, then sh…: Error: no .sizer in the shadow root of #x
 packages/elements/test/list-detail.test.ts:19: unit-tests: ocelle-list-detail, in process (US3) US3-13: under dir=rtl in Frame R the th…: Error: no .pane.detail in the shadow root of #t
 packages/elements/test/list-detail.test.ts:19: unit-tests: ocelle-list-detail, in process (US3) US3-14: the element adds no role, landm…: AssertionError: expected { …(2) } to deeply equal { …(2) }
 packages/elements/test/list-detail.test.ts:19: unit-tests: ocelle-list-detail, in process (US3) US3-15: a hidden list-detail has no box…: AssertionError: expected { …(3) } to deeply equal { …(3) }
@@ -316,5 +318,5 @@ packages/elements/test/tiers.test.ts:168: unit-tests: shownPanes(tier, detailOpe
 packages/elements/test/tiers.test.ts:168: unit-tests: shownPanes(tier, detailOpen, hasInspector) one, detail-open false, inspector false: [ 'list' ]: Error: not implemented
 packages/elements/test/tiers.test.ts:168: unit-tests: shownPanes(tier, detailOpen, hasInspector) one, detail-open true, inspector true: [ 'detail', 'inspector' ]: Error: not implemented
 packages/elements/test/tiers.test.ts:168: unit-tests: shownPanes(tier, detailOpen, hasInspector) one, detail-open true, inspector false: [ 'detail' ]: Error: not implemented
-unit-tests: 277 of 3798 tests failed
+unit-tests: 279 of 3800 tests failed
 [ELIFECYCLE] Test failed. See above for more details.
