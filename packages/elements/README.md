@@ -454,8 +454,11 @@ element with a scroll region. Its interface:
 - Effects, on the scroll box and the module's own shadow nodes only, never on the host: the box's `tabindex`, `role`
   and `aria-label`, the arrow keys on the box, the focus clearance of slotted controls and the focus handover when
   overflow ends.
-- Lifecycle: it adds its listeners and its `ResizeObserver` when the host connects, follows the box after each update,
-  and stops when the host disconnects; it emits no event.
+- Lifecycle: when the host connects, it adds its `keydown`, `focusin` and `focusout` listeners on the host and its
+  `ResizeObserver`; after each update it follows the box, and on a new box, or none, it first lets go of the old one
+  (unobserved, its `scroll` and `slotchange` listeners and its frame's `focusout` listener taken off, its `tabindex`,
+  `role` and `aria-label` removed), so the new box takes them over; when the host disconnects, it disconnects the
+  observer and takes its three listeners off the host, and the box keeps its attributes as last set; it emits no event.
 - Structure. The host renders `.region-frame` holding `.region-box` (with `data-fade` bound through `ifDefined`), whose
   `.region-track` holds the content, then `.region-ring` and two `.region-edge` elements (`start`, `end`), all but the
   box `aria-hidden`, and adds `overflowRegionStyles` to its `static styles`. The host may put its own content model
