@@ -1,5 +1,5 @@
 Scope: all 5 workspace projects
-✓ Lockfile passes supply-chain policies (verified 1h ago)
+✓ Lockfile passes supply-chain policies (verified 2d ago)
 Lockfile is up to date, resolution step is skipped
 Packages are hard linked from the content-addressable store to the virtual store.
   Content-addressable store is at: /root/.local/share/pnpm/store/v11
@@ -35,9 +35,9 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 792ms using pnpm v12.16.1
+Done in 297ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
-setup: installed offline; Chromium at /opt/pw-browsers/chromium_headless_shell-1243/chrome-headless-shell-linux64/chrome-headless-shell
+setup: installed offline; Chromium at /opt/pw-browsers/chromium-1248/chrome-linux64/chrome
 $ node gates/bin/test.ts
 packages/tokens/test/browser/font.test.ts:158: unit-tests: the brand font under exactly the constitution IV CSP, no font-src (US2 scenario 6) reports the font file as the only violation, renders in a fallback family of --ocelle-font-sans, and keeps every token's value: AssertionError: expected [ '', '', '', '', '', '' ] to deeply equal []
 packages/tokens/test/browser/themes.test.ts:121: unit-tests: the six theme conditions (FR-006) system-light: :root defines exactly the table's names, and every colour has its light value: AssertionError: expected [ '--ocelle-bar-block-narrow', …(114) ] to deeply equal [ '--ocelle-bar-block-narrow', …(120) ]
