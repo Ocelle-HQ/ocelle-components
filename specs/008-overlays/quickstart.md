@@ -12,7 +12,10 @@ frontend-missions.md`. For stories and baselines: #10 merged and its pinned cont
    expected values in the browser, and are listed in the README and CHANGELOG.
 4. `pnpm run gate:manifest`: the committed manifest matches a regeneration.
 5. `pnpm run gate:csp && pnpm run gate:prefix && pnpm run gate:contrast && pnpm run gate:brand-rules`: all pass.
-6. `pnpm run gate:mutation`: no survivor on changed lines. Read the Timeout report lines (R-15).
+6. `pnpm run gate:mutation -- --base 3828d2f`: no survivor on changed lines. Read the Timeout report lines (R-15).
+   The gate requires `--base` (without it: `could not run: --base <sha> is required`, exit 2). For the whole mission
+   the base is `3828d2f`, the merge base with `main`; `gate:mutation -- --base 3828d2f --plan` plans 60 shards, so run
+   it shard by shard with `--files <entry>[,<entry>...]` as the plan lists them (as CI does on the pull request).
 7. After #10: `pnpm run gate:storybook-build && pnpm run gate:visual && pnpm run gate:axe`. Every dialog, drawer and
    tooltip story has baselines in light and dark, and axe reports no serious or critical finding.
 

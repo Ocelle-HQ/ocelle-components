@@ -794,7 +794,7 @@ Rechecked (T026) against #10 as merged into `claude/016-overlays` (merge commit 
 - **Focus-shown tooltip**: 006 has no focus state, so no story shows the bubble by focus. Focus behaviour is proven by
   the interaction tests (FR-043).
 - **Short viewport**: the 320 × 256 case (FR-018, WCAG 1.4.10) is a matrix row in both harnesses. #10's capture plan
-  has one viewport for every story (`capture-plan.ts:47-49`; `storybook/.storybook/main.ts:49` `viewport: false`), so
+  has one viewport for every story (`capture-plan.ts:47-49`; `storybook/.storybook/main.ts:23` `viewport: false`), so
   no story is written at that size; the matrix rows are the evidence.
 - **axe**: runs on the same context. The rule set is `gates/lib/axe-rules.ts:17-39` (every default rule and the
   wcag2a, wcag2aa, wcag21a, wcag21aa and wcag22aa rules, less experimental and harness-document rules). Serious and
