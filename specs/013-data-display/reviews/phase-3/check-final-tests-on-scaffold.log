@@ -1,5 +1,5 @@
 Scope: all 5 workspace projects
-✓ Lockfile passes supply-chain policies (verified 1d ago)
+✓ Lockfile passes supply-chain policies (verified 2d ago)
 Lockfile is up to date, resolution step is skipped
 Packages are hard linked from the content-addressable store to the virtual store.
   Content-addressable store is at: /root/.local/share/pnpm/store/v11
@@ -35,7 +35,7 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 478ms using pnpm v12.16.1
+Done in 361ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /opt/pw-browsers/chromium-1243/chrome-linux64/chrome
 $ node gates/bin/test.ts
@@ -266,5 +266,5 @@ packages/elements/test/progress.test.ts:25: unit-tests: ocelle-progress, in proc
 packages/elements/test/progress.test.ts:25: unit-tests: ocelle-progress, in process (US3) a determinate bar moved does not keep t…: AssertionError: expected { started: false, moved: [], …(1) } to deeply equal { started: true, …(2) }
 packages/elements/test/progress.test.ts:25: unit-tests: ocelle-progress, in process (US3) after the window, while the episode las…: AssertionError: expected { started: false, late: { …(2) } } to deeply equal { started: true, late: { …(2) } }
 packages/elements/test/progress.test.ts:31: unit-tests: a bar changed out of the document, in process (013 R-06 membership) a bar removed after its sweep and made indeterminate again while out of the document does not keep the episode open: a bar inserted two frames later sweeps from its own start: AssertionError: expected { Object (started, running, ...) } to deeply equal { started: true, running: true, …(1) }
-unit-tests: 227 of 3792 tests failed
+unit-tests: 227 of 3793 tests failed
 [ELIFECYCLE] Test failed. See above for more details.
