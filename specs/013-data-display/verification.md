@@ -87,4 +87,12 @@ Status: **open** (operator, at merge).
 
 ## Sign-off
 
-Not signed off yet.
+Operator: jeroennouwsdev, 2026-11-16. The orchestrator recorded this at the operator's request in the landing
+session ("sign off verification").
+
+At sign-off:
+
+- Items 1 and 2 were done.
+- CI run https://github.com/Ocelle-HQ/ocelle-components/actions/runs/43833386743 on the docs-only head `a42d8d4` was
+  still running.
+- Items 3 (the ruleset on `main`) and 4 (the squash-merge, by the operator) were still open.
