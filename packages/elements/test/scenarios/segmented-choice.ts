@@ -305,6 +305,18 @@ function lineRun(s: Shot, axis: "x" | "y", at: number, from: number, to: number,
   return { colour: "none", width: 0 };
 }
 
+/**
+ * The opaque colour `top` (a computed `rgb()` or `rgba()`) paints over the opaque `ground`: each channel
+ * `alpha × top + (1 − alpha) × ground`, rounded, as `rgb(r, g, b)`.
+ */
+function over(top: string, ground: string): string {
+  const channels = (colour: string): number[] => (colour.match(/[\d.]+/g) ?? []).map(Number);
+  const [r = 0, g = 0, b = 0, alpha = 1] = channels(top);
+  const [gr = 0, gg = 0, gb = 0] = channels(ground);
+  const mix = (front: number, back: number): string => String(Math.round(alpha * front + (1 - alpha) * back));
+  return `rgb(${mix(r, gr)}, ${mix(g, gg)}, ${mix(b, gb)})`;
+}
+
 const accentLight = tokenColour("color-accent-strong", "light");
 const accentDark = tokenColour("color-accent-strong", "dark");
 const borderLight = tokenColour("color-control-border", "light");
@@ -674,7 +686,9 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
   },
   {
     // Plants: the pressed paint as an inset box-shadow only (forced colours compute it to none: no Highlight edge); the
-    // boundaries kept out of forced colours (`forced-color-adjust: none` with their `control-border` lines).
+    // boundaries kept out of forced colours (`forced-color-adjust: none` with their `control-border` lines); the joined
+    // bar's forced-colours rule hiding it (`display: none`, `visibility: hidden`) or taking it out of its place
+    // (`position: static`).
     name: "US3-11: in forced colours every boundary is ButtonBorder, the default pressed segment shows a 3 px Highlight border, the joined pressed segment a 3 px Highlight bar on its block-end edge inside its box, and a focused segment a Highlight ring (FR-008)",
     fixture: true,
     run: async (driver, inPage) => {
@@ -683,7 +697,7 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
       const highlight = await driver.resolveColour("Highlight");
       const buttonBorder = await driver.resolveColour("ButtonBorder");
       const canvas = await driver.resolveColour("Canvas");
-      const named = (value: unknown): unknown => JSON.parse(JSON.stringify(value).split(highlight).join("Highlight").split(buttonBorder).join("ButtonBorder")) as unknown;
+      const named = (value: unknown): unknown => JSON.parse(JSON.stringify(value).split(over(highlight, canvas)).join("Highlight over Canvas").split(highlight).join("Highlight").split(buttonBorder).join("ButtonBorder")) as unknown;
       const fill = (value: unknown): unknown => ({ ...(value as Record<string, unknown>), fill: "any" });
       const plain = { pressed: named(fill(await inPage(paintOf, 0))), other: named(fill(await inPage(paintOf, 1))) };
       await driver.focus(seg(0));
@@ -698,8 +712,11 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
       const forcedColours = [highlight, buttonBorder];
       const pressedBox = b[0];
       const mine = b[1];
-      // The bar is read from its computed style, not its pixels: the emulated palette's Highlight is translucent, so the
-      // bar's pixels are Highlight blended with the ground (changed after the red run, reviews/phase-4/notes.md).
+      // The bar is read from its computed style and from its pixels. The emulated palette's Highlight is translucent
+      // (rgba(5, 0, 73, 0.8) in process), so the bar's pixels are Highlight composited over the ground behind it, the
+      // forced Canvas: the pixel read looks for that colour, which is neither the ground's nor a line's (changed after
+      // the red run, and the pixel read restored in review round 1, R1-01; reviews/phase-4/notes.md).
+      const painted = over(highlight, canvas);
       const bar = {
         content: await driver.computedPart(seg(0), "::before", "content"),
         width: await driver.computedPart(seg(0), "::before", "border-block-end-width"),
@@ -713,17 +730,18 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
           : named({
               bar,
               bottom: lineRun(s, "y", pressedBox.x + pressedBox.width / 2, pressedBox.y + pressedBox.height - 2, pressedBox.y + pressedBox.height + 2, forcedColours),
+              paint: lineRun(s, "y", pressedBox.x + pressedBox.width / 2, pressedBox.y + pressedBox.height - 8, pressedBox.y + pressedBox.height + 2, [painted]),
               shared: lineRun(s, "x", mine.y + mine.height / 2, mine.x - 2, mine.x + 2, forcedColours),
               top: lineRun(s, "y", mine.x + mine.width / 2, mine.y - 2, mine.y + 2, forcedColours),
             });
       await driver.forcedColors("none");
-      return { distinct: highlight !== canvas && buttonBorder !== highlight, plain, focused, joined };
+      return { distinct: highlight !== canvas && buttonBorder !== highlight && painted !== canvas && painted !== buttonBorder, plain, focused, joined };
     },
     expected: {
       distinct: true,
       plain: { pressed: { ...(paint("any", "3px", "Highlight") as object), fill: "any" }, other: { ...(paint("any", "1px", "ButtonBorder") as object), fill: "any" } },
       focused: ["3px Highlight", "3px Highlight", "3px Highlight", "3px Highlight"],
-      joined: { bar: { content: '""', width: "3px", colour: "Highlight", end: "0px", line: "1px" }, bottom: { colour: "ButtonBorder", width: 1 }, shared: { colour: "ButtonBorder", width: 1 }, top: { colour: "ButtonBorder", width: 1 } },
+      joined: { bar: { content: '""', width: "3px", colour: "Highlight", end: "0px", line: "1px" }, bottom: { colour: "ButtonBorder", width: 1 }, paint: { colour: "Highlight over Canvas", width: 3 }, shared: { colour: "ButtonBorder", width: 1 }, top: { colour: "ButtonBorder", width: 1 } },
     },
   },
   {
@@ -1229,8 +1247,9 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
     expected: { inTask: { value: "blocked", pressed: "true" }, tree: exposed("Lane filter", ["All", "Mine", "Blocked"], 2), events: [] },
   },
   {
-    // Plant: `label` not trimmed or a blank label naming the group. (That a present host `aria-label` decides alone is
-    // Chromium's own naming of the host, so no plant of the element's makes it fail; plants.md.)
+    // Plants: `label` not trimmed or a blank label naming the group; the element removing a blank host `aria-label`.
+    // (A defect only in the internals' name does not make the "decides alone" read fail: Chromium names the host from
+    // a present `aria-label` itself; plants.md.)
     name: "FR-006: the toolbar's name is the trimmed label, a blank label leaves it unnamed, a later label change follows; a host aria-label names it and decides alone, a blank one leaves it unnamed beside a label, and removing it falls back to the label",
     fixture: true,
     run: async (driver, inPage) => {

@@ -9,6 +9,9 @@ for byte.
 The runs used `pnpm exec vitest run --project <project> <file> -t <scenario>` with `OCELLE_CHROMIUM_PATH` set. A failing
 test name is cut at 110 characters. Every plant in the tables made at least one test fail.
 
+Review round 1 added four plants, at the end of the in-process table: three on the joined bar's forced-colours rule
+(R1-01), run against US3-11 with its pixel read restored, and one on the host `aria-label` (R1-05). Each bites.
+
 ## Plants corrected after their first run
 
 Four plant forms did not bite on their first run. None is a guard that cannot fail, so none needed a stop-and-ask.
@@ -22,10 +25,12 @@ Four plant forms did not bite on their first run. None is a guard that cannot fa
 - *The host `aria-label` not deciding alone* (the element ignoring a blank host `aria-label` when it sets its internals'
   name).
   - **Why it did not bite.** Chromium names the host from a present `aria-label`, blank or not, whatever the internals
-    say. The listbox's mutation record states the same for the same line. No element-side defect makes the FR-006
-    body's "decides alone" read fail in Chromium.
-  - **The record now.** The body's comment says so, and the plant named there (`label` not trimmed, or a blank label
-    naming the group) bites.
+    say, as the listbox's mutation record states for the same line. So a defect that goes only through the internals'
+    name cannot make the FR-006 body's "decides alone" read fail in Chromium.
+  - **The record now** (corrected in review round 1, R1-05; the first record said no element-side defect could make
+    the read fail, which was too strong). The guard is real for a defect that touches the host's attribute: the plant
+    *the element removing a blank host `aria-label` in `updated()`* makes the FR-006 body fail (`hostBlank` is then
+    named by the label), and it is in the table below with the `label` plant.
 - *The remembered value left out of the first render* (`kept` returning the selection as it is), then, on its second
   run, *the batch's first enabled segment dropped* alone.
   - **Why neither bit.** Two paths pick the first enabled segment when the first value names a disabled one: the host
@@ -127,3 +132,7 @@ Run on the built Storybook (`storybook-integration`, the segmented-choice storie
 | the controller without the target check (US2-21 with the real element) | `packages/elements/src/roving.ts` | `tabs.test.ts` (elements) | US2-21: in the selected Plan panel Enter and Space on a button activate it, ArrowLeft, Home and End in a text ; US2-21: in the selected Plan panel holding a button, a text input and an ocelle-segmented-choice, Enter and Sp (2 failed, 57 skipped of 59) |
 | the boundaries kept out of forced colours (`forced-color-adjust: none` on the segment, its `control-border` lines kept) | `packages/elements/src/ocelle-segment.ts` | `segmented-choice.test.ts` (elements) | US3-11: in forced colours every boundary is ButtonBorder, the default pressed segment shows a 3 px Highlight b (1 failed, 61 skipped of 62) |
 | no first enabled segment pressed on first render when the value names a disabled segment (`kept` returning the selection as it is and the batch's first enabled segment dropped) | `packages/elements/src/selection.ts` | `segmented-choice.test.ts` (elements) | FR-027: on first render with a value no enabled segment has the first enabled segment is pressed, and with a v (1 failed, 61 skipped of 62) |
+| the joined bar's forced-colours rule hiding it with `display: none` (review round 1, R1-01) | `packages/elements/src/ocelle-segment.ts` | `segmented-choice.test.ts` (elements) | US3-11: in forced colours every boundary is ButtonBorder, the default pressed segment shows a 3 px Highlight bor (1 failed, 61 skipped of 62) |
+| the joined bar's forced-colours rule hiding it with `visibility: hidden` (review round 1, R1-01) | `packages/elements/src/ocelle-segment.ts` | `segmented-choice.test.ts` (elements) | US3-11: in forced colours every boundary is ButtonBorder, the default pressed segment shows a 3 px Highlight bor (1 failed, 61 skipped of 62) |
+| the joined bar's forced-colours rule taking it out of its place (`position: static`) (review round 1, R1-01) | `packages/elements/src/ocelle-segment.ts` | `segmented-choice.test.ts` (elements) | US3-11: in forced colours every boundary is ButtonBorder, the default pressed segment shows a 3 px Highlight bor (1 failed, 61 skipped of 62) |
+| the element removing a blank host `aria-label` in `updated()` (review round 1, R1-05) | `packages/elements/src/ocelle-segmented-choice.ts` | `segmented-choice.test.ts` (elements) | FR-006: the toolbar's name is the trimmed label, a blank label leaves it unnamed, a later label change follows; (1 failed, 61 skipped of 62) |

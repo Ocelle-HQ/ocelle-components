@@ -49,6 +49,12 @@ harnesses. The phase 3 stand-in body (a nested `ocelle-tabs`) stays, as T062b as
     inset `0px`, so the bar is inside the box; and the segment's own block-end line, 1 px.
   - **What it still reads from pixels.** The 1 px `ButtonBorder` line under the bar, the shared line and the top line.
   - **Plant.** "The bar as an inset box-shadow only" still fails it: the bar's border width is then `0px`.
+  - **Review round 1 (R1-01): the pixel read is back.** The computed read alone was looser than the red read: with
+    `display: none`, `visibility: hidden` or `position: static` on the bar's forced-colours rule, US3-11 still passed.
+    US3-11 now also reads the bar's pixels, as a run of 3 CSS px just above the 1 px line. Their colour is the
+    resolved `Highlight` composited over the forced `Canvas` behind the bar: `rgb(55, 51, 109)` for
+    `rgba(5, 0, 73, 0.8)` over white. The body checks that this colour differs from the ground and from
+    `ButtonBorder`. The three plants now fail US3-11 (`plants.md`), and the body passes in both harnesses.
 - No other test changed. The scenario bodies, expected values and pairings of the red commit are otherwise unchanged.
 
 ## A behaviour fix found in green

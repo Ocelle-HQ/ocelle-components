@@ -56,7 +56,7 @@ export class OcelleSegment extends LitElement {
     // `value` is the accessor below, which writes the attribute itself (as on `ocelle-option`): `useDefault` keeps Lit
     // from reflecting the index default at the first update (FR-009). `reflect` and `noAccessor` describe the accessor
     // for the manifest.
-    // Stryker disable next-line BooleanLiteral,ObjectLiteral: equivalent, the accessor's setter writes the attribute and the attribute's changes are not passed to Lit; without `reflect` Lit writes no initial value either
+    // Stryker disable next-line BooleanLiteral,ObjectLiteral: equivalent for `{}`, `reflect: false` and `noAccessor: false` (the accessor's setter writes the attribute and the attribute's changes are not passed to Lit; without `reflect` Lit writes no initial value either); `useDefault: false`, the line's other BooleanLiteral, is not equivalent and fails US3-14
     value: { type: String, reflect: true, noAccessor: true, useDefault: true },
   };
 

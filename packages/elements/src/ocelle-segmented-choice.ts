@@ -203,7 +203,7 @@ export class OcelleSegmentedChoice extends LitElement {
     // Disconnecting first makes every observation start anew, so each target's size is delivered at the next rendering
     // (observing a target that is already observed does not deliver it again in Chromium).
     this.#sizes.disconnect();
-    // Stryker disable next-line ConditionalExpression,LogicalOperator: equivalent, observing a group that is not joined, or not connected, only delivers sizes whose regroup sets no state (`setRows(…, null)` on segments that have none)
+    // Stryker disable next-line ConditionalExpression,LogicalOperator: equivalent for the guard forced `false`, `&&`, and either operand forced `false` (a group that is not joined regroups to `null` states, which its segments already have; a disconnected group is observed again at `connectedCallback`); the guard forced `true` is not equivalent and fails US3-10 among others
     if (!this.joined || !this.isConnected) return;
     this.#sizes.observe(this);
     for (const { node } of this.#model.entries) this.#sizes.observe(node, { box: "border-box" });
@@ -294,7 +294,7 @@ function removedOf(records: readonly MutationRecord[]): OcelleSegment[][] {
 /** Whether focus has left for nowhere: `document.activeElement` is the body or null (research R-03). */
 function focusLeft(): boolean {
   const active = document.activeElement;
-  // Stryker disable next-line ConditionalExpression,LogicalOperator: equivalent in Chromium, which reports the body, never null, when nothing has focus (phase 2 review round 1, R1-03); kept for engines that report null
+  // Stryker disable next-line ConditionalExpression,LogicalOperator: equivalent in Chromium for `active === null` forced `false` only, as Chromium reports the body, never null, when nothing has focus (phase 2 review round 1, R1-03; kept for engines that report null); the line's other mutants are not equivalent and fail the R-03 bodies
   return active === null || active === document.body;
 }
 
