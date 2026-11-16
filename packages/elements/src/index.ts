@@ -4,6 +4,7 @@
 export { OcelleBrandMark } from "./ocelle-brand-mark.ts";
 export { OcelleCopyField } from "./ocelle-copy-field.ts";
 export { OcelleIcon } from "./ocelle-icon.ts";
+export { OcelleLink } from "./ocelle-link.ts";
 export { OcelleListbox } from "./ocelle-listbox.ts";
 export { OcelleOption } from "./ocelle-option.ts";
 export { OcelleSegment } from "./ocelle-segment.ts";
