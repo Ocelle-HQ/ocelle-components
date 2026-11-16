@@ -416,9 +416,9 @@ export class OcelleActionRow extends LitElement {
    */
   declare busy: boolean;
 
-  /** The moved host attributes (src/control.ts). */
-  readonly #moved = new MovedAttributes(this, moved, (name) => {
-    if (references.some((reference) => reference === name)) this.#resolve();
+  /** The moved host attributes (src/control.ts); any change of them resolves the moved references again. */
+  readonly #moved = new MovedAttributes(this, moved, () => {
+    this.#resolve();
     this.requestUpdate();
   });
 
