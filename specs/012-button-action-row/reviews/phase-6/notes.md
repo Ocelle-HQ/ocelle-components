@@ -213,3 +213,22 @@ Options:
 - **(c)** Something else that you state.
 
 T066 stays open until the mutation gate passes, and T067 stays open because it needs a push.
+
+**Operator decision at phase 6, 2026-11-16: option (a).** The operator authorised one separate signed-off test
+commit with one in-process test, changing no existing test and no source.
+
+Applied:
+- **c6eb589** (test), in `test/action-row.test.ts`, checks that a Ctrl, Meta, Shift and Alt click on a button-mode
+  row each give exactly one `click` and one `ocelle-action-row-activate`.
+  - It passes on the code.
+  - With the mutation applied by hand (the link-mode check replaced by `true`), it fails.
+  - No existing test changed.
+
+After it:
+- `gate:mutation -- --base 89a1369`: **pass**. 77 mutants on the changed lines of 2 files (`src/ocelle-action-row.ts`,
+  `src/ocelle-button.ts`), none survived; 0 timeouts, 9 compile errors, 0 zero-mutant entries, 0 equivalent records;
+  334 s.
+- Whole suite, `pnpm test`: **3825 tests passed in 152 files**.
+- `gate:typecheck` and lint on the test file: pass.
+
+T066 is done. T067 stays open: it needs a push and a CI run.
