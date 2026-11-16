@@ -359,3 +359,6 @@ stripped). `git status` was clean but for the review files after each. The resul
 
 - `tooltip.test.ts` (in process) and `test/browser/tooltip.test.ts` (fixture twin), run together: 208 of 208 passed.
 - `gate:typecheck`, `gate:lint`, `gate:test-lint`: no finding.
+- `pnpm test` at `5b142cc` (`full-test-5b142cc.log`, started 2026-11-16T13:10:20Z, 823 s): **5107 of 5107 passed**
+  in 159 files, exit 0, on the first run. The commit that adds this log changes only `specs/008-overlays/`, so the
+  code it holds is the code that ran.
