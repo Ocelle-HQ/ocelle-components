@@ -208,3 +208,40 @@ Options:
   495 and 497 checks and the 528 and 531 conditionals. Record the rest (444, 456, 457, 468, 517) as surviving mutants
   for the reviewer.
 - **(c)** Something else that you state.
+
+**Operator decision at phase 5, 2026-11-16: option (a).** The operator authorised exactly these two changes after the
+red commit:
+- one separate test commit with in-process tests for the 17 surviving behaviours, changing no existing or red test;
+- the removal of the redundant line 421 condition.
+
+The operator also accepted the positive stacking of the hit layer: the layer at `z-index: 0`, the content at
+`z-index: 1`, and `Canvas` under forced colours. The planner aligns the plan, the data model and T056's wording; I did
+not edit those artifacts.
+
+Applied:
+- **440340a** (test): five in-process tests in `test/action-row.test.ts`, one per surviving behaviour:
+  - the inner control carries no empty `aria-label`, `aria-labelledby` or `aria-describedby` without a source
+    (lines 495, 497, 528, 531);
+  - text written into a slotted text node's data describes the row (444);
+  - a description forwarded through another shadow root's slot is read (468);
+  - a moved `aria-labelledby` is resolved when it is moved before connection, and again when the row moves into
+    another tree (421, 456, 457);
+  - a shrink-wrapped title-only row is exactly its title plus 13 px a side, and a row with tags and no trailing icon
+    shows its tags (517).
+  The tests pass on the code (48 of 48 in process). No existing test changed.
+- **4637d79** (source): the moved-attribute callback resolves the references on every moved change.
+
+After both:
+- `gate:mutation -- --base cf52eb1`: **pass**. 191 mutants on the changed lines of 3 files, none survived; 3 timeouts
+  (the `MutationObserver`'s options and constructor call, as before), 35 compile errors, 1 zero-mutant entry
+  (`src/index.ts`), 1 equivalent record (the `label` options); 549 s. Every survivor of the first run is killed or
+  gone, and no survivor proved impossible to observe.
+- Whole suite, `pnpm test`: **3720 tests passed in 152 files**, with docker up.
+- `gate:lint` (289 files), `gate:typecheck` and `gate:test-lint`: pass.
+
+**Environment.** Between the first mutation run and these runs the container restarted. dockerd was down, because a
+stale `/var/run/docker.pid` blocked it. The coordinator removed the pid file and restarted dockerd, and `docker info`
+passed before the whole suite above. No run of this phase was cut off by it: the plant shards, the visual runs and the
+first whole suite all ran before the restart.
+
+T059 is done.
