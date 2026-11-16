@@ -27,11 +27,11 @@ extended in phase 1, each with a self-test on a plain stand-in page (no `ocelle-
 
 | Spec | Phase | Scenario file | Runs | Notes |
 |---|---|---|---|---|
-| US1-1 … US1-8 | 2 | `scenarios/status-indicator.ts` | in process, CSP | US1-4 by the animation record and seeks (§ US1 bodies); US1-5, US1-6 by media emulation; US1-4 (d) for `hidden`, `display: none` ancestor and `<details>` (R-04 spike) |
+| US1-1 … US1-8 | 2 | `scenarios/status-indicator.ts` | in process, CSP | US1-4 by the animation record and seeks (§ US1 bodies); US1-5, US1-6 by media emulation; US1-4 (d) for `hidden` and a `display: none` ancestor; the `<details>` case pinned as not a start case (§ US1 bodies, R-04) |
 | SC-001, indicator | 2 | `scenarios/consumers.ts` | in process | `tone` per value with no consumer CSS: the dot's computed fill equals the token value from `expected.ts` for each tone, and an unknown tone reads the neutral value |
-| US2-1 … US2-6 | 3 | `scenarios/metric.ts` | in process, CSP | AT tree term → definition, the term named by the written label (not upper-cased) while the visible label is upper-cased; literal `<b>` text; `.layout-row .pair` on one line |
+| US2-1 … US2-7 | 3 | `scenarios/metric.ts` | in process, CSP | AT tree term → definition, the term named by the written label (not upper-cased) while the visible label is upper-cased; literal `<b>` text; `.layout-row .pair` on one line; § US2 bodies |
 | SC-001, metric | 3 | `scenarios/consumers.ts` | in process | `label` and `display-value` with no consumer CSS: Chromium's tree has the term named by the label and its definition with the value, and both texts are visible |
-| US3-1 … US3-7 | 4 | `scenarios/pill-tag.ts` | in process, CSP | heights per density pinned from token values (`.icon-row` nested in `.pill`, with and without an icon); wraps, no ellipsis; § US3 bodies |
+| US3-1 … US3-8 | 4 | `scenarios/pill-tag.ts` | in process, CSP | heights per density pinned from token values (`.icon-row` nested in `.pill`, with and without an icon); wraps, no ellipsis; § US3 bodies |
 | SC-001, pill | 4 | `scenarios/consumers.ts` | in process | `status`: the ground and text equal the status tokens' values; badge use: the border in the status colour at `border-width`; `title`: kept on the host as written; slotted content: the text is in the tree as plain text |
 | US4-1 … US4-12 | 5 | `scenarios/pill-tag-interactive.ts` | in process, CSP | event recorder: `click` and `ocelle-pill-tag-activate` with flags, order and serials, from pointer, Enter, Space, `click()`; modifier and middle clicks; mode switches with focus; § US4 bodies |
 | US5-1 … US5-6 | 6 | `scenarios/pill-tag-truncation.ts` | in process, CSP | every step settled by `settleLayout()`; tooltip state through `ocelle-tooltip`'s public behaviour only, negatives read after the test delay beside a showing twin; § US5 bodies |
@@ -49,8 +49,16 @@ extended in phase 1, each with a self-test on a plain stand-in page (no `ocelle-
 | US1-4, positive twin | `pulse` removed, settled, set again in a later task: a new animation (new identity) at a current time near 0 | the ring kept when `pulse` is removed |
 | US1-4, same task | `pulse` removed and set again within one task on an ended run: no animation runs and the ring node is the same (FR-012 (a) as amended), beside the positive twin above | (pinned behaviour; the twin is the positive) |
 | US1-4, `moveBefore()` and `hidden="until-found"` | what the T001 spike showed, pinned: after `moveBefore()` the same animation continues at a current time ≥ before the move; a reveal from `until-found` as the spike measured; each beside an `appendChild` move or a `hidden` reveal that starts a new run | (pinned behaviour) |
+| US1-4, `<details>` | what Chromium does, pinned (operator decision on PLAN-FRESH-2-001, (b)): a pulsing indicator in an open `<details>`, seeked to 500 ms, then `open = false`: the same animation is still running after 300 ms at a current time ≥ 800 ms; closed for longer than one run (the run's end time passed), then `open = true`: no animation on the ring, the dot solid; closed for less than one run and opened: the same animation, not a new one; an indicator connected and one given `pulse` inside a closed `<details>`, then opened: as the T001 spike measured; each beside a twin whose `hidden` parent is hidden and revealed and which starts a new run (new identity, current time near 0) | (pinned behaviour; the `hidden` twin is the positive) |
 | US1-5, the element's own rule | under `reduce` with a host rule restoring `--ocelle-motion-pulse: 1600ms`: no animation on the ring; twin under no preference with the same host rule: one run | the element's `animation: none` rule removed |
 | US1-8, host `aria-label` | `aria-label` present and blank, each with and without `label`: the element's internals (role, name, `ariaHidden`) follow `label` alone in every combination, equal to the same indicator without `aria-label`; Chromium's resulting tree is pinned as the red step measured it | `aria-label` read by the element |
+
+### US2 bodies
+
+| Body | Assertion | Plant |
+|---|---|---|
+| US2-7, flex row | in a 220 px flex row beside "Refactor the mission scheduler pipeline", a metric `label="Open"` `display-value="12345"` in `stack` and in `row`: label and value each on one line (one line box each, measured by a `Range` over the text), the metric's inline size at least its longest word; twin: a 34-letter value in a 100 px block container, in both layouts, breaks inside the metric (more than one line, the `dd` box inside the host's); a twin with `min-inline-size: 0` on the host in the flex row: the metric narrower than its longest word, every character inside it | `overflow-wrap: anywhere` on `dt` and `dd`; the row's `min-inline-size: 0` on `dt` and `dd` removed |
+| find in page | `window.find(label)` from the start of a page with one metric matches twice, and the second match's range lies in the `.written` span with a zero-size rect (the recorded limitation, R-05); if the T001 probe adopted a hiding that find skips: one match, in the eyebrow span; positive twin: a label also written once in the page outside the metric adds one match | (pinned behaviour; the twin is the positive) |
 
 ### US3 bodies
 
@@ -58,6 +66,7 @@ extended in phase 1, each with a self-test on a plain stand-in page (no `ocelle-
 |---|---|---|
 | static click | a static pill, enabled and with `disabled`, inside `<a href>` and under an ancestor click listener: the click reaches the ancestor with `defaultPrevented` false and the link's activation runs; `pill.click()` reaches a host listener; twin: the same on an interactive pill is guarded as 012 says | the guard active while static |
 | static focus | a click on a static pill inside a focusable ancestor (`tabindex="0"`) focuses the ancestor; twin: a click on an interactive pill focuses its inner control | `delegatesFocus` set |
+| US3-8, flex row | in a 220 px flex row beside "Refactor the mission scheduler pipeline", `<ocelle-pill-tag status="warning">Blocked</ocelle-pill-tag>` in each variant and density: the text on one line (one line box), the host at least the word's width plus the padding and border; the same pill with `min-inline-size: 0` set by the host: narrower than the word, the word over more than one line, every character inside the `.pill` box; twin: a 34-letter word in a 100 px block container and in a 100 px grid track breaks inside the pill (more than one line, the text box inside the `.pill` box, the host within the container); in a 150 px flex row the long word's host is at most the row's inline size | `overflow-wrap: anywhere` on the text; `min-inline-size: 0` on the static host or `.pill`; the static host `inline-grid`; the `.icon-row` cap removed |
 | seven names on a static pill | for each of `aria-label`, `aria-labelledby`, `aria-describedby`, `aria-controls`, `aria-current`, `aria-pressed`, `title`: set on an upgraded static pill, then changed: it stays on the host as set, no `data-ocelle-moved-*` mirror, no inner control, no custom state; interactive twin: the attribute is moved and mirrored | the static guard in `attributeChangedCallback` removed |
 
 ### US4 bodies
@@ -88,7 +97,7 @@ extended in phase 1, each with a self-test on a plain stand-in page (no `ocelle-
 | trigger: `slotchange` | a child's `slot` attribute changed so the default slot's text grows past the width (no `childList` record on the host) | the `slotchange` listener removed |
 | trigger: `updated()` | `density` switched to `default` in a fixed-width container (the span's box held at its maximum): truncated; `disabled` removed on a long pill: truncated | re-measure in `updated()` removed |
 | sub-pixel | the container at the fitting width minus 0.1 px: tooltip shown; at the fitting width: not shown | the measure by `scrollWidth > clientWidth` |
-| flex row and grid track | a pill beside a name in a flex row and in a grid track narrower than the text: the pill shrinks to the room left and truncates; the sibling keeps its size | the host's `min-inline-size: 0` removed |
+| flex row and grid track | a pill beside "Mission name" in a 200 px flex row and in a grid track narrower than the text: the pill shrinks to the room left and truncates. In the flex row the fixture sets the sibling rule explicitly (operator decision on PLAN-FRESH-2-003, (a)): a row with the sibling `flex: none` and a row with the pill `flex: 1 1 0` each keep the sibling at its natural size (its box equal to the same sibling's alone, one line); the twin row with neither pins the shared shrink: the pill truncates and the sibling is narrower than its natural width (two lines) | the host's `min-inline-size: 0` removed (from the interactive host sheet) |
 | after static → interactive | a pill made interactive (`interactive` set, and a link-mode `href` set) after connection, then narrowed: truncated, tooltip shown | observers created in `connectedCallback` only |
 | after a mode switch | a truncated button-mode pill switched to link mode, then widened until it fits: tooltip disabled | the `ResizeObserver` not re-targeted |
 | ring in a clipping container | a keyboard-focused truncated pill inside an `overflow: hidden` container: the ring's box (control box grown by offset + width) lies inside the container | the interactive host sheet not adopted |
@@ -119,7 +128,8 @@ on disconnection have no public observable; the phase-6 review records them with
 | disabled interactive pill with long text | `pill-tag-truncation.ts` (US5-6) |
 | forced colours | each element's scenario file; § US4 forced colours and forced colours, pressed |
 | right-to-left | `pill-tag.ts`, `metric.ts`, `pill-tag-truncation.ts` (ellipsis at the inline end; the measure at the inline start) |
-| long unbroken words | `pill-tag.ts`, `metric.ts` |
+| long unbroken words; a one-word pill or metric in a flex row | `pill-tag.ts` (§ US3 bodies, US3-8), `metric.ts` (§ US2 bodies, US2-7) |
+| `<details>` around a pulsing indicator | `status-indicator.ts` (§ US1 bodies) |
 
 ## Gates per phase
 

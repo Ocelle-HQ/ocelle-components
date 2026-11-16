@@ -24,7 +24,9 @@ No events, methods, slots or custom states. README: the host names the state in 
 pinned by US1-8); the indicator is not a busy or progress signal (#13's `ocelle-progress`); re-inserting or re-showing
 it more often than every 5 s keeps it pulsing; removing and setting `pulse` within one task starts no new run (set it
 again in a later task); a state-preserving move (`moveBefore()`) and a reveal from `hidden="until-found"` are not
-start cases; overriding the motion tokens must keep their product ≤ 5 s.
+start cases, and neither is opening a `<details>` around a pulsing indicator (a run under way when it closed goes on
+while it is closed, and none starts when it opens; operator decision, PLAN-FRESH-2-001); overriding the motion tokens
+must keep their product ≤ 5 s.
 
 ## `ocelle-metric`
 
@@ -40,7 +42,10 @@ start cases; overriding the motion tokens must keep their product ≤ 5 s.
 | part | `label` | | | the `dt` |
 | part | `value` | | | the `dd` |
 
-No events, methods, slots or custom states.
+No events, methods, slots or custom states. README: the browser's find in page matches a metric's label twice, the
+visible label and the invisible written copy that names the term (a known limitation, R-05, unless the T001 probe finds
+a hiding that find skips); in a flex row a metric is not shrunk below its longest word, and a host that wants it to
+shrink further sets `min-inline-size: 0` on it (its words then break inside it).
 
 ## `ocelle-pill-tag`
 
@@ -87,7 +92,12 @@ or a cell or column width; an auto-layout table cell grows instead); an interact
 (`--ocelle-focus-offset` + `--ocelle-focus-width`) of inline margin and caps its width to keep its ring inside a
 clipping container, and a container that clips in the block direction keeps that much unclipped space (012's
 clearance rule); a late font load that turns an exactly fitting text into an overflowing one is seen at the next width
-or text change.
+or text change. Flex rows (operator decisions on PLAN-FRESH-2-002 and PLAN-FRESH-2-003, (a)): a static pill is not
+shrunk below its longest word, so a one-word pill stays on one line, and a host that wants it to shrink further sets
+`min-inline-size: 0` on it (the word then breaks inside the pill); an enabled interactive pill shrinks to truncate, and
+the flex row shares that shrink with its siblings by their flex bases, so a sibling keeps its size only if the host
+gives it `flex: none` or gives the pill `flex: 1 1 0` (the pill then takes the remaining room); otherwise the sibling
+shrinks too, down to its longest word.
 
 ## `@ocelle/tokens`
 

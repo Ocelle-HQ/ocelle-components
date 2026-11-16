@@ -107,7 +107,8 @@ animation: none; } }`. New tokens (motion group): `motion-pulse` 1600ms and `mot
 every declaration here passes.
 
 The four start cases of FR-012, as amended after squad round 1 (operator decisions on PLAN-CORRECTNESS-1-013 (a) and
-PLAN-CORRECTNESS-1-014 (b)), are what CSS animations do natively, with no script:
+PLAN-CORRECTNESS-1-014 (b)) and squad round 2 (PLAN-FRESH-2-001 (b)), are what CSS animations do natively, with no
+script:
 - (a) `pulse` absent → present as a rendered change: the ring element is created, so its animation starts; removing
   `pulse` removes the ring and so the animation. A removal and re-addition within one task coalesce into one Lit
   update with `pulse` still true, so the ring node is kept and no run starts; FR-012 (a) counts only rendered changes,
@@ -118,15 +119,23 @@ PLAN-CORRECTNESS-1-014 (b)), are what CSS animations do natively, with no script
   shows (the run under way continues, the same animation object, its current time not reset).
 - (c) `reduce` → no preference: `animation-name` changes from `none` to `ocelle-pulse`, which starts a new animation;
   the reverse change cancels the running one at once (FR-013).
-- (d) not rendered → rendered (an ancestor's `display: none`, the `hidden` attribute in its hidden state, a closed
-  `<details>`): an element without a box has its CSS animations cancelled and gets new ones when it is rendered again.
-  For the `<details>` case Chromium hides the closed content through its slot (`content-visibility: hidden` in recent
-  versions), which may keep the animation instead of cancelling it: a spike in T001 measures (d) for `hidden`, an
-  ancestor's `display: none` and `<details>`, and if `<details>` does not restart natively the phase-2 tasks add the
-  smallest fix the spike shows (**recheck**). `hidden="until-found"` hides with `content-visibility` too and is not a
-  start case (FR-012 (d) as amended); the spike measures it and a scenario pins what it shows.
+- (d) not rendered → rendered (an ancestor's `display: none`, the `hidden` attribute in its hidden state): an element
+  without a box has its CSS animations cancelled and gets new ones when it is rendered again (squad round 2's probe5 on
+  Chromium 153: `hidden` on the parent cancels the run, and on reveal a new one starts). A `<details>` is not a start
+  case (FR-012 (d) as amended, operator decision on PLAN-FRESH-2-001, (b)): Chromium hides closed content through its
+  slot (`content-visibility: hidden`), which keeps the animation. The round's probe1 measured it: after `open = false`
+  the same `Animation` is still `running` (current time 500 → 800 ms over 300 ms), after 5 s closed it has ended, and
+  after `open = true` `getAnimations()` is empty, so no run starts; a `<details>` closed for less than one run lets the
+  run go on and shows its remainder on opening. Detecting the opening would need an `IntersectionObserver` and script
+  state per pulsing indicator (the only signal on close and open, probe2), which the pulse does not have; so the pulse
+  stays CSS-only and the README states that opening a `<details>` starts no run. The T001 spike re-measures (d) for
+  `hidden` and an ancestor's `display: none`, and the `<details>` behaviour (closed for less and for more than one run,
+  and an indicator connected or given `pulse` inside a closed `<details>`) on the merged Chromium, and the scenarios pin
+  what it shows (**recheck**). `hidden="until-found"` hides with `content-visibility` too and is not a start case
+  either; the spike measures it and a scenario pins what it shows.
 - No other change restarts the animation: changing `tone` changes only `color`/`background` on the ring and dot, never
-  an `animation-*` longhand; theme, size, position, `visibility`, opacity and scrolling do not cancel CSS animations.
+  an `animation-*` longhand; theme, size, position, `visibility`, opacity, scrolling and a `<details>` closed and
+  opened do not cancel CSS animations.
   This is proven on the running animation, not on computed longhands (contracts/checks.md § US1-4): for each change
   FR-012 lists, the scenario seeks the run, applies the change and reads back the same animation (its stable identity
   in the driver) at a current time at or after the seek, beside a positive twin in which `pulse` is removed and set
@@ -148,6 +157,9 @@ identity per animation, and frames sampled by seeking the animation and reading 
 after each test (frontend findings).
 
 **Alternatives**: a JS timer that removes the ring after 5 s (state, timers, Timeout mutants, and (b) to (d) by hand);
+an `IntersectionObserver` on the ring that re-creates it when a `<details>` opens (option (a) of PLAN-FRESH-2-001, not
+chosen: script state and an observer on every pulsing indicator, and a `checkVisibility()` test so that scrolling back
+into view does not count);
 animating the dot's opacity (the #498 defect); a new ring-extent token (not needed: the extent is half the dot's size
 token); keying the ring on a counter so a same-task toggle restarts (rejected by the operator, PLAN-CORRECTNESS-1-014
 (b)).
@@ -171,7 +183,24 @@ smallest token-only hiding the probe shows to be kept, and the operator is told.
 var(--ocelle-figures)`, the family inherited from the base styles (Schibsted Grotesk). `stack`: block flow; `row`: the
 rule is on the pair, `.layout-row .pair { display: flex; flex-wrap: wrap; align-items: baseline; column-gap:
 var(--ocelle-space-2); }` (the `dl`'s only child is the pair, so a flex `dl` would leave `dt` and `dd` stacked).
-Empty value: `dd { min-block-size: 1lh; }` (the one `lh` use 005's lint allows). `overflow-wrap: anywhere` on both.
+Empty value: `dd { min-block-size: 1lh; }` (the one `lh` use 005's lint allows). `overflow-wrap: break-word` on both
+(operator decision on PLAN-FRESH-2-002, (a)), which breaks a word only where it would overflow and, unlike `anywhere`,
+does not lower the min-content size: so a metric in a host's flex row is not shrunk below its longest word and a
+one-word label or value stays on one line (US2-7), while a long unbroken value in a block container still breaks inside
+the box. In `row` the `dt` and `dd` are flex items of the pair, whose automatic minimum would be that word, so
+`.layout-row .pair > * { min-inline-size: 0; }` lets a long value shrink to the pair and break; this does not lower the
+metric's own min-content (the squad's probe on Chromium 153, a 100 px block and a 220 px flex row: without the rule a
+long row value overflows, with it the value breaks over three lines and a one-word metric in the flex row stays 39 px
+wide on one line, against 29 px and two lines with `anywhere`). A host that wants a metric to shrink further in a flex
+row sets `min-inline-size: 0` on it (README).
+
+Find in page (squad round 2, PLAN-FRESH-2-006): the written copy is text in the document, so the browser's find bar
+matches a metric's label twice, the visible uppercase span (find is case-insensitive) and the zero-size copy, whose
+highlight cannot be seen (the round's probe4: `window.find('Open missions')` matches twice in one metric). This is a
+known limitation, recorded here and in the README and pinned by a scenario in `scenarios/metric.ts` (two matches per
+label, the second inside the `.written` span). The T001 probe of the term's name also tries the token-only hidings it
+can find for one that find-in-page skips while the term keeps the written name and no other node is added; if one is
+found, phase 3 adopts it, the scenario pins one match instead, and the operator is told.
 
 **Rationale**: a `dl` with one group is the plainest markup that gives the term/definition pair FR-024 asks for; the
 hidden copy keeps 011's eyebrow look and FR-022's written name together.
@@ -183,10 +212,24 @@ PLAN-A11Y-SECURITY-1-001, not chosen.
 
 ## R-06 `ocelle-pill-tag`, static: box, densities and variants
 
-**Decision**: host `display: inline-grid; min-inline-size: 0; max-inline-size: 100%` in every mode, the inner box
-(the static `.pill` span, or the inner control in R-07) its one grid item, stretched in both axes, with
-`min-inline-size: 0` on a static `.pill` so the host's automatic minimum is never its unwrapped text (a static pill in
-a flex row or grid track shrinks and wraps, FR-027). Shadow root (static mode):
+**Decision** (revised after squad round 2, operator decision on PLAN-FRESH-2-002, (a)): a static pill's host is
+`display: inline-block; max-inline-size: 100%`, its `.pill` span `display: block`, the `.icon-row` capped at
+`max-inline-size: 100%` and the text span at `min-inline-size: 0`, with `overflow-wrap: break-word` on the text. No
+`min-inline-size: 0` is set on the static host or the `.pill`: a flex row's automatic minimum for the pill is then its
+longest word, so a one-word pill such as "Blocked" beside a long name keeps its word on one line (US3-8), while in a
+block container or a grid track the capped row lets a long unbroken word break inside the pill (Edge Cases). The
+`min-inline-size: 0` chain the interactive pill needs to truncate (host, control, `.icon-row`, text span) and its
+`display: inline-grid` live in the interactive host sheet (R-07). Squad round 2's probes on Chromium 153 (14 px text,
+4/12 padding): in a 220 px flex row beside "Refactor the mission scheduler pipeline", the round-1 box (the chain in
+every mode and `anywhere`) gave a 45 to 50 px host with "Blocked" over three or four lines; this box gives 76 px and one
+line. A 34-letter word in a 100 px block container or grid track breaks inside the pill over three lines; the same box
+with an `inline-grid` host, or without the row cap, keeps the word on one line and overflows the pill (a grid item's
+and an `inline-flex` row's automatic minimum is the word), which is why the static host is not a grid. In a 150 px
+flex row the long word sets the pill's minimum up to the row's full inline size (the host's `max-inline-size: 100%`)
+and breaks there. A wrapped static pill inline in text sits on the baseline of its last line (inline-block); a static
+pill in a flex row that stretches its items keeps its own block size inside the stretched host. A host that wants the
+round-1 shrinking sets `min-inline-size: 0` on the pill, and the word then breaks inside the pill (README, US3-8).
+Shadow root (static mode):
 
 ```html
 <span part="pill" class="pill status-… variant-… density-…">
@@ -199,8 +242,9 @@ with `iconSlotStyles` (005). The `.pill` box carries the density padding, the co
 `icon-slot.ts`) is on a different box from the density padding and the two never compete. `--ocelle-icon-size: 1lh`
 is set on `.pill` (the convention's one resizing route), so the row's block padding is 0, the 1lh-tall `.icon-slot`
 holds an icon one line tall, and a pill with and without an icon has the same height; the scenarios pin each
-density's height from the token values. The `.icon-row` has `min-inline-size: 0` and the text span `min-inline-size:
-0` so the text can wrap (static) or truncate (R-09). Sizes, all tokens:
+density's height from the token values. The `.icon-row` has `max-inline-size: 100%` and the text span
+`min-inline-size: 0` so the text can wrap inside a capped pill (static); in interactive modes the interactive host
+sheet adds `min-inline-size: 0` on the `.icon-row` so the text can truncate (R-07, R-09). Sizes, all tokens:
 
 | | default | compact |
 |---|---|---|
@@ -213,7 +257,7 @@ density's height from the token values. The `.icon-row` has `min-inline-size: 0`
 `background: transparent; border-color: var(--ocelle-color-<status>); font-variant-numeric: var(--ocelle-figures)`.
 Both: `border: var(--ocelle-border-width) solid transparent` (the static pill's border is transparent outside forced
 colours, which forced colours turns into a visible system-colour border, FR-028), `border-radius:
-var(--ocelle-radius-pill)`. Text: `white-space: normal; overflow-wrap: anywhere` (wraps, never truncates, FR-027).
+var(--ocelle-radius-pill)`. Text: `white-space: normal; overflow-wrap: break-word` (wraps, never truncates, FR-027).
 
 A static pill is inert content: its click guard is inactive (R-07), its shadow root has no `delegatesFocus` (R-07) and
 it has no inner control, so a click on it reaches its ancestors as a click on its text would (an enclosing `<a href>`
@@ -226,8 +270,13 @@ the dot on the main grounds (non-text 3:1 is weaker than the text 4.5:1 already 
 today: **no new contrast rows** for the status vocabulary. A badge or indicator placed on a state ground (inside a
 notice) is outside the checked set; the README says so.
 
-**Rationale**: every value a token; forced colours handled by the transparent-border idiom; no new contrast surface;
-one structure (`.pill` > `.icon-row`) in every mode.
+**Rationale**: every value a token (the keywords, `0` and `100%`); forced colours handled by the transparent-border
+idiom; no new contrast surface; one structure (`.pill` > `.icon-row`) in every mode, with the host's display and
+minimum set per mode.
+
+**Alternatives**: keeping the round-1 box and telling hosts to give a static pill `flex: none` in a flex row (option
+(b) of PLAN-FRESH-2-002, not chosen); `break-word` with the round-1 `inline-grid` host (a long word overflows the pill
+in a block container, see the probes above).
 
 ## R-07 `ocelle-pill-tag`, interactive: 012's conventions reused
 
@@ -235,9 +284,9 @@ one structure (`.pill` > `.icon-row`) in every mode.
 control" class="control pill status-… variant-… density-…">` or `<a part="pill control" href=… class="control pill
 …">`, holding the same nested `.icon-row` as R-06, wrapped in `<ocelle-tooltip>` (R-09). The `control` class is what
 every `controlStyles` rule selects (012 `control.ts` 157-194), so the token focus ring, the link without underline and
-the forced-colours table apply. The inner control is the host's one stretched grid item (R-06's `display:
-inline-grid`, as `ocelle-button.ts` 134), so it fills the host in both axes and a host stretched by a flex row or a grid
-cell has no area outside it (012 FR-001, adopted by FR-030); the tooltip host between them is `display: contents`, so
+the forced-colours table apply. The inner control is the host's one stretched grid item (the interactive host
+sheet's `display: inline-grid`, as `ocelle-button.ts` 134), so it fills the host in both axes and a host stretched by a
+flex row or a grid cell has no area outside it (012 FR-001, adopted by FR-030); the tooltip host between them is `display: contents`, so
 the control is the grid item.
 
 Reused from 012's `control.ts` as merged: `linkHref` decides the mode (FR-002 of 012), `controlState(disabled, false)`
@@ -327,7 +376,14 @@ ends (the cap alone would leave the inline-start ring outside it). The margin is
 area of the host the guard could swallow. Host selectors cannot see the derived mode (`href=""` or a non-link URL is
 static), and the pill sets no host attribute or custom state for it (FR-031), so these two host rules live in one
 constructable stylesheet that the pill adds to `shadowRoot.adoptedStyleSheets` on entry to an interactive mode and
-removes on → static (adopted stylesheets, CSP-safe, constitution IV). The block axis is the host's: the README carries
+removes on → static (adopted stylesheets, CSP-safe, constitution IV). Since squad round 2 (operator decision on
+PLAN-FRESH-2-002, (a)) the same sheet, added after the static styles so that it wins on equal specificity, also
+carries what only an interactive pill needs: `:host { display: inline-grid; min-inline-size: 0; }` and
+`min-inline-size: 0` on the control, its `.icon-row` and its text span (the chain that lets a flex or grid parent shrink
+an enabled pill until it truncates, R-09), and, for a disabled interactive pill, which wraps instead (FR-033), the text
+at `white-space: normal; overflow-wrap: anywhere`, so that a host shrunk below a word still shows every character inside
+the pill (US5-6). A disabled interactive pill in a flex row can therefore break a short word, as the round-1 static
+pill did; it is the interactive pill's chain, not a static pill's. The block axis is the host's: the README carries
 012's clearance rule for a container that clips in the block direction. A scenario focuses a truncated pill inside an
 `overflow: hidden` container and checks the ring's box lies inside it; the `Truncated` story shows a focused truncated
 pill in a clipping container.
@@ -398,10 +454,19 @@ would be unreachable and its mutant equivalent); a pill-owned copy of the guard 
 
 **Decision**: in an enabled interactive pill the text span has `white-space: nowrap; overflow: hidden;
 text-overflow: ellipsis; min-inline-size: 0` and the control `max-inline-size: 100%` of the host, which is capped as
-R-07 says and has `min-inline-size: 0` (R-06), so a flex or grid parent can shrink it to the room left and it truncates
-there; in a disabled interactive pill the text has the static pill's wrapping rules. In an auto-layout table a cell
+R-07 says and has `min-inline-size: 0` (the interactive host sheet, R-07), so a flex or grid parent can shrink it to
+the room left and it truncates there; in a disabled interactive pill the text wraps (`white-space: normal;
+overflow-wrap: anywhere`, R-07). In an auto-layout table a cell
 grows to its content's max-content width, so a pill there does not truncate; the README says truncation needs a
 definite inline size (a fixed table layout, a cell or column width) and scenarios pin the flex row and the grid track.
+
+Siblings in a flex row (operator decision on PLAN-FRESH-2-003, (a)): flex shrink is weighted by flex basis, so a
+truncating pill and a sibling with `flex: 0 1 auto` share the overflow, and the sibling shrinks too, down to its longest
+word (squad round 2's probe3 on Chromium 153, a 200 px row: the pill truncates at 130 px while "Mission name" wraps to
+51.6 × 36 px against its natural 90.2 × 17 px; the pill's 10 px of inline margin, decision 11, adds to the overflow
+shared out). The element does not settle this. The README and the contract say that the sibling keeps its size only if
+it is `flex: none`, or if the pill takes the remaining room through `flex: 1 1 0` set by the host, and the checks.md
+fixture sets each explicitly beside a twin row with neither that pins the shared shrink.
 
 `truncated` (internal reactive state) is `!disabled && overflow`, where *overflow* is measured with fractional
 geometry, since `scrollWidth` and `clientWidth` are integers and the ellipsis is drawn on a sub-pixel overflow: a
@@ -515,14 +580,35 @@ and a second row with `pulse`; captured under reduced motion with animations dis
 `gates/lib/capture-plan.ts` 48, 59, so both rows show the solid dot, and the second row carries axe and the FR-004
 state coverage for `pulse`, no visual evidence for FR-011 or FR-012, which the US1-4 scenarios prove) and `Labelled`;
 metric `Stack`, `Row`, `EmptyValue`; pill `Statuses`, `Badge`, `Compact`, `WithIcon`, `LongTextWraps`; interactive
-`Button`, `Pressed` (pill and badge, pressed and not), `Link`, `Disabled`, `Focus`; truncation `Truncated` (with a
-focused truncated pill in a clipping container, R-07), `DisabledWraps`: **17 stories** (the separate `Pulse` story is
-folded into `Tones`, operator decision on PLAN-TESTABILITY-1-011, (b)), each with light and dark baselines made with
+`Button`, `Pressed` (pill and badge, pressed and not), `Link`, `Disabled`, `Focus`, and the pointer states of decision
+6 declared with 006's pointer parameter as 012 declares `PrimaryHovered` and `SecondaryPressed`
+(`button.stories.ts` 3, 65-87): `PillHovered` (`{ hover: "ocelle-pill-tag" }`, the border in the status colour),
+`BadgeHovered` (the status-ground fill), `PillActive` (`{ press: "ocelle-pill-tag" }`, the hover border and the inset
+bar-width cue) and `BadgeActive` (the fill and the cue). 006's `pointerProblem` (`gates/lib/capture-plan.ts` 230-233)
+rejects a selector that matches more than one element, so each of these stories holds exactly one `ocelle-pill-tag`, an
+enabled button-mode pill of one status, and the pill and the badge, whose hover and active looks differ, each have
+their own (FR-004, constitution V; squad round 2, PLAN-FRESH-2-004); truncation `Truncated`, `DisabledWraps`:
+**21 stories** (the separate `Pulse` story is folded into `Tones`, operator decision on PLAN-TESTABILITY-1-011, (b)),
+each with light and dark baselines made with
 `OCELLE_VISUAL_ENGINE=docker pnpm run visual:update` in 006's pinned container (dockerd started as root; conflicting
 PNGs regenerated, never hand-picked).
 
+`Truncated` (squad round 2, PLAN-FRESH-2-005): a row of enabled interactive pills in a narrow container, truncated and
+fitting, none focused, and below them, alone, one truncated pill in an `overflow: hidden` container (R-07) that a
+story-only wrapper focuses. 008's tooltip shows its bubble at once on a `focusin` whose target matches
+`:focus-visible` (`ocelle-tooltip.ts` 4-5, 277-282) and does nothing while `disabled` (304), and the pill enables it only
+once the `ResizeObserver` has measured truncation (R-09), so a wrapper that focused after `updateComplete` alone, as
+012's `StoryFocus` does, would focus before the tooltip is enabled and the baseline would show no bubble. The wrapper
+therefore waits for `updateComplete`, then for the `ocelle-tooltip` in the pill's shadow root to have `disabled` false
+(re-reading after each animation frame and `updateComplete`), and only then calls the pill's plain `focus()`, which
+006's capture shows as `:focus-visible` (012's phase-2 spike). The baseline shows the focused pill with its ring whole
+inside the clipping container **and 008's open bubble** above it (`placement` `top`, the default), in the top layer, so
+the story leaves the room above the focused pill free and the bubble covers no other example. The baseline thus
+depends on 008's bubble styling: a change to it re-baselines `Truncated` in light and dark, which the phase-6 review
+and the README's story notes state.
+
 **Risk**: 012's plan estimates about 4 stories of headroom to the plant split count (76 at `shardSize` 1) after 012,
-and asks for a triage record on a plant design that does not grow with the story count. 17 stories exceed it. T001
+and asks for a triage record on a plant design that does not grow with the story count. 21 stories exceed it. T001
 reads the split count and the story total on `main` then; if this feature's stories would exceed it and no such op
 has landed, the run stops and asks the operator (**plan decision 9**). Op 016's `--affected` mode limits the local
 plant runs to the plants a phase's diff can affect, so the local cost is the phase's, not the whole set's.

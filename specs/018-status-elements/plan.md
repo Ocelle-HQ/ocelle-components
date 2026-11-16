@@ -20,7 +20,10 @@ status vocabulary module serves the indicator and the pill (R-02). Tokens added:
 (R-10). Implementation starts after 012, 008 and op 016 are on `main`; T001 rechecks every dependency fact, the merged
 test driver and the task list against op 016 as merged (R-01), and phase 1 adds and self-tests the driver methods the
 scenarios need (R-11). Per-phase plant runs are always the affected plants (op 016's `--affected` mode); the full
-plant set is never run locally. Revised after plan squad round 1 (`reviews/plan/round-1/fixes-1.md`).
+plant set is never run locally. Revised after plan squad round 1 (`reviews/plan/round-1/fixes-1.md`) and round 2
+(`reviews/plan/round-2/fixes-1.md`: a `<details>` opened is not a start case, a static pill or metric keeps its
+longest word in a flex row, the flex-row sibling rule, hover and active stories, the `Truncated` baseline's bubble, and
+the metric's find-in-page limitation).
 
 ## Technical Context
 
@@ -49,7 +52,7 @@ interactive pill, none for static pills, indicators or metrics (R-09).
 1.4.13 (III), red-first and mutation-tested (VIII), plants run locally only in op 016's `--affected` mode (R-13).
 
 **Scale/Scope**: 3 elements, 1 internal module, 3 additive helper methods and 1 additive helper parameter, 5 to 9
-tokens, 17 stories with light and dark baselines, a phase-1 harness step.
+tokens, 21 stories with light and dark baselines, a phase-1 harness step.
 
 ## Constitution Check
 
@@ -59,9 +62,9 @@ tokens, 17 stories with light and dark baselines, a phase-1 harness step.
 |---|---|
 | I. Names, events, no I/O, small interface, manifest | Tags `ocelle-status-indicator`, `ocelle-metric`, `ocelle-pill-tag`; the pill's user intent goes out as `ocelle-pill-tag-activate` (`bubbles`, `composed`, `cancelable`) beside the native `click`, on the same terms as `ocelle-button-activate` (operator decision SPEC-1-01). No I/O: observers only read layout. Every member in the manifest, mirrors and custom states included (contracts/elements-status.md, R-15). |
 | II. Tokens only, brand rules | All values tokens, every declaration written to pass `gate:style-lint` (no `0s` delay, the ring grown by `inset` from `size-indicator`, the visually hidden label copy from keywords and 0, R-04, R-05); new tokens listed (R-10); no monospace (badge in Schibsted Grotesk with `--ocelle-figures`); the pill radius only on state pills, every pill variant being one (operator decision SPEC-1-04) and the indicator dot a state mark under the same reading (plan decision 3); `color-rule` never used; no ochre text or fill; `color-accent-strong` only as the resting border of an interactive pill on its state ground, as 002's rule for controls on state grounds requires (R-07). |
-| III. Accessible by construction | Indicator: role `img` with its label or hidden, `label` the only name source (R-03), state never by colour alone (README), pulse ≤ 5 s and none under reduced motion (2.2.2, R-04), forced colours. Metric: term and definition, the term named by the label as written while it is shown uppercase (R-05). Pill: one native inner control on 012's conventions that fills the host, ARIA moved and no ID reference across the shadow root (R-07), a static pill inert for clicks and focus (R-06, R-07), focus and the tooltip kept across a mode switch (2.4.3, R-08), token focus ring kept inside a clipping container, a resting control border, a disabled look beyond text colour and system colours for a disabled link in forced colours, a pressed look kept distinct in forced colours (a `Highlight` fill, R-07), 24 px targets (2.5.8), full text by tooltip only while truncated, measured to the sub-pixel, and never needed while disabled (1.4.13, R-09). Contrast: every pair used already checked (R-06, R-07); axe on every story. |
+| III. Accessible by construction | Indicator: role `img` with its label or hidden, `label` the only name source (R-03), state never by colour alone (README), pulse ≤ 5 s and none under reduced motion (2.2.2, R-04), forced colours. Metric: term and definition, the term named by the label as written while it is shown uppercase, its written copy a second, invisible find-in-page match recorded as a limitation (R-05); a static pill or metric not shrunk below its longest word in a flex row (R-05, R-06). Pill: one native inner control on 012's conventions that fills the host, ARIA moved and no ID reference across the shadow root (R-07), a static pill inert for clicks and focus (R-06, R-07), focus and the tooltip kept across a mode switch (2.4.3, R-08), token focus ring kept inside a clipping container, a resting control border, a disabled look beyond text colour and system colours for a disabled link in forced colours, a pressed look kept distinct in forced colours (a `Highlight` fill, R-07), 24 px targets (2.5.8), full text by tooltip only while truncated, measured to the sub-pixel, and never needed while disabled (1.4.13, R-09). Contrast: every pair used already checked (R-06, R-07); axe on every story. |
 | IV. Strict CSP, offline | Adopted stylesheets, the pill's interactive host sheet included (added and removed in `adoptedStyleSheets`, R-07); no inline style; every scenario also on the strict-CSP fixture; `gate:csp` on built output. |
-| V. Storybook, behaviour tests | A story per variant and state in light and dark with baselines from 006's pinned container (R-12); interaction tests for `click` and `ocelle-pill-tag-activate` with every flag, order and every keyboard path (contracts/checks.md). |
+| V. Storybook, behaviour tests | A story per variant and state in light and dark with baselines from 006's pinned container (R-12), the hover and active looks of the interactive pill and badge included through 006's pointer parameter, one pill per such story; the `Truncated` baseline's open tooltip stated; interaction tests for `click` and `ocelle-pill-tag-activate` with every flag, order and every keyboard path (contracts/checks.md). |
 | VI. Consumer-driven, own code | #7 and spec-kitty-design #498, #509, #524, #526; kitty-mission-ui's recorded attributes (SC-001). Nothing copied from Spec Kitty. |
 | VII. Semver | Additions only (MINOR): three elements and entry points, an event, custom states, mirror attributes, tokens; three additive methods and one additive, defaulted parameter on internal helpers; changelog entries in both packages. |
 | VIII. Test-first, non-vacuous | Each phase starts with one red commit holding its scenario bodies, node tests, story test entries and token expectations (I3), recorded by `red.sh`; new driver methods self-tested on stand-ins in phase 1 before any element (R-11); every "does not" paired with a positive assertion and a measured plant (contracts/checks.md § bodies), negatives read after the layout settles and the tooltip delay passes; each SC-001 row in the phase of its element, so each is seen failing; each truncation trigger proven alone; CSS-only pulse avoids timer mutants; element and token source mutated with 007's verdicts and op 015's limit, equivalent mutants recorded with reasons (R-09, R-13). |
@@ -69,12 +72,15 @@ tokens, 17 stories with light and dark baselines, a phase-1 harness step.
 | Workflow gates | No new gate; plants locally only in op 016's `--affected` mode (the affected plants of each phase, never the full set), CI's Plants check unchanged; T001 rechecks the tasks against op 016 as merged. |
 
 Re-checked after Phase 1 design and after plan squad round 1 (rows II, III, IV, VII, VIII and Workflow gates
-updated for the round's fixes and decisions): no violation.
+updated for the round's fixes and decisions): no violation. Re-checked after plan squad round 2 (rows III and V
+updated; VIII unchanged, the pulse staying CSS-only by the operator's decision on PLAN-FRESH-2-001): no violation.
 
 ## Decisions the operator should see at the plan gate
 
 Decisions 4, 6, 7, 9, 11 and 12 were revised or added after plan squad round 1; the operator's fork decisions of that
-round are recorded in spec.md's header and in `reviews/plan/round-1/fixes-1.md`.
+round are recorded in spec.md's header and in `reviews/plan/round-1/fixes-1.md`. Decisions 5 and 9 were revised and 13
+and 14 added after plan squad round 2 (`reviews/plan/round-2/fixes-1.md`), whose fork decisions are in spec.md's
+header too.
 
 1. **Implementation waits** (R-01): for 012, 008 and op 016 on `main`, merged into this branch by `/ocelle-land`; T001
    rechecks every fact marked **recheck** in research.md, the merged test driver's signatures (012 and 008
@@ -89,7 +95,10 @@ round are recorded in spec.md's header and in `reviews/plan/round-1/fixes-1.md`.
    host `aria-label` is unsupported and not read; US1-8 pins what Chromium exposes.
 5. **Pill sizes** (R-06): default density `font-size-sm`, `line-height-tight`, padding `space-1` / `space-3`; compact
    `font-size-xs`, `line-height-snug`, `space-1` / `space-2`; `.icon-row` nested inside `.pill`, the icon scaled to
-   `1lh`, so a pill with and without an icon has one height.
+   `1lh`, so a pill with and without an icon has one height. A static pill's host is `inline-block`, its row capped
+   and its text `overflow-wrap: break-word`, so a flex row does not shrink it below its longest word; the
+   `inline-grid` host and the `min-inline-size: 0` chain are the interactive host sheet's (operator decision on
+   PLAN-FRESH-2-002, (a); R-06, R-07).
 6. **Interactive looks** (R-07; operator decisions on PLAN-A11Y-SECURITY-1-005 (a) and -006 (a)): an interactive
    `pill` has a resting `color-accent-strong` border, a badge its status border; hover takes the status colour on a
    pill's border and the status ground as a badge's fill; active and pressed add an inset `bar-width` cue, and a pressed
@@ -100,8 +109,10 @@ round are recorded in spec.md's header and in `reviews/plan/round-1/fixes-1.md`.
    pair), and `GrayText` for a disabled pill of either mode in forced colours; no stop.
 8. **`title` on an interactive pill** (R-09): moved and applied as 012 FR-004 says, so a truncated pill with a `title`
    shows both; the README tells hosts not to set it.
-9. **Story count and plant shards** (R-12): 17 stories (`Pulse` folded into `Tones`, operator decision on
-   PLAN-TESTABILITY-1-011, (b)), more than the headroom 012 estimates to the plant split count; if no plant design
+9. **Story count and plant shards** (R-12): 21 stories (`Pulse` folded into `Tones`, operator decision on
+   PLAN-TESTABILITY-1-011, (b); `PillHovered`, `BadgeHovered`, `PillActive` and `BadgeActive` added after squad round
+   2, PLAN-FRESH-2-004, since FR-004 and constitution V allow no exception), more than the headroom 012 estimates to the
+   plant split count; if no plant design
    that does not grow with the story count has landed by T001, the run stops and asks.
 10. **012 helper extension** (R-08): three additive `MovedAttributes` methods, `capture()`, `release()` and
     `adoptMirrors()`, and an additive, defaulted `active` parameter of `guardHost`; no existing method or parameter
@@ -115,6 +126,12 @@ round are recorded in spec.md's header and in `reviews/plan/round-1/fixes-1.md`.
     link mode as the pill's own rule; `ocelle-button` as merged differs (it sets the state in link mode). The
     difference goes to mission 012 as a triage note, filed by the orchestrator (this plan does not change
     `ocelle-button`).
+13. **`<details>` and the pulse** (R-04; operator decision on PLAN-FRESH-2-001, (b)): opening a `<details>` is not a
+    start case; Chromium keeps the run going while closed and starts none on opening, the README says so and a
+    scenario pins it; the pulse stays CSS-only, with no observer and no script state.
+14. **Siblings of a truncating pill in a flex row** (R-09; operator decision on PLAN-FRESH-2-003, (a)): the element
+    does not take the overflow for itself; the sibling keeps its size only if it is `flex: none` or the pill is given
+    `flex: 1 1 0` by the host, which the README and the contract say and a check pins beside the shared-shrink twin.
 
 ## Project Structure
 
@@ -177,8 +194,10 @@ never the full set locally), recorded in `reviews/phase-N/plants.md`; the phase'
    (012, 008, op 016 merged; 011's state; `control.ts` exports; the tooltip's properties; the merged driver's
    signatures, 012 and 008 reconciled; rule (f) as generalised; the plant split count and story total, decision 9)
    and the task list against op 016 as merged (its command, `--list` output and record format), and records them in
-   `reviews/phase-1/recheck.md`; spikes, recorded: R-04 (d) (`<details>`), `moveBefore()` and `hidden="until-found"`
-   (R-04 (b), (d)), R-05's term name with the visually hidden copy, R-08 (focus-visible after a programmatic focus,
+   `reviews/phase-1/recheck.md`; spikes, recorded: R-04 (d) (`hidden`, a `display: none` ancestor, and the
+   `<details>` behaviour to pin: closed for less and for more than one run, an indicator connected or given `pulse`
+   inside a closed one), `moveBefore()` and `hidden="until-found"` (R-04 (b), (d)), R-05's term name with the visually
+   hidden copy and a token-only hiding that find-in-page skips, R-08 (focus-visible after a programmatic focus,
    and the refocus order relative to the tooltip's slotchange), R-07's forced-colours pressed fill (an author
    `Highlight` background kept under forced-colours emulation), R-09's fractional measure under `text-overflow:
    ellipsis`; stops on any interface difference. Then the harness step (red first): the driver methods of
@@ -189,17 +208,19 @@ never the full set locally), recorded in `reviews/phase-N/plants.md`; the phase'
    indicator row.
 3. **US2 `ocelle-metric`** (P2): the eyebrow tokens only if 011 is not on `main` (with its contrast rows and count
    changes, counts first); the element, entry point, manifest, README, stories `Stack`, `Row`, `EmptyValue`;
-   scenarios US2-1 … US2-6; SC-001's metric row.
+   scenarios US2-1 … US2-7 and § US2 bodies (the flex row, find in page); SC-001's metric row.
 4. **US3 static `ocelle-pill-tag`** (P3): token `line-height-snug`; the element in static mode, entry point, manifest
    (static members), README; stories `Statuses`, `Badge`, `Compact`, `WithIcon`, `LongTextWraps`; scenarios
-   US3-1 … US3-7 and § US3 bodies; SC-001's pill rows.
+   US3-1 … US3-8 and § US3 bodies; SC-001's pill rows.
 5. **US4 interactive pill** (P4): token `target-small`; `MovedAttributes.capture()`, `release()`, `adoptMirrors()`
    and `guardHost`'s `active` parameter (red first in `control.test.ts`, 012's cases untouched); button and link
    modes, activate event, passthrough and mode changes with focus, looks, the interactive host sheet; manifest (moved
    attributes, mirrors, `label` attribute, methods, events, states, `control` part); README rules; stories `Button`,
-   `Pressed`, `Link`, `Disabled`, `Focus`; scenarios US4-1 … US4-12 and § US4 bodies.
+   `Pressed`, `Link`, `Disabled`, `Focus`, `PillHovered`, `BadgeHovered`, `PillActive`, `BadgeActive`; scenarios
+   US4-1 … US4-12 and § US4 bodies.
 6. **US5 truncation and tooltip** (P5): truncation state, fractional measure and observers, the tooltip wrapper,
-   disabled wrapping; stories `Truncated`, `DisabledWraps`; scenarios US5-1 … US5-6 and § US5 bodies; the observer
+   disabled wrapping; stories `Truncated` (focused only once the tooltip is enabled, its baseline showing the open
+   bubble, R-12), `DisabledWraps`; scenarios US5-1 … US5-6 and § US5 bodies; the observer
    teardown mutants recorded as equivalent with their reason.
 7. **Polish**: README cross-links and engines check, CHANGELOG review, quickstart run end to end, full gate set
    (plants still in `--affected` mode against phase 2's base), SC-001 to SC-006 checked.

@@ -74,6 +74,21 @@ ocelle-action-row or ocelle-tooltip; each element meeting #7's Done-when checkli
 - The metric label's name (PLAN-A11Y-SECURITY-1-001), "(a)": FR-022 and US2-2 stand; the plan draws the uppercase
   label `aria-hidden` and names the term by a visually hidden copy as written.
 
+**Operator decisions at plan squad round 2** (human:jeroennouwsdev; `reviews/plan/round-2/refute.md`, applied in
+`reviews/plan/round-2/fixes-1.md`):
+
+- A `<details>` around a pulsing indicator (PLAN-FRESH-2-001), "(b)": closing and opening a `<details>` is not a start
+  case, as for `hidden="until-found"`; Chromium keeps a run under way while the `<details>` is closed and starts none
+  when it opens, which a test pins and the README states; the pulse stays CSS-only (FR-012 (d), US1-4, SC-004, Edge
+  Cases).
+- A one-word static pill or metric in a flex row (PLAN-FRESH-2-002), "(a)": a static pill and a metric are not shrunk
+  below their longest word by a flex row, so "Blocked" beside a long name stays on one line; a long unbroken word still
+  breaks inside the box in a block container or a grid track, and in a flex row it sets the item's minimum; a host that
+  wants the old shrinking sets `min-inline-size: 0` (Edge Cases, FR-024, FR-027, US2-7, US3-8).
+- The sibling of a truncating pill in a flex row (PLAN-FRESH-2-003), "(a)": the sibling keeps its size only if it is
+  `flex: none` or the pill takes the remaining room through `flex: 1 1 0`; otherwise the flex row shares the shrink
+  between them. The README says so and a check pins both (plan, contracts).
+
 **Consumers** (constitution VI): kitty-mission-ui's Kitty Desktop and Kitty Dashboard screens, which today use the
 `sk-pill-tag` (32 uses: `status`, `title`, slotted content, badge use), `sk-status-indicator` (2 uses: `tone`) and
 `sk-metric` (2 uses: `label`, `display-value`) equivalents; spec-kitty-design #498, #509, #524 and #526 name the gaps
@@ -155,9 +170,11 @@ accessibility tree.
    run starts on the same terms, while a state-preserving move (`moveBefore()`) keeps the run under way; **When** the
    motion preference changes from `reduce` to no preference while `pulse` is set, **Then** one run starts at that moment
    on the same terms; **When** a connected indicator with `pulse` set that was not rendered (it or an ancestor `display:
-   none`, the `hidden` attribute in its hidden state included, or inside a closed `<details>`) starts being rendered (a
-   tab panel shown, a `<details>` opened), **Then** one run starts at that moment on the same terms; and no other change
-   starts or restarts it, whatever it is (FR-012 lists the four cases in full; WCAG 2.2.2). The 5 s limit holds for the
+   none`, the `hidden` attribute in its hidden state included) starts being rendered (a tab panel shown, a `hidden`
+   ancestor revealed), **Then** one run starts at that moment on the same terms; **When** a `<details>` around the
+   indicator is closed and opened again, **Then** no run starts on opening: a run under way when it closed goes on while
+   it is closed (and may end unseen), as Chromium does, which a test pins (operator decision, PLAN-FRESH-2-001); and no
+   other change starts or restarts it, whatever it is (FR-012 lists the four cases in full; WCAG 2.2.2). The 5 s limit holds for the
    default values of the pulse's motion tokens (FR-041).
 5. **Given** `pulse` and `prefers-reduced-motion: reduce`, **When** it renders, **Then** no animation runs and the dot
    is shown solid; **When** the preference changes to `reduce` while a run is under way, **Then** the run stops at
@@ -201,6 +218,10 @@ boxes, the computed label and value styles, and the accessibility tree.
 5. **Given** no `display-value` or an empty one, **When** it renders, **Then** the label is shown, the value is empty,
    no placeholder text is added, and the element keeps the height it has with a one-line value.
 6. **Given** an unknown `layout` value, **When** it renders, **Then** it uses the stacked layout.
+7. **Given** a metric with a one-word label and value (for example `label="Open"`, `display-value="12345"`), in either
+   layout, beside a long name in a flex row too narrow for both at their natural widths, **When** it renders, **Then**
+   neither its label nor its value is broken inside a word: each stays on one line, and the flex row shrinks the name
+   instead (Edge Cases; operator decision, PLAN-FRESH-2-002).
 
 ---
 
@@ -238,6 +259,11 @@ long text, both themes and forced colours; read boxes, computed styles, the acce
 7. **Given** `title="Blocked since Monday"` on a static pill, **When** it renders, **Then** the attribute stays on the
    host and the element does not move or change it; this also holds for a pill that was interactive before and has
    become static (US4-8, FR-035).
+8. **Given** a one-word static pill (for example `<ocelle-pill-tag status="warning">Blocked</ocelle-pill-tag>`), in
+   either variant and density, beside a long name in a flex row too narrow for both at their natural widths, **When**
+   it renders, **Then** its word stays whole on one line (the pill is not shrunk below its longest word) and the flex
+   row shrinks the name instead; **When** the host sets `min-inline-size: 0` on the pill, **Then** the pill shrinks and
+   the word breaks inside the pill, every character visible (Edge Cases; operator decision, PLAN-FRESH-2-002).
 
 ---
 
@@ -386,7 +412,15 @@ container width, the text and `disabled`; hover, focus and press Escape; read th
   still seen; the badge keeps its outline; a pressed interactive pill or badge is still told apart from an unpressed
   one (US4-4, FR-031).
 - Right-to-left documents: the icon slot, the row layout and the ellipsis follow the inline direction.
-- Very long unbroken words in a static pill or a metric value: they break inside the box rather than overflow it.
+- Very long unbroken words in a static pill or a metric value: in a block container or a grid track they break inside
+  the box rather than overflow it. In a flex row a word sets the item's minimum inline size: the row does not shrink a
+  static pill or a metric below its longest word, so a one-word pill such as "Blocked" stays whole beside a long name
+  (US2-7, US3-8); a pill's longest word is capped at the container's full inline size, beyond which it breaks inside the
+  pill. A host that wants a static pill or a metric to shrink further in a flex row sets `min-inline-size: 0` on it, and
+  its words then break inside the box; the README says so (operator decision, PLAN-FRESH-2-002).
+- A pulsing indicator inside a `<details>` that is closed and opened: opening it starts no run; a run under way when
+  it closed goes on while it is closed and may end unseen; the README says so (FR-012 (d); operator decision,
+  PLAN-FRESH-2-001).
 
 ## Requirements *(mandatory)*
 
@@ -438,10 +472,13 @@ container width, the text and `disabled`; hover, focus and press Escape; read th
   reconnection here and keeps the run under way (operator decision, PLAN-CORRECTNESS-1-013); (c)
   when the motion preference changes from `reduce` to no preference while the element is connected with `pulse` set;
   and (d) each time the element starts being rendered while connected with `pulse` set, having not been rendered
-  because it or an ancestor was `display: none` (the `hidden` attribute in its hidden state included) or inside a closed
-  `<details>` (a hidden tab panel shown, a `<details>` opened, a `hidden` ancestor revealed); a reveal from
-  `hidden="until-found"` is not a start case (operator decision, PLAN-CORRECTNESS-1-013). What a `moveBefore()` move
-  and an `until-found` reveal do is pinned by tests. Each case keeps no state from earlier
+  because it or an ancestor was `display: none`, the `hidden` attribute in its hidden state included (a hidden tab
+  panel shown, a `hidden` ancestor revealed); a reveal from `hidden="until-found"` is not a start case (operator
+  decision, PLAN-CORRECTNESS-1-013), and neither is the opening of a `<details>` around the element: an element inside
+  a closed `<details>` does not count as not rendered here, and Chromium keeps a run under way while the `<details>` is
+  closed and starts none when it opens (operator decision, PLAN-FRESH-2-001). What a `moveBefore()` move, an
+  `until-found` reveal, a `<details>` closed and opened, and a start case that occurs while a `<details>` around the
+  element is closed do is pinned by tests. Each case keeps no state from earlier
   runs. A case that occurs while the element is not rendered starts no run of its own; the run starts when (d) occurs.
   No other change starts or restarts a run: not a change of `tone`, `label` or any other attribute, the theme, the
   element's size or position, `visibility` or opacity, or scrolling it out of view and back. Without `pulse`, no
@@ -450,7 +487,8 @@ container width, the text and `disabled`; hover, focus and press Escape; read th
   FR-017 does for its spinner). The README also states that each connection, and each time the indicator is shown
   again, starts a run, so a host that re-inserts, moves, re-renders or re-shows an indicator more often than every
   5 s (a polled swap, a live re-sort) keeps it pulsing, and should keep `pulse` off between changes or keep the
-  element in place (SPEC-3-08).
+  element in place (SPEC-3-08). It states too that a `<details>` opened around a pulsing indicator starts no run
+  (PLAN-FRESH-2-001).
 - **FR-013**: Under `prefers-reduced-motion: reduce` no animation runs, with or without `pulse`, and the dot is shown
   solid; a change of the preference to `reduce` stops a run under way at once (and a change back starts one, FR-012
   (c)).
@@ -476,8 +514,8 @@ container width, the text and `disabled`; hover, focus and press Escape; read th
 - **FR-023**: The value uses Schibsted Grotesk with tabular figures (`--ocelle-figures`).
 - **FR-024**: The label and value are exposed as one term and its definition, in that order, in both layouts. In
   `stack` the label is above the value; in `row` they share one line, label first in reading order, and wrap rather
-  than overflow when there is not room for both. An empty value adds no placeholder and keeps the one-line value
-  height.
+  than overflow when there is not room for both. A flex row around the metric does not shrink it below its longest
+  word (Edge Cases, US2-7). An empty value adds no placeholder and keeps the one-line value height.
 
 **`ocelle-pill-tag`**
 
@@ -491,7 +529,8 @@ container width, the text and `disabled`; hover, focus and press Escape; read th
 - **FR-026**: Content: the default slot holds the pill's text; the `icon` slot follows mission 005's slot convention.
   Slotted icons are decorative and add nothing to the accessibility tree.
 - **FR-027**: A static pill (neither `interactive` nor a link-mode `href`) is not focusable, has no role of its own,
-  exposes its text as plain text, and wraps a full text that does not fit onto further lines; it never truncates.
+  exposes its text as plain text, and wraps a full text that does not fit onto further lines; it never truncates. A
+  flex row around it does not shrink it below its longest word (Edge Cases, US3-8).
   `title` and ARIA attributes on a static pill's host are left where they are.
 - **FR-028**: The `pill` variant fills with `--ocelle-color-<status>-bg`, sets its text in `--ocelle-color-<status>`,
   and has `--ocelle-radius-pill` corners. The `badge` variant has no fill of its own, a border in
@@ -609,7 +648,8 @@ container width, the text and `disabled`; hover, focus and press Escape; read th
 - **SC-004**: With reduced motion requested, zero animations run on any indicator; with it not requested, the dot is
   fully visible in 100 % of sampled animation frames, and with the default token values no pulse run lasts longer
   than 5 s from its start, whether it started by setting `pulse`, by connecting the element, by a change of the
-  motion preference or by the element starting to be rendered (FR-012 (d)).
+  motion preference or by the element starting to be rendered (FR-012 (d); the opening of a `<details>` is not one of
+  these starts, operator decision PLAN-FRESH-2-001).
 - **SC-005**: A keyboard-only user can reach, activate and read the full text of every enabled interactive pill,
   truncated or not, without a pointer; every activation produces exactly one `click` and one
   `ocelle-pill-tag-activate` (none on a modifier click in link mode); the full text of every disabled interactive

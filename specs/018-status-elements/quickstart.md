@@ -32,9 +32,14 @@ pnpm run gate:mutation                          # alone, never beside plants
   `gate:manifest` reports nothing stale.
 - In the Storybook: the indicator stories show solid dots, `Tones` with and without `pulse` (captures run with reduced
   motion); the metric labels are uppercase; the pill stories show wrapping static pills, outlined badges, compact
-  pills, interactive pills with their resting border, pressed pills and badges, disabled interactive pills and a
-  truncated pill, focused inside a clipping container with its ring whole.
+  pills, interactive pills with their resting border, a hovered pill (its border in the status colour) and a hovered
+  badge (the status-ground fill), an active pill and badge (the inset cue), pressed pills and badges, disabled
+  interactive pills, and in `Truncated` unfocused truncated and fitting pills above one truncated pill that is focused
+  inside a clipping container with its ring whole and 008's tooltip bubble open above it, over no other example (the
+  story focuses it only once its tooltip is enabled; a change to 008's bubble re-baselines this story). 21 stories in
+  all, each in light and dark.
 - By hand in Chromium (not a gate): an indicator with `pulse` pulses about 4.8 s and stops; hovering or tabbing to a
   truncated interactive pill shows its full text in the tooltip, Escape hides it; a screen reader reads a metric's
-  label as written.
+  label as written; the find bar matches a metric's label twice, once on an invisible copy (a known limitation, R-05);
+  a pulsing indicator inside a `<details>` does not pulse again when the `<details>` is opened.
 - Mutation: no surviving mutant in new or changed source without a recorded equivalent.

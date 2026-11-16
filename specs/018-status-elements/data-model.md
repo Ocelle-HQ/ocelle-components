@@ -31,27 +31,32 @@ animation on the ring, which exists iff `pulse` and the element is rendered and 
 Pulse run lifecycle (CSS, R-04):
 
 ```text
-[no ring] --pulse set, rendered (a) / connect with pulse (b) / shown again (d)--> [running]
+[no ring] --pulse set, rendered (a) / connect with pulse (b) / shown again from display: none or hidden (d)--> [running]
 [running] --after count × duration--> [ended: ring at opacity 0, dot solid]
 [running|ended] --pulse removed, rendered--> [no ring]
 [running] --reduced motion on--> [no animation]  --reduced motion off (c)--> [running]
 pulse removed and set within one task --> no transition (one Lit update, ring kept)
 moveBefore() (state-preserving move), hidden="until-found" revealed --> as the T001 spike shows, pinned; not a start case
+<details> closed --> no transition: [running] goes on while closed and may reach [ended] unseen
+<details> opened --> no transition: no run starts (Chromium 153, squad round 2), pinned; not a start case
 any other change (tone, label, theme, size, position, visibility, scroll) --> no transition
 ```
 
 FR-012 (a), (b) and (d) as amended after squad round 1 (operator decisions on PLAN-CORRECTNESS-1-013 (a) and
-PLAN-CORRECTNESS-1-014 (b)).
+PLAN-CORRECTNESS-1-014 (b)) and squad round 2 (PLAN-FRESH-2-001 (b): no observer and no script state for the
+`<details>` case).
 
 ## `ocelle-metric`
 
 | Field | Source | Type / default | Notes |
 |---|---|---|---|
-| `label` | attribute `label`, reflected | string, `""` | rendered twice as text in `dt`: an `aria-hidden` uppercase eyebrow span and a visually hidden written copy that names the term (R-05) |
+| `label` | attribute `label`, reflected | string, `""` | rendered twice as text in `dt`: an `aria-hidden` uppercase eyebrow span and a visually hidden written copy that names the term (R-05); find in page matches it twice, a recorded limitation (R-05) |
 | `displayValue` | attribute `display-value`, reflected | string, `""` | rendered as text in `dd`; never parsed |
 | `layout` | attribute `layout` | `"stack" \| "row"`, `stack` | getter parses; unknown → `stack` (R-02 pattern) |
 
-No events, methods or custom states.
+No events, methods or custom states. Box: `overflow-wrap: break-word` on `dt` and `dd`, and in `row` `min-inline-size:
+0` on both inside the pair, so a flex row does not shrink the metric below its longest word while a long value still
+breaks inside it (R-05).
 
 ## `ocelle-pill-tag`
 
@@ -80,8 +85,10 @@ Derived:
   and applied `aria-current` present and ≠ `"false"` (FR-031).
 - **observers** (`ResizeObserver` on the text span, `MutationObserver` on the host, `slotchange` on the default slot)
   exist iff connected and mode ≠ static (R-09).
-- **interactive host sheet** (the focus-ring clearance cap and margin, R-07) is in `adoptedStyleSheets` iff mode ≠
-  static.
+- **interactive host sheet** (the focus-ring clearance cap and margin; the host's `display: inline-grid` and the
+  `min-inline-size: 0` chain on host, control, `.icon-row` and text span; the disabled pill's `overflow-wrap:
+  anywhere`, R-07) is in `adoptedStyleSheets` iff mode ≠ static. While static the host is `inline-block` with no
+  `min-inline-size: 0` anywhere, so a flex row does not shrink it below its longest word (R-06).
 
 Mode transitions (FR-035, R-08). Every passthrough step runs synchronously in the `interactive`/`href`
 `attributeChangedCallback` that changes the mode; rendering follows in Lit's update.
