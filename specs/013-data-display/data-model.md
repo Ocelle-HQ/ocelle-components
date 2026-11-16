@@ -63,7 +63,7 @@ its own line; no label is shown until upgrade (R-01, PLAN-FRESH-2-002).
 - `columns` (with `layout === "grid"` only): `gridMeasure` is the sheet's own content-box inline size as laid out in
   four columns (no column class on the `<dl>`); 4 when `gridMeasure >= 2 × threshold`, 2 when `gridMeasure >=
   threshold`, else 1. Decided by the same measure pass, on the same triggers, with the same narrowing (R-02 § The
-  grid layout's column count). The pass sets the internal class `cols-2` or `cols-1` (none for 4) unconditionally.
+  grid layout's column count). The pass sets the internal class `cols-2` below 2 × threshold, and `cols-1` as well below the threshold (none for 4), unconditionally.
 - `stacked` is not a reactive property and is not bound in the template. The measure pass removes the `stacked` class,
   reads the measure, and sets the class from the decision unconditionally, so the DOM never differs from the decision
   (PLAN-FRESH-3-002).
@@ -79,7 +79,7 @@ its own line; no label is shown until upgrade (R-01, PLAN-FRESH-2-002).
   ```
   With `layout="grid"` (IQ-05 (b), R-01):
   ```text
-  <dl part="list">        (class "cols-2" or "cols-1" set by the measure pass only; none for four columns)
+  <dl part="list">        (class "cols-2" below 2 × T, and "cols-1" as well below T, set by the measure pass only; none for four columns)
     per pair: <div class="item"><dt part="label" lang=… dir=…>{label}</dt><dd part="value"><slot/></dd></div>,
               with the slot assigned to that pair
   </dl>

@@ -283,7 +283,7 @@ function iterationCountRaw(nodes: readonly Node[]): string[] {
     });
     const [count] = counts;
     const allowed = counts.length === 1 && count !== undefined && positiveInteger.test(count.value) ? count : undefined;
-    // Stryker disable next-line StringLiteral: equivalent, classify() reads the property only for font values and unitless numbers, and no property name but the unitless ones and the fonts changes either
+    // Stryker disable next-line StringLiteral: equivalent, classify() reads the property only for font values, unitless numbers and (through functionRaw) the grid-template-columns tracks and the transform translateX(<percentage>), and the mutant "" is, like animation-iteration-count, none of the unitless properties, the fonts, grid-template-columns or transform, so each read gives the same result
     return item.flatMap((node) => (node === allowed ? [] : classify([node], "animation-iteration-count", false)));
   });
 }

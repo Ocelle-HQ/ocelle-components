@@ -45,6 +45,40 @@ describe("reconnection, in process (R-01)", () => {
   });
 });
 
+describe("a removed sheet stops listening, in process (O3-01, landing L1-01)", () => {
+  it("a sheet removed from the document keeps the classes it had at removal after a window resize, while a connected sheet re-runs the pass on the same dispatch", async () => {
+    await driver.mount(
+      '<div id="holder"><ocelle-facts id="r" style="inline-size: 300px"><ocelle-fact label="Owner">Ada</ocelle-fact></ocelle-facts>' +
+        '<ocelle-facts id="c" style="display: block; inline-size: 300px; block-size: 100px; overflow: hidden"><ocelle-fact label="Owner">Ada</ocelle-fact></ocelle-facts></div>',
+    );
+    await driver.layout("c");
+    const removed = document.getElementById("r");
+    const connected = document.getElementById("c");
+    const removedList = removed?.shadowRoot?.querySelector("dl");
+    const connectedList = connected?.shadowRoot?.querySelector("dl");
+    if (removed === null || removedList === null || removedList === undefined || connectedList === null || connectedList === undefined) throw new Error("no sheet");
+    const atStart = { removed: [...removedList.classList], connected: [...connectedList.classList] };
+    removed.remove();
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    const atRemoval = [...removedList.classList];
+    // The connected sheet has a fixed block size and hides its overflow, so clearing its class by hand resizes
+    // neither the host nor a probe: no ResizeObserver callback restores the class (`undispatched` pins that), and
+    // only the window resize listener's pass does.
+    connectedList.classList.remove("stacked");
+    await driver.layout("c");
+    const undispatched = [...connectedList.classList];
+    window.dispatchEvent(new Event("resize"));
+    await driver.layout("c");
+    expect({ atStart, atRemoval, undispatched, removed: [...removedList.classList], connected: [...connectedList.classList] }).toEqual({
+      atStart: { removed: ["stacked"], connected: ["stacked"] },
+      atRemoval: ["stacked"],
+      undispatched: [],
+      removed: ["stacked"],
+      connected: ["stacked"],
+    });
+  });
+});
+
 describe("no ResizeObserver loop error (013 R-02, operator decision \"(a) Defer + 2-frame wait\"; T006a)", () => {
   it("the flips (a block 600 → 300 → 600 px, the round 3 dialog widened 360 → 1200 px, the hook 15rem → 40rem → 15rem at 450 px, a grid sheet 300 → 600 → 800 px) each happen and raise no ResizeObserver loop error in a window error event or a console.error call, which the recorder sees when the test dispatches one", async () => {
     const recorded: string[] = [];

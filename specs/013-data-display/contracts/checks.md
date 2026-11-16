@@ -87,6 +87,12 @@ something only the element gives:
   column count after each step), and that the recorder sees a synthetic `ErrorEvent` with that message dispatched by
   the test itself, so it cannot pass on a recorder that sees nothing. Plant: the measure pass run synchronously inside
   the `ResizeObserver` callback (no `requestAnimationFrame`); this test must fail.
+- **A removed sheet stops listening (O3-01, landing L1-01).** In the in-process harness
+  (`packages/elements/test/facts.test.ts`): a sheet is removed from the document, `window` receives a `resize` event
+  and, after the layout wait, the removed sheet's `<dl>` class list is the one it had at removal (it does not re-decide
+  its layout, so `window` does not keep it alive). Paired: the same dispatch on a connected sheet re-runs the pass.
+  The cleanup already ships, so this test has no red; plants: the `disconnectedCallback` body emptied, and the
+  `window.removeEventListener("resize", …)` call removed; the test must fail on each.
 - **The measure pass owns the class (PLAN-FRESH-3-002).** A 300 px block sheet (stacked) is resized to 290 px; after
   the layout wait it is still one column (the `<dl>`'s computed `grid-template-columns` is one track and each value is
   below its label). Plant: the class not restored after the measure (the pass toggles `stacked` only when the decision
