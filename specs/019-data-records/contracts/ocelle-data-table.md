@@ -36,12 +36,17 @@ states (branch; rechecked by T001).
 - `:host { display: block; min-inline-size: 0; }`, so the element shrinks as a default flex item or a grid item and
   its region overflows instead of the page (R-02, FR-009);
 - `:host([hidden]) { display: none; }`;
-- `:host .region-track { inline-size: fit-content; }` (R-03, decision 1);
-- `:host .region-box { container-type: inline-size; }`, the query container the caption's cap resolves against
-  through the flat tree (R-07). It adds inline size containment to the box.
+- `:host .region-track { inline-size: fit-content; }` (R-03, decision 1).
 
-The README's Sizing line: a wrapper that is itself the flex or grid item, around the element, needs
-`min-inline-size: 0` too.
+No box sets `container-type` (PLAN-FRESH-2-001): inline size containment would make the element 0 px wide in a
+shrink-to-fit host (R-02). The element adopts one per-instance constructed sheet of its own, after
+`overflowRegionStyles`, holding `.region-track { --data-table-box-size: <n>px; }`. Its own `ResizeObserver` on
+`.region-box` writes the box's client inline size there (R-07). The property is internal (no `--ocelle-` prefix, not
+in the manifest, not a documented hook).
+
+The README's Sizing line has two parts. A wrapper that is itself the flex or grid item, around the element, needs
+`min-inline-size: 0` too. In a shrink-to-fit host (a dialog, an inline-block, a start-aligned flex) the data table
+takes its table's width and overflows only when its own inline size is bounded, as 015's README says of the scroller.
 
 ```html
 <div class="region-frame">
@@ -78,12 +83,15 @@ The README's Sizing line: a wrapper that is itself the flex or grid item, around
 
 ## Caption and the start fade (R-07, R-17)
 
-The caption is sticky at the box's start edge and capped by `--ocelle-measure-container` (the box's width), less the
-end fade and the track's ring room, so it wraps inside the box's unmasked width. 009's start fade masks the box's
-start edge, so a caption pinned at `inset-inline-start: 0` would fade there. The data table asks 009's owner for a
-module option that keeps a pinned start box out of the start fade (R-17) and does not change the module. Until that
-option is on `main`, the caption's inset and cap follow the operator's answer to Q-F (plan default (a): inset and cap
-by the fade depth).
+The caption is capped by the box's measured width (`--data-table-box-size`, falling back to
+`--ocelle-measure-container` before the first measurement and before upgrade), less the end fade and the track's ring
+room, so it wraps inside the box's unmasked width at rest. Its `contain: inline-size` keeps its text out of the
+table's intrinsic width, so the measurement cannot feed back (R-07). 009's start fade masks the box's start edge, so
+a caption pinned at `inset-inline-start: 0` would fade there. The data table asks 009's owner for a module option
+that keeps a pinned start box out of the start fade (R-17) and does not change the module. Until that option is on
+`main`, the caption is not sticky (Q-F, decided (b) by PLAN-FRESH-2-002's option (c)). It scrolls with the table, starts
+at the table's start edge at every scroll position, and is reached by scrolling back. Once the option lands, the
+caption becomes sticky at inset 0, a later MINOR.
 
 ## Look
 

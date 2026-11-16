@@ -7,8 +7,8 @@ checks: [contracts/checks.md](contracts/checks.md).
 
 - 009, 013 and op 016 are on `main` and merged into this branch, and `reviews/recheck.md` (T001) records no open
   difference.
-- `reviews/recheck.md` records whether 009's pinned-start option (research R-17) is on `main`, and the caption follows
-  it or the operator's answer to Q-F.
+- `reviews/recheck.md` records whether 009's pinned-start option (research R-17) is on `main`. If it is, the caption
+  is sticky through it at inset 0; if not, it scrolls with the table (Q-F, decided (b)).
 - Each phase's `reviews/phase-<N>/element-plants.md` records every element plant biting (contracts/checks.md).
 - `pnpm install --offline` works (`pnpm run setup:online` after a container restart).
 - For baselines: docker running (`nohup dockerd > /tmp/dockerd.log 2>&1 &`, as root), and #10's pinned container
@@ -27,7 +27,8 @@ checks: [contracts/checks.md](contracts/checks.md).
    selected plant passes. The record goes in `reviews/phase-4/plants.md`.
 5. **By hand, in Storybook** (`pnpm --filter storybook run dev`, or the built `storybook-static`):
    - **Data table, overflows.** At 320 px, Tab reaches the region, a screen reader announces the "Work packages"
-     group, and the arrows scroll it. At 1280 px Tab skips it.
+     group, and the arrows scroll it. At rest the caption wraps inside the box and starts at the table's edge. At
+     1280 px Tab skips it.
    - **Timeline.** The screen reader reads a list of three items, "14:02 Mission created" first, with no dot or line
      announced.
    - **Chain, wrapped.** The steps wrap at 320 px with no connector at a line's end, and the ordinals read 1 to 6 on

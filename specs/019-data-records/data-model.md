@@ -16,6 +16,7 @@ while unset.
 | table | derived | `HTMLTableElement \| undefined` | The first direct child with `localName === "table"`; re-derived on every child-list change. |
 | caption text | derived | `string \| undefined` | The assigned table's `caption`'s text nodes in tree order, skipping any element with `hidden` or `aria-hidden="true"` and its subtree, an `<img>` giving its `alt`; white space collapsed and trimmed; empty counts as absent (R-04). Re-read on any change in the subtree (`childList`, `characterData`, `hidden`, `aria-hidden`, `alt`). |
 | name | derived | `string \| undefined` | `label` (non-blank), else caption text, passed to `setLabel`; the module puts a non-blank host `aria-label` first. |
+| box size | derived, from layout | `number` (px) | `.region-box`'s client inline size, read by the element's own `ResizeObserver` and written as the internal `--data-table-box-size` on `.region-track` in its per-instance sheet; caps the caption (R-07). Not surface. |
 | overflow state | module (009) | `overflowing`, `offStart`, `offEnd`, `fadeAttribute`, `name` | As 009's contract states. Overflowing: the box is a tab stop, with `role="group"` and `aria-label` when named. |
 
 **States**: fits (no tab stop, no role, no fade) ↔ overflows (tab stop; named `group` or unnamed; fades on the sides
@@ -31,14 +32,17 @@ to the first focusable cell content or to the frame (009's handover).
 | events | derived | `OcelleTimelineEvent[]` | Direct children with the item tag, neither `hidden` nor `aria-hidden="true"`, in source order. |
 | name | derived | `string \| undefined` | `resolveName(host aria-label, label)` from 009's module (R-09); set on the shadow `<ol>` as `aria-label`; absent when undefined. |
 
+| next has time | derived per `<li>` | `boolean` | `hasTime` of the next visible event's `time`; sets `next-has-time` on the `<li>`, so its connector ends `space-1` before the next dot (R-10). False on the last `<li>`. |
+
 **States**: no visible event (no `<ol>` rendered) ↔ one or more (an `<ol>` with one `<li>` per event; the last `<li>`
-renders no connector span). Before upgrade: one event per line, no time (R-08).
+renders no connector span). Before upgrade: one visible event per line, no time, an `aria-hidden="true"` event not
+shown (R-08).
 
 ## Timeline event (`ocelle-timeline-event`)
 
 | Field | Source | Type | Rule |
 |---|---|---|---|
-| `time` | property / attribute, reflected | `string \| undefined` | Shown as given in `part="time"` above the content (Q-C). "Has a time" is `hasTime(time)`: a string whose trimmed value is not empty. Absent, empty or white space renders no time box and sets no `has-time` on the timeline's `<li>` (R-10). |
+| `time` | property / attribute, reflected | `string \| undefined` | Shown as given in `part="time"` above the content (Q-C). "Has a time" is `hasTime(time)` from the internal `timeline-time.ts`: a string whose trimmed value is not empty. Absent, empty or white space renders no time box and sets no `has-time` on the timeline's `<li>` (R-10). |
 | `wrap` | property / attribute, reflected | `"anywhere" \| undefined` | `overflow-wrap: anywhere` on `part="content"` only. |
 | content | light DOM | inline markup | Shown in `part="content"` through the default slot; never copied. |
 

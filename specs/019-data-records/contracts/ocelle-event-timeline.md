@@ -1,7 +1,8 @@
 # Contract: `ocelle-event-timeline`
 
 Module `packages/elements/src/ocelle-event-timeline.ts`, class `OcelleEventTimeline`. It imports
-`./ocelle-timeline-event.ts` (013's container import rule) and calls `define("ocelle-event-timeline", …)`.
+`./ocelle-timeline-event.ts` (013's container import rule) and `hasTime` from the internal `./timeline-time.ts`
+(R-10), and calls `define("ocelle-event-timeline", …)`.
 
 ## Usage
 
@@ -28,7 +29,7 @@ Module `packages/elements/src/ocelle-event-timeline.ts`, class `OcelleEventTimel
 
 ```html
 <ol role="list" part="list" aria-label="…">
-  <li role="listitem" class="has-time">    <!-- has-time when hasTime(event.time) -->
+  <li role="listitem" class="has-time next-has-time">  <!-- has-time when hasTime(event.time); next-has-time when hasTime(next visible event's time) -->
     <span class="marker-line" aria-hidden="true"><span class="marker"></span></span>
     <span class="connector" aria-hidden="true"></span>   <!-- not rendered on the last visible <li> -->
     <slot></slot>                          <!-- assigned: one event -->
@@ -38,14 +39,17 @@ Module `packages/elements/src/ocelle-event-timeline.ts`, class `OcelleEventTimel
 ```
 
 With no visible event nothing is rendered. The connector is a real span (PLAN-TESTABILITY-1-001), absolutely
-positioned in the marker column from the marker's centre to the next marker's centre (R-10).
+positioned in the marker column. It is gapped (PLAN-FRESH-2-004, operator decision (a)): it starts `--ocelle-space-1`
+after its own dot's block end and ends `--ocelle-space-1` before the next visible dot's block start, so it never
+crosses a dot. Its start follows this `<li>`'s marker line (`has-time` or not) and its end the next `<li>`'s
+(`next-has-time` or not), so a mixed timed and untimed timeline keeps equal gaps (R-10).
 
 ## Marks
 
 | Element | Styles |
 |---|---|
 | `.marker` | `box-sizing: border-box`; inline and block size `--ocelle-size-dot`; `border: calc(var(--ocelle-size-dot) / 2) solid var(--ocelle-color-ink-muted)`; `border-radius: 50%` (a mark shape, Q-D) |
-| `.connector` | no inline size; `border-inline-start: var(--ocelle-border-width) solid var(--ocelle-color-rule-strong)` (decorative) |
+| `.connector` | no inline size; `border-inline-start: var(--ocelle-border-width) solid var(--ocelle-color-rule-strong)` (decorative); block start and end insets as `calc()` over tokens from the two `<li>`'s types, `size-dot`, `space-1` and the row gap `space-3` (R-10) |
 
 ## Forced colours (PLAN-A11Y-SECURITY-1-001)
 
@@ -58,8 +62,8 @@ content text take the system text colour. No `forced-color-adjust: none`.
 - Manual assignment of each visible event (no `hidden`, no `aria-hidden="true"`) to its `<li>`'s slot, in source
   order.
 - A `MutationObserver` watches the child list and each child's `hidden`, `aria-hidden` and `time`, and re-renders.
-  `time` reflects, so a property set from script is seen; the `has-time` class uses the event module's `hasTime`
-  predicate, the same one that decides the time box (R-10).
+  `time` reflects, so a property set from script is seen. The `has-time` and `next-has-time` classes use the
+  internal `hasTime` predicate of `timeline-time.ts`, the same one the event uses for its time box (R-10).
 - The name is `resolveName(host aria-label, label)`, set on the `<ol>` (R-09).
 - No live region, landmark, heading or tab stop.
 
@@ -70,6 +74,9 @@ or connector appears in the tree; each marker wrapper and connector span carries
 
 ## Before upgrade
 
-`@ocelle/styles` sets `:where(ocelle-event-timeline:not(:defined) > ocelle-timeline-event:not([hidden])) { display:
-block; }`, so the events show one per line (R-08). Their times do not show before upgrade (the time is rendered in
-shadow). The README's "Before upgrade" line says both.
+`@ocelle/styles` sets `:where(ocelle-event-timeline:not(:defined) >
+ocelle-timeline-event:not([hidden]):not([aria-hidden="true"])) { display: block; }` and
+`:where(ocelle-event-timeline:not(:defined) > ocelle-timeline-event[aria-hidden="true"]) { display: none; }`, so the
+visible events show one per line and an `aria-hidden="true"` event is not shown, as after upgrade (R-08,
+PLAN-FRESH-2-005). Their times do not show before upgrade (the time is rendered in shadow). The README's "Before
+upgrade" line says both.

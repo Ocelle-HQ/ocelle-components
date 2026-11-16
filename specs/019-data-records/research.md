@@ -45,12 +45,24 @@ change, and calls `setLabel(name)` in `updated()` with the name of R-04. Nothing
 **Host sizing (PLAN-A11Y-SECURITY-1-004, operator decision (a)).** The element's own styles set `:host {
 min-inline-size: 0; }`. As a default flex item, or a grid item in an `auto` or `1fr` track, the host's automatic
 minimum is otherwise its content's min-content width, so the region would never overflow and the page would scroll
-sideways (FR-009; 015's README documents the same limit for 009's own elements). R-07's query container on
-`.region-box` adds inline size containment, which also keeps the table's width out of the host's min-content size;
-`min-inline-size: 0` stays as the explicit rule, and the bodies prove both. Phase 1's red commit has two 320 px bodies:
-the element as a default flex item and as a `1fr` grid item, each asserting that the page's scroll width equals the
-viewport width and that the region overflows (its box is a tab stop). The README states that a host that is not itself
-the flex or grid item (a wrapper around it) needs `min-inline-size: 0` on that wrapper.
+sideways (FR-009; 015's README documents the same limit for 009's own elements). Phase 1's red commit has two 320 px
+bodies: the element as a default flex item and as a `1fr` grid item, each asserting that the page's scroll width
+equals the viewport width and that the region overflows (its box is a tab stop). The README states that a host that is
+not itself the flex or grid item (a wrapper around it) needs `min-inline-size: 0` on that wrapper.
+
+**Shrink-to-fit hosts (PLAN-FRESH-2-001, operator decision (a)).** The data table sets no `container-type` on any of
+its boxes (R-07). Inline size containment on `.region-box` would make the box add nothing to its ancestors' intrinsic
+sizes, so in a shrink-to-fit host the host, the box and the caption would be 0 px wide. Such hosts are a `<dialog>`, a
+popover or other absolutely positioned panel, an inline-block, a float, a table cell, a start-aligned column flex or
+grid, and a `width: fit-content` card. The squad measured this in headless Chrome. 015's README rule says the same: no
+`container-type` on a host that may shrink to fit. In such a host the data table takes its table's width, as 009's
+elements take their content's. It does not overflow unless its own inline size is bounded, so the page may scroll
+sideways instead; the README's Sizing line states this, as 015's does for the scroller. Phase 1's red commit has
+three shrink-to-fit bodies: the element in an open `<dialog>`, in a `display: inline-block` wrapper, and in a column
+flex with `align-items: flex-start`. Each runs with a fitting table and asserts three things. The host's inline size
+equals the table's natural width plus the track's ring room, within 0.5 px, and is above 0. The caption is not
+narrower than its longest word. A long caption over a narrow table wraps at the table's width and does not widen the
+host (R-07's caption containment).
 
 **Rationale.** Operator decision Q2 (b); FR-008. The module already gives the conditional tab stop, the named group,
 arrow keys, fades, focus clearance and focus handover, and its triggers (box and track resize, `slotchange` on the
@@ -141,7 +153,7 @@ tokens):
 | Target | Values |
 |---|---|
 | table | `border-collapse: collapse`; `inline-size: 100%` (it fills the track, R-03); `margin: 0`; `font-family: var(--ocelle-font-sans)`; `font-variant-numeric: var(--ocelle-figures)` |
-| caption | `font-size: var(--ocelle-font-size-sm)`; `font-weight: var(--ocelle-font-weight-medium)`; `line-height: var(--ocelle-line-height-normal)`; `color: var(--ocelle-color-ink)`; `text-align: start`; `padding-block-end: var(--ocelle-space-2)`; `position: sticky`, with the inset and the `max-inline-size` cap of R-07 (it stays at the region's start edge while the region scrolls and wraps inside the box's visible width) |
+| caption | `font-size: var(--ocelle-font-size-sm)`; `font-weight: var(--ocelle-font-weight-medium)`; `line-height: var(--ocelle-line-height-normal)`; `color: var(--ocelle-color-ink)`; `text-align: start`; `padding-block-end: var(--ocelle-space-2)`; `position: static` (not sticky until 009's option of R-17 lands; Q-F (b)); `contain: inline-size` and the measured `max-inline-size` cap of R-07 (it scrolls with the table and wraps inside the box's visible width at rest) |
 | body cell (`td`, and `th` per FR-006's row rule) | `padding: var(--ocelle-space-1) var(--ocelle-space-2)` (4 px / 8 px, below 003's 8 px / 12 px); `font-size: var(--ocelle-font-size-sm)`; `line-height: var(--ocelle-line-height-compact)`; `color: var(--ocelle-color-ink-soft)`; `text-align: start`; `vertical-align: top`; `border-block-end: var(--ocelle-border-width) solid var(--ocelle-color-rule)` (decorative, FR-013) |
 | column header (FR-006's selection) | `font-size: var(--ocelle-font-size-xs)`; `font-weight: var(--ocelle-font-weight-medium)`; `text-transform: uppercase`; `letter-spacing: var(--ocelle-tracking-caps)`; `color: var(--ocelle-color-ink-muted)`; `border-block-end-color: var(--ocelle-color-rule-strong)` (decorative); same padding as body cells |
 | row header (FR-006's selection) | `font-size: var(--ocelle-font-size-sm)`; `font-weight: var(--ocelle-font-weight-medium)`; `color: var(--ocelle-color-ink)`; no upper case, no tracking |
@@ -162,8 +174,9 @@ with the data table's value, under `[data-ocelle-prose=""] :where(…the same ta
 `padding`, `border-block-end`, `text-align`; on `th` font weight, size, figures and the rule colour; on the caption
 `position`, `inset-inline-start`, `max-inline-size`, `text-align`, and the caption inherits `line-height-prose`. The
 override restates each, plus `display: table`, `overflow-x: visible`, `max-inline-size: none` on the table,
-`container-type: normal` and `min-inline-size: auto`, and the caption's font size, line height and R-07's
-`max-inline-size` cap (set by the data table, so neither the prose line height nor the prose cap reaches it).
+`container-type: normal` and `min-inline-size: auto`, and the caption's `position: static`, `inset-inline-start:
+auto`, `contain: inline-size`, font size, line height and R-07's measured `max-inline-size` cap (set by the data
+table, so neither 003's sticky prose caption, the prose line height nor the prose cap reaches it).
 
 **The override's node test (PLAN-TESTABILITY-1-008).** It does not list 003's selector forms. It parses `base.css`,
 selects every `[data-ocelle-prose=""]` rule whose selector can match a table, caption, row group (`thead`, `tbody`,
@@ -184,10 +197,11 @@ passes it (PLAN-CORRECTNESS-1-005, PLAN-FRESH-1-004):
 - Phase 1's red: the rule table gains block 1 (the data-table rules) and block 2 (the prose override), transcribed
   with their declarations, after the wrap rule, and the last-rule assertion becomes "the wrap rule, then block 1,
   then block 2, in that order".
-- Phase 2's red: the table gains the timeline's pre-upgrade list-item rule (R-08, block 3's first rule) after block 2,
-  and the assertion becomes "the wrap rule, block 1, block 2, then the timeline rule".
-- Phase 3's red: the table gains the chain's pre-upgrade rule after the timeline's, and the assertion becomes the
-  final order "the wrap rule, block 1, block 2, block 3 (the timeline rule, then the chain rule)".
+- Phase 2's red: the table gains the timeline's two pre-upgrade rules (R-08, block 3's first two: the visible-item rule
+  and the `aria-hidden` rule) after block 2, and the assertion becomes "the wrap rule, block 1, block 2, then the
+  timeline's rules".
+- Phase 3's red: the table gains the chain's two pre-upgrade rules after the timeline's, and the assertion becomes the
+  final order "the wrap rule, block 1, block 2, block 3 (the timeline's rules, then the chain's)".
 
 Each red commit's message names this change and its reason (Principle VIII: an existing test changed for a planned
 addition, not to pass). The new
@@ -204,31 +218,60 @@ pre-upgrade table). `::slotted(table)` for the table box only (used for nothing:
 
 ## R-07 Caption, print and pre-upgrade
 
-**Decision (PLAN-CORRECTNESS-1-001, operator decision (a)).** The caption is sticky at the inline start (R-06) so the
-table's name stays visible while the region scrolls. A caption as wide as the table grid cannot move inside its
-containing block (the table wrapper), and clipping by the box is not wrapping, so the caption is given a bound, as
-003's prose caption is (`base.css` lines 187 to 209: the prose table is `container-type: inline-size` and its caption
-has `max-inline-size: var(--ocelle-measure-container)`, `100cqi`):
+**Decision.** This section follows PLAN-CORRECTNESS-1-001 (operator decision (a): the caption is bound so it wraps
+inside the box), PLAN-FRESH-2-001 (operator decision (a): a measured cap, no query container) and PLAN-FRESH-2-002
+(operator decision (c), which answers Q-F as (b)). Until 009's module has the option of R-17, the caption is not
+sticky (R-06). It is part of the table, scrolls with it, starts at the table's start edge at every scroll position
+(no inset), and is reached by scrolling back to the start. The spec's edge case "Caption while the region scrolls"
+allows this. The caption is still given a bound. A caption as wide as the table grid would otherwise run past the
+box's end edge at rest and be clipped there, and clipping by the box is not wrapping. 003's prose caption has such a
+bound too (`base.css` lines 187 to 209: `max-inline-size: var(--ocelle-measure-container)`, `100cqi`, against the
+prose table's query container). The data table bounds its caption without a query container:
 
-- The data table's own shadow styles make `.region-box` a query container: `.region-box { container-type:
-  inline-size; }`. This adds inline size containment to the box: its inline size no longer depends on its content,
-  which also keeps the table's width out of the host's min-content size (R-02's host sizing). The box is a block that
-  fills the frame, so nothing else changes.
-- Block 1 and the prose override cap the caption at `max-inline-size: calc(var(--ocelle-measure-container) -
-  var(--ocelle-scroller-fade-size) - var(--ocelle-focus-offset) - var(--ocelle-focus-width))`: the box's visible
-  width, less the end fade (which shows while the table is scrolled to the start) and less the track's ring room before
-  the first column. The caption then wraps inside the box's unmasked width. Until 009's module has the option of R-17,
-  the caption's inset and cap follow the operator's answer to Q-F (below).
-- The caption is slotted content (a descendant of the slotted table), so `100cqi` must resolve against `.region-box`
-  through the flat tree. Phase 1's spike measures that lookup in Chromium; a failure goes to the operator.
-- Outside the element (pre-upgrade) there is no container, and `cqi` falls back to the small viewport, which bounds
-  the caption at the viewport's width less the same figures.
+- **No query container.** No box of the data table sets `container-type`. Inline size containment on `.region-box`
+  collapses the element to 0 px in every shrink-to-fit host (R-02, PLAN-FRESH-2-001).
+- **A measured width.** The element observes `.region-box` with its own `ResizeObserver`. 009's observer belongs to
+  the module and is not reached into. This observer sizes the caption only, so R-05's overflow triggers are
+  unchanged. On each callback the observer writes the box's client inline size, in px, as the inherited custom
+  property `--data-table-box-size` on `.region-track`. It writes it into the element's own per-instance constructed
+  stylesheet, adopted after `overflowRegionStyles` (`replaceSync` once, then `setProperty`, as 009's module does for
+  its mask figures). There is no `style` attribute, so strict CSP holds. The slotted table and its caption inherit the
+  property through the flat tree. The property is internal: it has no `--ocelle-` prefix, it is not a token, not
+  manifest surface and not a documented hook, and `token-only` checks `--ocelle-*` names only, so it needs no new
+  allowance.
+- **The cap.** Block 1 and the prose override cap the caption at `max-inline-size: calc(var(--data-table-box-size,
+  var(--ocelle-measure-container)) - var(--ocelle-scroller-fade-size) - var(--ocelle-focus-offset) -
+  var(--ocelle-focus-width))`. That is the box's visible width, less the end fade (which shows while an overflowing
+  table is at rest) and less the track's ring room before the first column. The caption then wraps inside the box's
+  unmasked width at rest.
+- **No feedback.** Block 1 and the prose override give the caption `contain: inline-size`, so its text adds nothing
+  to the table's intrinsic width: the table, and so the box in a shrink-to-fit host, is as wide as its grid. Without
+  it the measured width would cap the caption, the capped caption would narrow the box, and so on, a loop the
+  `ResizeObserver` reports. A caption longer than a narrow table wraps at the table's width. Its block size is still
+  its content's.
+- **The flat tree.** The caption is slotted content (a descendant of the slotted table), so the property must reach
+  it through the flat tree. Phase 1's spike measures this in Chromium, and also that the three shrink-to-fit hosts of
+  R-02 raise no `ResizeObserver` loop error. A failure goes to the operator.
+- **Before upgrade.** Outside the element (pre-upgrade) the property is unset and the fallback
+  `--ocelle-measure-container` (`100cqi`) resolves against the nearest query container or, with none, the small
+  viewport. That bounds the caption at the viewport's width less the same figures.
 
-Phase 1's red commit has two 320 px caption bodies, one scrolled to the start and one scrolled to the end (and, with a
-third column scrolled to the middle, the `both` fade). Each asserts that every line box of the caption (`Range`
-client rects over its text) lies inside the box's unmasked extent: the box's visible rect, less the fade depth on each
-side whose fade shows (the `.region-edge` widths). The spec edge case "never cut at 320 px (it wraps)" is then
-measured, not only spiked.
+Phase 1's red commit has these caption bodies:
+
+- **320 px, overflowing, at rest** (`scrollLeft` 0). Every line box of the caption (`Range` client rects over its
+  text) lies inside the box's unmasked extent: the box's visible rect, less the depth of each fade that shows (the
+  `.region-edge` widths). The caption's inline start equals the table's within 0.5 px (no inset, PLAN-FRESH-2-002).
+- **320 px, scrolled to the middle (the `both` fade) and to the end.** The caption's inline start still equals the
+  table's within 0.5 px: it scrolls with the table and is not sticky.
+- **A fitting table.** The caption's inline start equals the table's, and its line boxes lie inside the box.
+- **A narrow column** (a 400 px wrapper at a 1280 px viewport, then resized to 600 px). After `settle`, every caption
+  line box lies inside the box's unmasked extent at each width. This proves the cap follows the measured box and not
+  the viewport.
+- **No loop.** Around the three shrink-to-fit bodies, the in-process test records `error` events and
+  `console.error`, and asserts none carries "ResizeObserver loop". It uses the recorder and synthetic self-check
+  that R-12 describes; phase 1 builds them in `packages/elements/test/data-table.test.ts`, and phase 3 reuses them.
+
+The spec edge case "never cut at 320 px (it wraps)" is then measured, not only spiked.
 
 Print: the phase 1 spike prints the overflowing story to
 PDF in Chromium and records whether content past the box is clipped; the README states the result and that a consumer
@@ -260,15 +303,27 @@ painted colour and box (R-10, R-12). Each connector span is empty and `aria-hidd
 no node of a marker or connector is in the tree, and a DOM assertion pins `aria-hidden="true"` on each (R-11's probe:
 an empty span adds no node in Chromium either way).
 
-**Before upgrade (PLAN-FRESH-1-004, operator decision (a)).** `@ocelle/styles` gains two (0,0,0) rules, as 013's
-`:where(ocelle-facts:not(:defined) > ocelle-fact:not([hidden]))` rule does for facts:
-`:where(ocelle-event-timeline:not(:defined) > ocelle-timeline-event:not([hidden])) { display: block; }` and
-`:where(ocelle-evidence-chain:not(:defined) > ocelle-evidence-step:not([hidden])) { display: block; }`. A
-server-rendered timeline or chain then shows one item per line before upgrade instead of running its items together.
-An event's time is an attribute rendered only in shadow, so it does not show before upgrade, and the README's "Before
-upgrade" line per container says so. The styles browser bodies (`packages/styles/test/browser/data-table.test.ts`,
-the records section) assert each item's box starts below the previous one with the elements undefined, and that a
-`hidden` item is not shown. The spec's edge cases gain this case.
+**Before upgrade (PLAN-FRESH-1-004, operator decision (a); PLAN-FRESH-2-005, operator decision (a)).**
+`@ocelle/styles` gains four (0,0,0) rules, two per container, as 013's `:where(ocelle-facts:not(:defined) >
+ocelle-fact:not([hidden]))` rule does for facts:
+
+- `:where(ocelle-event-timeline:not(:defined) > ocelle-timeline-event:not([hidden]):not([aria-hidden="true"])) {
+  display: block; }`;
+- `:where(ocelle-event-timeline:not(:defined) > ocelle-timeline-event[aria-hidden="true"]) { display: none; }`;
+- `:where(ocelle-evidence-chain:not(:defined) > ocelle-evidence-step:not([hidden]):not([aria-hidden="true"])) {
+  display: block; }`;
+- `:where(ocelle-evidence-chain:not(:defined) > ocelle-evidence-step[aria-hidden="true"]) { display: none; }`.
+
+A server-rendered timeline or chain then shows one visible item per line before upgrade instead of running its items
+together. The `display: none` rules are needed because an undefined item that only misses the first rule falls back
+to inline display and still shows. With them, an `aria-hidden="true"` item is not shown before upgrade either, as
+FR-025 requires and as the upgraded containers do, so nothing shifts on upgrade. A `hidden` item is hidden by the
+UA's own rule. An event's time is an attribute rendered only in shadow, so it does not show before upgrade, and the
+README's "Before upgrade" line per container says so. The styles browser bodies
+(`packages/styles/test/browser/data-table.test.ts`, the records section) run with the elements undefined. For each
+container they assert three things: each visible item's box starts below the previous one, a `hidden` item is not
+shown, and an `aria-hidden="true"` item is not shown (its box is empty and the next visible item starts directly below
+the one before it). The spec's edge cases gain this case.
 
 **Rationale.** Operator decision Q3 (a); 013's slotted-item pattern (R-01 of 013) measured that a shadow list with
 manual assignment gives one clean list in Chromium. Rendering no `<ol>` when empty avoids an empty named list.
@@ -300,9 +355,14 @@ helper `accessibleName` in `naming.ts` implements the other rule ("decides alone
 (only when the event has a time) above `<span part="content"><slot></slot></span>`, each `display: block`.
 
 **"Has a time" (PLAN-CORRECTNESS-1-003).** `time` reflects to its attribute, as 013's `ocelle-fact` reflects `label`,
-so the container's `MutationObserver` sees a property set from script. One predicate, `hasTime(time)`, exported from
-`ocelle-timeline-event.ts` (internal, not re-exported from `index.ts`) and imported by the timeline, decides both the
-time box and the `<li>`'s `has-time` class: true when `time` is a string whose trimmed value is not empty. So
+so the container's `MutationObserver` sees a property set from script. One predicate, `hasTime(time)`, decides the
+time box, the `<li>`'s `has-time` class and the previous `<li>`'s `next-has-time` class: true when `time` is a string
+whose trimmed value is not empty. It lives in the internal module `src/timeline-time.ts` (PLAN-FRESH-2-003), which
+both `ocelle-timeline-event.ts` and `ocelle-event-timeline.ts` import. The file name is outside the manifest's glob
+(`src/ocelle-*.ts`) and the module is not in the package's `exports` map, so `hasTime` is neither manifest surface nor
+importable from a public entry point, which is how 009's `overflow-region.ts` stays internal. No element module
+exports a function. Phase 2's red commit adds a manifest test statement: the module of `ocelle-timeline-event`
+declares only the class `OcelleTimelineEvent`, and its exports name nothing else but the element's definition. So
 `time=""` and a white-space `time` render no time box and set no `has-time`, and the item text is the content alone
 (the data model's "empty or absent renders no time box"). A non-blank time is shown as given. Phase 2's red commit has
 bodies for `time` set, changed and cleared by property after mount, `time=""` and `time=" "`, each measuring the
@@ -320,10 +380,34 @@ border, `border: calc(var(--ocelle-size-dot) / 2) solid var(--ocelle-color-ink-m
 foreground property and not a background (forced colours, below), and `border-radius: 50%` (Q-D, decided: a mark
 shape, not a corner radius, constitution II). The connector is the `<li>`'s `<span class="connector"
 aria-hidden="true">`, absolutely positioned in the marker column with no inline size and a `border-inline-start:
-var(--ocelle-border-width) solid var(--ocelle-color-rule-strong)` (decorative), from the marker's centre to the next
-`<li>`'s marker centre (it spans the `<li>`'s block size plus the row gap). The last visible `<li>` renders no
+var(--ocelle-border-width) solid var(--ocelle-color-rule-strong)` (decorative). The last visible `<li>` renders no
 connector span (hidden items render no `<li>`). Rows are separated by `--ocelle-space-3`. All positions are logical
-(`inset-inline-start`), so `dir="rtl"` mirrors them.
+(`inset-inline-start`, `inset-block-start`, `inset-block-end`), so `dir="rtl"` mirrors them.
+
+**A gapped connector (PLAN-FRESH-2-004, operator decision (a)).** Each connector runs from its own dot to the next
+one and never crosses either dot, so no lighter line is painted over a structural mark:
+
+- **Start.** It starts `--ocelle-space-1` after its own dot's block end. That offset follows this `<li>`'s marker line
+  (the time's line box with `has-time`, the content's without).
+- **End.** It ends `--ocelle-space-1` before the next visible dot's block start. That offset follows the next
+  `<li>`'s marker line, read from the `next-has-time` class. The container sets the class on each `<li>` whose next
+  visible event has a time, by the same `hasTime`, and re-renders it from its `MutationObserver` like `has-time`. So a
+  timeline that mixes events with and without a time still ends each connector the same distance before the next dot.
+  With a centre-to-centre span, each end would be off by half the difference of the two line heights, about 1.45 px.
+- **Figures.** The offsets are `calc()` over tokens: the two types' sizes and `--ocelle-line-height-normal`,
+  `--ocelle-size-dot`, `--ocelle-space-1` and the row gap `--ocelle-space-3`. No new `style-lint` allowance is used.
+  The phase 2 spike records the exact form `style-lint` accepts, and a form it rejects goes to the operator.
+
+Phase 2's red commit has connector geometry bodies on a timeline of three timed events and on a mixed timeline
+(timed, untimed, timed, untimed). For each connector they assert:
+
+- its block start is at or after its dot's block end, and its block end is at or before the next dot's block start;
+- both gaps, the dot's end to the connector's start and the connector's end to the next dot's start, equal
+  `--ocelle-space-1` within 0.5 px;
+- `elementFromPoint` at the centre of each dot returns that marker, not a connector.
+
+Element plants: the connector started at its dot's centre again, and `next-has-time` never set. The first must fail
+the geometry bodies, the second the mixed timeline's body.
 
 `wrap="anywhere"` on an event sets `overflow-wrap: anywhere` on `part="content"` only.
 
@@ -460,8 +544,8 @@ cannot pass on the token source alone:
 - 009's `overflow-region.ts`: its exports (`resolveName` among them, with R-09's rule), constructor options,
   `setLabel`, the class names, the `.region-track` rule (R-03 depends on it), the `.region-box` padding and mask rules
   and `--ocelle-scroller-fade-size` (R-07 depends on them), and the README's conventions entry;
-- whether 009's module has the pinned-start option of R-17, and its name; if it has, the caption uses it and the
-  interim rule of Q-F is not built;
+- whether 009's module has the pinned-start option of R-17, and its name; if it has, the caption uses it and is
+  sticky at `inset-inline-start: 0` (R-17), and if not, it is not sticky (Q-F, decided (b));
 - `--ocelle-tracking-caps` and `--ocelle-measure-container` in the token source;
 - 013's README § Element conventions (slotted items, container import, wrap, `undefined` defaults);
 - both drivers as merged (PLAN-CORRECTNESS-1-006). On the branches, 009's (015's) driver has `press`, `tabWalk`,
@@ -507,12 +591,14 @@ start edge (here the sticky caption) out of the start fade's mask. This mission 
 the request is recorded here, in the plan's dependencies and in T001's recheck, and goes to 009's owner through the
 operator. What it asks for, not how: with the option set, the start fade covers the scrolling content only, and a
 sticky box at the start edge is painted unmasked; the module's interface gains that option and its test, and nothing
-changes for the existing users that do not set it. Once the option is on `main`, the data table sets it, the caption
-pins at `inset-inline-start: 0`, and R-07's cap applies as written.
+changes for the existing users that do not set it. Once the option is on `main`, the data table sets it, and the
+caption becomes sticky at `inset-inline-start: 0` with R-07's measured cap as written. That is a later MINOR as a
+look change, or part of phase 1 if T001 finds the option on `main` (R-14). With inset 0 the caption still starts at
+the table's start edge at rest, so PLAN-FRESH-2-002's misalignment cannot arise.
 
-**Until then.** What the data table does while 009's module has no such option is the operator's choice, Q-F below.
-Phase 1's red caption bodies (R-07) assert the same thing either way: every caption line box lies inside the box's
-unmasked extent.
+**Until then (Q-F, decided (b)).** The caption is not sticky (R-07): it scrolls with the table, is capped so it wraps
+inside the box at rest, and has no inset at any scroll position. PLAN-FRESH-2-002, operator decision (c), 2026-11-16,
+settles round 1's Q-F this way.
 
 ## Open questions for the plan gate (spec SPEC-1-06 (b))
 
@@ -542,14 +628,14 @@ spec before tasks are generated.
   time? The plan keeps `time` attribute-only, as FR-023 approves, and the README states the limit: the time is plain
   text rendered in the event's shadow root, so it carries none of these, and a consumer that needs them puts them in
   the content. If the answer is yes, a named `time` slot is a spec change to FR-023 before tasks.
-- **Q-F. The caption until 009's option exists (R-17; PLAN-A11Y-SECURITY-1-002).** (a) Sticky with
-  `inset-inline-start: var(--ocelle-scroller-fade-size)` and the cap cut to `calc(var(--ocelle-measure-container) - 2
-  * var(--ocelle-scroller-fade-size))`, so the caption stays out of both fades; when 009's option lands, the inset
-  goes to 0 and the cap to R-07's (a later PATCH). (b) Not sticky until then: the caption scrolls with the table, is
-  capped by R-07's rule so it wraps inside the box at rest, and is reached by scrolling back; it becomes sticky when the
-  option lands (a later MINOR, as a look change). (c) Phase 1's green waits for 009's option on `main`; phases 2 and 3,
-  which do not depend on phase 1, may run first. The plan proceeds on (a) until the operator answers. Recommendation:
-  (a).
+- **Q-F. The caption until 009's option exists (decided, (b): PLAN-FRESH-2-002 operator decision (c), 2026-11-16;
+  R-17; PLAN-A11Y-SECURITY-1-002).** Not sticky until 009's option lands. The caption scrolls with the table, is
+  capped by R-07's measured rule so it wraps inside the box at rest, and is reached by scrolling back. It has no inset
+  at any scroll position, so it starts at the table's start edge. It becomes sticky (inset 0) when the option lands, a
+  later MINOR as a look change. The other options are withdrawn. (a) was sticky with a fade-depth inset, and that
+  inset applied at rest and to a fitting table too: the caption sat 28 px off the first column in every state, not
+  only "while the table is scrolled" as round 1 described it (PLAN-FRESH-2-002). (c) waited for the option before
+  phase 1's green.
 
 And one decision from the research itself:
 

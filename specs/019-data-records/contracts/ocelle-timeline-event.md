@@ -1,7 +1,8 @@
 # Contract: `ocelle-timeline-event`
 
 Module `packages/elements/src/ocelle-timeline-event.ts`, class `OcelleTimelineEvent`,
-`define("ocelle-timeline-event", …)`.
+`define("ocelle-timeline-event", …)`. It imports `hasTime` from the internal `./timeline-time.ts` and exports only
+its class.
 
 ## Public surface (manifest)
 
@@ -32,11 +33,13 @@ The colours, the time's position and the content's size may change with Q-B and 
 ## Has a time (PLAN-CORRECTNESS-1-003)
 
 `time` reflects to its attribute (as 013's `ocelle-fact` reflects `label`), so the timeline's `MutationObserver` sees a
-property set from script. The module exports one internal predicate, `hasTime(time)`: true when `time` is a string
-whose trimmed value is not empty. It decides the time box here and the `has-time` class on the timeline's `<li>`, so
-`time=""` and `time=" "` give no time box, no `has-time`, and an item text of the content alone. `hasTime` is not
-re-exported from `index.ts` and is not public surface: the manifest treats it as it treats 009's internal
-`overflow-region.ts` exports on `main` (T001 checks how).
+property set from script. One internal predicate, `hasTime(time)`, is true when `time` is a string whose trimmed
+value is not empty. It decides the time box here and the `has-time` and `next-has-time` classes on the timeline's
+`<li>`, so `time=""` and `time=" "` give no time box, no `has-time`, and an item text of the content alone.
+`hasTime` lives in `packages/elements/src/timeline-time.ts` (PLAN-FRESH-2-003), which this module and
+`ocelle-event-timeline.ts` import. The file is outside the manifest's glob (`src/ocelle-*.ts`) and the package's
+`exports` map, and is not re-exported from `index.ts`, so `hasTime` is neither manifest surface nor importable from a
+public entry point. A manifest test statement asserts that this module declares only `OcelleTimelineEvent`.
 
 ## Limits (Q-E)
 

@@ -20,26 +20,31 @@ history and evidence chain.
   is named from the host `aria-label`, then `label`, then the caption's text, hidden parts skipped and image `alt`
   read (R-04). One host rule sizes the module's track to `fit-content`, so cells wrap before the table scrolls. This
   needs the operator's decision 1 (R-03). `:host { min-inline-size: 0 }` lets it shrink as a flex or grid item
-  (R-02). The caption is sticky and capped inside the box, which is a query container (R-07); keeping it clear of the
-  start fade needs an option in 009's module that this mission asks 009's owner for (R-17, Q-F).
+  (R-02). No box sets `container-type`, so the element keeps its table's width in a shrink-to-fit host such as a
+  dialog (R-02, R-07). The caption is not sticky until 009's module has an option, requested of 009's owner, that
+  keeps a pinned start box out of the start fade (R-17; Q-F decided (b)). Until then it scrolls with the table, starts
+  at the table's start edge, and is capped by the box's measured width, so it wraps inside the box at rest (R-07).
 - **Timeline and chain.** Each renders a shadow `<ol role="list">` with one `<li role="listitem">` per visible item,
   assigned manually (R-08). Each list is named on the `<ol>`, and a blank host `aria-label` counts as absent (R-09).
   The name comes from 009's exported `resolveName`. Markers, connectors and ordinals are `aria-hidden`; markers and
   connectors are real spans drawn with borders, so they are measurable and visible in forced colours (R-08, R-10,
   R-12). Markers are round (`border-radius: 50%`, Q-D decided).
   - **Timeline.** Each event has a time line above its content, and a dot marker is centred on the event's first line
-    with `1lh`. `time` reflects, and one `hasTime` predicate decides the time box and the marker's line (R-10).
+    with `1lh`. `time` reflects, and one internal `hasTime` predicate, in a module outside the manifest and the exports
+    map, decides the time box and the marker's line (R-10). Each connector is gapped: it runs from its own dot's end
+    to the next dot's start and never crosses a dot, with its end taken from the next event's type (R-10).
   - **Chain.** The chain is a wrapping flex row. Connectors sit in each step's trailing padding, and a line end is
     measured from layout, so no connector dangles or crosses lines (R-12). Every step reserves a `size-step` line box,
     so all connectors share the marker's centre line. A chip step is drawn by the container through `::slotted()`:
     `radius-2`, outline only, 20.4 px tall.
-  - **Before upgrade.** Two (0,0,0) `@ocelle/styles` rules put one item per line (R-08).
+  - **Before upgrade.** Four (0,0,0) `@ocelle/styles` rules put one visible item per line and hide `aria-hidden="true"`
+    items, as the upgraded containers do (R-08).
 - **Tokens and contrast.** No new token and no new contrast row. Contrast is checked twice: a node check ties each
   painted colour to a `checked` row of `pairs.json`, and the browser bodies tie each rendered colour to its token
   (R-13).
-- **What is not decided yet.** Open questions Q-A to Q-C and Q-E from the unread #470, #517 and #533, Q-F (the
-  caption until 009's option exists) and decision 1 go to the operator at the plan gate. Q-D was decided at squad
-  round 1.
+- **What is not decided yet.** Open questions Q-A to Q-C and Q-E from the unread #470, #517 and #533 and decision 1
+  go to the operator at the plan gate. Q-D was decided at squad round 1. Q-F was decided at squad round 2 as (b),
+  through PLAN-FRESH-2-002's option (c).
 
 Implementation waits for 009, 013 and op 016 on `main`. The first task rechecks the plan against `main` as merged
 (R-14), including whether 009's pinned-start option (R-17) has landed.
@@ -83,8 +88,10 @@ engine-floor feature: manual slot assignment (013) and the module's features (00
 **Project Type**: library (web components) in a pnpm workspace.
 
 **Performance Goals**: none specific.
-- Each class adopts one shared stylesheet; the data table also gets the module's one per-instance sheet (009).
-- Per container: one `MutationObserver`. The chain also has one `ResizeObserver`, on its list and its items.
+- Each class adopts one shared stylesheet. The data table also gets the module's one per-instance sheet (009) and its
+  own per-instance sheet, which holds the measured caption width (R-07).
+- Per container: one `MutationObserver`. The chain also has one `ResizeObserver`, on its list and its items. The data
+  table has one `ResizeObserver` of its own, on `.region-box`, for the caption's cap (R-07).
 
 **Constraints**: strict CSP with no exception; token-only styles with no new `style-lint` allowance (every value is a
 token, a keyword, a system colour in forced colours, `0`, a `%` (which `token-only.ts` allows: the table's
@@ -92,24 +99,24 @@ token, a keyword, a system colour in forced colours, `0`, a `%` (which `token-on
 monospace; no I/O; one heavy job at a time in this container.
 
 **Scale/Scope**: 5 elements, 0 tokens, 0 contrast rows, 3 `@ocelle/styles` blocks (the data-table rules, their prose
-override, and the two pre-upgrade list-item rules), 1 driver addition, 32 stories (12 in phase 1, 9 in phase 2, 11
+override, and the four pre-upgrade list-item rules), 1 driver addition, 32 stories (12 in phase 1, 9 in phase 2, 11
 in phase 3, each with two baselines: 64 PNGs).
 
 ## Constitution Check
 
-*Gate: passes before Phase 0 and again after Phase 1 design (rechecked after squad round 1), with the open questions
-Q-A to Q-C, Q-E, Q-F and decision 1 for the operator at the plan gate. No exception is planned (Complexity Tracking).*
+*Gate: passes before Phase 0 and again after Phase 1 design (rechecked after squad rounds 1 and 2), with the open questions
+Q-A to Q-C, Q-E and decision 1 for the operator at the plan gate (Q-D and Q-F decided at squad rounds 1 and 2). No exception is planned (Complexity Tracking).*
 
 | Principle | How this plan meets it |
 |---|---|
-| I. Names, no I/O, small interface, manifest | **Tags**: `ocelle-data-table`, `ocelle-event-timeline`, `ocelle-timeline-event`, `ocelle-evidence-chain`, `ocelle-evidence-step`. **Events**: none. **I/O**: none. **Properties**: `label`, `wrap` (data table); `label` (timeline, chain); `time`, `wrap` (event); `variant`, `wrap` (step). Every property is `\| undefined` with `@default undefined`; `wrap`, `variant` and `time` reflect, because the styles or the container's observer read them (`time`: PLAN-CORRECTNESS-1-003). **Parts**: `list` on the two containers; `time` and `content` on the event; `content` on the step. **CSS hooks**: none. **Slots**: the default slot of each element. The manifest declares everything, with every list stated ([contracts/](contracts/)). |
+| I. Names, no I/O, small interface, manifest | **Tags**: `ocelle-data-table`, `ocelle-event-timeline`, `ocelle-timeline-event`, `ocelle-evidence-chain`, `ocelle-evidence-step`. **Events**: none. **I/O**: none. **Properties**: `label`, `wrap` (data table); `label` (timeline, chain); `time`, `wrap` (event); `variant`, `wrap` (step). Every property is `\| undefined` with `@default undefined`; `wrap`, `variant` and `time` reflect, because the styles or the container's observer read them (`time`: PLAN-CORRECTNESS-1-003). **Parts**: `list` on the two containers; `time` and `content` on the event; `content` on the step. **CSS hooks**: none. **Slots**: the default slot of each element. The manifest declares everything, with every list stated ([contracts/](contracts/)). No element module exports a function: the internal `hasTime` lives in `src/timeline-time.ts`, outside the manifest glob and the exports map, and a manifest test statement pins that (R-10). The caption's measured width is an internal custom property with no `--ocelle-` prefix, not surface (R-07). |
 | II. Tokens only, brand rules | **Tokens**: every value is a token (R-06, R-10, R-12); no new token (R-13). **No monospace**: cells, times, ordinals and chips use `font-sans` with `figures`. **`color-rule`**: only on decorative lines (the row and header rules, the connectors; FR-013). **Radius**: `radius-2` on the chip (the one radius, never `radius-pill`). The dot and the step marker are round, `border-radius: 50%` with no token: a mark shape, not a corner radius, so the one-radius rule is not engaged and no radius token is added (FR-031, FR-040; Q-D, operator decision (a) on PLAN-CORRECTNESS-1-004). **Ochre**: none. |
-| III. Accessible by construction | **ID references**: none across a root. The table's references stay in the consumer's tree (R-01), and the region is named by copied text (R-04). **Roles**: the table's own roles; a `group` on the region while it overflows (009); `list` and `listitem` on the shadow lists, explicit for WebKit (R-08). **Hidden**: markers, connectors and ordinals are `aria-hidden`; item text is asserted by `itemTexts` (R-11). **Keyboard**: the overflowing region is the only added tab stop, with arrows, clearance and handover from the module; slotted links keep theirs. **Contrast**: text and structural marks use ink tokens with text declarations on the nine main grounds; decorative lines are exempt (FR-013), checked by a node check against `pairs.json` and by rendered-colour bodies (R-13). **Forced colours**: every mark is a border drawn in `CanvasText`; the chip's box rule sits outside the variant block (R-10, R-12). **Reflow**: 320 px tests per container, and the data table as a flex and a grid item (R-02); the caption wraps inside the box's unmasked width (R-07). **Naming**: a blank host `aria-label` counts as absent on the lists, through 009's `resolveName` (R-09); the region's caption name skips hidden parts and reads image `alt` (R-04). **axe**: #10's `axe` gate on every story, with no exception entry planned. |
-| IV. Strict CSP, offline | Adopted stylesheets and `base.css` only. No `style` attribute; the module's mask figures use its per-instance sheet (009). Fixture pages assert zero violations. |
+| III. Accessible by construction | **ID references**: none across a root. The table's references stay in the consumer's tree (R-01), and the region is named by copied text (R-04). **Roles**: the table's own roles; a `group` on the region while it overflows (009); `list` and `listitem` on the shadow lists, explicit for WebKit (R-08). **Hidden**: markers, connectors and ordinals are `aria-hidden`; item text is asserted by `itemTexts` (R-11). **Keyboard**: the overflowing region is the only added tab stop, with arrows, clearance and handover from the module; slotted links keep theirs. **Contrast**: text and structural marks use ink tokens with text declarations on the nine main grounds; decorative lines are exempt (FR-013), checked by a node check against `pairs.json` and by rendered-colour bodies (R-13). **Forced colours**: every mark is a border drawn in `CanvasText`; the chip's box rule sits outside the variant block (R-10, R-12). **Reflow**: 320 px tests per container, the data table as a flex and a grid item, and in three shrink-to-fit hosts (a dialog, an inline-block, a start-aligned column flex), where it is never 0 px wide (R-02); the caption wraps inside the box's unmasked width at rest (R-07). **Naming**: a blank host `aria-label` counts as absent on the lists, through 009's `resolveName` (R-09); the region's caption name skips hidden parts and reads image `alt` (R-04). **axe**: #10's `axe` gate on every story, with no exception entry planned. |
+| IV. Strict CSP, offline | Adopted stylesheets and `base.css` only. No `style` attribute; the module's mask figures use its per-instance sheet (009), and the data table's measured caption width uses its own (R-07). Fixture pages assert zero violations. |
 | V. Storybook, behaviour tests | A story per variant and state, light and dark ([contracts/checks.md](contracts/checks.md) § Stories). The item elements' states are stories in their container's file. Their behaviour outside the container is proven by browser bodies only, as 013 did for `ocelle-fact`. FR-050 names that as the spec's own rule, not an exception. Every spec'd state has a story, the hidden item, the unnamed overflowing table, the table-less data table and the empty containers included (PLAN-CORRECTNESS-1-007, operator decision (a)). |
 | VI. Consumer-driven, own code | Needs: kitty-mission-ui's `.sk-data-table` family and the Desktop V2 primitives (#470, #517, #533). The issues are unread, so their points are the plan gate's questions Q-A to Q-C and Q-E (spec SPEC-1-06 (b)). The inventory is an operator input before each red commit (R-16). Nothing is copied, and the README mapping names roles only. |
 | VII. Semver | **MINOR**: five elements, five entry points and three `base.css` blocks. CHANGELOG entries go in `@ocelle/elements` and `@ocelle/styles`. `@ocelle/tokens` is unchanged. |
-| VIII. Test-first, non-vacuous | A scaffold comes before each red commit. The red commit holds the phase's scenario bodies, the driver test, the node and styles tests and the story-test extension (operator decision I3), and `red.sh` keeps one red record per phase. The red log is read per body: every scenario body fails on an assertion, never on an import or setup error, and each body the platform alone could pass carries a paired assertion only the element gives (contracts/checks.md). Each phase's red commit changes one existing test, 003's `source.test.ts`, for the `base.css` rules that phase's green adds (phase 1 blocks 1 and 2, phase 2 the timeline's pre-upgrade rule, phase 3 the chain's), and its message says so (R-06). Item-text bodies also assert a non-empty text (FR-016). Each CSS-only behaviour has a named element plant or a stated reason, because Stryker does not mutate `css` templates or `base.css`; element plants mutate green source, so they run after green, are never committed, and are recorded in `reviews/phase-<N>/element-plants.md` (contracts/checks.md § Element plants). Spikes run before the scaffolds of phases 1 to 3, and a failing spike result goes to the operator. |
+| VIII. Test-first, non-vacuous | A scaffold comes before each red commit. The red commit holds the phase's scenario bodies, the driver test, the node and styles tests and the story-test extension (operator decision I3), and `red.sh` keeps one red record per phase. The red log is read per body: every scenario body fails on an assertion, never on an import or setup error, and each body the platform alone could pass carries a paired assertion only the element gives (contracts/checks.md). Each phase's red commit changes one existing test, 003's `source.test.ts`, for the `base.css` rules that phase's green adds (phase 1 blocks 1 and 2, phase 2 the timeline's two pre-upgrade rules, phase 3 the chain's two), and its message says so (R-06). Item-text bodies also assert a non-empty text (FR-016). Each CSS-only behaviour has a named element plant or a stated reason, because Stryker does not mutate `css` templates or `base.css`; element plants mutate green source, so they run after green, are never committed, and are recorded in `reviews/phase-<N>/element-plants.md` (contracts/checks.md § Element plants). Spikes run before the scaffolds of phases 1 to 3, and a failing spike result goes to the operator. |
 | Licence, supply chain | No new dependency or asset. |
 | Workflow gates | No gate changes. The gates run unchanged; the gate plants run by op 016's selection locally and in full in CI (R-15). |
 
@@ -128,13 +135,14 @@ Q-A to Q-C, Q-E, Q-F and decision 1 for the operator at the plan gate. No except
    R-12).
 6. **Q-E, marked-up times** (#470). Does #470's history need machine-readable or marked-up times? The plan keeps
    `time` attribute-only as FR-023 approves, and the README states the limit; a yes is a spec change before tasks.
-7. **Q-F, the caption until 009's option exists (R-17).** The plan proceeds on (a): sticky, inset and capped by the
-   fade depth, until 009's module keeps a pinned start box out of the mask. (b) is a non-sticky caption until then;
-   (c) waits for the option before phase 1's green.
+7. **Q-F, the caption until 009's option exists (R-17).** Decided at squad round 2 as (b) (PLAN-FRESH-2-002,
+   operator decision (c), 2026-11-16). The caption is not sticky until 009's option lands: it scrolls with the table,
+   with no inset, and is capped by the box's measured width (R-07). It becomes sticky at inset 0 once the option is on
+   `main`, a later MINOR. Round 1's default (a), a fade-depth inset, is withdrawn: that inset applied at rest too.
 8. **Dependencies.** Implementation waits for 009, 013 and op 016 on `main`. T001 rechecks the plan and tasks
    against `main` as merged and stops for the operator on any difference (R-14). One request goes to 009's owner
-   through the operator: a module option that keeps a pinned start box (the sticky caption) out of the start fade's
-   mask (R-17, PLAN-A11Y-SECURITY-1-002 operator decision (c)). This mission does not change 009's module.
+   through the operator: a module option that keeps a pinned start box (the caption, sticky once it lands) out of the
+   start fade's mask (R-17, PLAN-A11Y-SECURITY-1-002 operator decision (c)). This mission does not change 009's module.
 9. **The inventory (R-16).** The operator supplies kitty-mission-ui's variant inventory before each phase's red
    commit, as in 013. A gap goes to the operator.
 
@@ -167,8 +175,9 @@ specs/019-data-records/
 packages/elements/
 ├── src/
 │   ├── ocelle-data-table.ts       # new (uses overflow-region.ts)
-│   ├── ocelle-event-timeline.ts   # new (imports ocelle-timeline-event.ts; resolveName from overflow-region.ts)
-│   ├── ocelle-timeline-event.ts   # new (exports the internal hasTime predicate, R-10)
+│   ├── ocelle-event-timeline.ts   # new (imports ocelle-timeline-event.ts and timeline-time.ts; resolveName from overflow-region.ts)
+│   ├── ocelle-timeline-event.ts   # new (imports timeline-time.ts; exports only its class)
+│   ├── timeline-time.ts           # new, internal: the hasTime predicate, outside the manifest glob and the exports map (R-10)
 │   ├── ocelle-evidence-chain.ts   # new (imports ocelle-evidence-step.ts; resolveName from overflow-region.ts)
 │   ├── ocelle-evidence-step.ts    # new
 │   ├── index.ts, browser.ts       # re-export / define the five
@@ -234,7 +243,8 @@ Every phase with stories also does the following:
    - **T001, the recheck (R-14).** Compare this plan and the tasks with `main` as merged and write
      `reviews/recheck.md`. The flow stops for the operator on any difference. The recheck covers:
      - 009's module interface, `resolveName`, its `.region-track` rule and its fade mask rules;
-     - whether 009's module has the pinned-start option requested in R-17 (if so, Q-F's interim rule is not built);
+     - whether 009's module has the pinned-start option requested in R-17 (if so, the caption is sticky through it at
+       inset 0; if not, it is not sticky, Q-F (b));
      - `--ocelle-tracking-caps`, `--ocelle-measure-container` and `--ocelle-scroller-fade-size`;
      - 013's README conventions;
      - both drivers as merged: 009's additions, and how `computed`, `reducedMotion` and the focus readers were
@@ -249,8 +259,10 @@ Every phase with stories also does the following:
      - the accessibility tree and axe in and out of the element, fitting and overflowing;
      - the track at `fit-content` at 1280, 600 and 320 px, with and without `wrap="anywhere"`;
      - the swaps of a `tbody` or the whole table, a cell edit and a late web font, each against a fresh load;
-     - the caption at 320 px, sticky and capped, and the flat-tree container lookup for the slotted caption (`100cqi`
-       against `.region-box`);
+     - the caption at 320 px, not sticky and capped by the measured box width, and the measured property reaching the
+       slotted caption through the flat tree (R-07);
+     - the element in a `<dialog>`, an inline-block and a start-aligned column flex: never 0 px wide, and no
+       `ResizeObserver` loop error (R-02, R-07);
      - the prose override in Chromium;
      - print to PDF.
    - **Red.**
@@ -264,8 +276,13 @@ Every phase with stories also does the following:
        `<tbody>` (rendered unchanged, no added text), two `<tbody>` groups and a `<tfoot>` (the row rule between every
        pair of consecutive rows, none below the last, R-06), row and corner headers, a `colspan` header, pre-upgrade,
        640 px.
-     - The 320 px caption bodies of R-07 (scrolled to the start, the middle and the end).
+     - The caption bodies of R-07: at 320 px at rest (inside the unmasked extent, start equal to the table's), scrolled
+       to the middle and the end (start still equal to the table's), a fitting table, a narrow column resized from 400
+       to 600 px, and the no-`ResizeObserver`-loop check around the shrink-to-fit bodies.
      - The element as a default flex item and as a `1fr` grid item at 320 px (R-02).
+     - The shrink-to-fit bodies of R-02: in an open `<dialog>`, an inline-block and a start-aligned column flex, the
+       host as wide as the table plus the ring room (never 0 px), the caption not narrower than its longest word, a
+       long caption wrapping at a narrow table's width.
      - The five elements in 013's define-twice fixture (two copies of the package: the first definition wins); the
        data table's entry goes in here, and phases 2 and 3 add theirs to the same body.
      - The change to 003's `packages/styles/test/source.test.ts` (R-06): blocks 1 and 2 after the wrap rule, the
@@ -274,8 +291,10 @@ Every phase with stories also does the following:
      - The data table's part of `test/node/records-pairs.test.ts` (R-13).
      - README statements for the data-table section, the conventions amendment (FR-056), its mapping rows, the Host
        ARIA list (the data table added beside 009's elements, with the module's blank-counts-as-absent rule), the
-       Sizing line (a wrapper that is the flex or grid item needs `min-inline-size: 0`) and the caption rule (the
-       `hidden` attribute, not CSS, hides part of a caption from the name).
+       Sizing line (a wrapper that is the flex or grid item needs `min-inline-size: 0`; in a shrink-to-fit host the
+       data table takes its table's width and overflows only when its own inline size is bounded), the caption rules
+       (the `hidden` attribute, not CSS, hides part of a caption from the name; the caption scrolls with the table
+       until 009's option lands).
      - The story-test extension.
    - **Green.** `ocelle-data-table.ts`, the `base.css` blocks, exports and the manifest, the stories with baselines,
      the README (section, conventions, overflow-region users, Host ARIA list, sizing, prose specificity, the
@@ -287,15 +306,20 @@ Every phase with stories also does the following:
      - `itemTexts` and its test, in both harnesses.
      - US2-1 to US2-10, with US2-8's forced-colours and rendered-contrast halves (R-10, R-13).
      - The `time` bodies of R-10: set, changed and cleared by property after mount, `time=""` and `time=" "`.
+     - The connector geometry bodies of R-10: three timed events and a mixed timed and untimed timeline, with each
+       connector clear of both dots and both gaps `space-1` within 0.5 px, and `elementFromPoint` inside each dot
+       returning the marker.
+     - The manifest test statement that the `ocelle-timeline-event` module declares only its class (R-10).
      - Edge-case bodies: an event outside the timeline, an empty timeline (no `<ol>`), `aria-hidden` items, `lang` and
-       `dir` on an event, order kept, no live region, pre-upgrade (the `base.css` list-item rule), 640 px.
-     - The change to 003's `packages/styles/test/source.test.ts` (R-06): the timeline's pre-upgrade rule after block 2,
-       the last-rule assertion "the wrap rule, block 1, block 2, the timeline rule"; named with its reason in the
-       commit message.
+       `dir` on an event, order kept, no live region, pre-upgrade (the `base.css` list-item rules: a `hidden` and an
+       `aria-hidden="true"` event not shown), 640 px.
+     - The change to 003's `packages/styles/test/source.test.ts` (R-06): the timeline's two pre-upgrade rules after
+       block 2, the last-rule assertion "the wrap rule, block 1, block 2, the timeline's rules"; named with its reason
+       in the commit message.
      - The timeline's entries in the define-twice body and in `test/node/records-pairs.test.ts`.
      - README statements (the section, the Host ARIA list, the overflow-region users of `resolveName`, "Before
        upgrade", the attribute-only `time` limit of Q-E), mapping rows and the story-test extension.
-   - **Green.** `ocelle-timeline-event.ts` and `ocelle-event-timeline.ts`, the pre-upgrade rule in `base.css`,
+   - **Green.** `timeline-time.ts`, `ocelle-timeline-event.ts` and `ocelle-event-timeline.ts`, the two pre-upgrade rules in `base.css`,
      exports, the manifest, stories with baselines, the README section (with the Host ARIA list update) and the
      CHANGELOGs. Then the timeline's element plants.
 3. **US3 Evidence chain** (P3).
@@ -308,14 +332,14 @@ Every phase with stories also does the following:
      - The mixed-chips geometry body (each connector's centre on the row's marker centre within 0.5 px, R-12).
      - The in-process no-`ResizeObserver`-loop test with its synthetic self-check (R-12).
      - Edge-case bodies: a step outside the chain, an empty chain, mixed chips, a link in a step (FR-011), `lang` and
-       `dir`, pre-upgrade, 640 px.
-     - The change to 003's `packages/styles/test/source.test.ts` (R-06): the chain's pre-upgrade rule after the
-       timeline's, the final last-rule assertion "the wrap rule, block 1, block 2, block 3 (timeline rule, chain
-       rule)"; named with its reason in the commit message.
+       `dir`, pre-upgrade (a `hidden` and an `aria-hidden="true"` step not shown), 640 px.
+     - The change to 003's `packages/styles/test/source.test.ts` (R-06): the chain's two pre-upgrade rules after the
+       timeline's, the final last-rule assertion "the wrap rule, block 1, block 2, block 3 (the timeline's rules, the
+       chain's rules)"; named with its reason in the commit message.
      - The chain's entries in the define-twice body and in `test/node/records-pairs.test.ts`.
      - The no-pill node test, README statements ("Before upgrade" among them), mapping rows and the story-test
        extension.
-   - **Green.** `ocelle-evidence-step.ts` and `ocelle-evidence-chain.ts`, the pre-upgrade rule in `base.css`,
+   - **Green.** `ocelle-evidence-step.ts` and `ocelle-evidence-chain.ts`, the two pre-upgrade rules in `base.css`,
      exports, the manifest, stories with baselines, the README section and the CHANGELOGs. Then the chain's element
      plants, the no-pill plant among them.
 4. **Polish.** Documentation only:
@@ -334,9 +358,9 @@ No exception to the constitution is planned.
   with no story.
 - A story the `axe` gate fails is fixed in the story or the element. An exception entry, or any further state without
   a story (for example a host `aria-label` story that axe rejects, R-09), needs a row here and the operator's approval.
-- The host rule on `.region-track` (R-03) and the query container on `.region-box` (R-07) are styling overrides
-  inside the data table's own stylesheet, not changes to 009's module. The operator decides the first at the plan
-  gate (decision 1).
+- The host rule on `.region-track` (R-03) is a styling override inside the data table's own stylesheet, and the
+  measured caption width (R-07) is written by the data table's own observer into its own per-instance sheet. Neither
+  changes 009's module. The operator decides the first at the plan gate (decision 1).
 - The markers' `border-radius: 50%` is recorded under constitution II as a mark shape, not a corner radius (Q-D,
   operator decision (a) on PLAN-CORRECTNESS-1-004); it is not an exception and adds no token.
 - Every spec'd state has a story (contracts/checks.md § Stories), so FR-050 records no further state without one.

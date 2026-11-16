@@ -73,9 +73,11 @@ Every mark is a border, never a background. Outside the variant block: `@media (
 
 ## Before upgrade
 
-`@ocelle/styles` sets `:where(ocelle-evidence-chain:not(:defined) > ocelle-evidence-step:not([hidden])) { display:
-block; }`, so the steps show one per line, with no marker or ordinal (R-08). The README's "Before upgrade" line says
-so.
+`@ocelle/styles` sets `:where(ocelle-evidence-chain:not(:defined) >
+ocelle-evidence-step:not([hidden]):not([aria-hidden="true"])) { display: block; }` and
+`:where(ocelle-evidence-chain:not(:defined) > ocelle-evidence-step[aria-hidden="true"]) { display: none; }`, so the
+visible steps show one per line, with no marker or ordinal, and an `aria-hidden="true"` step is not shown, as after
+upgrade (R-08, PLAN-FRESH-2-005). The README's "Before upgrade" line says so.
 
 ## Accessibility tree (Chromium)
 

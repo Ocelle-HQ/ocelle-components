@@ -33,7 +33,7 @@ used for the lists.
 | AX tree, table | US1-1, US1-4, US1-6, US1-7, US1-15, US1-16, the R-04 caption-text bodies | The full Chromium AX tree: compare the element's subtree with the same table outside; region `group` and name |
 | AX tree, lists, and `itemTexts(list)` (new, R-11) | US2-1, US2-3, US2-5, US2-6, US2-10, US3-1, US3-6, US3-7, US3-10 | `StaticText` names under each `listitem`, joined, collapsed and trimmed. Each assertion also checks the text is not empty. US2-5, US2-6, US3-6 and US3-7 also assert the `listitem` count and that no other child of the container is in the tree. No marker or connector node is in the tree, and a DOM assertion pins `aria-hidden="true"` on every marker wrapper and connector span |
 | computed style | US1-2, US1-3, US1-10, US1-14, US2-3, US3-2, US3-4, the `time` bodies (R-10) | `getComputedStyle` on cells, headers, caption, time, marker and chip, against the token's computed value read from a probe |
-| geometry | US1-4, US1-12, US2-2, US2-9, US3-2, US3-3, US3-4, US3-5, US3-9, ordinal fit, mixed chips, the `time` bodies, the caption bodies (R-07) | `getBoundingClientRect` on real elements (markers, connector spans, `<li>`, the chip, the caption's line boxes through a `Range`): marker size, centring on the first line, connector ends inside the chain, chip block size < `size-step`, the ordinal box inside the marker's padding box, connector centres on the row's marker centre (0.5 px). US1-12, US2-9 and US3-9 assert inline-start edges against the container's: under `dir="rtl"` the first column's, the markers' and the first step's right edges are at the container's right edge, and lines fill towards the left. US3-5 asserts the long step's box stays inside the chain |
+| geometry | US1-4, US1-12, US2-2, US2-9, US3-2, US3-3, US3-4, US3-5, US3-9, ordinal fit, mixed chips, the `time` bodies, the caption bodies (R-07), the shrink-to-fit bodies (R-02), the timeline connector bodies (R-10) | `getBoundingClientRect` on real elements (markers, connector spans, `<li>`, the chip, the host, the caption's line boxes through a `Range`): marker size, centring on the first line, the caption's start against the table's and its line boxes inside the box's unmasked extent, the host's inline size in a shrink-to-fit host, each timeline connector clear of both dots with `space-1` gaps (0.5 px) and `elementFromPoint` inside each dot returning the marker, connector ends inside the chain, chip block size < `size-step`, the ordinal box inside the marker's padding box, connector centres on the row's marker centre (0.5 px). US1-12, US2-9 and US3-9 assert inline-start edges against the container's: under `dir="rtl"` the first column's, the markers' and the first step's right edges are at the container's right edge, and lines fill towards the left. US3-5 asserts the long step's box stays inside the chain |
 | scroll width | US1-4, US2-4, US3-3, US3-5, 640 px bodies, the flex-item and grid-item bodies (R-02) | page `scrollWidth === innerWidth` |
 | keyboard | US1-5, US1-8, US1-13, US2-7, FR-011 link in a step | See the table below |
 | copy | US1-9, US2-4 | 013's `copy` |
@@ -71,7 +71,7 @@ asserts something only the element gives, or is proven by a green-time element p
 | FR-011 link in a step | the link keeps its tab stop | the link's box is inside its `<li>`, after the marker |
 | "throws nothing" halves (empty containers, no table, items outside a container) | an empty render throws nothing | the empty containers render no `<ol>` and expose no `listitem`; the no-table data table has `.region-box` and no slotted node; an item outside its container shows its shadow `part="content"` (and the event its `part="time"` text) |
 | the "not shown" halves of US2-6 and US3-7 | an empty render shows nothing | the item children are shown: one `<li>` per item, `itemTexts` equal to the items' texts, no other child's text in the tree |
-| the pre-upgrade bodies | (none: no rule exists at red) | each item's box starts below the previous one before definition |
+| the pre-upgrade bodies | (none: no rule exists at red) | each visible item's box starts below the previous one before definition, and a `hidden` or `aria-hidden="true"` item is not shown |
 | the no-pill grep | no source exists at red | element plant: `pill` written into the chain's styles must fail it |
 | define twice | the first definition wins with no element | the elements' tag names resolve to the first copy's classes, and each renders its shadow structure |
 
@@ -86,8 +86,12 @@ stays op 016's gate-plant record in its set form, which the review compares line
 | Plant | Must fail |
 |---|---|
 | The `fit-content` track rule removed (R-03) | US1-9 |
-| `:host { min-inline-size: 0 }` and the box's query container removed (R-02, R-07) | the flex-item and grid-item bodies |
+| `:host { min-inline-size: 0 }` removed (R-02) | the flex-item and grid-item bodies |
+| `:host .region-box { container-type: inline-size; }` added (R-02, R-07) | the shrink-to-fit bodies |
 | The caption's `max-inline-size` cap removed (R-07) | the 320 px caption bodies |
+| The measured box size never written, so the cap falls back to `--ocelle-measure-container` (R-07) | the narrow-column caption body |
+| The caption's `contain: inline-size` removed (R-07) | the long-caption shrink-to-fit body, the no-loop check |
+| The caption made sticky with `inset-inline-start: var(--ocelle-scroller-fade-size)` (Q-F (a)) | the caption bodies at rest and scrolled (start equal to the table's) |
 | The caption text read as `textContent` (R-04) | the `hidden`, `aria-hidden` and `img alt` caption bodies |
 | The observer without `characterData` (R-04) | US1-16, the `text` run |
 | The prose override removed, or one property of it removed (the node test lists each) | US1-10, prose-override node test |
@@ -99,6 +103,9 @@ stays op 016's gate-plant record in its set form, which the review compares line
 | The step marker's `aria-hidden` removed | US3-1, US3-10 (the ordinal becomes a `StaticText`) |
 | `time` not reflected | the `time` set-by-property body (the marker's centre is off the first line) |
 | The connector span rendered for the last `<li>` | US2-2 |
+| The timeline connector started at its dot's centre (R-10) | the connector geometry bodies |
+| `next-has-time` never set (R-10) | the mixed timeline's connector body |
+| The pre-upgrade `aria-hidden="true"` `display: none` rules removed (R-08) | the pre-upgrade `aria-hidden` bodies of both containers |
 | The timeline dot drawn as a `background-color`, with no border | US2-8 forced colours |
 | The timeline marker in `rule-strong` | US2-8 rendered contrast, records contrast node check |
 | `data-line-end` never set | US3-3 |

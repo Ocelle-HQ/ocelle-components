@@ -1,10 +1,10 @@
 # Contract: the `@ocelle/styles` data-table rules
 
 `packages/styles/src/base.css` gains three blocks, after 003's identifier-wrap rule: the data-table rules, the prose
-override that follows them, and the two pre-upgrade list-item rules. Research R-06, R-07 and R-08 have the values and
+override that follows them, and the four pre-upgrade list-item rules. Research R-06, R-07 and R-08 have the values and
 the reasons. 003's `packages/styles/test/source.test.ts` transcribes them after the wrap rule, in the order wrap, block 1, block 2,
-block 3 (the timeline rule, then the chain rule); phase 1's red adds blocks 1 and 2, phase 2's red the timeline rule
-and phase 3's red the chain rule, each in the phase whose green adds the rule (R-06).
+block 3 (the timeline's two rules, then the chain's two). Phase 1's red adds blocks 1 and 2, phase 2's red the
+timeline's rules and phase 3's red the chain's, each in the phase whose green adds them (R-06).
 
 ## Block 1: the data-table rules, at specificity (0,0,0)
 
@@ -14,7 +14,7 @@ table of an `ocelle-data-table` is selected, whether the element is defined or n
 | Selector (inside `:where()`) | Purpose |
 |---|---|
 | `ocelle-data-table > table` | `border-collapse`, `inline-size: 100%`, `margin: 0`, sans, figures |
-| `ocelle-data-table > table > caption` | caption type, colour, `text-align: start`, sticky at the inline start, `max-inline-size` capped by `--ocelle-measure-container` less the end fade and the ring room (R-07; Q-F sets the interim inset and cap) |
+| `ocelle-data-table > table > caption` | caption type, colour, `text-align: start`, `position: static` (not sticky until 009's option of R-17; Q-F (b)), `contain: inline-size`, `max-inline-size: calc(var(--data-table-box-size, var(--ocelle-measure-container)) - var(--ocelle-scroller-fade-size) - var(--ocelle-focus-offset) - var(--ocelle-focus-width))`: the box's measured width less the end fade and the ring room (R-07) |
 | `ocelle-data-table > table > :is(thead, tbody, tfoot) > tr > :is(td, th)` | compact padding, `sm` / `line-height-compact`, `ink-soft`, row rule, `text-align: start`, `vertical-align: top` |
 | `… > thead > tr > th`, `… th[scope="col"]`, `… th[scope="colgroup"]` | eyebrow header: `xs`, medium (Q-B), upper case, `tracking-caps`, `ink-muted`, `rule-strong` rule |
 | `… th[scope="row"]`, `… th[scope="rowgroup"]`, `… > :is(tbody, tfoot) > tr > th:not([scope])` | row header: `sm`, medium, `ink`, no case or tracking |
@@ -35,7 +35,7 @@ each property 003's prose rules set, with the value block 1 gives. It also sets 
 | table | `display: table`, `overflow-x: visible`, `max-inline-size: none`, `container-type: normal`, `margin-block: 0`, `border-collapse: collapse` |
 | cells | `min-inline-size: auto`, block 1's padding, rule and `text-align` |
 | header cells | block 1's font size, weight, figures and rule colour, by selection |
-| caption | block 1's `max-inline-size` cap, position, inset, `text-align`, font size and line height |
+| caption | block 1's `max-inline-size` cap, `position: static`, `inset-inline-start: auto`, `contain: inline-size`, `text-align`, font size and line height |
 
 A node test (`packages/styles/test/prose-override.test.ts`) selects every `[data-ocelle-prose=""]` rule in `base.css`
 whose selector can match a table, caption, row group, row, column or cell, pseudo-classes included (for example
@@ -48,12 +48,16 @@ target, unless the test's not-applicable list records it with its reason (`outli
 
 | Selector (inside `:where()`) | Values |
 |---|---|
-| `ocelle-event-timeline:not(:defined) > ocelle-timeline-event:not([hidden])` | `display: block` |
-| `ocelle-evidence-chain:not(:defined) > ocelle-evidence-step:not([hidden])` | `display: block` |
+| `ocelle-event-timeline:not(:defined) > ocelle-timeline-event:not([hidden]):not([aria-hidden="true"])` | `display: block` |
+| `ocelle-event-timeline:not(:defined) > ocelle-timeline-event[aria-hidden="true"]` | `display: none` |
+| `ocelle-evidence-chain:not(:defined) > ocelle-evidence-step:not([hidden]):not([aria-hidden="true"])` | `display: block` |
+| `ocelle-evidence-chain:not(:defined) > ocelle-evidence-step[aria-hidden="true"]` | `display: none` |
 
-As 013's rule for facts. One item per line before upgrade; times, markers and ordinals show only after upgrade (the
-README's "Before upgrade" lines). Styles browser bodies assert each item's box starts below the previous one with
-the elements undefined (PLAN-FRESH-1-004).
+As 013's rule for facts. One visible item per line before upgrade; times, markers and ordinals show only after
+upgrade (the README's "Before upgrade" lines). An `aria-hidden="true"` item is not shown before upgrade, as after it
+(FR-025, PLAN-FRESH-2-005); without the `display: none` rule it would fall back to inline display and show. Styles
+browser bodies, with the elements undefined, assert each visible item's box starts below the previous one, and that a
+`hidden` item and an `aria-hidden="true"` item are not shown (PLAN-FRESH-1-004, PLAN-FRESH-2-005).
 
 ## Consumer rules
 
