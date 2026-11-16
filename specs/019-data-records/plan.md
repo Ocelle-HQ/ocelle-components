@@ -18,8 +18,8 @@ history and evidence chain.
   tree. The cells are styled by zero-specificity rules in `@ocelle/styles`, because shadow styles cannot reach them,
   with a prose override at (0,1,0) (R-06). The region is a named `group` tab stop only while the table overflows. It
   is named from the host `aria-label`, then `label`, then the caption's text, hidden parts skipped and image `alt`
-  read (R-04). One host rule sizes the module's track to `fit-content`, so cells wrap before the table scrolls. This
-  needs the operator's decision 1 (R-03). `:host { min-inline-size: 0 }` lets it shrink as a flex or grid item
+  read (R-04). One host rule sizes the module's track to `fit-content`, so cells wrap before the table scrolls
+  (decision 1 (a), decided at the plan gate; R-03). `:host { min-inline-size: 0 }` lets it shrink as a flex or grid item
   (R-02). No box sets `container-type`, so the element keeps its table's width in a shrink-to-fit host such as a
   dialog (R-02, R-07). The caption is not sticky until 009's module has an option, requested of 009's owner, that
   keeps a pinned start box out of the start fade (R-17; Q-F decided (b)). Until then it scrolls with the table, starts
@@ -33,22 +33,27 @@ history and evidence chain.
   The name comes from 009's exported `resolveName`. Markers, connectors and ordinals are `aria-hidden`; markers and
   connectors are real spans drawn with borders, so they are measurable and visible in forced colours (R-08, R-10,
   R-12). Markers are round (`border-radius: 50%`, Q-D decided).
-  - **Timeline.** Each event has a time line above its content, and a dot marker is centred on the event's first line
-    with `1lh`. `time` reflects, and one internal `hasTime` predicate, in a module outside the manifest and the exports
-    map, decides the time box and the marker's line (R-10). Each connector is gapped: it runs from its own dot's end
+  - **Timeline.** Each event has a time line above its content (Q-C (a)), and a dot marker is centred on the event's
+    first line with `1lh`. The time is the event's named `time` slot when that has visible non-blank content, else the
+    reflected `time` attribute (Q-E, "Yes: named time slot"); the slotted time is styled through `::slotted()` and the
+    item text stays time first. One internal `hasTime(event)` predicate, with `hasSlottedTime(event)`, in a module
+    outside the manifest and the exports map, decides the time box and the marker's line, in the event and in the
+    timeline (R-10). Each connector is gapped: it runs from its own dot's end
     to the next dot's start and never crosses a dot, with its end taken from the next event's type (R-10).
   - **Chain.** The chain is a wrapping flex row. Connectors sit in each step's trailing padding, and a line end is
     measured from layout, so no connector dangles or crosses lines (R-12). Every step reserves a `size-step` line box,
     so all connectors share the marker's centre line. A chip step is drawn by the container through `::slotted()`:
-    `radius-2`, outline only, 20.4 px tall.
+    `radius-2`, outline only (Q-A (a)), 20.4 px tall.
   - **Before upgrade.** Four (0,0,0) `@ocelle/styles` rules put one visible item per line and hide `aria-hidden="true"`
     items, as the upgraded containers do (R-08).
 - **Tokens and contrast.** No new token and no new contrast row. Contrast is checked twice: a node check ties each
   painted colour to a `checked` row of `pairs.json`, and the browser bodies tie each rendered colour to its token
   (R-13).
-- **What is not decided yet.** Open questions Q-A to Q-C and Q-E from the unread #470, #517 and #533 and decision 1
-  go to the operator at the plan gate. Q-D was decided at squad round 1. Q-F was decided at squad round 2 as (b),
-  through PLAN-FRESH-2-002's option (c).
+- **Decided at the plan gate (2026-11-16).** Decision 1 (a), Q-A (a), Q-B (a) and Q-C (a) confirm the plan's
+  defaults. Q-E is "Yes: named time slot", a change to FR-023 now in the spec. Q-D was decided at squad round 1, Q-F
+  at squad round 2 as (b), through PLAN-FRESH-2-002's option (c). One question stays open: Q-G, whether an empty or
+  hidden slotted time lets the `time` attribute apply (the plan's reading, yes) or silences it
+  (`reviews/plan/gate-answers.md`).
 
 Implementation waits for 009, 013 and op 016 on `main`. The first task rechecks the plan against `main` as merged
 (R-14), including whether 009's pinned-start option (R-17) has landed.
@@ -94,7 +99,8 @@ engine-floor feature: manual slot assignment (013) and the module's features (00
 **Performance Goals**: none specific.
 - Each class adopts one shared stylesheet. The data table also gets the module's one per-instance sheet (009) and its
   own per-instance sheet, which holds the measured caption width (R-07).
-- Per container: one `MutationObserver`. The chain also has one `ResizeObserver`, on its list and its items. The data
+- Per container: one `MutationObserver` (the timeline's on its events' subtrees too, for the slotted time). Per
+  event: one `MutationObserver` on its own subtree, for the slotted time (R-10). The chain also has one `ResizeObserver`, on its list and its items. The data
   table has one `ResizeObserver` of its own, on its `block-size: 0` measuring element (not on `.region-box`), for
   the caption's cap, and at most one pending animation frame request per instance, for the end fade's share of the
   cap (R-07).
@@ -105,42 +111,50 @@ token, a keyword, a system colour in forced colours, `0`, a `%` (which `token-on
 monospace; no I/O; one heavy job at a time in this container.
 
 **Scale/Scope**: 5 elements, 0 tokens, 0 contrast rows, 3 `@ocelle/styles` blocks (the data-table rules, their prose
-override, and the four pre-upgrade list-item rules), 1 driver addition, 32 stories (12 in phase 1, 9 in phase 2, 11
-in phase 3, each with two baselines: 64 PNGs).
+override, and the four pre-upgrade list-item rules), 1 driver addition, 33 stories (12 in phase 1, 10 in phase 2, 11
+in phase 3, each with two baselines: 66 PNGs).
 
 ## Constitution Check
 
-*Gate: passes before Phase 0 and again after Phase 1 design (rechecked after squad rounds 1 and 2), with the open questions
-Q-A to Q-C, Q-E and decision 1 for the operator at the plan gate (Q-D and Q-F decided at squad rounds 1 and 2). No exception is planned (Complexity Tracking).*
+*Gate: passes before Phase 0 and again after Phase 1 design (rechecked after squad rounds 1 and 2, and after the plan
+gate's answers of 2026-11-16: decision 1, Q-A, Q-B and Q-C (a), Q-E a named `time` slot; Q-D and Q-F decided at squad
+rounds 1 and 2; Q-G open, either option passes). No exception is planned (Complexity Tracking).*
 
 | Principle | How this plan meets it |
 |---|---|
-| I. Names, no I/O, small interface, manifest | **Tags**: `ocelle-data-table`, `ocelle-event-timeline`, `ocelle-timeline-event`, `ocelle-evidence-chain`, `ocelle-evidence-step`. **Events**: none. **I/O**: none. **Properties**: `label`, `wrap` (data table); `label` (timeline, chain); `time`, `wrap` (event); `variant`, `wrap` (step). Every property is `\| undefined` with `@default undefined`; `wrap`, `variant` and `time` reflect, because the styles or the container's observer read them (`time`: PLAN-CORRECTNESS-1-003). **Parts**: `list` on the two containers; `time` and `content` on the event; `content` on the step. **CSS hooks**: none. **Slots**: the default slot of each element. The manifest declares everything, with every list stated ([contracts/](contracts/)). No element module exports a function: the internal `hasTime` lives in `src/timeline-time.ts`, outside the manifest glob and the exports map, and a manifest test statement pins that (R-10). The caption's measured width is an internal custom property with no `--ocelle-` prefix, not surface (R-07). |
+| I. Names, no I/O, small interface, manifest | **Tags**: `ocelle-data-table`, `ocelle-event-timeline`, `ocelle-timeline-event`, `ocelle-evidence-chain`, `ocelle-evidence-step`. **Events**: none. **I/O**: none. **Properties**: `label`, `wrap` (data table); `label` (timeline, chain); `time`, `wrap` (event); `variant`, `wrap` (step). Every property is `\| undefined` with `@default undefined`; `wrap`, `variant` and `time` reflect, because the styles or the container's observer read them (`time`: PLAN-CORRECTNESS-1-003). **Parts**: `list` on the two containers; `time` and `content` on the event; `content` on the step. **CSS hooks**: none. **Slots**: the default slot of each element, and the event's named `time` slot (Q-E), which the manifest declares. The manifest declares everything, with every list stated ([contracts/](contracts/)). No element module exports a function: the internal `hasTime` and `hasSlottedTime` live in `src/timeline-time.ts`, outside the manifest glob and the exports map, and a manifest test statement pins that (R-10). The caption's measured width is an internal custom property with no `--ocelle-` prefix, not surface (R-07). |
 | II. Tokens only, brand rules | **Tokens**: every value is a token (R-06, R-10, R-12); no new token (R-13). **No monospace**: cells, times, ordinals and chips use `font-sans` with `figures`. **`color-rule`**: only on decorative lines (the row and header rules, the connectors; FR-013). **Radius**: `radius-2` on the chip (the one radius, never `radius-pill`). The dot and the step marker are round, `border-radius: 50%` with no token: a mark shape, not a corner radius, so the one-radius rule is not engaged and no radius token is added (FR-031, FR-040; Q-D, operator decision (a) on PLAN-CORRECTNESS-1-004). **Ochre**: none. |
-| III. Accessible by construction | **ID references**: none across a root. The table's references stay in the consumer's tree (R-01), and the region is named by copied text (R-04). **Roles**: the table's own roles; a `group` on the region while it overflows (009); `list` and `listitem` on the shadow lists, explicit for WebKit (R-08). **Hidden**: markers, connectors and ordinals are `aria-hidden`; item text is asserted by `itemTexts` (R-11). **Keyboard**: the overflowing region is the only added tab stop, with arrows, clearance and handover from the module; slotted links keep theirs. **Contrast**: text and structural marks use ink tokens with text declarations on the nine main grounds; decorative lines are exempt (FR-013), checked by a node check against `pairs.json` and by rendered-colour bodies (R-13). **Forced colours**: every mark is a border drawn in `CanvasText`; the chip's box rule sits outside the variant block (R-10, R-12). **Reflow**: 320 px tests per container, the data table as a flex and a grid item, and in three shrink-to-fit hosts (a dialog, an inline-block, a start-aligned column flex), where it is never 0 px wide (R-02); the caption wraps inside the box's unmasked width at rest (R-07). **Naming**: a blank host `aria-label` counts as absent on the lists, through 009's `resolveName` (R-09); the region's caption name skips hidden parts and reads image `alt` (R-04). **axe**: #10's `axe` gate on every story, with no exception entry planned. |
+| III. Accessible by construction | **ID references**: none across a root. The table's references stay in the consumer's tree (R-01), and the region is named by copied text (R-04). **Roles**: the table's own roles; a `group` on the region while it overflows (009); `list` and `listitem` on the shadow lists, explicit for WebKit (R-08). **Hidden**: markers, connectors and ordinals are `aria-hidden`; item text is asserted by `itemTexts` (R-11). **Keyboard**: the overflowing region is the only added tab stop, with arrows, clearance and handover from the module; slotted links keep theirs. **Contrast**: text and structural marks use ink tokens with text declarations on the nine main grounds (a slotted time takes the attribute time's `ink-muted` through `::slotted()`); decorative lines are exempt (FR-013), checked by a node check against `pairs.json` and by rendered-colour bodies (R-13). **Forced colours**: every mark is a border drawn in `CanvasText`; the chip's box rule sits outside the variant block (R-10, R-12). **Reflow**: 320 px tests per container, the data table as a flex and a grid item, and in three shrink-to-fit hosts (a dialog, an inline-block, a start-aligned column flex), where it is never 0 px wide (R-02); the caption wraps inside the box's unmasked width at rest (R-07). **Naming**: a blank host `aria-label` counts as absent on the lists, through 009's `resolveName` (R-09); the region's caption name skips hidden parts and reads image `alt` (R-04). **axe**: #10's `axe` gate on every story, with no exception entry planned. |
 | IV. Strict CSP, offline | Adopted stylesheets and `base.css` only. No `style` attribute; the module's mask figures use its per-instance sheet (009), and the data table's measured caption width uses its own (R-07). Fixture pages assert zero violations. |
 | V. Storybook, behaviour tests | A story per variant and state, light and dark ([contracts/checks.md](contracts/checks.md) § Stories). The item elements' states are stories in their container's file. Their behaviour outside the container is proven by browser bodies only, as 013 did for `ocelle-fact`. FR-050 names that as the spec's own rule, not an exception. Every spec'd state has a story, the hidden item, the unnamed overflowing table, the table-less data table and the empty containers included (PLAN-CORRECTNESS-1-007, operator decision (a)). |
-| VI. Consumer-driven, own code | Needs: kitty-mission-ui's `.sk-data-table` family and the Desktop V2 primitives (#470, #517, #533). The issues are unread, so their points are the plan gate's questions Q-A to Q-C and Q-E (spec SPEC-1-06 (b)). The inventory is an operator input before each red commit (R-16). Nothing is copied, and the README mapping names roles only. |
+| VI. Consumer-driven, own code | Needs: kitty-mission-ui's `.sk-data-table` family and the Desktop V2 primitives (#470, #517, #533). The issues are unread, so their points were the plan gate's questions Q-A to Q-C and Q-E (spec SPEC-1-06 (b)), which the operator answered on 2026-11-16 (Q-E's answer, the `time` slot, is in FR-023). The inventory is an operator input before each red commit (R-16). Nothing is copied, and the README mapping names roles only. |
 | VII. Semver | **MINOR**: five elements, five entry points and three `base.css` blocks. CHANGELOG entries go in `@ocelle/elements` and `@ocelle/styles`. `@ocelle/tokens` is unchanged. |
 | VIII. Test-first, non-vacuous | A scaffold comes before each red commit. The red commit holds the phase's scenario bodies, the driver test, the node and styles tests and the story-test extension (operator decision I3), and `red.sh` keeps one red record per phase. The red log is read per body: every scenario body fails on an assertion, never on an import or setup error, and each body the platform alone could pass carries a paired assertion only the element gives (contracts/checks.md). Each phase's red commit changes one existing test, 003's `source.test.ts`, for the `base.css` rules that phase's green adds (phase 1 blocks 1 and 2, phase 2 the timeline's two pre-upgrade rules, phase 3 the chain's two), and its message says so (R-06). Item-text bodies also assert a non-empty text (FR-016). Each CSS-only behaviour has a named element plant or a stated reason, because Stryker does not mutate `css` templates or `base.css`; element plants mutate green source, so they run after green, are never committed, and are recorded in `reviews/phase-<N>/element-plants.md` (contracts/checks.md § Element plants). Spikes run before the scaffolds of phases 1 to 3, and a failing spike result goes to the operator. |
 | Licence, supply chain | No new dependency or asset. |
 | Workflow gates | No gate changes. The gates run unchanged; the gate plants run by op 016's selection locally and in full in CI (R-15). |
 
-## Decisions the operator should see at the plan gate
+## Decisions at the plan gate
 
-1. **The track's inline size (R-03).**
-   - The plan's default is (a): `:host .region-track { inline-size: fit-content }` in the data table's own styles. It
-     overrides one property of 009's module stylesheet, so cells wrap before the table scrolls.
-   - (b) adds a sizing option to 009's module. That changes 009's interface.
-   - (c) keeps max-content, which changes US1-9.
-2. **Q-A, the chip step's look** (#517). The plan uses an outline with no fill.
-3. **Q-B, the column headers' weight and colour** (#533). The plan uses medium weight in `ink-muted`.
-4. **Q-C, the event's time position** (#470). The plan puts the time on its own line above the content, with the
+Answered by the operator on 2026-11-16 (`reviews/plan/operator-gate.md`); the changes are listed in
+`reviews/plan/gate-answers.md`.
+
+1. **The track's inline size (R-03). Decided: (a).** `:host .region-track { inline-size: fit-content }` in the data
+   table's own styles. It overrides one property of 009's module stylesheet, so cells wrap before the table scrolls.
+   (b), a sizing option in 009's module, and (c), max-content with a changed US1-9, are not taken.
+2. **Q-A, the chip step's look** (#517). **Decided: (a)**, an outline with no fill.
+3. **Q-B, the column headers' weight and colour** (#533). **Decided: (a)**, medium weight in `ink-muted`.
+4. **Q-C, the event's time position** (#470). **Decided: (a)**, the time on its own line above the content, with the
    marker on that line.
 5. **Q-D, the markers' shape.** Decided at squad round 1: `border-radius: 50%` for both markers, no token (R-10,
    R-12).
-6. **Q-E, marked-up times** (#470). Does #470's history need machine-readable or marked-up times? The plan keeps
-   `time` attribute-only as FR-023 approves, and the README states the limit; a yes is a spec change before tasks.
+6. **Q-E, marked-up times** (#470). **Decided: "Yes: named time slot".** `ocelle-timeline-event` gets a named `time`
+   slot that takes precedence over the `time` attribute, styled through `::slotted()`, the item text still time
+   first. FR-023 is changed in the spec, with US2-11 to US2-14; the contracts, data model, research R-08 and R-10
+   (the shared `hasTime(event)` and the connector's `next-has-time`), checks, stories and phase 2 follow.
+   - **Q-G, an empty or hidden slotted time beside a `time` attribute. Open.** The plan reads "precedence" as: the
+     attribute applies when the slot has no visible non-blank content (FR-023, US2-13). The alternative is that any
+     `slot="time"` child silences the attribute. The plan's reading stands until the operator answers
+     (`reviews/plan/gate-answers.md`).
 7. **Q-F, the caption until 009's option exists (R-17).** Decided at squad round 2 as (b) (PLAN-FRESH-2-002,
    operator decision (c), 2026-11-16). The caption is not sticky until 009's option lands: it scrolls with the table,
    with no inset, and is capped by the box's measured width (R-07). It becomes sticky at inset 0 once the option is on
@@ -159,7 +173,7 @@ Q-A to Q-C, Q-E and decision 1 for the operator at the plan gate (Q-D and Q-F de
 ```text
 specs/019-data-records/
 ├── plan.md              # this file
-├── research.md          # R-01 to R-17, open questions Q-A to Q-F, decision 1
+├── research.md          # R-01 to R-17, the plan gate's questions Q-A to Q-G, decision 1
 ├── data-model.md
 ├── quickstart.md
 ├── contracts/
@@ -183,7 +197,7 @@ packages/elements/
 │   ├── ocelle-data-table.ts       # new (uses overflow-region.ts)
 │   ├── ocelle-event-timeline.ts   # new (imports ocelle-timeline-event.ts and timeline-time.ts; resolveName from overflow-region.ts)
 │   ├── ocelle-timeline-event.ts   # new (imports timeline-time.ts; exports only its class)
-│   ├── timeline-time.ts           # new, internal: the hasTime predicate, outside the manifest glob and the exports map (R-10)
+│   ├── timeline-time.ts           # new, internal: hasTime(event) and hasSlottedTime(event), outside the manifest glob and the exports map (R-10)
 │   ├── ocelle-evidence-chain.ts   # new (imports ocelle-evidence-step.ts; resolveName from overflow-region.ts)
 │   ├── ocelle-evidence-step.ts    # new
 │   ├── index.ts, browser.ts       # re-export / define the five
@@ -321,28 +335,44 @@ Every phase with stories also does the following:
      the README (section, conventions, overflow-region users, Host ARIA list, sizing, prose specificity, the
      `<tfoot>` order, print, pre-upgrade) and the CHANGELOGs. Then the data table's element plants.
 2. **US2 Event timeline** (P2).
-   - **Spike.** R-08, R-09 and R-11: the tree with `role="list"`, the item-text oracle, the empty connector and marker
-     spans, and the host `aria-label` against 009's lane.
+   - **Spike.** R-08, R-09, R-10 and R-11: the tree with `role="list"`, the item-text oracle, the empty connector and
+     marker spans, the host `aria-label` against 009's lane, and the `time` slot (a slotted `<time>` after the content
+     read first, an unrendered slot leaving an empty or hidden slotted node out of the tree and layout, and
+     `::slotted(*)` setting the type over a `<b>`'s UA bold).
    - **Red.**
      - `itemTexts` and its test, in both harnesses.
-     - US2-1 to US2-10, with US2-8's forced-colours and rendered-contrast halves (R-10, R-13).
+     - US2-1 to US2-14, with US2-8's forced-colours and rendered-contrast halves (R-10, R-13).
      - The `time` bodies of R-10: set, changed and cleared by property after mount, `time=""` and `time=" "`.
-     - The connector geometry bodies of R-10: three timed events and a mixed timed and untimed timeline, with each
-       connector clear of both dots and both gaps `space-1` within 0.5 px, and `elementFromPoint` inside each dot
-       returning the marker.
-     - The manifest test statement that the `ocelle-timeline-event` module declares only its class (R-10).
-     - Edge-case bodies: an event outside the timeline, an empty timeline (no `<ol>`), `aria-hidden` items, `lang` and
-       `dir` on an event, order kept, no live region, pre-upgrade (the `base.css` list-item rules: a `hidden` and an
-       `aria-hidden="true"` event not shown), 640 px.
+     - The `time` slot bodies of R-10 (Q-E): US2-11 to US2-14 (a slotted `<time datetime>` after the content shown
+       above it and read first, with the attribute time's type, a `<b slot="time">` included; the attribute ignored
+       while the slot has content and shown again when the slotted node is removed; an empty, white-space-only,
+       `hidden` and `aria-hidden="true"` slotted time, with and without a `time` attribute; filled, emptied, hidden and
+       shown after mount), with the paired assertions of checks.md § Bodies.
+     - The connector geometry bodies of R-10: three timed events and a mixed timeline (timed, untimed, timed by its
+       slot, untimed with an empty slotted time), with each connector clear of both dots and both gaps `space-1`
+       within 0.5 px, and `elementFromPoint` inside each dot returning the marker.
+     - The manifest test statements that the `ocelle-timeline-event` module declares only its class, and that the
+       event declares the default slot and the `time` slot (R-10).
+     - Edge-case bodies: an event outside the timeline (with an attribute time and with a slotted time), an empty
+       timeline (no `<ol>`), `aria-hidden` items, `lang` and `dir` on an event and on a slotted time, two slotted time
+       nodes of which one is `aria-hidden="true"`, order kept, no live region, pre-upgrade (the `base.css` list-item
+       rules: a `hidden` and an `aria-hidden="true"` event not shown; a slotted time's text shown before the
+       content's), 640 px.
      - The change to 003's `packages/styles/test/source.test.ts` (R-06): the timeline's two pre-upgrade rules after
        block 2, the last-rule assertion "the wrap rule, block 1, block 2, the timeline's rules"; named with its reason
        in the commit message.
      - The timeline's entries in the define-twice body and in `test/node/records-pairs.test.ts`.
      - README statements (the section, the Host ARIA list, the overflow-region users of `resolveName`, "Before
-       upgrade", the attribute-only `time` limit of Q-E), mapping rows and the story-test extension.
-   - **Green.** `timeline-time.ts`, `ocelle-timeline-event.ts` and `ocelle-event-timeline.ts`, the two pre-upgrade rules in `base.css`,
-     exports, the manifest, stories with baselines, the README section (with the Host ARIA list update) and the
-     CHANGELOGs. Then the timeline's element plants.
+       upgrade" with the slotted time shown inline, and the `time` slot of Q-E: it takes precedence over the
+       attribute, carries `datetime`, `title`, `lang`, `dir` or an htmx target, which the attribute cannot, one time
+       element per event, and a consumer rule on the slotted node beating the `::slotted()` type), mapping rows and
+       the story-test extension.
+   - **Green.** `timeline-time.ts` (`hasTime(event)`, `hasSlottedTime(event)`), `ocelle-timeline-event.ts` (the `time`
+     slot, its `::slotted()` rules and its own observer) and `ocelle-event-timeline.ts` (its observer on the events'
+     subtrees), the two pre-upgrade rules in `base.css`, exports, the manifest (the `time` slot included), the 10
+     stories with baselines, the README section (with the Host ARIA list update and the `time` slot) and the
+     CHANGELOGs (the `time` slot named as surface). Then the timeline's element plants, the slot plants of checks.md
+     among them.
 3. **US3 Evidence chain** (P3).
    - **Spike.** R-12: line ends at 1280, 600 and 320 px and after the R-12 changes, two-digit fit for ordinal 20, the
      chip's block size, the shared centre line with chips, and `dir="rtl"`.
@@ -381,7 +411,7 @@ No exception to the constitution is planned.
   a story (for example a host `aria-label` story that axe rejects, R-09), needs a row here and the operator's approval.
 - The host rule on `.region-track` (R-03) is a styling override inside the data table's own stylesheet, and the
   measured caption width (R-07) is written by the data table's own observer into its own per-instance sheet. Neither
-  changes 009's module. The operator decides the first at the plan gate (decision 1).
+  changes 009's module. The operator chose the first at the plan gate (decision 1 (a), 2026-11-16).
 - The markers' `border-radius: 50%` is recorded under constitution II as a mark shape, not a corner radius (Q-D,
   operator decision (a) on PLAN-CORRECTNESS-1-004); it is not an exception and adds no token.
 - Every spec'd state has a story (contracts/checks.md § Stories), so FR-050 records no further state without one.

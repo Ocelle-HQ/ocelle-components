@@ -30,7 +30,8 @@ checks: [contracts/checks.md](contracts/checks.md).
      group, and the arrows scroll it. At rest the caption wraps inside the box and starts at the table's edge. At
      1280 px Tab skips it.
    - **Timeline.** The screen reader reads a list of three items, "14:02 Mission created" first, with no dot or line
-     announced.
+     announced. In the marked-up times story each `<time slot="time">` shows above its event's text in the time's
+     type and is read first, and the event that also has a `time` attribute shows only its slotted time.
    - **Chain, wrapped.** The steps wrap at 320 px with no connector at a line's end, and the ordinals read 1 to 6 on
      the visible default steps.
 6. **Mutation.** Run `pnpm run gate:mutation` on the phase's changed source. No mutant survives unless the review

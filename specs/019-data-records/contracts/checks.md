@@ -31,9 +31,9 @@ used for the lists.
 | Oracle | Used by | How |
 |---|---|---|
 | AX tree, table | US1-1, US1-4, US1-6, US1-7, US1-15, US1-16, the R-04 caption-text bodies | The full Chromium AX tree: compare the element's subtree with the same table outside; region `group` and name |
-| AX tree, lists, and `itemTexts(list)` (new, R-11) | US2-1, US2-3, US2-5, US2-6, US2-10, US3-1, US3-6, US3-7, US3-10 | `StaticText` names under each `listitem`, joined, collapsed and trimmed. Each assertion also checks the text is not empty. US2-5, US2-6, US3-6 and US3-7 also assert the `listitem` count and that no other child of the container is in the tree. No marker or connector node is in the tree, and a DOM assertion pins `aria-hidden="true"` on every marker wrapper and connector span |
-| computed style | US1-2, US1-3, US1-10, US1-14, US2-3, US3-2, US3-4, the `time` bodies (R-10) | `getComputedStyle` on cells, headers, caption, time, marker and chip, against the token's computed value read from a probe |
-| geometry | US1-4, US1-12, US2-2, US2-9, US3-2, US3-3, US3-4, US3-5, US3-9, ordinal fit, mixed chips, the `time` bodies, the caption bodies (R-07), the shrink-to-fit bodies (R-02), the timeline connector bodies (R-10) | `getBoundingClientRect` on real elements (markers, connector spans, `<li>`, the chip, the host, the caption's line boxes through a `Range`): marker size, centring on the first line, the caption's start against the table's and its line boxes inside the box's unmasked extent, the host's inline size in a shrink-to-fit host, each timeline connector clear of both dots with `space-1` gaps (0.5 px) and `elementFromPoint` inside each dot returning the marker, connector ends inside the chain, chip block size < `size-step`, the ordinal box inside the marker's padding box, connector centres on the row's marker centre (0.5 px). US1-12, US2-9 and US3-9 assert inline-start edges against the container's: under `dir="rtl"` the first column's, the markers' and the first step's right edges are at the container's right edge, and lines fill towards the left. US3-5 asserts the long step's box stays inside the chain |
+| AX tree, lists, and `itemTexts(list)` (new, R-11) | US2-1, US2-3, US2-5, US2-6, US2-10, US2-11 to US2-14, the slotted-time edge bodies (R-10), US3-1, US3-6, US3-7, US3-10 | `StaticText` names under each `listitem`, joined, collapsed and trimmed. Each assertion also checks the text is not empty. US2-5, US2-6, US3-6 and US3-7 also assert the `listitem` count and that no other child of the container is in the tree. No marker or connector node is in the tree, and a DOM assertion pins `aria-hidden="true"` on every marker wrapper and connector span |
+| computed style | US1-2, US1-3, US1-10, US1-14, US2-3, US2-11, US3-2, US3-4, the `time` bodies (R-10) | `getComputedStyle` on cells, headers, caption, time (the attribute time's `part="time"` and each slotted time node, a `<b slot="time">` included), marker and chip, against the token's computed value read from a probe |
+| geometry | US1-4, US1-12, US2-2, US2-9, US2-11, US2-13, US2-14, US3-2, US3-3, US3-4, US3-5, US3-9, ordinal fit, mixed chips, the `time` bodies, the caption bodies (R-07), the shrink-to-fit bodies (R-02), the timeline connector bodies (R-10) | `getBoundingClientRect` on real elements (markers, connector spans, `<li>`, the chip, the host, the caption's line boxes through a `Range`): marker size, centring on the first line, the caption's start against the table's and its line boxes inside the box's unmasked extent, the host's inline size in a shrink-to-fit host, each timeline connector clear of both dots with `space-1` gaps (0.5 px) and `elementFromPoint` inside each dot returning the marker, connector ends inside the chain, chip block size < `size-step`, the ordinal box inside the marker's padding box, connector centres on the row's marker centre (0.5 px). US1-12, US2-9 and US3-9 assert inline-start edges against the container's: under `dir="rtl"` the first column's, the markers' and the first step's right edges are at the container's right edge, and lines fill towards the left. US3-5 asserts the long step's box stays inside the chain |
 | scroll width | US1-4, US2-4, US3-3, US3-5, 640 px bodies, the flex-item and grid-item bodies (R-02) | page `scrollWidth === innerWidth` |
 | keyboard | US1-5, US1-8, US1-13, US2-7, FR-011 link in a step | See the table below |
 | copy | US1-9, US2-4 | 013's `copy` |
@@ -69,7 +69,9 @@ asserts something only the element gives, or is proven by a green-time element p
 | `<thead>` with an empty `<tbody>` | the table renders as written | the header row has the eyebrow style and the region exists (`.region-box` in the shadow root), with no added text node |
 | US2-7, FR-026 | the link keeps its tab stop; no live region exists | the link's box is inside the `<li>`'s content column, after the marker column (inline offset at least `size-dot` plus `space-3`), and the list is in the AX tree with its name |
 | FR-011 link in a step | the link keeps its tab stop | the link's box is inside its `<li>`, after the marker |
-| "throws nothing" halves (empty containers, no table, items outside a container) | an empty render throws nothing | the empty containers render no `<ol>` and expose no `listitem`; the no-table data table has `.region-box` and no slotted node; an item outside its container shows its shadow `part="content"` (and the event its `part="time"` text) |
+| "throws nothing" halves (empty containers, no table, items outside a container) | an empty render throws nothing | the empty containers render no `<ol>` and expose no `listitem`; the no-table data table has `.region-box` and no slotted node; an item outside its container shows its shadow `part="content"` (and the event its `part="time"` text, or its `part="time"` holding the `time` slot with the slotted node assigned) |
+| US2-13, the empty or hidden slotted time with no `time` attribute | an unstyled `<time>` with no text, or a `hidden` one, shows nothing anyway | the same body asserts the event has no `part="time"` in its shadow root, its `<li>` has no `has-time`, the marker's centre is on the content's first line, and the slotted node is unassigned (`assignedSlot` is `null`) |
+| US2-12, the attribute not shown | the light DOM never holds "09:00" | the same body asserts `part="time"` holds the `time` slot with the slotted node assigned, and after the slotted node is removed `part="time"`'s text is "09:00" |
 | the "not shown" halves of US2-6 and US3-7 | an empty render shows nothing | the item children are shown: one `<li>` per item, `itemTexts` equal to the items' texts, no other child's text in the tree |
 | the pre-upgrade bodies | (none: no rule exists at red) | each visible item's box starts below the previous one before definition, and a `hidden` or `aria-hidden="true"` item is not shown |
 | the no-pill grep | no source exists at red | element plant: `pill` written into the chain's styles must fail it |
@@ -110,6 +112,14 @@ stays op 016's gate-plant record in its set form, which the review compares line
 | The connector span rendered for the last `<li>` | US2-2 |
 | The timeline connector started at its dot's centre (R-10) | the connector geometry bodies |
 | `next-has-time` never set (R-10) | the mixed timeline's connector body |
+| `hasTime` reading the `time` attribute only, ignoring the slot (R-10, plan gate Q-E) | US2-11, the mixed timeline's connector body |
+| The attribute's text rendered beside the `time` slot while the event has a slotted time | US2-12 |
+| `hasSlottedTime` counting a `hidden` or `aria-hidden="true"` node, or one with blank text | US2-13 |
+| The `time` slot always rendered, whatever `hasSlottedTime` gives | US2-13 (the empty-slot halves: the time box exists) |
+| The event's own observer without `characterData` | US2-14, the filled case |
+| The timeline's observer without `subtree` | US2-14, the marker and connector halves |
+| The `slot[name="time"]::slotted(*)` type rule removed | US2-11, the `<b slot="time">` case |
+| The `::slotted([aria-hidden="true"])` `display: none` rule removed | the two-slotted-nodes body |
 | The pre-upgrade `aria-hidden="true"` `display: none` rules removed (R-08) | the pre-upgrade `aria-hidden` bodies of both containers |
 | The timeline dot drawn as a `background-color`, with no border | US2-8 forced colours |
 | The timeline marker in `rule-strong` | US2-8 rendered contrast, records contrast node check |
@@ -151,9 +161,11 @@ In `storybook/stories/<element>.stories.ts`, each in light and dark (PLAN-CORREC
   - empty body;
   - 320 px;
   - no table (an empty region).
-- **Timeline (9):**
+- **Timeline (10):**
   - three events;
   - an event without a time;
+  - marked-up times (each event's time a `<time slot="time" datetime>`, one event also with a `time` attribute that
+    the slot overrides);
   - a long identifier with `wrap`;
   - a link in an event;
   - one event;
@@ -174,7 +186,7 @@ In `storybook/stories/<element>.stories.ts`, each in light and dark (PLAN-CORREC
   - unnamed;
   - empty (no visible step).
 
-That is 32 stories, 64 baselines: `visual:update` reports 24, 18 and 22 added in phases 1 to 3 (R-15).
+That is 33 stories, 66 baselines: `visual:update` reports 24, 20 and 22 added in phases 1 to 3 (R-15).
 
 The item elements' states are in their container's file. A standalone item has no story (FR-050). No story sets a
 blank or decisive host `aria-label` unless the phase 2 spike shows axe is clean on it (R-09). The story test checks

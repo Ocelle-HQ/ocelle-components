@@ -2,7 +2,7 @@
 
 Module `packages/elements/src/ocelle-event-timeline.ts`, class `OcelleEventTimeline`. It imports
 `./ocelle-timeline-event.ts` (013's container import rule) and `hasTime` from the internal `./timeline-time.ts`
-(R-10), and calls `define("ocelle-event-timeline", …)`.
+(R-10; it reads the event's slotted time as well as its `time` attribute, plan gate Q-E), and calls `define("ocelle-event-timeline", …)`.
 
 ## Usage
 
@@ -10,6 +10,10 @@ Module `packages/elements/src/ocelle-event-timeline.ts`, class `OcelleEventTimel
 <ocelle-event-timeline label="Mission history">
   <ocelle-timeline-event time="14:02">Mission created</ocelle-timeline-event>
   <ocelle-timeline-event time="14:20">Plan approved</ocelle-timeline-event>
+  <ocelle-timeline-event>
+    <time slot="time" datetime="2026-11-15T14:41">14:41</time>
+    Review requested
+  </ocelle-timeline-event>
 </ocelle-event-timeline>
 ```
 
@@ -29,7 +33,7 @@ Module `packages/elements/src/ocelle-event-timeline.ts`, class `OcelleEventTimel
 
 ```html
 <ol role="list" part="list" aria-label="…">
-  <li role="listitem" class="has-time next-has-time">  <!-- has-time when hasTime(event.time); next-has-time when hasTime(next visible event's time) -->
+  <li role="listitem" class="has-time next-has-time">  <!-- has-time when hasTime(event); next-has-time when hasTime(next visible event); each counts a slotted time -->
     <span class="marker-line" aria-hidden="true"><span class="marker"></span></span>
     <span class="connector" aria-hidden="true"></span>   <!-- not rendered on the last visible <li> -->
     <slot></slot>                          <!-- assigned: one event -->
@@ -42,7 +46,9 @@ With no visible event nothing is rendered. The connector is a real span (PLAN-TE
 positioned in the marker column. It is gapped (PLAN-FRESH-2-004, operator decision (a)): it starts `--ocelle-space-1`
 after its own dot's block end and ends `--ocelle-space-1` before the next visible dot's block start, so it never
 crosses a dot. Its start follows this `<li>`'s marker line (`has-time` or not) and its end the next `<li>`'s
-(`next-has-time` or not), so a mixed timed and untimed timeline keeps equal gaps (R-10).
+(`next-has-time` or not), so a mixed timed and untimed timeline keeps equal gaps (R-10). An event timed by its
+`time` slot is a timed event here, and one whose slotted time is empty or hidden is untimed unless its `time`
+attribute is non-blank.
 
 ## Marks
 
@@ -61,16 +67,20 @@ content text take the system text colour. No `forced-color-adjust: none`.
 
 - Manual assignment of each visible event (no `hidden`, no `aria-hidden="true"`) to its `<li>`'s slot, in source
   order.
-- A `MutationObserver` watches the child list and each child's `hidden`, `aria-hidden` and `time`, and re-renders.
-  `time` reflects, so a property set from script is seen. The `has-time` and `next-has-time` classes use the
-  internal `hasTime` predicate of `timeline-time.ts`, the same one the event uses for its time box (R-10).
+- A `MutationObserver` watches the host's subtree: `childList`, `characterData`, and the attributes `hidden`,
+  `aria-hidden`, `time` and `slot` (`subtree: true`), and re-renders. So an event added, removed, hidden or shown, a
+  `time` set (it reflects, so a property set from script is seen), and an event's slotted time added, removed,
+  emptied, filled, hidden or shown all re-decide the classes (plan gate Q-E). A record from inside an event's content
+  re-renders to the same classes, which changes nothing. The `has-time` and `next-has-time` classes use the internal
+  `hasTime(event)` predicate of `timeline-time.ts`, the same one the event uses for its time box (R-10).
 - The name is `resolveName(host aria-label, label)`, set on the `<ol>` (R-09).
 - No live region, landmark, heading or tab stop.
 
 ## Accessibility tree (Chromium)
 
-`list` (named or not) > `listitem` × N. Each item's text (FR-016) is "time content", or the content alone. No marker
-or connector appears in the tree; each marker wrapper and connector span carries `aria-hidden="true"`.
+`list` (named or not) > `listitem` × N. Each item's text (FR-016) is "time content", or the content alone; the time
+is the slotted time's text when the event has one, else the `time` attribute's, and never both. No marker or
+connector appears in the tree; each marker wrapper and connector span carries `aria-hidden="true"`.
 
 ## Before upgrade
 
@@ -78,5 +88,5 @@ or connector appears in the tree; each marker wrapper and connector span carries
 ocelle-timeline-event:not([hidden]):not([aria-hidden="true"])) { display: block; }` and
 `:where(ocelle-event-timeline:not(:defined) > ocelle-timeline-event[aria-hidden="true"]) { display: none; }`, so the
 visible events show one per line and an `aria-hidden="true"` event is not shown, as after upgrade (R-08,
-PLAN-FRESH-2-005). Their times do not show before upgrade (the time is rendered in shadow). The README's "Before
-upgrade" line says both.
+PLAN-FRESH-2-005). Their attribute times do not show before upgrade (rendered in shadow); a slotted time is light DOM
+and shows inline where written. The README's "Before upgrade" line says both.

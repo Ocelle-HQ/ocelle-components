@@ -64,6 +64,21 @@ Ocelle web console uses them in server-rendered pages under a strict CSP, filled
   decides the line FR-021 centres the marker on; #470). The plan's own choices on these points stand until the
   operator answers; an answer that changes a requirement here is recorded in the spec before tasks are generated.
 
+**Operator decisions at the plan gate** (2026-11-16, human:jeroennouwsdev; `reviews/plan/operator-gate.md`):
+
+- Decision 1 (R-03), the track's inline size: (a), the data table's host rule `:host .region-track { inline-size:
+  fit-content }`; 009's module unchanged (FR-008, US1-9 as written).
+- Q-A, the chip step's look (#517): (a), outline only, no fill (FR-035).
+- Q-B, the column headers' weight and colour (#533): (a), `--ocelle-font-weight-medium` in `--ocelle-color-ink-muted`
+  (FR-006).
+- Q-C, the event's time position (#470): (a), the time on its own line above the content, the marker centred on the
+  time's line (FR-023, FR-021).
+- Q-E, marked-up times (#470): "Yes: named time slot". `ocelle-timeline-event` gets a named `time` slot that takes
+  precedence over the `time` attribute, styled through `::slotted()`, the item text still time first (FR-023, US2-11
+  to US2-14). A slotted time that is empty, white space only or hidden counts as no slotted time, and the `time`
+  attribute then applies; that reading of "precedence" is the plan's and is put back to the operator as Q-G in
+  `reviews/plan/gate-answers.md`.
+
 ## Scope
 
 **In scope:** five new custom elements in `@ocelle/elements`: `ocelle-data-table`, `ocelle-event-timeline` with its
@@ -178,17 +193,18 @@ the region's tab stop and name, the page's scroll width and the accessibility tr
 
 A Kitty Desktop mission view shows its event history: "Mission created", "Plan approved", "Review requested", each with
 a time. The developer writes `<ocelle-event-timeline label="Mission history">` with one `<ocelle-timeline-event
-time="14:02">` per event and the event's text as its content. Each event shows a small dot marker on a vertical line
-that joins the events, its time in tabular figures and its text. A screen-reader user hears a list named "Mission
-history" with three items, in order, each with its time and its text, and hears nothing of the dots or the line. An
-htmx poll appends an event at the end and the list grows.
+time="14:02">` per event and the event's text as its content; where the time must be machine-readable, they write it as
+`<time slot="time" datetime="…">14:02</time>` inside the event instead. Each event shows a small dot marker on a
+vertical line that joins the events, its time in tabular figures and its text. A screen-reader user hears a list named
+"Mission history" with three items, in order, each with its time and its text, and hears nothing of the dots or the
+line. An htmx poll appends an event at the end and the list grows.
 
 **Why this priority**: the event history is a Desktop V2 primitive (#470) every mission view uses; it is a static
 readout on 013's slotted-item pattern.
 
 **Independent Test**: render an `ocelle-event-timeline` with four events, one with a 26-character identifier in its
-text. At 1280 px and 320 px, check the marker size, the accessibility tree, the reading order and the page's scroll
-width.
+text and one with its time in the `time` slot. At 1280 px and 320 px, check the marker size, the accessibility tree,
+the reading order and the page's scroll width.
 
 **Acceptance Scenarios**:
 
@@ -202,8 +218,9 @@ width.
    one; the last event has no connector after it (FR-021).
 3. **Given** an event with `time="14:02"`, **When** its computed style is read, **Then** the time is in
    `--ocelle-font-sans` with `tabular-nums` through `--ocelle-figures` and is distinct from the content by more than
-   colour (size or weight, the plan names it); **Given** an event with no `time`, **Then** it shows its content with no
-   empty time box and the list item's item text (FR-016) is its content alone (FR-023).
+   colour (size or weight, the plan names it); **Given** an event with no time (no non-blank `time` and no slotted
+   time), **Then** it shows its content with no empty time box and the list item's item text (FR-016) is its content
+   alone (FR-023).
 4. **Given** an event whose content holds a 26-character identifier and whose `wrap="anywhere"` is set, **When** the
    timeline is 320 px wide, **Then** the identifier wraps inside the event, the page's scroll width equals the viewport
    width, and copying the content gives the identifier unchanged (FR-024, FR-009).
@@ -226,6 +243,27 @@ width.
     `aria-label` counts as absent; **Given** a blank host `aria-label` and no `label` (or a blank one), **Then** the
     list is unnamed; **Given** a non-blank host `aria-label` "History" and `label="Mission history"`, **Then** the list
     is named "History" (FR-022).
+11. **Given** a timeline whose second event has no `time` attribute and holds `<time slot="time"
+    datetime="2026-11-15T14:20">14:20</time>` written after its content "Plan approved", **When** it renders, **Then**
+    the slotted `<time>` is shown in the event's `part="time"` box above the content, unchanged (its `datetime`
+    attribute and text are the consumer's, nothing is written on it); its computed font family, font size, font weight,
+    colour, `font-variant-numeric` and line height equal those of an attribute time (US2-3), also when the slotted
+    element is a `<b slot="time">` (whose own default weight is bold); the list item's item text (FR-016) is "14:20
+    Plan approved", time first although the `<time>` follows the content in source; and the marker is centred on the
+    time's line, as for an attribute time (FR-023, FR-021, FR-016).
+12. **Given** an event with `time="09:00"` and a slotted time "14:20", **When** it renders, **Then** only "14:20" is
+    shown and exposed: no rendered text and no `StaticText` of the event is "09:00", and the item text is "14:20" a
+    space and the content; **When** the slotted time is then removed, **Then** "09:00" is shown and the item text is
+    "09:00" a space and the content, without a page reload (FR-023, FR-025).
+13. **Given** an event with no `time` attribute whose only slotted time is empty (`<time slot="time"></time>`), white
+    space only, `hidden` or `aria-hidden="true"`, **When** it renders in a timeline, **Then** it has no time box, the
+    slotted node is neither shown nor exposed, the item text is its content alone, the marker is centred on the
+    content's first line, and the previous event's connector ends as before an untimed event (FR-021, FR-023);
+    **Given** the same event with `time="09:00"` as well, **Then** "09:00" is shown and exposed as its time (FR-023).
+14. **Given** an event whose slotted time is empty, **When** its text is filled ("14:20"), and **Given** one whose
+    slotted time is `hidden`, **When** `hidden` is removed, **Then** in each case the time box appears with the slotted
+    time, the item text becomes time first, the marker moves to the time's line and the previous connector's end
+    follows, without a page reload or resize; the reverse changes remove the time box again (FR-023, FR-025).
 
 ---
 
@@ -306,9 +344,11 @@ the chip variant.
   not the table are shown and exposed until upgrade, because no shadow root exists yet (FR-012).
 - **Timeline and chain before the elements are defined.** A server-rendered timeline or chain shows its items one per
   line before upgrade (an `@ocelle/styles` rule at specificity (0,0,0) selects the undefined containers' visible
-  items, as for 013's facts), so the items do not run together. Before upgrade an event's time does not show (it is
-  an attribute the event renders in its shadow root), and no marker, connector or ordinal shows; the README's "Before
-  upgrade" line for each container says so (squad round 1, PLAN-FRESH-1-004, operator decision (a)).
+  items, as for 013's facts), so the items do not run together. Before upgrade an attribute `time` does not show (the
+  event renders it in its shadow root), while a slotted time is the consumer's light-DOM node and shows inline where
+  it is written (before the content when written first; an `aria-hidden="true"` one shows too, unexposed, until
+  upgrade). No marker, connector or ordinal shows; the README's "Before upgrade" line for each container says so
+  (squad round 1, PLAN-FRESH-1-004, operator decision (a); plan gate Q-E).
 - **Data table at 200% zoom and 320 px.** The table scrolls inside its region; the page does not scroll sideways (WCAG
   1.4.10's exception for two-dimensional data tables applies to the table's own content, not the page).
 - **Data table print.** The plan's research records what 009's region does in print (scrolled content may be clipped).
@@ -318,8 +358,11 @@ the chip variant.
 - **A timeline or chain with no items.** It renders nothing visible, exposes no list item, and throws nothing; whether
   an empty list node is exposed is set in the plan and tested (FR-025).
 - **`ocelle-timeline-event` outside `ocelle-event-timeline`, `ocelle-evidence-step` outside `ocelle-evidence-chain`.**
-  The item shows its time (for an event) and content as plain text, with no marker, no connector and no list item
-  role. It throws nothing (FR-020, FR-030).
+  The item shows its time (for an event: the slotted time, else the attribute's, FR-023) and content as plain text,
+  with no marker, no connector and no list item role. It throws nothing (FR-020, FR-030).
+- **More than one slotted time.** Every visible direct child with `slot="time"` is shown in the time box in source
+  order; the event has a slotted time when at least one of them has non-blank text (FR-023). The README asks for one
+  time element per event.
 - **A hidden item.** An item with `hidden` or `aria-hidden="true"` is not shown, not exposed, gets no marker or ordinal
   and is skipped by the connectors, until the attribute is removed (FR-025).
 - **Order.** The timeline and the chain keep source order. Neither sorts by time; newest-first or oldest-first is the
@@ -331,7 +374,8 @@ the chip variant.
 - **Chip steps mixed with default steps.** They share a row and wrap together; a chip step has no marker and no
   ordinal (FR-035), and the ordinals of the default steps count every visible step, chip steps included, so the
   numbers match the list's positions.
-- **Lang and dir on items.** An item's `lang` and `dir` apply to its own content and time (WCAG 3.1.2).
+- **Lang and dir on items.** An item's `lang` and `dir` apply to its own content and time (WCAG 3.1.2). A slotted
+  time may carry its own `lang` and `dir`, which apply to it alone.
 - **Two copies of the package on a page.** As the library's existing rule: the first definition wins.
 - **Loading.** None of the five elements has a loading or busy state, during an htmx swap or otherwise; a consumer
   that needs one marks it on its own markup.
@@ -474,11 +518,22 @@ the chip variant.
   name sit on a shadow node (the overflow-region elements), not the general rule that a host `aria-label` decides
   alone, because its name sits on the shadow `<ol>`. The README's Host ARIA section lists the timeline and the chain
   with those elements.
-- **FR-023**: `ocelle-timeline-event` MUST offer a `time` property (string, unset by default): the event's time as the
-  consumer formats it, shown before or above the content in `--ocelle-font-sans` with `--ocelle-figures`, distinct from
-  the content by more than colour. The element does not parse or format times. With no `time` there is no time box.
-  The list item's item text (FR-016) is the time, a space and the content, time first; with no `time` it is the
-  content alone.
+- **FR-023**: `ocelle-timeline-event` MUST offer a `time` property (string, unset by default) and a named `time` slot
+  (plan gate Q-E, "Yes: named time slot"), each giving the event's time as the consumer formats it. The **slotted
+  time** is the event's direct children with `slot="time"` that have neither `hidden` nor `aria-hidden="true"`; the
+  event **has a slotted time** when the trimmed text content of at least one of them is not empty. The event's time
+  is, in order: its slotted time, when it has one, with the `time` attribute then ignored (neither shown nor exposed);
+  else its `time` when that is a non-blank string; else none. An empty, white-space-only or hidden slotted time counts
+  as no slotted time and is neither shown nor exposed (the `time` attribute then applies; Q-G in
+  `reviews/plan/gate-answers.md`). The time is shown on its own line above the content (Q-C (a)) in
+  `--ocelle-font-sans` with `--ocelle-figures`, distinct from the content by more than colour; a slotted time is
+  styled through `::slotted()` to the same type as an attribute time, and the element writes nothing on the slotted
+  nodes (a consumer rule on them wins, and their attributes, such as `datetime`, `title`, `lang` or `dir`, stay
+  theirs). The element does not parse, format or read times. With no time there is no time box. The list item's item
+  text (FR-016) is the time, a space and the content, time first wherever the slotted time sits in source; with no
+  time it is the content alone. Adding, removing, emptying, filling, hiding or showing a slotted time, or changing its
+  `slot` attribute, MUST update the time box, the marker's line and the connectors (FR-021, FR-025) without a page
+  reload or resize.
 - **FR-024**: `ocelle-timeline-event` and `ocelle-evidence-step` MUST each take a `wrap` property with the one value
   `anywhere`, which sets `overflow-wrap: anywhere` on its content (never on the time); content with
   `data-ocelle-wrap="anywhere"` keeps that behaviour. Without it, content wraps between words. Neither element
@@ -525,8 +580,8 @@ the chip variant.
   scale xs < sm < md < lg < xl < 2xl of `--ocelle-font-size-*` (`font-size-fact` and `font-size-subhead` are not
   steps of this scale), so the default step content is at `sm` or above. It MUST NOT import, extend or read any
   element, token, part or hook of #7's pill tag (`ocelle-pill-tag`), and its radius is not `--ocelle-radius-pill`
-  (#517: the chip is the chain's own). Whether the chip also has a fill is one of the plan gate's open questions
-  (SPEC-1-06). A chip step keeps its list item and its position.
+  (#517: the chip is the chain's own). The chip has no fill (plan gate Q-A (a)). A chip step keeps its list item and
+  its position.
 - **FR-036**: Step content MUST use `--ocelle-font-sans` in a text colour that meets FR-013; the marker ring and the
   chip outline use an ink token and meet FR-013's 3:1 rule on all nine main grounds; the connectors are decorative under FR-013 and visible in forced colours.
 
@@ -542,7 +597,7 @@ the chip variant.
 
 - **FR-050**: Each element MUST have a story per variant and per state in `storybook/stories/<element>.stories.ts`,
   rendered in light and dark, following #10's contributor note (`specs/006-storybook-workbench` FR-025). The item
-  elements have no stories file of their own: their states (with and without time, wrap, hidden, chip) are stories in
+  elements have no stories file of their own: their states (with and without time, a slotted time, wrap, hidden, chip) are stories in
   their container's file, and their behaviour outside the container is proven by browser tests only, as 013 did for
   `ocelle-fact`. Data-table stories include a fitting table, an overflowing table (the region focusable and named), a
   table with row headers, and a table named by its caption. Any further state without a story is a constitution V
@@ -578,7 +633,8 @@ the chip variant.
 ### Key Entities
 
 - **Data table** (`ocelle-data-table`): one consumer `<table>`, a region label, a wrap policy.
-- **Event** (`ocelle-timeline-event`): an optional time (text), content (inline markup), a wrap policy.
+- **Event** (`ocelle-timeline-event`): an optional time (the `time` attribute's text, or marked-up nodes in the `time`
+  slot, which take precedence), content (inline markup), a wrap policy.
 - **Event timeline** (`ocelle-event-timeline`): its events in source order, a name.
 - **Evidence step** (`ocelle-evidence-step`): content, a variant (default or chip), a wrap policy; its ordinal is
   derived.

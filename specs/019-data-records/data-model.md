@@ -32,22 +32,25 @@ to the first focusable cell content or to the frame (009's handover).
 | host `aria-label` | observed attribute | `string \| null` | Non-blank names the list; blank counts as absent. |
 | events | derived | `OcelleTimelineEvent[]` | Direct children with the item tag, neither `hidden` nor `aria-hidden="true"`, in source order. |
 | name | derived | `string \| undefined` | `resolveName(host aria-label, label)` from 009's module (R-09); set on the shadow `<ol>` as `aria-label`; absent when undefined. |
-
-| next has time | derived per `<li>` | `boolean` | `hasTime` of the next visible event's `time`; sets `next-has-time` on the `<li>`, so its connector ends `space-1` before the next dot (R-10). False on the last `<li>`. |
+| has time | derived per `<li>` | `boolean` | `hasTime(event)`: a slotted time, or a non-blank `time` (R-10); sets `has-time` on the `<li>`, which puts the marker on the time's line. |
+| next has time | derived per `<li>` | `boolean` | `hasTime` of the next visible event; sets `next-has-time` on the `<li>`, so its connector ends `space-1` before the next dot (R-10). False on the last `<li>`. |
 
 **States**: no visible event (no `<ol>` rendered) ↔ one or more (an `<ol>` with one `<li>` per event; the last `<li>`
-renders no connector span). Before upgrade: one visible event per line, no time, an `aria-hidden="true"` event not
-shown (R-08).
+renders no connector span). Before upgrade: one visible event per line, no attribute time (a slotted time shows inline
+where written), an `aria-hidden="true"` event not shown (R-08).
 
 ## Timeline event (`ocelle-timeline-event`)
 
 | Field | Source | Type | Rule |
 |---|---|---|---|
-| `time` | property / attribute, reflected | `string \| undefined` | Shown as given in `part="time"` above the content (Q-C). "Has a time" is `hasTime(time)` from the internal `timeline-time.ts`: a string whose trimmed value is not empty. Absent, empty or white space renders no time box and sets no `has-time` on the timeline's `<li>` (R-10). |
+| `time` | property / attribute, reflected | `string \| undefined` | Shown as given in `part="time"` above the content (Q-C (a)) when the event has no slotted time; ignored (not shown, not exposed) while it has one. Absent, empty or white space counts as no attribute time (R-10). |
+| slotted time | light DOM, direct children with `slot="time"` | elements (for example `<time datetime>`) | The visible ones (neither `hidden` nor `aria-hidden="true"`) are shown through the `time` slot in `part="time"`, styled to the time's type through `::slotted()`, never copied or written to. `hasSlottedTime(event)` (internal `timeline-time.ts`): at least one visible one has non-blank trimmed `textContent`. Empty, white-space-only or hidden counts as none, and the slot is then not rendered (plan gate Q-E; Q-G). |
+| has a time | derived | `boolean` | `hasTime(event)` from `timeline-time.ts`: `hasSlottedTime(event)`, or a non-blank `time`. False renders no time box and sets no `has-time` on the timeline's `<li>` (R-10). Re-derived from the event's own `MutationObserver` and the timeline's. |
 | `wrap` | property / attribute, reflected | `"anywhere" \| undefined` | `overflow-wrap: anywhere` on `part="content"` only. |
 | content | light DOM | inline markup | Shown in `part="content"` through the default slot; never copied. |
 
-Item text (FR-016): `time`, a space, the content's text; the content's text alone when the event has no time.
+Item text (FR-016): the time (the slotted time's text when the event has one, else `time`), a space, the content's
+text; the content's text alone when the event has no time. Time first wherever the slotted time sits in source.
 
 ## Evidence chain (`ocelle-evidence-chain`)
 

@@ -36,7 +36,7 @@ states (branch; rechecked by T001).
 - `:host { display: block; min-inline-size: 0; }`, so the element shrinks as a default flex item or a grid item and
   its region overflows instead of the page (R-02, FR-009);
 - `:host([hidden]) { display: none; }`;
-- `:host .region-track { inline-size: fit-content; }` (R-03, decision 1);
+- `:host .region-track { inline-size: fit-content; }` (R-03, decision 1 (a), decided at the plan gate);
 - `:host .box-size { block-size: 0; }`, the measuring element below (R-07, PLAN-FRESH-3-001 (a)).
 
 No shadow rule selects on `data-fade`: the end fade's share of the caption's cap is written by script one animation

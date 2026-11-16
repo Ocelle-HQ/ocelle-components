@@ -83,7 +83,7 @@ box, `scroll`) cover a swapped table and a swapped `<tbody>` (R-05).
 **Alternatives.** 003's prose scroll box (Q2 (c), rejected by the operator: a permanent or absent tab stop, no fade).
 Wrapping and never scrolling (Q2 (a), rejected: columns become unreadable at 320 px).
 
-## R-03 The track's inline size for a table (an operator decision at the plan gate)
+## R-03 The track's inline size for a table (decided at the plan gate: decision 1 (a))
 
 **Finding (branch, from the source).** `overflowRegionStyles` sets `.region-track { inline-size: max-content;
 min-inline-size: 100%; }`. A table inside a max-content track is laid out at its max-content width: no cell ever wraps,
@@ -92,7 +92,7 @@ breaks inside its cell before the table overflows") cannot hold. The scroller an
 cards or lanes never wraps); a table wants its cells to wrap first and to scroll only when its min-content width does
 not fit.
 
-**Decision (plan default, pending the operator, Decision 1 of the plan).** The data table's own stylesheet sets
+**Decision (decision 1 (a), operator, plan gate 2026-11-16).** The data table's own stylesheet sets
 `:host .region-track { inline-size: fit-content; }`, which beats the module's `.region-track` rule by specificity
 ((0,2,0) over (0,1,0)) whatever the sheet order. `fit-content` resolves to `min(max-content, max(min-content,
 available))`, with the module's `min-inline-size: 100%` still applied: the table fills the box and wraps its cells
@@ -105,8 +105,8 @@ identifier with and without `wrap="anywhere"`; the track's and table's inline si
 focus clearance on a link off-screen, and the fades. Expected: wrap before overflow; overflow only with an unbroken
 identifier without the policy, or with more columns than fit at their longest word.
 
-**Alternatives (the options at the plan gate).** (a) The host override above (recommended: one property, no module
-change). (b) A `track` sizing option added to 009's module (rejected for this mission: it changes 009's interface,
+**Alternatives (the options at the plan gate; the operator chose (a)).** (a) The host override above (recommended: one
+property, no module change). (b) A `track` sizing option added to 009's module (rejected for this mission: it changes 009's interface,
 FR-008; it would go to 009's owner). (c) Keep max-content: cells never wrap inside the element, the table scrolls
 whenever it is wider than its unwrapped width, and US1-9 changes to "the identifier breaks inside its cell" only once
 the cell is given a width by the consumer.
@@ -175,8 +175,8 @@ tokens):
 
 FR-006's selection, in source order so the later rule wins where two match: column header = `thead th`,
 `th[scope="col"]`, `th[scope="colgroup"]`; row header = `th[scope="row"]`, `th[scope="rowgroup"]`,
-`:is(tbody, tfoot) th:not([scope])` (a corner cell with `scope="row"` in `<thead>` is a row header). The open
-questions Q-A and Q-B (below) may change the header's weight and colour.
+`:is(tbody, tfoot) th:not([scope])` (a corner cell with `scope="row"` in `<thead>` is a row header). The header's
+weight and colour are Q-B's answer (a), medium in `ink-muted`, as in the table above (plan gate, 2026-11-16).
 
 A second block, the prose override (FR-012), restates every property 003's prose rules set on the same targets,
 with the data table's value, under `[data-ocelle-prose=""] :where(…the same targets…)` at (0,1,0), placed after
@@ -381,8 +381,11 @@ one `<li role="listitem">` per visible item, in source order; each `<li>` holds 
 aria-hidden="true">`, a real element, PLAN-TESTABILITY-1-001 operator decision (b)) and a `<slot>` to which the
 container assigns its item. A visible item is a direct child with the item tag and neither `hidden` nor
 `aria-hidden="true"` (013's facts rule). One `MutationObserver` per container re-renders on a change of its children
-and of an item's `hidden`, `aria-hidden`, `variant` (chain) or `time` (timeline); a change inside an item's content
-needs no re-render. The item properties the containers read (`time`, `variant`) reflect to attributes, so a property
+and of an item's `hidden`, `aria-hidden`, `variant` (chain) or `time` (timeline); in the chain a change inside an
+item's content needs no re-render. The timeline's observer also watches its events' subtrees (`subtree: true`,
+`characterData`, and the `slot` attribute besides the ones above), because an event's slotted time decides its
+`has-time` and its previous `<li>`'s `next-has-time` (R-10, plan gate Q-E); a record from inside content re-renders
+to the same classes. The item properties the containers read (`time`, `variant`) reflect to attributes, so a property
 set from script is seen (R-10, R-12). With no visible item the
 container renders no `<ol>` at all (so no empty list node is exposed; FR-025's "set in the plan"). The list is named
 on the `<ol>` with `aria-label` from the name of R-09.
@@ -412,8 +415,10 @@ A server-rendered timeline or chain then shows one visible item per line before 
 together. The `display: none` rules are needed because an undefined item that only misses the first rule falls back
 to inline display and still shows. With them, an `aria-hidden="true"` item is not shown before upgrade either, as
 FR-025 requires and as the upgraded containers do, so nothing shifts on upgrade. A `hidden` item is hidden by the
-UA's own rule. An event's time is an attribute rendered only in shadow, so it does not show before upgrade, and the
-README's "Before upgrade" line per container says so. The styles browser bodies
+UA's own rule. An event's attribute time is rendered only in shadow, so it does not show before upgrade; a slotted
+time (plan gate Q-E) is the consumer's light-DOM node and shows inline where it is written, an `aria-hidden="true"`
+one included (shown, not exposed), and no rule is added for it. The README's "Before upgrade" line per container says
+so. The styles browser bodies
 (`packages/styles/test/browser/data-table.test.ts`, the records section) run with the elements undefined. For each
 container they assert three things: each visible item's box starts below the previous one, a `hidden` item is not
 shown, and an `aria-hidden="true"` item is not shown (its box is empty and the next visible item starts directly below
@@ -424,7 +429,10 @@ manual assignment gives one clean list in Chromium. Rendering no `<ol>` when emp
 
 **Spike (phase 2).** The Chromium tree of a timeline of three events (`list` named, three `listitem`, each holding the
 event's time and content as `StaticText`), with the FR-016 item-text oracle (R-11) and axe `list`, `listitem`,
-`aria-allowed-role` and a full run.
+`aria-allowed-role` and a full run. Also, for the `time` slot (plan gate Q-E): a slotted `<time datetime>` written
+after the content gives its `StaticText` before the content's; an unrendered `time` slot leaves an empty or hidden
+`slot="time"` child out of the tree and out of layout; and `slot[name="time"]::slotted(*)` sets the type on a `<b>`
+over its UA bold.
 
 ## R-09 Naming the lists: a blank host `aria-label` counts as absent (FR-022)
 
@@ -445,29 +453,65 @@ helper `accessibleName` in `naming.ts` implements the other rule ("decides alone
 
 ## R-10 The timeline's look (FR-021, FR-023, FR-027)
 
-**Decision (plan default; Q-C below may change it).** The event renders its own shadow root: `<span part="time">`
-(only when the event has a time) above `<span part="content"><slot></slot></span>`, each `display: block`.
+**Decision (Q-C decided (a) and Q-E decided "Yes: named time slot" at the plan gate, 2026-11-16).** The event
+renders its own shadow root, with the platform's named slot assignment: `<span part="time">` (only when the event has
+a time) above `<span part="content"><slot></slot></span>`, each `display: block`. Inside `part="time"` it renders
+`<slot name="time">` when the event has a slotted time, and the `time` attribute's text otherwise, never both.
 
-**"Has a time" (PLAN-CORRECTNESS-1-003).** `time` reflects to its attribute, as 013's `ocelle-fact` reflects `label`,
-so the container's `MutationObserver` sees a property set from script. One predicate, `hasTime(time)`, decides the
-time box, the `<li>`'s `has-time` class and the previous `<li>`'s `next-has-time` class: true when `time` is a string
-whose trimmed value is not empty. It lives in the internal module `src/timeline-time.ts` (PLAN-FRESH-2-003), which
-both `ocelle-timeline-event.ts` and `ocelle-event-timeline.ts` import. The file name is outside the manifest's glob
-(`src/ocelle-*.ts`) and the module is not in the package's `exports` map, so `hasTime` is neither manifest surface nor
-importable from a public entry point, which is how 009's `overflow-region.ts` stays internal. No element module
-exports a function. Phase 2's red commit adds a manifest test statement: the module of `ocelle-timeline-event`
-declares only the class `OcelleTimelineEvent`, and its exports name nothing else but the element's definition. So
-`time=""` and a white-space `time` render no time box and set no `has-time`, and the item text is the content alone
-(the data model's "empty or absent renders no time box"). A non-blank time is shown as given. Phase 2's red commit has
-bodies for `time` set, changed and cleared by property after mount, `time=""` and `time=" "`, each measuring the
-marker's centre against the first line box of the event (the time's line, or the content's when it has no time) and
-asserting the reflected attribute. The time is
+**"Has a time" (PLAN-CORRECTNESS-1-003; plan gate Q-E).** `time` reflects to its attribute, as 013's `ocelle-fact`
+reflects `label`, so the container's `MutationObserver` sees a property set from script. The internal module
+`src/timeline-time.ts` (PLAN-FRESH-2-003) has two predicates on the event element, which both
+`ocelle-timeline-event.ts` and `ocelle-event-timeline.ts` import:
+
+- `hasSlottedTime(event)`: true when at least one of the event's direct children with `slot="time"`, with neither
+  `hidden` nor `aria-hidden="true"`, has a trimmed `textContent` that is not empty. It reads the light DOM, not
+  `assignedNodes()`, because the `time` slot is not rendered while the event has no slotted time, and so that the
+  container gets the same answer as the event.
+- `hasTime(event)`: `hasSlottedTime(event)`, or the event's `time` attribute is a string whose trimmed value is not
+  empty.
+
+`hasTime` decides the time box, the `<li>`'s `has-time` class and the previous `<li>`'s `next-has-time` class;
+`hasSlottedTime` decides whether the time box holds the slot or the attribute's text. So the slotted time takes
+precedence: while the event has one, the `time` attribute is neither rendered nor exposed. An empty, white-space-only,
+`hidden` or `aria-hidden="true"` slotted time counts as none: the slot is not rendered, so those nodes are unassigned
+(not shown, not in the tree), and a non-blank `time` attribute applies instead (the plan's reading of "precedence";
+Q-G below). Beside a visible slotted node, a hidden one is assigned with it, so the event's styles add
+`slot[name="time"]::slotted([hidden]), slot[name="time"]::slotted([aria-hidden="true"]) { display: none; }`.
+
+The slotted time is styled through `slot[name="time"]::slotted(*)` with the attribute time's declarations (below), so
+a `<time>`, or a `<b>` whose UA weight is bold, takes the time's type; the element writes nothing on the slotted
+nodes, and a consumer rule on them wins (the cascade puts outer rules above `::slotted()`), which the README states.
+The time box comes before the content in the shadow tree, so the item text is time first wherever the consumer wrote
+the slotted node.
+
+The event observes itself with one `MutationObserver` (`childList`, `characterData`, `subtree`, and the attributes
+`slot`, `hidden` and `aria-hidden`) while connected, recomputes `hasSlottedTime` per record batch and requests an
+update when it changed, so the time box follows a slotted time added, removed, emptied, filled, hidden or shown, also
+outside a timeline. The container's observer watches the same changes in its events' subtrees (R-08) for the classes.
+
+The file name is outside the manifest's glob (`src/ocelle-*.ts`) and the module is not in the package's `exports`
+map, so neither predicate is manifest surface nor importable from a public entry point, which is how 009's
+`overflow-region.ts` stays internal. No element module exports a function. Phase 2's red commit adds a manifest test
+statement: the module of `ocelle-timeline-event` declares only the class `OcelleTimelineEvent`, and its exports name
+nothing else but the element's definition; and a manifest statement that the event declares the default slot and the
+`time` slot. So `time=""` and a white-space `time`, with no slotted time, render no time box and set no `has-time`,
+and the item text is the content alone (the data model's "empty or absent renders no time box"). A non-blank time is
+shown as given. Phase 2's red commit has bodies for `time` set, changed and cleared by property after mount,
+`time=""` and `time=" "`, each measuring the marker's centre against the first line box of the event (the time's
+line, or the content's when it has no time) and asserting the reflected attribute. It also has the slot bodies
+US2-11 to US2-14 (a slotted `<time datetime>` after the content, shown above it and read first, with the attribute
+time's computed type, a `<b slot="time">` included; the attribute ignored while the slot has content and shown again
+when the slotted node is removed; an empty, white-space-only, `hidden` and `aria-hidden="true"` slotted time, with and
+without a `time` attribute; the slotted time filled, emptied, hidden and shown after mount), an event outside a
+timeline with a slotted time, two slotted time nodes of which one is `aria-hidden="true"`, and a slotted time with its
+own `lang`. The time is
 `--ocelle-font-size-xs`, `--ocelle-font-weight-medium`, `--ocelle-color-ink-muted`, `--ocelle-figures`, line height
 `--ocelle-line-height-normal`; the content is `--ocelle-font-size-sm`, regular weight, `--ocelle-color-ink`,
 `--ocelle-line-height-normal`; time and content differ by size and weight (FR-023). The container's `<li>` is a
 two-column grid: a marker column of `--ocelle-size-dot` plus `--ocelle-space-3` of gap, and the item. The marker sits
 in a `1lh` wrapper whose line box is set to the time's type when the event has a time and to the content's type when
-it has none (the container reads `hasTime` of the item's reflected `time` and sets `has-time` on the `<li>`), so it is
+it has none (the container reads `hasTime(event)`, the slotted time or the reflected `time`, and sets `has-time` on
+the `<li>`), so it is
 centred on the event's first line (the slot convention's `1lh` technique, which `style-lint` allows). The marker is a
 round dot of `--ocelle-size-dot`: `box-sizing: border-box`, inline and block size `--ocelle-size-dot`, drawn as a
 border, `border: calc(var(--ocelle-size-dot) / 2) solid var(--ocelle-color-ink-muted)`, so the mark is painted by a
@@ -485,7 +529,9 @@ one and never crosses either dot, so no lighter line is painted over a structura
   (the time's line box with `has-time`, the content's without).
 - **End.** It ends `--ocelle-space-1` before the next visible dot's block start. That offset follows the next
   `<li>`'s marker line, read from the `next-has-time` class. The container sets the class on each `<li>` whose next
-  visible event has a time, by the same `hasTime`, and re-renders it from its `MutationObserver` like `has-time`. So a
+  visible event has a time, by the same `hasTime(event)`, so an event timed by its `time` slot counts and one whose
+  slotted time is empty or hidden does not (unless its `time` attribute is non-blank), and re-renders it from its
+  `MutationObserver` like `has-time`, a change to the next event's slotted time included. So a
   timeline that mixes events with and without a time still ends each connector the same distance before the next dot.
   With a centre-to-centre span, each end would be off by half the difference of the two line heights, about 1.45 px.
 - **Figures.** The offsets are `calc()` over tokens: the two types' sizes and `--ocelle-line-height-normal`,
@@ -493,7 +539,7 @@ one and never crosses either dot, so no lighter line is painted over a structura
   The phase 2 spike records the exact form `style-lint` accepts, and a form it rejects goes to the operator.
 
 Phase 2's red commit has connector geometry bodies on a timeline of three timed events and on a mixed timeline
-(timed, untimed, timed, untimed). For each connector they assert:
+(timed, untimed, timed by its `time` slot, untimed with an empty slotted time). For each connector they assert:
 
 - its block start is at or after its dot's block end, and its block end is at or before the next dot's block start;
 - both gaps, the dot's end to the connector's start and the connector's end to the next dot's start, equal
@@ -501,11 +547,16 @@ Phase 2's red commit has connector geometry bodies on a timeline of three timed 
 - `elementFromPoint` at the centre of each dot returns that marker, not a connector.
 
 Element plants: the connector started at its dot's centre again, and `next-has-time` never set. The first must fail
-the geometry bodies, the second the mixed timeline's body.
+the geometry bodies, the second the mixed timeline's body. For the slot (plan gate Q-E): `hasTime` reading the `time`
+attribute only must fail US2-11 and the mixed body; the attribute's text rendered beside the slot must fail US2-12;
+`hasSlottedTime` counting a `hidden` or `aria-hidden="true"` node, or blank text, must fail US2-13; the event's
+observer without `characterData` must fail US2-14's filled case; the container's observer without `subtree` must fail
+US2-14's marker and connector halves; and the `::slotted(*)` type rule removed must fail US2-11's `<b>` case.
 
 `wrap="anywhere"` on an event sets `overflow-wrap: anywhere` on `part="content"` only.
 
-Outside a timeline the event's own shadow content (time above content) shows as plain text, with no marker or role.
+Outside a timeline the event's own shadow content (time above content, slotted or attribute) shows as plain text,
+with no marker or role.
 
 **Forced colours (PLAN-A11Y-SECURITY-1-001).** In forced colours the browser forces `background-color` to `Canvas`, so
 a mark drawn as a background would be Canvas on Canvas. Every mark is therefore drawn with a border, and the
@@ -532,7 +583,7 @@ CDP session (013's `commands.ts` reads the AX tree for value properties).
 
 ## R-12 The chain's look and line ends (FR-031 to FR-036)
 
-**Decision (plan default; Q-A below may change it).**
+**Decision (Q-A decided (a) at the plan gate, 2026-11-16).**
 
 - The `<ol>` is `display: flex; flex-wrap: wrap; align-items: flex-start`, with `row-gap: var(--ocelle-space-3)` and
   no column gap: each `<li>` carries the gap after it as `padding-inline-end: var(--ocelle-space-5)`, inside which its
@@ -612,8 +663,8 @@ between consecutive steps on one line only).
 **Decision.** No new token. Every value above is an existing token on `main`, plus `--ocelle-tracking-caps` from 009
 (branch). Every text colour (`ink`, `ink-soft`, `ink-muted`) and every structural mark (`ink-muted`) has a text
 declaration on the nine main grounds; the decorative lines use `color-rule` and `color-rule-strong`, which have none
-(FR-013). No contrast row is added. If Q-A to Q-C change a colour, the plan checks the new pair against the token
-source before tasks are generated.
+(FR-013). No contrast row is added. The plan gate's answers (Q-A to Q-C all (a), 2026-11-16) change no colour, and a
+slotted time is painted in the attribute time's `ink-muted`, so no new pair arises.
 
 **Contrast oracles (PLAN-TESTABILITY-1-003, operator decision (c)).** Two checks, so a mark painted in the wrong token
 cannot pass on the token source alone:
@@ -663,7 +714,7 @@ Each difference is written to `reviews/recheck.md`, and the flow stops for the o
 `reviews/phase-<N>/plants.md`, never a full `gate:plants` locally (CI's required Plants check judges the full set).
 Baselines: `pnpm run visual:update` only in #10's pinned container under docker (start `dockerd` as root; after a
 container restart, `pnpm run setup:online`); the command must report `<n> added, 0 changed, 0 removed` with `<n>`
-twice the phase's new stories (24, 18 and 22 for phases 1 to 3, from checks.md § Stories), so no existing baseline
+twice the phase's new stories (24, 20 and 22 for phases 1 to 3, from checks.md § Stories), so no existing baseline
 moves (013's baselines among them, SC-007). Conflicting PNGs are regenerated in the container, never hand-picked. Mutation follows #23 and op 015 on `main`.
 
 ## R-16 The kitty-mission-ui inventory (FR-058)
@@ -694,34 +745,35 @@ the table's start edge at rest, so PLAN-FRESH-2-002's misalignment cannot arise.
 inside the box at rest, and has no inset at any scroll position. PLAN-FRESH-2-002, operator decision (c), 2026-11-16,
 settles round 1's Q-F this way.
 
-## Open questions for the plan gate (spec SPEC-1-06 (b))
+## Questions of the plan gate (spec SPEC-1-06 (b)), answered 2026-11-16
 
-The plan's choices below stand until the operator answers; an answer that changes a requirement is written into the
-spec before tasks are generated.
+The operator answered at the plan gate (`reviews/plan/operator-gate.md`, human:jeroennouwsdev): decision 1 (a), Q-A
+(a), Q-B (a), Q-C (a) and Q-E "Yes: named time slot". Q-D and Q-F were decided during the squad rounds. The answer to
+Q-E changed FR-023, which the spec now records; Q-G is the one question that answer leaves open.
 
-- **Q-A. The chip step's look (FR-035, #517).** (a) Outline only, no fill (the plan's choice: the chip reads as the
-  chain's own and cannot be mistaken for #7's filled pill tag). (b) Outline and a `--ocelle-color-inset` fill (a
-  stronger chip; the chip's text then needs its declaration on inset, which ink has). (c) Fill only, no outline (the
-  boundary would need 3:1 from the fill, which no fill token gives on all grounds). Recommendation: (a).
-- **Q-B. The column headers' weight and colour (FR-006, #533).** (a) `--ocelle-font-weight-medium` in
+- **Q-A. The chip step's look (FR-035, #517). Decided: (a).** (a) Outline only, no fill (the plan's choice: the chip
+  reads as the chain's own and cannot be mistaken for #7's filled pill tag). (b) Outline and a `--ocelle-color-inset`
+  fill (a stronger chip; the chip's text then needs its declaration on inset, which ink has). (c) Fill only, no
+  outline (the boundary would need 3:1 from the fill, which no fill token gives on all grounds).
+- **Q-B. The column headers' weight and colour (FR-006, #533). Decided: (a).** (a) `--ocelle-font-weight-medium` in
   `--ocelle-color-ink-muted` (the plan's choice, the same eyebrow 013's empty-state eyebrow uses). (b)
   `--ocelle-font-weight-strong` in `--ocelle-color-ink-muted` (heavier, closer to a heading). (c)
   `--ocelle-font-weight-medium` in `--ocelle-color-ink-soft` (the cells' colour, distinct only by size and case).
-  Recommendation: (a).
-- **Q-C. The event's time position (FR-023, which sets FR-021's marker line; #470).** (a) The time on its own line
-  above the content, the marker centred on the time's line (the plan's choice: the content keeps the full width at
-  320 px). (b) The time before the content on the same line, the marker centred on that shared first line (a narrower
-  content column; a long time wraps). (c) The time after the content, at the inline end. Recommendation: (a).
+- **Q-C. The event's time position (FR-023, which sets FR-021's marker line; #470). Decided: (a).** (a) The time on
+  its own line above the content, the marker centred on the time's line (the plan's choice: the content keeps the
+  full width at 320 px). (b) The time before the content on the same line, the marker centred on that shared first
+  line (a narrower content column; a long time wraps). (c) The time after the content, at the inline end.
 - **Q-D. The markers' shape (decided, PLAN-CORRECTNESS-1-004 operator decision (a), 2026-11-16).** Both the timeline
   dot and the step marker use `border-radius: 50%` with no token, recorded under constitution II as a mark shape and
   not a corner radius. This meets FR-031 ("a round marker") and FR-040 ("No new radius token is added"); `token-only.ts`
   allows `%`. The earlier options are withdrawn: `radius-1` (a rounded square, against FR-031) and a new
   `--ocelle-radius-round` token (against FR-040, `brand-rules.ts`'s closed radius set and constitution II).
-- **Q-E. Marked-up times (FR-023, #470; PLAN-FRESH-1-006 operator decision (b)).** Does #470's history need
-  machine-readable or marked-up times: a `<time datetime>`, a title, its own `lang` or `dir`, or an htmx target on the
-  time? The plan keeps `time` attribute-only, as FR-023 approves, and the README states the limit: the time is plain
-  text rendered in the event's shadow root, so it carries none of these, and a consumer that needs them puts them in
-  the content. If the answer is yes, a named `time` slot is a spec change to FR-023 before tasks.
+- **Q-E. Marked-up times (FR-023, #470; PLAN-FRESH-1-006 operator decision (b)). Decided: "Yes: named time slot".**
+  The question was whether #470's history needs machine-readable or marked-up times: a `<time datetime>`, a title, its
+  own `lang` or `dir`, or an htmx target on the time. The operator answered yes. `ocelle-timeline-event` gets a named
+  `time` slot that takes precedence over the `time` attribute, styled through `::slotted()`, with the item text still
+  time first (FR-023, R-10, US2-11 to US2-14). The attribute stays for plain times. The README states that the slot
+  carries these and the attribute does not.
 - **Q-F. The caption until 009's option exists (decided, (b): PLAN-FRESH-2-002 operator decision (c), 2026-11-16;
   R-17; PLAN-A11Y-SECURITY-1-002).** Not sticky until 009's option lands. The caption scrolls with the table, is
   capped by R-07's measured rule so it wraps inside the box at rest, and is reached by scrolling back. It has no inset
@@ -730,9 +782,16 @@ spec before tasks are generated.
   inset applied at rest and to a fitting table too: the caption sat 28 px off the first column in every state, not
   only "while the table is scrolled" as round 1 described it (PLAN-FRESH-2-002). (c) waited for the option before
   phase 1's green.
+- **Q-G. An empty or hidden slotted time beside a `time` attribute (FR-023; open, for the operator).** The answer to
+  Q-E says the slot takes precedence and that an empty or hidden slotted time counts as no time, but not whether the
+  attribute then applies. (a) The attribute applies: the slot wins only when it has content, so an empty or hidden
+  slotted time falls back to a non-blank `time` (the plan's reading, written into FR-023 and US2-13). (b) The event
+  has no time: any `slot="time"` child, empty or hidden included, silences the attribute, so a consumer can clear a
+  time by emptying the slotted node. The plan's reading (a) stands until the operator answers; (b) changes FR-023,
+  US2-13, `hasTime` and one plant before tasks.
 
 And one decision from the research itself:
 
-- **Decision 1 (R-03). The track's inline size.** (a) The data table's host rule `:host .region-track { inline-size:
-  fit-content }` (recommended). (b) A track-sizing option in 009's module (a change to 009's interface, outside this
-  mission). (c) Keep the module's max-content: cells never wrap inside the element, and US1-9 changes.
+- **Decision 1 (R-03). The track's inline size. Decided: (a).** (a) The data table's host rule `:host .region-track {
+  inline-size: fit-content }` (recommended). (b) A track-sizing option in 009's module (a change to 009's interface,
+  outside this mission). (c) Keep the module's max-content: cells never wrap inside the element, and US1-9 changes.

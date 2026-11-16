@@ -48,3 +48,9 @@
   US1-10), the step marker's inside as the ordinal's ground (FR-031), header-cell precedence (FR-006), slot
   re-assignment and two swap/rename scenarios (FR-003, US1-15, US1-16), the pre-upgrade children (Edge Cases,
   FR-012), tests for behavioural edge cases (FR-052) and no loading state (Edge Cases).
+- Plan gate (2026-11-16, `reviews/plan/operator-gate.md`, changes in `reviews/plan/gate-answers.md`): the operator
+  answered the open questions. Decision 1, Q-A, Q-B and Q-C confirm the plan's defaults (FR-035 now states no fill,
+  FR-023 the time above the content). Q-E, "Yes: named time slot", changes FR-023 (a named `time` slot that takes
+  precedence over the `time` attribute) and adds US2-11 to US2-14; each is testable (checks.md). Q-G, whether an
+  empty or hidden slotted time lets the attribute apply, is put back to the operator; the spec states the plan's
+  reading until then.

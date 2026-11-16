@@ -53,8 +53,9 @@ target, unless the test's not-applicable list records it with its reason (`outli
 | `ocelle-evidence-chain:not(:defined) > ocelle-evidence-step:not([hidden]):not([aria-hidden="true"])` | `display: block` |
 | `ocelle-evidence-chain:not(:defined) > ocelle-evidence-step[aria-hidden="true"]` | `display: none` |
 
-As 013's rule for facts. One visible item per line before upgrade; times, markers and ordinals show only after
-upgrade (the README's "Before upgrade" lines). An `aria-hidden="true"` item is not shown before upgrade, as after it
+As 013's rule for facts. One visible item per line before upgrade; attribute times, markers and ordinals show only
+after upgrade (the README's "Before upgrade" lines). A slotted time (plan gate Q-E) is light DOM and shows inline where
+written; no rule is added for it. An `aria-hidden="true"` item is not shown before upgrade, as after it
 (FR-025, PLAN-FRESH-2-005); without the `display: none` rule it would fall back to inline display and show. Styles
 browser bodies, with the elements undefined, assert each visible item's box starts below the previous one, and that a
 `hidden` item and an `aria-hidden="true"` item are not shown (PLAN-FRESH-1-004, PLAN-FRESH-2-005).
