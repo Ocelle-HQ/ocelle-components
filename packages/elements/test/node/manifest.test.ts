@@ -285,7 +285,7 @@ describe("generate(root) on the repository's element source", () => {
     const manifest = await generate(repo);
     const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
     expect(manifest.schemaVersion).toBe("1.0.0");
-    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-icon.ts", "src/ocelle-listbox.ts", "src/ocelle-option.ts", "src/ocelle-segment.ts", "src/ocelle-segmented-choice.ts", "src/ocelle-tab-panel.ts", "src/ocelle-tab.ts", "src/ocelle-tabs.ts"]);
+    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-copy-field.ts", "src/ocelle-icon.ts", "src/ocelle-listbox.ts", "src/ocelle-option.ts", "src/ocelle-segment.ts", "src/ocelle-segmented-choice.ts", "src/ocelle-tab-panel.ts", "src/ocelle-tab.ts", "src/ocelle-tabs.ts"]);
     const [icon] = modules.find((module) => module.path === "src/ocelle-icon.ts")?.declarations ?? [];
     expect(icon).toMatchObject({
       kind: "class",
@@ -475,6 +475,31 @@ describe("generate(root) on the repository's element source", () => {
         { name: "icon", described: true },
       ],
       cssParts: [],
+      cssProperties: [],
+    });
+  });
+
+  it("declares ocelle-copy-field per contracts/elements.md: value and status (strings, not reflected, default empty) and copyLabel (attribute copy-label, not reflected, default Copy), the request event with its { text } detail, no slot, the value and copy-control parts and no CSS property (014 FR-055, phase 5)", async () => {
+    const field = await declared("src/ocelle-copy-field.ts");
+    expect(field).toEqual({
+      name: "OcelleCopyField",
+      tagName: "ocelle-copy-field",
+      members: [
+        { name: "copyLabel", type: "string", attribute: "copy-label", reflects: false, default: '"Copy"', described: true },
+        { name: "status", type: "string", attribute: "status", reflects: false, default: '""', described: true },
+        { name: "value", type: "string", attribute: "value", reflects: false, default: '""', described: true },
+      ],
+      attributes: [
+        { name: "copy-label", fieldName: "copyLabel", described: true },
+        { name: "status", fieldName: "status", described: true },
+        { name: "value", fieldName: "value", described: true },
+      ],
+      events: [{ name: "ocelle-copy-field-request", type: "CustomEvent<{ text: string }>", described: true }],
+      slots: [],
+      cssParts: [
+        { name: "copy-control", described: true },
+        { name: "value", described: true },
+      ],
       cssProperties: [],
     });
   });

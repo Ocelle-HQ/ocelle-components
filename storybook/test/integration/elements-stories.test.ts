@@ -430,3 +430,71 @@ describe("the ocelle-segmented-choice stories in the built Storybook (014 FR-050
     }
   }
 });
+
+/** What a copy-field story's page shows: its theme, whether the field and the icon are defined, and each field's state. */
+function observeCopyFields(page: Page): Promise<unknown> {
+  return page.evaluate(() => {
+    let active: Element | null = document.activeElement;
+    while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement;
+    return {
+      theme: document.documentElement.dataset.theme,
+      defined: ["ocelle-copy-field", "ocelle-icon"].map((tag) => customElements.get(tag) !== undefined),
+      fields: [...document.querySelectorAll("#storybook-root ocelle-copy-field")].map((field) => {
+        const root = field.shadowRoot;
+        const text = root?.querySelector<HTMLElement>('[part~="value"]');
+        const control = root?.querySelector<HTMLButtonElement>('[part~="copy-control"]');
+        const lineHeight = text === null || text === undefined ? 0 : Number.parseFloat(getComputedStyle(text).lineHeight);
+        const height = text === null || text === undefined ? 0 : text.getBoundingClientRect().height - Number.parseFloat(getComputedStyle(text).paddingTop) - Number.parseFloat(getComputedStyle(text).paddingBottom);
+        return {
+          value: (field as unknown as { value?: unknown }).value,
+          status: root?.querySelector('[role="status"]')?.textContent ?? null,
+          wrapped: lineHeight > 0 && Math.round(height / lineHeight) > 1,
+          disabled: control?.disabled ?? null,
+          name: control?.getAttribute("aria-label") ?? null,
+          focused: control !== null && control !== undefined && control === active,
+          icon: control?.querySelector("ocelle-icon")?.getAttribute("name") ?? null,
+        };
+      }),
+    };
+  });
+}
+
+const manifestCommand = "pnpm --filter @ocelle/elements run manifest";
+const implementCommand = "spec-kitty agent workflow implement --mission 014-selection-input --phase 5 --base main --worktree .worktrees/014-selection-input-phase-5 --no-push";
+
+/** A field as `observeCopyFields` reads it. */
+function copyField(value: string, options: { readonly status?: string; readonly wrapped?: boolean; readonly name?: string; readonly focused?: boolean } = {}): unknown {
+  return { value, status: options.status ?? "", wrapped: options.wrapped === true, disabled: value === "", name: options.name ?? "Copy", focused: options.focused === true, icon: "copy" };
+}
+
+// The copy-field stories (014 FR-050, FR-051; research.md R-07, R-12; T079): each story renders its field with the
+// state it states, in light and dark, and axe with the axe gate's full rule set reports no violation and no serious or
+// critical incomplete (no new entry in a11y-exceptions.json, FR-051). The wrapped story's long command lies on more
+// than one line at the story's 320 px, the others on one; the status story shows its status in the live region;
+// the empty story's control is disabled; the focused story's control has focus after its `play`.
+const copyFieldStories = [
+  { id: "elements-ocelle-copy-field--short", fields: [copyField(manifestCommand)] },
+  { id: "elements-ocelle-copy-field--wrapped-long-command", fields: [copyField(implementCommand, { wrapped: true })] },
+  { id: "elements-ocelle-copy-field--with-status", fields: [copyField(manifestCommand, { status: "Copied to clipboard" })] },
+  { id: "elements-ocelle-copy-field--empty-disabled", fields: [copyField("")] },
+  { id: "elements-ocelle-copy-field--focused-copy-control", fields: [copyField(manifestCommand, { name: "Copy command", focused: true })] },
+] as const;
+
+describe("the ocelle-copy-field stories in the built Storybook (014 FR-050, FR-051)", { timeout: 60_000 }, () => {
+  for (const { id, fields } of copyFieldStories) {
+    for (const theme of ["light", "dark"] as const) {
+      it(`${id} in ${theme}: renders its field with the state it states, and axe's full rule set reports no violation and no serious or critical incomplete`, async () => {
+        const { page, outside } = await open(id, theme, "ocelle-copy-field");
+        const observed = await observeCopyFields(page);
+        const results = await axeResults(page);
+        expect({
+          observed,
+          violations: results.violations,
+          incomplete: results.incomplete.filter((each) => each.impact === "serious" || each.impact === "critical"),
+          outside,
+        }).toEqual({ observed: { theme, defined: [true, true], fields }, violations: [], incomplete: [], outside: [] });
+        await page.close();
+      });
+    }
+  }
+});

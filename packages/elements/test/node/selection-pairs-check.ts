@@ -107,6 +107,24 @@ export const segmentedChoiceRows: { readonly painted: Painted; readonly pairs: r
   pairs: [],
 };
 
+/**
+ * R-15's row for `ocelle-copy-field` (014 phase 5): text `ink` on the `inset` well (the command), on `sheet` (the
+ * control's icon) and on the main grounds (the status text below the field), `disabled-ink` (exempt; the disabled
+ * control's icon); the fills `inset` (the well) and `sheet` (the control); the lines `control-border` on the main
+ * grounds (the field's outer border), `accent-strong` on `inset` and `sheet` (the divider, the control's inline-start
+ * border), and the control's focus ring, an outline (a `line`), `color-focus` on the main grounds and, on its
+ * inline-start side, on the `inset` well.
+ */
+export const copyFieldRows: { readonly painted: Painted; readonly pairs: readonly Pair[] } = {
+  painted: { text: ["color-disabled-ink", "color-ink"], fill: ["color-inset", "color-sheet"], bar: [], ring: [], line: ["color-accent-strong", "color-control-border", "color-focus"] },
+  pairs: [
+    ...on("color-ink", [...mainGrounds, "color-inset"]),
+    ...on("color-control-border", mainGrounds),
+    ...on("color-accent-strong", ["color-inset", "color-sheet"]),
+    ...on("color-focus", [...mainGrounds, "color-inset"]),
+  ],
+};
+
 /** Whether a rule sits inside `@media (forced-colors: active)` (not inside its negation). */
 function inForcedColours(rule: Rule): boolean {
   for (let parent = rule.parent; parent !== undefined && parent.type !== "root"; parent = parent.parent) {
