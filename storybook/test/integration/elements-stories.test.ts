@@ -388,3 +388,98 @@ describe("the ocelle-action-row stories in the built Storybook (012 US4, FR-050)
     }
   }
 });
+
+// 012 phase 6 (tasks.md T063; research.md R-13; plan decisions 27, 30 and 31): the `ocelle-action-row` stories of User
+// Story 5 (current page and true, a hovered and a focused current row, unavailable, unavailable and current, link
+// rows, cards, a card with many tags, cards right to left, and a current row on chrome), each rendering its rows with
+// the story's attributes and its inner controls with the state they report (`aria-current`, `aria-disabled`, an `<a>`
+// with or without `href`), in light and dark, with base.css applied and no request outside the origin; the focused
+// story's one current row holds focus in its inner control.
+
+/** One row of a state story: its attributes, its inner control and the states the inner control reports. */
+interface StateRowSeen {
+  readonly rowId: string | null;
+  readonly presentation: string | null;
+  readonly layout: string | null;
+  readonly ground: string | null;
+  readonly current: string | null;
+  readonly unavailable: boolean;
+  readonly rendered: boolean;
+  readonly tag: string | null;
+  readonly href: string | null;
+  readonly ariaCurrent: string | null;
+  readonly ariaDisabled: string | null;
+}
+
+/** What a state story's page shows: its theme, the base stylesheet, its rows and the current rows that hold focus. */
+function observeStateRows(page: Page): Promise<unknown> {
+  return page.evaluate(() => ({
+    theme: document.documentElement.dataset.theme,
+    base: {
+      linked: [...document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')].some((link) => link.href.endsWith("/base.css") && link.sheet !== null),
+      scheme: getComputedStyle(document.documentElement).colorScheme,
+    },
+    defined: customElements.get("ocelle-action-row") !== undefined,
+    rows: [...document.querySelectorAll("#storybook-root ocelle-action-row")].map((row) => {
+      const inner = row.shadowRoot?.querySelector('[part="control"]');
+      return {
+        rowId: row.getAttribute("row-id"),
+        presentation: row.getAttribute("presentation"),
+        layout: row.getAttribute("layout"),
+        ground: row.getAttribute("ground"),
+        current: row.getAttribute("current"),
+        unavailable: row.hasAttribute("unavailable"),
+        rendered: row.shadowRoot?.querySelectorAll('[part="control"]').length === 1,
+        tag: inner?.localName ?? null,
+        href: inner?.getAttribute("href") ?? null,
+        ariaCurrent: inner?.getAttribute("aria-current") ?? null,
+        ariaDisabled: inner?.getAttribute("aria-disabled") ?? null,
+      };
+    }),
+    focused: [...document.querySelectorAll("#storybook-root ocelle-action-row")].filter((row) => row.shadowRoot?.activeElement?.getAttribute("part") === "control").map((row) => row.getAttribute("row-id")),
+  }));
+}
+
+/** A row of a state story with its row id and the attributes given, the others absent. */
+function stateRow(rowId: string, attributes: Partial<StateRowSeen> = {}): StateRowSeen {
+  return { rowId, presentation: null, layout: null, ground: null, current: null, unavailable: false, rendered: true, tag: "button", href: null, ariaCurrent: null, ariaDisabled: null, ...attributes };
+}
+
+/** A default and a flush row of a state story, each with the attributes given. */
+const statePair = (attributes: Partial<StateRowSeen> = {}): StateRowSeen[] => [stateRow("m-42", attributes), stateRow("m-43", { presentation: "flush", ...attributes })];
+const currentPage = { current: "page", ariaCurrent: "page" };
+const unavailable = { unavailable: true, ariaDisabled: "true" };
+const card = { layout: "card" };
+
+const stateStories: readonly { readonly id: string; readonly rows: readonly StateRowSeen[]; readonly focused?: readonly string[] }[] = [
+  { id: "elements-ocelle-action-row--current-page", rows: statePair(currentPage) },
+  { id: "elements-ocelle-action-row--current-true", rows: statePair({ current: "true", ariaCurrent: "true" }) },
+  { id: "elements-ocelle-action-row--current-hovered", rows: [stateRow("m-42", currentPage)] },
+  { id: "elements-ocelle-action-row--current-focused", rows: [stateRow("m-41"), stateRow("m-42", currentPage), stateRow("m-43")], focused: ["m-42"] },
+  { id: "elements-ocelle-action-row--unavailable", rows: statePair(unavailable) },
+  { id: "elements-ocelle-action-row--unavailable-current", rows: statePair({ ...unavailable, ...currentPage }) },
+  { id: "elements-ocelle-action-row--link-row", rows: statePair({ tag: "a", href: "#missions" }) },
+  { id: "elements-ocelle-action-row--card", rows: statePair(card) },
+  { id: "elements-ocelle-action-row--card-with-many-tags", rows: [stateRow("m-42", card)] },
+  { id: "elements-ocelle-action-row--card-right-to-left", rows: statePair(card) },
+  { id: "elements-ocelle-action-row--chrome-current", rows: statePair({ ground: "chrome", ...currentPage }) },
+];
+
+describe("the ocelle-action-row state and card stories in the built Storybook (012 US5, FR-050)", { timeout: 60_000 }, () => {
+  for (const { id, rows, focused } of stateStories) {
+    for (const theme of ["light", "dark"] as const) {
+      it(`${id} in ${theme}: renders its ocelle-action-row elements with the story's attributes and states, each inner control rendered, with base.css applied and no request outside the origin`, async () => {
+        const { page, outside } = await open(id, theme, "ocelle-action-row");
+        expect({ ...((await observeStateRows(page)) as object), outside }).toEqual({
+          theme,
+          base: { linked: true, scheme: theme },
+          defined: true,
+          rows,
+          focused: focused ?? [],
+          outside: [],
+        });
+        await page.close();
+      });
+    }
+  }
+});
