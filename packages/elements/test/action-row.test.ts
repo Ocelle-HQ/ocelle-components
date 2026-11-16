@@ -160,3 +160,110 @@ describe("ocelle-action-row's host guard", () => {
     expect({ synthetic, clicked }).toEqual({ synthetic: [], clicked: ["click", "ocelle-action-row-activate"] });
   });
 });
+
+// Added after the mutation run of T059 (operator decision at phase 5, 2026-11-16, option (a); reviews/phase-5/notes.md):
+// behaviours the scenarios left unasserted, one test per surviving behaviour. In process only: they read the inner
+// control's attributes, change a text node's data, forward a slot through another shadow root and move a row between
+// trees, none of which the driver does.
+
+/** Waits for the row to render, then for a frame, and again, as the driver's settle does. */
+async function settled(host: Row): Promise<void> {
+  await host.updateComplete;
+  await new Promise((resolve) => requestAnimationFrame(resolve));
+  await host.updateComplete;
+}
+
+/** The page's element with `id`. */
+function byId(id: string): HTMLElement {
+  const found = document.getElementById(id);
+  if (found === null) throw new Error(`no #${id}`);
+  return found;
+}
+
+/** The inner control of a row. */
+function controlOf(host: Element): Element {
+  const found = host.shadowRoot?.querySelector('[part="control"]');
+  if (found === null || found === undefined) throw new Error("no inner control");
+  return found;
+}
+
+describe("ocelle-action-row's name and description sources, in process", () => {
+  afterEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  it("leaves no empty ARIA attribute on the inner control: no aria-labelledby or aria-describedby without a reference or a texted slot, no aria-label for a whitespace label or beside a host aria-labelledby; and sets each when it has a source", async () => {
+    document.body.innerHTML =
+      '<p id="owner">Mission 42 by Ana</p>' +
+      '<ocelle-action-row id="plain">Mission 42</ocelle-action-row>' +
+      '<ocelle-action-row id="blank" label="   ">Mission 42</ocelle-action-row>' +
+      '<ocelle-action-row id="both" aria-labelledby="owner" label="Open" aria-label="Open it">Mission 42</ocelle-action-row>' +
+      '<ocelle-action-row id="described">Mission 42<span slot="description">Due Friday</span></ocelle-action-row>';
+    for (const host of [...document.querySelectorAll("ocelle-action-row")] as Row[]) await settled(host);
+    const attributes = (id: string): Record<string, string | null> => {
+      const inner = controlOf(document.getElementById(id) as Element);
+      return Object.fromEntries(["aria-label", "aria-labelledby", "aria-describedby"].map((name) => [name, inner.getAttribute(name)]));
+    };
+    expect({ plain: attributes("plain"), blank: attributes("blank"), both: attributes("both"), described: attributes("described") }).toEqual({
+      plain: { "aria-label": null, "aria-labelledby": null, "aria-describedby": null },
+      blank: { "aria-label": null, "aria-labelledby": null, "aria-describedby": null },
+      both: { "aria-label": null, "aria-labelledby": "", "aria-describedby": null },
+      described: { "aria-label": null, "aria-labelledby": null, "aria-describedby": "" },
+    });
+  });
+
+  it("describes the row once text is written into the data of a slotted element's text node, which fires no slotchange and changes no child list", async () => {
+    document.body.innerHTML = '<ocelle-action-row id="r">Mission 42<span slot="description"> </span></ocelle-action-row>';
+    const host = document.getElementById("r") as Row;
+    await settled(host);
+    const before = controlOf(host).ariaDescribedByElements?.length ?? 0;
+    const text = host.querySelector("span")?.firstChild as Text;
+    text.data = "Due Friday";
+    await settled(host);
+    expect({ before, after: controlOf(host).ariaDescribedByElements?.map((element) => element.textContent) ?? null }).toEqual({ before: 0, after: ["Due Friday"] });
+  });
+
+  it("reads a description forwarded through another shadow root's slot (the flattened assignment)", async () => {
+    document.body.innerHTML = '<div id="outer"><span id="due">Due Friday</span></div>';
+    const outer = byId("outer");
+    outer.attachShadow({ mode: "open" }).innerHTML = '<ocelle-action-row>Mission 42<slot slot="description"></slot></ocelle-action-row>';
+    const host = outer.shadowRoot?.querySelector("ocelle-action-row") as Row;
+    await settled(host);
+    expect(controlOf(host).ariaDescribedByElements?.map((element) => element.id) ?? null).toEqual(["due"]);
+  });
+
+  it("resolves a moved aria-labelledby when it was moved before the row was connected, and again when the row is connected in another tree", async () => {
+    document.body.innerHTML = '<p id="owner">Mission 42 by Ana</p><div id="other"></div>';
+    const early = document.createElement("ocelle-action-row") as Row;
+    early.textContent = "Mission 42";
+    early.setAttribute("aria-labelledby", "owner");
+    document.body.append(early);
+    await settled(early);
+    const connected = controlOf(early).ariaLabelledByElements?.map((element) => element.textContent) ?? null;
+    const root = byId("other").attachShadow({ mode: "open" });
+    root.innerHTML = '<p id="owner">Mission 42 by Ben</p>';
+    root.append(early);
+    await settled(early);
+    expect({ connected, moved: controlOf(early).ariaLabelledByElements?.map((element) => element.textContent) ?? null }).toEqual({ connected: ["Mission 42 by Ana"], moved: ["Mission 42 by Ben"] });
+  });
+});
+
+describe("ocelle-action-row's end group takes no space when empty", () => {
+  afterEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  it("shrink-wraps a title-only row to its title and its inline padding (13 px a side, the border included), and shows the tags of a row without a trailing icon", async () => {
+    document.body.innerHTML =
+      '<div id="wrap"><ocelle-action-row id="t"><span id="title">Mission 42</span></ocelle-action-row></div>' +
+      '<ocelle-action-row id="g">Mission 43<span id="tag" slot="tags">Blocked</span></ocelle-action-row>';
+    byId("wrap").style.display = "inline-block";
+    const [titled, tagged] = [document.getElementById("t") as Row, document.getElementById("g") as Row];
+    await settled(titled);
+    await settled(tagged);
+    const host = titled.getBoundingClientRect();
+    const title = byId("title").getBoundingClientRect();
+    const tag = byId("tag").getBoundingClientRect();
+    expect({ width: Math.abs(host.width - (title.width + 26)) <= 0.5, tag: tag.width > 0 }).toEqual({ width: true, tag: true });
+  });
+});
