@@ -35,10 +35,8 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 623ms using pnpm v12.16.1
+Done in 688ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /opt/pw-browsers/chromium-1243/chrome-linux64/chrome
 $ node gates/bin/test.ts
-packages/elements/test/tooltip.test.ts:29: unit-tests: ocelle-tooltip, in process (US3) Escape, then a brief hover (FR-033, R-12): shown by keyboard focus and hidden by Escape, focus kept on the trigger; the pointer enters the trigger and leaves both boxes within 100 ms: no bubble at any frame of a 450 ms wait from the entry: Error: the leave came at or after 100 ms from the entry in each of 3 runs (133.5, 117.5, 116.4 ms from the entry): the row has no run it can judge
-unit-tests: 1 of 5107 tests failed
-[ELIFECYCLE] Test failed. See above for more details.
+unit-tests: 5107 tests passed in 159 files
