@@ -25,5 +25,7 @@ Module `packages/elements/src/ocelle-evidence-step.ts`, class `OcelleEvidenceSte
 | `:host` | `display: inline-block`; `:host([hidden]) { display: none }` |
 | `[part="content"]` | `overflow-wrap: anywhere` under `:host([wrap="anywhere"])` |
 
-The step's type, colour and chip box come from its container (`::slotted()`). Outside a chain the step inherits the
-page's text and shows as plain text, with no marker, ordinal or chip box.
+The step's type, colour and chip box come from its container (`::slotted()`), with the chip's box rule outside the
+container's variant block so the outline stays in forced colours (`CanvasText`;
+[ocelle-evidence-chain.md](ocelle-evidence-chain.md) § Forced colours). Outside a chain the step inherits the page's text and shows as plain text, with no marker, ordinal
+or chip box.

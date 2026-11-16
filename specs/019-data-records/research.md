@@ -42,6 +42,16 @@ and the default role `group`, adds `overflowRegionStyles` after its own styles, 
 (the `data-fade` binding through `ifDefined`), lists `aria-label` in `observedAttributes` with `requestUpdate()` on
 change, and calls `setLabel(name)` in `updated()` with the name of R-04. Nothing of the module is copied or changed.
 
+**Host sizing (PLAN-A11Y-SECURITY-1-004, operator decision (a)).** The element's own styles set `:host {
+min-inline-size: 0; }`. As a default flex item, or a grid item in an `auto` or `1fr` track, the host's automatic
+minimum is otherwise its content's min-content width, so the region would never overflow and the page would scroll
+sideways (FR-009; 015's README documents the same limit for 009's own elements). R-07's query container on
+`.region-box` adds inline size containment, which also keeps the table's width out of the host's min-content size;
+`min-inline-size: 0` stays as the explicit rule, and the bodies prove both. Phase 1's red commit has two 320 px bodies:
+the element as a default flex item and as a `1fr` grid item, each asserting that the page's scroll width equals the
+viewport width and that the region overflows (its box is a tab stop). The README states that a host that is not itself
+the flex or grid item (a wrapper around it) needs `min-inline-size: 0` on that wrapper.
+
 **Rationale.** Operator decision Q2 (b); FR-008. The module already gives the conditional tab stop, the named group,
 arrow keys, fades, focus clearance and focus handover, and its triggers (box and track resize, `slotchange` on the
 box, `scroll`) cover a swapped table and a swapped `<tbody>` (R-05).
@@ -80,11 +90,26 @@ the cell is given a width by the consumer.
 ## R-04 The region's name
 
 **Decision.** `name = label?.trim() || captionText || undefined`, passed to `setLabel`; the module itself puts a
-non-blank host `aria-label` first (contract § Inputs) and treats a blank one as absent. `captionText` is the
-whitespace-collapsed, trimmed `textContent` of the assigned table's `caption` (`table.caption`), and a caption whose
-trimmed text is empty counts as absent (spec check 3, SPEC-3-05; the README states it, and US1-7 gets that case in the
-red commit). The element re-reads the caption from its `MutationObserver`, which observes its subtree for `childList`
-and `characterData` (a swapped table, a replaced or edited caption, US1-16). The caption is never referenced by ID.
+non-blank host `aria-label` first (contract § Inputs) and treats a blank one as absent. `captionText` is the caption
+text of the assigned table's `caption` (`table.caption`), computed by walking its subtree in tree order
+(PLAN-A11Y-SECURITY-1-005, operator decision (a)):
+
+- a text node contributes its data;
+- an element with the `hidden` attribute or `aria-hidden="true"` contributes nothing, nor does its subtree;
+- an `<img>` contributes its `alt` (nothing when it has none);
+- the result has every run of white space collapsed to one space and is trimmed.
+
+So the group's name matches the name the platform gives the table from its caption in these cases, where
+`textContent` would not. A caption hidden by a consumer stylesheet (`display: none` from CSS) is not detected; the
+README asks for the `hidden` attribute instead. A caption whose caption text is empty counts as absent (spec check 3,
+SPEC-3-05; the README states it, and US1-7 gets that case in the red commit). The element re-reads the caption from
+its `MutationObserver`, which observes its subtree for `childList`, `characterData` and the attributes `hidden`,
+`aria-hidden` and `alt` (a swapped table, a replaced or edited caption, US1-16, a part of the caption hidden or shown).
+The caption is never referenced by ID.
+
+Phase 1's red commit has one body per rule: a caption holding a `hidden` span, one holding an `aria-hidden="true"`
+span, and one holding an `<img alt="…">` between two words. Each asserts the region's name, and the `hidden` one also
+asserts the name changes when the attribute is removed.
 
 **Rationale.** FR-010. The accessible name of the `group` must not need an ID reference across the root; text copied
 into `aria-label` is the established pattern (013's progress takes a heading's text as `label`).
@@ -116,13 +141,13 @@ tokens):
 | Target | Values |
 |---|---|
 | table | `border-collapse: collapse`; `inline-size: 100%` (it fills the track, R-03); `margin: 0`; `font-family: var(--ocelle-font-sans)`; `font-variant-numeric: var(--ocelle-figures)` |
-| caption | `font-size: var(--ocelle-font-size-sm)`; `font-weight: var(--ocelle-font-weight-medium)`; `line-height: var(--ocelle-line-height-normal)`; `color: var(--ocelle-color-ink)`; `text-align: start`; `padding-block-end: var(--ocelle-space-2)`; `position: sticky; inset-inline-start: 0` (it stays at the region's start edge while the region scrolls, R-07) |
+| caption | `font-size: var(--ocelle-font-size-sm)`; `font-weight: var(--ocelle-font-weight-medium)`; `line-height: var(--ocelle-line-height-normal)`; `color: var(--ocelle-color-ink)`; `text-align: start`; `padding-block-end: var(--ocelle-space-2)`; `position: sticky`, with the inset and the `max-inline-size` cap of R-07 (it stays at the region's start edge while the region scrolls and wraps inside the box's visible width) |
 | body cell (`td`, and `th` per FR-006's row rule) | `padding: var(--ocelle-space-1) var(--ocelle-space-2)` (4 px / 8 px, below 003's 8 px / 12 px); `font-size: var(--ocelle-font-size-sm)`; `line-height: var(--ocelle-line-height-compact)`; `color: var(--ocelle-color-ink-soft)`; `text-align: start`; `vertical-align: top`; `border-block-end: var(--ocelle-border-width) solid var(--ocelle-color-rule)` (decorative, FR-013) |
 | column header (FR-006's selection) | `font-size: var(--ocelle-font-size-xs)`; `font-weight: var(--ocelle-font-weight-medium)`; `text-transform: uppercase`; `letter-spacing: var(--ocelle-tracking-caps)`; `color: var(--ocelle-color-ink-muted)`; `border-block-end-color: var(--ocelle-color-rule-strong)` (decorative); same padding as body cells |
 | row header (FR-006's selection) | `font-size: var(--ocelle-font-size-sm)`; `font-weight: var(--ocelle-font-weight-medium)`; `color: var(--ocelle-color-ink)`; no upper case, no tracking |
-| last body row | `border-block-end: 0` on its cells |
+| last body row | `border-block-end: 0` on its cells, selected as `ocelle-data-table > table > :is(tbody, tfoot):last-child > tr:last-child > :is(td, th)`: the last row of the table's last row group only, so consecutive rows across two `<tbody>` groups, or a `<tbody>` and a `<tfoot>`, keep the rule between them (PLAN-CORRECTNESS-1-009). HTML puts a `<tfoot>` after the body row groups; a `<tfoot>` written before a `<tbody>` is still rendered last, but the selector follows source order, so its last row keeps its rule and the last `<tbody>` row has none. The README states this |
 | `ocelle-data-table[wrap="anywhere"]` body cells | `overflow-wrap: anywhere` (never on header cells) |
-| forced colours | cells `CanvasText`, rules `CanvasText` (decorative lines stay visible, FR-013) |
+| forced colours | cells `CanvasText`, rules `CanvasText` (decorative lines stay visible, FR-013); no `forced-color-adjust: none` (003's `source.test.ts` rejects it in `base.css`) |
 
 FR-006's selection, in source order so the later rule wins where two match: column header = `thead th`,
 `th[scope="col"]`, `th[scope="colgroup"]`; row header = `th[scope="row"]`, `th[scope="rowgroup"]`,
@@ -136,11 +161,29 @@ with the data table's value, under `[data-ocelle-prose=""] :where(…the same ta
 `display`, `overflow-x`, `max-inline-size`, `container-type`, `border-collapse`; on `th, td` `min-inline-size`,
 `padding`, `border-block-end`, `text-align`; on `th` font weight, size, figures and the rule colour; on the caption
 `position`, `inset-inline-start`, `max-inline-size`, `text-align`, and the caption inherits `line-height-prose`. The
-override restates each, plus `display: table`, `overflow-x: visible`, `max-inline-size: none`, `container-type:
-normal` and `min-inline-size: auto`, and the caption's font size and line height (set by the data table, so
-the prose line height does not reach it). A node test reads 003's prose table rules from `base.css` and fails when
-one of their properties is not restated in the override (so a later 003 change cannot slip through), and US1-10's
-body compares every property in the list on every target with the same table outside prose (SPEC-3-01).
+override restates each, plus `display: table`, `overflow-x: visible`, `max-inline-size: none` on the table,
+`container-type: normal` and `min-inline-size: auto`, and the caption's font size, line height and R-07's
+`max-inline-size` cap (set by the data table, so neither the prose line height nor the prose cap reaches it).
+
+**The override's node test (PLAN-TESTABILITY-1-008).** It does not list 003's selector forms. It parses `base.css`,
+selects every `[data-ocelle-prose=""]` rule whose selector can match a table, caption, row group (`thead`, `tbody`,
+`tfoot`), row (`tr`), column (`col`, `colgroup`) or cell (`th`, `td`), pseudo-classes included (for example
+`:where(table:focus-visible)` at `base.css` lines 198 to 201), and fails on any property of those rules that the
+override does not restate on the matching target. A property that cannot apply inside the element is recorded in the
+test's own not-applicable list with its reason, and the list is asserted exactly: `outline` and `outline-offset` of
+`:where(table:focus-visible)` (the region's box is the tab stop; a consumer who makes the table focusable keeps 003's
+inset ring, and US1-10 compares the rest). So a later 003 rule on `tr`, a row group, `col` or a pseudo-class is read,
+and fails the test until the override or the list takes it. US1-10's body compares every property in the list on every
+target with the same table outside prose (SPEC-3-01).
+
+**003's existing test (PLAN-CORRECTNESS-1-005).** `packages/styles/test/source.test.ts` (lines 192 to 203) pins the
+prose slice to its exact position and requires `rules(root).slice(start)` to equal `[wrap]`, so any rule added after
+the wrap rule fails it. Phase 1's red commit changes that test: its rule table gains the data-table block, its prose
+override and the pre-upgrade list-item rules (R-08), transcribed with their declarations, after the wrap rule, and the
+last-rule assertion becomes "the wrap rule, then the data-table rules, in that order". The red commit's message names
+this change and its reason (Principle VIII: an existing test changed for a planned addition, not to pass). The new
+styles tests follow the package's own layout: browser bodies in `packages/styles/test/browser/data-table.test.ts`, the
+override's node test in `packages/styles/test/prose-override.test.ts` (the package has no `test/node/`).
 
 **Rationale.** Shadow styles cannot reach a slotted table's cells (`::slotted()` reaches the table only). Zero
 specificity outside prose lets a consumer's `td` rule win (US1-14). Inside prose only (0,1,0) after 003's rules can
@@ -152,9 +195,33 @@ pre-upgrade table). `::slotted(table)` for the table box only (used for nothing:
 
 ## R-07 Caption, print and pre-upgrade
 
-**Decision.** The caption is sticky at the inline start (R-06) so the table's name stays visible while the region
-scrolls; it wraps within the region's visible width because the track's inline padding and the box clip it. The
-spike measures at 320 px that the caption's text is never cut. Print: the phase 1 spike prints the overflowing story to
+**Decision (PLAN-CORRECTNESS-1-001, operator decision (a)).** The caption is sticky at the inline start (R-06) so the
+table's name stays visible while the region scrolls. A caption as wide as the table grid cannot move inside its
+containing block (the table wrapper), and clipping by the box is not wrapping, so the caption is given a bound, as
+003's prose caption is (`base.css` lines 187 to 209: the prose table is `container-type: inline-size` and its caption
+has `max-inline-size: var(--ocelle-measure-container)`, `100cqi`):
+
+- The data table's own shadow styles make `.region-box` a query container: `.region-box { container-type:
+  inline-size; }`. This adds inline size containment to the box: its inline size no longer depends on its content,
+  which also keeps the table's width out of the host's min-content size (R-02's host sizing). The box is a block that
+  fills the frame, so nothing else changes.
+- Block 1 and the prose override cap the caption at `max-inline-size: calc(var(--ocelle-measure-container) -
+  var(--ocelle-scroller-fade-size) - var(--ocelle-focus-offset) - var(--ocelle-focus-width))`: the box's visible
+  width, less the end fade (which shows while the table is scrolled to the start) and less the track's ring room before
+  the first column. The caption then wraps inside the box's unmasked width. Until 009's module has the option of R-17,
+  the caption's inset and cap follow the operator's answer to Q-F (below).
+- The caption is slotted content (a descendant of the slotted table), so `100cqi` must resolve against `.region-box`
+  through the flat tree. Phase 1's spike measures that lookup in Chromium; a failure goes to the operator.
+- Outside the element (pre-upgrade) there is no container, and `cqi` falls back to the small viewport, which bounds
+  the caption at the viewport's width less the same figures.
+
+Phase 1's red commit has two 320 px caption bodies, one scrolled to the start and one scrolled to the end (and, with a
+third column scrolled to the middle, the `both` fade). Each asserts that every line box of the caption (`Range`
+client rects over its text) lies inside the box's unmasked extent: the box's visible rect, less the fade depth on each
+side whose fade shows (the `.region-edge` widths). The spec edge case "never cut at 320 px (it wraps)" is then
+measured, not only spiked.
+
+Print: the phase 1 spike prints the overflowing story to
 PDF in Chromium and records whether content past the box is clipped; the README states the result and that a consumer
 who prints sets a print rule of its own. No print rule is added (spec edge case). Before upgrade the base rules style
 the table, there is no region and no shadow root, so other children show and a wide table can widen the page; the
@@ -164,16 +231,35 @@ README says so (FR-012).
 
 **Decision.** Both containers attach a manual-assignment shadow root and render `<ol role="list" part="list">` with
 one `<li role="listitem">` per visible item, in source order; each `<li>` holds the decorative marker
-(`<span class="marker" aria-hidden="true">`) and a `<slot>` to which the container assigns its item. A visible item
-is a direct child with the item tag and neither `hidden` nor `aria-hidden="true"` (013's facts rule). One
-`MutationObserver` per container re-renders on a change of its children and of an item's `hidden`, `aria-hidden`,
-`variant` (chain) or `time` (timeline); a change inside an item's content needs no re-render. With no visible item the
+(`<span class="marker" aria-hidden="true">`), the decorative connector (`<span class="connector"
+aria-hidden="true">`, a real element, PLAN-TESTABILITY-1-001 operator decision (b)) and a `<slot>` to which the
+container assigns its item. A visible item is a direct child with the item tag and neither `hidden` nor
+`aria-hidden="true"` (013's facts rule). One `MutationObserver` per container re-renders on a change of its children
+and of an item's `hidden`, `aria-hidden`, `variant` (chain) or `time` (timeline); a change inside an item's content
+needs no re-render. The item properties the containers read (`time`, `variant`) reflect to attributes, so a property
+set from script is seen (R-10, R-12). With no visible item the
 container renders no `<ol>` at all (so no empty list node is exposed; FR-025's "set in the plan"). The list is named
 on the `<ol>` with `aria-label` from the name of R-09.
 
 `list-style: none` is set on the `<ol>` (the marker is the element's), and the explicit `role="list"` and
 `role="listitem"` keep the list semantics in WebKit, which drops an unstyled list's role (spec check 1, SPEC-1-11);
 Chromium is unaffected.
+
+**Connectors as elements.** The connectors are spans, not `::before` or `::after`, so the drivers' existing `boxes`
+and `styles` readers measure them (no driver reads a pseudo-element) and the forced-colours bodies can read their
+painted colour and box (R-10, R-12). Each connector span is empty and `aria-hidden="true"`; the AX bodies assert that
+no node of a marker or connector is in the tree, and a DOM assertion pins `aria-hidden="true"` on each (R-11's probe:
+an empty span adds no node in Chromium either way).
+
+**Before upgrade (PLAN-FRESH-1-004, operator decision (a)).** `@ocelle/styles` gains two (0,0,0) rules, as 013's
+`:where(ocelle-facts:not(:defined) > ocelle-fact:not([hidden]))` rule does for facts:
+`:where(ocelle-event-timeline:not(:defined) > ocelle-timeline-event:not([hidden])) { display: block; }` and
+`:where(ocelle-evidence-chain:not(:defined) > ocelle-evidence-step:not([hidden])) { display: block; }`. A
+server-rendered timeline or chain then shows one item per line before upgrade instead of running its items together.
+An event's time is an attribute rendered only in shadow, so it does not show before upgrade, and the README's "Before
+upgrade" line per container says so. The styles browser bodies (`packages/styles/test/browser/data-table.test.ts`,
+the records section) assert each item's box starts below the previous one with the elements undefined, and that a
+`hidden` item is not shown. The spec's edge cases gain this case.
 
 **Rationale.** Operator decision Q3 (a); 013's slotted-item pattern (R-01 of 013) measured that a shadow list with
 manual assignment gives one clean list in Chromium. Rendering no `<ol>` when empty avoids an empty named list.
@@ -184,10 +270,15 @@ event's time and content as `StaticText`), with the FR-016 item-text oracle (R-1
 
 ## R-09 Naming the lists: a blank host `aria-label` counts as absent (FR-022)
 
-**Decision.** `name = nonBlank(host aria-label) ?? nonBlank(label) ?? undefined`, set on the `<ol>`; with no name the
-`<ol>` has no `aria-label`. The host's own `aria-label` attribute is the consumer's and is not removed; whether
-Chromium exposes it on the host's generic node, and whether axe reports `aria-prohibited-attr` for it, is measured in
-phase 2's spike against 009's lane, which renders its named role on a shadow wrapper the same way (branch). If the host
+**Decision.** `name = resolveName(host aria-label, label)`, set on the `<ol>`; with no name the `<ol>` has no
+`aria-label`. `resolveName(hostAriaLabel, label)` is the function 009's `overflow-region.ts` already exports (line 91 on
+the branch; `ocelle-workflow-lane.ts` imports it): the host's non-blank `aria-label`, trimmed, else the trimmed
+non-blank `label`, else none. Both containers import it from `./overflow-region.ts` (PLAN-CORRECTNESS-1-011, operator
+decision (a)); no `list-name.ts` is added. The README's overflow-region entry lists the timeline and the chain as users
+of that export, and T001 rechecks its name and rule (R-14).
+
+The host's own `aria-label` attribute is the consumer's and is not removed; whether Chromium exposes it on the host's
+generic node, and whether axe reports `aria-prohibited-attr` for it, is measured in phase 2's spike against 009's lane, which renders its named role on a shadow wrapper the same way (branch). If the host
 attribute is exposed as a second name, the element follows whatever 009's lane does on `main` (R-14) and no story sets
 a host `aria-label` unless axe is clean on it (Complexity Tracking, if needed).
 
@@ -197,27 +288,51 @@ helper `accessibleName` in `naming.ts` implements the other rule ("decides alone
 ## R-10 The timeline's look (FR-021, FR-023, FR-027)
 
 **Decision (plan default; Q-C below may change it).** The event renders its own shadow root: `<span part="time">`
-(only when `time` is non-empty) above `<span part="content"><slot></slot></span>`, each `display: block`. The time is
+(only when the event has a time) above `<span part="content"><slot></slot></span>`, each `display: block`.
+
+**"Has a time" (PLAN-CORRECTNESS-1-003).** `time` reflects to its attribute, as 013's `ocelle-fact` reflects `label`,
+so the container's `MutationObserver` sees a property set from script. One predicate, `hasTime(time)`, exported from
+`ocelle-timeline-event.ts` (internal, not re-exported from `index.ts`) and imported by the timeline, decides both the
+time box and the `<li>`'s `has-time` class: true when `time` is a string whose trimmed value is not empty. So
+`time=""` and a white-space `time` render no time box and set no `has-time`, and the item text is the content alone
+(the data model's "empty or absent renders no time box"). A non-blank time is shown as given. Phase 2's red commit has
+bodies for `time` set, changed and cleared by property after mount, `time=""` and `time=" "`, each measuring the
+marker's centre against the first line box of the event (the time's line, or the content's when it has no time) and
+asserting the reflected attribute. The time is
 `--ocelle-font-size-xs`, `--ocelle-font-weight-medium`, `--ocelle-color-ink-muted`, `--ocelle-figures`, line height
 `--ocelle-line-height-normal`; the content is `--ocelle-font-size-sm`, regular weight, `--ocelle-color-ink`,
 `--ocelle-line-height-normal`; time and content differ by size and weight (FR-023). The container's `<li>` is a
 two-column grid: a marker column of `--ocelle-size-dot` plus `--ocelle-space-3` of gap, and the item. The marker sits
 in a `1lh` wrapper whose line box is set to the time's type when the event has a time and to the content's type when
-it has none (the container reads the item's `time` attribute and sets a class on the `<li>`), so it is centred on the
-event's first line (the slot convention's `1lh` technique, which `style-lint` allows). The marker is a filled square
-of `--ocelle-size-dot` in `--ocelle-color-ink-muted` with `--ocelle-radius-1` (the tokens README's radius for small
-marks; Q-D below). The connector is the `<li>`'s `::before` in the marker column, `--ocelle-border-width` wide in
-`--ocelle-color-rule-strong` (decorative), from the marker's centre to the next `<li>`'s marker centre (it spans the
-`<li>`'s block size plus the row gap); the last `<li>` has none (`:last-child`, and hidden items render no `<li>`).
-Rows are separated by `--ocelle-space-3`. All positions are logical (`inset-inline-start`), so `dir="rtl"` mirrors
-them.
+it has none (the container reads `hasTime` of the item's reflected `time` and sets `has-time` on the `<li>`), so it is
+centred on the event's first line (the slot convention's `1lh` technique, which `style-lint` allows). The marker is a
+round dot of `--ocelle-size-dot`: `box-sizing: border-box`, inline and block size `--ocelle-size-dot`, drawn as a
+border, `border: calc(var(--ocelle-size-dot) / 2) solid var(--ocelle-color-ink-muted)`, so the mark is painted by a
+foreground property and not a background (forced colours, below), and `border-radius: 50%` (Q-D, decided: a mark
+shape, not a corner radius, constitution II). The connector is the `<li>`'s `<span class="connector"
+aria-hidden="true">`, absolutely positioned in the marker column with no inline size and a `border-inline-start:
+var(--ocelle-border-width) solid var(--ocelle-color-rule-strong)` (decorative), from the marker's centre to the next
+`<li>`'s marker centre (it spans the `<li>`'s block size plus the row gap). The last visible `<li>` renders no
+connector span (hidden items render no `<li>`). Rows are separated by `--ocelle-space-3`. All positions are logical
+(`inset-inline-start`), so `dir="rtl"` mirrors them.
 
 `wrap="anywhere"` on an event sets `overflow-wrap: anywhere` on `part="content"` only.
 
 Outside a timeline the event's own shadow content (time above content) shows as plain text, with no marker or role.
 
+**Forced colours (PLAN-A11Y-SECURITY-1-001).** In forced colours the browser forces `background-color` to `Canvas`, so
+a mark drawn as a background would be Canvas on Canvas. Every mark is therefore drawn with a border, and the
+timeline's styles add, outside the variant block, `@media (forced-colors: active) { .marker, .connector {
+border-color: CanvasText; } }`: the dot and the connector are drawn in `CanvasText`, and the time and content text are
+forced to the system text colour. No `forced-color-adjust: none` is needed. US2-8's forced-colours half asserts, on
+the real spans, that each marker's and connector's drawing border colour is a foreground system colour (`CanvasText`,
+not the ground's `Canvas`) and that each box is not empty (the marker's border box is `--ocelle-size-dot` square; the
+connector's border box has the border width and a block size above zero). Plant: the dot drawn as a
+`background-color` with no border; US2-8 must fail.
+
 **Contrast.** `ink-muted` on the nine main grounds is a text declaration in the token source (4.5:1 or more), above
-the 3:1 FR-013 requires of the marker (branch values; the contrast gate reads them).
+the 3:1 FR-013 requires of the marker (branch values; the contrast gate reads them). R-13 has the two oracles that tie
+what is painted to those declarations.
 
 ## R-11 The item-text oracle (FR-016)
 
@@ -230,48 +345,77 @@ CDP session (013's `commands.ts` reads the AX tree for value properties).
 
 ## R-12 The chain's look and line ends (FR-031 to FR-036)
 
-**Decision (plan default; Q-A and Q-D below may change it).**
+**Decision (plan default; Q-A below may change it).**
 
 - The `<ol>` is `display: flex; flex-wrap: wrap; align-items: flex-start`, with `row-gap: var(--ocelle-space-3)` and
   no column gap: each `<li>` carries the gap after it as `padding-inline-end: var(--ocelle-space-5)`, inside which its
-  connector (`::after`) is drawn, `--ocelle-border-width` thick in `--ocelle-color-rule-strong` (decorative), vertically
-  centred on the marker, from `--ocelle-space-1` after the step to `--ocelle-space-1` before the padding's end.
+  connector (`<span class="connector" aria-hidden="true">`, absolutely positioned) is drawn as a
+  `border-block-start: var(--ocelle-border-width) solid var(--ocelle-color-rule-strong)` with no block size
+  (decorative), from `--ocelle-space-1` after the step to `--ocelle-space-1` before the padding's end.
+- **One centre line (PLAN-FRESH-1-005, operator decision (a)).** Every `<li>` reserves a `--ocelle-size-step` line
+  box: `min-block-size: var(--ocelle-size-step)`. A default step's marker fills it. A chip `<li>` (class `chip`) sets
+  `align-items: center`, so a one-line chip (20.4 px) is centred in that box, 1 px from each edge. Every connector is
+  placed at `inset-block-start: calc(var(--ocelle-size-step) / 2 - var(--ocelle-border-width) / 2)` from its `<li>`'s
+  block start, so all connectors on a row share the default marker's centre line, chips or not. A chip that wraps onto
+  more lines is taller than the box and starts at its top; its connector stays on the same centre line. Phase 3's red
+  commit has a mixed-chips geometry body: in a row of default and chip steps, each connector's centre equals the row's
+  marker centre within 0.5 px, and each one-line chip's centre does too.
 - **Line ends.** CSS cannot tell a line's last flex item. The container measures: after each render and from a
   `ResizeObserver` on the `<ol>` and on each `<li>`, it compares each visible `<li>`'s block-start offset with the
   next one's and sets `data-line-end` on each `<li>` whose next item starts a new line, and on the last; the rule
-  `li[data-line-end]::after { content: none }` hides that connector. The connector is absolutely positioned in
-  padding that exists either way, so toggling it changes no size and the observer cannot loop; the write happens in
-  the observer callback. The result depends only on the current layout, so it is the same whatever the history. The
+  `li[data-line-end] > .connector { display: none; }` hides that connector. The connector is absolutely positioned in
+  padding that exists either way, so toggling it changes no size and the observer should not loop; the write happens
+  in the observer callback. The result depends only on the current layout, so it is the same whatever the history. The
   phase 3 spike measures it at 1280, 600 and 320 px, after a step's text changes, a step added and hidden, a late web
   font and `dir="rtl"`, against a fresh load.
+- **No observer loop, tested (PLAN-TESTABILITY-1-007).** "Should not loop" is proven by 013's in-process test, in
+  `packages/elements/test/evidence-chain.test.ts`: around a run of changes (the host resized 1280 → 320 → 1280 px, a
+  step added, then hidden), each read after the layout wait of checks.md, the test records every `window` `error` event
+  (capture phase) and every `console.error` call and asserts none carries "ResizeObserver loop". Paired: the same test
+  asserts that the line ends changed at each step (the set of `<li>` with `data-line-end` differs at 320 px from
+  1280 px, and follows the added and hidden step), and that the recorder sees a synthetic `ErrorEvent` with that
+  message dispatched by the test itself. Plant: the callback also writes a size-changing property (the `<li>`'s
+  `padding-inline-end` toggled with `data-line-end`); the test must fail.
 - **Default step.** The `<li>` is an inline flex row: marker, `--ocelle-space-2`, item. The marker is
   `--ocelle-size-step` square, `box-sizing: border-box`, no fill, a `--ocelle-ring-step` solid border in
-  `--ocelle-color-ink-muted` (structural, 3:1 through its text declaration), `--ocelle-radius-1` (Q-D), with the
-  ordinal centred in `--ocelle-font-size-xs`, `--ocelle-font-weight-medium`, `--ocelle-color-ink-muted`,
-  `--ocelle-figures`, line height 1 (`--ocelle-line-height-tight` is 1.15; the plan uses it). The ordinal is text inside
-  the `aria-hidden` marker. The step content is `--ocelle-font-size-sm`, `--ocelle-color-ink`,
+  `--ocelle-color-ink-muted` (structural, 3:1 through its text declaration), `border-radius: 50%` (a round marker,
+  FR-031; Q-D, decided), with the ordinal centred in `--ocelle-font-size-xs`, `--ocelle-font-weight-medium`,
+  `--ocelle-color-ink-muted`, `--ocelle-figures`, line height `--ocelle-line-height-tight` (1.15). The ordinal is text
+  inside the `aria-hidden` marker. The step content is `--ocelle-font-size-sm`, `--ocelle-color-ink`,
   `--ocelle-line-height-normal`, set on the slotted item through `::slotted(ocelle-evidence-step)`, and is
   vertically centred with the marker on its first line (the `1lh` wrapper again).
 - **Ordinals.** Each default step's ordinal is its 1-based position among the visible steps, chip steps counted (spec
   check 3, SPEC-3-02: the numbers shown can skip, for example 1, 2, 4 with a chip third). The red commit's US3-6 body
   asserts exactly that, with a case where a chip step is hidden and shown again.
 - **Two-digit fit (SPEC-3-03).** The marker's inner box is 22.4 − 2 × 1.5 = 19.4 px; "20" at 12 px tabular is about
-  14 px wide and 13.8 px tall. The check: for ordinal 20 in a twenty-step chain, the ordinal's rendered box lies inside
-  the marker's inner (padding) box, with `scrollWidth <= clientWidth` on the marker.
+  14 px wide and 13.8 px tall (12 px × 1.15). The check: for ordinal 20 in a twenty-step chain, the ordinal's
+  rendered box lies inside the marker's inner (padding) box, with `scrollWidth <= clientWidth` on the marker.
 - **Chip step (FR-035).** The container styles a chip through `::slotted(ocelle-evidence-step[variant="chip"])` and
   renders no marker in its `<li>`: `--ocelle-font-size-xs` (one step below the default's `sm`),
   `--ocelle-line-height-normal`, `padding-block: 0`, `padding-inline: var(--ocelle-space-2)`, a `--ocelle-ring-step`
-  solid border in `--ocelle-color-ink-muted`, `border-radius: var(--ocelle-radius-2)`, `--ocelle-color-ink`. The sum:
+  solid border in `--ocelle-color-ink-muted`, `border-radius: var(--ocelle-radius-2)`, `--ocelle-color-ink`. The chip's
+  box (border width and style, radius, padding, type) is one rule outside the `@media not (forced-colors: active)`
+  block, because the outline is structural (FR-013: the chip's only boundary); only its colours sit in the variant
+  block. The sum:
   12 px × 1.45 = 17.4 px line + 2 × 1.5 px border = 20.4 px, below `--ocelle-size-step`'s 22.4 px (US3-4). No fill
   (Q-A). Nothing of `ocelle-pill-tag` is imported or read; a node test greps the chain's source and styles for
   `pill`.
 - `variant` and `wrap` on the step reflect to attributes, so the container's `::slotted()` selectors and the
   `MutationObserver` see a property set from script.
+- **Forced colours (PLAN-A11Y-SECURITY-1-001).** Every mark is a border (the ring, the connector, the chip outline),
+  never a background, and the chain's styles add, outside the variant block, `@media (forced-colors: active) {
+  .marker, .connector { border-color: CanvasText; } ::slotted(ocelle-evidence-step[variant="chip"]) { border-color:
+  CanvasText; } }`. The ordinal and the step text are forced to the system text colour. US3-8's forced-colours half
+  asserts, on the real elements, that each ring's, connector's and chip outline's drawing border colour is a
+  foreground system colour (`CanvasText`, not `Canvas`) with a border width above zero, that the ordinal's colour is a
+  system text colour, and that each box is not empty. Plants: the chip's box rule moved inside the variant block (the
+  chip loses its outline in forced colours), and a connector drawn as a `background-color`; US3-8 must fail for each.
 
 Outside a chain a step's own shadow root shows its content as plain text, with no marker, ordinal or chip box (the
 chip box is the container's styling).
 
-**Alternatives.** A clip trick that hides the line-start connector with `overflow: clip` and
+**Alternatives.** Connectors as `::before` or `::after` (the earlier plan; replaced because no driver reads a
+pseudo-element, PLAN-TESTABILITY-1-001). A clip trick that hides the line-start connector with `overflow: clip` and
 `overflow-clip-margin` (rejected: WebKit, Kitty Desktop's engine, has no `overflow-clip-margin`, so a focus ring at a
 line's start would be clipped there). A dangling connector at each line's end (rejected: FR-034 draws connectors
 between consecutive steps on one line only).
@@ -281,18 +425,49 @@ between consecutive steps on one line only).
 **Decision.** No new token. Every value above is an existing token on `main`, plus `--ocelle-tracking-caps` from 009
 (branch). Every text colour (`ink`, `ink-soft`, `ink-muted`) and every structural mark (`ink-muted`) has a text
 declaration on the nine main grounds; the decorative lines use `color-rule` and `color-rule-strong`, which have none
-(FR-013). No contrast row is added. If Q-A to Q-D change a colour, the plan checks the new pair against the token
+(FR-013). No contrast row is added. If Q-A to Q-C change a colour, the plan checks the new pair against the token
 source before tasks are generated.
+
+**Contrast oracles (PLAN-TESTABILITY-1-003, operator decision (c)).** Two checks, so a mark painted in the wrong token
+cannot pass on the token source alone:
+
+- **Source (node).** As 013's `progress-pairs.test.ts`: `packages/elements/test/node/records-pairs.test.ts` (with
+  `records-pairs-check.ts`) for the five element templates, and `packages/styles/test/data-table-pairs.test.ts` for
+  the data-table block of `base.css`. Each reads every colour the source paints (cell, header, row header, caption,
+  time, content, marker, ring, ordinal, chip outline, chip text) and asserts each foreground and structural colour is
+  tied to a `checked` row of `packages/tokens/contrast/pairs.json` on all nine main grounds in both themes, and each
+  decorative line uses a rule token. A fixture with one row removed (`fixtures/pairs-missing-row.json`, as 013's) must
+  make the check fail. This covers US1-11, US2-8 and US3-8.
+- **Rendered (browser).** US1-11, US2-8 and US3-8 read each rendered colour (cell, header, time, content, marker,
+  ring, ordinal, chip outline) in light and dark and assert it equals the probe-resolved value of the token the source
+  names, then look that token up in the declarations. Element plants (checks.md): the timeline marker in
+  `rule-strong`, the step ring in `rule`, the chip outline in `control-border`, the header text in `rule-strong`; the
+  rendered body must fail for each.
 
 ## R-14 The recheck against `main` (the first task)
 
-**Decision.** Before any phase starts, task T001 compares, on `main` as merged: 009's `overflow-region.ts` exports,
-constructor options, `setLabel`, the class names, the `.region-track` rule (R-03 depends on it) and the README's
-conventions entry; `--ocelle-tracking-caps` in the token source; 013's README § Element conventions (slotted items,
-container import, wrap, `undefined` defaults) and its driver functions; 011's or 012's eyebrow tokens, if any is on
-`main` (FR-006); op 016's `gate:plants -- --affected <base>` and `--list`, and its `reviews/phase-<N>/plants.md`
-record; #10's gate commands and container. Each difference is written to `reviews/recheck.md`, and the flow stops for
-the operator on any difference before phase 1's spike.
+**Decision.** Before any phase starts, task T001 compares, on `main` as merged:
+
+- 009's `overflow-region.ts`: its exports (`resolveName` among them, with R-09's rule), constructor options,
+  `setLabel`, the class names, the `.region-track` rule (R-03 depends on it), the `.region-box` padding and mask rules
+  and `--ocelle-scroller-fade-size` (R-07 depends on them), and the README's conventions entry;
+- whether 009's module has the pinned-start option of R-17, and its name; if it has, the caption uses it and the
+  interim rule of Q-F is not built;
+- `--ocelle-tracking-caps` and `--ocelle-measure-container` in the token source;
+- 013's README § Element conventions (slotted items, container import, wrap, `undefined` defaults);
+- both drivers as merged (PLAN-CORRECTNESS-1-006). On the branches, 009's (015's) driver has `press`, `tabWalk`,
+  `activeElement`, `focus`, `scrollLeft`, `setScrollLeft`, `frameRecord`, `settle`, `computed(target: Target)` and
+  `reducedMotion(on: boolean)`; 013's has `pressTab`, `focused`, `frames`, `layout`, `computed(id: string)`,
+  `reducedMotion(mode)`, `viewport`, `scrollWidth`, `copy` and `text`. T001 records which names and signatures `main`
+  kept, how `computed`, `reducedMotion` and the focus readers (`focused` against `activeElement`, `pressTab` against
+  `press("Tab")` and `tabWalk`) were reconciled, and rewrites checks.md's helper names to match. The harness paths are
+  013's: `packages/elements/test/in-process.ts`, `test/browser/driver.ts` and `test/scenarios/driver.ts`;
+- 011's or 012's eyebrow tokens, if any is on `main` (FR-006);
+- op 016's `gate:plants -- --affected <base>` and `--list`, and its `reviews/phase-<N>/plants.md` record;
+- #10's gate commands and container.
+
+Each difference is written to `reviews/recheck.md`, and the flow stops for the operator on any difference before phase
+1's spike.
 
 ## R-15 Gate runs per phase (FR-051, FR-059)
 
@@ -301,8 +476,8 @@ the operator on any difference before phase 1's spike.
 `reviews/phase-<N>/plants.md`, never a full `gate:plants` locally (CI's required Plants check judges the full set).
 Baselines: `pnpm run visual:update` only in #10's pinned container under docker (start `dockerd` as root; after a
 container restart, `pnpm run setup:online`); the command must report `<n> added, 0 changed, 0 removed` with `<n>`
-twice the phase's new stories, so no existing baseline moves (013's baselines among them, SC-007). Conflicting PNGs
-are regenerated in the container, never hand-picked. Mutation follows #23 and op 015 on `main`.
+twice the phase's new stories (24, 18 and 22 for phases 1 to 3, from checks.md § Stories), so no existing baseline
+moves (013's baselines among them, SC-007). Conflicting PNGs are regenerated in the container, never hand-picked. Mutation follows #23 and op 015 on `main`.
 
 ## R-16 The kitty-mission-ui inventory (FR-058)
 
@@ -310,6 +485,25 @@ are regenerated in the container, never hand-picked. Mutation follows #23 and op
 and states, with counts, role names only) and of any event-history or evidence-chain class family. kitty-mission-ui is
 outside this session's GitHub scope, so, as in 013, the inventory is an operator input recorded here before each
 phase's red commit (tasks T00x per phase); a gap goes to the operator, and the surface is not widened by review.
+
+## R-17 A request to 009's owner: a pinned start box out of the start fade (PLAN-A11Y-SECURITY-1-002)
+
+**Finding (branch, from the source).** 009's start fade is a mask on `.region-box`, the scrollport:
+`linear-gradient(to right, transparent, ink var(--ocelle-scroller-fade-size))` while `data-fade` is `start` or `both`.
+`.region-box` has block padding only, so a caption with `position: sticky; inset-inline-start: 0` pins to the masked
+edge and its first `--ocelle-scroller-fade-size` of text fades out whenever the table is scrolled away from the start.
+
+**Decision (operator decision (c), 2026-11-16).** Ask 009's owner for a module option that keeps a box pinned at the
+start edge (here the sticky caption) out of the start fade's mask. This mission does not change 009's module (FR-008):
+the request is recorded here, in the plan's dependencies and in T001's recheck, and goes to 009's owner through the
+operator. What it asks for, not how: with the option set, the start fade covers the scrolling content only, and a
+sticky box at the start edge is painted unmasked; the module's interface gains that option and its test, and nothing
+changes for the existing users that do not set it. Once the option is on `main`, the data table sets it, the caption
+pins at `inset-inline-start: 0`, and R-07's cap applies as written.
+
+**Until then.** What the data table does while 009's module has no such option is the operator's choice, Q-F below.
+Phase 1's red caption bodies (R-07) assert the same thing either way: every caption line box lies inside the box's
+unmasked extent.
 
 ## Open questions for the plan gate (spec SPEC-1-06 (b))
 
@@ -329,11 +523,24 @@ spec before tasks are generated.
   above the content, the marker centred on the time's line (the plan's choice: the content keeps the full width at
   320 px). (b) The time before the content on the same line, the marker centred on that shared first line (a narrower
   content column; a long time wraps). (c) The time after the content, at the inline end. Recommendation: (a).
-- **Q-D. The markers' shape (constitution II's radius rule).** (a) `--ocelle-radius-1` for both the timeline dot and
-  the step marker (the plan's choice: the tokens README gives `radius-1` to small marks, dots included; at 22.4 px the
-  step marker reads as a rounded square). (b) Round marks: a new token `--ocelle-radius-round: 50%` under FR-040,
-  recorded as a mark shape, not a corner radius. (c) `radius-1` for the dot and a round step marker (the token of
-  (b) for the step only). Recommendation: (a), unless #470 or #517 shows round markers, then (b).
+- **Q-D. The markers' shape (decided, PLAN-CORRECTNESS-1-004 operator decision (a), 2026-11-16).** Both the timeline
+  dot and the step marker use `border-radius: 50%` with no token, recorded under constitution II as a mark shape and
+  not a corner radius. This meets FR-031 ("a round marker") and FR-040 ("No new radius token is added"); `token-only.ts`
+  allows `%`. The earlier options are withdrawn: `radius-1` (a rounded square, against FR-031) and a new
+  `--ocelle-radius-round` token (against FR-040, `brand-rules.ts`'s closed radius set and constitution II).
+- **Q-E. Marked-up times (FR-023, #470; PLAN-FRESH-1-006 operator decision (b)).** Does #470's history need
+  machine-readable or marked-up times: a `<time datetime>`, a title, its own `lang` or `dir`, or an htmx target on the
+  time? The plan keeps `time` attribute-only, as FR-023 approves, and the README states the limit: the time is plain
+  text rendered in the event's shadow root, so it carries none of these, and a consumer that needs them puts them in
+  the content. If the answer is yes, a named `time` slot is a spec change to FR-023 before tasks.
+- **Q-F. The caption until 009's option exists (R-17; PLAN-A11Y-SECURITY-1-002).** (a) Sticky with
+  `inset-inline-start: var(--ocelle-scroller-fade-size)` and the cap cut to `calc(var(--ocelle-measure-container) - 2
+  * var(--ocelle-scroller-fade-size))`, so the caption stays out of both fades; when 009's option lands, the inset
+  goes to 0 and the cap to R-07's (a later PATCH). (b) Not sticky until then: the caption scrolls with the table, is
+  capped by R-07's rule so it wraps inside the box at rest, and is reached by scrolling back; it becomes sticky when the
+  option lands (a later MINOR, as a look change). (c) Phase 1's green waits for 009's option on `main`; phases 2 and 3,
+  which do not depend on phase 1, may run first. The plan proceeds on (a) until the operator answers. Recommendation:
+  (a).
 
 And one decision from the research itself:
 

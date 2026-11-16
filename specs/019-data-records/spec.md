@@ -304,6 +304,11 @@ the chip variant.
   `@ocelle/styles` cell rules (which select the undefined element too) and no scroll region, so a server-rendered page
   shows the table before upgrade; a wide table may then widen the page until upgrade, and direct children that are
   not the table are shown and exposed until upgrade, because no shadow root exists yet (FR-012).
+- **Timeline and chain before the elements are defined.** A server-rendered timeline or chain shows its items one per
+  line before upgrade (an `@ocelle/styles` rule at specificity (0,0,0) selects the undefined containers' visible
+  items, as for 013's facts), so the items do not run together. Before upgrade an event's time does not show (it is
+  an attribute the event renders in its shadow root), and no marker, connector or ordinal shows; the README's "Before
+  upgrade" line for each container says so (squad round 1, PLAN-FRESH-1-004, operator decision (a)).
 - **Data table at 200% zoom and 320 px.** The table scrolls inside its region; the page does not scroll sideways (WCAG
   1.4.10's exception for two-dimensional data tables applies to the table's own content, not the page).
 - **Data table print.** The plan's research records what 009's region does in print (scrolled content may be clipped).

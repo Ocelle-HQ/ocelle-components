@@ -7,6 +7,9 @@ checks: [contracts/checks.md](contracts/checks.md).
 
 - 009, 013 and op 016 are on `main` and merged into this branch, and `reviews/recheck.md` (T001) records no open
   difference.
+- `reviews/recheck.md` records whether 009's pinned-start option (research R-17) is on `main`, and the caption follows
+  it or the operator's answer to Q-F.
+- Each phase's `reviews/phase-<N>/element-plants.md` records every element plant biting (contracts/checks.md).
 - `pnpm install --offline` works (`pnpm run setup:online` after a container restart).
 - For baselines: docker running (`nohup dockerd > /tmp/dockerd.log 2>&1 &`, as root), and #10's pinned container
   (`storybook/visual/container.json`).

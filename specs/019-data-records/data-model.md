@@ -14,7 +14,7 @@ while unset.
 | `wrap` | property / attribute `wrap`, reflected | `"anywhere" \| undefined` | `anywhere` sets `overflow-wrap: anywhere` on body cells through `base.css` (R-06); any other value acts as unset. |
 | host `aria-label` | observed attribute | `string \| null` | Read by the module: non-blank names the region alone; blank counts as absent. |
 | table | derived | `HTMLTableElement \| undefined` | The first direct child with `localName === "table"`; re-derived on every child-list change. |
-| caption text | derived | `string \| undefined` | The assigned table's `caption`'s `textContent`, white space collapsed and trimmed; empty counts as absent. Re-read on any change in the subtree. |
+| caption text | derived | `string \| undefined` | The assigned table's `caption`'s text nodes in tree order, skipping any element with `hidden` or `aria-hidden="true"` and its subtree, an `<img>` giving its `alt`; white space collapsed and trimmed; empty counts as absent (R-04). Re-read on any change in the subtree (`childList`, `characterData`, `hidden`, `aria-hidden`, `alt`). |
 | name | derived | `string \| undefined` | `label` (non-blank), else caption text, passed to `setLabel`; the module puts a non-blank host `aria-label` first. |
 | overflow state | module (009) | `overflowing`, `offStart`, `offEnd`, `fadeAttribute`, `name` | As 009's contract states. Overflowing: the box is a tab stop, with `role="group"` and `aria-label` when named. |
 
@@ -29,20 +29,20 @@ to the first focusable cell content or to the frame (009's handover).
 | `label` | property / attribute | `string \| undefined` | List name when the host `aria-label` is absent or blank (R-09). |
 | host `aria-label` | observed attribute | `string \| null` | Non-blank names the list; blank counts as absent. |
 | events | derived | `OcelleTimelineEvent[]` | Direct children with the item tag, neither `hidden` nor `aria-hidden="true"`, in source order. |
-| name | derived | `string \| undefined` | Set on the shadow `<ol>` as `aria-label`; absent when undefined. |
+| name | derived | `string \| undefined` | `resolveName(host aria-label, label)` from 009's module (R-09); set on the shadow `<ol>` as `aria-label`; absent when undefined. |
 
 **States**: no visible event (no `<ol>` rendered) ↔ one or more (an `<ol>` with one `<li>` per event; the last `<li>`
-has no connector).
+renders no connector span). Before upgrade: one event per line, no time (R-08).
 
 ## Timeline event (`ocelle-timeline-event`)
 
 | Field | Source | Type | Rule |
 |---|---|---|---|
-| `time` | property / attribute | `string \| undefined` | Shown as given in `part="time"` above the content (Q-C); empty or absent renders no time box. |
+| `time` | property / attribute, reflected | `string \| undefined` | Shown as given in `part="time"` above the content (Q-C). "Has a time" is `hasTime(time)`: a string whose trimmed value is not empty. Absent, empty or white space renders no time box and sets no `has-time` on the timeline's `<li>` (R-10). |
 | `wrap` | property / attribute, reflected | `"anywhere" \| undefined` | `overflow-wrap: anywhere` on `part="content"` only. |
 | content | light DOM | inline markup | Shown in `part="content"` through the default slot; never copied. |
 
-Item text (FR-016): `time`, a space, the content's text; the content's text alone with no `time`.
+Item text (FR-016): `time`, a space, the content's text; the content's text alone when the event has no time.
 
 ## Evidence chain (`ocelle-evidence-chain`)
 
@@ -52,7 +52,8 @@ Item text (FR-016): `time`, a space, the content's text; the content's text alon
 | host `aria-label` | observed attribute | `string \| null` | As the timeline's. |
 | steps | derived | `OcelleEvidenceStep[]` | Direct children with the item tag, neither `hidden` nor `aria-hidden="true"`, in source order. |
 | ordinal | derived per step | `number` | 1-based position among the visible steps, chip steps counted; shown only on default steps. |
-| line end | derived per step, from layout | `boolean` | True when the next visible step starts a new line, or for the last step; hides that step's connector (R-12). |
+| name | derived | `string \| undefined` | As the timeline's (`resolveName`). |
+| line end | derived per step, from layout | `boolean` | True when the next visible step starts a new line, or for the last step; hides that step's connector span (R-12). |
 
 ## Evidence step (`ocelle-evidence-step`)
 
@@ -68,4 +69,5 @@ Item text: the content's text only (no ordinal).
 
 - A container imports its item module (013's convention); an item outside its container shows its own shadow content
   as plain text with no list role, marker, ordinal, connector or chip box.
-- The data table uses 009's internal module; it is not an item container and imports no element.
+- The data table uses 009's internal module; it is not an item container and imports no element. The timeline and
+  the chain import only `resolveName` from that module (R-09).
