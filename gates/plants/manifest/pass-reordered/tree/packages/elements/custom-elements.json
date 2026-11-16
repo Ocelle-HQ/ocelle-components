@@ -618,6 +618,285 @@
       ]
     },
     {
+      "path": "src/ocelle-form-select.ts",
+      "kind": "javascript-module",
+      "exports": [
+        {
+          "name": "OcelleFormSelect",
+          "kind": "js",
+          "declaration": {
+            "name": "OcelleFormSelect",
+            "module": "src/ocelle-form-select.ts"
+          }
+        }
+      ],
+      "declarations": [
+        {
+          "tagName": "ocelle-form-select",
+          "superclass": {
+            "package": "lit",
+            "name": "LitElement"
+          },
+          "slots": [],
+          "name": "OcelleFormSelect",
+          "members": [
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "value",
+              "kind": "field",
+              "description": "The current choice: the value of the option the user chose, or that a script, a reset or a restore selected; a\nvalue no option has selects nothing and reads `\"\"`. Not reflected; a host `value` attribute is ignored.",
+              "default": "\"\""
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "name",
+              "kind": "field",
+              "description": "The name the value is submitted under; without one the value is not in the form data. Reflected.",
+              "default": "\"\"",
+              "attribute": "name"
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "label",
+              "kind": "field",
+              "description": "The visible label, drawn above the control; it names the control after any external `<label>`. Reflected.",
+              "default": "\"\"",
+              "attribute": "label"
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "description",
+              "kind": "field",
+              "description": "The description, drawn under the label and the control's accessible description. Reflected.",
+              "default": "\"\"",
+              "attribute": "description"
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "error",
+              "kind": "field",
+              "description": "The error the host sets: shown under the control, it marks the control invalid for assistive technology, is added\nto its description and is announced politely once each time it changes to a new text; it does not block\nsubmission. Whitespace is collapsed and trimmed. Reflected.",
+              "default": "\"\"",
+              "attribute": "error"
+            },
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "required",
+              "kind": "field",
+              "description": "Whether a value is required, as the native constraint. Reflected.",
+              "default": "false",
+              "attribute": "required"
+            },
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "disabled",
+              "kind": "field",
+              "description": "Whether the control is disabled: not focusable, not editable and not in the form data. Reflected.",
+              "default": "false",
+              "attribute": "disabled"
+            },
+            {
+              "type": {
+                "text": "HTMLFormElement | null"
+              },
+              "readonly": true,
+              "name": "form",
+              "kind": "field",
+              "description": "The form the control belongs to, or null, as a native control's."
+            },
+            {
+              "type": {
+                "text": "NodeList"
+              },
+              "readonly": true,
+              "name": "labels",
+              "kind": "field",
+              "description": "The `<label>` elements associated with the control, as a native control's."
+            },
+            {
+              "type": {
+                "text": "ValidityState"
+              },
+              "readonly": true,
+              "name": "validity",
+              "kind": "field",
+              "description": "The control's validity, the native control's constraint validation."
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "readonly": true,
+              "name": "validationMessage",
+              "kind": "field",
+              "description": "The browser's validation message for the native control, or empty when it is valid."
+            },
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "readonly": true,
+              "name": "willValidate",
+              "kind": "field",
+              "description": "Whether the control takes part in constraint validation."
+            },
+            {
+              "return": {
+                "type": {
+                  "text": "boolean"
+                }
+              },
+              "name": "checkValidity",
+              "kind": "method",
+              "description": "Whether the control satisfies its constraints; when not, it fires `invalid` at the host."
+            },
+            {
+              "return": {
+                "type": {
+                  "text": "boolean"
+                }
+              },
+              "name": "reportValidity",
+              "kind": "method",
+              "description": "As `checkValidity()`, and when invalid the browser focuses the native control and shows its message."
+            },
+            {
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "type": {
+                    "text": "FocusOptions"
+                  },
+                  "optional": true,
+                  "name": "options"
+                }
+              ],
+              "name": "focus",
+              "kind": "method",
+              "description": "Focuses the native control; the host is not a tab stop of its own."
+            }
+          ],
+          "kind": "class",
+          "events": [
+            {
+              "type": {
+                "text": "CustomEvent<{ value: string }>"
+              },
+              "name": "ocelle-form-select-change",
+              "description": "A committed change of the choice by the user, with the value; never for a change by script, reset, restore or a change of the options."
+            }
+          ],
+          "description": "A labelled native select for closed choices, with an optional description and a host-set error, whose options are its\nlight-DOM `<option>` and `<optgroup>` children, and that takes part in its form like a native select: its value is\nsubmitted under `name`, validated by the browser's own constraints, restored on reset and on history restore, and\ndisabled by a disabled fieldset.",
+          "customElement": true,
+          "cssProperties": [],
+          "cssParts": [
+            {
+              "name": "label",
+              "description": "The visible label, above the select."
+            },
+            {
+              "name": "control",
+              "description": "The native select."
+            },
+            {
+              "name": "description",
+              "description": "The description, under the label."
+            },
+            {
+              "name": "error",
+              "description": "The error, under the select."
+            }
+          ],
+          "attributes": [
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "name",
+              "fieldName": "name",
+              "description": "The name the value is submitted under; without one the value is not in the form data. Reflected.",
+              "default": "\"\""
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "label",
+              "fieldName": "label",
+              "description": "The visible label, drawn above the control; it names the control after any external `<label>`. Reflected.",
+              "default": "\"\""
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "description",
+              "fieldName": "description",
+              "description": "The description, drawn under the label and the control's accessible description. Reflected.",
+              "default": "\"\""
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "error",
+              "fieldName": "error",
+              "description": "The error the host sets: shown under the control, it marks the control invalid for assistive technology, is added\nto its description and is announced politely once each time it changes to a new text; it does not block\nsubmission. Whitespace is collapsed and trimmed. Reflected.",
+              "default": "\"\""
+            },
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "name": "required",
+              "fieldName": "required",
+              "description": "Whether a value is required, as the native constraint. Reflected.",
+              "default": "false"
+            },
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "name": "disabled",
+              "fieldName": "disabled",
+              "description": "Whether the control is disabled: not focusable, not editable and not in the form data. Reflected.",
+              "default": "false"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "path": "src/ocelle-icon.ts",
       "kind": "javascript-module",
       "exports": [

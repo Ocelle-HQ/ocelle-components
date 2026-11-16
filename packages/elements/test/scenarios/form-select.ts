@@ -29,6 +29,8 @@ export const selectKind: ControlKind = {
   inner: "select",
   roles: ["combobox"],
   markup: (tag, attributes, value) => el(tag, attributes, `<option value="">None</option>${value === undefined ? "" : `<option value="${value}" selected>${value}</option>`}`),
+  native: (attributes, value) => `<select ${attributes}><option value="">None</option>${value === undefined ? "" : `<option value="${value}" selected>${value}</option>`}</select>`,
+  requiredExposed: false,
 };
 
 /** The options of US3 scenario 1: "To do", and "Done" marked `selected`. */

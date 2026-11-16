@@ -9,6 +9,7 @@
     "./ocelle-brand-mark.js": "./dist/ocelle-brand-mark.js",
     "./ocelle-notice.js": "./dist/ocelle-notice.js",
     "./ocelle-form-input.js": "./dist/ocelle-form-input.js",
+    "./ocelle-form-select.js": "./dist/ocelle-form-select.js",
     "./browser.js": "./dist/browser/ocelle-elements.js",
     "./custom-elements.json": "./custom-elements.json"
   },

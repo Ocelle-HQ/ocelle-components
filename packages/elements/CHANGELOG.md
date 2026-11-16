@@ -28,6 +28,13 @@ entry points and the browser build's file path (constitution VII).
   `checkValidity()`, `reportValidity()` and `focus()`; the event `ocelle-form-input-change` with `detail: { value }`,
   no slot, and the CSS parts `label`, `control`, `description` and `error`; its entry point
   `@ocelle/elements/ocelle-form-input.js`.
+- `ocelle-form-select`, a labelled native select for closed choices with an optional description and a host-set error
+  that takes part in its form like a native select (form-associated, through `ElementInternals`), with its options
+  from its light-DOM `<option>` and `<optgroup>` children and the `chevron-down` open-list indicator; its attributes
+  and reflected properties `name`, `label`, `description`, `error`, `required` and `disabled`; the properties `value`,
+  `form`, `labels`, `validity`, `validationMessage` and `willValidate` and the methods `checkValidity()`,
+  `reportValidity()` and `focus()`; the event `ocelle-form-select-change` with `detail: { value }`, no slot, and the
+  CSS parts `label`, `control`, `description` and `error`; its entry point `@ocelle/elements/ocelle-form-select.js`.
 - In the README, the form-control convention that later form-like elements follow: form association, naming,
   description, error and its announcement, host ARIA, events and implicit submission.
 - In the README, the slot convention for icons in controls that later controls follow: the `icon` and `trailing`
