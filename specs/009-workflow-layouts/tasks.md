@@ -666,22 +666,22 @@ reports `pass`.
 
 ### Tests (red, one commit)
 
-- [ ] T062 [P] `packages/elements/test/node/readme.test.ts`:
+- [X] T062 [P] `packages/elements/test/node/readme.test.ts`:
   - the frames of User Scenarios (W, R, N and S, with their widths) as the tested screen sizes;
   - "WebKit is not measured", naming the scroller's tab stop, the arrow keys, the focus handover and list-detail's
     focus moves;
   - the print note (Edge Cases);
   - loading, error and disabled states do not apply to these layout elements (R-15).
-- [ ] T063 [P] `packages/elements/test/node/changelog.test.ts` (or the existing changelog assertions): the elements
+- [X] T063 [P] `packages/elements/test/node/changelog.test.ts` (or the existing changelog assertions): the elements
   changelog names the four elements, their entry points, `remeasure()`, the overflow-region convention and the
   container-tier convention. The tokens changelog names the six tokens (FR-035).
 
 ### Implementation (green)
 
-- [ ] T064 README and changelog statements of T062 and T063 where earlier phases did not already write them.
-- [ ] T065 Run every command of `specs/009-workflow-layouts/quickstart.md` once, one heavy job at a time, and record
+- [X] T064 README and changelog statements of T062 and T063 where earlier phases did not already write them.
+- [X] T065 Run every command of `specs/009-workflow-layouts/quickstart.md` once, one heavy job at a time, and record
   the outputs in `specs/009-workflow-layouts/reviews/phase-5/quickstart.md`.
-- [ ] T066 If #8 (011), #9 (010) or #16 (008) has landed on `main`, merge `main` (never rebase). Resolve
+- [X] T066 If #8 (011), #9 (010) or #16 (008) has landed on `main`, merge `main` (never rebase). Resolve
   `packages/elements/src/index.ts`, `src/browser.ts`, `custom-elements.json` (regenerate), the READMEs, the changelogs
   and the Storybook configuration. Reconcile `--ocelle-tracking-caps` and the container-tier convention with #8 as R-16
   says. Re-run the gates, and record the result in `specs/009-workflow-layouts/reviews/phase-5/merge.md`.

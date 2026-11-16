@@ -10,6 +10,10 @@ package (mission 002; #5).** Before, there was no token package: colours, spacin
 shared `--ocelle-*` names. Now a host links `tokens.css` and serves `fonts/` beside it under `font-src 'self'`,
 nothing loads from a CDN, and two new merge checks (Contrast, Brand rules) keep the token values accessible.
 
+`--ocelle-lane-min-width`, `--ocelle-list-track-width`, `--ocelle-list-detail-collapse`,
+`--ocelle-list-detail-inspector-collapse`, `--ocelle-scroller-fade-size` and `--ocelle-tracking-caps`, the six tokens of
+the workflow layouts of `@ocelle/elements`, are additions to the token names: a minor change.
+
 ### Added
 
 - `fonts/`: Schibsted Grotesk, the variable `wght` WOFF2 with its SIL Open Font License 1.1 (`OFL.txt`), declared
