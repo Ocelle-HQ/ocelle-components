@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { Finding } from "../lib/findings.ts";
-import { checkRegistry, ciJobs, fr020, parseRegistry, plantHelperJobs, plantJob, shardInPlantCheckFindings, skipContainerFindings } from "../lib/registry.ts";
+import { affectedInCiFindings, checkRegistry, ciJobs, fr020, parseRegistry, plantHelperJobs, plantJob, shardInPlantCheckFindings, skipContainerFindings } from "../lib/registry.ts";
 import type { Gate } from "../lib/registry.ts";
 
 // The registry check of the plant job (research.md R-10, data-model.md § Gate): the gate ids of gates.json, the gate
@@ -298,5 +298,44 @@ describe("the split plant jobs (plan decision 23)", () => {
     expect(shardInPlantCheckFindings(split(plan, shard, verdict), "ci.yml")).toEqual([]);
     expect(shardInPlantCheckFindings(split(plan, shard, `${verdict}\n      - run: pnpm run visual:update -- --plant visual/pass-x`), "ci.yml")).toEqual([]);
     expect(shardInPlantCheckFindings(readFileSync(new URL("../../.github/workflows/ci.yml", import.meta.url), "utf8"), ".github/workflows/ci.yml")).toEqual([]);
+  });
+});
+
+// Op 016 (spec.md OR-004, scenario 9; plan.md *Registry rule*): --affected judges only the plants a diff selects, so
+// none of the three plant jobs may pass it, and the required Plants check always judges every plant.
+describe("affectedInCiFindings (op 016)", () => {
+  const split = (plan: string, shard: string, verdict: string): string =>
+    "jobs:\n  lint:\n    steps:\n      - run: pnpm run gate:lint\n" +
+    `  plants-plan:\n    name: Plants plan\n    steps:\n${plan}\n` +
+    `  plants-shard:\n    name: Plants shard\n    steps:\n${shard}\n` +
+    `  plants:\n    name: Plants\n    steps:\n${verdict}\n`;
+  const plan = "      - run: pnpm --silent run gate:plants -- --plan";
+  const shard = '      - run: pnpm run gate:plants -- --shard "$SHARD"';
+  const verdict = "      - run: pnpm run gate:plants -- --verdict storybook/.visual/plant-shards";
+  const affected = (job: string, path = "ci.yml"): Finding => ({
+    location: { path },
+    gate: "plants",
+    rule: "affected-in-ci",
+    message: `the ${job} job passes --affected, so CI would judge only the plants a diff selects`,
+  });
+
+  it("gives one finding per plant job that passes --affected, in the order plants-plan, plants-shard, plants", () => {
+    expect(affectedInCiFindings(split(`${plan} --affected HEAD~1`, `${shard} --affected HEAD~1`, `${verdict} --affected HEAD~1`), ".github/workflows/ci.yml")).toEqual([
+      affected("plants-plan", ".github/workflows/ci.yml"),
+      affected("plants-shard", ".github/workflows/ci.yml"),
+      affected("plants", ".github/workflows/ci.yml"),
+    ]);
+    expect(affectedInCiFindings(split(plan, shard, "      - run: |\n          pnpm run gate:plants -- --affected \"$BASE\""), "ci.yml")).toEqual([affected("plants")]);
+    expect(affectedInCiFindings(split(plan, `${shard} --affected main`, verdict), "ci.yml")).toEqual([affected("plants-shard")]);
+  });
+
+  it("finds nothing in a workflow without it, the repository's own included", () => {
+    expect(affectedInCiFindings(split(plan, shard, verdict), "ci.yml")).toEqual([]);
+    expect(affectedInCiFindings(readFileSync(new URL("../../.github/workflows/ci.yml", import.meta.url), "utf8"), ".github/workflows/ci.yml")).toEqual([]);
+  });
+
+  it("finds nothing for --affected in a job that is not a plant job", () => {
+    const other = split(plan, shard, verdict).replace("pnpm run gate:lint", "pnpm run gate:plants -- --affected HEAD~1") + "  after:\n    steps:\n      - run: pnpm run gate:plants -- --affected HEAD~1\n";
+    expect(affectedInCiFindings(other, "ci.yml")).toEqual([]);
   });
 });

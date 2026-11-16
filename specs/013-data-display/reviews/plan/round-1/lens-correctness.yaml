@@ -1,0 +1,244 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: correctness
+# Checked: spec.md, plan.md, research.md, data-model.md, contracts/elements.md, contracts/checks.md, quickstart.md,
+# spike/RESULTS.md, reviews/spec/*, constitution 1.3.1, triage/013-data-display.md, packages/tokens/src/source.ts,
+# packages/tokens/contrast/pairs.json, gates/stylelint/token-only.ts, gates/test/contrast*.ts and integration tests,
+# gates/bin/brand-rules.ts, packages/elements/README.md, src/ocelle-icon.ts, test/commands.ts, test/*/driver.ts,
+# test/node/brand-pairs.test.ts, test/build/build.test.ts, .specify/extensions/story/story-config.yml, #10's spec on
+# origin/claude/010-storybook-workbench, specs/003-base-styles/sources/spec-kitty-design-issues.md, Playwright 1.63
+# coreBundle.js. Probes ran in headless Chromium 153.0.8010.12 (the spike's version) from the session scratchpad.
+# Contrast figures of R-06 were recomputed from the token values and agree (4.11/4.80/5.33/5.56/4.43/4.31 light,
+# 6.28/8.30/7.44/7.78/7.78/6.13 dark; control-border 2.80/2.94 light, 2.95/2.88 dark). Also checked and found fine:
+# 24rem threshold = shell-sidebar-width 20rem + space-10 4rem; an absolutely positioned 24rem probe with block-size 0
+# adds no page scroll width at 320 px; a blank host aria-label leaves an ElementInternals progressbar unnamed
+# (matches README § Host ARIA); empty <dt>/<dd> are exposed as term/definition nodes in light DOM.
+findings:
+  - id: PLAN-CORRECTNESS-1-001
+    severity: 3
+    title: "The style-lint gate rejects fit-content(), minmax() and translateX(): the facts grid and the progress animation fail token-only"
+    evidence:
+      - artifact: "research.md § R-03 'grid-template-columns: fit-content(50%) minmax(0, 1fr)'; § R-02 'one column, minmax(0, 1fr)'; § R-06 'animated with transform: translateX() from -100% to 250%'; plan.md Constitution Check II 'with no new allowance (%, fr, numbers in calc(), scale: -1 1 and 0 are allowed today)'; contracts/checks.md § Gates touched 'No new allowance is needed'"
+      - code: "gates/stylelint/token-only.ts:131-141 functionRaw(): 'a var() fallback and calc() operands are checked; any other function is raw' -> `return [valueParser.stringify(node)]` for every function that is not var() or calc(). fit-content(50%), minmax(0, 1fr), minmax(0,1fr) and translateX(-100%)/translateX(250%) (inside @keyframes too, root.walkDecls visits them) are each reported as raw. No existing element uses any of these functions (grep of packages/elements/src: none)."
+    claim: |
+      The plan states that every style passes token-only with no new allowance, but three of its load-bearing values
+      are functions the rule classifies as raw whole. The facts grid (FR-005's capped label column and the
+      never-widened value column, R-03's measured fit-content(50%)) and the indeterminate motion (FR-033) cannot be
+      written as planned without failing the style-lint gate (SC-007). Either the lint changes (a gate change, which
+      Principle VIII requires to have a plant, and which the plan says does not happen: "No gate added") or the CSS
+      changes, and the spike's measurements (fit-content vs minmax(auto, 50%)) were taken on CSS that cannot ship.
+    remedies:
+      - "Add a recorded token-only allowance for fit-content(<percentage>) and minmax(0, <fr>) in grid-template-columns (and for translate percentages), with unit tests and a style-lint plant, list it in plan § Gates touched and the Constitution Check, and drop the 'no new allowance' claims."
+      - "Redesign with values the rule already allows and re-measure in the phase-1 spike: e.g. the `translate` property with bare percentages instead of transform: translateX(); a label column and value track expressed without functions (and state how FR-005's cap and minmax(0,1fr)'s no-widening are kept)."
+
+  - id: PLAN-CORRECTNESS-1-002
+    severity: 3
+    title: "Spec-kitty-design #531 and #535 are in the repository; FR-008 is decided on the false premise that #531 is unreadable"
+    evidence:
+      - artifact: "research.md § R-03 'Upstream issues (SPEC-1-12). ... could not be read from this session ... FR-008's #531 clause therefore keeps the spec's default'; plan.md Decisions 5 'The upstream spec-kitty-design issues were not readable ... If the operator can supply #531's text'; spec.md Issues paragraph 'The plan's research MUST read those six issues ... in particular #531 for FR-008, #510 for FR-022 and US2, #535 for FR-007 and #498 for US3'"
+      - code: "specs/003-base-styles/sources/spec-kitty-design-issues.md:5-27 holds #535 and #531 'Copied verbatim from the public repository spec-kitty/spec-kitty-design ... on 2026-11-09'. #531: 'A dense operational screen (slug, last scan time, ... table cells, fact values) is designed at 14 px with a 1.5 line height, and its identifiers and values are set in the mono face in a muted colour'; stand-in 'font-size: var(--sk-text-sm) and line-height: 1.5 ... color: var(--sk-fg-muted)'. #535 stand-in: 'overflow-wrap: anywhere ... on the Facts dd'."
+    claim: |
+      The spec makes FR-008's compact value size depend on the plan's reading of #531 and requires the research to
+      read the six issues. Two of them are on disk, and #531 says fact values on dense screens are 14 px (here
+      --ocelle-font-size-sm, 0.875rem) at a 1.5 line height in a muted colour (mono excluded by constitution II).
+      The plan keeps --ocelle-font-size-fact (1.0625rem, 17 px) in compact and tells the operator the text is not
+      available, so the operator is asked to decide on wrong information, and compact density may not meet the
+      consumer need it exists for (constitution VI). #510 and #498 (FR-022/US2, US3) remain unread with no request
+      to the orchestrator to fetch them read-only, as spec check 1 suggested.
+    remedies:
+      - "Read specs/003-base-styles/sources/spec-kitty-design-issues.md in research R-03; state FR-008's compact value size and line height from #531 with the source (or state why font-size-fact stays despite #531), and record #535's 'on the Facts dd' stand-in against FR-007's wrap property; correct plan Decision 5 and ask the orchestrator to fetch #510 and #498 read-only before the plan gate."
+
+  - id: PLAN-CORRECTNESS-1-003
+    severity: 3
+    title: "Facts in a shrink-to-fit host is path-dependent: once stacked it never returns to two columns"
+    evidence:
+      - artifact: "research.md § R-02 'Why this holds in a shrink-to-fit host ... If that width is below the threshold the element stacks, and its stacked max-content is no wider, so the state is stable: there is no oscillation.'; § R-02 Alternatives 'Flex-wrap per pair ... stacks in a shrink-to-fit dialog even when there is room'"
+      - code: "Probe (scratchpad hyst.cjs, Chromium 153): R-02's design (plain grid fit-content(50%) minmax(0,1fr), 24rem absolute probe, ResizeObserver toggling a stacked class) in a default flex item, two pairs in 16px sans. Fresh load at a 1000 px viewport: width 403, two columns. Load at 360 px: width 268, stacked. Same page then widened to 1000 px: width 268, still stacked."
+    claim: |
+      In a shrink-to-fit host the element's own inline size is its max-content, which depends on the state the
+      element is in. Two-column max-content can be above the threshold while stacked max-content is below it, so
+      both states are self-consistent: the same content in the same available space renders two columns or one
+      column depending on history (a dialog opened on a narrow window and then widened, a popover re-shown after a
+      rotation). R-02's stability argument proves only the absence of oscillation, not a single answer, and FR-005's
+      rule ("two columns while its own inline size is at least a threshold") has no defined result here. The design
+      also stacks in a shrink-to-fit host whenever two-column max-content is under 24rem, even with ample room,
+      which is the very reason R-02 gives for rejecting flex-wrap.
+    remedies:
+      - "Decide stacking against a state-independent measure (for example the two-column max-content compared with the available inline space, or the probe compared with the containing block's available inline size), add the widen-after-stack case to the phase-1 spike and to the shrink-to-fit scenario bodies, and correct R-02's rejection of flex-wrap."
+      - "Keep the design and state in FR-005/FR-009 (operator) that in a shrink-to-fit host the layout depends on history, with the README saying so; add a test that pins the chosen behaviour."
+
+  - id: PLAN-CORRECTNESS-1-004
+    severity: 3
+    title: "Right-to-left indeterminate mark: logical inset plus scale: -1 1 mirrors twice and the mark runs in the wrong half"
+    evidence:
+      - artifact: "research.md § R-06 'The fill grows from the inline start: inset-inline-start: 0, mirrored under dir=\"rtl\"'; 'translateX is mirrored under :dir(rtl) with scale: -1 1 on the track'; data-model.md § ocelle-progress States"
+      - code: "Probe (scratchpad probe.cjs, Chromium 153): dir=rtl, track 400 px with scale:-1 1 and overflow:hidden, mark position:absolute; inset-inline-start:0; inline-size:40%. Mark x-range in the track for translateX -100% / 0% / 100% / 250%: [160,320] / [0,160] / [-160,0] / [-400,-240]. In LTR the same rules sweep from [-160,0] to [400,560]. A determinate 25% fill under the same scale sits at [0,100] (left), not at the inline start."
+    claim: |
+      The logical inset already moves the mark to the right edge under rtl; the track's scale: -1 1 flips it back
+      and inverts translateX. The RTL mark starts mid-track, never covers the inline-start 20% of the track, and
+      exits off the inline end side immediately: the moving mark (FR-033) is wrong under dir="rtl". If the scale
+      applies in the determinate state as well, the fill grows from the left in rtl, breaking FR-038. The plan does
+      not say which state the scale is limited to.
+    remedies:
+      - "Use one mirroring mechanism: physical left: 0 on the mark with scale: -1 1 on the track under :dir(rtl) for the indeterminate state only, or logical insets with no scale and a direction-aware translate; state which in R-06 and add an RTL indeterminate scenario body (mark covers the inline-start end during the loop) beside FR-038's determinate one."
+
+  - id: PLAN-CORRECTNESS-1-005
+    severity: 2
+    title: "The determinate inline size written through the CSSOM is never cleared, so an indeterminate mark keeps the old width"
+    evidence:
+      - artifact: "research.md § R-06 'The determinate fill's inline size is set in updated() through the CSSOM: fill.style.inlineSize = `${fraction * 100}%`'; § Indeterminate 'The fill becomes a mark 40% wide (inline-size: 40%)'; § Reduced motion 'parked at inset-inline-start: 30%, 40% wide'; spec FR-032 'Removing the value attribute ... after a value was set makes the bar indeterminate again'"
+      - code: "Probe (scratchpad probe.cjs): a node with style.inlineSize='75%' and a stylesheet rule inline-size:40% in a 400 px box measures 300 px; the inline style wins over the adopted/author rule."
+    claim: |
+      The plan sets the fill's inline size as an inline style only when determinate and gives the indeterminate and
+      reduced-motion marks their 40% width from the stylesheet. An inline style outranks the stylesheet, so after a
+      determinate-to-indeterminate transition (FR-032) the mark keeps the last fraction: a 75% "mark" animating, or a
+      still mark from 30% to 105% of the track under reduced motion. The plan never says the inline style is removed.
+    remedies:
+      - "State in R-06 and the data model that updated() removes the inline inline-size (style.removeProperty) whenever the bar is not determinate, and add a scenario body: value set, then removed, then the mark is 40% of the track in both motion modes."
+
+  - id: PLAN-CORRECTNESS-1-006
+    severity: 2
+    title: "The track does not clip the moving mark: the 250% translate overflows the element and the page"
+    evidence:
+      - artifact: "research.md § R-06 Track (block-size, background, radius, box-shadow, min-inline-size; no overflow rule); § Indeterminate 'translateX() from -100% to 250%'; spec Edge Cases 'nothing overflows the element or the page horizontally'; FR-036 boundary 'against the track'"
+      - code: "Probe (scratchpad probe.cjs): 320 px viewport, 288 px track without overflow: hidden, 40% mark at translateX(250%): document scrollWidth 403."
+    claim: |
+      Transforms contribute to scrollable overflow. With no overflow clip on the track, the indeterminate mark is
+      painted outside the track on the page ground during part of every loop and makes the page scroll sideways at
+      320 px (WCAG 1.4.10, the spec's edge case). It also paints the ochre mark directly on the ground, a pairing the
+      12 contrast rows and the pairing test never consider.
+    remedies:
+      - "Add overflow: hidden (or clip) on the track to R-06 and the data model, and a scenario body asserting the page scroll width equals the viewport width while the indeterminate bar runs at 320 px."
+
+  - id: PLAN-CORRECTNESS-1-007
+    severity: 2
+    title: "The contrast change breaks the pinned 149-required-pairs record (A.8), which the plan does not list"
+    evidence:
+      - artifact: "contracts/checks.md § Contrast 'The color-accent-strong record in packages/tokens/src/source.ts adds those grounds to its declared non-text grounds' and 'Pinned counts ... from 328 entries (160 light, 168 dark) to 340'; plan.md phase 3 red 'the contrast counts in the pinned tests (328 -> 340)'"
+      - code: "gates/test/contrast-required.test.ts:7,45-46,58-70 transcribes A.8 by hand with color-accent-strong on accent-low, inset, hover-bg and the state grounds, and pins 149 per theme and 298 total; gates/test/contrast.test.ts:80-81, gates/test/integration/token-gates.test.ts:13-16, gates/test/integration/plants-robustness.test.ts:116-128 pin the summary '(149 required per theme)'; packages/tokens/src/source.ts:4 and gates/bin/contrast.ts:116 repeat 149."
+    claim: |
+      requiredPairs() derives the required set from the declared grounds in source.ts. Adding six grounds to
+      color-accent-strong makes it 155 per theme and 310 in all, so the green commit fails contrast-required.test.ts
+      and every '149 required per theme' summary unless the red commit changes them, and the hand transcription is of
+      002's spec Appendix A.8, which this mission then amends without saying so. The plan names only the 328 -> 340
+      entry counts.
+    remedies:
+      - "List in contracts/checks.md and plan phase 3 red: the A.8 transcription in gates/test/contrast-required.test.ts (155/310), the '149 required' summaries in contrast.test.ts, token-gates.test.ts and plants-robustness.test.ts; in green the source.ts and contrast.ts comments; and record that 013 extends 002's A.8 list."
+
+  - id: PLAN-CORRECTNESS-1-008
+    severity: 1
+    title: "checks.md puts the gates/bin/contrast.ts comment in the red commit, which may change only test files; plan.md puts it in green"
+    evidence:
+      - artifact: "contracts/checks.md § Contrast 'Every place 005 listed for the counts changes first, in the red commit: ... and the comment in gates/bin/contrast.ts'; plan.md phase 3 green 'the gates/bin/contrast.ts comment'"
+      - code: ".specify/extensions/story/story-config.yml:13 test_pathspec ':(glob)**/*.test.ts :(glob)**/*.spec.ts :(glob)**/test/** :(glob)**/*.stories.ts'; gates/bin/contrast.ts matches none, so tdd-check.sh:35-37 reports a red commit that changes it."
+    claim: |
+      The two artifacts disagree, and following checks.md makes the red commit fail the automatic red/green check
+      (constitution VIII: a red commit changes only test files).
+    remedies:
+      - "Make checks.md say the contrast.ts (and source.ts) comments change in green, as plan.md says."
+
+  - id: PLAN-CORRECTNESS-1-009
+    severity: 2
+    title: "Empty-state gaps as per-wrapper margin-block-start leave a gap above the heading when there is no visual"
+    evidence:
+      - artifact: "research.md § R-04 'Gaps: visual to heading space-3, heading to text space-2, text to actions space-4. These are per-wrapper margin-block-start, not one gap'; 'Each wrapper is display: none while its slot has no assigned nodes ... so the column's gap adds no space for an absent part'; spec FR-023 'An empty slot MUST take no space and add no gap'; Edge Cases 'Empty-state with only actions. Allowed.'"
+    claim: |
+      With the gap on the following wrapper, hiding an absent wrapper removes only its own margin. The commonest
+      empty state, with no visual, still carries the visual-to-heading margin on the heading wrapper above the
+      heading, and an actions-only state carries the text-to-actions margin above the actions: an absent slot adds a
+      gap, against FR-023. The R-04 text still reasons about 'the column's gap', which the same section replaced with
+      margins, so the plan does not say which rule removes these leading margins.
+    remedies:
+      - "State the rule in R-04 and the data model: each margin applies only when a preceding part is present (for example classes from the has.* flags, or the gap expressed as margin-block-end on the preceding present part with the last present part's margin removed), and add scenario bodies for no visual and actions only (first present part starts at the block padding)."
+
+  - id: PLAN-CORRECTNESS-1-010
+    severity: 2
+    title: "A hidden ocelle-fact still gets a label row: ocelle-facts renders its dt regardless"
+    evidence:
+      - artifact: "research.md § R-01 'For each ocelle-fact child, in source order, it renders <dt part=\"label\">${child.label}</dt><dd part=\"value\"><slot></slot></dd>'; MutationObserver 'attributeFilter: [\"label\"]'; spec FR-001 ':host([hidden]) { display: none; }' on each element (ocelle-fact included, spec § Common)"
+      - code: "packages/elements/README.md § Host ARIA 'A host hidden attribute removes the element: no box and no node'"
+    claim: |
+      The term is rendered by the sheet, not by the fact. A consumer hiding one pair with hidden (a common
+      server-rendered pattern) hides only the fact host inside the dd: the label stays visible and the description
+      list keeps a term with an empty definition, against the library's hidden rule. The observer does not watch
+      hidden, so toggling it later would not re-render either.
+    remedies:
+      - "Skip facts whose hidden attribute is set when building pairs, add hidden to the attributeFilter, and add a scenario body (hidden pair: no row, no term, no definition; unhidden: back in source order)."
+
+  - id: PLAN-CORRECTNESS-1-011
+    severity: 2
+    title: "Property defaults contradict the README conventions (@default undefined, 'x | undefined' variants) and reflected defaults write attributes onto consumer hosts"
+    evidence:
+      - artifact: "contracts/elements.md: density '\"default\" | \"compact\"' default '\"default\"' (reflected); variant '\"default\" | \"panel\"' default '\"default\"' (reflected); size default '\"default\"' (reflected); label default '\"\"'; showLabel default false; value/max 'number | null' default null; data-model.md same"
+      - code: "packages/elements/README.md § Element conventions 'every public property a description and @default undefined: the manifest takes the tag name and the defaults from them' and properties as 'declare fields'; src/ocelle-brand-mark.ts and test/node/manifest.test.ts:291-297 model variants as '\"chrome\" | undefined' / '\"mono\" | undefined' with default undefined."
+    claim: |
+      FR-001 requires the README conventions. The contract gives defaults that a declare field cannot hold without a
+      constructor assignment, and a variant vocabulary ('default' as a value) unlike the existing variants. With Lit,
+      a reflected property that has an initial value writes the attribute on first update, so every
+      ocelle-facts, ocelle-empty-state and ocelle-progress gains density="default", variant="default" or
+      size="default" on the consumer's markup, which matters to server-rendered htmx pages that morph the DOM.
+    remedies:
+      - "Follow 005: density '\"compact\" | undefined', variant '\"panel\" | undefined', size '\"compact\" | undefined', label and valueText 'string | undefined', showLabel 'boolean | undefined', value and max 'number | undefined', each @default undefined, with the effective defaults stated in descriptions."
+      - "Keep the contract's defaults and amend the README conventions in phase 1 (with readme-test statements), saying that defaults are not reflected."
+
+  - id: PLAN-CORRECTNESS-1-012
+    severity: 2
+    title: "ocelle-facts.ts importing ocelle-fact.ts breaks the convention that a module defines its element and no other"
+    evidence:
+      - artifact: "contracts/elements.md § Modules and exports 'ocelle-facts.ts imports ocelle-fact.ts, so importing the sheet defines both'; plan.md Structure Decision 'Every new file sits where 005's conventions put it'"
+      - code: "packages/elements/README.md § Element conventions 'importing the module defines that element and no other'; test/build/build.test.ts:52-75 asserts per-element dist modules import no other element."
+    claim: |
+      FR-001 requires the README's conventions, and the plan says it follows them, but the contract states the
+      opposite for ocelle-facts. The README is the record follow-on missions copy (FR-056), and the pattern this
+      mission sets (a container that pulls in its item element) is exactly what follow-on 1's timeline and chain
+      will reuse, so the deviation must be stated, not implied.
+    remedies:
+      - "Amend README § Element conventions in phase 1 (slotted-item paragraph, FR-056) to say a container module imports its item element, with a readme-test statement and a build test that dist/ocelle-facts.js imports ./ocelle-fact.js and nothing else."
+      - "Do not import: ocelle-facts treats undefined ocelle-fact children by tag name and attribute, and the README says to import both entry points."
+
+  - id: PLAN-CORRECTNESS-1-013
+    severity: 2
+    title: "emulateReducedMotion through raw CDP is reset by the harness's Playwright emulateMedia, and the shared driver is not in the plan"
+    evidence:
+      - artifact: "research.md § R-08 'emulateReducedMotion, which sets prefers-reduced-motion through CDP Emulation.setEmulatedMedia'; contracts/checks.md § Browser commands; plan.md Source Code lists only test/commands.ts and commands.test.ts"
+      - code: "test/commands.ts:141-143 emulate() calls page.emulateMedia({ forcedColors, colorScheme }); Playwright 1.63 coreBundle.js (crPage updateEmulateMedia) sends Emulation.setEmulatedMedia with all four features each time, prefers-reduced-motion as '' when Playwright's own reducedMotion is 'no-override'. test/scenarios/driver.ts:141-142 is the shared driver interface (forcedColors), implemented in test/in-process.ts and test/browser/driver.ts:190-191."
+    claim: |
+      A reduced-motion state set behind Playwright's back is cleared by the next emulateForcedColors or colour-scheme
+      call, so any body that combines forced colours and reduced motion (US3-8 with the still mark, US3-7 per theme)
+      silently runs with motion. The scenario bodies run on both harnesses through the shared driver, which needs a
+      reducedMotion method in scenarios/driver.ts, in-process.ts and browser/driver.ts; the plan names a Vitest
+      command only.
+    remedies:
+      - "Use page.emulateMedia({ reducedMotion }) as the forced-colours helper does, add reducedMotion to the shared driver and both implementations, list those files in plan § Source Code, and test that forced colours then reduced motion keeps both."
+
+  - id: PLAN-CORRECTNESS-1-014
+    severity: 2
+    title: "The operator confirms FR-004 on vanilla elements and axe 4.10.2, and the plan gives no way back if the Lit and axe 4.14.0 recheck differs"
+    evidence:
+      - artifact: "plan.md Decisions 1 'The plan proposes confirming FR-004 unchanged. The rechecks under Lit and axe-core 4.14.0 in phase 1's spike precede the red commit.'; research.md header 'axe-core 4.10.2 ... #10's axe gate pins axe-core 4.14.0'; R-01 'If it does not, US1-10's assertion becomes \"the definition follows its (empty) row\" and the plan's reading goes to review'; spec FR-004 'The operator then confirms this requirement or replaces it; tasks are not generated against FR-004 until then'"
+      - code: "spike/RESULTS.md lines 3-6: 'axe-core: 4.10.2', 'Custom elements are vanilla with open shadow roots'. Probe (scratchpad dt.cjs): a light-DOM empty <dt> is exposed as a term node in Chromium 153, so the empty-term fallback is likely moot, but it was not measured in the A5 shadow structure."
+    claim: |
+      SPEC-1-04 "D" asks for the measurement to reach the operator before tasks. The measured structure is not the
+      one that ships (Lit, manual assignment in updated()) and not under the axe version of the gate, and if the
+      phase-1 spike finds otherwise the plan routes the change to review, not to the operator, and lets the plan
+      reword US1-10, an acceptance scenario. Tasks would then exist for a requirement whose basis failed.
+    remedies:
+      - "Run the A5 recheck with Lit 3.3.3 and axe-core 4.14.0 (and the empty <dt> case in the A5 shadow structure) before the plan gate and report it with Decision 1."
+      - "Keep the recheck in phase 1, but state that a failing recheck stops the flow for the operator (FR-004 and US1-10 are the operator's to change), not a review reading."
+
+  - id: PLAN-CORRECTNESS-1-015
+    severity: 1
+    title: "Minor disagreements between spec, research and data model (figures on the label, ariaValueMax, wrap outside facts, pairing-test location)"
+    evidence:
+      - artifact: "spec FR-035 'Visible label and value text use --ocelle-figures' vs research R-06 Labelled variant (label: ink, font-size-sm, no figures; only value-text gets figures)"
+      - artifact: "research R-05 'ariaValueMax = String(max)' vs data-model.md 'ariaValueMax | effective max' (FR-032: max 0 or NaN is 100)"
+      - artifact: "data-model.md / R-03 'the fact's :host sets overflow-wrap: anywhere ... The label is rendered by ocelle-facts ... so it never takes the policy' vs R-01 outside ocelle-facts the fact renders its own <span part=\"label\"> inside that host, so the label inherits the policy (SPEC-2-10 fix: 'the label unaffected')"
+      - code: "plan.md and checks.md place test/node/progress-pairs.test.ts reading built dist/ocelle-progress.js; README § Files and tests puts tests that need the build in test/build/, and test/node/brand-pairs.test.ts:12-16 reads the source while test/build/build.test.ts:63 reads dist."
+    claim: |
+      Each is small, but each lets a test be written to one artifact and pass while another is broken: the label
+      without tabular figures fails FR-035; ariaValueMax from the raw max exposes '0' or 'NaN' for an invalid max;
+      the label of a standalone fact wraps anywhere; a node test reading dist depends on build order.
+    remedies:
+      - "Give the visible label --ocelle-figures in R-06; make R-05 say the effective max; set the wrap policy on the value slot's wrapper (not :host) or state the standalone exception; put the source half of the pairing test in test/node and the dist half in test/build, as 005 did."

@@ -37,6 +37,32 @@ entry points and the browser build's file path (constitution VII).
   CSS parts `label`, `control`, `description` and `error`; its entry point `@ocelle/elements/ocelle-form-select.js`.
 - In the README, the form-control convention that later form-like elements follow: form association, naming,
   description, error and its announcement, host ARIA, events and implicit submission.
+- `ocelle-facts`, a label and value sheet exposed as one description list of its `ocelle-fact` children, two columns
+  or stacked by its own inline size against the hook `--ocelle-facts-stack-below`; its properties `density` and
+  `layout` (reflected), `layout="columns"`, `layout="stacked"` and `layout="grid"` (cells, label above value, in four,
+  two or one columns); its parts `list`, `label` and `value`; the value hooks `--ocelle-facts-value-size` and
+  `--ocelle-facts-value-line-height`.
+- `ocelle-fact`, one pair: its properties `label` and `wrap` (reflected, `wrap="anywhere"` for identifiers); outside a
+  sheet it shows its label above its value. Importing `@ocelle/elements/ocelle-facts.js` also defines it.
+- Entry points `@ocelle/elements/ocelle-facts.js` (defines `ocelle-facts` and `ocelle-fact`) and
+  `@ocelle/elements/ocelle-fact.js` (defines `ocelle-fact` only).
+- `ocelle-empty-state`, an empty or loading panel: the consumer's own heading, body and actions in one centred
+  column, with no heading level, role or tab stop of its own; its property `variant` (reflected), `variant="panel"`
+  with the larger rhythm and the lighter heading; its slots `visual`, the `eyebrow` slot (a short upper-case line
+  above the heading), `heading`, the default slot (the body, its margins reset and its children spaced) and
+  `actions`; its part `body`. Entry point `@ocelle/elements/ocelle-empty-state.js` (defines `ocelle-empty-state`
+  only).
+- `ocelle-progress`, a progress bar, determinate with a `value` or indeterminate without one, exposed as one
+  progressbar named by `label` (or a host `aria-label`) with its value, minimum and maximum; the indeterminate mark
+  sweeps once per loading episode for less than 5 s and then rests as a still mark, and shows the still mark at once
+  under reduced motion; its properties `value`, `max`, `value-text`, `label`, `show-label` (the label row, with the
+  value text at its inline end), `size` (reflected, `size="compact"`) and `ground` (reflected, `ground="tinted"` for
+  tinted grounds); its parts `track`, `fill`, `label` and `value-text`. Entry point
+  `@ocelle/elements/ocelle-progress.js` (defines `ocelle-progress` only).
+- The style lint's token-only rule, which checks these elements' styles, admits four values and nothing near them:
+  the `grid-template-columns` tracks `fit-content(<percentage>)` and `minmax(0, <flex>)` (the facts columns and
+  grid), `translateX(<percentage>)` in `transform` (the progress sweep) and a bare positive integer
+  `animation-iteration-count` (the bounded sweep). No token is added.
 - In the README, the slot convention for icons in controls that later controls follow: the `icon` and `trailing`
   slots, their size, alignment, gap and colour rules and the naming rule.
 - Entry points: `@ocelle/elements` (the package root, defines every element), `@ocelle/elements/ocelle-icon.js`

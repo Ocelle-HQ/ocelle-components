@@ -2,12 +2,16 @@ import { afterEach, describe, expect, it } from "vitest";
 import { FirstLoadBase, OcelleTestProbe, OcelleTestRegion } from "./fixtures/live-regions.ts";
 import { inProcessDriver, timing } from "./in-process.ts";
 import type { InsertHow } from "./scenarios/driver.ts";
+import { defineDriverHelpers, driverAdditionScenarios } from "./scenarios/driver-additions.ts";
 
 // The driver steps in process (specs/010-feedback-forms T001b; contracts/testing.md § Driver steps, § Forms): each
 // step on test-only elements of test/fixtures/live-regions.ts and plain controls, so each test fails without its step.
 // `registerFirstLoad` and `readyState` are in-process steps only; the fixture-page steps are
 // test/browser/driver.test.ts.
 const driver = inProcessDriver();
+// The helper elements of the driver additions of 013 phase 1 (scenarios/driver-additions.ts), defined in this file's
+// frame for the shared bodies at the end of this file.
+defineDriverHelpers();
 
 function byId(id: string): HTMLElement {
   const found = document.getElementById(id);
@@ -355,5 +359,14 @@ describe("call(id, method, ...args)", () => {
   it("rejects when the element has no such method, rather than reading undefined", async () => {
     await driver.mount('<input id="i">');
     await expect(driver.call("i", "noSuchMethod")).rejects.toThrow("call: #i has no method noSuchMethod");
+  });
+});
+
+// The driver additions of 013 phase 1 in process (contracts/checks.md § Driver additions; tasks.md T003): the shared
+// bodies of scenarios/driver-additions.ts on the in-process driver, with their helper elements defined in this file's
+// frame. The same bodies run on the strict-CSP fixture in test/browser/driver.test.ts.
+describe("the driver additions, in process (013 T003)", () => {
+  it.each(driverAdditionScenarios)("$name", async ({ run, expected }) => {
+    expect(await run(driver)).toEqual(expected);
   });
 });
