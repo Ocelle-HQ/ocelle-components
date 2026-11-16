@@ -743,6 +743,27 @@ export const listDetailScenarios: readonly ListDetailScenario[] = [
     },
   },
   {
+    // Added at phase 4 review round 6 (R6-01), red before the fix: becoming rendered is a re-measure trigger whether or
+    // not a pass was skipped while the element had no box (FR-025; data-model.md § list-detail "Not rendered"; R-13).
+    // A class swap is a change the element cannot see (its `MutationObserver` has no `attributes`), so while hidden
+    // nothing leaves a pass pending. Plant: becoming rendered requests a pass only when one is pending (the minimum
+    // stays 480 px).
+    name: "US3-12, hidden, changed unseen, then shown (R6-01): shown at 1073 px in three columns in the 1196 px row, then its wrapper hidden; while hidden the list's light-DOM element gets the class of a 35rem block, an attribute-only change the element cannot see; shown again with no remeasure(), after settle it has the figures of its new content (560 px minimum), 1073 px in three columns, with no error (FR-025)",
+    base: false,
+    run: async (driver) => {
+      await page(driver, "R", `<div id="x-w"><div class="row">${listDetail("x", "", sized("x"))}</div></div>`, { extra: notRenderedRules });
+      const shown = await measuredState(driver, "x");
+      await driver.setAttribute("x-w", "class", "gone");
+      await frames(driver, 4);
+      await driver.setAttribute("x-list", "class", "w35");
+      await frames(driver, 4);
+      await driver.setAttribute("x-w", "class", null);
+      await driver.settle();
+      return { shown, again: await measuredState(driver, "x"), messages: await driver.messages() };
+    },
+    expected: { shown: threeAt1073, again: { ...threeAt1073, figures: { sizer: "1073px", min: "560px" } }, messages: [] },
+  },
+  {
     name: "US3-13: under dir=rtl in Frame R the three columns run from the right: the list at the right, the inspector at the left, with the 1 px borders on the inline-start side (the right) of the detail and of the inspector (FR-023)",
     base: false,
     run: async (driver) => {

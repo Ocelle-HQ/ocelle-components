@@ -248,8 +248,10 @@ describe("ocelle-list-detail's measurement pass (R-13)", () => {
   // `ResizeObserver` requests it once the element is rendered again, but only then. The mutants that survived without
   // it (the pending pass requested at every observation, or left pending after a pass) are its proof: a resize of a
   // rendered element is not a re-measure trigger (FR-025, research.md R-13), and each extra pass costs a full layout of
-  // every pane.
-  it("guard O5-01: a list-detail resized while rendered runs no pass; hidden, a change runs no pass until it is shown, then exactly one; hidden and shown again with nothing pending, it runs none", async () => {
+  // every pane. Since phase 4 review round 6 (R6-01) becoming rendered is a trigger in its own right, also with nothing
+  // pending: a change made while hidden may be one the element cannot see (a class swap), so a hide and a show, each
+  // seen by the observer in its own frame, runs exactly one pass (`again` was 0, the narrower reading R6-01 rejects).
+  it("guard O5-01: a list-detail resized while rendered runs no pass; hidden, a change runs no pass until it is shown, then exactly one; hidden and shown again with no change, it runs exactly one", async () => {
     await driver.viewport(1280, 800);
     await driver.mount(`<div id="w">${markup}</div>`);
     await nextFrame();
@@ -270,10 +272,12 @@ describe("ocelle-list-detail's measurement pass (R-13)", () => {
     await nextFrame();
     const shown = passes() - resized - hidden;
     await driver.style("w", "display", "none");
+    await nextFrame();
+    await nextFrame();
     await driver.style("w", "display", "block");
     await nextFrame();
     await nextFrame();
-    expect({ resized, hidden, shown, again: passes() - resized - hidden - shown, messages: await driver.messages() }).toEqual({ resized: 0, hidden: 0, shown: 1, again: 0, messages: [] });
+    expect({ resized, hidden, shown, again: passes() - resized - hidden - shown, messages: await driver.messages() }).toEqual({ resized: 0, hidden: 0, shown: 1, again: 1, messages: [] });
   });
 
   // Guard added after the landing-pass fix, for the same reason: since a pass on a grid with no box writes nothing, a
