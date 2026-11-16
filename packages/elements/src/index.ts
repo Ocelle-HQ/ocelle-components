@@ -2,6 +2,7 @@
 // package, `ocelle-icon`, `ocelle-brand-mark`, `ocelle-listbox`, `ocelle-option`, `ocelle-tabs`, `ocelle-tab`,
 // `ocelle-tab-panel`, `ocelle-segmented-choice` and `ocelle-segment`, and exports their classes.
 export { OcelleBrandMark } from "./ocelle-brand-mark.ts";
+export { OcelleCopyField } from "./ocelle-copy-field.ts";
 export { OcelleIcon } from "./ocelle-icon.ts";
 export { OcelleListbox } from "./ocelle-listbox.ts";
 export { OcelleOption } from "./ocelle-option.ts";
