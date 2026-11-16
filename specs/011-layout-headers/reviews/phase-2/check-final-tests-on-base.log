@@ -35,7 +35,7 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 381ms using pnpm v12.16.1
+Done in 389ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /opt/pw-browsers/chromium-1243/chrome-linux64/chrome
 $ node gates/bin/test.ts
