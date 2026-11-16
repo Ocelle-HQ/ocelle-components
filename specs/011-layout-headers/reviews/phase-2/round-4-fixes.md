@@ -15,3 +15,5 @@ Operator round at landing (PR #44), task T049 (`reviews/landing/round-1-tasks.md
 
 `pnpm test`, `gate:test-lint` and `gate:mutation` run at the end of the landing fix rounds; their results are in the
 round's report.
+
+T049 was not ticked in `tasks.md` by the fix commit f058ea9; the tick was added afterwards in a bookkeeping commit, its work checked present first.

@@ -86,7 +86,7 @@ The operator fixed the landing notes in this feature on 2026-11-15 (`reviews/pha
 code: `src/slot-state.ts` keeps reading `assignedNodes()` unflattened (research.md R-03); the README gains the
 statement for shell authors. Its red test is the readme test's assertion; no scenario harness applies.
 
-- [ ] T048 R2-01 (landing L1-04), README statement for shell authors on forwarded slots (spec Empty slot and FR-036,
+- [X] T048 R2-01 (landing L1-04), README statement for shell authors on forwarded slots (spec Empty slot and FR-036,
   research.md R-03, contracts/elements-package.md § Shell authors), test first. **Red**, in a commit that changes only
   test files (`test(011-layout-headers): phase 1 review round 2 red`, signed off): `packages/elements/test/node/readme.test.ts`
   (`elements-node`) gains one fragment, its own `states:` test: "A shell that forwards a slot of its own into an
@@ -148,7 +148,7 @@ zero CSP violations; `pnpm run gate:contrast` reports 169 light / 177 dark / 158
 The operator chose to fix L1-01 in this phase on 2026-11-15 (`reviews/phase-2/round-4.md`). One red commit of test
 files only, then the fix.
 
-- [ ] T049 [US1] R4-01 (landing L1-01), the card reads its own `header` slot on `slotchange` (FR-017, research.md
+- [X] T049 [US1] R4-01 (landing L1-01), the card reads its own `header` slot on `slotchange` (FR-017, research.md
   R-05 § Forwarded slots, contracts/checks.md § Pairing plants, the forwarded-slot row), test first. **Red**, in a
   commit that changes only test files (`test(011-layout-headers): phase 2 review round 4 red`, signed off): a shared
   scenario in `packages/elements/test/scenarios/card.ts`, "R-05 forwarded slot (phase 2 review R4-01)", run by both
@@ -238,7 +238,7 @@ recorded by `.specify/extensions/story/scripts/red.sh 4 fix-2`, and one fix comm
 (`fix(011-layout-headers): phase 4 review round 2`, signed off) with `reviews/phase-4/round-2-fixes.md`; reviewed as
 phase 4 round 3.
 
-- [ ] T050 [US3] R2-01 (landing L1-03), a `template` or `script` in the sidebar's default slot draws no section
+- [X] T050 [US3] R2-01 (landing L1-03), a `template` or `script` in the sidebar's default slot draws no section
   (FR-021, FR-022, US3-3's template variant, research.md R-09 § never-rendered elements, contracts/checks.md
   § Pairing plants, the `template` row), test first. **Red**: in `packages/elements/test/scenarios/context-sidebar.ts`,
   the US3-3 template variant as a shared scenario, run by both harnesses, `packages/elements/test/context-sidebar.test.ts`
@@ -263,7 +263,7 @@ phase 4 round 3.
   statement "A page rule does not change a section's padding, inline margins, divider or display" stays as it is.
   **Evidence**: in `reviews/phase-4/plants.md` § Review round 2 fix, the `template` row's two plants and the R-17
   style plants of the changed rules, with the scenarios that failed in each harness
-- [ ] T051 [US3] R2-02 (landing L1-02), the published declarations do not declare the internals key (FR-034,
+- [X] T051 [US3] R2-02 (landing L1-02), the published declarations do not declare the internals key (FR-034,
   research.md R-11 § Type declarations, contracts/checks.md § Pairing plants, the declarations row), test first.
   **Red**, in the same commit as T050: `packages/elements/test/build/build.test.ts` (`elements-build`; the scenario
   harnesses do not apply) gains one test, after the package's build (`buildPackage()`): `dist/ocelle-context-sidebar.d.ts`
@@ -312,7 +312,7 @@ horizontal, and keeps its orientation at 721, 720, 719 and 320 px.
 The operator chose to fix L1-05 in this phase on 2026-11-15 (`reviews/phase-5/round-2.md`). README only: its red
 test is the readme test's; no scenario harness applies.
 
-- [ ] T052 [US4] R2-01 (landing L1-05), the rail README names `ocelle-nav-item` as not released yet and loses its
+- [X] T052 [US4] R2-01 (landing L1-05), the rail README names `ocelle-nav-item` as not released yet and loses its
   stray line break (FR-027, FR-036), test first. **Red**, in a commit that changes only test files
   (`test(011-layout-headers): phase 5 review round 2 red`, signed off): in `packages/elements/test/node/readme.test.ts`
   (`elements-node`), the fragment "A plain `<a>` does not: give `<a>` items `color: inherit` and a target of at least
