@@ -71,18 +71,21 @@ plants those paths select (`affectedPlants` in `gates/lib/plant-runner.ts`), not
 (`note: affected: <gate>/<case>, by <path>`), and says in its summary that it is not the Plants check; with `--list`
 it prints the same selection and judges no plant. Each path is tried against these classes in order. Paths no plant
 reads (`specs/**` but a plan, `ops/`, `triage/`, `knowledge/`, `.claude/`, `.specify/`, `tooling/`, `gates/test/`,
-`gates/README.md`, test directories and top-level `*.md` files) select nothing. A path in `gates/plants/<gate>/<case>/`
-selects that plant and every plant whose `baselinesOf` names it. `gates/bin/<gate>.ts` selects that gate's plants.
-`.github/workflows/ci.yml` selects the registry's plants. Repository content (stories, the Storybook configuration and
-scripts, baselines, `storybook/a11y-exceptions.json`, plans, package source, token files and the element manifest)
-selects `repositoryContentPlants`, the fixed list of plants whose expectation names repository content; a test pins
-every `visual` and `axe` case, so a new one must be classified there. Every other path, shared gate source
-(`gates/lib/`, `gates/gates.json`, `gates/bin/plants.ts` and the other non-gate entries, `gates/eslint/`,
-`gates/stylelint/`) and anything unmapped, selects the full set. Known limit: token values, `base.css`, the fonts and
-element source also reach the visual plants' own stories and the `unit-tests` and `mutation` plants, which the
-selection leaves out; and a gate entry another entry imports (`gates/bin/prefix.ts`, which `brand-rules` imports)
-selects only its own gate's plants, not the importer's; only CI's full set judges those. The registry check fails (`affected-in-ci`) when a step of
-any of the three CI plant jobs passes `--affected`.
+`gates/README.md`, test directories and top-level `*.md` files) select nothing. A path in
+`gates/plants/<gate>/<case>/` selects that plant and every plant whose `baselinesOf` names it. `gates/bin/<gate>.ts`
+selects that gate's plants, and those of each gate whose entry imports it (`gateEntryImports`: today `brand-rules`
+imports `gates/bin/prefix.ts`; a test reads every gate entry's imports and pins the pairs). `.github/workflows/ci.yml`
+selects the registry's plants. Repository content (stories, the Storybook configuration and scripts, baselines,
+`storybook/a11y-exceptions.json`, plans, package source, token files and the element manifest) selects
+`repositoryContentPlants`, the fixed list of plants whose expectation names repository content; an element path
+(`packages/elements/src/`, `packages/elements/custom-elements.json`) also selects every `manifest` plant, and a token
+path (one under `packages/tokens/`) every `contrast`, `brand-rules` and `style-lint` plant. A test pins every
+`visual`, `axe`, `manifest`, `contrast` and `brand-rules` case, so a new one must be classified there. Every other
+path, shared gate source (`gates/lib/`, `gates/gates.json`, `gates/bin/plants.ts` and the other non-gate entries,
+`gates/eslint/`, `gates/stylelint/`) and anything unmapped, selects the full set. Known limit: token values,
+`base.css`, the fonts and element source also reach the visual plants' own stories and the `unit-tests` and `mutation`
+plants, which the selection leaves out; only CI's full set judges those. The registry check fails (`affected-in-ci`)
+when a step of any of the three CI plant jobs passes `--affected`.
 
 In CI the job `plants-plan` ("Plants plan") prints the plan. The matrix job `plants-shard` ("Plants shard") first
 prints the free disk (`df -h /`), removes the runner's unused toolsets and prints it again, then judges one shard each under both engines and uploads its report

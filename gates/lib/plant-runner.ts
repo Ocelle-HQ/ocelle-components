@@ -305,7 +305,9 @@ export function plantTimeNote(plant: string, milliseconds: number): string {
 /**
  * The plants whose expectation names repository content (op 016, Q3 C; plan.md *Path classes*): a change to a story,
  * a baseline, the Storybook configuration, element source, token source or the axe exceptions selects these. The
- * pin in gates/test/plant-runner.test.ts makes each new visual or axe plant be classified here or not.
+ * pin in gates/test/plant-runner.test.ts makes each new visual, axe, manifest, contrast or brand-rules plant be
+ * classified here or not. Element and token paths select more than these: every manifest plant, and every contrast,
+ * brand-rules and style-lint plant (operator round 3, O3-01).
  */
 export const repositoryContentPlants: readonly string[] = [
   // Every repository story in light and dark, against the repository's baselines.
@@ -328,6 +330,16 @@ export const repositoryContentPlants: readonly string[] = [
   "contrast/repository-values",
   // The configuration set's token source against the brand rules.
   "brand-rules/repository-values",
+];
+
+/**
+ * The registered gate entries in gates/bin/ that another registered gate entry imports (op 016, operator round 3,
+ * O3-05): a change to `gates/bin/<entry>.ts` also selects every plant of `<importer>`. Sorted by entry, then
+ * importer; the cross-import pin in gates/test/plant-runner.test.ts reads every entry's imports and pins this list.
+ */
+export const gateEntryImports: readonly { readonly entry: string; readonly importer: string }[] = [
+  // brand-rules judges rule A with prefix's monospaceFamilies.
+  { entry: "prefix", importer: "brand-rules" },
 ];
 
 /** A feature's plan, `specs/<feature>/plan.md`: the axe plants' roots carry the plans their exceptions name. */
@@ -383,6 +395,9 @@ export type FullReason = "shared gate source" | "not mapped";
 /** The full set, by the first path that asks for it; or the selected plants in plant order, each by its first path. */
 export type Affected = { readonly full: { readonly path: string; readonly reason: FullReason } } | { readonly plants: ReadonlyMap<string, string> };
 
+/** An element path (operator round 3, O3-01): the element source or the element manifest, which most manifest plants embed. */
+const elementPath = /^packages\/elements\/(?:src\/|custom-elements\.json$)/;
+
 /**
  * The plants a path that is not a no-plant path selects, or the reason it selects the full set (plan.md *Path classes*
  * 2 to 6, tried in order).
@@ -395,16 +410,31 @@ function pathPlants(path: string, input: AffectedInput): readonly string[] | Ful
     return input.plants.filter((plant) => plant.name === `${gate}/${name}` || (plant.name.startsWith(`${gate}/`) && plant.baselinesOf === name)).map((plant) => plant.name);
   }
   const entry = /^gates\/bin\/([^/]+)\.ts$/.exec(path);
-  if (entry !== null && input.gates.includes(String(entry[1]))) return names.filter((name) => name.startsWith(`${String(entry[1])}/`));
+  if (entry !== null && input.gates.includes(String(entry[1]))) {
+    const id = String(entry[1]);
+    const gates = [id, ...gateEntryImports.filter((pair) => pair.entry === id).map((pair) => pair.importer)];
+    return names.filter((name) => gates.some((gate) => name.startsWith(`${gate}/`)));
+  }
   if (path === ".github/workflows/ci.yml") return names.filter((name) => name.startsWith("plants/"));
-  if (repositoryContentPath(path)) return names.filter((name) => repositoryContentPlants.includes(name));
+  if (repositoryContentPath(path)) {
+    const element = elementPath.test(path);
+    const token = path.startsWith("packages/tokens/");
+    return names.filter(
+      (name) =>
+        repositoryContentPlants.includes(name) ||
+        (element && name.startsWith("manifest/")) ||
+        (token && (name.startsWith("contrast/") || name.startsWith("brand-rules/") || name.startsWith("style-lint/"))),
+    );
+  }
   return /^gates\/(?:lib\/|bin\/|eslint\/|stylelint\/|gates\.json$)/.test(path) ? "shared gate source" : "not mapped";
 }
 
 /**
  * The plants the changed paths can affect (op 016, spec.md OR-001, plan.md *Path classes*): the full set as soon as
  * one path asks for it, naming that path and why; else the selected plants in plant order, each with the first
- * changed path that selected it.
+ * changed path that selected it. A gate entry also selects the plants of the gates that import it (`gateEntryImports`);
+ * an element path also selects every manifest plant, and a token path every contrast, brand-rules and style-lint plant
+ * (operator round 3, O3-01 and O3-05).
  */
 export function affectedPlants(input: AffectedInput): Affected {
   const by = new Map<string, string>();

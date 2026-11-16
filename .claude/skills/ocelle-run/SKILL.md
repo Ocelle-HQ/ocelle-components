@@ -134,8 +134,9 @@ Run `$S/units.sh`. For each unit, in order:
       fold'`), or the phase's `reviews/phase-N/base.sha` when there is none. Note `OLD=$(git rev-parse HEAD)`.
    3. `tooling/speckit/bin/fold-history.sh $FB <feature-dir> phase-N`. It keeps the base, the scaffold and its
       parent, each red commit and its parent, folds every other commit forward, verifies every tree, remaps
-      `base.sha`, `scaffold.sha` and `red-commits`, appends to `reviews/history-map.txt` and commits
-      `chore(phase-N)`. Not ok: report its problems and stop; HEAD is back on `OLD`.
+      `base.sha`, `scaffold.sha`, `red-commits` and the `- base:` line of `plants.md`, appends to
+      `reviews/history-map.txt` and commits `chore(phase-N)`. Not ok: report its problems and stop; HEAD is back
+      on `OLD`.
    4. `$S/tdd-check.sh N` must report `pass` on the new SHAs; commit its outputs alone
       (`chore(phase-N): red/green check after the fold`).
    5. **Gate "fold phase N"**: show the commit counts (before → after) and ask, multiple choice, for the force-push:
