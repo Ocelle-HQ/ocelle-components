@@ -40,7 +40,11 @@ import "./ocelle-icon.ts";
  */
 export class OcelleCopyField extends LitElement {
   static override properties = {
+    // `value` and `status` are the accessors below, and their attributes are handled in attributeChangedCallback; the
+    // entries name the attributes for Lit and the manifest.
+    // Stryker disable next-line ObjectLiteral,BooleanLiteral: equivalent, `{}` and `noAccessor: false` make Lit wrap the class's own accessor, which only adds an update request that renders the same template
     value: { type: String, noAccessor: true },
+    // Stryker disable next-line ObjectLiteral,BooleanLiteral: equivalent, as for `value`: the wrapped `status` accessor adds an update request and the template does not read `status`
     status: { type: String, noAccessor: true },
     copyLabel: { type: String, attribute: "copy-label" },
   };
@@ -181,11 +185,10 @@ export class OcelleCopyField extends LitElement {
   }
 
   set value(value: string) {
-    const old = this.#value;
-    if (value === old) return;
+    if (value === this.#value) return;
     this.#value = value;
     if (this.hasUpdated) this.status = "";
-    this.requestUpdate("value", old);
+    this.requestUpdate();
   }
 
   /**
