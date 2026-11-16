@@ -9,3 +9,9 @@ high 2, medium 5, low 5, coverage 100).
   `reviews/analysis/fixes-1.md`, before implementation.
 - **Tasks**: approved, with those fixes applied. Design is done; implementation waits for missions 012 and 008 on
   `main`.
+
+## After the analysis fixes
+
+- **I1, the pulse ring** (`fixes-1.md` asked to confirm): the ring is part of the dot's state mark and also uses
+  `--ocelle-radius-pill`, as now written in the spec's Terms, FR-003, R-04 and T020 (human:jeroennouwsdev,
+  2026-11-16).
