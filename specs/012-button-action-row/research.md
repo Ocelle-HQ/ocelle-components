@@ -647,12 +647,18 @@ control, so they inherit no colour from it; each sets its own, keyed on the host
 which the element marks on the layout wrapper (`.layout.link`, internal, no public surface):
 - description and tags `--ocelle-color-ink-soft` (`--ocelle-color-chrome-muted` with `:host([ground="chrome"])`,
   US4-17); trailing as the title (`--ocelle-color-ink`, `--ocelle-color-chrome-ink` on chrome);
-- `:host([unavailable])`: description, tags and trailing `--ocelle-color-disabled-ink`, as the title (US5-7);
+- `:host([unavailable])`: description, tags and trailing `--ocelle-color-disabled-ink`, as the title (US5-7), and
+  the three wrappers carry `aria-disabled="true"` while it is set (plan decision 31): axe-core 4.14.0's
+  `color-contrast` skips text under an `aria-disabled` ancestor, which the title has (the inner control) and the
+  siblings did not, so their disabled ink (below 4.5:1 on `accent-low`, `inset`, `hover-bg`, `rail` and the chrome
+  surfaces) drew a serious violation on 52 of 72 unavailable pages in the phase 6 spike (T060); with the attribute,
+  0 results of any impact and no `aria-allowed-attr`, the wrappers staying `aria-hidden` with no accessibility node;
 - under `@media (forced-colors: active)`: the R-12 table's text colour per state, set on each wrapper as on the inner
   control (`ButtonText` in button mode, `LinkText` in link mode, `GrayText` when unavailable).
 US4-17, US5-7 and the forced-colours scenarios read the computed colour of the description and tags wrappers (and of
 the trailing icon) beside the title's (plant: sibling colours removed, so they fall back to the host's inherited
-colour).
+colour); axe on unavailable rows with description and tags reads the wrappers' `aria-disabled` (plant: wrappers
+without `aria-disabled`, plan decision 31).
 
 The slot convention's size rules are scoped to the icon slots (PLAN-A11Y-SECURITY-1-002): `src/icon-slot.ts` has an
 unscoped `::slotted(*)` that sets inline and block size to the icon size, `max-inline-size: none` and `flex: none`, all
@@ -762,7 +768,9 @@ layer also draws the row's surface (`background-color`, the current `accent-low`
 edge is the place measured before from the inner control's. The text of the title and of the siblings is painted
 over the layer's surface, not under it (positive stacking, R-01), and the phase 5 spike (T049a) and phase 6 spike
 (T060) measure axe `color-contrast` for it on a plain and on a current row: no violation and no incomplete result
-(US5-4, FR-052), else a stop-and-ask.
+(US5-4, FR-052), else a stop-and-ask. T060 measured 0 results on plain, hovered and focused current rows; on
+unavailable rows the sibling wrappers' disabled ink drew a serious violation until they carried `aria-disabled`
+(R-10 § Sibling ink, plan decision 31).
 
 **Bar and ring distinct (PLAN-FRESH-2-005 (b))**: `color-focus` and `color-current` are both `accent-strong`. With the
 bar at `inset-inline-start: 0` it occupied 1 to 4 px inside the border edge (0 to 3 px on a flush row), overlapping
@@ -779,7 +787,9 @@ inline-start band, the gap (the surface colour) and the bar band at their own po
 three sides, in left-to-right and `dir="rtl"`; plants: the bar at `inset-inline-start: 0` (overlap), and the bar at
 the ring's inner edge (no gap). An unfocused current row shows the bar 7 px in from its edge, the README says so. Under
 `@media (forced-colors: active)` it gets `forced-color-adjust: none` and `background-color: Highlight` (`GrayText` when
-the row is unavailable, decision 16). Unavailable outside forced colours: `--ocelle-color-disabled-ink`.
+the row is unavailable, decision 16). Unavailable outside forced colours: `--ocelle-color-disabled-ink`. An unavailable
+current row keeps the current surface (`accent-low`, or `chrome-hover` on chrome; `Canvas` under forced colours) and
+shows no hover (plan decisions 16 and 31, reading (i)).
 
 **Flush hover in forced colours**: a flush control's hover (and a flush row's) is an outline in `Highlight`,
 `outline-style: dashed`, `outline-width: var(--ocelle-focus-width)`, with the control's focus-ring offset; it takes no
@@ -790,7 +800,8 @@ elements set these system colours explicitly (Chromium keeps author system colou
 covers the label, the title, the description, the tags, the trailing icon and the spinner (`currentColor`). On the
 row the description, tags and trailing wrappers are siblings of the inner control and inherit nothing from it (plan
 decision 30), so each wrapper sets the row's text colour itself, keyed on `:host([unavailable])` and on the mode the
-element marks on its layout wrapper (R-10 § Sibling ink); "border" and "other" are drawn by the row's hit layer, which
+element marks on its layout wrapper (R-10 § Sibling ink; their `aria-disabled` while unavailable, plan decision 31,
+changes no colour); "border" and "other" are drawn by the row's hit layer, which
 also sets its surface to `background-color: Canvas` in every state (as `a.control` does in `controlStyles`; without it
 axe read the dark palette's text over an unknown background and reported `color-contrast`, plan decision 30's note of
 2026-11-16):

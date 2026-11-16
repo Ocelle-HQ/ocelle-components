@@ -173,6 +173,18 @@ decision 30):
   host's outside points are stated for that layer ("the control's hit layer fills the host"). The card layout follows
   the same model.
 
+**Operator decisions at phase 6** (2026-11-16, human:jeroennouwsdev; the phase 6 implementer's stop-and-ask, plan
+decision 31):
+
+- Unavailable rows and axe, "(a) mark the content beside the control as disabled too": axe-core 4.14.0 skips the
+  contrast of a disabled control's own text, but the description, tags and trailing content now sit beside the inner
+  control (phase 5), so axe checked their disabled ink as active text and drew a serious finding on most unavailable
+  rows, against FR-052. While a row is unavailable, that content is marked disabled along with the control, so axe
+  treats it as part of the inactive component, as WCAG 1.4.3 and FR-042 already do; the accessibility tree is
+  unchanged.
+- Unavailable and current together, reading (i): the row keeps its current surface, and its text and bar take the
+  disabled ink, with no hover (edge case "`unavailable` and `current` together").
+
 **Issues**: #7, in part (triage record `triage/012-button-action-row.md`, approved by the operator on 2026-11-13).
 This feature builds the two action controls of #7. `ocelle-pill-tag`, `ocelle-status-indicator` and `ocelle-metric`
 stay in #7 for a later status mission. The body of #7 (read on 2026-11-13) is the source of the requirements below.
@@ -613,7 +625,9 @@ tree, the navigation result and the line boxes of the tags.
    is dispatched, a link row navigates nowhere (not in the current tab, not in a new tab or window), and no `click`
    reaches a bubble-phase listener on the element or its ancestors.
 7. **Given** an unavailable row, **When** rendered, **Then** its title and description use the disabled ink token,
-   its hover does not change the surface, and in forced colours it uses `GrayText`.
+   its hover does not change the surface, and in forced colours it uses `GrayText`; axe reports no serious or critical
+   finding on it, with or without description and tags, on every ground it is placed on (FR-042's exemption,
+   FR-052).
 8. **Given** `layout="card"` with several slotted tags, **When** the card is narrower than the tags' total width,
    **Then** the tags wrap onto new lines only between tags, and within the tags region no tag's text is broken inside
    a word, except a single tag longer than the card's width, which may break inside a word. (The title's wrapping is
@@ -667,7 +681,10 @@ tree, the navigation result and the line boxes of the tags.
 - **Row with an icon and an empty title**: named by `label` or the host's name passthrough (FR-034); with neither it
   has no accessible name and axe reports it, as in "Empty label and no icon". The row keeps its minimum block size
   (FR-031).
-- **`unavailable` and `current` together**: both are reported; the unavailable look wins visually.
+- **`unavailable` and `current` together**: both are reported; the unavailable look wins visually, except for the
+  surface: the row keeps its current surface (`--ocelle-color-accent-low`, or `--ocelle-color-chrome-hover` with
+  `ground="chrome"`), its text and the current bar take the disabled ink (`GrayText` in forced colours), and hovering
+  changes nothing.
 - **A row with `busy` and `unavailable`**: both reported; no event.
 - **Very long titles and unbreakable identifiers** in a row title or description: the row's own styles wrap them
   anywhere when needed (they do not rely on `base.css`'s identifier wrapping, which does not reach the shadow root),
@@ -1003,7 +1020,9 @@ tree, the navigation result and the line boxes of the tags.
   a link-mode button) and the row's `ocelle-action-row-activate` with `bubbles`, `composed`, `cancelable` and
   `detail`, from pointer and every keyboard path.
 - **FR-052**: Keyboard paths (Tab, Shift+Tab, Enter, Space) and the accessibility tree (role, name, description,
-  states) are tested for every state, and axe reports no serious or critical finding on any story or test page.
+  states) are tested for every state, and axe reports no serious or critical finding on any story or test page,
+  unavailable rows with description and tags included (their disabled ink is exempt as part of the inactive
+  component, FR-042).
 - **FR-053**: The custom-elements manifest lists every public property, attribute (the passthrough attributes
   and `title` and their `data-ocelle-moved-*` mirrors included, each with a description; operator decisions,
   PLAN-CORRECTNESS-1-006, PLAN-FRESH-2-002, PLAN-FRESH-2-006), event (with its `detail` type),

@@ -112,13 +112,14 @@ div.layout            host's single stretched grid item; position: relative; z-i
 │  │  │  └─ span.bar    the current bar, only while current is set (position: absolute, in the inline padding)
 │  │  ├─ span.icon-slot  slot "icon" (hidden when empty); position: relative; z-index: 1
 │  │  └─ span[part=title]  default slot; overflow-wrap: anywhere; position: relative; z-index: 1
-│  └─ span[part=description]  slot "description"; aria-hidden="true"; pointer-events: none; own ink;
-│                             hidden when empty; position: relative; z-index: 1
+│  └─ span[part=description]  slot "description"; aria-hidden="true"; aria-disabled="true" while
+│                             unavailable; pointer-events: none; own ink; hidden when empty;
+│                             position: relative; z-index: 1
 └─ (row layout) end group: flex 0 0 auto, wraps as a whole
-   ├─ span[part=tags]     slot "tags"; aria-hidden="true"; pointer-events: none; own ink; hidden when empty;
-   │                      position: relative; z-index: 1
-   └─ span.trailing       slot "trailing"; aria-hidden="true"; pointer-events: none; own ink; hidden when empty;
-                          position: relative; z-index: 1
+   ├─ span[part=tags]     slot "tags"; aria-hidden="true"; aria-disabled="true" while unavailable;
+   │                      pointer-events: none; own ink; hidden when empty; position: relative; z-index: 1
+   └─ span.trailing       slot "trailing"; aria-hidden="true"; aria-disabled="true" while unavailable;
+                          pointer-events: none; own ink; hidden when empty; position: relative; z-index: 1
 ```
 
 In card layout the same elements are placed by the wrapper's grid (the inner control with the trailing wrapper at the
@@ -135,6 +136,13 @@ Sibling ink (R-10 § Sibling ink): the description, tags and trailing wrappers i
 and set their colour from the host's state and the mode: description and tags `color-ink-soft` (`chrome-muted` with
 `ground="chrome"`), trailing as the title; `disabled-ink` with `unavailable`; under forced colours `ButtonText`
 (button mode), `LinkText` (`.layout.link`) or `GrayText` (unavailable).
+
+Unavailable siblings (plan decision 31): while `unavailable` is set, the description, tags and trailing wrappers carry
+`aria-disabled="true"`, removed when it is cleared. They stay `aria-hidden` with no accessibility node, so the tree,
+name, description, disabled state, focusability and `aria-current` are unchanged; axe's `color-contrast` then skips
+their disabled ink as it skips the title's inside the `aria-disabled` inner control (the inactive-component exemption,
+FR-042). Without it, 52 of 72 unavailable pages drew a serious `color-contrast` violation on the description and tags
+(phase 6 spike, T060).
 
 Name: per `nameSource`; with no host name and no `label`, the inner control's content, its icon (decorative) and its
 title (so the description, the tags and the trailing content never join the name, and the control's visible text is
@@ -161,8 +169,8 @@ shadow `<span class="bar">` inside `span.hit`, absolutely positioned in the inli
 border edge (`inset-inline-start: calc(var(--ocelle-focus-width) + 2 * var(--ocelle-focus-offset))`, less
 `--ocelle-border-width` on a default row), so a gap of the row's surface separates it from the ring, `bar-width` wide,
 `color-current` (`disabled-ink` when unavailable; `Highlight`/`GrayText` with `forced-color-adjust: none` under forced
-colours); current surface `accent-low` (`chrome-hover` with `ground="chrome"`); flush hover under forced colours a
-dashed `Highlight` outline.
+colours); current surface `accent-low` (`chrome-hover` with `ground="chrome"`), kept while the row is also
+unavailable, with no hover (plan decisions 16 and 31); flush hover under forced colours a dashed `Highlight` outline.
 
 ### Event `ocelle-action-row-activate`
 
