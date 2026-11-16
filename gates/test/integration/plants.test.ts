@@ -256,4 +256,30 @@ describe("plant job (gates/bin/plants.ts)", () => {
     },
     timeout,
   );
+
+  // Op 016, operator round 3 of phase 1 (O3-02; spec.md OR-009 and scenario 16): the base resolves, but git diff fails.
+  // A junk GIT_INDEX_FILE leaves rev-parse working and makes git diff (and git ls-files) exit 128, so the job must exit
+  // 2 naming git's first stderr line, not judge an empty selection and exit 0. The line names the index file in most
+  // git versions, so the match leaves that part open.
+  it(
+    "--affected HEAD exits 2 naming git's first stderr line when git diff fails, and judges no plant",
+    async () => {
+      const root = plantsRoot();
+      const git = (...args: string[]): void => {
+        execFileSync("git", ["-c", "user.name=t", "-c", "user.email=t@example.invalid", "-c", "commit.gpgsign=false", ...args], { cwd: root, env: baseEnv(), stdio: "ignore" });
+      };
+      git("init", "-q");
+      git("add", "-A");
+      git("commit", "-q", "-m", "plants root");
+      const junk = join(tempDir("index"), "junk-index");
+      writeFileSync(junk, "not an index\n");
+      const ran = await runGate("gates/bin/plants.ts", ["--root", root, "--affected", "HEAD"], { cwd: tempDir("cwd"), env: { ...baseEnv(), GIT_INDEX_FILE: junk } });
+      expect(ran).toEqual({
+        code: 2,
+        stdout: [],
+        stderr: [expect.stringMatching(/^plants: could not run: git failed \(fatal: (?:.+: )?index file smaller than expected\)$/)],
+      });
+    },
+    timeout,
+  );
 });

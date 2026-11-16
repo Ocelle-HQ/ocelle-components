@@ -10,8 +10,10 @@
 # commit folds forward into the next kept commit. A group never spans two authors. Each new commit takes the exact
 # tree, author and date of the last commit of its group; its message is the group's first feat/fix commit's message
 # (else the last commit's), with the other subjects listed in its body and the union of the group's trailers (Signed-off-by and the rest).
-# Then one commit remaps base.sha, scaffold.sha and red-commits of every phase to the new SHAs and appends a section
-# to <feature>/reviews/history-map.txt (old -> new for every commit of the range that maps to a new one).
+# Then one commit remaps base.sha, scaffold.sha and red-commits of every phase, and the `- base:` line of its plants.md
+# (op 016, operator round 3, O3-04; that line only: the command and the verbatim output keep their SHAs), to the new
+# SHAs and appends a section to <feature>/reviews/history-map.txt (old -> new for every commit of the range that maps
+# to a new one).
 #
 # Leaves HEAD on the folded history and keeps the old head as refs/ocelle/prefold/<label>/<branch>. Never pushes.
 # Prints {"ok":true|false,"old_head":..,"new_head":..,"commits_before":n,"commits_after":n,"problems":[..]}.
@@ -101,6 +103,14 @@ for dir in "$feature"/reviews/phase-*; do
   if [[ -f "$dir/red-commits" ]]; then
     tmp=$(mktemp); while read -r l s; do [[ -n "${s:-}" ]] && echo "$l $(remap "$s")"; done < "$dir/red-commits" > "$tmp"; mv "$tmp" "$dir/red-commits"
   fi
+  # plants.md: the first `- base: <sha>` line only, so its base stays equal to base.sha (the review checks it).
+  if [[ -f "$dir/plants.md" ]]; then
+    old=$(sed -n -E 's/^- base: ([0-9a-f]{7,40})$/\1/p' "$dir/plants.md" | head -n 1)
+    if [[ -n "$old" ]]; then
+      new=$(remap "$old"); tmp=$(mktemp)
+      awk -v o="- base: $old" -v n="- base: $new" '!done && $0 == o { print n; done = 1; next } { print }' "$dir/plants.md" > "$tmp"; mv "$tmp" "$dir/plants.md"
+    fi
+  fi
 done
 map_file="$feature/reviews/history-map.txt"
 { [[ -s "$map_file" ]] && echo
@@ -108,9 +118,14 @@ map_file="$feature/reviews/history-map.txt"
   for c in "${commits[@]}"; do [[ -n "${map[$c]+x}" ]] && echo "$c ${map[$c]}"; done; } >> "$map_file"
 git add "$feature/reviews"
 GIT_EDITOR=true git commit -q -s -m "chore($label): remap evidence SHAs after the history fold" \
-  -m "base.sha, scaffold.sha and red-commits of every phase now name the folded commits; reviews/history-map.txt maps old to new. Review files keep the SHAs they were written with; the map resolves them."
+  -m "base.sha, scaffold.sha and red-commits of every phase, and the base line of its plants.md, now name the folded commits; reviews/history-map.txt maps old to new. Review files, and plants.md's command and output, keep the SHAs they were written with; the map resolves them."
 new_head=$(git rev-parse HEAD)
-outside=$(git diff --name-only "$old_head" "$new_head" | grep -v -E "^$feature/reviews/(phase-[^/]+/(base\.sha|scaffold\.sha|red-commits)|history-map\.txt)$" || true)
+# A phase's plants.md may differ only in its `- base:` line: one line out, one line in.
+base_line_only() { local changes
+  changes=$(git diff --unified=0 "$old_head" "$new_head" -- "$1" | grep -E '^[-+]' | grep -v -E '^(--- (a/|/dev/null)|\+\+\+ (b/|/dev/null))' || true)
+  [[ "$(printf '%s\n' "$changes" | grep -c -E '^-- base: [0-9a-f]{7,40}$')" == 1 && "$(printf '%s\n' "$changes" | grep -c -E '^\+- base: [0-9a-f]{7,40}$')" == 1 && "$(printf '%s\n' "$changes" | wc -l | tr -d ' ')" == 2 ]]; }
+outside=$(git diff --name-only "$old_head" "$new_head" | grep -v -E "^$feature/reviews/(phase-[^/]+/(base\.sha|scaffold\.sha|red-commits)|history-map\.txt)$" \
+  | while read -r f; do [[ "$f" =~ ^$feature/reviews/phase-[^/]+/plants\.md$ ]] && base_line_only "$f" || echo "$f"; done || true)
 if [[ -n "$outside" ]]; then
   git reset -q --hard "$old_head"
   printf '{"ok":false,"old_head":"%s","problems":["final tree differs outside the evidence files: %s"]}\n' "$old_head" "$(echo $outside)"; exit 1
