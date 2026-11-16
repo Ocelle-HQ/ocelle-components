@@ -417,10 +417,11 @@ const tries = 3;
 /** The text-field row's bound: its click must come this soon after the entry for "shown before 150 ms" to be judged. */
 const early = 150;
 /**
- * The own hover delay of the R-12 leave row and of the re-entry row, set as `--ocelle-tooltip-delay` on their tooltip
- * (operator decisions after tdd-check 4 and after the phase 5 red step: under load the leave, and the move back, came
- * after the 300 ms test delay), and their wait from the entry: 1.5 times that delay, as 450 ms is for the test delay,
- * so a delay the leave did not end, or one a move restarted, would show the bubble inside the window.
+ * The own hover delay of the R-12 leave row, of the re-entry row and of the row "Escape, then a brief hover", set as
+ * `--ocelle-tooltip-delay` on their tooltip (operator decisions after tdd-check 4, after the phase 5 red step and at
+ * the phase 5 landing: under load the leave, and the move back, came after the 300 ms test delay, or after the 100 ms
+ * bound of the Escape row), and their wait from the entry: 1.5 times that delay, as 450 ms is for the test delay, so a
+ * delay the leave did not end, or one a move restarted, would show the bubble inside the window.
  */
 const longDelay = 1000;
 const longWait = 1500;
@@ -842,21 +843,29 @@ const overlayEvent = (tag: string, type: "close-request" | "close", reason: stri
 
 const escapeRows = [
   row(
-    "Escape, then a brief hover (FR-033, R-12): shown by keyboard focus and hidden by Escape, focus kept on the trigger; the pointer enters the trigger and leaves both boxes within 100 ms: no bubble at any frame of a 450 ms wait from the entry",
+    "Escape, then a brief hover (FR-033, R-12): with --ocelle-tooltip-delay: 1000ms on the tooltip, shown by keyboard focus and hidden by Escape, focus kept on the trigger; the pointer enters the trigger and leaves both boxes before that delay: no bubble at any frame of a 1500 ms wait from the entry",
     async (driver) =>
-      beforeDelay("the leave", async () => {
-        await start(driver, page());
-        await tabFrom(driver);
-        await driver.press("Escape");
-        await track(driver);
-        await driver.hover("trg");
-        await pause(50);
-        await driver.pointer([rest]);
-        await pause(450);
-        const f = await frames(driver);
-        return { at: f.left, observed: { never: never(f, 400), focus: await driver.focusPath(), visible: await driver.focusVisible("trg") } };
-      }, 100),
-    { never: true, focus: "trg", visible: true },
+      beforeDelay(
+        "the leave",
+        async () => {
+          await start(driver, page(), `#tip { --ocelle-tooltip-delay: ${String(longDelay)}ms; }`);
+          await tabFrom(driver);
+          await driver.press("Escape");
+          await track(driver);
+          await driver.hover("trg");
+          await pause(50);
+          await driver.pointer([rest]);
+          await pause(1000);
+          await pause(longWait - 1000);
+          const f = await frames(driver);
+          return {
+            at: f.left,
+            observed: { never: never(f, 0), toWait: (f.frames.at(-1)?.t ?? 0) >= longWait, focus: await driver.focusPath(), visible: await driver.focusVisible("trg") },
+          };
+        },
+        longDelay,
+      ),
+    { never: true, toWait: true, focus: "trg", visible: true },
   ),
   row(
     "Escape (US3-4, FR-033): shown by keyboard focus, another key (Shift) leaves it shown and reaches the document; Escape hides it; focus stays on the trigger; a keydown recorder on the document (capture and bubble) sees nothing; dismissed: no bubble at any frame of a 450 ms wait with focus and pointer unchanged; the pointer entering the trigger shows it again by 450 ms",

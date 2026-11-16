@@ -20,3 +20,7 @@ fail for it. No red commit is recorded for this phase (`red-commits` is absent; 
 - **Phase 5 review round 1, R1-01** (`packages/elements/src/bubble.ts`:1-8 and :12, `packages/elements/src/ocelle-tooltip.ts`:138-141):
   the change is comment text only. Stryker makes no mutant of a comment, so no test can fail. The planned mutation
   shard for both files reports `zero-mutants` for each (`mutation.log`, `notes.md` § Review round 1, R1-01 fix).
+- **Phase 5 review round 2, R2-01** (`packages/elements/test/scenarios/tooltip.ts`, the row "Escape, then a brief
+  hover (FR-033, R-12)", T060): a test-only stabilisation of a row the code already meets (a 1000 ms delay of its
+  own, bounds and waits scaled), so it could not fail before a fix. The break checks in `notes.md` § Review round 2,
+  R2-01 fix, and in `round-2-fixes.md` (logs `break-checks/r2-01-b*.log`) are its test-first evidence.
