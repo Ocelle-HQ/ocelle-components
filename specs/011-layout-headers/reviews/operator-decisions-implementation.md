@@ -82,3 +82,9 @@ Recorded by the orchestrator; each is the operator's answer (human:jeroennouwsde
     redone from 567e476 (`archive/claude/008-layout-headers-pre-resign`), the merge parent 3828d2f is kept, and the
     remap, `gate:signoff` and the red/green check of every phase are re-run before the force-push with lease, which
     the operator approved.
+13. **2026-11-16, the Plants shard times at landing are accepted** ("Accept, same follow-up op"). On CI run
+    https://github.com/Ocelle-HQ/ocelle-components/actions/runs/43943196107 (head `cd80093`, all 78 jobs green), 14 of
+    the 28 Plants shard jobs took longer than mission 006's 570 s stop-and-ask limit: shards 6 to 19, from 696 s to
+    907 s. Nothing failed, because the shard jobs have no timeout. It is the growth that mission 013's landing
+    accepted, with its follow-up op that re-splits the plants shards and bounds the cleanup step; this pull request
+    changes no shard. `verification.md` item 2 records it.
