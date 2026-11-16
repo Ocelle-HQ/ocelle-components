@@ -19,3 +19,5 @@ fix commit.
 
 `pnpm test`, `gate:storybook-build`, `gate:visual -- --engine docker`, `gate:axe` and `gate:mutation` run at the end of
 the landing fix rounds; their results are in the round's report.
+
+T050 and T051 were not ticked in `tasks.md` by the fix commit 749125b; the ticks were added afterwards in a bookkeeping commit, their work checked present first.

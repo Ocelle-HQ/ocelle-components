@@ -238,7 +238,7 @@ recorded by `.specify/extensions/story/scripts/red.sh 4 fix-2`, and one fix comm
 (`fix(011-layout-headers): phase 4 review round 2`, signed off) with `reviews/phase-4/round-2-fixes.md`; reviewed as
 phase 4 round 3.
 
-- [ ] T050 [US3] R2-01 (landing L1-03), a `template` or `script` in the sidebar's default slot draws no section
+- [X] T050 [US3] R2-01 (landing L1-03), a `template` or `script` in the sidebar's default slot draws no section
   (FR-021, FR-022, US3-3's template variant, research.md R-09 § never-rendered elements, contracts/checks.md
   § Pairing plants, the `template` row), test first. **Red**: in `packages/elements/test/scenarios/context-sidebar.ts`,
   the US3-3 template variant as a shared scenario, run by both harnesses, `packages/elements/test/context-sidebar.test.ts`
@@ -263,7 +263,7 @@ phase 4 round 3.
   statement "A page rule does not change a section's padding, inline margins, divider or display" stays as it is.
   **Evidence**: in `reviews/phase-4/plants.md` § Review round 2 fix, the `template` row's two plants and the R-17
   style plants of the changed rules, with the scenarios that failed in each harness
-- [ ] T051 [US3] R2-02 (landing L1-02), the published declarations do not declare the internals key (FR-034,
+- [X] T051 [US3] R2-02 (landing L1-02), the published declarations do not declare the internals key (FR-034,
   research.md R-11 § Type declarations, contracts/checks.md § Pairing plants, the declarations row), test first.
   **Red**, in the same commit as T050: `packages/elements/test/build/build.test.ts` (`elements-build`; the scenario
   harnesses do not apply) gains one test, after the package's build (`buildPackage()`): `dist/ocelle-context-sidebar.d.ts`
