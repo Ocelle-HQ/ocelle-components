@@ -57,12 +57,13 @@ plant in one process, the registry check first), which stays what runs locally:
   then the `axe` plants the same way (`plantShards`, `otherShardSize` and `shardSize` in `gates/lib/plant-runner.ts`).
   The approved sizes: 80, approved by the operator (006 plan decision 30), and **1** (012 research.md R-13, 012 plan
   decision 15; it was 3, approved by decision 30 up to its split count of 25 stories). By 006's measured model (387 +
-  size × 1.377 × (2s + 2) s per `visual` shard at s stories) a size-1 shard takes about 550 s at 012's about 58 stories,
-  and the split count at size 1 is **76 stories** (599 s), put to the operator for approval at 012 phase 1's review.
-  Size 1 is the last lever: a plant is never split, so no lower size remains, and a `visual` shard's time still grows
-  with every repository story; after 012 about 18 stories of headroom remain. The cost: at 58 stories the 73 `visual`
-  and `axe` shards take about 11.2 Plants runner-hours per CI run, against about 4 at 21 stories and size 3 (006
-  plan.md, Complexity Tracking, "Plant roots hold every repository story").
+  size × 1.377 × (2s + 2) s per `visual` shard at s stories) a size-1 shard takes about 588 s at the 72 stories the
+  repository holds after 012 (corrected at 012 phase 6 from phase 1's estimate of about 58 stories and 550 s), and the
+  split count at size 1 is **76 stories** (599 s), approved by the operator at 012 phase 1's review. Size 1 is the last
+  lever: a plant is never split, so no lower size remains, and a `visual` shard's time still grows with every
+  repository story; after 012 about **4 stories** of headroom remain. The cost: at 72 stories the 73 `visual` and `axe`
+  shards take about **11.9 Plants runner-hours** per CI run (73 × 588 s), against about 4 at 21 stories and size 3
+  (006 plan.md, Complexity Tracking, "Plant roots hold every repository story").
 - `--shard <k>` judges only shard `k`'s plants as the single run would, with no registry or structural check, prints
   `plants: shard <k> of <n>: <m> plants judged, every plant as expected`, and writes the report
   `storybook/.visual/plant-shards/<k>.json` whatever its exit.

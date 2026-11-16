@@ -143,6 +143,30 @@
             },
             {
               "type": {
+                "text": "\"page\" | \"true\" | undefined"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "current",
+              "kind": "field",
+              "description": "`page` or `true`: the row is the current item, reported as `aria-current` with that value on the inner control and\ndrawn with the current mark (an `--ocelle-color-accent-low` surface, `--ocelle-color-chrome-hover` on chrome, and\na bar in `--ocelle-color-current` at the inline start, apart from the focus ring), which stays on hover; absent or\nany other value is not current. Reflected.",
+              "default": "undefined",
+              "attribute": "current"
+            },
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "unavailable",
+              "kind": "field",
+              "description": "Unavailable: the row exists but cannot be used right now. Its inner control stays in the tab order, reports\n`aria-disabled=\"true\"`, keeps its name and description and is not activated (no event, no click past the element,\nno navigation: a link row has no `href`); it shows the disabled ink and no hover. Reflected.",
+              "default": "false",
+              "attribute": "unavailable"
+            },
+            {
+              "type": {
                 "text": "boolean"
               },
               "reflects": true,
@@ -171,16 +195,16 @@
                 "text": "CustomEvent<{ rowId: string }>"
               },
               "name": "ocelle-action-row-activate",
-              "description": "Dispatched from the element on each activation (a pointer click, Enter, Space in button mode, `click()`); bubbles, composed and cancelable, `detail` `{ rowId }`, the current `row-id` or `\"\"`."
+              "description": "Dispatched from the element on each activation (a pointer click, Enter, Space in button mode, `click()`), before a link's navigation; bubbles, composed and cancelable, `detail` `{ rowId }`, the current `row-id` or `\"\"`; `preventDefault()` cancels a link's navigation. Not dispatched for a Ctrl, Meta, Shift or Alt click or a middle click in link mode, nor while the row is unavailable."
             }
           ],
-          "description": "An activatable row: a leading icon, a title, a description, tags and a trailing icon, activated by pointer or\nkeyboard with one `ocelle-action-row-activate` event that carries the row's id; a row or a card, bordered or flush,\non the ground the host states, and a link with `href`.",
+          "description": "An activatable row: a leading icon, a title, a description, tags and a trailing icon, activated by pointer or\nkeyboard with one `ocelle-action-row-activate` event that carries the row's id; a row or a card, bordered or flush,\non the ground the host states, a link with `href`, the current item of a list and an unavailable item.",
           "customElement": true,
           "cssProperties": [],
           "cssParts": [
             {
               "name": "control",
-              "description": "The inner `<button>`, or the inner `<a>` in link mode."
+              "description": "The row's icon-and-title control: the inner `<button>`, or the inner `<a>` in link mode. It is not the row's surface: the description, tags and trailing content are beside it, and `::part(control)` styles do not reach the row's surface or border."
             },
             {
               "name": "title",
@@ -323,6 +347,24 @@
               "fieldName": "rel",
               "description": "The inner link's `rel`, in link mode. Reflected.",
               "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "\"page\" | \"true\" | undefined"
+              },
+              "name": "current",
+              "fieldName": "current",
+              "description": "`page` or `true`: the row is the current item, reported as `aria-current` with that value on the inner control and\ndrawn with the current mark (an `--ocelle-color-accent-low` surface, `--ocelle-color-chrome-hover` on chrome, and\na bar in `--ocelle-color-current` at the inline start, apart from the focus ring), which stays on hover; absent or\nany other value is not current. Reflected.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "name": "unavailable",
+              "fieldName": "unavailable",
+              "description": "Unavailable: the row exists but cannot be used right now. Its inner control stays in the tab order, reports\n`aria-disabled=\"true\"`, keeps its name and description and is not activated (no event, no click past the element,\nno navigation: a link row has no `href`); it shows the disabled ink and no hover. Reflected.",
+              "default": "false"
             },
             {
               "type": {
@@ -627,7 +669,7 @@
             },
             {
               "name": "pressed",
-              "description": "While the moved `aria-pressed` is `\"true\"`."
+              "description": "While the moved `aria-pressed` is `\"true\"`, in button mode only: a link has no pressed state."
             },
             {
               "name": "current",

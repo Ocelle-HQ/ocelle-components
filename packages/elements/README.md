@@ -294,6 +294,10 @@ with one `ocelle-action-row-activate` event that carries the row's id, so a host
   none.
 - `layout` (attribute and property, reflected): `row` (the default) puts the icon, the title and the description on
   one line with the tags and the trailing icon, which move together to a second line when the line cannot hold them.
+  `layout="card"`: the icon and the title on the first line with the trailing icon at its end, then the description,
+  then the tags, each `--ocelle-space-1` below the line above; the title is the part `title`, so a host can adjust it.
+  Tags wrap only between tags: a tag's text is not broken inside a word, except a tag wider than the row, which may
+  break.
 - `presentation` (attribute and property, reflected): `default` (a bordered row on `--ocelle-color-sheet`,
   `--ocelle-radius-row`) or `flush` (no border and no surface, the block padding `--ocelle-space-1` and the compact
   text scale); any other value renders `default`.
@@ -303,6 +307,19 @@ with one `ocelle-action-row-activate` event that carries the row's id, so a host
   `--ocelle-color-chrome-ink` and the description and tags in `--ocelle-color-chrome-muted`.
 - `href` and `target`, `rel` (attributes and properties, reflected): link mode (Link versus button), with the
   `noopener` rule of `ocelle-button`; the row has no `download`.
+- `current` (attribute and property, reflected): `page` or `true` marks the current item: the inner control reports
+  `aria-current` with that value and the row shows the current mark, an `--ocelle-color-accent-low` surface
+  (`--ocelle-color-chrome-hover` with `ground="chrome"`) and a bar in `--ocelle-color-current`, `--ocelle-bar-width`
+  wide, at the inline start; any other value is not current. The bar is drawn 7 px inside the row's edge, apart from
+  the focus ring, so on a focused current row the ring and the bar stay two marks. The current mark stays on hover; in
+  forced colours the bar is `Highlight`.
+- `unavailable` (boolean attribute and property, reflected): the row is unavailable (the control conventions): its
+  inner control stays in the tab order with `aria-disabled="true"`, keeps its name and description and is not
+  activated by any click or key; a link row has no `href`. Its title, description, tags and trailing icon are in
+  `--ocelle-color-disabled-ink` (`GrayText` in forced colours), and hovering it changes nothing. An unavailable
+  current row keeps its current surface and `aria-current`, with the bar in `--ocelle-color-disabled-ink`. While the
+  row is unavailable its description, tags and trailing wrappers carry `aria-disabled="true"` too, so a checker reads
+  their text as part of the inactive control.
 - `busy` (boolean attribute and property, reflected): the row's content is updating; its inner control reports
   `aria-busy="true"`, and activation still dispatches the event: on a row, busy does not mean unavailable.
 - Slots: the default slot (the title), `icon` and `trailing` (the slot convention), `description` and `tags`
@@ -310,6 +327,9 @@ with one `ocelle-action-row-activate` event that carries the row's id, so a host
 
 Each activation (a pointer click, Enter or Space, the element's `click()`) dispatches `ocelle-action-row-activate` from
 the element: a `CustomEvent` with `bubbles: true`, `composed: true`, `cancelable: true` and `detail` `{ rowId }`.
+In link mode the event is dispatched before the navigation, and calling `preventDefault()` on it cancels the
+navigation. A click with Ctrl, Meta, Shift or Alt held, or a middle click, dispatches no event and the element prevents
+nothing: the browser's own modifier handling applies (on Chromium on Linux a Meta-click navigates the current tab).
 
 The row is named by its title (the default slot), then by `label` or the host's `aria-label` or `aria-labelledby` in
 the name order; its accessible description is the text of the `description` slot followed by that of the `tags` slot,
@@ -400,7 +420,7 @@ after it) follows these rules.
 
    Since a host attribute selector no longer matches a moved state, `ocelle-button` exposes custom states:
    `:state(expanded)` while the moved `aria-expanded` is `"true"`, `:state(pressed)` while the moved `aria-pressed` is
-   `"true"`, and `:state(current)` while the moved `aria-current` is anything but `"false"`, for example
+   `"true"` in button mode, and `:state(current)` while the moved `aria-current` is anything but `"false"`, for example
    `ocelle-button:state(expanded) ocelle-icon`. ID references (`aria-controls`, `aria-labelledby`,
    `aria-describedby`) are resolved by id in the host's own tree (its document, or the shadow root it is in) when they
    are set and when the element is connected, and related to the inner control by element reference, never by copying

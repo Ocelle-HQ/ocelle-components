@@ -308,3 +308,21 @@ describe("ocelle-action-row's end group takes no space when empty", () => {
     expect({ width: Math.abs(host.width - (title.width + 26)) <= 0.5, tag: tag.width > 0 }).toEqual({ width: true, tag: true });
   });
 });
+
+// A modifier click on a button-mode row (FR-033, data-model.md § Event `ocelle-action-row-activate`: any click in
+// button mode activates; only link mode ignores Ctrl, Meta, Shift and Alt clicks). Added after the red commit for the
+// surviving mutant at src/ocelle-action-row.ts's modifier check (operator decision at phase 6, 2026-11-16, option (a)).
+describe("ocelle-action-row's modifier clicks in button mode", { timeout: 60_000 }, () => {
+  it("dispatches exactly one click and one ocelle-action-row-activate for each Ctrl, Meta, Shift and Alt click on a button-mode row", async () => {
+    await driver.mount('<div id="wrap"><ocelle-action-row id="r" row-id="m-42">Mission 42</ocelle-action-row></div>');
+    await driver.events("r", ["click", "ocelle-action-row-activate"]);
+    const found: Record<string, unknown> = {};
+    for (const modifier of ["Control", "Meta", "Shift", "Alt"] as const) {
+      await driver.click("r", { modifiers: [modifier] });
+      const records = (await driver.takeEvents()).filter((record) => record.target === "ocelle-action-row#r");
+      found[modifier] = Object.fromEntries(["click", "ocelle-action-row-activate"].map((type) => [type, new Set(records.filter((record) => record.type === type).map((record) => record.serial)).size]));
+    }
+    const once = { click: 1, "ocelle-action-row-activate": 1 };
+    expect(found).toEqual({ Control: once, Meta: once, Shift: once, Alt: once });
+  });
+});
