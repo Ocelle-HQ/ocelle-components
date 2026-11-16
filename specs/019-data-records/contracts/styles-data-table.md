@@ -8,6 +8,12 @@ timeline's rules and phase 3's red the chain's, each in the phase whose green ad
 
 ## Block 1: the data-table rules, at specificity (0,0,0)
 
+The caption's cap reads `--data-table-box-size` and `--data-table-end-fade`, which `ocelle-data-table` writes on
+its `.region-track`. The two names are a documented base-style hook between `@ocelle/elements` and `@ocelle/styles`,
+public surface under constitution VII (analysis I7 (a)): the README of each package names them, each CHANGELOG lists
+them as surface, and a rename in either package is a breaking change for both. Before upgrade neither is set, and the
+cap falls back to `--ocelle-measure-container` with no end fade.
+
 Every selector is wrapped whole in `:where()`, so any consumer rule on the same element wins (US1-14). Only the direct
 table of an `ocelle-data-table` is selected, whether the element is defined or not, so a nested table is not styled.
 
@@ -58,7 +64,8 @@ after upgrade (the README's "Before upgrade" lines). A slotted time (plan gate Q
 written; no rule is added for it. An `aria-hidden="true"` item is not shown before upgrade, as after it
 (FR-025, PLAN-FRESH-2-005); without the `display: none` rule it would fall back to inline display and show. Styles
 browser bodies, with the elements undefined, assert each visible item's box starts below the previous one, and that a
-`hidden` item and an `aria-hidden="true"` item are not shown (PLAN-FRESH-1-004, PLAN-FRESH-2-005).
+`hidden` item and an `aria-hidden="true"` item are not shown (PLAN-FRESH-1-004, PLAN-FRESH-2-005). They live in
+`packages/styles/test/browser/list-items.test.ts`, apart from the data-table file (analysis I5).
 
 ## Consumer rules
 
@@ -66,4 +73,4 @@ browser bodies, with the elements undefined, assert each visible item's box star
 - **Inside prose.** A consumer rule needs a specificity above (0,1,0), or (0,1,0) placed after `@ocelle/styles`.
 - **In a consumer's shadow root.** `@ocelle/styles` is adopted there too.
 
-The README states all three.
+The README states all three, and the base-style hook of block 1 (a consumer does not set its two properties).

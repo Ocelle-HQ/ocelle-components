@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-15
 
-**Status**: Draft
+**Status**: Approved at the spec gate (2026-11-15); amended after the plan gate and after the analysis (2026-11-16)
 
 **Input**: User description: "Mission for the rest of #13 (triage/019-data-display-follow-on.md; triage/013-data-display.md
 option B), spec directory specs/019-data-records. The operator chose option B at the triage gate: this mission builds
@@ -76,8 +76,17 @@ Ocelle web console uses them in server-rendered pages under a strict CSP, filled
 - Q-E, marked-up times (#470): "Yes: named time slot". `ocelle-timeline-event` gets a named `time` slot that takes
   precedence over the `time` attribute, styled through `::slotted()`, the item text still time first (FR-023, US2-11
   to US2-14). A slotted time that is empty, white space only or hidden counts as no slotted time, and the `time`
-  attribute then applies; that reading of "precedence" is the plan's and is put back to the operator as Q-G in
-  `reviews/plan/gate-answers.md`.
+  attribute then applies.
+- Q-G, an empty, white-space-only or hidden slotted time beside a `time` attribute: (a), the attribute applies; the
+  slot takes precedence only when it has visible non-blank text (FR-023, US2-13).
+
+**Operator decisions after the analysis** (2026-11-16, human:jeroennouwsdev; `reviews/analysis/operator-decisions.md`):
+
+- C1, states without a story: (c). A standalone `ocelle-timeline-event` and a standalone `ocelle-evidence-step` get a
+  story in their container's file; the states named by a host `aria-label` (the data table's region, the timeline,
+  the chain) are one Principle V exception in the plan's Complexity Tracking, proven by browser tests (FR-050).
+- I7, the caption cap's custom properties: (a). `--data-table-box-size` and `--data-table-end-fade` are a documented
+  base-style hook between `@ocelle/elements` and `@ocelle/styles`, public surface under constitution VII (FR-057).
 
 ## Scope
 
@@ -263,7 +272,10 @@ the reading order and the page's scroll width.
 14. **Given** an event whose slotted time is empty, **When** its text is filled ("14:20"), and **Given** one whose
     slotted time is `hidden`, **When** `hidden` is removed, **Then** in each case the time box appears with the slotted
     time, the item text becomes time first, the marker moves to the time's line and the previous connector's end
-    follows, without a page reload or resize; the reverse changes remove the time box again (FR-023, FR-025).
+    follows, without a page reload or resize; the reverse changes remove the time box again; **Given** an event whose
+    `<time>` child has no `slot` attribute (so it is part of the content), **When** `slot="time"` is set on that child,
+    **Then** the same follows, and **When** the `slot` attribute is removed again, **Then** the time box goes and the
+    node is shown in the content (FR-023, FR-025).
 
 ---
 
@@ -359,10 +371,12 @@ the chip variant.
   an empty list node is exposed is set in the plan and tested (FR-025).
 - **`ocelle-timeline-event` outside `ocelle-event-timeline`, `ocelle-evidence-step` outside `ocelle-evidence-chain`.**
   The item shows its time (for an event: the slotted time, else the attribute's, FR-023) and content as plain text,
-  with no marker, no connector and no list item role. It throws nothing (FR-020, FR-030).
-- **More than one slotted time.** Every visible direct child with `slot="time"` is shown in the time box in source
-  order; the event has a slotted time when at least one of them has non-blank text (FR-023). The README asks for one
-  time element per event.
+  with no marker, no connector and no list item role. It throws nothing (FR-020, FR-030). Each has a story in its
+  container's stories file (FR-050).
+- **More than one slotted time.** The event has a slotted time when at least one visible direct child with
+  `slot="time"` has non-blank text (FR-023). It then shows every visible one in the time box in source order, a blank
+  one beside a non-blank one included: the blank one adds no text to the item text (white space is collapsed,
+  FR-016). With no non-blank one, none is shown (FR-023). The README asks for one time element per event.
 - **A hidden item.** An item with `hidden` or `aria-hidden="true"` is not shown, not exposed, gets no marker or ordinal
   and is skipped by the connectors, until the attribute is removed (FR-025).
 - **Order.** The timeline and the chain keep source order. Neither sorts by time; newest-first or oldest-first is the
@@ -524,8 +538,9 @@ the chip variant.
   event **has a slotted time** when the trimmed text content of at least one of them is not empty. The event's time
   is, in order: its slotted time, when it has one, with the `time` attribute then ignored (neither shown nor exposed);
   else its `time` when that is a non-blank string; else none. An empty, white-space-only or hidden slotted time counts
-  as no slotted time and is neither shown nor exposed (the `time` attribute then applies; Q-G in
-  `reviews/plan/gate-answers.md`). The time is shown on its own line above the content (Q-C (a)) in
+  as no slotted time and is neither shown nor exposed (the `time` attribute then applies; plan gate Q-G (a)). While
+  the event has a slotted time, every visible `slot="time"` child is shown in source order, a blank one included
+  (it adds no item text). The time is shown on its own line above the content (Q-C (a)) in
   `--ocelle-font-sans` with `--ocelle-figures`, distinct from the content by more than colour; a slotted time is
   styled through `::slotted()` to the same type as an attribute time, and the element writes nothing on the slotted
   nodes (a consumer rule on them wins, and their attributes, such as `datetime`, `title`, `lang` or `dir`, stay
@@ -582,8 +597,9 @@ the chip variant.
   element, token, part or hook of #7's pill tag (`ocelle-pill-tag`), and its radius is not `--ocelle-radius-pill`
   (#517: the chip is the chain's own). The chip has no fill (plan gate Q-A (a)). A chip step keeps its list item and
   its position.
-- **FR-036**: Step content MUST use `--ocelle-font-sans` in a text colour that meets FR-013; the marker ring and the
-  chip outline use an ink token and meet FR-013's 3:1 rule on all nine main grounds; the connectors are decorative under FR-013 and visible in forced colours.
+- **FR-036**: Step content MUST use `--ocelle-font-sans` in a text colour the plan names. Its text colour, the marker
+  ring, the chip outline and the connectors follow FR-013, which classes each of them and states the colour, contrast
+  and forced-colours rules.
 
 ### Tokens
 
@@ -597,11 +613,13 @@ the chip variant.
 
 - **FR-050**: Each element MUST have a story per variant and per state in `storybook/stories/<element>.stories.ts`,
   rendered in light and dark, following #10's contributor note (`specs/006-storybook-workbench` FR-025). The item
-  elements have no stories file of their own: their states (with and without time, a slotted time, wrap, hidden, chip) are stories in
-  their container's file, and their behaviour outside the container is proven by browser tests only, as 013 did for
-  `ocelle-fact`. Data-table stories include a fitting table, an overflowing table (the region focusable and named), a
-  table with row headers, and a table named by its caption. Any further state without a story is a constitution V
-  exception recorded in the plan's Complexity Tracking and approved by the operator.
+  elements have no stories file of their own: their states (with and without time, a slotted time, wrap, hidden, chip,
+  and the item outside its container) are stories in their container's file (analysis C1 (c)). Data-table stories
+  include a fitting table, an overflowing table (the region focusable and named), a table with row headers, and a
+  table named by its caption. The states named by a host `aria-label` (the data table's region, the timeline and the
+  chain) have no story: they are a constitution V exception recorded in the plan's Complexity Tracking, chosen by the
+  operator (analysis C1 (c)), and proven by browser tests. Any further state without a story is a constitution V
+  exception recorded there and approved by the operator.
 - **FR-051**: Visual baselines and the `axe` run follow #10 on `main`. Each phase that adds stories MUST commit their
   light and dark baselines, produced in #10's pinned container by its baseline command under docker, and its stories
   MUST pass #10's `storybook-build`, `visual` and `axe` gates with no serious or critical finding and no
@@ -621,7 +639,10 @@ the chip variant.
   shadow styles cannot reach its descendants, and assigned by manual slot assignment. It MUST also list the data table
   as a user of the overflow-region module beside 009's elements.
 - **FR-057**: Each package changed gets a changelog entry naming its surface additions: the five elements and their
-  properties, any added tokens, and the added `@ocelle/styles` rules (constitution VII, MINOR).
+  properties, any added tokens, and the added `@ocelle/styles` rules (constitution VII, MINOR). The custom properties
+  `ocelle-data-table` writes and `@ocelle/styles`' caption cap reads (`--data-table-box-size`,
+  `--data-table-end-fade`) are a documented base-style hook between the two packages: both packages' changelogs and
+  READMEs name them as surface, and the READMEs say a consumer does not set them (analysis I7 (a)).
 - **FR-058**: The README MUST map each kitty-mission-ui `.sk-data-table` variant, and any event-history or
   evidence-chain class family the plan's research inventories, to the element and variant that replaces it, or to the
   consumer's remedy, or to "not this mission" with the operator's decision. The mapping names roles only and copies no

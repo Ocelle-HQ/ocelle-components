@@ -30,14 +30,14 @@ used for the lists.
 
 | Oracle | Used by | How |
 |---|---|---|
-| AX tree, table | US1-1, US1-4, US1-6, US1-7, US1-15, US1-16, the R-04 caption-text bodies | The full Chromium AX tree: compare the element's subtree with the same table outside; region `group` and name |
-| AX tree, lists, and `itemTexts(list)` (new, R-11) | US2-1, US2-3, US2-5, US2-6, US2-10, US2-11 to US2-14, the slotted-time edge bodies (R-10), US3-1, US3-6, US3-7, US3-10 | `StaticText` names under each `listitem`, joined, collapsed and trimmed. Each assertion also checks the text is not empty. US2-5, US2-6, US3-6 and US3-7 also assert the `listitem` count and that no other child of the container is in the tree. No marker or connector node is in the tree, and a DOM assertion pins `aria-hidden="true"` on every marker wrapper and connector span |
+| AX tree, table | US1-1, US1-4, US1-6, US1-7, US1-15, US1-16, the R-04 caption-text bodies, the FR-010 host `aria-label` body, the hidden-host bodies | The full Chromium AX tree: compare the element's subtree with the same table outside; region `group` and name |
+| AX tree, lists, and `itemTexts(list)` (new, R-11) | US2-1, US2-3, US2-5, US2-6, US2-10, US2-11 to US2-14 (US2-14's `slot` change included), the slotted-time edge bodies (R-10), US3-1, US3-6, US3-7, US3-10, the FR-026 bodies (no live region, landmark or heading node in the container's subtree), the hidden-host bodies | `StaticText` names under each `listitem`, joined, collapsed and trimmed. Each assertion also checks the text is not empty. US2-5, US2-6, US3-6 and US3-7 also assert the `listitem` count and that no other child of the container is in the tree. No marker or connector node is in the tree, and a DOM assertion pins `aria-hidden="true"` on every marker wrapper and connector span |
 | computed style | US1-2, US1-3, US1-10, US1-14, US2-3, US2-11, US3-2, US3-4, the `time` bodies (R-10) | `getComputedStyle` on cells, headers, caption, time (the attribute time's `part="time"` and each slotted time node, a `<b slot="time">` included), marker and chip, against the token's computed value read from a probe |
 | geometry | US1-4, US1-12, US2-2, US2-9, US2-11, US2-13, US2-14, US3-2, US3-3, US3-4, US3-5, US3-9, ordinal fit, mixed chips, the `time` bodies, the caption bodies (R-07), the shrink-to-fit bodies (R-02), the timeline connector bodies (R-10) | `getBoundingClientRect` on real elements (markers, connector spans, `<li>`, the chip, the host, the caption's line boxes through a `Range`): marker size, centring on the first line, the caption's start against the table's and its line boxes inside the box's unmasked extent, the host's inline size in a shrink-to-fit host, each timeline connector clear of both dots with `space-1` gaps (0.5 px) and `elementFromPoint` inside each dot returning the marker, connector ends inside the chain, chip block size < `size-step`, the ordinal box inside the marker's padding box, connector centres on the row's marker centre (0.5 px). US1-12, US2-9 and US3-9 assert inline-start edges against the container's: under `dir="rtl"` the first column's, the markers' and the first step's right edges are at the container's right edge, and lines fill towards the left. US3-5 asserts the long step's box stays inside the chain |
 | scroll width | US1-4, US2-4, US3-3, US3-5, 640 px bodies, the flex-item and grid-item bodies (R-02) | page `scrollWidth === innerWidth` |
 | keyboard | US1-5, US1-8, US1-13, US2-7, FR-011 link in a step | See the table below |
 | copy | US1-9, US2-4 | 013's `copy` |
-| forced colours | US1-11, US2-8, US3-8 | `emulateMedia({ forcedColors: "active" })`. Text: a system text colour. Each mark (cell rules, timeline marker and connector, step ring and connector, chip outline): the border side that draws it has a foreground system colour (`CanvasText`, never the ground's `Canvas`) and a width above zero, and its border box is not empty (PLAN-A11Y-SECURITY-1-001) |
+| forced colours | US1-11, US2-8, US3-8 | `emulateMedia({ forcedColors: "active" })`. Text: a system text colour. Each mark (cell rules, the header rule below the column headers, timeline marker and connector, step ring and connector, chip outline): the border side that draws it has a foreground system colour (`CanvasText`, never the ground's `Canvas`) and a width above zero, and its border box is not empty (PLAN-A11Y-SECURITY-1-001) |
 | contrast, source | US1-11, US2-8, US3-8 | Node checks `packages/elements/test/node/records-pairs.test.ts` and `packages/styles/test/data-table-pairs.test.ts`: each colour painted is tied to a `checked` row of `pairs.json` on the nine main grounds in both themes; a removed-row fixture must fail the check (R-13) |
 | contrast, rendered | US1-11, US2-8, US3-8 | Each rendered colour (cell, header, time, content, marker, ring, ordinal, chip outline) in light and dark equals the probe-resolved value of the token the source names, and that token is then looked up in the declarations (R-13) |
 
@@ -76,6 +76,10 @@ asserts something only the element gives, or is proven by a green-time element p
 | the pre-upgrade bodies | (none: no rule exists at red) | each visible item's box starts below the previous one before definition, and a `hidden` or `aria-hidden="true"` item is not shown |
 | the no-pill grep | no source exists at red | element plant: `pill` written into the chain's styles must fail it |
 | define twice | the first definition wins with no element | the elements' tag names resolve to the first copy's classes, and each renders its shadow structure |
+| the hidden-host bodies (FR-001, FR-015) | at red the scaffold has no `:host` display rule, so the user-agent `[hidden]` rule hides the host anyway | the same body asserts a sibling without `hidden` renders its shadow structure (`.region-box` with the table assigned, the `<ol>`, or the item's `part="content"`); element plant: `:host([hidden])` removed must fail it at green |
+| FR-026, no landmark or heading | an empty render adds none | the same body asserts the container's named `list` is in the AX tree |
+| US2-14's `slot` change | with no element, a `<time>` child shows wherever it is written | the same body asserts `part="time"` holds the node after `slot="time"` is set and the `<li>` has `has-time`, and neither after `slot` is removed |
+| the two visible slotted times, one blank (A1) | the light DOM holds both nodes anyway | the same body asserts both are assigned to the `time` slot (`assignedSlot` is the `time` slot) and the item text is time first with no added text |
 
 ## Element plants (CSS-only behaviour Stryker does not mutate)
 
@@ -118,6 +122,8 @@ stays op 016's gate-plant record in its set form, which the review compares line
 | The `time` slot always rendered, whatever `hasSlottedTime` gives | US2-13 (the empty-slot halves: the time box exists) |
 | The event's own observer without `characterData` | US2-14, the filled case |
 | The timeline's observer without `subtree` | US2-14, the marker and connector halves |
+| `slot` dropped from the event's observer's attribute filter (analysis G1) | US2-14's `slot` change (the time box) |
+| `slot` dropped from the timeline's observer's attribute filter (analysis G1) | US2-14's `slot` change (`has-time`, the marker's line and the connector's end) |
 | The `slot[name="time"]::slotted(*)` type rule removed | US2-11, the `<b slot="time">` case |
 | The `::slotted([aria-hidden="true"])` `display: none` rule removed | the two-slotted-nodes body |
 | The pre-upgrade `aria-hidden="true"` `display: none` rules removed (R-08) | the pre-upgrade `aria-hidden` bodies of both containers |
@@ -135,6 +141,7 @@ stays op 016's gate-plant record in its set form, which the review compares line
 | `pill` written into the chain's styles | the no-pill node test |
 | `role="list"` removed | the explicit-role body |
 | A blank host `aria-label` treated as decisive | US2-10, US3-10 |
+| `:host([hidden])` removed, per element (FR-001, analysis G3) | that element's hidden-host body |
 
 **Equivalent in Chromium (PLAN-TESTABILITY-1-005).** Removing `aria-hidden` from the timeline's marker wrapper, or
 from a connector span, cannot fail an AX body. The squad's refute pass reran the probe (google-chrome headless,
@@ -161,7 +168,7 @@ In `storybook/stories/<element>.stories.ts`, each in light and dark (PLAN-CORREC
   - empty body;
   - 320 px;
   - no table (an empty region).
-- **Timeline (10):**
+- **Timeline (11):**
   - three events;
   - an event without a time;
   - marked-up times (each event's time a `<time slot="time" datetime>`, one event also with a `time` attribute that
@@ -172,8 +179,10 @@ In `storybook/stories/<element>.stories.ts`, each in light and dark (PLAN-CORREC
   - a hidden event (three events, the second `hidden`);
   - right-to-left;
   - 320 px;
-  - empty (no visible event).
-- **Chain (11):**
+  - empty (no visible event);
+  - standalone events (analysis C1 (c)): two `ocelle-timeline-event`s outside a timeline, one with a `time` attribute
+    and one with a `<time slot="time" datetime>`, each its time above its content as plain text, no marker.
+- **Chain (12):**
   - six steps in one row;
   - wrapped at 320 px;
   - mixed chips;
@@ -184,14 +193,19 @@ In `storybook/stories/<element>.stories.ts`, each in light and dark (PLAN-CORREC
   - a hidden step (six steps, the third `hidden`);
   - right-to-left;
   - unnamed;
-  - empty (no visible step).
+  - empty (no visible step);
+  - standalone steps (analysis C1 (c)): a default and a `variant="chip"` `ocelle-evidence-step` outside a chain, each
+    plain text with no marker, ordinal or chip box.
 
-That is 33 stories, 66 baselines: `visual:update` reports 24, 20 and 22 added in phases 1 to 3 (R-15).
+That is 35 stories, 70 baselines: `visual:update` reports 24, 22 and 24 added in phases 1 to 3 (R-15).
 
-The item elements' states are in their container's file. A standalone item has no story (FR-050). No story sets a
-blank or decisive host `aria-label` unless the phase 2 spike shows axe is clean on it (R-09). The story test checks
-presence in light and dark, 320 px reflow of each container story, and that every list in every story has a name
-except the unnamed chain story and the empty stories (which render no list). A story the `axe` gate fails (the unnamed
+The item elements' states are in their container's file, the standalone item included (analysis C1 (c)). No story
+sets a host `aria-label`, blank or not, on any of the three containers: those states are plan.md § Complexity
+Tracking's one Principle V exception (R-09's axe risk), proven by the browser bodies (the FR-010 host `aria-label`
+body, US2-10, US3-10). Each phase's spike (T003, T026, T052) runs axe on the state; a clean result meets the row's
+sunset and goes to the operator, who decides whether the phase adds the story. The story test checks presence in light
+and dark, 320 px reflow of each story, and that every list in every story has a name except the unnamed chain story,
+the empty stories and the standalone-item stories (which render no list). A story the `axe` gate fails (the unnamed
 overflowing table is the likeliest) is fixed in the story or the element, or goes to the operator with a Complexity
 Tracking row.
 
@@ -201,7 +215,7 @@ Tracking row.
 |---|---|
 | `gate:unit-tests`, `gate:typecheck`, `gate:lint`, `gate:style-lint`, `gate:test-lint`, `gate:csp`, `gate:prefix`, `gate:manifest`, `gate:contrast`, `gate:brand-rules` | every phase |
 | `gate:storybook-build`, `gate:visual`, `gate:axe` | phases 1 to 3, with the phase's baselines from `visual:update` in #10's pinned container under docker |
-| `gate:plants -- --affected <phase base>` (op 016), `--list` recorded in `reviews/phase-<N>/plants.md` | every phase; never a full local `gate:plants` |
+| `gate:plants -- --affected <phase base>` (op 016), the run itself (base, command, exit, verbatim output) recorded in `reviews/phase-<N>/plants.md` in op 016's form; the reviewer reruns it with `--list` and compares the `note: affected:` lines | every phase (phase 4: the mission's base, `reviews/phase-1/base.sha`, quickstart step 4); never a full local `gate:plants` |
 | element plants (§ Element plants), recorded in `reviews/phase-<N>/element-plants.md` | phases 1 to 3, after green |
-| `gate:mutation` | every phase, under #23 and op 015 |
+| `gate:mutation` | every phase with source, `--base <phase base>`, under #23 and op 015; phase 4 (quickstart step 6) on the mission's base |
 | `gate:signoff` | every commit signed off |

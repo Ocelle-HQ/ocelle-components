@@ -29,6 +29,11 @@ Module `packages/elements/src/ocelle-event-timeline.ts`, class `OcelleEventTimel
 
 `aria-label` is observed. The name comes from `resolveName`, imported from `./overflow-region.ts` (R-09).
 
+## Host styles
+
+`:host { display: block; }` and `:host([hidden]) { display: none; }` beside it (FR-001; the display rule would
+otherwise beat the user-agent `[hidden]` rule). A hidden timeline has no box and no list node (analysis G3).
+
 ## Shadow structure (one or more visible events)
 
 ```html

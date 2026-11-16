@@ -26,6 +26,11 @@ Module `packages/elements/src/ocelle-evidence-chain.ts`, class `OcelleEvidenceCh
 
 `aria-label` is observed. The name comes from `resolveName`, imported from `./overflow-region.ts` (R-09).
 
+## Host styles
+
+`:host { display: block; }` and `:host([hidden]) { display: none; }` beside it (FR-001; the display rule would
+otherwise beat the user-agent `[hidden]` rule). A hidden chain has no box and no list node (analysis G3).
+
 ## Shadow structure
 
 ```html

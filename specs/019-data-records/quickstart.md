@@ -23,16 +23,26 @@ checks: [contracts/checks.md](contracts/checks.md).
    elements with empty event lists.
 3. **Storybook.** Run `pnpm run gate:storybook-build`, `gate:visual` and `gate:axe`. All pass. `visual` reports no
    change to 013's or any earlier baseline (SC-007).
-4. **Plants.** Run `pnpm run gate:plants -- --affected origin/main --list`, then the same without `--list`. Every
-   selected plant passes. The record goes in `reviews/phase-4/plants.md`.
+4. **Plants.** Run `pnpm run gate:plants -- --affected $(cat specs/019-data-records/reviews/phase-1/base.sha)`, the
+   mission's base (phase 4 changes no source, so its own base would select nothing), one heavy job at a time. It
+   exits 0. The run itself goes in `reviews/phase-4/plants.md` in op 016's form (base, command, exit, verbatim output;
+   tasks.md § Plants); "No plant selected" is recorded as printed. The reviewer reruns the command with `--list` and
+   compares its `note: affected:` lines with the record. In phases 1 to 3 the same step runs with the phase's own
+   base (T023, T049, T072).
 5. **By hand, in Storybook** (`pnpm --filter storybook run dev`, or the built `storybook-static`):
    - **Data table, overflows.** At 320 px, Tab reaches the region, a screen reader announces the "Work packages"
      group, and the arrows scroll it. At rest the caption wraps inside the box and starts at the table's edge. At
      1280 px Tab skips it.
+   - **Data table, hook.** In the dev tools the region's track carries `--data-table-box-size`, and
+     `--data-table-end-fade` while the end fade shows (the base-style hook between the two packages, analysis I7 (a));
+     both READMEs and CHANGELOGs name them.
    - **Timeline.** The screen reader reads a list of three items, "14:02 Mission created" first, with no dot or line
      announced. In the marked-up times story each `<time slot="time">` shows above its event's text in the time's
      type and is read first, and the event that also has a `time` attribute shows only its slotted time.
    - **Chain, wrapped.** The steps wrap at 320 px with no connector at a line's end, and the ordinals read 1 to 6 on
      the visible default steps.
-6. **Mutation.** Run `pnpm run gate:mutation` on the phase's changed source. No mutant survives unless the review
-   records it as equivalent.
+   - **Standalone items.** The standalone-event and standalone-step stories show their items as plain text with no
+     marker, connector or ordinal, and the screen reader reads no list.
+6. **Mutation.** Run `pnpm run gate:mutation -- --base $(cat specs/019-data-records/reviews/phase-1/base.sha)`, the
+   mission's changed source (in phases 1 to 3, `--base` the phase's own base: T025, T051, T074). No mutant survives
+   unless the review records it as equivalent.

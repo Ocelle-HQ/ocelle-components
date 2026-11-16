@@ -29,6 +29,15 @@ states (branch; rechecked by T001).
 
 `aria-label` is observed (not a property). The class carries `@tagname ocelle-data-table`.
 
+**Base-style hook (analysis I7 (a)).** The element writes two custom properties that `@ocelle/styles`' caption cap
+reads: `--data-table-box-size` (the box's measured inline size, in px) and `--data-table-end-fade` (the end fade's
+depth, `var(--ocelle-scroller-fade-size)`, while the end fade shows). They are a documented base-style hook between
+`@ocelle/elements` and `@ocelle/styles`, so public surface under constitution VII: a rename or removal is a MAJOR
+change from 1.0.0, and both packages' CHANGELOGs and READMEs name them. They are not in the manifest's CSS custom
+property list, which lists what an element's styles read: the element writes them and never reads them, and a
+consumer does not set them (the READMEs say so). They keep their names without the `--ocelle-` prefix, which the
+`token-only` gate reserves for tokens.
+
 ## Shadow structure
 
 `overflowRegionStyles` is added after the element's own styles. The element's own styles are:
@@ -54,8 +63,8 @@ pending, cancelled on disconnect), whose callback reads the box's current `data-
 `--data-table-end-fade: var(--ocelle-scroller-fade-size)` while the end fade shows or removes it otherwise. It is
 never written in the task in which the fade changes, because that task is inside 009's `ResizeObserver` delivery and
 the rewrap would raise the loop error (PLAN-FRESH-3-002 verify 1). The measuring element is one
-internal node outside 009's structure; nothing of the module changes (FR-008). Both properties are internal (no
-`--ocelle-` prefix, not in the manifest, not documented hooks).
+internal node outside 009's structure; nothing of the module changes (FR-008). Both properties are the base-style
+hook of § Public surface (no `--ocelle-` prefix, not in the manifest, documented in both READMEs; analysis I7 (a)).
 
 The README's Sizing line has two parts. A wrapper that is itself the flex or grid item, around the element, needs
 `min-inline-size: 0` too. In a shrink-to-fit host (a dialog, an inline-block, a start-aligned flex) the data table
@@ -74,6 +83,10 @@ takes its table's width and overflows only when its own inline size is bounded, 
 ```
 
 ## Behaviour
+
+- **Hidden host.** `:host([hidden])` gives no box and no node; a host `aria-hidden="true"` keeps the table shown and
+  removes the region and the table from the accessibility tree (the Host ARIA rule, FR-015). Browser bodies assert
+  both (analysis G3).
 
 - **Assignment.** `slotAssignment: "manual"`. In `updated()`, and on a child-list change seen by its
   `MutationObserver`, the slot is assigned the first direct `table` child or nothing.

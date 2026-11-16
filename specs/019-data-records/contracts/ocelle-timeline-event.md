@@ -31,11 +31,14 @@ slot and every other child to the default slot.
 
 The `time` slot is rendered only while the event has a slotted time. Otherwise the `slot="time"` children are
 unassigned, so an empty, white-space-only or hidden slotted time is neither shown nor exposed, and an attribute time
-is never shown beside a slotted one.
+is never shown beside a slotted one. While the event has a slotted time, every `slot="time"` child is assigned in
+source order, a blank one beside a non-blank one included: a blank node adds no text to the item text (white space
+is collapsed), and a `hidden` or `aria-hidden="true"` one is not shown (below; analysis A1). Setting or removing a
+child's `slot` attribute moves it between the slots, and the observer below re-decides the time box (analysis G1).
 
 | Element | Styles |
 |---|---|
-| `:host` | `display: block` |
+| `:host` | `display: block`; `:host([hidden]) { display: none }` (FR-001) |
 | `[part="time"]` | `display: block`; `xs`, medium weight, `ink-muted`, `figures`, `line-height-normal` |
 | `slot[name="time"]::slotted(*)` | the same type as `[part="time"]`: `font-family: var(--ocelle-font-sans)`, `xs`, medium weight, `ink-muted`, `figures`, `line-height-normal` (so a `<b>`, `<small>` or `<strong>` takes the time's type); in forced colours the system text colour |
 | `slot[name="time"]::slotted([hidden]), slot[name="time"]::slotted([aria-hidden="true"])` | `display: none` (a hidden node beside a visible one in the slot) |
