@@ -417,9 +417,10 @@ const tries = 3;
 /** The text-field row's bound: its click must come this soon after the entry for "shown before 150 ms" to be judged. */
 const early = 150;
 /**
- * The R-12 leave row's own hover delay, set as `--ocelle-tooltip-delay` on its tooltip (operator decision after
- * tdd-check 4: under load its leave came after the 300 ms test delay), and its wait from the entry: 1.5 times that
- * delay, as 450 ms is for the test delay, so a delay the leave did not end would show the bubble inside the window.
+ * The own hover delay of the R-12 leave row and of the re-entry row, set as `--ocelle-tooltip-delay` on their tooltip
+ * (operator decisions after tdd-check 4 and after the phase 5 red step: under load the leave, and the move back, came
+ * after the 300 ms test delay), and their wait from the entry: 1.5 times that delay, as 450 ms is for the test delay,
+ * so a delay the leave did not end, or one a move restarted, would show the bubble inside the window.
  */
 const longDelay = 1000;
 const longWait = 1500;
@@ -512,27 +513,32 @@ const showRows = [
     { delay: delayed, persisted: true, layer: [tipLayer], focus: "body" },
   ),
   row(
-    "Hover delay, moves inside the tooltip before the delay (R-12's delay rule, the matrix's re-entry): the pointer enters the trigger, moves onto its inner span and back onto the trigger's edge, both moves before the delay: the timer is not restarted, not shown before the 300 ms delay from the first entry, shown before 300 ms from the move back and by 450 ms",
+    "Hover delay, moves inside the tooltip before the delay (R-12's delay rule, the matrix's re-entry): with --ocelle-tooltip-delay: 1000ms on the tooltip, the pointer enters the trigger, moves onto its inner span and back onto the trigger's edge, both moves before that delay: the timer is not restarted, over a 1500 ms wait from the first entry: not shown before 1000 ms from the first entry, shown before 1000 ms from the move back and by 1500 ms from the first entry",
     async (driver) =>
-      beforeDelay("the move back onto the trigger", async () => {
-        await start(driver, page({ trigger: '<button id="trg" aria-label="Projects">Edge <span id="inner">inner text</span> edge</button>' }));
-        const trigger = await inspect(driver, "trg");
-        const inner = await inspect(driver, "inner");
-        const edge = { x: trigger.left + 4, y: trigger.top + trigger.height / 2 };
-        await track(driver);
-        await driver.pointer([edge]);
-        await driver.pointer([centre(inner)]);
-        await driver.pointer([edge]);
-        await pause(450);
-        const f = await frames(driver);
-        const back = f.moved ?? 0;
-        const shown = openTimes(f);
-        return {
-          at: f.moved,
-          observed: { entered: f.t0 !== null, beforeDelay: shown.some((t) => t < testDelay), beforeRestart: shown.some((t) => t < back + testDelay), by450: shown.some((t) => t <= 450) },
-        };
-      }),
-    { entered: true, beforeDelay: false, beforeRestart: true, by450: true },
+      beforeDelay(
+        "the move back onto the trigger",
+        async () => {
+          await start(driver, page({ trigger: '<button id="trg" aria-label="Projects">Edge <span id="inner">inner text</span> edge</button>' }), `#tip { --ocelle-tooltip-delay: ${String(longDelay)}ms; }`);
+          const trigger = await inspect(driver, "trg");
+          const inner = await inspect(driver, "inner");
+          const edge = { x: trigger.left + 4, y: trigger.top + trigger.height / 2 };
+          await track(driver);
+          await driver.pointer([edge]);
+          await driver.pointer([centre(inner)]);
+          await driver.pointer([edge]);
+          await pause(1000);
+          await pause(longWait - 1000);
+          const f = await frames(driver);
+          const back = f.moved ?? 0;
+          const shown = openTimes(f);
+          return {
+            at: f.moved,
+            observed: { entered: f.t0 !== null, beforeDelay: shown.some((t) => t < longDelay), beforeRestart: shown.some((t) => t < back + longDelay), byWait: shown.some((t) => t <= longWait) },
+          };
+        },
+        longDelay,
+      ),
+    { entered: true, beforeDelay: false, beforeRestart: true, byWait: true },
   ),
   row(
     "Hover delay under reduced motion (US3-8, R-09, R-15): with prefers-reduced-motion: reduce the delay is not zeroed: not shown before 150 ms, shown by 450 ms",
@@ -662,9 +668,12 @@ const showRows = [
         await track(driver);
         await driver.click("trg");
         await driver.pointer([rest]);
-        await pause(450);
+        await pause(500);
         const f = await frames(driver);
-        const clicked = { focus: await driver.focusPath(), visible: await driver.focusVisible("trg"), never: never(f, 400), to450: (f.frames.at(-1)?.t ?? 0) >= 450 };
+        const click = f.clicked;
+        if (click === null) throw new Error("the click on the trigger: the page recorded no time for it after the entry");
+        const last = f.frames.at(-1)?.t ?? 0;
+        const clicked = { focus: await driver.focusPath(), visible: await driver.focusVisible("trg"), never: never(f, 0) && last - click >= 400, to450: last >= click + 450 };
         await driver.press("Tab", { shift: true });
         await driver.press("Tab");
         return { at: f.left, observed: { clicked, keyboard: await bubbleOpen(driver) } };
@@ -846,7 +855,7 @@ const escapeRows = [
         await pause(450);
         const f = await frames(driver);
         return { at: f.left, observed: { never: never(f, 400), focus: await driver.focusPath(), visible: await driver.focusVisible("trg") } };
-      }),
+      }, 100),
     { never: true, focus: "trg", visible: true },
   ),
   row(

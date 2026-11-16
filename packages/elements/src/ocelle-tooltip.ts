@@ -135,8 +135,10 @@ export class OcelleTooltip extends LitElement {
   static #shown: OcelleTooltip | undefined;
 
   static {
-    // An overlay is opening (R-10): the shown bubble hides first. A pending delay ends by the pointer's own `pointerout`
-    // when the backdrop covers the trigger, or by the focus that moves into the overlay.
+    // An overlay is opening (R-10): the shown bubble hides first, and `#hide` ends that tooltip's own pending delay.
+    // Another tooltip's pending hover delay ends by its trigger's `pointerout` when the backdrop covers the trigger, or
+    // by the tooltip's removal; not by the focus that moves into the overlay, since `#onFocusout` hides only when not
+    // hovered, and only `#onPointerout` ends the hover.
     bubbles.dismiss = () => {
       const shown = OcelleTooltip.#shown;
       if (shown !== undefined) shown.#hide();
