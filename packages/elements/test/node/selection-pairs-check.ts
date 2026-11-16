@@ -125,6 +125,16 @@ export const copyFieldRows: { readonly painted: Painted; readonly pairs: readonl
   ],
 };
 
+/**
+ * R-15's row for `ocelle-link` (014 phase 6): text `link` (at rest) and `link-hover` (under the pointer) on the main
+ * grounds, its underline drawn in the text colour; no fill and no bar; the focus ring, an outline (a `line`),
+ * `color-focus` on the main grounds.
+ */
+export const linkRows: { readonly painted: Painted; readonly pairs: readonly Pair[] } = {
+  painted: { text: ["color-link", "color-link-hover"], fill: [], bar: [], ring: [], line: ["color-focus"] },
+  pairs: [...on("color-link", mainGrounds), ...on("color-link-hover", mainGrounds), ...on("color-focus", mainGrounds)],
+};
+
 /** Whether a rule sits inside `@media (forced-colors: active)` (not inside its negation). */
 function inForcedColours(rule: Rule): boolean {
   for (let parent = rule.parent; parent !== undefined && parent.type !== "root"; parent = parent.parent) {

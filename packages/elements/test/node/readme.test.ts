@@ -193,6 +193,23 @@ const fragments = [
   "The field's outer border is `--ocelle-border-width` in `--ocelle-color-control-border` with the radius `--ocelle-radius-2`. The Copy control sits flush at the field's inline end, inside that border, filled `--ocelle-color-sheet`, with one line of `--ocelle-border-width` in `--ocelle-color-accent-strong` between it and the text: no gap and no double line. The control is at least `--ocelle-target-min` in both dimensions and shows the token focus ring when focused by keyboard. In forced colours the boundaries are `ButtonBorder`, the icon is `ButtonText` and the ring `Highlight`. The copy field is for the main grounds",
   "Importing `ocelle-copy-field` defines `ocelle-icon` too, for its copy icon",
   "`ocelle-copy-field` reads the tokens `--ocelle-font-sans`, `--ocelle-figures`, `--ocelle-color-ink`, `--ocelle-color-inset`, `--ocelle-color-sheet`, `--ocelle-color-control-border`, `--ocelle-color-accent-strong`, `--ocelle-color-disabled-ink`, `--ocelle-color-focus`, `--ocelle-focus-width`, `--ocelle-focus-offset`, `--ocelle-border-width`, `--ocelle-radius-2`, `--ocelle-target-min`, `--ocelle-space-1`, `--ocelle-space-2`, `--ocelle-space-3` and `--ocelle-icon-size`",
+  // ocelle-link (014 US5, FR-045 to FR-049, FR-056; research.md R-08, R-15, R-16)
+  "`ocelle-link` is a link inside running text: it is drawn inline in `--ocelle-color-link` with an underline, in `--ocelle-color-link-hover` under the pointer, and shows the token focus ring around each line it wraps onto. It always tells the host it was activated, with `ocelle-link-activate`; without `href` it never navigates, and with `href` it navigates unless the host cancels the event",
+  "`href` (attribute and property, reflected): the link's target, as written. Without it the link is still a link in the tab order and only emits its event",
+  "`label` (attribute and property, not reflected): the link's accessible name instead of its text, trimmed; blank counts as none. Name the link with `label`: a host `aria-label` on `ocelle-link` does not name the link (the element does not forward it, and it would name the host as a second node around the link)",
+  "A `label` must contain the link's visible text, best starting with it (text \"the mission log\", label \"the mission log, opens in the viewer\"): a name without the visible text fails WCAG 2.5.3, Label in Name, and the `axe` gate's `label-content-name-mismatch`",
+  "`ocelle-link-activate` with `detail` `{ href }`: the user activated the link with Enter or a primary-button click; `href` is the `href` attribute as written, or `null` without one. It bubbles, is composed and is cancelable: a host that routes the activation itself calls `preventDefault()`",
+  "`detail.href` is the attribute as written and is not validated: it may be a `javascript:` or `data:` URL. The element refuses those, and any scheme other than `http:`, `https:` and the document's own, only for its own navigation",
+  "With `href`, after the event and unless a listener cancelled it, the link resolves `href` against the document's base URL at that moment and navigates to it only when the resolved protocol is `http:`, `https:` or the document's own protocol. The check is on the resolved URL, so spaces before the scheme or a tab inside it do not bypass it. An empty `href` is an `href`, and a fragment navigates within the document",
+  "A host that navigates itself from the event applies the same check: resolve `detail.href` against `document.baseURI` and navigate only when the resolved protocol is `http:`, `https:` or the document's own",
+  "A host that needs another scheme (an app's own scheme on a page served over `http:`, say) handles the event: it cancels it and navigates or acts itself",
+  "Only plain activations emit: Enter, or a primary-button click, with no modifier or with Alt alone. A user's modified activation (Ctrl, Meta or Shift held on a click or on Enter, or a middle-button click) emits nothing and keeps the browser's own behaviour, a new tab or window",
+  "A modified activation of a link without `href` does nothing: it emits no event and the page does not navigate",
+  "The link has no `target`, `download` or `rel`. A host that wants to open a new window itself handles the event: it cancels it and opens the window",
+  "Keys: the link is one tab stop. Enter activates it; Space does not, and scrolls the page as on any link. It handles no other key",
+  "The link's focusable anchor is in its shadow root (`delegatesFocus`); a parent that counts its focusable content, such as a tab panel, counts the link",
+  "CSS part: `anchor`, the link's anchor. In forced colours the link is `LinkText`, underlined, and its focus ring `Highlight`. The link is for the main grounds",
+  "`ocelle-link` reads the tokens `--ocelle-color-link`, `--ocelle-color-link-hover`, `--ocelle-color-focus`, `--ocelle-focus-width` and `--ocelle-focus-offset`",
   // two copies on a page (FR-006, Edge Cases)
   "Two copies of the package on one page, two versions or the browser build beside a bundle of the module build, cannot both define an element: the first definition wins and the second import throws nothing",
 ];
@@ -210,6 +227,7 @@ const entryRows = [
   "| `@ocelle/elements/ocelle-segmented-choice.js` | `dist/ocelle-segmented-choice.js` | `ocelle-segmented-choice` and `ocelle-segment`; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-segment.js` | `dist/ocelle-segment.js` | `ocelle-segment` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-copy-field.js` | `dist/ocelle-copy-field.js` | `ocelle-copy-field` and `ocelle-icon`; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-link.js` | `dist/ocelle-link.js` | `ocelle-link` only; for hosts with a bundler |",
   "| `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |",
   "| `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |",
 ];
@@ -254,7 +272,7 @@ describe("packages/elements/README.md", () => {
   it("lists exactly the entry points of package.json's exports in its Entry points table (FR-002)", () => {
     const manifest = JSON.parse(read("package.json")) as { exports?: Record<string, string> };
     expect(tableRows(read("README.md"), "Entry points")).toEqual(entryRows);
-    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-listbox.js", "./ocelle-option.js", "./ocelle-tabs.js", "./ocelle-tab.js", "./ocelle-tab-panel.js", "./ocelle-segmented-choice.js", "./ocelle-segment.js", "./ocelle-copy-field.js", "./browser.js", "./custom-elements.json"]);
+    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-listbox.js", "./ocelle-option.js", "./ocelle-tabs.js", "./ocelle-tab.js", "./ocelle-tab-panel.js", "./ocelle-segmented-choice.js", "./ocelle-segment.js", "./ocelle-copy-field.js", "./ocelle-link.js", "./browser.js", "./custom-elements.json"]);
   });
 
   it("lists the thirteen names of the set, whether each mirrors and the consumer need it meets, in its Icons table (US2-1, FR-018, SC-007)", () => {
@@ -314,6 +332,10 @@ describe("packages/elements/CHANGELOG.md", () => {
     "`copy-label`",
     "`copy-control`",
     "`@ocelle/elements/ocelle-copy-field.js`",
+    // 014 phase 6 (FR-058, research.md R-16)
+    "`ocelle-link`",
+    "`ocelle-link-activate`",
+    "`@ocelle/elements/ocelle-link.js`",
     ...["chevron-start", "chevron-end", "chevron-up", "chevron-down", "arrow-start", "arrow-end", "menu", "close", "folder", "file", "search", "table", "copy"].map((name) => `\`${name}\``),
   ])("names %s under Unreleased / Added (constitution VII, FR-031, SC-008)", (surface) => {
     expect(added).toContain(surface);

@@ -20,7 +20,7 @@
 // of the same keyboard mechanism, whose ArrowRight is a handled key) and `x-shadow-link`, a custom element defined by the
 // body whose open shadow root delegates focus to an `<a href>` (a focusable reached only through a shadow root). The
 // stand-in bodies stay; phase 4 adds US2-21's body with the real `ocelle-segmented-choice` (T062b), and phase 6 adds
-// US2-22's with the real `ocelle-link` (reviews/phase-3/notes.md).
+// US2-22's with the real `ocelle-link` (T093a; reviews/phase-3/notes.md).
 import { tokenColour } from "./icon.ts";
 import type { AxState, Driver, InPage, Target } from "./driver.ts";
 
@@ -1057,6 +1057,32 @@ export const tabsScenarios: readonly TabsScenario[] = [
       button: { id: "only" },
       removed: { focus: { panel: 0 }, ring: ["3px", "solid", accentLight, "2px"] },
       added: { id: "again" },
+    },
+  },
+  {
+    // T093a (phase 6; phase 3 review R1-04): US2-22's body with the real element. Plant: a light-DOM selector query
+    // measured at tabs updates only (the panel holding only the link, whose anchor is focusable only through its shadow
+    // root, is then a stop; the panel whose button is removed later stays no stop).
+    name: "US2-22: the selected panel holding only an ocelle-link is no stop: Tab on the selected tab focuses the link's anchor inside its shadow root and the panel has no tabindex; a panel whose only button the host removes after render becomes a stop, Tab from the selected tab focusing the panel itself with the focus ring (FR-023; the real ocelle-link)",
+    fixture: true,
+    run: async (driver, inPage) => {
+      await mount(driver, inPage, page(tabOf("Spec") + tabOf("Plan") + panelOf("Spec", '<ocelle-link id="lnk">the mission log</ocelle-link>') + panelOf("Plan")));
+      await driver.focus(tab(0));
+      await driver.press("Tab");
+      const link = { focus: await inPage(where, null), panelTabindex: await inPage(() => document.querySelector("#tb > ocelle-tab-panel")?.getAttribute("tabindex") ?? null, null) };
+      await mount(driver, inPage, page(tabOf("Spec") + tabOf("Plan") + panelOf("Spec", '<button id="only" type="button">Only</button>') + panelOf("Plan")));
+      await driver.focus(tab(0));
+      await driver.press("Tab");
+      const button = await inPage(where, null);
+      await driver.mutate(panel(0), [{ remove: 0 }]);
+      await driver.focus(tab(0));
+      await driver.press("Tab");
+      return { link, button, removed: { focus: await inPage(where, null), ring: await outline(driver, panel(0)) } };
+    },
+    expected: {
+      link: { focus: { host: "lnk", part: "anchor" }, panelTabindex: null },
+      button: { id: "only" },
+      removed: { focus: { panel: 0 }, ring: ["3px", "solid", accentLight, "2px"] },
     },
   },
   {

@@ -112,8 +112,8 @@ export interface Visit {
 
 /**
  * The allowed requests of a page (spec § The strict-CSP fixture): the page itself, its stylesheets, the vendored
- * font and the scripts the page is allowed (the browser build, and on `scripts` pages the test-only bundles), all
- * same-origin.
+ * font and the files the page is allowed (the browser build, on `scripts` pages the test-only bundles, and on the
+ * link's page, since 014 User Story 5, the link target page link-target.html), all same-origin.
  */
 function allowed(origin: string, page: string, scripts: readonly string[]): (url: string) => boolean {
   const paths = new Set([page, "tokens.css", "base.css", ...scripts]);
@@ -124,7 +124,10 @@ function allowed(origin: string, page: string, scripts: readonly string[]): (url
   };
 }
 
-/** Opens `page` of the fixture in a fresh context with the recorders installed before navigation. */
+/**
+ * Opens `page` of the fixture in a fresh context with the recorders installed before navigation; `scripts` are the
+ * other files it may request (the browser build by default; 014 User Story 5 adds link-target.html).
+ */
 export async function visit(browser: Browser, origin: string, page: string, scripts: readonly string[] = ["ocelle-elements.js"]): Promise<Visit> {
   const context = await browser.newContext({ viewport: { width: 1280, height: 800 }, colorScheme: "light" });
   const opened = await context.newPage();

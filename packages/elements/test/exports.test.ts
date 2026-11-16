@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 
 // The package root's exports (005 FR-032, T021, T052; 014 T011): it replaces the skeleton test that asserted the
 // package "exports nothing yet". The root exports the element classes, `OcelleBrandMark`, `OcelleIcon`, `OcelleListbox`,
-// `OcelleCopyField`, `OcelleOption`, `OcelleSegment`, `OcelleSegmentedChoice`, `OcelleTab`, `OcelleTabPanel` and `OcelleTabs` (014 phases 3 to 5), and nothing else at run time (the `IconName` type is erased).
+// `OcelleCopyField`, `OcelleLink`, `OcelleOption`, `OcelleSegment`, `OcelleSegmentedChoice`, `OcelleTab`, `OcelleTabPanel` and `OcelleTabs` (014 phases 3 to 6), and nothing else at run time (the `IconName` type is erased).
 describe("@ocelle/elements root exports", () => {
-  it("exports OcelleBrandMark, OcelleCopyField, OcelleIcon, OcelleListbox, OcelleOption, OcelleSegment, OcelleSegmentedChoice, OcelleTab, OcelleTabPanel and OcelleTabs and nothing else", async () => {
+  it("exports OcelleBrandMark, OcelleCopyField, OcelleIcon, OcelleLink, OcelleListbox, OcelleOption, OcelleSegment, OcelleSegmentedChoice, OcelleTab, OcelleTabPanel and OcelleTabs and nothing else", async () => {
     const module: Record<string, unknown> = await import("../src/index.ts");
-    expect(Object.keys(module)).toEqual(["OcelleBrandMark", "OcelleCopyField", "OcelleIcon", "OcelleListbox", "OcelleOption", "OcelleSegment", "OcelleSegmentedChoice", "OcelleTab", "OcelleTabPanel", "OcelleTabs"]);
+    expect(Object.keys(module)).toEqual(["OcelleBrandMark", "OcelleCopyField", "OcelleIcon", "OcelleLink", "OcelleListbox", "OcelleOption", "OcelleSegment", "OcelleSegmentedChoice", "OcelleTab", "OcelleTabPanel", "OcelleTabs"]);
     expect([module.OcelleBrandMark, module.OcelleIcon, module.OcelleListbox, module.OcelleOption].map((each) => typeof each)).toEqual(["function", "function", "function", "function"]);
     expect([customElements.get("ocelle-listbox"), customElements.get("ocelle-option")]).toEqual([module.OcelleListbox, module.OcelleOption]);
     expect([module.OcelleTab, module.OcelleTabPanel, module.OcelleTabs].map((each) => typeof each)).toEqual(["function", "function", "function"]);
@@ -15,5 +15,7 @@ describe("@ocelle/elements root exports", () => {
     expect([customElements.get("ocelle-segment"), customElements.get("ocelle-segmented-choice")]).toEqual([module.OcelleSegment, module.OcelleSegmentedChoice]);
     expect(typeof module.OcelleCopyField).toBe("function");
     expect(customElements.get("ocelle-copy-field")).toEqual(module.OcelleCopyField);
+    expect(typeof module.OcelleLink).toBe("function");
+    expect(customElements.get("ocelle-link")).toEqual(module.OcelleLink);
   });
 });

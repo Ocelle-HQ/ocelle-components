@@ -285,7 +285,7 @@ describe("generate(root) on the repository's element source", () => {
     const manifest = await generate(repo);
     const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
     expect(manifest.schemaVersion).toBe("1.0.0");
-    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-copy-field.ts", "src/ocelle-icon.ts", "src/ocelle-listbox.ts", "src/ocelle-option.ts", "src/ocelle-segment.ts", "src/ocelle-segmented-choice.ts", "src/ocelle-tab-panel.ts", "src/ocelle-tab.ts", "src/ocelle-tabs.ts"]);
+    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-copy-field.ts", "src/ocelle-icon.ts", "src/ocelle-link.ts", "src/ocelle-listbox.ts", "src/ocelle-option.ts", "src/ocelle-segment.ts", "src/ocelle-segmented-choice.ts", "src/ocelle-tab-panel.ts", "src/ocelle-tab.ts", "src/ocelle-tabs.ts"]);
     const [icon] = modules.find((module) => module.path === "src/ocelle-icon.ts")?.declarations ?? [];
     expect(icon).toMatchObject({
       kind: "class",
@@ -500,6 +500,26 @@ describe("generate(root) on the repository's element source", () => {
         { name: "copy-control", described: true },
         { name: "value", described: true },
       ],
+      cssProperties: [],
+    });
+  });
+
+  it("declares ocelle-link per contracts/elements.md: href (string, reflected, default undefined) and label (string, not reflected, default undefined), the cancelable activate event with its { href } detail, the default slot, the anchor part and no CSS property (014 FR-055, phase 6)", async () => {
+    const link = await declared("src/ocelle-link.ts");
+    expect(link).toEqual({
+      name: "OcelleLink",
+      tagName: "ocelle-link",
+      members: [
+        { name: "href", type: "string | undefined", attribute: "href", reflects: true, default: "undefined", described: true },
+        { name: "label", type: "string | undefined", attribute: "label", reflects: false, default: "undefined", described: true },
+      ],
+      attributes: [
+        { name: "href", fieldName: "href", described: true },
+        { name: "label", fieldName: "label", described: true },
+      ],
+      events: [{ name: "ocelle-link-activate", type: "CustomEvent<{ href: string | null }>", described: true }],
+      slots: [{ name: "", described: true }],
+      cssParts: [{ name: "anchor", described: true }],
       cssProperties: [],
     });
   });
