@@ -167,3 +167,51 @@ describe("ocelle-scroller with the platform's classic scrollbar (US1-4, US1-7, U
     }).toEqual({ observed: { handed: "s >> div.region-frame", bar: true, ring: [true, true, true] }, recorded: clean });
   });
 });
+
+// Since 009 phase 2's operator round 3 (O3-02, T068; landing review L1-02): the one case where only the box's border
+// box changes. A board in Frame W at 1280 px holds five lanes that fit; a card's inner block in the last lane grows to
+// 600 px. The lanes are contained (FR-014), so neither the track nor the box's content box changes, but the classic
+// scrollbar that appears adds its thickness to the box's block size, so its border box changes, and the module's
+// observer of the border box sees it: the box becomes a tab stop and a `region` named "Board", with a scroll range of
+// 443 px. Plant: the box observed without `{ box: "border-box" }` (its content box), which leaves the overflowing
+// board with no tab stop and no role (reviews/phase-2/plants.md).
+describe("ocelle-workflow-board with the platform's classic scrollbar (O3-02, FR-014)", { timeout: 120_000 }, () => {
+  it("a card's inner block that grows past the board's end makes the board a tab stop and a region named \"Board\", scrollable by 443 px, though only the box's border box changed", async () => {
+    const { browser, origin } = started();
+    const page = await visit(browser, origin, "board.html");
+    const driver = fixtureDriver(page.page, page.log);
+    await driver.viewport(1280, 800);
+    const laneOf = (index: number, inner: string): string => `<ocelle-workflow-lane id="l${String(index)}" label="Lane ${String(index + 1)}"><p>${inner}</p></ocelle-workflow-lane>`;
+    const lanes = [0, 1, 2, 3].map((index) => laneOf(index, "Card")).join("") + laneOf(4, '<span id="grow" class="grow"></span>');
+    await driver.mount(`<div data-frame="W"><ocelle-workflow-board id="b" label="Board">${lanes}</ocelle-workflow-board></div>`);
+    await driver.rules(".grow { display: block; inline-size: 20px; block-size: 20px; }");
+    await driver.settle();
+    const state = (): Promise<unknown> =>
+      page.page.evaluate(() => {
+        const box = document.getElementById("b")?.shadowRoot?.querySelector<HTMLElement>(".region-box");
+        return {
+          tabindex: box?.getAttribute("tabindex") ?? null,
+          role: box?.getAttribute("role") ?? null,
+          name: box?.getAttribute("aria-label") ?? null,
+          range: (box?.scrollWidth ?? 0) - (box?.clientWidth ?? 0),
+          bar: (box?.offsetHeight ?? 0) - (box?.clientHeight ?? 0) > 0,
+        };
+      });
+    // The scroll range, 443 px within 1 px: as 443 when it is, else as measured.
+    const within = (observed: unknown): unknown => {
+      const { range, ...rest } = observed as { range: number };
+      return { ...rest, range: Math.abs(range - 443) <= 1 ? 443 : range };
+    };
+    const fitting = await state();
+    await driver.style("grow", "inline-size", "600px");
+    await driver.settle();
+    const grown = await state();
+    expect({ observed: { fitting, grown: within(grown) }, recorded: await page.finish() }).toEqual({
+      observed: {
+        fitting: { tabindex: null, role: null, name: null, range: 0, bar: false },
+        grown: { tabindex: "0", role: "region", name: "Board", range: 443, bar: true },
+      },
+      recorded: clean,
+    });
+  });
+});
