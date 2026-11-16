@@ -3,8 +3,8 @@ import * as root from "../src/index.ts";
 
 // The package root (005 FR-002, US1 scenario 17's runtime half; research.md R-02, T014, T052; 014 research.md R-16,
 // T017): importing only src/index.ts defines every element of the package, `ocelle-icon`, `ocelle-brand-mark`,
-// `ocelle-listbox`, `ocelle-option`, `ocelle-tabs`, `ocelle-tab`, `ocelle-tab-panel`, `ocelle-segmented-choice`, `ocelle-segment` and `ocelle-copy-field`, each as the class the root exports (analysis F1 (a): the mark joins in phase 5;
-// 014 phase 2 adds the listbox and the option, phase 3 the tabs, the tab and the panel, phase 4 the segmented choice and the segment, phase 5 the copy field). This file's own iframe (Vitest browser mode, isolate on) holds only
+// `ocelle-listbox`, `ocelle-option`, `ocelle-tabs`, `ocelle-tab`, `ocelle-tab-panel`, `ocelle-segmented-choice`, `ocelle-segment`, `ocelle-copy-field` and `ocelle-link`, each as the class the root exports (analysis F1 (a): the mark joins in phase 5;
+// 014 phase 2 adds the listbox and the option, phase 3 the tabs, the tab and the panel, phase 4 the segmented choice and the segment, phase 5 the copy field, phase 6 the link). This file's own iframe (Vitest browser mode, isolate on) holds only
 // what this import defines.
 describe("importing src/index.ts", () => {
   it("defines ocelle-icon and ocelle-brand-mark as the OcelleIcon and OcelleBrandMark it exports", () => {
@@ -35,5 +35,11 @@ describe("importing src/index.ts", () => {
     const exported = root as Record<string, unknown>;
     expect(typeof exported.OcelleCopyField).toBe("function");
     expect(customElements.get("ocelle-copy-field")).toEqual(exported.OcelleCopyField);
+  });
+
+  it("defines ocelle-link as the OcelleLink it exports", () => {
+    const exported = root as Record<string, unknown>;
+    expect(typeof exported.OcelleLink).toBe("function");
+    expect(customElements.get("ocelle-link")).toEqual(exported.OcelleLink);
   });
 });

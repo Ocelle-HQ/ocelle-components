@@ -498,3 +498,68 @@ describe("the ocelle-copy-field stories in the built Storybook (014 FR-050, FR-0
     }
   }
 });
+
+/** What a link story's page shows: its theme, whether the link is defined, and each link's state. */
+function observeLinks(page: Page): Promise<unknown> {
+  return page.evaluate(() => {
+    let active: Element | null = document.activeElement;
+    while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement;
+    return {
+      theme: document.documentElement.dataset.theme,
+      defined: customElements.get("ocelle-link") !== undefined,
+      links: [...document.querySelectorAll("#storybook-root ocelle-link")].map((link) => {
+        const anchor = link.shadowRoot?.querySelector<HTMLElement>('[part~="anchor"]');
+        return {
+          inParagraph: link.parentElement?.localName === "p",
+          href: anchor?.getAttribute("href") ?? null,
+          label: anchor?.getAttribute("aria-label") ?? null,
+          lines: new Set([...link.getClientRects()].filter((rect) => rect.width > 0).map((rect) => Math.round(rect.top))).size,
+          underline: anchor === null || anchor === undefined ? null : getComputedStyle(anchor).textDecorationLine,
+          focused: anchor !== null && anchor !== undefined && anchor === active,
+        };
+      }),
+    };
+  });
+}
+
+/** A link as `observeLinks` reads it. */
+function storyLink(options: { readonly href?: string | null; readonly label?: string; readonly lines?: number; readonly focused?: boolean } = {}): unknown {
+  return { inParagraph: true, href: options.href === undefined ? "#mission-log" : options.href, label: options.label ?? null, lines: options.lines ?? 1, underline: "underline", focused: options.focused === true };
+}
+
+// The link stories (014 FR-050, FR-051; research.md R-08, R-10, R-12; T095): each story renders its link inside a
+// paragraph with the state it states, underlined, in light and dark, and axe with the axe gate's full rule set reports
+// no violation and no serious or critical incomplete (no new entry in a11y-exceptions.json, FR-051). That rule set
+// holds `label-content-name-mismatch` (WCAG 2.5.3, impact serious): the `label` story's label contains the visible
+// text, so the rule finds nothing (plant: a story label without the visible text, R-08 "Label in name"). The wrapped
+// story's link lies on three lines at the story's width, the others on one (on two lines, the union box of the anchor,
+// whose text is slotted, has its centre between the lines, and axe-core 4.14.0 reports a serious color-contrast
+// incomplete, bgOverlap; reviews/phase-6/notes.md); the focused story's link has focus
+// after its `play`; the label story's link has no href and its anchor carries the label.
+const linkStories = [
+  { id: "elements-ocelle-link--in-a-paragraph", links: [storyLink()] },
+  { id: "elements-ocelle-link--wrapped-across-lines", links: [storyLink({ lines: 3 })] },
+  { id: "elements-ocelle-link--focused", links: [storyLink({ focused: true })] },
+  { id: "elements-ocelle-link--hovered", links: [storyLink()] },
+  { id: "elements-ocelle-link--with-label", links: [storyLink({ href: null, label: "the mission log, opens in the viewer" })] },
+] as const;
+
+describe("the ocelle-link stories in the built Storybook (014 FR-050, FR-051)", { timeout: 60_000 }, () => {
+  for (const { id, links } of linkStories) {
+    for (const theme of ["light", "dark"] as const) {
+      it(`${id} in ${theme}: renders its link in a paragraph with the state it states, and axe's full rule set reports no violation (no label-content-name-mismatch included) and no serious or critical incomplete`, async () => {
+        const { page, outside } = await open(id, theme, "ocelle-link");
+        const observed = await observeLinks(page);
+        const results = await axeResults(page);
+        expect({
+          observed,
+          violations: results.violations,
+          mismatch: results.violations.filter((each) => each.id === "label-content-name-mismatch"),
+          incomplete: results.incomplete.filter((each) => each.impact === "serious" || each.impact === "critical"),
+          outside,
+        }).toEqual({ observed: { theme, defined: true, links }, violations: [], mismatch: [], incomplete: [], outside: [] });
+        await page.close();
+      });
+    }
+  }
+});

@@ -5,6 +5,7 @@ import { define } from "../src/define.ts";
 import { OcelleTab } from "../src/ocelle-tab.ts";
 import { OcelleTabPanel } from "../src/ocelle-tab-panel.ts";
 import { OcelleTabs } from "../src/ocelle-tabs.ts";
+import "../src/ocelle-link.ts";
 import "../src/ocelle-segmented-choice.ts";
 import { inProcessDriver } from "./in-process.ts";
 import { tabsScenarios } from "./scenarios/tabs.ts";
@@ -15,7 +16,7 @@ import type { InPage } from "./scenarios/driver.ts";
 // clipboard call by the page at its end (SC-006); the same bodies run on the built browser build on the strict-CSP
 // fixture in test/browser/tabs.test.ts. Importing src/ocelle-tabs.ts defines the three elements (R-16); the tab and the
 // panel are imported here too for their classes, and since phase 4 the segmented choice, which US2-21's body places in
-// a panel (T062b). Then the in-process case of two copies of the package (spec Edge
+// a panel (T062b), and since phase 6 the link, which US2-22's real body places in a panel (T093a). Then the in-process case of two copies of the package (spec Edge
 // Cases): a second class defined under each tag through the package's guarded `define` throws nothing and leaves the
 // first, whose tabs still work. And axe-core, the version the axe gate pins, run in process on a tabs with a selected
 // and a disabled tab (research.md R-01, R-02): it finds the internals where they are kept, so it reports no

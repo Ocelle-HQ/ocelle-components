@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import { brandPairs, fr026Foregrounds, styleTemplate } from "../node/brand-pairs-check.ts";
 import type { PairEntry } from "../node/brand-pairs-check.ts";
-import { copyFieldRows, listboxRows, optionRows, segmentRows, segmentedChoiceRows, selectionPairs, tabPanelRows, tabRows, tabsRows } from "../node/selection-pairs-check.ts";
+import { copyFieldRows, linkRows, listboxRows, optionRows, segmentRows, segmentedChoiceRows, selectionPairs, tabPanelRows, tabRows, tabsRows } from "../node/selection-pairs-check.ts";
 import { buildPackage, elements } from "./package-build.ts";
 
 // The two builds as the package ships them (005 FR-001, FR-002, FR-004, FR-016, FR-029, FR-033; US1 scenario 17's
@@ -31,6 +31,8 @@ import { buildPackage, elements } from "./package-build.ts";
 // - since 014 phase 5 (T078, T079): dist/ocelle-copy-field.js imports ./ocelle-icon.js and no other element; the
 //   selection pairs check on the built copy field finds R-15's tokens and every pair checked; the browser build
 //   defines it.
+// - since 014 phase 6 (T094, T095): dist/ocelle-link.js imports the internal ./link-target.js and no element; the
+//   selection pairs check on the built link finds R-15's tokens and every pair checked; the browser build defines it.
 const dist = join(elements, "dist");
 const browserBuild = join(dist, "browser", "ocelle-elements.js");
 
@@ -189,10 +191,31 @@ describe("the module build of the copy field (dist/ocelle-copy-field.js)", () =>
   });
 });
 
+describe("the module build of the link (dist/ocelle-link.js)", () => {
+  const read = (name: string): string => (existsSync(join(dist, name)) ? readFileSync(join(dist, name), "utf8") : "");
+
+  it("dist/ocelle-link.js imports lit, the registration helper and the internal ./link-target.js, and not the package root or any element", () => {
+    const link = specifiers(read("ocelle-link.js"));
+    expect({
+      lit: link.includes("lit"),
+      define: link.includes("./define.js"),
+      target: link.includes("./link-target.js"),
+      root: link.includes("./index.js"),
+      elements: link.filter((specifier) => specifier.startsWith("./ocelle-")),
+    }).toEqual({ lit: true, define: true, target: true, root: false, elements: [] });
+  });
+
+  it("the css template of the built link paints R-15's tokens, each R-15 pair a checked row of pairs.json (the stylesheet as shipped)", () => {
+    const pairs = JSON.parse(readFileSync(join(elements, "..", "tokens", "contrast", "pairs.json"), "utf8")) as PairEntry[];
+    const sheet = styleTemplate(read("ocelle-link.js"));
+    expect({ sheet: sheet !== "", link: selectionPairs(sheet, linkRows.pairs, pairs) }).toEqual({ sheet: true, link: { painted: linkRows.painted, missing: [] } });
+  });
+});
+
 describe("the browser build (dist/browser/ocelle-elements.js)", () => {
   const text = (): string => (existsSync(browserBuild) ? readFileSync(browserBuild, "utf8") : "");
 
-  it("is self-contained: it defines ocelle-icon, ocelle-brand-mark, ocelle-listbox, ocelle-option, ocelle-tabs, ocelle-tab, ocelle-tab-panel, ocelle-segmented-choice, ocelle-segment and ocelle-copy-field, with no import statement and no dynamic import", () => {
+  it("is self-contained: it defines ocelle-icon, ocelle-brand-mark, ocelle-listbox, ocelle-option, ocelle-tabs, ocelle-tab, ocelle-tab-panel, ocelle-segmented-choice, ocelle-segment, ocelle-copy-field and ocelle-link, with no import statement and no dynamic import", () => {
     const code = text();
     expect({
       exists: code !== "",
@@ -202,9 +225,10 @@ describe("the browser build (dist/browser/ocelle-elements.js)", () => {
       definesTabs: code.includes('"ocelle-tabs"') && code.includes('"ocelle-tab"') && code.includes('"ocelle-tab-panel"'),
       definesSegmentedChoice: code.includes('"ocelle-segmented-choice"') && code.includes('"ocelle-segment"'),
       definesCopyField: code.includes('"ocelle-copy-field"'),
+      definesLink: code.includes('"ocelle-link"'),
       specifiers: specifiers(code),
       dynamicImport: /\bimport\s*\(/.test(code),
-    }).toEqual({ exists: true, definesIcon: true, definesMark: true, definesListbox: true, definesTabs: true, definesSegmentedChoice: true, definesCopyField: true, specifiers: [], dynamicImport: false });
+    }).toEqual({ exists: true, definesIcon: true, definesMark: true, definesListbox: true, definesTabs: true, definesSegmentedChoice: true, definesCopyField: true, definesLink: true, specifiers: [], dynamicImport: false });
   });
 
   it("holds Lit's production build at the locked versions, not its development build, no ssr-dom-shim and no console call", () => {

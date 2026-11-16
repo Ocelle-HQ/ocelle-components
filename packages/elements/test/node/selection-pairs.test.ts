@@ -1,9 +1,9 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { copyFieldRows, listboxRows, optionRows, paintedTokens, segmentRows, segmentedChoiceRows, selectionPairs, styleTemplate, tabPanelRows, tabRows, tabsRows } from "./selection-pairs-check.ts";
+import { copyFieldRows, linkRows, listboxRows, optionRows, paintedTokens, segmentRows, segmentedChoiceRows, selectionPairs, styleTemplate, tabPanelRows, tabRows, tabsRows } from "./selection-pairs-check.ts";
 import type { PairEntry } from "./selection-pairs-check.ts";
 
-// The listbox's colour pairs, since phase 3 the tabs', since phase 4 the segmented choice's and since phase 5 the copy field's (014 spec FR-058; research.md R-15, R-17; T018), on the element source: the colour tokens
+// The listbox's colour pairs, since phase 3 the tabs', since phase 4 the segmented choice's and since phase 5 the copy field's and since phase 6 the link's (014 spec FR-058; research.md R-15, R-17; T018), on the element source: the colour tokens
 // the style templates of `ocelle-option.ts` and `ocelle-listbox.ts` paint per role are exactly R-15's (the option's text
 // `ink` and `disabled-ink`, fill `hover-bg`, bar `accent-strong`, ring `color-focus`; the listbox none), and every pair
 // of R-15's rows is a `checked` row of packages/tokens/contrast/pairs.json in both themes (`disabled-ink` exempt). In
@@ -14,7 +14,7 @@ const read = (path: string): string => readFileSync(new URL(path, import.meta.ur
 const pairs = JSON.parse(read("../../../tokens/contrast/pairs.json")) as PairEntry[];
 const withoutCanvasBar = pairs.filter((entry) => !(entry.theme === "light" && entry.fg === "color-accent-strong" && entry.bg === "color-canvas"));
 
-describe("the listbox's, the tabs', the segmented choice's and the copy field's colour pairs (FR-058, R-15, R-17)", () => {
+describe("the listbox's, the tabs', the segmented choice's, the copy field's and the link's colour pairs (FR-058, R-15, R-17)", () => {
   it("ocelle-option paints exactly R-15's tokens per role, every R-15 pair checked in pairs.json, and the planted copy without the light canvas bar row reports it", () => {
     const option = styleTemplate(read("../../src/ocelle-option.ts"));
     expect(selectionPairs(option, optionRows.pairs, pairs)).toEqual({ painted: optionRows.painted, missing: [] });
@@ -58,6 +58,13 @@ describe("the listbox's, the tabs', the segmented choice's and the copy field's 
     const withoutInsetDivider = pairs.filter((entry) => !(entry.theme === "light" && entry.fg === "color-accent-strong" && entry.bg === "color-inset"));
     expect(selectionPairs(field, copyFieldRows.pairs, pairs)).toEqual({ painted: copyFieldRows.painted, missing: [] });
     expect(selectionPairs(field, copyFieldRows.pairs, withoutInsetDivider)).toEqual({ painted: copyFieldRows.painted, missing: ["color-accent-strong on color-inset in light"] });
+  });
+
+  it("ocelle-link paints exactly R-15's tokens per role, every R-15 pair checked in pairs.json, and the planted copy without the light rail link row reports it (014 phase 6)", () => {
+    const link = styleTemplate(read("../../src/ocelle-link.ts"));
+    const withoutRailLink = pairs.filter((entry) => !(entry.theme === "light" && entry.fg === "color-link" && entry.bg === "color-rail"));
+    expect(selectionPairs(link, linkRows.pairs, pairs)).toEqual({ painted: linkRows.painted, missing: [] });
+    expect(selectionPairs(link, linkRows.pairs, withoutRailLink)).toEqual({ painted: linkRows.painted, missing: ["color-link on color-rail in light"] });
   });
 
   it("reads the roles from a stylesheet: a bar in control-border is reported in the bar role, forced-colours rules are not read", () => {
