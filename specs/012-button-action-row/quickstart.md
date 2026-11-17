@@ -11,7 +11,9 @@ Prerequisites: `pnpm run setup:offline`; in this container `export OCELLE_CHROMI
    on the fixture); the fixture runs report zero CSP violations.
 3. Tokens: `pnpm vitest run --project tokens --project tokens-browser` and `pnpm run gate:contrast` — the seven new
    tokens and the rows of [research.md](research.md) R-08 pass in both themes; the reduced-motion block sets exactly
-   the motion durations to `0ms`, except those marked `delay: true` (operator decision C1, 2026-11-17).
+   the motion durations to `0ms`, except a token whose name ends in `-delay` and that carries `delay: true` (operator
+   decision C1, 2026-11-17, as amended by phase 4 round 2); a misplaced `delay: true` or a motion duration that is not a
+   literal `<number>ms` value is refused by the generator and a finding of `gate:brand-rules` rule (f).
 4. Gates: `pnpm run gate:manifest`, `gate:style-lint`, `gate:csp`, `gate:prefix`, `gate:pins`, `gate:test-lint`, then
    `pnpm run gate:mutation -- --base <phase base>`.
 5. Stories: `pnpm vitest run --project storybook-integration` — the new stories render in light and dark.

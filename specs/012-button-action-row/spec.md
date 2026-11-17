@@ -157,6 +157,13 @@ option (a) each):
   `delay: true`) keeps its value. A later duration token needs no further rule change.
   The rule keeps rejecting a duration that is not `0ms` under reduced motion and now also rejects a missing
   `motion-spin`. This changes 002's rule (f) for every later feature; the plan records it (plan decision 29).
+  *Amended at landing* (operator, 2026-11-17, phase 4 round 2, O2-01 "Names ending in -delay (Recommended)" and
+  O2-02 "Fail on non-ms motion (Recommended)", `reviews/phase-4/round-2.md`): every motion-group duration is a
+  literal `<number>ms` value and is `0ms` under reduced motion, except a token whose name ends in `-delay` and that
+  carries `delay: true`; anything else in the motion group is a finding. So `delay: true` on any other token (for
+  example `motion-base`), and a motion duration written in seconds (`1s`) or as `var()` or `calc()`, are each a
+  finding of the brand rule, and the token build refuses them. An angle (`motion-turn`) and an easing curve
+  (`easing-standard`) are not durations and stay out of the rule (plan decision 29 states how they are told apart).
 
 **Operator decisions at phase 5** (2026-11-15, human:jeroennouwsdev; the phase 5 implementer's stop-and-ask, plan
 decision 30):

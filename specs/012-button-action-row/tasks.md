@@ -6,7 +6,9 @@ added tasks carry suffixed IDs, e.g. T031a, and no task is renumbered):
 - spec.md (FR-001 to FR-023, FR-030 to FR-042, FR-050 to FR-056, SC-001 to SC-007; US1-1..19, US2-1..14, US3-1..11,
   US4-1..18, US5-1..12; edge cases);
 - plan.md, with decisions 1 to 28 and the phase list, decision 29 (operator decision at phase 4: 002's
-  brand-rules rule (f) follows the generator; added tasks T042a, T045a) and decision 30 (operator decisions at phase
+  brand-rules rule (f) follows the generator; added tasks T042a, T045a; amended at landing by the operator rounds of
+  2026-11-17, phase 4 round 2: only a `-delay` motion token may carry `delay: true`, every other motion duration a
+  literal `ms` value; added tasks T049b to T049f, and phase 6 round 2's T069 to T072) and decision 30 (operator decisions at phase
   5, 2026-11-15: the row's description, tags and trailing content are `aria-hidden` siblings of the inner control,
   whose hit layer fills the host; added task T049a, and T050, T053, T054, T056 to T058, T060, T061, T063 and T064
   revised) and decision 31 (operator decisions at phase 6, 2026-11-16: the sibling wrappers carry `aria-disabled`
@@ -212,6 +214,53 @@ spinner is still under reduced motion and ends within 4.8 s.
 
 **Checkpoint**: `tdd-check.sh 4` reports `pass`.
 
+### Fix round 2 (operator round from the landing review: O2-01, O2-02)
+
+On 2026-11-17 the operator folded landing review R1-04 (`reviews/landing/round-1.md`) into this pull request
+("Fold all including R1-04"), recorded as phase 4 round 2 (`reviews/phase-4/round-2.md`). O2-01, verbatim "Names
+ending in -delay (Recommended)": "The generator and rule (f) accept `delay: true` only on a motion token whose name
+ends in `-delay` (tooltip-delay today), and fail with a finding otherwise. Future delays need no list edit." O2-02,
+verbatim "Fail on non-ms motion (Recommended)": "Rule (f) (and a generator check) reports a finding for any
+motion-group duration that isn't a literal `<number>ms`, unless it is a valid delay. That forces one unit and keeps
+every motion duration zeroable." The rule, as plan decision 29 now states it: every motion-group duration is a
+literal `<number>ms` value and is `0ms` under reduced motion, except a token whose name ends in `-delay` and that
+carries `delay: true`; anything else in the motion group is a finding. A motion-group value that is a literal angle
+(a number with `deg`, `grad`, `rad` or `turn`) or an easing function (`cubic-bezier(...)`, `steps(...)`,
+`linear(...)`, or the keywords `linear`, `ease`, `ease-in`, `ease-out`, `ease-in-out`, `step-start`, `step-end`) is
+not a duration and stays out of scope; every other motion-group value counts as a duration (fail closed). Both
+findings are test-first. The gate validates the source with the root's `validateSource` before the rules run, so the
+fail plants use a wrapped generator whose `validateSource` lets the planted record through (plan decision 29).
+
+**Red (one commit)**
+
+- [ ] T049b [P] [US3] O2-01, test-first:
+  - `gates/test/brand-rules.test.ts`, beside the C1 case ("does not require a motion duration marked as a delay ..."), with a generator whose `validateSource` lets the record through: a source with `{ name: "motion-pause", group: "motion", value: "300ms", delay: true }` gives exactly one `reduced-motion` finding at that record's line, naming the token and that `delay: true` is accepted only on a motion token whose name ends in `-delay` (message written by hand in the test); the same finding for a record outside group `motion` (`{ name: "shell-delay", group: "shell", value: "50ms", delay: true }`); and for `motion-base` with `delay: true`, that finding plus, since a misplaced marker exempts nothing, the existing "does not set --ocelle-motion-base to 0ms" finding when the block leaves it out (both lines written by hand); `tooltip-delay` (500ms, `delay: true`) still gives no finding and stays out of the block (the C1 case kept); a `-delay` name without the marker (`{ name: "fade-delay", group: "motion", value: "300ms" }`) is an ordinary motion duration, required at `0ms` in the block.
+  - `packages/tokens/test/validate.test.ts`, under "validateSource() names the token and the rule": `validateSource` throws `invalid token source: ...` naming `motion-pause` and the rule for each of the three misplaced markers above; it accepts the real source (with `tooltip-delay`) and a fixture source with a `fade-delay` marked `delay: true`.
+- [ ] T049c [P] [US3] O2-02, test-first, and the pins of the two new plants:
+  - `gates/test/brand-rules.test.ts`, with the same kind of generator: each of `{ name: "motion-slow", group: "motion", value: "1s" }`, `value: "var(--ocelle-motion-base)"` and `value: "calc(2 * 100ms)"` gives exactly one `reduced-motion` finding at that record's line, naming the token, its value and that a motion duration must be a literal `<number>ms` (message written by hand); and in the same tests the non-durations stay out of scope: `motion-turn` (`1turn`), a `90deg` value, `easing-standard` (`cubic-bezier(...)`), a `steps(4)` value and an `ease-in` value give no finding and are not required in the block; a `-delay` token with `delay: true` and a value that is not `ms` gives no finding (O2-02: "unless it is a valid delay").
+  - `packages/tokens/test/validate.test.ts`: `validateSource` throws naming the token for each of `1s`, `var(...)` and `calc(...)` above, and accepts the non-durations above.
+  - Pins changed first, by design (as T042a did): `gates/test/plant-runner.test.ts` `brandRulesPin` gains `f-delay-marker-misplaced` and `f-motion-not-ms` and its count goes from 15 to 17; `gates/test/integration/plants-robustness.test.ts` `plants: 37` becomes 39; `gates/test/gates-readme.test.ts` requires both new plants in the `brand-rules` row's plants cell, beside `f-motion-not-zero` and `f-motion-spin-missing`. Any other pinned plant or shard count that two more brand-rules plants change (the other-plant shards are ⌈n / 80⌉, 3 today) is changed here too, measured, not guessed.
+- [ ] T049d [US3] Commit T049b and T049c alone (`test(012-button-action-row): phase 4 fix-2 red — O2-01, O2-02`), signed off. Then run `.specify/extensions/story/scripts/red.sh 4 fix-2`. Confirm every new failure is an assertion failure against the current code (no finding where one is expected, `validateSource` not throwing, a pin of 15 or 37, a missing plant name), not a load error. A case that passes at once because the behaviour already exists (for example `tooltip-delay` passing, the non-durations out of scope) is reported in the round's notes, not forced red.
+
+**Green**
+
+- [ ] T049e [US3] O2-01 and O2-02, over T049b and T049c:
+  - `packages/tokens/src/generate.ts`: `recordProblems` (so `validateSource`) reports `delay: true` on a record that is not of group `motion` or whose name does not end in `-delay`, and a motion-group value that is neither a valid delay, a literal `<number>ms`, an angle nor an easing function (the closed list of plan decision 29); `motionDurations` keeps reading the literal `ms` durations less the valid delays; the `delay` field's doc comment and the header comment of `motionDurations` state the rule.
+  - `gates/bin/brand-rules.ts`: rule (f) (`motionDurations`, `reducedMotionBlock`) reports both findings at the record's location (`inputs.locate(name)`), rule `reduced-motion`, with the same classification, its own copy; the existing (f) findings and messages unchanged.
+  - New fail plants, each with `plant.json` (one `reduced-motion` finding, location `packages/tokens/src/overrides.ts#<name>`, the message), `delta.json` (`generator: "wrapped"` and a `tokens` `add`) and a `tree/packages/tokens/src/generate.ts` wrapper as `f-motion-spin-missing`'s whose `validateSource` lets the planted record through: `gates/plants/brand-rules/f-delay-marker-misplaced/` (adds `motion-pause`, `300ms`, `delay: true`) and `gates/plants/brand-rules/f-motion-not-ms/` (adds `motion-slow`, `1s`).
+  - `gates/README.md`: the `brand-rules` row's plants cell lists `f-delay-marker-misplaced` and `f-motion-not-ms` (the row's rule text is T071); `specs/002-design-tokens/contracts/gates.md` § Plants: the `brand-rules` Fail cell lists both new plants with a one-line description each (as amended by 012 phase 4 round 2).
+  - Tokens README and CHANGELOG: one line each that the token build refuses a misplaced `delay: true` and a motion duration that is not a literal `ms` value. T049b and T049c now pass.
+- [ ] T049f [US3] Run the checks:
+  - each new plant once, alone (`pnpm run gate:plants -- --shard <k>` for its shard, or the affected-plants run), each giving exactly its one finding; record them in `reviews/phase-4/plants.md` under a "Fix round 2" heading, with `f-motion-not-zero` and `f-motion-spin-missing` still as expected;
+  - `pnpm test`, `pnpm vitest run --project tokens --project tokens-browser`, `pnpm run gate:typecheck`, `gate:lint`, `gate:test-lint`, `gate:contrast` (unchanged) and `gate:brand-rules` (0 findings on the repository: `tooltip-delay` valid, every other motion duration literal `ms`);
+  - `pnpm run gate:mutation -- --base <T049d red commit> --files packages/tokens/src/generate.ts,gates/bin/brand-rules.ts`, alone, before the commit: no survivor on the changed lines (every record reasoned, R-14).
+
+  Commit green (`fix(012-button-action-row): phase 4 fix-2 — O2-01, O2-02`), signed off. Then run `.specify/extensions/story/scripts/tdd-check.sh 4` (`pass`). Reviewed as phase 4 round 3.
+
+**Checkpoint**: a `delay: true` marker outside a motion token named `-delay`, or a motion duration that is not a
+literal `ms` value, is refused by the token build and reported by `gate:brand-rules` rule (f); `tooltip-delay` keeps
+its value under reduced motion; `tdd-check.sh 4` reports `pass`.
+
 ---
 
 ## Phase 5: User Story 4 - `ocelle-action-row` (Priority: P4)
@@ -281,6 +330,25 @@ nothing.
 
 **Checkpoint**: `tdd-check.sh 6` reports `pass`.
 
+### Fix round 2 (operator round from the landing review: O2-01, O2-02, O2-03)
+
+On 2026-11-17 the operator settled landing review R1-01 and folded R1-02 and R1-03 into this pull request ("Fold all
+including R1-04"), recorded as phase 6 round 2 (`reviews/phase-6/round-2.md`; landing review
+`reviews/landing/round-1.md`). O2-01, verbatim "Accept, file plant triage (Recommended)": "Record both measures (gate
+step and job wall time, per shard and total) in reviews/phase-6/ci-run.md once shard 23 is in, and tick T067 on the
+gate-step figure (all under 570 s). Your plant-design triage record (decision 15, R1-09), with the visual test's
+519/600 s (R1-06), is offered as a follow-up issue." All three findings are records and documentation and change no
+behaviour, so they need no red commit (constitution VIII: no behaviour); the label is fix-2, reviewed as phase 6
+round 3. T071 waits for phase 4 fix-2 (T049e) for its plant names.
+
+- [ ] T069 [US5] O2-01, `specs/012-button-action-row/reviews/phase-6/ci-run.md` (new): record CI run 44098238937 (497b05f) from the figures the orchestrator supplies, without measuring or estimating any: per Plants shard, the plant gate step's time and the whole job's wall time (attempt 1 for 75 of 76 shards, attempt 2 for shard 23, whose attempt 1 failed in setup, landing review R1-05), and the totals of both measures (runner-hours); the slowest shard by each measure; that every gate-step time is under 570 s (the peak 516 s, shard 40, as round 2 states) while 16 job wall times exceed 570 s (up to 862 s) because of slow runner setup that day (disk cleanup up to 324 s, pnpm setup up to 373 s); the story count of the run (171) against the split count of 76; and the operator's answer above, verbatim, with the follow-up issue it offers (plant-design triage record, decision 15, R1-09; the visual test's 519/600 s, R1-06). Then tick T067 (`[X]`) and append to it "(ticked on the gate-step figure, all under 570 s: operator, 2026-11-17, phase 6 round 2 O2-01; `reviews/phase-6/ci-run.md`)". A supplied figure that contradicts round 2 (a gate step at or over 570 s) is a stop-and-ask. No code change.
+- [ ] T070 [US5] O2-02 (landing review R1-02), after T069: correct the sizing figures, which the merges made false (171 stories, not about 72), in `gates/README.md` (the plant-sharding paragraph, lines 58-66 at round 2), the `shardSize` comment of `gates/lib/plant-runner.ts` (lines 266-268 at round 2; comment only, no code) and the Complexity Tracking row "Plant roots hold every repository story" of `specs/006-storybook-workbench/plan.md` (line 637 at round 2). Each states the merged state: the story count (171) and the shard count, the measured figures of T069's `ci-run.md` (the gate step's peak and total, and the job wall time's peak and total, each with run 44098238937 named), that the split count of 76 stories at size 1 is exceeded (so 006's model figures of about 588 s, "about 4 stories of headroom" and about 11.9 runner-hours no longer hold and are removed, not kept beside the measures), and that the plant-design triage record is pending (operator, 2026-11-17, phase 6 round 2 O2-01: offered as a follow-up issue). No test pins these figures today (`gates/test/gates-readme.test.ts` checked); if a wording that a test pins changes, that test changes in the same commit.
+- [ ] T071 [US5] O2-03 (landing review R1-03), after phase 4 fix-2 (T049e): in `gates/README.md`, the `brand-rules` row's rule text (line 36 at round 2) keeps "reduced motion at 0ms for every motion duration of the token source (012 changed 002's rule (f), which named two)" (pinned by `gates/test/gates-readme.test.ts`) and adds the exception as phase 4 round 2 amended it: except a token whose name ends in `-delay` and that carries `delay: true`, every motion duration being a literal `<number>ms` value; a misplaced marker or a non-`ms` motion duration is a finding (plan decision 29). In `specs/002-design-tokens/contracts/gates.md` § Plants (line 232 at round 2), the `brand-rules` Fail cell lists `f-motion-spin-missing` (012 phase 4) and, if T049e has not already listed them, phase 4 fix-2's `f-delay-marker-misplaced` and `f-motion-not-ms`, each with a one-line description, marked as added by 012.
+- [ ] T072 [US5] Run `pnpm test` (the gates-readme test included), `pnpm run gate:typecheck` and `gate:lint` (T070's comment edit); record T069 to T071 in `reviews/phase-6/notes.md` under "Fix round 2"; commit (`docs(012-button-action-row): phase 6 fix-2 — O2-01, O2-02, O2-03`), signed off. Then run `.specify/extensions/story/scripts/tdd-check.sh 6` (`pass`). Reviewed as phase 6 round 3.
+
+**Checkpoint**: T067 is ticked on the recorded gate-step figures, and the gate docs state the measured sizing and
+rule (f) as amended; `tdd-check.sh 6` reports `pass`.
+
 ---
 
 ## Dependencies & Execution Order
@@ -290,6 +358,10 @@ nothing.
 - Within a phase: spike first where there is one; the red commit holds every test task of the phase (one `red.sh`
   record); implementation in the listed order; the plants-and-gates task last.
 - Phase 2 alone serves #14's copy control; #12 needs phase 3 as well.
+- Landing operator rounds (2026-11-17): phase 4 fix-2 (T049b to T049f) is one unit (red under `red.sh 4 fix-2`,
+  green, check), reviewed as phase 4 round 3; phase 6 fix-2 (T069 to T072) is a documentation unit with no red commit,
+  reviewed as phase 6 round 3. T071 needs T049e's plant names, so phase 4 fix-2 goes first; T069 needs the
+  orchestrator's CI figures (shard 23's attempt 2 included), and T070 needs T069's figures.
 
 ## Parallel Opportunities
 

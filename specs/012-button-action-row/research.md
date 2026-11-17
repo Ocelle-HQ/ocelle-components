@@ -448,7 +448,9 @@ durations. 800 ms, `0ms` under reduced motion. The generator's reduced-motion bl
 and `motion-base` (`packages/tokens/src/generate.ts:281`, asserted "exactly" by `test/generate.test.ts:107`); it is
 changed to emit `0ms` for every record of group `motion` whose value is a duration (`ms`), so `motion-spin` gets it
 and `motion-turn` and `easing-standard` do not (PLAN-CORRECTNESS-1-007). Amended at landing (operator decision C1, 2026-11-17, landing of PR #50; d4a56ea red, 558c560 fix): a record marked `delay: true` (a delay, not motion, such as mission 008's `tooltip-delay`, 500ms) is skipped
-and keeps its value under reduced motion. The `generate.test.ts` assertion becomes
+and keeps its value under reduced motion; at landing round 2 (phase 4 round 2, O2-01, O2-02) the marker is accepted only
+on a motion token whose name ends in `-delay`, and every other motion duration must be a literal `ms` value, or the
+generator refuses the source (see the next paragraph). The `generate.test.ts` assertion becomes
 "exactly the motion durations: `motion-fast`, `motion-base`, `motion-spin`", recorded as a stricter replacement
 (constitution VIII); `generate.ts` is mutated under the default configuration.
 
@@ -462,7 +464,16 @@ brand-rules: reduced-motion: --ocelle-motion-spin: 0ms in the reduced-motion blo
 group `motion` whose source value is a duration (`ms`) to `0ms`, except those marked `delay: true` (operator decision
 C1, 2026-11-17), the set read from the token source the gate already loads, so `motion-fast`, `motion-base` and
 `motion-spin` today, not `motion-turn`, not `easing-standard`, not `tooltip-delay`, and a later duration token needs no
-gate edit. Red first in `gates/test/brand-rules.test.ts` (phase 4's red commit);
+gate edit. Amended at landing, round 2 (operator, 2026-11-17, phase 4 round 2, O2-01 "Names ending in -delay
+(Recommended)" and O2-02 "Fail on non-ms motion (Recommended)", `reviews/phase-4/round-2.md`, on landing review
+R1-04): every motion-group duration is a literal `<number>ms` value and is `0ms` under reduced motion, except a token
+whose name ends in `-delay` and that carries `delay: true`; anything else in the motion group is a finding. A
+`delay: true` marker on any other record, and a motion duration that is not a literal `<number>ms` (`1s`, `var()`,
+`calc()`), are each a `reduced-motion` finding of rule (f) and a refusal of the generator's `validateSource`; a
+motion value that is an angle (`deg`, `grad`, `rad`, `turn`) or an easing function (`cubic-bezier()`, `steps()`,
+`linear()` or an easing keyword) is not a duration and stays out of scope, every other value counts as one (plan
+decision 29). New fail plants `f-delay-marker-misplaced` and `f-motion-not-ms` (tasks.md T049b to T049f).
+Red first in `gates/test/brand-rules.test.ts` (phase 4's red commit);
 `gates/bin/brand-rules.ts` mutated under the default configuration; the plant `f-motion-not-zero` kept, a new fail
 plant `f-motion-spin-missing` for a block without `motion-spin`; the `gates/README.md` row and plan decision 29 record
 the change to 002's rule (f). *Alternatives*: (b) a third name in rule (f)'s list (smaller, but every later duration
