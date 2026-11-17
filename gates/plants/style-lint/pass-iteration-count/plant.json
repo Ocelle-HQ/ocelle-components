@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "The bounded sweep's animation-iteration-count: 3 in an element's css template passes: animation-iteration-count takes a bare positive integer (013 research.md R-10, PLAN-A11Y-SECURITY-1-001 (a))."
+}

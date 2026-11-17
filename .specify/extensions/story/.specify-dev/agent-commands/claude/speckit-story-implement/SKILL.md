@@ -56,9 +56,26 @@ never picks a phase itself.
    wrong, replace it with a stricter one and record the reason in the commit body.
 7. Tick each finished task as `- [X]` in `tasks.md`. Leave a task open if it is not finished, and say why.
 8. Run the project's fast checks that exist (typecheck, lint, unit and interaction tests). All tests must pass.
-9. Commit: `feat(<feature>): phase <N> — <phase title>` with the task ids in the body, signed off. Do not push.
+9. **Plants.** If `plants_command` is set in `.specify/extensions/story/story-config.yml`, run
+   `<plants_command> -- --affected $(cat FEATURE_DIR/reviews/phase-<N>/base.sha)` and write
+   `FEATURE_DIR/reviews/phase-<N>/plants.md` in this form:
+
+   ```markdown
+   # Plants of phase <N>
+
+   - base: <sha>
+   - command: <the command as run>
+   - exit: <code>
+
+   (standard output and standard error, verbatim, in one fenced text block)
+   ```
+
+   The phase is not done unless the exit is 0. Record "no plant selected" as it is printed, never as "plants
+   passed". This run is a local aid: CI's Plants check still judges every plant.
+10. Commit, with `plants.md`: `feat(<feature>): phase <N> — <phase title>` with the task ids in the body, signed
+    off. Do not push.
 
 ## Report
 
-The red commit and what failed in it, tasks done, tasks left open (with reasons), checks run and their result,
+The red commit and what failed in it, the plant run's selection and exit, tasks done, tasks left open (with reasons), checks run and their result,
 and the commit ids.

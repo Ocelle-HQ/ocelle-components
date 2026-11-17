@@ -1,0 +1,79 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 3
+lens: fresh
+# Probes: playwright 1.x from /opt/node-tools driving Google Chrome at /usr/bin/google-chrome, headless, light DOM and
+# plain custom elements standing in for the plan's mechanisms. Scripts p1.mjs to p5.mjs are in this session's
+# scratchpad and are not part of the repository.
+# Rounds 1 and 2 (refute.md, fixes-1.md, verify-1.md) were read; settled findings are not repeated. This round
+# attacks the round-2 fixes.
+# Checked and not reported:
+# - PLAN-FRESH-2-001 (a) geometry: at DSF 1 the two-layer mask (fade 100% x clientHeight at block start, opaque
+#   100% x (offsetHeight - clientHeight) at block end, border-box origin, add) left every scrollbar and content pixel
+#   equal to a plain twin for content heights 30, 30.25, 30.4, 30.5, 30.6, 30.75 px (fractional border boxes). At
+#   DSF 1.25 and 1.5 the scrollbar's top device row differed by 1 to 3 levels; too small to report.
+# - PLAN-FRESH-2-004: removing tabindex from a keyboard-focused box leaves it document.activeElement synchronously,
+#   after a microtask and after two frames, and a frame focused afterwards matches :focus-visible; the handover
+#   ring selector holds whatever order the module uses.
+findings:
+  - id: PLAN-FRESH-3-001
+    severity: 3
+    title: "list-detail's MutationObserver cannot see content rendered in a slotted element's shadow root, which is how every ocelle element and any web-component consumer renders; FR-025's 'when the content of any pane mutates' and the recorded cost are wrong"
+    evidence:
+      - artifact: "spec.md FR-025: 'Its intrinsic sizes follow its slotted content when an element is added or removed or when the content of any pane mutates; a size change with no DOM mutation (an image or a font loading) is picked up at the next such change'; spec.md:84 operator decision 'a size change in a pane with no DOM mutation, such as an image or a font loading'"
+      - artifact: "research.md R-13 § When it runs: 'a MutationObserver (childList, characterData, attributes, subtree) on the assigned elements of all three panes … a host that replaces the detail's inner content (the select-a-record flow, an htmx swap), in any tier, is seen'; Recorded cost names only 'an image or a font loading'; data-model.md § Re-measure triggers and contracts/elements.md container-tier convention say the same"
+      - artifact: "sources/issues.md:46 and :62: the Desktop V2 primitives (data-table, facts, event-timeline, card, …) are each an element ('every one is an element'); constitution I: framework-free custom elements. The panes of the consumer screens list-detail exists for will hold such elements"
+      - code: "p1.mjs: a custom element with an open shadow root in a pane, MutationObserver {childList, characterData, attributes, subtree} on it. Widening a shadow child (style attribute to 640 px) and replacing its text produced 0 records; a host attribute change on the same element produced 1. MutationObserver's subtree follows tree children, and a shadow root is not a child (DOM § Mutation observers)"
+    claim: |
+      The round-2 fix moved list-detail's content trigger from a pane ResizeObserver to a MutationObserver over the
+      panes' light DOM. That covers an htmx swap of light DOM, but not the other common way pane content changes in a
+      web-component application: a slotted element (a data table, an event timeline, a consumer's own Lit component)
+      gets a new property and re-renders inside its own shadow root. No light-DOM node changes, so no record is
+      delivered, no pass runs, and the figures stay stale. In a shrink-to-fit host this is exactly R-13's stale
+      content case (1073 px and the wrong tier instead of 1196 px), reached through the select-a-record flow the fix
+      claims to cover. The round-1 pane ResizeObserver saw at least the block-size part of such a change. Now
+      nothing sees it. FR-025 promises re-measurement "when the content of any pane mutates", and the recorded cost,
+      which the operator accepted, names only images and fonts. It understates the gap: the gap covers every
+      property-driven element, this library's included. US3-12's two content-change cases swap light DOM only, so
+      no planned test sees this.
+    remedies:
+      - "(a) Add a public `remeasure(): void` method to ocelle-list-detail (MINOR, contracts/elements.md, manifest, README container-tier convention) that runs the pass. FR-025, the spec's round-2 decision, R-13 Recorded cost, data-model and the README name content rendered inside a slotted element's shadow root as unseen, together with images and fonts, and point to `remeasure()`. US3-12 adds a case where a slotted element with an open shadow root widens its shadow content by a property: the figures stay stale until `remeasure()` is called, then the element shows the R-13 figure. Plant: `remeasure()` as a no-op."
+      - "(b) Keep the MutationObserver, and also observe each assigned element's border box with a ResizeObserver whose callback only schedules the pass for the next animation frame, never writing in the delivery. This catches the block-size part of a shadow-rendered change. Record that a width-only change inside a shadow root still waits. Add the shadow-content case to US3-12 with `driver.messages()` empty."
+      - "(c) Record only: amend FR-025, the round-2 decision, R-13, data-model, contracts/elements.md and the README so that the unseen class is 'any size change with no light-DOM mutation in the panes, including content rendered in a slotted element's shadow root', with the operator re-confirming the decision at the plan gate."
+  - id: PLAN-FRESH-3-002
+    severity: 3
+    title: "The pass runs in the MutationObserver microtask, so a mutation made inside any ResizeObserver callback (a virtualised list, a responsive component) writes the sizer inside the delivery and brings back the 'ResizeObserver loop' error the round-2 fix says is gone"
+    evidence:
+      - artifact: "research.md R-13 § When it runs: 'Its records are delivered as a microtask after the task that made them, before the rendering step … So nothing writes the sizer from inside a ResizeObserver delivery … Both are gone with this design'; contracts/elements.md container-tier convention: 're-measured … never inside a ResizeObserver callback, whose writes would resize a shrink-to-fit host within the delivery'"
+      - artifact: "research.md R-13 § Content change in a shown pane and spike pass condition: `driver.messages()` empty is asserted only for content changes the test makes from a task"
+      - code: "p3.mjs: a flex row holding a stand-in list-detail (shadow grid, sizer set through an adopted constructed sheet's rule from a MutationObserver callback over the pane, the host observed by a ResizeObserver). A slotted 'virtualiser' element whose own ResizeObserver appends a 700 px row when it is resized. After the virtualiser was resized, window received 'ResizeObserver loop completed with undelivered notifications.' Control p3b.mjs, identical except the virtualiser appends its row in a requestAnimationFrame: no error, same final width (1000 px). The microtask checkpoint after each ResizeObserver callback delivers the MutationObserver records inside the delivery, and the host is shallower than the observed virtualiser, so its new size is left undelivered"
+    claim: |
+      The round-2 claim that nothing writes the sizer inside a ResizeObserver delivery holds only when the
+      content mutation comes from a task. MutationObserver records, and `slotchange` events, which are queued the
+      same way, are delivered at the next microtask checkpoint. A ResizeObserver callback that mutates pane content
+      has its own checkpoint inside the delivery loop. Content that changes in response to its own size is a common
+      pattern: virtualised lists (the list pane of a long record list), components that swap content by width, and
+      lazy row rendering. With it, the pass resizes the shrink-to-fit host inside the delivery, the window error
+      returns, and the host's size arrives a frame late. That is the failure PLAN-FRESH-2-002 was confirmed for. The
+      plan's tests make every mutation from a task, so they cannot fail on this path.
+    remedies:
+      - "Schedule the pass instead of running it in the observer callback: the MutationObserver callback and `slotchange` set a flag and request one animation frame, and that frame callback runs the pass (in one task, as now) at most once per frame. A mutation made in a task is still measured before that frame's layout and ResizeObserver delivery. A mutation made inside a ResizeObserver or animation-frame callback is measured one frame later, never inside a delivery. Record that reading in R-13, data-model and FR-025. Add a US3-12 case: a slotted element whose own ResizeObserver appends wider content, with `driver.messages()` empty and the R-13 figure after settle. Plant: the pass run in the MutationObserver callback."
+      - "Keep the microtask pass and record in R-13, FR-025 and the README that content mutated inside a ResizeObserver callback makes the browser report the loop error and lag one frame. Say that consumers must defer such mutations, and filter that message in no test."
+  - id: PLAN-FRESH-3-003
+    severity: 2
+    title: "Observing `attributes` across the whole subtree runs a full forced-layout pass of all three panes on every attribute change anywhere in the panes; measured at about 14 ms per change with a 1000-row list, and not recorded as a cost"
+    evidence:
+      - artifact: "round-2 fixes-1.md, note on PLAN-FRESH-2-002 (a): '`attributes` is added to the observed record types', beyond the option the operator chose ('childList, characterData and subtree')"
+      - artifact: "research.md R-13 § Measurement pass: 'renders all panes in the three-column grid, reads the max-content and min-content inline sizes of the three-column grid and of the one-column stack … then restores the tier'; § When it runs: 'the observer runs one pass per delivery'. Recorded cost names only unseen changes, not the cost of a pass"
+      - code: "p4.mjs: a three-column grid (288 px, 1fr, 304 px) with 1000 text rows in the list pane, and a MutationObserver {attributes, childList, characterData, subtree} on the list whose callback runs a stand-in pass (max-content layout, min-content one-column layout, restore, each read back). Toggling `aria-selected` on one row per frame for 30 frames: median 14.0 ms and maximum 21.6 ms per pass on this machine, run in the microtask before the frame"
+    claim: |
+      With `attributes` and `subtree`, each of these triggers a full re-layout of every pane twice plus a restore:
+      a row's `aria-selected` or `class` toggled on selection or hover, htmx's `htmx-request` class, a reflected
+      attribute on a slotted ocelle element, a `<time>` or progress figure ticking each second. That happens even
+      when the host is not shrink-to-fit and the figures cannot matter. On a long list that costs most of a 16 ms frame
+      on desktop hardware, and more on the slower devices kitty-mission-ui and the console run on. The operator accepted
+      a recorded cost about unseen changes. Nobody stated or accepted the cost of the trigger set as the fixer
+      widened it.
+    remedies:
+      - "Coalesce passes to at most one per animation frame (the scheduling of PLAN-FRESH-3-002's first remedy), restrict `attributes` with an `attributeFilter` of attributes that commonly change layout (`class`, `style`, `hidden`, `width`, `height`, `src`, `colspan`) or drop it as the chosen option did, and record the per-pass cost and the trigger set in R-13 and the README convention. Add a test that 20 attribute changes in one task, and a change of an attribute not in the filter, run at most one pass and no pass respectively, observed through a test-only pass counter. Plant: one pass per record."

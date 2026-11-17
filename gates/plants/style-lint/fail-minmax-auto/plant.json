@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "minmax() with a minimum other than 0 (minmax(auto, 50%)) is raw: the allowance takes minmax(0, <flex>) only, so a change admitting every minmax() is caught (013 research.md R-10).",
+  "findings": [
+    {
+      "location": "packages/elements/src/x.ts:6",
+      "rule": "ocelle/token-only",
+      "message": "minmax(auto, 50%)"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+# Analysis fixes 1
+
+Input: `specs/008-overlays/analysis-report.md` (approved at the tasks gate). Operator decisions of 2026-11-13
+(human:MOES-Media): fix I1 and C1 now; resolve I3 by folding each phase's story tests into its single red commit.
+`analysis-report.md` is unchanged. No task was renumbered.
+
+| ID | Resolution | Where |
+|----|------------|-------|
+| I1 | fixed: the drawer no longer inherits the dialog's "long body" and "styles" rows. It has its own Long body row (panel block size equals the viewport's, 800 px and 256 px at 320 × 256, not capped at `dialog-max-block`) and Styles row (UA reset, `max-inline-size` = `dialog-max-inline`, no block cap below the viewport, the two corner radii on the touched viewport edge 0 per `side` × `dir`, not centred). The Size row now covers uncapped and capped widths and asserts that `--ocelle-dialog-inline-size` on the host changes nothing. FR-003 sets no radius for the drawer's inner-edge corners, so no row asserts them. The plan's Constitution Check (II) no longer says the radius is `radius-2` for both. | contracts/checks.md § Drawer; tasks.md T030; plan.md Constitution Check II |
+| C1 | fixed: a Persistence row says that, once shown, the bubble is still `:popover-open` after a bounded 900 ms wait (three times the 300 ms test delay, within R-15's 1 000 ms bound), sampled every frame. It covers the pointer on the trigger, the pointer on the bubble, and keyboard focus with the pointer outside both. Each case is part of the test of the show it guards. | contracts/checks.md § Tooltip; tasks.md T041; research.md R-15 |
+| I3 | decided: each phase's story red task is now part of the phase's one red commit (T027 in T020, T038 in T034, T050 in T046), recorded once by `red.sh <phase> phase`. T026 (R-16 recheck) moved ahead of Phase 2's tests, so it runs before any story test is written. Story green and baselines (T028/T029, T039/T040, T051/T052) stay after each phase's green. The phase flow, Hold, Dependencies and Parallel sections were updated to match. Task IDs are unchanged; T026, T027, T038 and T050 now come earlier in the file than their numbers suggest. | tasks.md (phase flow, Hold, Phases 2 to 4, Dependencies, Parallel); plan.md Constitution Check VIII |

@@ -5,9 +5,22 @@ import type { BrowserCommand, BrowserCommandContext } from "vitest/node";
 // The element tests' browser commands (005 research.md R-11; packages/elements/test/commands.ts), loaded when a command
 // runs: the plant trees of the gates copy this file without the element test code (research.md R-10), so neither
 // loading nor type-checking the configuration may depend on it.
+interface PathStep {
+  readonly x: number;
+  readonly y: number;
+  readonly down?: boolean;
+  readonly up?: boolean;
+  readonly button?: "left" | "right" | "middle";
+}
 interface ElementCommands {
   readonly axTree: (context: BrowserCommandContext, id: string, scope?: "element" | "subtree") => Promise<unknown>;
   readonly emulateForcedColors: (context: BrowserCommandContext, mode: "active" | "none", palette?: "light" | "dark") => Promise<void>;
+  readonly scrollWidth: (context: BrowserCommandContext) => Promise<unknown>;
+  readonly activeElement: (context: BrowserCommandContext) => Promise<unknown>;
+  readonly textBoxes: (context: BrowserCommandContext, id: string) => Promise<unknown>;
+  readonly emulateReducedMotion: (context: BrowserCommandContext, mode: "reduce" | "no-preference") => Promise<void>;
+  readonly pointerPath: (context: BrowserCommandContext, steps: readonly PathStep[]) => Promise<void>;
+  readonly touchTap: (context: BrowserCommandContext, x: number, y: number) => Promise<void>;
 }
 const elementCommandsUrl = new URL("./packages/elements/test/commands.ts", import.meta.url).href;
 const elementCommands = async (): Promise<ElementCommands> => (await import(elementCommandsUrl)) as ElementCommands;
@@ -15,10 +28,33 @@ const axTree: BrowserCommand<[id: string, scope?: "element" | "subtree"]> = asyn
 const emulateForcedColors: BrowserCommand<[mode: "active" | "none", palette?: "light" | "dark"]> = async (context, mode, palette) => {
   await (await elementCommands()).emulateForcedColors(context, mode, palette);
 };
+// The document readers of 011 research.md R-13: the scroll width, the deep active element and the text boxes.
+const scrollWidth: BrowserCommand = async (context) => (await elementCommands()).scrollWidth(context);
+const activeElement: BrowserCommand = async (context) => (await elementCommands()).activeElement(context);
+const textBoxes: BrowserCommand<[id: string]> = async (context, id) => (await elementCommands()).textBoxes(context, id);
+// 013 phase 3 (research.md R-08, contracts/checks.md § Driver additions): reduced motion through the same
+// `page.emulateMedia` helper as forced colours, so neither clears the other; 009's overflow-region scenarios
+// (research.md R-17) use it too.
+const emulateReducedMotion: BrowserCommand<[mode: "reduce" | "no-preference"]> = async (context, mode) => {
+  await (await elementCommands()).emulateReducedMotion(context, mode);
+};
+// 008 research.md R-14: real pointer paths and touch taps for the overlay scenarios.
+const pointerPath: BrowserCommand<[steps: readonly PathStep[]]> = async (context, steps) => {
+  await (await elementCommands()).pointerPath(context, steps);
+};
+const touchTap: BrowserCommand<[x: number, y: number]> = async (context, x, y) => {
+  await (await elementCommands()).touchTap(context, x, y);
+};
+const elementBrowserCommands = { axTree, emulateForcedColors, scrollWidth, activeElement, textBoxes, emulateReducedMotion, pointerPath, touchTap };
+
+// The element browser projects run at the fixture's 1280 × 800 (008 research.md R-14), the default one as a mouse
+// device and elements-touch as a touch device (`hasTouch`); both exclude the node, build and fixture suites.
+const elementViewport = { width: 1280, height: 800 };
 
 // Plants and gate-test fixtures are inputs of the gates and their tests, never tests of this repository
 // (FR-028, research.md R-10): every project excludes them.
 const excluded = ["**/node_modules/**", "**/dist/**", "gates/plants/**", "gates/test/fixtures/**"];
+const elementExcluded = [...excluded, "packages/elements/test/node/**", "packages/elements/test/build/**", "packages/elements/test/browser/**"];
 
 // Optional, environment-only Chromium override (research.md R-03, operator decision 2026-11-02): when
 // OCELLE_CHROMIUM_PATH is set and non-empty, the elements project launches that executable; otherwise Playwright's own.
@@ -67,19 +103,40 @@ export default defineConfig({
       {
         // The in-process element tests (005 research.md R-11): browser mode, element source; mutated by
         // stryker.elements.config.json (R-12). The node, build and fixture tests run in their own projects below. The
-        // axTree and emulateForcedColors commands read Chromium's accessibility tree over CDP and switch forced colours
-        // for the shared scenario bodies (packages/elements/test/commands.ts). Each test file keeps its own iframe and
-        // custom-element registry (isolate, the default).
+        // axTree, emulateForcedColors and emulateReducedMotion commands read Chromium's accessibility tree over CDP and
+        // switch forced colours and reduced motion for the shared scenario bodies (packages/elements/test/commands.ts).
+        // Each test file keeps its own iframe and custom-element registry (isolate, the default). 008 (R-14): a
+        // 1280 × 800 viewport, as on the fixture, a mouse device; the touch rows (`test/*.touch.test.ts`) run in
+        // elements-touch instead; the commands also drive the real pointer.
         test: {
           name: "elements",
           include: ["packages/elements/**/*.test.ts"],
-          exclude: [...excluded, "packages/elements/test/node/**", "packages/elements/test/build/**", "packages/elements/test/browser/**"],
+          exclude: [...elementExcluded, "packages/elements/test/*.touch.test.ts"],
           browser: {
             enabled: true,
             provider: playwright({ launchOptions }),
             headless: true,
+            viewport: elementViewport,
             instances: [{ browser: "chromium" }],
-            commands: { axTree, emulateForcedColors },
+            commands: elementBrowserCommands,
+          },
+        },
+      },
+      {
+        // The in-process touch rows (008 research.md R-14): the same browser mode at 1280 × 800 in a context with
+        // `hasTouch`, for `test/*.touch.test.ts` only, with the elements project's excludes, so the fixture's touch
+        // files stay in elements-browser. Mutated with the elements project (vitest.mutation.elements.config.ts).
+        test: {
+          name: "elements-touch",
+          include: ["packages/elements/test/*.touch.test.ts"],
+          exclude: elementExcluded,
+          browser: {
+            enabled: true,
+            provider: playwright({ launchOptions, contextOptions: { hasTouch: true } }),
+            headless: true,
+            viewport: elementViewport,
+            instances: [{ browser: "chromium" }],
+            commands: elementBrowserCommands,
           },
         },
       },

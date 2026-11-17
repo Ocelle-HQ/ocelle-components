@@ -169,6 +169,18 @@ pitfalls up front. Each entry names where it was found. New entries are added as
   limit (005 landing; every shard of run 43188981994 finished within 6:42).
 - **006 L1-02**: under CI load a surviving mutant can show as a Timeout, which counts as detected. When a mutation shard reports timeouts on changed lines, re-run that range locally before trusting it.
 - **006 L1-04**: an allowlist entry that points to a justification must be checked for the exact form of that pointer (`specs/<feature>/plan.md`), not just for staying inside the repository; the review found a `plan` that pointed to any file.
+- **013 R4-01**: a test that clears a class an element sets from its own size can be undone by that element's own
+  `ResizeObserver`. Clearing `stacked` on a sheet changed its height, the observer put the class back, and the
+  "listener" control passed with `addEventListener` deleted. Give the host a fixed block size (`block-size`,
+  `overflow: hidden`) so clearing the class changes no size, assert that it stays cleared before the dispatch, and plant
+  both halves of a paired test.
+- **013 L1-01**: Stryker equivalent-mutant records on teardown code (`disconnectedCallback`'s body,
+  `removeEventListener`'s event name) hid a missing test for "a removed element stops listening". Treat such a
+  record as a coverage claim and write the removed-element test instead.
+- **013 R4-03**: a story file for an element a later phase adds breaks the scaffold run of an earlier phase, because
+  the Storybook setup loads every story. The run exits 2, and the TDD check reads that as red.
+- **009 O3-01**: a story that sets `scrollLeft` once after `updateComplete` captures the wrong position when the content grows later (fonts, late layout). The visual baselines then record the bug. Re-apply the position from a `ResizeObserver` on the box and its track, and test it by growing the content after the first position.
+- **009 L1-01, R6-01**: an element that measures its own intrinsic sizes must skip measuring while it has no box (`getClientRects().length === 0`: a closed `<dialog>`, a `display: none` ancestor, a `hidden` host). It must then measure once it becomes rendered, not only if a pass was skipped. A `MutationObserver` that does not watch attributes misses a class swap made while hidden. Test every hidden route against a twin that was rendered from the start.
 
 # Candidates for a frontend profile or lens
 

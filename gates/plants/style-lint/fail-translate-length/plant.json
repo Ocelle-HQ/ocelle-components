@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "translateX() with a length (translateX(8px)) is raw: the allowance takes a percentage only, so a change admitting every translate argument is caught (013 research.md R-10).",
+  "findings": [
+    {
+      "location": "packages/elements/src/x.ts:7",
+      "rule": "ocelle/token-only",
+      "message": "translateX(8px)"
+    }
+  ]
+}
