@@ -478,7 +478,7 @@ export const actionRowScenarios: readonly Scenario[] = [
       };
     },
     expected: {
-      meaningful: [{ role: "button", name: "Mission 42" }],
+      meaningful: [{ role: "button", name: "Mission 42", description: "Due Friday Blocked Design" }],
       texts: [{ role: "StaticText", name: "Mission 42" }],
       state: { role: "button", name: "Mission 42", description: "Due Friday Blocked Design", focusable: true, disabled: false },
       forward: [["button#before"], ["ocelle-action-row#r", "button"], ["button#after"]],
@@ -757,7 +757,7 @@ export const actionRowScenarios: readonly Scenario[] = [
       return { first, slotted, empty, whitespace, written, removed: await description("e"), axe: await severe(driver) };
     },
     expected: {
-      first: { meaningful: [{ role: "button", name: "Mission 42" }], host: null, mirror: "Open the mission", name: "Mission 42", description: "Open the mission" },
+      first: { meaningful: [{ role: "button", name: "Mission 42", description: "Open the mission" }], host: null, mirror: "Open the mission", name: "Mission 42", description: "Open the mission" },
       slotted: "Due Friday",
       empty: "Open the mission",
       whitespace: "Open the mission",

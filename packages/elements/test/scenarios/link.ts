@@ -723,9 +723,9 @@ export const linkScenarios: readonly Scenario[] = [
       first: {
         nodes: [
           { role: "generic", name: "" },
-          { role: "button", name: "Save" },
+          { role: "button", name: "Save", description: "Close dialog" },
         ],
-        meaningful: [{ role: "button", name: "Save" }],
+        meaningful: [{ role: "button", name: "Save", description: "Close dialog" }],
         name: "Save",
         description: "Close dialog",
         host: null,
