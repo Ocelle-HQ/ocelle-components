@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
-import { fold, generate, iconNames, normalise, serialise, writeManifest } from "../../scripts/manifest.ts";
+import { generate, iconNames, normalise, serialise, writeManifest } from "../../scripts/manifest.ts";
 import type { Manifest } from "../../scripts/manifest.ts";
 
 // The custom-elements manifest generator (005 FR-007, US1 scenario 11; research.md R-06; reviews/phase-2/spike.md § 2;
@@ -180,50 +180,25 @@ describe("normalise(raw, names): the observed standard attributes (specs/010-fee
   });
 });
 
-describe("fold(raw): the analyzer's output folded onto the element modules (specs/010-feedback-forms FR-034, #27; T036)", () => {
-  const inherited = { name: "Base", module: "src/base.ts" };
-  const lists = ["members", "attributes", "slots", "events", "cssParts", "cssProperties"] as const;
-  const module = (path: string, declarations: Json[]): Json => ({ kind: "javascript-module", path, declarations, exports: [] });
-
-  it("keeps only the element modules, drops inheritedFrom from every list, and replaces a superclass in a dropped module by that class's own, along the chain", () => {
-    const element: Json = { kind: "class", name: "A", customElement: true, superclass: { name: "Base", module: "/src/base.ts" } };
-    for (const key of lists) element[key] = [{ name: `own-${key}` }, { name: `inherited-${key}`, inheritedFrom: inherited }];
-    const out = fold({
-      schemaVersion: "1.0.0",
-      modules: [
-        module("src/ocelle-a.ts", [element]),
-        module("src/base.ts", [{ kind: "class", name: "Base", superclass: { name: "Root", module: "/src/root.ts" } }]),
-        module("src/root.ts", [{ kind: "class", name: "Root", superclass: { name: "LitElement", package: "lit" } }]),
-      ],
-    });
-    const expected: Json = { kind: "class", name: "A", customElement: true, superclass: { name: "LitElement", package: "lit" } };
-    for (const key of lists) expected[key] = [{ name: `own-${key}` }, { name: `inherited-${key}` }];
-    expect(out).toStrictEqual({ schemaVersion: "1.0.0", modules: [module("src/ocelle-a.ts", [expected])] });
-  });
-
-  it("leaves a superclass in an element module, in a package or in a module it was not given as it is, states the lists, and gives a declaration without a superclass none", () => {
-    const out = fold({
-      modules: [
-        module("src/ocelle-a.ts", [
-          { kind: "class", name: "A", superclass: { name: "B", module: "/src/ocelle-b.ts" } },
-          { kind: "class", name: "C", superclass: { name: "Gone", module: "/src/gone.ts" } },
-          { kind: "function", name: "helper" },
-        ]),
-        module("src/ocelle-b.ts", [{ kind: "class", name: "B", superclass: { name: "LitElement", package: "lit" } }]),
-      ],
-    });
-    const declarations = ((out.modules as Json[]).flatMap((each) => each.declarations as Json[]));
-    expect({
-      superclasses: declarations.map((each) => each.superclass),
-      keys: declarations.map((each) => Object.keys(each).sort()),
-    }).toStrictEqual({
-      superclasses: [{ name: "B", module: "/src/ocelle-b.ts" }, { name: "Gone", module: "/src/gone.ts" }, undefined, { name: "LitElement", package: "lit" }],
-      keys: [
-        ["attributes", "cssParts", "cssProperties", "events", "kind", "members", "name", "slots", "superclass"],
-        ["attributes", "cssParts", "cssProperties", "events", "kind", "members", "name", "slots", "superclass"],
-        ["attributes", "cssParts", "cssProperties", "events", "kind", "members", "name", "slots"],
-        ["attributes", "cssParts", "cssProperties", "events", "kind", "members", "name", "slots", "superclass"],
-      ],
+// specs/010-feedback-forms operator round 3 (reviews/phase-3/round-3.md, O3-01; T041c): the fold(raw) tests of T036 are
+// removed with fold itself. They pinned the rule the operator replaced at the landing of PR #49 ("Main's rule +
+// FormControl"): an internal base's members are listed on the element with inheritedFrom, and its superclass is kept as
+// the analyzer writes it, as mission 008 does for src/overlay.ts (constitution VIII: the reason for replacing pinned
+// tests, recorded here).
+describe("normalise(raw, names): what an element inherits from an internal base (specs/010-feedback-forms O3-01; T041c)", () => {
+  it("keeps a member's and an attribute's inheritedFrom and the declaration's superclass as given", () => {
+    const from = { name: "FormControl", module: "src/form-control.ts" };
+    const changed = structuredClone(raw);
+    const element = declaration(changed);
+    element.superclass = { name: "FormControl", module: "/src/form-control.ts" };
+    (element.members as Json[]).push({ kind: "field", name: "required", privacy: "public", type: { text: "boolean" }, description: "Required.", attribute: "required", inheritedFrom: from });
+    (element.attributes as Json[]).push({ name: "required", fieldName: "required", type: { text: "boolean" }, description: "Required.", inheritedFrom: from });
+    const out = declaration(normalise(changed, []));
+    const inherited = (list: unknown): unknown[] => ((list ?? []) as Json[]).map((each) => [each.name, each.inheritedFrom ?? null]);
+    expect({ superclass: out.superclass, members: inherited(out.members), attributes: inherited(out.attributes) }).toEqual({
+      superclass: { module: "/src/form-control.ts", name: "FormControl" },
+      members: [["name", null], ["label", null], ["required", { module: "src/form-control.ts", name: "FormControl" }]],
+      attributes: [["name", null], ["label", null], ["required", { module: "src/form-control.ts", name: "FormControl" }]],
     });
   });
 });
@@ -276,11 +251,14 @@ describe("generate(root) on other element sources", () => {
   });
 });
 
-/** An internal base class in src/base-control.ts: a reflected property, a getter, a method, a focus() override and observed standard attributes. */
-const baseControl = `import { LitElement } from "lit";
+/**
+ * An internal base class `name`: a reflected property, a getter, a method, a focus() override and observed standard
+ * attributes.
+ */
+const controlBase = (name: string): string => `import { LitElement } from "lit";
 
 /** A base. */
-export class BaseControl extends LitElement {
+export class ${name} extends LitElement {
   static override properties = { name: { type: String, reflect: true } };
 
   /** The observed standard attributes. */
@@ -315,15 +293,15 @@ export class BaseControl extends LitElement {
 }
 `;
 
-/** An element derived from BaseControl, with a property of its own. */
-const derived = `import { BaseControl } from "./base-control.ts";
+/** An element class `name` with the tag `tag`, derived from `base` imported from `module`, with a property of its own. */
+const derived = (tag: string, name: string, base: string, module: string): string => `import { ${base} } from "./${module}";
 
 /**
- * An alpha.
+ * An element.
  *
- * @tagname ocelle-alpha
+ * @tagname ${tag}
  */
-export class Alpha extends BaseControl {
+export class ${name} extends ${base} {
   static override properties = { label: {} };
 
   /**
@@ -335,26 +313,44 @@ export class Alpha extends BaseControl {
 }
 `;
 
-describe("generate(root) on an element derived from an internal base class (specs/010-feedback-forms FR-034, #27; PLAN-CORRECTNESS-1-004; T030)", () => {
-  it("folds the base's public members and attributes into the element's entry, focus() included, and adds no module, superclass or inheritedFrom naming the base's source", async () => {
-    const dir = root({ "packages/elements/src/base-control.ts": baseControl, "packages/elements/src/ocelle-alpha.ts": derived });
+// specs/010-feedback-forms operator round 3 (reviews/phase-3/round-3.md, O3-01; T041c): this replaces T030's pinned
+// rule "folds the base's public members and attributes into the element's entry ... and adds no module, superclass or
+// inheritedFrom naming the base's source". The operator chose mission 008's rule with src/form-control.ts as a second
+// named base beside src/overlay.ts: the base's members are listed on the element with inheritedFrom, the superclass is
+// kept as the analyzer writes it, the base's module is not published, and a base in any other file of src/ is not read
+// (constitution VIII: the reason for replacing a pinned test, recorded here).
+describe("generate(root) on an element derived from an internal base class (specs/010-feedback-forms FR-034, #27, O3-01; T030, T041c)", () => {
+  it("reads src/form-control.ts by name: its public members and attributes, focus() included, are listed on the element with inheritedFrom and the superclass names it; a base in base-control.ts gives nothing; the published modules are the ocelle-* ones only", async () => {
+    const dir = root({
+      "packages/elements/src/form-control.ts": controlBase("FormControl"),
+      "packages/elements/src/base-control.ts": controlBase("BaseControl"),
+      "packages/elements/src/ocelle-alpha.ts": derived("ocelle-alpha", "Alpha", "FormControl", "form-control.ts"),
+      "packages/elements/src/ocelle-beta.ts": derived("ocelle-beta", "Beta", "BaseControl", "base-control.ts"),
+    });
     const manifest = await generate(dir);
-    const element = declaration(manifest);
-    const focus = (element.members as Json[] | undefined)?.find((member) => member.name === "focus");
+    const modules = manifest.modules as Json[];
+    const of = (path: string): Json => declaration({ modules: modules.filter((module) => module.path === path) });
+    const inherited = (entry: Json, list: "members" | "attributes"): unknown[] => ((entry[list] ?? []) as Json[]).map((each) => [each.name, each.inheritedFrom ?? null]);
+    const alpha = of("src/ocelle-alpha.ts");
+    const beta = of("src/ocelle-beta.ts");
+    const focus = (alpha.members as Json[] | undefined)?.find((member) => member.name === "focus");
+    const from = { name: "FormControl", module: "src/form-control.ts" };
     expect({
-      paths: (manifest.modules as Json[]).map((module) => module.path),
-      members: ((element.members ?? []) as Json[]).map((member) => member.name),
-      attributes: ((element.attributes ?? []) as Json[]).map((attribute) => attribute.name),
+      paths: modules.map((module) => module.path),
+      declarations: modules.flatMap((module) => ((module.declarations ?? []) as Json[]).map((each) => each.name)),
+      alpha: { members: inherited(alpha, "members"), attributes: inherited(alpha, "attributes"), superclass: alpha.superclass },
       focus: { kind: focus?.kind, parameters: focus?.parameters, described: typeof focus?.description === "string" && focus.description !== "" },
-      superclass: element.superclass,
-      mentions: JSON.stringify(manifest).includes("base-control"),
+      beta: { members: inherited(beta, "members"), attributes: inherited(beta, "attributes") },
     }).toEqual({
-      paths: ["src/ocelle-alpha.ts"],
-      members: ["label", "name", "form", "checkValidity", "focus"],
-      attributes: ["label", "name"],
+      paths: ["src/ocelle-alpha.ts", "src/ocelle-beta.ts"],
+      declarations: ["Alpha", "Beta"],
+      alpha: {
+        members: [["label", null], ["name", from], ["form", from], ["checkValidity", from], ["focus", from]],
+        attributes: [["label", null], ["name", from]],
+        superclass: { name: "FormControl", module: "/src/form-control.ts" },
+      },
       focus: { kind: "method", parameters: [{ name: "options", optional: true, type: { text: "FocusOptions" } }], described: true },
-      superclass: { name: "LitElement", package: "lit" },
-      mentions: false,
+      beta: { members: [["label", null]], attributes: [["label", null]] },
     });
   });
 });
@@ -502,30 +498,35 @@ describe("generate(root) on the repository's element source", () => {
         readonly: each.readonly,
         returns: returned?.type?.text,
         parameters: parameters?.map((parameter) => `${parameter.name}${parameter.optional === true ? "?" : ""}: ${String(parameter.type?.text)}`),
+        inheritedFrom: each.inheritedFrom,
         described: described(each.description),
       });
     };
     const field = (name: string, type: string, value: string, attribute?: string, reflects?: boolean): Json => defined({ kind: "field", name, type, default: value, attribute, reflects, described: true });
     const getter = (name: string, type: string): Json => ({ kind: "field", name, type, readonly: true, described: true });
+    // The members and attributes declared in src/form-control.ts are listed with inheritedFrom (operator round 3, O3-01; T041c).
+    const from = { name: "FormControl", module: "src/form-control.ts" };
     const method = (name: string, returns: string, parameters?: string[]): Json => defined({ kind: "method", name, returns, parameters, described: true });
     const types = '"text" | "email" | "url" | "tel" | "search" | "password" | "number"';
     const optional = (name: string, attribute: string, type = "string | undefined"): Json => field(name, type, "undefined", attribute, true);
     const members = [
-      field("name", "string", '""', "name", true),
-      field("label", "string", '""', "label", true),
-      field("description", "string", '""', "description", true),
-      field("error", "string", '""', "error", true),
-      field("required", "boolean", "false", "required", true),
-      field("disabled", "boolean", "false", "disabled", true),
-      field("value", "string", '""'),
-      getter("form", "HTMLFormElement | null"),
-      getter("labels", "NodeList"),
-      getter("validity", "ValidityState"),
-      getter("validationMessage", "string"),
-      getter("willValidate", "boolean"),
-      method("checkValidity", "boolean"),
-      method("reportValidity", "boolean"),
-      method("focus", "void", ["options?: FocusOptions"]),
+      ...[
+        field("name", "string", '""', "name", true),
+        field("label", "string", '""', "label", true),
+        field("description", "string", '""', "description", true),
+        field("error", "string", '""', "error", true),
+        field("required", "boolean", "false", "required", true),
+        field("disabled", "boolean", "false", "disabled", true),
+        field("value", "string", '""'),
+        getter("form", "HTMLFormElement | null"),
+        getter("labels", "NodeList"),
+        getter("validity", "ValidityState"),
+        getter("validationMessage", "string"),
+        getter("willValidate", "boolean"),
+        method("checkValidity", "boolean"),
+        method("reportValidity", "boolean"),
+        method("focus", "void", ["options?: FocusOptions"]),
+      ].map((each): Json => ({ ...each, inheritedFrom: from })),
       field("type", types, '"text"', "type", true),
       optional("placeholder", "placeholder"),
       optional("autocomplete", "autocomplete"),
@@ -538,13 +539,13 @@ describe("generate(root) on the repository's element source", () => {
       optional("maxLength", "maxlength", "number | undefined"),
       field("readOnly", "boolean", "false", "readonly", true),
     ];
-    const attribute = (each: Json): Json => defined({ name: each.name, fieldName: each.fieldName, type: (each.type as { text?: string } | undefined)?.text, default: each.default, described: described(each.description) });
+    const attribute = (each: Json): Json => defined({ name: each.name, fieldName: each.fieldName, type: (each.type as { text?: string } | undefined)?.text, default: each.default, inheritedFrom: each.inheritedFrom, described: described(each.description) });
     const attributes = [
-      ...members.filter((each) => each.attribute !== undefined).map((each) => ({ name: each.attribute, fieldName: each.name, type: each.type, default: each.default, described: true })),
+      ...members.filter((each) => each.attribute !== undefined).map((each) => defined({ name: each.attribute, fieldName: each.name, type: each.type, default: each.default, inheritedFrom: each.inheritedFrom, described: true })),
       { name: "value", type: "string", default: '""', described: true },
     ];
     const valueAttribute = ((entry?.attributes ?? []) as Json[]).find((each) => each.name === "value");
-    expect(entry).toMatchObject({ kind: "class", name: "OcelleFormInput", tagName: "ocelle-form-input", customElement: true, slots: [], cssProperties: [], superclass: { name: "LitElement", package: "lit" } });
+    expect(entry).toMatchObject({ kind: "class", name: "OcelleFormInput", tagName: "ocelle-form-input", customElement: true, slots: [], cssProperties: [], superclass: { name: "FormControl", module: "/src/form-control.ts" } });
     expect({
       members: ((entry?.members ?? []) as Json[]).map(member).sort(byName),
       attributes: ((entry?.attributes ?? []) as Json[]).map(attribute).sort(byName),
@@ -581,34 +582,39 @@ describe("generate(root) on the repository's element source", () => {
         readonly: each.readonly,
         returns: returned?.type?.text,
         parameters: parameters?.map((parameter) => `${parameter.name}${parameter.optional === true ? "?" : ""}: ${String(parameter.type?.text)}`),
+        inheritedFrom: each.inheritedFrom,
         described: described(each.description),
       });
     };
     const field = (name: string, type: string, value: string, attribute?: string, reflects?: boolean): Json => defined({ kind: "field", name, type, default: value, attribute, reflects, described: true });
     const getter = (name: string, type: string): Json => ({ kind: "field", name, type, readonly: true, described: true });
+    // The members and attributes declared in src/form-control.ts are listed with inheritedFrom (operator round 3, O3-01; T041c).
+    const from = { name: "FormControl", module: "src/form-control.ts" };
     const method = (name: string, returns: string, parameters?: string[]): Json => defined({ kind: "method", name, returns, parameters, described: true });
     // The shared members only: none of the input's own (type and the pass-through properties).
     const members = [
-      field("name", "string", '""', "name", true),
-      field("label", "string", '""', "label", true),
-      field("description", "string", '""', "description", true),
-      field("error", "string", '""', "error", true),
-      field("required", "boolean", "false", "required", true),
-      field("disabled", "boolean", "false", "disabled", true),
-      field("value", "string", '""'),
-      getter("form", "HTMLFormElement | null"),
-      getter("labels", "NodeList"),
-      getter("validity", "ValidityState"),
-      getter("validationMessage", "string"),
-      getter("willValidate", "boolean"),
-      method("checkValidity", "boolean"),
-      method("reportValidity", "boolean"),
-      method("focus", "void", ["options?: FocusOptions"]),
+      ...[
+        field("name", "string", '""', "name", true),
+        field("label", "string", '""', "label", true),
+        field("description", "string", '""', "description", true),
+        field("error", "string", '""', "error", true),
+        field("required", "boolean", "false", "required", true),
+        field("disabled", "boolean", "false", "disabled", true),
+        field("value", "string", '""'),
+        getter("form", "HTMLFormElement | null"),
+        getter("labels", "NodeList"),
+        getter("validity", "ValidityState"),
+        getter("validationMessage", "string"),
+        getter("willValidate", "boolean"),
+        method("checkValidity", "boolean"),
+        method("reportValidity", "boolean"),
+        method("focus", "void", ["options?: FocusOptions"]),
+      ].map((each): Json => ({ ...each, inheritedFrom: from })),
     ];
-    const attribute = (each: Json): Json => defined({ name: each.name, fieldName: each.fieldName, type: (each.type as { text?: string } | undefined)?.text, default: each.default, described: described(each.description) });
+    const attribute = (each: Json): Json => defined({ name: each.name, fieldName: each.fieldName, type: (each.type as { text?: string } | undefined)?.text, default: each.default, inheritedFrom: each.inheritedFrom, described: described(each.description) });
     // Exactly the reflected shared attributes: no value (a host value attribute is ignored), form, aria-*, role or hidden.
-    const attributes = members.filter((each) => each.attribute !== undefined).map((each) => ({ name: each.attribute, fieldName: each.name, type: each.type, default: each.default, described: true }));
-    expect(entry).toMatchObject({ kind: "class", name: "OcelleFormSelect", tagName: "ocelle-form-select", customElement: true, superclass: { name: "LitElement", package: "lit" } });
+    const attributes = members.filter((each) => each.attribute !== undefined).map((each) => defined({ name: each.attribute, fieldName: each.name, type: each.type, default: each.default, inheritedFrom: each.inheritedFrom, described: true }));
+    expect(entry).toMatchObject({ kind: "class", name: "OcelleFormSelect", tagName: "ocelle-form-select", customElement: true, superclass: { name: "FormControl", module: "/src/form-control.ts" } });
     expect({
       described: described(entry?.description),
       members: ((entry?.members ?? []) as Json[]).map(member).sort(byName),
