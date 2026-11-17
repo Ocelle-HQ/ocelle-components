@@ -160,7 +160,9 @@ heading, in the regular or the compact size.
 - `tone` (attribute and property, reflected): `info` (the default), `success`, `warning`, `danger` or `neutral`; any
   other value behaves as `info` and the property reads `"info"`, while the attribute keeps the value as written. The
   box's ground is `--ocelle-color-<tone>-bg`, with a bar of `--ocelle-bar-width` in `--ocelle-color-<tone>` along its
-  inline-start edge, so the ground is never the only mark of the tone; the text is `--ocelle-color-ink`.
+  inline-start edge; the text is `--ocelle-color-ink`. The bar and the ground differ from one tone to another only by
+  colour, and not at all in forced colours, so the host's text must state the tone, as "Run failed" or "Saved." does:
+  the look of the box alone does not tell a warning from a success.
 - `size` (attribute and property, reflected): `regular` (the default) or `compact`; any other value behaves as
   `regular` and the property reads `"regular"`, while the attribute keeps the value as written. The compact size sets
   the text in `--ocelle-font-size-sm` and `--ocelle-line-height-compact`, the scale of the base styles' compact density,
