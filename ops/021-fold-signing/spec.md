@@ -75,6 +75,16 @@ throwaway signing program.
   signature check.
 - The fold's interface, evidence remapping and the existing outside-evidence failure path.
 
+**Amendment (2026-11-17, operator round 3, `reviews/phase-1/round-3.md`).** The operator brought two items into
+scope:
+
+- O3-02: the `plants.md` `- base:` line patterns of the remap and of the outside-evidence check accept 7 to 64 hex
+  characters, as `pr-base` does, so a SHA-256 fold remaps that line.
+- O3-04: in `.claude/skills/ocelle-land/SKILL.md`, the one sentence on a failed fold (`:181`) now states the
+  script's exit codes and prefold-ref contract. This is a docs-only change.
+
+The rest of evidence remapping and every other skill stay out of scope.
+
 ## Success Criteria
 
 - **SC-001**: A fold run with signing on leaves no unsigned commit in `<base>..HEAD`.
