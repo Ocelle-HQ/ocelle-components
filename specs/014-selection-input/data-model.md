@@ -78,5 +78,10 @@ Disabled children stay in the list with `enabled` false (focusable at `tabindex=
 | Field | Type | Rule |
 |---|---|---|
 | `href` | string or `null` | as written, reflected; event `detail.href` |
+| `label` | string or `null` | attribute and property, not reflected; trimmed, blank (only whitespace) counts as none; set as `part="anchor"`'s `aria-label` when non-blank and removed from the anchor otherwise, following each change (FR-045, R-08) |
 | target | URL string or `null` | `navigationTarget(href, document.baseURI, location.protocol)`, evaluated at each activation (and to refresh the anchor's `href` presence on `href` change and at each activation's first event) |
 | allowed | boolean | target not `null`: `new URL(href, baseURI)` parses and its protocol ∈ {`http:`, `https:`, `documentProtocol`} (FR-047); `""` and fragments allowed when they resolve to such a URL |
+
+The link's name is the anchor's: `part="anchor"` takes its `aria-label` from the link's `label` only, and is named by
+its slotted text otherwise; a host `aria-label` on `ocelle-link` is not an input (not read, forwarded or observed), and
+the element writes no attribute on its host (FR-045, operator decision during phase 6, R-08).

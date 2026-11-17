@@ -1,0 +1,33 @@
+$ node gates/bin/mutation.ts -- --base 493142e
+packages/elements/src/ocelle-link.ts:46: mutation: record: ObjectLiteral: equivalent, {} gives Lit's default options, which are type String's (attribute "label", the default converter, not reflected)
+packages/elements/src/ocelle-link.ts:163: mutation: record: ConditionalExpression: the condition forced `false` is equivalent in Chromium, which fires `click` for the primary button only (a middle click is an `auxclick`, US5-13), kept for engines that are not measured; forced `true` is killed by US5-3 and disabled with it, as Stryker disables by mutator kind
+packages/elements/src/ocelle-link.ts:151: mutation: timeout: StringLiteral: replaced by ""
+packages/elements/src/link-target.ts:13: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/link-target.ts:14: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/link-target.ts:14: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/link-target.ts:14: mutation: compile-error: LogicalOperator: replaced by href === null && !URL.canParse(href, baseURI)
+packages/elements/src/link-target.ts:14: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/link-target.ts:14: mutation: compile-error: EqualityOperator: replaced by href !== null
+packages/elements/src/link-target.ts:16: mutation: compile-error: LogicalOperator: replaced by url.protocol === "http:" && url.protocol === "https:"
+packages/elements/src/link-target.ts:16: mutation: compile-error: EqualityOperator: replaced by url.protocol !== "http:"
+packages/elements/src/ocelle-link.ts:42: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/ocelle-link.ts:122: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-link.ts:123: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-link.ts:127: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-link.ts:141: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-link.ts:141: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-link.ts:141: mutation: compile-error: EqualityOperator: replaced by typeof this.label !== "string"
+packages/elements/src/ocelle-link.ts:141: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-link.ts:150: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-link.ts:150: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-link.ts:150: mutation: compile-error: LogicalOperator: replaced by href !== null || navigationTarget(href, document.baseURI, location.protocol) !== null
+packages/elements/src/ocelle-link.ts:150: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-link.ts:150: mutation: compile-error: EqualityOperator: replaced by href === null
+packages/elements/src/ocelle-link.ts:173: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/ocelle-link.ts:180: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-link.ts:182: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-link.ts:182: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-link.ts:182: mutation: compile-error: EqualityOperator: replaced by target === null
+packages/elements/src/ocelle-link.ts:182: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/index.ts: mutation: zero-mutants: no mutant on the changed lines
+mutation: 115 mutants on the changed lines of 3 files, none survived; 1 timeout, 27 compile errors, 1 zero-mutant entry; 2 equivalent records

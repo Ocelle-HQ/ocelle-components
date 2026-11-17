@@ -332,8 +332,10 @@ unreflected `status` attribute. Each "does not" outcome among them is paired in 
    text); manifest with `label`; README naming the link with `label` (a host `aria-label` does not name the link),
    the `detail.href` warning, the label-in-name rule for `label` (R-08), the resolved-protocol check a host that
    navigates itself applies (FR-047), that hosts needing other schemes handle the event (US5-9), and FR-049's three
-   statements (a modified activation keeps the browser's new tab or window; a modified activation without `href` does
-   nothing; a host that wants a new window handles the event), each checked by the documentation test (analysis G2).
+   statements (a modified activation keeps the browser's new tab or window, and for Meta follows the platform's
+   convention, operator decision 2 during phase 6; a modified activation without `href` does nothing; a host that
+   wants a new window handles the event), the axe-core 4.14.0 `color-contrast` incomplete on a link wrapped onto
+   exactly two lines (R-08, operator decision 4 during phase 6), each checked by the documentation test (analysis G2).
 7. **Polish**: README overview (nine elements, engine floor Chromium 125 / WebKit 17.4 as decided at the phase 4 stop, T059a, module rule) and one README example
    per SC-009 use (the Open project folder picker, tabbed screens, segmented choices, in-text links, copy fields),
    checked by the documentation test, red first (analysis G3); CHANGELOG MINOR entry, the composed dialog
