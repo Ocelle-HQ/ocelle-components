@@ -1,8 +1,8 @@
 # Fixes for the operator's decisions on the T001 recheck
 
 - **Date:** 2026-11-17
-- **Recheck:** `reviews/recheck.md` (Q1 to Q5); **decisions:** `reviews/recheck-decisions.md` (human:jeroennouwsdev):
-  Q1 (a), Q2 (c), Q3 (a), Q4 (a), Q5 (b).
+- **Recheck:** `reviews/recheck.md` (Q1 to Q5, and Q6 in § Second pass); **decisions:** `reviews/recheck-decisions.md` (human:jeroennouwsdev):
+  Q1 (a), Q2 (c), Q3 (a), Q4 (a), Q5 (b); Q6 (a).
 - **Read against:** the working tree at 8ee3351 (`main` b594b7e merged): `packages/tokens/src/source.ts` 48 to 55 and
   151 to 153 (011's eyebrow tokens), `packages/tokens/contrast/pairs.json` (`color-eyebrow` rows), `ocelle-page-header.ts`
   120 to 142, `overflow-region.ts` 160 to 164 and 490 to 498 (the edge's width as the fade depth),
@@ -23,6 +23,7 @@
 | Q3 | (a) | Phases fold from a base at 8ee3351 or later (`base.sha` or a later remap commit), which `fold-history.sh` accepts; the merge commit stays; `/ocelle-run`'s "no merge commits on the branch" read as "no merge commit after the fold base"; `/ocelle-land` handles the PR shape. No skill or script changed | plan.md § Phases (introductory sentence), § Decisions after the recheck item 3; tasks.md new "Folds" paragraph after "Waits for", § Implementation strategy "Then" line |
 | Q4 | (a) | Citations moved to the lines at 8ee3351: `base.css` prose rules 127 to 223 → 139 to 235; `table:focus-visible` 198 to 201 → 210 to 213; the prose table and caption 187 to 209 → 199 to 221; `source.test.ts` 192 to 203 → 195 to 212 (base-layer slice 31 to 53, facts entry 50, prose slice 204 to 207, last-rule assertion 209 to 212) | research.md R-06 (the prose-rule list, the override's node test, "003's existing test"), R-07 (the prose caption bound) |
 | Q5 | (b) | Block 3 (the four pre-upgrade list rules) goes in `base.css`'s base layer right after 013's facts rule and before the focus rule (timeline's two, then chain's two), named in the base layer's header comment and documented beside `packages/styles/README.md` § Facts before upgrade; `source.test.ts` transcribes them in its `baseLayer` slice (later slices move with `baseLayer.length`); the last-rule assertion keeps phase 1's final form "the wrap rule, block 1, block 2" | research.md R-06 ("003's existing test" bullets for phases 1 to 3), R-08 ("Before upgrade" placement); contracts/styles-data-table.md introduction and § Block 3; contracts/ocelle-event-timeline.md and ocelle-evidence-chain.md § Before upgrade; plan.md Constitution Check row VIII, § Decisions after the recheck item 5, § Project Structure (`source.test.ts` line), phase 2 and 3 red (`source.test.ts` items) and green (placement); tasks.md T035, T043, T059, T066 |
+| Q6 | (a) | The "Base-style hook (analysis I7 (a))" paragraph gave `--data-table-end-fade` as `var(--ocelle-scroller-fade-size)`; it now says the end fade's depth is the measured px inline size of `.region-edge.end`, while the end fade shows (recheck Q2 (c), second pass Q6). No other artifact carried the stale description (spec.md, plan.md, research.md, data-model.md, quickstart.md, tasks.md, contracts/styles-data-table.md and checks.md searched); T001 stays unticked for the implementer's recheck of that line | contracts/ocelle-data-table.md § Interface, "Base-style hook" paragraph (lines 32 to 34) |
 
 ## Notes
 

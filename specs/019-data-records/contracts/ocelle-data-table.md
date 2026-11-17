@@ -31,10 +31,10 @@ states (branch; rechecked by T001).
 
 **Base-style hook (analysis I7 (a)).** The element writes two custom properties that `@ocelle/styles`' caption cap
 reads: `--data-table-box-size` (the box's measured inline size, in px) and `--data-table-end-fade` (the end fade's
-depth, `var(--ocelle-scroller-fade-size)`, while the end fade shows). They are a documented base-style hook between
-`@ocelle/elements` and `@ocelle/styles`, so public surface under constitution VII: a rename or removal is a MAJOR
-change from 1.0.0, and both packages' CHANGELOGs and READMEs name them. They are not in the manifest's CSS custom
-property list, which lists what an element's styles read: the element writes them and never reads them, and a
+depth, the measured px inline size of `.region-edge.end`, while the end fade shows; recheck Q2 (c)). They are a
+documented base-style hook between `@ocelle/elements` and `@ocelle/styles`, so public surface under constitution VII:
+a rename or removal is a MAJOR change from 1.0.0, and both packages' CHANGELOGs and READMEs name them. They are not
+in the manifest's CSS custom property list, which lists what an element's styles read: the element writes them and never reads them, and a
 consumer does not set them (the READMEs say so). They keep their names without the `--ocelle-` prefix, which the
 `token-only` gate reserves for tokens.
 
