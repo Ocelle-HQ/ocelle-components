@@ -1,0 +1,113 @@
+Scope: all 5 workspace projects
+✓ Lockfile passes supply-chain policies (verified 3d ago)
+Lockfile is up to date, resolution step is skipped
+Packages are hard linked from the content-addressable store to the virtual store.
+  Content-addressable store is at: /root/.local/share/pnpm/store/v11
+  Virtual store is at:             node_modules/.pnpm
+Packages: +502
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 502, reused 502, downloaded 0, added 502, done
+.../node_modules/rs-module-lexer postinstall$ node postinstall.js
+.../node_modules/rs-module-lexer postinstall: Done
+
+devDependencies:
++ @custom-elements-manifest/analyzer 0.11.0
++ @eslint/js 10.0.1
++ @stryker-mutator/core 10.1.1
++ @stryker-mutator/typescript-checker 10.1.1
++ @stryker-mutator/vitest-runner 10.1.1
++ @types/node 26.6.5
++ @vitest/browser-playwright 5.0.5
++ @vitest/eslint-plugin 1.6.28
++ axe-core 4.14.0
++ eslint 10.13.0
++ jiti 2.7.0
++ parse5 8.0.1
++ playwright 1.64.1
++ pngjs 7.0.0
++ postcss 8.5.31
++ postcss-lit 1.4.1
++ postcss-selector-parser 7.1.7
++ postcss-value-parser 4.2.0
++ stylelint 17.16.0
++ typescript 6.0.3
++ typescript-eslint 8.72.0
++ vite 8.3.5
++ vitest 5.0.5
+
+Done in 424ms using pnpm v12.16.1
+$ node gates/bin/setup-offline.ts
+setup: installed offline; Chromium at /opt/pw-browsers/chromium-1243/chrome-linux64/chrome
+$ node gates/bin/test.ts
+packages/elements/test/node/readme.test.ts:364: unit-tests: packages/elements/README.md overview (014 T110) counts and names the eleven elements, the nine of this feature with the icon and the mark: AssertionError: expected ' The Ocelle web components: standards…' to contain 'eleven elements'
+packages/elements/test/node/readme.test.ts:369: unit-tests: packages/elements/README.md overview (014 T110) states the engine floor, Chromium 125 and WebKit 17.4: AssertionError: expected ' The Ocelle web components: standards…' to contain 'The elements need Chromium 125 or Web…'
+packages/elements/test/node/readme.test.ts:373: unit-tests: packages/elements/README.md overview (014 T110) states that a parent element's entry point also defines its children: AssertionError: expected ' The Ocelle web components: standards…' to contain 'A parent element\'s entry point also …'
+packages/elements/test/node/readme.test.ts:377: unit-tests: packages/elements/README.md overview (014 T110) points to the examples of each use: AssertionError: expected ' The Ocelle web components: standards…' to contain 'Examples shows each selection and inp…'
+packages/elements/test/node/readme.test.ts:428: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) has exactly the five examples, in order: AssertionError: expected [] to deeply equal [ …(5) ]
+packages/elements/test/node/readme.test.ts:435: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) The Open project folder picker has an html example: AssertionError: expected '' not to be '' // Object.is equality
+packages/elements/test/node/readme.test.ts:439: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) The Open project folder picker uses import "@ocelle/elements/ocelle-listbox.js": AssertionError: expected '' to contain 'import "@ocelle/elements/ocelle-listb…'
+packages/elements/test/node/readme.test.ts:439: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) The Open project folder picker uses <ocelle-listbox label=: AssertionError: expected '' to contain '<ocelle-listbox label='
+packages/elements/test/node/readme.test.ts:439: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) The Open project folder picker uses <ocelle-option value=: AssertionError: expected '' to contain '<ocelle-option value='
+packages/elements/test/node/readme.test.ts:439: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) The Open project folder picker uses <ocelle-icon slot="icon" name="folder">: AssertionError: expected '' to contain '<ocelle-icon slot="icon" name="folder…'
+packages/elements/test/node/readme.test.ts:439: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) The Open project folder picker uses ocelle-listbox-change: AssertionError: expected '' to contain 'ocelle-listbox-change'
+packages/elements/test/node/readme.test.ts:439: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) The Open project folder picker uses ocelle-listbox-activate: AssertionError: expected '' to contain 'ocelle-listbox-activate'
+packages/elements/test/node/readme.test.ts:439: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) The Open project folder picker uses event.detail.value: AssertionError: expected '' to contain 'event.detail.value'
+packages/elements/test/node/readme.test.ts:439: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) The Open project folder picker uses .value: AssertionError: expected '' to contain '.value'
+packages/elements/test/node/readme.test.ts:439: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) The Open project folder picker uses Open project: AssertionError: expected '' to contain 'Open project'
+packages/elements/test/node/readme.test.ts:443: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) The Open project folder picker writes no ARIA of the host's own (no aria-* attribute or property but the copy field's name, no role, tabindex or id): AssertionError: expected '' to match /<ocelle-[a-z-]+[\s>]/
+packages/elements/test/node/readme.test.ts:451: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) The Open project folder picker uses no ResizeObserver and no clipboard call: AssertionError: expected '' to match /<ocelle-[a-z-]+[\s>]/
+packages/elements/test/node/readme.test.ts:435: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) Tabbed screens has an html example: AssertionError: expected '' not to be '' // Object.is equality
+packages/elements/test/node/readme.test.ts:439: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) Tabbed screens uses import "@ocelle/elements/ocelle-tabs.js": AssertionError: expected '' to contain 'import "@ocelle/elements/ocelle-tabs.…'
+packages/elements/test/node/readme.test.ts:439: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) Tabbed screens uses <ocelle-tabs label=: AssertionError: expected '' to contain '<ocelle-tabs label='
+packages/elements/test/node/readme.test.ts:439: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) Tabbed screens uses <ocelle-tab value=: AssertionError: expected '' to contain '<ocelle-tab value='
+packages/elements/test/node/readme.test.ts:439: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) Tabbed screens uses <ocelle-tab-panel>: AssertionError: expected '' to contain '<ocelle-tab-panel>'
+packages/elements/test/node/readme.test.ts:439: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) Tabbed screens uses ocelle-tabs-change: AssertionError: expected '' to contain 'ocelle-tabs-change'
+packages/elements/test/node/readme.test.ts:439: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) Tabbed screens uses event.detail.value: AssertionError: expected '' to contain 'event.detail.value'
+packages/elements/test/node/readme.test.ts:443: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) Tabbed screens writes no ARIA of the host's own (no aria-* attribute or property but the copy field's name, no role, tabindex or id): AssertionError: expected '' to match /<ocelle-[a-z-]+[\s>]/
+packages/elements/test/node/readme.test.ts:451: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) Tabbed screens uses no ResizeObserver and no clipboard call: AssertionError: expected '' to match /<ocelle-[a-z-]+[\s>]/
+packages/elements/test/node/readme.test.ts:435: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) Segmented choices has an html example: AssertionError: expected '' not to be '' // Object.is equality
+packages/elements/test/node/readme.test.ts:439: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) Segmented choices uses import "@ocelle/elements/ocelle-segmented-choice.js": AssertionError: expected '' to contain 'import "@ocelle/elements/ocelle-segme…'
+packages/elements/test/node/readme.test.ts:439: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) Segmented choices uses <ocelle-segmented-choice label=: AssertionError: expected '' to contain '<ocelle-segmented-choice label='
+packages/elements/test/node/readme.test.ts:439: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) Segmented choices uses  joined: AssertionError: expected '' to contain ' joined'
+packages/elements/test/node/readme.test.ts:439: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) Segmented choices uses <ocelle-segment value=: AssertionError: expected '' to contain '<ocelle-segment value='
+packages/elements/test/node/readme.test.ts:439: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) Segmented choices uses ocelle-segmented-choice-change: AssertionError: expected '' to contain 'ocelle-segmented-choice-change'
+packages/elements/test/node/readme.test.ts:439: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) Segmented choices uses event.detail.value: AssertionError: expected '' to contain 'event.detail.value'
+packages/elements/test/node/readme.test.ts:443: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) Segmented choices writes no ARIA of the host's own (no aria-* attribute or property but the copy field's name, no role, tabindex or id): AssertionError: expected '' to match /<ocelle-[a-z-]+[\s>]/
+packages/elements/test/node/readme.test.ts:451: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) Segmented choices uses no ResizeObserver and no clipboard call: AssertionError: expected '' to match /<ocelle-[a-z-]+[\s>]/
+packages/elements/test/node/readme.test.ts:435: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) In-text links has an html example: AssertionError: expected '' not to be '' // Object.is equality
+packages/elements/test/node/readme.test.ts:439: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) In-text links uses import "@ocelle/elements/ocelle-link.js": AssertionError: expected '' to contain 'import "@ocelle/elements/ocelle-link.…'
+packages/elements/test/node/readme.test.ts:439: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) In-text links uses <ocelle-link href=: AssertionError: expected '' to contain '<ocelle-link href='
+packages/elements/test/node/readme.test.ts:439: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) In-text links uses <ocelle-link label=: AssertionError: expected '' to contain '<ocelle-link label='
+packages/elements/test/node/readme.test.ts:439: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) In-text links uses ocelle-link-activate: AssertionError: expected '' to contain 'ocelle-link-activate'
+packages/elements/test/node/readme.test.ts:439: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) In-text links uses event.detail.href: AssertionError: expected '' to contain 'event.detail.href'
+packages/elements/test/node/readme.test.ts:439: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) In-text links uses event.preventDefault(): AssertionError: expected '' to contain 'event.preventDefault()'
+packages/elements/test/node/readme.test.ts:443: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) In-text links writes no ARIA of the host's own (no aria-* attribute or property but the copy field's name, no role, tabindex or id): AssertionError: expected '' to match /<ocelle-[a-z-]+[\s>]/
+packages/elements/test/node/readme.test.ts:451: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) In-text links uses no ResizeObserver and no clipboard call: AssertionError: expected '' to match /<ocelle-[a-z-]+[\s>]/
+packages/elements/test/node/readme.test.ts:435: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) Copy fields has an html example: AssertionError: expected '' not to be '' // Object.is equality
+packages/elements/test/node/readme.test.ts:439: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) Copy fields uses import "@ocelle/elements/ocelle-copy-field.js": AssertionError: expected '' to contain 'import "@ocelle/elements/ocelle-copy-…'
+packages/elements/test/node/readme.test.ts:439: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) Copy fields uses <ocelle-copy-field aria-label=: AssertionError: expected '' to contain '<ocelle-copy-field aria-label='
+packages/elements/test/node/readme.test.ts:439: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) Copy fields uses  value=: AssertionError: expected '' to contain ' value='
+packages/elements/test/node/readme.test.ts:439: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) Copy fields uses ocelle-copy-field-request: AssertionError: expected '' to contain 'ocelle-copy-field-request'
+packages/elements/test/node/readme.test.ts:439: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) Copy fields uses event.detail.text: AssertionError: expected '' to contain 'event.detail.text'
+packages/elements/test/node/readme.test.ts:439: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) Copy fields uses .status =: AssertionError: expected '' to contain '.status ='
+packages/elements/test/node/readme.test.ts:443: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) Copy fields writes no ARIA of the host's own (no aria-* attribute or property but the copy field's name, no role, tabindex or id): AssertionError: expected '' to match /<ocelle-[a-z-]+[\s>]/
+packages/elements/test/node/readme.test.ts:451: unit-tests: packages/elements/README.md examples, one per consumer use (014 SC-009, T110) Copy fields uses no ResizeObserver and no clipboard call: AssertionError: expected '' to match /<ocelle-[a-z-]+[\s>]/
+packages/elements/test/node/readme.test.ts:466: unit-tests: packages/elements/CHANGELOG.md MINOR entry (014 T111) states that the selection and input elements are a MINOR change: AssertionError: expected ' ' to contain 'Selection and input elements, a MINOR…'
+packages/elements/test/node/readme.test.ts:470: unit-tests: packages/elements/CHANGELOG.md MINOR entry (014 T111) names `ocelle-listbox`: AssertionError: expected ' ' to contain '`ocelle-listbox`'
+packages/elements/test/node/readme.test.ts:470: unit-tests: packages/elements/CHANGELOG.md MINOR entry (014 T111) names `ocelle-option`: AssertionError: expected ' ' to contain '`ocelle-option`'
+packages/elements/test/node/readme.test.ts:470: unit-tests: packages/elements/CHANGELOG.md MINOR entry (014 T111) names `ocelle-tabs`: AssertionError: expected ' ' to contain '`ocelle-tabs`'
+packages/elements/test/node/readme.test.ts:470: unit-tests: packages/elements/CHANGELOG.md MINOR entry (014 T111) names `ocelle-tab`: AssertionError: expected ' ' to contain '`ocelle-tab`'
+packages/elements/test/node/readme.test.ts:470: unit-tests: packages/elements/CHANGELOG.md MINOR entry (014 T111) names `ocelle-tab-panel`: AssertionError: expected ' ' to contain '`ocelle-tab-panel`'
+packages/elements/test/node/readme.test.ts:470: unit-tests: packages/elements/CHANGELOG.md MINOR entry (014 T111) names `ocelle-segmented-choice`: AssertionError: expected ' ' to contain '`ocelle-segmented-choice`'
+packages/elements/test/node/readme.test.ts:470: unit-tests: packages/elements/CHANGELOG.md MINOR entry (014 T111) names `ocelle-segment`: AssertionError: expected ' ' to contain '`ocelle-segment`'
+packages/elements/test/node/readme.test.ts:470: unit-tests: packages/elements/CHANGELOG.md MINOR entry (014 T111) names `ocelle-copy-field`: AssertionError: expected ' ' to contain '`ocelle-copy-field`'
+packages/elements/test/node/readme.test.ts:470: unit-tests: packages/elements/CHANGELOG.md MINOR entry (014 T111) names `ocelle-link`: AssertionError: expected ' ' to contain '`ocelle-link`'
+packages/elements/test/node/readme.test.ts:470: unit-tests: packages/elements/CHANGELOG.md MINOR entry (014 T111) names `ocelle-listbox-change`: AssertionError: expected ' ' to contain '`ocelle-listbox-change`'
+packages/elements/test/node/readme.test.ts:470: unit-tests: packages/elements/CHANGELOG.md MINOR entry (014 T111) names `ocelle-listbox-activate`: AssertionError: expected ' ' to contain '`ocelle-listbox-activate`'
+packages/elements/test/node/readme.test.ts:470: unit-tests: packages/elements/CHANGELOG.md MINOR entry (014 T111) names `ocelle-tabs-change`: AssertionError: expected ' ' to contain '`ocelle-tabs-change`'
+packages/elements/test/node/readme.test.ts:470: unit-tests: packages/elements/CHANGELOG.md MINOR entry (014 T111) names `ocelle-segmented-choice-change`: AssertionError: expected ' ' to contain '`ocelle-segmented-choice-change`'
+packages/elements/test/node/readme.test.ts:470: unit-tests: packages/elements/CHANGELOG.md MINOR entry (014 T111) names `ocelle-copy-field-request`: AssertionError: expected ' ' to contain '`ocelle-copy-field-request`'
+packages/elements/test/node/readme.test.ts:470: unit-tests: packages/elements/CHANGELOG.md MINOR entry (014 T111) names `ocelle-link-activate`: AssertionError: expected ' ' to contain '`ocelle-link-activate`'
+packages/elements/test/node/readme.test.ts:474: unit-tests: packages/elements/CHANGELOG.md MINOR entry (014 T111) names the engine floor raised to Chromium 125 and WebKit 17.4: AssertionError: expected ' ' to contain 'raises the engine floor to Chromium 1…'
+unit-tests: 70 of 4098 tests failed
+[ELIFECYCLE] Test failed. See above for more details.
