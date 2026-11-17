@@ -133,7 +133,7 @@ test can fail for it.
   - #23's and op 015's mutation rules (`gate:mutation -- --base`, the shard time limit).
 
   Commit `reviews/recheck.md` (with any `checks.md` helper renames) signed off. If any item shows a difference, stop for the operator before T003: the difference and its effect on the tasks go in the phase review as a multiple-choice question.
-- [ ] T002 Write `specs/019-data-records/reviews/phase-0/tdd-exempt.md`: phase 0 is a recheck of documents against `main`, with no behaviour, so no test can fail for it. Commit it with T001's record.
+- [X] T002 Write `specs/019-data-records/reviews/phase-0/tdd-exempt.md`: phase 0 is a recheck of documents against `main`, with no behaviour, so no test can fail for it. Commit it with T001's record.
 
 **Checkpoint**: `tdd-check.sh 0` reports `exempt`; `reviews/recheck.md` records no open difference.
 

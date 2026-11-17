@@ -15,11 +15,13 @@ built browser build) and `test/scenarios/driver.ts` (the shared driver interface
 Each body is named after its scenario (`US1-4 …`) or its edge case. Every acceptance scenario and every edge case
 that states behaviour has a body (FR-052).
 
-**Driver helpers, as on the branches (PLAN-CORRECTNESS-1-006).** 013's driver: `viewport`, `scrollWidth`, `copy`,
-`text`, `pressTab`, `focused`, `frames`, `layout`, `computed(id)`, `reducedMotion(mode)`. 009's (015's) driver:
-`press`, `tabWalk`, `activeElement`, `focus`, `scrollLeft`, `setScrollLeft`, `frameRecord`, `settle`,
-`computed(target)`, `reducedMotion(on)`. The one addition is `itemTexts` (R-11). Where the two conflict (`computed`,
-`reducedMotion`, the focus readers), the bodies use the reconciled form T001 records.
+**Driver helpers, as merged on `main` (PLAN-CORRECTNESS-1-006; T001, `reviews/recheck.md` § 5).** From 013:
+`viewport`, `scrollWidth`, `copy`, `text`, `pressTab`, `focused`, `frames`, `layout`. From 009: `press`, `tabWalk`,
+`deepActive`, `focus`, `scrollLeft`, `setScrollLeft`, `frameRecord`, `settle`. The conflicts are reconciled on `main`
+as `computed(target, property)`, where a target is an id or `{ id, inner }` (013's id form is the string case);
+`reducedMotion(mode)`, with `"reduce"` or `"no-preference"`; and the focus readers `focused()` (013, the innermost
+focused element's id), `deepActive()` (009, the deep active element as a string, `"s1 >> div.region-box"`) and
+`activeElement()` (011, the same element as a record `{ name, id, hosts }`). The one addition is `itemTexts` (R-11).
 
 **Layout wait (PLAN-TESTABILITY-1-007).** Every body that reads a layout after a change (a resize, an item added,
 removed, hidden or shown, a `time` or `variant` set, a table swapped) waits with 009's `settle` as merged (the
@@ -47,7 +49,7 @@ used for the lists.
 |---|---|
 | US1-5 | `focus` on the box, `press("ArrowRight")`, `press("ArrowLeft")`, `scrollLeft` before and after, the fade read from `data-fade` |
 | US1-8 | `setScrollLeft(0)`, `pressTab` until the link has focus, `focused`, `scrollLeft`, `frameRecord` for the ring's box against the fade depths |
-| US1-13 | `focus` on the box, the swap, `settle`, `activeElement` (the handover target) |
+| US1-13 | `focus` on the box, the swap, `settle`, `deepActive` (the handover target) |
 | US2-7, FR-011 link in a step, FR-026 | `pressTab`, `focused`, `tabWalk` (the link is the only added stop) |
 
 **US1-16 runs twice (PLAN-TESTABILITY-1-011).** Once with 013's `text` on the caption's text node (a `characterData`
