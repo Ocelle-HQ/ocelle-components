@@ -70,7 +70,7 @@ Ocelle web console uses them in server-rendered pages under a strict CSP, filled
   fit-content }`; 009's module unchanged (FR-008, US1-9 as written).
 - Q-A, the chip step's look (#517): (a), outline only, no fill (FR-035).
 - Q-B, the column headers' weight and colour (#533): (a), `--ocelle-font-weight-medium` in `--ocelle-color-ink-muted`
-  (FR-006).
+  (FR-006). Superseded on 2026-11-17 by the recheck's Q1 (a) below: 011's eyebrow tokens, weight 600.
 - Q-C, the event's time position (#470): (a), the time on its own line above the content, the marker centred on the
   time's line (FR-023, FR-021).
 - Q-E, marked-up times (#470): "Yes: named time slot". `ocelle-timeline-event` gets a named `time` slot that takes
@@ -87,6 +87,23 @@ Ocelle web console uses them in server-rendered pages under a strict CSP, filled
   the chain) are one Principle V exception in the plan's Complexity Tracking, proven by browser tests (FR-050).
 - I7, the caption cap's custom properties: (a). `--data-table-box-size` and `--data-table-end-fade` are a documented
   base-style hook between `@ocelle/elements` and `@ocelle/styles`, public surface under constitution VII (FR-057).
+
+**Operator decisions on the T001 recheck** (2026-11-17, human:jeroennouwsdev; `reviews/recheck.md`, decisions in
+`reviews/recheck-decisions.md`, changes listed in `reviews/recheck-fixes.md`):
+
+- Q1, the column headers' tokens: (a). `--ocelle-tracking-caps` is not on `main` (009 uses 011's
+  `--ocelle-tracking-eyebrow`), and 011's eyebrow tokens are, so the column headers use all four of them:
+  `--ocelle-font-size-eyebrow`, `--ocelle-font-weight-eyebrow` (600), `--ocelle-tracking-eyebrow` and
+  `--ocelle-color-eyebrow`, as 011's page and section headers do. This supersedes Q-B (a) (FR-006, US1-3).
+- Q2, the data table's per-instance sheet: (c). The end fade's share of the caption cap is written as the measured px
+  inline size of the module's `.region-edge.end`, so the data table's own sheet holds only px figures measured from
+  layout; the README's Styles convention is amended only for the number of per-instance sheets (an element that uses
+  the overflow-region module may hold one of its own beside the module's).
+- Q3, history folds after the merge of `main` (8ee3351): (a). Each phase is folded from a base at 8ee3351 or later;
+  the merge commit stays in the branch's history and `/ocelle-land` handles the pull request's shape.
+- Q4, stale line citations: (a). The plan's research cites `base.css` and `source.test.ts` at their merged lines.
+- Q5, the pre-upgrade rules' place: (b). The timeline's and the chain's pre-upgrade rules go in the base layer of
+  `base.css`, beside 013's `ocelle-facts` rule, and 003's `source.test.ts` transcribes them in its base-layer slice.
 
 ## Scope
 
@@ -107,7 +124,7 @@ cells (FR-005); any new tokens these elements need that no existing token provid
   the data table is a readout and emits no event;
 - an end-aligned numeric column (#13 does not ask for one; see Assumptions);
 - copying text to the clipboard (constitution I; #14 and the host);
-- the eyebrow tokens of 011 or 012, which the data table uses if they are on `main` first and does not add (FR-006);
+- 011's eyebrow tokens, which are on `main` and which the data table's column headers use and do not add (FR-006);
 - the `storybook-build`, `visual` and `axe` gates and #10's pinned container, which are on `main`; this mission writes
   the stories they read and commits their baselines (FR-051);
 - WebKit measurement (the library's Engines note).
@@ -145,9 +162,9 @@ the region's tab stop and name, the page's scroll width and the accessibility tr
    smaller than 003's prose table cell padding (`--ocelle-space-2` block, `--ocelle-space-3` inline). No computed font
    family in the table is a monospace family (FR-005).
 3. **Given** a column header cell (a `<th>` in the table's `<thead>`, or one with `scope="col"`), **When** its computed
-   style is read, **Then** it is at `--ocelle-font-size-xs`, `text-transform: uppercase`, letter spacing through
-   `--ocelle-tracking-caps` (or 011's eyebrow tokens if those are on `main` when the phase starts), in the colour the
-   plan names from the tokens' contrast declarations; a row header cell (`<th scope="row">` in the body) is at the
+   style is read, **Then** its font size, weight, letter spacing and colour resolve through 011's eyebrow tokens
+   (`--ocelle-font-size-eyebrow`, `--ocelle-font-weight-eyebrow`, `--ocelle-tracking-eyebrow`,
+   `--ocelle-color-eyebrow`; recheck Q1 (a)) and it has `text-transform: uppercase`; a row header cell (`<th scope="row">` in the body) is at the
    body cell size in `--ocelle-color-ink`, not uppercase (FR-006).
 4. **Given** the table in a 320 px block container, wider than it, **When** it renders, **Then** the table keeps its
    columns, the element's region scrolls sideways, the page's scroll width equals the viewport width, and the region's
@@ -469,10 +486,12 @@ the chip variant.
   The README MUST say that the table's look needs `@ocelle/styles` on the page (or adopted in a consumer's shadow
   root), what the table shows without it, and the specificity a consumer rule needs inside a prose container
   (FR-012).
-- **FR-006**: Column header cells (each `<th>` in the table's `<thead>`, and each `<th scope="col">`) MUST be eyebrows:
-  `--ocelle-font-size-xs`, upper case, letter spacing `--ocelle-tracking-caps`, at the weight and colour the plan names
-  from existing tokens and their contrast declarations (#533). If 011's or 012's eyebrow tokens are on `main` when the
-  phase starts, the headers use them instead and the plan records it; this mission adds no eyebrow token. Row header
+- **FR-006**: Column header cells (each `<th>` in the table's `<thead>`, and each `<th scope="col">`) MUST be eyebrows
+  (#533) in 011's four eyebrow tokens, as 011's page and section headers use them: font size
+  `--ocelle-font-size-eyebrow`, weight `--ocelle-font-weight-eyebrow`, upper case, letter spacing
+  `--ocelle-tracking-eyebrow` and colour `--ocelle-color-eyebrow`, whose text declaration covers the main grounds
+  (FR-013). This mission adds no eyebrow token (recheck Q1 (a), 2026-11-17, which replaces `--ocelle-tracking-caps`,
+  not on `main`, and plan-gate Q-B's weight and colour). Row header
   cells (`<th scope="row">`) MUST use the body cell size in `--ocelle-color-ink` at a weight the plan names, not upper
   case. Where the rules meet: `scope="row"` takes the row-header style wherever it is (a corner cell in `<thead>`
   included); a `<th>` with no `scope` in `<tbody>` or `<tfoot>` takes the row-header style; `scope="colgroup"` takes
@@ -606,8 +625,8 @@ the chip variant.
 - **FR-040**: A new token MAY be added to `@ocelle/tokens` only where no existing token gives the value (for example a
   connector width). No new radius token is added: the chip uses `--ocelle-radius-2` (FR-035). Each new token MUST
   go through the token package's existing validation (records, generator, contrast declaration for any foreground
-  colour, and tests) and be listed in the plan with the reason no existing token fits. `--ocelle-tracking-caps` is
-  009's token and is not re-added here.
+  colour, and tests) and be listed in the plan with the reason no existing token fits. 011's eyebrow tokens are used as
+  they are and are not re-added here (FR-006).
 
 ### Evidence (#7's checklist)
 
@@ -689,7 +708,8 @@ the chip variant.
   009's contract and 013's conventions as on their branches (`origin/claude/015-workflow-layouts`,
   `origin/claude/013-data-display`); the first task rechecks the plan and tasks against `main` as merged (the module's
   interface, `--ocelle-tracking-caps`, 013's README conventions, op 016's affected-plants command) and stops for the
-  operator on any difference.
+  operator on any difference. Done on 2026-11-17 after `main` was merged (8ee3351): `reviews/recheck.md`, answered by
+  the operator's recheck decisions above.
 - The compact cell padding, cell font size, header weight and colours, connector width and chip padding are set in the
   plan from the existing scale. The spec fixes only their order (data-table cells more compact than 003's prose table,
   chip step smaller than a default step).

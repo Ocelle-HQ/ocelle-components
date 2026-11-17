@@ -53,14 +53,18 @@ frame after the fade changes (below; R-07, PLAN-FRESH-3-002 (b), verify 1).
 
 No box sets `container-type` (PLAN-FRESH-2-001): inline size containment would make the element 0 px wide in a
 shrink-to-fit host (R-02). The element adopts one per-instance constructed sheet of its own, after
-`overflowRegionStyles`, holding `.region-track { --data-table-box-size: <n>px; --data-table-end-fade: … }`. Its own
+`overflowRegionStyles` and beside the module's per-instance sheet, holding `.region-track { --data-table-box-size:
+<n>px; --data-table-end-fade: <m>px }`: px figures measured from layout only, as the README's Styles convention
+requires, amended in phase 1 for the count of per-instance sheets (research R-07, recheck Q2 (c)). Its own
 `ResizeObserver` observes the measuring element `.box-size`, an empty `block-size: 0` node after `.region-frame`, and
 writes its unrounded inline size there (the entry's `contentBoxSize[0].inlineSize`, equal to `.region-box`'s exact
 width, never the rounded `clientWidth`; R-07). It does not observe `.region-box`: the written cap rewraps the caption,
 which changes the box's block size and would raise a `ResizeObserver` loop error (PLAN-FRESH-3-001). When the
 rendered `data-fade` moves into or out of `end` or `both`, `updated()` requests one animation frame (at most one
-pending, cancelled on disconnect), whose callback reads the box's current `data-fade` and sets
-`--data-table-end-fade: var(--ocelle-scroller-fade-size)` while the end fade shows or removes it otherwise. It is
+pending, cancelled on disconnect), whose callback reads the box's current `data-fade` and, while the end fade shows,
+sets `--data-table-end-fade` to the measured px inline size of `.region-edge.end` (its unrounded
+`getBoundingClientRect().width`, the fade depth), or removes it otherwise. It never writes a token's text such as
+`var(--ocelle-scroller-fade-size)` (recheck Q2 (c)). It is
 never written in the task in which the fade changes, because that task is inside 009's `ResizeObserver` delivery and
 the rewrap would raise the loop error (PLAN-FRESH-3-002 verify 1). The measuring element is one
 internal node outside 009's structure; nothing of the module changes (FR-008). Both properties are the base-style

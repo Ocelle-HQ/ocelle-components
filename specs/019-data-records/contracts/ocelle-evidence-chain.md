@@ -78,7 +78,7 @@ Every mark is a border, never a background. Outside the variant block: `@media (
 
 ## Before upgrade
 
-`@ocelle/styles` sets `:where(ocelle-evidence-chain:not(:defined) >
+`@ocelle/styles` sets, in `base.css`'s base layer after the timeline's rules (recheck Q5 (b)), `:where(ocelle-evidence-chain:not(:defined) >
 ocelle-evidence-step:not([hidden]):not([aria-hidden="true"])) { display: block; }` and
 `:where(ocelle-evidence-chain:not(:defined) > ocelle-evidence-step[aria-hidden="true"]) { display: none; }`, so the
 visible steps show one per line, with no marker or ordinal, and an `aria-hidden="true"` step is not shown, as after

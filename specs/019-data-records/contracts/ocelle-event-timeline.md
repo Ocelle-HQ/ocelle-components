@@ -89,7 +89,7 @@ connector appears in the tree; each marker wrapper and connector span carries `a
 
 ## Before upgrade
 
-`@ocelle/styles` sets `:where(ocelle-event-timeline:not(:defined) >
+`@ocelle/styles` sets, in `base.css`'s base layer beside 013's facts rule (recheck Q5 (b)), `:where(ocelle-event-timeline:not(:defined) >
 ocelle-timeline-event:not([hidden]):not([aria-hidden="true"])) { display: block; }` and
 `:where(ocelle-event-timeline:not(:defined) > ocelle-timeline-event[aria-hidden="true"]) { display: none; }`, so the
 visible events show one per line and an `aria-hidden="true"` event is not shown, as after upgrade (R-08,

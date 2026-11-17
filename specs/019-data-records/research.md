@@ -9,6 +9,14 @@ reading below that depends on one of them is marked **(branch)** and is rechecke
 (R-14). No measurement has run in this session: the spikes named below run in their phase, before its scaffold, and a
 failing result goes to the operator before the red commit.
 
+**After the recheck (2026-11-17).** `main` (b594b7e) is merged into this branch (8ee3351), and T001 rechecked every
+**(branch)** reading against it (`reviews/recheck.md`). The operator's decisions on its five questions
+(`reviews/recheck-decisions.md`) are applied below and listed in `reviews/recheck-fixes.md`: Q1 (a), the column
+headers use 011's four eyebrow tokens (R-06, R-13; `--ocelle-tracking-caps` is not on `main`); Q2 (c), the end fade is
+written as a measured px figure (R-07); Q3 (a), phase folds from bases at 8ee3351 or later (plan § Phases); Q4 (a),
+the `base.css` and `source.test.ts` line citations of R-06 and R-07 are those at 8ee3351; Q5 (b), the pre-upgrade
+list rules sit in `base.css`'s base layer beside 013's facts rule (R-06, R-08).
+
 ## R-01 The data table's content model: the consumer's `<table>`, slotted unchanged
 
 **Decision.** `ocelle-data-table` attaches its shadow root with `slotAssignment: "manual"` and renders 009's region
@@ -169,7 +177,7 @@ tokens):
 | table | `border-collapse: collapse`; `inline-size: 100%` (it fills the track, R-03); `margin: 0`; `font-family: var(--ocelle-font-sans)`; `font-variant-numeric: var(--ocelle-figures)` |
 | caption | `font-size: var(--ocelle-font-size-sm)`; `font-weight: var(--ocelle-font-weight-medium)`; `line-height: var(--ocelle-line-height-normal)`; `color: var(--ocelle-color-ink)`; `text-align: start`; `padding-block-end: var(--ocelle-space-2)`; `position: static` (not sticky until 009's option of R-17 lands; Q-F (b)); the measured `max-inline-size` cap of R-07 and no inline size containment (it scrolls with the table and wraps inside the box's unmasked width at rest; PLAN-FRESH-3-002 (b)) |
 | body cell (`td`, and `th` per FR-006's row rule) | `padding: var(--ocelle-space-1) var(--ocelle-space-2)` (4 px / 8 px, below 003's 8 px / 12 px); `font-size: var(--ocelle-font-size-sm)`; `line-height: var(--ocelle-line-height-compact)`; `color: var(--ocelle-color-ink-soft)`; `text-align: start`; `vertical-align: top`; `border-block-end: var(--ocelle-border-width) solid var(--ocelle-color-rule)` (decorative, FR-013) |
-| column header (FR-006's selection) | `font-size: var(--ocelle-font-size-xs)`; `font-weight: var(--ocelle-font-weight-medium)`; `text-transform: uppercase`; `letter-spacing: var(--ocelle-tracking-caps)`; `color: var(--ocelle-color-ink-muted)`; `border-block-end-color: var(--ocelle-color-rule-strong)` (decorative); same padding as body cells |
+| column header (FR-006's selection) | 011's eyebrow tokens (recheck Q1 (a)): `font-size: var(--ocelle-font-size-eyebrow)`; `font-weight: var(--ocelle-font-weight-eyebrow)`; `text-transform: uppercase`; `letter-spacing: var(--ocelle-tracking-eyebrow)`; `color: var(--ocelle-color-eyebrow)`; `border-block-end-color: var(--ocelle-color-rule-strong)` (decorative); same padding as body cells |
 | row header (FR-006's selection) | `font-size: var(--ocelle-font-size-sm)`; `font-weight: var(--ocelle-font-weight-medium)`; `color: var(--ocelle-color-ink)`; no upper case, no tracking |
 | last body row | `border-block-end: 0` on its cells, selected as `ocelle-data-table > table > :is(tbody, tfoot):last-child > tr:last-child > :is(td, th)`: the last row of the table's last row group only, so consecutive rows across two `<tbody>` groups, or a `<tbody>` and a `<tfoot>`, keep the rule between them (PLAN-CORRECTNESS-1-009). HTML puts a `<tfoot>` after the body row groups; a `<tfoot>` written before a `<tbody>` is still rendered last, but the selector follows source order, so its last row keeps its rule and the last `<tbody>` row has none. The README states this |
 | `ocelle-data-table[wrap="anywhere"]` body cells | `overflow-wrap: anywhere` (never on header cells) |
@@ -177,12 +185,19 @@ tokens):
 
 FR-006's selection, in source order so the later rule wins where two match: column header = `thead th`,
 `th[scope="col"]`, `th[scope="colgroup"]`; row header = `th[scope="row"]`, `th[scope="rowgroup"]`,
-`:is(tbody, tfoot) th:not([scope])` (a corner cell with `scope="row"` in `<thead>` is a row header). The header's
-weight and colour are Q-B's answer (a), medium in `ink-muted`, as in the table above (plan gate, 2026-11-16).
+`:is(tbody, tfoot) th:not([scope])` (a corner cell with `scope="row"` in `<thead>` is a row header). The column
+header's size, weight, tracking and colour are 011's four eyebrow tokens, as `ocelle-page-header` and
+`ocelle-section-header` use them (`packages/tokens/src/source.ts` 48 to 55 and 151 to 153 at 8ee3351:
+`--ocelle-color-eyebrow` is `ink-muted` with its own text declaration on the main grounds, `--ocelle-font-size-eyebrow`
+is `font-size-xs`, `--ocelle-font-weight-eyebrow` is `font-weight-strong`, 600, and `--ocelle-tracking-eyebrow` is
+0.08em). This is the recheck's Q1 (a) (2026-11-17), which supersedes the plan gate's Q-B (a), medium in `ink-muted`:
+the weight is now 600, the colour token `color-eyebrow` (the same ink), and `--ocelle-tracking-caps`, which 009 did not
+land, is replaced by `--ocelle-tracking-eyebrow`. The block names the eyebrow tokens, not the tokens they alias, so a
+later change to 011's eyebrow reaches the table's headers.
 
 A second block, the prose override (FR-012), restates every property 003's prose rules set on the same targets,
 with the data table's value, under `[data-ocelle-prose=""] :where(…the same targets…)` at (0,1,0), placed after
-003's prose rules in `base.css`. 003's prose rules set today (`base.css` lines 127 to 223 on `main`): on the table
+003's prose rules in `base.css`. 003's prose rules set today (`base.css` lines 139 to 235 at 8ee3351): on the table
 `margin-block` (the shared `:where(p, ul, ol, blockquote, pre, table, hr)` rule; spec check 3, SPEC-3-01),
 `display`, `overflow-x`, `max-inline-size`, `container-type`, `border-collapse`; on `th, td` `min-inline-size`,
 `padding`, `border-block-end`, `text-align`; on `th` font weight, size, figures and the rule colour; on the caption
@@ -195,7 +210,7 @@ table, so neither 003's sticky prose caption, the prose line height nor the pros
 **The override's node test (PLAN-TESTABILITY-1-008).** It does not list 003's selector forms. It parses `base.css`,
 selects every `[data-ocelle-prose=""]` rule whose selector can match a table, caption, row group (`thead`, `tbody`,
 `tfoot`), row (`tr`), column (`col`, `colgroup`) or cell (`th`, `td`), pseudo-classes included (for example
-`:where(table:focus-visible)` at `base.css` lines 198 to 201), and fails on any property of those rules that the
+`:where(table:focus-visible)` at `base.css` lines 210 to 213 at 8ee3351), and fails on any property of those rules that the
 override does not restate on the matching target. A property that cannot apply inside the element is recorded in the
 test's own not-applicable list with its reason, and the list is asserted exactly: `outline` and `outline-offset` of
 `:where(table:focus-visible)` (the region's box is the tab stop; a consumer who makes the table focusable keeps 003's
@@ -203,19 +218,22 @@ inset ring, and US1-10 compares the rest). So a later 003 rule on `tr`, a row gr
 and fails the test until the override or the list takes it. US1-10's body compares every property in the list on every
 target with the same table outside prose (SPEC-3-01).
 
-**003's existing test (PLAN-CORRECTNESS-1-005).** `packages/styles/test/source.test.ts` (lines 192 to 203) pins the
-prose slice to its exact position and requires `rules(root).slice(start)` to equal `[wrap]`, so any rule added after
-the wrap rule fails it. Each phase's red commit changes that test for the rules its own green adds, so every green
-passes it (PLAN-CORRECTNESS-1-005, PLAN-FRESH-1-004):
+**003's existing test (PLAN-CORRECTNESS-1-005).** `packages/styles/test/source.test.ts` (lines 195 to 212 at
+8ee3351) pins the rule order in four slices: the base layer (`baseLayer`, lines 31 to 53, asserted at 196 to 198, with
+013's facts rule at line 50 between the code rule and the focus rule), the compact scale, the prose slice at its exact
+position (204 to 207), and `rules(root).slice(start)` equal to `[wrap]` (209 to 212), so any rule added after the wrap
+rule fails it. Each phase's red commit changes that test for the rules its own green adds, so every green passes it
+(PLAN-CORRECTNESS-1-005, PLAN-FRESH-1-004; recheck Q5 (b)):
 
 - Phase 1's red: the rule table gains block 1 (the data-table rules) and block 2 (the prose override), transcribed
   with their declarations, after the wrap rule, and the last-rule assertion becomes "the wrap rule, then block 1,
-  then block 2, in that order".
-- Phase 2's red: the table gains the timeline's two pre-upgrade rules (R-08, block 3's first two: the visible-item rule
-  and the `aria-hidden` rule) after block 2, and the assertion becomes "the wrap rule, block 1, block 2, then the
-  timeline's rules".
-- Phase 3's red: the table gains the chain's two pre-upgrade rules after the timeline's, and the assertion becomes the
-  final order "the wrap rule, block 1, block 2, block 3 (the timeline's rules, then the chain's)".
+  then block 2, in that order". That is its final form: no later phase adds a rule after block 2.
+- Phase 2's red: `baseLayer` gains the timeline's two pre-upgrade rules (R-08, block 3's first two: the visible-item
+  rule and the `aria-hidden` rule), transcribed with their declarations, right after 013's facts rule and before the
+  focus rule, so the base-layer assertion reads "…the code rule, the facts rule, the timeline's two rules, the focus
+  rule, the forced-colours focus rule". The later slices start from `baseLayer.length`, so they move with it.
+- Phase 3's red: `baseLayer` gains the chain's two pre-upgrade rules right after the timeline's, before the focus
+  rule.
 
 Each red commit's message names this change and its reason (Principle VIII: an existing test changed for a planned
 addition, not to pass). The new
@@ -239,8 +257,8 @@ sticky (R-06). It is part of the table, scrolls with it, starts at the table's s
 (no inset), and is reached by scrolling back to the start. The spec's edge case "Caption while the region scrolls"
 allows this. The caption is still given a bound. A caption as wide as the table grid would otherwise run past the
 box's end edge at rest and be clipped there, and clipping by the box is not wrapping. 003's prose caption has such a
-bound too (`base.css` lines 187 to 209: `max-inline-size: var(--ocelle-measure-container)`, `100cqi`, against the
-prose table's query container). The data table bounds its caption without a query container:
+bound too (`base.css` lines 199 to 221 at 8ee3351: `max-inline-size: var(--ocelle-measure-container)`, `100cqi`,
+against the prose table's query container). The data table bounds its caption without a query container:
 
 - **No query container.** No box of the data table sets `container-type`. Inline size containment on `.region-box`
   collapses the element to 0 px in every shrink-to-fit host (R-02, PLAN-FRESH-2-001).
@@ -261,8 +279,11 @@ prose table's query container). The data table bounds its caption without a quer
   inline padding or border and, with no bounded block size, no vertical scrollbar. It never writes `clientWidth`,
   which rounds to a whole pixel (PLAN-FRESH-3-002 verify 1, "No feedback" below). The value is written as the
   inherited custom property `--data-table-box-size` on `.region-track`. It writes it into the element's own per-instance constructed
-  stylesheet, adopted after `overflowRegionStyles` (`replaceSync` once, then `setProperty`, as 009's module does for
-  its mask figures). There is no `style` attribute, so strict CSP holds. The slotted table and its caption inherit the
+  stylesheet, adopted after `overflowRegionStyles` and after the module's own per-instance sheet (`replaceSync` once,
+  then `setProperty`, as 009's module does for its mask figures). There is no `style` attribute, so strict CSP holds.
+  The sheet holds only px figures the element measured from layout, as the README's Styles convention requires; that
+  convention, which on `main` allows "at most one" per-instance sheet, is amended in phase 1 for the count only (recheck
+  Q2 (c); "The README's Styles convention" below). The slotted table and its caption inherit the
   property through the flat tree. The property has no `--ocelle-` prefix and is not a token, and `token-only` checks
   `--ocelle-*` names only, so it needs no new allowance. It is not manifest surface (the element writes it and never
   reads it), but `@ocelle/styles` reads it, so it is a documented base-style hook between the two packages, public
@@ -270,8 +291,14 @@ prose table's query container). The data table bounds its caption without a quer
   package would otherwise break the caption cap in the other with no semver signal.
 - **The end fade, only while it shows, written one frame later (PLAN-FRESH-3-002, operator decision (b); verify 1).**
   The cap subtracts the end fade only while `.region-box` has `data-fade="end"` or `data-fade="both"`. The element
-  writes the inherited property `--data-table-end-fade` on `.region-track` in the same per-instance sheet:
-  `var(--ocelle-scroller-fade-size)` while the end fade shows, and the property removed otherwise. No shadow rule on
+  writes the inherited property `--data-table-end-fade` on `.region-track` in the same per-instance sheet: while the
+  end fade shows, the measured px inline size of the module's `.region-edge.end` (its unrounded
+  `getBoundingClientRect().width`, the fade depth from layout, as 009's module itself reads the fade depth from a
+  `.region-edge` for focus clearance), and the property removed otherwise (recheck Q2 (c), 2026-11-17). A token's
+  text such as `var(--ocelle-scroller-fade-size)` is never written: the per-instance sheet holds measured px figures
+  only. The edge is laid out in every state (`.region-edge { inline-size: var(--ocelle-scroller-fade-size);
+  block-size: 0 }`, `overflow-region.ts` 160 to 164 at 8ee3351), so its width is the fade depth whether or not the
+  fade shows. No shadow rule on
   `.region-box[data-fade=…]` sets it, and it is never written in the task in which the fade changes. 009's module
   decides the fade in its own `ResizeObserver` callback on `.region-box`, and the element renders the new `data-fade`
   in Lit's update, a microtask inside that delivery. A cap that changed there would rewrap the caption and change
@@ -282,7 +309,10 @@ prose table's query container). The data table bounds its caption without a quer
   swap, a late web font, a `hidden` host shown or any change that toggles the end fade while the host's inline size
   stays put takes the same path. So `updated()` compares the rendered fade's end state with the one last written and,
   when they differ, requests one animation frame (at most one pending request per instance, cancelled on disconnect).
-  The frame callback reads `.region-box`'s current `data-fade` and writes or removes the property. Animation frame
+  The frame callback reads `.region-box`'s current `data-fade` and, with the end fade showing, `.region-edge.end`'s
+  width, and writes it in px or removes the property. The read comes before the write, so it costs at most one layout
+  flush ahead of the frame's own; the edge's size never depends on the caption or the table, so the read adds no
+  feedback path. Animation frame
   callbacks run before the frame's layout and its `ResizeObserver` gathering, so the rewrap reaches 009's observer as
   a fresh notification in that frame, not as a change inside a delivery. The cap changes only how the caption wraps:
   a table that overflows by its grid still overflows, a fitting table's caption contribution stays within the box less
@@ -331,6 +361,26 @@ prose table's query container). The data table bounds its caption without a quer
   the narrow-column resize, when a `hidden` host is shown, when a cell edit takes a block-host table from fitting to
   overflowing and back with a caption that rewraps across the end fade's depth, and in the shrink-to-fit hosts of
   R-02, the one-long-word body with a box width that rounds down among them. A failure goes to the operator.
+- **The README's Styles convention (recheck Q2 (c)).** `packages/elements/README.md` § Element conventions, Styles
+  (lines 1284 to 1289 at 8ee3351), allows "at most one per-instance constructed stylesheet that holds only px figures
+  the element measured from layout" and names the overflow-region module's mask size and `ocelle-list-detail`'s
+  intrinsic sizes as its two uses; `packages/elements/test/node/readme.test.ts` (lines 55 to 58) pins those two
+  sentences word for word. The data table adopts the module's sheet and one of its own, so phase 1 amends the count
+  and the list of uses, and nothing else (the px-only rule, the no-token-text rule and `CSSStyleRule.style` stay).
+  The two sentences become:
+  - "An element's styles are its shared `static styles`, one or more `css` tagged templates built only from
+    `--ocelle-*` tokens and the values the `style-lint` gate allows, which every instance adopts, plus at most one
+    per-instance constructed stylesheet of its own that holds only px figures the element measured from layout, and,
+    in an element that uses the overflow-region module, the module's per-instance sheet beside it";
+  - "A per-instance sheet never holds a value from an attribute, a property, a token's text or slotted text, and it is
+    written through `CSSStyleRule.style`, never through an element's `style`: the overflow-region module's mask size,
+    `ocelle-list-detail`'s intrinsic sizes and `ocelle-data-table`'s caption cap (its box size and end fade depth) are
+    its uses".
+
+  Phase 1's red changes the two pinned strings of `readme.test.ts` to these (an existing test changed for a planned
+  addition, named in the red commit's message with its reason, as for `source.test.ts`), and phase 1's green writes
+  them into the README. The end-fade body asserts the written value is a px figure equal to the edge's measured width
+  (a computed `--data-table-end-fade` of `2rem`, the token's text substituted, fails it).
 - **Before upgrade.** Outside the element (pre-upgrade) both properties are unset. The fallback
   `--ocelle-measure-container` (`100cqi`) resolves against the nearest query container or, with none, the small
   viewport, and the end fade falls back to zero. That bounds the caption at the viewport's width less the ring room.
@@ -354,8 +404,11 @@ Phase 1's red commit has these caption bodies:
   caption one line long at the fitting cap (the box less the ring room, 390 px) and two lines at that cap less the end
   fade's depth (358 px).
   A cell's text is edited so the table overflows. After `settle` the body asserts `data-fade="end"` at rest
-  (`scrollLeft` 0), that the caption has two line boxes, and that each lies inside the box's unmasked extent. The edit
-  is then undone, and after `settle` the box has no `data-fade` and the caption has one line box again.
+  (`scrollLeft` 0), that the caption has two line boxes, that each lies inside the box's unmasked extent, and that
+  the computed `--data-table-end-fade` on `.region-track` is a px length equal to `.region-edge.end`'s width within
+  0.01 px (recheck Q2 (c)). The edit
+  is then undone, and after `settle` the box has no `data-fade`, the caption has one line box again and the computed
+  `--data-table-end-fade` on `.region-track` is empty.
 - **No loop.** The in-process test records `error` events and `console.error`, and asserts none carries
   "ResizeObserver loop", around each of these (PLAN-FRESH-3-001, PLAN-FRESH-3-002 verify 1): a block host on first
   load whose caption wraps to a different line count at the fallback cap and at the measured cap (a caption one line
@@ -406,7 +459,12 @@ an empty span adds no node in Chromium either way).
 
 **Before upgrade (PLAN-FRESH-1-004, operator decision (a); PLAN-FRESH-2-005, operator decision (a)).**
 `@ocelle/styles` gains four (0,0,0) rules, two per container, as 013's `:where(ocelle-facts:not(:defined) >
-ocelle-fact:not([hidden]))` rule does for facts:
+ocelle-fact:not([hidden]))` rule does for facts. They sit where that rule sits, in `base.css`'s base layer (recheck
+Q5 (b), 2026-11-17): the timeline's two right after the facts rule (`base.css` lines 46 to 52 at 8ee3351), then the
+chain's two, all before the focus rule. The base layer's header comment (line 8, "…code elements, ocelle-facts before
+upgrade, the focus ring…") names them beside the facts, and `packages/styles/README.md` documents them beside
+§ Facts before upgrade (lines 107 to 113 at 8ee3351). Block 3 is this group of four rules; it is the third block this
+mission adds, not the third after the wrap rule:
 
 - `:where(ocelle-event-timeline:not(:defined) > ocelle-timeline-event:not([hidden]):not([aria-hidden="true"])) {
   display: block; }`;
@@ -672,18 +730,22 @@ between consecutive steps on one line only).
 
 ## R-13 Tokens
 
-**Decision.** No new token. Every value above is an existing token on `main`, plus `--ocelle-tracking-caps` from 009
-(branch). Every text colour (`ink`, `ink-soft`, `ink-muted`) and every structural mark (`ink-muted`) has a text
-declaration on the nine main grounds; the decorative lines use `color-rule` and `color-rule-strong`, which have none
-(FR-013). No contrast row is added. The plan gate's answers (Q-A to Q-C all (a), 2026-11-16) change no colour, and a
-slotted time is painted in the attribute time's `ink-muted`, so no new pair arises.
+**Decision.** No new token. Every value above is an existing token on `main` as merged (8ee3351); the column headers
+use 011's eyebrow tokens (`--ocelle-font-size-eyebrow`, `--ocelle-font-weight-eyebrow`, `--ocelle-tracking-eyebrow`,
+`--ocelle-color-eyebrow`; recheck Q1 (a)), and `--ocelle-tracking-caps`, which the plan once took from 009's branch,
+is not used (009 landed without it). Every text colour (`ink`, `ink-soft`, `ink-muted`, and `color-eyebrow` on the
+column headers) and every structural mark (`ink-muted`) has a text declaration on the nine main grounds; the decorative lines use `color-rule` and `color-rule-strong`, which have none
+(FR-013). No contrast row is added: `color-eyebrow`'s rows are 011's (`packages/tokens/contrast/pairs.json`, `checked`
+on the nine main grounds in both themes). The plan gate's answers (Q-A to Q-C all (a), 2026-11-16) change no colour,
+and a slotted time is painted in the attribute time's `ink-muted`, so no new pair arises.
 
 **Contrast oracles (PLAN-TESTABILITY-1-003, operator decision (c)).** Two checks, so a mark painted in the wrong token
 cannot pass on the token source alone:
 
 - **Source (node).** As 013's `progress-pairs.test.ts`: `packages/elements/test/node/records-pairs.test.ts` (with
   `records-pairs-check.ts`) for the five element templates, and `packages/styles/test/data-table-pairs.test.ts` for
-  the data-table block of `base.css`. Each reads every colour the source paints (cell, header, row header, caption,
+  the data-table block of `base.css` (the column header's colour is tied to `color-eyebrow`'s rows). Each reads every
+  colour the source paints (cell, header, row header, caption,
   time, content, marker, ring, ordinal, chip outline, chip text) and asserts each foreground and structural colour is
   tied to a `checked` row of `packages/tokens/contrast/pairs.json` on all nine main grounds in both themes, and each
   decorative line uses a rule token. A fixture with one row removed (`fixtures/pairs-missing-row.json`, as 013's) must
@@ -718,6 +780,11 @@ cannot pass on the token source alone:
 
 Each difference is written to `reviews/recheck.md`, and the flow stops for the operator on any difference before phase
 1's spike.
+
+**Done (2026-11-17).** `reviews/recheck.md` found five differences; the operator answered them in
+`reviews/recheck-decisions.md` (Q1 (a), Q2 (c), Q3 (a), Q4 (a), Q5 (b)), and the changes they make to this plan are
+listed in `reviews/recheck-fixes.md`. The list above is the recheck's scope as planned; `--ocelle-tracking-caps` in it
+is the token that turned out absent (Q1).
 
 ## R-15 Gate runs per phase (FR-051, FR-059)
 
@@ -774,6 +841,8 @@ same day (`reviews/plan/operator-gate.md`).
   `--ocelle-color-ink-muted` (the plan's choice, the same eyebrow 013's empty-state eyebrow uses). (b)
   `--ocelle-font-weight-strong` in `--ocelle-color-ink-muted` (heavier, closer to a heading). (c)
   `--ocelle-font-weight-medium` in `--ocelle-color-ink-soft` (the cells' colour, distinct only by size and case).
+  **Superseded (2026-11-17)** by the recheck's Q1 (a): 011's four eyebrow tokens, weight 600 in `color-eyebrow`
+  (R-06).
 - **Q-C. The event's time position (FR-023, which sets FR-021's marker line; #470). Decided: (a).** (a) The time on
   its own line above the content, the marker centred on the time's line (the plan's choice: the content keeps the
   full width at 320 px). (b) The time before the content on the same line, the marker centred on that shared first

@@ -104,6 +104,7 @@ stays op 016's gate-plant record in its set form, which the review compares line
 | `contain: inline-size` added to the caption (R-07, PLAN-FRESH-3-002 (b)) | the one-long-word narrow-table body |
 | The box size written as `.region-box`'s `clientWidth` (rounded) instead of the entry's unrounded inline size (R-07, PLAN-FRESH-3-002 verify 1) | the no-loop check around the one-long-word narrow-table body, whose precondition (the box's unrounded width has a fractional part between 0.1 and 0.4 px) is asserted first |
 | The end fade written in the task in which the fade changes (synchronously in `updated()`, or by a shadow rule on `.region-box[data-fade="end"]` and `[data-fade="both"]`; R-07, PLAN-FRESH-3-002 verify 1) | the no-loop check around the end-fade body (a block-host table taken from fitting to overflowing by a cell edit, its caption rewrapping across the fade's depth) |
+| The end fade written as the token's text `var(--ocelle-scroller-fade-size)` instead of `.region-edge.end`'s measured px width (R-07, recheck Q2 (c)) | the end-fade body (the computed `--data-table-end-fade` on `.region-track` is a px length equal to the edge's width within 0.01 px; the token's text computes to `2rem`) |
 | The caption made sticky with `inset-inline-start: var(--ocelle-scroller-fade-size)` (Q-F (a)) | the caption bodies at rest and scrolled (start equal to the table's) |
 | The caption text read as `textContent` (R-04) | the `hidden`, `aria-hidden` and `img alt` caption bodies |
 | The observer without `characterData` (R-04) | US1-16, the `text` run |

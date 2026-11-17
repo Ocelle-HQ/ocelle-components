@@ -1,9 +1,11 @@
 # Contract: the `@ocelle/styles` data-table rules
 
-`packages/styles/src/base.css` gains three blocks, after 003's identifier-wrap rule: the data-table rules, the prose
-override that follows them, and the four pre-upgrade list-item rules. Research R-06, R-07 and R-08 have the values and
-the reasons. 003's `packages/styles/test/source.test.ts` transcribes them after the wrap rule, in the order wrap, block 1, block 2,
-block 3 (the timeline's two rules, then the chain's two). Phase 1's red adds blocks 1 and 2, phase 2's red the
+`packages/styles/src/base.css` gains three blocks: the data-table rules and the prose override that follows them,
+after 003's identifier-wrap rule, and the four pre-upgrade list-item rules, in the base layer right after 013's
+`ocelle-facts` pre-upgrade rule and before the focus rule (recheck Q5 (b), 2026-11-17). Research R-06, R-07 and R-08
+have the values and the reasons. 003's `packages/styles/test/source.test.ts` transcribes blocks 1 and 2 after the wrap
+rule, in the order wrap, block 1, block 2 (its last-rule assertion), and block 3 in its `baseLayer` slice after the
+facts rule (the timeline's two rules, then the chain's two). Phase 1's red adds blocks 1 and 2, phase 2's red the
 timeline's rules and phase 3's red the chain's, each in the phase whose green adds them (R-06).
 
 ## Block 1: the data-table rules, at specificity (0,0,0)
@@ -20,9 +22,9 @@ table of an `ocelle-data-table` is selected, whether the element is defined or n
 | Selector (inside `:where()`) | Purpose |
 |---|---|
 | `ocelle-data-table > table` | `border-collapse`, `inline-size: 100%`, `margin: 0`, sans, figures |
-| `ocelle-data-table > table > caption` | caption type, colour, `text-align: start`, `position: static` (not sticky until 009's option of R-17; Q-F (b)), no inline size containment (its longest word widens the table, PLAN-FRESH-3-002 (b)), `max-inline-size: calc(var(--data-table-box-size, var(--ocelle-measure-container)) - 2 * (var(--ocelle-focus-offset) + var(--ocelle-focus-width)) - var(--data-table-end-fade, 0 * var(--ocelle-scroller-fade-size)))`: the box's measured width less the ring room on both sides and less the end fade only while it shows (the data table writes `--data-table-end-fade` on `.region-track` one animation frame after `.region-box`'s `data-fade` moves into or out of `end` or `both`, outside any `ResizeObserver` delivery), so a fitting table's cap is its own width (R-07) |
+| `ocelle-data-table > table > caption` | caption type, colour, `text-align: start`, `position: static` (not sticky until 009's option of R-17; Q-F (b)), no inline size containment (its longest word widens the table, PLAN-FRESH-3-002 (b)), `max-inline-size: calc(var(--data-table-box-size, var(--ocelle-measure-container)) - 2 * (var(--ocelle-focus-offset) + var(--ocelle-focus-width)) - var(--data-table-end-fade, 0 * var(--ocelle-scroller-fade-size)))`: the box's measured width less the ring room on both sides and less the end fade only while it shows (the data table writes `--data-table-end-fade`, the measured px width of its `.region-edge.end`, on `.region-track` one animation frame after `.region-box`'s `data-fade` moves into or out of `end` or `both`, outside any `ResizeObserver` delivery), so a fitting table's cap is its own width (R-07) |
 | `ocelle-data-table > table > :is(thead, tbody, tfoot) > tr > :is(td, th)` | compact padding, `sm` / `line-height-compact`, `ink-soft`, row rule, `text-align: start`, `vertical-align: top` |
-| `… > thead > tr > th`, `… th[scope="col"]`, `… th[scope="colgroup"]` | eyebrow header: `xs`, medium (Q-B), upper case, `tracking-caps`, `ink-muted`, `rule-strong` rule |
+| `… > thead > tr > th`, `… th[scope="col"]`, `… th[scope="colgroup"]` | eyebrow header in 011's eyebrow tokens (recheck Q1 (a)): `font-size-eyebrow`, `font-weight-eyebrow` (600), upper case, `tracking-eyebrow`, `color-eyebrow`, `rule-strong` rule |
 | `… th[scope="row"]`, `… th[scope="rowgroup"]`, `… > :is(tbody, tfoot) > tr > th:not([scope])` | row header: `sm`, medium, `ink`, no case or tracking |
 | `ocelle-data-table > table > :is(tbody, tfoot):last-child > tr:last-child > :is(td, th)` | no rule below the table's last row only; rows of earlier row groups keep theirs (a `<tfoot>` goes after the `<tbody>` groups, as HTML says; the README states the source-order rule) |
 | `ocelle-data-table[wrap="anywhere"] > table > :is(tbody, tfoot) > tr > td` | `overflow-wrap: anywhere` |
@@ -51,6 +53,11 @@ target, unless the test's not-applicable list records it with its reason (`outli
 003 rule on another table part is read (PLAN-TESTABILITY-1-008).
 
 ## Block 3: list items before upgrade, at specificity (0,0,0)
+
+In the base layer, beside 013's facts rule (recheck Q5 (b)): the timeline's two rules right after
+`:where(ocelle-facts:not(:defined) > ocelle-fact:not([hidden]))`, then the chain's two, then 003's focus rule. The base
+layer's header comment names them with the facts, and `packages/styles/README.md` documents them beside § Facts before
+upgrade.
 
 | Selector (inside `:where()`) | Values |
 |---|---|

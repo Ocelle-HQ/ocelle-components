@@ -59,15 +59,21 @@ history and evidence chain.
   (Complexity Tracking). I7 (a): the caption cap's `--data-table-box-size` and `--data-table-end-fade` are a
   documented base-style hook between `@ocelle/elements` and `@ocelle/styles` (constitution VII). See § Decisions after
   the analysis.
+- **Decided on the T001 recheck (2026-11-17).** Q1 (a): the column headers use 011's four eyebrow tokens (weight 600),
+  superseding Q-B (a). Q2 (c): the end fade is written as the measured px width of `.region-edge.end`, so the data
+  table's own per-instance sheet holds px figures only, and the README's Styles convention is amended for the count of
+  sheets. Q3 (a): phases fold from bases at 8ee3351 or later. Q4 (a): research cites the merged lines. Q5 (b): the
+  pre-upgrade list rules go in `base.css`'s base layer beside 013's facts rule. See § Decisions after the recheck.
 
-Implementation waits for 009, 013 and op 016 on `main`. The first task rechecks the plan against `main` as merged
-(R-14), including whether 009's pinned-start option (R-17) has landed.
+009, 013 and op 016 are on `main`, and `main` (b594b7e) is merged into this branch (8ee3351, operator decision of
+2026-11-17, `reviews/main-merge.md`). The first task rechecked the plan against it (R-14, `reviews/recheck.md`):
+009's pinned-start option (R-17) has not landed, so the caption is not sticky (Q-F (b)).
 
 ## Technical Context
 
 **Language/Version**: TypeScript 6.0.3 (strict, `erasableSyntaxOnly`); Node 26.13.0 in CI, 22.23.4 in this container.
 
-**Primary Dependencies**: `lit` 3.3.3. No new dependency. Internal: 009's `src/overflow-region.ts` (branch): the
+**Primary Dependencies**: `lit` 3.3.3. No new dependency. Internal: 009's `src/overflow-region.ts` (on `main`): the
 data table uses `OverflowRegion` (R-02), and the timeline and chain import its `resolveName` (R-09). Requested of
 009's owner, not built here: a module option that keeps a pinned start box out of the start fade (R-17).
 
@@ -104,7 +110,8 @@ engine-floor feature: manual slot assignment (013) and the module's features (00
 
 **Performance Goals**: none specific.
 - Each class adopts one shared stylesheet. The data table also gets the module's one per-instance sheet (009) and its
-  own per-instance sheet, which holds the measured caption width (R-07).
+  own per-instance sheet, which holds the measured box width and the measured end fade depth, px figures only (R-07;
+  the README's Styles convention amended for the count of sheets, recheck Q2 (c)).
 - Per container: one `MutationObserver` (the timeline's on its events' subtrees too, for the slotted time). Per
   event: one `MutationObserver` on its own subtree, for the slotted time (R-10). The chain also has one `ResizeObserver`, on its list and its items. The data
   table has one `ResizeObserver` of its own, on its `block-size: 0` measuring element (not on `.region-box`), for
@@ -124,19 +131,20 @@ addition, 35 stories (12 in phase 1, 11 in phase 2, 12 in phase 3, each with two
 
 *Gate: passes before Phase 0 and again after Phase 1 design (rechecked after squad rounds 1 and 2, and after the plan
 gate's answers of 2026-11-16: decision 1, Q-A, Q-B and Q-C (a), Q-E a named `time` slot; Q-D and Q-F decided at squad
-rounds 1 and 2; Q-G decided (a)), and after the analysis decisions of 2026-11-16 (C1 (c), I7 (a)). One Principle V
+rounds 1 and 2; Q-G decided (a)), after the analysis decisions of 2026-11-16 (C1 (c), I7 (a)), and after the recheck
+decisions of 2026-11-17 (Q1 (a), Q2 (c), Q3 (a), Q4 (a), Q5 (b)), none of which changes a verdict below. One Principle V
 exception is recorded, chosen by the operator as C1 (c) (Complexity Tracking).*
 
 | Principle | How this plan meets it |
 |---|---|
 | I. Names, no I/O, small interface, manifest | **Tags**: `ocelle-data-table`, `ocelle-event-timeline`, `ocelle-timeline-event`, `ocelle-evidence-chain`, `ocelle-evidence-step`. **Events**: none. **I/O**: none. **Properties**: `label`, `wrap` (data table); `label` (timeline, chain); `time`, `wrap` (event); `variant`, `wrap` (step). Every property is `\| undefined` with `@default undefined`; `wrap`, `variant` and `time` reflect, because the styles or the container's observer read them (`time`: PLAN-CORRECTNESS-1-003). **Parts**: `list` on the two containers; `time` and `content` on the event; `content` on the step. **CSS hooks**: one base-style hook between the packages, `--data-table-box-size` and `--data-table-end-fade`, written by the data table and read by `@ocelle/styles`' caption cap (analysis I7 (a); row VII); no element declares a CSS custom property in the manifest. **Slots**: the default slot of each element, and the event's named `time` slot (Q-E), which the manifest declares. The manifest declares everything, with every list stated ([contracts/](contracts/)). No element module exports a function: the internal `hasTime` and `hasSlottedTime` live in `src/timeline-time.ts`, outside the manifest glob and the exports map, and a manifest test statement pins that (R-10). The caption's measured width and the end fade's depth are custom properties with no `--ocelle-` prefix (the prefix is the tokens'), documented as the base-style hook above, not manifest members: the element writes them and its styles never read them (R-07). |
-| II. Tokens only, brand rules | **Tokens**: every value is a token (R-06, R-10, R-12); no new token (R-13). **No monospace**: cells, times, ordinals and chips use `font-sans` with `figures`. **`color-rule`**: only on decorative lines (the row and header rules, the connectors; FR-013). **Radius**: `radius-2` on the chip (the one radius, never `radius-pill`). The dot and the step marker are round, `border-radius: 50%` with no token: a mark shape, not a corner radius, so the one-radius rule is not engaged and no radius token is added (FR-031, FR-040; Q-D, operator decision (a) on PLAN-CORRECTNESS-1-004). **Ochre**: none. |
+| II. Tokens only, brand rules | **Tokens**: every value is a token (R-06, R-10, R-12); no new token (R-13); the column headers use 011's eyebrow tokens as they are (recheck Q1 (a)). **No monospace**: cells, times, ordinals and chips use `font-sans` with `figures`. **`color-rule`**: only on decorative lines (the row and header rules, the connectors; FR-013). **Radius**: `radius-2` on the chip (the one radius, never `radius-pill`). The dot and the step marker are round, `border-radius: 50%` with no token: a mark shape, not a corner radius, so the one-radius rule is not engaged and no radius token is added (FR-031, FR-040; Q-D, operator decision (a) on PLAN-CORRECTNESS-1-004). **Ochre**: none. |
 | III. Accessible by construction | **ID references**: none across a root. The table's references stay in the consumer's tree (R-01), and the region is named by copied text (R-04). **Roles**: the table's own roles; a `group` on the region while it overflows (009); `list` and `listitem` on the shadow lists, explicit for WebKit (R-08). **Hidden**: markers, connectors and ordinals are `aria-hidden`; item text is asserted by `itemTexts` (R-11). **Keyboard**: the overflowing region is the only added tab stop, with arrows, clearance and handover from the module; slotted links keep theirs. **Contrast**: text and structural marks use ink tokens with text declarations on the nine main grounds (a slotted time takes the attribute time's `ink-muted` through `::slotted()`); decorative lines are exempt (FR-013), checked by a node check against `pairs.json` and by rendered-colour bodies (R-13). **Forced colours**: every mark is a border drawn in `CanvasText`; the chip's box rule sits outside the variant block (R-10, R-12). **Reflow**: 320 px tests per container, the data table as a flex and a grid item, and in three shrink-to-fit hosts (a dialog, an inline-block, a start-aligned column flex), where it is never 0 px wide (R-02); the caption wraps inside the box's unmasked width at rest (R-07). **Naming**: a blank host `aria-label` counts as absent on the lists, through 009's `resolveName` (R-09); the region's caption name skips hidden parts and reads image `alt` (R-04). **axe**: #10's `axe` gate on every story, with no exception entry planned. |
-| IV. Strict CSP, offline | Adopted stylesheets and `base.css` only. No `style` attribute; the module's mask figures use its per-instance sheet (009), and the data table's measured caption width uses its own (R-07). Fixture pages assert zero violations. |
+| IV. Strict CSP, offline | Adopted stylesheets and `base.css` only. No `style` attribute; the module's mask figures use its per-instance sheet (009), and the data table's measured box width and end fade depth use its own, px figures only (R-07, recheck Q2 (c)). Fixture pages assert zero violations. |
 | V. Storybook, behaviour tests | A story per variant and state, light and dark ([contracts/checks.md](contracts/checks.md) § Stories). The item elements' states are stories in their container's file, the standalone event and the standalone step included (analysis C1 (c)). Every spec'd state has a story, the hidden item, the unnamed overflowing table, the table-less data table and the empty containers included (PLAN-CORRECTNESS-1-007, operator decision (a)), except the states named by a host `aria-label` (the data table's region, the timeline, the chain): one exception row in Complexity Tracking, chosen by the operator (C1 (c)), proven by browser bodies, with a sunset each phase's spike checks. |
 | VI. Consumer-driven, own code | Needs: kitty-mission-ui's `.sk-data-table` family and the Desktop V2 primitives (#470, #517, #533). The issues are unread, so their points were the plan gate's questions Q-A to Q-C and Q-E (spec SPEC-1-06 (b)), which the operator answered on 2026-11-16 (Q-E's answer, the `time` slot, is in FR-023). The inventory is an operator input before each red commit (R-16). Nothing is copied, and the README mapping names roles only. |
 | VII. Semver | **MINOR**: five elements, five entry points, three `base.css` blocks and one base-style hook (`--data-table-box-size`, `--data-table-end-fade`, analysis I7 (a)), which couples the two separately versioned packages and so is surface: both CHANGELOGs and both READMEs name it, and a rename or removal is MAJOR from 1.0.0. CHANGELOG entries go in `@ocelle/elements` and `@ocelle/styles`. `@ocelle/tokens` is unchanged. |
-| VIII. Test-first, non-vacuous | A scaffold comes before each red commit. The red commit holds the phase's scenario bodies, the driver test, the node and styles tests and the story-test extension (operator decision I3), and `red.sh` keeps one red record per phase. The red log is read per body: every scenario body fails on an assertion, never on an import or setup error, and each body the platform alone could pass carries a paired assertion only the element gives (contracts/checks.md). Each phase's red commit changes one existing test, 003's `source.test.ts`, for the `base.css` rules that phase's green adds (phase 1 blocks 1 and 2, phase 2 the timeline's two pre-upgrade rules, phase 3 the chain's two), and its message says so (R-06). Item-text bodies also assert a non-empty text (FR-016). Each CSS-only behaviour has a named element plant or a stated reason, because Stryker does not mutate `css` templates or `base.css`; element plants mutate green source, so they run after green, are never committed, and are recorded in `reviews/phase-<N>/element-plants.md` (contracts/checks.md § Element plants). Spikes run before the scaffolds of phases 1 to 3, and a failing spike result goes to the operator. |
+| VIII. Test-first, non-vacuous | A scaffold comes before each red commit. The red commit holds the phase's scenario bodies, the driver test, the node and styles tests and the story-test extension (operator decision I3), and `red.sh` keeps one red record per phase. The red log is read per body: every scenario body fails on an assertion, never on an import or setup error, and each body the platform alone could pass carries a paired assertion only the element gives (contracts/checks.md). Each phase's red commit changes 003's `source.test.ts` for the `base.css` rules that phase's green adds (phase 1 blocks 1 and 2 after the wrap rule, phase 2 the timeline's two pre-upgrade rules and phase 3 the chain's two in its base-layer slice, recheck Q5 (b)), and phase 1's red also changes the two Styles sentences `packages/elements/test/node/readme.test.ts` pins, for the convention amendment of recheck Q2 (c); each red message names its changed test and the reason (R-06, R-07). Item-text bodies also assert a non-empty text (FR-016). Each CSS-only behaviour has a named element plant or a stated reason, because Stryker does not mutate `css` templates or `base.css`; element plants mutate green source, so they run after green, are never committed, and are recorded in `reviews/phase-<N>/element-plants.md` (contracts/checks.md § Element plants). Spikes run before the scaffolds of phases 1 to 3, and a failing spike result goes to the operator. |
 | Licence, supply chain | No new dependency or asset. |
 | Workflow gates | No gate changes. The gates run unchanged; the gate plants run by op 016's selection locally and in full in CI (R-15). |
 
@@ -150,6 +158,7 @@ Answered by the operator on 2026-11-16 (`reviews/plan/operator-gate.md`); the ch
    (b), a sizing option in 009's module, and (c), max-content with a changed US1-9, are not taken.
 2. **Q-A, the chip step's look** (#517). **Decided: (a)**, an outline with no fill.
 3. **Q-B, the column headers' weight and colour** (#533). **Decided: (a)**, medium weight in `ink-muted`.
+   **Superseded** on 2026-11-17 by the recheck's Q1 (a): 011's four eyebrow tokens (§ Decisions after the recheck).
 4. **Q-C, the event's time position** (#470). **Decided: (a)**, the time on its own line above the content, with the
    marker on that line.
 5. **Q-D, the markers' shape.** Decided at squad round 1: `border-radius: 50%` for both markers, no token (R-10,
@@ -185,6 +194,32 @@ Answered by the operator on 2026-11-16 (`reviews/analysis/operator-decisions.md`
    `--data-table-end-fade` are a documented base-style hook between `@ocelle/elements` (the writer) and
    `@ocelle/styles` (the reader): public surface under constitution VII, named in both CHANGELOGs and READMEs, with a
    README test statement in each package (T011, T013).
+
+## Decisions after the recheck
+
+Answered by the operator on 2026-11-17 (`reviews/recheck-decisions.md`, human:jeroennouwsdev) on the five questions of
+`reviews/recheck.md`; the changes are listed in `reviews/recheck-fixes.md`.
+
+1. **Q1, the column headers' tokens. Decided: (a).** `--ocelle-tracking-caps` is not on `main`, and 011's eyebrow
+   tokens are. The column headers use all four: `--ocelle-font-size-eyebrow`, `--ocelle-font-weight-eyebrow` (600),
+   `--ocelle-tracking-eyebrow` and `--ocelle-color-eyebrow`, as `ocelle-page-header` and `ocelle-section-header` do.
+   This supersedes Q-B (a). FR-006, US1-3, R-06, R-13, contracts/styles-data-table.md, T006 and T017 follow; the
+   contrast node check ties the header colour to `color-eyebrow`'s `checked` rows. No token is added.
+2. **Q2, the data table's per-instance sheet. Decided: (c).** The end fade's share of the caption cap is written as
+   the measured px inline size of `.region-edge.end` (the fade depth from layout, as 009's module reads it), never as
+   `var(--ocelle-scroller-fade-size)`. The README's Styles convention ("at most one" per-instance sheet, pinned by
+   `test/node/readme.test.ts`) is amended in phase 1 for the count only: an element that uses the overflow-region
+   module may hold one sheet of its own beside the module's, and the data table's caption cap joins the list of uses
+   (R-07 gives the two sentences). A new element plant writes the token's text and must fail the end-fade body.
+3. **Q3, history folds after the merge. Decided: (a).** Each phase is folded after its approval from a base at
+   8ee3351 or later (its `base.sha` or a later remap commit), which `fold-history.sh` accepts. The merge commit 8ee3351
+   stays in the branch's history; `/ocelle-run`'s "no merge commits on the branch" is read as "no merge commit after
+   the fold base", and `/ocelle-land` handles the pull request's shape. No skill or script changes here.
+4. **Q4, stale line citations. Decided: (a).** R-06 and R-07 cite `base.css` and `source.test.ts` at their lines at
+   8ee3351 (every `base.css` line +12; `source.test.ts`'s prose slice and last-rule assertion at 204 to 212).
+5. **Q5, the pre-upgrade rules' place. Decided: (b).** The timeline's and the chain's pre-upgrade rules (block 3) go
+   in `base.css`'s base layer right after 013's facts rule, before the focus rule, and `source.test.ts` transcribes
+   them in its `baseLayer` slice; the last-rule assertion keeps phase 1's form, "the wrap rule, block 1, block 2".
 
 ## Project Structure
 
@@ -228,7 +263,7 @@ packages/elements/
 │   ├── browser/{data-table,event-timeline,evidence-chain}.test.ts
 │   ├── define.test.ts                                          # the define-twice fixture gains the five
 │   ├── entry-*.test.ts                                         # the five entry points
-│   ├── node/readme.test.ts, node/manifest.test.ts, node/chain-no-pill.test.ts
+│   ├── node/readme.test.ts (changed in phase 1: the Styles sentences, recheck Q2 (c)), node/manifest.test.ts, node/chain-no-pill.test.ts
 │   ├── node/records-pairs.test.ts, node/records-pairs-check.ts # contrast source check (R-13)
 │   └── build/build.test.ts                                     # container import rule for the two containers
 ├── custom-elements.json           # regenerated
@@ -237,7 +272,7 @@ packages/elements/
 packages/styles/
 ├── src/base.css                   # the data-table block, the prose override, the pre-upgrade list rules
 ├── test/browser/data-table.test.ts, test/browser/list-items.test.ts, test/prose-override.test.ts, test/data-table-pairs.test.ts
-├── test/source.test.ts (changed: the new rules after the wrap rule, R-06), test/readme.test.ts
+├── test/source.test.ts (changed: blocks 1 and 2 after the wrap rule, block 3 in the base-layer slice, R-06), test/readme.test.ts
 ├── README.md, CHANGELOG.md
 storybook/stories/{data-table,event-timeline,evidence-chain}.stories.ts
 storybook/.storybook/stories-layout.css                        # wrapper widths on data-story selectors
@@ -251,7 +286,9 @@ names follow 013's on `main` after the recheck (T001).
 
 ## Phases (user stories) for `/speckit-tasks`
 
-Each phase is one unit for `/ocelle-run` step 4 and is folded after its approval. Phases 1 to 3 run in this order:
+Each phase is one unit for `/ocelle-run` step 4 and is folded after its approval, from a fold base at 8ee3351 (the
+merge of `main`) or later: its `base.sha` or a later remap commit (recheck Q3 (a)). The merge commit stays in the
+branch's history, and `/ocelle-land` handles the pull request's shape. Phases 1 to 3 run in this order:
 
 1. **Spike.** Run before the scaffold, recorded in `reviews/phase-<N>/spike.md`. A failing result goes to the operator.
 2. **Scaffold.** The phase's modules with `define`, `@tagname`, declared properties and an empty `render()`, plus
@@ -292,6 +329,8 @@ Every phase with stories also does the following:
      - 011's or 012's eyebrow tokens;
      - op 016's `--affected` and its record file;
      - #10's commands and container.
+   - Recorded on 2026-11-17 in `reviews/recheck.md` (five differences), answered in `reviews/recheck-decisions.md`
+     and applied as § Decisions after the recheck states; T001 stays for the implementer to tick.
    - The operator's inventory for R-16 is not a phase 0 item: it is one step per phase, before that phase's red
      commit (decision 9; tasks T005, T028, T054).
    - The `itemTexts` driver addition belongs to phase 2's red commit, not here, so it is proven red first.
@@ -320,7 +359,7 @@ Every phase with stories also does the following:
      - FR-010's host `aria-label` (non-blank decides, blank counts as absent), the state the exception row covers.
      - US1-11's forced colours with the header rule as well as the row rules (analysis G2).
      - US1-10 comparing every property of R-06's list on every target (SPEC-3-01).
-     - US1-3 with "011's or 012's eyebrow tokens" (SPEC-3-04).
+     - US1-3 with 011's four eyebrow tokens (SPEC-3-04, recheck Q1 (a)).
      - US1-16 twice: the caption's text node edited (`characterData`) and the caption replaced (`childList`).
      - The caption-text bodies of R-04: a `hidden` span, an `aria-hidden="true"` span, an `<img alt>`.
      - Edge-case bodies: no table, two tables, a nested table not styled, no `thead`, a `<thead>` with an empty
@@ -332,7 +371,8 @@ Every phase with stories also does the following:
        wrapping at the table's width), a narrow column resized from 400 to 600 px whose table overflows and whose
        caption is longer than the box at both widths (`data-fade="end"` asserted at rest before the line boxes), and
        the end-fade body (a 400 px block-host table that fits, a cell edit making it overflow and the edit undone:
-       `data-fade="end"` at rest and a two-line caption inside the unmasked extent, then no `data-fade` and one line),
+       `data-fade="end"` at rest, a two-line caption inside the unmasked extent and `--data-table-end-fade` the end
+       edge's measured px width, then no `data-fade`, one line and no end fade),
        and the no-`ResizeObserver`-loop check around a block host on first load with a caption that rewraps between
        the fallback and the measured cap, the narrow-column resize, a `hidden` host shown, both edits of the end-fade
        body, and the shrink-to-fit bodies (the one-long-word body with its rounding-down precondition asserted first).
@@ -346,6 +386,9 @@ Every phase with stories also does the following:
        data table's entry goes in here, and phases 2 and 3 add theirs to the same body.
      - The change to 003's `packages/styles/test/source.test.ts` (R-06): blocks 1 and 2 after the wrap rule, the
        last-rule assertion "the wrap rule, block 1, block 2"; named with its reason in the commit message.
+     - The change to the two Styles sentences `packages/elements/test/node/readme.test.ts` pins (R-07, recheck
+       Q2 (c)): a per-instance sheet of the element's own beside the overflow-region module's, and the data table's
+       caption cap among the uses; named with its reason in the commit message.
      - The `@ocelle/styles` browser tests, the prose-override node test and the data-table contrast node test.
      - The data table's part of `test/node/records-pairs.test.ts` (R-13).
      - README statements for the data-table section, the conventions amendment (FR-056), its mapping rows, the Host
@@ -358,7 +401,7 @@ Every phase with stories also does the following:
        I7 (a)).
      - The story-test extension.
    - **Green.** `ocelle-data-table.ts`, the `base.css` blocks, exports and the manifest, the stories with baselines,
-     the README (section, conventions, overflow-region users, Host ARIA list, sizing, prose specificity, the
+     the README (section, conventions with the Styles amendment of recheck Q2 (c), overflow-region users, Host ARIA list, sizing, prose specificity, the
      `<tfoot>` order, print, pre-upgrade, the base-style hook) and the CHANGELOGs, which name the hook as surface. Then the data table's element plants.
 2. **US2 Event timeline** (P2).
    - **Spike.** R-08, R-09, R-10 and R-11: the tree with `role="list"`, the item-text oracle, the empty connector and
@@ -388,9 +431,9 @@ Every phase with stories also does the following:
        (analysis G3), pre-upgrade (the `base.css` list-item
        rules: a `hidden` and an `aria-hidden="true"` event not shown; a slotted time's text shown before the
        content's), 640 px.
-     - The change to 003's `packages/styles/test/source.test.ts` (R-06): the timeline's two pre-upgrade rules after
-       block 2, the last-rule assertion "the wrap rule, block 1, block 2, the timeline's rules"; named with its reason
-       in the commit message.
+     - The change to 003's `packages/styles/test/source.test.ts` (R-06, recheck Q5 (b)): the timeline's two
+       pre-upgrade rules in the `baseLayer` slice right after 013's facts rule, before the focus rule; the last-rule
+       assertion unchanged; named with its reason in the commit message.
      - The timeline's entries in the define-twice body and in `test/node/records-pairs.test.ts`.
      - README statements (the section, the Host ARIA list, the overflow-region users of `resolveName`, "Before
        upgrade" with the slotted time shown inline, and the `time` slot of Q-E: it takes precedence over the
@@ -399,7 +442,8 @@ Every phase with stories also does the following:
        the story-test extension.
    - **Green.** `timeline-time.ts` (`hasTime(event)`, `hasSlottedTime(event)`), `ocelle-timeline-event.ts` (the `time`
      slot, its `::slotted()` rules and its own observer) and `ocelle-event-timeline.ts` (its observer on the events'
-     subtrees), the two pre-upgrade rules in `base.css`, exports, the manifest (the `time` slot included), the 11
+     subtrees), the two pre-upgrade rules in `base.css`'s base layer after the facts rule (with the layer's header
+     comment), exports, the manifest (the `time` slot included), the 11
      stories with baselines (the standalone event among them), the README section (with the Host ARIA list update and the `time` slot) and the
      CHANGELOGs (the `time` slot named as surface). Then the timeline's element plants, the slot plants of checks.md
      among them.
@@ -416,13 +460,14 @@ Every phase with stories also does the following:
      - Edge-case bodies: a step outside the chain, an empty chain, mixed chips, a link in a step (FR-011), `lang` and
        `dir`, no live region, landmark or heading (FR-026), a hidden chain and a hidden standalone step (analysis G3),
        pre-upgrade (a `hidden` and an `aria-hidden="true"` step not shown), 640 px.
-     - The change to 003's `packages/styles/test/source.test.ts` (R-06): the chain's two pre-upgrade rules after the
-       timeline's, the final last-rule assertion "the wrap rule, block 1, block 2, block 3 (the timeline's rules, the
-       chain's rules)"; named with its reason in the commit message.
+     - The change to 003's `packages/styles/test/source.test.ts` (R-06, recheck Q5 (b)): the chain's two pre-upgrade
+       rules in the `baseLayer` slice right after the timeline's, before the focus rule; the last-rule assertion
+       unchanged; named with its reason in the commit message.
      - The chain's entries in the define-twice body and in `test/node/records-pairs.test.ts`.
      - The no-pill node test, README statements ("Before upgrade" among them), mapping rows and the story-test
        extension.
-   - **Green.** `ocelle-evidence-step.ts` and `ocelle-evidence-chain.ts`, the two pre-upgrade rules in `base.css`,
+   - **Green.** `ocelle-evidence-step.ts` and `ocelle-evidence-chain.ts`, the two pre-upgrade rules in `base.css`'s
+     base layer after the timeline's,
      exports, the manifest, the 12 stories with baselines (the standalone step among them), the README section and the CHANGELOGs. Then the chain's element
      plants, the no-pill plant among them.
 4. **Polish.** Documentation only:
@@ -444,7 +489,8 @@ time. Phase 3 reuses phase 2's `itemTexts`; both containers import 009's `resolv
 - A story the `axe` gate fails is fixed in the story or the element. An exception entry, or any further state without
   a story, needs a row here and the operator's approval.
 - The host rule on `.region-track` (R-03) is a styling override inside the data table's own stylesheet, and the
-  measured caption width (R-07) is written by the data table's own observer into its own per-instance sheet. Neither
+  measured caption width and end fade depth (R-07) are written by the data table into its own per-instance sheet, px
+  figures only, beside the module's (the README's Styles convention amended for the count, recheck Q2 (c)). Neither
   changes 009's module. The operator chose the first at the plan gate (decision 1 (a), 2026-11-16).
 - The markers' `border-radius: 50%` is recorded under constitution II as a mark shape, not a corner radius (Q-D,
   operator decision (a) on PLAN-CORRECTNESS-1-004); it is not an exception and adds no token.

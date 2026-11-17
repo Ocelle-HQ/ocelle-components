@@ -5,8 +5,8 @@ checks: [contracts/checks.md](contracts/checks.md).
 
 ## Prerequisites
 
-- 009, 013 and op 016 are on `main` and merged into this branch, and `reviews/recheck.md` (T001) records no open
-  difference.
+- 009, 013 and op 016 are on `main` and merged into this branch (8ee3351), and every difference of
+  `reviews/recheck.md` (T001) is answered in `reviews/recheck-decisions.md` and applied (`reviews/recheck-fixes.md`).
 - `reviews/recheck.md` records whether 009's pinned-start option (research R-17) is on `main`. If it is, the caption
   is sticky through it at inset 0; if not, it scrolls with the table (Q-F, decided (b)).
 - Each phase's `reviews/phase-<N>/element-plants.md` records every element plant biting (contracts/checks.md).
@@ -30,11 +30,14 @@ checks: [contracts/checks.md](contracts/checks.md).
    compares its `note: affected:` lines with the record. In phases 1 to 3 the same step runs with the phase's own
    base (T023, T049, T072).
 5. **By hand, in Storybook** (`pnpm --filter storybook run dev`, or the built `storybook-static`):
+   - **Data table, headers.** The column headers are small, tracked, uppercase eyebrows in 011's eyebrow tokens, as
+     in the page and section headers (recheck Q1 (a)).
    - **Data table, overflows.** At 320 px, Tab reaches the region, a screen reader announces the "Work packages"
      group, and the arrows scroll it. At rest the caption wraps inside the box and starts at the table's edge. At
      1280 px Tab skips it.
    - **Data table, hook.** In the dev tools the region's track carries `--data-table-box-size`, and
-     `--data-table-end-fade` while the end fade shows (the base-style hook between the two packages, analysis I7 (a));
+     `--data-table-end-fade` while the end fade shows, both in px measured from layout (the end fade is the end
+     edge's width, recheck Q2 (c)) (the base-style hook between the two packages, analysis I7 (a));
      both READMEs and CHANGELOGs name them.
    - **Timeline.** The screen reader reads a list of three items, "14:02 Mission created" first, with no dot or line
      announced. In the marked-up times story each `<time slot="time">` shows above its event's text in the time's
