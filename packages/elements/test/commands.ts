@@ -7,19 +7,27 @@
 // harnesses read the tree the same way: the in-process `elements` project through the Vitest browser commands
 // `axTree` and `emulateForcedColors` below (registered in vitest.config.ts), the fixture suites through a Playwright
 // CDP session on their page.
+//
+// 008 adds (research.md R-14): `axTree` also gives a node's description and its modal flag where Chromium reports
+// them; `pointerPath(steps)`, which drives `page.mouse`, and `touchTap(x, y)`, which drives `page.touchscreen`, both at
+// points of the test's frame with the frame's offset and scale in the runner page added. Reduced motion is 013's
+// `emulateReducedMotion(mode)`, which forced colours leave alone, so each test file's reset helper ends both.
 import type { CDPSession, Frame, Page } from "playwright";
 import type { BrowserCommandContext } from "vitest/node";
 
 /**
  * One unignored accessibility node: its role and its computed name, for a heading its level (011 research.md R-13;
- * 013 US2-1, US2-2), and for a range node (a progressbar, a slider) its value properties (013 phase 3,
- * contracts/checks.md § Driver additions): `value` when the node has a current value, and `valuemin`, `valuemax` and
- * `valuetext` as Chromium reports them. `valuetext` reads `""` in Chromium whatever the page sets
- * (reviews/phase-3/spike.md), so no test asserts a value text on it.
+ * 013 US2-1, US2-2), where Chromium reports them its computed description (when not empty) and its `modal` flag (008
+ * R-14), and for a range node (a progressbar, a slider) its value properties (013 phase 3, contracts/checks.md § Driver
+ * additions): `value` when the node has a current value, and `valuemin`, `valuemax` and `valuetext` as Chromium reports
+ * them. `valuetext` reads `""` in Chromium whatever the page sets (reviews/phase-3/spike.md), so no test asserts a
+ * value text on it. A node without one of these has no such key.
  */
 export interface AxNode {
   readonly role: string;
   readonly name: string;
+  readonly description?: string;
+  readonly modal?: boolean;
   readonly level?: number;
   readonly value?: number;
   readonly valuemin?: number;
@@ -81,6 +89,7 @@ interface RawAxNode {
   readonly backendDOMNodeId?: number;
   readonly role?: { readonly value?: unknown };
   readonly name?: { readonly value?: unknown };
+  readonly description?: { readonly value?: unknown };
   readonly value?: { readonly value?: unknown };
   readonly properties?: readonly { readonly name: string; readonly value?: { readonly value?: unknown } }[];
 }
@@ -97,13 +106,17 @@ function text(value: unknown): string {
 
 /**
  * A node as the readers report it: role and name, a heading's `level` property (011 research.md R-13; 013 US2-1,
- * US2-2), and a range node's value properties, each only when Chromium reports it (013 phase 3).
+ * US2-2), the description and modal flag it has (008 R-14), and a range node's value properties, each only when
+ * Chromium reports it (013 phase 3).
  */
 function reported(node: RawAxNode): AxNode {
   const role = text(node.role?.value);
   const property = (name: string): unknown => node.properties?.find((each) => each.name === name)?.value?.value;
   const level = property("level");
   const named = role === "heading" && typeof level === "number" ? { role, name: text(node.name?.value), level } : { role, name: text(node.name?.value) };
+  const description = text(node.description?.value);
+  const modal = property("modal");
+  const described = { ...(description === "" ? {} : { description }), ...(typeof modal === "boolean" ? { modal } : {}) };
   const values: { value?: number; valuemin?: number; valuemax?: number; valuetext?: string } = {};
   const value = node.value?.value;
   if (typeof value === "number") values.value = value;
@@ -111,7 +124,7 @@ function reported(node: RawAxNode): AxNode {
   if (typeof min === "number") values.valuemin = min;
   if (typeof max === "number") values.valuemax = max;
   if (typeof valueText === "string") values.valuetext = valueText;
-  return { ...named, ...values };
+  return { ...named, ...described, ...values };
 }
 
 function inner(node: DomNode): readonly DomNode[] {
@@ -210,6 +223,44 @@ async function frameIdOf(session: CDPSession, url: string): Promise<string | und
 export async function emulate(page: Page, mode: ForcedColors, palette?: Palette): Promise<void> {
   const scheme = mode === "none" ? "light" : palette;
   await page.emulateMedia(scheme === undefined ? { forcedColors: mode } : { forcedColors: mode, colorScheme: scheme });
+}
+
+/** One step of a pointer path: a point, and a press or release of `button` (`left`) there. */
+export interface PathStep {
+  readonly x: number;
+  readonly y: number;
+  readonly down?: boolean;
+  readonly up?: boolean;
+  readonly button?: "left" | "right" | "middle";
+  readonly still?: boolean;
+}
+
+/**
+ * Moves `page.mouse` through `steps` (points of the page, after `map`), with intermediate moves; a `still` step does
+ * not move, so its press and release follow the previous step's at once (it must name the previous step's point).
+ */
+export async function movePointer(page: Page, steps: readonly PathStep[], map: (x: number, y: number) => { x: number; y: number } = (x, y) => ({ x, y })): Promise<void> {
+  let last: PathStep | undefined;
+  for (const step of steps) {
+    const point = map(step.x, step.y);
+    const button = step.button ?? "left";
+    if (step.still === true) {
+      if (last?.x !== step.x || last.y !== step.y) throw new Error("a still pointer step must name the previous step's point");
+    } else await page.mouse.move(point.x, point.y, { steps: 4 });
+    if (step.down === true) await page.mouse.down({ button });
+    if (step.up === true) await page.mouse.up({ button });
+    last = step;
+  }
+}
+
+/** Maps a point of the test's frame to a point of the runner page: the frame element's offset and its scale. */
+async function frameMap(context: BrowserCommandContext): Promise<(x: number, y: number) => { x: number; y: number }> {
+  const box = await context.iframe.owner().boundingBox();
+  if (box === null) throw new Error("the test's frame has no box");
+  const frame = await context.frame();
+  const width = await frame.evaluate(() => window.innerWidth);
+  const scale = box.width / width;
+  return (x, y) => ({ x: box.x + x * scale, y: box.y + y * scale });
 }
 
 /**
@@ -340,6 +391,17 @@ export async function emulateReducedMotion(context: BrowserCommandContext, mode:
   await emulateMotion(context.page, mode);
 }
 
+/** The `pointerPath(steps)` browser command (registered in vitest.config.ts): `page.mouse` through points of the test's frame. */
+export async function pointerPath(context: BrowserCommandContext, steps: readonly PathStep[]): Promise<void> {
+  await movePointer(context.page, steps, await frameMap(context));
+}
+
+/** The `touchTap(x, y)` browser command (registered in vitest.config.ts): `page.touchscreen` at a point of the test's frame. */
+export async function touchTap(context: BrowserCommandContext, x: number, y: number): Promise<void> {
+  const point = (await frameMap(context))(x, y);
+  await context.page.touchscreen.tap(point.x, point.y);
+}
+
 declare module "vitest/browser" {
   interface BrowserCommands {
     /**
@@ -357,5 +419,9 @@ declare module "vitest/browser" {
     textBoxes: (id: string) => Promise<TextBox[]>;
     /** Emulates `prefers-reduced-motion: reduce`, or ends it with `"no-preference"` (013 phase 3). */
     emulateReducedMotion: (mode: ReducedMotion) => Promise<void>;
+    /** Moves the real pointer through points of this frame, pressing and releasing where a step says so. */
+    pointerPath: (steps: readonly PathStep[]) => Promise<void>;
+    /** A real touch tap at a point of this frame (a context with `hasTouch` only). */
+    touchTap: (x: number, y: number) => Promise<void>;
   }
 }
