@@ -27,8 +27,9 @@
 // The modifier activations (US5-13). Chromium on Linux, where these tests run, opens a new tab for Ctrl and a middle
 // click and a new window for Shift; the Meta key there is not a new-tab modifier, and Chromium follows a Meta click on
 // an `<a href>` in place (reviews/phase-6/notes.md). The element's part is the same for every modifier: it emits nothing
-// and leaves the click's default alone (FR-046). The body therefore asserts the event and the default for Meta, and the
-// "no navigation in place" of a modified activation for Ctrl, Shift and the middle click.
+// and leaves the click's default alone (FR-046). For Meta, a click and Enter, the body asserts only that part, no event
+// and the default not prevented, and nothing about the navigation that follows (operator decision 2 during phase 6,
+// R1-01); it asserts the "no navigation in place" of a modified activation for Ctrl, Shift and the middle click.
 import { tokenColour } from "./icon.ts";
 import type { AxState, ClickOptions, Driver, InPage, Modifier, Pixels, Target } from "./driver.ts";
 
@@ -771,7 +772,7 @@ export const linkScenarios: readonly LinkScenario[] = [
   {
     // Plants: emitting on every click (modified clicks emit); `preventDefault()` on every click (the new tab or window
     // no longer opens); the modifiers not read on Enter (Ctrl+Enter emits).
-    name: "US5-13, with href, on the fixture: Ctrl and Shift held on a click or on Enter, and a middle click, emit no ocelle-link-activate and the element does not prevent the click's default: the browser opens the link target page in a new tab or window and the page itself does not navigate; Meta held emits nothing and leaves the default too; only Alt held is a plain activation, which emits and navigates, its default prevented",
+    name: "US5-13, with href, on the fixture: Ctrl and Shift held on a click or on Enter, and a middle click, emit no ocelle-link-activate and the element does not prevent the click's default: the browser opens the link target page in a new tab or window and the page itself does not navigate; Meta held on a click and on Enter emits nothing and leaves the default alone (the platform's behaviour after that is not asserted); only Alt held is a plain activation, which emits and navigates, its default prevented",
     fixtureOnly: true,
     run: async (driver, inPage, navigation) => {
       await mount(driver, inPage, page('href="link-target.html"'));
@@ -790,8 +791,15 @@ export const linkScenarios: readonly LinkScenario[] = [
       await mount(driver, inPage, page('href="link-target.html"'));
       await inPage(recordEvents, null);
       await inPage(recordClicks, null);
+      await driver.focus("link");
+      await navigation.press("Enter", ["Meta"]);
+      const metaEnter = { events: await inPage(recordedEvents, null), clicks: await inPage(recordedClicks, null) };
+      await navigation.back();
+      await mount(driver, inPage, page('href="link-target.html"'));
+      await inPage(recordEvents, null);
+      await inPage(recordClicks, null);
       await navigation.click("link", { modifiers: ["Alt"] });
-      return { modified, meta, alt: { where: await inPage(where, null), events: await inPage(recordedEvents, null), clicks: await inPage(recordedClicks, null) } };
+      return { modified, meta, metaEnter, alt: { where: await inPage(where, null), events: await inPage(recordedEvents, null), clicks: await inPage(recordedClicks, null) } };
     },
     expected: {
       modified: {
@@ -801,6 +809,7 @@ export const linkScenarios: readonly LinkScenario[] = [
         opened: ["link-target.html", "link-target.html", "link-target.html", "link-target.html", "link-target.html"],
       },
       meta: { events: [], clicks: [click(["Meta"], false)] },
+      metaEnter: { events: [], clicks: [click(["Meta"], false)] },
       alt: { where: arrived, events: [event("link-target.html")], clicks: [click(["Alt"], true)] },
     },
   },

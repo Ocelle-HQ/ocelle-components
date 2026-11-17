@@ -50,9 +50,9 @@ entry points and the browser build's file path (constitution VII).
 - `ocelle-link`, a link in running text, underlined in the link colour, that emits the cancelable
   `ocelle-link-activate` with `detail` `{ href }` on Enter or a plain click; without `href` it never navigates, and
   with `href`, unless the event is cancelled, it navigates only to an `href` that resolves to `http:`, `https:` or the
-  document's own protocol; a modified activation keeps the browser's own new tab or window; its properties `href`
-  (reflected) and `label` (its name instead of its text: a host `aria-label` does not name the link), and its part
-  `anchor`.
+  document's own protocol; a modified activation is left to the browser (a new tab or window for Ctrl, Shift and a
+  middle click, the platform's convention for Meta); its properties `href` (reflected) and `label` (its name instead
+  of its text: a host `aria-label` does not name the link), and its part `anchor`.
 - Entry point `@ocelle/elements/ocelle-link.js` (defines `ocelle-link` only).
 - The engine floor is Chromium 125 and WebKit 17.4, raised from Chromium 120 and WebKit 16.4 for the custom states
   (`:state()`) of `ocelle-segment`.

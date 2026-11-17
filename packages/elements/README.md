@@ -460,10 +460,12 @@ the same check: resolve `detail.href` against `document.baseURI` and navigate on
 `http:`, say) handles the event: it cancels it and navigates or acts itself.
 
 Only plain activations emit: Enter, or a primary-button click, with no modifier or with Alt alone. A user's modified
-activation (Ctrl, Meta or Shift held on a click or on Enter, or a middle-button click) emits nothing and keeps the
-browser's own behaviour, a new tab or window. A modified activation of a link without `href` does nothing: it emits no
-event and the page does not navigate. The link has no `target`, `download` or `rel`. A host that wants to open a new
-window itself handles the event: it cancels it and opens the window.
+activation (Ctrl, Meta or Shift held on a click or on Enter, or a middle-button click) emits nothing, and the element
+leaves its default to the browser: a new tab or window for Ctrl, Shift and the middle click, and the platform's
+convention for Meta (on macOS Meta is Cmd, which opens a new tab; Chromium on Linux follows the link in place). A
+modified activation of a link without `href` does nothing: it emits no event and the page does not navigate. The link
+has no `target`, `download` or `rel`. A host that wants to open a new window itself handles the event: it cancels it and
+opens the window.
 
 Keys: the link is one tab stop. Enter activates it; Space does not, and scrolls the page as on any link. It handles no
 other key. The link's focusable anchor is in its shadow root (`delegatesFocus`); a parent that counts its focusable
@@ -471,6 +473,11 @@ content, such as a tab panel, counts the link.
 
 CSS part: `anchor`, the link's anchor. In forced colours the link is `LinkText`, underlined, and its focus ring
 `Highlight`. The link is for the main grounds.
+
+axe-core 4.14.0 reports a serious `color-contrast` incomplete (`bgOverlap`) on a link whose text wraps onto exactly two
+lines: the link's text is slotted, so axe measures the union box of that text, whose centre lies on the surrounding
+paragraph, and cannot find the background. It is not a contrast failure: the link's colours are checked pairs of the
+tokens, and on one line or on three lines axe reports nothing.
 
 `ocelle-link` reads the tokens `--ocelle-color-link`, `--ocelle-color-link-hover`, `--ocelle-color-focus`,
 `--ocelle-focus-width` and `--ocelle-focus-offset`.

@@ -106,3 +106,10 @@ the `javascript:` bodies (US5-9) and the fragment bodies (US5-11, US5-14), and b
 | the :host([hidden]) rule missing (the :host display rule then overrides the user-agent [hidden] rule) | `ocelle-link.ts` | `link.test.ts` (elements) | Edge Cases: host hidden removes the link, no box and no node; without it the link has a box and its node (1 failed | 18 skipped (19)) |
 | the host given a role (internals role link: a second node) | `ocelle-link.ts` | `link.test.ts` (elements) | US5-1: a link in a paragraph is exposed as a link named by its text inside the paragraph's text, is in the tab… (1 failed | 18 skipped (19)) |
 | navigating on every activation (the null href's base URL assigned) | `ocelle-link.ts` | `link.test.ts` (elements-browser) | US5-2: with the link focused, Enter emits one ocelle-link-activate … (Execution context was destroyed: the pag…; US5-3: a click on the link without href emits one ocelle-link-activate with detail { href: null } and the page… (2 failed | 23 skipped (25)) |
+
+## Review round 1 (R1-01)
+
+*Meta not read as a modifier on a click* (`ocelle-link.ts`: the click handler's `event.metaKey` dropped), run against
+`browser/link.test.ts` (elements-browser) with `-t "US5-13, with href"` on the round 1 fix: US5-13, with href, on the
+fixture … (1 failed | 24 skipped (25)). The Meta click and the new Meta+Enter both emit under it. The source was
+restored byte for byte.

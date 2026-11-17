@@ -1,0 +1,9 @@
+# Phase 6, review round 1 fixes
+
+| ID | Resolution | Red test | Where |
+|----|------------|----------|-------|
+| R1-01 | fixed, per operator decision 2 (a). The finding is a spec defect, which the planner amended in `039018a`. The fix makes the test stronger and corrects the docs. The US5-13 fixture body adds Meta+Enter with `href`. For Meta, on a click and on Enter, it asserts only no event and the default not prevented. It keeps the in-place navigation check for Ctrl, Shift and the middle click. The README and CHANGELOG sentence about "a new tab or window" now gives the platform's convention for Meta, and the documentation test checks the new README sentence. | none, by skill step 3: a strengthened test on code that was already right. The new assertions fail where they should. The plant *Meta not read as a modifier* makes the US5-13 fixture body fail (`plants.md`). The new README fragment fails on the README of `039018a`, run by hand: 2 failed of 232. | `packages/elements/test/scenarios/link.ts` (US5-13, with href; header note), `packages/elements/README.md`, `packages/elements/CHANGELOG.md`, `packages/elements/test/node/readme.test.ts` |
+| R1-02 | fixed by the planner in `039018a` (operator decision 3): `data-model.md` § Link state lists `label`. Nothing to change in code or tests. | none (docs) | `specs/014-selection-input/data-model.md` |
+| R1-03 | fixed, per operator decision 4. The README's link section states the axe-core 4.14.0 two-line `color-contrast` incomplete (`bgOverlap`), and the documentation test checks it. `notes.md` records the upstream axe-core report as still to be filed; it was not filed. | none (docs). The new fragment fails on the README of `039018a`. | `packages/elements/README.md`, `packages/elements/test/node/readme.test.ts`, `reviews/phase-6/notes.md` |
+
+T093 and T098 are ticked again. No source file changed, so the mutation gate was not rerun.

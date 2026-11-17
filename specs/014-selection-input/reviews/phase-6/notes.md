@@ -174,3 +174,21 @@ commit after it adds only these records.
 | axe | exit 0: 110 story-theme runs, 0 serious or critical; 22 notes, all excepted (the Prose document's ten and the scrolling listbox story's twelve); no new exception |
 | `mutation -- --base 493142e` | exit 0: 115 mutants on the changed lines of 3 files, none survived; 1 timeout, 27 compile errors, 1 zero-mutant entry, 2 equivalent records (`mutation.log`) |
 | plants | exit 0: 301 plants of 17 gates and the registry, every plant as expected; this includes `visual/fail-token-changed` with the five link findings, `storybook-build/fail-empty-index` with the link stories' empty copy and the manifest plants with the link's module |
+
+## Review round 1 fixes
+
+- **R1-01, operator decision 2 (a).** For Meta, US5-13 states only the element's part. The fixture body now also presses
+  Meta+Enter on the link with `href`, after the Meta click, on a fresh page. For both, it asserts no
+  `ocelle-link-activate` and a `click` whose default the element did not prevent, and nothing about the navigation
+  that follows. The in-place navigation check stays for Ctrl, Shift and the middle click. The README's sentence now
+  says a modified activation's default is left to the browser: a new tab or window for Ctrl, Shift and the middle
+  click, and the platform's convention for Meta. The CHANGELOG entry says the same, and the documentation test checks
+  the new README sentence. No source changed.
+- **R1-03, operator decision 4.** The README's link section states the axe-core 4.14.0 limitation: a serious
+  `color-contrast` incomplete (`bgOverlap`) on a link whose slotted text wraps onto exactly two lines, not a contrast
+  failure. The documentation test checks it.
+- **Upstream axe-core report: still to be filed.** The limitation above (axe's `getVisibleChildTextRects` reads only
+  the element's own child text nodes; for a shadow anchor whose text is slotted it falls back to the union box, whose
+  centre lies between two lines) goes to axe-core as an upstream report. It has not been filed from this run.
+- **R1-02, operator decision 3.** The planner added `label` to `data-model.md` § Link state in `039018a`; no change in
+  this phase's code or tests.
