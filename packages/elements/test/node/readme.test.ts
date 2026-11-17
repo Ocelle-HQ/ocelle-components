@@ -133,6 +133,8 @@ const fragments = [
   // ocelle-notice (specs/010-feedback-forms FR-004 to FR-011, FR-035; research.md R-02, R-03; T016b)
   "`ocelle-notice` shows a message about a state or result in a box whose look follows its tone, with an optional heading, in the regular or the compact size",
   "`tone` (attribute and property, reflected): `info` (the default), `success`, `warning`, `danger` or `neutral`; any other value behaves as `info` and the property reads `\"info\"`, while the attribute keeps the value as written",
+  // the tone is in the host's text (FR-034, the spec's assumption; phase 2 operator round 4, O4-02; T025c)
+  "The bar and the ground differ from one tone to another only by colour, and not at all in forced colours, so the host's text must state the tone, as \"Run failed\" or \"Saved.\" does: the look of the box alone does not tell a warning from a success",
   "`size` (attribute and property, reflected): `regular` (the default) or `compact`; any other value behaves as `regular` and the property reads `\"regular\"`, while the attribute keeps the value as written",
   "`announce` (boolean attribute and property, reflected): the notice announces its text once, politely for `info`, `success` and `neutral` and assertively for `warning` and `danger`",
   "Slots: `heading` (optional; only elements are assigned to it) and the default slot, the body. CSS parts: `heading` and `body`. The notice has no event and no CSS custom property of its own",
