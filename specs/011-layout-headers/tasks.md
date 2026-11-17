@@ -1,0 +1,371 @@
+# Tasks: Layout and Headers
+
+**Input**: design documents in `specs/011-layout-headers/`, as approved at the plan gate on 2026-11-13 after three
+plan-squad rounds (`reviews/plan/round-1..3/`):
+- spec.md (FR-001 to FR-039, with no FR-009 or FR-029: 37 functional requirements; SC-001 to SC-006, US1-1 to US1-19, US2-1 to US2-8, US3-1 to US3-13, US4-1 to US4-11);
+- plan.md, its decisions and phase list;
+- research.md, R-01 to R-17;
+- data-model.md;
+- contracts/elements-package.md and contracts/checks.md;
+- quickstart.md.
+
+**Precondition (operator decision, 2026-11-12)**: no task of this file starts before #10 (Storybook workbench,
+`specs/006-storybook-workbench`) is merged on `main` and `main` has been merged into `claude/008-layout-headers`
+(a merge, never a rebase). T001 checks this and stops the phase if it does not hold.
+
+**Tests**: required. Constitution Principle VIII applies to every phase. The phase flow is `base.sh`, an optional
+`scaffold.sh`, one red commit of test files only proven by `red.sh`, then green, `tdd-check.sh` and an independent
+review. Expected values are written by hand from the spec and contracts: token values are read from the same page
+by token name (never literals), and the token sentinels of R-13 override each token an element reads.
+
+The guard rules (spec "Does not outcomes are paired", contracts/checks.md § Pairing plants):
+- A "does not" assertion never stands alone: it shares its test with the positive assertion it guards.
+- Each guard is proven able to fail by its named plant, applied by 005's working-tree method, run through both
+  harnesses and recorded in `reviews/phase-N/plants.md`.
+- Every declaration of a phase's new `css` templates is neutralised once and its catching scenario recorded (R-17);
+  an uncaught declaration blocks the review unless recorded as equivalent with a reason.
+- A plant that does not make its guard fail stops the phase (stop-and-ask).
+
+**Shared scenario bodies** (R-13): each scenario is written once in `packages/elements/test/scenarios/<element>.ts`
+against the driver and run by the in-process `elements` project (source, mutated) and the `elements-browser`
+project (browser build on strict-CSP fixture pages, which also assert zero CSP violations, only allowed requests and
+no console message).
+
+**Environment**: Node 22 in this container, 26.13.0 in CI; `OCELLE_CHROMIUM_PATH` for every browser run; a
+container engine for `visual`; one heavy job at a time; never `git stash`.
+
+**Organization**: phase 1 is setup and spike; phases 2 to 5 are User Stories 1 to 4, one review unit each, folded
+after approval (`/ocelle-run` step 4.3). Records (README, CHANGELOG, stories, baselines, plants) belong to the phase
+whose behaviour they describe. There is no polish phase. Phase 5 is separable (triage 011).
+
+**Stop-and-ask points**: the implementer records the question in the phase review and does not work around it:
+- T001: #10 not on `main`, or #10 as merged differs from R-14 in a way that changes a task;
+- T002 spike: any measured fact that contradicts R-02, R-04, R-09, R-10 or R-11 and has no fallback named there
+  (R-09's first-section selector; R-11's role probe or a serious or critical axe finding on the seven host cases);
+- a plant that does not bite; a style declaration nothing catches and that is not equivalent;
+- any mutation shard over 10 minutes;
+- #7 has already added eyebrow tokens with other names or values (R-16).
+
+## Format: `[ID] [P?] [Story] Description`
+
+- **[P]**: can run in parallel (different files, no dependency on an unfinished task)
+- **[Story]**: the user story of the task (US1 to US4)
+- Paths are relative to the repository root.
+
+---
+
+## Phase 1: Setup
+
+**Purpose**: confirm #10, measure the browser facts the plan depends on, and add the slot-state controller and the
+test readers every story uses.
+
+**Independent Test**: `reviews/phase-1/spike.md` records every measurement of plan phase 1 with its result;
+`pnpm exec vitest run --project elements` passes `slot-state.test.ts` and `commands.test.ts`; `tdd-check.sh 1`
+reports `pass`; the phase-1 gate set of the checkpoint passes, `mutation` included.
+
+### Recheck and spike (first)
+
+- [X] T001 #10 recheck (R-14), recorded in `specs/011-layout-headers/reviews/phase-1/spike.md`: confirm #10 is merged on `main` and merged into this branch; compare #10 as merged with R-14 (story file location `storybook/stories/<element>.stories.ts`, story id scheme, baseline path `storybook/baselines/<story-id>.<theme>.png`, `pnpm run visual:update`, `gate:storybook-build`, `gate:visual`, `gate:axe`, the axe rule set and excluded rules of #10 FR-016, the contributor note items of #10 FR-025, whether the `axe` gate is still a stub as at `5f49794`, the pinned axe-core version); record every difference and stop-and-ask on one that changes a task
+- [X] T002 Spike in this container's Chromium on scratch pages (scratchpad, not committed), recorded in `specs/011-layout-headers/reviews/phase-1/spike.md` with the measured values: R-02 (UA `h1`–`h6` rules lose to `::slotted()`; UA `p` and `ul` margins trimmed by the edge-margin rules, the margin between two `p` kept, a `<p hidden>` at a body or footer edge skipped); R-04 wrap rule (a) actions beside the heading when the longest word plus actions fit, (b) under the column when not, (c) a 60-character run broken inside the column at 320 px with no horizontal overflow, (d) with an eyebrow, the actions' block start equals the heading's; R-09 (`::slotted(:nth-child(1 of :not([slot]):not([hidden])))` with a head element before the first section in DOM order; negative inline margins on `div`, `span`, `ocelle-section-header`, `ul` and `p` sections giving full-width borders; `ul` sections under a page `ul { margin: 0; padding: 0; list-style: none }` reset and under `* { margin: 0; padding: 0; border: 0 solid }` with the `!important` rules; hidden `div` and `ocelle-section-header` sections and a hidden first section; the host box in block, flex-row and grid containers with and without base.css); R-10 (vertical rail border box 52 px and content box 44 px, horizontal border box equal to a 320 px container, with and without base.css; the focus ring of a 40 px item inside the border box and unclipped; the host in the three container kinds; a horizontal rail with no primary items keeps its bottom group at the inline end; the stand-in items' computed colour and axe `color-contrast` and `target-size` on them); R-11 (the host-as-landmark tree for the four US3-12 and three US4-11 cases: one navigation node with the expected name and no other node carrying it; axe-core as pinned by #10 with the internals under a `Symbol("internals")` key: no serious or critical finding on the seven cases, and `axe.commons.aria.getRole(host) === "navigation"`, reading `null` when the internals are in a `#private` field)
+
+### Tests (red, one commit)
+
+- [X] T003 [P] `packages/elements/test/slot-state.test.ts`: on a test host whose shadow root holds a default slot and a named slot wired to `src/slot-state.ts`, the slot is empty with no assigned node, with only empty or whitespace-only assigned text nodes, and not empty with one assigned element (also when `hidden`) or one non-whitespace text node; the state follows an element appended and removed, the `slot` attribute changed, and an assigned text node's data changed from whitespace to text and back (R-03); the empty state's wrapper class is set after `updateComplete` on first render
+- [X] T004 [P] `packages/elements/test/commands.test.ts`: `axTree(id)` nodes carry `level` for a heading (`<h3 id>` gives role `heading`, level 3); the new readers return the document's scrolling width (a 400 px wide child in a 320 px viewport reads 400), the deep active element through open shadow roots, and, for each text node under an element, its box and its clipping ancestors (a text inside `overflow: hidden` is reported clipped) (R-13)
+
+### Implementation (green)
+
+- [X] T005 `packages/elements/src/slot-state.ts`: the internal controller of R-03 (`slotchange` per slot; `MutationObserver` on the host with `characterData`, `childList`, `subtree` for default slots; one Lit `state` field per slot; an `empty` class on the slot's wrapper, which the element styles `display: none`); not exported from `src/index.ts`
+- [X] T006 `packages/elements/test/commands.ts` and `vitest.config.ts` browser commands: `AxNode.level`, the scroll-width, deep-active-element and text-box readers of T004
+- [X] T007 [P] Exempt plumbing in `packages/elements/test/scenarios/driver.ts`, `packages/elements/test/in-process.ts` and `packages/elements/test/browser/driver.ts`: DOM append, remove and text-data change of light DOM, Tab presses (Playwright `Tab` on fixtures, `userEvent.tab` in process), viewport and container size, `driver.rules` for token overrides; fixture page templates `packages/elements/test/browser/fixtures/{card,section-header,page-header,context-sidebar,personal-rail}.html`
+- [X] T008 Write `specs/011-layout-headers/reviews/phase-1/tdd-exempt.md`: T001, T002 and T007 have no behaviour (record, measurement, plumbing), with the reason; T003 and T004 are the red commit for T005 and T006
+
+### Fix from the landing review (phase 1 round 2: R2-01, landing L1-04)
+
+The operator fixed the landing notes in this feature on 2026-11-15 (`reviews/phase-1/round-2.md`). R2-01 changes no
+code: `src/slot-state.ts` keeps reading `assignedNodes()` unflattened (research.md R-03); the README gains the
+statement for shell authors. Its red test is the readme test's assertion; no scenario harness applies.
+
+- [X] T048 R2-01 (landing L1-04), README statement for shell authors on forwarded slots (spec Empty slot and FR-036,
+  research.md R-03, contracts/elements-package.md § Shell authors), test first. **Red**, in a commit that changes only
+  test files (`test(011-layout-headers): phase 1 review round 2 red`, signed off): `packages/elements/test/node/readme.test.ts`
+  (`elements-node`) gains one fragment, its own `states:` test: "A shell that forwards a slot of its own into an
+  element of this package, such as `<slot name="footer" slot="footer"></slot>` in its shadow root, assigns that
+  `<slot>` element to the element's slot. The element counts it as content even when nothing is assigned to the
+  forwarded slot, so the part takes its wrapper, gap, padding or divider with nothing in it. Forward a slot only when
+  it has content, or remove the forwarding `<slot>` when it has none." Run `.specify/extensions/story/scripts/red.sh 1 fix-2`
+  and confirm `"recorded": true` with the failure on that `toContain` (the statement missing), not a load error.
+  **Green**: `packages/elements/README.md` gains a section `## Forwarded slots` holding that paragraph, between
+  `## Slot convention` and `## Host ARIA`; each element's empty-slot paragraph stays as it is. No source, CHANGELOG
+  or story changes, so no mutation run. **Checks**: `pnpm exec vitest run --project elements-node`, `gate:test-lint`,
+  `gate:lint`; `tdd-check.sh 1` reports `pass`. Write `reviews/phase-1/round-2-fixes.md` and commit
+  (`fix(011-layout-headers): phase 1 review round 2`, signed off); reviewed as phase 1 round 3
+
+**Checkpoint**: `tdd-check.sh 1` reports `pass`; every spike item is recorded; gates `typecheck`, `lint`,
+`test-lint`, `test` and `mutation` (phase base; the changed source is `packages/elements/src/slot-state.ts`) pass,
+before the phase-1 review. A surviving mutant in `slot-state.ts` is a blocking review finding unless the review
+records it as equivalent with a reason (constitution VIII, SC-005); phase 2's mutation run uses phase 2's base and
+does not cover it again.
+
+---
+
+## Phase 2: User Story 1 - Section header, card and the eyebrow tokens (Priority: P1) 🎯 MVP
+
+**Goal**: US1-1 to US1-19; FR-001 to FR-018 and FR-030 to FR-039 for `ocelle-section-header` and `ocelle-card`;
+the four eyebrow tokens with their contrast rows.
+
+**Independent Test**: on the strict-CSP fixture, a compact card with a section header in its `header` slot and `p`
+body content measures `--ocelle-space-5` padding, `--ocelle-space-4` header gap and the compact heading size, with
+zero CSP violations; `pnpm run gate:contrast` reports 169 light / 177 dark / 158 required; stories pass `visual`,
+`axe` and the 320 px story pass.
+
+### Tests (red, one commit)
+
+- [X] T009 [P] [US1] Token tests, changed first at the places R-12 lists (re-read them at the phase base): `packages/tokens/test/expected.ts` gains `font-size-eyebrow` = `var(--ocelle-font-size-xs)`, `font-weight-eyebrow` = `var(--ocelle-font-weight-strong)`, `tracking-eyebrow` = `0.08em`, `color-eyebrow` = `var(--ocelle-color-ink-muted)` in light and dark; `gates/test/contrast-pairs.test.ts` 160 / 168 → 169 / 177 and 328 → 346; `gates/test/contrast-required.test.ts` 149 → 158, 298 → 316 and `color-eyebrow` in the A.8 table's text foregrounds on `main`; `gates/test/contrast.test.ts`, `gates/test/integration/plants-robustness.test.ts` (161 → 170 for the planted row), `gates/test/integration/token-gates.test.ts` likewise (US1-15)
+- [X] T010 [P] [US1] `packages/elements/test/card-context.test.ts`: `inCompactCardHeader(header)` is true only for a header whose `assignedSlot` is a slot named `header` in an `ocelle-card` shadow root with `density="compact"` (false for `density=""`, `"bogus"`, `"regular"`, absent, the body slot, a header nested in a `div` in the `header` slot, a header in an inner card); `notifyHeaders(slot, previous)` calls `requestUpdate` on upgraded `ocelle-section-header` elements among the assigned and previous sets and returns the current set (R-05)
+- [X] T011 [P] [US1] `packages/elements/test/scenarios/section-header.ts`: US1-1 to US1-6, US1-14, US1-16, US1-17 (outside-card half) as shared bodies; US1-2 with `p` description and `span` eyebrow measured to the slotted element's border box (FR-008), in LTR and RTL and both themes; US1-5 with the name compared ignoring case and the DOM text unchanged, the three eyebrow-variant headers equal; US1-4 comparing every other element's border box; the token-sentinel scenario over contracts/elements-package.md § Tokens each element reads; the no-event check (mount, slot changes, attribute changes); FR-006's invalid-value cases for `variant`: headers with `variant=""` and `variant="bogus"` drawn with the default heading style and with their eyebrow and description rendered, each keeping the value the page wrote, in the same test as a `variant="eyebrow"` twin drawn in the eyebrow style (plant: contracts/checks.md § Pairing plants, the empty-or-invalid row); each "does not" paired as contracts/checks.md says
+- [X] T012 [P] [US1] `packages/elements/test/scenarios/card.ts`: US1-7 to US1-13, US1-17 (in-card half), US1-18, US1-19 as shared bodies; US1-7 and US1-11 with `p` bodies measured to the slotted element's border box, US1-7 also with a `<p hidden>` at each body edge (FR-008); US1-10's three ways of setting `inset` and removal; US1-13 in forced colours with the compact card's layout held (FR-001); the R-05 transitions (density set then removed by script; a header moved between `header` slot and body by its `slot` attribute and by DOM moves); FR-006's cases for the card: cards with `density=""` and `density="bogus"` drawn with the regular padding and header gap of US1-7 and their slotted section header at the default size, each keeping the value the page wrote, in the same test as a `density="compact"` twin drawn with US1-8's padding, gap and compact header; and a card written with no `density` or `inset` carrying neither attribute after upgrade, in the same test as `card.density = "compact"` and `card.inset = true` set by property reflecting both (plants: contracts/checks.md § Pairing plants, the upgrade and empty-or-invalid rows); token sentinel; no-event check
+- [X] T013 [P] [US1] `packages/elements/test/section-header.test.ts` and `packages/elements/test/card.test.ts` (in-process over T011 and T012); `packages/elements/test/browser/section-header.test.ts` and `card.test.ts` (fixture over T011 and T012), plus the mixed-copy fixture page: a named same-origin test bundle of the module build's `ocelle-card.js` loaded before the browser build, on which a header in a compact card's `header` slot is compact (R-05)
+- [X] T014 [P] [US1] `packages/elements/test/entry-section-header.test.ts`, `entry-card.test.ts` (importing `../src/ocelle-card.ts` defines `ocelle-card` and not `ocelle-section-header`), `entry-card-order.test.ts` (import card, mount, import header, and the reverse: the header is compact in both orders), `entry-root.test.ts` extended to the two elements and their classes
+- [X] T015 [P] [US1] `packages/elements/test/node/manifest.test.ts`: entries for `ocelle-section-header` (`size`, `variant`, reflected, types `"regular" | "compact" | undefined` and `"default" | "eyebrow" | undefined`, default absent; slots `heading`, `eyebrow`, `description`, `actions`; empty events, parts, CSS properties) and `ocelle-card` (`density`, `inset` boolean, reflected; slots `header` and default) (FR-034); `packages/elements/test/build/build.test.ts` and `pack.test.ts`: `dist/ocelle-section-header.js`, `dist/ocelle-card.js`, each importing only own files and `lit`
+- [X] T016 [P] [US1] `packages/elements/test/node/readme.test.ts`: the FR-036 statements for both elements, one assertion each (usage, slots, properties and values with the "not set" look, tokens read, the empty-slot rule with "remove an element from the slot rather than hide it", the slotted-heading rule, "place outside a `[data-ocelle-prose]` region", the eyebrow variant's upper case with unchanged DOM text, the card's compact rule for a slotted header without a valid `size`, the card has no role, the edge-margin trim of FR-008 and that a page rule wins, the Consumer-need workaround the section header replaces: part-level padding and gap overrides, per FR-036's mapping); the amended Styles convention paragraph (layout-only rules outside `@media not (forced-colors: active)`, FR-001); both CHANGELOGs naming the elements, entry points and tokens. The existing engine fragments ("Engine floor: Chromium 120+ and WebKit 16.4+ …" and the per-feature engine lines) stay as they are, so the readme test keeps holding FR-039 (R-15)
+- [X] T016a [US1] Pinned element lists (E1 of `reviews/analysis/fixes-1.md`), re-listed at the phase base as R-12 does for the contrast counts: search `packages/elements/test`, `gates/test` and `storybook/test` at the phase base for every assertion that pins the package's element classes, entry points, `exports` keys, manifest module paths or `dist` files exactly, record the list in `specs/011-layout-headers/reviews/phase-2/notes.md`, and change each one that this phase's green tasks (T020–T024) change, in this red commit. At the first analysis's head (`5bb0e04`) these are: `packages/elements/test/exports.test.ts` (the root's run-time exports exactly the base's list plus `OcelleCard` and `OcelleSectionHeader`, in the module namespace's sorted order, each a function); `packages/elements/test/node/readme.test.ts` `entryRows` (the README's Entry points table gains the rows `@ocelle/elements/ocelle-card.js` | `dist/ocelle-card.js` | "`ocelle-card` only; for hosts with a bundler" and the same row for `ocelle-section-header`, in the form of the base's rows, after the base's element rows and before the `browser.js` row, in the order of contracts/elements-package.md § Entry points) and its `exports` keys assertion (the same two keys in the same place); `packages/elements/test/node/manifest.test.ts:250` (module paths by code point: `src/ocelle-card.ts` and `src/ocelle-section-header.ts` added); `packages/elements/test/build/build.test.ts:44-49` (the module-build file list); `pack.test.ts` and `entry-root.test.ts` as T014 and T015 say. A list that a sibling has changed by the phase base is taken as it is at the base, plus this phase's additions
+- [X] T017 [P] [US1] `storybook/test/integration/elements-stories.test.ts` extended first: the section-header and card story ids present and rendering in light and dark, and each loaded at 320 × 800 px with `scrollWidth <= 320` and no clipped text node, paired with the element rendering its content (SC-002)
+
+### Implementation (green)
+
+- [X] T018 [US1] `packages/tokens/src/source.ts` (four records per R-12 and the 149 → 158 comment), regenerate `tokens.css`, `packages/tokens/contrast/pairs.json` (9 rows per theme for `color-eyebrow` on the main grounds), the comment in `gates/bin/contrast.ts`; `packages/tokens/README.md` and `CHANGELOG.md`
+- [X] T019 [US1] `packages/elements/src/card-context.ts` per R-05 (no state, no export from `index.ts`)
+- [X] T020 [US1] `packages/elements/src/ocelle-section-header.ts`: `size` and `variant` reflected with no initializer (`@default undefined`), slots and wrappers per R-04 with the eyebrow above the row, `box-sizing: border-box`, `:host { display: block }` and `:host([hidden])`, slotted heading styles per FR-012 and FR-031 with `margin: 0`, the edge margins of FR-008, size resolved in `willUpdate` from own valid `size` else `inCompactCardHeader(this)`, `requestUpdate()` in `connectedCallback`, slot state from T005; eyebrow variant omits the eyebrow and description slots
+- [X] T021 [US1] `packages/elements/src/ocelle-card.ts` per R-08: `density` and `inset` (`type: Boolean, reflect: true`), border, `radius-row`, grounds, padding and gap per density, header wrapper hidden when empty, FR-008 first and last visible body-element trims with `:not([hidden])`, `notifyHeaders` on `slotchange` of `header` and in `updated()` when `density` changed; no role
+- [X] T022 [US1] `packages/elements/src/index.ts`, `src/browser.ts`, `packages/elements/package.json` `exports` (`./ocelle-card.js`, `./ocelle-section-header.js`, after the base's element entries and before `./browser.js`, the order T016a pins); regenerate and commit `packages/elements/custom-elements.json`
+- [X] T023 [US1] `storybook/stories/section-header.stories.ts` and `storybook/stories/card.stories.ts`: a story per variant and state US1 names (sizes, eyebrow variant, empty and filled slots, densities, inset, header and no header), no `style` attribute; baselines by `pnpm run visual:update`, CI's captures committed when they differ (R-14)
+- [X] T024 [US1] `packages/elements/README.md` (sections for both elements, the amended Styles paragraph, and the Entry points table rows for `@ocelle/elements/ocelle-card.js` and `@ocelle/elements/ocelle-section-header.js` as T016a pins them) and `packages/elements/CHANGELOG.md` with the statements of T016
+- [X] T025 [US1] Evidence in `specs/011-layout-headers/reviews/phase-2/plants.md`: every pairing plant of contracts/checks.md whose rows name US1 scenarios, and the R-17 style plants for both templates, each with the scenarios that failed in each harness; `pnpm run gate:plants` after the contrast counts changed
+
+### Fix from the landing review (phase 2 round 4: R4-01, landing L1-01)
+
+The operator chose to fix L1-01 in this phase on 2026-11-15 (`reviews/phase-2/round-4.md`). One red commit of test
+files only, then the fix.
+
+- [X] T049 [US1] R4-01 (landing L1-01), the card reads its own `header` slot on `slotchange` (FR-017, research.md
+  R-05 § Forwarded slots, contracts/checks.md § Pairing plants, the forwarded-slot row), test first. **Red**, in a
+  commit that changes only test files (`test(011-layout-headers): phase 2 review round 4 red`, signed off): a shared
+  scenario in `packages/elements/test/scenarios/card.ts`, "R-05 forwarded slot (phase 2 review R4-01)", run by both
+  harnesses, `packages/elements/test/card.test.ts` (`elements`, in process on the source) and
+  `packages/elements/test/browser/card.test.ts` (`elements-browser`, the browser build on `test/browser/fixtures/card.html`
+  under the strict CSP, with zero CSP violations, only allowed requests and no console message). The scenario mounts a
+  wrapper element with an open shadow root holding `<ocelle-card density="compact"><slot name="extra" slot="header"></slot></ocelle-card>`,
+  appends to that card an `ocelle-section-header slot="header"` with an `h3 slot="heading"`, and asserts the header
+  is drawn compact (positive half). It then appends a `span slot="extra"` to the wrapper, so the forwarded slot's
+  content changes, and removes the header's `slot` attribute: the header, now in the card's body, is drawn at the
+  default size (its heading's font size equal to the regular size's token, read by name from the page, US1-1), and
+  setting `slot="header"` again draws it compact. The wrapper's shadow root is built by a driver primitive added to
+  `packages/elements/test/scenarios/driver.ts`, `packages/elements/test/in-process.ts` and
+  `packages/elements/test/browser/driver.ts` (attach an open shadow root with given markup to a mounted element, and
+  append to or change attributes of nodes inside it; exempt plumbing as T007, no `style` attribute, no inline script),
+  or by a test-only wrapper module under `packages/elements/test/fixtures/` served to the fixture page as the test
+  host's file is (`test/browser/global-setup.ts`); either way only files under `packages/elements/test/` change. Run
+  `.specify/extensions/story/scripts/red.sh 2 fix-4` and confirm `"recorded": true` with the failure in both harnesses
+  on the header's size (compact where the default size is expected after it left the slot), not a setup or load
+  error. **Green**: `packages/elements/src/ocelle-card.ts` `#headerChanged` passes the card's own `header` slot to
+  `notifyHeaders` (the `slot[name="header"]` of its render root, as `updated()` reads it, or `event.currentTarget`
+  when the listener is on that slot), never `event.target`; no other file. **Evidence**: in
+  `reviews/phase-2/plants.md` § Review round 4 fix, the forwarded-slot pairing plant (`event.target` restored) with
+  the scenarios that failed in each harness. **Checks**: `pnpm test`, `gate:typecheck`, `gate:lint`, `gate:test-lint`,
+  `gate:csp`, `gate:manifest` (unchanged), `gate:mutation -- --base <reviews/phase-2/base.sha>` with no survivor in
+  `src/ocelle-card.ts`; `tdd-check.sh 2` reports `pass`. Write `reviews/phase-2/round-4-fixes.md` and commit
+  (`fix(011-layout-headers): phase 2 review round 4`, signed off); reviewed as phase 2 round 5
+
+**Checkpoint**: `tdd-check.sh 2` reports `pass`; gates `typecheck`, `lint`, `style-lint`, `test-lint`, `test`, `manifest`, `csp`, `prefix`, `contrast`, `brand-rules`, `storybook-build`, `visual`, `axe`, `mutation` (phase base) pass.
+
+---
+
+## Phase 3: User Story 2 - Page header (Priority: P2)
+
+**Goal**: US2-1 to US2-8; FR-019 and the common FRs for `ocelle-page-header`.
+
+**Independent Test**: on the fixture, `<ocelle-page-header size="compact">` with an `h1`, eyebrow, `p` description
+and actions draws a 24 px display title, the eyebrow tokens, a `--ocelle-space-1` gap to the description, the band's
+padding and rule, and exposes one level-1 heading and no landmark.
+
+### Tests (red, one commit)
+
+- [X] T026 [P] [US2] `packages/elements/test/scenarios/page-header.ts`: US2-1 to US2-8 as shared bodies (US2-2 with a `p` description, FR-008, LTR and RTL, both themes; US2-5 at 320 px with scroll-width and text-box assertions; US2-7 in forced colours; US2-8 with an empty heading, the heading column's `gap` of R-07); FR-006's cases for the page header: headers with `size=""` and `size="bogus"` drawn at the regular size of US2-2, each keeping the value the page wrote, in the same test as a `size="compact"` twin drawn at US2-3's compact size; and a header written with no `size` carrying no `size` attribute after upgrade, in the same test as `header.size = "compact"` set by property reflecting it (plants: contracts/checks.md § Pairing plants, the upgrade and empty-or-invalid rows); token sentinel; no-event check; each "does not" paired
+- [X] T027 [P] [US2] `packages/elements/test/page-header.test.ts`, `packages/elements/test/browser/page-header.test.ts`, `packages/elements/test/entry-page-header.test.ts`, `entry-root.test.ts` extended; manifest test entry (`size` reflected; slots `heading`, `eyebrow`, `description`, `actions`; empty lists); build and pack tests for `dist/ocelle-page-header.js`
+- [X] T028 [P] [US2] `packages/elements/test/node/readme.test.ts` page-header statements of FR-036, one assertion each: the common ones (usage, slots `heading`, `eyebrow`, `description`, `actions`, `size` with its values and its "not set" look, the tokens read, the empty-slot rule with "remove an element from the slot rather than hide it", the edge-margin trim of FR-008 and that a page rule wins), the slotted-heading rule, "place outside a `[data-ocelle-prose]` region", "no ground of its own" of R-07, and the Consumer-need workaround it replaces: pinned page-header font rules, per FR-036's mapping; the `@ocelle/elements` CHANGELOG naming the element and its entry point as a MINOR addition, as T016 does; story test extended to the page-header stories with the 320 px pass
+- [X] T028a [US2] Pinned element lists (E1 of `reviews/analysis/fixes-1.md`), re-listed at the phase base as T016a says, recorded in `specs/011-layout-headers/reviews/phase-3/notes.md` and changed in this red commit where this phase's green tasks (T030, T031) change them: `packages/elements/test/exports.test.ts` (the base's root exports plus `OcellePageHeader`, in the namespace's sorted order); `packages/elements/test/node/readme.test.ts` `entryRows` (the row `@ocelle/elements/ocelle-page-header.js` | `dist/ocelle-page-header.js` | "`ocelle-page-header` only; for hosts with a bundler", in the form of the base's rows, after the base's element rows and before the `browser.js` row) and its `exports` keys assertion (the same key in the same place); `packages/elements/test/node/manifest.test.ts` module paths (`src/ocelle-page-header.ts` added, by code point); `packages/elements/test/build/build.test.ts`'s module-build file list; `pack.test.ts` and `entry-root.test.ts` as T027 says
+
+### Implementation (green)
+
+- [X] T029 [US2] `packages/elements/src/ocelle-page-header.ts` per R-07: no `<header>`, no ground, block padding `--ocelle-space-4`, inline `--ocelle-space-6`, `border-block-end` rule, heading column `gap: var(--ocelle-space-1)`, R-04's wrap rule, FR-019 fonts, FR-008 margins, `box-sizing: border-box`, `:host([hidden])`
+- [X] T030 [US2] `src/index.ts`, `src/browser.ts`, `exports` (`./ocelle-page-header.js`, after the base's element entries and before `./browser.js`, the order T028a pins), manifest regenerated
+- [X] T031 [US2] `storybook/stories/page-header.stories.ts` (sizes, every slot empty and filled, empty heading) and baselines; README section, the Entry points table row for `@ocelle/elements/ocelle-page-header.js` as T028a pins it, and CHANGELOG
+- [X] T032 [US2] Evidence in `specs/011-layout-headers/reviews/phase-3/plants.md`: the US2 pairing plants and the R-17 style plants for the template
+
+**Checkpoint**: `tdd-check.sh 3` reports `pass`; the phase-2 gate set without `contrast` and `brand-rules` passes.
+
+---
+
+## Phase 4: User Story 3 - Context sidebar (Priority: P3)
+
+**Goal**: US3-1 to US3-13; FR-020 to FR-023, FR-028 for `ocelle-context-sidebar`.
+
+**Independent Test**: on the fixture, a sidebar with `label`, head, three sections and a footer in a 600 px container
+exposes one navigation landmark with that name, four full-width dividers with `--ocelle-space-4` padding, the
+footer at the block end, and survives the two page resets.
+
+### Tests (red, one commit)
+
+- [X] T033 [P] [US3] `packages/elements/test/scenarios/context-sidebar.ts`: US3-1 to US3-13 as shared bodies; US3-3 with `div`, `span` and `ocelle-section-header` sections, `ul` and `p` sections, head and footer content, the footer `<p hidden>` edge variant, the page-reset variants `ul { margin: 0; padding: 0; list-style: none }` and `* { margin: 0; padding: 0; border: 0 solid }`, and the hidden-section variant; US3-4 in a block container, a flex-row container and a grid container shorter than the content, each of definite block size (block size the content's, footer after the last section), and the 600 px flex-row and grid containers filled with the footer at the block end (operator decision at the phase-1 spike; plant: contracts/checks.md § Pairing plants, the two US3-4 rows); US3-11 text between sections; US3-12 reading the tree only (one navigation node per sidebar, the four naming cases, no other node carrying the name, the host `aria-label` never written or removed); token sentinel; no-event check; each "does not" paired
+- [X] T034 [P] [US3] `packages/elements/test/context-sidebar.test.ts`, `packages/elements/test/browser/context-sidebar.test.ts`, `packages/elements/test/entry-context-sidebar.test.ts`, `entry-root.test.ts` extended; manifest test (`label` not reflected; slots `head`, default, `footer`; empty lists; no member for the internals key, R-11); build and pack tests for `dist/ocelle-context-sidebar.js`
+- [X] T035 [P] [US3] `packages/elements/test/node/readme.test.ts` sidebar statements of FR-036, one assertion each: the common ones (usage, slots `head`, default and `footer`, `label` with its "not set" look, the tokens read, the empty-slot rule with "remove an element from the slot rather than hide it", the edge-margin trim of FR-008 for head and footer and that a page rule wins), the Consumer-need workarounds it replaces, per FR-036's mapping: part-level padding and gap overrides, and token-painted dividers; and its own ("set a distinct `label`" with the assistive-technology reason, the host `aria-label` rule, wrap each section in an element, remove sections rather than hide them all, which section properties a page rule can and cannot change, that it fills its container or grows with its content in a block, flex-row or grid container because the host is `align-self: start` and that a page rule on the host's `align-self` wins, that in a flex row or a flex column the container sets its inline size (an `inline-size`, a `flex` value, a grid track) and that in a flex column `align-self: stretch` on the host also gives it the container's inline size (operator decisions 6 and 7 of `reviews/operator-decisions-implementation.md`)); the `@ocelle/elements` CHANGELOG naming the element and its entry point as a MINOR addition, as T016 does; story test extended to the sidebar stories, including one story per US3-12 case rendered alone
+- [X] T035a [US3] Pinned element lists (E1 of `reviews/analysis/fixes-1.md`), re-listed at the phase base as T016a says, recorded in `specs/011-layout-headers/reviews/phase-4/notes.md` and changed in this red commit where this phase's green tasks (T038, T039) change them: `packages/elements/test/exports.test.ts` (the base's root exports plus `OcelleContextSidebar`, in the namespace's sorted order); `packages/elements/test/node/readme.test.ts` `entryRows` (the row `@ocelle/elements/ocelle-context-sidebar.js` | `dist/ocelle-context-sidebar.js` | "`ocelle-context-sidebar` only; for hosts with a bundler", in the form of the base's rows, after the base's element rows and before the `browser.js` row) and its `exports` keys assertion (the same key in the same place); `packages/elements/test/node/manifest.test.ts` module paths (`src/ocelle-context-sidebar.ts` added, by code point); `packages/elements/test/build/build.test.ts`'s module-build file list; `pack.test.ts` and `entry-root.test.ts` as T034 says
+
+### Implementation (green)
+
+- [X] T036 [US3] `packages/elements/src/naming.ts`: `internalsKey` (`Symbol("internals")`, `@internal`) for the sidebar's and rail's internals (005's elements unchanged, R-11). Phase 5 needs this task: if phase 4 is deferred or runs after phase 5, T036 moves into phase 5's green tasks before T044, and its test is then T042's manifest no-member assertion and T047's role probe
+- [X] T037 [US3] `packages/elements/src/ocelle-context-sidebar.ts` per R-09 and R-11: the host is the navigation landmark through `ElementInternals` (`role = "navigation"`, `ariaLabel` from `label`, the host `aria-label` winning natively and never written), no inner `<nav>`; host box `display: flex; flex-direction: column; min-block-size: 100%; align-self: start`; head, sections and footer wrappers; section rules with `:not([hidden])` and `!important` on padding, `margin-inline`, `border-block-start`, `display` (`margin-block: 0` normal); first section without a border; divider placement per FR-022 and US3-13; FR-008 head and footer edge trims with `:not([hidden])`; `--ocelle-color-rail` ground
+- [X] T038 [US3] `src/index.ts`, `src/browser.ts`, `exports` (`./ocelle-context-sidebar.js`, after the base's element entries and before `./browser.js`, the order T035a pins), manifest regenerated
+- [X] T039 [US3] `storybook/stories/context-sidebar.stories.ts` (full, no head, no footer, one section, text in the slot, empty sections, hidden sections, the four US3-12 cases each alone) and baselines; README section, the Entry points table row for `@ocelle/elements/ocelle-context-sidebar.js` as T035a pins it, and CHANGELOG
+- [X] T040 [US3] Evidence in `specs/011-layout-headers/reviews/phase-4/`: `plants.md` with the US3 pairing plants and the R-17 style plants; the role probe of contracts/checks.md (`axe.commons.aria.getRole(host) === "navigation"` for a host with `label`, with a host `aria-label` and with neither, with axe-core's version, and the `#private`-field plant reading `null`)
+
+### Fixes from the landing review (phase 4 round 2: R2-01, landing L1-03; R2-02, landing L1-02)
+
+The operator chose to fix L1-03 and L1-02 in this phase on 2026-11-15 (`reviews/phase-4/round-2.md`). T050 and
+T051 share one red commit (`test(011-layout-headers): phase 4 review round 2 red`, test files only, signed off),
+recorded by `.specify/extensions/story/scripts/red.sh 4 fix-2`, and one fix commit
+(`fix(011-layout-headers): phase 4 review round 2`, signed off) with `reviews/phase-4/round-2-fixes.md`; reviewed as
+phase 4 round 3.
+
+- [X] T050 [US3] R2-01 (landing L1-03), a `template` or `script` in the sidebar's default slot draws no section
+  (FR-021, FR-022, US3-3's template variant, research.md R-09 § never-rendered elements, contracts/checks.md
+  § Pairing plants, the `template` row), test first. **Red**: in `packages/elements/test/scenarios/context-sidebar.ts`,
+  the US3-3 template variant as a shared scenario, run by both harnesses, `packages/elements/test/context-sidebar.test.ts`
+  (`elements`) and `packages/elements/test/browser/context-sidebar.test.ts` (`elements-browser`, the browser build on
+  `test/browser/fixtures/context-sidebar.html` under the strict CSP, with zero CSP violations, only allowed requests
+  and no console message): a sidebar with a head, a footer, two visible `div` sections and a `<template>` (holding an
+  `li`) and a `<script type="application/json">` before the first section, between the two and after the last: the
+  `template` and `script` have no box (zero border box) and their computed `display` is `none`; exactly one divider
+  lies between the two visible sections with `--ocelle-space-4` of padding on both sides, the first visible section
+  has no divider of its own (one divider between it and the head) and the last one divider to the footer, as in
+  US3-3 (the positive half, in the same test); and a sidebar whose default slot holds only a `<template>`, with a
+  head and footer, keeps the head and footer dividers meeting with no padding between them (it counts as content,
+  as with every section hidden). In the same commit, `packages/elements/test/node/readme.test.ts` (`elements-node`)
+  gains one fragment, its own `states:` test: "A `template` or `script` element in the default slot, such as a
+  `<template>` that Alpine.js keeps in the page for `x-if` or `x-for`, is not a section: it is not drawn and gets no
+  padding or divider. Like a hidden section, it still counts as content." Confirm in the red run that the scenario
+  fails in both harnesses on the template's box and divider (a 33 px block with a divider where none is expected), and
+  the readme test on the missing statement, not on setup; a CSP violation for the data block is a stop-and-ask.
+  **Green**: `packages/elements/src/ocelle-context-sidebar.ts`: every section rule, the first-section rule included,
+  also excludes `template` and `script` (`:not(template, script)` beside `:not([slot]):not([hidden])`);
+  `packages/elements/README.md`, the sidebar section: that paragraph after the hidden-section paragraph; the
+  statement "A page rule does not change a section's padding, inline margins, divider or display" stays as it is.
+  **Evidence**: in `reviews/phase-4/plants.md` § Review round 2 fix, the `template` row's two plants and the R-17
+  style plants of the changed rules, with the scenarios that failed in each harness
+- [X] T051 [US3] R2-02 (landing L1-02), the published declarations do not declare the internals key (FR-034,
+  research.md R-11 § Type declarations, contracts/checks.md § Pairing plants, the declarations row), test first.
+  **Red**, in the same commit as T050: `packages/elements/test/build/build.test.ts` (`elements-build`; the scenario
+  harnesses do not apply) gains one test, after the package's build (`buildPackage()`): `dist/ocelle-context-sidebar.d.ts`
+  and `dist/ocelle-personal-rail.d.ts` each declare `label: string | undefined;` and contain no `internalsKey`, and
+  `dist/naming.d.ts` declares `accessibleName` and contains no `internalsKey` (each "no" paired with its positive in
+  that test). Confirm in the red run that it fails on the `internalsKey` declarations present, not on the build.
+  **Green**: `"stripInternal": true` in `compilerOptions` of `packages/elements/tsconfig.json` only (not
+  `tsconfig.base.json`); no source changes, so `custom-elements.json` and the emitted JavaScript stay as they are.
+  Before committing, confirm that `@internal` is still carried only by `src/naming.ts`'s `internalsKey` and the
+  internals fields of `src/ocelle-context-sidebar.ts` and `src/ocelle-personal-rail.ts`, so nothing else leaves the
+  declarations. **Evidence**: in `reviews/phase-4/plants.md` § Review round 2 fix, the declarations row's two plants
+  (`stripInternal` removed; the field's `@internal` removed) with the test that failed. **Checks for T050 and T051**:
+  `pnpm -r build`, `pnpm test`, `gate:typecheck`, `gate:lint`, `gate:style-lint`, `gate:test-lint`, `gate:csp`,
+  `gate:prefix`, `gate:manifest` (no change), `gate:storybook-build`, `gate:visual` and `gate:axe` (no baseline
+  changes, since no story slots a `template`), `gate:mutation -- --base <reviews/phase-4/base.sha>`;
+  `tdd-check.sh 4` reports `pass`
+
+**Checkpoint**: `tdd-check.sh 4` reports `pass`; the phase-3 gate set passes.
+
+---
+
+## Phase 5: User Story 4 - Personal rail (Priority: P4)
+
+**Goal**: US4-1 to US4-11; FR-024 to FR-028 for `ocelle-personal-rail`.
+
+**Independent Test**: on the fixture, a rail with `label`, three stand-in links and one bottom link is one
+navigation landmark on the chrome, 52 px wide with a 44 px content box when vertical, a wrapping row when
+horizontal, and keeps its orientation at 721, 720, 719 and 320 px.
+
+### Tests (red, one commit)
+
+- [X] T041 [P] [US4] `packages/elements/test/scenarios/personal-rail.ts`: US4-1 to US4-11 as shared bodies; US4-2 with the stand-in items' computed colour equal to `--ocelle-color-chrome-ink` and the focus ring inside the border box, the 600 px height in a flex-row and a grid container beside the block one, and the taller-than-container variant (a vertical rail taller than a container of definite block size growing with its content, bottom group inside its border box) in a block, a flex-row and a grid container (operator decision at the phase-1 spike; plant: contracts/checks.md § Pairing plants, the US4-2 taller-than-container row); US4-4 at 721, 720, 719 and 320 px; US4-5 orientation change with focus kept; US4-6 in both orientations; US4-7 at 320 px in LTR and RTL; US4-9 with the horizontal rail still a row in forced colours; US4-10 running the README's `matchMedia("(width < Npx)")` example (read from `packages/elements/README.md`) through a same-origin module with the viewport at N and N − 1, its first assertion being that the README's rail section holds the example's code block (an `expect` on the located block, so at red, before T046 writes it, the test fails with an assertion failure on the missing example, not a throw or a setup error), and only then running it; FR-006's empty-value case for the rail, beside US4-8's invalid value: rails with `orientation=""` and `orientation="sideways"` laid out vertically as with no `orientation`, each keeping the value the page wrote, in the same test as an `orientation="horizontal"` twin laid out as US4-3's row (plant: contracts/checks.md § Pairing plants, the empty-or-invalid row); a rail written with no `orientation` carrying no `orientation` attribute after upgrade, in the same test as `rail.orientation = "horizontal"` set by property reflecting it (FR-006; plant: the upgrade row); US4-11 reading the tree only; token sentinel; no-event check; each "does not" paired
+- [X] T042 [P] [US4] `packages/elements/test/personal-rail.test.ts`, `packages/elements/test/browser/personal-rail.test.ts` with the linked same-origin stand-in stylesheet `packages/elements/test/browser/fixtures/rail-items.css`, `packages/elements/test/entry-personal-rail.test.ts`, `entry-root.test.ts` extended to all five; manifest test (`label` not reflected; `orientation` reflected with type `"vertical" | "horizontal" | undefined`; slots default and `bottom`; empty lists; no internals member); build and pack tests for `dist/ocelle-personal-rail.js`
+- [X] T043 [P] [US4] `packages/elements/test/node/readme.test.ts` rail statements of FR-036, one assertion each: the common ones (usage, slots default and `bottom`, `label` and `orientation` with its values and its "not set" look, the tokens read, the empty-slot rule with "remove an element from the slot rather than hide it"; FR-008's edge-margin statement does not apply to the rail), "set a distinct `label`" with the assistive-technology reason and the host `aria-label` rule, the Consumer-need workaround it replaces: personal-rail `::part` overrides, per FR-036's mapping; and its own (the orientation example with an exclusive bound `width < N`, items sized by themselves at `--ocelle-size-rail-item`, `<a>` items need `color: inherit` and a 24 px target, a taller rail grows and scrolling is the container's, in a block, flex-row or grid container because the host is `align-self: start`, and a page rule on the host's `align-self` wins, the note for #12 that `orientation` and `label` are the whole interface); the `@ocelle/elements` CHANGELOG naming the element and its entry point as a MINOR addition, as T016 does; story test extended to the rail stories, including one per US4-11 case rendered alone
+- [X] T043a [US4] Pinned element lists (E1 of `reviews/analysis/fixes-1.md`), re-listed at the phase base as T016a says, recorded in `specs/011-layout-headers/reviews/phase-5/notes.md` and changed in this red commit where this phase's green tasks (T045, T046) change them: `packages/elements/test/exports.test.ts` (the base's root exports plus `OcellePersonalRail`, in the namespace's sorted order); `packages/elements/test/node/readme.test.ts` `entryRows` (the row `@ocelle/elements/ocelle-personal-rail.js` | `dist/ocelle-personal-rail.js` | "`ocelle-personal-rail` only; for hosts with a bundler", in the form of the base's rows, after the base's element rows and before the `browser.js` row) and its `exports` keys assertion (the same key in the same place); `packages/elements/test/node/manifest.test.ts` module paths (`src/ocelle-personal-rail.ts` added, by code point); `packages/elements/test/build/build.test.ts`'s module-build file list; `pack.test.ts` and `entry-root.test.ts` as T042 says
+
+### Implementation (green)
+
+- [X] T044 [US4] `packages/elements/src/ocelle-personal-rail.ts` per R-10 and R-11: host navigation landmark through `ElementInternals` under `internalsKey`; `align-self: start` on `:host` (operator decision at the phase-1 spike); vertical default (`inline-size: var(--ocelle-shell-rail-width)`, `min-block-size: 100%`, padding block `--ocelle-space-2` and inline `--ocelle-space-1`, `box-sizing: border-box`, groups centred, `--ocelle-space-1` gaps, divider `aria-hidden` only when both groups are non-empty); `:host([orientation="horizontal"])` row with wrapping primary group, bottom group `max-inline-size: 50%` and `margin-inline-start: auto`, block-direction divider over every row; chrome ground and chrome-ink colour; no media or container query; template identical in both orientations
+- [X] T045 [US4] `src/index.ts`, `src/browser.ts`, `exports` (`./ocelle-personal-rail.js`, after the base's element entries and before `./browser.js`, the order T043a pins), manifest regenerated
+- [X] T046 [US4] `storybook/stories/personal-rail.stories.ts` (vertical, horizontal, no bottom, no primary, wrapped at a narrow width, the three US4-11 cases each alone; root `data-story="rail-items"`) with the stand-in item rules in the story stylesheet, no `style` attribute; baselines; README section (the #12 note, the orientation example, the `<a>` item note), the Entry points table row for `@ocelle/elements/ocelle-personal-rail.js` as T043a pins it, and CHANGELOG
+- [X] T047 [US4] Evidence in `specs/011-layout-headers/reviews/phase-5/`: `plants.md` with the US4 pairing plants (including the README `max-width` plant for US4-10 and the `@media` and `@container` flips for US4-4) and the R-17 style plants; the role probe for the rail as in T040
+
+### Fix from the landing review (phase 5 round 2: R2-01, landing L1-05)
+
+The operator chose to fix L1-05 in this phase on 2026-11-15 (`reviews/phase-5/round-2.md`). README only: its red
+test is the readme test's; no scenario harness applies.
+
+- [X] T052 [US4] R2-01 (landing L1-05), the rail README names `ocelle-nav-item` as not released yet and loses its
+  stray line break (FR-027, FR-036), test first. **Red**, in a commit that changes only test files
+  (`test(011-layout-headers): phase 5 review round 2 red`, signed off): in `packages/elements/test/node/readme.test.ts`
+  (`elements-node`), the fragment "A plain `<a>` does not: give `<a>` items `color: inherit` and a target of at least
+  24 px, or use `ocelle-nav-item` elements." is replaced by the stricter "A plain `<a>` does not: give `<a>` items
+  `color: inherit` and a target of at least 24 px, or use `ocelle-nav-item` elements once they are released; no
+  release of this package ships `ocelle-nav-item` yet." (a stricter statement, not a looser one: it holds
+  the old statement up to its full stop and adds the release statement FR-027 now asks for; the reason is recorded in the round's
+  fix note); and one
+  test reads the README raw, without whitespace flattening, and asserts that it contains "`ocelle-nav-item` is
+  expected to have. The rail sets only the gap" on one line (the stray line break at the landing review's README
+  line 445 removed). "For #12:" stays. Run `.specify/extensions/story/scripts/red.sh 5 fix-2` and confirm
+  `"recorded": true` with both failures on `toContain`, not a load error. **Green**: `packages/elements/README.md`,
+  the rail section only: the sentence as asserted and the paragraph re-wrapped; no source, CHANGELOG or story
+  changes, so no mutation run. **Checks**: `pnpm exec vitest run --project elements-node`, `pnpm exec vitest run
+  --project elements-browser test/browser/personal-rail.test.ts` (US4-10 still finds the README's orientation
+  example), `gate:test-lint`, `gate:lint`; `tdd-check.sh 5` reports `pass`. Write `reviews/phase-5/round-2-fixes.md`
+  and commit (`fix(011-layout-headers): phase 5 review round 2`, signed off); reviewed as phase 5 round 3
+
+**Checkpoint**: `tdd-check.sh 5` reports `pass`; the phase-3 gate set passes; quickstart.md steps 1 to 8 hold.
+
+---
+
+## Dependencies & Execution Order
+
+- Phase 1 needs #10 on `main` merged into the branch (T001), then T002 before any red commit of phases 2–5.
+- Phase 2 (US1) needs phase 1; it adds the eyebrow tokens phase 3 uses and the `ocelle-section-header` phase 4 uses.
+- Phase 3 (US2) needs phase 2 (eyebrow tokens, wrap rule); phase 4 needs phase 1 and phase 2 (`ocelle-section-header` for
+  US3-3's section variants); phase 5 needs phase 1 and
+  T036 (`internalsKey` in `src/naming.ts`, phase 4). Phases 4 and 5 run after phase 3 in order because they share
+  `index.ts`, `exports`, the manifest and the README.
+- Phase 5 can be split off without touching phases 1–4. Phase 4 cannot be deferred behind phase 5 unless T036 moves
+  into phase 5 (T036 says how).
+- The pinned element lists (T016a, T028a, T035a, T043a) are re-listed at each phase base, so a phase written after a
+  sibling or an earlier phase changed them starts from the lists as they are.
+- Within a phase: the red commit (Tests) first, then Implementation, then the evidence task.
+- Fixes from the landing review (operator decisions at landing, 2026-11-15; `reviews/landing/round-1-tasks.md`):
+  T048 (phase 1), T049 (phase 2), T050 and T051 (phase 4, one unit) and T052 (phase 5) each run as one unit (red,
+  green, checks) under their phase's `red.sh <N> fix-<k>` label, in phase order, one after the other, and each is
+  reviewed as its phase's next round. They touch shared files (`readme.test.ts` in T048, T050 and T052; the README
+  in the same three), so none runs in parallel with another. The landing review runs again after all five.
+
+## Parallel Opportunities
+
+- Inside each red commit, the `[P]` test tasks touch different files and can be written in parallel.
+- The pinned-list tasks (T016a, T028a, T035a, T043a) are not `[P]`: they edit files that their phase's other red
+  tasks also edit (`exports.test.ts`, `entry-root.test.ts`, `readme.test.ts`, `manifest.test.ts`, `build.test.ts`,
+  `pack.test.ts`; T014–T016, T027–T028, T034–T035, T042–T043), and are written together with those tasks in the same
+  red commit.
+- T007 runs in parallel with T003–T004.
+- Implementation tasks within a phase are sequential (shared `index.ts`, `exports`, manifest).
+
+## Implementation Strategy
+
+MVP is phase 2 (section header and card with the eyebrow tokens): a usable screen section. Each later phase adds one
+element and is reviewed and folded on its own. Siblings #16, #15 and #9 touch the same shared files; conflicts are
+resolved at landing by merging `main` (R-16), with `custom-elements.json` regenerated.

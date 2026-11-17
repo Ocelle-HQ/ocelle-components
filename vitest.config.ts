@@ -8,6 +8,9 @@ import type { BrowserCommand, BrowserCommandContext } from "vitest/node";
 interface ElementCommands {
   readonly axTree: (context: BrowserCommandContext, id: string, scope?: "element" | "subtree") => Promise<unknown>;
   readonly emulateForcedColors: (context: BrowserCommandContext, mode: "active" | "none", palette?: "light" | "dark") => Promise<void>;
+  readonly scrollWidth: (context: BrowserCommandContext) => Promise<unknown>;
+  readonly activeElement: (context: BrowserCommandContext) => Promise<unknown>;
+  readonly textBoxes: (context: BrowserCommandContext, id: string) => Promise<unknown>;
   readonly emulateReducedMotion: (context: BrowserCommandContext, mode: "reduce" | "no-preference") => Promise<void>;
 }
 const elementCommandsUrl = new URL("./packages/elements/test/commands.ts", import.meta.url).href;
@@ -16,6 +19,10 @@ const axTree: BrowserCommand<[id: string, scope?: "element" | "subtree"]> = asyn
 const emulateForcedColors: BrowserCommand<[mode: "active" | "none", palette?: "light" | "dark"]> = async (context, mode, palette) => {
   await (await elementCommands()).emulateForcedColors(context, mode, palette);
 };
+// The document readers of 011 research.md R-13: the scroll width, the deep active element and the text boxes.
+const scrollWidth: BrowserCommand = async (context) => (await elementCommands()).scrollWidth(context);
+const activeElement: BrowserCommand = async (context) => (await elementCommands()).activeElement(context);
+const textBoxes: BrowserCommand<[id: string]> = async (context, id) => (await elementCommands()).textBoxes(context, id);
 // 013 phase 3 (research.md R-08, contracts/checks.md § Driver additions): reduced motion through the same
 // `page.emulateMedia` helper as forced colours, so neither clears the other; 009's overflow-region scenarios
 // (research.md R-17) use it too.
@@ -86,7 +93,7 @@ export default defineConfig({
             provider: playwright({ launchOptions }),
             headless: true,
             instances: [{ browser: "chromium" }],
-            commands: { axTree, emulateForcedColors, emulateReducedMotion },
+            commands: { axTree, emulateForcedColors, scrollWidth, activeElement, textBoxes, emulateReducedMotion },
           },
         },
       },

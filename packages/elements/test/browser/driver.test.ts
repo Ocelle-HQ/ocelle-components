@@ -211,16 +211,16 @@ describe("the fixture driver", { timeout: 60_000 }, () => {
     expect({ observed, recorded: await page.finish() }).toEqual({ observed: { active: "b", settled: true }, recorded: clean });
   });
 
-  it("activeElement() names the deep active element: a shadow node under its host's id, a light-DOM element by id, else body", async () => {
+  it("deepActive() names the deep active element: a shadow node under its host's id, a light-DOM element by id, else body", async () => {
     const page = await open();
     const driver = fixtureDriver(page.page, page.log);
     await defineHost(page.page);
     await driver.mount('<button id="a" type="button">A</button><driver-host id="h"></driver-host>');
-    const atRest = await driver.activeElement();
+    const atRest = await driver.deepActive();
     await page.page.evaluate(() => document.getElementById("a")?.focus());
-    const light = await driver.activeElement();
+    const light = await driver.deepActive();
     await page.page.evaluate(() => (document.getElementById("h")?.shadowRoot?.querySelector(".inner") as HTMLElement | null)?.focus());
-    expect({ observed: [atRest, light, await driver.activeElement()], recorded: await page.finish() }).toEqual({ observed: ["body", "a", "h >> button.inner"], recorded: clean });
+    expect({ observed: [atRest, light, await driver.deepActive()], recorded: await page.finish() }).toEqual({ observed: ["body", "a", "h >> button.inner"], recorded: clean });
   });
 
   it("tabWalk(from, to) lists the deep active element after each Tab from `from` to `to`, and with `backward` after each Shift+Tab", async () => {
@@ -247,10 +247,10 @@ describe("the fixture driver", { timeout: 60_000 }, () => {
     await page.page.evaluate(() => document.getElementById("a")?.focus());
     await driver.press("Tab");
     await driver.focus({ id: "h", inner: ".inner" });
-    const afterKeys = { active: await driver.activeElement(), visible: await page.page.evaluate(() => document.getElementById("h")?.shadowRoot?.activeElement?.matches(":focus-visible")) };
+    const afterKeys = { active: await driver.deepActive(), visible: await page.page.evaluate(() => document.getElementById("h")?.shadowRoot?.activeElement?.matches(":focus-visible")) };
     await driver.click("a", { x: 2, y: 2 });
     await driver.focus("b");
-    const afterClick = { active: await driver.activeElement(), visible: await page.page.evaluate(() => document.activeElement?.matches(":focus-visible")) };
+    const afterClick = { active: await driver.deepActive(), visible: await page.page.evaluate(() => document.activeElement?.matches(":focus-visible")) };
     expect({ observed: [afterKeys, afterClick], recorded: await page.finish() }).toEqual({
       observed: [
         { active: "h >> button.inner", visible: true },

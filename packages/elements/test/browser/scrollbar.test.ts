@@ -152,7 +152,7 @@ describe("ocelle-scroller with the platform's classic scrollbar (US1-4, US1-7, U
     await driver.rules(rules);
     await driver.tabWalk("before", "s >> div.region-box");
     await driver.style("w", "inline-size", "100px");
-    const handed = await driver.activeElement();
+    const handed = await driver.deepActive();
     await driver.style("w", "inline-size", "1000px");
     const image = await driver.pixels("s");
     const focus = rgb(tokenColour("color-focus", "light"));

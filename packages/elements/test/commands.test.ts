@@ -1,16 +1,31 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { commands } from "vitest/browser";
+import { commands, page } from "vitest/browser";
 
-// The two browser commands of the elements project (005 research.md R-11, T012; reviews/phase-2/spike.md § 3):
-// `axTree(id)` returns the unignored accessibility nodes of the element with that `id` and of its shadow subtree,
-// read from Chromium's full tree of this test's frame, and `emulateForcedColors(mode, palette)` switches forced
-// colours and the system palette for this page and back. Plain elements stand in for the icons, so these tests pin
-// the commands, not the elements.
+// The browser commands of the elements project (005 research.md R-11, T012; reviews/phase-2/spike.md § 3; 011
+// research.md R-13, T004): `axTree(id)` returns the unignored accessibility nodes of the element with that `id` and of
+// its shadow subtree, read from Chromium's full tree of this test's frame, a heading's with its level;
+// `emulateForcedColors(mode, palette)` switches forced colours and the system palette for this page and back;
+// `scrollWidth()`, `activeElement()` and `textBoxes(id)` read the test frame's document: its scrolling width, the
+// focused element through open shadow roots, and the box and clipping ancestors of each text node under an element;
+// `emulateReducedMotion(mode)` (013 phase 3) switches `prefers-reduced-motion` for this page and back, and `axTree`
+// reports a heading's level (013 US2-1, US2-2) and a range node's value properties (013 phase 3).
+// Plain elements stand in for the icons, so these tests pin the commands, not the elements.
+const sheets = document.adoptedStyleSheets;
+
 afterEach(async () => {
   await commands.emulateForcedColors("none");
+  await page.viewport(414, 896);
+  document.adoptedStyleSheets = sheets;
   await commands.emulateReducedMotion("no-preference");
   document.body.replaceChildren();
 });
+
+/** Adds `rules` to the page as an adopted stylesheet, after its own. */
+function rules(text: string): void {
+  const sheet = new CSSStyleSheet();
+  sheet.replaceSync(text);
+  document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet];
+}
 
 class HiddenHost extends HTMLElement {
   constructor() {
@@ -82,6 +97,105 @@ describe("axTree(id)", () => {
       missing: [],
       here: [{ role: "button", name: "Here" }],
     });
+  });
+});
+
+describe("axTree(id): heading levels (011 R-13)", () => {
+  it("gives an <h3 id> one heading node at level 3 and an <h2 id> one at level 2", async () => {
+    document.body.innerHTML = '<h3 id="three">Three</h3><h2 id="two">Two</h2>';
+    expect({ three: await commands.axTree("three"), two: await commands.axTree("two") }).toEqual({
+      three: [{ role: "heading", name: "Three", level: 3 }],
+      two: [{ role: "heading", name: "Two", level: 2 }],
+    });
+  });
+
+  it("gives the level of a heading in an element's accessibility subtree, and none to a node that is not a heading", async () => {
+    document.body.innerHTML = '<section id="part" aria-label="Part"><h4>Four</h4><button>Go</button></section>';
+    const nodes = await commands.axTree("part", "subtree");
+    expect(nodes.map((node) => ({ role: node.role, level: node.level ?? "none" }))).toEqual([
+      { role: "region", level: "none" },
+      { role: "heading", level: 4 },
+      { role: "StaticText", level: "none" },
+      { role: "button", level: "none" },
+      { role: "StaticText", level: "none" },
+    ]);
+  });
+});
+
+describe("scrollWidth() (011 R-13)", () => {
+  it("reads 400 for a 400 px wide child in a 320 px viewport, and 320 once the child is gone", async () => {
+    await page.viewport(320, 600);
+    rules("body { margin: 0 } #wide { inline-size: 400px; block-size: 10px }");
+    document.body.innerHTML = '<div id="wide"></div>';
+    const wide = await commands.scrollWidth();
+    document.getElementById("wide")?.remove();
+    expect({ wide, narrow: await commands.scrollWidth() }).toEqual({ wide: 400, narrow: 320 });
+  });
+});
+
+describe("activeElement() (011 R-13)", () => {
+  it("reads the focused element through open shadow roots with the hosts on its path, and a document-level one with none", async () => {
+    document.body.innerHTML = '<button id="plain">Plain</button><div id="outer"></div>';
+    const outer = document.getElementById("outer");
+    const middle = document.createElement("div");
+    middle.id = "middle";
+    outer?.attachShadow({ mode: "open" }).append(middle);
+    const inner = document.createElement("button");
+    inner.id = "inner";
+    inner.textContent = "Inner";
+    middle.attachShadow({ mode: "open" }).append(inner);
+    inner.focus();
+    const deep = await commands.activeElement();
+    document.getElementById("plain")?.focus();
+    const plain = await commands.activeElement();
+    (document.activeElement as HTMLElement | null)?.blur();
+    expect({ deep, plain, none: await commands.activeElement() }).toEqual({
+      deep: { name: "button", id: "inner", hosts: ["outer", "middle"] },
+      plain: { name: "button", id: "plain", hosts: [] },
+      none: { name: "body", id: "", hosts: [] },
+    });
+  });
+});
+
+describe("textBoxes(id) (011 R-13)", () => {
+  it("reports a text inside an overflow: hidden ancestor that cuts it as clipped, naming that ancestor, and a text that fits as not", async () => {
+    rules(`
+      body { margin: 0 }
+      #clip { overflow: hidden; inline-size: 50px; white-space: nowrap; font: 16px/20px sans-serif }
+      #free { inline-size: 300px; font: 16px/20px sans-serif }
+    `);
+    document.body.innerHTML = '<div id="clip">A run of text far wider than fifty pixels</div><div id="free">Short</div>';
+    const [clipped] = await commands.textBoxes("clip");
+    const [free] = await commands.textBoxes("free");
+    const line = document.getElementById("free")?.getBoundingClientRect();
+    const inLine = (box: { x: number; y: number; width: number; height: number } | undefined): boolean =>
+      box !== undefined && line !== undefined && box.width > 0 && box.x >= line.x && box.x + box.width <= line.x + 300 && box.y >= line.y && box.y + box.height <= line.y + line.height;
+    expect({
+      clipped: { text: clipped?.text, wide: (clipped?.box.width ?? 0) > 50, clippers: clipped?.clippers, clipped: clipped?.clipped },
+      free: { text: free?.text, inLine: inLine(free?.box), clippers: free?.clippers, clipped: free?.clipped },
+    }).toEqual({
+      clipped: { text: "A run of text far wider than fifty pixels", wide: true, clippers: ["clip"], clipped: true },
+      free: { text: "Short", inLine: true, clippers: [], clipped: false },
+    });
+  });
+
+  it("follows a slotted text node through the flat tree to a clipping wrapper in the host's shadow root, one entry per text node", async () => {
+    rules("body { margin: 0; font: 16px/20px sans-serif }");
+    document.body.innerHTML = '<div id="host">First words that run on <b>and on</b></div>';
+    const host = document.getElementById("host");
+    const shadow = host?.attachShadow({ mode: "open" });
+    const wrapper = document.createElement("div");
+    wrapper.className = "wrapper";
+    const sheet = new CSSStyleSheet();
+    sheet.replaceSync(".wrapper { overflow: hidden; inline-size: 40px; white-space: nowrap }");
+    if (shadow !== undefined) shadow.adoptedStyleSheets = [sheet];
+    wrapper.append(document.createElement("slot"));
+    shadow?.append(wrapper);
+    const boxes = await commands.textBoxes("host");
+    expect(boxes.map((each) => ({ text: each.text, clippers: each.clippers, clipped: each.clipped }))).toEqual([
+      { text: "First words that run on ", clippers: ["div"], clipped: true },
+      { text: "and on", clippers: ["div"], clipped: true },
+    ]);
   });
 });
 

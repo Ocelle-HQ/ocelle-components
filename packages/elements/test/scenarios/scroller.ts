@@ -21,7 +21,7 @@ import type { Box, Driver, Palette, Part, Target } from "./driver.ts";
 import { systemColours, tokenColour } from "./icon.ts";
 import type { Scenario } from "./icon.ts";
 
-/** The element a region scenario runs on: its tag and how `activeElement()` names its box and its frame. */
+/** The element a region scenario runs on: its tag and how `deepActive()` names its box and its frame. */
 export interface Region {
   readonly tag: string;
   readonly box: string;
@@ -281,7 +281,7 @@ export function regionScenarios(region: Region): Scenario[] {
           await page(driver, `<button id="before" type="button">before</button><div class="clip" data-test="wide-strip"><${tag} id="s" label="Filters"><span id="w" class="solid"></span>${inner}</${tag}></div>`);
           await driver.tabWalk("before", `s >> ${region.box}`);
           await driver.style("w", "inline-size", "100px");
-          return { active: await driver.activeElement(), box: (await boxAttributes(driver, "s")).tabindex, frame: await shadowAttribute(driver, "s", "region-frame", "tabindex") };
+          return { active: await driver.deepActive(), box: (await boxAttributes(driver, "s")).tabindex, frame: await shadowAttribute(driver, "s", "region-frame", "tabindex") };
         };
         // The hidden link carries no `.item` class: that rule's `display` would beat the user-agent `[hidden]` rule.
         const skipped = '<button id="disabled" class="item" type="button" disabled>d</button><span inert><a id="inert" class="item" href="#inert">i</a></span><a id="gone" href="#gone" hidden>g</a><a id="unseen" class="item invisible" href="#unseen">u</a>';
@@ -293,12 +293,12 @@ export function regionScenarios(region: Region): Scenario[] {
         };
         const rest = await ringSides(driver, "s", focusColour("light"));
         await driver.style("w", "inline-size", "1000px");
-        const again = { active: await driver.activeElement(), box: (await boxAttributes(driver, "s")).tabindex, ring: await ringSides(driver, "s", focusColour("light")) };
+        const again = { active: await driver.deepActive(), box: (await boxAttributes(driver, "s")).tabindex, ring: await ringSides(driver, "s", focusColour("light")) };
         await driver.forcedColors("active", "light");
         const forced = await ringSides(driver, "s", await highlightOnCanvas(driver));
         await driver.forcedColors("none");
         await driver.press("Tab");
-        return { ...observed, rest, again, forced, left: { active: await driver.activeElement(), frame: await shadowAttribute(driver, "s", "region-frame", "tabindex") } };
+        return { ...observed, rest, again, forced, left: { active: await driver.deepActive(), frame: await shadowAttribute(driver, "s", "region-frame", "tabindex") } };
       },
       expected: {
         link: { active: "k", box: null, frame: null },
@@ -559,7 +559,7 @@ export const scrollerScenarios: readonly Scenario[] = [
       const keyboard = await ringSides(driver, "s", focusColour("light"));
       await driver.click("before", { x: 2, y: 2 });
       await driver.click("s", { x: 150, y: 17 });
-      const clicked = { active: await driver.activeElement(), ring: await ringSides(driver, "s", focusColour("light")) };
+      const clicked = { active: await driver.deepActive(), ring: await ringSides(driver, "s", focusColour("light")) };
       await driver.forcedColors("active", "light");
       await driver.click("before", { x: 2, y: 2 });
       await focusBox(driver, "s");
@@ -579,7 +579,7 @@ export const scrollerScenarios: readonly Scenario[] = [
       const box = [await driver.lastKeyPrevented(), await driver.scrollLeft(boxOf("s"))];
       await driver.setScrollLeft(boxOf("s"), 0);
       await driver.press("Tab");
-      const focused = await driver.activeElement();
+      const focused = await driver.deepActive();
       await driver.press("ArrowRight");
       const right = await driver.lastKeyPrevented();
       await driver.press("ArrowLeft");
@@ -632,7 +632,7 @@ export const scrollerScenarios: readonly Scenario[] = [
         const box = await driver.box(id, ".region-box");
         const track = await driver.box(id, ".region-track");
         return {
-          last: await driver.activeElement() === last,
+          last: await driver.deepActive() === last,
           rings,
           height: Math.abs(box.height - (track.height + 2 * room)) < 0.5,
           blockScroll: Number(await readOnce(driver, boxOf(id), "scrollHeight")) - Number(await readOnce(driver, boxOf(id), "clientHeight")),
@@ -657,11 +657,11 @@ export const scrollerScenarios: readonly Scenario[] = [
         await driver.tabWalk("before", "s >> div.region-box");
         for (let index = 0; index < 12; index++) {
           await driver.press("Tab");
-          steps.push({ focused: await driver.activeElement(), ...(await step(driver, "s", `k${String(index)}`, direction)) });
+          steps.push({ focused: await driver.deepActive(), ...(await step(driver, "s", `k${String(index)}`, direction)) });
         }
         for (let index = 10; index >= 0; index--) {
           await driver.press("Shift+Tab");
-          steps.push({ focused: await driver.activeElement(), ...(await step(driver, "s", `k${String(index)}`, direction)) });
+          steps.push({ focused: await driver.deepActive(), ...(await step(driver, "s", `k${String(index)}`, direction)) });
         }
         return steps;
       };
@@ -681,7 +681,7 @@ export const scrollerScenarios: readonly Scenario[] = [
       await page(driver, `${before}${strip("s", `${links("k", 6)}<button id="wide" class="wide" type="button">wide</button>${links("m", 6)}`, ' label="Filters"', ' data-ground="canvas"')}`);
       await driver.tabWalk("before", "k5");
       await driver.press("Tab");
-      const focused = { active: await driver.activeElement(), ...(await fallbackState(driver)) };
+      const focused = { active: await driver.deepActive(), ...(await fallbackState(driver)) };
       const ringStart = (await driver.box("wide")).x - room - (await driver.box("s", ".region-box")).x;
       await driver.wheel("s", 30);
       const wheeled = await fallbackState(driver);
@@ -689,7 +689,7 @@ export const scrollerScenarios: readonly Scenario[] = [
       await driver.press("Tab");
       const again = await fallbackState(driver);
       await driver.press("Tab");
-      const left = { active: await driver.activeElement(), fades: (await fallbackState(driver)).fades };
+      const left = { active: await driver.deepActive(), fades: (await fallbackState(driver)).fades };
       await driver.tabWalk("before", "wide");
       const before7 = (await fallbackState(driver)).fades;
       await driver.tabWalk("wide", "s >> div.region-box", true);
@@ -725,13 +725,13 @@ export const scrollerScenarios: readonly Scenario[] = [
       );
       await driver.click("pb", { x: 3, y: 12 });
       await driver.click("tb", { x: 3, y: 12 });
-      const clicked = { active: await driver.activeElement(), scroller: await driver.scrollLeft(boxOf("s")), twin: await driver.scrollLeft("twin"), fade: await shadowAttribute(driver, "s", "region-box", "data-fade") };
+      const clicked = { active: await driver.deepActive(), scroller: await driver.scrollLeft(boxOf("s")), twin: await driver.scrollLeft("twin"), fade: await shadowAttribute(driver, "s", "region-box", "data-fade") };
       await driver.tabWalk("before", "pb");
       const box = await driver.box("s", ".region-box");
       const tabbed = Math.round(box.x + box.width - ringOf(await driver.box("pb")).right);
       await driver.click("ti", { x: 3, y: 12 });
       const box2 = await driver.box("s2", ".region-box");
-      return { clicked, tabbed, input: { active: await driver.activeElement(), clearance: Math.round(box2.x + box2.width - ringOf(await driver.box("ti")).right) } };
+      return { clicked, tabbed, input: { active: await driver.deepActive(), clearance: Math.round(box2.x + box2.width - ringOf(await driver.box("ti")).right) } };
     },
     expected: { clicked: { active: "tb", scroller: 0, twin: 0, fade: "end" }, tabbed: fade, input: { active: "ti", clearance: fade } },
   },
@@ -822,11 +822,11 @@ export const scrollerGuards: readonly Scenario[] = [
       await page(driver, `${before}${strip("s", '<span id="w" class="solid"></span><a id="k" class="item" href="#k">k</a>')}`);
       await driver.click("before", { x: 2, y: 2 });
       await driver.style("w", "inline-size", "100px");
-      const outside = await driver.activeElement();
+      const outside = await driver.deepActive();
       await driver.style("w", "inline-size", "1000px");
       await focusBox(driver, "s");
       await driver.style("w", "inline-size", "100px");
-      return { outside, inside: await driver.activeElement() };
+      return { outside, inside: await driver.deepActive() };
     },
     expected: { outside: "before", inside: "k" },
   },

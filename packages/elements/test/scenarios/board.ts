@@ -185,7 +185,7 @@ async function cardStep(driver: Driver, id: string, cardId: string): Promise<unk
   const fadeAttribute = await shadowAttribute(driver, id, "region-box", "data-fade");
   const clearLeft = !["start", "both"].includes(fadeAttribute ?? "") || ring.left >= box.x + fade - 0.5;
   const clearRight = !["end", "both"].includes(fadeAttribute ?? "") || ring.right <= box.x + box.width - fade + 0.5;
-  return { active: await driver.activeElement(), inside: inside(ring, box), clear: clearLeft && clearRight, fades: fadeAttribute === fadeFor(await driver.scrollLeft(boxOf(id)), track, box) };
+  return { active: await driver.deepActive(), inside: inside(ring, box), clear: clearLeft && clearRight, fades: fadeAttribute === fadeFor(await driver.scrollLeft(boxOf(id)), track, box) };
 }
 
 /** Each side of the element's computed border, as `<width> <style> <colour>`, or `none` when it is 0 px wide. */

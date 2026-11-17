@@ -138,13 +138,13 @@ describe("the in-process driver", () => {
     expect({ active: document.activeElement?.id, settled: frames >= 2 }).toEqual({ active: "b", settled: true });
   });
 
-  it("activeElement() names the deep active element: a shadow node under its host's id, a light-DOM element by id, else body", async () => {
+  it("deepActive() names the deep active element: a shadow node under its host's id, a light-DOM element by id, else body", async () => {
     await driver.mount('<button id="a" type="button">A</button><driver-host id="h"></driver-host><span id="plain"></span>');
-    const atRest = await driver.activeElement();
+    const atRest = await driver.deepActive();
     document.getElementById("a")?.focus();
-    const light = await driver.activeElement();
+    const light = await driver.deepActive();
     (document.getElementById("h")?.shadowRoot?.querySelector(".inner") as HTMLElement | null)?.focus();
-    expect([atRest, light, await driver.activeElement()]).toEqual(["body", "a", "h >> button.inner"]);
+    expect([atRest, light, await driver.deepActive()]).toEqual(["body", "a", "h >> button.inner"]);
   });
 
   it("tabWalk(from, to) lists the deep active element after each Tab from `from` to `to`, and with `backward` after each Shift+Tab", async () => {
@@ -161,10 +161,10 @@ describe("the in-process driver", () => {
     document.getElementById("a")?.focus();
     await driver.press("Tab");
     await driver.focus({ id: "h", inner: ".inner" });
-    const afterKeys = { active: await driver.activeElement(), visible: document.getElementById("h")?.shadowRoot?.activeElement?.matches(":focus-visible") };
+    const afterKeys = { active: await driver.deepActive(), visible: document.getElementById("h")?.shadowRoot?.activeElement?.matches(":focus-visible") };
     await driver.click("a", { x: 2, y: 2 });
     await driver.focus("b");
-    expect([afterKeys, { active: await driver.activeElement(), visible: document.activeElement?.matches(":focus-visible") }]).toEqual([
+    expect([afterKeys, { active: await driver.deepActive(), visible: document.activeElement?.matches(":focus-visible") }]).toEqual([
       { active: "h >> button.inner", visible: true },
       { active: "b", visible: false },
     ]);

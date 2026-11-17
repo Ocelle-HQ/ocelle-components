@@ -1,6 +1,6 @@
 {
   "expect": "fail",
-  "why": "A changed token value (color-ink, light) changes every story-theme that shows it: differs on the sixty-nine light story-themes measured in the pinned container (FR-004, US2 scenario 2), the twelve the phase 1 spike listed, the eight of mission 005's stories that show color-ink (all but elements-ocelle-brand-mark--chrome, measured for plan decision 29), the ten of 009's board and lane stories that show color-ink (all but elements-ocelle-workflow-board--no-lanes, an empty board; measured in the pinned container), the six of 009's list-detail stories, whose panes show text in color-ink, the twenty-two ocelle-facts stories of mission 013 (measured in its phase 1), the six ocelle-empty-state stories with a heading (measured in its phase 2; the actions-only story shows no color-ink), the panel-loading story (its heading) and the four ocelle-progress stories with a visible label (labelled, labelled compact, value text, right to left; measured in its phase 3, the bars without a visible label show no color-ink), and none in dark. A story added later that shows color-ink in light adds its line here (research.md R-07).",
+  "why": "A changed token value (color-ink, light) changes every story-theme that shows it: differs on the ninety-five light story-themes measured in the pinned container (FR-004, US2 scenario 2), the twelve the phase 1 spike listed, the eight of mission 005's stories that show color-ink (all but elements-ocelle-brand-mark--chrome, measured for plan decision 29), the ten of 009's board and lane stories that show color-ink (all but elements-ocelle-workflow-board--no-lanes, an empty board; measured in the pinned container), the six of 009's list-detail stories, whose panes show text in color-ink, the eleven of 011's section header and card stories that show it (all but elements-ocelle-section-header--empty-heading, measured in the pinned container under docker for 011 phase 2), the four of 011's page header stories that show it (all but elements-ocelle-page-header--empty-heading, measured in the pinned container under docker for 011 phase 3) and the eleven of 011's context sidebar stories, which all show it (measured in the pinned container under docker for 011 phase 4), the twenty-two ocelle-facts stories of mission 013 (measured in its phase 1), the six ocelle-empty-state stories with a heading (measured in its phase 2; the actions-only story shows no color-ink), the panel-loading story (its heading) and the four ocelle-progress stories with a visible label (labelled, labelled compact, value text, right to left; measured in its phase 3, the bars without a visible label show no color-ink), and none in dark. None of 011's eight personal rail stories shows it: the rail is drawn in the chrome ink on the chrome, and nothing else in those stories is text (measured in the pinned container under docker for 011 phase 5). A story added later that shows color-ink in light adds its line here (research.md R-07).",
   "findings": [
     {
       "location": "base-styles--base-page/light",
@@ -256,6 +256,110 @@
     },
     {
       "location": "elements-ocelle-list-detail--right-to-left/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-section-header--heading-only/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-section-header--filled/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-section-header--compact/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-section-header--eyebrow-variant/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-section-header--long-heading/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-card--regular/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-card--compact/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-card--inset/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-card--inset-compact/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-card--no-header/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-card--nested/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-page-header--heading-only/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-page-header--filled/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-page-header--compact/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-page-header--long-heading/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-context-sidebar--full/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-context-sidebar--no-head/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-context-sidebar--no-footer/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-context-sidebar--one-section/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-context-sidebar--text-in-the-slot/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-context-sidebar--empty-sections/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-context-sidebar--hidden-sections/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-context-sidebar--host-aria-label/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-context-sidebar--label-and-host-aria-label/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-context-sidebar--blank-host-aria-label/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-context-sidebar--unnamed/light",
       "rule": "differs"
     },
     {

@@ -1,0 +1,5 @@
+# node specs/011-layout-headers/reviews/phase-4/role-probe.mjs, Chromium for Testing 1243 (OCELLE_CHROMIUM_PATH), 2026-11-14
+# green source (internals under internalsKey):
+{"axeCore":"4.14.0","roles":{"labelled":"navigation","host":"navigation","neither":"navigation"}}
+# plant: the internals in a #private field (readonly #internals = this.attachInternals(), read as this.#internals):
+{"axeCore":"4.14.0","roles":{"labelled":null,"host":null,"neither":null}}

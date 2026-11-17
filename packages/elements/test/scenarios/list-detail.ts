@@ -306,7 +306,7 @@ export const listDetailScenarios: readonly ListDetailScenario[] = [
       await page(driver, "N", `${before}${framed("n", "N")}${after}`);
       const rest = { tabindex: await wrapperTabindex(driver, "n"), texts: await texts(driver, "n"), roles: await roles(driver, "n") };
       await driver.click("n-lt", { x: 4, y: 4 });
-      return { rest, clicked: await driver.activeElement(), after: await wrapperTabindex(driver, "n") };
+      return { rest, clicked: await driver.deepActive(), after: await wrapperTabindex(driver, "n") };
     },
     expected: { rest: { tabindex: [null, null, null], texts: listTexts, roles: [] }, clicked: "body", after: [null, null, null] },
   },
@@ -327,16 +327,16 @@ export const listDetailScenarios: readonly ListDetailScenario[] = [
         const y = Math.round(detail.y - frame.y + detail.height / 2);
         const colour = focusColour(theme);
         const moved = {
-          active: await driver.activeElement(),
+          active: await driver.deepActive(),
           tabindex: await wrapperTabindex(driver, "n"),
           ring: await ring(driver, "n", "detail"),
           inside: detail.x >= frame.x - 0.5 && detail.x + detail.width <= frame.x + frame.width + 0.5,
           pixels: [near(at(image, 1, y), colour), near(at(image, image.width - 2, y), colour), near(at(image, Math.round(frame.width / 2), Math.round(detail.y - frame.y + 1)), colour)],
         };
         await driver.press("Tab");
-        const tabbed = { active: await driver.activeElement(), tabindex: await wrapperTabindex(driver, "n") };
+        const tabbed = { active: await driver.deepActive(), tabindex: await wrapperTabindex(driver, "n") };
         await driver.setAttribute("n", "detail-open", null);
-        return { moved, tabbed, back: { active: await driver.activeElement(), tabindex: await wrapperTabindex(driver, "n"), ring: (await ring(driver, "n", "list"))["outline-style"] } };
+        return { moved, tabbed, back: { active: await driver.deepActive(), tabindex: await wrapperTabindex(driver, "n"), ring: (await ring(driver, "n", "list"))["outline-style"] } };
       },
       expected: {
         moved: {
@@ -357,11 +357,11 @@ export const listDetailScenarios: readonly ListDetailScenario[] = [
     run: async (driver) => {
       await page(driver, "N", `${before}${framed("n", "N")}${after}`);
       await driver.click("n-l0", { x: 4, y: 4 });
-      const clicked = await driver.activeElement();
+      const clicked = await driver.deepActive();
       await driver.setAttribute("n", "detail-open", "");
-      const moved = { active: await driver.activeElement(), ring: (await ring(driver, "n", "detail"))["outline-style"] };
+      const moved = { active: await driver.deepActive(), ring: (await ring(driver, "n", "detail"))["outline-style"] };
       await driver.press("Tab");
-      return { clicked, moved, tabbed: await driver.activeElement() };
+      return { clicked, moved, tabbed: await driver.deepActive() };
     },
     expected: { clicked: "n-l0", moved: { active: "n >> div.pane.detail", ring: "none" }, tabbed: "n-d0" },
   },
@@ -373,15 +373,15 @@ export const listDetailScenarios: readonly ListDetailScenario[] = [
       await page(driver, "N", `${before}${framed("n", "N")}${framed("s", "N", ' collapse-below="0"')}${after}`);
       await driver.tabWalk("n-l1", "before", true);
       await driver.setAttribute("n", "detail-open", "");
-      const outsideSet = await driver.activeElement();
+      const outsideSet = await driver.deepActive();
       await driver.setAttribute("n", "detail-open", null);
-      const outsideRemoved = await driver.activeElement();
+      const outsideRemoved = await driver.deepActive();
       await driver.tabWalk("before", "s-l0");
       await driver.setAttribute("s", "detail-open", "");
-      const stays = { active: await driver.activeElement(), layout: await layout(driver, "s"), tabindex: await wrapperTabindex(driver, "s") };
+      const stays = { active: await driver.deepActive(), layout: await layout(driver, "s"), tabindex: await wrapperTabindex(driver, "s") };
       await driver.tabWalk("before", "n-l0");
       await driver.setAttribute("n", "detail-open", "");
-      return { outsideSet, outsideRemoved, stays, moved: await driver.activeElement() };
+      return { outsideSet, outsideRemoved, stays, moved: await driver.deepActive() };
     },
     expected: { outsideSet: "before", outsideRemoved: "before", stays: { active: "s-l0", layout: "two", tabindex: [null, null, null] }, moved: "n >> div.pane.detail" },
   },
@@ -395,7 +395,7 @@ export const listDetailScenarios: readonly ListDetailScenario[] = [
         await driver.tabWalk("before", "n-l0");
         await driver.setAttribute("n", "detail-open", "");
         const { "outline-color": colour, ...shape } = await ring(driver, "n", "detail");
-        return { active: await driver.activeElement(), ring: shape, highlight: colour === (await driver.resolveColour("Highlight")) };
+        return { active: await driver.deepActive(), ring: shape, highlight: colour === (await driver.resolveColour("Highlight")) };
       },
       expected: { active: "n >> div.pane.detail", ring: { "outline-style": "solid", "outline-width": "3px", "outline-offset": "-3px" }, highlight: true },
     }),
@@ -407,10 +407,10 @@ export const listDetailScenarios: readonly ListDetailScenario[] = [
       await page(driver, "W", `${before}${framed("w", "W")}${framed("f", "W")}${after}`);
       await driver.tabWalk("before", "w-d0");
       await driver.setAttribute("w", "narrow", "");
-      const narrowed = { active: await driver.activeElement(), layout: await layout(driver, "w"), tabindex: await wrapperTabindex(driver, "w") };
+      const narrowed = { active: await driver.deepActive(), layout: await layout(driver, "w"), tabindex: await wrapperTabindex(driver, "w") };
       await driver.tabWalk("before", "f-d0");
       await driver.style("f-frame", "inline-size", "600px");
-      return { narrowed, resized: { active: await driver.activeElement(), layout: await layout(driver, "f"), tabindex: await wrapperTabindex(driver, "f") } };
+      return { narrowed, resized: { active: await driver.deepActive(), layout: await layout(driver, "f"), tabindex: await wrapperTabindex(driver, "f") } };
     },
     expected: {
       narrowed: { active: "w >> div.pane.list", layout: "one: list", tabindex: ["-1", null, null] },
@@ -809,7 +809,7 @@ export const listDetailScenarios: readonly ListDetailScenario[] = [
       await driver.setProperty("s-detail", "innerHTML", '<div class="w35"></div>');
       await driver.call("s", "remeasure");
       await driver.setAttribute("e-x", "slot", "inspector");
-      return { active: await driver.activeElement(), a: await layout(driver, "a"), c: await layout(driver, "c"), e: await layout(driver, "e"), messages: await driver.messages() };
+      return { active: await driver.deepActive(), a: await layout(driver, "a"), c: await layout(driver, "c"), e: await layout(driver, "e"), messages: await driver.messages() };
     },
     expected: { active: "a >> div.pane.detail", a: "one: detail", c: "one: list", e: "three", messages: [] },
   },
@@ -915,11 +915,11 @@ export const listDetailGuards: readonly ListDetailScenario[] = [
       await page(driver, "N", `${before}${framed("n", "N")}`);
       await driver.tabWalk("before", "n-l0");
       await driver.setAttribute("n", "detail-open", "");
-      const moved = await driver.activeElement();
+      const moved = await driver.deepActive();
       await driver.setAttribute("n", "detail-open", null);
-      const back = { active: await driver.activeElement(), tabindex: await wrapperTabindex(driver, "n") };
+      const back = { active: await driver.deepActive(), tabindex: await wrapperTabindex(driver, "n") };
       await driver.setAttribute("n", "detail-open", "");
-      return { moved, back, again: { active: await driver.activeElement(), tabindex: await wrapperTabindex(driver, "n") } };
+      return { moved, back, again: { active: await driver.deepActive(), tabindex: await wrapperTabindex(driver, "n") } };
     },
     expected: { moved: "n >> div.pane.detail", back: { active: "n >> div.pane.list", tabindex: ["-1", null, null] }, again: { active: "n >> div.pane.detail", tabindex: [null, "-1", null] } },
   },
@@ -942,11 +942,11 @@ export const listDetailFixes: readonly ListDetailScenario[] = [
     run: async (driver) => {
       await page(driver, "N", `${before}<div id="z-frame" data-frame="N"><test-shadow-frame id="sh">${listDetail("z")}</test-shadow-frame></div>`);
       await driver.focus({ id: "sh", inner: "#z-l0" });
-      const start = await driver.activeElement();
+      const start = await driver.deepActive();
       await driver.setProperty("sh", "open", "open");
-      const opened = await driver.activeElement();
+      const opened = await driver.deepActive();
       await driver.setProperty("sh", "open", "");
-      return { start, opened, closed: await driver.activeElement() };
+      return { start, opened, closed: await driver.deepActive() };
     },
     expected: { start: "sh >> z-l0", opened: "sh >> z >> div.pane.detail", closed: "sh >> z >> div.pane.list" },
   },

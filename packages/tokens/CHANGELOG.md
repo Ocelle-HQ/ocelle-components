@@ -26,7 +26,8 @@ the workflow layouts of `@ocelle/elements`, are additions to the token names: a 
 - The tokens, by group:
   - colour: `--ocelle-color-canvas`, `--ocelle-color-sheet`, `--ocelle-color-pane`, `--ocelle-color-panel`,
     `--ocelle-color-inspector`, `--ocelle-color-rail`, `--ocelle-color-inset`, `--ocelle-color-ink`,
-    `--ocelle-color-ink-soft`, `--ocelle-color-ink-muted`, `--ocelle-color-rule`, `--ocelle-color-rule-strong`,
+    `--ocelle-color-ink-soft`, `--ocelle-color-ink-muted`, `--ocelle-color-eyebrow` (the eyebrow colour, an alias of
+    `--ocelle-color-ink-muted` with a text contrast entry on every main ground, 011), `--ocelle-color-rule`, `--ocelle-color-rule-strong`,
     `--ocelle-color-control-border`, `--ocelle-color-chrome`, `--ocelle-color-chrome-ink`,
     `--ocelle-color-chrome-muted`, `--ocelle-color-chrome-hover`, `--ocelle-color-accent`, `--ocelle-color-on-accent`,
     `--ocelle-color-accent-low`, `--ocelle-color-accent-strong`, `--ocelle-color-focus`, `--ocelle-color-current`,
@@ -42,7 +43,9 @@ the workflow layouts of `@ocelle/elements`, are additions to the token names: a 
     `--ocelle-line-height-compact` (the compact scale of `@ocelle/styles`, 003), `--ocelle-line-height-prose` (the
     prose running text of `@ocelle/styles`, 003), `--ocelle-font-weight-regular`, `--ocelle-font-weight-medium`, `--ocelle-font-weight-strong`,
     `--ocelle-font-weight-display`, `--ocelle-tracking-display`, `--ocelle-tracking-caps` (the letter spacing of small
-    uppercase labels, `0.06em`: the flat lane's title of `@ocelle/elements`, 009)
+    uppercase labels, `0.06em`: the flat lane's title of `@ocelle/elements`, 009), and the eyebrow tokens of
+    `@ocelle/elements`' section header (011): `--ocelle-font-size-eyebrow` (an alias of `--ocelle-font-size-xs`),
+    `--ocelle-font-weight-eyebrow` (an alias of `--ocelle-font-weight-strong`) and `--ocelle-tracking-eyebrow` (`0.08em`)
   - space: `--ocelle-space-1`, `--ocelle-space-2`, `--ocelle-space-3`, `--ocelle-space-4`, `--ocelle-space-5`,
     `--ocelle-space-6`, `--ocelle-space-7`, `--ocelle-space-8`, `--ocelle-space-9`, `--ocelle-space-10`,
     `--ocelle-gutter`, `--ocelle-scroller-fade-size` (`ocelle-scroller`'s fade depth and focus clearance,
