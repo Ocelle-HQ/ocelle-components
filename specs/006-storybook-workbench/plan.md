@@ -630,7 +630,8 @@ Closed by this feature:
 Opened by this feature, an accepted cost with a sunset (operator decision on PLAN-FRESH-2-007, option (b), 2026-11-10;
 scope and sunset updated by the operator's decisions on CI run 43072665056, 2026-11-11, and on CI run 43242674392,
 2026-11-12 (decision 30), human:jeroennouwsdev; scope and sunset updated by 012 phase 1, 2026-11-14, `size` 1 by 012
-plan decision 15, its split count awaiting the operator's approval at 012 phase 1's review):
+plan decision 15, its split count approved at 012 phase 1's review and now exceeded at 171 stories (see the row), the
+plant-design triage record pending):
 
 | Item | Scope | Rationale | Sunset |
 |---|---|---|---|
