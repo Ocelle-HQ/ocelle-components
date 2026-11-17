@@ -131,8 +131,9 @@ decision 1, task T059a):
   WebKit 16.4 to Chromium 125 / WebKit 17.4 (FR-029, FR-056; plan research R-06). No segment host carries a row
   attribute. The options "no, keep the floor" and "wait for the answer" were declined.
 
-**Operator decision during phase 6** (2026-11-16, human:jeroennouwsdev; `reviews/phase-6/operator-decisions.md`
-decision 1, on the T090 spike in `reviews/phase-6/spike.md`):
+**Operator decisions during phase 6** (2026-11-16 and 2026-11-17, human:jeroennouwsdev;
+`reviews/phase-6/operator-decisions.md`; decision 1 on the T090 spike in `reviews/phase-6/spike.md`, decisions 2 to 4
+on `reviews/phase-6/round-1.md`):
 
 - The link is named like the tabs (the spike's option (c)). With a host `aria-label`, Chromium names the role-less
   link host as a generic around the link in every measured form that leaves the attribute on the host, so a
@@ -142,6 +143,17 @@ decision 1, on the T090 spike in `reviews/phase-6/spike.md`):
   README tells hosts to name the link with `label`, which must contain the visible text (FR-045, User Story 5
   scenario 8). Options (a), moving the attribute off the host, (b), accepting two named nodes, and (d), naming from
   the text only, were declined.
+- Decision 2 (R1-01) (a): for Meta, User Story 5 scenario 13 states only the element's part: no
+  `ocelle-link-activate` and the activating event's default not prevented by the element. What follows is the
+  platform's own behaviour, which this spec does not state: on macOS Meta is Cmd, the new-tab key; on Linux Chromium a
+  native link follows a Meta click or Meta+Enter in place. "The page does not navigate in place" holds for Ctrl, Shift
+  and the middle click only. The scenario's test covers Meta+Enter with `href`, and the README states that a Meta
+  activation follows the platform's convention (FR-046, FR-049). Options (b), also asserting the in-place navigation
+  on Linux, (c), Meta a modifier on macOS only with platform detection, and (d), blocking the default for Meta, were
+  declined.
+- Decisions 3 (R1-02) and 4 (R1-03) change no outcome of this spec: `data-model.md` § "Link state" lists `label` and
+  states that a host `aria-label` is not an input (FR-045), and research R-08 records the axe-core 4.14.0
+  `color-contrast` incomplete on a link wrapped onto exactly two lines, which the README states (FR-051 unchanged).
 
 **Dependency on #10 (not merged).** The Storybook workbench of #10 (branch `claude/010-storybook-workbench`,
 `specs/006-storybook-workbench`) gives the `visual` gate (baselines in a pinned container, light and dark), the `axe`
@@ -675,10 +687,14 @@ navigate" means the URL, its fragment included, is unchanged (scenario 14).
     page navigates to that `file:` target, because the resolved protocol equals the document's own. The plan confirms
     that the test runner can open this page; if it cannot, the plan raises it to the operator instead of dropping the
     case.
-13. **Given** `<ocelle-link href="link-target.html">`, **When** it is activated with Ctrl, Meta (Cmd) or Shift held
-    (click or Enter), or clicked with the middle button, **Then** no `ocelle-link-activate` is emitted, the
-    activating event's default is not prevented by the element (read by a `window` listener in the bubble phase),
-    and the page itself does not navigate in place; the browser's own behaviour (new tab or window) is kept. Paired
+13. **Given** `<ocelle-link href="link-target.html">`, **When** it is activated with Ctrl or Shift held (click or
+    Enter), or clicked with the middle button, **Then** no `ocelle-link-activate` is emitted, the activating event's
+    default is not prevented by the element (read by a `window` listener in the bubble phase), and the page itself
+    does not navigate in place; the browser's own behaviour (new tab or window) is kept. **When** it is activated
+    with Meta held, by a click and by Enter, **Then** no `ocelle-link-activate` is emitted and the activating event's
+    default is not prevented by the element (read the same way); that is the element's whole part, and what follows
+    is the platform's own behaviour, which this scenario does not state (on macOS Meta is Cmd, the new-tab key; on
+    Linux Chromium a native link follows a Meta activation in place; operator decision 2 during phase 6). Paired
     in the same test with a plain click's event. An activation with only Alt held is a plain activation. **Given**
     `<ocelle-link>` without `href`, **When** it is activated with Ctrl, Meta (Cmd) or Shift held (click or Enter), or
     clicked with the middle button, **Then** no `ocelle-link-activate` is emitted and the page does not navigate,
@@ -957,8 +973,10 @@ navigate" means the URL, its fragment included, is unchanged (scenario 14).
 - **FR-046**: Enter and a primary-button click activate it; Space does not. Each plain activation emits one cancelable
   `ocelle-link-activate` with `{ href }`: the `href` attribute as written, or `null` without one. With `href`, a
   modified activation (Ctrl, Meta or Shift held on a click or Enter, or a middle-button click) emits no event, and
-  the element does not prevent its default, so the browser's own behaviour (new tab or window) is kept (operator
-  decision Q2 (a); User Story 5 scenario 13). Without `href`, every modified activation likewise emits no event
+  the element does not prevent its default, so the browser's own behaviour is kept (operator decision Q2 (a); User
+  Story 5 scenario 13): a new tab or window for Ctrl, Shift and the middle click, and for Meta whatever the platform
+  does (Cmd on macOS opens a new tab; Linux Chromium follows the link in place; operator decision 2 during phase 6).
+  Without `href`, every modified activation likewise emits no event
   (operator decision Q2 (b) at spec check 2): only plain activations emit, and a host routes only those. An
   activation with only Alt held is a plain activation.
 - **FR-047**: Without `href` it never navigates. With `href`, after the event, unless the event's default was
@@ -973,7 +991,8 @@ navigate" means the URL, its fragment included, is unchanged (scenario 14).
   resolved-protocol check.
 - **FR-048**: The focus ring follows each line fragment when the link wraps (FR-007).
 - **FR-049**: `ocelle-link` has no `target`, `download` or `rel` handling in this feature; the README says that a
-  user's modified activation keeps the browser's new tab or window (FR-046), that a modified activation of a link
+  user's modified activation is left to the browser, a new tab or window for Ctrl, Shift and the middle click and the
+  platform's convention for Meta (FR-046), that a modified activation of a link
   without `href` does nothing, and that a host that wants to open a new window itself handles the event.
 
 **Stories, baselines, axe (on #10's design; implementation after #10 merges)**

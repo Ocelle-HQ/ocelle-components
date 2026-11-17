@@ -457,7 +457,9 @@ Under that stated surface the swap is a PATCH (FR-038, FR-044); the documentatio
 **Decision.** `ocelle-link` renders `<a part="anchor">` around a default slot, with `delegatesFocus` on the shadow
 root. The anchor carries the host's `href` attribute as written whenever the host has an `href` and its resolution
 (below) is allowed at that moment, so a modified activation (Ctrl, Meta, Shift click or Enter, middle click) is left
-entirely to the browser (new tab or window, FR-046). Without `href`, or with a disallowed one, the anchor has no
+entirely to the browser (FR-046): a new tab or window for Ctrl, Shift and the middle click, and for Meta the
+platform's own behaviour (Cmd on macOS opens a new tab; Linux Chromium follows the link in place), which the element
+neither causes nor prevents (operator decision 2 during phase 6, R1-01). Without `href`, or with a disallowed one, the anchor has no
 `href`, `role="link"` and `tabindex="0"` (so it is still a focusable link in the tree), and modified activations do
 nothing.
 
@@ -535,6 +537,18 @@ the engine, so FR-048 holds with no `box-decoration-break` (which does not affec
 validated (it may be `javascript:` or `data:`), that the element refuses those and foreign schemes only for its own
 navigation, and that a host that navigates itself must apply the same resolved-protocol check; it also states the
 label-in-name rule above (PLAN-FRESH-2-005). The documentation test checks both statements.
+
+**axe on a link wrapped onto two lines** (operator decision 4 during phase 6, R1-03). axe-core 4.14.0, the version
+#10's `axe` gate pins, reports a serious `color-contrast` incomplete (`bgOverlap`, on `ocelle-link >>> a[part="anchor"]`)
+for a link whose slotted text wraps onto exactly two lines: the anchor's own child is a slot, so axe measures the union
+box of the slotted text, whose centre lies on the surrounding paragraph, and cannot find the background. It is not a
+contrast failure: the link's colour pairs are checked by the `contrast` gate (R-15), and on one line or on three lines
+axe reports nothing (measured at 240, 300, 360 and 2000 px on the built wrapped story). The wrapped story is laid out on
+three lines and adds no exception (FR-051 unchanged). A host page whose `ocelle-link` happens to wrap onto exactly two
+lines sees this incomplete in its own axe run, so the README's link section states the limitation (axe-core 4.14.0, a
+serious `color-contrast` incomplete, `bgOverlap`, on slotted link text wrapped onto exactly two lines; not a contrast
+failure; the link's colours are checked pairs; T098). An upstream report to axe-core is to be filed and is recorded in
+the phase 6 notes, as phase 3 recorded its axe defect (R-02); it is not filed by the feature's runs.
 
 **Alternatives.** No native anchor and `location.assign` only: loses the browser's new-tab behaviour that the
 operator's Q2 (a) keeps. Leaving the native navigation for plain clicks and cancelling it when the host cancels:
@@ -617,7 +631,10 @@ Plants: a `navigator.clipboard.writeText` call and a `document.execCommand("copy
 `javascript:` href whose body would set a `window` marker if it ran; with `navigationTarget`'s tests (R-08) they kill
 the `defaultPrevented`, protocol and `location.assign` mutants in process. Cross-document navigation (US5-4, 5, 9 to
 13) runs on the fixture only. US5-13's kept browser behaviour is observed on the fixture with Playwright's
-`context.on("page")` (a new page opened by the modified activation) beside the unchanged URL of the first page.
+`context.on("page")` (a new page opened by the modified activation) beside the unchanged URL of the first page, for
+Ctrl, Shift and the middle click. For Meta (a click and Enter, with `href`) the test reads only the element's part, no
+event and the default not prevented, and asserts nothing about the navigation that follows (operator decision 2
+during phase 6: on Linux Chromium a native link follows Meta in place).
 
 **US5-11's base** (PLAN-CORRECTNESS-1-008, SPEC-2-05). With `<base href="kitty-app://app/">` in the markup the
 module script, styles, font and link target would resolve against it and the element would never load. The fixture
