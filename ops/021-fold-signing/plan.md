@@ -28,9 +28,14 @@ in `tooling/speckit/README.md`.
 | `gates/test/integration/fold-history.test.ts` | Red: the five tests of *Test approach*. The existing test stays as it is. |
 | `tooling/speckit/bin/fold-history.sh` | The four changes of *Approach*, and three lines in the header comment. |
 | `tooling/speckit/README.md` | In the `bin/fold-history.sh` description (lines 33 to 36), one phrase: "signs every commit it rebuilds when `commit.gpgsign` is on and refuses an unsigned result or a range that holds main's commits". |
+| `.claude/skills/ocelle-land/SKILL.md` | Operator round 3 only (O3-04): the one sentence at `:181` on a failed fold. Docs only. See *Operator round 3*. |
 
-Unchanged, and the review checks it: `.claude/skills/**` (`ocelle-run`, `ocelle-land`), `gates/bin/signoff.ts`,
-`.github/**`, the re-sign scripts under other missions' `reviews/`, and the script's interface and JSON shape.
+Operator round 3 also changes the test file (one new test, a `plants` flag for `signedRepo`, and stronger
+assertions in four tests) and widens the `- base:` patterns in the script (*Operator round 3*).
+
+Unchanged, and the review checks it: `.claude/skills/**` apart from the one sentence of `ocelle-land` above
+(`ocelle-run` unchanged), `gates/bin/signoff.ts`, `.github/**`, the re-sign scripts under other missions'
+`reviews/`, and the script's interface and JSON shape.
 
 ## Approach
 
@@ -105,12 +110,30 @@ The existing test (`commit.gpgsign false`) is the guard for FR-006 and stays gre
 The red log (`red.sh 1 phase`) must show each of the five failing on its assertion, not on setup. If the fake signer
 does not work on the runner, that is a setup failure: stop and report it, do not loosen the test.
 
+## Operator round 3 (phase 1, label `fix-3`)
+
+Source: `reviews/phase-1/round-3.md`, from landing review `reviews/landing/round-1.md`. The operator answered on
+2026-11-17 with "L1-01 + L1-02 + L1-04 + L1-03", which makes L1-01 to L1-04 the blocking findings O3-01 to O3-04.
+L1-05 stays a follow-up, L1-06 is documented in the spec, and L1-07 is closed.
+
+| ID | File | Change |
+|---|---|---|
+| O3-01 | `gates/test/integration/fold-history.test.ts` | A coverage test of the main guard's pass path. `refs/remotes/origin/main` and `refs/heads/main` both point at `foldBase`, and the signed fold must exit 0 with `ok:true`, base.sha rewritten and every commit of the range signed. It passes against the phase's code. Hand mutants MA (always `die` when a main ref exists) and MB (count from `$base^`) must fail it. `foldBase` is the test repository's root commit, so under MB `$base^` does not resolve and the fold exits non-zero. The test fails either way. |
+| O3-02 | the test file; `tooling/speckit/bin/fold-history.sh:123`, `:146` | Red first. `signedRepo` gets an optional `plants` flag, off by default so the earlier tests are unchanged, which writes a phase `plants.md` with a `- base: <phaseBase>` line. The SHA-256 test turns it on and asserts that the line is remapped to the new base.sha and that no other line changes. Then the remap's `sed` pattern and both `base_line_only` `grep` patterns go from `{7,40}` to `{7,64}`, as `pr-base` already did (R1-03). This touches op 016's evidence remapping code, which spec *Out of scope* excludes. The operator brought it in, because this op's widened `pr-base` made the stale path reachable. |
+| O3-03 | the test file | Scenario 3, scenario 4 and the R1-02 test each also assert their problem text: `could not build the folded commit` for scenario 3, and `the remap commit could not be signed` for the other two. This only strengthens the assertions. No expected value is dropped. |
+| O3-04 | `.claude/skills/ocelle-land/SKILL.md:181` | Docs only. The sentence on a failed fold now states the script's contract (header comment `:23` and the paths above). On failure HEAD is on the old head: exit 1 when a verification failed, exit 2 when the fold could not run. The prefold ref is written only once the rebuilt commits have passed their checks, and a failed or unsigned remap commit deletes it again. Spec *Out of scope* lists the skills. The operator brought this one sentence in. `ocelle-run` (`:138`) is accurate and stays as it is. |
+
+The red commit holds the three test changes, and only O3-02 fails there. The fix commit holds the two widened
+patterns, the skill sentence, the fix note `reviews/phase-1/round-3-fixes.md` (with the hand mutant table) and any
+new evidence. The op still changes no TypeScript source and no CI gate, so there is still nothing to mutate and no
+plant.
+
 ## Constitution Check
 
 | Principle | Status |
 |---|---|
 | I to VII | Not touched: no element, token, story, baseline, manifest or package change. |
-| VIII Test-first | Five red tests first, in a test-only commit; each fails on behaviour. No test weakened; the existing one is untouched. |
+| VIII Test-first | Five red tests first, in a test-only commit; each fails on behaviour. No test weakened; the existing one is untouched. Operator round 3: its tests come first, in the `fix-3` test-only commit, red on O3-02's missing behaviour. The O3-01 and O3-03 coverage changes only add assertions. |
 | VIII Gates are proven | No CI gate changes, so no plant (operator constraint). |
 | VIII Mutation | No TypeScript source changes; nothing for Stryker to mutate. Recorded in the phase review. |
 | DCO / supply chain | Trailers kept as today. No secret: the test's key file and signer are throwaway files in a temporary directory. |
@@ -121,6 +144,7 @@ No Complexity Tracking entry.
 ## Stop conditions
 
 - If the change needs a new option or argument of the script, or a change to a skill, stop and record in `op.md`
-  that the work has grown beyond the op.
+  that the work has grown beyond the op. The one exception is the `ocelle-land` sentence of operator round 3
+  (O3-04), which the operator brought in.
 - If the operator rejects "refuse" for Q1 and wants excluded commits remapped, the triage becomes
   `decision-needed` (triage *What would change this decision*).
