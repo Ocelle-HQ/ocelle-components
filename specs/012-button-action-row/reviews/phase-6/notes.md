@@ -243,8 +243,8 @@ No red commit: the three findings are records and documentation (round-2-fixes.m
   the failed jobs; the run is 145/145). Gate step: peak 516 s (shard 40), none at or over 570 s, 22953 s (6.38 h).
   Job wall: peak 862 s (shard 33), 17 over 570 s (round 2's 16 of attempt 1 and shard 23's attempt 2 at 645 s),
   34810 s (9.67 h), the excess being runner setup that day. No supplied gate-step figure contradicts round 2, so no
-  stop-and-ask. The supplied table's Attempt column also marks shards 47 to 76 with attempt 2; ci-run.md copies it
-  as supplied and notes that the other 75 rows agree with round 2's attempt-1 figures. T067 is ticked with the
+  stop-and-ask. The supplied table's Attempt column was corrected in db5edfd: attempt 1 for every shard except
+  shard 23; the job ids of shards 47 to 76 are GitHub's re-run copies. T067 is ticked with the
   citation T069 gives.
 - **T070 (O2-02)**: gates/README.md (plant sharding) and the `shardSize` comment of gates/lib/plant-runner.ts now state
   171 stories in 76 shards, the measured peaks and totals of both measures with run 44098238937 named, that the split
