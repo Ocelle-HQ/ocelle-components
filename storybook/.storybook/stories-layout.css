@@ -1,6 +1,8 @@
 /*
  * Layout of the base-style stories (003 research.md R-12, PLAN-A11Y-SECURITY-1-006): layout only, no rule of
- * base.css, selectors on data-story attributes only (no class, no style attribute).
+ * base.css, selectors on data-story attributes only (no class, no style attribute). Since 008, also the ocelle-dialog,
+ * ocelle-drawer and ocelle-tooltip stories' blocks, since 011 the personal-rail stories' stand-in items, keyed on their
+ * data-story root, and since 013 the ocelle-facts, ocelle-empty-state and ocelle-progress stories' wrappers (below).
  */
 [data-story] {
   padding: var(--ocelle-space-4);
@@ -40,6 +42,26 @@
  */
 [data-story="tooltip"] {
   --ocelle-tooltip-delay: 0ms;
+}
+
+/*
+ * The personal-rail stories' stand-in items (011 research.md R-10, FR-038): until #12's ocelle-nav-item exists, the
+ * rail stories hold plain <a> links, sized here to --ocelle-size-rail-item squares that inherit the rail's chrome ink,
+ * as the rail's fixture pages size theirs. The Wrapped story's narrow root is at most 320 px wide, so the horizontal
+ * rail in it wraps, and narrower on a narrower page.
+ */
+[data-story="rail-items"] a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  inline-size: var(--ocelle-size-rail-item);
+  block-size: var(--ocelle-size-rail-item);
+  color: inherit;
+}
+
+[data-story="rail-narrow"] {
+  max-inline-size: 320px;
 }
 
 /*

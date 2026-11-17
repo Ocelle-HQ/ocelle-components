@@ -21,6 +21,11 @@ describe("pnpm pack of @ocelle/elements", () => {
     expect(wanted.filter((path) => !packed.includes(path))).toEqual([]);
     expect(packed).toContain("dist/ocelle-icon.js");
     expect(packed).toContain("dist/ocelle-brand-mark.js");
+    expect(packed).toContain("dist/ocelle-card.js");
+    expect(packed).toContain("dist/ocelle-section-header.js");
+    expect(packed).toContain("dist/ocelle-page-header.js");
+    expect(packed).toContain("dist/ocelle-context-sidebar.js");
+    expect(packed).toContain("dist/ocelle-personal-rail.js");
   });
 
   // 008 tasks.md T019: the dialog's entry point is packed, and package.json maps it.

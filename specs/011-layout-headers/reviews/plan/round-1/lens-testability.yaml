@@ -1,0 +1,171 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: testability
+findings:
+  - id: PLAN-TESTABILITY-1-001
+    severity: 3
+    title: "Nearly all of this feature's behaviour is CSS, which mutation testing cannot reach one declaration at a time; in CI it may not reach it at all"
+    evidence:
+      - artifact: "plan.md § Constitution Check VIII: 'scenario bodies shared so the mutated in-process run covers every scenario; mutation scope as 005 decision 16'; research.md R-01: 'Styles are one `css` template per element'; spec SC-005"
+      - artifact: "research.md R-04, R-07 to R-10: the gaps, padding, dividers, wrap rule, footer pinning, rail layout and eyebrow style are all static declarations in the `css` template; the only script logic is slot-state.ts, card-context.ts, size resolution and the landmark name"
+      - code: "specs/005-icons-brand-mark/research.md:630-633: 'Stryker mutates the static parts of `css` and `svg` tagged templates as string literals where it can'. Stryker's StringLiteral mutator replaces a template literal as a whole with an empty one, so each element's stylesheet is one mutant, killed by any layout assertion at all"
+      - code: "gates/README.md:153-156 and gates/lib/mutation/shards.ts:3-14: CI shards a file with more than 30 changed lines into 30-line `path:start-end` entries, and 'a mutant whose node spans a cut ... is mutated in no shard'. Every element file here is new, so it has more than 30 changed lines, and a stylesheet template of more than 30 lines spans a cut, so CI does not mutate it"
+    claim: |
+      SC-005 and Principle VIII's mutation clause are meant to show that every behaviour is held by a test that can
+      fail. In this feature, behaviour such as "the card's compact padding is space-5", "the divider is
+      border-block-start on every section except the first", "the footer has margin-block-start: auto" and "eyebrow
+      letter-spacing" is all static declarations inside one tagged template per element. Mutation testing gives at
+      most one mutant per stylesheet (the empty sheet). Any scenario kills that mutant, so a suite that never checks,
+      say, the compact gap or the rail's inline padding still passes the mutation gate. In CI the sheet's single
+      mutant can also fall across a shard cut and go unmutated. The plan's only guard below whole-sheet level is the
+      pairing-plant table, which covers about a dozen rules. So the "mutation testing can reach the code" claim does
+      not hold for most of what this feature changes.
+    remedies:
+      - "Add a declaration-level style-mutation step to each phase's evidence. For every declaration in a new element's `css` template, delete or neutralise it in the working tree, run both harnesses' scenarios for that element, and record in reviews/phase-N/plants.md the scenario that fails. A declaration no scenario catches is a blocking finding, or is recorded as equivalent with a reason. Name it in contracts/checks.md § Gates run per phase."
+      - "Alternatively, record in the plan a traceability table from each style declaration (or rule group) to the scenario and assertion that checks it, reviewed at each phase review. Record in Complexity Tracking, for the operator to approve, that CSS is outside Stryker's reach, and add the cut limit for template literals."
+  - id: PLAN-TESTABILITY-1-002
+    severity: 3
+    title: "Token assertions compare against resolved values, and many of the tokens named here share values, so a wrong-token implementation passes"
+    evidence:
+      - artifact: "research.md R-13: 'Measurements read computed styles against the token values read from the same page (never literals)'; spec US1-5, US2-2, FR-012, FR-019, FR-031: 'drawn with the eyebrow tokens', 'in --ocelle-font-display', 'in --ocelle-color-eyebrow'"
+      - code: "packages/tokens/src/source.ts:123 `font-display` = `var(--ocelle-font-sans)`, so the heading face (FR-012) and the eyebrow face (FR-031) cannot be told apart"
+      - code: "data-model.md § Tokens added: `color-eyebrow` = `color-ink-muted` (the section-header description colour, FR-012), `font-weight-eyebrow` = `font-weight-strong` (the section heading weight), `font-size-eyebrow` = `font-size-xs`"
+      - code: "packages/tokens/src/source.ts:58-59: `color-chrome-ink` and `color-chrome-muted` have the same value in light and dark, so the rail's ink and divider assertions 'in both themes' cannot catch a theme mistake"
+    claim: |
+      A computed-style assertion such as "colour equals the resolved value of --ocelle-color-eyebrow" also passes
+      when the element uses --ocelle-color-ink-muted, a literal #5E584F, or the description's rule. "Heading in
+      font-display" passes with font-sans. "Eyebrow at weight-eyebrow" passes with weight-strong. These tests cannot
+      fail for the defect they name: the element reading the wrong token, or not reading the token by inheritance as
+      FR-007 requires. That defect shows up as soon as #7 or a consumer re-points an alias. The same gap leaves the
+      README's per-element token list (FR-036) unchecked against what the element actually reads.
+    remedies:
+      - "Add to R-13 and contracts/checks.md a token-sentinel scenario per element. Through `driver.rules`, override each token the element reads (contracts/elements-package.md § Tokens each element reads) on `:root` with a distinct sentinel value, and assert that the matching computed style follows it. Also assert that the element still draws its default with the overrides removed. Generate the list of overridden tokens from the same table the README test checks, so the README list, the manifest claim of FR-007 and the element's real reads cannot drift."
+  - id: PLAN-TESTABILITY-1-003
+    severity: 2
+    title: "The pairing-plant table leaves several 'does not' outcomes of the spec without a pair or a plant"
+    evidence:
+      - artifact: "spec § '\"Does not\" outcomes are paired': 'Each one is tested together with a positive outcome ... and the plan names, for each, a planted defect that makes it fail'"
+      - artifact: "contracts/checks.md § Pairing plants (lines 38-53) has no row for: US1-5 'an eyebrow or description slotted into it is not rendered'; US1-16 'the first's accessibility tree holds no heading'; US2-1 'still no h1 anywhere on the page'; US3-7 'no divider between sections'; US4-6 'the first has no divider' (the divider div's own show condition; the 'wrapper not hidden' plant does not touch it); US4-4 'no ... container threshold' (only an `@media` plant); US1-4 'border boxes of every other element ... are the same'; US3-4 'does not overlap'; R-11 'no other node carrying the name'; R-11 'The element never rewrites or removes the page's aria-label'"
+    claim: |
+      The spec requires a named plant for every "does not" outcome, because each one already holds when the element is
+      undefined or broken in a nearby way. The listed rows cover a subset. The unlisted outcomes can pass
+      vacuously. For example, US3-7's "no divider" holds if dividers are never drawn, and US4-6's missing-divider
+      check holds whatever the divider's condition is. No plant is planned to show these tests can fail.
+    remedies:
+      - "Extend contracts/checks.md § Pairing plants with one row per missing outcome, each with its positive pair and plant. For example: US1-5, eyebrow and description slots rendered in the eyebrow variant; US3-7, a border on the first section too; US4-6, divider shown when either group is non-empty; US4-4, an `@container (max-width: 720px)` flip beside the `@media` one; US1-16 and US2-1, a heading role on the heading wrapper; R-11, the host aria-label copied onto the nav as well as kept on the host, so two named nodes appear; FR-028, the element writing or removing the host's aria-label."
+  - id: PLAN-TESTABILITY-1-004
+    severity: 2
+    title: "FR-018 (the card has no role) and FR-002 (no event) have no scenario and no planned test"
+    evidence:
+      - artifact: "spec FR-018: 'The card MUST expose no role or landmark of its own'. No acceptance scenario of US1 reads the card's accessibility tree (US1-1 reads the section header; US1-12 is tab order only)"
+      - artifact: "spec FR-002: 'None of the five elements emits an event'; plan.md Constitution Check V: 'No events to assert'"
+      - artifact: "spec SC-003: 'The accessibility tree of every scenario holds exactly the headings ... and no other heading or landmark from the five elements' depends on scenarios that read the tree, and none reads a card's"
+    claim: |
+      SC-001 ("All acceptance scenarios pass") can be met while the card renders `role="region"` or an `<article>` in
+      its shadow root, because no scenario reads the card's tree. FR-002's "no event" is also a "does not" outcome
+      with no test. If a later edit dispatches a `slotchange`-derived custom event, nothing fails.
+    remedies:
+      - "Add to US1's scenario bodies (plan phase 2) an accessibility-tree read of a card in each density, with and without inset and header. Assert it adds no node of its own beyond its slotted content, paired with the slotted heading being present, and plant a `role=\"region\"` wrapper. For FR-002, add per element a listener for every event type dispatched from the host during mount, slot changes and attribute changes, paired with a positive outcome of the same step, and plant a `dispatchEvent` on slot change."
+  - id: PLAN-TESTABILITY-1-005
+    severity: 2
+    title: "The plant mechanism 'a stylesheet or controller swapped in the in-process harness' is not workable as stated, and departs from 005's proven method"
+    evidence:
+      - artifact: "contracts/checks.md:35-36: 'Each is a test-local planted defect (a stylesheet or controller swapped in the in-process harness) that makes the paired test fail'"
+      - code: "specs/005-icons-brand-mark/reviews/phase-4/plants.md:3-8: in 005, each plant was 'the planted edit applied to the source in the working tree, the slot scenarios run through both harnesses ... whose global setup bundles the planted ... into the browser build ... No pairing plant is committed'"
+    claim: |
+      A Lit element's `static styles` and template are fixed when the module defines the tag. A test cannot swap them
+      for the real tag without a test hook in the source, which would be public or test-only surface, or a subclass
+      under another tag, which the shared bodies do not mount. A "test-local" plant also runs only in process, so it
+      never shows that the fixture-page suite (the browser build) can fail. Mutating the unit inside the test also
+      comes close to the constitution's ban on asserting on a stand-in rather than the unit.
+    remedies:
+      - "Replace the sentence with 005's method. Each plant is a working-tree edit of the element source, the named scenarios are run through both harnesses (the browser build rebuilt with the plant), the file is restored, and the result is recorded in reviews/phase-N/plants.md with the scenarios that failed in each harness. No plant is committed and no test hook is added to source."
+  - id: PLAN-TESTABILITY-1-006
+    severity: 2
+    title: "The driver and command additions these scenarios need are under-listed and exempted from red, though some are behaviour that 005 tests"
+    evidence:
+      - artifact: "plan.md phase 1: 'exempt: scenario driver additions (viewport, `dir`, deep active element), fixture page templates'"
+      - code: "packages/elements/test/scenarios/driver.ts:79 onward: the Driver has `dir` already, but nothing to add, remove or retext light-DOM children (US1-4, US3-6, R-03's text-data change), press Tab, set the viewport or a container's size (US4-4), read scrollingElement.scrollWidth, read text-node boxes (the spec's 'no text is clipped'), or run axe"
+      - code: "packages/elements/test/commands.ts:11-14: `AxNode` carries only `role` and `name`, so US1-1's 'heading node, level 2' and US2-1's level cannot be read from the tree without changing `axNodes`, which packages/elements/test/commands.test.ts (98 lines) tests"
+    claim: |
+      The scenarios depend on driver methods that do not exist and that are not trivial: scroll width, deep active
+      element after Tab, text-node clipping boxes, and the heading level from CDP. If one of them is wrong (it reads
+      the wrong document, or always reports 0 or the same element), every "no horizontal scroll" or "no tab stop"
+      assertion built on it passes vacuously. Constitution VIII exempts only units with no behaviour, and 005 tested
+      its commands (commands.test.ts). The plan's list also misses the AX level extension, the DOM-change methods
+      and axe.
+    remedies:
+      - "List every driver and command addition in plan phase 1 (DOM append, remove and text-data change; Tab and deep active element; viewport and container size; scroll width; text-node boxes; AX heading level; axe if kept in the harnesses). Make the behavioural ones (commands.ts `axNodes` level, scroll width, active element, text boxes) red-first with tests in commands.test.ts or a driver test on a known page that each can fail. Exempt only pure plumbing, with the reason recorded."
+  - id: PLAN-TESTABILITY-1-007
+    severity: 2
+    title: "The axe assertions of US3-12, US4-11 and the R-11 spike have no harness: no axe-core in the package tests, and the plan adds no dependency"
+    evidence:
+      - artifact: "plan.md phase 4: 'US3-12 with axe on the fixture page'; research.md R-11: 'does axe 4.14.0 report a serious or critical finding'; plan.md Technical Context: 'no new dependency ... #10's capture container and axe-core once merged'"
+      - code: "grep -rn axe packages/elements/package.json package.json storybook/package.json pnpm-lock.yaml: no match on this branch. No driver method or command runs axe (driver.ts, commands.ts)"
+      - artifact: "plan.md phase 2: scenario bodies 'run by both harnesses'. The in-process harness has no axe either, and the fixture page's CSP is `script-src 'self'`"
+    claim: |
+      FR-028's clause "MUST NOT cause an axe serious or critical finding", and R-11's choice between options (i) and
+      (ii), depend on running axe on the scenario page. The plan does not say where axe-core comes from for
+      @ocelle/elements' test projects. Under pnpm's isolation, #10's storybook devDependency is not resolvable from
+      packages/elements. The plan also does not say how axe is loaded on a strict-CSP fixture page, or how a shared
+      body calls it in process. Without that, US3-12 and US4-11 cannot be written red-first as specified. They will
+      quietly fall back to the story-level `axe` gate, which runs only the stories, not the four US3-12 cases.
+    remedies:
+      - "Decide in research.md: add `axe-core` (pinned to #10's version) as a devDependency of @ocelle/elements, record it as a dev-only supply-chain addition, add an `axe(id)` driver method for both harnesses (in process by import; on the fixture page by Playwright evaluate, or by a same-origin script that the CSP allows), and test it red-first with a page known to produce a finding."
+      - "Or move FR-028's axe clause to the `axe` gate. Require one story per US3-12 and US4-11 case (host aria-label, both, blank), each rendered alone so landmark-unique holds, and state in the plan that the package scenarios assert only the accessibility tree."
+  - id: PLAN-TESTABILITY-1-008
+    severity: 2
+    title: "Reflow is planned as scrollWidth only: the 'no text is clipped' clause and SC-002's 'every story at 320 px' have no test"
+    evidence:
+      - artifact: "spec § Reflow: 'no text is clipped (every slotted text node's box lies inside its element's box)'; SC-002: 'At 320 px, every story of the five elements has no horizontal scroll and no clipped text'"
+      - artifact: "research.md R-13: 'Reflow at 320 px sets the viewport and asserts `document.scrollingElement.scrollWidth <= 320` together with the positive stacking outcome'. Clipping is not mentioned"
+      - code: "git show 5f49794:specs/006-storybook-workbench/spec.md:534: 'One fixed capture viewport and device scale factor for all stories; per-story viewports are not ...' (FR-012 and line 176: 1280 × 800). #10's gates never render a story at 320 px"
+    claim: |
+      A slotted text node can overflow its element's box and be clipped by an `overflow: hidden` ancestor, or hang
+      inside an `overflow: auto` wrapper, without adding to the document's scroll width. So the planned assertion
+      cannot fail for the clipping defect the spec names. SC-002 is about every story, but the plan's 320 px tests
+      cover only the four reflow scenarios (US1-14, US2-5, US3-10, US4-7), and #10's visual and axe gates capture
+      only at 1280 px. SC-002 therefore has no check that can fail.
+    remedies:
+      - "Add to R-13 a text-box assertion (a Range over each slotted text node, its client rects inside the slotting element's border box and inside every overflow-clipping ancestor) with a plant (`overflow: hidden` plus `white-space: nowrap` on a wrapper). Add a 320 px pass over every story of the five elements, either in the story test (storybook/test/integration/elements-stories.test.ts at a 320 × 800 viewport) or as fixture scenarios generated from the story list, asserting no scroll and no clipping."
+  - id: PLAN-TESTABILITY-1-009
+    severity: 2
+    title: "The card-to-header channel's dynamic transitions and definition order are claimed but not tested"
+    evidence:
+      - artifact: "data-model.md § State transitions: 'Card `density` changed, or its `header` slot's assignment changed → the card sets or clears the flag'; research.md R-05: '`setCardCompact(header, false)` for those that left the slot since the last read'"
+      - artifact: "contracts/elements-package.md:16-17: '`ocelle-card.js` does not define `ocelle-section-header` ... (R-05 works whichever is defined first)'; research.md R-05: 'No test is added for a mixed page beyond 005's'"
+      - artifact: "spec US1-8, US1-9, US1-17 and US1-18 are all static mounts. No scenario changes `density` after render, moves a header out of the `header` slot or into the body, or defines ocelle-card before ocelle-section-header. Both harnesses define all elements up front"
+    claim: |
+      The clearing path, the density-change path and the upgrade-order path are where this channel is likely to
+      break. If the card flags a not-yet-upgraded header and the header's state never reads the WeakMap on upgrade,
+      it stays regular. The planned scenarios never exercise these paths, so the only signal would be mutation
+      survivors in card-context.ts, after the red step rather than before it. The upgrade-order claim in the contract
+      is not checked by anything.
+    remedies:
+      - "Add scenarios to phase 2: a compact card whose density is set and then removed by script (header compact, then regular); a header moved from the compact card's `header` slot to its body, and back; a compact card with its header defined before and after `ocelle-section-header` is registered. The last one is an entry test that imports `@ocelle/elements/ocelle-card.js`, mounts, then imports `ocelle-section-header.js`. Name a plant for each, for example no clear on leave, or the flag read only at construction."
+  - id: PLAN-TESTABILITY-1-010
+    severity: 2
+    title: "US4-10 tests the test page's own query, not the element and not the README example"
+    evidence:
+      - artifact: "plan.md phase 5: 'US4-10 with a test page query at an exclusive bound'; spec US4-10: 'a page that sets `orientation` from its own query with an exclusive bound, as the README shows'"
+      - artifact: "spec FR-026: the element has no query of its own. The vertical or horizontal outcome at the bound is decided entirely by the test fixture's script"
+    claim: |
+      Once US4-2 and US4-3 pass, the outcome "vertical at the bound, horizontal 1 px below" depends only on the query
+      the test itself writes. The test can fail only through its own fixture code, which shows nothing about the
+      element. It also does not check that the README's example, the thing a consumer copies, has an exclusive bound.
+      Rewrite the README to `max-width: N` and this test still passes.
+    remedies:
+      - "Have the test extract the orientation example's code block from packages/elements/README.md (as the readme test locates sections) and run that code on the fixture page through a same-origin module, so the README's code is what is measured at N and N-1. Plant: the README example rewritten with `max-width: N`."
+  - id: PLAN-TESTABILITY-1-011
+    severity: 1
+    title: "SC-006 is checked only by the presence of README text"
+    evidence:
+      - artifact: "spec SC-006: each workaround 'has a matching element property, slot or default in this feature, named in the README's per-element sections as FR-036 lists and asserted by its documentation test'; plan phases 2-5: 'README and readme test'"
+    claim: |
+      A readme test that finds the sentence naming the workaround passes whether or not the behaviour that replaces
+      the workaround exists. The criterion's real content ("has a matching property, slot or default") is held only by
+      text.
+    remedies:
+      - "In contracts/checks.md, map each SC-006 workaround to the acceptance scenarios whose behaviour replaces it: part-level padding and gap overrides to US1-3, US2-4, US3-5; token-painted dividers to US3-3; pinned page-header font rules to US2-2, US2-3; personal-rail ::part overrides to US4-2 to US4-7. Have the readme test assert that each workaround statement cites those scenario ids, so the criterion is traced to tests that can fail."

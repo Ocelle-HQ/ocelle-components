@@ -1,0 +1,18 @@
+# Landing review round 1: tasks and artifact changes
+
+The operator decided on 2026-11-15 to fix the blocking finding and all four notes of `round-1.md` in this feature.
+The decisions are recorded in `reviews/phase-1/round-2.md`, `reviews/phase-2/round-4.md`,
+`reviews/phase-4/round-2.md` and `reviews/phase-5/round-2.md`. Each fix is a task in `tasks.md`, in its phase. Each
+task starts with a red test and runs under its phase's `red.sh <N> fix-<k>` label. No source or test code is
+changed here.
+
+| Finding | Operator round | Task | Spec, plan and design changes |
+|---|---|---|---|
+| L1-04 forwarded slots count as content | phase 1 round 2, R2-01 | T048 (phase 1; `readme.test.ts` first, then a README section `## Forwarded slots`; `red.sh 1 fix-2`) | spec: Empty slot gains the forwarded-slot sentence, a new Edge Case, and an FR-036 bullet (once, for shell authors) with the statement's content; research.md R-03 § Forwarded slots (the unflattened read stays, and why); data-model.md Validation rules; contracts/elements-package.md § Shell authors; plan.md § Fixes from the landing review |
+| L1-01 card `slotchange` reads `event.target` | phase 2 round 4, R4-01 | T049 (phase 2, US1; a shared card scenario with a wrapper slot forwarded into `header`, run by `elements` and `elements-browser`; `red.sh 2 fix-4`) | spec: FR-017 made precise for a forwarded slot in the `header` slot, and a new Edge Case; research.md R-05 § Forwarded slots and its test list; data-model.md State transitions; contracts/checks.md pairing-plant row (plant: `event.target` restored); plan.md § Fixes |
+| L1-03 `<template>` drawn as a sidebar section | phase 4 round 2, R2-01 | T050 (phase 4, US3; a US3-3 template and `script` variant run by `elements` and `elements-browser`, plus a `readme.test.ts` fragment; one red commit with T051, `red.sh 4 fix-2`) | spec: US3-3 gains the template variant; FR-021 and FR-022 exclude `template` and `script` from sections (they still count as content); a new Edge Case; the FR-036 sidebar bullet gains the statement; research.md R-09 § never-rendered elements (the selectors, and why `style` is not listed); data-model.md; contracts/elements-package.md (sidebar) and contracts/checks.md pairing-plant row; plan.md § Fixes |
+| L1-02 `[internalsKey]` in the published `.d.ts`; R-11 says `@ignore` | phase 4 round 2, R2-02 | T051 (phase 4, US3; a `build.test.ts` test on the emitted declarations, `elements-build`; same red commit as T050) | research.md R-11: `@internal` only, with the reason from `reviews/phase-4/notes.md`, and § Type declarations: `"stripInternal": true` in `packages/elements/tsconfig.json` (not the base), so no `.d.ts` declares the member, its import or the `internalsKey` export. The JavaScript is unchanged and no README or CHANGELOG line is added. spec FR-034: the declarations declare nothing the manifest omits as internal; contracts/elements-package.md (sidebar) and contracts/checks.md (`elements-build` row and the declarations pairing-plant row); plan.md Constitution Check I and VII, Project Structure, § Fixes |
+| L1-05 rail README `ocelle-nav-item` wording and a stray line break | phase 5 round 2, R2-01 | T052 (phase 5, US4; `readme.test.ts` fragment made stricter, plus a raw-text line assertion; `red.sh 5 fix-2`) | spec: FR-027, the FR-036 rail bullet and the Edge Case on plain `<a>` items say "once released", and that no release ships `ocelle-nav-item` yet; contracts/elements-package.md (rail); plan.md § Fixes |
+
+The fix tasks run in phase order, one after the other: T048, T049, T050 with T051, then T052 (tasks.md, Dependencies
+& Execution Order). Each one is reviewed as its phase's next round, and then the landing review runs again.
