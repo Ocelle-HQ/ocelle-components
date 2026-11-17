@@ -262,7 +262,7 @@ describe("generate(root) on the repository's element source", () => {
     const manifest = await generate(repo);
     const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
     expect(manifest.schemaVersion).toBe("1.0.0");
-    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-action-row.ts", "src/ocelle-brand-mark.ts", "src/ocelle-button.ts", "src/ocelle-empty-state.ts", "src/ocelle-fact.ts", "src/ocelle-facts.ts", "src/ocelle-icon.ts", "src/ocelle-progress.ts"]);
+    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-action-row.ts", "src/ocelle-brand-mark.ts", "src/ocelle-button.ts", "src/ocelle-card.ts", "src/ocelle-context-sidebar.ts", "src/ocelle-empty-state.ts", "src/ocelle-fact.ts", "src/ocelle-facts.ts", "src/ocelle-icon.ts", "src/ocelle-page-header.ts", "src/ocelle-personal-rail.ts", "src/ocelle-progress.ts", "src/ocelle-section-header.ts"]);
     const [icon] = modules.find((module) => module.path === "src/ocelle-icon.ts")?.declarations ?? [];
     expect(icon).toMatchObject({
       kind: "class",
@@ -435,6 +435,94 @@ describe("generate(root) on the repository's element source", () => {
       control: "The row's icon-and-title control: the inner `<button>`, or the inner `<a>` in link mode. It is not the row's surface: the description, tags and trailing content are beside it, and `::part(control)` styles do not reach the row's surface or border.",
       pressed: 'While the moved `aria-pressed` is `"true"`, in button mode only: a link has no pressed state.',
     });
+  });
+
+  // 011 (FR-006, FR-007, FR-034; contracts/elements-package.md § Elements; T015): the section header and the card, each
+  // with its reflected variant properties, typed and defaulting to not set, its slots, and empty event, part and CSS
+  // property lists.
+  const described = (list: unknown): Record<string, unknown>[] =>
+    ((list ?? []) as Record<string, unknown>[]).map(({ description, ...rest }) => ({ ...rest, described: typeof description === "string" && description !== "" }));
+
+  it('declares ocelle-section-header with its tag name and class, size ("regular" | "compact" | undefined) and variant ("default" | "eyebrow" | undefined), reflected, each with the default undefined, the slots heading, eyebrow, description and actions, and no event, part or CSS property (FR-034)', async () => {
+    const modules = (await generate(repo)).modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [header] = modules.find((module) => module.path === "src/ocelle-section-header.ts")?.declarations ?? [];
+    expect(header).toMatchObject({ kind: "class", name: "OcelleSectionHeader", tagName: "ocelle-section-header", customElement: true, events: [], cssParts: [], cssProperties: [] });
+    expect(described(header?.members)).toEqual([
+      { kind: "field", name: "size", privacy: "public", type: { text: '"regular" | "compact" | undefined' }, default: "undefined", attribute: "size", reflects: true, described: true },
+      { kind: "field", name: "variant", privacy: "public", type: { text: '"default" | "eyebrow" | undefined' }, default: "undefined", attribute: "variant", reflects: true, described: true },
+    ]);
+    expect(described(header?.attributes)).toEqual([
+      { name: "size", fieldName: "size", type: { text: '"regular" | "compact" | undefined' }, default: "undefined", described: true },
+      { name: "variant", fieldName: "variant", type: { text: '"default" | "eyebrow" | undefined' }, default: "undefined", described: true },
+    ]);
+    expect(described(header?.slots)).toEqual(["heading", "eyebrow", "description", "actions"].map((name) => ({ name, described: true })));
+  });
+
+  it('declares ocelle-page-header with its tag name and class, size ("regular" | "compact" | undefined), reflected, with the default undefined, the slots heading, eyebrow, description and actions, and no event, part or CSS property (011 FR-019, FR-034; T027)', async () => {
+    const modules = (await generate(repo)).modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [header] = modules.find((module) => module.path === "src/ocelle-page-header.ts")?.declarations ?? [];
+    expect(header).toMatchObject({ kind: "class", name: "OcellePageHeader", tagName: "ocelle-page-header", customElement: true, events: [], cssParts: [], cssProperties: [] });
+    expect(described(header?.members)).toEqual([
+      { kind: "field", name: "size", privacy: "public", type: { text: '"regular" | "compact" | undefined' }, default: "undefined", attribute: "size", reflects: true, described: true },
+    ]);
+    expect(described(header?.attributes)).toEqual([{ name: "size", fieldName: "size", type: { text: '"regular" | "compact" | undefined' }, default: "undefined", described: true }]);
+    expect(described(header?.slots)).toEqual(["heading", "eyebrow", "description", "actions"].map((name) => ({ name, described: true })));
+  });
+
+  it('declares ocelle-card with its tag name and class, density ("regular" | "compact" | undefined) and inset (boolean | undefined), reflected, each with the default undefined, the slots header and the default slot, and no event, part or CSS property (FR-034)', async () => {
+    const modules = (await generate(repo)).modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [card] = modules.find((module) => module.path === "src/ocelle-card.ts")?.declarations ?? [];
+    expect(card).toMatchObject({ kind: "class", name: "OcelleCard", tagName: "ocelle-card", customElement: true, events: [], cssParts: [], cssProperties: [] });
+    expect(described(card?.members)).toEqual([
+      { kind: "field", name: "density", privacy: "public", type: { text: '"regular" | "compact" | undefined' }, default: "undefined", attribute: "density", reflects: true, described: true },
+      { kind: "field", name: "inset", privacy: "public", type: { text: "boolean | undefined" }, default: "undefined", attribute: "inset", reflects: true, described: true },
+    ]);
+    expect(described(card?.attributes)).toEqual([
+      { name: "density", fieldName: "density", type: { text: '"regular" | "compact" | undefined' }, default: "undefined", described: true },
+      { name: "inset", fieldName: "inset", type: { text: "boolean | undefined" }, default: "undefined", described: true },
+    ]);
+    expect(described(card?.slots)).toEqual([
+      { name: "header", described: true },
+      { name: "", described: true },
+    ]);
+  });
+
+  it("declares ocelle-context-sidebar with its tag name and class, label (string | undefined), not reflected, with the default undefined, the slots head, the default slot and footer, no event, part or CSS property, and no member for its internals key (011 FR-020, FR-021, FR-034; research.md R-11; T034)", async () => {
+    const modules = (await generate(repo)).modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [sidebar] = modules.find((module) => module.path === "src/ocelle-context-sidebar.ts")?.declarations ?? [];
+    expect(sidebar).toMatchObject({ kind: "class", name: "OcelleContextSidebar", tagName: "ocelle-context-sidebar", customElement: true, events: [], cssParts: [], cssProperties: [] });
+    const members = described(sidebar?.members);
+    expect({
+      members,
+      internals: members.filter((member) => JSON.stringify(member).toLowerCase().includes("internals")),
+    }).toEqual({
+      members: [{ kind: "field", name: "label", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "label", described: true }],
+      internals: [],
+    });
+    expect(described(sidebar?.attributes)).toEqual([{ name: "label", fieldName: "label", type: { text: "string | undefined" }, default: "undefined", described: true }]);
+    expect(described(sidebar?.slots)).toEqual(["head", "", "footer"].map((name) => ({ name, described: true })));
+  });
+
+  it("declares ocelle-personal-rail with its tag name and class, label (string | undefined), not reflected, and orientation (\"vertical\" | \"horizontal\" | undefined), reflected, each with the default undefined, the default slot and bottom, no event, part or CSS property, and no member for its internals key (011 FR-024 to FR-026, FR-034; research.md R-11; T042)", async () => {
+    const modules = (await generate(repo)).modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [rail] = modules.find((module) => module.path === "src/ocelle-personal-rail.ts")?.declarations ?? [];
+    expect(rail).toMatchObject({ kind: "class", name: "OcellePersonalRail", tagName: "ocelle-personal-rail", customElement: true, events: [], cssParts: [], cssProperties: [] });
+    const members = described(rail?.members);
+    expect({
+      members,
+      internals: members.filter((member) => JSON.stringify(member).toLowerCase().includes("internals")),
+    }).toEqual({
+      members: [
+        { kind: "field", name: "label", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "label", described: true },
+        { kind: "field", name: "orientation", privacy: "public", type: { text: '"vertical" | "horizontal" | undefined' }, default: "undefined", attribute: "orientation", reflects: true, described: true },
+      ],
+      internals: [],
+    });
+    expect(described(rail?.attributes)).toEqual([
+      { name: "label", fieldName: "label", type: { text: "string | undefined" }, default: "undefined", described: true },
+      { name: "orientation", fieldName: "orientation", type: { text: '"vertical" | "horizontal" | undefined' }, default: "undefined", described: true },
+    ]);
+    expect(described(rail?.slots)).toEqual(["", "bottom"].map((name) => ({ name, described: true })));
   });
 
   // 013 (T017; contracts/elements.md § `ocelle-facts`, § `ocelle-fact`): every list stated, every member described.

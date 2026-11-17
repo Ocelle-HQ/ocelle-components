@@ -24,6 +24,7 @@ import { runningOf } from "./animations.ts";
 import { layoutWait } from "./layout-wait.ts";
 import { activeInnerOf, activePath, clickElement, computedOf, copyElement, currentOf, endOrder, focusElement, morphElement, preventNextEvent, recordEvents, resetPage, sentinelId, startOrder, takeRecords } from "./page-side.ts";
 import { decodePng } from "./pixels.ts";
+import { heardTypes } from "./scenarios/driver.ts";
 import type { Box, Driver, Drawing, NavigationRecord, Paint, Part, Placement, Sheets, TreeNode } from "./scenarios/driver.ts";
 
 function sheet(text: string): CSSStyleSheet {
@@ -44,6 +45,21 @@ function element(id: string): HTMLElement {
 /** Waits until every `ocelle-*` element of the page has rendered, then for a frame. */
 async function settle(): Promise<void> {
   const elements = [...document.querySelectorAll("*")].filter((each) => each.localName.startsWith("ocelle-"));
+  await Promise.all(elements.map((each) => (each as Partial<LitElement>).updateComplete ?? Promise.resolve(true)));
+  await new Promise((resolve) => requestAnimationFrame(resolve));
+}
+
+/** The element matching `inner` in the shadow root of the element with `id`. */
+function inShadow(id: string, inner: string): Element {
+  const found = element(id).shadowRoot?.querySelector(inner);
+  if (found === null || found === undefined) throw new Error(`no ${inner} in the shadow root of #${id}`);
+  return found;
+}
+
+/** Waits as `settle` does, and also for every `ocelle-*` element in the shadow root of the element with `id`. */
+async function settleShadow(id: string): Promise<void> {
+  await settle();
+  const elements = [...(element(id).shadowRoot?.querySelectorAll("*") ?? [])].filter((each) => each.localName.startsWith("ocelle-"));
   await Promise.all(elements.map((each) => (each as Partial<LitElement>).updateComplete ?? Promise.resolve(true)));
   await new Promise((resolve) => requestAnimationFrame(resolve));
 }
@@ -102,6 +118,46 @@ lastSink();
 
 /** The most Tab presses `tabOrder` makes before it stops. */
 const maxSteps = 64;
+
+/** The `id` of the element with one of `ids` that `node` is, or whose shadow tree holds it, or undefined. */
+function recordedHost(node: unknown, ids: ReadonlySet<string>): string | undefined {
+  for (let at = node instanceof Node ? node : null; at !== null; ) {
+    if (at instanceof Element && ids.has(at.id)) return at.id;
+    const root = at.getRootNode();
+    at = root instanceof ShadowRoot ? root.host : null;
+  }
+  return undefined;
+}
+
+/** What `listen` installed: the records, and how to remove it. */
+let listening: { readonly records: string[]; readonly stop: () => void } | undefined;
+
+function listen(ids: readonly string[]): void {
+  listening?.stop();
+  const watched = new Set(ids);
+  const records: string[] = [];
+  const original = Object.getOwnPropertyDescriptor(EventTarget.prototype, "dispatchEvent")?.value as (this: EventTarget, event: Event) => boolean;
+  EventTarget.prototype.dispatchEvent = function (this: EventTarget, event: Event): boolean {
+    const id = recordedHost(this, watched);
+    if (id !== undefined) records.push(`${id}: ${event.type}`);
+    return original.call(this, event);
+  };
+  const capture = (event: Event): void => {
+    const id = event.composedPath().map((node) => recordedHost(node, watched)).find((each) => each !== undefined);
+    if (id !== undefined) records.push(`${id}: ${event.type}`);
+  };
+  for (const type of heardTypes) window.addEventListener(type, capture, true);
+  listening = {
+    records,
+    stop: () => {
+      EventTarget.prototype.dispatchEvent = original;
+      for (const type of heardTypes) window.removeEventListener(type, capture, true);
+    },
+  };
+}
+
+/** The numbers `identities` gave the shadow nodes it has seen. */
+const identities = new Map<Element, number>();
 
 export function inProcessDriver(): Driver {
   return {
@@ -289,11 +345,85 @@ export function inProcessDriver(): Driver {
       morphElement({ id, markup });
       await settle();
     },
+    append: async (id, markup) => {
+      element(id).insertAdjacentHTML("beforeend", markup);
+      await settle();
+    },
+    remove: async (id) => {
+      element(id).remove();
+      await settle();
+    },
+    textData: async (id, index, data) => {
+      const text = [...element(id).childNodes].filter((node) => node.nodeType === Node.TEXT_NODE)[index];
+      if (text === undefined) throw new Error(`#${id} has no text node ${String(index)}`);
+      (text as Text).data = data;
+      await settle();
+    },
+    tab: async (shift = false) => {
+      await userEvent.tab({ shift });
+      await settle();
+    },
+    activeElement: () => commands.activeElement(),
     viewport: async (width, height) => {
       await page.viewport(width, height);
       await settle();
     },
-    scrollWidth: () => Promise.resolve(document.documentElement.scrollWidth),
+    size: async (id, inline, block) => {
+      const style = element(id).style;
+      for (const [property, value] of [["inline-size", inline], ["block-size", block]] as const) {
+        if (value === null) style.removeProperty(property);
+        else style.setProperty(property, `${String(value)}px`);
+      }
+      await settle();
+    },
+    scrollWidth: () => commands.scrollWidth(),
+    textBoxes: (id) => commands.textBoxes(id),
+    listen: (ids) => {
+      listen(ids);
+      return Promise.resolve();
+    },
+    heard: () => {
+      const records = listening?.records ?? [];
+      listening?.stop();
+      listening = undefined;
+      return Promise.resolve([...records]);
+    },
+    identities: (id) => {
+      const root = element(id).shadowRoot;
+      if (root === null) return Promise.resolve([]);
+      return Promise.resolve(
+        [...root.querySelectorAll("*")].map((node) => {
+          const known = identities.get(node);
+          if (known !== undefined) return known;
+          identities.set(node, identities.size + 1);
+          return identities.size;
+        }),
+      );
+    },
+    shadow: async (id, markup) => {
+      element(id).attachShadow({ mode: "open" }).innerHTML = markup;
+      await settleShadow(id);
+    },
+    shadowAppend: async (id, inner, markup) => {
+      inShadow(id, inner).insertAdjacentHTML("beforeend", markup);
+      await settleShadow(id);
+    },
+    shadowAttribute: async (id, inner, name, value) => {
+      if (value === null) inShadow(id, inner).removeAttribute(name);
+      else inShadow(id, inner).setAttribute(name, value);
+      await settleShadow(id);
+    },
+    shadowComputed: (id, inner, property) => Promise.resolve(getComputedStyle(inShadow(id, inner)).getPropertyValue(property)),
+    module: async (code) => {
+      // A blob URL is of the test page's origin; this page has no CSP.
+      const url = URL.createObjectURL(new Blob([code], { type: "text/javascript" }));
+      try {
+        await import(/* @vite-ignore */ url);
+      } finally {
+        URL.revokeObjectURL(url);
+      }
+      await settle();
+    },
     layout: (id) => layoutWait(id),
     clipboardCopy: async (id) => {
       const range = document.createRange();
@@ -359,10 +489,6 @@ export function inProcessDriver(): Driver {
       return Promise.resolve(current.id === "" ? `<${current.localName}>` : current.id);
     },
     animations: (id) => Promise.resolve(runningOf(id)),
-    remove: (id) => {
-      element(id).remove();
-      return Promise.resolve();
-    },
     frames: async (count) => {
       for (let frame = 0; frame < count; frame++) await new Promise((resolve) => requestAnimationFrame(resolve));
     },

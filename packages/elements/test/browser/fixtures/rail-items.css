@@ -1,0 +1,15 @@
+/*
+ * The personal rail's stand-in items (011 research.md R-10, FR-027, FR-038): until #12's ocelle-nav-item exists, the
+ * rail pages hold plain <a> items, sized here to --ocelle-size-rail-item squares that inherit the rail's chrome ink.
+ * A same-origin stylesheet linked by the fixture pages (and read in process), never a style attribute, so the CSP
+ * record stays clean; keyed on the [data-story="rail-items"] root, as the rail stories' stylesheet is.
+ */
+[data-story="rail-items"] a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  inline-size: var(--ocelle-size-rail-item);
+  block-size: var(--ocelle-size-rail-item);
+  color: inherit;
+}

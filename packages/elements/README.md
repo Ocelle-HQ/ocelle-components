@@ -1,10 +1,12 @@
 # @ocelle/elements
 
 The Ocelle web components: standards-based custom elements (Lit 3) that work in any page, a server-rendered page
-under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has eight elements:
-`ocelle-icon`, with a set of thirteen icons, `ocelle-brand-mark`, the Ocelle rosette, two controls that follow the
-control conventions below, `ocelle-button` and `ocelle-action-row`, `ocelle-facts` with its item `ocelle-fact`, a
-label and value sheet, `ocelle-empty-state`, an empty or loading panel, and `ocelle-progress`, a progress bar.
+under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has thirteen elements:
+`ocelle-icon`, with a set of thirteen icons, `ocelle-brand-mark`, the Ocelle rosette, the layout elements
+`ocelle-section-header`, `ocelle-card`, `ocelle-page-header`, `ocelle-context-sidebar` and `ocelle-personal-rail`, two
+controls that follow the control conventions below, `ocelle-button` and `ocelle-action-row`, `ocelle-facts` with its
+item `ocelle-fact`, a label and value sheet, `ocelle-empty-state`, an empty or loading panel, and `ocelle-progress`, a
+progress bar.
 
 ## Entry points
 
@@ -13,6 +15,11 @@ label and value sheet, `ocelle-empty-state`, an empty or loading panel, and `oce
 | `@ocelle/elements` | `dist/index.js` | every element; for hosts with a bundler |
 | `@ocelle/elements/ocelle-icon.js` | `dist/ocelle-icon.js` | `ocelle-icon` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-brand-mark.js` | `dist/ocelle-brand-mark.js` | `ocelle-brand-mark` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-card.js` | `dist/ocelle-card.js` | `ocelle-card` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-section-header.js` | `dist/ocelle-section-header.js` | `ocelle-section-header` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-page-header.js` | `dist/ocelle-page-header.js` | `ocelle-page-header` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-context-sidebar.js` | `dist/ocelle-context-sidebar.js` | `ocelle-context-sidebar` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-personal-rail.js` | `dist/ocelle-personal-rail.js` | `ocelle-personal-rail` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-button.js` | `dist/ocelle-button.js` | `ocelle-button` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-action-row.js` | `dist/ocelle-action-row.js` | `ocelle-action-row` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-facts.js` | `dist/ocelle-facts.js` | `ocelle-facts` and its item `ocelle-fact`; for hosts with a bundler |
@@ -139,6 +146,343 @@ back to the SVG default size, 300 × 300 px.
 In forced colours the ring and the spot are painted in `currentColor` in every variant, the system colour of their
 context. On the light main grounds the ochre spot measures 2.6:1: the ring carries the mark, and a host that needs
 every part at 3:1 uses `tone="mono"`. `ocelle-brand-mark` has no slot, event, CSS part or CSS custom property.
+
+## `ocelle-section-header`
+
+```html
+<ocelle-section-header>
+  <span slot="eyebrow">Mission</span>
+  <h2 slot="heading">Runs</h2>
+  <p slot="description">Every run of the mission, newest first.</p>
+  <button slot="actions" type="button">New run</button>
+</ocelle-section-header>
+
+<ocelle-section-header variant="eyebrow"><h3 slot="heading">Recent</h3></ocelle-section-header>
+<ul>…</ul>
+```
+
+`ocelle-section-header` styles a heading the page slots, with an optional eyebrow above it, an optional description
+under it and optional actions at its inline end. It creates no heading of its own: slot one heading element (`h1` to
+`h6`) in `heading`, and its level is the page's. The page's own rules for that heading win over the header's styles.
+Place the header outside a `[data-ocelle-prose]` region: the prose rules of `@ocelle/styles` for `h1` to `h6` are page
+rules, so they win over the header's heading style.
+
+- `heading` (slot): the page's heading element, drawn in `--ocelle-font-display` at `--ocelle-font-weight-strong`,
+  `--ocelle-line-height-tight` and `--ocelle-color-ink`, at `--ocelle-font-size-lg`, or at `--ocelle-font-size-subhead`
+  at the compact size, with no margin.
+- `eyebrow` (slot): a short label above the heading, on a line of its own, drawn with the eyebrow style:
+  `--ocelle-font-sans` at `--ocelle-font-size-eyebrow`, `--ocelle-font-weight-eyebrow`, `--ocelle-tracking-eyebrow`
+  and `--ocelle-line-height-normal`, in `--ocelle-color-eyebrow`, upper case, with `--ocelle-figures`.
+- `description` (slot): supporting text under the heading, at `--ocelle-font-size-sm` in `--ocelle-color-ink-muted`.
+- `actions` (slot): controls at the inline end of the heading's first line, their block start at the heading's. When
+  the heading's longest word and the actions do not fit side by side, the actions move under the heading,
+  `--ocelle-space-2` below it, at its inline start, and a word longer than the line wraps inside itself.
+
+The gaps are `--ocelle-space-1` between eyebrow and heading and between heading and description, `--ocelle-space-4`
+between the heading and the actions, and `--ocelle-space-2` between two actions; the header has no padding of its own.
+
+- `size` (attribute and property, reflected): `regular` or `compact`. Not set, or any other value, draws the heading
+  regular, at `--ocelle-font-size-lg`, or compact in a compact `ocelle-card`'s `header` slot. `compact` draws it at
+  `--ocelle-font-size-subhead`; the gaps stay the same.
+- `variant` (attribute and property, reflected): `default` or `eyebrow`. Not set, or any other value, draws as
+  `default`. `eyebrow` draws the heading with the eyebrow style, for a heading used as a label above a list, and renders
+  neither the `eyebrow` nor the `description` slot; `actions` stay. `size` and a compact card change nothing in the
+  eyebrow variant.
+
+The eyebrow variant draws the heading upper case while its DOM text stays as written; Chromium names the heading by its
+drawn, upper-case text.
+
+`ocelle-section-header` reads the tokens `--ocelle-font-display`, `--ocelle-font-sans`, `--ocelle-font-size-lg`,
+`--ocelle-font-size-subhead`, `--ocelle-font-size-sm`, `--ocelle-font-weight-strong`, `--ocelle-line-height-tight`,
+`--ocelle-line-height-normal`, `--ocelle-color-ink`, `--ocelle-color-ink-muted`, `--ocelle-space-1`,
+`--ocelle-space-2`, `--ocelle-space-4`, `--ocelle-figures`, `--ocelle-font-size-eyebrow`,
+`--ocelle-font-weight-eyebrow`, `--ocelle-tracking-eyebrow` and `--ocelle-color-eyebrow`.
+
+The section header trims the block margins of its slotted eyebrow and description, so a `p` description sits
+`--ocelle-space-1` under the heading; a page rule that sets those margins wins.
+
+An empty slot of the section header takes no space: no box, gap or margin. A slot is empty when no element is assigned
+to it and every text assigned to it is whitespace; an assigned element counts as content even when it is `hidden`, so
+remove an element from the slot rather than hide it. The layout follows the slots' content as it changes.
+
+The section header replaces the part-level padding and gap overrides Kitty Desktop sets on its section headers: an empty
+part takes no padding or gap, and the gaps between filled parts are the header's own.
+
+`ocelle-section-header` has no event, CSS part or CSS custom property, and adds no tab stop.
+
+## `ocelle-card`
+
+```html
+<ocelle-card density="compact">
+  <ocelle-section-header slot="header"><h2 slot="heading">Runs</h2></ocelle-section-header>
+  <p>Twelve runs this week.</p>
+</ocelle-card>
+
+<ocelle-card inset><p>A card nested inside another surface.</p></ocelle-card>
+```
+
+`ocelle-card` draws a header above a body, with a `--ocelle-border-width` border in `--ocelle-color-rule`,
+`--ocelle-radius-row` corners and the `--ocelle-color-sheet` ground.
+
+- `header` (slot): the card's header, usually an `ocelle-section-header`.
+- The default slot: the card's body.
+- `density` (attribute and property, reflected): `regular` or `compact`. Not set, or any other value, draws regular:
+  padding `--ocelle-space-7` and a `--ocelle-space-2` gap between header and body. `compact` has padding
+  `--ocelle-space-5` and a `--ocelle-space-4` gap.
+- `inset` (boolean attribute and property, reflected): present with any value, the empty string included, draws the card
+  on `--ocelle-color-inset`, for a card nested inside another surface, and changes nothing else. Absent, the card is on
+  `--ocelle-color-sheet`. In forced colours both grounds are the system background, so an inset card looks like a
+  regular one.
+
+A compact card draws an `ocelle-section-header` in its `header` slot at the compact size, unless the header has a valid
+`size` of its own (`regular` or `compact`), which wins; a header with an empty or invalid `size` takes the card's
+density. Only a header assigned to the card's own `header` slot is compacted: one in its body, inside another element in
+the `header` slot, or in a card nested in it keeps its own size.
+
+`@ocelle/elements/ocelle-card.js` does not define `ocelle-section-header`: a page that slots one imports both. The
+compact size works whichever is defined first, and when the two come from two copies of the package; a header of a copy
+that does not answer Lit's `requestUpdate()` learns of a density change only at its own next update.
+
+The card has no role: it adds no region, article or group, and a page that needs a region or an article adds it, for
+example by wrapping the card in a `section` with an accessible name.
+
+`ocelle-card` reads the tokens `--ocelle-border-width`, `--ocelle-color-rule`, `--ocelle-radius-row`,
+`--ocelle-color-sheet`, `--ocelle-color-inset`, `--ocelle-space-2`, `--ocelle-space-4`, `--ocelle-space-5` and
+`--ocelle-space-7`.
+
+The card trims the block-start margin of the first visible body element and the block-end margin of the last, skipping
+a `hidden` element at either edge, so a `p` body starts at the header gap and ends at the padding edge. The margins
+between body elements are the page's, and a page rule that sets the trimmed margins wins.
+
+An empty slot of the card takes no space: a card with no header has no header gap. A slot is empty when no element is
+assigned to it and every text assigned to it is whitespace; an assigned element counts as content even when it is
+`hidden`, so remove an element from the slot rather than hide it.
+
+In forced colours the card's border is drawn in a system colour, and a compact card keeps its padding, gap and compact
+header. `ocelle-card` has no event, CSS part or CSS custom property, and adds no tab stop.
+
+## `ocelle-page-header`
+
+```html
+<ocelle-page-header size="compact">
+  <span slot="eyebrow">Workspace</span>
+  <h1 slot="heading">Missions</h1>
+  <p slot="description">Every mission of the workspace, newest first.</p>
+  <button slot="actions" type="button">New mission</button>
+</ocelle-page-header>
+```
+
+`ocelle-page-header` starts a screen: a band holding an optional eyebrow naming the area, the screen's title, an
+optional subtitle and the screen's actions, ruled off below. The page header creates no heading of its own: slot one
+heading element (`h1` to `h6`) in `heading`, usually the screen's `h1`, and its level is the page's. The page's own
+rules for that heading win over the header's styles. Place the page header outside a `[data-ocelle-prose]` region: the
+prose rules of `@ocelle/styles` for `h1` to `h6` are page rules, so they win over the header's heading style.
+
+- `heading` (slot): the page's heading element, the screen's title, drawn in `--ocelle-font-display` at
+  `--ocelle-font-weight-display`, `--ocelle-tracking-display`, `--ocelle-line-height-tight` and `--ocelle-color-ink`,
+  at `--ocelle-font-size-2xl`, or at `--ocelle-font-size-xl` at the compact size, with no margin.
+- `eyebrow` (slot): a short label above the heading naming the area, on a line of its own, drawn with the eyebrow style
+  at both sizes: `--ocelle-font-sans` at `--ocelle-font-size-eyebrow`, `--ocelle-font-weight-eyebrow`,
+  `--ocelle-tracking-eyebrow` and `--ocelle-line-height-normal`, in `--ocelle-color-eyebrow`, upper case, with
+  `--ocelle-figures`.
+- `description` (slot): a subtitle under the heading, at `--ocelle-font-size-md` in `--ocelle-color-ink-soft`,
+  `--ocelle-space-1` below the heading.
+- `actions` (slot): the screen's controls at the inline end of the heading's first line, their block start at the
+  heading's, `--ocelle-space-4` from it. When the heading's longest word and the actions do not fit side by side, the
+  actions move under the description, or under the heading when there is none, `--ocelle-space-2` below it, at its
+  inline start, and a word longer than the line wraps inside itself.
+
+The band has block padding `--ocelle-space-4`, inline padding `--ocelle-space-6` and a `--ocelle-border-width` rule in
+`--ocelle-color-rule` along its block end. The gaps are `--ocelle-space-1` between eyebrow and heading and
+`--ocelle-space-2` between two actions. The page header has no ground of its own: the band shows the surface it sits on,
+the page canvas or a pane.
+
+- `size` (attribute and property, reflected): `regular` or `compact`. Not set, or any other value, draws regular, the
+  heading at `--ocelle-font-size-2xl`. `compact` draws the heading at `--ocelle-font-size-xl` (24 px), for dense
+  screens; everything else stays the same.
+
+`ocelle-page-header` reads the tokens `--ocelle-font-display`, `--ocelle-font-sans`, `--ocelle-font-size-2xl`,
+`--ocelle-font-size-xl`, `--ocelle-font-size-md`, `--ocelle-font-weight-display`, `--ocelle-tracking-display`,
+`--ocelle-line-height-tight`, `--ocelle-line-height-normal`, `--ocelle-color-ink`, `--ocelle-color-ink-soft`,
+`--ocelle-color-rule`, `--ocelle-border-width`, `--ocelle-space-1`, `--ocelle-space-2`, `--ocelle-space-4`,
+`--ocelle-space-6`, `--ocelle-figures`, `--ocelle-font-size-eyebrow`, `--ocelle-font-weight-eyebrow`,
+`--ocelle-tracking-eyebrow` and `--ocelle-color-eyebrow`.
+
+The page header trims the block margins of its slotted eyebrow and description, so a `p` description sits
+`--ocelle-space-1` under the heading; a page rule that sets those margins wins.
+
+An empty slot of the page header takes no space: no box, gap or margin. A slot is empty when no element is assigned to
+it and every text assigned to it is whitespace; an assigned element counts as content even when it is `hidden`, so
+remove an element from the slot rather than hide it. The layout follows the slots' content as it changes.
+
+The page header replaces the pinned page-header font rules Kitty Desktop sets on its page headers: the title, eyebrow
+and subtitle fonts and the band are the header's own, at either size.
+
+In forced colours the rule under the band is drawn in a system colour, and a compact header keeps its compact title.
+`ocelle-page-header` has no event, CSS part or CSS custom property, adds no tab stop, and exposes no heading, banner or
+other landmark of its own.
+
+## `ocelle-context-sidebar`
+
+```html
+<ocelle-context-sidebar label="Team navigation">
+  <p slot="head">Kitty team</p>
+  <ul>
+    <li><a href="/missions">Missions</a></li>
+    <li><a href="/runs">Runs</a></li>
+  </ul>
+  <ocelle-section-header><h2 slot="heading">Projects</h2></ocelle-section-header>
+  <p slot="footer">3 of 5 missions done</p>
+</ocelle-context-sidebar>
+```
+
+`ocelle-context-sidebar` is the column beside a screen's content: a head, sections of navigation and a footer, ruled
+off from each other.
+
+- `head` (slot): the sidebar's head, the team or project it belongs to, padded `--ocelle-space-4` on every side.
+- The default slot: the sections, one element each (a `ul` of links, a `div`, an `ocelle-section-header`), each drawn
+  as a block padded `--ocelle-space-4` on every side across the sidebar's whole inline size.
+- `footer` (slot): the sidebar's footer, a progress summary for example, padded `--ocelle-space-4` on every side and
+  kept at the sidebar's block end.
+
+A `--ocelle-border-width` divider in `--ocelle-color-rule` lies between the head and the first section, between each
+two sections and between the last section and the footer, across the sidebar's whole inline size; with no sections,
+one divider lies between the head and the footer. The sidebar's ground is `--ocelle-color-rail`.
+
+- `label` (attribute and property, not reflected): the name of the sidebar's navigation landmark, trimmed. Not set,
+  empty or whitespace-only, the landmark has no name; the sidebar is drawn the same either way.
+
+Set a distinct `label` on every sidebar: assistive technology lists the navigation landmarks of a page, and unnamed
+ones give its user nothing to tell them apart. A host `aria-label` decides the landmark's name alone when present: a
+non-empty one is the name even when `label` is set, and a blank one leaves the landmark unnamed even with a `label`.
+`label` names the landmark only when the host has no `aria-label`, so removing the host `aria-label` falls back to
+`label`. The sidebar never writes, changes or removes the host's `aria-label`.
+
+`ocelle-context-sidebar` reads the tokens `--ocelle-color-rail`, `--ocelle-color-rule`, `--ocelle-border-width` and
+`--ocelle-space-4`.
+
+The sidebar trims the block margins of each section, and the block-start margin of the first visible element and the
+block-end margin of the last visible element of its head and of its footer, skipping a `hidden` element at either
+edge, so a `p` or a `ul` sits `--ocelle-space-4` inside its part. The margins between the elements of the head or of
+the footer are the page's, and a page rule that sets the trimmed margins wins.
+
+An empty slot of the sidebar takes no space: no padding and no divider. A slot is empty when no element is assigned to
+it and every text assigned to it is whitespace; an assigned element counts as content even when it is `hidden`, so
+remove an element from the slot rather than hide it. The layout follows the slots' content as it changes.
+
+Wrap each section in an element: text in the default slot is drawn between the sections, with the sections' inline
+padding and no block padding, but it is not a section and gets no divider of its own. A `hidden` section draws nothing
+of its own, no box, padding or divider, but it still counts as content: a sidebar whose sections are all hidden keeps
+the dividers around its empty default slot, so remove sections from the slot rather than hide them all.
+
+A `template` or `script` element in the default slot, such as a `<template>` that Alpine.js keeps in the page for
+`x-if` or `x-for`, is not a section: it is not drawn and gets no padding or divider. Like a hidden section, it still
+counts as content.
+
+A page rule does not change a section's padding, inline margins, divider or display: the sidebar sets them
+`!important`, as the slot convention does, so a page reset such as `ul { margin: 0; padding: 0 }` leaves them in
+place. A section's block margins are the page's to set.
+
+The sidebar fills its container's block size when its content is shorter, with the footer at the block end and the
+free space above the footer, and grows with its content when it is taller, the footer following the last section;
+scrolling is the container's. This holds in a block, flex-row or grid container alike, because the host is
+`align-self: start`. A page rule on the host's `align-self` wins, so a page that sets it to `stretch` in a flex row or
+grid of definite block size keeps the sidebar at the container's size. In a flex row or a flex column the container
+sets the sidebar's inline size (an `inline-size`, a `flex` value, a grid track): there `align-self: start` leaves it
+at its content's inline size. In a flex column, `align-self: stretch` on the host also gives it the container's inline
+size.
+
+The sidebar replaces the part-level padding and gap overrides and the token-painted dividers Kitty Desktop sets on its
+context sidebars: the parts' padding and the dividers are the sidebar's own, and an empty part takes none.
+
+In forced colours the sidebar's dividers are drawn in a system colour. `ocelle-context-sidebar` has no event, CSS part
+or CSS custom property and adds no tab stop. The host itself is its one navigation landmark, with no other landmark
+inside it.
+
+## `ocelle-personal-rail`
+
+```html
+<ocelle-personal-rail label="Personal">
+  <a href="/inbox">Inbox</a>
+  <a href="/runs">Runs</a>
+  <a href="/docs">Docs</a>
+  <a slot="bottom" href="/account">Account</a>
+</ocelle-personal-rail>
+```
+
+`ocelle-personal-rail` is the narrow dark column of personal navigation: icon links from its start, and a bottom
+group, an account link for example, at its end. It is drawn on `--ocelle-color-chrome` with `--ocelle-color-chrome-ink`
+text in both themes.
+
+- The default slot: the primary items, from the rail's block start (vertical) or inline start (horizontal).
+- `bottom` (slot): the bottom group, kept at the rail's block end (vertical) or at the inline end of its first row
+  (horizontal).
+
+The items are `--ocelle-space-1` apart and centred across the rail. A `--ocelle-border-width` divider in
+`--ocelle-color-chrome-muted` lies between the two groups, `--ocelle-space-1` from each, only when both are filled.
+
+- `orientation` (attribute and property, reflected): `vertical` or `horizontal`. Not set, or any other value, draws
+  vertical: a column `--ocelle-shell-rail-width` (52 px) wide, padded `--ocelle-space-2` in the block direction and
+  `--ocelle-space-1` inline, which leaves a 44 px content box, with the divider across it. `horizontal` draws a row
+  padded `--ocelle-space-2` that fills its container's inline size: the primary items wrap onto further rows from its
+  inline start, the bottom group sits at the inline end of the first row, at most half the content box wide, and the
+  divider runs over the rail's whole block size.
+- `label` (attribute and property, not reflected): the name of the rail's navigation landmark, trimmed. Not set, empty
+  or whitespace-only, the landmark has no name; the rail is drawn the same either way.
+
+Set a distinct `label` on every rail: assistive technology lists the navigation landmarks of a page, and unnamed ones
+give its user nothing to tell them apart. A host `aria-label` decides the landmark's name alone when present: a
+non-empty one is the name even when `label` is set, and a blank one leaves the landmark unnamed even with a `label`.
+`label` names the landmark only when the host has no `aria-label`, so removing the host `aria-label` falls back to
+`label`. The rail never writes, changes or removes the host's `aria-label`.
+
+The rail changes orientation only when `orientation` changes: it has no viewport or container query of its own, and
+changing it keeps focus, the document and tab order and the landmark. The page sets it, from wherever its tier comes
+from; this one sets it from a viewport media query whose bound is exclusive, `matchMedia("(width < Npx)")` (never
+`max-width: N`, which also matches at N), vertical while the viewport is at least 720 px wide and horizontal below:
+
+```js
+const rail = document.querySelector("ocelle-personal-rail");
+const narrow = matchMedia("(width < 720px)");
+const orient = () => {
+  rail.orientation = narrow.matches ? "horizontal" : "vertical";
+};
+orient();
+narrow.addEventListener("change", orient);
+```
+
+For #12: `orientation` and `label` are the whole interface a shell or a personal drawer uses to drive the rail. A
+shell that wants the rail horizontal inside its drawer and vertical in its column sets `orientation` from its own
+tier, with an exclusive bound in its own query; the rail does not care where the value comes from. It emits no event.
+
+The rail sizes no item: items are sized by themselves, at `--ocelle-size-rail-item` (40 px), the size #12's
+`ocelle-nav-item` is expected to have. The rail sets only the gap, the items' centring and the chrome ink as its
+colour, which an item takes when it inherits colour. A plain `<a>` does not: give `<a>` items `color: inherit` and a
+target of at least 24 px, or use `ocelle-nav-item` elements once they are released; no release of this package ships
+`ocelle-nav-item` yet.
+
+`ocelle-personal-rail` reads the tokens `--ocelle-color-chrome`, `--ocelle-color-chrome-ink`,
+`--ocelle-color-chrome-muted`, `--ocelle-border-width`, `--ocelle-shell-rail-width`, `--ocelle-space-1` and
+`--ocelle-space-2`.
+
+An empty slot of the rail takes no space: no gap and no divider, so a rail without bottom items has no divider, and
+one with only bottom items has them at its block end (vertical) or inline end (horizontal). A slot is empty when no
+element is assigned to it and every text assigned to it is whitespace; an assigned element counts as content even
+when it is `hidden`, so remove an element from the slot rather than hide it. The layout follows the slots' content as
+it changes.
+
+A vertical rail fills its container's block size when its content is shorter, with the free space between the divider
+and the bottom group, and grows with its content when it is taller, the bottom group following the primary items;
+scrolling is the container's. This holds in a block, flex-row or grid container alike, because the host is
+`align-self: start`. A page rule on the host's `align-self` wins, so a page that sets it to `stretch` in a flex row or
+grid of definite block size keeps the rail at the container's size.
+
+The rail replaces the personal-rail `::part` overrides Kitty Desktop sets on its personal rail: the rail's width,
+padding, gap, divider and orientation are its own, and the items are the page's.
+
+In forced colours the rail's divider is drawn in a system colour, and a horizontal rail keeps its row.
+`ocelle-personal-rail` has no event, CSS part or CSS custom property and adds no tab stop. The host itself is its one
+navigation landmark, with no other landmark inside it.
 
 ## `ocelle-button`
 
@@ -756,6 +1100,14 @@ A host then slots its icons with no size of its own (here into `ocelle-button`, 
 The convention is proven on a test-only host, `ocelle-test-host` (`test/fixtures/test-host.ts`), which ships in no
 package; the controls of later features follow it.
 
+## Forwarded slots
+
+A shell that forwards a slot of its own into an element of this package, such as
+`<slot name="footer" slot="footer"></slot>` in its shadow root, assigns that `<slot>` element to the element's slot.
+The element counts it as content even when nothing is assigned to the forwarded slot, so the part takes its wrapper,
+gap, padding or divider with nothing in it. Forward a slot only when it has content, or remove the forwarding
+`<slot>` when it has none.
+
 ## Host ARIA
 
 A host `aria-label` names the element as `label` does, and when present it decides alone: a blank host `aria-label`
@@ -823,8 +1175,10 @@ with its mirror, so the manifest lists both.
 **Styles.** An element's styles are one `css` tagged template assigned to `static styles`, built only from `--ocelle-*`
 tokens and the values the `style-lint` gate allows, so every instance adopts one shared stylesheet. No template has a
 `style` attribute or a `<style>` element. Every element's styles hold `:host([hidden]) { display: none; }` beside its
-`:host` display rule, which would otherwise beat the user-agent `[hidden]` rule. Variant rules go inside
-`@media not (forced-colors: active)`, so a forced-colours rule never has to outrank a variant selector.
+`:host` display rule, which would otherwise beat the user-agent `[hidden]` rule. Variant rules that set colours or
+grounds go inside `@media not (forced-colors: active)`, so a forced-colours rule never has to outrank a variant
+selector. Variant rules that set layout only (size, padding, gap, direction, wrapping) stay outside it, so a compact or
+horizontal variant keeps its layout in forced colours.
 
 **Manifest.** `custom-elements.json` is generated from the element source by
 `pnpm --filter @ocelle/elements run manifest` and committed; the `manifest` gate fails when it differs from a

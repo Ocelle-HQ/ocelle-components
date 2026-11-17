@@ -3,7 +3,8 @@
 // PLAN-A11Y-SECURITY-1-002 (a)): a value with a non-whitespace character names the element, a blank one leaves it
 // unlabelled even with a `label`, because Chromium names the host from a present `aria-label` whatever the element
 // sets. Without one, the trimmed `label` names it when non-empty. The element never writes the host's attribute;
-// hosts pass it trimmed (PLAN-A11Y-SECURITY-1-003 (a)). Internal, not an entry point.
+// hosts pass it trimmed (PLAN-A11Y-SECURITY-1-003 (a)). Since 011, it also holds `internalsKey`, where the landmark
+// elements keep their internals (research.md R-11). Internal, not an entry point.
 
 /**
  * The element's accessible name: when the host has an `aria-label` attribute it alone decides (its value when it
@@ -26,3 +27,14 @@ export function expose(internals: ElementInternals, name: string | undefined, dr
   internals.ariaLabel = shown ? name : null;
   internals.ariaHidden = shown ? null : "true";
 }
+
+/**
+ * The key of the own property that holds a landmark element's internals (011 research.md R-11): the context sidebar
+ * and the personal rail declare `readonly [internalsKey] = this.attachInternals()`. An own property keyed by a symbol
+ * described `internals` is where axe-core's role computation reads a custom element's internals, so axe judges the
+ * host's ARIA attributes against its `navigation` role; a `#private` field would hide them from it. Not exported from
+ * the package root or the browser build.
+ *
+ * @internal
+ */
+export const internalsKey = Symbol("internals");

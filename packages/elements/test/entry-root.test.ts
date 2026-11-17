@@ -1,20 +1,35 @@
 import { describe, expect, it } from "vitest";
 import * as root from "../src/index.ts";
 
-// The package root (005 FR-002, US1 scenario 17's runtime half; research.md R-02, T014, T052; 013 contracts/elements.md
-// § Modules and exports, T006, T025): importing only src/index.ts defines every element of the package, `ocelle-icon`,
-// `ocelle-brand-mark`, `ocelle-facts`, `ocelle-fact`, `ocelle-empty-state` and `ocelle-progress`, each as the class the root
-// exports
-// (analysis F1 (a): the mark joins in phase 5). This file's own iframe (Vitest browser mode, isolate on) holds only
-// what this import defines. 012 (tasks.md T018) adds `ocelle-button` and its class `OcelleButton`, and (tasks.md T051)
-// `ocelle-action-row` and its class `OcelleActionRow`.
+// The package root (005 FR-002, US1 scenario 17's runtime half; research.md R-02, T014, T052; 011 FR-001, T014; 013
+// contracts/elements.md § Modules and exports, T006, T025): importing only src/index.ts defines every element of the
+// package, `ocelle-icon`, `ocelle-brand-mark` and, since 011, `ocelle-card`, `ocelle-section-header`, `ocelle-page-header`
+// (T027), `ocelle-context-sidebar` (T034) and `ocelle-personal-rail` (T042), since 012 `ocelle-button` (tasks.md T018)
+// and `ocelle-action-row` (tasks.md T051), and since 013 `ocelle-facts`, `ocelle-fact`, `ocelle-empty-state` and
+// `ocelle-progress`, each as the class the root exports (analysis F1 (a): the mark joins in 005 phase 5). This file's
+// own iframe (Vitest browser mode, isolate on) holds only what this import defines.
 describe("importing src/index.ts", () => {
-  it("defines ocelle-icon, ocelle-brand-mark, ocelle-button and ocelle-action-row as the OcelleIcon, OcelleBrandMark, OcelleButton and OcelleActionRow it exports", () => {
+  it("defines ocelle-icon, ocelle-brand-mark, ocelle-card, ocelle-section-header, ocelle-page-header, ocelle-context-sidebar, ocelle-personal-rail, ocelle-button and ocelle-action-row as the OcelleIcon, OcelleBrandMark, OcelleCard, OcelleSectionHeader, OcellePageHeader, OcelleContextSidebar, OcellePersonalRail, OcelleButton and OcelleActionRow it exports", () => {
     const exported = root as Record<string, unknown>;
-    expect([exported.OcelleIcon, exported.OcelleBrandMark, exported.OcelleButton, exported.OcelleActionRow].map((each) => typeof each)).toEqual(["function", "function", "function", "function"]);
-    expect({ icon: customElements.get("ocelle-icon"), mark: customElements.get("ocelle-brand-mark"), button: customElements.get("ocelle-button"), row: customElements.get("ocelle-action-row") }).toEqual({
+    expect([exported.OcelleIcon, exported.OcelleBrandMark, exported.OcelleCard, exported.OcelleSectionHeader, exported.OcellePageHeader, exported.OcelleContextSidebar, exported.OcellePersonalRail, exported.OcelleButton, exported.OcelleActionRow].map((each) => typeof each)).toEqual(["function", "function", "function", "function", "function", "function", "function", "function", "function"]);
+    expect({
+      icon: customElements.get("ocelle-icon"),
+      mark: customElements.get("ocelle-brand-mark"),
+      card: customElements.get("ocelle-card"),
+      header: customElements.get("ocelle-section-header"),
+      page: customElements.get("ocelle-page-header"),
+      sidebar: customElements.get("ocelle-context-sidebar"),
+      rail: customElements.get("ocelle-personal-rail"),
+      button: customElements.get("ocelle-button"),
+      row: customElements.get("ocelle-action-row"),
+    }).toEqual({
       icon: exported.OcelleIcon,
       mark: exported.OcelleBrandMark,
+      card: exported.OcelleCard,
+      header: exported.OcelleSectionHeader,
+      page: exported.OcellePageHeader,
+      sidebar: exported.OcelleContextSidebar,
+      rail: exported.OcellePersonalRail,
       button: exported.OcelleButton,
       row: exported.OcelleActionRow,
     });
