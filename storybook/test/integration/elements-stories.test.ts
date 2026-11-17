@@ -297,6 +297,58 @@ describe("the mid-scroll ocelle-scroller stories hold their share of the scroll 
   }
 });
 
+/** The chips a late layout change appends to the story's scroller (O5-01, T083), the same sentences as T067's. */
+function changeLayoutLate(): void {
+  const scroller = document.querySelector("#storybook-root ocelle-scroller");
+  const box = scroller?.shadowRoot?.querySelector<HTMLElement>(".region-box");
+  const before = (box?.scrollWidth ?? 0) - (box?.clientWidth ?? 0);
+  for (const text of ["Assigned to the release train", "Waiting for the design review", "Blocked by the accessibility audit"]) {
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.textContent = text;
+    scroller?.append(" ", chip);
+  }
+  (window as unknown as { lateGrowth?: number }).lateGrowth = (box?.scrollWidth ?? 0) - (box?.clientWidth ?? 0) - before;
+}
+
+/**
+ * Makes the strip's layout change late, deterministically (O5-01, T083): the next `page.evaluate` on `page` first
+ * runs `changeLayoutAtNextRead`'s change, in the same task as what that evaluate reads, so the change lands after the
+ * read starts and no frame (and so no `ResizeObserver` delivery) lies between the change and a read that does not
+ * wait. This is the race of CI run 44087406429 (a layout change, such as a late font, just before the first read),
+ * placed where it bites every time. Later evaluates are not changed.
+ */
+function changeLayoutAtNextRead(page: Page): void {
+  const evaluate = page.evaluate.bind(page);
+  Object.defineProperty(page, "evaluate", {
+    configurable: true,
+    value: (read: unknown): Promise<unknown> => {
+      Reflect.deleteProperty(page, "evaluate");
+      return evaluate(`(${changeLayoutLate.toString()})(), (${String(read)})()`);
+    },
+  });
+}
+
+// Since 009 phase 2's operator round 5 (O5-01, T083; research.md R-15): CI run 44087406429 failed T067's middle story
+// in light on `first`, the first position read as soon as `open()` returned, before the story's `ResizeObserver` had
+// written the position again after a late layout change. The case makes that change land as the first read starts
+// (three sentence-length chips, growing the scroll range by at least 200 px) and reads the first position with T067's
+// reads: the position read must be the story's share of the range as the layout settles.
+describe("the mid-scroll ocelle-scroller stories' first position is read after a late layout change settles (009 R-15, O5-01, T083)", { timeout: 60_000 }, () => {
+  for (const { id, share } of growing) {
+    for (const theme of ["light", "dark"] as const) {
+      it(`${id} in ${theme}: when the strip grows as the first read starts, the first position read is ${String(share)} of the scroll range within 1 px`, async () => {
+        const { page, outside } = await open(id, theme, "ocelle-scroller");
+        changeLayoutAtNextRead(page);
+        const first = await scrollFigures(page);
+        const lateGrowth = await page.evaluate(() => (window as unknown as { lateGrowth?: number }).lateGrowth ?? 0);
+        expect({ first: Math.abs(first.at - first.range * share) <= 1, grewBy200: lateGrowth >= 200, outside }).toEqual({ first: true, grewBy200: true, outside: [] });
+        await page.close();
+      });
+    }
+  }
+});
+
 /** What a dialog story's page shows: its theme, the base stylesheet and its dialogs. */
 function observeDialogs(page: Page): Promise<unknown> {
   return page.evaluate(() => ({
