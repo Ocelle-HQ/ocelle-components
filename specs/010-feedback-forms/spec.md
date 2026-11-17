@@ -110,6 +110,16 @@ are not read (SPEC-1-09). Their `sk-*` names are kitty-mission-ui roles, not nam
   read twice; the README says so and tells hosts to set the text first (FR-008, FR-009, User Story 1 scenario 15).
 - PLAN-FRESH-3-004 (a) is a plan decision (research R-09) with no change here.
 
+**Operator decision at the landing of PR #49** (2026-11-17, human:jeroennouwsdev; `reviews/phase-3/round-3.md` O3-01,
+`reviews/landing/merge-stop-2.md`):
+
+- "Main's rule + FormControl (Recommended)": the manifest follows mission 008's rule for an internal base class
+  (008 research R-01, operator decision "analyse, then drop it", 2026-11-14), with `src/form-control.ts` named as a
+  second internal base beside `src/overlay.ts`. The members and attributes `ocelle-form-input` and
+  `ocelle-form-select` take from `FormControl` are listed on each with `inheritedFrom`, and each keeps `FormControl`
+  as its superclass. This replaces the earlier design (PLAN-CORRECTNESS-1-004) that copied the base's members into
+  each element without `inheritedFrom` and gave the elements the superclass `LitElement` (FR-034).
+
 ## Consumer need
 
 - kitty-mission-ui uses the Spec Kitty notice in 28 places. Its notice draws a heading block and a gap even when no
@@ -920,7 +930,14 @@ gates and the README documentation test.
   conventions say, and the README documents them. The input's `value` attribute is not one of them: it is the
   element's own attribute, the default value of FR-021, with no property of its own (the `value` property is the
   current value), and the manifest declares it as an attribute with its type (`string`), default (`""`) and
-  description. The manifest adds no new kind of source path (#27).
+  description. The members and attributes the form elements take from their internal base class `FormControl`
+  (`src/form-control.ts`) are listed on `ocelle-form-input` and `ocelle-form-select` with
+  `inheritedFrom: { name: "FormControl", module: "src/form-control.ts" }`, and each element's `superclass` stays
+  `FormControl` from `src/form-control.ts`, as the analyzer writes it; members and attributes the element declares
+  itself carry no `inheritedFrom`. This is mission 008's rule for its overlays' base `src/overlay.ts` (008 research
+  R-01, operator decision 2026-11-14): the generator reads the element modules `src/ocelle-*.ts` and the named internal
+  bases `src/overlay.ts` and `src/form-control.ts`, and nothing else of `src/`; the published manifest holds the
+  element modules only, no internal base's module or declaration (operator decision at the landing, O3-01).
 - **FR-035**: The README gets one section per element and a "Form controls" section (FR-020 to FR-028), names the tokens
   each element reads, defines what "announced" covers in the tests (accessibility tree, not a screen reader), and
   states the WebKit limitation for form association, `ElementInternals` and live regions and that restore by autofill

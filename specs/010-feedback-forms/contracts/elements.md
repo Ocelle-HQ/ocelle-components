@@ -33,6 +33,13 @@ Tokens read: `color-<tone>`, `color-<tone>-bg`, `color-ink`, `radius-row`, `bar-
 
 ## Shared by `ocelle-form-input` and `ocelle-form-select`
 
+The shared members are declared once, in the internal base class `FormControl` (`src/form-control.ts`, not an entry
+point). In the manifest each form element lists the ones it takes from the base, and their attributes, with
+`inheritedFrom: { name: "FormControl", module: "src/form-control.ts" }`, and keeps `FormControl` from
+`src/form-control.ts` as its `superclass`; a member or attribute the element declares itself has no `inheritedFrom`.
+The module `src/form-control.ts` is not published. This is mission 008's rule for the overlays' base `src/overlay.ts`
+(spec FR-034; plan decision 12; operator decision O3-01, `reviews/phase-3/round-3.md`).
+
 | Member | Kind | Type | Default |
 |---|---|---|---|
 | `name` | attribute + property, reflected | `string` | `""` |
