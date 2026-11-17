@@ -34,3 +34,23 @@ has the in-process sink body as its planted twin.
   "shard 40 of 76: 1 plant judged, every plant as expected", 160.0 s.
 - `fail-empty-index` needs nothing new (phase 2 gave its tree `button.stories.ts`).
 - The manifest plants' committed-manifest copies carry the new `busy` member and attribute (4ceaefc).
+
+## Fix round 2 (operator round from the landing review: O2-01, O2-02; tasks.md T049f)
+
+The two new fail plants, each judged once in its other-plant shard on the fix-2 green tree (red commit 2041399 plus
+the fix), `OCELLE_VISUAL_ENGINE=docker pnpm run gate:plants -- --shard <k>`, one shard at a time. The judge compares
+the findings as a multiset by location and rule, so "as expected" means exactly the one `reduced-motion` finding,
+with the message given in `plant.json`.
+
+| Plant | Planted | Expected finding | Shard | Result |
+|---|---|---|---|---|
+| `brand-rules/f-delay-marker-misplaced` (new) | adds `motion-pause`, `300ms`, `delay: true`; wrapped generator whose `validateSource` lets `motion-pause` through | `packages/tokens/src/overrides.ts#motion-pause`, `reduced-motion`, "motion-pause carries delay: true, which is accepted only on a motion token whose name ends in -delay" | 2 | as expected, 55.6 s |
+| `brand-rules/f-motion-not-ms` (new) | adds `motion-slow`, `1s`; wrapped generator whose `validateSource` lets `motion-slow` through | `packages/tokens/src/overrides.ts#motion-slow`, `reduced-motion`, "motion-slow is 1s; a motion duration must be a literal <number>ms value" | 3 | as expected, 128.1 s |
+| `brand-rules/f-motion-not-zero` (kept) | wrapped generator, `--ocelle-motion-fast: 60ms` in the block | one `reduced-motion` finding at the declaration | 1 | as expected, 51.1 s |
+| `brand-rules/f-motion-spin-missing` (kept) | wrapped generator drops `--ocelle-motion-spin: 0ms` | one `reduced-motion` finding at the block | 2 | as expected, 51.2 s |
+
+Shard lines: "plants: shard 1 of 76: 80 plants judged, every plant as expected" (142 s), "plants: shard 2 of 76: 80
+plants judged, every plant as expected" (149 s), "plants: shard 3 of 76: 79 plants judged, every plant as expected"
+(179 s): all 239 other plants, the brand-rules gate's 17 among them. The `visual` and `axe` shards were not rerun: the
+fix changes no stylesheet the repository's source produces (`gate:brand-rules` and the tokens tests pass unchanged,
+and the reduced-motion block of the real source is the same three durations).

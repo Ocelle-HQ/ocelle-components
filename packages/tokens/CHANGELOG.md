@@ -64,6 +64,8 @@ nothing loads from a CDN, and two new merge checks (Contrast, Brand rules) keep 
   - motion: `--ocelle-motion-fast`, `--ocelle-motion-base`, `--ocelle-easing-standard`, `--ocelle-tooltip-delay` (the
     hover delay of `ocelle-tooltip`, not zeroed under reduced motion; mission 008), and for the busy spinner of
     `ocelle-button` (012) `--ocelle-motion-spin` (one turn, `800ms`) and `--ocelle-motion-turn` (its angle, `1turn`)
+- The token build refuses a misplaced `delay: true` (only a motion token whose name ends in `-delay` may carry it)
+  and a motion duration that is not a literal `ms` value, such as `1s`, `var()` or `calc()` (mission 012).
 - The control tokens of `@ocelle/elements`' `ocelle-button` (mission 012), in the colour group:
   `--ocelle-color-hover-border` (the border of a hovered or pressed bordered control, `--ocelle-color-ink` unless
   overridden), `--ocelle-color-accent-hover` (a primary control's hover fill), `--ocelle-color-active-bg` (the pressed

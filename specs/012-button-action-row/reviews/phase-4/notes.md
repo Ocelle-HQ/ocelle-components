@@ -148,3 +148,43 @@ and was missed in the red commit.
 After it, the whole suite, `pnpm test` on 08246ac: **3579 tests passed in 149 files**. A first rerun gave 5 failures, all
 in `gates/test/integration/visual.test.ts` with exit 2: dockerd had stopped in the container (`docker info` failed). I
 restarted dockerd as root as the environment notes say, and the rerun above passed. T049 is done.
+
+## Fix round 2 (operator round from the landing review: O2-01, O2-02; tasks.md T049b to T049f)
+
+- **Red** (T049d): 2041399, tests only (`gates/test/brand-rules.test.ts`, `packages/tokens/test/validate.test.ts`,
+  `packages/tokens/test/generate.test.ts`, the pins in `gates/test/plant-runner.test.ts`,
+  `gates/test/integration/plants-robustness.test.ts` and `gates/test/gates-readme.test.ts`). `red.sh 4 fix-2`:
+  `"recorded": true`, exit 1, **18 of 7061 tests failed**, every one an `AssertionError` against the code before the
+  fix (red-fix-2.log): rule (f) exit 0 with no finding where one is expected (7: the three misplaced markers, `1s`,
+  `var()`, `calc()` and a per-theme motion value); `validateSource` not throwing (6); `css()` leaving a misplaced marker
+  out of the block (1); the pins (4: 17 brand-rules cases, 239 other plants, 39 contrast and brand-rules plants, the
+  two plant names missing from the README row). No load or setup error. A first `red.sh` run was stopped by the
+  agent's own 10-minute command limit before it finished (nothing recorded, its worktree removed) and was run again.
+- **Cases that passed at once** (the behaviour already existed; reported, not forced red, T049d): the C1 case
+  (`tooltip-delay` needs no block entry); "requires a -delay name without the marker at 0ms in the block";
+  "keeps the motion values that are no durations out of scope ..." (`1turn`, `90deg`, `cubic-bezier(...)`, `steps(4)`,
+  `ease-in`, and `fade-delay` at `1s` with `delay: true`); in validate.test.ts "delay: true on a motion token whose
+  name ends in -delay, and the motion angles and easings" and "for a motion value per theme, by the theme rule alone"
+  (added so that the generator's string check is pinned: a per-theme motion value gets the theme rule only).
+- **How rule (f) tells durations apart** (O2-02): a motion-group value is out of scope when it is a literal angle
+  (`<number>deg|grad|rad|turn`) or an easing function or keyword (`cubic-bezier(...)`, `steps(...)`, `linear(...)`,
+  `linear`, `ease`, `ease-in`, `ease-out`, `ease-in-out`, `step-start`, `step-end`); a literal `<number>ms` is a
+  required duration; anything else, a per-theme value included, is a finding (fail closed). A valid delay (`delay:
+  true` on a motion token named `-delay`) is skipped whatever its value. A misplaced marker is a finding and exempts
+  nothing. Both findings are at the record (`inputs.locate`), rule `reduced-motion`, before the block's findings.
+- **Green** checks on the fix tree: `pnpm test` **7061 tests passed in 208 files** (2027 s; dockerd restarted first, it
+  had stopped); `pnpm vitest run --project tokens --project tokens-browser` 196 passed; `gate:typecheck` no type
+  error; `gate:lint` 402 files, no finding; `gate:test-lint` 291 files, no finding; `gate:contrast` unchanged (207
+  pairs in light, 215 in dark, 196 required per theme); `gate:brand-rules` "7 rules checked" (0 findings: `tooltip-delay`
+  a valid delay, every other motion duration literal `ms`). The real source's stylesheet is byte-identical before and
+  after the fix (`css(source)` compared).
+- **Plants**: plants.md § Fix round 2 (both new plants as expected in shards 2 and 3; shards 1 to 3, all 239 other
+  plants, as expected).
+- **Mutation** (`pnpm run gate:mutation -- --base 2041399 --files packages/tokens/src/generate.ts,gates/bin/brand-rules.ts`,
+  alone, 371 s): **121 mutants on the changed lines of 2 files, none survived**; 13 timeouts, 30 compile errors, 0
+  zero-mutant entries, 0 equivalent records. The 13 timeouts (pass, R-14): 12 are regex mutants of the kind phase 4
+  already recorded, the anchors dropped and the fraction part changed (`\d` for `\d+`, `\D+`), on the `ms` regex
+  (`generate.ts:80`, moved up from its old line, so counted as changed) and on the new not-a-duration regex
+  (`generate.ts:85`, `brand-rules.ts:37`); no test feeds a prefixed, suffixed or fractional angle or duration. The
+  13th is `isDelay` returning `true` (`generate.ts:100`), which empties the reduced-motion block and makes every
+  record a delay; the run timed out rather than reporting the kill. The 30 compile errors are mutants the type checker rejects (listed in the run's output).

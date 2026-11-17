@@ -29,6 +29,12 @@ const radii: ReadonlyMap<string, string> = new Map([
 ]);
 /** A duration in milliseconds, as a motion token states one (`120ms`). */
 const duration = /^\d+(?:\.\d+)?ms$/;
+/**
+ * A motion value that is no duration, out of rule (f)'s scope (012 plan decision 29 as amended by phase 4 round 2,
+ * O2-02; a closed list): a literal angle, or an easing function or keyword. Every other motion value counts as a
+ * duration (fail closed).
+ */
+const notDuration = /^(?:\d+(?:\.\d+)?(?:deg|grad|rad|turn)|(?:cubic-bezier|steps|linear)\(.*\)|linear|ease|ease-in|ease-out|ease-in-out|step-start|step-end)$/;
 /** The system colour keywords of CSS Color 4 (FR-018). */
 export const systemColours: readonly string[] = [
   "AccentColor",
@@ -191,26 +197,39 @@ function cssAt(line: number | undefined): Location {
 /**
  * The reduced-motion declarations FR-007 requires, each 0ms: every token of group `motion` in the source whose value is
  * a duration, in source order (012 plan decision 29: rule (f) follows the generator; before, the two names
- * `motion-fast` and `motion-base`), except those marked as delays (operator decision C1: `delay: true`).
+ * `motion-fast` and `motion-base`), except the delays (operator decision C1: `delay: true`). As phase 4 round 2
+ * amended it (operator, 2026-11-17, O2-01 and O2-02), it reports at the record: `delay: true` on a token that is not
+ * of group `motion` or whose name does not end in `-delay` (such a marker exempts nothing), and a motion value that is
+ * not a valid delay, a literal `<number>ms` duration, an angle or an easing function (such a value is not required).
  */
-function motionDurations(inputs: Inputs): string[] {
-  return inputs.tokens.source
-    .filter((record) => record.group === "motion" && record.delay !== true && typeof record.value === "string" && duration.test(record.value))
-    .map((record) => `--ocelle-${record.name}`);
+function motionDurations(inputs: Inputs, found: Found): string[] {
+  const required: string[] = [];
+  for (const record of inputs.tokens.source) {
+    const delay = record.delay === true && record.group === "motion" && record.name.endsWith("-delay");
+    if (record.delay === true && !delay) found(inputs.locate(record.name), `${record.name} carries delay: true, which is accepted only on a motion token whose name ends in -delay`);
+    if (record.group !== "motion" || delay) continue;
+    const value = typeof record.value === "string" ? record.value : JSON.stringify(record.value);
+    if (duration.test(value)) required.push(`--ocelle-${record.name}`);
+    else if (!notDuration.test(value)) found(inputs.locate(record.name), `${record.name} is ${value}; a motion duration must be a literal <number>ms value`);
+  }
+  return required;
 }
 
-/** (f) A prefers-reduced-motion: reduce block sets exactly the motion durations of the source, each to 0ms. */
+/**
+ * (f) A prefers-reduced-motion: reduce block sets exactly the motion durations of the source, each to 0ms; only a
+ * motion token named `-delay` carries `delay: true`, and every other motion duration is a literal `ms` value.
+ */
 function reducedMotionBlock(inputs: Inputs, found: Found): void {
   const blocks: AtRule[] = [];
   inputs.stylesheet.walkAtRules("media", (block) => {
     if (/prefers-reduced-motion\s*:\s*reduce/.test(block.params)) blocks.push(block);
   });
+  const reducedMotion = motionDurations(inputs, found);
   const [first] = blocks;
   if (first === undefined) {
     found(cssAt(undefined), "no @media (prefers-reduced-motion: reduce) block");
     return;
   }
-  const reducedMotion = motionDurations(inputs);
   const set = new Set<string>();
   for (const block of blocks) {
     block.walkDecls((declaration) => {

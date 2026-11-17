@@ -99,6 +99,8 @@ Under `prefers-reduced-motion: reduce` every motion duration (`--ocelle-motion-f
 duration, and nothing else. `--ocelle-easing-standard` and `--ocelle-motion-turn` keep their values, and so does a
 motion token the source marks as a delay, `--ocelle-tooltip-delay`, because a delay is not motion. The brand-rules
 check fails a stylesheet whose block misses a motion duration or sets anything else.
+The token build refuses a misplaced `delay: true` (only a motion token whose name ends in `-delay` may carry it) and a
+motion duration that is not a literal `ms` value (`1s`, `var()` or `calc()`), so every motion duration can be zeroed.
 
 ### Forced colours
 
