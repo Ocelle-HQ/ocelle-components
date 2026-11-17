@@ -340,7 +340,7 @@ export class OcelleNotice extends LitElement {
   }
 
   override disconnectedCallback(): void {
-    // Stryker disable next-line CallExpression: equivalent, LitElement's disconnectedCallback() only tells reactive controllers, and the notice has none
+    // Stryker disable next-line CallExpression: equivalent, LitElement's disconnectedCallback() tells reactive controllers, which the notice has none of, and disconnects its template's async directives, which it uses none of (its template uses no directive)
     super.disconnectedCallback();
     this.startMove();
     afterTask(() => {
