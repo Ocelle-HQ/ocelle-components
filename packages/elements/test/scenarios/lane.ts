@@ -3,7 +3,7 @@
 // R-10, R-17; T032). Each scenario sets its frame's viewport, observes the page through the driver and returns one
 // observation; each harness asserts it equals the scenario's `expected`, written by hand from the spec and research:
 // the token values of packages/tokens/test/expected.ts (`--ocelle-font-size-sm` 0.875rem, 14 px; `--ocelle-font-size-xs`
-// 0.75rem, 12 px; `--ocelle-font-weight-strong` 600; `--ocelle-tracking-caps` 0.06em, 0.72 px at 12 px;
+// 0.75rem, 12 px; `--ocelle-font-weight-strong` 600; `--ocelle-tracking-eyebrow` 0.08em, 0.96 px at 12 px;
 // `--ocelle-radius-row` 6 px; `--ocelle-space-3` 12 px; the colours per theme) and research.md R-09's structure: the
 // visible header is hidden from the tree (`aria-hidden="true"`, the lane's one hidden node) and holds the title and
 // the count, `.title` and `.count`; the lane's group role and name are on a node of its shadow root. The visible text is
@@ -93,7 +93,7 @@ function flatExpected(theme: "light" | "dark"): unknown {
     color: tokenColour("color-ink-soft", theme),
     "font-variant-numeric": "tabular-nums",
     "text-transform": "uppercase",
-    "letter-spacing": "0.72px",
+    "letter-spacing": "0.96px",
   };
   return {
     box: { "background-color": "rgba(0, 0, 0, 0)", "border-top-left-radius": "0px", "padding-top": "0px", "padding-left": "0px" },
@@ -199,7 +199,7 @@ export const laneScenarios: readonly BoardScenario[] = [
   },
   ...(["light", "dark"] as const).map(
     (theme): BoardScenario => ({
-      name: `US2-7 in ${theme}: a flat lane has no ground, corners or padding; its title and count are 12 px uppercase at weight 600 in color-ink-soft, spaced by --ocelle-tracking-caps, in the sans with tabular figures, never monospace; variant is reflected and the tree is the default lane's (FR-017, FR-021)`,
+      name: `US2-7 in ${theme}: a flat lane has no ground, corners or padding; its title and count are 12 px uppercase at weight 600 in color-ink-soft, spaced by --ocelle-tracking-eyebrow, in the sans with tabular figures, never monospace; variant is reflected and the tree is the default lane's (FR-017, FR-021)`,
       base: false,
       run: (driver) => flat(driver, theme),
       expected: flatExpected(theme),

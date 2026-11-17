@@ -96,32 +96,33 @@ describe("the JSON export from the real source", () => {
   });
 });
 
-// 009 (research.md R-16, FR-033): the source's pinned count, 115 tokens of 002 and 003 plus 009's six, and the six by
-// name in the generated stylesheet's :root block and the JSON export, with their group and value.
-describe("009's six tokens (FR-033)", () => {
-  const six = [
+// 009 (research.md R-16, FR-033): the source's pinned count, 115 tokens of 002 and 003, 011's four eyebrow tokens and
+// 009's five (since the merge of 011, 009 uses 011's tracking-eyebrow for its uppercase labels and adds no
+// tracking-caps), and the five by name in the generated stylesheet's :root block and the JSON export, with their group
+// and value.
+describe("009's five tokens (FR-033)", () => {
+  const five = [
     { name: "lane-min-width", group: "shell", value: "10rem" },
     { name: "list-track-width", group: "shell", value: "18rem" },
     { name: "list-detail-collapse", group: "shell", value: "40rem" },
     { name: "list-detail-inspector-collapse", group: "shell", value: "60rem" },
     { name: "scroller-fade-size", group: "space", value: "var(--ocelle-space-7)", ref: ["space-7"] },
-    { name: "tracking-caps", group: "type", value: "0.06em" },
   ];
 
-  it("pins the source at 121 tokens", () => {
-    expect([source.length, exported.tokens.length, sheet.root.size]).toEqual([121, 121, 121]);
+  it("pins the source at 124 tokens", () => {
+    expect([source.length, exported.tokens.length, sheet.root.size]).toEqual([124, 124, 124]);
   });
 
   it("has each as a plain record with its group, value and references", () => {
-    const records = six.map(({ name }) => source.find((record) => record.name === name));
-    expect(records.map((record) => (record === undefined ? undefined : { name: record.name, group: record.group, value: record.value, ...(record.ref === undefined ? {} : { ref: record.ref }) }))).toEqual(six);
+    const records = five.map(({ name }) => source.find((record) => record.name === name));
+    expect(records.map((record) => (record === undefined ? undefined : { name: record.name, group: record.group, value: record.value, ...(record.ref === undefined ? {} : { ref: record.ref }) }))).toEqual(five);
   });
 
   it("declares each on :root in tokens.css and exports it in tokens.json, scroller-fade-size resolved to 2rem", () => {
-    expect(six.map(({ name }) => sheet.root.get(full(name)))).toEqual(six.map(({ value }) => value));
+    expect(five.map(({ name }) => sheet.root.get(full(name)))).toEqual(five.map(({ value }) => value));
     const byName = new Map(exported.tokens.map((token) => [token.name, token]));
-    expect(six.map(({ name }) => byName.get(full(name)))).toEqual(
-      six.map(({ name, group, value, ref }) => ({ name: full(name), group, value: value === "var(--ocelle-space-7)" ? "2rem" : value, ...(ref === undefined ? {} : { ref: ref.map(full) }) })),
+    expect(five.map(({ name }) => byName.get(full(name)))).toEqual(
+      five.map(({ name, group, value, ref }) => ({ name: full(name), group, value: value === "var(--ocelle-space-7)" ? "2rem" : value, ...(ref === undefined ? {} : { ref: ref.map(full) }) })),
     );
   });
 });

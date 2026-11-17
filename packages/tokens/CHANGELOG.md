@@ -11,8 +11,8 @@ shared `--ocelle-*` names. Now a host links `tokens.css` and serves `fonts/` bes
 nothing loads from a CDN, and two new merge checks (Contrast, Brand rules) keep the token values accessible.
 
 `--ocelle-lane-min-width`, `--ocelle-list-track-width`, `--ocelle-list-detail-collapse`,
-`--ocelle-list-detail-inspector-collapse`, `--ocelle-scroller-fade-size` and `--ocelle-tracking-caps`, the six tokens of
-the workflow layouts of `@ocelle/elements`, are additions to the token names: a minor change.
+`--ocelle-list-detail-inspector-collapse` and `--ocelle-scroller-fade-size`, the five tokens of the workflow layouts of
+`@ocelle/elements`, are additions to the token names: a minor change.
 
 ### Added
 
@@ -42,10 +42,10 @@ the workflow layouts of `@ocelle/elements`, are additions to the token names: a 
     `--ocelle-line-height-tight`, `--ocelle-line-height-normal`, `--ocelle-line-height-relaxed`,
     `--ocelle-line-height-compact` (the compact scale of `@ocelle/styles`, 003), `--ocelle-line-height-prose` (the
     prose running text of `@ocelle/styles`, 003), `--ocelle-font-weight-regular`, `--ocelle-font-weight-medium`, `--ocelle-font-weight-strong`,
-    `--ocelle-font-weight-display`, `--ocelle-tracking-display`, `--ocelle-tracking-caps` (the letter spacing of small
-    uppercase labels, `0.06em`: the flat lane's title of `@ocelle/elements`, 009), and the eyebrow tokens of
-    `@ocelle/elements`' section header (011): `--ocelle-font-size-eyebrow` (an alias of `--ocelle-font-size-xs`),
-    `--ocelle-font-weight-eyebrow` (an alias of `--ocelle-font-weight-strong`) and `--ocelle-tracking-eyebrow` (`0.08em`)
+    `--ocelle-font-weight-display`, `--ocelle-tracking-display`, and the eyebrow tokens of `@ocelle/elements`' section
+    header (011): `--ocelle-font-size-eyebrow` (an alias of `--ocelle-font-size-xs`), `--ocelle-font-weight-eyebrow`
+    (an alias of `--ocelle-font-weight-strong`) and `--ocelle-tracking-eyebrow` (`0.08em`, also the letter spacing of
+    the flat lane's title, 009)
   - space: `--ocelle-space-1`, `--ocelle-space-2`, `--ocelle-space-3`, `--ocelle-space-4`, `--ocelle-space-5`,
     `--ocelle-space-6`, `--ocelle-space-7`, `--ocelle-space-8`, `--ocelle-space-9`, `--ocelle-space-10`,
     `--ocelle-gutter`, `--ocelle-scroller-fade-size` (`ocelle-scroller`'s fade depth and focus clearance,

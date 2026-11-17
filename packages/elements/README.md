@@ -458,6 +458,7 @@ narrow.addEventListener("change", orient);
 For #12: `orientation` and `label` are the whole interface a shell or a personal drawer uses to drive the rail. A
 shell that wants the rail horizontal inside its drawer and vertical in its column sets `orientation` from its own
 tier, with an exclusive bound in its own query; the rail does not care where the value comes from. It emits no event.
+The container-tier convention (Element conventions) describes the tiers of an element that chooses its own.
 
 The rail sizes no item: items are sized by themselves, at `--ocelle-size-rail-item` (40 px), the size #12's
 `ocelle-nav-item` is expected to have. The rail sets only the gap, the items' centring and the chrome ink as its
@@ -892,11 +893,11 @@ default slot, the lane's content, such as cards.
   colours it draws a 1 px `CanvasText` border.
 - **Flat.** The flat lane has no ground, corners or padding of its own: its cards sit on the board's ground. Its title
   and count are `--ocelle-font-size-xs` at `--ocelle-font-weight-strong` in `--ocelle-color-ink-soft`, uppercase,
-  spaced by `--ocelle-tracking-caps`, in `--ocelle-font-sans` with tabular figures. In forced colours it draws no
+  spaced by `--ocelle-tracking-eyebrow`, in `--ocelle-font-sans` with tabular figures. In forced colours it draws no
   border.
 - **Tokens.** `ocelle-workflow-lane` reads the tokens `--ocelle-color-sheet`, `--ocelle-radius-row`,
   `--ocelle-space-3`, `--ocelle-font-size-sm`, `--ocelle-font-size-xs`, `--ocelle-font-weight-strong`,
-  `--ocelle-color-ink`, `--ocelle-color-ink-soft`, `--ocelle-color-ink-muted`, `--ocelle-tracking-caps`,
+  `--ocelle-color-ink`, `--ocelle-color-ink-soft`, `--ocelle-color-ink-muted`, `--ocelle-tracking-eyebrow`,
   `--ocelle-font-sans`, `--ocelle-figures` and `--ocelle-border-width`; the board gives it `--ocelle-lane-min-width`.
 - **Title.** A long title wraps between words, and a word wider than the lane breaks inside it; the lane does not
   widen for it, and the count stays visible.
@@ -1100,7 +1101,10 @@ in no package.
 
 **Container tiers.** The container-tier convention: a tier is chosen from the element's own border-box inline size,
 measured by a `ResizeObserver`, never from the viewport. `ocelle-list-detail` follows it, and so does any later
-element with tiers.
+element with tiers. An element with no tiers of its own, such as `ocelle-personal-rail`, measures nothing: the page
+sets its layout attribute (the rail's `orientation`) from the page's own tier, with an exclusive bound as below, and
+the element does not care where the value comes from. The tier an element renders is internal, never an attribute
+of its host.
 
 - A threshold is a `*-below` attribute. After trimming ASCII whitespace it accepts exactly
   `^(?:0|[0-9]+(?:\.[0-9]+)?(?:px|rem|em))$`, units in any ASCII letter case: `rem` resolves at the root's computed

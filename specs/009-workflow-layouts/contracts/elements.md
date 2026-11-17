@@ -76,7 +76,7 @@ The board module does not define the lane: a host imports both, or the root.
     ground, which differs from canvas, panel, inspector and pane in both themes; operator decision
     PLAN-CORRECTNESS-1-011 (b), research.md R-10), `--ocelle-radius-row`, `--ocelle-space-3`;
   - title and count: `--ocelle-font-size-sm`, `--ocelle-font-size-xs`, `--ocelle-font-weight-strong`,
-    `--ocelle-color-ink`, `--ocelle-color-ink-soft`, `--ocelle-color-ink-muted`, `--ocelle-tracking-caps`,
+    `--ocelle-color-ink`, `--ocelle-color-ink-soft`, `--ocelle-color-ink-muted`, `--ocelle-tracking-eyebrow`,
     `--ocelle-font-sans`, `--ocelle-figures`;
   - forced-colours border: `--ocelle-border-width`.
 - **Name:** `"<title>, <count-label or count>"`, `"<count-label or count>"` without a title, or `"<title>"` without a
@@ -166,7 +166,9 @@ The board module does not define the lane: a host imports both, or the root.
 | `--ocelle-list-detail-collapse` | `40rem` | shell | the default `collapse-below` |
 | `--ocelle-list-detail-inspector-collapse` | `60rem` | shell | the default `inspector-below` |
 | `--ocelle-scroller-fade-size` | `var(--ocelle-space-7)` | space | the fade depth and the focus clearance |
-| `--ocelle-tracking-caps` | `0.06em` | type | letter spacing of small uppercase labels (shared with #8, R-16) |
+
+The flat lane's letter spacing is #8's `--ocelle-tracking-eyebrow` (`0.08em`, type), which landed first; this feature
+adds no letter-spacing token (R-16).
 
 ## Stories (`storybook/stories/`; recheck against #10 as merged, research.md R-15)
 

@@ -148,7 +148,6 @@ export const records = tokenRecords([
   { name: "font-weight-strong", group: "type", value: "600" },
   { name: "font-weight-display", group: "type", value: "800" },
   { name: "tracking-display", group: "type", value: "-0.03em" }, // display letter spacing
-  { name: "tracking-caps", group: "type", value: "0.06em" }, // small uppercase labels: the flat lane's title (009), #8's eyebrow
   { name: "font-size-eyebrow", group: "type", value: "var(--ocelle-font-size-xs)", ref: ["font-size-xs"] }, // eyebrows, 12 px (011)
   { name: "font-weight-eyebrow", group: "type", value: "var(--ocelle-font-weight-strong)", ref: ["font-weight-strong"] }, // eyebrows (011)
   { name: "tracking-eyebrow", group: "type", value: "0.08em" }, // eyebrow letter spacing (011)

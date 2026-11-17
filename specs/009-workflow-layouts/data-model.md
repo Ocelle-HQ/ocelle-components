@@ -77,5 +77,6 @@ At rest no wrapper has a `tabindex`. At first render the same rule applies, and 
 
 ## Tokens added
 
-`lane-min-width`, `list-track-width`, `list-detail-collapse`, `list-detail-inspector-collapse`, `scroller-fade-size`
-and `tracking-caps`, as listed in contracts/elements.md. They are plain records in `packages/tokens/src/source.ts`.
+`lane-min-width`, `list-track-width`, `list-detail-collapse`, `list-detail-inspector-collapse` and
+`scroller-fade-size`, as listed in contracts/elements.md; the flat lane's letter spacing is #8's `tracking-eyebrow`
+(research.md R-16). They are plain records in `packages/tokens/src/source.ts`.

@@ -27,11 +27,11 @@ describe("packages/elements/CHANGELOG.md: the workflow layouts are a minor chang
   });
 });
 
-describe("packages/tokens/CHANGELOG.md: the six layout tokens are a minor change (FR-035)", () => {
+describe("packages/tokens/CHANGELOG.md: the five layout tokens are a minor change (FR-035)", () => {
   const section = unreleased(read("../tokens/CHANGELOG.md"));
 
   it.each([
-    "`--ocelle-lane-min-width`, `--ocelle-list-track-width`, `--ocelle-list-detail-collapse`, `--ocelle-list-detail-inspector-collapse`, `--ocelle-scroller-fade-size` and `--ocelle-tracking-caps`, the six tokens of the workflow layouts of `@ocelle/elements`, are additions to the token names: a minor change",
+    "`--ocelle-lane-min-width`, `--ocelle-list-track-width`, `--ocelle-list-detail-collapse`, `--ocelle-list-detail-inspector-collapse` and `--ocelle-scroller-fade-size`, the five tokens of the workflow layouts of `@ocelle/elements`, are additions to the token names: a minor change",
   ])("states under Unreleased: %s", (statement) => {
     expect(section).toContain(flat(statement));
   });

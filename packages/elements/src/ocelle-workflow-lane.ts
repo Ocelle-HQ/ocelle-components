@@ -87,7 +87,7 @@ export class OcelleWorkflowLane extends LitElement {
         font-size: var(--ocelle-font-size-xs);
         font-weight: var(--ocelle-font-weight-strong);
         font-variant-numeric: var(--ocelle-figures);
-        letter-spacing: var(--ocelle-tracking-caps);
+        letter-spacing: var(--ocelle-tracking-eyebrow);
         text-transform: uppercase;
         color: var(--ocelle-color-ink-soft);
       }
@@ -109,7 +109,7 @@ export class OcelleWorkflowLane extends LitElement {
         font-size: var(--ocelle-font-size-xs);
         font-weight: var(--ocelle-font-weight-strong);
         font-variant-numeric: var(--ocelle-figures);
-        letter-spacing: var(--ocelle-tracking-caps);
+        letter-spacing: var(--ocelle-tracking-eyebrow);
         text-transform: uppercase;
       }
     }

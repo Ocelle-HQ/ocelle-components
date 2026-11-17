@@ -417,7 +417,7 @@ and the board's overflow state, read the lane names in the tree, and draw both l
    - it has no ground, no corners and no padding of its own, and its cards sit directly on the board's ground;
    - its title is in uppercase (`text-transform: uppercase`, so the accessible name keeps the host's case), in
      `--ocelle-font-size-xs` at `--ocelle-font-weight-strong`, in `--ocelle-color-ink-soft`, spaced by
-     `--ocelle-tracking-caps` (FR-021), in the sans with tabular figures, never a monospace face;
+     `--ocelle-tracking-eyebrow` (FR-021), in the sans with tabular figures, never a monospace face;
    - the count follows it in the same style.
 
    The tree is the same as for the default variant.
@@ -761,9 +761,10 @@ goes.
   text to the tree. No built-in word is added to the name in any language (operator decision; US2-5).
 - **FR-020**: A lane's title wraps inside the lane between words, and breaks inside a word only when the word alone is
   wider than the lane. The lane does not widen for it (US2-8).
-- **FR-021**: A new token `--ocelle-tracking-caps` (`0.06em`) sets the letter spacing of small uppercase labels. It is
-  used by the flat lane's title, and #8's eyebrow is expected to reuse it (Assumptions, "Sibling tokens"). The flat
-  title is never set in a monospace face: no `font-family` other than `--ocelle-font-sans` (constitution II).
+- **FR-021**: The letter spacing of small uppercase labels is #8's token `--ocelle-tracking-eyebrow` (`0.08em`), which
+  landed first (Assumptions, "Sibling tokens"; research.md R-16): the flat lane's title uses it, and this feature adds
+  no letter-spacing token. The flat title is never set in a monospace face: no `font-family` other than
+  `--ocelle-font-sans` (constitution II).
 
 **`ocelle-list-detail`**
 
@@ -875,8 +876,8 @@ goes.
   Their visual baselines and axe runs come from #10's `visual` and `axe` gates, as merged (Assumptions, "#10"). A
   story that shows a mid-scroll state sets the scroll position in its render, so its capture is deterministic.
 - **FR-033**: The tokens `--ocelle-lane-min-width`, `--ocelle-list-track-width`, `--ocelle-list-detail-collapse`,
-  `--ocelle-list-detail-inspector-collapse`, `--ocelle-scroller-fade-size` and `--ocelle-tracking-caps` are added to
-  `@ocelle/tokens` through its token source, with their documentation rows. None is a colour, so no contrast pair is
+  `--ocelle-list-detail-inspector-collapse` and `--ocelle-scroller-fade-size` are added to `@ocelle/tokens` through
+  its token source, with their documentation rows. None is a colour, so no contrast pair is
   added. The token gates' pinned counts are updated with them.
 - **FR-034**: The README of `@ocelle/elements` documents:
   - each element: its attributes, properties, methods (list-detail's `remeasure()`), slots, the tokens it reads, and
@@ -912,7 +913,7 @@ goes.
   A documentation test checks each of these items.
 - **FR-035**: The changelogs of `@ocelle/elements` and `@ocelle/tokens` name the surface this feature adds: the four
   elements, their attributes, properties and slots, list-detail's `remeasure()` method, the new entry points, the
-  container-tier convention, and the six tokens. The changes are additions (MINOR).
+  container-tier convention, and the five tokens. The changes are additions (MINOR).
 
 ### Key Entities
 
