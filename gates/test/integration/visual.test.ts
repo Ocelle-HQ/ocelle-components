@@ -23,7 +23,9 @@ import type { Ran } from "./workspace.ts";
 // here has CI and GITHUB_ACTIONS removed from its environment (the CI rule has its own test) and no
 // OCELLE_VISUAL_ENGINE, so the engine is `auto`, docker here. The animation control drives the host browser
 // (OCELLE_CHROMIUM_PATH locally) on the plant story pass-animation-and-caret.
-const timeout = 600_000;
+// 900 s since the merge of main into 014 (landing): the repository's runs capture 354 story-themes, not 286 or 110,
+// and one such test took 456 s alone and more than 600 s under the full unit-tests run's load.
+const timeout = 900_000;
 const empty = join(repo, "gates/test/fixtures/plant-repo/empty-plant");
 const plantsDir = join(repo, "gates/plants/visual");
 const docker = "only: no cross-engine comparison)";
