@@ -9,3 +9,10 @@
 ## Decision 2 — announce comment (2026-11-17)
 
 - Answer: **"Post it (Recommended)"**. Posted as https://github.com/Ocelle-HQ/ocelle-components/pull/54#issuecomment-6957148133.
+
+## Decision 3 — shared scenario Driver contract conflict (2026-11-17)
+
+- Operator: human:jeroennouwsdev
+- Context: merging origin/main, the shared `Driver` (packages/elements/test/scenarios/driver.ts) has five methods both sides added with different signatures and meanings — `press`, `click`, `hover`, `activeElement`, `viewportSize` — and a different `Target` type. Main's earlier merge of #43 kept both sides by giving the later additions distinct names.
+- Options: rename 014's methods; rename main's methods; unify into overloads; defer the merge.
+- Answer: **"Rename 014's methods (Recommended)"**. 014's five colliding methods get distinct names, `Target` widens to cover both shapes with one shared resolver, and main's landed code is untouched. The planner updates 014's task, research and contract wording to the new names afterwards.
