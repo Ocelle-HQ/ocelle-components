@@ -250,7 +250,8 @@ function operate(operation: Operation): void {
     const target = found(operation.id);
     removed.set(operation.id, target);
     target.remove();
-  } else (found(operation.id) as HTMLElement).focus();
+  } else if (operation.op === "reset") (found(operation.id) as HTMLFormElement).reset();
+  else (found(operation.id) as HTMLElement).focus();
 }
 
 /** A property value as the driver reports it: a string, number, boolean or null; anything else as null. */

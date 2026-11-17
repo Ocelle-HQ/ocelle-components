@@ -176,6 +176,32 @@ describe("ocelle-form-select's rules", () => {
     expect({ value: element.value, data: [...new FormData(byId("f", HTMLFormElement))] }).toEqual({ value: "", data: [] });
   });
 
+  it("a form reset in the task of the select's insertion, before its first render, reports no error and gives at once the value of the default selection, as on a native select: the last option marked selected, a group's options included, else the first enabled option, a disabled group's options skipped, else \"\"", async () => {
+    const cases: Record<string, string> = {
+      marked: '<option value="a">A</option><optgroup label="G"><option value="b" selected>B</option></optgroup><option value="c">C</option>',
+      enabled: '<optgroup label="Closed" disabled><option value="a">A</option></optgroup><option value="b" disabled>B</option><option value="c">C</option>',
+      none: "",
+    };
+    const errors: string[] = [];
+    const heard = (event: ErrorEvent): void => {
+      errors.push(event.message);
+    };
+    const values: Record<string, unknown> = {};
+    window.addEventListener("error", heard);
+    try {
+      for (const [name, options] of Object.entries(cases)) {
+        container.innerHTML = `<form id="f"><ocelle-form-select id="s" name="lane">${options}</ocelle-form-select></form><form id="g"><select id="n" name="lane">${options}</select></form>`;
+        byId("f", HTMLFormElement).reset();
+        byId("g", HTMLFormElement).reset();
+        values[name] = { element: byId("s", OcelleFormSelect).value, native: byId("n", HTMLSelectElement).value };
+      }
+    } finally {
+      window.removeEventListener("error", heard);
+    }
+    await endOfTask();
+    expect({ errors, values }).toEqual({ errors: [], values: { marked: { element: "b", native: "b" }, enabled: { element: "c", native: "c" }, none: { element: "", native: "" } } });
+  });
+
   it("an option change updates the validity: a required select whose only option has an empty value becomes valid when a selected option of another value is added", async () => {
     await insert('<ocelle-form-select id="s" required><option value="">Choose a lane</option></ocelle-form-select>');
     const element = byId("s", OcelleFormSelect);

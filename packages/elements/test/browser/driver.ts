@@ -326,7 +326,8 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
             const target = byId(operation.id);
             removed.set(operation.id, target);
             target.remove();
-          } else (byId(operation.id) as HTMLElement).focus();
+          } else if (operation.op === "reset") (byId(operation.id) as HTMLFormElement).reset();
+          else (byId(operation.id) as HTMLElement).focus();
         }
       }, operations);
       await settle(page);
