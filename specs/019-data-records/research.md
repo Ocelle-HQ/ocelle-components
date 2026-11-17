@@ -163,6 +163,11 @@ analysis G5).
 **Rationale.** With R-03's `fit-content` the track's inline size follows the table's content, unlike the board's
 contained lanes, so no unobserved case is expected.
 
+**Result (T003, 2026-11-17, `reviews/phase-1/spike.md` § 4).** None. A `<tbody>` swap, a whole-`<table>` swap
+(`innerHTML` and `replaceChild`), a cell's text edit, a late web font, a `hidden` table shown again and `wrap="anywhere"`
+set later each left the same overflow state as a fresh load. No README line is needed and T013 adds no conditional
+statement.
+
 ## R-06 The cell rules in `@ocelle/styles` (FR-005, FR-006, FR-007, FR-012)
 
 **Decision.** `packages/styles/src/base.css` gains a "data table" block, every selector of which is wrapped whole in
