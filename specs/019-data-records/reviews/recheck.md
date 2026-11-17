@@ -7,6 +7,8 @@
 - **Result:** five differences, each a question for the operator in § Questions below (Q1 to Q5). Phase 1 (T003) does
   not start until they are answered. One mechanical difference, the driver helper names, is resolved by T001 itself:
   `contracts/checks.md` § Harnesses and § Keyboard bodies now name the merged helpers (item 5).
+- **Second pass** (after the operator's decisions, `reviews/recheck-decisions.md`, applied in 827b34a): one difference
+  remains, Q6 in § Second pass below. T001 stays open.
 
 ## 1. 009's overflow-region module
 
@@ -269,3 +271,36 @@ data-model.md rows 19 and 20, contracts/ocelle-data-table.md 55 to 61, plan.md 1
   assertion.
 - (b) Beside 013's facts rule in the base layer, in `source.test.ts`'s `baseLayer` slice; the last-rule assertion
   then ends at block 2 from phase 1 on.
+
+## Second pass: the artifacts after the operator's decisions (827b34a)
+
+- **Decisions:** `reviews/recheck-decisions.md` (human:jeroennouwsdev, 2026-11-17): Q1 (a), Q2 (c), Q3 (a), Q4 (a),
+  Q5 (b). **Applied:** 827b34a (`reviews/recheck-fixes.md`). **Compared:** spec.md, plan.md, research.md,
+  data-model.md, tasks.md, quickstart.md and contracts/ at 827b34a against the working tree (sources unchanged since
+  8ee3351; `git diff 8ee3351 827b34a` touches `specs/019-data-records/` only).
+
+| Item | Check at 827b34a | Result |
+|---|---|---|
+| 1. Overflow-region module | unchanged by the decisions; R-07 now cites `overflow-region.ts` 160 to 164 (`.region-edge { inline-size: var(--ocelle-scroller-fade-size); block-size: 0 }`, so the edge is laid out in every state) and the module's own read of the fade depth as `edge.getBoundingClientRect().width` (`#onFocusIn`, 490 to 498, `fade:` at 497): both as on `main` | none |
+| 2. Pinned-start option | unchanged (absent; caption not sticky, Q-F (b)) | none |
+| 3. Tokens (Q1 (a)) | spec FR-006, US1-3 (164 to 168), the Q-B lines (72 to 73, superseded), research R-06, R-13, Q-B (840 to 844), plan § Decisions after the recheck 1 and plan-gate item 3 (superseded), contracts/styles-data-table.md column-header row, tasks T006 US1-3 (204), T017 (268) all name `--ocelle-font-size-eyebrow`, `--ocelle-font-weight-eyebrow`, `--ocelle-tracking-eyebrow`, `--ocelle-color-eyebrow`, which are `source.ts` 48 to 55 and 151 to 153 (weight `var(--ocelle-font-weight-strong)`); `--ocelle-tracking-caps` remains only in the verbatim spec Input (16), the recheck's own scope lists (tasks.md 142, plan.md 325, research R-14) and statements that it is gone, as recheck-fixes § Notes says | none |
+| 4 (a). Per-instance sheet (Q2 (c)) | data-model.md row 20, research R-07 (292 to 300 and § "The README's Styles convention" 364 to 378), plan.md 113, 143, 208 to 213, contracts/ocelle-data-table.md § Shadow structure (54 to 67), contracts/styles-data-table.md row 25, contracts/checks.md 107, quickstart.md 39, tasks T007, T013, T016, T021, T024: the end fade is the measured px width of `.region-edge.end`, never the token's text. R-07's "before" sentences match `packages/elements/README.md` 1284 to 1289 and `test/node/readme.test.ts` 57 and 58 word for word; the token's text would compute to `2rem` (`scroller-fade-size` is `var(--ocelle-space-7)`, `space-7` `2rem`, `source.ts` 162 and 168), as checks.md 107 says. **But** contracts/ocelle-data-table.md § Interface, "Base-style hook (analysis I7 (a))", lines 32 to 34, still says: "`--data-table-end-fade` (the end fade's depth, `var(--ocelle-scroller-fade-size)`, while the end fade shows)". It was not in 827b34a's diff and contradicts lines 54 to 67 of the same file and Q2 (c) | **yes** → **Q6** |
+| 4 (b). Pre-upgrade rules (Q5 (b)) | research R-06 (221 to 231), R-08 (463), contracts/styles-data-table.md 7 and § Block 3, the timeline and chain contracts § Before upgrade, plan.md 220 to 223 and 275, tasks T035, T043, T059, T066: block 3 in the base layer after `base.css` 50 to 52 (the facts rule) and before the focus rule 55; `source.test.ts` `baseLayer` 31 to 53 with the facts entry at 50, the last-rule assertion 209 to 212 keeping "wrap, block 1, block 2". The base layer's header comment (`base.css` 8) is not pinned by any test, so naming the new rules in it breaks nothing | none |
+| 5. Drivers | checks.md § Harnesses (20 to 24) and § Keyboard bodies US1-13 (52) still name `deepActive`, `activeElement()` as 011's record reader, `computed(Target)`, `reducedMotion(mode)` | none |
+| 6. Line citations (Q4 (a)) | research R-06: prose rules 139 to 235 (`base.css` 139 shared margin rule, 235 end of `th`), `table:focus-visible` 210 to 213 (211 to 213 the rule, 210 its comment), prose table and caption 199 to 221 (202 to 208 table, 215 to 221 caption); `source.test.ts` 195 to 212 (describe 195, `baseLayer` 31 to 53, its assertion 196 to 198, prose slice 204 to 207, last rule 209 to 212) | none |
+| 7. Op 016, story commands | unchanged | none |
+| 8. #10's commands | unchanged | none |
+| 9. Manifest glob, exports | unchanged | none |
+| 10. Mutation | unchanged | none |
+| 11. Folds (Q3 (a)) | tasks.md § Folds (49) and § Implementation strategy (465), plan.md § Phases and § Decisions after the recheck 3: fold bases at 8ee3351 or later, which `fold-history.sh` 33 accepts (first pass, item 11); no skill or script changed | none |
+
+**Q6. The data-table contract's base-style hook paragraph still gives the end fade as the token's text**
+(contracts/ocelle-data-table.md 32 to 34; the only remaining difference). The implementer does not edit contracts.
+Effect: none on the tasks (T007, T016, T024 already follow Q2 (c)); the contract would contradict itself in phase 1's
+review.
+- (a) The planner changes the parenthesis to "(the end fade's depth, the measured px inline size of `.region-edge.end`,
+  while the end fade shows)" in a documentation commit; the implementer then rechecks that line alone and ticks T001.
+- (b) The operator accepts the line as a known slip, recorded here, and lets the implementer tick T001 now; the planner
+  corrects it with phase 1's first planning fix, and phase 1's review reads lines 54 to 67 as the contract.
+- (c) The implementer makes the one-line correction in the T001 commit, under the operator's explicit authorisation,
+  and ticks T001.
