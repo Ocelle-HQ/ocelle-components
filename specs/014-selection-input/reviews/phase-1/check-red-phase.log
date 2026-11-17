@@ -1,5 +1,5 @@
 Scope: all 5 workspace projects
-✓ Lockfile passes supply-chain policies (verified 2h ago)
+✓ Lockfile passes supply-chain policies (verified 3d ago)
 Lockfile is up to date, resolution step is skipped
 Packages are hard linked from the content-addressable store to the virtual store.
   Content-addressable store is at: /root/.local/share/pnpm/store/v11
@@ -35,15 +35,10 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 239ms using pnpm v12.16.1
+Done in 483ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /opt/pw-browsers/chromium-1243/chrome-linux64/chrome
 $ node gates/bin/test.ts
-gates/test/integration/visual.test.ts:115: unit-tests: visual gate (gates/bin/visual.ts) captures the repository's 42 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1): AssertionError: expected { code: 2, stdout: [], …(1) } to deeply equal { code: +0, …(2) }
-gates/test/integration/visual.test.ts:126: unit-tests: visual gate (gates/bin/visual.ts) keeps the capture, its diff image and run 1 in baseline layout for differs and missing-baseline, and nothing for any other story-theme (FR-005, analysis G2): AssertionError: expected { code: 2, findings: [], …(1) } to deeply equal { code: 1, findings: [ …(2) ], …(1) }
-gates/test/integration/visual.test.ts:239: unit-tests: baseline command (gates/bin/baselines.ts) writes nothing on an unchanged tree and says so (FR-008, analysis G1): AssertionError: expected { code: 2, stdout: [], …(1) } to deeply equal { code: +0, …(2) }
-gates/test/integration/visual.test.ts:251: unit-tests: baseline command (gates/bin/baselines.ts) the plant mode writes a deleted baseline of a plant back with the bytes it had, and touches no other file (research.md R-11): AssertionError: expected { code: 2, stdout: [], …(1) } to deeply equal { code: +0, …(2) }
-gates/test/integration/visual.test.ts:271: unit-tests: capture (gates/visual/capture.ts in the pinned container) captures a story alone byte for byte as in a full run after other stories (freshness, FR-028), and a 2000 px story 2000 px tall (FR-012): AssertionError: expected { code: 1, …(1) } to deeply equal { code: +0, stderr: '' }
 gates/test/integration/vitest-mutation-config.test.ts:85: unit-tests: vitest.mutation.config.ts holds every project of vitest.config.ts except gates-integration, tokens-browser, styles-browser, storybook-integration, elements, elements-build, elements-browser and elements-browser-file, with tokens split for the start order: AssertionError: expected [ 'tokens', 'tokens-browser', …(10) ] to deeply equal [ 'tokens', 'tokens-browser', …(11) ]
 packages/elements/test/browser/driver.test.ts:40: unit-tests: the driver commands and recorders on the strict-CSP fixture (014 R-11) press sends the key with its modifiers …: Error: focus: not implemented
 packages/elements/test/browser/driver.test.ts:40: unit-tests: the driver commands and recorders on the strict-CSP fixture (014 R-11) click gives one trusted left click by d…: Error: click: not implemented
@@ -89,5 +84,5 @@ packages/elements/test/driver-recorders.test.ts:18: unit-tests: the driver recor
 packages/elements/test/driver-recorders.test.ts:18: unit-tests: the driver recorders, in process (014 R-07, R-11) activationRecord puts a synchronous req…: Error: activationRecord: not implemented
 packages/elements/test/driver-recorders.test.ts:18: unit-tests: the driver recorders, in process (014 R-07, R-11) axUpdates records the region emptied in…: Error: axUpdates: not implemented
 packages/elements/test/driver-recorders.test.ts:18: unit-tests: the driver recorders, in process (014 R-07, R-11) axUpdates records the region emptied an…: Error: axUpdates: not implemented
-unit-tests: 50 of 3156 tests failed
+unit-tests: 45 of 3156 tests failed
 [ELIFECYCLE] Test failed. See above for more details.

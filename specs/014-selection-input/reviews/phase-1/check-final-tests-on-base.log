@@ -1,5 +1,5 @@
 Scope: all 5 workspace projects
-✓ Lockfile passes supply-chain policies (verified 2h ago)
+✓ Lockfile passes supply-chain policies (verified 3d ago)
 Lockfile is up to date, resolution step is skipped
 Packages are hard linked from the content-addressable store to the virtual store.
   Content-addressable store is at: /root/.local/share/pnpm/store/v11
@@ -35,24 +35,9 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 539ms using pnpm v12.16.1
+Done in 307ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /opt/pw-browsers/chromium-1243/chrome-linux64/chrome
 $ node gates/bin/test.ts
-gates/test/integration/visual.test.ts:115: unit-tests: visual gate (gates/bin/visual.ts) captures the repository's 42 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1): AssertionError: expected { code: 2, stdout: [], …(1) } to deeply equal { code: +0, …(2) }
-gates/test/integration/visual.test.ts:126: unit-tests: visual gate (gates/bin/visual.ts) keeps the capture, its diff image and run 1 in baseline layout for differs and missing-baseline, and nothing for any other story-theme (FR-005, analysis G2): AssertionError: expected { code: 2, findings: [], …(1) } to deeply equal { code: 1, findings: [ …(2) ], …(1) }
-gates/test/integration/visual.test.ts:239: unit-tests: baseline command (gates/bin/baselines.ts) writes nothing on an unchanged tree and says so (FR-008, analysis G1): AssertionError: expected { code: 2, stdout: [], …(1) } to deeply equal { code: +0, …(2) }
-gates/test/integration/visual.test.ts:251: unit-tests: baseline command (gates/bin/baselines.ts) the plant mode writes a deleted baseline of a plant back with the bytes it had, and touches no other file (research.md R-11): AssertionError: expected { code: 2, stdout: [], …(1) } to deeply equal { code: +0, …(2) }
-gates/test/integration/visual.test.ts:271: unit-tests: capture (gates/visual/capture.ts in the pinned container) captures a story alone byte for byte as in a full run after other stories (freshness, FR-028), and a 2000 px story 2000 px tall (FR-012): AssertionError: expected { code: 1, …(1) } to deeply equal { code: +0, stderr: '' }
-gates/test/integration/vitest-mutation-config.test.ts:85: unit-tests: vitest.mutation.config.ts holds every project of vitest.config.ts except gates-integration, tokens-browser, styles-browser, storybook-integration, elements, elements-build, elements-browser and elements-browser-file, with tokens split for the start order: AssertionError: expected [ 'tokens', 'tokens-browser', …(10) ] to deeply equal [ 'tokens', 'tokens-browser', …(11) ]
-gates/test/vitest-config.test.ts:50: unit-tests: vitest.mutation.config.ts excludes exactly tokens-browser, styles-browser, elements, elements-build, elements-browser, elements-browser-file, storybook-integration and gates-integration from the projects of vitest.config.ts, and splits tokens: AssertionError: expected [ 'tokens-browser', …(6) ] to deeply equal [ 'tokens-browser', …(7) ]
-gates/test/vitest-config.test.ts:131: unit-tests: the Vitest projects put an element file: test in elements-browser-file only, a node project on exactly its own directory that provides the file-access flag: AssertionError: expected { owners: [ 'elements' ], …(5) } to deeply equal { …(6) }
-packages/elements/test/ax-states.test.ts:14: unit-tests: axStates(target, scope) gives a native listbox's orientation and, through its subtree, each option's selected and disabled states: TypeError: commands.axStates is not a function
-packages/elements/test/ax-states.test.ts:24: unit-tests: axStates(target, scope) addresses a child of a parent: the second option of the listbox: TypeError: commands.axStates is not a function
-packages/elements/test/ax-states.test.ts:29: unit-tests: axStates(target, scope) gives pressed as true, false or mixed, and disabled, for toggle buttons: TypeError: commands.axStates is not a function
-packages/elements/test/ax-states.test.ts:45: unit-tests: axStates(target, scope) maps aria-controls to the controlled node's role and name, and gives a tablist's orientation and a status's live value: TypeError: commands.axStates is not a function
-packages/elements/test/ax-states.test.ts:56: unit-tests: axStates(target, scope) leaves axTree's nodes exactly { role, name } for the same buttons: TypeError: commands.axStates is not a function
-packages/elements/test/driver-recorders.test.ts:18: unit-tests: the driver recorders, in process (014 R-07, R-11) axUpdates records the region emptied in…: TypeError: commands.axUpdatesStart is not a function
-packages/elements/test/driver-recorders.test.ts:18: unit-tests: the driver recorders, in process (014 R-07, R-11) axUpdates records the region emptied an…: TypeError: commands.axUpdatesStart is not a function
-unit-tests: 15 of 3156 tests failed
+unit-tests: could not run: no test file found; check the include patterns of vitest.config.ts
 [ELIFECYCLE] Test failed. See above for more details.
