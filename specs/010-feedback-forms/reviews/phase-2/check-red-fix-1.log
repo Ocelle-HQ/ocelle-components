@@ -1,5 +1,5 @@
 Scope: all 5 workspace projects
-✓ Lockfile passes supply-chain policies (verified 1d ago)
+✓ Lockfile passes supply-chain policies (verified 3d ago)
 Lockfile is up to date, resolution step is skipped
 Packages are hard linked from the content-addressable store to the virtual store.
   Content-addressable store is at: /root/.local/share/pnpm/store/v11
@@ -35,7 +35,7 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 499ms using pnpm v12.16.1
+Done in 538ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /opt/pw-browsers/chromium-1243/chrome-linux64/chrome
 $ node gates/bin/test.ts
@@ -43,11 +43,12 @@ packages/elements/test/node/readme.test.ts:205: unit-tests: packages/elements/RE
 packages/elements/test/browser/notice.test.ts:45: unit-tests: ocelle-notice on the strict-CSP fixture with the browser build (US1) US1-11 text: when the host replaces a t…: Error: promise rejected "AssertionError: US1-11 text: the write af… { …(4) }" instead of resolving
 packages/elements/test/browser/notice.test.ts:45: unit-tests: ocelle-notice on the strict-CSP fixture with the browser build (US1) US1-11 heading: when the host changes t…: Error: promise rejected "AssertionError: US1-11 heading: announcem… { …(4) }" instead of resolving
 packages/elements/test/browser/notice.test.ts:45: unit-tests: ocelle-notice on the strict-CSP fixture with the browser build (US1) US1-13 one task: three text changes in …: Error: promise rejected "AssertionError: US1-13 one task: the writ… { …(4) }" instead of resolving
-packages/elements/test/browser/plants.test.ts:105: unit-tests: plants (elements-browser project) empty-state start: the wait ignores the empty state's start turns US1-11 text (startDocument) red: Error: promise rejected "AssertionError: US1-11 text: announcement… { …(4) }" instead of resolving
+packages/elements/test/browser/notice.test.ts:45: unit-tests: ocelle-notice on the strict-CSP fixture with the browser build (US1) Edge case, two notices changed in one t…: Error: promise rejected "AssertionError: Edge case, two notices: a… { …(4) }" instead of resolving
+packages/elements/test/browser/plants.test.ts:105: unit-tests: plants (elements-browser project) empty-state start: the wait ignores the empty state's start turns US1-11 text (startDocument) red: Error: promise rejected "AssertionError: US1-11 text: the write af… { …(4) }" instead of resolving
 packages/elements/test/browser/plants.test.ts:105: unit-tests: plants (elements-browser project) empty-state start: the wait ignores the empty state's start turns US1-13 one task (startDocument) red: Error: promise rejected "AssertionError: US1-13 one task: the writ… { …(4) }" instead of resolving
 packages/elements/test/announcer.test.ts:152: unit-tests: the wait's floor from the empty state's start (R-02 step 2; phase 2 stop 2, decision (a)) ends no earlier than W of the load state in which the region's empty state began, counted from its start, and W after the last trigger: AssertionError: empty-state start: the copies at the wait's bounds (W 300 ms, pre-load W 700 ms): expected { …(10) } to deeply equal { …(10) }
 packages/elements/test/notice-rules.test.ts:239: unit-tests: the wait from the empty state's start (R-02 step 2; phase 2 stop 2, decision (a)) a change in the first task after a first load is written the pre-load W after the region's first render, not W after the change: AssertionError: expected { atW: 'B', before: 'B', at: 'B' } to deeply equal { atW: '', before: '', at: 'B' }
 packages/elements/test/notice-rules.test.ts:254: unit-tests: the wait from the empty state's start (R-02 step 2; phase 2 stop 2, decision (a)) counts from the region's last render or reveal: after the load, a reveal and an insertion again are written W after them, a change of the first-loaded text the pre-load W after its render: AssertionError: expected { …(2) } to deeply equal { Object (atW, atLoadingW) }
 packages/elements/test/plants.test.ts:208: unit-tests: plants (elements project) empty-state start: the wait ignores the empty state's start turns the fake-clock rule case with two D val… red: Error: promise rejected "AssertionError: empty-state start: the co… { …(4) }" instead of resolving
-unit-tests: 10 of 3531 tests failed
+unit-tests: 11 of 3531 tests failed
 [ELIFECYCLE] Test failed. See above for more details.
