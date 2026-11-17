@@ -1,5 +1,5 @@
 Scope: all 5 workspace projects
-✓ Lockfile passes supply-chain policies (verified 3h ago)
+✓ Lockfile passes supply-chain policies (verified 15h ago)
 Lockfile is up to date, resolution step is skipped
 Packages are hard linked from the content-addressable store to the virtual store.
   Content-addressable store is at: /root/.local/share/pnpm/store/v11
@@ -35,17 +35,18 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 247ms using pnpm v12.16.1
+Done in 305ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /opt/pw-browsers/chromium-1248/chrome-linux64/chrome
 $ node gates/bin/test.ts
-gates/test/integration/fold-history.test.ts:222: unit-tests: history fold (tooling/speckit/bin/fold-history.sh) signs every commit of the folded range, the rebuilt ones and the remap commit, when commit.gpgsign is on (op 021, scenario 1): AssertionError: expected { status: +0, ok: true, …(3) } to deeply equal { status: +0, ok: true, …(3) }
-gates/test/integration/fold-history.test.ts:240: unit-tests: history fold (tooling/speckit/bin/fold-history.sh) refuses an unsigned rebuild with exit 1 and an is-not-signed problem, and changes nothing (op 021, scenario 2): AssertionError: expected { status: +0, ok: true, …(3) } to deeply equal { status: 1, ok: false, …(3) }
-gates/test/integration/fold-history.test.ts:257: unit-tests: history fold (tooling/speckit/bin/fold-history.sh) ends with exit 2 and ok:false JSON when signing fails while rebuilding, and changes nothing (op 021, scenario 3): AssertionError: expected { status: 128, ok: undefined, …(2) } to deeply equal { status: 2, ok: false, …(2) }
-gates/test/integration/fold-history.test.ts:273: unit-tests: history fold (tooling/speckit/bin/fold-history.sh) rolls back to the old head with exit 1 and no prefold ref when the remap commit cannot be signed (op 021, scenario 4): AssertionError: expected { status: 128, ok: undefined, …(2) } to deeply equal { status: 1, ok: false, …(2) }
-gates/test/integration/fold-history.test.ts:289: unit-tests: history fold (tooling/speckit/bin/fold-history.sh) refuses with exit 2 a range that holds a commit reachable from main, and changes nothing (op 021, scenario 5): AssertionError: expected { status: +0, ok: true, …(3) } to deeply equal { status: 2, ok: false, …(3) }
-gates/test/integration/fold-history.test.ts:307: unit-tests: history fold (tooling/speckit/bin/fold-history.sh) refuses with exit 2 a range that holds a commit reachable from origin/main when there is no local main (op 021, scenario 5, R1-01): AssertionError: expected { status: +0, ok: true, …(4) } to deeply equal { status: 2, ok: false, …(4) }
-gates/test/integration/fold-history.test.ts:326: unit-tests: history fold (tooling/speckit/bin/fold-history.sh) rolls back with exit 1 and no prefold ref when the remap commit succeeds but is not signed (op 021, FR-004, R1-02): AssertionError: expected { status: +0, ok: true, …(2) } to deeply equal { status: 1, ok: false, …(2) }
-gates/test/integration/fold-history.test.ts:342: unit-tests: history fold (tooling/speckit/bin/fold-history.sh) signs every commit of the folded range in a SHA-256 repository, whose signature header is gpgsig-sha256 (op 021, edge case, R1-03): AssertionError: expected { status: 2, ok: false, …(4) } to deeply equal { status: +0, ok: true, …(4) }
-unit-tests: 8 of 3851 tests failed
+gates/test/integration/fold-history.test.ts:227: unit-tests: history fold (tooling/speckit/bin/fold-history.sh) signs every commit of the folded range, the rebuilt ones and the remap commit, when commit.gpgsign is on (op 021, scenario 1): AssertionError: expected { status: +0, ok: true, …(3) } to deeply equal { status: +0, ok: true, …(3) }
+gates/test/integration/fold-history.test.ts:245: unit-tests: history fold (tooling/speckit/bin/fold-history.sh) refuses an unsigned rebuild with exit 1 and an is-not-signed problem, and changes nothing (op 021, scenario 2): AssertionError: expected { status: +0, ok: true, …(3) } to deeply equal { status: 1, ok: false, …(3) }
+gates/test/integration/fold-history.test.ts:262: unit-tests: history fold (tooling/speckit/bin/fold-history.sh) ends with exit 2 and ok:false JSON when signing fails while rebuilding, and changes nothing (op 021, scenario 3): AssertionError: expected { status: 128, ok: undefined, …(3) } to deeply equal { status: 2, ok: false, …(3) }
+gates/test/integration/fold-history.test.ts:279: unit-tests: history fold (tooling/speckit/bin/fold-history.sh) rolls back to the old head with exit 1 and no prefold ref when the remap commit cannot be signed (op 021, scenario 4): AssertionError: expected { status: 128, ok: undefined, …(3) } to deeply equal { status: 1, ok: false, …(3) }
+gates/test/integration/fold-history.test.ts:296: unit-tests: history fold (tooling/speckit/bin/fold-history.sh) refuses with exit 2 a range that holds a commit reachable from main, and changes nothing (op 021, scenario 5): AssertionError: expected { status: +0, ok: true, …(3) } to deeply equal { status: 2, ok: false, …(3) }
+gates/test/integration/fold-history.test.ts:314: unit-tests: history fold (tooling/speckit/bin/fold-history.sh) refuses with exit 2 a range that holds a commit reachable from origin/main when there is no local main (op 021, scenario 5, R1-01): AssertionError: expected { status: +0, ok: true, …(4) } to deeply equal { status: 2, ok: false, …(4) }
+gates/test/integration/fold-history.test.ts:333: unit-tests: history fold (tooling/speckit/bin/fold-history.sh) folds with exit 0 when origin/main and main exist but reach no commit of the range (op 021, edge case never refuses wrongly, O3-01): AssertionError: expected { status: +0, ok: true, …(5) } to deeply equal { status: +0, ok: true, …(5) }
+gates/test/integration/fold-history.test.ts:355: unit-tests: history fold (tooling/speckit/bin/fold-history.sh) rolls back with exit 1 and no prefold ref when the remap commit succeeds but is not signed (op 021, FR-004, R1-02): AssertionError: expected { status: +0, ok: true, …(3) } to deeply equal { status: 1, ok: false, …(3) }
+gates/test/integration/fold-history.test.ts:372: unit-tests: history fold (tooling/speckit/bin/fold-history.sh) signs every commit of the folded range in a SHA-256 repository, whose signature header is gpgsig-sha256 (op 021, edge case, R1-03): AssertionError: expected { status: 2, ok: false, …(6) } to deeply equal { status: +0, ok: true, …(6) }
+unit-tests: 9 of 3852 tests failed
 [ELIFECYCLE] Test failed. See above for more details.
