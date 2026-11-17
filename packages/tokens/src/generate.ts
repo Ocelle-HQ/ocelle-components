@@ -26,6 +26,11 @@ export interface TokenRecord {
   readonly value: string | Themed<string>;
   readonly ref?: readonly string[] | Themed<readonly string[]>;
   readonly contrast?: Contrast;
+  /**
+   * A duration of group `motion` that is a delay, not motion (operator decision C1, 2026-11-17: 008's tooltip-delay):
+   * reduced motion leaves it, so the reduced-motion block and brand rule (f) skip it.
+   */
+  readonly delay?: true;
 }
 
 /** One change of the token source by key (data-model.md § Token overrides). */
@@ -270,10 +275,11 @@ const duration = /^\d+(?:\.\d+)?ms$/;
 
 /**
  * The motion durations of a source, in source order: every record of group `motion` whose value is a duration (012
- * research.md R-07, plan decision 29), so `motion-turn` (an angle) and `easing-standard` are not among them.
+ * research.md R-07, plan decision 29), so `motion-turn` (an angle) and `easing-standard` are not among them, except
+ * those marked as delays (operator decision C1: `delay: true`, 008's tooltip-delay).
  */
 function motionDurations(source: readonly TokenRecord[]): TokenRecord[] {
-  return source.filter((record) => record.group === "motion" && typeof record.value === "string" && duration.test(record.value));
+  return source.filter((record) => record.group === "motion" && record.delay !== true && typeof record.value === "string" && duration.test(record.value));
 }
 
 /**

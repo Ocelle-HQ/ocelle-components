@@ -96,7 +96,8 @@ row's description and tags sit; the contrast check covers each pair.
 
 Under `prefers-reduced-motion: reduce` every motion duration (`--ocelle-motion-fast`, `--ocelle-motion-base`,
 `--ocelle-motion-spin`) is `0ms`: the stylesheet's reduced-motion block sets each motion token whose value is a
-duration, and nothing else. `--ocelle-easing-standard` and `--ocelle-motion-turn` keep their values. The brand-rules
+duration, and nothing else. `--ocelle-easing-standard` and `--ocelle-motion-turn` keep their values, and so does a
+motion token the source marks as a delay, `--ocelle-tooltip-delay`, because a delay is not motion. The brand-rules
 check fails a stylesheet whose block misses a motion duration or sets anything else.
 
 ### Forced colours

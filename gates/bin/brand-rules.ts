@@ -191,10 +191,12 @@ function cssAt(line: number | undefined): Location {
 /**
  * The reduced-motion declarations FR-007 requires, each 0ms: every token of group `motion` in the source whose value is
  * a duration, in source order (012 plan decision 29: rule (f) follows the generator; before, the two names
- * `motion-fast` and `motion-base`).
+ * `motion-fast` and `motion-base`), except those marked as delays (operator decision C1: `delay: true`).
  */
 function motionDurations(inputs: Inputs): string[] {
-  return inputs.tokens.source.filter((record) => record.group === "motion" && typeof record.value === "string" && duration.test(record.value)).map((record) => `--ocelle-${record.name}`);
+  return inputs.tokens.source
+    .filter((record) => record.group === "motion" && record.delay !== true && typeof record.value === "string" && duration.test(record.value))
+    .map((record) => `--ocelle-${record.name}`);
 }
 
 /** (f) A prefers-reduced-motion: reduce block sets exactly the motion durations of the source, each to 0ms. */

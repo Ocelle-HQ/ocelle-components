@@ -276,7 +276,8 @@ export const records = tokenRecords([
   { name: "motion-turn", group: "motion", value: "1turn" }, // the spinner's angle of one turn (012); not a duration
   { name: "easing-standard", group: "motion", value: "cubic-bezier(0.22, 1, 0.36, 1)" },
   // the tooltip's hover delay; not 0ms under reduced motion, because a delay is not motion (008 research.md R-09)
-  { name: "tooltip-delay", group: "motion", value: "500ms" },
+  // marked as a delay (operator decision C1), so the reduced-motion block leaves it
+  { name: "tooltip-delay", group: "motion", value: "500ms", delay: true },
 ]);
 
 export const source: readonly TokenRecord[] = applyOverrides(records, overrides);
