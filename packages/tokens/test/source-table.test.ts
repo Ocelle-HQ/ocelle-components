@@ -96,10 +96,10 @@ describe("the JSON export from the real source", () => {
   });
 });
 
-// 009 (research.md R-16, FR-033): the source's pinned count, 115 tokens of 002 and 003, 011's four eyebrow tokens and
-// 009's five (since the merge of 011, 009 uses 011's tracking-eyebrow for its uppercase labels and adds no
-// tracking-caps), and the five by name in the generated stylesheet's :root block and the JSON export, with their group
-// and value.
+// 009 (research.md R-16, FR-033): the source's pinned count, 115 tokens of 002 and 003, 011's four eyebrow tokens,
+// 008's three (drawer-inline, tooltip-max-inline and tooltip-delay) and 009's five (since the merge of 011, 009 uses
+// 011's tracking-eyebrow for its uppercase labels and adds no tracking-caps), and the five by name in the generated
+// stylesheet's :root block and the JSON export, with their group and value.
 describe("009's five tokens (FR-033)", () => {
   const five = [
     { name: "lane-min-width", group: "shell", value: "10rem" },
@@ -109,8 +109,8 @@ describe("009's five tokens (FR-033)", () => {
     { name: "scroller-fade-size", group: "space", value: "var(--ocelle-space-7)", ref: ["space-7"] },
   ];
 
-  it("pins the source at 124 tokens", () => {
-    expect([source.length, exported.tokens.length, sheet.root.size]).toEqual([124, 124, 124]);
+  it("pins the source at 127 tokens", () => {
+    expect([source.length, exported.tokens.length, sheet.root.size]).toEqual([127, 127, 127]);
   });
 
   it("has each as a plain record with its group, value and references", () => {
