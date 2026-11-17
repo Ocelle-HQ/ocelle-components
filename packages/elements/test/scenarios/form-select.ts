@@ -413,6 +413,27 @@ export const formSelectScenarios: readonly FormScenario[] = [
       );
     },
   },
+  {
+    name: "FR-024, reset before the first render: a select inserted into a form that is reset in the same task, before the select renders, reports no error to the page, then shows the option marked selected (in a group), its value and form data those of a native select given the same steps",
+    run: async (driver, tag) => {
+      const options = '<option value="todo">To do</option><optgroup label="Closed"><option value="done" selected>Done</option></optgroup><option value="later">Later</option>';
+      await driver.mount(form("") + form("", "g"));
+      await driver.batch([
+        { op: "insert", container: "f", markup: select(tag, 'id="s" name="lane" label="Lane"', options) },
+        { op: "reset", id: "f" },
+        { op: "insert", container: "g", markup: nativeSelect('id="n" name="lane" aria-label="Lane"', options) },
+        { op: "reset", id: "g" },
+      ]);
+      assert.deepEqual(await driver.messages(), [], "FR-024, reset before the first render: no error on the page");
+      const side = async (id: string, formId: string): Promise<unknown> => ({ value: await driver.property(id, "value"), data: await driver.formData(formId) });
+      const done = { value: "done", data: [["lane", "done"]] };
+      assert.deepEqual(
+        { element: await side("s", "f"), native: await side("n", "g"), shown: { element: await driver.propertyIn("s", parts.control, "selectedIndex"), native: await driver.property("n", "selectedIndex") } },
+        { element: done, native: done, shown: { element: 1, native: 1 } },
+        "FR-024, reset before the first render",
+      );
+    },
+  },
   ...scenario7,
 ];
 

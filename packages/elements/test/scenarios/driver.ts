@@ -102,7 +102,8 @@ export interface Waits {
  * (`textContent`), `attribute` sets an attribute (null removes it), `property` sets a property, `move` appends the
  * element to another container (a removal and an insertion in one operation; an element a `remove` removed is found
  * by its id too), `remove` removes it, `focus` focuses it. `data` (phase 4) sets the data of the element's first child
- * node, a text node, so the change is a `characterData` mutation and not a `childList` one.
+ * node, a text node, so the change is a `characterData` mutation and not a `childList` one. `reset` (phase 4, operator
+ * round 2) resets the form with the id (`HTMLFormElement.reset()`), so a reset can share the task of an insertion.
  */
 export type Operation =
   | { readonly op: "insert"; readonly container: string; readonly markup: string }
@@ -112,6 +113,7 @@ export type Operation =
   | { readonly op: "property"; readonly id: string; readonly name: string; readonly value: string | number | boolean | null }
   | { readonly op: "move"; readonly id: string; readonly to: string }
   | { readonly op: "remove"; readonly id: string }
+  | { readonly op: "reset"; readonly id: string }
   | { readonly op: "focus"; readonly id: string };
 
 /**
