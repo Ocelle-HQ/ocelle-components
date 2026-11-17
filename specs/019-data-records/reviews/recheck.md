@@ -8,7 +8,9 @@
   not start until they are answered. One mechanical difference, the driver helper names, is resolved by T001 itself:
   `contracts/checks.md` § Harnesses and § Keyboard bodies now name the merged helpers (item 5).
 - **Second pass** (after the operator's decisions, `reviews/recheck-decisions.md`, applied in 827b34a): one difference
-  remains, Q6 in § Second pass below. T001 stays open.
+  remains, Q6 in § Second pass below.
+- **Third pass** (after the operator's decision Q6 (a), applied in b282a98 and 0d57425): no difference remains
+  (§ Third pass below). T001 is done.
 
 ## 1. 009's overflow-region module
 
@@ -304,3 +306,17 @@ review.
   corrects it with phase 1's first planning fix, and phase 1's review reads lines 54 to 67 as the contract.
 - (c) The implementer makes the one-line correction in the T001 commit, under the operator's explicit authorisation,
   and ticks T001.
+
+## Third pass: the Q6 line after the operator's decision (0d57425)
+
+- **Decision:** `reviews/recheck-decisions.md` (6900039): Q6 (a). **Applied:** b282a98 (the parenthesis) and 0d57425
+  (rewrap only, no word changed; `reviews/recheck-fixes.md` Q6 row). `git diff bf39e06 0d57425` touches
+  `contracts/ocelle-data-table.md`, `reviews/recheck-decisions.md` and `reviews/recheck-fixes.md` only; sources are
+  unchanged since 8ee3351.
+
+| Item | Check at 0d57425 | Result |
+|---|---|---|
+| Q6. contracts/ocelle-data-table.md § Interface, "Base-style hook (analysis I7 (a))", lines 32 to 34 | Now reads "`--data-table-end-fade` (the end fade's depth, the measured px inline size of `.region-edge.end`, while the end fade shows; recheck Q2 (c))": option (a)'s wording, plus the decision's citation. It agrees with § Shadow structure of the same file (lines 54 to 67: px figures only, the edge's unrounded `getBoundingClientRect().width`, never the token's text), contracts/styles-data-table.md row 25, research R-07, data-model.md's "end fade" row and tasks T016; `.region-edge.end` is in `overflow-region.ts` (170, laid out in every state by 160 to 164). The paragraph keeps the 120-column wrap | none |
+| Stale text elsewhere | `var(--ocelle-scroller-fade-size)` in specs/019-data-records outside reviews/ now appears only as the cap's zero fallback `0 * var(--ocelle-scroller-fade-size)` (tasks T017, research 327, styles-data-table row 25), as statements that the token's text is never written (plan.md 210, research 298, ocelle-data-table.md 67), as the plant of checks.md 107, the rejected sticky caption of checks.md 108, and 009's own rules (research 299, 811) | none |
+
+T001 is ticked. Phase 0's plant run is recorded in `reviews/phase-0/plants.md`.
