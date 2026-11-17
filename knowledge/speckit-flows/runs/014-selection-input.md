@@ -3,7 +3,7 @@ type: Run Summary
 title: 014-selection-input
 description: Review rounds, findings and TDD checks per phase of 014-selection-input, generated from its review files
 tags: [run, 014-selection-input]
-generated: { by: process:story-summary, at: 2026-11-17T16:33:38Z }
+generated: { by: process:story-summary, at: 2026-11-17T16:51:54Z }
 sources:
   - id: p1-r1
     resource: ../../../specs/014-selection-input/reviews/phase-1/round-1.md
@@ -35,13 +35,13 @@ sources:
 
 | Phases | Review rounds | Blocking findings | Phases past round 3 | Accepted by operator | TDD check failing now | Disputed findings |
 |---|---|---|---|---|---|---|
-| 7 | 12 | 8 | 0 | 0 | 1 | 0 |
+| 7 | 12 | 8 | 0 | 0 | 0 | 0 |
 
 # Phases
 
 | Phase | Title | Tasks done | Rounds | Blocking per round | Verdict | TDD check | Red commits | Disputed | Accepted |
 |---|---|---|---|---|---|---|---|---|---|
-| 1 | Setup | 10/10 | 1 | 0 | approved | fail | 1 | 0 | no |
+| 1 | Setup | 10/10 | 1 | 0 | approved | pass | 1 | 0 | no |
 | 2 | User Story 1 - Pick one item from a list with the keyboard: `ocelle-listbox` and `ocelle-option` (Priority: P1) 🎯 MVP | 21/21 | 2 | 1, 0 | approved | pass | 2 | 0 | no |
 | 3 | User Story 2 - Switch between panels with real tabs: `ocelle-tabs` (Priority: P2) | 11/11 | 2 | 4, 0 | approved | pass | 1 | 0 | no |
 | 4 | User Story 3 - Choose one of a few options as a toggle group: `ocelle-segmented-choice` (Priority: P3) | 16/16 | 2 | 1, 0 | approved | pass | 1 | 0 | no |
