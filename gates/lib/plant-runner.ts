@@ -264,10 +264,13 @@ export function aloneDecision(plantPath: string, storyTheme: StoryTheme, alone: 
 
 /**
  * The most `visual` (or `axe`) plants in one shard (plan decisions 23 and 30): 1, one plant per shard (012 research.md
- * R-13, plan decision 15), so a `visual` shard stays under 10 minutes at about 58 repository stories; 3, approved by
- * the operator in answer to tasks.md T046l ("A' size 3") up to its split count of 25 stories, would take about 875 s.
- * It was 8, then 4 for the measuring run, then 3. Size 1 is the floor: `plantShards` keeps each plant whole, so no
- * lower setting remains (006 plan.md, Complexity Tracking, "Plant roots hold every repository story").
+ * R-13, plan decision 15). Its split count of 76 stories is exceeded: at the 171 stories after 012's landing, CI run
+ * 44098238937 measured the plant gate step at most 516 s per shard and 22953 s in all, and the job wall time at most
+ * 862 s and 34810 s in all (012 reviews/phase-6/ci-run.md); the plant-design triage record is pending (operator,
+ * 2026-11-17, 012 phase 6 round 2 O2-01). It was 8, then 4 for the measuring run, then 3 (approved by the operator in
+ * answer to tasks.md T046l, "A' size 3", up to its split count of 25 stories). Size 1 is the floor: `plantShards`
+ * keeps each plant whole, so no lower setting remains (006 plan.md, Complexity Tracking, "Plant roots hold every
+ * repository story").
  */
 export const shardSize = 1;
 

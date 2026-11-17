@@ -232,3 +232,30 @@ After it:
 - `gate:typecheck` and lint on the test file: pass.
 
 T066 is done. T067 stays open: it needs a push and a CI run.
+
+## Fix round 2 (operator round from the landing review: O2-01, O2-02, O2-03; tasks.md T069 to T072)
+
+No red commit: the three findings are records and documentation (round-2-fixes.md).
+
+- **T069 (O2-01)**: reviews/phase-6/ci-run.md records CI run 44098238937 on 497b05f from the figures the orchestrator
+  supplied: per shard the plant gate step and the job wall time, attempt 1 for the shards that passed in it and
+  attempt 2 for shard 23 (failed in setup in attempt 1, landing review R1-05; the operator authorised one re-run of
+  the failed jobs; the run is 145/145). Gate step: peak 516 s (shard 40), none at or over 570 s, 22953 s (6.38 h).
+  Job wall: peak 862 s (shard 33), 17 over 570 s (round 2's 16 of attempt 1 and shard 23's attempt 2 at 645 s),
+  34810 s (9.67 h), the excess being runner setup that day. No supplied gate-step figure contradicts round 2, so no
+  stop-and-ask. The supplied table's Attempt column also marks shards 47 to 76 with attempt 2; ci-run.md copies it
+  as supplied and notes that the other 75 rows agree with round 2's attempt-1 figures. T067 is ticked with the
+  citation T069 gives.
+- **T070 (O2-02)**: gates/README.md (plant sharding) and the `shardSize` comment of gates/lib/plant-runner.ts now state
+  171 stories in 76 shards, the measured peaks and totals of both measures with run 44098238937 named, that the split
+  count of 76 stories is exceeded, and that the plant-design triage record is pending; the model figures (about
+  588 s, about 4 stories of headroom, about 11.9 runner-hours) are removed. The Complexity Tracking row of
+  specs/006-storybook-workbench/plan.md (line 637) is planner territory: its replacement text was handed to the
+  orchestrator to route, and it is not edited in this commit.
+- **T071 (O2-03)**: the `brand-rules` row of gates/README.md keeps the pinned "reduced motion at 0ms for every motion
+  duration of the token source (012 changed 002's rule (f), which named two)" and adds the exception (a `-delay` token
+  with `delay: true`) and the literal-`ms` rule, with misplaced markers and non-`ms` durations as findings (plan
+  decision 29). specs/002-design-tokens/contracts/gates.md § Plants lists `f-motion-spin-missing` (012 phase 4) beside
+  phase 4 fix-2's `f-delay-marker-misplaced` and `f-motion-not-ms`, each with a one-line description.
+- **T072 checks**: `pnpm test` **7061 tests passed in 208 files** (the gates-readme test included; 1964 s);
+  `gate:typecheck` no type error; `gate:lint` 402 files, no finding.
