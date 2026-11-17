@@ -120,7 +120,7 @@ for dir in "$feature"/reviews/phase-*; do
   fi
   # plants.md: the first `- base: <sha>` line only, so its base stays equal to base.sha (the review checks it).
   if [[ -f "$dir/plants.md" ]]; then
-    old=$(sed -n -E 's/^- base: ([0-9a-f]{7,40})$/\1/p' "$dir/plants.md" | head -n 1)
+    old=$(sed -n -E 's/^- base: ([0-9a-f]{7,64})$/\1/p' "$dir/plants.md" | head -n 1)
     if [[ -n "$old" ]]; then
       new=$(remap "$old"); tmp=$(mktemp)
       awk -v o="- base: $old" -v n="- base: $new" '!done && $0 == o { print n; done = 1; next } { print }' "$dir/plants.md" > "$tmp"; mv "$tmp" "$dir/plants.md"
@@ -143,7 +143,7 @@ new_head=$(git rev-parse HEAD)
 # A phase's plants.md may differ only in its `- base:` line: one line out, one line in.
 base_line_only() { local changes
   changes=$(git diff --unified=0 "$old_head" "$new_head" -- "$1" | grep -E '^[-+]' | grep -v -E '^(--- (a/|/dev/null)|\+\+\+ (b/|/dev/null))' || true)
-  [[ "$(printf '%s\n' "$changes" | grep -c -E '^-- base: [0-9a-f]{7,40}$')" == 1 && "$(printf '%s\n' "$changes" | grep -c -E '^\+- base: [0-9a-f]{7,40}$')" == 1 && "$(printf '%s\n' "$changes" | wc -l | tr -d ' ')" == 2 ]]; }
+  [[ "$(printf '%s\n' "$changes" | grep -c -E '^-- base: [0-9a-f]{7,64}$')" == 1 && "$(printf '%s\n' "$changes" | grep -c -E '^\+- base: [0-9a-f]{7,64}$')" == 1 && "$(printf '%s\n' "$changes" | wc -l | tr -d ' ')" == 2 ]]; }
 outside=$(git diff --name-only "$old_head" "$new_head" | grep -v -E "^$feature/reviews/(phase-[^/]+/(base\.sha|scaffold\.sha|red-commits)|history-map\.txt)$" \
   | while read -r f; do [[ "$f" =~ ^$feature/reviews/phase-[^/]+/plants\.md$ ]] && base_line_only "$f" || echo "$f"; done || true)
 if [[ -n "$outside" ]]; then
