@@ -1,6 +1,6 @@
 {
   "expect": "fail",
-  "why": "A changed token value (color-ink, light) changes every story-theme that shows it: differs on the fifty-three light story-themes measured in the pinned container (FR-004, US2 scenario 2), the twelve the phase 1 spike listed, the eight of mission 005's stories that show color-ink (all but elements-ocelle-brand-mark--chrome, measured for plan decision 29), the seven listbox stories of 014 (every option's text is color-ink) the eight tabs stories of 014 (every tab's text is color-ink) the nine segmented-choice stories of 014 (every segment's text is color-ink) four of the five copy-field stories of 014 (the command's text is color-ink; the empty field shows no text and its disabled icon is color-disabled-ink) and the five link stories of 014 (the sentence around each link is color-ink), and none in dark. A story added later that shows color-ink in light adds its line here (research.md R-07).",
+  "why": "A changed token value (color-ink, light) changes every story-theme that shows it: differs on the one hundred and forty-nine light story-themes measured in the pinned container (FR-004, US2 scenario 2), the twelve the phase 1 spike listed, the eight of mission 005's stories that show color-ink (all but elements-ocelle-brand-mark--chrome, measured for plan decision 29), the eight ocelle-dialog stories of mission 008 (measured in phase 2, R-16), the four ocelle-drawer stories on the sheet ground (all but the two on the chrome ground, measured in phase 3), the nine ocelle-tooltip stories (measured in phase 4), the ten of 009's board and lane stories that show color-ink (all but elements-ocelle-workflow-board--no-lanes, an empty board; measured in the pinned container), the six of 009's list-detail stories, whose panes show text in color-ink, the eleven of 011's section header and card stories that show it (all but elements-ocelle-section-header--empty-heading, measured in the pinned container under docker for 011 phase 2), the four of 011's page header stories that show it (all but elements-ocelle-page-header--empty-heading, measured in the pinned container under docker for 011 phase 3) and the eleven of 011's context sidebar stories, which all show it (measured in the pinned container under docker for 011 phase 4), the twenty-two ocelle-facts stories of mission 013 (measured in its phase 1), the six ocelle-empty-state stories with a heading (measured in its phase 2; the actions-only story shows no color-ink), the panel-loading story (its heading) and the four ocelle-progress stories with a visible label (labelled, labelled compact, value text, right to left; measured in its phase 3, the bars without a visible label show no color-ink), the seven listbox stories of 014 (every option's text is color-ink) the eight tabs stories of 014 (every tab's text is color-ink) the nine segmented-choice stories of 014 (every segment's text is color-ink) four of the five copy-field stories of 014 (the command's text is color-ink; the empty field shows no text and its disabled icon is color-disabled-ink) and the five link stories of 014 (the sentence around each link is color-ink), and none in dark. None of 011's eight personal rail stories shows it: the rail is drawn in the chrome ink on the chrome, and nothing else in those stories is text (measured in the pinned container under docker for 011 phase 5). A story added later that shows color-ink in light adds its line here (research.md R-07).",
   "findings": [
     {
       "location": "base-styles--base-page/light",
@@ -31,6 +31,54 @@
       "rule": "differs"
     },
     {
+      "location": "elements-ocelle-dialog--default/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-dialog--one-line-confirmation/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-dialog--with-footer-actions/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-dialog--long-scrolling-body/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-dialog--prose-with-a-table/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-dialog--open-project/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-dialog--long-label/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-dialog--host-aria-label/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-drawer--start/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-drawer--end/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-drawer--rtl-start/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-drawer--long-scrolling-body/light",
+      "rule": "differs"
+    },
+    {
       "location": "elements-ocelle-icon--close/light",
       "rule": "differs"
     },
@@ -51,31 +99,115 @@
       "rule": "differs"
     },
     {
-      "location": "elements-ocelle-listbox--no-selection/light",
+      "location": "elements-ocelle-facts--default/light",
       "rule": "differs"
     },
     {
-      "location": "elements-ocelle-listbox--selected/light",
+      "location": "elements-ocelle-facts--compact/light",
       "rule": "differs"
     },
     {
-      "location": "elements-ocelle-listbox--disabled-option/light",
+      "location": "elements-ocelle-facts--stacked/light",
       "rule": "differs"
     },
     {
-      "location": "elements-ocelle-listbox--focused-option/light",
+      "location": "elements-ocelle-facts--columns-shrink-to-fit/light",
       "rule": "differs"
     },
     {
-      "location": "elements-ocelle-listbox--hovered-option/light",
+      "location": "elements-ocelle-facts--stacked-wide/light",
       "rule": "differs"
     },
     {
-      "location": "elements-ocelle-listbox--scrolling-listbox/light",
+      "location": "elements-ocelle-facts--identifier-wrap/light",
       "rule": "differs"
     },
     {
-      "location": "elements-ocelle-listbox--option-with-icon/light",
+      "location": "elements-ocelle-facts--missing-label/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-facts--missing-value/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-facts--link-in-value/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-facts--right-to-left/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-facts--compact-region/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-facts--grid-strip/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-facts--grid-two-columns/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-facts--grid-one-column/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-facts--grid-one-fact/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-facts--grid-three-facts/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-facts--grid-eight-facts/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-facts--grid-long-label-and-identifier/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-facts--grid-link-and-status/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-facts--grid-unavailable-value/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-facts--grid-compact/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-facts--grid-right-to-left/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-empty-state--default/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-empty-state--panel/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-empty-state--heading-only/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-empty-state--several-actions-narrow/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-empty-state--refusal-with-eyebrow/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-empty-state--several-body-paragraphs/light",
       "rule": "differs"
     },
     {
@@ -108,6 +240,258 @@
     },
     {
       "location": "tokens--motion/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-workflow-board--five-lanes/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-workflow-board--five-lanes-narrow/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-workflow-board--one-lane/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-workflow-board--right-to-left/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-workflow-lane--default-with-count/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-workflow-lane--default-without-count/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-workflow-lane--flat-with-count/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-workflow-lane--flat-without-count/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-workflow-lane--long-title/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-workflow-lane--untitled-with-count/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-list-detail--three-columns/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-list-detail--two-columns-inspector-stacked/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-list-detail--one-column-list/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-list-detail--one-column-detail/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-list-detail--no-inspector/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-list-detail--right-to-left/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-tooltip--hover-top/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-tooltip--hover-bottom/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-tooltip--hover-start/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-tooltip--hover-end/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-tooltip--flipped-at-the-top-edge/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-tooltip--rtl-hover-start/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-tooltip--rtl-hover-end/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-tooltip--inside-an-open-dialog/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-tooltip--long-text/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-section-header--heading-only/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-section-header--filled/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-section-header--compact/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-section-header--eyebrow-variant/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-section-header--long-heading/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-card--regular/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-card--compact/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-card--inset/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-card--inset-compact/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-card--no-header/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-card--nested/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-page-header--heading-only/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-page-header--filled/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-page-header--compact/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-page-header--long-heading/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-context-sidebar--full/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-context-sidebar--no-head/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-context-sidebar--no-footer/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-context-sidebar--one-section/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-context-sidebar--text-in-the-slot/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-context-sidebar--empty-sections/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-context-sidebar--hidden-sections/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-context-sidebar--host-aria-label/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-context-sidebar--label-and-host-aria-label/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-context-sidebar--blank-host-aria-label/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-context-sidebar--unnamed/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-empty-state--panel-loading/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-progress--labelled/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-progress--labelled-compact/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-progress--value-text/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-progress--right-to-left/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-listbox--no-selection/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-listbox--selected/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-listbox--disabled-option/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-listbox--focused-option/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-listbox--hovered-option/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-listbox--scrolling-listbox/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-listbox--option-with-icon/light",
       "rule": "differs"
     },
     {

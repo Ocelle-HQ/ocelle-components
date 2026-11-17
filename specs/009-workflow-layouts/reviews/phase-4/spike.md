@@ -1,0 +1,118 @@
+# Phase 4 spike: list-detail's measurement pass and sizer (T045, research.md R-13)
+
+Run on 2026-11-14 at the phase base `2caad68`, in scratch files only (a prototype of `ocelle-list-detail`, its tier
+rules and its measurement module, and one in-process test that printed its observations), with the in-process driver
+of `packages/elements/test/in-process.ts` in Chromium 1248 (`pnpm exec vitest run --project elements`). The scratch
+files were deleted after the run; nothing of them is committed. The green implementation (T054 to T056) follows the
+prototype as it stood at the passing run.
+
+## The prototype
+
+- **Pass.** One animation-frame callback, scheduled at most once per frame from a `MutationObserver` on the assigned
+  elements of the three slots (`childList`, `characterData`, `subtree`; no `attributes`), `slotchange` and
+  `remeasure()`, and run synchronously in `willUpdate` before a `narrow`, `detail-open`, `collapse-below` or
+  `inspector-below` change. It sets the grid's `data-tier` to a measurement tier `max` (the widest grid, every present
+  pane shown, `inline-size: max-content`), reads the grid's inline size, sets `min` (the one-column stack as a block,
+  `inline-size: min-content`), reads it, and restores the tier, all in the same callback.
+- **Sizer.** The two figures go into the instance's one constructed sheet (`.sizer {}` and `.grid {}`, set through
+  `CSSStyleRule.style.setProperty`, only when changed): the sizer's `inline-size` (max-content figure, capped by
+  `max-inline-size: 100%`) and the grid's `min-inline-size` (min-content figure). No `style` attribute.
+- **Host measurement.** A `ResizeObserver` gives the tier only, never runs the pass.
+
+## Figures (all with `driver.messages()` empty)
+
+| Case | R-13 / US3-12 expects | Measured |
+|---|---|---|
+| 1196 px flex row | 1073 px, three columns | 1073 px, `three`, the same tier on every frame of ten |
+| 636 px flex row | 636 px, one column | 636 px, `one`, stable over ten frames |
+| `<dialog open>` with `max-inline-size: var(--ocelle-dialog-max-inline)`, 1280 px viewport | three columns | 1073 px, `three`, stable |
+| table cell of a 636 px table | one column | 630 px (the cell's padding and spacing), `one`, stable |
+| stale content: `narrow`, the detail's inner content replaced by a 40rem block, then `narrow` removed | 1196 px, three columns | 1196 px while still `narrow` (the replacement is a light-DOM mutation, so the next frame's pass sees it), then 1196 px, `three` |
+| content change, a 35rem block twice as tall | 1153 px in the first frame record after the change, three columns | first `resize:` entry after the change is 1153, `three` |
+| content change, a 35rem block of the same height | as above | first `resize:` entry after the change is 1153, `three` |
+| unseen: a property of a slotted element that renders a 40rem block in its shadow root (`narrow`) | 1073 px for ten frames, then 1196 px after `remeasure()` | 1073 on every frame of ten; first `resize:` after `remeasure()` is 1196, `one` |
+| unseen: a class swap on the detail's light-DOM block that a page rule makes 40rem wide (`narrow`) | as above | as above |
+| a slotted element that appends a 35rem block from its own `ResizeObserver` (`narrow`, then `detail-open`) | 1153 px after settle, the detail shown in one column, no error | 1153 px, `one`, the detail shown and the list `display: none`, no message |
+
+In every frame record the grid's `data-tier` read only the old and the new tier (`one`, `three`), never `max` or
+`min`: the measurement grid never reached a frame.
+
+## What the spike changed in the prototype, and why
+
+The figures above hold only with these three choices. Each was measured both ways; none changes a figure of R-13, so
+the spike does not stop the phase (tasks.md, stop-and-ask point T050). They are design details inside R-13's decision,
+recorded here and in the green commit.
+
+1. **The sizer is an empty `aria-hidden` `<svg>`, not a `div`.** With a `div` sizer of `inline-size: 1073px` and
+   `max-inline-size: 100%`, the 636 px row stayed at 1073 px and three columns, and the table cell at 1073 px: a
+   percentage maximum does not count in a box's min-content contribution, so the sizer's 1073 px was also the
+   element's min-content size. An `<svg>` is a replaced element, and a replaced element whose maximum size is a
+   percentage contributes zero to min-content (CSS Sizing 3 § 5.2.2, compressible replaced elements), so the sizer
+   gives the max-content figure only. With it the 636 px row shrinks to 636 px and the table cell to 630 px. The grid
+   track that holds the sizer is `1fr` because `minmax(0, 1fr)` is a function, which `style-lint`'s `token-only` rule
+   reports as raw; `1fr` is equivalent here because every grid item has `min-inline-size: 0` or no min-content.
+2. **The tier is measured on a zero-height probe, not on the host.** With the host's own `ResizeObserver` on its
+   border box, the `ResizeObserver` case reported "ResizeObserver loop completed with undelivered notifications.":
+   the appended block grows the host's block size inside the slotted element's delivery, and the host is shallower
+   than the slotted element. The tier needs the inline size only, so the element observes an `aria-hidden`
+   `.probe` of `block-size: 0` before the grid, whose border box is the host's content box, and adds the host's
+   inline padding and borders, read from its computed style, to give the host's border-box inline size
+   (data-model.md `measured`). A block-size change no longer notifies the observer, and the case reports nothing.
+   The fixture element of this case stops observing itself once it has appended its block; otherwise its own second
+   notification, at its own depth, brings the message whatever the element does.
+3. **The panes have `contain: inline-size` outside the measurement tiers.** Without it, a shown pane's content counts
+   in the grid's own intrinsic size, so in three columns the same-height case reached 1153 px by CSS alone with the
+   `MutationObserver` silenced (measured: first `resize:` 1153 without any pass). With it, the same run stays at
+   1073 px on every frame, so the figures come from the pass alone and US3-12's plant "the shown-pane
+   `ResizeObserver` as the trigger" can bite on the same-height case as R-13 says. The measurement tiers set
+   `contain: none`, so the pass reads the content. R-13's "Recorded cost" reads that a shown pane's change in three
+   columns "shows without a pass" where CSS carries it; with the containment it waits for the next trigger like every
+   other unseen change. No test or contract states the CSS case; the README's convention says unseen changes wait for
+   the next trigger or `remeasure()`, which now holds for every pane.
+
+## Changed after the spike (phase 4 review round 1, R1-03)
+
+Item 2's probe gave the host's border box only when the content box changed too: a change of the host's inline padding
+or borders alone (a content-box host with a definite `inline-size`, or a shrink-to-fit host) notified nothing, so the
+tier went stale (round-1.md R1-03; operator decision P3). The fix keeps the probe and its sum, and adds a second
+zero-height `aria-hidden` block beside it, the edge box, a direct child of the shadow root that inherits the host's
+`padding-inline`, `border-inline-width` and `border-inline-style`. Its border box fills the host's content box, so its
+content box is the host's content box less those padding and borders, and changes when they change alone. The one
+`ResizeObserver` observes both blocks' content boxes; only the probe's size enters the sum. Neither block's block size
+ever changes, so the `ResizeObserver` case of the table above still reports no message (US3-12, "a mutation inside a
+ResizeObserver callback", passes in both harnesses). Observing the host's own border box was not taken, for the loop
+message item 2 records. Recorded costs: the edge box's own intrinsic contribution, the host's inline padding and
+borders, is a floor of the host's content size, far below the grid's figures in every case of the scenarios; and in a
+host whose content box is narrower than its own inline padding and borders, the edge box's content box is clamped at
+zero and its border box overflows the host's content box by the difference, so a further change of them alone is not
+seen in that case.
+
+## Changed after the spike (phase 4 review round 2, R2-01 and R2-02)
+
+Both costs recorded above were taken up in round 2 (round-2.md; operator decision P4, "Fix R2-02, document R2-01"):
+
+- **The floor (R2-02), removed.** The edge box is now `position: absolute` with `inline-size: 0`, and the observer
+  watches its border box, which is the host's inline padding and borders themselves. Out of flow, it adds nothing to
+  the host's min-content or max-content size: in a min-content wrapper a list-detail with 150 px inline padding is
+  300 px wide empty and 300 px plus one letter with a letter in each pane (600 px both before); in a
+  max-content wrapper an empty one with 200 px padding and 1 px borders is 289 + 402 = 691 px (804 px before). The
+  zero-height box adds no scrollable overflow, also where it reaches past the host's border box. The empty case also
+  showed that a list-detail with nothing slotted never ran a pass (no slot reports a change), so its sizer kept the
+  `<svg>` default of 300 px; the first render now schedules one.
+- **The narrow host (cost 2), now seen.** The border box of a 0 px wide box is never clamped, so in a host whose
+  content box is narrower than its own inline padding and borders a change of a px or em padding or of a border
+  alone notifies too (content 30 px, `collapse-below="120px"`, padding 40 px to 50 px: one column, then two).
+- **Percentage padding (R2-01), a recorded limitation.** The edge box resolves a percentage padding against its own
+  containing block, not the host's, so a percentage padding that follows the host's container while the host's
+  content box keeps its size is reported by no observer. The remedy is `remeasure()`: after each scheduled pass, in
+  the same animation-frame callback, the element takes its border box afresh (the probe's content box read then plus
+  the host's computed inline padding and borders) and chooses the tier again. Measured: a content-box host 600 px
+  wide with 2% padding and `collapse-below="640px"`, its container from 1000 px to 500 px: 620 px and two columns
+  until `remeasure()`, then one in the first frame after the call; and back.
+
+The `ResizeObserver` case of the table above still reports no message in both harnesses, and every round 1 R1-03
+case still passes.
+
+## Result
+
+Every figure of R-13 holds, with no window error and no leaked measurement frame. The phase continues to the red step.

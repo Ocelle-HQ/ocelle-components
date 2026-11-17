@@ -1,0 +1,210 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: correctness
+# Checked against the repository at 75eccc6 (base.sha) and, where marked "probe", in this container's Chrome for
+# Testing 153 driven by Playwright (/opt/node-tools/node_modules/playwright), with the plan's CSS reproduced in light
+# DOM (the probes are in the lens session's scratchpad, not in the repository).
+findings:
+  - id: PLAN-CORRECTNESS-1-001
+    severity: 4
+    title: "The board's track takes its lanes' max-content, so five lanes holding ordinary cards overflow Frame W"
+    evidence:
+      - artifact: "contracts/overflow-region.md § Stylesheet: `.region-track` | `inline-size: max-content; min-inline-size: 100%; box-sizing: border-box`; research.md R-08 Track: `display: flex; gap: var(--ocelle-space-3); min-inline-size: 100%` (no override of the shared `inline-size: max-content`); R-08 Lanes: `::slotted(*)` gets `flex: 1 1 var(--ocelle-lane-min-width); min-inline-size: var(--ocelle-lane-min-width)` ... so no child takes its min-content as its minimum"
+      - artifact: "spec US2-1 (five lanes in Frame W, each holding cards, do not overflow), US2-14 (identifier, 400 px image, nested 400 px scroller: lanes equal, board does not overflow), FR-013, FR-016, SC-003"
+      - code: "probe, Frame W 876 px, plan CSS as written: lanes holding one card 'WP01' -> scrollWidth 876, lanes 164 px; lanes holding one card with the 66-character sentence 'Implement the overflow region module and its tests for the scroller' -> scrollWidth 2392, five lanes 467 px each (board overflows)"
+      - code: "probe, same track with `inline-size: fit-content` or `min-content` instead: plain text fits (876), but a lane with a nested scroller whose row is 400 px -> scrollWidth 1108 (lanes 210 px), a lane with a card holding `<img width=400>` capped by `max-inline-size: 100%` -> 1098 (lanes 208 px)"
+      - code: "probe, plan's max-content track plus `contain: inline-size` on each lane: sentence text, 60-character identifier, 400 px image and nested 400 px scroller all give scrollWidth 876 and five 164 px lanes in Frame W; Frame N still overflows (858 > 636)"
+    claim: |
+      `min-inline-size` on a flex item only sets the item's floor; it does not stop the item's content from feeding the
+      flex container's intrinsic size. The shared stylesheet sizes `.region-track` at `max-content`, and a row flex
+      container's max-content is the sum of its items' max-content contributions, which for a lane is its longest
+      unwrapped card text. So with any realistic card text the board's track is far wider than Frame W, every lane
+      grows equally to fill it, the board overflows, becomes a tab stop and a region, and US2-1, FR-016 and SC-003 fail:
+      the board scrolls at 1280 px, which is exactly spec-kitty-design#507's complaint. Even a fit-content or min-content
+      track does not rescue US2-14, because a nested scroller (its track is itself max-content) and a capped image still
+      raise the lanes' min-content contributions. The plan's tests would go red, but the design they would be written
+      against cannot pass them; the fix belongs in the design (R-08 and the contract), not in phase 3's green step.
+    remedies:
+      - "research.md R-08 and contracts/overflow-region.md § Stylesheet: the board's `::slotted(*)` rule adds `contain: inline-size` (each child's intrinsic inline size is then its `min-inline-size`, the lane minimum, whatever it holds), keeping the module's `max-content` track so the inline ring room still follows the last lane; state why in R-08 (measured: intrinsic contributions, not the floor, size the track). US2-1's test fills each card with sentence-length text, and US2-14's plant becomes 'a lane without inline-size containment' as well as 'min-content minimum'."
+
+  - id: PLAN-CORRECTNESS-1-002
+    severity: 3
+    title: "The masked fade's `linear-gradient()` fails the token-only lint, contrary to R-05 and 'No gate changes'"
+    evidence:
+      - artifact: "research.md R-05 Lint: '`transparent` and `var(--ocelle-*)` pass `token-only`, as do `%` stops'; R-05 Fade: 'a `mask-image` on the scroll box. It is a `linear-gradient` ...'; plan.md § Structure Decision: 'No gate changes: the `manifest`, `csp`, `style-lint` and `mutation` gates ... apply as they are'"
+      - code: "gates/stylelint/token-only.ts:131-141 functionRaw(): only `var()` (fallback checked) and `calc()` are classified inside; 'any other function is raw' and `return [valueParser.stringify(node)]` reports the whole function"
+      - code: "gates/test/token-only.test.ts:20 pins `{ property: \"color\", value: \"rgb(0 0 0)\", raw: [\"rgb(0 0 0)\"] }`: a function of token-only parts is still raw whole; `grep -rn gradient packages/*/src gates/stylelint` finds no precedent"
+    claim: |
+      Every `mask-image: linear-gradient(...)` rule the plan relies on for the fade (FR-007, US1-6, US1-7) is reported
+      by the `style-lint` gate as raw, whatever its arguments, so the element CSS cannot pass the merge gates as
+      designed. The plan's Constitution Check II ('element CSS is `token-only`') and its 'No gate changes' are both
+      therefore wrong. Making it pass means either a gate change (which under constitution VIII needs its own tests
+      and a plant, and a contracts/gates.md amendment) or moving the gradient out of element CSS, which is a design
+      choice the operator should see now, not at phase 2's green step.
+    remedies:
+      - "Extend `ocelle/token-only` to classify the arguments of `linear-gradient()` (direction keywords, `transparent`, tokens, `%` stops) like `calc()`, as a planned gate change with red-first tests, a plant and a contracts/gates.md entry; drop 'No gate changes' from plan.md and add the task to phase 2."
+      - "Keep the gate unchanged and carry the gradients as tokens (for example `--ocelle-scroller-fade-mask-start`, `-end`, `-both` and their mirrored forms, built from `--ocelle-scroller-fade-size`), so element CSS says `mask-image: var(...)` only; add them to FR-033 and R-16 and the token counts."
+
+  - id: PLAN-CORRECTNESS-1-003
+    severity: 2
+    title: "R-11's border placement gives a 1073 px three-column max-content, not US3-12's 1074 px"
+    evidence:
+      - artifact: "spec US3-12: 'Its inline size is that of its three-column layout, 18rem + 30rem + 19rem plus its two 1 px borders (1074 px)'; US3-1: the inspector '`--ocelle-shell-inspector-width` (19rem, 304 px) wide'; research.md R-13 Expected results and plan.md phase 4 spike: '1074 px three columns in a 1196 px row'"
+      - artifact: "research.md R-11: three-column tracks `var(--ocelle-list-track-width) minmax(0, 1fr) var(--ocelle-shell-inspector-width)`; 'border-inline-start ... on the detail pane and on the inspector when it is a column'"
+      - code: "probe: that grid as a flex item in a 1196 px row with a 30rem nowrap block in the detail -> grid 1073 px, inspector border box 304 px, inspector content 303 px"
+    claim: |
+      The inspector's border sits inside its fixed 19rem track, so the three-column max-content is 288 + (480 + 1) + 304
+      = 1073 px and the inspector's own content box is 303 px. The spec counts both borders outside the tracks. As
+      planned, the spike's pass condition (1074 px) fails on an off-by-one that is a design inconsistency, not a spike
+      result, and the operator would be handed R-13's fork for the wrong reason. Either the track sizes or the spec
+      figure has to change, and which one decides whether "19rem wide" in US3-1 includes the rule.
+    remedies:
+      - "Decide in research.md R-11 whether the pane widths include the 1 px rules. If they do, correct US3-12 to 1073 px and say in FR-023 that the inspector's 19rem includes its border. If they do not, size the fixed tracks as `calc(token + var(--ocelle-border-width))` on the side that carries the border, so US3-12's 1074 px and a 304 px inspector content box both hold; update R-13's expected results and the spike figure to match."
+
+  - id: PLAN-CORRECTNESS-1-004
+    severity: 2
+    title: "CSSOM writes do create a `style` attribute; the plan's Constitution IV argument is factually wrong"
+    evidence:
+      - artifact: "plan.md § Constitution Check IV: 'CSSOM writes of computed figures are allowed under the policy and create no markup (R-13)'; § Technical Context Constraints: 'CSSOM writes ... never a markup `style` attribute'; research.md R-13 Setting them: 'a CSSOM write creates neither'"
+      - artifact: "constitution IV: 'No inline script, no inline style element or attribute'"
+      - code: "probe: `d.style.setProperty('inline-size', '10px')` then `d.outerHTML` -> `<div id=\"d\" style=\"inline-size: 10px;\"></div>`"
+    claim: |
+      CSP indeed does not block CSSOM writes, but a write through `element.style` sets the element's `style` attribute,
+      which then shows in the DOM, is serialised, and is what constitution IV names literally ("no inline style ...
+      attribute"). The plan justifies R-13's sizer with a statement that is false, so the Constitution Check passes on a
+      wrong premise, and the deviation, if it is acceptable, needs an explicit operator ruling or a Complexity Tracking
+      row rather than "no exceptions". A design that needs no style attribute exists.
+    remedies:
+      - "Set the two measured figures through a per-instance constructed stylesheet adopted on the element's shadow root (`new CSSStyleSheet()`, `replaceSync` of one rule for the sizer and the grid, swapped on each measurement), which writes no attribute and is the same mechanism as `static styles`; correct the Constitution Check IV row, R-13 and the Technical Context constraint accordingly, and add a test that no shadow element of list-detail carries a `style` attribute."
+      - "Keep `element.style` writes and record them as a Complexity Tracking row with the operator's ruling that constitution IV's 'style attribute' means markup under CSP, not run-time CSSOM; fix the 'create no markup' wording."
+
+  - id: PLAN-CORRECTNESS-1-005
+    severity: 2
+    title: "The blank host `aria-label` rule contradicts 005's README Host ARIA rule, which the readme test pins, and the plan changes neither"
+    evidence:
+      - artifact: "spec FR-010: 'A host `aria-label` ... decides naming alone, as in 005's FR-034; an empty or whitespace-only host `aria-label` counts as absent'; FR-019 the same for the lane; FR-030 'Each element follows the README's element conventions (005)'"
+      - code: "packages/elements/README.md:189-190 § Host ARIA (general, not per element): 'when present it decides alone: a blank host `aria-label` leaves the element unlabelled even with a `label`'"
+      - code: "packages/elements/test/node/readme.test.ts:73-74 pins that sentence verbatim as a README item"
+      - artifact: "plan.md phases 2 to 5 (Records, README) and FR-034's README items: no task touches § Host ARIA; reviews/spec/check-2-fixes.md SPEC-2-08 chose 'blank counts as absent' without noting 005's opposite rule"
+    claim: |
+      005's rule (blank host label = unlabelled even with `label`) and this feature's rule (blank host label = absent,
+      `label` names) are opposites, yet FR-010 cites 005's FR-034 as its source and the README's Host ARIA section,
+      written for the whole package, will go on stating 005's rule for all six elements. A consumer reading the README
+      gets the wrong behaviour for four of them, and the library has two host-ARIA conventions with no stated scope.
+      The readme test will not catch it because it only checks the old sentence is present.
+    remedies:
+      - "Amend FR-010's wording (drop 'as in 005's FR-034', state the rule on its own), and add a README task to phase 2 (red first in readme.test.ts): § Host ARIA states which rule applies to which elements (icon and brand mark: blank decides; scroller, board, lane: blank counts as absent, with the reason from R-01), or the operator rules that one rule applies to all and 005's elements change (then a behaviour change to 005 with its own tests)."
+
+  - id: PLAN-CORRECTNESS-1-006
+    severity: 2
+    title: "The plan departs from the approved spec's text in five places without amending the spec"
+    evidence:
+      - artifact: "spec FR-028 'Upgrading the element moves no focus' and Edge Cases '`detail-open` before the element upgrades ... No focus is moved at upgrade' vs research.md R-14 Upgrade / plan.md decision 6: focus moves at upgrade when the first layout hides its pane"
+      - artifact: "spec FR-001 'A slotted control that takes focus is scrolled fully into view ... It is also never left under a fade' (any focus) vs research.md R-06 'Pointer focus does not apply' / plan.md decision 3"
+      - artifact: "spec FR-011 Outputs 'whether the box overflows, and whether content is off-screen at the inline start and at the inline end' vs contracts/overflow-region.md Outputs adding `fadeStart`, `fadeEnd`, `fadeAttribute`, `name`; spec SC-001 'fades or forced-colours lines are on exactly the sides with content off-screen' vs R-06 'read as ... except while the FR-001 fallback suppresses one'"
+      - artifact: "spec FR-025 'a non-negative decimal number followed by `px`, `rem` or `em`' vs research.md R-12 rejecting `.5rem` and `+56rem` ('examples within FR-025's text, so the spec is unchanged'); spec FR-018 'a whole number of 0 or more' vs R-09 rejecting `\"3.0\"` and `\"3e0\"`"
+    claim: |
+      The spec is the requirement the tests and the phase reviews are judged against. Each of these plan readings
+      either contradicts an explicit spec sentence (upgrade focus, pointer focus, SC-001's 'exactly') or narrows a
+      grammar the spec states more broadly (`.5` is a CSS decimal number; `3.0` is a whole number). A test written to
+      the plan then fails a review held to the spec, or a test written to the spec contradicts the design. The plan
+      lists three of them as operator decisions but proposes no spec text, and says of R-12 that the spec is
+      unchanged when it is not.
+    remedies:
+      - "At the plan gate, amend the spec with the plan's readings: FR-028 and the Edge Case (upgrade moves focus only when the first layout hides the focused pane), FR-001 (clearance on keyboard, `:focus-visible`, focus only), FR-011's output list and SC-001's suppression exception, FR-025's grammar (digits with an optional `.digits` fraction, no sign, no exponent) and FR-018's count grammar (decimal digits only); update the paired table where a 'does not' row changes."
+
+  - id: PLAN-CORRECTNESS-1-007
+    severity: 2
+    title: "Removing the inspector pane removes its slot, so a later inspector is never detected"
+    evidence:
+      - artifact: "research.md R-11 Empty inspector: '`slotchange` on the `inspector` slot sets an internal `hasInspector` state. Without one, no inspector pane is rendered at all (FR-024)'"
+      - artifact: "spec US3-8: 'Slotting an inspector adds them (scenario 1)'; data-model.md `hasInspector`: 'the `inspector` slot has an assigned element'"
+    claim: |
+      `slotchange` fires only on a `<slot>` that is in the shadow tree. If the pane, and with it `<slot name="inspector">`,
+      is not rendered while `hasInspector` is false, then an element that starts without an inspector (the first render)
+      never sees one being added, and US3-8's second half fails; the same happens after the host removes and re-adds
+      its inspector. The plan's wording does not say the slot survives the pane's removal.
+    remedies:
+      - "research.md R-11: the `inspector` slot is always rendered; only the pane's track, border and space depend on `hasInspector` (for example the slot's wrapper is `display: none` and outside the grid template while empty). Add US3-8's 'slot an inspector after first render, then remove it' case to the phase 4 scenarios, with the plant 'slot rendered only when an inspector is present'."
+
+  - id: PLAN-CORRECTNESS-1-008
+    severity: 2
+    title: "R-13's intrinsic sizes go stale: list-detail has no 'track observer', and hidden panes cannot be observed"
+    evidence:
+      - artifact: "research.md R-13 Measurement pass: 'It runs on `slotchange` and when the track observer sees a content size change'; R-11 and data-model.md list-detail: the only observer named is the host's `ResizeObserver` (`measured`)"
+      - artifact: "spec FR-025: 'Its intrinsic inline sizes ... do not depend on the layout it shows ... the layout does not alternate'; FR-027: panes that are not shown have no box"
+    claim: |
+      'The track' is the overflow-region module's element; list-detail has none, so the second trigger is undefined.
+      Worse, in one column the hidden panes are `display: none`: a host that replaces the detail's inner content while
+      the list is shown (the ordinary select-a-record flow, and htmx swaps in the console) changes the detail's
+      max-content with no `slotchange` (the slotted element stays) and no resize (the pane has no box). The element's
+      recorded max-content and min-content then describe old content, so in a shrink-to-fit host it keeps the wrong size
+      and can pick the wrong tier, which is what FR-025 forbids. The spike as written (figures after `slotchange`) does
+      not exercise this.
+    remedies:
+      - "Name the triggers in R-13 and data-model.md: `slotchange` on all three slots, a `ResizeObserver` on each shown pane, a re-measure before applying every tier or `detail-open` change, and a `MutationObserver` (`childList`, `characterData`, `subtree`) on the assigned elements of hidden panes, or state which of these the design drops and why; add a spike case 'detail content replaced inside the slotted element while in one column, then `detail-open` set, in a 1196 px flex row' with its expected size."
+
+  - id: PLAN-CORRECTNESS-1-009
+    severity: 2
+    title: "The clearance arithmetic cannot read 'computed px values' of the fade token: the computed value is `2rem`"
+    evidence:
+      - artifact: "contracts/overflow-region.md § Inputs: 'the clearance arithmetic reads their computed px values from the box at the time of focus' (`--ocelle-focus-offset`, `--ocelle-focus-width`, `--ocelle-scroller-fade-size`)"
+      - code: "packages/tokens/src/source.ts:151 `space-7` is `2rem`; research.md R-16 `scroller-fade-size` is `var(--ocelle-space-7)`"
+      - code: "probe: `getComputedStyle(el).getPropertyValue('--ocelle-scroller-fade-size')` -> '2rem' (unregistered custom property: substituted tokens, not px); `--ocelle-focus-offset` -> '2px'"
+    claim: |
+      An unregistered custom property's computed value is its token text after `var()` substitution, so the fade depth
+      comes back as `2rem` (and a host override such as `calc(1rem + 4px)` as that text), not a px figure. The pure
+      `clearanceScroll` helper takes `fade` as a number, so the module needs a defined way to get it; left to the
+      implementer, a `parseFloat("2rem")` gives 2 px of clearance and US1-13's fade-clearance assertions fail, or pass
+      only at the default root font size.
+    remedies:
+      - "contracts/overflow-region.md and research.md R-06: measure the figures from laid-out boxes, not custom-property text: the fade depth from a shadow element sized `inline-size: var(--ocelle-scroller-fade-size)` (the forced-colours edge elements can carry it), the ring room from the track's computed `padding-inline-start` (a px used value); add a unit case with a 20 px root font size and a `calc()` override of the fade token."
+
+  - id: PLAN-CORRECTNESS-1-010
+    severity: 2
+    title: "Block size and the fade ignore the horizontal scrollbar, which every test run hides"
+    evidence:
+      - artifact: "spec FR-001 and US1-13: 'its block size is its content's block size plus that room on each block side'; research.md R-04 and contracts/overflow-region.md `.region-box` `overflow-x: auto` with only the ring room as block padding; R-05 the mask is on the scroll box"
+      - code: "/opt/node-tools/node_modules/playwright-core/lib/coreBundle.js:43338-43344: headless Chromium is launched with `--hide-scrollbars`; vitest.config.ts runs the `elements` project headless through `@vitest/browser-playwright`, and the `elements-browser` and #10 runs use Playwright `chromium.launch()`"
+      - artifact: "no artifact of spec, plan, research or contracts mentions scrollbars (`grep -rn scrollbar specs/009-workflow-layouts` is empty)"
+    claim: |
+      In a headed Chromium with classic scrollbars (Windows, most Linux desktops, any host page with 'always show
+      scrollbars'), an overflowing scroller or board gains a horizontal scrollbar under its content, so its block size is
+      content + ring room + scrollbar, not what FR-001 states, and the box-level `mask-image` fades the scrollbar's ends
+      too. Every planned measurement runs with scrollbars hidden, so the requirement is unverified exactly where it can
+      differ, and the design has not decided what the scrollbar should do (overlay, `scrollbar-width`, `scrollbar-gutter`,
+      or masked track instead of masked box).
+    remedies:
+      - "Decide the scrollbar's place in research.md R-04/R-05 (for example: the block size excludes the scrollbar, which stays visible and unmasked because the mask goes on the track or an inner clip, not on the scroll box), restate FR-001's block-size sentence to match, and add one `elements-browser` case launched without `--hide-scrollbars` (`ignoreDefaultArgs`) that measures block size and the scrollbar's opacity at a faded edge."
+
+  - id: PLAN-CORRECTNESS-1-011
+    severity: 2
+    title: "The default lane's chrome is invisible on the ground the plan renders it on"
+    evidence:
+      - artifact: "spec US2-4: the default lane has 'a `--ocelle-color-panel` ground, `--ocelle-radius-row` corners and `--ocelle-space-3` padding'; Consumer need: the pipeline needs a lane 'without the nested card look' (#506), i.e. the default has one; research.md R-10: 'The board paints no ground ... The flat-lane stories render on `color-canvas`, the preview's ground'"
+      - code: "packages/tokens/src/source.ts:36 `color-canvas` light #F1EEE8 dark #15130F; :39 `color-panel` light #F1EEE8 dark #15130F (identical); :40 `color-inspector` identical too"
+    claim: |
+      The panel ground equals the canvas (and the panel and inspector grounds) in both themes, so a default lane on the
+      preview ground, or in a pane or inspector, shows no ground and therefore no visible corners: the 'lane chrome' that
+      distinguishes it from `flat` is reduced to padding and title type. The default and flat stories then differ by
+      a few pixels, and the consumer need the default variant exists for is not met on the grounds the plan names. The
+      spec and plan never say which ground a board sits on, which is the condition for US2-4 to mean anything.
+    remedies:
+      - "State the board's expected ground (for example `color-pane`, Kitty's reading pane) in spec US2-4 and research.md R-10, render the board and lane stories on it through a `[data-story]` rule, and add a test that the default lane's computed ground differs from that ground."
+      - "Give the default lane a ground that differs from every main ground the board may sit on (for example `color-sheet`, as cards use), changing US2-4 and contracts/elements.md's tokens read."
+
+  - id: PLAN-CORRECTNESS-1-012
+    severity: 1
+    title: "Small contradictions between research, contract and the lint rule"
+    evidence:
+      - artifact: "research.md R-04: block ring room is 'block padding of the scroll box (scroller) or of the lanes row (board)' vs contracts/overflow-region.md § Stylesheet: `.region-box` always has 'block padding of the ring room' (shared by the board), so the board would get it twice unless it overrides the module's rule, which the contract says a host does not do ('it does not change the module's')"
+      - artifact: "research.md R-05 and contract `.region-edge`: 'a 1 px `CanvasText` line'; contracts/elements.md scroller 'Tokens read' omits `--ocelle-border-width`, and `1px` outside `calc()` is raw under gates/stylelint/token-only.ts wordAllowed() (a non-zero number with a unit)"
+      - artifact: "contracts/overflow-region.md § Use: `box: () => this.renderRoot.querySelector(\".region-box\")` typed against `box: () => HTMLElement | null` in § Inputs; `querySelector(string)` returns `Element | null`, which does not type-check under the repository's strict TypeScript"
+    claim: |
+      Each is minor, but the contract is the interface #13 will copy verbatim: the board's block room must come from one
+      place, the edge line must be the border-width token (and the scroller's token list must say so for the manifest
+      and README), and the sample code should compile.
+    remedies:
+      - "Make R-04 and the contract agree (block ring room on `.region-box` for every host, the board adds none to its lanes row); write the edge line as `var(--ocelle-border-width) solid CanvasText` and add `--ocelle-border-width` to the scroller's and board's tokens read; type the sample as `querySelector<HTMLElement>(\".region-box\")`."

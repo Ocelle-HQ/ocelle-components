@@ -1,0 +1,9 @@
+$ node gates/bin/test.ts
+packages/elements/test/drawer.test.ts:25: unit-tests: ocelle-drawer, in process (US2) Input during the exit, motion on: two close-control clicks: exactly one request and one close, no cancel event, focus on the opener (FR-013, FR-014, R-02, R-06): AssertionError: expected { …(4) } to deeply equal { …(4) }
+packages/elements/test/tooltip.test.ts:29: unit-tests: ocelle-tooltip, in process (US3) Hover delay, moves inside the tooltip, then leaving before the delay (R-12): the pointer enters the trigger, moves onto its inner span and leaves both boxes at 150 ms: no bubble at any frame of a 450 ms wait from the entry: AssertionError: expected { never: false, counts: { …(2) } } to deeply equal { never: true, counts: { …(2) } }
+unit-tests: 2 of 5067 tests failed
+[ELIFECYCLE] Test failed. See above for more details.
+
+real	14m29.135s
+user	12m53.207s
+sys	2m51.317s

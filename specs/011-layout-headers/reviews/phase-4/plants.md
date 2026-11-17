@@ -1,0 +1,170 @@
+# Phase 4 plants (T040)
+
+Evidence for contracts/checks.md § Pairing plants (the rows that name US3 scenarios, the sidebar or its landmark) and
+the declaration-level style plants of research.md R-17 for the one `css` template of the phase,
+`src/ocelle-context-sidebar.ts`, and the role probe of contracts/checks.md § Role probe.
+
+**Method** (005's working-tree method, `specs/005-icons-brand-mark/reviews/phase-4/plants.md`, as phases 2 and 3
+applied it): each plant is an edit of `src/ocelle-context-sidebar.ts` (one of them of `src/slot-state.ts`) in the
+working tree at the green state of this phase. With the edit in place both harnesses run the phase's suite:
+
+- in process (`elements`): `test/context-sidebar.test.ts`;
+- on the strict-CSP fixture (`elements-browser`): `test/browser/context-sidebar.test.ts`, with the browser build rebuilt
+  from the planted source by the global setup.
+
+Then the file is restored. Nothing was committed with a plant and no test hook was added to source. A style plant
+deletes one declaration; for a grouped rule, one more plant per selector removes that selector from the group. The
+cells list the scenarios that failed, by their label, with the number of failed tests first. A control run with no
+plant (a comment line changed) failed no test in either harness.
+
+Run on 2026-11-14 in this container, Chromium for Testing 1243 through `OCELLE_CHROMIUM_PATH`, on the green code with
+the red commit's tests, by a script that applies each plant, runs the two suites with Vitest's JSON reporter and
+restores the files. The first pass ran before two assertions were added to the red tests (below); the plants it left
+uncaught were run again with them, and every other plant had already failed at least one scenario in each harness
+without them. After the mutation run, the template's class lists moved to Lit's `classMap` (notes.md), and every plant
+that edits the template (the tab stop, the three empty wrappers, the inner `<nav>`, the event, the `style` attribute
+and the control) was run again on that code; the style plants edit only the `css` template, which did not change.
+
+**Result**: every style plant (31: the template's 25 declarations and the 6 selectors of its three grouped rules) and
+every pairing plant but two makes at least one scenario fail in each harness:
+
+- the CSP plant (a `style` attribute in the template) fails 25 fixture tests and no in-process test, by design: only
+  the fixture pages are served under the strict policy (FR-035), so its guard is the fixture's;
+- `max-block-size: 100%` on the layout container (the contract's plant for "the footer does not overlap the last
+  section", US3-4) fails no test, and is recorded as **equivalent** for this template: the host's block size is never
+  definite (`block-size` is not set, `min-block-size` is a minimum and `align-self: start` keeps a flex row or grid
+  from stretching it), so a percentage `max-block-size` on its flex item resolves to `none` and changes nothing. Two
+  plants that do let the footer overlap or the host stop at the container's size were run in its place, and each
+  fails US3-4: `max-block-size: 100%` on the host, and the footer positioned at the block end over the sections.
+
+No style declaration is recorded as equivalent; the one equivalent record is the pairing plant above.
+
+Before the red commit, the first pass found two plants no scenario caught, and the red tests gained an assertion for
+each:
+
+- `box-sizing: border-box` on the host: the host has no padding or border of its own, so the declaration shows only
+  when the page gives the host some. The border-box scenario gained a sidebar the page gives `padding: 8px` and a
+  `2px` border in a 600 px container: its border box is 600 px tall only with `border-box` (R-01, R-09).
+- `!important` dropped from the sections' `display: block`: neither page reset sets `display`. The reset scenarios'
+  page rule on the sections' block margins also sets their `padding` and `display` (FR-022: a page rule does not
+  change a section's padding or display), and each section stays a block padded `--ocelle-space-4`.
+
+The mutation run on the same code is recorded in notes.md.
+
+## Role probe (contracts/checks.md § Role probe, research.md R-11)
+
+`role-probe.mjs` builds the browser build from the working tree's source, loads it and axe-core on one page and reads
+`axe.commons.aria.getRole(host)` for a sidebar with `label`, one with a host `aria-label` and one with neither
+(`role-probe.log`):
+
+| Source | axe-core | with `label` | with a host `aria-label` | with neither |
+|---|---|---|---|---|
+| green (internals under `internalsKey`) | 4.14.0 | `navigation` | `navigation` | `navigation` |
+| plant: the internals in a `#private` field | 4.14.0 | `null` | `null` | `null` |
+
+The plant "internals key not in the manifest" (the `@internal` tag removed from the field) fails the manifest test
+`declares ocelle-context-sidebar … and no member for its internals key` (`elements-node`, 1 of 24 failed): the
+manifest then lists a member `[internalsKey]`.
+
+## Style plants
+
+| Plant | In process (`elements`) | Fixture (`elements-browser`) |
+|---|---|---|
+| sidebar: `:host { display: flex; }` | 5: US3-3, light; US3-3, dark; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container; a hidden host and the border box (FR-00… | 5: US3-3, light; US3-3, dark; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container; a hidden host and the border box (FR-00… |
+| sidebar: `:host { flex-direction: column; }` | 1: US3-10 | 1: US3-10 |
+| sidebar: `:host { box-sizing: border-box; }` | 1: a hidden host and the border box (FR-00… | 1: a hidden host and the border box (FR-00… |
+| sidebar: `:host { min-block-size: 100%; }` | 4: US3-3, light; US3-3, dark; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container | 4: US3-3, light; US3-3, dark; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container |
+| sidebar: `:host { align-self: start; }` | 1: US3-4 | 1: US3-4 |
+| sidebar: `:host([hidden]) { display: none; }` | 1: a hidden host and the border box (FR-00… | 1: a hidden host and the border box (FR-00… |
+| sidebar: `.layout { display: flex; }` | 4: US3-3, light; US3-3, dark; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container | 4: US3-3, light; US3-3, dark; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container |
+| sidebar: `.layout { flex: 1 0 auto; }` | 4: US3-3, light; US3-3, dark; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container | 4: US3-3, light; US3-3, dark; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container |
+| sidebar: `.layout { flex-direction: column; }` | 21: US3-3, light; US3-3, dark; US3-3, ocelle-section-header and span s…; US3-3, FR-008; US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma…; US3-3, hidden sections; US3-4; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container; US3-5; US3-6; US3-7; US3-8; US3-9, forced colours with the light pa…; US3-9, forced colours with the dark pal…; US3-10; US3-11; US3-13; token sentinels (research.md R-13); a hidden host and the border box (FR-00… | 21: US3-3, light; US3-3, dark; US3-3, ocelle-section-header and span s…; US3-3, FR-008; US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma…; US3-3, hidden sections; US3-4; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container; US3-5; US3-6; US3-7; US3-8; US3-9, forced colours with the light pa…; US3-9, forced colours with the dark pal…; US3-10; US3-11; US3-13; token sentinels (research.md R-13); a hidden host and the border box (FR-00… |
+| sidebar: `.head, .footer { padding: var(--ocelle-space-4); }` | 18: US3-3, light; US3-3, dark; US3-3, ocelle-section-header and span s…; US3-3, FR-008; US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma…; US3-3, hidden sections; US3-4; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container; US3-5; US3-6; US3-7; US3-9, forced colours with the light pa…; US3-9, forced colours with the dark pal…; US3-11; US3-13; token sentinels (research.md R-13) | 18: US3-3, light; US3-3, dark; US3-3, ocelle-section-header and span s…; US3-3, FR-008; US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma…; US3-3, hidden sections; US3-4; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container; US3-5; US3-6; US3-7; US3-9, forced colours with the light pa…; US3-9, forced colours with the dark pal…; US3-11; US3-13; token sentinels (research.md R-13) |
+| sidebar: `.footer { margin-block-start: auto; }` | 4: US3-3, light; US3-3, dark; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container | 4: US3-3, light; US3-3, dark; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container |
+| sidebar: `.sections { padding-inline: var(--ocelle-space-4); }` | 17: US3-3, light; US3-3, dark; US3-3, ocelle-section-header and span s…; US3-3, FR-008; US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma…; US3-3, hidden sections; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container; US3-5; US3-6; US3-7; US3-10; US3-11; US3-13; token sentinels (research.md R-13); a hidden host and the border box (FR-00… | 17: US3-3, light; US3-3, dark; US3-3, ocelle-section-header and span s…; US3-3, FR-008; US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma…; US3-3, hidden sections; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container; US3-5; US3-6; US3-7; US3-10; US3-11; US3-13; token sentinels (research.md R-13); a hidden host and the border box (FR-00… |
+| sidebar: `.head.divided { border-block-end: var(--ocelle-border-width) solid var(--ocelle-color-rule); }` | 1: US3-13 | 1: US3-13 |
+| sidebar: `.sections.after-head { border-block-start: var(--ocelle-border-width) solid var(--ocelle-color-rule); }` | 18: US3-3, light; US3-3, dark; US3-3, ocelle-section-header and span s…; US3-3, FR-008; US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma…; US3-3, hidden sections; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container; US3-5; US3-6; US3-7; US3-8; US3-9, forced colours with the light pa…; US3-9, forced colours with the dark pal…; US3-11; US3-13; token sentinels (research.md R-13) | 18: US3-3, light; US3-3, dark; US3-3, ocelle-section-header and span s…; US3-3, FR-008; US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma…; US3-3, hidden sections; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container; US3-5; US3-6; US3-7; US3-8; US3-9, forced colours with the light pa…; US3-9, forced colours with the dark pal…; US3-11; US3-13; token sentinels (research.md R-13) |
+| sidebar: `.sections.before-footer { border-block-end: var(--ocelle-border-width) solid var(--ocelle-color-rule); }` | 19: US3-3, light; US3-3, dark; US3-3, ocelle-section-header and span s…; US3-3, FR-008; US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma…; US3-3, hidden sections; US3-4; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container; US3-5; US3-6; US3-7; US3-8; US3-9, forced colours with the light pa…; US3-9, forced colours with the dark pal…; US3-11; US3-13; token sentinels (research.md R-13) | 19: US3-3, light; US3-3, dark; US3-3, ocelle-section-header and span s…; US3-3, FR-008; US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma…; US3-3, hidden sections; US3-4; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container; US3-5; US3-6; US3-7; US3-8; US3-9, forced colours with the light pa…; US3-9, forced colours with the dark pal…; US3-11; US3-13; token sentinels (research.md R-13) |
+| sidebar: `.empty { display: none; }` | 3: US3-5; US3-6; US3-13 | 3: US3-5; US3-6; US3-13 |
+| sidebar: `::slotted(:not([slot]):not([hidden])) { display: block !important; }` | 1: US3-3, ocelle-section-header and span s… | 1: US3-3, ocelle-section-header and span s… |
+| sidebar: `::slotted(:not([slot]):not([hidden])) { padding: var(--ocelle-space-4) !important; }` | 15: US3-3, light; US3-3, dark; US3-3, ocelle-section-header and span s…; US3-3, FR-008; US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma…; US3-3, hidden sections; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container; US3-5; US3-6; US3-7; US3-10; US3-13; token sentinels (research.md R-13) | 14: US3-3, light; US3-3, dark; US3-3, ocelle-section-header and span s…; US3-3, FR-008; US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma…; US3-3, hidden sections; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container; US3-5; US3-6; US3-7; US3-13; token sentinels (research.md R-13) |
+| sidebar: `::slotted(:not([slot]):not([hidden])) { margin-block: 0; }` | 3: US3-3, FR-008; US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma… | 3: US3-3, FR-008; US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma… |
+| sidebar: `::slotted(:not([slot]):not([hidden])) { margin-inline: calc(-1 * var(--ocelle-space-4)) !important; }` | 19: US3-3, light; US3-3, dark; US3-3, ocelle-section-header and span s…; US3-3, FR-008; US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma…; US3-3, hidden sections; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container; US3-5; US3-6; US3-7; US3-8; US3-9, forced colours with the light pa…; US3-9, forced colours with the dark pal…; US3-11; US3-13; token sentinels (research.md R-13); a hidden host and the border box (FR-00… | 19: US3-3, light; US3-3, dark; US3-3, ocelle-section-header and span s…; US3-3, FR-008; US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma…; US3-3, hidden sections; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container; US3-5; US3-6; US3-7; US3-8; US3-9, forced colours with the light pa…; US3-9, forced colours with the dark pal…; US3-11; US3-13; token sentinels (research.md R-13); a hidden host and the border box (FR-00… |
+| sidebar: `::slotted(:not([slot]):not([hidden])) { border-block-start: var(--ocelle-border-width) solid var(--ocelle-color-rule) !important; }` | 17: US3-3, light; US3-3, dark; US3-3, ocelle-section-header and span s…; US3-3, FR-008; US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma…; US3-3, hidden sections; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container; US3-5; US3-6; US3-7; US3-8; US3-9, forced colours with the light pa…; US3-9, forced colours with the dark pal…; US3-11; token sentinels (research.md R-13) | 17: US3-3, light; US3-3, dark; US3-3, ocelle-section-header and span s…; US3-3, FR-008; US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma…; US3-3, hidden sections; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container; US3-5; US3-6; US3-7; US3-8; US3-9, forced colours with the light pa…; US3-9, forced colours with the dark pal…; US3-11; token sentinels (research.md R-13) |
+| sidebar: `::slotted(:nth-child(1 of :not([slot]):not([hidden]))) { border-block-start: none !important; }` | 16: US3-3, light; US3-3, dark; US3-3, ocelle-section-header and span s…; US3-3, FR-008; US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma…; US3-3, hidden sections; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container; US3-5; US3-6; US3-7; US3-9, forced colours with the light pa…; US3-9, forced colours with the dark pal…; US3-13; token sentinels (research.md R-13) | 16: US3-3, light; US3-3, dark; US3-3, ocelle-section-header and span s…; US3-3, FR-008; US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma…; US3-3, hidden sections; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container; US3-5; US3-6; US3-7; US3-9, forced colours with the light pa…; US3-9, forced colours with the dark pal…; US3-13; token sentinels (research.md R-13) |
+| sidebar: `::slotted(:nth-child(1 of [slot="head"]:not([hidden]))), ::slotted(:nth-child(1 of [slot="footer"]:not([hidden]))) { margin-block-start: 0; }` | 16: US3-3, light; US3-3, dark; US3-3, ocelle-section-header and span s…; US3-3, FR-008; US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma…; US3-3, hidden sections; US3-4; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container; US3-5; US3-6; US3-7; US3-11; US3-13; token sentinels (research.md R-13) | 16: US3-3, light; US3-3, dark; US3-3, ocelle-section-header and span s…; US3-3, FR-008; US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma…; US3-3, hidden sections; US3-4; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container; US3-5; US3-6; US3-7; US3-11; US3-13; token sentinels (research.md R-13) |
+| sidebar: `::slotted(:nth-last-child(1 of [slot="head"]:not([hidden]))), ::slotted(:nth-last-child(1 of [slot="footer"]:not([hidden]))) { margin-block-end: 0; }` | 18: US3-3, light; US3-3, dark; US3-3, ocelle-section-header and span s…; US3-3, FR-008; US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma…; US3-3, hidden sections; US3-4; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container; US3-5; US3-6; US3-7; US3-9, forced colours with the light pa…; US3-9, forced colours with the dark pal…; US3-11; US3-13; token sentinels (research.md R-13) | 18: US3-3, light; US3-3, dark; US3-3, ocelle-section-header and span s…; US3-3, FR-008; US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma…; US3-3, hidden sections; US3-4; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container; US3-5; US3-6; US3-7; US3-9, forced colours with the light pa…; US3-9, forced colours with the dark pal…; US3-11; US3-13; token sentinels (research.md R-13) |
+| sidebar: `@media not (forced-colors: active) :host { background-color: var(--ocelle-color-rail); }` | 14: US3-3, light; US3-3, dark; US3-3, ocelle-section-header and span s…; US3-3, FR-008; US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma…; US3-3, hidden sections; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container; US3-5; US3-6; US3-7; US3-13; token sentinels (research.md R-13) | 14: US3-3, light; US3-3, dark; US3-3, ocelle-section-header and span s…; US3-3, FR-008; US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma…; US3-3, hidden sections; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container; US3-5; US3-6; US3-7; US3-13; token sentinels (research.md R-13) |
+| sidebar: `.head removed from the group { .head, .footer }` | 17: US3-3, light; US3-3, dark; US3-3, ocelle-section-header and span s…; US3-3, FR-008; US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma…; US3-3, hidden sections; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container; US3-5; US3-6; US3-7; US3-9, forced colours with the light pa…; US3-9, forced colours with the dark pal…; US3-11; US3-13; token sentinels (research.md R-13) | 17: US3-3, light; US3-3, dark; US3-3, ocelle-section-header and span s…; US3-3, FR-008; US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma…; US3-3, hidden sections; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container; US3-5; US3-6; US3-7; US3-9, forced colours with the light pa…; US3-9, forced colours with the dark pal…; US3-11; US3-13; token sentinels (research.md R-13) |
+| sidebar: `.footer removed from the group { .head, .footer }` | 16: US3-3, light; US3-3, dark; US3-3, ocelle-section-header and span s…; US3-3, FR-008; US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma…; US3-3, hidden sections; US3-4; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container; US3-5; US3-6; US3-7; US3-11; US3-13; token sentinels (research.md R-13) | 16: US3-3, light; US3-3, dark; US3-3, ocelle-section-header and span s…; US3-3, FR-008; US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma…; US3-3, hidden sections; US3-4; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container; US3-5; US3-6; US3-7; US3-11; US3-13; token sentinels (research.md R-13) |
+| sidebar: `::slotted(:nth-child(1 of [slot="head"]:not([hidden]))) removed from the group { ::slotted(:nth-child(1 of [slot="head"]:not([hidden]))), ::slotted(:nth-child(1 of [slot="footer"]:not([hidden]))) }` | 14: US3-3, light; US3-3, dark; US3-3, ocelle-section-header and span s…; US3-3, FR-008; US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma…; US3-3, hidden sections; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container; US3-5; US3-6; US3-7; US3-13; token sentinels (research.md R-13) | 14: US3-3, light; US3-3, dark; US3-3, ocelle-section-header and span s…; US3-3, FR-008; US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma…; US3-3, hidden sections; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container; US3-5; US3-6; US3-7; US3-13; token sentinels (research.md R-13) |
+| sidebar: `::slotted(:nth-child(1 of [slot="footer"]:not([hidden]))) removed from the group { ::slotted(:nth-child(1 of [slot="head"]:not([hidden]))), ::slotted(:nth-child(1 of [slot="footer"]:not([hidden]))) }` | 12: US3-3, ocelle-section-header and span s…; US3-3, FR-008; US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma…; US3-3, hidden sections; US3-4; US3-5; US3-6; US3-7; US3-11; US3-13; token sentinels (research.md R-13) | 12: US3-3, ocelle-section-header and span s…; US3-3, FR-008; US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma…; US3-3, hidden sections; US3-4; US3-5; US3-6; US3-7; US3-11; US3-13; token sentinels (research.md R-13) |
+| sidebar: `::slotted(:nth-last-child(1 of [slot="head"]:not([hidden]))) removed from the group { ::slotted(:nth-last-child(1 of [slot="head"]:not([hidden]))), ::slotted(:nth-last-child(1 of [slot="footer"]:not([hidden]))) }` | 17: US3-3, light; US3-3, dark; US3-3, ocelle-section-header and span s…; US3-3, FR-008; US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma…; US3-3, hidden sections; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container; US3-5; US3-6; US3-7; US3-9, forced colours with the light pa…; US3-9, forced colours with the dark pal…; US3-11; US3-13; token sentinels (research.md R-13) | 17: US3-3, light; US3-3, dark; US3-3, ocelle-section-header and span s…; US3-3, FR-008; US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma…; US3-3, hidden sections; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container; US3-5; US3-6; US3-7; US3-9, forced colours with the light pa…; US3-9, forced colours with the dark pal…; US3-11; US3-13; token sentinels (research.md R-13) |
+| sidebar: `::slotted(:nth-last-child(1 of [slot="footer"]:not([hidden]))) removed from the group { ::slotted(:nth-last-child(1 of [slot="head"]:not([hidden]))), ::slotted(:nth-last-child(1 of [slot="footer"]:not([hidden]))) }` | 15: US3-3, light; US3-3, dark; US3-3, ocelle-section-header and span s…; US3-3, FR-008; US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma…; US3-3, hidden sections; US3-4; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container; US3-5; US3-6; US3-7; US3-13; token sentinels (research.md R-13) | 15: US3-3, light; US3-3, dark; US3-3, ocelle-section-header and span s…; US3-3, FR-008; US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma…; US3-3, hidden sections; US3-4; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container; US3-5; US3-6; US3-7; US3-13; token sentinels (research.md R-13) |
+
+## Pairing plants
+
+| Plant | In process (`elements`) | Fixture (`elements-browser`) |
+|---|---|---|
+| `!important` dropped from the section rule's `display: block;` | 2: US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma… | 2: US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma… |
+| `!important` dropped from the section rule's `padding: var(--ocelle-space-4);` | 2: US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma… | 2: US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma… |
+| `!important` dropped from the section rule's `margin-inline: calc(-1 * var(--ocelle-space-4));` | 2: US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma… | 2: US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma… |
+| `!important` dropped from the section rule's `border-block-start: var(--ocelle-border-width) solid var(--ocelle-color-rule);` | 1: US3-3, a reset of every element (* { ma… | 1: US3-3, a reset of every element (* { ma… |
+| `:not([hidden])` dropped from the section rule | 1: US3-3, hidden sections | 1: US3-3, hidden sections |
+| `:not([hidden])` dropped from the first-section rule only | 1: US3-3, hidden sections | 1: US3-3, hidden sections |
+| `:not([hidden])` dropped from the footer's last-element rule | 1: US3-3, FR-008 | 1: US3-3, FR-008 |
+| `:not([hidden])` dropped from the footer's first-element rule | 1: US3-3, FR-008 | 1: US3-3, FR-008 |
+| `:not([hidden])` dropped from the head's first-element rule | 1: US3-3, FR-008 | 1: US3-3, FR-008 |
+| `:not([hidden])` dropped from the head's last-element rule | 1: US3-3, FR-008 | 1: US3-3, FR-008 |
+| `max-block-size: 100%` on the layout container | 0 | 0 |
+| the divider at each section's block end instead of its start, the last section excepted (a divider for text after a section) | 16: US3-3, light; US3-3, dark; US3-3, ocelle-section-header and span s…; US3-3, FR-008; US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma…; US3-3, hidden sections; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container; US3-5; US3-6; US3-7; US3-9, forced colours with the light pa…; US3-9, forced colours with the dark pal…; US3-11; token sentinels (research.md R-13) | 16: US3-3, light; US3-3, dark; US3-3, ocelle-section-header and span s…; US3-3, FR-008; US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma…; US3-3, hidden sections; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container; US3-5; US3-6; US3-7; US3-9, forced colours with the light pa…; US3-9, forced colours with the dark pal…; US3-11; token sentinels (research.md R-13) |
+| a wrapper with `tabindex="0"` | 2: US3-1; US3-8 | 2: US3-1; US3-8 |
+| `overflow: hidden` and `white-space: nowrap` on a wrapper | 1: US3-10 | 1: US3-10 |
+| the wrapper of an empty slot not hidden (the head wrapper's `empty` class never set) | 2: US3-5; US3-6 | 2: US3-5; US3-6 |
+| the wrapper of an empty slot not hidden (the sections wrapper's `empty` class never set) | 1: US3-13 | 1: US3-13 |
+| the wrapper of an empty slot not hidden (the footer wrapper's `empty` class never set) | 2: US3-5; US3-6 | 2: US3-5; US3-6 |
+| an inner `<nav>` carrying the landmark's name | 5: US3-1; US3-2; US3-12; a hidden host and the border box (FR-00…; no event (FR-002) | 5: US3-1; US3-2; US3-12; a hidden host and the border box (FR-00…; no event (FR-002) |
+| the element replaces a blank host `aria-label` by the `label` value | 1: US3-12 | 1: US3-12 |
+| the element writes `aria-label` from `label` on the host, and removes a blank one | 2: US3-1; US3-12 | 2: US3-1; US3-12 |
+| `dispatchEvent(new Event("change"))` on slot change | 1: no event (FR-002) | 1: no event (FR-002) |
+| a template with a `style` attribute | 0 | 25: US3-1; US3-2; US3-3, light; US3-3, dark; US3-3, ocelle-section-header and span s…; US3-3, FR-008; US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma…; US3-3, hidden sections; US3-4; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container; US3-5; US3-6; US3-7; US3-8; US3-9, forced colours with the light pa…; US3-9, forced colours with the dark pal…; US3-10; US3-11; US3-12; US3-13; token sentinels (research.md R-13); a hidden host and the border box (FR-00…; no event (FR-002) |
+| the role set to `none` instead of `navigation` | 5: US3-1; US3-2; US3-12; a hidden host and the border box (FR-00…; no event (FR-002) | 5: US3-1; US3-2; US3-12; a hidden host and the border box (FR-00…; no event (FR-002) |
+| the slot state read once at first render only | 2: US3-6; no event (FR-002) | 2: US3-6; no event (FR-002) |
+| `max-block-size: 100%` on the host | 1: US3-4 | 1: US3-4 |
+| the footer placed at the host's block end over the sections (`position: absolute; inset-block-end: 0`) | 18: US3-1; US3-3, light; US3-3, dark; US3-3, ocelle-section-header and span s…; US3-3, FR-008; US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma…; US3-3, hidden sections; US3-4; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container; US3-5; US3-6; US3-7; US3-8; US3-11; US3-13; token sentinels (research.md R-13) | 18: US3-1; US3-3, light; US3-3, dark; US3-3, ocelle-section-header and span s…; US3-3, FR-008; US3-3, a ul reset (ul { margin; US3-3, a reset of every element (* { ma…; US3-3, hidden sections; US3-4; US3-4, a 600 px flex-row container; US3-4, a 600 px grid container; US3-5; US3-6; US3-7; US3-8; US3-11; US3-13; token sentinels (research.md R-13) |
+
+## Control
+
+| Plant | In process (`elements`) | Fixture (`elements-browser`) |
+|---|---|---|
+| a comment line changed | 0 | 0 |
+
+## Review round 2 fix
+
+The fix for R2-01 adds `:not(template, script)` to the two section rules of `src/ocelle-context-sidebar.ts` (the
+section rule and the first-section rule); the fix for R2-02 adds `"stripInternal": true` to
+`packages/elements/tsconfig.json`. Planted with the method above, on the fix code with the `fix-2` red commit's tests
+(`4da65c9`), on 2026-11-16 in this container, by a script that applies each plant, runs the suites with Vitest's JSON
+reporter and restores the file. The scenario plants run `test/context-sidebar.test.ts` (`elements`) and
+`test/browser/context-sidebar.test.ts` (`elements-browser`, the browser build rebuilt from the planted source); the
+declarations plants run `test/build/build.test.ts` (`elements-build`, after the package's build). The R-17 style plants
+cover every declaration of the two changed rules. A control run with no plant (a comment line changed) failed no test
+in any of the three projects. Every plant makes at least one test fail in each harness it applies to.
+
+| Plant | In process (`elements`) | Fixture (`elements-browser`) |
+|---|---|---|
+| pairing: `:not(template, script)` dropped from the section rule | 1: US3-3, template and script (phase 4 rev… | 1: US3-3, template and script (phase 4 rev… |
+| pairing: `:not(template, script)` dropped from the first-section rule only | 1: US3-3, template and script (phase 4 rev… | 1: US3-3, template and script (phase 4 rev… |
+| style: section rule `display: block !important;` | 3: US3-3, ocelle-section-header and span s…; US3-3, a ul reset (ul { margin: 0; padd…; US3-3, a reset of every element (* { ma… | 3: US3-3, ocelle-section-header and span s…; US3-3, a ul reset (ul { margin: 0; padd…; US3-3, a reset of every element (* { ma… |
+| style: section rule `padding: var(--ocelle-space-4) !important;` | 16: US3-3, light: a sidebar with a head, th…; US3-3, dark: a sidebar with a head, thr…; US3-3, ocelle-section-header and span s…; and 13 more | 15: US3-3, light: a sidebar with a head, th…; US3-3, dark: a sidebar with a head, thr…; US3-3, ocelle-section-header and span s…; and 12 more |
+| style: section rule `margin-block: 0;` | 3: US3-3, FR-008: with a ul and a p as sec…; US3-3, a ul reset (ul { margin: 0; padd…; US3-3, a reset of every element (* { ma… | 3: US3-3, FR-008: with a ul and a p as sec…; US3-3, a ul reset (ul { margin: 0; padd…; US3-3, a reset of every element (* { ma… |
+| style: section rule `margin-inline: calc(-1 * var(--ocelle-space-4)) !important;` | 20: US3-3, light: a sidebar with a head, th…; US3-3, dark: a sidebar with a head, thr…; US3-3, ocelle-section-header and span s…; and 17 more | 20: US3-3, light: a sidebar with a head, th…; US3-3, dark: a sidebar with a head, thr…; US3-3, ocelle-section-header and span s…; and 17 more |
+| style: section rule `border-block-start: var(--ocelle-border-width) solid var(--ocelle-color-rule) !important;` | 18: US3-3, light: a sidebar with a head, th…; US3-3, dark: a sidebar with a head, thr…; US3-3, ocelle-section-header and span s…; and 15 more | 18: US3-3, light: a sidebar with a head, th…; US3-3, dark: a sidebar with a head, thr…; US3-3, ocelle-section-header and span s…; and 15 more |
+| style: first-section rule `border-block-start: none !important;` | 17: US3-3, light: a sidebar with a head, th…; US3-3, dark: a sidebar with a head, thr…; US3-3, ocelle-section-header and span s…; and 14 more | 17: US3-3, light: a sidebar with a head, th…; US3-3, dark: a sidebar with a head, thr…; US3-3, ocelle-section-header and span s…; and 14 more |
+| control: a comment line changed | 0 | 0 (and 0 in `elements-build`) |
+
+| Declarations plant | Build (`elements-build`) |
+|---|---|
+| `stripInternal` removed from packages/elements/tsconfig.json | 1: dist/ocelle-context-sidebar.d.ts and dist/ocelle-personal-rail.d.ts declare label and no internalsKey, and dist/naming.d.ts declares accessibleName and no internalsKey |
+| `@internal` removed from the sidebar's internals field | 1: dist/ocelle-context-sidebar.d.ts and dist/ocelle-personal-rail.d.ts declare label and no internalsKey, and dist/naming.d.ts declares accessibleName and no internalsKey |
+| `@internal` removed from the rail's internals field | 1: dist/ocelle-context-sidebar.d.ts and dist/ocelle-personal-rail.d.ts declare label and no internalsKey, and dist/naming.d.ts declares accessibleName and no internalsKey |

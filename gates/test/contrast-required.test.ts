@@ -5,7 +5,7 @@ import type { RequiredPair } from "../lib/token-source.ts";
 
 // The required pair set (002 FR-016, spec Appendix A.8, research.md R-07, PLAN-TESTABILITY-1-002): derived from the
 // intended grounds of the real token source, it must equal A.8 as transcribed by hand below, with 014's six
-// `color-accent-strong` non-text pairs on the main grounds (research.md R-17), 155 (fg, bg, kind) triples per theme. Removing a ground from source.ts, or a mutant doing so, fails this test even though the gate
+// `color-accent-strong` non-text pairs on the main grounds (research.md R-17), 164 (fg, bg, kind) triples per theme. Removing a ground from source.ts, or a mutant doing so, fails this test even though the gate
 // would still pass on a pair list that lacks the pair.
 const main = ["color-canvas", "color-sheet", "color-pane", "color-panel", "color-inspector", "color-rail", "color-inset", "color-accent-low", "color-hover-bg"];
 const stateGrounds = ["color-danger-bg", "color-warning-bg", "color-success-bg", "color-info-bg", "color-neutral-bg"];
@@ -17,6 +17,7 @@ const a8: readonly (readonly [readonly string[], "text" | "non-text", readonly s
       "color-ink",
       "color-ink-soft",
       "color-ink-muted",
+      "color-eyebrow",
       "color-link",
       "color-link-hover",
       "color-disabled-ink",
@@ -57,19 +58,19 @@ const expected = triples(a8.flatMap(([fgs, kind, grounds]) => fgs.flatMap((fg) =
 describe("requiredPairs on the real token source (spec A.8)", () => {
   const inTheme = (theme: string): RequiredPair[] => requiredPairs(source).filter((pair) => pair.theme === theme);
 
-  it("is the 155 triples of A.8 and R-17 in light", () => {
-    expect(expected).toHaveLength(155);
+  it("is the 164 triples of A.8 and R-17 in light", () => {
+    expect(expected).toHaveLength(164);
     expect(triples(inTheme("light"))).toEqual(expected);
   });
 
-  it("is the 155 triples of A.8 and R-17 in dark", () => {
+  it("is the 164 triples of A.8 and R-17 in dark", () => {
     expect(triples(inTheme("dark"))).toEqual(expected);
   });
 
-  it("holds 310 pairs, each once", () => {
+  it("holds 328 pairs, each once", () => {
     const required = requiredPairs(source);
-    expect(new Set(required.map((pair) => `${pair.theme} ${pair.fg} ${pair.bg} ${pair.kind}`)).size).toBe(310);
-    expect(required).toHaveLength(310);
+    expect(new Set(required.map((pair) => `${pair.theme} ${pair.fg} ${pair.bg} ${pair.kind}`)).size).toBe(328);
+    expect(required).toHaveLength(328);
   });
 });
 

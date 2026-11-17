@@ -1,0 +1,10 @@
+# Squad round 3: fixes 1
+
+Applied to the artifacts at the commit that adds this note, from `refute.md` (three confirmed findings, one fork
+decided by the operator).
+
+| ID | Resolution | Where |
+|----|------------|-------|
+| PLAN-FRESH-3-001 | decided: (a) | research R-04 § Tab cycle (hybrid handling: explicit at the cycle's ends, from a non-stop of the overlay's open tree and from the body; native from a middle stop or an opaque focus container; repair of a native move that lands on the body, with the stated extra press where the engine gives no signal; opaque containers in the walk; reverse-wrap and positive `tabindex` limits) and § Focus checked; R-02 § Escape inside a slotted iframe and § Focus on the body; spec FR-008, FR-010, SC-002, Edge Cases "Content the overlay cannot see into", US1 scenario 14, US2 scenario 5; checks § Dialog "Tab cycle" rows "Opaque content" and "Middle moves are native", row "Escape in a slotted iframe", § Drawer inherited list; data-model § Overlay "Tab" and "Stops"; contract README statements; plan Summary, Constitution Check III, decisions 16 and 18, Risks "Opaque slotted content" |
+| PLAN-FRESH-3-002 | fixed | research R-02 § Topmost, § Decision (fifth exception), § Close watchers in slotted content, § Focus on the body (listener stands aside); R-04 § Tab cycle (stands aside while a close watcher is open); spec FR-010, Edge Cases "Escape that slotted content uses", US1 scenario 13, US2 scenario 5; checks § Dialog "Escape with slotted content" row "Slotted close watchers" (menu with focus on its invoker and inside it × {no veto, veto}, `hint`, nested native modal with Escape and Tab), § Drawer inherited list; data-model § Overlay stack; contract README statements; plan Summary, Constitution Check III, decision 19 |
+| PLAN-FRESH-3-003 | fixed | research R-18 § The drawer's body fills its column; data-model § `ocelle-drawer` Layout and § Body stop; spec FR-018 and US2 scenario 7; checks § Drawer (dialog's "one-line body" row no longer inherited; own "One-line body" row: body = panel minus header and footer, footer block end at the panel's block end); contract README statements; plan decisions 15 and 20 |

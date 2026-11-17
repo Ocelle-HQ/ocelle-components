@@ -27,3 +27,14 @@ unattended runs). The change is made in the source
 - `.specify/extensions/story/commands/speckit.story.review.md`
 - `.specify/extensions/story/.specify-dev/agent-commands/claude/speckit-story-review/SKILL.md`
 - `.claude/skills/speckit-story-review/SKILL.md` (the copy the reviewer follows)
+
+**Amendment (2026-11-15, op 016, `ops/016-plants-affected`).** The final values gain one key, with its comment line
+after the `knowledge_dir` comment:
+
+```yaml
+plants_command: "pnpm run gate:plants"
+```
+
+A phase runs it as `<plants_command> -- --affected <phase base>` and keeps the output in
+`FEATURE_DIR/reviews/phase-<N>/plants.md`; the reviewer re-runs it with `--list` and compares the selection. Empty:
+the phase records no plant run. It is a local aid only: CI's required Plants check still judges every plant.

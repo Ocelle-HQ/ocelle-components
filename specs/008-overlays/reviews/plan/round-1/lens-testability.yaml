@@ -1,0 +1,221 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: testability
+# Probes run for this lens: Playwright 1.63.0 (/opt/node-tools) with Chromium 153.0.8010.12 (/opt/pw-browsers), the
+# same Chromium build research.md measured. Scripts kept outside the repository (session scratchpad, probe/p.cjs and
+# probe/p2.cjs). The repository's node_modules are not installed, so Vitest itself was not run.
+findings:
+  - id: PLAN-TESTABILITY-1-001
+    severity: 3
+    title: "SC-002's Tab-cycle check passes without the planned wrap code, because Chromium sends focus to body, not outside"
+    evidence:
+      - artifact: "spec.md § SC-002 'From an open overlay, 0 Tab or Shift+Tab presses in a cycle of (focusable elements + 2) reach an element outside it'; research.md § R-04 'keydown Tab on the last tabbable element ... moves focus to the other end'; contracts/checks.md § Test matrix 'Tab and Shift+Tab cycle'"
+      - code: "Probe p.cjs: modal <dialog> holding buttons i1, i2, page button 'after' behind it, no wrap code. Six Tab presses give [i2, body, i1, i2, body, i1]. Focus never reaches 'after' (inert), it passes through document.body"
+    claim: |
+      Without R-04's explicit wrap, Chromium never puts focus on an element outside the dialog. Each cycle has one
+      stop on `body` instead. A test written to SC-002's wording ('reach an element outside it') passes against an
+      implementation with no wrap code at all. It also passes against every mutant of the wrap condition
+      (first/last comparison, `shiftKey` branch, `preventDefault`). FR-008's 'wrapping at the ends' and the whole
+      wrap branch of `overlay.ts` are left without a test that can fail. In process, the test page is an iframe in
+      Vitest's runner page, so the stop may also land in the parent frame, which `focusPath()` reports as 'body'.
+    remedies:
+      - "Restate SC-002 and the matrix row as an exact sequence. For n tabbables, n+2 Tab presses give focusPath() equal to the expected wrap-around list, and the same for Shift+Tab. The list has no 'body' entry. Run it starting from the first tabbable, from the last, and from the close control, so the wrap is exercised in both directions."
+  - id: PLAN-TESTABILITY-1-002
+    severity: 3
+    title: "No matrix row has slotted content that stops Escape, so the cancel fallback goes untested and a veto hole goes unseen"
+    evidence:
+      - artifact: "research.md § R-02 'handles Escape on keydown (bubble phase, on its <dialog>) ... If a cancel arrives for a press the keydown path did not handle ..., it runs the request path once for it'; contracts/checks.md § Test matrix dialog row 'Escape × {veto, no veto, veto then Escape twice}'"
+      - code: "Probe p2.cjs: modal <dialog> with a slotted-style <input> whose keydown listener calls stopPropagation() for Escape, a bubble-phase keydown preventDefault on the dialog, and a cancel listener that always calls preventDefault. Three Escapes log ['cancel:true', 'cancel:false'], and dialog.open is false. The second cancel is not cancelable and the dialog closes despite the veto"
+    claim: |
+      R-02's cancel fallback is reachable in the measured engine: a slotted control that stops Escape's propagation
+      (a listbox or combobox doing its own Escape, such as #14's) keeps the keydown from reaching the dialog's
+      bubble-phase listener. The planned matrix only presses Escape with nothing in between, so mutants in the
+      fallback ('runs the request path once') survive. The case also breaks US1 scenario 4 and FR-013 ('on every
+      repetition'): the second Escape fires a non-cancelable `cancel` and the platform closes the inner dialog. No
+      planned test would show it. This is a behaviour finding as well, and the correctness lens may own the design
+      fix. The testability gap is that the matrix cannot detect it.
+    remedies:
+      - "Add matrix rows for an overlay whose focused slotted control stops Escape's keydown propagation, × {no veto, veto, veto then Escape twice}, asserting open, events and focus as in US1 scenarios 3 and 4. Also add a row where a slotted control calls preventDefault on Escape, and state the expected outcome. Record in R-02 how the veto survives: for example, the overlay's Escape keydown listener runs in the capture phase on the shadow root or the dialog, ahead of slotted listeners, or the plan states the limit."
+  - id: PLAN-TESTABILITY-1-003
+    severity: 3
+    title: "The event recorder cannot observe the state at dispatch time, so FR-014's and R-06's close order is unasserted"
+    evidence:
+      - artifact: "research.md § R-14 'record(id, eventNames) and recorded(): events with detail, cancelable, bubbles and composed'; § R-15 'the close event fires only after the dialog has left the top layer, and focus is returned before the close event is dispatched'; spec.md § FR-014 'after the element is closed and open is false'"
+      - code: "packages/elements/test/scenarios/driver.ts has no event or state recorder today. The planned record() stores only event fields, and topLayer() and focusPath() are read after the fact, when every order gives the same end state"
+    claim: |
+      The close order is a contract that #12 and the console depend on (`open` false → exit → <dialog>.close() →
+      focus returned → `…-close`). With only the event fields recorded and the state read after the scenario,
+      mutants and refactors that dispatch `…-close` before `close()`, or before focus returns, give the same
+      recorded() and the same final focusPath() and topLayer(). The end state cannot tell the orders apart, so no
+      planned test can fail on the order.
+    remedies:
+      - "Make record() capture, synchronously inside the listener, the host's `open`, whether the inner dialog is `:modal`/open, and the deep focus path. Assert in the matrix: at `…-close-request`, open is true and still :modal; at `…-close`, open is false, not :modal, and focus is on the FR-009 target. Do this with motion on and with motion off."
+  - id: PLAN-TESTABILITY-1-004
+    severity: 3
+    title: "Motion is unobservable: no driver probe reads animations, and the story captures turn them off"
+    evidence:
+      - artifact: "spec.md § US1 scenario 12, FR-020, FR-028 ('enter from and leave towards its own side (mirrored under rtl)'); research.md § R-06 'translate from -100 % or 100 %, signed by its side and by :dir(rtl)', 'Setting open again during an exit cancels the animation'; § R-14 driver additions (no animation reader); § R-16 'reducedMotion: \"reduce\", animations: \"disabled\"'"
+      - code: "Probe p.cjs: element.animate([{translate:'-100%'},{translate:'0'}], {duration:200, easing:'cubic-bezier(0.22, 1, 0.36, 1)'}); effect.getTiming() gives 200 and the easing string, effect.getKeyframes() gives the translate values, and hasAttribute('style') is false. The data is readable without writing a style attribute"
+      - code: "packages/tokens/src/source.ts:226-227 motion-base 200ms, easing-standard cubic-bezier(0.22, 1, 0.36, 1)"
+    claim: |
+      The only planned motion assertion (R-15) is about timing order. With the duration mutated to 0 or the easing
+      lookup broken, it still passes, because 'close event after leaving the top layer' holds with no animation as
+      well. Several things are never observed: the easing token, the duration token, the keyframes, and the sign of
+      the drawer's translate by `side` × `dir`. The story captures disable animations, so no story checks them
+      either. Two consequences follow. FR-020's 'only with --ocelle-motion-base and --ocelle-easing-standard' and
+      FR-028 have no test that can fail. Every string and conditional mutant in the keyframe code survives the
+      mutation gate. The re-open-during-exit branch is also untested: the matrix's 'rapid toggle' does not say
+      motion is on, and under reduced motion R-06 does everything in one task, so the branch cannot run.
+    remedies:
+      - "Add a driver probe animations(id, inner?) that returns, for each animation on the element or its shadow part, its timing (duration, easing), keyframes and playState. Add matrix rows with motion on: dialog entry and exit (opacity keyframes, duration equal to computed motion-base, easing equal to computed easing-standard); drawer side × dir (translate sign, entry and exit); re-open during exit (animation cancelled, still :modal, no close event). With reduced motion: no animation is created."
+  - id: PLAN-TESTABILITY-1-005
+    severity: 2
+    title: "The tooltip's reduced-motion check cannot fail, because the design gives the bubble no animation"
+    evidence:
+      - artifact: "spec.md § US3 scenario 8 'it appears without animation under reduced motion', SC-008 'and the bubble's show complete with 0 ms of animation'; contracts/checks.md § Test matrix tooltip row '... reduced motion; forced colours'"
+      - artifact: "research.md § R-10 to R-12 describe no bubble animation; R-06 covers overlays only. grep for animate/motion in research.md, data-model.md and contracts finds no tooltip animation"
+    claim: |
+      Against this design, the tooltip's 'reduced motion' row passes on any implementation, including one that
+      ignores the media query. Principle VIII forbids such a test ('every test must be shown able to fail'). It
+      would also be counted as evidence for US3 scenario 8 and SC-008. The one reduced-motion behaviour of the
+      tooltip that can break is in R-09: the delay is not zeroed under reduced motion. No row tests it.
+    remedies:
+      - "Replace the row with one that can fail: under reduced motion with the test delay set, the bubble is still not shown before the delay and is shown after it. Record that the bubble never animates and take the documentation exemption for SC-008's tooltip clause, or delete that clause."
+  - id: PLAN-TESTABILITY-1-006
+    severity: 3
+    title: "The dialog's style and layout claims (US1 scenarios 9 to 11, FR-006, FR-018, FR-024) have no matrix rows and are left to stories"
+    evidence:
+      - artifact: "contracts/checks.md § Test matrix dialog row lists open, focus, Escape, close control, backdrop, host, form, opener, nesting, removal, toggle and motion, but not UA reset, forced colours, sizes, body scroll, definite inline size or target size. The drawer row adds 'UA reset; forced colours; long body scroll' only for the drawer"
+      - artifact: "research.md § R-16 capture context: light and dark, reducedMotion reduce, no forced colours; constitution VIII forbids 'snapshots as the only assertion of behaviour' and lists 'computed styles from tokens' as observable behaviour"
+    claim: |
+      Five claims are observable with the existing driver (computed(), box(), forcedColors()) but planned only as
+      stories or not at all: the dialog's UA reset and forced-colours boundary (US1 scenario 9, FR-003, FR-021);
+      max-block with a scrolling body and visible heading and footer (US1 scenario 10, FR-018); max-inline in a
+      narrow viewport (FR-024); the definite inline size (US1 scenario 11, FR-019); and the close control's
+      `target-min` and focus ring (FR-006). The tooltip has the same gap for its maximum inline size and
+      unbreakable text (FR-035). A baseline image is snapshot evidence, it covers no forced-colours mode, and it
+      cannot kill a mutant. Mutation runs only the in-process tests (vitest.mutation.elements.config.ts), so any
+      script-side logic here (the footer not rendered while its slot is empty, the heading-hidden switch) has no
+      killing test.
+    remedies:
+      - "Add dialog rows with computed and geometry assertions: computed border, padding, margin, background, colour and max sizes equal to the token values; forced colours in both palettes (boundary visible, close control focus indicator); long body (panel height ≤ dialog-max-block, heading and footer boxes inside the panel, body scrollHeight > clientHeight, body reachable by Tab or keyboard scroll); narrow container (width ≤ dialog-max-inline); body inline size definite with prose and a table; close control box ≥ target-min. For the drawer: inline size equals drawer-inline and ≤ dialog-max-inline. For the tooltip: the bubble width ≤ tooltip-max-inline, and an unbreakable string stays inside it. Add a footer present/absent row."
+  - id: PLAN-TESTABILITY-1-007
+    severity: 2
+    title: "The backdrop-click rows never click the panel's own padding, the one case that separates the coordinate check from the target check"
+    evidence:
+      - artifact: "research.md § R-07 'a click on ::backdrop targets the dialog with coordinates outside its border box ... whose target is the <dialog> itself'; contracts/checks.md drawer row 'backdrop click × {veto, no veto} and press inside, release outside'"
+      - code: "Probe p2.cjs: modal <dialog> with 40px padding. A click 5px inside the dialog's border box and a click at (5,5) on the backdrop both report event.target === the dialog"
+    claim: |
+      A click on the panel's own padding or empty area reaches the drawer with target === <dialog>, exactly like a
+      backdrop click. Only R-07's border-box coordinate test tells them apart. The planned rows click the backdrop
+      and do press-inside/release-outside. A click on slotted content would be rejected by the target check alone.
+      So a mutant that drops or inverts the click-coordinate comparison is not killed, and a click in the drawer's
+      padding would close it (US2 scenario 2: 'a click inside the panel never does').
+    remedies:
+      - "Add drawer rows: a primary click on the panel's padding (inside the border box, target the <dialog>) dispatches nothing; a press on the backdrop released inside the panel dispatches nothing; a click on the backdrop on each side of the panel (start and end, under ltr and rtl) requests close with 'backdrop'. On the dialog, add a click on the backdrop that dispatches nothing."
+  - id: PLAN-TESTABILITY-1-008
+    severity: 2
+    title: "The planned pointer primitives do not provide touch input, gap crossing, or press-and-release at coordinates in either harness"
+    evidence:
+      - artifact: "research.md § R-14 'press, hover(id | null, inner?), click(id, inner?, { button? }), tap(id)'; 'In process: userEvent from vitest/browser'; contracts/checks.md tooltip 'hoverable gap', 'touch'; drawer 'press inside, release outside'"
+      - code: "Probe p.cjs: page.tap() on a context without hasTouch throws 'The page does not support tap. Use hasTouch context option to enable touch support.' packages/elements/test/browser/serve.ts:127 newContext({ viewport, colorScheme }) has no hasTouch; vitest.config.ts elements project instances: [{ browser: 'chromium' }] sets no hasTouch"
+      - artifact: "research.md § R-11 'the bubble's hit box includes the offset ... so the pointer goes from trigger to bubble without leaving both'"
+    claim: |
+      Three of the planned paths have no input mechanism, or one that cannot fail.
+      (a) `tap` throws in both harnesses as configured. The 'touch' row (US3 scenario 10, FR-037) therefore errors,
+      or is quietly replaced by a synthetic event that is not a tap.
+      (b) Playwright's hover moves the mouse in one step to the target's centre. Moving from trigger to bubble never
+      places the pointer in the gap, so the 'hoverable gap' row passes even with no transparent hit area. WCAG
+      1.4.13 hoverability is left unproven.
+      (c) Pressing inside and releasing outside needs mouse down, move and up at coordinates. vitest/browser's
+      userEvent has no such call. The plan names no browser command for it, nor the frame-offset translation the
+      in-process iframe needs.
+    remedies:
+      - "Define driver primitives pointer(path) (a list of {x, y, down?, up?} in page coordinates, with intermediate steps) and touchTap(id). In process, implement them through browser commands on context.page.mouse/touchscreen that add the test iframe's offset; on the fixture, through page.mouse and a hasTouch context. Pin both in a commands self-test. Rewrite the gap row so the pointer stops at a point inside the gap and the bubble is asserted shown there; also stop at a point beyond the padded gap and assert it hides."
+  - id: PLAN-TESTABILITY-1-009
+    severity: 2
+    title: "The two harnesses run the same geometry scenarios at different viewport sizes"
+    evidence:
+      - code: "packages/elements/test/browser/serve.ts:127 fixture contexts at 1280 × 800; vitest.config.ts elements project sets no browser.viewport, so the in-process iframe has Vitest's default size (documented as 414 × 896; not measured here, as Vitest is not installed in this checkout)"
+      - artifact: "contracts/checks.md tooltip 'each placement; flip; cross-axis clamp'; spec.md US1 scenario 10 'a viewport narrower than the dialog's preferred inline size'; research.md § R-09 dialog preferred size measure-reading (68ch), drawer 20rem"
+    claim: |
+      The scenario bodies are shared (R-14), but the in-process harness, the one Stryker mutates, does not run at
+      the fixture's or the capture's viewport. Edge-flip and clamp positions, the 68ch preferred size against the
+      max-inline cap, and the drawer's share of the width therefore differ between the two runs. Either the bodies
+      hard-code coordinates that hold in only one harness, or they assert less. And a 68ch dialog in a 414px frame
+      is already capped, so the uncapped case may never run in process.
+    remedies:
+      - "Set the elements project's browser viewport to 1280 × 800, as on the fixture and in #10's capture. Alternatively, add a viewport() driver method and require every geometry assertion to derive its expectation from it. Add one row where the dialog is uncapped and one where it is capped, in both harnesses."
+  - id: PLAN-TESTABILITY-1-010
+    severity: 2
+    title: "The new driver probes get no self-test, and FR-047's counts can be fooled by the driver's own style()"
+    evidence:
+      - artifact: "plan.md § Phases 1 'driver and command additions ... These are test code. The red evidence comes from the first story phase.'; research.md § R-14 styleAttributes(), styleElements(), topLayer(), focusPath(), record()"
+      - code: "packages/elements/test/commands.test.ts pins the existing axTree and emulateForcedColors commands with stand-in elements (the precedent). packages/elements/test/in-process.ts style: element(id).style.setProperty(...), a CSSOM write that creates a style attribute"
+    claim: |
+      FR-047 and SC-007 rest entirely on styleAttributes() and styleElements() returning 0. The focus and nesting
+      rows rest on focusPath() and topLayer(). If a probe is wrong (it does not walk shadow roots opened later,
+      misses the popover's shadow root, or counts only the light DOM), every assertion built on it passes
+      vacuously. A story phase's red run does not prove a probe can report a non-zero result, because that run
+      fails on the missing element. There are two further traps. driver.style() itself creates a style attribute,
+      so a scenario that uses it is a false failure. And an end-of-scenario count misses a style attribute that is
+      written during placement and removed again.
+    remedies:
+      - "In Phase 1, add self-tests for each new probe in both harnesses, with stand-in elements: a CSSOM style write inside a nested open shadow root is counted; an added <style> in a shadow root is counted; a :popover-open element and a :modal dialog are reported in order by topLayer(); focusPath() reports an inner shadow button. Count style attributes as a delta from mount, and with a MutationObserver over the document and every shadow root, so transient writes are also caught. Forbid driver.style() in the overlay and tooltip scenarios; use rules()."
+  - id: PLAN-TESTABILITY-1-011
+    severity: 2
+    title: "Tooltip code paths named in research have no matrix row, so their mutants survive"
+    evidence:
+      - artifact: "research.md § R-11 're-placed on scroll (capture, any scroller) and resize, throttled to one placement per animation frame. It is hidden if the trigger is removed or disabled'; § R-13 'adds that id to the trigger's aria-describedby, keeping any ids the host put there and removing only its own on change or disconnect'; § R-12 'first element assigned to the default slot (slotchange tracked)'; spec.md Edge Cases 'A shown bubble hides when its trigger is removed or disabled'"
+      - artifact: "contracts/checks.md tooltip row has 'trigger removed' and 'describes on and off (AX tree)', but no scroll/resize, trigger disabled, host-owned aria-describedby ids, text change, disconnect, empty text with describes, or slot change"
+    claim: |
+      Mutation runs only the in-process scenarios. With no row, the following code lands in source with no killing
+      test, and the mutation gate blocks on its survivors (or a reviewer records them as equivalent when they are
+      not): the scroll and resize listeners and their per-frame throttle; the 'disabled trigger' hide; the
+      id-list editing of aria-describedby (keep host ids, remove own); the span's removal on disconnect and when
+      text becomes empty; the trigger's re-resolution on slotchange.
+    remedies:
+      - "Add tooltip rows: scroll the container while shown and assert the bubble's box follows the trigger; resize; the trigger becomes disabled while shown; a trigger with a host aria-describedby='x' keeps 'x' after describes is set, unset and the tooltip disconnected; text changed with describes (description updates); empty text with describes (no span, no id); the slotted trigger replaced (the new trigger works, the old gets no listeners or id). For the Escape row, also record keydown on the document and the overlay host, to show 'the keypress goes no further'."
+  - id: PLAN-TESTABILITY-1-012
+    severity: 2
+    title: "R-05's focus-return fallbacks have no rows: disabled opener, inert opener, lost opener above an open overlay, no opener"
+    evidence:
+      - artifact: "research.md § R-05 'focus it if it is still connected, not disabled and not inside an inert subtree. Otherwise: if an overlay beneath is still open, focus goes to that overlay's initial focus target; else ... document body'; spec.md Edge Cases 'removed or disabled', 'Opened by the host without an opener'"
+      - artifact: "contracts/checks.md dialog row covers only 'opener removed (body)', 'opener inside a shadow root' and 'nested dialog over drawer'"
+    claim: |
+      SC-001 claims that focus after every open/close path is where FR-007 or FR-009 says. But the
+      `disabled` check, the inert check, the 'overlay beneath' fallback and the body-at-open case are never driven.
+      Their conditions survive mutation (for example, `!disabled` → `true` focuses a disabled button, which leaves
+      focus on body in Chromium, the same end state as the fallback, unless the row asserts it), and a regression
+      in #12's nested use (a dialog opened from the drawer whose opener is removed) is not caught.
+    remedies:
+      - "Add rows: opener disabled before close (focus on body, nothing thrown, no message); opener made inert; a dialog opened from a drawer whose opener is removed before close (focus on the drawer's initial target); open set with focus on body (focus returns to body); the opener is a custom element's inner button that is removed while its host stays."
+  - id: PLAN-TESTABILITY-1-013
+    severity: 2
+    title: "The delay tests use 200 ms, the same as --ocelle-motion-base, and have no upper bound short of the 1 000 ms poll"
+    evidence:
+      - artifact: "research.md § R-15 'set --ocelle-tooltip-delay: 200ms ... check that the bubble is not shown after one frame and 100 ms, and that it is shown within the bounded poll' (at most 1 000 ms)"
+      - code: "packages/tokens/src/source.ts:226 motion-base 200ms"
+    claim: |
+      Two weak spots. First, an implementation, mutant or typo that reads `--ocelle-motion-base` instead of
+      `--ocelle-tooltip-delay` gives the same 200 ms in process (motion-base is not zeroed there), so it passes.
+      Second, 'shown within 1 000 ms' accepts any delay from 100 ms up to five times the configured one: a parse
+      that misreads units, or a delay doubled by restarting the timer on every pointerenter of trigger and bubble.
+      FR-031 ('rested for --ocelle-tooltip-delay') is therefore checked only from below.
+    remedies:
+      - "Use a test delay that equals no other motion token (for example 300 ms). Assert not shown at delay − 150 ms and shown by delay + 150 ms. Add a row where the pointer moves trigger → bubble → trigger before the delay elapses and the bubble shows no later than delay + 150 ms from the first entry, if that is the intended rule (otherwise state the rule)."
+  - id: PLAN-TESTABILITY-1-014
+    severity: 1
+    title: "The 'late :focus-visible' row must assert its precondition, or it can pass without exercising anything"
+    evidence:
+      - artifact: "research.md § R-12 'A trigger focused by a click that later starts matching :focus-visible (after a keypress, without focus moving) does not show the bubble'; contracts/checks.md 'late :focus-visible does not show'"
+      - code: "Probe p.cjs (Chromium 153): button focused by click, :focus-visible false; after pressing Shift it becomes true without focus moving. So the state can be produced, but only with a specific key sequence"
+    claim: |
+      This row asserts an absence (no bubble). If the scenario's key press never makes the trigger match
+      `:focus-visible` (wrong key, or a different engine heuristic), the test passes whatever the element does. The
+      pointer also has to leave first, or the hover delay shows the bubble anyway and the row fails for the wrong
+      reason.
+    remedies:
+      - "Specify the row: click the trigger, move the pointer off both boxes, press Shift, assert the trigger matches :focus-visible (a driver read), then assert that no bubble shows within delay + 150 ms."

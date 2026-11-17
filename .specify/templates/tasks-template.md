@@ -18,6 +18,7 @@ description: "Task list template for feature implementation"
 - **[P]**: Can run in parallel (different files, no dependencies)
 - **[Story]**: Which user story this task belongs to (e.g., US1, US2, US3)
 - Include exact file paths in descriptions
+- Every phase ends with the affected plant run of `plants_command` (`<plants_command> -- --affected <phase base>`), kept in `reviews/phase-<N>/plants.md`; a phase never lists plant shards by number
 
 ## Path Conventions
 

@@ -4,7 +4,8 @@
 // script runs (test/browser/serve.ts), and the fixture driver reaches it through `page.evaluate`
 // (test/browser/driver.ts). It must not refer to anything outside its own body, since Playwright sends its source.
 //
-// - `resolve` finds a target: an element's id, or the index-th element child of a tag of a parent with an id.
+// - `resolve` finds a target: an element's id, the index-th element child of a tag of a parent with an id, or (since the
+//   merge of main, 009 research.md R-17) the element matching `inner` in the shadow root of the element with an id.
 // - The keydown recorder: a `document` listener in the bubble phase, recording each key and `defaultPrevented`.
 // - The clipboard observer (PLAN-TESTABILITY-1-009, SC-006): `navigator.clipboard`'s `write`, `writeText`, `read` and
 //   `readText` (on `Clipboard.prototype`) and `document.execCommand` with `copy`, `cut` or `paste` are recorded and
@@ -47,6 +48,11 @@ export function installPageHelpers(): void {
     if (typeof target === "string") {
       const found = document.getElementById(target);
       if (found === null) throw new Error(`no #${target} on the page`);
+      return found;
+    }
+    if ("inner" in target) {
+      const found = document.getElementById(target.id)?.shadowRoot?.querySelector<HTMLElement>(target.inner);
+      if (found === null || found === undefined) throw new Error(`no ${target.inner} in the shadow root of #${target.id}`);
       return found;
     }
     const parent = document.getElementById(target.parent);

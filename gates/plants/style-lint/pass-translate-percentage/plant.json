@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "The sweep keyframes translateX(-175%) and translateX(175%) in an element's css template pass: transform takes translateX(<percentage>), in a rule or in @keyframes (013 research.md R-10, PLAN-CORRECTNESS-1-001 (a))."
+}

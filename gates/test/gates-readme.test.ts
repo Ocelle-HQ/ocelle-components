@@ -36,6 +36,15 @@ describe("gates/README.md (002 FR-022)", () => {
     for (const plant of ["a-monospace", "b-ochre-pair-not-excluded", "g-forced-colours-override", "g-system-colour-mapping", "source-invalid"]) expect(row("brand-rules")?.[4]).toContain(plant);
   });
 
+  it("names, in the style-lint row, the classified linear-gradient() arguments and their plants (009 contracts/gates.md § `style-lint`, T022)", () => {
+    const gates = rows(section("The gates"));
+    const row = gates.find((cells) => cells[0] === "`style-lint`");
+    expect(row?.slice(0, 3)).toEqual(["`style-lint`", "Style lint", "`pnpm run gate:style-lint`"]);
+    expect(row?.[3] ?? "").toContain("since 009 the arguments of `linear-gradient()` are classified as at the top level of a value, and every other gradient function is raw whole");
+    const plants = ["pass-linear-gradient-tokens", "fail-gradient-hex", "fail-gradient-angle", "fail-gradient-length", "fail-radial-gradient"];
+    expect(plants.filter((plant) => !(row?.[4] ?? "").includes(plant))).toEqual([]);
+  });
+
   it("lists manifest in The gates, with its check, command and plants (005 FR-009, research.md R-06)", () => {
     const gates = rows(section("The gates"));
     const row = gates.find((cells) => cells[0] === "`manifest`");
@@ -155,5 +164,32 @@ describe("gates/README.md (006 FR-023)", () => {
     expect(prefixScope).toContain("`storybook/dist/*.html`");
     expect(section("The Storybook scope of `csp` and `prefix` (002 FR-023)")).toBe("");
     expect(["narrows SPEC-1-05", "connect-src 'self'", "The Storybook page's header", "The narrowed static scope"].filter((text) => readme.includes(text))).toEqual([]);
+  });
+});
+
+describe("gates/README.md (013 R-10)", () => {
+  it("states the style-lint allowance of fit-content(<percentage>) and minmax(0, <flex>) in grid-template-columns only, with its plants pass-grid-fit-content, fail-fit-content-length and fail-minmax-auto", () => {
+    const row = rows(section("The gates")).find((cells) => cells[0] === "`style-lint`") ?? [];
+    const check = row[3] ?? "";
+    const plants = row[4] ?? "";
+    expect({
+      allowance: ["`fit-content(<percentage>)`", "`minmax(0, <flex>)`", "`grid-template-columns`"].filter((text) => !check.includes(text)),
+      plants: ["pass-grid-fit-content", "fail-fit-content-length", "fail-minmax-auto"].filter((plant) => !plants.includes(plant)),
+      directories: ["pass-grid-fit-content", "fail-fit-content-length", "fail-minmax-auto"].filter((plant) => !readdirSync(new URL("../plants/style-lint/", import.meta.url)).includes(plant)),
+    }).toEqual({ allowance: [], plants: [], directories: [] });
+  });
+});
+
+describe("gates/README.md (013 R-10, phase 3)", () => {
+  it("states the style-lint allowance of translateX(<percentage>) in transform and a bare positive integer in animation-iteration-count, with its plants pass-translate-percentage, fail-translate-length, pass-iteration-count and fail-iteration-count-fraction", () => {
+    const row = rows(section("The gates")).find((cells) => cells[0] === "`style-lint`") ?? [];
+    const check = row[3] ?? "";
+    const plants = row[4] ?? "";
+    const names = ["pass-translate-percentage", "fail-translate-length", "pass-iteration-count", "fail-iteration-count-fraction"];
+    expect({
+      allowance: ["`translateX(<percentage>)`", "`transform`", "`animation-iteration-count`", "a bare positive integer"].filter((text) => !check.includes(text)),
+      plants: names.filter((plant) => !plants.includes(plant)),
+      directories: names.filter((plant) => !readdirSync(new URL("../plants/style-lint/", import.meta.url)).includes(plant)),
+    }).toEqual({ allowance: [], plants: [], directories: [] });
   });
 });

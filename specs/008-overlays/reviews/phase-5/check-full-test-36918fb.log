@@ -1,0 +1,5 @@
+$ node gates/bin/test.ts
+packages/elements/test/browser/drawer.test.ts:37: unit-tests: ocelle-drawer on the strict-CSP fixture with the browser build (US2) Close control activated during the entry, motion on: the request and the close carry close-button, focus back on the opener (FR-011, FR-013): AssertionError: expected { …(2) } to deeply equal { observed: { …(5) }, …(1) }
+unit-tests: 1 of 5107 tests failed
+[ELIFECYCLE] Test failed. See above for more details.
+exit 1 1349 s

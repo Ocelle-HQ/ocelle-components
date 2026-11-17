@@ -13,7 +13,12 @@
 // R-03, R-08) `scale` takes only the bare numbers -1 and 1, and any function in its value is raw; and (R-03, R-10) the
 // unit `lh` passes only as `1lh`, as the whole value or, inside `calc()`, once per expression as an operand of `+` or
 // `-` in an expression that references an `--ocelle-*` token, a group that holds only `1lh` counting as that `1lh`
-// (OP4-01); and (R-03, R-09) `aspect-ratio` takes only the bare number 1 as its whole value.
+// (OP4-01); and (R-03, R-09) `aspect-ratio` takes only the bare number 1 as its whole value. Since 013 (research.md R-10)
+// `grid-template-columns` takes the tracks `fit-content(<percentage>)` and `minmax(0, <flex>)`, nothing else nested;
+// and since 013 phase 3 (R-10) `transform` takes `translateX(<percentage>)`, in a rule or in `@keyframes`, and
+// `animation-iteration-count` a bare positive integer, one per comma-separated item.
+// Since 009 (contracts/gates.md § `style-lint`, research.md R-05) the arguments of `linear-gradient()` are classified
+// as at the top level of a value; every other gradient function stays raw whole.
 import stylelint from "stylelint";
 import type { Rule } from "stylelint";
 import valueParser from "postcss-value-parser";
@@ -128,8 +133,44 @@ function admittedLine(calc: valueParser.FunctionNode): Node | undefined {
 }
 
 /**
- * The raw parts of a function: a var() fallback and calc() operands are checked; any other function is raw. `line`
- * is the `1lh` the enclosing calc() expression admits; an outermost calc() works out its own.
+ * Whether a function is a grid track that 013's allowance admits in `grid-template-columns` (research.md R-10,
+ * PLAN-CORRECTNESS-1-001 (a)): `fit-content(<percentage>)`, one percentage argument, or `minmax(0, <flex>)`, the
+ * number 0 and one `fr` length. Nothing nested, no other argument, no other function (`repeat()` stays raw).
+ */
+function gridTrack(node: valueParser.FunctionNode): boolean {
+  const name = node.value.toLowerCase();
+  const args = node.nodes.filter((child) => child.type !== "space" && child.type !== "comment");
+  const unit = (child: Node | undefined): string | undefined => {
+    if (child?.type !== "word") return undefined;
+    const number = valueParser.unit(child.value);
+    return number === false ? undefined : number.unit.toLowerCase();
+  };
+  if (name === "fit-content") return args.length === 1 && unit(args[0]) === "%";
+  if (name !== "minmax" || args.length !== 3) return false;
+  const [min, comma, max] = args;
+  return min?.type === "word" && min.value === "0" && comma?.type === "div" && comma.value === "," && unit(max) === "fr";
+}
+
+/**
+ * Whether a function is the translate 013's sweep allowance admits in `transform` (research.md R-10, PLAN-CORRECTNESS-1-001
+ * (a)): `translateX(<percentage>)`, one percentage argument, nothing nested; any other translate stays raw.
+ */
+function percentageTranslate(node: valueParser.FunctionNode): boolean {
+  const args = node.nodes.filter((child) => child.type !== "space" && child.type !== "comment");
+  const [only] = args;
+  if (node.value.toLowerCase() !== "translatex" || args.length !== 1 || only?.type !== "word") return false;
+  const number = valueParser.unit(only.value);
+  return number !== false && number.unit === "%";
+}
+
+/**
+ * The raw parts of a function: a var() fallback and calc() operands are checked; since 009 (contracts/gates.md
+ * § `style-lint`, research.md R-05) the arguments of `linear-gradient()` are classified as at the top level of a value,
+ * so its direction keywords, `transparent` and `%` stops pass, its commas are dividers, var() and calc() inside it are
+ * checked as everywhere and any other function inside it is raw whole; in `grid-template-columns` (outside calc()) the
+ * two grid tracks of gridTrack() pass, and in `transform` (outside calc()) `translateX(<percentage>)` (013 R-10); any
+ * other function is raw. `line` is the `1lh` the enclosing calc() expression admits; an outermost calc() works out its
+ * own.
  */
 function functionRaw(node: valueParser.FunctionNode, property: string, inCalc: boolean, line: Node | undefined): string[] {
   const name = node.value.toLowerCase();
@@ -138,10 +179,13 @@ function functionRaw(node: valueParser.FunctionNode, property: string, inCalc: b
     return comma === -1 ? [] : classify(node.nodes.slice(comma + 1), property, inCalc);
   }
   if (name === "calc" || (name === "" && inCalc)) return classify(node.nodes, property, true, inCalc ? line : admittedLine(node));
+  if (name === "linear-gradient") return classify(node.nodes, property, false, undefined, true);
+  if (property === "grid-template-columns" && !inCalc && gridTrack(node)) return [];
+  if (property === "transform" && !inCalc && percentageTranslate(node)) return [];
   return [valueParser.stringify(node)];
 }
 
-function classify(nodes: readonly Node[], property: string, inCalc: boolean, line?: Node): string[] {
+function classify(nodes: readonly Node[], property: string, inCalc: boolean, line?: Node, inGradient = false): string[] {
   const raw: string[] = [];
   for (const node of nodes) {
     if (node.type === "word") {
@@ -149,7 +193,8 @@ function classify(nodes: readonly Node[], property: string, inCalc: boolean, lin
     } else if (node.type === "string") {
       if (isFont(property)) raw.push(valueParser.stringify(node));
     } else if (node.type === "function") {
-      raw.push(...functionRaw(node, property, inCalc, line));
+      // A gradient's arguments are classified once: a gradient nested in a gradient is raw whole.
+      raw.push(...(inGradient && node.value.toLowerCase() === "linear-gradient" ? [valueParser.stringify(node)] : functionRaw(node, property, inCalc, line)));
     } else if (node.type === "unicode-range") {
       raw.push(node.value);
     }
@@ -224,12 +269,39 @@ function aspectRatioRaw(nodes: readonly Node[]): string[] {
   });
 }
 
+/** A positive integer as written: digits only, no leading zero, no sign, no fraction or exponent. */
+const positiveInteger = /^[1-9]\d*$/;
+
+/**
+ * The raw values of an `animation-iteration-count` value (013 research.md R-10, PLAN-A11Y-SECURITY-1-001 (a)): in each
+ * comma-separated item, its one unitless number passes when it is a bare positive integer; an item with more than one
+ * unitless number, a fraction, a sign or an exponent is raw, and every other part is classified as for any property.
+ */
+function iterationCountRaw(nodes: readonly Node[]): string[] {
+  const items: Node[][] = [[]];
+  for (const node of nodes) {
+    if (node.type === "div" && node.value === ",") items.push([]);
+    else items[items.length - 1]?.push(node);
+  }
+  return items.flatMap((item) => {
+    const counts = item.filter((node) => {
+      const number = valueParser.unit(node.value);
+      return number !== false && number.unit === "";
+    });
+    const [count] = counts;
+    const allowed = counts.length === 1 && count !== undefined && positiveInteger.test(count.value) ? count : undefined;
+    // Stryker disable next-line StringLiteral: equivalent, classify() reads the property only for font values, unitless numbers and (through functionRaw) the grid-template-columns tracks and the transform translateX(<percentage>), and the mutant "" is, like animation-iteration-count, none of the unitless properties, the fonts, grid-template-columns or transform, so each read gives the same result
+    return item.flatMap((node) => (node === allowed ? [] : classify([node], "animation-iteration-count", false)));
+  });
+}
+
 /** The raw values (FR-024) in one declaration's value, in source order; empty when the value is token-only. */
 export function rawValues(property: string, value: string, options: RawOptions = {}): string[] {
   const name = property.toLowerCase();
   const nodes = valueParser(value).nodes;
   if (name === "scale") return scaleRaw(nodes);
   if (name === "aspect-ratio") return aspectRatioRaw(nodes);
+  if (name === "animation-iteration-count") return iterationCountRaw(nodes);
   if (options.lineHeight === "token" && name === "line-height") {
     const [only] = nodes;
     return nodes.length === 1 && only !== undefined && tokenLineHeight(only) ? [] : [value.trim()];

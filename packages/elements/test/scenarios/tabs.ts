@@ -22,7 +22,7 @@
 // stand-in bodies stay; phase 4 adds US2-21's body with the real `ocelle-segmented-choice` (T062b), and phase 6 adds
 // US2-22's with the real `ocelle-link` (T093a; reviews/phase-3/notes.md).
 import { tokenColour } from "./icon.ts";
-import type { AxState, Driver, InPage, Target } from "./driver.ts";
+import type { AxState, AxTarget, Driver, InPage, Target } from "./driver.ts";
 
 /** One body: what it checks, what it must observe, and whether the fixture harness runs it too. */
 export interface TabsScenario {
@@ -56,10 +56,10 @@ function page(inner: string, attributes = 'label="Mission views"'): string {
 }
 
 /** The `index`-th tab and panel of `#tb` (or of `parent`), as driver targets. */
-function tab(index: number, parent = "tb"): Target {
+function tab(index: number, parent = "tb"): AxTarget {
   return { parent, kind: "ocelle-tab", index };
 }
-function panel(index: number, parent = "tb"): Target {
+function panel(index: number, parent = "tb"): AxTarget {
   return { parent, kind: "ocelle-tab-panel", index };
 }
 
@@ -181,12 +181,12 @@ function exposed(name: string, names: readonly string[], selected: number | null
 }
 
 /** The roles of the unignored accessibility ancestors of `target`, nearest first. */
-async function ancestors(driver: Driver, target: Target): Promise<string[]> {
+async function ancestors(driver: Driver, target: AxTarget): Promise<string[]> {
   return (await driver.axStates(target, "ancestors")).map((node) => node.role);
 }
 
 /** What `controls` the tab at `target` is exposed with, as role and name. */
-async function controls(driver: Driver, target: Target): Promise<unknown> {
+async function controls(driver: Driver, target: AxTarget): Promise<unknown> {
   const [node] = await driver.axStates(target);
   return node?.controls ?? [];
 }

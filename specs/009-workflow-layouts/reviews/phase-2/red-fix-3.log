@@ -1,0 +1,52 @@
+Scope: all 5 workspace projects
+✓ Lockfile passes supply-chain policies (verified 2d ago)
+Lockfile is up to date, resolution step is skipped
+Packages are hard linked from the content-addressable store to the virtual store.
+  Content-addressable store is at: /root/.local/share/pnpm/store/v11
+  Virtual store is at:             node_modules/.pnpm
+Packages: +502
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 502, reused 502, downloaded 0, added 502, done
+.../node_modules/rs-module-lexer postinstall$ node postinstall.js
+.../node_modules/rs-module-lexer postinstall: Done
+
+devDependencies:
++ @custom-elements-manifest/analyzer 0.11.0
++ @eslint/js 10.0.1
++ @stryker-mutator/core 10.1.1
++ @stryker-mutator/typescript-checker 10.1.1
++ @stryker-mutator/vitest-runner 10.1.1
++ @types/node 26.6.5
++ @vitest/browser-playwright 5.0.5
++ @vitest/eslint-plugin 1.6.28
++ axe-core 4.14.0
++ eslint 10.13.0
++ jiti 2.7.0
++ parse5 8.0.1
++ playwright 1.64.1
++ pngjs 7.0.0
++ postcss 8.5.31
++ postcss-lit 1.4.1
++ postcss-selector-parser 7.1.7
++ postcss-value-parser 4.2.0
++ stylelint 17.16.0
++ typescript 6.0.3
++ typescript-eslint 8.72.0
++ vite 8.3.5
++ vitest 5.0.5
+
+Done in 587ms using pnpm v12.16.1
+$ node gates/bin/setup-offline.ts
+setup: installed offline; Chromium at /opt/pw-browsers/chromium-1248/chrome-linux64/chrome
+$ node gates/bin/test.ts
+packages/elements/test/build/build-output.test.ts:27: unit-tests: the shipped build holds no test-only pass count (O3-05) dist/list-detail-measure.js, dist/browser/ocelle-elements.js and dist/index.js hold no passCount and no pass counter: AssertionError: expected { built: [ true, true, true ], …(4) } to deeply equal { built: [ true, true, true ], …(4) }
+storybook/test/integration/elements-stories.test.ts:254: unit-tests: the mid-scroll ocelle-scroller stories hold their share of the scroll range when the strip grows after the first write (009 R-15, O3-01, T067) elements-ocelle-scroller--overflowing-in-the-middle in light: after sentence-length chips are appended, the scroll position is 0.5 of the new scroll range within 1 px: AssertionError: expected { first: false, grewBy200: true, …(3) } to deeply equal { first: true, grewBy200: true, …(3) }
+storybook/test/integration/elements-stories.test.ts:254: unit-tests: the mid-scroll ocelle-scroller stories hold their share of the scroll range when the strip grows after the first write (009 R-15, O3-01, T067) elements-ocelle-scroller--overflowing-in-the-middle in dark: after sentence-length chips are appended, the scroll position is 0.5 of the new scroll range within 1 px: AssertionError: expected { first: false, grewBy200: true, …(3) } to deeply equal { first: true, grewBy200: true, …(3) }
+storybook/test/integration/elements-stories.test.ts:254: unit-tests: the mid-scroll ocelle-scroller stories hold their share of the scroll range when the strip grows after the first write (009 R-15, O3-01, T067) elements-ocelle-scroller--overflowing-at-the-end in light: after sentence-length chips are appended, the scroll position is 1 of the new scroll range within 1 px: AssertionError: expected { first: true, grewBy200: true, …(3) } to deeply equal { first: true, grewBy200: true, …(3) }
+storybook/test/integration/elements-stories.test.ts:254: unit-tests: the mid-scroll ocelle-scroller stories hold their share of the scroll range when the strip grows after the first write (009 R-15, O3-01, T067) elements-ocelle-scroller--overflowing-at-the-end in dark: after sentence-length chips are appended, the scroll position is 1 of the new scroll range within 1 px: AssertionError: expected { first: true, grewBy200: true, …(3) } to deeply equal { first: true, grewBy200: true, …(3) }
+packages/elements/test/node/readme.test.ts:294: unit-tests: packages/elements/README.md states: Lifecycle: when the host connects, it adds its `keydown`, `focusin` and `focusout` listeners on the host and its `ResizeObserver`; after each update it follows the box, and on a new box, or none, it first lets go of the old one (unobserved, its `scroll` and `slotchange` listeners and its frame's `focusout` listener taken off, its `tabindex`, `role` and `aria-label` removed), so the new box takes them over; when the host disconnects, it disconnects the observer and takes its three listeners off the host, and the box keeps its attributes as last set; it emits no event: AssertionError: expected '# @ocelle/elements The Ocelle web com…' to contain 'Lifecycle: when the host connects, it…'
+packages/elements/test/overflow-host.test.ts:73: unit-tests: ocelle-test-overflow-host, a new box in place of the old one (O3-03, T069) after the swap the old box has no tab stop, role or name, and the new box is a tab stop, a group named "Filters", scrolled 40 px by ArrowRight: AssertionError: expected { before: { a: { …(3) }, …(1) }, …(2) } to deeply equal { before: { a: { …(3) }, …(1) }, …(2) }
+packages/elements/test/overflow-host.test.ts:87: unit-tests: ocelle-test-overflow-host, a new box in place of the old one (O3-03, T069) growing, scrolling or slotting into the old box after the swap changes no output and puts no attribute back on it: it is unobserved and its listeners are gone: AssertionError: expected { Object (swapped, unseen, ...) } to deeply equal { Object (swapped, unseen, ...) }
+packages/elements/test/overflow-host.test.ts:114: unit-tests: ocelle-test-overflow-host, a new box in place of the old one (O3-03, T069) with no box, the old box loses its tab stop, role and name; a box rendered again is followed again: AssertionError: expected { …(4) } to deeply equal { …(4) }
+unit-tests: 9 of 3782 tests failed
+[ELIFECYCLE] Test failed. See above for more details.

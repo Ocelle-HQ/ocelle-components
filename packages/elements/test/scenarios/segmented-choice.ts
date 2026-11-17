@@ -1200,10 +1200,10 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
         return Math.round(((second?.x ?? 0) - ((first?.x ?? 0) + (first?.width ?? 0))) * 100) / 100;
       };
       const plain = { gap: await gap(), radii: await inPage(radii, null) };
-      await driver.setProperty("sc", "joined", true as unknown as string);
+      await driver.setProperty("sc", "joined", true);
       await driver.afterResizeDelivery("box");
       const joined = { attribute: await driver.attribute("sc", "joined"), gap: await gap(), radii: await inPage(radii, null) };
-      await driver.setProperty("sc", "joined", false as unknown as string);
+      await driver.setProperty("sc", "joined", false);
       return { plain, joined, again: { attribute: await driver.attribute("sc", "joined"), gap: await gap(), radii: await inPage(radii, null) } };
     },
     expected: {

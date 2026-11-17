@@ -1,0 +1,96 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 2
+lens: fresh
+# Probes: Google Chrome at /usr/bin/google-chrome driven by the global playwright (/opt/node22/lib/node_modules/playwright),
+# scratch pages in the session scratchpad (not in the repository) that reproduce the plan's CSS literally
+# (R-04, R-08, R-09, R-10) with constructable stylesheets in open shadow roots. axe-core 4.14.0 fetched with
+# `npm pack axe-core@4.14.0` into the scratchpad (the version #10 pins at 5f49794) and run with #10 FR-016's rule set:
+# the wcag2a/2aa/21a/21aa/22aa and best-practice tags, with region, landmark-one-main and page-has-heading-one off.
+# Round 1's refute, fixes and verify were read; none of the findings below repeats a settled one.
+findings:
+  - id: PLAN-FRESH-2-001
+    severity: 3
+    title: "R-09's `::slotted(:not([slot])) { display: block }` shows sections the page has hidden, including a hidden ocelle-section-header"
+    evidence:
+      - artifact: "research.md § R-09: 'each section (`::slotted(:not([slot]))`, an element in the default slot) is `display: block` (... a page rule still wins)'; 'Hidden sections still count (spec \"Empty slot\")'; spec.md § Edge Cases: '`hidden` on any of the five hosts: no box and no node, by the element conventions' `:host([hidden])` rule'; spec.md § Empty slot: 'An assigned element is content even when it is `hidden` or has no box'"
+      - code: "Probe, the R-09 sidebar CSS verbatim: `<div id=s2 hidden>` in the default slot computes `display: block` and draws a 51 px padded, bordered section (y 101-152); `<x-sec id=s3 hidden>`, a custom element whose own sheet has `:host{display:block}:host([hidden]){display:none}` (the README convention every ocelle element follows), also computes `display: block` (y 152-203). The UA `[hidden]{display:none}` loses to the author `::slotted()` rule, and an inner `:host([hidden])` loses to the outer context's `::slotted()` rule. packages/styles/src/base.css has no `[hidden]` rule, so linking base.css does not help."
+    claim: |
+      The plan's fix for PLAN-CORRECTNESS-1-010 makes `hidden` a no-op on every sidebar section. A page that hides a
+      section (a common way to toggle navigation groups, and what kitty-mission-ui does with `hidden` on part content)
+      gets it drawn with padding and a divider, and a hidden `ocelle-section-header` section breaks the spec's own
+      edge case ("hidden on any of the five hosts: no box"). "A page rule still wins" does not cover this: `hidden` is a
+      UA rule and the header's `:host([hidden])` is an inner-context rule, both of which lose. Separately, the
+      first-section selector `:nth-child(1 of :not([slot]))` counts a hidden first section, so once hidden works, the
+      second section's `border-block-start` sits directly on the sections wrapper's head divider (a 2 px double rule).
+      No scenario or plant contains a hidden section, so the plan as written goes green with this defect.
+    remedies:
+      - "R-09: exclude hidden elements from every section rule (`::slotted(:not([slot]):not([hidden]))` for display, padding, margins and border, and `::slotted(:nth-child(1 of :not([slot]):not([hidden])))` for the first-section exception), keeping hidden sections as content for slot emptiness as the spec says; add to US3 (or as a US3-3 variant) a sidebar with a hidden `div` section and a hidden `ocelle-section-header` section between two visible ones: no box for either, exactly one divider between the visible sections, paired with the visible sections' divider, planted with the `:not([hidden])` dropped; add the R-09 spike item."
+  - id: PLAN-FRESH-2-002
+    severity: 3
+    title: "UA margins of slotted `<p>` and `<ul>` content (description, card body, sidebar sections) add gaps the spec forbids; only the heading's margin is reset"
+    evidence:
+      - artifact: "research.md § R-02: '`margin: 0`' on `::slotted([slot=\"heading\"])` only; R-07: 'The description wrapper carries `margin-block-start: var(--ocelle-space-1)`'; R-08: the card's 'flex column with `gap` of the density'; R-09: sections get `padding` and `margin-inline` only; spec.md US1-7: '`<ocelle-card><ocelle-section-header slot=\"header\">…</ocelle-section-header><p>Body</p></ocelle-card>` ... a `--ocelle-space-2` gap between header and body'; US1-11: 'the first one's body starts at its padding edge'; US3-3: 'there is no other gap between parts'; FR-012 and FR-019 give the description a size and colour but no margin"
+      - code: "Probe with the plan's structure: `<p slot=description>` under an `h2` with margin 0 in an R-04 column (gap 4 px): heading bottom 659, description top 679, a 20 px gap (4 + the p's 16 px UA margin). `<p>Body</p>` in an R-08 card (padding 32, gap 8): header bottom 713, body top 737 (24 px, not 8), body bottom 755 against card bottom 803 (48 px, not 32). Sidebar sections `<ul>` and `<p>` under the R-09 rules: computed `margin-top: 16px`, a 16 px blank between the previous section's box and the `ul`'s divider (y 203 to 219). Margins do not collapse through the wrappers, which are flex items."
+    claim: |
+      The spec's gap and padding outcomes hold only for content without UA margins, yet the spec's own US1-7 example
+      body is a `<p>`, and a description is naturally a `<p>`, a sidebar section naturally a `<ul>` of links.
+      Consumers moving from kitty-mission-ui's part-level padding and gap overrides (the SC-006 workaround these
+      elements replace) would get the 16 px stray gaps back. For the tests it is a coin toss: an implementer who
+      measures the slotted `<p>` of US1-7 cannot get 8 px with R-08 as written, one who measures a `span` or the
+      wrapper passes while the consumer's page is wrong. The plan does not say which edge "body starts" and "gap"
+      measure, and no scenario slots a `p` description or a `ul` section.
+    remedies:
+      - "The elements trim the edge margins of slotted content (a page rule still wins): `margin-block: 0` on `::slotted([slot=description])`, `::slotted([slot=eyebrow])` and the sidebar's sections; in the card, `margin-block-start: 0` on `::slotted(:nth-child(1 of :not([slot])))` and `margin-block-end: 0` on `::slotted(:nth-last-child(1 of :not([slot])))`, so body paragraphs keep their spacing between each other; add `<p>` description, `<p>` card body (as US1-7 already writes) and `ul` and `p` sidebar sections to US1-2, US1-7, US1-11, US2-2 and US3-3, with a plant that drops each reset; README states the trim."
+      - "Keep the elements out of content margins: amend US1-7, US1-11, US2-2 and US3-3 to measure the wrapper or slot box, not the slotted element, state in the README that slotted content keeps its own margins and that `p` and `ul` content needs a margin reset by the page, and list that reset among the remaining consumer rules in SC-006 (which then no longer removes the part-level gap overrides wholly)."
+  - id: PLAN-FRESH-2-003
+    severity: 3
+    title: "Plain `<a>` items do not inherit the rail's chrome ink and are 18 px tall: the rail stories fail the `axe` gate (color-contrast and target-size, serious), and nothing in the plan says what the story and fixture items are"
+    evidence:
+      - artifact: "spec.md FR-027: 'The rail MUST NOT size or style its items beyond the gap, their centring across the rail and the chrome ink colour they inherit; item size and density are the items' own (#12's `ocelle-nav-item`)'; FR-024: 'on `--ocelle-color-chrome` with `--ocelle-color-chrome-ink` text'; FR-038: no serious or critical finding on any story in either theme; R-14: stories render 'one element state inside the story root'; US4-2 measures 'square items of `--ocelle-size-rail-item`'"
+      - code: "Probe, R-10's vertical rail CSS verbatim on #15130F (light-theme chrome, packages/tokens/src/source.ts:57) with three `<a>` items and one bottom `<a>`, axe-core 4.14.0 with #10 FR-016's rule set: `color-contrast (serious)` and `target-size (serious): 3 nodes`, link heights 18 px. The UA rule `a:any-link { color: -webkit-link }` beats inheritance, and base.css styles links only inside `[data-ocelle-prose]` (packages/styles/src/base.css:153). The same page with `a { display:inline-flex; inline-size:2.5rem; block-size:2.5rem; color:inherit }` from a document stylesheet: no violation. #10 forbids story style attributes (5f49794:gates/plants/csp/fail-storybook-story-style-attribute) and its story layout sheet keys on `[data-story]` only (5f49794:storybook/.storybook/stories-layout.css)."
+    claim: |
+      `ocelle-nav-item` is #12's and does not exist, so every rail story and fixture in this feature holds stand-in
+      items. With plain links, which the README example and most consumers will also write, the items are UA blue on
+      near-black (about 2.3:1 in light theme) and fail WCAG 1.4.3 and 2.5.8: the `axe` gate fails the rail stories,
+      and US4-2's "with `--ocelle-color-chrome-ink` text" passes on the host's computed colour while the visible links
+      are not chrome ink. FR-027's "the chrome ink colour they inherit" is false for the element consumers are most
+      likely to slot. Stand-in items wider than the 44 px content box would also fail the story test's text-box rule
+      at 320 px. The plan names no stand-in item, no CSP-safe way to size it (a story stylesheet), and no check of the
+      slotted item's own colour, so the failure shows up only when #10's gate first runs in phase 5.
+    remedies:
+      - "Keep FR-027 and plan the stand-ins: a same-origin story and fixture stylesheet (no style attribute, selectors on `data-story`) that gives rail items `--ocelle-size-rail-item` square boxes and `color: inherit`; US4-2 asserts a slotted item's computed colour equals `--ocelle-color-chrome-ink`; correct FR-027's wording to 'the chrome ink colour on the host, which an item takes when it inherits colour', and the README states that `<a>` items need `color: inherit` (or `ocelle-nav-item`) and a 24 px target."
+      - "Amend FR-027 so the rail sets `color: inherit` on `::slotted(a:any-link)` in both slots (a page rule still wins), with a US4-2 assertion on a plain slotted link's colour and a plant that drops the rule; item size stays the items' own and the stand-in sizing of the first remedy is still needed for `target-size`."
+  - id: PLAN-FRESH-2-004
+    severity: 1
+    title: "The axe measurement R-11 requires before the plan gate: axe 4.14.0 does not see the `#internals` landmark, so the README's stated reason for a distinct label is false and FR-028's axe stories cannot fail on naming"
+    evidence:
+      - artifact: "research.md § R-11: 'These axe outcomes are measured on a probe page with the axe-core 4.14.0 of #10's branch ... before the plan gate'; spec.md § Edge Cases: 'the README says to always set a distinct `label`, since axe's landmark rules flag two unnamed navigation landmarks'; FR-028: 'The host's `aria-label` MUST NOT cause an axe serious or critical finding, as the `axe` gate checks'"
+      - code: "axe-core 4.14.0 package/gather-internals.js: getElementInternals reads only own properties `_internals`, `internals`, `internals_` or symbols described `internals` / `privateInternals`; 005's elements hold `readonly #internals = this.attachInternals()` (packages/elements/src/ocelle-icon.ts:87, ocelle-brand-mark.ts:110), the pattern R-11 adopts. Probe, a host with `#internals` role navigation: the four US3-12 cases and the US4-11 'both' case give no violation and pass `aria-prohibited-attr` and `aria-allowed-attr` on the host; two unnamed such hosts on one page give no `landmark-unique` finding (landmark-unique checked only `main`). #10's axe gate is still a stub at 5f49794 (gates/bin/axe.ts: 'not implemented (axe, phase 4)'), and `region` is one of #10 FR-016's excluded rules."
+    claim: |
+      The plan defers this measurement to "before the plan gate", and no artifact records it; here it is. Two things
+      follow. The README rationale the spec prescribes for "set a distinct `label`" is not what axe does with this
+      design; the true reason is that assistive technology lists unnamed navigation landmarks indistinguishably. And
+      FR-028's axe clause, held by the seven per-case stories, is satisfied trivially: axe treats the hosts as role-less
+      custom elements, so no naming outcome can make those stories fail. That is acceptable only if the plan says so;
+      as written it presents the stories as evidence for naming. The plan is also planned against a #10 commit whose
+      `axe` gate does not exist yet, which R-14's recheck should name explicitly.
+    remedies:
+      - "Record this measurement in research.md R-11 (axe does not read `#private` internals; no serious or critical finding on the seven cases; `landmark-unique` does not see the hosts; `region` is excluded by #10), state that the per-case stories guard only against a regression that adds a node or attribute axe does flag, change the README rationale in the spec's edge case and FR-036 to the assistive-technology reason, and name in R-14's recheck that #10's `axe` gate is unimplemented at 5f49794."
+      - "As above, but store the internals in a field axe 4.14.0 reads (an own symbol described `internals`, which is not public surface or in the manifest), so `landmark-unique` and axe's landmark rules do apply to the hosts, and add an unnamed-pair story expected to produce that moderate note; this departs from 005's `#internals` pattern and needs the same change considered for it."
+  - id: PLAN-FRESH-2-005
+    severity: 2
+    title: "US4-10's README example is undefined: 'its column' needs a ResizeObserver, `width < N` is a media query on the viewport, and the plant only fits the latter"
+    evidence:
+      - artifact: "spec.md US4-10: 'a page that sets `orientation` from its own query with an exclusive bound, as the README shows (vertical while its column is at least the bound, horizontal below), When the column is exactly at the bound'; FR-026: 'from its own query with an exclusive bound (`width < N`, never `max-width: N`)'; contracts/checks.md § Pairing plants: 'the README example rewritten to `max-width: N`'; contracts/elements-package.md § For #12: 'vertical in its column ... with an exclusive bound in its own query'"
+      - code: "grep of spec.md, plan.md, research.md and contracts/ for `matchMedia` and `ResizeObserver`: no match. A media query (`matchMedia('(width < Npx)')`) reads the viewport, not a column; a container query cannot set an attribute; so a column-driven example must be script with a ResizeObserver, whose bound is written as a comparison, not as `max-width`."
+    claim: |
+      The test runs the README's code at N and N − 1, but nothing says what is resized. If the example uses
+      `matchMedia`, US4-10's "column" is wrong and the test resizes the viewport; if it observes a column, the
+      planted `max-width: N` rewrite is not expressible and the plant is vacuous, and an observer on a column whose
+      width depends on the rail's orientation (52 px vertical, 100 % horizontal) can oscillate or raise
+      "ResizeObserver loop completed with undelivered notifications", which the fixture page would not record. This
+      is the one interface #12 is told to copy (FR-026), so its form should be decided before the red commit.
+    remedies:
+      - "Decide the example in research.md (a new R-10 item): either `matchMedia('(width < Npx)')` on the viewport, with US4-10 reworded from 'column' to 'viewport' and the plant as written; or a ResizeObserver on a container of fixed, rail-independent width with `entry.contentRect.width < N`, the test resizing that container to N and N − 1 (and N − 0.5), the plant rewritten to `<= N`, and the fixture page asserting no ResizeObserver loop error."

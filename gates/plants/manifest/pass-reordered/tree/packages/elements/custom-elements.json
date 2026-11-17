@@ -100,6 +100,160 @@
       ]
     },
     {
+      "path": "src/ocelle-card.ts",
+      "kind": "javascript-module",
+      "exports": [
+        {
+          "name": "OcelleCard",
+          "kind": "js",
+          "declaration": {
+            "name": "OcelleCard",
+            "module": "src/ocelle-card.ts"
+          }
+        }
+      ],
+      "declarations": [
+        {
+          "tagName": "ocelle-card",
+          "superclass": {
+            "package": "lit",
+            "name": "LitElement"
+          },
+          "slots": [
+            {
+              "name": "header",
+              "description": "The card's header, usually an `ocelle-section-header`, which a compact card draws at its compact size."
+            },
+            {
+              "name": "",
+              "description": "The card's body."
+            }
+          ],
+          "name": "OcelleCard",
+          "members": [
+            {
+              "type": {
+                "text": "\"regular\" | \"compact\" | undefined"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "density",
+              "kind": "field",
+              "description": "The card's density: `regular` or `compact`, whose padding and header-to-body gap are smaller and which draws a\nsection header in its `header` slot at the compact size. Not set, or any other value, draws regular. Reflected.",
+              "default": "undefined",
+              "attribute": "density"
+            },
+            {
+              "type": {
+                "text": "boolean | undefined"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "inset",
+              "kind": "field",
+              "description": "Draws the card on the inset ground, for a card nested inside another surface; present with any value is inset.\nChanges nothing else. Reflected.",
+              "default": "undefined",
+              "attribute": "inset"
+            }
+          ],
+          "kind": "class",
+          "events": [],
+          "description": "A card: a header slot above its body, in a regular or compact density, on the sheet or the inset ground.",
+          "customElement": true,
+          "cssProperties": [],
+          "cssParts": [],
+          "attributes": [
+            {
+              "type": {
+                "text": "\"regular\" | \"compact\" | undefined"
+              },
+              "name": "density",
+              "fieldName": "density",
+              "description": "The card's density: `regular` or `compact`, whose padding and header-to-body gap are smaller and which draws a\nsection header in its `header` slot at the compact size. Not set, or any other value, draws regular. Reflected.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "boolean | undefined"
+              },
+              "name": "inset",
+              "fieldName": "inset",
+              "description": "Draws the card on the inset ground, for a card nested inside another surface; present with any value is inset.\nChanges nothing else. Reflected.",
+              "default": "undefined"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "src/ocelle-context-sidebar.ts",
+      "kind": "javascript-module",
+      "exports": [
+        {
+          "name": "OcelleContextSidebar",
+          "kind": "js",
+          "declaration": {
+            "name": "OcelleContextSidebar",
+            "module": "src/ocelle-context-sidebar.ts"
+          }
+        }
+      ],
+      "declarations": [
+        {
+          "tagName": "ocelle-context-sidebar",
+          "superclass": {
+            "package": "lit",
+            "name": "LitElement"
+          },
+          "slots": [
+            {
+              "name": "head",
+              "description": "The sidebar's head, the team or project it belongs to."
+            },
+            {
+              "name": "",
+              "description": "The sections, one element each (a `ul` of links, a `div`, an `ocelle-section-header`), drawn as padded blocks with a divider between each two."
+            },
+            {
+              "name": "footer",
+              "description": "The sidebar's footer, kept at its block end."
+            }
+          ],
+          "name": "OcelleContextSidebar",
+          "members": [
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "privacy": "public",
+              "name": "label",
+              "kind": "field",
+              "description": "The name of the navigation landmark, trimmed, used while the host has no `aria-label`; empty or whitespace-only\ncounts as none, and the landmark is then unnamed. Not reflected.",
+              "default": "undefined",
+              "attribute": "label"
+            }
+          ],
+          "kind": "class",
+          "events": [],
+          "description": "A context sidebar: a navigation landmark holding a head, sections and a footer, ruled off from each other.",
+          "customElement": true,
+          "cssProperties": [],
+          "cssParts": [],
+          "attributes": [
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "name": "label",
+              "fieldName": "label",
+              "description": "The name of the navigation landmark, trimmed, used while the host has no `aria-label`; empty or whitespace-only\ncounts as none, and the landmark is then unnamed. Not reflected.",
+              "default": "undefined"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "path": "src/ocelle-copy-field.ts",
       "kind": "javascript-module",
       "exports": [
@@ -206,6 +360,690 @@
               "fieldName": "copyLabel",
               "description": "The Copy control's accessible name, trimmed; empty or whitespace-only gives the default. Not reflected.",
               "default": "\"Copy\""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "src/ocelle-dialog.ts",
+      "kind": "javascript-module",
+      "exports": [
+        {
+          "name": "OcelleDialog",
+          "kind": "js",
+          "declaration": {
+            "name": "OcelleDialog",
+            "module": "src/ocelle-dialog.ts"
+          }
+        }
+      ],
+      "declarations": [
+        {
+          "tagName": "ocelle-dialog",
+          "superclass": {
+            "name": "OcelleOverlay",
+            "module": "/src/overlay.ts"
+          },
+          "slots": [
+            {
+              "name": "",
+              "description": "The body: the dialog's content, which scrolls when it is taller than the space left."
+            },
+            {
+              "name": "footer",
+              "description": "The actions, laid out at the end of the panel; not rendered while empty."
+            }
+          ],
+          "name": "OcelleDialog",
+          "members": [
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "open",
+              "kind": "field",
+              "inheritedFrom": {
+                "name": "OcelleOverlay",
+                "module": "src/overlay.ts"
+              },
+              "description": "Whether the overlay is shown, modally in the top layer; setting it shows or closes the overlay, and the overlay\nsets it to false whenever it closes. Reflected.",
+              "default": "false",
+              "attribute": "open"
+            },
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "privacy": "public",
+              "name": "label",
+              "kind": "field",
+              "inheritedFrom": {
+                "name": "OcelleOverlay",
+                "module": "src/overlay.ts"
+              },
+              "description": "The overlay's heading and accessible name; a host `aria-label` names it instead when present. A label is required.",
+              "default": "undefined",
+              "attribute": "label"
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "privacy": "public",
+              "name": "closeLabel",
+              "kind": "field",
+              "inheritedFrom": {
+                "name": "OcelleOverlay",
+                "module": "src/overlay.ts"
+              },
+              "description": "The accessible name of the close control, in the host's language.",
+              "default": "\"Close\"",
+              "attribute": "close-label"
+            }
+          ],
+          "kind": "class",
+          "events": [
+            {
+              "type": {
+                "text": "CustomEvent<{ reason: \"escape\" | \"close-button\" }>"
+              },
+              "name": "ocelle-dialog-close-request",
+              "description": "The user asked to close the dialog, by Escape or the close control. Cancelable: cancelling it keeps the dialog open."
+            },
+            {
+              "type": {
+                "text": "CustomEvent<{ reason: \"escape\" | \"close-button\" | \"host\" }>"
+              },
+              "name": "ocelle-dialog-close",
+              "description": "The dialog closed, once it has left the top layer and focus has returned, with the request's reason, or `host` when the host set `open` to false or the platform closed it."
+            }
+          ],
+          "description": "A modal dialog over the page, with a heading, a body, footer actions and a close control; Escape and the close\ncontrol ask the host first, which may keep it open.",
+          "customElement": true,
+          "cssProperties": [
+            {
+              "name": "--ocelle-dialog-inline-size",
+              "description": "The dialog's preferred inline size, capped by `--ocelle-dialog-max-inline`; the reading measure (`--ocelle-measure-reading`) by default."
+            }
+          ],
+          "cssParts": [
+            {
+              "name": "panel",
+              "description": "The panel, the native `<dialog>`."
+            },
+            {
+              "name": "heading",
+              "description": "The visible heading, which holds the `label`."
+            },
+            {
+              "name": "body",
+              "description": "The body around the default slot, a Tab stop while it overflows."
+            },
+            {
+              "name": "footer",
+              "description": "The footer around the `footer` slot."
+            },
+            {
+              "name": "close-button",
+              "description": "The close control, a native button named by `close-label`."
+            }
+          ],
+          "attributes": [
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "name": "open",
+              "inheritedFrom": {
+                "name": "OcelleOverlay",
+                "module": "src/overlay.ts"
+              },
+              "fieldName": "open",
+              "description": "Whether the overlay is shown, modally in the top layer; setting it shows or closes the overlay, and the overlay\nsets it to false whenever it closes. Reflected.",
+              "default": "false"
+            },
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "name": "label",
+              "inheritedFrom": {
+                "name": "OcelleOverlay",
+                "module": "src/overlay.ts"
+              },
+              "fieldName": "label",
+              "description": "The overlay's heading and accessible name; a host `aria-label` names it instead when present. A label is required.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "close-label",
+              "inheritedFrom": {
+                "name": "OcelleOverlay",
+                "module": "src/overlay.ts"
+              },
+              "fieldName": "closeLabel",
+              "description": "The accessible name of the close control, in the host's language.",
+              "default": "\"Close\""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "src/ocelle-drawer.ts",
+      "kind": "javascript-module",
+      "exports": [
+        {
+          "name": "OcelleDrawer",
+          "kind": "js",
+          "declaration": {
+            "name": "OcelleDrawer",
+            "module": "src/ocelle-drawer.ts"
+          }
+        }
+      ],
+      "declarations": [
+        {
+          "tagName": "ocelle-drawer",
+          "superclass": {
+            "name": "OcelleOverlay",
+            "module": "/src/overlay.ts"
+          },
+          "slots": [
+            {
+              "name": "",
+              "description": "The body: the drawer's content, which fills the panel between the heading and the footer and scrolls when it is taller."
+            },
+            {
+              "name": "footer",
+              "description": "The actions, laid out at the end of the panel; not rendered while empty."
+            }
+          ],
+          "name": "OcelleDrawer",
+          "members": [
+            {
+              "type": {
+                "text": "\"start\" | \"end\""
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "side",
+              "kind": "field",
+              "description": "The inline edge of the viewport the drawer is placed against, in the drawer's direction: `start` (the left edge\nunder `dir=\"ltr\"`, the right edge under `dir=\"rtl\"`) or `end`. Any other value gives `start`. Reflected.",
+              "default": "\"start\"",
+              "attribute": "side"
+            },
+            {
+              "type": {
+                "text": "\"sheet\" | \"chrome\""
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "ground",
+              "kind": "field",
+              "description": "The drawer's ground: `sheet`, or `chrome`, the chrome ground and ink in both themes. Any other value gives `sheet`.\nReflected.",
+              "default": "\"sheet\"",
+              "attribute": "ground"
+            },
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "headingHidden",
+              "kind": "field",
+              "description": "Whether the heading is hidden visually: not painted and taking no space, but kept in the accessibility tree as the\ndrawer's heading, with the accessible name unchanged. Reflected.",
+              "default": "false",
+              "attribute": "heading-hidden"
+            },
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "open",
+              "kind": "field",
+              "inheritedFrom": {
+                "name": "OcelleOverlay",
+                "module": "src/overlay.ts"
+              },
+              "description": "Whether the overlay is shown, modally in the top layer; setting it shows or closes the overlay, and the overlay\nsets it to false whenever it closes. Reflected.",
+              "default": "false",
+              "attribute": "open"
+            },
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "privacy": "public",
+              "name": "label",
+              "kind": "field",
+              "inheritedFrom": {
+                "name": "OcelleOverlay",
+                "module": "src/overlay.ts"
+              },
+              "description": "The overlay's heading and accessible name; a host `aria-label` names it instead when present. A label is required.",
+              "default": "undefined",
+              "attribute": "label"
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "privacy": "public",
+              "name": "closeLabel",
+              "kind": "field",
+              "inheritedFrom": {
+                "name": "OcelleOverlay",
+                "module": "src/overlay.ts"
+              },
+              "description": "The accessible name of the close control, in the host's language.",
+              "default": "\"Close\"",
+              "attribute": "close-label"
+            }
+          ],
+          "kind": "class",
+          "events": [
+            {
+              "type": {
+                "text": "CustomEvent<{ reason: \"escape\" | \"close-button\" | \"backdrop\" }>"
+              },
+              "name": "ocelle-drawer-close-request",
+              "description": "The user asked to close the drawer, by Escape, the close control or a primary-button click on the backdrop. Cancelable: cancelling it keeps the drawer open."
+            },
+            {
+              "type": {
+                "text": "CustomEvent<{ reason: \"escape\" | \"close-button\" | \"backdrop\" | \"host\" }>"
+              },
+              "name": "ocelle-drawer-close",
+              "description": "The drawer closed, once it has left the top layer and focus has returned, with the request's reason, or `host` when the host set `open` to false or the platform closed it."
+            }
+          ],
+          "description": "A modal side drawer: a full-height panel against the inline start or end edge of the viewport, with a heading, a\nbody, footer actions and a close control; Escape, the close control and a click on the backdrop ask the host first,\nwhich may keep it open.",
+          "customElement": true,
+          "cssProperties": [],
+          "cssParts": [
+            {
+              "name": "panel",
+              "description": "The panel, the native `<dialog>`."
+            },
+            {
+              "name": "heading",
+              "description": "The heading, which holds the `label`; visually hidden with `heading-hidden`."
+            },
+            {
+              "name": "body",
+              "description": "The body around the default slot, a Tab stop while it overflows."
+            },
+            {
+              "name": "footer",
+              "description": "The footer around the `footer` slot."
+            },
+            {
+              "name": "close-button",
+              "description": "The close control, a native button named by `close-label`."
+            }
+          ],
+          "attributes": [
+            {
+              "type": {
+                "text": "\"start\" | \"end\""
+              },
+              "name": "side",
+              "fieldName": "side",
+              "description": "The inline edge of the viewport the drawer is placed against, in the drawer's direction: `start` (the left edge\nunder `dir=\"ltr\"`, the right edge under `dir=\"rtl\"`) or `end`. Any other value gives `start`. Reflected.",
+              "default": "\"start\""
+            },
+            {
+              "type": {
+                "text": "\"sheet\" | \"chrome\""
+              },
+              "name": "ground",
+              "fieldName": "ground",
+              "description": "The drawer's ground: `sheet`, or `chrome`, the chrome ground and ink in both themes. Any other value gives `sheet`.\nReflected.",
+              "default": "\"sheet\""
+            },
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "name": "heading-hidden",
+              "fieldName": "headingHidden",
+              "description": "Whether the heading is hidden visually: not painted and taking no space, but kept in the accessibility tree as the\ndrawer's heading, with the accessible name unchanged. Reflected.",
+              "default": "false"
+            },
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "name": "open",
+              "inheritedFrom": {
+                "name": "OcelleOverlay",
+                "module": "src/overlay.ts"
+              },
+              "fieldName": "open",
+              "description": "Whether the overlay is shown, modally in the top layer; setting it shows or closes the overlay, and the overlay\nsets it to false whenever it closes. Reflected.",
+              "default": "false"
+            },
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "name": "label",
+              "inheritedFrom": {
+                "name": "OcelleOverlay",
+                "module": "src/overlay.ts"
+              },
+              "fieldName": "label",
+              "description": "The overlay's heading and accessible name; a host `aria-label` names it instead when present. A label is required.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "close-label",
+              "inheritedFrom": {
+                "name": "OcelleOverlay",
+                "module": "src/overlay.ts"
+              },
+              "fieldName": "closeLabel",
+              "description": "The accessible name of the close control, in the host's language.",
+              "default": "\"Close\""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "src/ocelle-empty-state.ts",
+      "kind": "javascript-module",
+      "exports": [
+        {
+          "name": "OcelleEmptyState",
+          "kind": "js",
+          "declaration": {
+            "name": "OcelleEmptyState",
+            "module": "src/ocelle-empty-state.ts"
+          }
+        }
+      ],
+      "declarations": [
+        {
+          "tagName": "ocelle-empty-state",
+          "superclass": {
+            "package": "lit",
+            "name": "LitElement"
+          },
+          "slots": [
+            {
+              "name": "visual",
+              "description": "An icon or an `ocelle-progress` above the heading. A progress bar spans the column up to the reading measure; an icon stays centred."
+            },
+            {
+              "name": "eyebrow",
+              "description": "A short line above the heading (for example \"Refused\"), shown small, medium weight, muted and in upper case. Not a heading: the element adds no role."
+            },
+            {
+              "name": "heading",
+              "description": "The consumer's own heading element. Its level is the consumer's; the element never adds a heading."
+            },
+            {
+              "name": "",
+              "description": "The body. Each element is a block with no block margins, separated from the next by a small gap; put inline content in one `<p>`."
+            },
+            {
+              "name": "actions",
+              "description": "Buttons or links. They wrap when narrow."
+            }
+          ],
+          "name": "OcelleEmptyState",
+          "members": [
+            {
+              "type": {
+                "text": "\"panel\" | undefined"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "variant",
+              "kind": "field",
+              "description": "`panel` fills a list or inspector panel with a larger block padding and larger gaps and a lighter heading. Unset,\nor any other value, gives the default variant. Reflected.",
+              "default": "undefined",
+              "attribute": "variant"
+            }
+          ],
+          "kind": "class",
+          "events": [],
+          "description": "An empty or loading panel: the consumer's own heading, body and actions in one centred column, with an optional\nvisual and eyebrow above the heading.",
+          "customElement": true,
+          "cssProperties": [],
+          "cssParts": [
+            {
+              "name": "body",
+              "description": "The centred column, with its block padding and every slot in it. The body's content sits in an internal wrapper inside it, which is not a part."
+            }
+          ],
+          "attributes": [
+            {
+              "type": {
+                "text": "\"panel\" | undefined"
+              },
+              "name": "variant",
+              "fieldName": "variant",
+              "description": "`panel` fills a list or inspector panel with a larger block padding and larger gaps and a lighter heading. Unset,\nor any other value, gives the default variant. Reflected.",
+              "default": "undefined"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "src/ocelle-fact.ts",
+      "kind": "javascript-module",
+      "exports": [
+        {
+          "name": "OcelleFact",
+          "kind": "js",
+          "declaration": {
+            "name": "OcelleFact",
+            "module": "src/ocelle-fact.ts"
+          }
+        }
+      ],
+      "declarations": [
+        {
+          "tagName": "ocelle-fact",
+          "superclass": {
+            "package": "lit",
+            "name": "LitElement"
+          },
+          "slots": [
+            {
+              "name": "",
+              "description": "The value."
+            }
+          ],
+          "name": "OcelleFact",
+          "members": [
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "label",
+              "kind": "field",
+              "description": "The label (term) of this pair. Unset or empty gives an empty term. Reflected.",
+              "default": "undefined",
+              "attribute": "label"
+            },
+            {
+              "type": {
+                "text": "\"anywhere\" | undefined"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "wrap",
+              "kind": "field",
+              "description": "`anywhere` breaks a long identifier value anywhere instead of overflowing. The label keeps word wrapping. Unset\nwraps between words. Reflected.",
+              "default": "undefined",
+              "attribute": "wrap"
+            }
+          ],
+          "kind": "class",
+          "events": [],
+          "description": "One label and value pair of an `ocelle-facts` sheet: the label is the `label` attribute and the value is the\nelement's content. Outside a sheet it shows its label above its value.",
+          "customElement": true,
+          "cssProperties": [
+            {
+              "name": "--ocelle-facts-value-size",
+              "description": "As on `ocelle-facts`, for a fact outside a sheet: the value's font size, `--ocelle-font-size-fact` by default."
+            },
+            {
+              "name": "--ocelle-facts-value-line-height",
+              "description": "As on `ocelle-facts`, for a fact outside a sheet: the value's line height, `--ocelle-line-height-normal` by default."
+            }
+          ],
+          "cssParts": [
+            {
+              "name": "label",
+              "description": "The label, rendered only outside `ocelle-facts`."
+            }
+          ],
+          "attributes": [
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "name": "label",
+              "fieldName": "label",
+              "description": "The label (term) of this pair. Unset or empty gives an empty term. Reflected.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "\"anywhere\" | undefined"
+              },
+              "name": "wrap",
+              "fieldName": "wrap",
+              "description": "`anywhere` breaks a long identifier value anywhere instead of overflowing. The label keeps word wrapping. Unset\nwraps between words. Reflected.",
+              "default": "undefined"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "src/ocelle-facts.ts",
+      "kind": "javascript-module",
+      "exports": [
+        {
+          "name": "OcelleFacts",
+          "kind": "js",
+          "declaration": {
+            "name": "OcelleFacts",
+            "module": "src/ocelle-facts.ts"
+          }
+        }
+      ],
+      "declarations": [
+        {
+          "tagName": "ocelle-facts",
+          "superclass": {
+            "package": "lit",
+            "name": "LitElement"
+          },
+          "slots": [
+            {
+              "name": "",
+              "description": "The pairs, `ocelle-fact` elements, in source order. Other children, and facts with `hidden` or `aria-hidden=\"true\"`, are not shown."
+            }
+          ],
+          "name": "OcelleFacts",
+          "members": [
+            {
+              "type": {
+                "text": "\"compact\" | undefined"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "density",
+              "kind": "field",
+              "description": "Row spacing: `compact` tightens the gaps for dense screens. Unset gives the default spacing. It does not change\nthe type: in a `data-ocelle-density=\"compact\"` region the values take the region's scale. Reflected.",
+              "default": "undefined",
+              "attribute": "density"
+            },
+            {
+              "type": {
+                "text": "\"columns\" | \"stacked\" | \"grid\" | undefined"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "layout",
+              "kind": "field",
+              "description": "`columns` keeps two columns and `stacked` one column at any size. `grid` shows each pair as a cell, label above\nvalue, in four, two or one columns from the sheet's own inline size (four from twice `--ocelle-facts-stack-below`,\ntwo from it, one below it). Unset, or any other value, switches automatically on the sheet's own two-column inline\nsize; set it for a sheet in a dialog, popover or other shrink-to-fit host, where a short sheet would otherwise\nstack. Reflected.",
+              "default": "undefined",
+              "attribute": "layout"
+            }
+          ],
+          "kind": "class",
+          "events": [],
+          "description": "A label and value sheet: one description list of its `ocelle-fact` children, in two columns, stacked or as a grid of\ncells.",
+          "customElement": true,
+          "cssProperties": [
+            {
+              "name": "--ocelle-facts-stack-below",
+              "description": "With `layout` unset, below this inline size (the sheet's own, as laid out in two columns) each value stacks under its label; with `layout=\"grid\"`, below it the cells take one column and from twice it four (the sheet's own size as laid out in four columns). An absolute length; a percentage, 0 or an invalid value falls back to the default, 24rem from tokens (`calc(var(--ocelle-space-10) * 6)`)."
+            },
+            {
+              "name": "--ocelle-facts-value-size",
+              "description": "The values' font size, `--ocelle-font-size-fact` by default. Set by `@ocelle/styles`' density hook (`--ocelle-font-size-sm` in a compact region)."
+            },
+            {
+              "name": "--ocelle-facts-value-line-height",
+              "description": "The values' line height, `--ocelle-line-height-normal` by default. Set by `@ocelle/styles`' density hook (`--ocelle-line-height-compact` in a compact region)."
+            }
+          ],
+          "cssParts": [
+            {
+              "name": "list",
+              "description": "The description list grid. Do not set its columns: a `grid-template-columns` rule here overrides every layout."
+            },
+            {
+              "name": "label",
+              "description": "Each term (label). Carries the fact's `lang` and `dir`."
+            },
+            {
+              "name": "value",
+              "description": "Each definition (value) box."
+            }
+          ],
+          "attributes": [
+            {
+              "type": {
+                "text": "\"compact\" | undefined"
+              },
+              "name": "density",
+              "fieldName": "density",
+              "description": "Row spacing: `compact` tightens the gaps for dense screens. Unset gives the default spacing. It does not change\nthe type: in a `data-ocelle-density=\"compact\"` region the values take the region's scale. Reflected.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "\"columns\" | \"stacked\" | \"grid\" | undefined"
+              },
+              "name": "layout",
+              "fieldName": "layout",
+              "description": "`columns` keeps two columns and `stacked` one column at any size. `grid` shows each pair as a cell, label above\nvalue, in four, two or one columns from the sheet's own inline size (four from twice `--ocelle-facts-stack-below`,\ntwo from it, one below it). Unset, or any other value, switches automatically on the sheet's own two-column inline\nsize; set it for a sheet in a dialog, popover or other shrink-to-fit host, where a short sheet would otherwise\nstack. Reflected.",
+              "default": "undefined"
             }
           ]
         }
@@ -384,6 +1222,147 @@
               "fieldName": "label",
               "description": "The link's accessible name instead of its text, trimmed; blank counts as none. It must contain the visible text.\nA host `aria-label` does not name the link. Not reflected.",
               "default": "undefined"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "src/ocelle-list-detail.ts",
+      "kind": "javascript-module",
+      "exports": [
+        {
+          "name": "OcelleListDetail",
+          "kind": "js",
+          "declaration": {
+            "name": "OcelleListDetail",
+            "module": "src/ocelle-list-detail.ts"
+          }
+        }
+      ],
+      "declarations": [
+        {
+          "tagName": "ocelle-list-detail",
+          "superclass": {
+            "package": "lit",
+            "name": "LitElement"
+          },
+          "slots": [
+            {
+              "name": "list",
+              "description": "The list pane."
+            },
+            {
+              "name": "",
+              "description": "The detail pane."
+            },
+            {
+              "name": "inspector",
+              "description": "The optional inspector pane."
+            }
+          ],
+          "name": "OcelleListDetail",
+          "members": [
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "privacy": "public",
+              "name": "collapseBelow",
+              "kind": "field",
+              "description": "One column below this length: digits with an optional fraction and `px`, `rem` or `em`, or a unitless `0`, after\ntrimming ASCII whitespace; any other value counts as absent, and the default is `--ocelle-list-detail-collapse` as\ncomputed on the element. Not reflected.",
+              "default": "undefined",
+              "attribute": "collapse-below"
+            },
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "privacy": "public",
+              "name": "inspectorBelow",
+              "kind": "field",
+              "description": "The inspector stacks under the detail below this length, with the grammar of `collapse-below`; the default is\n`--ocelle-list-detail-inspector-collapse` as computed on the element. Not reflected.",
+              "default": "undefined",
+              "attribute": "inspector-below"
+            },
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "narrow",
+              "kind": "field",
+              "description": "Forces the one-column layout whatever the element's measured size. Reflected.",
+              "default": "false",
+              "attribute": "narrow"
+            },
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "detailOpen",
+              "kind": "field",
+              "description": "In one column, shows the detail pane, with the inspector stacked under it, instead of the list; in two or three\ncolumns it has no effect. Reflected.",
+              "default": "false",
+              "attribute": "detail-open"
+            },
+            {
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "privacy": "public",
+              "name": "remeasure",
+              "kind": "method",
+              "description": "Requests a measurement of the intrinsic sizes for the next animation frame, coalesced with any other trigger, for\na change the element cannot see: content a slotted element renders in its own shadow root, an attribute-only\nchange, or an image or a font loading. In that frame it also re-chooses the tier from a fresh measurement of the\nelement's border box, as after a percentage inline padding that changes with the host's container. On an element\nthat is not in a document, never connected or removed, it does nothing. On an element that is not rendered (in a\nclosed `<dialog>`, under a `display: none` ancestor or `hidden`) the pass writes nothing and the tier stays; the\nelement measures itself afresh once it is rendered."
+            }
+          ],
+          "kind": "class",
+          "events": [],
+          "description": "A list beside its detail, with an optional inspector, that shows one pane at a time below its threshold.",
+          "customElement": true,
+          "cssProperties": [],
+          "cssParts": [],
+          "attributes": [
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "name": "collapse-below",
+              "fieldName": "collapseBelow",
+              "description": "One column below this length: digits with an optional fraction and `px`, `rem` or `em`, or a unitless `0`, after\ntrimming ASCII whitespace; any other value counts as absent, and the default is `--ocelle-list-detail-collapse` as\ncomputed on the element. Not reflected.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "name": "inspector-below",
+              "fieldName": "inspectorBelow",
+              "description": "The inspector stacks under the detail below this length, with the grammar of `collapse-below`; the default is\n`--ocelle-list-detail-inspector-collapse` as computed on the element. Not reflected.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "name": "narrow",
+              "fieldName": "narrow",
+              "description": "Forces the one-column layout whatever the element's measured size. Reflected.",
+              "default": "false"
+            },
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "name": "detail-open",
+              "fieldName": "detailOpen",
+              "description": "In one column, shows the detail pane, with the inspector stacked under it, instead of the list; in two or three\ncolumns it has no effect. Reflected.",
+              "default": "false"
             }
           ]
         }
@@ -570,6 +1549,512 @@
               "fieldName": "value",
               "description": "The option's value, reported by the listbox's `value` and events: the `value` attribute as written (not trimmed),\nor, when it is missing or blank, the option's index among its parent's options, as a string, which is not written\nto the attribute. Reflected.",
               "default": "the option's index, as a string"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "src/ocelle-page-header.ts",
+      "kind": "javascript-module",
+      "exports": [
+        {
+          "name": "OcellePageHeader",
+          "kind": "js",
+          "declaration": {
+            "name": "OcellePageHeader",
+            "module": "src/ocelle-page-header.ts"
+          }
+        }
+      ],
+      "declarations": [
+        {
+          "tagName": "ocelle-page-header",
+          "superclass": {
+            "package": "lit",
+            "name": "LitElement"
+          },
+          "slots": [
+            {
+              "name": "heading",
+              "description": "The page's own heading element (`h1` to `h6`, usually the screen's `h1`), drawn with the display style; its level is the page's."
+            },
+            {
+              "name": "eyebrow",
+              "description": "A short label above the heading naming the area, drawn with the eyebrow style."
+            },
+            {
+              "name": "description",
+              "description": "A subtitle under the heading."
+            },
+            {
+              "name": "actions",
+              "description": "The screen's controls at the inline end of the heading's first line, wrapping under the description when they do not fit beside the heading."
+            }
+          ],
+          "name": "OcellePageHeader",
+          "members": [
+            {
+              "type": {
+                "text": "\"regular\" | \"compact\" | undefined"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "size",
+              "kind": "field",
+              "description": "The heading's size: `regular` or `compact`. Not set, or any other value, draws regular, the heading at\n`--ocelle-font-size-2xl`; `compact` draws it at `--ocelle-font-size-xl`. Reflected.",
+              "default": "undefined",
+              "attribute": "size"
+            }
+          ],
+          "kind": "class",
+          "events": [],
+          "description": "A screen's page header: a band around a heading the page slots, with an optional eyebrow above, a description under\nthe heading and actions at its inline end, ruled off below.",
+          "customElement": true,
+          "cssProperties": [],
+          "cssParts": [],
+          "attributes": [
+            {
+              "type": {
+                "text": "\"regular\" | \"compact\" | undefined"
+              },
+              "name": "size",
+              "fieldName": "size",
+              "description": "The heading's size: `regular` or `compact`. Not set, or any other value, draws regular, the heading at\n`--ocelle-font-size-2xl`; `compact` draws it at `--ocelle-font-size-xl`. Reflected.",
+              "default": "undefined"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "src/ocelle-personal-rail.ts",
+      "kind": "javascript-module",
+      "exports": [
+        {
+          "name": "OcellePersonalRail",
+          "kind": "js",
+          "declaration": {
+            "name": "OcellePersonalRail",
+            "module": "src/ocelle-personal-rail.ts"
+          }
+        }
+      ],
+      "declarations": [
+        {
+          "tagName": "ocelle-personal-rail",
+          "superclass": {
+            "package": "lit",
+            "name": "LitElement"
+          },
+          "slots": [
+            {
+              "name": "",
+              "description": "The primary items, icon links for example, from the rail's start."
+            },
+            {
+              "name": "bottom",
+              "description": "The bottom group, an account link for example, kept at the rail's end."
+            }
+          ],
+          "name": "OcellePersonalRail",
+          "members": [
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "privacy": "public",
+              "name": "label",
+              "kind": "field",
+              "description": "The name of the navigation landmark, trimmed, used while the host has no `aria-label`; empty or whitespace-only\ncounts as none, and the landmark is then unnamed. Not reflected.",
+              "default": "undefined",
+              "attribute": "label"
+            },
+            {
+              "type": {
+                "text": "\"vertical\" | \"horizontal\" | undefined"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "orientation",
+              "kind": "field",
+              "description": "The layout direction, set by the page or a shell: `vertical` (a column) or `horizontal` (a row that wraps). Not\nset, or any other value, is vertical; the element never changes it itself. Reflected.",
+              "default": "undefined",
+              "attribute": "orientation"
+            }
+          ],
+          "kind": "class",
+          "events": [],
+          "description": "A personal rail: a navigation landmark holding the page's primary items and a bottom group, on the chrome.",
+          "customElement": true,
+          "cssProperties": [],
+          "cssParts": [],
+          "attributes": [
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "name": "label",
+              "fieldName": "label",
+              "description": "The name of the navigation landmark, trimmed, used while the host has no `aria-label`; empty or whitespace-only\ncounts as none, and the landmark is then unnamed. Not reflected.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "\"vertical\" | \"horizontal\" | undefined"
+              },
+              "name": "orientation",
+              "fieldName": "orientation",
+              "description": "The layout direction, set by the page or a shell: `vertical` (a column) or `horizontal` (a row that wraps). Not\nset, or any other value, is vertical; the element never changes it itself. Reflected.",
+              "default": "undefined"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "src/ocelle-progress.ts",
+      "kind": "javascript-module",
+      "exports": [
+        {
+          "name": "OcelleProgress",
+          "kind": "js",
+          "declaration": {
+            "name": "OcelleProgress",
+            "module": "src/ocelle-progress.ts"
+          }
+        }
+      ],
+      "declarations": [
+        {
+          "tagName": "ocelle-progress",
+          "superclass": {
+            "package": "lit",
+            "name": "LitElement"
+          },
+          "slots": [],
+          "name": "OcelleProgress",
+          "members": [
+            {
+              "type": {
+                "text": "number | undefined"
+              },
+              "privacy": "public",
+              "name": "value",
+              "kind": "field",
+              "description": "The current amount, from 0 to `max`: below 0 counts as 0, above `max` as `max`. Unset, `null`, an empty or\nwhitespace-only attribute, or a value that is not a finite number makes the bar indeterminate. Not reflected.",
+              "default": "undefined",
+              "attribute": "value"
+            },
+            {
+              "type": {
+                "text": "number | undefined"
+              },
+              "privacy": "public",
+              "name": "max",
+              "kind": "field",
+              "description": "The maximum. Unset, not a finite number, or 0 or less counts as 100. Not reflected.",
+              "default": "undefined",
+              "attribute": "max"
+            },
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "privacy": "public",
+              "name": "valueText",
+              "kind": "field",
+              "description": "Words for the current value, for example \"7 of 12\", exposed (and shown with `show-label`) while the bar is\ndeterminate, as given. Unset lets the platform announce the value. Not reflected.",
+              "default": "undefined",
+              "attribute": "value-text"
+            },
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "privacy": "public",
+              "name": "label",
+              "kind": "field",
+              "description": "The accessible name, as text (no rich label). A bar needs a name: set `label`, or a host `aria-label`, which\noverrides it. To name a bar after a nearby heading, pass the heading's text. Not reflected.",
+              "default": "undefined",
+              "attribute": "label"
+            },
+            {
+              "type": {
+                "text": "boolean | undefined"
+              },
+              "privacy": "public",
+              "name": "showLabel",
+              "kind": "field",
+              "description": "Shows the label as text above the bar (beside it in compact), and the value text while determinate. Unset hides\nboth; the name and value are exposed either way.",
+              "default": "undefined",
+              "attribute": "show-label"
+            },
+            {
+              "type": {
+                "text": "\"compact\" | undefined"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "size",
+              "kind": "field",
+              "description": "`compact` is a thin bar with the label beside it. Unset, or any other value, gives the default size. Reflected.",
+              "default": "undefined",
+              "attribute": "size"
+            },
+            {
+              "type": {
+                "text": "\"tinted\" | undefined"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "ground",
+              "kind": "field",
+              "description": "`tinted` draws the track's boundary in the accent-strong colour, for a bar on an inset, accent-low, hover or state\nground. Unset is for the canvas, sheet, pane, panel, inspector and rail grounds. Reflected.",
+              "default": "undefined",
+              "attribute": "ground"
+            }
+          ],
+          "kind": "class",
+          "events": [],
+          "description": "A progress bar: determinate with a `value`, indeterminate without one. Name it with `label`.",
+          "customElement": true,
+          "cssProperties": [],
+          "cssParts": [
+            {
+              "name": "track",
+              "description": "The track, the full inline size of the bar."
+            },
+            {
+              "name": "fill",
+              "description": "The filled part: the determinate extent from the inline start, or the indeterminate mark."
+            },
+            {
+              "name": "label",
+              "description": "The visible label, with `show-label`."
+            },
+            {
+              "name": "value-text",
+              "description": "The visible value text, with `show-label` while determinate, at the inline end of the label row."
+            }
+          ],
+          "attributes": [
+            {
+              "type": {
+                "text": "number | undefined"
+              },
+              "name": "value",
+              "fieldName": "value",
+              "description": "The current amount, from 0 to `max`: below 0 counts as 0, above `max` as `max`. Unset, `null`, an empty or\nwhitespace-only attribute, or a value that is not a finite number makes the bar indeterminate. Not reflected.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "number | undefined"
+              },
+              "name": "max",
+              "fieldName": "max",
+              "description": "The maximum. Unset, not a finite number, or 0 or less counts as 100. Not reflected.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "name": "value-text",
+              "fieldName": "valueText",
+              "description": "Words for the current value, for example \"7 of 12\", exposed (and shown with `show-label`) while the bar is\ndeterminate, as given. Unset lets the platform announce the value. Not reflected.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "name": "label",
+              "fieldName": "label",
+              "description": "The accessible name, as text (no rich label). A bar needs a name: set `label`, or a host `aria-label`, which\noverrides it. To name a bar after a nearby heading, pass the heading's text. Not reflected.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "boolean | undefined"
+              },
+              "name": "show-label",
+              "fieldName": "showLabel",
+              "description": "Shows the label as text above the bar (beside it in compact), and the value text while determinate. Unset hides\nboth; the name and value are exposed either way.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "\"compact\" | undefined"
+              },
+              "name": "size",
+              "fieldName": "size",
+              "description": "`compact` is a thin bar with the label beside it. Unset, or any other value, gives the default size. Reflected.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "\"tinted\" | undefined"
+              },
+              "name": "ground",
+              "fieldName": "ground",
+              "description": "`tinted` draws the track's boundary in the accent-strong colour, for a bar on an inset, accent-low, hover or state\nground. Unset is for the canvas, sheet, pane, panel, inspector and rail grounds. Reflected.",
+              "default": "undefined"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "src/ocelle-scroller.ts",
+      "kind": "javascript-module",
+      "exports": [
+        {
+          "name": "OcelleScroller",
+          "kind": "js",
+          "declaration": {
+            "name": "OcelleScroller",
+            "module": "src/ocelle-scroller.ts"
+          }
+        }
+      ],
+      "declarations": [
+        {
+          "tagName": "ocelle-scroller",
+          "superclass": {
+            "package": "lit",
+            "name": "LitElement"
+          },
+          "slots": [
+            {
+              "name": "",
+              "description": "The strip's content."
+            }
+          ],
+          "name": "OcelleScroller",
+          "members": [
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "privacy": "public",
+              "name": "label",
+              "kind": "field",
+              "description": "The name of the strip's group while it overflows, trimmed; empty or whitespace-only counts as none, and without one\nan overflowing strip is a tab stop with no role. Not reflected.",
+              "default": "undefined",
+              "attribute": "label"
+            }
+          ],
+          "kind": "class",
+          "events": [],
+          "description": "A horizontal strip that scrolls in the inline direction and is a tab stop and a named group only while it overflows.",
+          "customElement": true,
+          "cssProperties": [],
+          "cssParts": [],
+          "attributes": [
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "name": "label",
+              "fieldName": "label",
+              "description": "The name of the strip's group while it overflows, trimmed; empty or whitespace-only counts as none, and without one\nan overflowing strip is a tab stop with no role. Not reflected.",
+              "default": "undefined"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "src/ocelle-section-header.ts",
+      "kind": "javascript-module",
+      "exports": [
+        {
+          "name": "OcelleSectionHeader",
+          "kind": "js",
+          "declaration": {
+            "name": "OcelleSectionHeader",
+            "module": "src/ocelle-section-header.ts"
+          }
+        }
+      ],
+      "declarations": [
+        {
+          "tagName": "ocelle-section-header",
+          "superclass": {
+            "package": "lit",
+            "name": "LitElement"
+          },
+          "slots": [
+            {
+              "name": "heading",
+              "description": "The page's own heading element (`h1` to `h6`), drawn with the header's heading style; its level is the page's."
+            },
+            {
+              "name": "eyebrow",
+              "description": "A short label above the heading, drawn with the eyebrow style; not rendered in the eyebrow variant."
+            },
+            {
+              "name": "description",
+              "description": "Supporting text under the heading; not rendered in the eyebrow variant."
+            },
+            {
+              "name": "actions",
+              "description": "Controls at the inline end of the heading's first line, wrapping under the heading when they do not fit beside it."
+            }
+          ],
+          "name": "OcelleSectionHeader",
+          "members": [
+            {
+              "type": {
+                "text": "\"regular\" | \"compact\" | undefined"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "size",
+              "kind": "field",
+              "description": "The heading's size: `regular` or `compact`. Not set, or any other value, draws regular, or compact when the\nheader is in a compact card's `header` slot; a valid value wins over the card. No effect in the eyebrow variant.\nReflected.",
+              "default": "undefined",
+              "attribute": "size"
+            },
+            {
+              "type": {
+                "text": "\"default\" | \"eyebrow\" | undefined"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "variant",
+              "kind": "field",
+              "description": "`eyebrow` draws the heading with the eyebrow style and renders neither the eyebrow nor the description slot;\n`default`, not set or any other value draws the default heading style. Reflected.",
+              "default": "undefined",
+              "attribute": "variant"
+            }
+          ],
+          "kind": "class",
+          "events": [],
+          "description": "A section header around a heading the page slots: an optional eyebrow above, a description under the heading and\nactions at its inline end.",
+          "customElement": true,
+          "cssProperties": [],
+          "cssParts": [],
+          "attributes": [
+            {
+              "type": {
+                "text": "\"regular\" | \"compact\" | undefined"
+              },
+              "name": "size",
+              "fieldName": "size",
+              "description": "The heading's size: `regular` or `compact`. Not set, or any other value, draws regular, or compact when the\nheader is in a compact card's `header` slot; a valid value wins over the card. No effect in the eyebrow variant.\nReflected.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "\"default\" | \"eyebrow\" | undefined"
+              },
+              "name": "variant",
+              "fieldName": "variant",
+              "description": "`eyebrow` draws the heading with the eyebrow style and renders neither the eyebrow nor the description slot;\n`default`, not set or any other value draws the default heading style. Reflected.",
+              "default": "undefined"
             }
           ]
         }
@@ -986,6 +2471,319 @@
               "fieldName": "value",
               "description": "The selected tab's value; `\"\"` only while no tab is enabled. Setting it selects the first enabled tab with the\nvalue; `\"\"` or a value no enabled tab has keeps the selection, and a non-empty such value is remembered until a tab\nwith it appears or is enabled. A set never emits an event; setting the current value changes nothing. Not\nreflected.",
               "default": "the first enabled tab's value"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "src/ocelle-tooltip.ts",
+      "kind": "javascript-module",
+      "exports": [
+        {
+          "name": "OcelleTooltip",
+          "kind": "js",
+          "declaration": {
+            "name": "OcelleTooltip",
+            "module": "src/ocelle-tooltip.ts"
+          }
+        }
+      ],
+      "declarations": [
+        {
+          "tagName": "ocelle-tooltip",
+          "superclass": {
+            "package": "lit",
+            "name": "LitElement"
+          },
+          "slots": [
+            {
+              "name": "",
+              "description": "The trigger: the first element assigned, a button or a link that carries its own accessible name."
+            },
+            {
+              "name": "description",
+              "description": "The tooltip's own: with `describes`, the hidden description span it adds to its children; never rendered."
+            }
+          ],
+          "name": "OcelleTooltip",
+          "members": [
+            {
+              "type": {
+                "text": "string"
+              },
+              "privacy": "public",
+              "name": "text",
+              "kind": "field",
+              "description": "The bubble's plain text, never parsed as markup. An empty text shows no bubble.",
+              "default": "\"\"",
+              "attribute": "text"
+            },
+            {
+              "type": {
+                "text": "\"top\" | \"bottom\" | \"start\" | \"end\""
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "placement",
+              "kind": "field",
+              "description": "The side of the trigger the bubble is shown on: `top`, `bottom`, `start` or `end`, the last two in the tooltip's\ndirection; it is shown on the opposite side when it does not fit. Reflected.",
+              "default": "\"top\"",
+              "attribute": "placement"
+            },
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "disabled",
+              "kind": "field",
+              "description": "Whether the tooltip shows no bubble. Reflected.",
+              "default": "false",
+              "attribute": "disabled"
+            },
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "describes",
+              "kind": "field",
+              "description": "Whether the text is the trigger's accessible description, for a text that adds to the trigger's name; supported\nonly when the trigger is itself the focusable element. Reflected.",
+              "default": "false",
+              "attribute": "describes"
+            }
+          ],
+          "kind": "class",
+          "events": [],
+          "description": "A tooltip: a short text in a bubble beside its trigger, shown while the pointer rests on the trigger or the bubble\nor the trigger has keyboard focus, hidden by Escape. The trigger carries its own accessible name; the bubble only\nrepeats or supplements it.",
+          "customElement": true,
+          "cssProperties": [],
+          "cssParts": [
+            {
+              "name": "bubble",
+              "description": "The bubble in the top layer, hidden from assistive technology; its only child paints the text."
+            }
+          ],
+          "attributes": [
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "text",
+              "fieldName": "text",
+              "description": "The bubble's plain text, never parsed as markup. An empty text shows no bubble.",
+              "default": "\"\""
+            },
+            {
+              "type": {
+                "text": "\"top\" | \"bottom\" | \"start\" | \"end\""
+              },
+              "name": "placement",
+              "fieldName": "placement",
+              "description": "The side of the trigger the bubble is shown on: `top`, `bottom`, `start` or `end`, the last two in the tooltip's\ndirection; it is shown on the opposite side when it does not fit. Reflected.",
+              "default": "\"top\""
+            },
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "name": "disabled",
+              "fieldName": "disabled",
+              "description": "Whether the tooltip shows no bubble. Reflected.",
+              "default": "false"
+            },
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "name": "describes",
+              "fieldName": "describes",
+              "description": "Whether the text is the trigger's accessible description, for a text that adds to the trigger's name; supported\nonly when the trigger is itself the focusable element. Reflected.",
+              "default": "false"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "src/ocelle-workflow-board.ts",
+      "kind": "javascript-module",
+      "exports": [
+        {
+          "name": "OcelleWorkflowBoard",
+          "kind": "js",
+          "declaration": {
+            "name": "OcelleWorkflowBoard",
+            "module": "src/ocelle-workflow-board.ts"
+          }
+        }
+      ],
+      "declarations": [
+        {
+          "tagName": "ocelle-workflow-board",
+          "superclass": {
+            "package": "lit",
+            "name": "LitElement"
+          },
+          "slots": [
+            {
+              "name": "",
+              "description": "The lanes; any child is laid out as a lane."
+            }
+          ],
+          "name": "OcelleWorkflowBoard",
+          "members": [
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "privacy": "public",
+              "name": "label",
+              "kind": "field",
+              "description": "The name of the board's region while it overflows, trimmed; empty or whitespace-only counts as none, and without\none an overflowing board is a tab stop with no role. Not reflected.",
+              "default": "undefined",
+              "attribute": "label"
+            }
+          ],
+          "kind": "class",
+          "events": [],
+          "description": "A row of lanes that scrolls inside itself, and is a tab stop and a named region, only while the lanes' minimum\nwidths exceed its size.",
+          "customElement": true,
+          "cssProperties": [],
+          "cssParts": [],
+          "attributes": [
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "name": "label",
+              "fieldName": "label",
+              "description": "The name of the board's region while it overflows, trimmed; empty or whitespace-only counts as none, and without\none an overflowing board is a tab stop with no role. Not reflected.",
+              "default": "undefined"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "src/ocelle-workflow-lane.ts",
+      "kind": "javascript-module",
+      "exports": [
+        {
+          "name": "OcelleWorkflowLane",
+          "kind": "js",
+          "declaration": {
+            "name": "OcelleWorkflowLane",
+            "module": "src/ocelle-workflow-lane.ts"
+          }
+        }
+      ],
+      "declarations": [
+        {
+          "tagName": "ocelle-workflow-lane",
+          "superclass": {
+            "package": "lit",
+            "name": "LitElement"
+          },
+          "slots": [
+            {
+              "name": "",
+              "description": "The lane's content."
+            }
+          ],
+          "name": "OcelleWorkflowLane",
+          "members": [
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "privacy": "public",
+              "name": "label",
+              "kind": "field",
+              "description": "The lane's title, shown and used as its name, trimmed; empty or whitespace-only counts as absent, and no title is\nshown. Not reflected.",
+              "default": "undefined",
+              "attribute": "label"
+            },
+            {
+              "type": {
+                "text": "number | undefined"
+              },
+              "privacy": "public",
+              "name": "count",
+              "kind": "field",
+              "description": "The count shown after the title with tabular figures, and named after it: a whole number of 0 or more. The\nattribute counts when, after trimming, it is decimal digits alone, at most `Number.MAX_SAFE_INTEGER`; the\nproperty when it is a safe integer of 0 or more; anything else counts as absent. Not reflected.",
+              "default": "undefined",
+              "attribute": "count"
+            },
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "privacy": "public",
+              "name": "countLabel",
+              "kind": "field",
+              "description": "The count's text in the lane's name, such as \"3 work packages\", trimmed; the visible count still shows the\nnumber. Used only while a count is shown. Not reflected.",
+              "default": "undefined",
+              "attribute": "count-label"
+            },
+            {
+              "type": {
+                "text": "\"flat\" | undefined"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "variant",
+              "kind": "field",
+              "description": "`flat` drops the lane's ground, corners and padding and sets the title and count in small uppercase; absent or any\nother value draws the default lane chrome. Reflected.",
+              "default": "undefined",
+              "attribute": "variant"
+            }
+          ],
+          "kind": "class",
+          "events": [],
+          "description": "A column of a workflow board with an optional title and count, exposed as one group named by them.",
+          "customElement": true,
+          "cssProperties": [],
+          "cssParts": [],
+          "attributes": [
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "name": "label",
+              "fieldName": "label",
+              "description": "The lane's title, shown and used as its name, trimmed; empty or whitespace-only counts as absent, and no title is\nshown. Not reflected.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "number | undefined"
+              },
+              "name": "count",
+              "fieldName": "count",
+              "description": "The count shown after the title with tabular figures, and named after it: a whole number of 0 or more. The\nattribute counts when, after trimming, it is decimal digits alone, at most `Number.MAX_SAFE_INTEGER`; the\nproperty when it is a safe integer of 0 or more; anything else counts as absent. Not reflected.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "name": "count-label",
+              "fieldName": "countLabel",
+              "description": "The count's text in the lane's name, such as \"3 work packages\", trimmed; the visible count still shows the\nnumber. Used only while a count is shown. Not reflected.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "\"flat\" | undefined"
+              },
+              "name": "variant",
+              "fieldName": "variant",
+              "description": "`flat` drops the lane's ground, corners and padding and sets the title and count in small uppercase; absent or any\nother value draws the default lane chrome. Reflected.",
+              "default": "undefined"
             }
           ]
         }
