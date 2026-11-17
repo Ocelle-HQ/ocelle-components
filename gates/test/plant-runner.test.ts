@@ -753,7 +753,7 @@ describe("plantShards and shardSize (plan decision 23)", () => {
       otherSizes: shards.slice(0, otherShards).map((shard) => shard.length <= 80 && shard.every((plant) => !plant.startsWith("visual/") && !plant.startsWith("axe/"))),
       visualAndAxe: shards.slice(otherShards),
     }).toEqual({
-      counts: { visual: 48, axe: 25, others: 237 },
+      counts: { visual: 48, axe: 25, others: 239 },
       shards: 3 + 48 + 25,
       otherSizes: [true, true, true],
       visualAndAxe: [...visualAndAxe.filter((plant) => plant.startsWith("visual/")).sort(), ...visualAndAxe.filter((plant) => plant.startsWith("axe/")).sort()].map((plant) => [plant]),
@@ -1130,7 +1130,7 @@ describe("repositoryContentPlants and the visual, axe, manifest, contrast and br
   ];
   const brandRulesPin = [
     "a-monospace", "b-link-equals-accent", "b-ochre-pair-not-excluded", "c-extra-radius", "c-wrong-value", "d-rule-as-boundary", "e-light-chrome",
-    "f-motion-not-zero", "f-motion-spin-missing", "g-forced-colours-override", "g-system-colour-mapping", "generator-throws", "repository-values", "source-invalid", "source-throws",
+    "f-delay-marker-misplaced", "f-motion-not-ms", "f-motion-not-zero", "f-motion-spin-missing", "g-forced-colours-override", "g-system-colour-mapping", "generator-throws", "repository-values", "source-invalid", "source-throws",
   ];
   const classified = (gate: string, pin: readonly string[]): string[] => pin.filter((name) => repositoryContentPlants.includes(`${gate}/${name}`));
 
@@ -1146,7 +1146,7 @@ describe("repositoryContentPlants and the visual, axe, manifest, contrast and br
     expect({ count: axePin.length, listed: cases("axe"), content: classified("axe", axePin) }).toEqual({ count: 25, listed: axePin, content: ["pass-repository"] });
   });
 
-  it("pins the 12 manifest, 14 contrast and 15 brand-rules cases, one of each gate repository content (operator round 3, O3-01)", () => {
+  it("pins the 12 manifest, 14 contrast and 17 brand-rules cases, one of each gate repository content (operator round 3, O3-01)", () => {
     expect([
       { count: manifestPin.length, listed: cases("manifest"), content: classified("manifest", manifestPin) },
       { count: contrastPin.length, listed: cases("contrast"), content: classified("contrast", contrastPin) },
@@ -1154,7 +1154,7 @@ describe("repositoryContentPlants and the visual, axe, manifest, contrast and br
     ]).toEqual([
       { count: 12, listed: manifestPin, content: ["pass-repository"] },
       { count: 14, listed: contrastPin, content: ["repository-values"] },
-      { count: 15, listed: brandRulesPin, content: ["repository-values"] },
+      { count: 17, listed: brandRulesPin, content: ["repository-values"] },
     ]);
   });
 

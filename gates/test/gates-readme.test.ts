@@ -44,6 +44,14 @@ describe("gates/README.md (002 FR-022)", () => {
     expect(["f-motion-not-zero", "f-motion-spin-missing"].filter((plant) => !(row?.[4] ?? "").includes(`\`${plant}\``))).toEqual([]);
   });
 
+  // 012 phase 4 round 2 (operator round of 2026-11-17, O2-01 and O2-02; plan decision 29 as amended): the brand-rules
+  // row lists the plants of a misplaced delay marker and a motion duration that is not a literal ms value.
+  it("lists f-delay-marker-misplaced and f-motion-not-ms in the brand-rules row, beside f-motion-not-zero and f-motion-spin-missing", () => {
+    const row = rows(section("The gates")).find((cells) => cells[0] === "`brand-rules`");
+    const plants = ["f-motion-not-zero", "f-motion-spin-missing", "f-delay-marker-misplaced", "f-motion-not-ms"];
+    expect(plants.filter((plant) => !(row?.[4] ?? "").includes(`\`${plant}\``))).toEqual([]);
+  });
+
   it("lists manifest in The gates, with its check, command and plants (005 FR-009, research.md R-06)", () => {
     const gates = rows(section("The gates"));
     const row = gates.find((cells) => cells[0] === "`manifest`");

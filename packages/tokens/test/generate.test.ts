@@ -147,6 +147,18 @@ describe("css()", () => {
     });
   });
 
+  // Phase 4 round 2 (operator round of 2026-11-17, O2-01 "Names ending in -delay"; plan decision 29 as amended): only a
+  // motion token whose name ends in -delay is a delay, so a misplaced marker exempts nothing from the block (the build
+  // refuses such a source in validateSource(); css() itself does not validate).
+  it("sets a motion duration with a misplaced delay marker to 0ms under reduced motion, and leaves a -delay one out (O2-01)", () => {
+    const source = withAdded({ name: "motion-pause", group: "motion", value: "300ms", delay: true }, { name: "fade-delay", group: "motion", value: "300ms", delay: true });
+    expect([...blocks(css(source)).reducedMotion.entries()]).toEqual([
+      ["--ocelle-motion-fast", "0ms"],
+      ["--ocelle-motion-base", "0ms"],
+      ["--ocelle-motion-pause", "0ms"],
+    ]);
+  });
+
   it("declares a derived token as var() of its source, alone or inside a larger value (FR-002)", () => {
     const sheet = blocks(css(fixture));
     expect({
