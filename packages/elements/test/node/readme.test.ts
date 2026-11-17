@@ -348,6 +348,134 @@ describe("packages/elements/CHANGELOG.md", () => {
   });
 });
 
+/** The nine elements and six events this feature adds (014 contracts/elements.md; plan.md VII: a MINOR change). */
+const selectionElements = ["ocelle-listbox", "ocelle-option", "ocelle-tabs", "ocelle-tab", "ocelle-tab-panel", "ocelle-segmented-choice", "ocelle-segment", "ocelle-copy-field", "ocelle-link"];
+const selectionEvents = ["ocelle-listbox-change", "ocelle-listbox-activate", "ocelle-tabs-change", "ocelle-segmented-choice-change", "ocelle-copy-field-request", "ocelle-link-activate"];
+
+/**
+ * 014 phase 7 (T110, plan.md step 7, analysis G3): the README overview, the text before its first `##` section, names
+ * every element with the nine of this feature, the engine floor raised to Chromium 125 / WebKit 17.4 at the phase 4
+ * stop (reviews/phase-4/decision-1.md) and the module rule of research R-16. The entry-point table's new specifiers are
+ * checked exactly by "lists exactly the entry points of package.json's exports" above.
+ */
+describe("packages/elements/README.md overview (014 T110)", () => {
+  const overview = flat(/^# @ocelle\/elements\n([\s\S]*?)(?=^## )/m.exec(read("README.md"))?.[1] ?? "");
+
+  it("counts and names the eleven elements, the nine of this feature with the icon and the mark", () => {
+    expect(overview).toContain("eleven elements");
+    for (const tag of ["ocelle-icon", "ocelle-brand-mark", ...selectionElements]) expect(overview).toContain(`\`${tag}\``);
+  });
+
+  it("states the engine floor, Chromium 125 and WebKit 17.4", () => {
+    expect(overview).toContain("The elements need Chromium 125 or WebKit 17.4 and later (see Engines)");
+  });
+
+  it("states that a parent element's entry point also defines its children", () => {
+    expect(overview).toContain("A parent element's entry point also defines the elements it owns as children");
+  });
+
+  it("points to the examples of each use", () => {
+    expect(overview).toContain("Examples shows each selection and input element built into a screen");
+  });
+});
+
+/**
+ * 014 SC-009 (T110, research R-14, analysis G3): the README has one example per use kitty-mission-ui builds from these
+ * elements, each a `###` section of `## Examples` with one `html` code block, written from the elements' public surface
+ * only: the entry point, the attributes, properties and events of the contract. The host writes no ARIA of its own (no
+ * `aria-*` attribute or property, no `role`, `tabindex` or `id`), no `ResizeObserver` and no clipboard call. One
+ * `aria-label` is allowed, on `ocelle-copy-field` alone: it is that element's documented name (it has no `label`
+ * property; README "Name the field with a host `aria-label`", contracts/elements.md), not ARIA wiring.
+ */
+const examples = [
+  {
+    heading: "The Open project folder picker",
+    uses: ["import \"@ocelle/elements/ocelle-listbox.js\"", "<ocelle-listbox label=", "<ocelle-option value=", "<ocelle-icon slot=\"icon\" name=\"folder\">", "ocelle-listbox-change", "ocelle-listbox-activate", "event.detail.value", ".value", "Open project"],
+  },
+  {
+    heading: "Tabbed screens",
+    uses: ["import \"@ocelle/elements/ocelle-tabs.js\"", "<ocelle-tabs label=", "<ocelle-tab value=", "<ocelle-tab-panel>", "ocelle-tabs-change", "event.detail.value"],
+  },
+  {
+    heading: "Segmented choices",
+    uses: ["import \"@ocelle/elements/ocelle-segmented-choice.js\"", "<ocelle-segmented-choice label=", " joined", "<ocelle-segment value=", "ocelle-segmented-choice-change", "event.detail.value"],
+  },
+  {
+    heading: "In-text links",
+    uses: ["import \"@ocelle/elements/ocelle-link.js\"", "<ocelle-link href=", "<ocelle-link label=", "ocelle-link-activate", "event.detail.href", "event.preventDefault()"],
+  },
+  {
+    heading: "Copy fields",
+    uses: ["import \"@ocelle/elements/ocelle-copy-field.js\"", "<ocelle-copy-field aria-label=", " value=", "ocelle-copy-field-request", "event.detail.text", ".status ="],
+  },
+];
+
+/** The `###` subsections of the README's `## Examples`, by heading, each with the text of its `html` code blocks. */
+function exampleBlocks(text: string): Map<string, string> {
+  const section = /^## Examples\n([\s\S]*?)(?=^## |(?![\s\S]))/m.exec(text)?.[1] ?? "";
+  const blocks = new Map<string, string>();
+  for (const part of section.split(/^### /m).slice(1)) {
+    const heading = part.slice(0, part.indexOf("\n")).trim();
+    const code = [...part.matchAll(/^```html\n([\s\S]*?)^```$/gm)].map((match) => match[1] ?? "").join("\n");
+    blocks.set(heading, code);
+  }
+  return blocks;
+}
+
+describe("packages/elements/README.md examples, one per consumer use (014 SC-009, T110)", () => {
+  const blocks = exampleBlocks(read("README.md"));
+
+  it("has exactly the five examples, in order", () => {
+    expect([...blocks.keys()]).toEqual(examples.map((example) => example.heading));
+  });
+
+  describe.each(examples)("$heading", ({ heading, uses }) => {
+    const code = blocks.get(heading) ?? "";
+
+    it("has an html example", () => {
+      expect(code.trim()).not.toBe("");
+    });
+
+    it.each(uses)("uses %s", (use) => {
+      expect(code).toContain(use);
+    });
+
+    it("writes no ARIA of the host's own (no aria-* attribute or property but the copy field's name, no role, tabindex or id)", () => {
+      expect(code).toMatch(/<ocelle-[a-z-]+[\s>]/);
+      const aria = [...code.matchAll(/<([a-z-]+)[^>]*?\saria-[a-z]+=|\baria[A-Z]\w*|["'`]aria-[a-z]+["'`]/g)].map((match) => match[0]);
+      expect(aria.filter((found) => !/^<ocelle-copy-field\s[^>]*?aria-label=$/.test(found))).toEqual([]);
+      expect(code).not.toMatch(/\s(?:role|tabindex|id)=/);
+      expect(code).not.toMatch(/setAttribute\(\s*["'`](?:role|tabindex|id)["'`]|\.(?:role|tabIndex|id)\s*=/);
+    });
+
+    it("uses no ResizeObserver and no clipboard call", () => {
+      expect(code).toMatch(/<ocelle-[a-z-]+[\s>]/);
+      expect(code).not.toMatch(/ResizeObserver|navigator\.clipboard|execCommand|ClipboardItem|clipboardData/);
+    });
+  });
+});
+
+/**
+ * 014 phase 7 (T111, plan.md VII): the Unreleased lead names this feature's MINOR change, the nine elements, the six
+ * events and the engine floor raised to Chromium 125 / WebKit 17.4 (reviews/phase-4/decision-1.md).
+ */
+describe("packages/elements/CHANGELOG.md MINOR entry (014 T111)", () => {
+  const unreleased = /^## Unreleased\n([\s\S]*?)(?=^## |(?![\s\S]))/m.exec(read("CHANGELOG.md"))?.[1] ?? "";
+  const lead = flat(unreleased.slice(0, Math.max(unreleased.indexOf("### "), 0)));
+
+  it("states that the selection and input elements are a MINOR change", () => {
+    expect(lead).toContain("Selection and input elements, a MINOR change");
+  });
+
+  it.each([...selectionElements, ...selectionEvents])("names `%s`", (name) => {
+    expect(lead).toContain(`\`${name}\``);
+  });
+
+  it("names the engine floor raised to Chromium 125 and WebKit 17.4", () => {
+    expect(lead).toContain("raises the engine floor to Chromium 125 and WebKit 17.4");
+  });
+});
+
 /**
  * The planning IDs of the specs (005 OP2-02, landing L1-04): requirement, criterion, scenario, plan, research and task
  * references belong to `specs/`, so the package-facing documents carry none.
