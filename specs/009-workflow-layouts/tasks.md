@@ -15,7 +15,8 @@ fixes in `reviews/analysis/fixes-1.md`). No task ID changed.
 
 Amended at the landing pass of PR #46 (2026-11-16): the landing review `reviews/landing/round-1.md` and the operator
 rounds `reviews/phase-2/round-3.md` (O3-01 to O3-05) and `reviews/phase-4/round-5.md` (O5-01) add T067 to T082, under
-phases 2 and 4. No earlier task ID changed.
+phases 2 and 4. No earlier task ID changed. The operator round `reviews/phase-2/round-5.md` (O5-01, 2026-11-17) adds
+T083 and T084 under phase 2.
 
 **Tests**: required. Constitution Principle VIII applies to every phase. The phase flow is:
 
@@ -442,6 +443,35 @@ this round's commits as the operator asked; the fix note says so.
 - [x] T077 [US1] Run the plants of T068 and T069 and T048's plant once and record them in
   `specs/009-workflow-layouts/reviews/phase-2/plants.md`. Then run, one at a time: `pnpm run gate:unit-tests`,
   `gate:visual`, `gate:axe`, `gate:csp`, `gate:manifest`, `gate:plants`, and `gate:mutation -- --base <phase base>`.
+
+### Fix 4: operator round from the landing pass (`reviews/phase-2/round-5.md`, O5-01)
+
+The source is CI run 44087406429 on the landing head 33e0832, which failed T067's "Overflowing in the middle" case in
+light with `first: false` (run 44080933084 passed on the same code). The story is right; the test reads the first
+position before the story's `ResizeObserver` re-writes it after a late layout change. The change is test-only. The
+red commit holds test files only and goes through `red.sh` as `fix-4` (or, if the reviewer accepts it for a test-only
+fix, a hand-applied reproduction recorded in the fix note); the fix note is `reviews/phase-2/round-5-fixes.md`, and
+round 6 reviews it.
+
+#### Tests (red, one commit)
+
+- [ ] T083 [US1] O5-01, `storybook/test/integration/elements-stories.test.ts`: for
+  `elements-ocelle-scroller--overflowing-in-the-middle` and `--overflowing-at-the-end`, in light and dark, a case
+  that makes the strip's layout change late, after `open()` returns and before the first position read,
+  deterministically (for example a font held back by a routed request and released after `updateComplete`, or a
+  width change injected from `page.evaluate` that lands after the read would start), so that the story's
+  `ResizeObserver` re-writes the position one frame after the change. The case then reads the first position with
+  T067's current reads. Acceptance: against HEAD it fails on `first` (`first: false`), locally and repeatably; record
+  the run in `reviews/phase-2/red-fix-4.log`. No other assertion of T067 or T020 changes (research.md R-15).
+
+#### Implementation (green)
+
+- [ ] T084 [US1] O5-01, `storybook/test/integration/elements-stories.test.ts`: T067's position reads (the first
+  read and the read after the strip grows) and T020's position check in `observeScrollers` wait for
+  `document.fonts.ready` and two animation frames before reading, as `openHovered` already does. No assertion,
+  tolerance or expected figure is loosened, and the story (`storybook/stories/scroller.stories.ts`) does not change.
+  Acceptance: T083 passes; T067 and T020 pass in both themes; a CI run of the branch passes job Unit tests with both
+  stories in both themes.
 
 **Checkpoint**: `tdd-check.sh 2` reports `pass`; the review approves.
 

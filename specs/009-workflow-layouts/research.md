@@ -816,6 +816,9 @@ layout's, whatever tier it shows, so a shrink-to-fit host cannot make the tier a
   share of the scroll range (half for "middle", all of it for "end") once the layout settles: when the box's scroll
   range changes after the first write, before the capture, it writes the position for the new range again, still
   with no timer. The story test grows the strip after the first write and asserts the position (T067).
+  Amended at operator round phase 2 round 5 (O5-01): the story test reads each scroll position only after
+  `document.fonts.ready` and two animation frames, so that a late layout change and the story's re-write land before
+  the read (T083, T084).
 - **Baselines.** Each phase produces its stories' baselines with `pnpm run visual:update` in the pinned container
   under docker, which this sandbox can start (#10's assumption, "Container in this environment"). They are confirmed
   by a CI run of the branch. When CI's captures differ, the CI artifact's files are committed, as #10's note says.
