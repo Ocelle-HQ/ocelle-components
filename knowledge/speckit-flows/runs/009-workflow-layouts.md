@@ -3,7 +3,7 @@ type: Run Summary
 title: 009-workflow-layouts
 description: Review rounds, findings and TDD checks per phase of 009-workflow-layouts, generated from its review files
 tags: [run, 009-workflow-layouts]
-generated: { by: process:story-summary, at: 2026-11-16T20:09:07Z }
+generated: { by: process:story-summary, at: 2026-11-17T12:51:47Z }
 sources:
   - id: p1-r1
     resource: ../../../specs/009-workflow-layouts/reviews/phase-1/round-1.md
