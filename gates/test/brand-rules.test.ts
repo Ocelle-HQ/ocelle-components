@@ -280,6 +280,20 @@ describe("brand-rules (f) reduced-motion", () => {
     expect(findings(ran)).toEqual([`${cssPath}:${String(lineOf(sheet, "--ocelle-motion-base: 0ms") + 1)}: brand-rules: reduced-motion: --ocelle-delay-other: 0ms in the reduced-motion block; ${onlyDurations}`]);
   });
 
+  // Operator decision C1 (2026-11-17, "(b) Delay opt-out"): a motion duration marked `delay: true` (008's tooltip-delay)
+  // is not a motion duration for rule (f): the block need not set it and must not, while an unmarked motion duration
+  // beside it is still required.
+  it("does not require a motion duration marked as a delay in the block and rejects it there, while still requiring an unmarked one (operator decision C1)", async () => {
+    const withDelay = [...records, { name: "tooltip-delay", group: "motion", value: "500ms", delay: true }, { name: "motion-slow", group: "motion", value: "1200ms" }];
+    const sheet = css(withDelay as unknown as readonly TokenRecord[]);
+    const without = await brandRules({ records: withDelay, wrapper: wrapper('text.replace("    --ocelle-tooltip-delay: 0ms;\\n", "")') });
+    expect(without).toEqual({ code: 0, out: ["brand-rules: 7 rules checked"], err: [] });
+    const within = await brandRules({ records: withDelay, wrapper: wrapper('text.replace("--ocelle-motion-base: 0ms;", "--ocelle-motion-base: 0ms;\\n    --ocelle-tooltip-delay: 0ms;")') });
+    expect(findings(within)).toEqual([`${cssPath}:${String(lineOf(sheet, "--ocelle-motion-base: 0ms") + 1)}: brand-rules: reduced-motion: --ocelle-tooltip-delay: 0ms in the reduced-motion block; ${onlyDurations}`]);
+    const unmarked = await brandRules({ records: withDelay, wrapper: wrapper('text.replace("    --ocelle-motion-slow: 0ms;\\n", "")') });
+    expect(findings(unmarked)).toEqual([`${cssPath}:${String(lineOf(sheet, "prefers-reduced-motion: reduce"))}: brand-rules: reduced-motion: the reduced-motion block does not set --ocelle-motion-slow to 0ms`]);
+  });
+
   it("reads the reduced-motion query with any spacing around its colon, and only in @media", async () => {
     const spaced = await brandRules({ wrapper: wrapper('text.replace("(prefers-reduced-motion: reduce)", "(prefers-reduced-motion :reduce)")') });
     expect(spaced).toEqual({ code: 0, out: ["brand-rules: 7 rules checked"], err: [] });

@@ -131,6 +131,22 @@ describe("css()", () => {
     expect([...blocks(css(withRecord("motion-fast", undefined))).reducedMotion.entries()]).toEqual([["--ocelle-motion-base", "0ms"]]);
   });
 
+  // Operator decision C1 (2026-11-17, "(b) Delay opt-out"; landing of 012 with 008): a motion duration whose record is
+  // marked `delay: true` (a delay, not motion: 008's tooltip-delay) keeps its value under reduced motion and is left
+  // out of the block, while an unmarked motion duration beside it is still set to 0ms.
+  it("leaves a motion duration marked as a delay out of the reduced-motion block, keeping its value, and still sets an unmarked one to 0ms (operator decision C1)", () => {
+    const source = withAdded({ name: "tooltip-delay", group: "motion", value: "500ms", delay: true }, { name: "motion-slow", group: "motion", value: "1200ms" });
+    const sheet = blocks(css(source));
+    expect({ reduced: [...sheet.reducedMotion.entries()], root: sheet.root.get("--ocelle-tooltip-delay") }).toEqual({
+      reduced: [
+        ["--ocelle-motion-fast", "0ms"],
+        ["--ocelle-motion-base", "0ms"],
+        ["--ocelle-motion-slow", "0ms"],
+      ],
+      root: "500ms",
+    });
+  });
+
   it("declares a derived token as var() of its source, alone or inside a larger value (FR-002)", () => {
     const sheet = blocks(css(fixture));
     expect({
