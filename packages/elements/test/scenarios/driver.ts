@@ -4,10 +4,10 @@
 // (test/browser/*.test.ts, the `elements-browser` project). Every method reads or acts on the page by element `id`;
 // nothing in a body depends on which harness runs it. Elements inside a shadow root are reached by a selector in the
 // element's shadow root.
-import type { AxNode, ForcedColors, Palette, ReducedMotion } from "../commands.ts";
+import type { ActiveElement, AxNode, ForcedColors, Palette, ReducedMotion, TextBox } from "../commands.ts";
 import type { Pixels } from "../pixels.ts";
 
-export type { AxNode, ForcedColors, Palette, ReducedMotion } from "../commands.ts";
+export type { ActiveElement, AxNode, ForcedColors, Palette, ReducedMotion, TextBox } from "../commands.ts";
 export type { Pixels } from "../pixels.ts";
 
 /** An element's border box, relative to the viewport, and its computed `display`. */
@@ -170,11 +170,74 @@ export interface Driver {
   sheets(selector: string): Promise<Sheets>;
   /** The console messages and uncaught errors the page reported since the last `mount`. */
   messages(): Promise<string[]>;
-  // The additions of 013 phase 1 (contracts/checks.md § Driver additions; tasks.md T003).
-  /** Sets the page's viewport to `width` × `height` CSS px and waits for every element to render. */
+  // Light DOM, keyboard and size plumbing, and the document readers of 011 research.md R-13 (T006, T007).
+  /** Appends `markup` (no `style` attribute) to the light DOM of the element with `id`, after its children, and waits for every element to render. */
+  append(id: string, markup: string): Promise<void>;
+  /** Removes the element with `id` from the page and waits for every element to render. */
+  remove(id: string): Promise<void>;
+  /**
+   * Sets the data of the `index`-th text-node child (counting text nodes only, from 0) of the element with `id`, and
+   * waits for every element to render.
+   */
+  textData(id: string, index: number, data: string): Promise<void>;
+  /** Presses Tab, or Shift+Tab with `shift`, and waits for every element to render. */
+  tab(shift?: boolean): Promise<void>;
+  /** The focused element through open shadow roots, with the hosts on its path (test/commands.ts `readActiveElement`). */
+  activeElement(): Promise<ActiveElement>;
+  /** Sets the viewport to `width` × `height` CSS px and waits for every element to render; it stays until set again. */
   viewport(width: number, height: number): Promise<void>;
-  /** The document element's scroll width. */
+  /**
+   * Sets the `inline-size` and `block-size` of the element with `id` (a container) through the CSSOM, in px; null
+   * removes the value. Waits for every element to render.
+   */
+  size(id: string, inline: number | null, block: number | null): Promise<void>;
+  /** The document's scrolling width (test/commands.ts `readScrollWidth`). */
   scrollWidth(): Promise<number>;
+  /** Each text node under the element with `id`, its box and its clipping ancestors (test/commands.ts `readTextBoxes`). */
+  textBoxes(id: string): Promise<TextBox[]>;
+  // Event recording of 011 research.md R-05, R-13 (phase 2); its DOM move is `move` of the 013 additions below.
+  /**
+   * Starts recording every event dispatched by script (`EventTarget.prototype.dispatchEvent`, which a custom element's
+   * own `dispatchEvent` calls) whose target is an element with one of `ids` or a node in the shadow tree of one, and
+   * every event that reaches one of those elements in the capture phase for the types in `heardTypes`. It records
+   * until `heard`, across `mount`, so it may be called before the elements exist.
+   */
+  listen(ids: readonly string[]): Promise<void>;
+  /** Stops the recording `listen` started and returns what it recorded, as `<id>: <type>` in dispatch order. */
+  heard(): Promise<string[]>;
+  // 011 User Story 4 (US4-10, contracts/checks.md: the README's orientation example run on the page).
+  /**
+   * Runs `code` as an ES module of the page loaded from a same-origin URL (the fixture serves it under the page's
+   * policy, so `script-src 'self'` allows it), and waits until it has run and every element has rendered.
+   */
+  module(code: string): Promise<void>;
+  /**
+   * A number for each element in the shadow root of the element with `id`, depth first in tree order: the same number
+   * for the same node across calls on one page, a new number for a node first seen, so a body can tell kept nodes from
+   * new ones (research.md R-10: the template does not change with orientation).
+   */
+  identities(id: string): Promise<number[]>;
+  // A shell's own shadow root, forwarding a slot into an element (011 research.md R-05 § Forwarded slots; phase 2
+  // review R4-01). The nodes of that shadow root are reached by a selector in it, `inner`.
+  /**
+   * Attaches an open shadow root holding `markup` (no `style` attribute) to the element with `id`, and waits for every
+   * element, those in that shadow root included, to render.
+   */
+  shadow(id: string, markup: string): Promise<void>;
+  /**
+   * Appends `markup` (no `style` attribute) to the element matching `inner` in the shadow root of the element with
+   * `id`, after its children, and waits for every element, those in that shadow root included, to render.
+   */
+  shadowAppend(id: string, inner: string, markup: string): Promise<void>;
+  /**
+   * Sets an attribute (null removes it) of the element matching `inner` in the shadow root of the element with `id`,
+   * and waits for every element, those in that shadow root included, to render.
+   */
+  shadowAttribute(id: string, inner: string, name: string, value: string | null): Promise<void>;
+  /** The computed value of a CSS property of the element matching `inner` in the shadow root of the element with `id`. */
+  shadowComputed(id: string, inner: string, property: string): Promise<string>;
+  // The additions of 013 phase 1 (contracts/checks.md § Driver additions; tasks.md T003); 013 also uses `viewport`,
+  // `scrollWidth` and `remove` above, which 011 added too, and `move` below serves 011 phase 2 as well.
   /**
    * The layout-settle wait (013 research.md R-02; operator decision "(a) Defer + 2-frame wait"): waits for every
    * `ocelle-*` element's update, then reads the border box of the element with `id` and of the first `dl` of its shadow
@@ -220,8 +283,6 @@ export interface Driver {
   reducedMotion(mode: ReducedMotion): Promise<void>;
   /** The current animations and transitions on the element with `id` and in its shadow root, in tree order. */
   animations(id: string): Promise<Running[]>;
-  /** Removes the element with `id` from the page. */
-  remove(id: string): Promise<void>;
   /** Waits `count` animation frames. */
   frames(count: number): Promise<void>;
   /**
@@ -250,3 +311,9 @@ export interface Driver {
    */
   events(id: string, during: () => Promise<void>): Promise<string[]>;
 }
+
+/**
+ * The event types `listen` also hears in the capture phase on the elements themselves: those an element could emit
+ * for a slot or attribute change, and the library's own prefix is covered by the dispatch record.
+ */
+export const heardTypes: readonly string[] = ["change", "input", "select", "toggle", "slotchange", "click", "focus", "blur", "load", "error"];

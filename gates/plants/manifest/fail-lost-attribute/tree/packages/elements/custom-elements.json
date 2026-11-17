@@ -103,6 +103,160 @@
           "attributes": [
             {
               "default": "undefined",
+              "description": "The card's density: `regular` or `compact`, whose padding and header-to-body gap are smaller and which draws a\nsection header in its `header` slot at the compact size. Not set, or any other value, draws regular. Reflected.",
+              "fieldName": "density",
+              "name": "density",
+              "type": {
+                "text": "\"regular\" | \"compact\" | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "Draws the card on the inset ground, for a card nested inside another surface; present with any value is inset.\nChanges nothing else. Reflected.",
+              "fieldName": "inset",
+              "name": "inset",
+              "type": {
+                "text": "boolean | undefined"
+              }
+            }
+          ],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A card: a header slot above its body, in a regular or compact density, on the sheet or the inset ground.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "density",
+              "default": "undefined",
+              "description": "The card's density: `regular` or `compact`, whose padding and header-to-body gap are smaller and which draws a\nsection header in its `header` slot at the compact size. Not set, or any other value, draws regular. Reflected.",
+              "kind": "field",
+              "name": "density",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"regular\" | \"compact\" | undefined"
+              }
+            },
+            {
+              "attribute": "inset",
+              "default": "undefined",
+              "description": "Draws the card on the inset ground, for a card nested inside another surface; present with any value is inset.\nChanges nothing else. Reflected.",
+              "kind": "field",
+              "name": "inset",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean | undefined"
+              }
+            }
+          ],
+          "name": "OcelleCard",
+          "slots": [
+            {
+              "description": "The card's header, usually an `ocelle-section-header`, which a compact card draws at its compact size.",
+              "name": "header"
+            },
+            {
+              "description": "The card's body.",
+              "name": ""
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-card"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-card.ts",
+            "name": "OcelleCard"
+          },
+          "kind": "js",
+          "name": "OcelleCard"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-card.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
+              "description": "The name of the navigation landmark, trimmed, used while the host has no `aria-label`; empty or whitespace-only\ncounts as none, and the landmark is then unnamed. Not reflected.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string | undefined"
+              }
+            }
+          ],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A context sidebar: a navigation landmark holding a head, sections and a footer, ruled off from each other.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "label",
+              "default": "undefined",
+              "description": "The name of the navigation landmark, trimmed, used while the host has no `aria-label`; empty or whitespace-only\ncounts as none, and the landmark is then unnamed. Not reflected.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            }
+          ],
+          "name": "OcelleContextSidebar",
+          "slots": [
+            {
+              "description": "The sidebar's head, the team or project it belongs to.",
+              "name": "head"
+            },
+            {
+              "description": "The sections, one element each (a `ul` of links, a `div`, an `ocelle-section-header`), drawn as padded blocks with a divider between each two.",
+              "name": ""
+            },
+            {
+              "description": "The sidebar's footer, kept at its block end.",
+              "name": "footer"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-context-sidebar"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-context-sidebar.ts",
+            "name": "OcelleContextSidebar"
+          },
+          "kind": "js",
+          "name": "OcelleContextSidebar"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-context-sidebar.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
               "description": "`panel` fills a list or inspector panel with a larger block padding and larger gaps and a lighter heading. Unset,\nor any other value, gives the default variant. Reflected.",
               "fieldName": "variant",
               "name": "variant",
@@ -464,6 +618,164 @@
           "attributes": [
             {
               "default": "undefined",
+              "description": "The heading's size: `regular` or `compact`. Not set, or any other value, draws regular, the heading at\n`--ocelle-font-size-2xl`; `compact` draws it at `--ocelle-font-size-xl`. Reflected.",
+              "fieldName": "size",
+              "name": "size",
+              "type": {
+                "text": "\"regular\" | \"compact\" | undefined"
+              }
+            }
+          ],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A screen's page header: a band around a heading the page slots, with an optional eyebrow above, a description under\nthe heading and actions at its inline end, ruled off below.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "size",
+              "default": "undefined",
+              "description": "The heading's size: `regular` or `compact`. Not set, or any other value, draws regular, the heading at\n`--ocelle-font-size-2xl`; `compact` draws it at `--ocelle-font-size-xl`. Reflected.",
+              "kind": "field",
+              "name": "size",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"regular\" | \"compact\" | undefined"
+              }
+            }
+          ],
+          "name": "OcellePageHeader",
+          "slots": [
+            {
+              "description": "The page's own heading element (`h1` to `h6`, usually the screen's `h1`), drawn with the display style; its level is the page's.",
+              "name": "heading"
+            },
+            {
+              "description": "A short label above the heading naming the area, drawn with the eyebrow style.",
+              "name": "eyebrow"
+            },
+            {
+              "description": "A subtitle under the heading.",
+              "name": "description"
+            },
+            {
+              "description": "The screen's controls at the inline end of the heading's first line, wrapping under the description when they do not fit beside the heading.",
+              "name": "actions"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-page-header"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-page-header.ts",
+            "name": "OcellePageHeader"
+          },
+          "kind": "js",
+          "name": "OcellePageHeader"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-page-header.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
+              "description": "The name of the navigation landmark, trimmed, used while the host has no `aria-label`; empty or whitespace-only\ncounts as none, and the landmark is then unnamed. Not reflected.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The layout direction, set by the page or a shell: `vertical` (a column) or `horizontal` (a row that wraps). Not\nset, or any other value, is vertical; the element never changes it itself. Reflected.",
+              "fieldName": "orientation",
+              "name": "orientation",
+              "type": {
+                "text": "\"vertical\" | \"horizontal\" | undefined"
+              }
+            }
+          ],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A personal rail: a navigation landmark holding the page's primary items and a bottom group, on the chrome.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "label",
+              "default": "undefined",
+              "description": "The name of the navigation landmark, trimmed, used while the host has no `aria-label`; empty or whitespace-only\ncounts as none, and the landmark is then unnamed. Not reflected.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "orientation",
+              "default": "undefined",
+              "description": "The layout direction, set by the page or a shell: `vertical` (a column) or `horizontal` (a row that wraps). Not\nset, or any other value, is vertical; the element never changes it itself. Reflected.",
+              "kind": "field",
+              "name": "orientation",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"vertical\" | \"horizontal\" | undefined"
+              }
+            }
+          ],
+          "name": "OcellePersonalRail",
+          "slots": [
+            {
+              "description": "The primary items, icon links for example, from the rail's start.",
+              "name": ""
+            },
+            {
+              "description": "The bottom group, an account link for example, kept at the rail's end.",
+              "name": "bottom"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-personal-rail"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-personal-rail.ts",
+            "name": "OcellePersonalRail"
+          },
+          "kind": "js",
+          "name": "OcellePersonalRail"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-personal-rail.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
               "description": "The current amount, from 0 to `max`: below 0 counts as 0, above `max` as `max`. Unset, `null`, an empty or\nwhitespace-only attribute, or a value that is not a finite number makes the bar indeterminate. Not reflected.",
               "fieldName": "value",
               "name": "value",
@@ -651,6 +963,100 @@
       ],
       "kind": "javascript-module",
       "path": "src/ocelle-progress.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
+              "description": "The heading's size: `regular` or `compact`. Not set, or any other value, draws regular, or compact when the\nheader is in a compact card's `header` slot; a valid value wins over the card. No effect in the eyebrow variant.\nReflected.",
+              "fieldName": "size",
+              "name": "size",
+              "type": {
+                "text": "\"regular\" | \"compact\" | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "`eyebrow` draws the heading with the eyebrow style and renders neither the eyebrow nor the description slot;\n`default`, not set or any other value draws the default heading style. Reflected.",
+              "fieldName": "variant",
+              "name": "variant",
+              "type": {
+                "text": "\"default\" | \"eyebrow\" | undefined"
+              }
+            }
+          ],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A section header around a heading the page slots: an optional eyebrow above, a description under the heading and\nactions at its inline end.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "size",
+              "default": "undefined",
+              "description": "The heading's size: `regular` or `compact`. Not set, or any other value, draws regular, or compact when the\nheader is in a compact card's `header` slot; a valid value wins over the card. No effect in the eyebrow variant.\nReflected.",
+              "kind": "field",
+              "name": "size",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"regular\" | \"compact\" | undefined"
+              }
+            },
+            {
+              "attribute": "variant",
+              "default": "undefined",
+              "description": "`eyebrow` draws the heading with the eyebrow style and renders neither the eyebrow nor the description slot;\n`default`, not set or any other value draws the default heading style. Reflected.",
+              "kind": "field",
+              "name": "variant",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"default\" | \"eyebrow\" | undefined"
+              }
+            }
+          ],
+          "name": "OcelleSectionHeader",
+          "slots": [
+            {
+              "description": "The page's own heading element (`h1` to `h6`), drawn with the header's heading style; its level is the page's.",
+              "name": "heading"
+            },
+            {
+              "description": "A short label above the heading, drawn with the eyebrow style; not rendered in the eyebrow variant.",
+              "name": "eyebrow"
+            },
+            {
+              "description": "Supporting text under the heading; not rendered in the eyebrow variant.",
+              "name": "description"
+            },
+            {
+              "description": "Controls at the inline end of the heading's first line, wrapping under the heading when they do not fit beside it.",
+              "name": "actions"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-section-header"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-section-header.ts",
+            "name": "OcelleSectionHeader"
+          },
+          "kind": "js",
+          "name": "OcelleSectionHeader"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-section-header.ts"
     }
   ],
   "readme": "",

@@ -1,0 +1,87 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 3
+lens: fresh
+# Read: spec.md, plan.md, research.md, data-model.md, quickstart.md, contracts/, the constitution, and the refute,
+# fixes and verify files of rounds 1 and 2. This round attacks the round-2 fixes (FR-008 edge-margin trim, the
+# :not([hidden]) section rules, the internals symbol key with its unnamed-pair stories) and what they touch.
+# Probes, all in this container, none in the repository: Google Chrome at /usr/bin/google-chrome driven by the global
+# playwright (/opt/node22/lib/node_modules/playwright), scratch pages in the session scratchpad that reproduce the
+# plan's CSS through constructable stylesheets in open shadow roots; axe-core 4.14.0 unpacked with
+# `npm pack axe-core@4.14.0` into the scratchpad (the version #10 pins at 5f49794), run with #10 FR-016's tag set
+# (wcag2a/2aa/21a/21aa/22aa, best-practice) and region, landmark-one-main and page-has-heading-one off.
+findings:
+  - id: PLAN-FRESH-3-001
+    severity: 3
+    title: "axe's `landmark-unique` selects landmarks by `role` attribute or tag only, so it never sees an internals-only host: the unnamed-pair stories cannot show the note, and the `#private` plant cannot fail"
+    evidence:
+      - artifact: "spec.md FR-028: 'The host landmark MUST be visible to axe's landmark rules (operator decision PLAN-FRESH-2-004 (b) ...), as one unnamed-pair story per element shows with axe's moderate `landmark-unique` note'; US3-12 and US4-11: 'a further story of two unnamed sidebars gets axe's moderate `landmark-unique` note on both hosts'; research.md R-11: 'With the symbol field, axe treats each host as a `navigation` landmark ... axe's landmark rules apply to them'; contracts/checks.md § Pairing plants: 'Axe sees the host landmark ... internals held in a `#private` field instead of under `internalsKey` (note gone)'; plan.md decision 7 and Constitution Check III"
+      - code: "axe-core 4.14.0 package/axe.js:37604-37608: `id: 'landmark-unique', impact: 'moderate', selector: '[role=banner], [role=complementary], [role=contentinfo], [role=main], [role=navigation], [role=region], [role=search], [role=form], form, footer, header, aside, main, nav, section'`. The other landmark rules (`landmark-*-is-top-level`, `landmark-no-duplicate-*`) are selector-based the same way. `_getElementInternals` (axe.js:23870) feeds only `getRole` and the ARIA attribute lookups (axe.js:19029, 20330, 20450, 20889, 21027)."
+      - code: "Probe: a custom element holding `this[Symbol('internals')] = this.attachInternals()` with `role = 'navigation'`, exactly R-11's design. `axe.commons.aria.getRole` gives `navigation` for each host, so axe does read the symbol. Two unnamed hosts: no `landmark-unique` node for either host (it checks `main` only), and no other landmark result on them. Two hosts with the same `label`: the same. Controls: two unnamed `<nav>` give `landmark-unique (moderate)` on `nav:nth-child(2)` only, and two hosts with an explicit `role=\"navigation\"` attribute give it on `x-nav:nth-child(2)` only. The four US3-12 cases, each alone with the symbol key: no violation at all."
+    claim: |
+      The round-2 fix (PLAN-FRESH-2-004 (b)) rests on "axe reads the internals, so its landmark rules apply". The first
+      half is true: axe's role computation sees `navigation`. The second half is false: every axe landmark rule picks
+      its nodes with a CSS selector on `role` attributes and landmark tags before any role computation runs. A host
+      whose role comes only from `ElementInternals` is never a candidate. The unnamed-pair story therefore gets no
+      `landmark-unique` note under the symbol key, just as under the `#private` field. The phase-1 spike expects the
+      note, and contracts/checks.md's plant "internals in a `#private` field (note gone)" is vacuous, because the note is
+      absent with or without the plant. FR-028's new sentence ("MUST be visible to axe's landmark rules ... as one
+      unnamed-pair story shows") cannot be met by this design at all. "On both hosts" is wrong even for real `<nav>`
+      elements: axe reports the duplicate on the second node only. The symbol key departs from 005's `#internals`
+      pattern, adds a manifest assertion and its plant, and raises a follow-up for 005, all for evidence that will not
+      appear. The spike would only find this after the plan gate, and R-11 then sends it back to the operator before
+      the US3 red commit.
+    remedies:
+      - "Revert to round 2's option (a): keep 005's `#internals` field and drop `internalsKey`, its manifest assertion and plant, the unnamed-pair stories, their plant, and the 005 follow-up. Delete FR-028's 'MUST be visible to axe's landmark rules' sentence and the pair-story clauses of US3-12, US4-11 and FR-038. Record this measurement in R-11: no axe landmark rule selects an internals-only host. State that the per-case stories guard only against serious or critical findings on the host and its subtree, and that landmark naming is held by the package scenarios' tree reads."
+      - "Keep the symbol key for axe's role computation (a host `aria-*` attribute is then checked against `navigation`), but remove every claim that axe's landmark rules or `landmark-unique` see the host: FR-028's sentence, the pair-story clauses of US3-12, US4-11 and FR-038, R-11's 'landmark rules apply' paragraph, the 'note gone' plant, and plan.md decision 7. Replace the pair-story evidence with a check that can fail, for example a spike or phase-evidence probe asserting `axe.commons.aria.getRole(host) === 'navigation'`, planted with the `#private` field."
+  - id: PLAN-FRESH-3-002
+    severity: 3
+    title: "The sidebar's section padding, full-width dividers and display are normal `::slotted()` declarations, so a common page reset (`ul { margin: 0; padding: 0 }`, `* { margin: 0; padding: 0 }`, a preflight `border: 0 solid`) removes them. The repository's own slot convention uses `!important` for this reason"
+    evidence:
+      - artifact: "research.md § R-09: each section `::slotted(:not([slot]):not([hidden]))` gets `display: block` ('a page rule still wins'), padding `--ocelle-space-4`, `margin-block: 0`, `margin-inline: calc(-1 * var(--ocelle-space-4))` and `border-block-start`; spec.md FR-021: 'each non-empty one has padding `--ocelle-space-4` on every side'; FR-022: each divider 'spans the sidebar's whole inline size'; FR-008 and FR-036 (round-2 fix PLAN-FRESH-2-002): the README tells pages that 'a page rule that sets these margins wins'; US3-3's `ul`-of-links section"
+      - code: "packages/elements/README.md:171-173 (slot convention): 'page rules beat a shadow root's normal rules; the convention's size rules on slotted elements are `!important`, so neither `base.css` nor a host rule changes a slotted icon's box'. CSS Cascade 5 § Context: for normal declarations the outer (page) context wins regardless of specificity, and for `!important` the inner context wins."
+      - code: "Probe, R-09's sidebar CSS on a 320 px sidebar with two `ul` sections. No page rule: each `ul` is x 0, 320 wide, padding 16, margin-inline -16, the second with a 1 px top border. With the page rule `ul { margin: 0; padding: 0; list-style: none }`: x 16, 288 wide, padding 0, margin-inline 0, so the divider is inset 16 px on each side and the section has no padding. With `* { margin: 0; padding: 0 }`: the same. With a preflight-style `*, ::before, ::after { box-sizing: border-box; border: 0 solid; margin: 0; padding: 0 }`: as before, and the divider's border-top-width is 0, so no divider is drawn."
+    claim: |
+      The sidebar puts each section's padding and divider on the page's own element, as a normal `::slotted()`
+      declaration, and a normal declaration in the outer context always wins. A navigation `ul` with its list margins
+      and padding reset is the usual markup for the very content US3-3 slots, and kitty-mission-ui's sidebar sections
+      are navigation lists. With that markup, FR-021 (padding on every side) and FR-022 (dividers across the whole
+      inline size) fail. A CSS reset that resets borders removes the dividers altogether, which is what #497 asks this
+      element to draw. The round-2 trim makes this worse. The README will tell pages that their margin rules win, and
+      the natural page rule, `margin: 0`, also zeroes the negative inline margins the full-width dividers depend on.
+      The spec only grants "a page rule wins" for margins (FR-008) and display (FR-022), not for padding or dividers.
+      No scenario, story or plant has a page rule on a section, so the plan goes green with this defect. The repository
+      already met this problem in the slot convention and chose `!important` on slotted box rules. The plan neither
+      follows that precedent nor records why it departs from it.
+    remedies:
+      - "Follow the slot convention: make the sidebar section rules that FR-021 and FR-022 require `!important` in `::slotted()` (padding, `margin-inline`, `border-block-start` and its first-section removal, `display: block`), so the inner context wins over page rules. Keep `margin-block: 0` normal so FR-008's 'a page rule wins' holds for block margins only. Add a US3-3 variant with `ul { margin: 0; padding: 0; list-style: none }` and with `* { margin: 0; padding: 0; border: 0 solid }` on the page: same four dividers across the whole inline size and the same padding. Plant: drop `!important`. Update FR-022 (display no longer page-overridable, or say which properties are) and the README."
+      - "Keep normal declarations, but decide this in the spec. FR-021 and FR-022 say that a page rule on a section's padding, margin, border or display wins. The README tells pages to put list resets on an element inside the section (`<div><ul>…</ul></div>`), never on the section element itself. US3-3 gains that wrapped variant under a page reset, and SC-006's 'part-level padding' workaround is checked against it."
+  - id: PLAN-FRESH-3-003
+    severity: 2
+    title: "R-07 puts the page header's description gap in a margin on the description wrapper, so an empty heading leaves a gap: the eyebrow and description end up 2 × `--ocelle-space-1` apart (the section header gives one), and with no eyebrow either the description starts 4 px inside the band padding"
+    evidence:
+      - artifact: "research.md § R-07: 'The description wrapper carries `margin-block-start: var(--ocelle-space-1)` and the column has no other gap between heading and description; the eyebrow-to-heading gap is the outer column's `--ocelle-space-1`'; R-04: section header heading column `gap: var(--ocelle-space-1)`; spec.md § Edge Cases: 'A section header or page header with an empty `heading` slot: the heading part adds no box or gap (US1-16, FR-005)'; FR-005: 'An empty slot ... MUST add no box, padding, gap, margin or divider'"
+      - code: "By R-04 and R-07 as written, for a page header with eyebrow and description and an empty heading: the outer column's gap (4 px) lies between the eyebrow wrapper and the row, and inside the row's heading column, whose heading wrapper is `display: none`, the description wrapper keeps its 4 px `margin-block-start`. Eyebrow to description is then 8 px. In the section header, the heading column's `gap` is dropped with the hidden item, so it is 4 px (US1-16). With heading and eyebrow both empty, the description sits 4 px below the band's block padding, and the actions, aligned to the row's start, sit 4 px above it. Searched spec.md: US2-4 covers only 'only a heading' and 'every slot filled', and no US2 scenario has an empty heading."
+    claim: |
+      The spec's edge case names the page header explicitly: an empty heading adds no gap. R-07 differs from R-04 for no
+      stated reason. A margin on the description wrapper survives when its neighbour is hidden, but a flex `gap` would
+      not. So the page header breaks FR-005 in the very case the edge case names, and has a block-start offset when the
+      description is the first visible part. No scenario or plant reaches it, so the declaration-level plants of R-17
+      would not catch it either: dropping the margin fails US2-2 and nothing else.
+    remedies:
+      - "R-07: use the heading column's `gap: var(--ocelle-space-1)` as R-04 does and drop the wrapper margin, which gives the same 4 px heading-to-description gap when both are present. Add a US2 scenario, the page-header twin of US1-16: eyebrow, description and actions with an empty heading, beside a full one. The eyebrow and description are `--ocelle-space-1` apart, the description's border box starts at the band's padding edge when there is no eyebrow either, and the heading is absent from the tree. Add it to the 'Empty part adds no gap' plant row."
+  - id: PLAN-FRESH-3-004
+    severity: 1
+    title: "Round 2's two fixes disagree: the section rules skip `[hidden]` elements, but FR-008's first/last trims on the card body and the sidebar head and footer still count them, so a hidden first or last element leaves the visible one with its 16 px UA margin"
+    evidence:
+      - artifact: "research.md § R-02: card `margin-block-start: 0` on `::slotted(:nth-child(1 of :not([slot])))` and `margin-block-end: 0` on `::slotted(:nth-last-child(1 of :not([slot])))`; sidebar head and footer `::slotted(:nth-child(1 of [slot=\"head\"]))` and `:nth-last-child(1 of …)`; R-09: every section rule 'excludes `[hidden]`' (PLAN-FRESH-2-001); spec.md US1-7 and US1-11: the body `p` starts exactly the density's gap below the header (or at the padding edge)"
+      - code: "Selector reading: in a card body `<p hidden>Draft</p><p>Body</p>`, the hidden `p` matches `:nth-child(1 of :not([slot]))` and gets the trim. Its UA `display: none` still applies, because the trim rule sets no `display`. The visible `p` matches no trim rule and keeps the UA `margin-block-start: 1em` (16 px), as round 2's refute measured for an untrimmed `p` (24 px from the header instead of 8). The same holds for a hidden last body element, and for a hidden first or last element in the sidebar head or footer."
+    claim: |
+      Round 2 decided that a hidden sidebar section must not change where the visible ones draw, and it fixed that for
+      the sections only. The trims added in the same round use the same `:nth-child(1 of S)` technique without
+      `:not([hidden])`. So a page that hides a body paragraph, footer line or head line, which is common for a toggled
+      notice, gets the 16 px stray gap FR-008 exists to remove. No scenario has a hidden element at a body, head or
+      footer edge.
+    remedies:
+      - "Add `:not([hidden])` to the four edge-trim selectors (`:nth-child(1 of :not([slot]):not([hidden]))`, `:nth-last-child(1 of :not([slot]):not([hidden]))`, and `[slot=\"head\"]:not([hidden])` and `[slot=\"footer\"]:not([hidden])` likewise). Add to US1-7 a body `<p hidden>` before and after the visible `p`, with the same gap and padding-edge outcome, and do the same for the sidebar footer in US3-3. Plant: `:not([hidden])` dropped from the card's first-element rule."
