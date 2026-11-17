@@ -204,9 +204,15 @@ describe("the ocelle-brand-mark stories in the built Storybook (US4-11, FR-019)"
   }
 });
 
-/** What a scroller story's page shows: its theme, its scrollers' state, and any style attribute or class on its markup. */
+/**
+ * What a scroller story's page shows: its theme, its scrollers' state, and any style attribute or class on its markup.
+ * It reads after `fonts.ready` and two animation frames, as `openHovered` does (O5-01, T084): a layout change before the
+ * read, such as a late font, has had the frame in which the story's `ResizeObserver` writes the position again.
+ */
 function observeScrollers(page: Page): Promise<unknown> {
-  return page.evaluate(() => {
+  return page.evaluate(async () => {
+    await document.fonts.ready;
+    for (let frame = 0; frame < 2; frame += 1) await new Promise((resolve) => requestAnimationFrame(resolve));
     const root = document.getElementById("storybook-root");
     const markup = [...(root?.querySelectorAll("*") ?? [])];
     return {
@@ -247,9 +253,15 @@ describe("the ocelle-scroller stories in the built Storybook (009 FR-032, T020)"
   }
 });
 
-/** The scroll figures of the story's one scroller's box: its scroll range and its distance from the start. */
+/**
+ * The scroll figures of the story's one scroller's box: its scroll range and its distance from the start, read after
+ * `fonts.ready` and two animation frames, as `openHovered` does (O5-01, T084), so that a layout change before the read
+ * has had the frame in which the story's `ResizeObserver` writes the position again.
+ */
 function scrollFigures(page: Page): Promise<{ readonly range: number; readonly at: number }> {
-  return page.evaluate(() => {
+  return page.evaluate(async () => {
+    await document.fonts.ready;
+    for (let frame = 0; frame < 2; frame += 1) await new Promise((resolve) => requestAnimationFrame(resolve));
     const box = document.querySelector("#storybook-root ocelle-scroller")?.shadowRoot?.querySelector<HTMLElement>(".region-box");
     return { range: (box?.scrollWidth ?? 0) - (box?.clientWidth ?? 0), at: Math.abs(box?.scrollLeft ?? 0) };
   });

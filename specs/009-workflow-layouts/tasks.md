@@ -455,7 +455,7 @@ round 6 reviews it.
 
 #### Tests (red, one commit)
 
-- [ ] T083 [US1] O5-01, `storybook/test/integration/elements-stories.test.ts`: for
+- [x] T083 [US1] O5-01, `storybook/test/integration/elements-stories.test.ts`: for
   `elements-ocelle-scroller--overflowing-in-the-middle` and `--overflowing-at-the-end`, in light and dark, a case
   that makes the strip's layout change late, after `open()` returns and before the first position read,
   deterministically (for example a font held back by a routed request and released after `updateComplete`, or a
@@ -466,7 +466,7 @@ round 6 reviews it.
 
 #### Implementation (green)
 
-- [ ] T084 [US1] O5-01, `storybook/test/integration/elements-stories.test.ts`: T067's position reads (the first
+- [x] T084 [US1] O5-01, `storybook/test/integration/elements-stories.test.ts`: T067's position reads (the first
   read and the read after the strip grows) and T020's position check in `observeScrollers` wait for
   `document.fonts.ready` and two animation frames before reading, as `openHovered` already does. No assertion,
   tolerance or expected figure is loosened, and the story (`storybook/stories/scroller.stories.ts`) does not change.
