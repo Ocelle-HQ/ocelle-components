@@ -13,3 +13,6 @@
 - **Q4, stale line citations:** (a) the planner updates the citations in R-06 and R-07.
 - **Q5, pre-upgrade rule placement:** (b) the timeline and chain pre-upgrade rules go in the base layer of `base.css`
   beside 013's facts rule; the per-phase `source.test.ts` changes follow.
+- **Q6, the stale end-fade line in `contracts/ocelle-data-table.md` (second recheck pass):** (a) the planner corrects
+  the parenthesis to the measured px inline size of `.region-edge.end` in a docs commit; the implementer then
+  rechecks that line and ticks T001.
