@@ -35,13 +35,16 @@ interface SignedRepo {
   readonly phaseBase: string;
   readonly red: string;
   readonly tools: string;
+  readonly plants: readonly string[];
 }
 
 /**
  * A temporary repository whose fold rewrites the phase base, with signing on; `signer` is set after the setup commits.
  * `objectFormat` "sha256" makes a SHA-256 repository, whose signed commits carry a gpgsig-sha256 header.
+ * `withPlants` also writes the phase's plants.md, a `- base: <phase base>` line between two fixed lines (op 021,
+ * operator round 3, O3-02); it is off by default, so the other tests' repositories are unchanged.
  */
-function signedRepo(signer: Signer, objectFormat: "sha1" | "sha256" = "sha1"): SignedRepo {
+function signedRepo(signer: Signer, objectFormat: "sha1" | "sha256" = "sha1", withPlants = false): SignedRepo {
   const root = tempDir("fold-signed");
   const tools = tempDir("fold-tools");
   const env = { ...baseEnv(), GIT_CONFIG_GLOBAL: "/dev/null", GIT_CONFIG_NOSYSTEM: "1" };
@@ -81,9 +84,11 @@ function signedRepo(signer: Signer, objectFormat: "sha1" | "sha256" = "sha1"): S
   const red = commit("a.test.ts", "red\n", "test: phase 1 red");
   write(`${reviews}/base.sha`, `${phaseBase}\n`);
   write(`${reviews}/red-commits`, `phase ${red}\n`);
+  const plants = withPlants ? ["# Plants of phase 1", `- base: ${phaseBase}`, "- exit: 0", ""] : [];
+  if (withPlants) write(`${reviews}/plants.md`, plants.join("\n"));
   commit("a.ts", "green\n", "feat: phase 1 green");
   git("config", "gpg.ssh.program", join(tools, `signer-${signer}`));
-  return { root, env, git, foldBase, unkept, phaseBase, red, tools };
+  return { root, env, git, foldBase, unkept, phaseBase, red, tools, plants };
 }
 
 /** A `git` that drops every -S argument of commit-tree and adds --no-gpg-sign, so the rebuilt commits are unsigned. */
@@ -260,12 +265,13 @@ describe("history fold (tooling/speckit/bin/fold-history.sh)", () => {
       const r = signedRepo("fail");
       const before = state(r);
       const ran = runFold(r);
-      expect({ status: ran.status, ok: ran.ok, state: state(r), prefold: prefold(r) }).toEqual({
-        status: 2,
-        ok: false,
-        state: before,
-        prefold: "",
-      });
+      expect({
+        status: ran.status,
+        ok: ran.ok,
+        notBuilt: ran.problems.some((p) => p.includes("could not build the folded commit")),
+        state: state(r),
+        prefold: prefold(r),
+      }).toEqual({ status: 2, ok: false, notBuilt: true, state: before, prefold: "" });
     },
     timeout,
   );
@@ -276,12 +282,13 @@ describe("history fold (tooling/speckit/bin/fold-history.sh)", () => {
       const r = signedRepo("failOnRemap");
       const before = state(r);
       const ran = runFold(r);
-      expect({ status: ran.status, ok: ran.ok, state: state(r), prefold: prefold(r) }).toEqual({
-        status: 1,
-        ok: false,
-        state: before,
-        prefold: "",
-      });
+      expect({
+        status: ran.status,
+        ok: ran.ok,
+        remapUnsigned: ran.problems.some((p) => p.includes("the remap commit could not be signed")),
+        state: state(r),
+        prefold: prefold(r),
+      }).toEqual({ status: 1, ok: false, remapUnsigned: true, state: before, prefold: "" });
     },
     timeout,
   );
@@ -324,17 +331,40 @@ describe("history fold (tooling/speckit/bin/fold-history.sh)", () => {
   );
 
   it(
+    "folds with exit 0 when origin/main and main exist but reach no commit of the range (op 021, edge case never refuses wrongly, O3-01)",
+    () => {
+      const r = signedRepo("ok");
+      r.git("update-ref", "refs/remotes/origin/main", r.foldBase);
+      r.git("branch", "main", r.foldBase);
+      const ran = runFold(r);
+      const newBase = readFileSync(join(r.root, `${reviews}/base.sha`), "utf8").trim();
+      const range = r.git("rev-list", `${r.foldBase}..HEAD`).split("\n");
+      expect({
+        status: ran.status,
+        ok: ran.ok,
+        problems: ran.problems,
+        rewritten: newBase !== r.phaseBase,
+        originMain: r.git("rev-parse", "refs/remotes/origin/main"),
+        main: r.git("rev-parse", "refs/heads/main"),
+        unsigned: range.filter((sha) => !signed(r, sha)),
+      }).toEqual({ status: 0, ok: true, problems: [], rewritten: true, originMain: r.foldBase, main: r.foldBase, unsigned: [] });
+    },
+    timeout,
+  );
+
+  it(
     "rolls back with exit 1 and no prefold ref when the remap commit succeeds but is not signed (op 021, FR-004, R1-02)",
     () => {
       const r = signedRepo("ok");
       const before = state(r);
       const ran = runFold(r, unsignedRemapGit(r.tools));
-      expect({ status: ran.status, ok: ran.ok, state: state(r), prefold: prefold(r) }).toEqual({
-        status: 1,
-        ok: false,
-        state: before,
-        prefold: "",
-      });
+      expect({
+        status: ran.status,
+        ok: ran.ok,
+        remapUnsigned: ran.problems.some((p) => p.includes("the remap commit could not be signed")),
+        state: state(r),
+        prefold: prefold(r),
+      }).toEqual({ status: 1, ok: false, remapUnsigned: true, state: before, prefold: "" });
     },
     timeout,
   );
@@ -342,10 +372,11 @@ describe("history fold (tooling/speckit/bin/fold-history.sh)", () => {
   it(
     "signs every commit of the folded range in a SHA-256 repository, whose signature header is gpgsig-sha256 (op 021, edge case, R1-03)",
     () => {
-      const r = signedRepo("ok", "sha256");
+      const r = signedRepo("ok", "sha256", true);
       const ran = runFold(r);
       const newBase = readFileSync(join(r.root, `${reviews}/base.sha`), "utf8").trim();
       const range = r.git("rev-list", `${r.foldBase}..HEAD`).split("\n");
+      const plants = readFileSync(join(r.root, `${reviews}/plants.md`), "utf8").split("\n");
       expect({
         status: ran.status,
         ok: ran.ok,
@@ -353,7 +384,18 @@ describe("history fold (tooling/speckit/bin/fold-history.sh)", () => {
         objectFormat: r.git("rev-parse", "--show-object-format"),
         commits: range.length,
         unsigned: range.filter((sha) => !signed(r, sha)),
-      }).toEqual({ status: 0, ok: true, rewritten: true, objectFormat: "sha256", commits: 4, unsigned: [] });
+        plantsBase: plants.filter((line) => line.startsWith("- base:")),
+        plantsOther: plants.filter((line) => !line.startsWith("- base:")),
+      }).toEqual({
+        status: 0,
+        ok: true,
+        rewritten: true,
+        objectFormat: "sha256",
+        commits: 4,
+        unsigned: [],
+        plantsBase: [`- base: ${newBase}`],
+        plantsOther: r.plants.filter((line) => !line.startsWith("- base:")),
+      });
     },
     timeout,
   );
