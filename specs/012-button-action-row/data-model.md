@@ -194,6 +194,6 @@ and `row.click()` produce); never on `auxclick`. In link mode, `preventDefault()
 | `color-accent-hover` (new) | proposed `#D9A23F` (both themes), the primary's hover fill | ground of `on-accent` |
 | `color-active-bg` (new) | proposed light `#D3CCBF`, dark `#3A342B`, the pressed surface | ground of `ink` |
 | `color-chrome-active` (new) | proposed `#3A342B` (both themes), the pressed surface on chrome (R-08 item 4a) | ground of `chrome-ink` |
-| `motion-spin` (new) | `800ms`, `0ms` under reduced motion (generator: every motion duration) | none |
+| `motion-spin` (new) | `800ms`, `0ms` under reduced motion (generator: every motion duration except those marked `delay: true`, operator decision C1, 2026-11-17) | none |
 | `motion-turn` (new) | `1turn`, unchanged under reduced motion | none |
 | `focus-offset-inset` (new) | `calc(-1 * (var(--ocelle-focus-offset) + var(--ocelle-focus-width)))`, ref `focus-offset`, `focus-width` | none |

@@ -151,8 +151,10 @@ option (a) each):
   reduced motion (002 FR-007, FR-019 (f)) accepts only `--ocelle-motion-fast` and `--ocelle-motion-base` at `0ms`, so
   it would reject the new `--ocelle-motion-spin` that this feature sets to `0ms` under reduced motion (FR-017). The
   rule changes: under reduced motion, exactly every motion token whose value is a duration is `0ms`, read from the
-  token source. Today that is `motion-fast`, `motion-base` and `motion-spin`; `motion-turn` (an angle) and
-  `easing-standard` are not durations and are not set there. A later duration token needs no further rule change.
+  token source, except a token marked as a delay (`delay: true` on its record: a delay, not motion; operator decision C1, 2026-11-17, landing of PR #50; d4a56ea red, 558c560 fix).
+  Today that is `motion-fast`, `motion-base` and `motion-spin`; `motion-turn` (an angle) and
+  `easing-standard` are not durations and are not set there, and mission 008's `tooltip-delay` (500ms, marked
+  `delay: true`) keeps its value. A later duration token needs no further rule change.
   The rule keeps rejecting a duration that is not `0ms` under reduced motion and now also rejects a missing
   `motion-spin`. This changes 002's rule (f) for every later feature; the plan records it (plan decision 29).
 

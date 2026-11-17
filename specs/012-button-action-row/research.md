@@ -447,7 +447,8 @@ of the library, and because it is a duration that drops to `0ms` under reduced m
 durations. 800 ms, `0ms` under reduced motion. The generator's reduced-motion block is hard-coded to `motion-fast`
 and `motion-base` (`packages/tokens/src/generate.ts:281`, asserted "exactly" by `test/generate.test.ts:107`); it is
 changed to emit `0ms` for every record of group `motion` whose value is a duration (`ms`), so `motion-spin` gets it
-and `motion-turn` and `easing-standard` do not (PLAN-CORRECTNESS-1-007). The `generate.test.ts` assertion becomes
+and `motion-turn` and `easing-standard` do not (PLAN-CORRECTNESS-1-007). Amended at landing (operator decision C1, 2026-11-17, landing of PR #50; d4a56ea red, 558c560 fix): a record marked `delay: true` (a delay, not motion, such as mission 008's `tooltip-delay`, 500ms) is skipped
+and keeps its value under reduced motion. The `generate.test.ts` assertion becomes
 "exactly the motion durations: `motion-fast`, `motion-base`, `motion-spin`", recorded as a stricter replacement
 (constitution VIII); `generate.ts` is mutated under the default configuration.
 
@@ -458,9 +459,10 @@ research missed a second reader of the reduced-motion block. Feature 002's `bran
 source and generator change applied to the working tree and restored afterwards: `packages/tokens/dist/tokens.css:223:
 brand-rules: reduced-motion: --ocelle-motion-spin: 0ms in the reduced-motion block; ...`, 1 finding
 (`reviews/phase-4/notes.md`). Rule (f) is changed to follow the generator: the block must set exactly every token of
-group `motion` whose source value is a duration (`ms`) to `0ms`, the set read from the token source the gate already
-loads, so `motion-fast`, `motion-base` and `motion-spin` today, not `motion-turn`, not `easing-standard`, and a later
-duration token needs no gate edit. Red first in `gates/test/brand-rules.test.ts` (phase 4's red commit);
+group `motion` whose source value is a duration (`ms`) to `0ms`, except those marked `delay: true` (operator decision
+C1, 2026-11-17), the set read from the token source the gate already loads, so `motion-fast`, `motion-base` and
+`motion-spin` today, not `motion-turn`, not `easing-standard`, not `tooltip-delay`, and a later duration token needs no
+gate edit. Red first in `gates/test/brand-rules.test.ts` (phase 4's red commit);
 `gates/bin/brand-rules.ts` mutated under the default configuration; the plant `f-motion-not-zero` kept, a new fail
 plant `f-motion-spin-missing` for a block without `motion-spin`; the `gates/README.md` row and plan decision 29 record
 the change to 002's rule (f). *Alternatives*: (b) a third name in rule (f)'s list (smaller, but every later duration
