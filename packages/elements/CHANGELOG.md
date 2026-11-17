@@ -5,6 +5,13 @@ entry points and the browser build's file path (constitution VII).
 
 ## Unreleased
 
+**Selection and input elements, a MINOR change: nine elements, `ocelle-listbox`, `ocelle-option`, `ocelle-tabs`,
+`ocelle-tab`, `ocelle-tab-panel`, `ocelle-segmented-choice`, `ocelle-segment`, `ocelle-copy-field` and `ocelle-link`,
+and six events, `ocelle-listbox-change`, `ocelle-listbox-activate`, `ocelle-tabs-change`,
+`ocelle-segmented-choice-change`, `ocelle-copy-field-request` and `ocelle-link-activate`, all additions to the
+surface.** The release also raises the engine floor to Chromium 125 and WebKit 17.4, for the custom states of
+`ocelle-segment`; each element, event and entry point is listed under Added.
+
 ### Added
 
 - `ocelle-icon`, an icon of the set drawn inline in `currentColor` at the `--ocelle-icon-size` token, decorative
