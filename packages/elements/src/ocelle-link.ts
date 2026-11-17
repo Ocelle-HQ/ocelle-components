@@ -4,8 +4,10 @@
 // when the resolved protocol is `http:`, `https:` or the document's own (src/link-target.ts).
 // - The host has no role. Its shadow root (`delegatesFocus`) holds one native anchor, `part="anchor"`, around a default
 //   slot. The anchor carries the host's `href` as written while that `href` is allowed, so a user's modified activation
-//   (Ctrl, Meta or Shift held, or a middle click) is the browser's own (a new tab or window); without `href`, or with a
-//   refused one, it has no `href`, `role="link"` and `tabindex="0"`, so it is still a focusable link. Its state is
+//   (Ctrl, Meta or Shift held, or a middle click) is left to the browser: a new tab or window for Ctrl, Shift and the
+//   middle click, and the platform's convention for Meta (Cmd on macOS opens a new tab; Chromium on Linux follows the
+//   link in place; phase 6 operator decision 2); without `href`, or with a refused one, it has no `href`, `role="link"`
+//   and `tabindex="0"`, so it is still a focusable link. Its state is
 //   written imperatively (`#refresh`) on each `href` change and at the first event of each activation (`pointerdown`,
 //   the `keydown` of Enter), so it follows the base URL of that moment.
 // - The link is named by its text, or by `label` (trimmed, blank as none), set as the anchor's `aria-label`. A host

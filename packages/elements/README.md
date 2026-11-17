@@ -1,10 +1,15 @@
 # @ocelle/elements
 
 The Ocelle web components: standards-based custom elements (Lit 3) that work in any page, a server-rendered page
-under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has `ocelle-icon`, with a set
-of thirteen icons, `ocelle-brand-mark`, the Ocelle rosette, `ocelle-listbox` with its `ocelle-option` children,
-`ocelle-tabs` with its `ocelle-tab` and `ocelle-tab-panel` children, `ocelle-segmented-choice` with its
-`ocelle-segment` children, `ocelle-copy-field` and `ocelle-link`.
+under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has eleven elements:
+`ocelle-icon`, with a set of thirteen icons, `ocelle-brand-mark`, the Ocelle rosette, `ocelle-listbox` with its
+`ocelle-option` children, `ocelle-tabs` with its `ocelle-tab` and `ocelle-tab-panel` children,
+`ocelle-segmented-choice` with its `ocelle-segment` children, `ocelle-copy-field` and `ocelle-link`.
+
+The elements need Chromium 125 or WebKit 17.4 and later (see Engines). Each element has its own entry point. A parent
+element's entry point also defines the elements it owns as children, and the copy field's defines `ocelle-icon`.
+Examples shows each selection and input element built into a screen, with no ARIA, `ResizeObserver` or clipboard code
+of the host's own.
 
 ## Entry points
 
@@ -481,6 +486,132 @@ tokens, and on one line or on three lines axe reports nothing.
 
 `ocelle-link` reads the tokens `--ocelle-color-link`, `--ocelle-color-link-hover`, `--ocelle-color-focus`,
 `--ocelle-focus-width` and `--ocelle-focus-offset`.
+
+## Examples
+
+Each example below is one screen of a host with a bundler, such as kitty-mission-ui, built from the elements'
+attributes, properties and events alone. The host writes no ARIA attribute, `id` or `tabindex`, observes no size and
+calls no clipboard API: the elements write their roles, states and associations themselves, wrap by themselves, and
+leave the clipboard to the host's bridge.
+
+### The Open project folder picker
+
+The folders are a listbox; a selection enables the Open project button, and Enter on the selected folder or a
+double-click opens it at once. A long list scrolls inside the listbox when the host's stylesheet sets its
+`max-block-size`.
+
+```html
+<ocelle-listbox label="Project folders">
+  <ocelle-option value="/home/ana/kitty-desktop"><ocelle-icon slot="icon" name="folder"></ocelle-icon>kitty-desktop</ocelle-option>
+  <ocelle-option value="/home/ana/ocelle-console"><ocelle-icon slot="icon" name="folder"></ocelle-icon>ocelle-console</ocelle-option>
+  <ocelle-option value="/home/ana/archive" disabled><ocelle-icon slot="icon" name="folder"></ocelle-icon>archive</ocelle-option>
+</ocelle-listbox>
+<button type="button" class="open-project" disabled>Open project</button>
+<script type="module">
+  import "@ocelle/elements/ocelle-listbox.js";
+
+  const folders = document.querySelector("ocelle-listbox");
+  const open = document.querySelector(".open-project");
+  folders.addEventListener("ocelle-listbox-change", () => {
+    open.disabled = folders.value === "";
+  });
+  folders.addEventListener("ocelle-listbox-activate", (event) => projects.open(event.detail.value));
+  open.addEventListener("click", () => projects.open(folders.value));
+</script>
+```
+
+### Tabbed screens
+
+A mission's screens are tabs paired with their panels by order; the selected screen is kept in the URL's fragment
+and restored by setting `value`, which emits no event. The tab row wraps onto rows when it does not fit.
+
+```html
+<ocelle-tabs label="Mission views">
+  <ocelle-tab value="spec"><ocelle-icon slot="icon" name="file"></ocelle-icon>Spec</ocelle-tab>
+  <ocelle-tab value="plan">Plan</ocelle-tab>
+  <ocelle-tab value="tasks">Tasks</ocelle-tab>
+  <ocelle-tab-panel>…the spec…</ocelle-tab-panel>
+  <ocelle-tab-panel>…the plan…</ocelle-tab-panel>
+  <ocelle-tab-panel>…the tasks…</ocelle-tab-panel>
+</ocelle-tabs>
+<script type="module">
+  import "@ocelle/elements/ocelle-tabs.js";
+
+  const views = document.querySelector("ocelle-tabs");
+  views.value = location.hash.slice(1);
+  views.addEventListener("ocelle-tabs-change", (event) => {
+    history.replaceState(null, "", `#${event.detail.value}`);
+  });
+</script>
+```
+
+### Segmented choices
+
+A filter is a segmented choice with exactly one segment pressed; the joined variant draws the segments as one bar and
+rounds each row's ends itself when it wraps.
+
+```html
+<ocelle-segmented-choice label="Lane filter" value="all" joined>
+  <ocelle-segment value="all">All</ocelle-segment>
+  <ocelle-segment value="mine">Mine</ocelle-segment>
+  <ocelle-segment value="blocked">Blocked</ocelle-segment>
+  <ocelle-segment value="done">Done</ocelle-segment>
+</ocelle-segmented-choice>
+<script type="module">
+  import "@ocelle/elements/ocelle-segmented-choice.js";
+
+  document.querySelector("ocelle-segmented-choice").addEventListener("ocelle-segmented-choice-change", (event) => {
+    board.filter(event.detail.value);
+  });
+</script>
+```
+
+### In-text links
+
+Links in running text tell the host they were activated; this host routes every plain activation itself, with the
+same scheme check the link applies, and opens a link without `href` in its side panel. A modified activation is left
+to the browser and emits nothing.
+
+```html
+<p>The run stopped at <ocelle-link href="/missions/014/log">the mission log</ocelle-link>; open
+<ocelle-link label="the task board, in the side panel">the task board</ocelle-link> beside it.</p>
+<script type="module">
+  import "@ocelle/elements/ocelle-link.js";
+
+  document.addEventListener("ocelle-link-activate", (event) => {
+    event.preventDefault();
+    if (event.detail.href === null) {
+      sidePanel.open("task-board");
+      return;
+    }
+    const url = new URL(event.detail.href, document.baseURI);
+    if (["http:", "https:", location.protocol].includes(url.protocol)) router.go(url);
+  });
+</script>
+```
+
+### Copy fields
+
+A command the user may copy: the field asks, the host's desktop bridge writes the clipboard, and the host reports the
+outcome in `status`, which the field announces. The field is named with a host `aria-label`, its documented name: it
+has no `label` property.
+
+```html
+<ocelle-copy-field aria-label="Install command" value="pnpm add @ocelle/elements"></ocelle-copy-field>
+<script type="module">
+  import "@ocelle/elements/ocelle-copy-field.js";
+
+  const field = document.querySelector("ocelle-copy-field");
+  field.addEventListener("ocelle-copy-field-request", async (event) => {
+    try {
+      await bridge.copy(event.detail.text);
+      field.status = "Copied to clipboard";
+    } catch {
+      field.status = "Could not copy: the bridge is unavailable";
+    }
+  });
+</script>
+```
 
 ## Slot convention
 
