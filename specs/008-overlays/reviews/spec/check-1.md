@@ -1,0 +1,46 @@
+---
+check: 1
+verdict: issues
+---
+
+# Spec check 1
+
+Inputs read: `specs/008-overlays/spec.md`, `checklists/requirements.md`, `triage/008-overlays.md`,
+`.specify/memory/constitution.md` (1.3.1), `packages/elements/README.md` (§ Engines, § Element conventions, § Host
+ARIA), `packages/tokens/src/source.ts`, `specs/003-base-styles/spec.md` FR-017, and 006's FR-012 / FR-031 on
+`origin/claude/010-storybook-workbench`. No earlier check exists. No `[NEEDS CLARIFICATION]` marker is left. Every
+token the spec names as existing (`--ocelle-color-overlay`, `--ocelle-elevation-raised`, `--ocelle-dialog-max-inline`,
+`--ocelle-dialog-max-block`, `--ocelle-motion-base`, `--ocelle-easing-standard`, `--ocelle-target-min`,
+`--ocelle-radius-2`, the chrome ground and ink) exists in `source.ts`.
+
+| ID | Severity | Where | Finding | Fix |
+|----|----------|-------|---------|-----|
+| SPEC-1-01 | blocking | spec.md FR-036, US3 scenario 7 | Whether the text becomes a description depends on it "equal[ling] the trigger's accessible name", but the spec does not define the comparison (exact, trimmed, case, whitespace collapsed?) or where the element reads the name from. No web API exposes a computed accessible name, and the name of a custom-element trigger (#12's nav item) is computed inside that trigger's shadow root (from `aria-label`, `label`, `aria-labelledby` or text). So the plan would have to build a heuristic, and no test could fail on cases the spec leaves open (a name from `aria-labelledby`, a name with different spacing). | Either replace the comparison with something the host states, such as a property that says whether the text repeats the name or describes the trigger (the default chosen by the spec), or define the comparison exactly: the sources it reads, in order, and the normalisation. Then add a scenario for a near-equal text. |
+| SPEC-1-02 | blocking | spec.md FR-031, FR-032, US3 scenarios 1 and 2 | Showing is gated on keyboard focus (`:focus-visible`), but staying and hiding are gated on "the trigger holds focus". Case left open: a pointer click focuses the trigger without focus-visible, the bubble shows after the hover delay, and then the pointer leaves while the trigger still has focus. FR-032 says the bubble stays, but the rule in FR-031 implies focus alone would not have shown it. A test of "pointer leaves a clicked trigger" can be written to expect either result. Touch has the same problem: a tap focuses the trigger, and FR-037 says no bubble. | Use one focus condition for show, stay and hide: either "focus-visible" throughout or "focus" throughout. Add a scenario for a clicked trigger that the pointer then leaves, and one for a tapped trigger. |
+| SPEC-1-03 | blocking | spec.md FR-035, FR-034, SC-007; constitution IV | The bubble sits in the top layer at a position computed from the trigger, inside the Chromium 120 floor where CSS anchor positioning (Chromium 125) is not available. The obvious way to build that is to write `element.style.top/left`, which creates an inline `style` attribute. Constitution IV forbids that, and the triage record says so ("tooltip positioning must not write a style attribute"). A strict CSP does not block CSSOM writes, so SC-007's "strict-CSP check with every scenario exercised" would not catch it. The spec states no requirement or test for this. | Add an FR: positioning (and any runtime styling of the panel or bubble) writes no `style` attribute and no `<style>` element; values reach the CSS only through adopted stylesheets. Add an assertion that no element the three elements render, and no trigger, has a `style` attribute after each placement scenario. |
+| SPEC-1-04 | operator | spec.md FR-005, US2, Consumer need (#12, spec-kitty-design#450) | FR-005 makes `label` a visible heading for both overlays. For #12's narrow-width personal drawer, which holds #8's personal rail on the chrome ground, the spec does not say whether a visible heading belongs in that design. If it does not, the drawer needs a way to keep the name without showing the heading, and that is new public surface. | Operator: answer the question below. Then either keep FR-005 as written or add a variant (for example a visually hidden heading) with its scenario. |
+| SPEC-1-05 | note | spec.md FR-014, FR-009, FR-020, Edge Cases (`open` toggled quickly) | With exit animations, the spec does not say whether "after the element is closed" (and the return of focus) happens when the exit starts or when it ends. That decides how long a test waits and what a host observes between the two. | State it, for example: `open` false, focus returned and `…-close` dispatched when the exit starts, and the top-layer entry removed when it ends. Or leave it to the plan explicitly. |
+| SPEC-1-06 | note | spec.md FR-020, FR-040 | Animating a native `<dialog>` out of the top layer in CSS usually needs `@starting-style` / `transition-behavior: allow-discrete` (WebKit 17.5 / 17.4) or `overlay` (no WebKit yet). FR-040 already fixes the Popover API as the floor's newest feature, which can turn out false. | Let FR-040 say "the newest feature the research finds", or require entry and exit to stay within Chromium 120 / WebKit 17 (for example the Web Animations API). |
+| SPEC-1-07 | note | spec.md FR-034 | "MUST not be light-dismissed by a click elsewhere other than by hiding" does not parse as one rule. The intent is probably "no platform light dismiss; a click elsewhere hides it only because pointer and focus leave (FR-032)". | Reword it. |
+| SPEC-1-08 | note | spec.md FR-035, US3 scenario 6, SC-006 | Only flipping along the placement axis is specified. A `top` bubble whose trigger is near the inline-start edge, or a bubble with no room on either side, overflows the viewport in the cross axis. That contradicts the intent that the bubble be painted whole. | Specify a cross-axis clamp inside the viewport (for example within `--ocelle-gutter`), and what happens when neither side fits. |
+| SPEC-1-09 | note | spec.md SC-001 | "Each with and without a cancelling host" cannot apply to the `"host"` reason, which has no request (FR-014). So the count of paths is not well defined. | Say: request reasons with and without a veto, plus `"host"`. |
+| SPEC-1-10 | note | spec.md US3 scenario 10 vs FR-037 | The scenario only says "no bubble is required". FR-037 says touch "shows no bubble", so the scenario cannot fail on the rule. | Make the Then clause "no bubble shows". |
+| SPEC-1-11 | note | spec.md US2 scenario 5, FR-018, FR-021, FR-003 | The drawer reuses US1 scenarios 1 to 5, 7, 8 and 12 and leaves out 9 (UA chrome reset, forced colours) and 10 (body scroll). FR-003, FR-018 and FR-021 apply to the drawer as well, yet no drawer scenario or story covers its forced-colours boundary, its UA reset or a long scrolling body. | Add drawer scenarios (or include US1 scenario 9 and the scroll part of 10) and a drawer long-body story to FR-042. |
+| SPEC-1-12 | note | spec.md Edge Cases (Opener gone), FR-009 | "The dialog documents where focus lands" does not fix a destination. A test can only check "not on a removed element", which also passes if focus is lost to `body`. | Name the destination (for example the document body, or the overlay beneath under FR-023). |
+| SPEC-1-13 | note | spec.md Edge Cases, FR-005 | No edge case covers an overlay with neither `label` nor a host `aria-label` (an unnamed dialog is an axe finding), or a long `label` at narrow width (wrap or truncate, and the close control kept). | Add both edge cases with their outcome. |
+| SPEC-1-14 | note | spec.md FR-038, Key Entities | The spec names the new tokens but not their values or where the values come from (drawer inline size against #450 and the personal rail; tooltip delay). The bubble's ground and ink are "tokens", but Key Entities does not list them as new, so it is unclear whether existing tokens are reused. | Have the plan's research source each value, and say whether the bubble's ground and ink are existing tokens (name them) or new ones (list them). |
+| SPEC-1-15 | note | spec.md FR-029, FR-036 | A trigger may be a custom element's host whose inner control has focus. A description for it has to reach that inner control (constitution III), which needs the trigger element's cooperation. No consumer of this case is named: #7 and #12 both use text equal to the name. | Either restrict descriptions to native triggers for now, or state the contract a custom-element trigger must meet. |
+| SPEC-1-16 | note | spec.md FR-024 | "A token-derived default" for `--ocelle-dialog-inline-size` names no token. | Name it, or say the plan picks it with a source. |
+| SPEC-1-17 | note | spec.md FR-005 | The heading level is not stated, yet it shows in the accessibility tree that FR-044 asserts. | State the level, or say it is the plan's choice and asserted. |
+
+## Counts
+
+- blocking: 3 (SPEC-1-01, SPEC-1-02, SPEC-1-03)
+- operator: 1 (SPEC-1-04)
+- note: 13
+
+## Operator question
+
+- SPEC-1-04: Should `ocelle-drawer` always show its `label` as a visible heading (FR-005), including in #12's
+  narrow-width personal drawer that holds #8's personal rail, or may a host keep the accessible name while hiding the
+  heading visually (a new public option)?

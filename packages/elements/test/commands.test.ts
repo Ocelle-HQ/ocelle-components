@@ -8,13 +8,18 @@ import { commands, page } from "vitest/browser";
 // `scrollWidth()`, `activeElement()` and `textBoxes(id)` read the test frame's document: its scrolling width, the
 // focused element through open shadow roots, and the box and clipping ancestors of each text node under an element;
 // `emulateReducedMotion(mode)` (013 phase 3) switches `prefers-reduced-motion` for this page and back, and `axTree`
-// reports a heading's level (013 US2-1, US2-2) and a range node's value properties (013 phase 3).
-// Plain elements stand in for the icons, so these tests pin the commands, not the elements.
+// reports a heading's level (013 US2-1, US2-2) and a range node's value properties (013 phase 3). 008 adds (research.md
+// R-14; tasks.md T003): `axTree` also gives a node's description and its modal flag where Chromium reports them;
+// `pointerPath(steps)` moves the real pointer through points of this test's frame, pressing and releasing where a step
+// says so. `touchTap` needs a touch context and is tested in commands.touch.test.ts. Reduced motion is 013's
+// `emulateReducedMotion(mode)`: forced colours leave it alone. The elements project's viewport is 1280 × 800 (008
+// R-14), so each test ends by restoring it. Plain elements stand in for the icons, so these tests pin the commands, not
+// the elements.
 const sheets = document.adoptedStyleSheets;
 
 afterEach(async () => {
   await commands.emulateForcedColors("none");
-  await page.viewport(414, 896);
+  await page.viewport(1280, 800);
   document.adoptedStyleSheets = sheets;
   await commands.emulateReducedMotion("no-preference");
   document.body.replaceChildren();
@@ -97,6 +102,75 @@ describe("axTree(id)", () => {
       missing: [],
       here: [{ role: "button", name: "Here" }],
     });
+  });
+});
+
+describe("axTree(id) description, modal and level", () => {
+  it("gives a modal dialog's modal flag, a heading's level and a described button's description beside role and name", async () => {
+    document.body.innerHTML = '<dialog id="dlg" aria-label="Panel"><h3 id="h">Title</h3><button id="b" aria-describedby="d">Go</button><p id="d">More</p></dialog>';
+    (document.getElementById("dlg") as HTMLDialogElement).showModal();
+    expect({ dialog: await commands.axTree("dlg"), heading: await commands.axTree("h"), button: await commands.axTree("b") }).toEqual({
+      dialog: [{ role: "dialog", name: "Panel", modal: true }],
+      heading: [{ role: "heading", name: "Title", level: 3 }],
+      button: [{ role: "button", name: "Go", description: "More" }],
+    });
+  });
+});
+
+describe("emulateReducedMotion(mode) (008 R-14)", () => {
+  it('makes (prefers-reduced-motion: reduce) match, and "no-preference" ends it', async () => {
+    const before = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    await commands.emulateReducedMotion("reduce");
+    const on = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    await commands.emulateReducedMotion("no-preference");
+    expect({ before, on, off: matchMedia("(prefers-reduced-motion: reduce)").matches }).toEqual({ before: false, on: true, off: false });
+  });
+});
+
+/** Puts a button of 80 × 40 px at (`left`, 100) of this frame, so its centre is at (`left` + 40, 120). */
+function placed(id: string, left: number): HTMLButtonElement {
+  const button = document.createElement("button");
+  button.id = id;
+  button.textContent = id;
+  Object.assign(button.style, { position: "fixed", left: `${String(left)}px`, top: "100px", width: "80px", height: "40px", margin: "0" });
+  document.body.append(button);
+  return button;
+}
+
+/** Records `<id> <type> <pointerType> <clientX> <clientY>` for each pointerdown and pointerup on `targets`. */
+function pointerLog(...targets: HTMLElement[]): string[] {
+  const log: string[] = [];
+  for (const target of targets) {
+    for (const type of ["pointerdown", "pointerup"]) {
+      target.addEventListener(type, (event) => {
+        const pointer = event as PointerEvent;
+        log.push(`${target.id} ${pointer.type} ${pointer.pointerType} ${String(Math.round(pointer.clientX))} ${String(Math.round(pointer.clientY))}`);
+      });
+    }
+  }
+  return log;
+}
+
+describe("pointerPath(steps)", () => {
+  it("presses and releases on the first button at its centre in this frame's coordinates, then stops on the second, which alone is :hover", async () => {
+    const one = placed("one", 100);
+    const two = placed("two", 300);
+    const log = pointerLog(one, two);
+    await commands.pointerPath([{ x: 140, y: 120, down: true }, { x: 140, y: 120, up: true }, { x: 340, y: 120 }]);
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    expect({ log, one: one.matches(":hover"), two: two.matches(":hover") }).toEqual({
+      log: ["one pointerdown mouse 140 120", "one pointerup mouse 140 120"],
+      one: false,
+      two: true,
+    });
+  });
+
+  it("a press on the first button released on the second gives the release to the second", async () => {
+    const one = placed("one", 100);
+    const two = placed("two", 300);
+    const log = pointerLog(one, two);
+    await commands.pointerPath([{ x: 140, y: 120, down: true }, { x: 340, y: 120, up: true }]);
+    expect(log).toEqual(["one pointerdown mouse 140 120", "two pointerup mouse 340 120"]);
   });
 });
 

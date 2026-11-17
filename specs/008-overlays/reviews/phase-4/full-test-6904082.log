@@ -1,0 +1,9 @@
+$ node gates/bin/test.ts
+gates/test/integration/axe.test.ts:51: unit-tests: axe gate (gates/bin/axe.ts) audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029): AssertionError: expected { code: 1, stdout: [ …(3) ], …(1) } to deeply equal { code: +0, …(2) }
+gates/test/integration/axe.test.ts:61: unit-tests: axe gate (gates/bin/axe.ts) fails a story with an unlabelled button in both themes, one critical button-name finding each, naming its selector (US3 scenario 2): AssertionError: expected { code: 1, stdout: [ …(5) ], …(1) } to deeply equal { code: 1, stdout: [ …(3) ], …(1) }
+unit-tests: 2 of 5065 tests failed
+[ELIFECYCLE] Test failed. See above for more details.
+
+real	13m19.989s
+user	11m22.456s
+sys	2m41.391s

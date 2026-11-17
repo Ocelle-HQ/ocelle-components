@@ -4,10 +4,10 @@ import { inProcessDriver } from "./in-process.ts";
 import { defineDriverHelpers, driverAdditionScenarios } from "./scenarios/driver-additions.ts";
 
 // The driver's own methods, in process, each proven against a plain page (009 research.md R-17; T005, T010).
-// `viewport()` resizes the test's iframe from Vitest's 414 × 896 default. Since phase 2 (T010) every method the US1
-// scenarios use: real keys and chords, a real click and wheel, the deep active element, the tab walk, `scrollLeft`,
-// the last keydown's `defaultPrevented`, reduced motion, the frame record and the two-frame `settle()`, plus
-// `messages()` and `sheets()` (which 005 added; their plants are in reviews/phase-2/plants.md). The pages are plain
+// `viewport()` resizes the test's iframe from the elements project's 1280 × 800 (vitest.config.ts, since 008). Since
+// phase 2 (T010) every method the US1 scenarios use: real keys and chords (`chord()`), a real click at a point
+// (`clickAt()`) and wheel, the deep active element, the tab walk, `scrollLeft`, the last keydown's `defaultPrevented`,
+// reduced motion, the frame record and the two-frame `settle()`, plus `messages()` and `sheets()` (which 005 added; their plants are in reviews/phase-2/plants.md). The pages are plain
 // markup and a shadow host defined below; each test observes the page itself, not through the method it proves.
 // test/browser/driver.test.ts proves the fixture driver's.
 // The driver additions of 013 phase 1 in process (contracts/checks.md § Driver additions; tasks.md T003): the shared
@@ -67,27 +67,27 @@ describe("the in-process driver", () => {
     { key: "Ctrl+ArrowRight", seen: { key: "ArrowRight", ...plain, ctrl: true } },
     { key: "Meta+ArrowRight", seen: { key: "ArrowRight", ...plain, meta: true } },
     { key: "Shift+ArrowRight", seen: { key: "ArrowRight", ...plain, shift: true } },
-  ])("press($key) sends one trusted keydown of the key with exactly its modifiers", async ({ key, seen }) => {
+  ])("chord($key) sends one trusted keydown of the key with exactly its modifiers", async ({ key, seen }) => {
     await driver.mount('<button id="a" type="button">A</button>');
     document.getElementById("a")?.focus();
     const keys = recordKeys();
-    await driver.press(key);
+    await driver.chord(key);
     expect(keys).toEqual([seen]);
   });
 
-  it("press(Tab) and press(Shift+Tab) move focus with real input, so the focused button matches :focus-visible", async () => {
+  it("chord(Tab) and chord(Shift+Tab) move focus with real input, so the focused button matches :focus-visible", async () => {
     await driver.mount('<button id="a" type="button">A</button><button id="b" type="button">B</button>');
     document.getElementById("a")?.focus();
-    await driver.press("Tab");
+    await driver.chord("Tab");
     const forward = { id: document.activeElement?.id, visible: document.activeElement?.matches(":focus-visible") };
-    await driver.press("Shift+Tab");
+    await driver.chord("Shift+Tab");
     expect([forward, { id: document.activeElement?.id, visible: document.activeElement?.matches(":focus-visible") }]).toEqual([
       { id: "b", visible: true },
       { id: "a", visible: true },
     ]);
   });
 
-  it("click(target, point) clicks at that point of the box with a trusted event, on a light-DOM and a shadow target, and a clicked button does not match :focus-visible", async () => {
+  it("clickAt(target, point) clicks at that point of the box with a trusted event, on a light-DOM and a shadow target, and a clicked button does not match :focus-visible", async () => {
     await driver.mount('<button id="a" type="button">A</button><div id="pad"></div><driver-host id="h"></driver-host>');
     await driver.rules("#pad { inline-size: 100px; block-size: 40px; }");
     const clicks: { target: string; x: number; y: number; trusted: boolean }[] = [];
@@ -96,9 +96,9 @@ describe("the in-process driver", () => {
       const box = target.getBoundingClientRect();
       clicks.push({ target: target.id === "" ? target.className : target.id, x: Math.round(event.clientX - box.left), y: Math.round(event.clientY - box.top), trusted: event.isTrusted });
     });
-    await driver.click("pad", { x: 30, y: 10 });
-    await driver.click({ id: "h", inner: ".inner" }, { x: 4, y: 4 });
-    await driver.click("a", { x: 2, y: 2 });
+    await driver.clickAt("pad", { x: 30, y: 10 });
+    await driver.clickAt({ id: "h", inner: ".inner" }, { x: 4, y: 4 });
+    await driver.clickAt("a", { x: 2, y: 2 });
     expect({ clicks, focused: document.activeElement?.id, visible: document.activeElement?.matches(":focus-visible") }).toEqual({
       clicks: [
         { target: "pad", x: 30, y: 10, trusted: true },
@@ -159,10 +159,10 @@ describe("the in-process driver", () => {
   it("focus(target) focuses a light-DOM and a shadow target by script, matching :focus-visible after keyboard input and not after a pointer click", async () => {
     await driver.mount('<button id="a" type="button">A</button><button id="b" type="button">B</button><driver-host id="h"></driver-host>');
     document.getElementById("a")?.focus();
-    await driver.press("Tab");
+    await driver.chord("Tab");
     await driver.focus({ id: "h", inner: ".inner" });
     const afterKeys = { active: await driver.deepActive(), visible: document.getElementById("h")?.shadowRoot?.activeElement?.matches(":focus-visible") };
-    await driver.click("a", { x: 2, y: 2 });
+    await driver.clickAt("a", { x: 2, y: 2 });
     await driver.focus("b");
     expect([afterKeys, { active: await driver.deepActive(), visible: document.activeElement?.matches(":focus-visible") }]).toEqual([
       { active: "h >> button.inner", visible: true },
@@ -194,9 +194,9 @@ describe("the in-process driver", () => {
     });
     button?.focus();
     const atMount = await driver.lastKeyPrevented();
-    await driver.press("ArrowRight");
+    await driver.chord("ArrowRight");
     const prevented = await driver.lastKeyPrevented();
-    await driver.press("ArrowLeft");
+    await driver.chord("ArrowLeft");
     expect([atMount, prevented, await driver.lastKeyPrevented()]).toEqual([false, true, false]);
   });
 
@@ -221,7 +221,7 @@ describe("the in-process driver", () => {
     });
     box.focus();
     const recorder = await driver.frameRecord("box", { property: "scrollLeft" });
-    await driver.press("ArrowRight");
+    await driver.chord("ArrowRight");
     const record = await recorder.stop();
     const frames = record.filter((each) => !each.startsWith("resize: "));
     const key = frames.indexOf("keydown");

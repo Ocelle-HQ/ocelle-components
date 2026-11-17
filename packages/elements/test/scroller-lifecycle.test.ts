@@ -23,7 +23,7 @@ describe("ocelle-scroller moved to another place of the page", () => {
     if (scroller !== null) document.getElementById("narrow")?.append(scroller);
     await driver.settle();
     await driver.tabWalk("before", "s >> div.region-box");
-    await driver.press("ArrowRight");
+    await driver.chord("ArrowRight");
     expect({ narrow, wide, back: box()?.getAttribute("tabindex"), scrolled: await driver.scrollLeft({ id: "s", inner: ".region-box" }), sheets: await driver.sheets("ocelle-scroller") }).toEqual({
       narrow: { tabindex: "0", role: "group" },
       wide: { tabindex: null, role: null },

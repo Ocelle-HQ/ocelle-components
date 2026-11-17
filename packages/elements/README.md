@@ -1,14 +1,15 @@
 # @ocelle/elements
 
 The Ocelle web components: standards-based custom elements (Lit 3) that work in any page, a server-rendered page
-under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has fifteen elements:
+under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has eighteen elements:
 `ocelle-icon`, with a set of thirteen icons, `ocelle-brand-mark`, the Ocelle rosette, `ocelle-scroller`, a
 horizontal strip that is a tab stop only while it overflows, `ocelle-workflow-board` with its
 `ocelle-workflow-lane`s, a row of lanes that scrolls inside itself when it is narrower than they are,
-`ocelle-list-detail`, a list beside its detail that collapses to one column by the space it has, the layout elements
-`ocelle-section-header`, `ocelle-card`, `ocelle-page-header`, `ocelle-context-sidebar` and `ocelle-personal-rail`,
-`ocelle-facts` with its item `ocelle-fact`, a label and value sheet, `ocelle-empty-state`, an empty or loading panel,
-and `ocelle-progress`, a progress bar.
+`ocelle-list-detail`, a list beside its detail that collapses to one column by the space it has, `ocelle-dialog`, a
+modal dialog, `ocelle-drawer`, a modal side drawer, `ocelle-tooltip`, a tooltip that shows a short text beside its
+trigger, the layout elements `ocelle-section-header`, `ocelle-card`, `ocelle-page-header`, `ocelle-context-sidebar`
+and `ocelle-personal-rail`, `ocelle-facts` with its item `ocelle-fact`, a label and value sheet, `ocelle-empty-state`,
+an empty or loading panel, and `ocelle-progress`, a progress bar.
 
 ## Entry points
 
@@ -21,6 +22,9 @@ and `ocelle-progress`, a progress bar.
 | `@ocelle/elements/ocelle-workflow-board.js` | `dist/ocelle-workflow-board.js` | `ocelle-workflow-board` only, not the lane; for hosts with a bundler |
 | `@ocelle/elements/ocelle-workflow-lane.js` | `dist/ocelle-workflow-lane.js` | `ocelle-workflow-lane` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-list-detail.js` | `dist/ocelle-list-detail.js` | `ocelle-list-detail` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-dialog.js` | `dist/ocelle-dialog.js` | `ocelle-dialog` and the `ocelle-icon` it renders; for hosts with a bundler |
+| `@ocelle/elements/ocelle-drawer.js` | `dist/ocelle-drawer.js` | `ocelle-drawer` and the `ocelle-icon` it renders; for hosts with a bundler |
+| `@ocelle/elements/ocelle-tooltip.js` | `dist/ocelle-tooltip.js` | `ocelle-tooltip` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-card.js` | `dist/ocelle-card.js` | `ocelle-card` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-section-header.js` | `dist/ocelle-section-header.js` | `ocelle-section-header` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-page-header.js` | `dist/ocelle-page-header.js` | `ocelle-page-header` only; for hosts with a bundler |
@@ -150,6 +154,244 @@ back to the SVG default size, 300 × 300 px.
 In forced colours the ring and the spot are painted in `currentColor` in every variant, the system colour of their
 context. On the light main grounds the ochre spot measures 2.6:1: the ring carries the mark, and a host that needs
 every part at 3:1 uses `tone="mono"`. `ocelle-brand-mark` has no slot, event, CSS part or CSS custom property.
+
+## `ocelle-dialog`
+
+```html
+<button id="open-project">Open project</button>
+<ocelle-dialog id="dialog" label="Open project" close-label="Close">
+  <p>Choose a folder.</p>
+  <div slot="footer"><button>Cancel</button><button>Open</button></div>
+</ocelle-dialog>
+```
+
+`ocelle-dialog` shows its content modally over the page in a native `<dialog>`: the page behind is inert to pointer,
+keyboard and the accessibility tree until it closes. It is centred in the viewport, on the sheet ground with the
+raised shadow, over the overlay backdrop.
+
+- `open` (attribute and property, reflected): whether the dialog is shown; setting it shows or closes the dialog, and
+  the dialog sets it to false whenever it closes.
+- `label` (attribute and property): the visible heading (level 2) and the dialog's accessible name. A label is
+  required: without a `label` or a host `aria-label` the dialog has no accessible name, and it invents none.
+- `close-label` (attribute; property `closeLabel`): the name of the close control, "Close" by default; set it in the
+  host's language. The close control is a native button holding the `close` icon, at least `--ocelle-target-min` in
+  both axes, with the focus ring.
+- Slots: the default slot is the body; `footer` holds the actions, at the end of the panel, and is not rendered while
+  empty.
+- Parts: `panel` (the `<dialog>`), `heading`, `body`, `footer` and `close-button`.
+- `--ocelle-dialog-inline-size`: the dialog's preferred inline size, `--ocelle-measure-reading` by default; the dialog
+  is never wider than `--ocelle-dialog-max-inline` nor taller than `--ocelle-dialog-max-block`.
+- Events: `ocelle-dialog-close-request` (cancelable; `detail.reason` is `"escape"` or `"close-button"`) when the user
+  asks to close it, and `ocelle-dialog-close` (`detail.reason` is the request's reason, or `"host"` when the host set
+  `open` to false or the platform closed it) once it has left the top layer and focus has returned; both bubble and
+  are composed, and opening dispatches nothing. Cancelling `ocelle-dialog-close-request` keeps the dialog open, with
+  focus inside, on every repetition. A click on the backdrop does nothing.
+
+```js
+opener.addEventListener("click", () => { dialog.open = true; });
+dialog.addEventListener("ocelle-dialog-close-request", (e) => { if (hasUnsavedInput()) e.preventDefault(); });
+dialog.addEventListener("ocelle-dialog-close", (e) => { /* e.detail.reason */ });
+```
+
+`ocelle-dialog` reads the tokens `--ocelle-color-sheet`, `--ocelle-color-ink`, `--ocelle-color-overlay`,
+`--ocelle-elevation-raised`, `--ocelle-radius-2`, `--ocelle-border-width`, `--ocelle-dialog-max-inline`,
+`--ocelle-dialog-max-block`, `--ocelle-measure-reading`, `--ocelle-font-sans`, `--ocelle-font-size-md`,
+`--ocelle-font-size-lg`, `--ocelle-font-weight-strong`, `--ocelle-line-height-normal`, `--ocelle-line-height-tight`,
+`--ocelle-space-2`, `--ocelle-space-3`, `--ocelle-space-4`, `--ocelle-space-6`, `--ocelle-target-min`,
+`--ocelle-focus-width`, `--ocelle-focus-offset`, `--ocelle-color-focus`, `--ocelle-motion-base` and
+`--ocelle-easing-standard`, and its close icon `--ocelle-icon-size`.
+
+**Focus.** On open, focus moves to the first slotted element marked `autofocus` in the body, else to the body's first
+focusable element, else to the close control. While the dialog is open, Tab and Shift+Tab move only among its
+focusable elements (the close control, the body's content and the footer's) and wrap at the ends; elements that are
+not rendered are skipped and a radio group is one stop. Between the cycle's ends Tab moves as the engine does, so
+content with a closed shadow root, an iframe or media controls keeps its inner focusable parts reachable by Tab and
+Shift+Tab in both directions: Shift+Tab from the close control onto such content at the dialog's end enters it from
+its end, with or without `delegatesFocus`. Leaving a slotted iframe past the cycle's end with Tab can cost one extra
+press. Slotted content with a positive `tabindex` is visited in the engine's order, and the cycle wraps where that
+order ends. An overflowing scroller in slotted content with nothing focusable inside (a wide prose table) is a Tab
+stop where the engine focuses scrollers (Chromium 130 and later); elsewhere it is skipped.
+
+On close, focus returns to the element that had it when the dialog opened, inside shadow roots too, as long as focus
+is still inside the dialog or on the body; focus another dialog has taken is kept. Where focus lands when the opener
+is gone: the opener while it is connected, not `disabled` and not inert; otherwise the initial focus target of the
+overlay beneath, if one is open; otherwise the document body. To move focus elsewhere after a close, move it in the
+`ocelle-dialog-close` listener, which runs after focus returned: the page stays inert until the exit ends, so a move
+to page content between `open = false` and `ocelle-dialog-close` has no effect.
+
+**Escape.** Escape asks the topmost dialog to close. A slotted widget that handles Escape calls `preventDefault()`,
+not `stopPropagation()`: if it stops Escape's propagation, the dialog does not see the key, and the platform can close
+a vetoed dialog on a repeated Escape, with reason `"host"`; the first vetoed sequence in a page may hold the veto on a
+second press as well. Escape with focus inside a slotted iframe does nothing to
+the dialog. An Escape that cancels an IME composition or clears a non-empty search field requests nothing.
+
+While a slotted popover (`popover="auto"` or `"hint"`, a menu), a native `<dialog>` shown modally from slotted
+content, or a non-modal `<dialog>` opened after the dialog (by `show()` or the `open` attribute) whose `closedby` is
+`closerequest` or `any` is open, Escape closes it alone, as the platform does, and the dialog requests nothing; Tab
+inside a nested native modal is left to the platform. A slotted non-modal `<dialog>` that was already open when the
+dialog opened, whatever its `closedby`, or one opened after it with `closedby` absent, `auto` or `none`, is ordinary
+content: Escape requests the dialog's close on every press and leaves it open, so close it yourself if needed. Such a
+dialog reopened by removing and setting its `open` attribute stays ordinary content (the change fires no event the
+dialog can see); reopen it with `close()` and then `show()` or the attribute to have Escape close it alone. An open
+`<dialog>` moved into an already open dialog is outside what was measured: if the platform then closes the dialog on
+Escape, the close comes with reason `"host"`.
+
+**Closing.** During the exit, Escape, the close control and the backdrop request nothing; only `open = true` stops a
+close. A slotted `<form method="dialog">` does nothing to the dialog: close it with `open = false` from the form's
+submit handler. Removing an open dialog from the document (a move, a morph, a portal) closes it with no event and sets
+`open` to false; set `open` again after re-inserting it.
+
+**Layout.** The body is at least three times `--ocelle-target-min` tall (132 px by default) at every size, so a
+one-line confirmation has space below its text; while the body overflows it is a Tab stop, so it scrolls by keyboard.
+The heading and footer stay visible while the body scrolls; when the viewport is too short for them and the body's
+minimum, the panel scrolls as a whole. The body has a definite inline size, so prose fills it.
+
+**Motion and forced colours.** The dialog fades in and out over `--ocelle-motion-base` with
+`--ocelle-easing-standard`, and not at all under `prefers-reduced-motion: reduce`, whatever an ancestor sets on those
+tokens. In forced colours the panel has a `CanvasText` border on a `Canvas` ground, the backdrop is `Canvas`, and the
+close control's focus ring is a `Highlight` outline.
+
+## `ocelle-drawer`
+
+```html
+<ocelle-drawer id="filters" label="Filters" side="end">
+  <form><!-- the filters --></form>
+  <div slot="footer"><button>Reset</button><button>Apply</button></div>
+</ocelle-drawer>
+```
+
+`ocelle-drawer` shows its content modally in a full-height panel against the inline start or end edge of the
+viewport, in a native `<dialog>`: the page behind is inert to pointer, keyboard and the accessibility tree until it
+closes. It has the focus, Escape, close control and event model of `ocelle-dialog`, with the `ocelle-drawer-` events,
+and a click on the backdrop asks to close it. Everything the `ocelle-dialog` section states about focus, Escape,
+closing and forced colours holds for the drawer as well.
+
+- `open`, `label` and `close-label`, the slots and the parts are those of `ocelle-dialog`.
+- `side` (attribute and property, reflected): `start` (the default) or `end`, the inline edge of the viewport in the
+  drawer's direction, so `start` is the left edge under `dir="ltr"` and the right edge under `dir="rtl"`.
+- `ground` (attribute and property, reflected): `sheet` (the default) or `chrome`, the chrome ground
+  `--ocelle-color-chrome` with `--ocelle-color-chrome-ink` in both themes. Any other value of `side` or `ground` gives
+  the default.
+- `heading-hidden` (attribute; property `headingHidden`, reflected): the heading is not painted and takes no space,
+  but stays in the accessibility tree as the drawer's level-2 heading, and the drawer's accessible name is unchanged;
+  the close control stays visible, focusable and in its place at the panel's block start.
+- Events: `ocelle-drawer-close-request` (cancelable; `detail.reason` is `"escape"`, `"close-button"` or `"backdrop"`)
+  when the user asks to close it, and `ocelle-drawer-close` (`detail.reason` is the request's reason, or `"host"` when
+  the host set `open` to false or the platform closed it) once it has left the top layer and focus has returned; both
+  bubble and are composed, and opening dispatches nothing. Cancelling `ocelle-drawer-close-request` keeps the drawer
+  open, with focus inside, on every repetition.
+
+```js
+opener.addEventListener("click", () => { drawer.open = true; });
+drawer.addEventListener("ocelle-drawer-close-request", (e) => { if (hasUnsavedInput()) e.preventDefault(); });
+drawer.addEventListener("ocelle-drawer-close", (e) => { /* e.detail.reason */ });
+```
+
+**Backdrop.** A primary-button click on the backdrop asks to close the drawer with reason `"backdrop"`; a press that
+starts in the panel and ends on the backdrop, or starts on the backdrop and ends in the panel, a click inside the panel
+and a secondary-button click do nothing. A click on the backdrop of an `ocelle-dialog` opened over the drawer closes
+neither.
+
+**Layout.** The drawer is as wide as `--ocelle-drawer-inline` (the sidebar width), never wider than
+`--ocelle-dialog-max-inline`, and as tall as the viewport; it has no `--ocelle-dialog-inline-size`. The two corners on
+the panel's inner edge, the edge facing the page, are rounded with `--ocelle-radius-2`; the two against the viewport's
+edge are square. The body fills the panel between the header and the footer, so the footer sits at the panel's end;
+it keeps the dialog's minimum of three times `--ocelle-target-min`, and when the viewport is too short the panel
+scrolls as a whole.
+
+**Motion.** The drawer slides in from its own edge and back out over `--ocelle-motion-base` with
+`--ocelle-easing-standard`, mirrored under `dir="rtl"`, and not at all under `prefers-reduced-motion: reduce`, whatever
+an ancestor sets on those tokens.
+
+`ocelle-drawer` reads the tokens `--ocelle-color-sheet`, `--ocelle-color-ink`, `--ocelle-color-overlay`,
+`--ocelle-color-chrome`, `--ocelle-color-chrome-ink`, `--ocelle-elevation-raised`, `--ocelle-radius-2`,
+`--ocelle-border-width`, `--ocelle-drawer-inline`, `--ocelle-dialog-max-inline`, `--ocelle-font-sans`,
+`--ocelle-font-size-md`, `--ocelle-font-size-lg`, `--ocelle-font-weight-strong`, `--ocelle-line-height-normal`,
+`--ocelle-line-height-tight`, `--ocelle-space-2`, `--ocelle-space-3`, `--ocelle-space-4`, `--ocelle-space-6`,
+`--ocelle-target-min`, `--ocelle-size-visually-hidden`, `--ocelle-focus-width`, `--ocelle-focus-offset`,
+`--ocelle-color-focus`, `--ocelle-motion-base` and `--ocelle-easing-standard`, and its close icon
+`--ocelle-icon-size`.
+
+#12's personal drawer: the chrome ground, a heading kept for the accessibility tree only, and the personal rail as its
+body.
+
+```html
+<ocelle-drawer label="Personal" ground="chrome" heading-hidden side="start">
+  <ocelle-personal-rail><!-- the personal rail --></ocelle-personal-rail>
+</ocelle-drawer>
+```
+
+## `ocelle-tooltip`
+
+```html
+<ocelle-tooltip text="Projects"><button aria-label="Projects"><ocelle-icon name="folder"></ocelle-icon></button></ocelle-tooltip>
+<ocelle-tooltip text="Saves a draft you can reopen later" describes><button>Save</button></ocelle-tooltip>
+```
+
+`ocelle-tooltip` shows a short text in a bubble beside its trigger, the first element in its default slot, when the
+pointer rests on the trigger or the trigger receives keyboard focus.
+
+- `text` (attribute and property): the bubble's plain text; an empty text shows no bubble.
+- `placement` (attribute and property, reflected): `top` (the default), `bottom`, `start` or `end`, the side of the
+  trigger the bubble is shown on, `start` and `end` in the tooltip's direction.
+- `disabled` (attribute and property, reflected): no bubble is shown.
+- `describes` (attribute and property, reflected): the text becomes the trigger's accessible description.
+- Slots: the default slot holds the trigger; the `description` slot is the tooltip's own and is never rendered. Part:
+  `bubble`. Events: none.
+
+The host is `display: contents`, so wrapping a trigger leaves the trigger's box unchanged: a pill that ellipsises in a
+narrow container still does, and an item keeps its place in a list.
+
+**Show and hide.** The bubble shows after the pointer has rested on the trigger for `--ocelle-tooltip-delay`, and at
+once when the trigger, or a control inside it, receives keyboard focus (it matches `:focus-visible`); focus from a
+pointer click or a tap neither shows nor keeps it. It stays while the pointer is on the trigger or on the bubble, which
+the pointer can reach across the gap between them, or the trigger has keyboard focus, with no timeout, and hides when
+none of these holds. Escape hides it and goes no further: focus and pointer do not move, an open dialog or drawer
+around it stays open and the next Escape asks to close that, and the bubble stays hidden until the pointer re-enters or
+keyboard focus arrives again. At most one bubble is shown on the page; it hides when its trigger is removed or disabled
+and when a dialog or drawer opens. The delay applies under `prefers-reduced-motion: reduce` too (a delay is not
+motion), and the bubble never animates.
+
+**Placement.** The bubble is shown in the top layer through the Popover API, above any open dialog or drawer, whole,
+whatever the overflow, transform or stacking context around the trigger. It is placed on its `placement` side,
+`--ocelle-space-2` away, and shown on the opposite side when it would overflow the viewport less `--ocelle-gutter`;
+when it fits on neither side it stays on its `placement` side; across that axis it is kept inside the viewport less
+`--ocelle-gutter`; it follows the trigger when anything scrolls or the viewport is resized. It is never wider than
+`--ocelle-tooltip-max-inline`: longer text wraps, an unbreakable string included. Its position is written to a
+stylesheet the tooltip adopts, never to a `style` attribute.
+
+`ocelle-tooltip` reads the tokens `--ocelle-color-chrome`, `--ocelle-color-chrome-ink`, `--ocelle-radius-2`,
+`--ocelle-border-width`, `--ocelle-font-sans`, `--ocelle-font-size-sm`, `--ocelle-line-height-normal`,
+`--ocelle-space-1`, `--ocelle-space-2`, `--ocelle-gutter`, `--ocelle-tooltip-delay` and
+`--ocelle-tooltip-max-inline`. In forced colours the bubble has the `Canvas` ground, `CanvasText` text and a
+`CanvasText` border.
+
+**Accessibility.** The trigger carries its own accessible name: the tooltip never names it. The bubble only repeats or
+supplements what is available otherwise, so it never carries essential information; touch input shows no bubble,
+except on a text-field trigger, which shows it on any focus. Without `describes`, the bubble is hidden from assistive
+technology and the trigger gets no description from the tooltip: use it when the text repeats the trigger's name. Set
+`describes` when the text adds to the trigger's name. With `describes`, the tooltip adds one hidden `span` with
+`slot="description"` and `role="tooltip"` to its own children, its text set as text, and that span's id to the
+trigger's `aria-describedby`, keeping the ids the host put there; it puts both back when a re-render of the host's
+template removes them, and moves the id when the trigger is replaced. No id reference crosses a shadow root.
+
+**Limits.** Triggers are buttons and links. A text field matches `:focus-visible` on any focus, so around one the
+bubble shows on focus however it arrives, by a click or a tap too. `describes` is supported only when the trigger is
+itself the focusable element (a native control, or a custom element focusable as its host): a custom element whose
+inner control takes focus cannot be described from outside its shadow root. On touch there is no hover, and a tap on a
+button or link does not give keyboard focus, so a tap shows no bubble. In an engine without the Popover API (below the
+engine floor) the tooltip shows nothing and throws nothing.
+
+#12's icon-only nav item: the link carries its name, and the bubble repeats it on hover and keyboard focus. #7's pill
+tag: the tooltip shows the full text only while the tag is ellipsised. Both render the tooltip inside their own shadow
+root, around their own inner control:
+
+```js
+// inside ocelle-nav-item's shadow root (icon-only mode)
+html`<ocelle-tooltip text="Projects" placement="end"><a href="/projects" aria-label="Projects">…</a></ocelle-tooltip>`;
+// inside ocelle-pill-tag's shadow root
+html`<ocelle-tooltip text="${this.text}" ?disabled=${!this.truncated}><button class="pill">${this.text}</button></ocelle-tooltip>`;
+```
 
 ## `ocelle-section-header`
 
@@ -965,6 +1207,11 @@ A host `aria-hidden="true"` hides the element, labelled or not. A host `hidden` 
 and no node, labelled or not. A host `role` or `aria-hidden="false"` is not supported: name the element with `label` or
 `aria-label` instead.
 
+With a host `aria-label`, an open `ocelle-dialog` exposes one named node, its modal dialog, named by the host
+`aria-label`; while it is closed, Chromium exposes the host itself as a named generic node. With a host `aria-label`,
+an open `ocelle-drawer` exposes one named node, its modal dialog, named by the host `aria-label`; while it is closed,
+Chromium exposes the host itself as a named generic node.
+
 ## Two copies on a page
 
 Two copies of the package on one page, two versions or the browser build beside a bundle of the module build, cannot
@@ -973,9 +1220,10 @@ then the first copy's.
 
 ## Engines
 
-Engine floor: Chromium 120+ and WebKit 16.4+, with no `window.ShadyCSS` polyfill on the page. Each figure is the
+Engine floor: Chromium 120+ and WebKit 17+, with no `window.ShadyCSS` polyfill on the page. Each figure is the
 newest feature the elements use:
 
+- The Popover API: Chromium 114, WebKit 17 (the tooltip's bubble in the top layer; it raised the floor from WebKit 16.4);
 - `:dir()`: Chromium 120, WebKit 16.4 (the inline-direction icons' mirroring);
 - `@media not (forced-colors: active)` (Media Queries 4's `not (…)` without a media type): Chromium 104, WebKit 16.4
   (the brand mark's variants);

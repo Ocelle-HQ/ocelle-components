@@ -101,6 +101,79 @@ export interface FrameRecorder {
   stop(): Promise<string[]>;
 }
 
+/** One step of a pointer path: a point in the page's (the frame's) coordinates, and a press or release there. */
+export interface PointerStep {
+  readonly x: number;
+  readonly y: number;
+  /** Presses the button at this point, after moving there. */
+  readonly down?: boolean;
+  /** Releases the button at this point, after moving there (and after `down`, when both are set). */
+  readonly up?: boolean;
+  /** The mouse button of `down` and `up`; `left` when not set. */
+  readonly button?: MouseButton;
+  /**
+   * No move to this point, which must be the previous step's: its press and release follow that step's at once, with
+   * no intermediate moves between them (each move waits for a frame).
+   */
+  readonly still?: boolean;
+}
+
+export type MouseButton = "left" | "right" | "middle";
+
+/**
+ * An event recorded by `record()`, with the state read synchronously inside the listener, at dispatch: the host's
+ * `open` (null when it has no boolean `open`), whether the first `<dialog>` of its shadow root is open and `:modal`
+ * (false when it has none), and `focusPath()`.
+ */
+export interface RecordedEvent {
+  readonly type: string;
+  /** A `CustomEvent`'s detail as JSON would carry it, or null. */
+  readonly detail: unknown;
+  readonly cancelable: boolean;
+  readonly bubbles: boolean;
+  readonly composed: boolean;
+  readonly open: boolean | null;
+  readonly dialogOpen: boolean;
+  readonly modal: boolean;
+  readonly focusPath: string;
+}
+
+/** One keyframe of an animation: its computed offset, its easing and its property values. */
+export type AnimationKeyframe = { readonly offset: number; readonly easing: string } & Readonly<Record<string, string | number>>;
+
+/** One animation of an element, read through `getAnimations()`. */
+export interface AnimationRecord {
+  /** The effect's duration in milliseconds, or `"auto"`. */
+  readonly duration: number | string;
+  readonly easing: string;
+  readonly playState: string;
+  readonly keyframes: readonly AnimationKeyframe[];
+}
+
+/** An element in the top layer: its name (see `focusPath()`) and whether it is `:modal` and `:popover-open`. */
+export interface TopLayerEntry {
+  readonly element: string;
+  readonly modal: boolean;
+  readonly popoverOpen: boolean;
+}
+
+/** The input device and preferences the page sees. */
+export interface Device {
+  /** `(hover: hover)`. */
+  readonly hover: boolean;
+  /** `(pointer: fine)`. */
+  readonly pointerFine: boolean;
+  readonly maxTouchPoints: number;
+  /** `(prefers-reduced-motion: reduce)`. */
+  readonly reducedMotion: boolean;
+}
+
+/** The size of the page's viewport (the frame, in process), in CSS pixels. */
+export interface Size {
+  readonly width: number;
+  readonly height: number;
+}
+
 /** One element of a shadow root's element tree: its local name and its element children (`structure`). */
 export interface TreeNode {
   readonly name: string;
@@ -209,11 +282,15 @@ export interface Driver {
   /**
    * Presses a key or a chord with real keyboard input, never a dispatched event (`:focus-visible` follows real input
    * only), then settles: `Tab`, `Shift+Tab`, `ArrowLeft`, `ArrowRight`, `Home`, `End`, `Alt+ArrowLeft`,
-   * `Ctrl+ArrowRight`, `Meta+ArrowRight`, `Shift+ArrowRight` (009 research.md R-17).
+   * `Ctrl+ArrowRight`, `Meta+ArrowRight`, `Shift+ArrowRight` (009 research.md R-17). 008's `press(key, options)`
+   * (below) presses one key, with Shift held when asked.
    */
-  press(key: string): Promise<void>;
-  /** A real pointer click at `point` of the target's border box, then a settle. */
-  click(target: Target, point: Point): Promise<void>;
+  chord(key: string): Promise<void>;
+  /**
+   * A real pointer click at `point` of the target's border box, then a settle. 008's `click(id, inner, options)`
+   * (below) clicks the centre of an element.
+   */
+  clickAt(target: Target, point: Point): Promise<void>;
   /** A real wheel event over the centre of the target's border box, `deltaX` CSS px to the right, then a settle. */
   wheel(target: Target, deltaX: number): Promise<void>;
   /**
@@ -246,6 +323,51 @@ export interface Driver {
   frameRecord(target: Target, read: Reading): Promise<FrameRecorder>;
   /** Waits two animation frames, then until every `ocelle-*` element of the page has rendered (`updateComplete`). */
   settle(): Promise<void>;
+
+  // The additions of 008 (research.md R-14). Input is real input through the browser (CDP): keys go to the focused
+  // element, pointer input to a point of the page, so `:hover`, `:focus-visible` and the pointer events are the
+  // browser's own. None of them writes a `style` attribute or a `<style>` element, so FR-047's counts are left alone;
+  // `style()` above does write one and is not used by the overlay scenarios.
+
+  /** Presses and releases `key` (a `KeyboardEvent.key` value: "Tab", "Escape", " ", …), with Shift held when `shift`. */
+  press(key: string, options?: { readonly shift?: boolean }): Promise<void>;
+  /** Moves the pointer to the centre of the element with `id` (or of `inner` in its shadow root), or with null to (0, 0). */
+  hover(id: string | null, inner?: string): Promise<void>;
+  /** Moves the pointer to the centre of the element with `id` (or of `inner`) and clicks there with `button` (`left`). */
+  click(id: string, inner?: string, options?: { readonly button?: MouseButton }): Promise<void>;
+  /** Moves the pointer through `path` in order, with intermediate moves, pressing and releasing where a step says so. */
+  pointer(path: readonly PointerStep[]): Promise<void>;
+  /** A real touch tap at the centre of the element with `id` (or of `inner`); only in a touch context. */
+  touchTap(id: string, inner?: string): Promise<void>;
+  /**
+   * The deep active element: its name (its `id`, or its local name when it has none), with the active element of its
+   * shadow root (open or closed) or of its frame after it in brackets, as deep as focus goes (`fh[in]`, `fr[f1]`); or
+   * `"body"` when nothing is focused.
+   */
+  focusPath(): Promise<string>;
+  /** Whether the element with `id` (or `inner` in its shadow root) matches `:focus-visible`. */
+  focusVisible(id: string, inner?: string): Promise<boolean>;
+  // Reduced motion is 013's `reducedMotion(mode)` and resizing is 013's `viewport(width, height)`, below (the merge of
+  // #43 kept them and converted 008's calls to them). Forced colours leave reduced motion alone.
+  /** The viewport's size. */
+  viewportSize(): Promise<Size>;
+  /** The input device and preferences the page sees. */
+  device(): Promise<Device>;
+  /** Starts recording the events `names` on the element with `id`, until the next `mount`. */
+  record(id: string, names: readonly string[]): Promise<void>;
+  /** The events recorded since the last `mount`, in dispatch order. */
+  recorded(): Promise<RecordedEvent[]>;
+  /**
+   * The animations of the element with `id` (or of `inner` in its shadow root), not of its subtree, with their
+   * keyframes (008; 013's `animations(id)` below reads the element and its whole shadow root instead).
+   */
+  ownAnimations(id: string, inner?: string): Promise<AnimationRecord[]>;
+  /** The open `:modal` and `:popover-open` elements of the page and its shadow roots, bottom first. */
+  topLayer(): Promise<TopLayerEntry[]>;
+  /** FR-047: the number of elements whose `style` attribute was written since the last `mount`, removed or not. */
+  styleAttributes(): Promise<number>;
+  /** FR-047: the number of `<style>` elements added to the document or a shadow root since the last `mount`, removed or not. */
+  styleElements(): Promise<number>;
   // Light DOM, keyboard and size plumbing, and the document readers of 011 research.md R-13 (T006, T007).
   /** Appends `markup` (no `style` attribute) to the light DOM of the element with `id`, after its children, and waits for every element to render. */
   append(id: string, markup: string): Promise<void>;
@@ -262,8 +384,8 @@ export interface Driver {
   activeElement(): Promise<ActiveElement>;
   /**
    * Sets the viewport to `width` × `height` CSS px and waits for every element to render; it stays until set again: in
-   * process the test's iframe (`vitest/browser`'s `page.viewport`, whose default is 414 × 896), on the fixture pages
-   * the page itself (`page.setViewportSize`, 1280 × 800 when the page opens). A 009 frame scenario sets its frame's
+   * process the test's iframe (`vitest/browser`'s `page.viewport`, 1280 × 800 by vitest.config.ts since 008), on the
+   * fixture pages the page itself (`page.setViewportSize`, 1280 × 800 when the page opens). A 009 frame scenario sets its frame's
    * viewport before it mounts (009 research.md R-17).
    */
   viewport(width: number, height: number): Promise<void>;

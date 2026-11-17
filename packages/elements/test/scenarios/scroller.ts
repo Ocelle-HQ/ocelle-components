@@ -297,7 +297,7 @@ export function regionScenarios(region: Region): Scenario[] {
         await driver.forcedColors("active", "light");
         const forced = await ringSides(driver, "s", await highlightOnCanvas(driver));
         await driver.forcedColors("none");
-        await driver.press("Tab");
+        await driver.chord("Tab");
         return { ...observed, rest, again, forced, left: { active: await driver.deepActive(), frame: await shadowAttribute(driver, "s", "region-frame", "tabindex") } };
       },
       expected: {
@@ -358,27 +358,27 @@ async function arrowKeys(driver: Driver, direction: "ltr" | "rtl", reduced: bool
   const toward = direction === "ltr" ? "ArrowRight" : "ArrowLeft";
   const back = direction === "ltr" ? "ArrowLeft" : "ArrowRight";
   const record = await driver.frameRecord(boxOf("s"), { property: "scrollLeft" });
-  await driver.press(toward);
+  await driver.chord(toward);
   const frames = (await record.stop()).filter((each) => !each.startsWith("resize: "));
   const first = { after: [...new Set(frames.slice(frames.indexOf("keydown") + 1))], prevented: await driver.lastKeyPrevented() };
-  await driver.press(back);
+  await driver.chord(back);
   const returned = [await driver.scrollLeft(boxOf("s")), await driver.lastKeyPrevented()];
-  await driver.press(back);
+  await driver.chord(back);
   const atStart = [await driver.scrollLeft(boxOf("s")), await driver.lastKeyPrevented()];
   await driver.setScrollLeft(boxOf("s"), sign * 10_000);
-  await driver.press(toward);
+  await driver.chord(toward);
   const atEnd = [await driver.scrollLeft(boxOf("s")), await driver.lastKeyPrevented()];
   const homeEnd: boolean[] = [];
   for (const key of ["Home", "End"]) {
     await driver.setScrollLeft(boxOf("s"), sign * 300);
-    await driver.press(key);
+    await driver.chord(key);
     homeEnd.push(await driver.lastKeyPrevented());
   }
   const modified: unknown[] = [];
   for (const key of ["Alt+ArrowLeft", "Ctrl+ArrowRight", "Meta+ArrowRight", "Shift+ArrowRight"]) {
     await driver.setScrollLeft(boxOf("s"), sign * 300);
     const held = await driver.frameRecord(boxOf("s"), { property: "scrollLeft" });
-    await driver.press(key);
+    await driver.chord(key);
     await driver.settle();
     await driver.settle();
     modified.push({ key, scrollLeft: [...new Set((await held.stop()).filter((each) => each !== "keydown").map((each) => each.replace("resize: ", "")))], prevented: await driver.lastKeyPrevented() });
@@ -557,11 +557,11 @@ export const scrollerScenarios: readonly Scenario[] = [
       await page(driver, `${before}${strip("s", '<span class="solid"></span>', ' label="Filters"', ' data-ground="canvas"')}`);
       await focusBox(driver, "s");
       const keyboard = await ringSides(driver, "s", focusColour("light"));
-      await driver.click("before", { x: 2, y: 2 });
-      await driver.click("s", { x: 150, y: 17 });
+      await driver.clickAt("before", { x: 2, y: 2 });
+      await driver.clickAt("s", { x: 150, y: 17 });
       const clicked = { active: await driver.deepActive(), ring: await ringSides(driver, "s", focusColour("light")) };
       await driver.forcedColors("active", "light");
-      await driver.click("before", { x: 2, y: 2 });
+      await driver.clickAt("before", { x: 2, y: 2 });
       await focusBox(driver, "s");
       const forced = await ringSides(driver, "s", await highlightOnCanvas(driver));
       await driver.forcedColors("none");
@@ -575,14 +575,14 @@ export const scrollerScenarios: readonly Scenario[] = [
     run: async (driver) => {
       await page(driver, `${before}${strip("s", links("k", 12))}`);
       await focusBox(driver, "s");
-      await driver.press("ArrowRight");
+      await driver.chord("ArrowRight");
       const box = [await driver.lastKeyPrevented(), await driver.scrollLeft(boxOf("s"))];
       await driver.setScrollLeft(boxOf("s"), 0);
-      await driver.press("Tab");
+      await driver.chord("Tab");
       const focused = await driver.deepActive();
-      await driver.press("ArrowRight");
+      await driver.chord("ArrowRight");
       const right = await driver.lastKeyPrevented();
-      await driver.press("ArrowLeft");
+      await driver.chord("ArrowLeft");
       return { box, focused, link: [right, await driver.lastKeyPrevented()] };
     },
     expected: { box: [true, 40], focused: "k0", link: [false, false] },
@@ -595,7 +595,7 @@ export const scrollerScenarios: readonly Scenario[] = [
         await driver.reducedMotion(reduced ? "reduce" : "no-preference");
         await focusBox(driver, "s");
         const record = await driver.frameRecord(boxOf("s"), { computed: "mask-image" });
-        await driver.press("ArrowRight");
+        await driver.chord("ArrowRight");
         const frames = (await record.stop()).filter((each) => !each.startsWith("resize: "));
         const key = frames.indexOf("keydown");
         const [was, now] = [new Set(frames.slice(0, key)), new Set(frames.slice(key + 1))];
@@ -626,7 +626,7 @@ export const scrollerScenarios: readonly Scenario[] = [
         const rings: boolean[] = [];
         await driver.tabWalk("before", `${prefix}0`);
         for (let index = 0; index < count; index++) {
-          if (index > 0) await driver.press("Tab");
+          if (index > 0) await driver.chord("Tab");
           rings.push(inside(ringOf(await driver.box(`${prefix}${String(index)}`)), await driver.box(id, ".region-box")));
         }
         const box = await driver.box(id, ".region-box");
@@ -656,11 +656,11 @@ export const scrollerScenarios: readonly Scenario[] = [
         const steps: unknown[] = [];
         await driver.tabWalk("before", "s >> div.region-box");
         for (let index = 0; index < 12; index++) {
-          await driver.press("Tab");
+          await driver.chord("Tab");
           steps.push({ focused: await driver.deepActive(), ...(await step(driver, "s", `k${String(index)}`, direction)) });
         }
         for (let index = 10; index >= 0; index--) {
-          await driver.press("Shift+Tab");
+          await driver.chord("Shift+Tab");
           steps.push({ focused: await driver.deepActive(), ...(await step(driver, "s", `k${String(index)}`, direction)) });
         }
         return steps;
@@ -680,25 +680,25 @@ export const scrollerScenarios: readonly Scenario[] = [
     run: async (driver) => {
       await page(driver, `${before}${strip("s", `${links("k", 6)}<button id="wide" class="wide" type="button">wide</button>${links("m", 6)}`, ' label="Filters"', ' data-ground="canvas"')}`);
       await driver.tabWalk("before", "k5");
-      await driver.press("Tab");
+      await driver.chord("Tab");
       const focused = { active: await driver.deepActive(), ...(await fallbackState(driver)) };
       const ringStart = (await driver.box("wide")).x - room - (await driver.box("s", ".region-box")).x;
       await driver.wheel("s", 30);
       const wheeled = await fallbackState(driver);
-      await driver.press("Shift+Tab");
-      await driver.press("Tab");
+      await driver.chord("Shift+Tab");
+      await driver.chord("Tab");
       const again = await fallbackState(driver);
-      await driver.press("Tab");
+      await driver.chord("Tab");
       const left = { active: await driver.deepActive(), fades: (await fallbackState(driver)).fades };
       await driver.tabWalk("before", "wide");
       const before7 = (await fallbackState(driver)).fades;
       await driver.tabWalk("wide", "s >> div.region-box", true);
-      await driver.press("ArrowRight");
+      await driver.chord("ArrowRight");
       const arrowed = (await fallbackState(driver)).fades;
       await driver.forcedColors("active", "light");
       await driver.tabWalk("before", "wide");
       const forcedSuppressed = [await driver.computed({ id: "s", inner: ".region-edge.start" }, "border-left-width"), await driver.computed({ id: "s", inner: ".region-edge.end" }, "border-right-width")];
-      await driver.press("Tab");
+      await driver.chord("Tab");
       const forcedBack = [await driver.computed({ id: "s", inner: ".region-edge.start" }, "border-left-width"), await driver.computed({ id: "s", inner: ".region-edge.end" }, "border-right-width")];
       await driver.forcedColors("none");
       return { focused, ringStart: Math.round(ringStart), wheeled: wheeled.fades, again, left, before7, arrowed, forced: { suppressed: forcedSuppressed, back: forcedBack } };
@@ -723,13 +723,13 @@ export const scrollerScenarios: readonly Scenario[] = [
         driver,
         `${before}${strip("s", row("k", button("pb")))}<div id="twin" class="twin"><div class="twin-track">${row("t", button("tb"))}</div></div>${strip("s2", row("i", '<input id="ti" class="item" type="text" aria-label="Text">'))}`,
       );
-      await driver.click("pb", { x: 3, y: 12 });
-      await driver.click("tb", { x: 3, y: 12 });
+      await driver.clickAt("pb", { x: 3, y: 12 });
+      await driver.clickAt("tb", { x: 3, y: 12 });
       const clicked = { active: await driver.deepActive(), scroller: await driver.scrollLeft(boxOf("s")), twin: await driver.scrollLeft("twin"), fade: await shadowAttribute(driver, "s", "region-box", "data-fade") };
       await driver.tabWalk("before", "pb");
       const box = await driver.box("s", ".region-box");
       const tabbed = Math.round(box.x + box.width - ringOf(await driver.box("pb")).right);
-      await driver.click("ti", { x: 3, y: 12 });
+      await driver.clickAt("ti", { x: 3, y: 12 });
       const box2 = await driver.box("s2", ".region-box");
       return { clicked, tabbed, input: { active: await driver.deepActive(), clearance: Math.round(box2.x + box2.width - ringOf(await driver.box("ti")).right) } };
     },
@@ -776,8 +776,8 @@ export const scrollerScenarios: readonly Scenario[] = [
         `${before}${strip("a", links("a", 3))}${strip("b", links("b", 12))}${strip("c", '<span class="solid"></span>', "", ' dir="rtl"')}${strip("d", links("d", 12), ' aria-label="Ready strip"')}`,
       );
       await focusBox(driver, "b");
-      await driver.press("ArrowRight");
-      await driver.press("Tab");
+      await driver.chord("ArrowRight");
+      await driver.chord("Tab");
       await driver.setScrollLeft(boxOf("c"), -300);
       await driver.style("a", "inline-size", "100px");
       return { defined: await driver.box("a", ".region-box").then((box) => box.display), messages: await driver.messages() };
@@ -820,7 +820,7 @@ export const scrollerGuards: readonly Scenario[] = [
     name: "US1 guard: overflow that ends while focus is outside the strip moves no focus, beside a twin whose focused box hands focus over (FR-004)",
     run: async (driver) => {
       await page(driver, `${before}${strip("s", '<span id="w" class="solid"></span><a id="k" class="item" href="#k">k</a>')}`);
-      await driver.click("before", { x: 2, y: 2 });
+      await driver.clickAt("before", { x: 2, y: 2 });
       await driver.style("w", "inline-size", "100px");
       const outside = await driver.deepActive();
       await driver.style("w", "inline-size", "1000px");
@@ -837,7 +837,7 @@ export const scrollerGuards: readonly Scenario[] = [
       await driver.setScrollLeft(boxOf("s"), 300);
       await focusBox(driver, "s");
       const box = await driver.scrollLeft(boxOf("s"));
-      await driver.press("Tab");
+      await driver.chord("Tab");
       return { box, link: await driver.scrollLeft(boxOf("s")) };
     },
     // Link 0's ring box ends at 90 px: clearing it from 300 px scrolls to the start.
@@ -850,7 +850,7 @@ export const scrollerGuards: readonly Scenario[] = [
       const fade = (): Promise<string | null> => shadowAttribute(driver, "s", "region-box", "data-fade");
       await driver.tabWalk("before", "wide");
       const focused = await fade();
-      await driver.click("before", { x: 2, y: 2 });
+      await driver.clickAt("before", { x: 2, y: 2 });
       const left = await fade();
       await driver.tabWalk("before", "wide");
       await driver.wheel("s", 1);

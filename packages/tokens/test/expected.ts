@@ -171,6 +171,9 @@ export const expectedTokens: readonly ExpectedToken[] = [
   plain("size-avatar", "size", "1.6rem", width(25.6)),
   plain("size-rail-item", "size", "2.5rem", width(40)),
   plain("size-visually-hidden", "size", "1px", width(1)),
+  // 008 (data-model.md § New tokens, research.md R-09): the tooltip bubble's maximum inline size, about 40 characters of
+  // font-size-sm.
+  plain("tooltip-max-inline", "size", "18rem", width(288)),
 
   // A.4 Shell and measure
   plain("shell-topbar-height", "shell", "3.25rem", width(52)),
@@ -197,6 +200,9 @@ export const expectedTokens: readonly ExpectedToken[] = [
   plain("measure-container", "shell", "100cqi", width(1000)),
   derived("dialog-max-inline", "shell", "calc(100vw - 2 * var(--ocelle-gutter))", "calc(100vw - 2 * 1rem)", ["gutter"], width(1248)),
   derived("dialog-max-block", "shell", "calc(100dvh - 2 * var(--ocelle-gutter))", "calc(100dvh - 2 * 1rem)", ["gutter"], width(768)),
+  // 008 (data-model.md § New tokens, research.md R-09): the drawer's inline size, the sidebar's width, which #12's
+  // personal drawer replaces at narrow widths (spec-kitty-design#450).
+  derived("drawer-inline", "shell", "var(--ocelle-shell-sidebar-width)", "20rem", ["shell-sidebar-width"], width(320)),
   derived(
     "bar-block-narrow",
     "shell",
@@ -282,6 +288,9 @@ export const expectedTokens: readonly ExpectedToken[] = [
     property: "transition-timing-function",
     used: "cubic-bezier(0.22, 1, 0.36, 1)",
   }),
+  // 008 (data-model.md § New tokens, research.md R-09): the tooltip's hover delay; not zeroed under reduced motion,
+  // because a delay is not motion (brand rule (f) sets only motion-fast and motion-base).
+  plain("tooltip-delay", "motion", "500ms", { property: "transition-duration", used: "0.5s" }),
 ];
 
 /** A.6: the tokens that must not exist. */

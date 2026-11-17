@@ -129,7 +129,7 @@ async function keys(driver: Driver, id: string, direction: "ltr" | "rtl"): Promi
   const toward = direction === "ltr" ? "ArrowRight" : "ArrowLeft";
   const back = direction === "ltr" ? "ArrowLeft" : "ArrowRight";
   const press = async (key: string): Promise<unknown[]> => {
-    await driver.press(key);
+    await driver.chord(key);
     return [zeroed(await driver.scrollLeft(boxOf(id))), await driver.lastKeyPrevented()];
   };
   const out: unknown[] = [];
@@ -139,7 +139,7 @@ async function keys(driver: Driver, id: string, direction: "ltr" | "rtl"): Promi
   const modified: unknown[] = [];
   for (const key of ["Alt+ArrowLeft", "Shift+ArrowRight"]) {
     await driver.setScrollLeft(boxOf(id), direction === "ltr" ? 100 : -100);
-    await driver.press(key);
+    await driver.chord(key);
     await driver.settle();
     modified.push({ key, scrollLeft: zeroed(await driver.scrollLeft(boxOf(id))), prevented: await driver.lastKeyPrevented() });
   }
@@ -411,8 +411,8 @@ export const boardScenarios: readonly BoardScenario[] = [
         `${before}${board("a", lanes("a"))}${board("r", lanes("r"), ' label="Workflow"', "N", ' dir="rtl"')}${board("f", linkLanes.replaceAll(' id="l', ' id="fl'))}${board("e", "")}${board("u", lanes("u"), "")}${lane("s", ' label="Ready" count="3" count-label="3 work packages"')}`,
       );
       await driver.tabWalk("before", "a >> div.region-box");
-      await driver.press("ArrowRight");
-      await driver.press("Tab");
+      await driver.chord("ArrowRight");
+      await driver.chord("Tab");
       await driver.setScrollLeft(boxOf("r"), -100);
       await driver.setAttribute("s", "count", "4");
       await driver.style("a-frame", "inline-size", "900px");

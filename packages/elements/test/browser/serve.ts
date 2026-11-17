@@ -12,6 +12,10 @@
 // violations through 002's `addInitScript` collector
 // (packages/tokens/test/browser/serve.ts), requests and their responses through Playwright's `request` and
 // `response` events, and console messages and uncaught errors through its `console` and `pageerror` events.
+//
+// 008 (research.md R-14, R-15): the served directory also holds the test delay stylesheet `tooltip-delay.css`
+// (test/fixtures/), which the overlay and tooltip pages link; every context is a mouse device at 1280 × 800, and
+// `visit(…, { touch: true })` opens its page in a context with `hasTouch` instead, for the touch rows only.
 import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
@@ -35,6 +39,7 @@ const baseSheet = fileURLToPath(new URL("../../../styles/src/base.css", import.m
 const fonts = fileURLToPath(new URL("../../../tokens/fonts", import.meta.url));
 /** The one source of 009's tested frames (research.md R-17), served as `frames.css` for the pages that link it. */
 const framesSheet = fileURLToPath(new URL("../fixtures/frames.css", import.meta.url));
+const tooltipDelay = fileURLToPath(new URL("../fixtures/tooltip-delay.css", import.meta.url));
 
 /** The built files each page may load, by served name, and where the global setup put them. */
 const builtFiles: Readonly<Record<string, string>> = {
@@ -68,6 +73,7 @@ export async function serve(built: Built | undefined): Promise<Served> {
   writeFileSync(join(dir, "tokens.css"), css(source));
   cpSync(baseSheet, join(dir, "base.css"));
   cpSync(framesSheet, join(dir, "frames.css"));
+  cpSync(tooltipDelay, join(dir, "tooltip-delay.css"));
   if (existsSync(fonts)) cpSync(fonts, join(dir, "fonts"), { recursive: true });
   if (built !== undefined && "dir" in built) {
     for (const [name, path] of Object.entries(builtFiles)) if (existsSync(join(built.dir, path))) cpSync(join(built.dir, path), join(dir, name));
@@ -118,12 +124,12 @@ export interface Visit {
 }
 
 /**
- * The allowed requests of a page (spec § The strict-CSP fixture): the page itself, its stylesheets, the vendored
- * font and the scripts the page is allowed (the browser build, and on `scripts` pages the test-only bundles), all
- * same-origin.
+ * The allowed requests of a page (spec § The strict-CSP fixture): the page itself, its stylesheets (009's
+ * `frames.css` and 008's test delay stylesheet among them), the vendored font and the scripts the page is allowed (the
+ * browser build, and on `scripts` pages the test-only bundles), all same-origin.
  */
 function allowed(origin: string, page: string, scripts: readonly string[]): (url: string) => boolean {
-  const paths = new Set([page, "tokens.css", "base.css", "frames.css", ...scripts]);
+  const paths = new Set([page, "tokens.css", "base.css", "frames.css", "tooltip-delay.css", ...scripts]);
   return (url) => {
     if (!url.startsWith(`${origin}/`)) return false;
     const path = new URL(url).pathname.slice(1);
@@ -131,9 +137,16 @@ function allowed(origin: string, page: string, scripts: readonly string[]): (url
   };
 }
 
+/** How `visit` opens a page. */
+export interface VisitOptions {
+  /** Opens the page in a context with `hasTouch` (a touch device) instead of the default mouse context (008 R-14). */
+  readonly touch?: boolean;
+}
+
 /** Opens `page` of the fixture in a fresh context with the recorders installed before navigation. */
-export async function visit(browser: Browser, origin: string, page: string, scripts: readonly string[] = ["ocelle-elements.js"]): Promise<Visit> {
-  const context = await browser.newContext({ viewport: { width: 1280, height: 800 }, colorScheme: "light" });
+export async function visit(browser: Browser, origin: string, page: string, scripts: readonly string[] = ["ocelle-elements.js"], options: VisitOptions = {}): Promise<Visit> {
+  const touch = options.touch === true ? { hasTouch: true } : {};
+  const context = await browser.newContext({ viewport: { width: 1280, height: 800 }, colorScheme: "light", ...touch });
   const opened = await context.newPage();
   const log: string[] = [];
   const requests: string[] = [];

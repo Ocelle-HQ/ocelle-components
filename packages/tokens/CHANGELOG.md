@@ -54,16 +54,19 @@ nothing loads from a CDN, and two new merge checks (Contrast, Brand rules) keep 
     `--ocelle-radius-pill`, `--ocelle-border-width`, `--ocelle-focus-width`, `--ocelle-focus-offset`,
     `--ocelle-bar-width`, `--ocelle-ring-step`
   - size: `--ocelle-target-min`, `--ocelle-icon-size`, `--ocelle-size-dot`, `--ocelle-size-step`,
-    `--ocelle-size-avatar`, `--ocelle-size-rail-item`, `--ocelle-size-visually-hidden`
+    `--ocelle-size-avatar`, `--ocelle-size-rail-item`, `--ocelle-size-visually-hidden`, `--ocelle-tooltip-max-inline`
+    (the maximum inline size of the `ocelle-tooltip` bubble; mission 008)
   - shell: `--ocelle-shell-topbar-height`, `--ocelle-shell-rail-width`, `--ocelle-shell-sidebar-width`,
     `--ocelle-shell-inspector-width`, `--ocelle-shell-main-max`, `--ocelle-shell-collapse-inspector`,
     `--ocelle-shell-collapse-sidebar`, `--ocelle-shell-height`, `--ocelle-footer-h`, `--ocelle-measure-sheet`,
     `--ocelle-measure-sentence`, `--ocelle-measure-page`, `--ocelle-measure-reading`, `--ocelle-measure-cell` and
     `--ocelle-measure-container` (the prose measure, table cell floor and caption cap of `@ocelle/styles`, 003),
-    `--ocelle-dialog-max-inline`, `--ocelle-dialog-max-block`, `--ocelle-bar-block-narrow`, `--ocelle-lane-min-width`
-    (a board lane's minimum and flex basis, `10rem`), `--ocelle-list-track-width` (list-detail's list pane, `18rem`),
+    `--ocelle-dialog-max-inline`, `--ocelle-dialog-max-block`, `--ocelle-bar-block-narrow`, `--ocelle-drawer-inline`
+    (the inline size of `ocelle-drawer`, the sidebar width; mission 008), `--ocelle-lane-min-width` (a board lane's
+    minimum and flex basis, `10rem`), `--ocelle-list-track-width` (list-detail's list pane, `18rem`),
     `--ocelle-list-detail-collapse` and `--ocelle-list-detail-inspector-collapse` (list-detail's default
     `collapse-below` and `inspector-below`, `40rem` and `60rem`) (the workflow layouts of `@ocelle/elements`, 009)
   - elevation: `--ocelle-elevation-sheet`, `--ocelle-elevation-raised`, `--ocelle-elevation-row`,
     `--ocelle-elevation-seg`, `--ocelle-elevation-bar`
-  - motion: `--ocelle-motion-fast`, `--ocelle-motion-base`, `--ocelle-easing-standard`
+  - motion: `--ocelle-motion-fast`, `--ocelle-motion-base`, `--ocelle-easing-standard`, `--ocelle-tooltip-delay` (the
+    hover delay of `ocelle-tooltip`, not zeroed under reduced motion; mission 008)

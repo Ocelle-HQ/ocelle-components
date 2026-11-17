@@ -93,7 +93,7 @@ describe("the fixture driver", { timeout: 60_000 }, () => {
     { key: "Ctrl+ArrowRight", seen: { key: "ArrowRight", ...plain, ctrl: true } },
     { key: "Meta+ArrowRight", seen: { key: "ArrowRight", ...plain, meta: true } },
     { key: "Shift+ArrowRight", seen: { key: "ArrowRight", ...plain, shift: true } },
-  ])("press($key) sends one trusted keydown of the key with exactly its modifiers", async ({ key, seen }) => {
+  ])("chord($key) sends one trusted keydown of the key with exactly its modifiers", async ({ key, seen }) => {
     const page = await open();
     const driver = fixtureDriver(page.page, page.log);
     await driver.mount('<button id="a" type="button">A</button>');
@@ -105,20 +105,20 @@ describe("the fixture driver", { timeout: 60_000 }, () => {
         if (!["Alt", "Control", "Meta", "Shift"].includes(event.key)) seen.push({ key: event.key, alt: event.altKey, ctrl: event.ctrlKey, meta: event.metaKey, shift: event.shiftKey, trusted: event.isTrusted });
       });
     });
-    await driver.press(key);
+    await driver.chord(key);
     const keys = await page.page.evaluate(() => (window as unknown as { seen: unknown[] }).seen);
     expect({ keys, recorded: await page.finish() }).toEqual({ keys: [seen], recorded: clean });
   });
 
-  it("press(Tab) and press(Shift+Tab) move focus with real input, so the focused button matches :focus-visible", async () => {
+  it("chord(Tab) and chord(Shift+Tab) move focus with real input, so the focused button matches :focus-visible", async () => {
     const page = await open();
     const driver = fixtureDriver(page.page, page.log);
     await driver.mount('<button id="a" type="button">A</button><button id="b" type="button">B</button>');
     const focused = (): Promise<unknown> => page.page.evaluate(() => ({ id: document.activeElement?.id, visible: document.activeElement?.matches(":focus-visible") }));
     await page.page.evaluate(() => document.getElementById("a")?.focus());
-    await driver.press("Tab");
+    await driver.chord("Tab");
     const forward = await focused();
-    await driver.press("Shift+Tab");
+    await driver.chord("Shift+Tab");
     expect({ observed: [forward, await focused()], recorded: await page.finish() }).toEqual({
       observed: [
         { id: "b", visible: true },
@@ -128,7 +128,7 @@ describe("the fixture driver", { timeout: 60_000 }, () => {
     });
   });
 
-  it("click(target, point) clicks at that point of the box with a trusted event, on a light-DOM and a shadow target, and a clicked button does not match :focus-visible", async () => {
+  it("clickAt(target, point) clicks at that point of the box with a trusted event, on a light-DOM and a shadow target, and a clicked button does not match :focus-visible", async () => {
     const page = await open();
     const driver = fixtureDriver(page.page, page.log);
     await defineHost(page.page);
@@ -143,9 +143,9 @@ describe("the fixture driver", { timeout: 60_000 }, () => {
         clicks.push({ target: target.id === "" ? target.className : target.id, x: Math.round(event.clientX - box.left), y: Math.round(event.clientY - box.top), trusted: event.isTrusted });
       });
     });
-    await driver.click("pad", { x: 30, y: 10 });
-    await driver.click({ id: "h", inner: ".inner" }, { x: 4, y: 4 });
-    await driver.click("a", { x: 2, y: 2 });
+    await driver.clickAt("pad", { x: 30, y: 10 });
+    await driver.clickAt({ id: "h", inner: ".inner" }, { x: 4, y: 4 });
+    await driver.clickAt("a", { x: 2, y: 2 });
     const observed = await page.page.evaluate(() => ({ clicks: (window as unknown as { clicks: unknown[] }).clicks, focused: document.activeElement?.id, visible: document.activeElement?.matches(":focus-visible") }));
     expect({ observed, recorded: await page.finish() }).toEqual({
       observed: {
@@ -245,10 +245,10 @@ describe("the fixture driver", { timeout: 60_000 }, () => {
     await defineHost(page.page);
     await driver.mount('<button id="a" type="button">A</button><button id="b" type="button">B</button><driver-host id="h"></driver-host>');
     await page.page.evaluate(() => document.getElementById("a")?.focus());
-    await driver.press("Tab");
+    await driver.chord("Tab");
     await driver.focus({ id: "h", inner: ".inner" });
     const afterKeys = { active: await driver.deepActive(), visible: await page.page.evaluate(() => document.getElementById("h")?.shadowRoot?.activeElement?.matches(":focus-visible")) };
-    await driver.click("a", { x: 2, y: 2 });
+    await driver.clickAt("a", { x: 2, y: 2 });
     await driver.focus("b");
     const afterClick = { active: await driver.deepActive(), visible: await page.page.evaluate(() => document.activeElement?.matches(":focus-visible")) };
     expect({ observed: [afterKeys, afterClick], recorded: await page.finish() }).toEqual({
@@ -296,9 +296,9 @@ describe("the fixture driver", { timeout: 60_000 }, () => {
       button?.focus();
     });
     const atMount = await driver.lastKeyPrevented();
-    await driver.press("ArrowRight");
+    await driver.chord("ArrowRight");
     const prevented = await driver.lastKeyPrevented();
-    await driver.press("ArrowLeft");
+    await driver.chord("ArrowLeft");
     expect({ observed: [atMount, prevented, await driver.lastKeyPrevented()], recorded: await page.finish() }).toEqual({ observed: [false, true, false], recorded: clean });
   });
 
@@ -333,7 +333,7 @@ describe("the fixture driver", { timeout: 60_000 }, () => {
       box?.focus();
     });
     const recorder = await driver.frameRecord("box", { property: "scrollLeft" });
-    await driver.press("ArrowRight");
+    await driver.chord("ArrowRight");
     const record = await recorder.stop();
     const frames = record.filter((each) => !each.startsWith("resize: "));
     const key = frames.indexOf("keydown");

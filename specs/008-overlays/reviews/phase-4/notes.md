@@ -1,0 +1,703 @@
+# Phase 4 notes: User Story 3, a tooltip that meets WCAG 1.4.13
+
+Base `78fe475` (`base.sha`). Environment: Chromium 153 (`OCELLE_CHROMIUM_PATH`), Playwright 1.64.1, docker with the
+pinned Playwright image; `CI` and `GITHUB_ACTIONS` unset.
+
+## Scaffold and red (T041 to T046, T050)
+
+- Scaffold `d63190e` (`scaffold.sha`): `src/ocelle-tooltip.ts`, the class `OcelleTooltip extends LitElement` with its
+  declared `text`, `placement`, `disabled` and `describes`, no behaviour, no JSDoc tags, not defined and not exported.
+- Red commit `fb7d915` (amended once before `red.sh`; `red-commits`), test files only; `red.sh 4 phase`: `tests_only`
+  true, `red` true, exit 1 (11 m 45 s). Log: `red-phase.log`, **271 of 5005 tests failed, every one by an
+  assertion**:
+  - the shared tooltip bodies in process (74) and on the strict-CSP fixture (74), the touch rows (2 + 2), "No Popover
+    API" (1): `ocelle-tooltip` is not defined, so no bubble part exists (`popoverOpen` undefined, the geometry NaN,
+    the description spans empty, the stand-in's samples show no open bubble);
+  - the entry test, the export keys, the manifest entry (the scaffold class has no JSDoc tags) and the published check
+    (2), the README and CHANGELOG fragments (40), the dist and pack lists (3 + 1);
+  - the tokens: `expected.ts`'s two rows show in `index`, `source-table`, `themes`, `values`, `font` and the
+    CHANGELOG and README checks, and the new tests (288 px, the delay kept under reduced motion); through them the
+    Tokens story tests (`storybook/test/unit/stories.test.ts` × 6, `render.test.ts` × 4);
+  - the 18 tooltip story tests (no story, no override); the gate counts (`storybook-build` 44 stories, `axe` 88 and
+    the plant run 90, `visual` 88 × 2, the baseline command's 88 files, `plant-repo` 88);
+  - the manifest gate's repository runs (`gates/test/manifest.test.ts` × 5, `gates/test/integration/manifest.test.ts`),
+    red because the scaffold module is not in the committed manifest (as in Phases 2 and 3); and
+    `gates/test/integration/vitest-mutation-config.test.ts` "starts source-table.test.ts first …", which stops after
+    the failing `source-table.test.ts` (as in Phase 3).
+- Before `red.sh`, a run of the new files in a worktree at the first red commit showed two rows failing for the wrong
+  reason: "describes lifecycle … the host removes the span" (the stand-in's `remove` of an id that did not exist) and
+  "Hoverable gap" on the fixture (a pointer move to NaN coordinates from the absent bubble, a CDP `Invalid
+  parameters`). The amend removes the spans through a stand-in command that counts them, and gives the gap row's
+  points a finite fallback; the expected values are unchanged.
+
+## Measurements while writing the rows
+
+- Pressing Shift alone makes a clicked button match `:focus-visible` (Chromium 153, probe outside the repository), so
+  the late `:focus-visible` row's precondition holds as the matrix states it.
+- Chromium collapses the two spaces of the name `aria-label="Open  project"` in the computed name: the trigger is
+  named "Open project". The row of US3-11 asserts that name and no description.
+- The description span must be assigned to a slot the shadow root holds but never renders (R-13: "assigned to a slot
+  the shadow root does not render"). With no `description` slot in the shadow root the span is not in the flat tree,
+  and Chromium gives the trigger no description from its `aria-describedby`; with `<slot name="description" hidden>`
+  it does (measured in process: the four description rows failed with the first form and pass with the second).
+- On the fixture the font of `tokens.css` loads after the first show, which widens the bubble: the per-frame check
+  places the bubble again when its own size changes, not only when the trigger moves (measured: the start and end
+  placement rows were 0.7 px off on the fixture with the first form).
+- The Storybook build minifies `stories-layout.css` and writes the override `--ocelle-tooltip-delay: 0ms` as `0s`, so
+  the computed custom property on a story's trigger reads `0s`. T050's story test reads the computed value as a
+  duration and asserts 0 ms (what the override means); the element reads both units (`0.3s` and `300ms` alike).
+- Story layout: the stories add no layout rule. Each trigger stands inline in a sentence after three short paragraphs,
+  so every placement has room on its side at 1280 × 800; the flipped story's trigger is in the first line (the 16 px
+  story padding is less than the bubble's block size plus the gutter). A first form of the flipped story put the
+  trigger at the line's start, where the cross-axis clamp moved the bubble off the trigger's centre; the long-text
+  story with one intro paragraph flipped below. Both were measured by T050's test and changed before the baselines.
+
+## Floor consumers (T049, FR-040, analysis I5)
+
+Searched the whole workspace (`git ls-files`, outside `specs/`, `knowledge/`, `triage/`, `ops/`) at Phase 4 for
+`"engines"`, `browserslist` (a package key or a `.browserslistrc`) and `build.target` (Vite, esbuild, a `tsconfig`
+`target` read as an engine floor), with no merge of `main` in this phase:
+
+- `package.json` (root) `engines`: `node` 26.13.0 and `pnpm` 12.16.1, Node's and pnpm's, not a browser floor; it stays.
+- No other `package.json` has `engines` or `browserslist`; no `.browserslistrc` exists.
+- `packages/elements/vite.browser.config.ts` sets no `build.target`; `storybook/.storybook/main.ts` sets none.
+- `tsconfig.base.json` `"target": "es2024"` is the language level of the TypeScript output, not an engine floor; the
+  package tsconfigs set none.
+- The gates' `engines` matches (`gates/lib/container.ts`, `gates/bin/visual.ts`, `gates/bin/baselines.ts`) are the
+  container engines of the visual gate, not browser floors.
+
+So no browser floor consumer exists besides the elements README § Engines, which now states Chromium 120+ and WebKit
+17+ with the Popover API (Chromium 114, WebKit 17) as the newest feature (T044, T049).
+
+## Kitty Desktop's webview (T053, FR-041; operator decision 2026-11-15, plan decision 26)
+
+Hand-off for kitty-mission-ui #20:
+
+- **Outcome: not yet determinable: Kitty Desktop has no webview until kitty-mission-ui #20.** The floor stays Chromium
+  120 / WebKit 17 (FR-040).
+- Evidence (read by the orchestrator from MOES-Media/kitty-mission-ui at commit `c994c8e`, 2026-10-17; research R-10):
+  `apps/desktop/src-tauri/Cargo.toml` is a compile-only placeholder with no dependencies, its comment "Tauri and its
+  system packages arrive with #20 (research R-02)"; `main.rs` reads "Kitty Desktop placeholder: builds and exits. The
+  Tauri host arrives with #20."; the charter names Tauri 2; the phase-0 research defers the webkit2gtk system packages
+  to #20; CI runs on ubuntu-24.04; no WebKitGTK version is pinned anywhere.
+- What #20 must do: when it adds Tauri 2 on Linux (the distro's webkit2gtk-4.1), choose a WebKitGTK that meets WebKit
+  17. By R-10's reading of the WebKitGTK release notes that is the 2.44 line or later; this is **unverified**. On macOS
+  WKWebView is the system WebKit, at WebKit 17 or newer on macOS 12+ with current updates.
+- Where the floor is stated: the elements README § Engines ("Engine floor: Chromium 120+ and WebKit 17+", with the
+  Popover API as the newest feature; T044's README test pins it).
+- Below the floor a tooltip shows nothing and throws nothing (R-10's guard, the "No Popover API" row), and its trigger
+  keeps its own name (FR-037), so nothing essential is lost.
+
+## Green (T047 to T049, T051)
+
+- Green commit `561c58e`: the two tokens, `src/ocelle-tooltip.ts`, the internal `src/bubble.ts` (the hooks the overlays and
+  the tooltip share without importing each other, so `ocelle-tooltip.js` defines no `ocelle-icon` and the overlays no
+  tooltip), the overlay base's hide-on-open call and topmost-overlay hook, the export, entry point, manifest, README
+  and CHANGELOGs, the delay override in `stories-layout.css`, the stories, the baselines and the plant lines. The
+  gates' Stryker comments that quote the renamed integration test titles name 88 story-themes (comment text only).
+- `ca2da97`: rows my own review of the source asked for before mutation (each passing on `561c58e`).
+- The tooltip's projects at green: `elements`, `elements-touch`, `elements-browser` (tooltip files) 189 passed;
+  `elements-node`, `tokens` 395 passed; `tokens-browser`, `elements-build` 48 passed; the 18 story tests passed.
+  `gate:typecheck`, `gate:lint`, `gate:style-lint`, `gate:test-lint`, `gate:manifest` (5 elements), `gate:csp`,
+  `gate:prefix`, `gate:config-copies`, `gate:contrast`, `gate:brand-rules`, `gate:pins`: no finding.
+
+## Mutation (T049)
+
+`gate:mutation -- --base 78fe475 --plan`, then one `gate:mutation -- --base 78fe475 --files <entries>` run per planned
+shard, the gate and `stryker.elements.config.json` as committed (`dryRunTimeoutMinutes` 30), each run's output in
+`mutation.log`. `.github/workflows/ci.yml` is unchanged (op 015 owns CI's `mutation-shard` limit).
+
+**Run time and the dry run.** The gate prints no Stryker output when Stryker completes, so Stryker's own dry-run
+figure is not in the logs. An elements shard with no mutant on its lines (shards 9 and 10 of the first plan, the
+tooltip's CSS) takes 448 s from start to exit: setup, the TypeScript checker and the dry run of every in-process row
+of `elements` and `elements-touch` (the dialog's, the drawer's and now the tooltip's). That bounds the dry run well
+under the 30-minute limit, so nothing goes to the operator under R-15. A shard with mutants took 467 to 964 s here.
+The six shards of gate files (comment-only changes) take 55 to 59 s each under `stryker.config.json`.
+
+### The first runs (`ca2da97`, plan of 21 shards)
+
+| Shard | Entries | Mutants on changed lines | Survived, NoCoverage | Timeouts | Compile errors | Exit | Time |
+|---|---|---|---|---|---|---|---|
+| 1 to 6 | the gate files (Stryker comment text only) | 0 (zero-mutant entries) | 0 | 0 | 0 | 0 | 55 to 59 s |
+| 7 | `visual-host.ts:180-207`, `capture.ts`, `bubble.ts`, `index.ts`, `ocelle-tooltip.ts:1-30` | 5 | 0 | 0 | 5 | 0 | 876 s |
+| 8 | `ocelle-tooltip.ts:31-60` | 21 | 2 | 0 | 4 | 1 | 905 s |
+| 9, 10 | `ocelle-tooltip.ts:61-120` (CSS) | 0 | 0 | 0 | 0 | 0 | 448 s each |
+| 11 | `:121-150` | 2 | 2 | 0 | 0 | 1 | 467 s |
+| 12 | `:151-180` | 3 | 3 | 0 | 0 | 1 | 515 s |
+| 13 | `:181-210` | 3 | 0 | 0 | 3 | 0 | 516 s |
+| 14 | `:211-240` | 22 | 4 | 0 | 4 | 1 | 584 s |
+| 15 | `:241-270` | 31 | 5 | 0 | 4 | 1 | 537 s |
+| 16 | `:271-300` | 49 | 3 | 0 | 20 | 1 | 561 s |
+| 17 | `:301-330` | 31 | 2 | 0 | 18 | 1 | 536 s |
+| 18 | `:331-360` | 22 | 2 | 0 | 9 | 1 | 527 s |
+| 19 | `:361-390` | 63 | 3 | 0 | 7 | 1 | 666 s |
+| 20 | `:391-420` | 54 | 1 | 1 | 15 | 1 | 540 s |
+| 21 | `:421-448`, `overlay.ts`, `source.ts` | 48 | 7 (one NoCoverage) | 1 | 15 | 1 | 964 s |
+
+`overlay.ts` (the hook calls), `bubble.ts`, `index.ts` and `source.ts` had no survivor. How each finding was resolved
+(lines are `ca2da97`'s): rows in `0020dab`,
+written from the spec and passing on the source of the time, and the source change `1f91513`.
+
+| Finding (`ca2da97` lines) | Code | Resolution |
+|---|---|---|
+| `:38` StringLiteral `endsWith("")` | `milliseconds()` reads a value without a unit as 0 | Row: `--ocelle-tooltip-delay: 300` (no unit) shows in the same task, as the overlays read a duration (Phase 2). |
+| `:53` ObjectLiteral `{}` | `text: { type: String }` | Equivalent, recorded: `{}` gives Lit's default options, type String's (Phase 2 recorded the overlays' `label` alike). |
+| `:136`, `:137` the hook's body; `:211`, `:217` `instances.add/delete` | hide every connected tooltip when an overlay opens | In Chromium the bubble also hides a little later by itself (focus moves into the overlay; the backdrop under the resting pointer gives a `pointerout`), so no row looked at the moment the overlay opens. Row: the trigger-opens rows read, in the overlay `<dialog>`'s synchronous `beforetoggle`, that no bubble is shown (R-10: the hide comes before `showModal()`). The hook now hides the shown bubble only, R-10's "hide current"; the set of tooltips is removed. |
+| `:174`, `:176` BooleanLiteral, `:180` StringLiteral | the initial `#hovered`, `#focused`, `#placed` | Removed: the first `slotchange` sets the first two before any event can matter, and any placement key differs from none. |
+| `:216` CallExpression | `super.disconnectedCallback()` | Equivalent, recorded (Lit's reactive controllers and async directives; the overlays' record of Phase 2). |
+| `:218` CallExpression | `#hide()` on disconnection | Row: the tooltip removed during the delay: no bubble, nothing thrown (without it the timer shows a disconnected popover, which throws). |
+| `:255` × 4 | `#inside(relatedTarget) \|\| pointerType === "touch"` | Rows: a synthetic touch `pointerover` with delay 0 shows nothing, a mouse one shows (R-12); moves inside the tooltip, then leaving before the delay: no bubble (without the inside test each move starts another timer, and the first fires after the leave). |
+| `:268` CallExpression | `clearTimeout` in `pointerout` | Row: shown by keyboard focus, Escape, then the pointer passes through within 100 ms: no bubble (keyboard focus holds, so the leave does not call `#hide`). |
+| `:281` BooleanLiteral | `#focused = false` on `focusout` | The Leave row now also shows the bubble by hover after the keyboard focus left and checks that leaving hides it. |
+| `:297` CallExpression | `clearTimeout` in `#show` | Removed: every path that leaves a timer pending ends in `#hide`, which clears it. |
+| `:300` ConditionalExpression `shown === this` → false | the already-shown return | Equivalent, recorded: the bubble would hide and show again in the same task, with no frame, event or focus change between. The line is split so the record covers this test alone. |
+| `:311` ConditionalExpression | `#hide`'s return when not shown | Row: two tooltips, the first trigger's focus leaving to the page button while the second is shown by hover, then keyboard focus back on the first: one bubble (without the return the first's `#hide` clears the second's record). |
+| `:313` CallExpression | `cancelAnimationFrame` | Equivalent, recorded: a loop left running only places a hidden bubble again and hides it again once its trigger is gone. |
+| `:336` StringLiteral `join("")`, `:337` ConditionalExpression → true | the placement key | The key is now a JSON array (no string literal); the test that skips an unchanged placement is equivalent, recorded (placing at every frame gives the same coordinates). |
+| `:361`, `:363` ArithmeticOperator `+ gutter` | the bottom and right fit | Rows: one pixel short of the exact fit on each side flips (the exact-fit rows of `ca2da97` kill the `>`/`<` mutants). |
+| `:380` CallExpression | `#hide()` on a slot change | The slot-change row with a keyboard-focused old trigger now reads the bubble right after the new trigger is slotted: hidden. |
+| `:407` Timeout | `while (getElementById(id) !== null)` → `=== null` | The loop never ends (every id it tries is free), so the page hangs: no assertion can kill it, Stryker's time limit is the kill (R-15). |
+| `:417`, `:436` Regex `/\s/`, `:436` `?? ""` (NoCoverage) and `each !== ""`, `:435` `trigger === undefined` | reading the ids of `aria-describedby` | One helper reads the ids for `#describe` and `#unlink`, split on single white space, so the `?? ""` and the empty-id filter run on every description (a trigger without the attribute). `trigger === undefined` with a span cannot arise (no trigger, no span); kept for the type. |
+| `:437` StringLiteral `join("")` | the host's remaining ids | Row: host ids "x y" give "x y <id>" with `describes` and "x y" again without it. |
+| `:421` Timeout | `takeRecords()` | Without it the observer reacts to its own `append`, which records again: an endless microtask loop, the page hangs. Stryker's time limit is the kill; R-13 states that the element's own writes are not acted on again. |
+| `:433` CallExpression | the observer's `disconnect()` in `#unlink` | Equivalent, recorded: a callback of a stale observation only runs `#describe`, which writes nothing while the description is not wanted or already in place. |
+
+### The final runs (`1f91513`, plan of 22 shards)
+
+After the source change `1f91513` the plan has 22 shards. The gate files of shards 1 to 6 are unchanged since
+`ca2da97`, so their first runs (no mutant on their changed lines) stand. Every other shard ran again at `1f91513`;
+the test commits after it (`3b6adea`, `19a63c7`) change no source line, so the results of shards 7 to 20 and 22 stand
+for HEAD, and shard 21 ran again at `19a63c7`.
+
+| Shard | Entries | Mutants on changed lines | Survived | Timeouts | Compile errors | Equivalent records | Exit | Time |
+|---|---|---|---|---|---|---|---|---|
+| 7 | the two gate files, `bubble.ts`, `index.ts`, `ocelle-tooltip.ts:1-30` | 14 | 0 | 0 | 9 | 35 (the gate files' process-boundary records) | 0 | 888 s |
+| 8 | `ocelle-tooltip.ts:31-60` | 25 | 0 | 0 | 3 | 1 | 0 | 543 s |
+| 9, 10, 12 | `:61-120` (CSS), `:151-180` (declarations) | 0 | 0 | 0 | 0 | 0 | 0 | 453 to 456 s |
+| 11 | `:121-150` | 5 | 0 | 0 | 4 | 0 | 0 | 475 s |
+| 13 | `:181-210` | 17 | 0 | 0 | 3 | 0 | 0 | 536 s |
+| 14 | `:211-240` | 19 | 0 | 0 | 3 | 1 | 0 | 582 s |
+| 15 | `:241-270` | 24 | 0 | 0 | 4 | 0 | 0 | 509 s |
+| 16 | `:271-300` | 39 | 0 | 0 | 10 | 0 | 0 | 521 s |
+| 17 | `:301-330` | 34 | 0 | 0 | 16 | 2 | 0 | 550 s |
+| 18 | `:331-360` | 30 | 0 | 0 | 18 | 1 | 0 | 540 s |
+| 19 | `:361-390` | 66 | 0 | 0 | 9 | 0 | 0 | 699 s |
+| 20 | `:391-420` | 32 | 0 | 1 | 11 | 0 | 0 | 563 s |
+| 21 | `:421-450` (at `19a63c7`) | 39 | 0 | 1 | 10 | 1 | 0 | 560 s |
+| 22 | `:451-457`, `overlay.ts`, `source.ts` | 12 | 0 | 0 | 5 | 0 | 0 | 917 s |
+
+Shard 21 first ran at `3b6adea` with one survivor, `:444` `id === undefined` → false (columns 34 to 50; `3b6adea`'s
+message names the trigger test by mistake, and its row of the trigger removed with `describes` set stays as a row).
+Without the return, `#unlink` rewrites a trigger's `aria-describedby` when the tooltip has no description, normalising
+the host's white space. Row (`19a63c7`): without `describes`, a host `aria-describedby=" x  y "` stays exactly as
+written through an update and a slot change (R-13: the tooltip removes only its own id); it passes on the source and
+failed with the mutant applied by hand (in process, outside a commit). Shard 21 then exits 0.
+
+**The final runs' Timeout report lines**:
+
+| Report line | Cause |
+|---|---|
+| `packages/elements/src/ocelle-tooltip.ts:415: mutation: timeout: EqualityOperator: replaced by root.getElementById(id) === null` | The id loop of `#describe` then runs while the id it tries is free, which every id is: it never ends and the page hangs at the first description. No assertion can kill it; Stryker's time limit is the kill (R-15). |
+| `packages/elements/src/ocelle-tooltip.ts:429: mutation: timeout: CallExpression: replaced by ;` | `takeRecords()` removed: the observer then reacts to the element's own `append` of the span, which records again, so `#describe` runs in an endless microtask loop and the page hangs. R-13's "its own re-insert is recognised and not acted on again" is that call; Stryker's time limit is the kill. |
+
+**Equivalent-mutant records** (next-line disable comments in `src/ocelle-tooltip.ts`, each with its reason; the gate
+lists them as `record` lines):
+
+| Line | Mutators | Why no test can tell |
+|---|---|---|
+| `text: { type: String }` | ObjectLiteral | `{}` gives Lit's default options, type String's (attribute `text`, the default converter, not reflected). |
+| `super.disconnectedCallback()` | CallExpression | Lit's own disconnection serves reactive controllers and async directives; the tooltip uses neither (the overlays' record of Phase 2). |
+| `if (shown === this) return;` in `#show` | ConditionalExpression | `false`: a bubble already shown hides and shows again in the same task, with no frame, event or focus change between, so nothing sees it. (`true`, which every show row kills, shares the mutator.) |
+| `cancelAnimationFrame(this.#frame)` | CallExpression | A loop left running after the hide only places a hidden bubble again, and hides it again once its trigger is gone: nothing is painted or dispatched. |
+| `if (placed !== this.#placed)` | ConditionalExpression | `true`: placing at every frame gives the same coordinates; the test only spares the work. (`false`, which the following rows kill, shares the mutator.) |
+| `this.#observer.disconnect()` in `#unlink` | CallExpression | A callback of a stale observation only runs `#describe`, which writes nothing while the description is not wanted or already in place. |
+
+No survivor or NoCoverage mutant is left on a changed line. T049 is done.
+
+## Stories and baselines (T051, T052)
+
+- `storybook/stories/tooltip.stories.ts`: the nine stories of data-model § Stories, each inside `<div
+  data-story="tooltip">`, each with `parameters.ocelle.pointer.hover` on `#tooltip-trigger`. `gate:storybook-build`:
+  built 44 stories. T050's story tests: 18 passed.
+- Baselines produced in the pinned container with `pnpm run visual:update` (docker): 22 files written, 18 added (the
+  tooltip's) and 4 changed: `tokens--size.light.png`, `tokens--size.dark.png`, `tokens--motion.light.png` and
+  `tokens--motion.dark.png`, because those Tokens stories list every size and motion token and now show
+  `--ocelle-tooltip-max-inline` and `--ocelle-tooltip-delay` (T047); the pull request must say so (constitution V).
+  No cross-engine (podman) comparison was possible in this container: only docker is available (`gate:visual`
+  reports "docker only: no cross-engine comparison"). CI's captures win over these.
+- `gate:visual`: 88 captures match their baselines.
+- `fail-token-changed`: measured in the pinned container by `gate:plants -- --shard 16` before the lines were added
+  (9 unexpected `differs`: every tooltip story in light; the tooltip's painted box is on the chrome ground, but each
+  story's text is `color-ink`), then the nine lines added (and the plant's `why` counted again: 41 light
+  story-themes); shard 16 then judged every plant as expected.
+- After the source change `1f91513` (after the baselines): `visual:update` wrote 0 files, `gate:visual` 88 captures
+  match, `gate:axe` the same result as below; no light story-theme changed, so shard 16 was not run again.
+
+### axe: open for the operator (R-16)
+
+`gate:axe`: **2 findings in 88 story-theme runs**: `elements-ocelle-tooltip--long-text/light` and `/dark`,
+`color-contrast-incomplete: serious: ocelle-tooltip >>> .box`, the long-text story's painted bubble. axe's reason,
+read with axe-core 4.14 on the built Storybook in a probe outside the repository (1280 × 800, reduced motion, the
+mouse on the trigger as the gate moves it): `elmPartiallyObscuring`, "Element's background color could not be
+determined because it partially overlaps other elements". The long bubble (288 × 91 px) lies over the story's
+paragraphs above the trigger and crosses their boxes. The other eight tooltip stories have no finding: their bubbles
+lie in empty space or wholly inside one line box (the `rtl` ones). T052 and R-16 say a `color-contrast-incomplete`
+node stops for the operator, so the story is left as data-model § Stories states it and the finding is the
+operator's. Measured, for the decision only (a scratch change of the page in the probe, not of the repository):
+with the trigger placed later in one long paragraph, so that the bubble lies wholly inside that paragraph's box, axe
+reports no incomplete result for the bubble. Options I see, not chosen:
+
+- (a) re-lay the long-text story's markup so the bubble lies wholly inside one element's box (as measured above), no
+  new layout rule and no exception;
+- (b) a text-free spacer block in the story, sized by its own `[data-story="tooltip-…"]` rule in
+  `stories-layout.css` (as the operator decided for the overlays' scroll edges), so the bubble overlaps no text;
+- (c) an `a11y-exceptions.json` entry with a Complexity Tracking row, which T052 excludes ("no new
+  `a11y-exceptions.json` entry").
+
+T052 stays open until that decision; after it, the baselines, `gate:visual`, `gate:axe` and shard 16 run again.
+
+### Plants
+
+`gate:plants -- --shard 16` (`visual/fail-token-changed`, `fail-websocket`, `fail-xhr`): every plant as expected after
+the nine lines. `--shard 19` (`visual/pass-repository`, `pass-second-render`, `pass-unused-face`): every plant as
+expected. `--shard 27` (`axe/pass-excepted-shadow`, `pass-minor-only`, `pass-repository`): 3 problems, each the open axe
+finding above (the planted repositories hold the repository's stories, so each run finds the long-text story's two
+`color-contrast-incomplete` nodes). The full `gate:plants` was not run (the brief: only the shards these changes
+touch); the other shards are left to CI.
+
+## Full suite
+
+- `pnpm test` at `ca2da97` (`full-test-ca2da97.log`, 12 m 15 s): 3 of 5041 tests failed: the two axe gate tests of the
+  open finding above ("audits the repository's 88 story-themes and exits 0", and "fails a story with an unlabelled
+  button …", which then prints the repository's two findings as well), and the drawer fixture row "Close control: … the
+  token focus ring when focused by keyboard (FR-006)", which passed 3 times of 3 run alone and again in the next full
+  run; my change does not reach it (the hook an opening overlay calls finds no tooltip on that page). Recorded as a
+  timing failure under the full suite's load, not investigated further in this phase.
+- `pnpm test` at `6904082` (`full-test-6904082.log`, 13 m 20 s): **2 of 5065 tests failed, both the axe gate tests of
+  the open finding**. Every other test passes, the tooltip's rows in both harnesses and the touch contexts among them.
+  `tdd-check.sh 4` needs this suite green, so it waits for the operator's decision on the long-text story (T052).
+
+## Operator decision: T052 (2026-11-15)
+
+- **Decided by:** the operator, asked in this session as a multiple-choice question.
+- **Question:** axe reports `color-contrast-incomplete` (`elmPartiallyObscuring`) on the long-text tooltip story, light and dark. Which fix?
+- **Answer:** "(a) Rearrange markup". Move the trigger later inside one long paragraph, so the bubble lies wholly inside that paragraph's box.
+- **Not chosen:** (b) a spacer block with its own story rule; (c) an `a11y-exceptions.json` entry.
+
+## T052 after the operator decision (option (a))
+
+- Red row first (`1ce1004`, `storybook/test/integration/elements-stories.test.ts`, "the ocelle-tooltip long-text
+  story's bubble inside one paragraph (008 T052, operator decision)"): in light and dark, the long-text story's
+  painted box lies wholly inside the box of the paragraph that holds the trigger and crosses the box of no other
+  element of the story. Red at `1ce1004` for the decision's reason: `insideParagraph: false`, `crossed: ["p", "p",
+  "p"]` (the three paragraphs above the trigger), both themes.
+- Fix (`4b74cc9`, `storybook/stories/tooltip.stories.ts` only): the long-text story is one `<div
+  data-story="tooltip">` holding one long paragraph, the trigger late in it (sixth line at 1280 × 800). No new CSS rule,
+  no spacer, no `a11y-exceptions.json` entry; the element's source is unchanged, so no mutation run. The row turns
+  green; the other 18 tooltip story rows still pass (the bubble above, centred, on top).
+- `gate:storybook-build`: built 44 stories. `gate:axe`: **88 story-theme runs, 0 serious or critical; 10 notes (0
+  incomplete, 10 excepted)**, the ten being the Prose document's existing exceptions. The long-text story has no
+  finding.
+- Baselines (`296072b`): `pnpm run visual:update` in the pinned container (docker, image `ee15712262f0`) wrote 2 files
+  (0 added, 2 changed, 0 removed): `elements-ocelle-tooltip--long-text.light.png` and `.dark.png`; 88 baseline files.
+  `gate:visual`: 88 captures match their baselines (docker only: no cross-engine comparison).
+- Plants: `--shard 16`, `--shard 19` and `--shard 27`: each "3 plants judged, every plant as expected". The long-text
+  story's `differs` line in `fail-token-changed` still holds (the story still shows `color-ink` in light), so
+  `plant.json` is unchanged. Shard 27's three problems of the open finding are gone.
+- Counts re-checked, unchanged: 44 stories, 88 story-themes, the axe plant run 90, 88 baseline files.
+
+### Full suite at `296072b`
+
+- Run 1 (`full-test-296072b.log`, 14 m 29 s): **2 of 5067 tests failed**, both outside this change: the drawer row
+  "Input during the exit, motion on: two close-control clicks: exactly one request and one close, no cancel event,
+  focus on the opener (FR-013, FR-014, R-02, R-06)" and the tooltip row "Hover delay, moves inside the tooltip, then
+  leaving before the delay (R-12): the pointer enters the trigger, moves onto its inner span and leaves both boxes at
+  150 ms: no bubble at any frame of a 450 ms wait from the entry" (`never: false`). Both axe gate tests now pass.
+- Both rows run alone: 3 of 3 passed each; the whole `tooltip.test.ts` alone: 104 of 104 passed, 3 runs of 3.
+- Run 2 (`full-test-296072b-run2.log`, 12 m 55 s): **1 of 5067 tests failed**, the same tooltip row (`never: false`).
+- Reading: the row leaves the trigger 150 ms after the entry against the 300 ms delay, timed by host-side pauses; under
+  the full suite's load those pauses overrun and the bubble shows before the leave. It passed in the full run at
+  `6904082`. The suite is therefore **not green** at `296072b`, and `tdd-check.sh 4` waits. Not changed here: making
+  that row robust under load (for example a longer delay on its page, or measuring the leave's real time) changes a
+  Phase 4 test and is a question for the operator. T052's own work (baselines, `gate:visual`, `gate:axe`, plants) is
+  done and ticked.
+
+## Operator decision: the R-12 hover-delay timing row (2026-11-15)
+
+- **Decided by:** the operator, asked in this session as a multiple-choice question.
+- **Problem:** the row "Hover delay, moves inside the tooltip, then leaving before the delay (R-12)" failed under full-suite load in 2 of 2 runs at 296072b, though it passes on its own.
+- **Answer:** "Measure real leave time". The test records when the pointer actually left, and asserts there is no bubble whenever leave time minus entry is under the delay. The delay and the spec do not change.
+- **Not chosen:** a longer delay on the row's page; re-running and accepting.
+
+## Operator decision: the R-12 rows after measuring the real times (2026-11-15)
+
+- **Decided by:** the operator, asked in this session as two multiple-choice questions.
+- **What the measurement showed:** each test pointer move takes about 80 ms.
+  - The R-12 leave row ("… leaves both boxes at 150 ms …") really leaves at 266 to 283 ms, against the 300 ms delay.
+  - The re-entry row's move back comes at 333 to 366 ms, after the delay, even without load.
+- **Leave row:** "Shorten pauses, rename". The row keeps measuring the real leave time. The pauses before the leave are shortened or removed, so the leave lands at about 180 to 200 ms, and the row is renamed to say what happens.
+- **Re-entry row:** "Shorten its pauses". Both moves land before the delay, measured in the page, so the row tests "trigger → bubble → trigger before the delay" as contracts/checks.md says.
+- **Not chosen:**
+  - for the leave row: a longer delay on its page; measuring only and accepting the failures;
+  - for the re-entry row: judging on the first move only; leaving the row unchanged.
+
+## The R-12 rows after the operator's decisions (`8c49287`)
+
+`8c49287` changes `packages/elements/test/scenarios/tooltip.ts` only (no source, delay or spec change). The stand-in
+`ocelle-test-tip` records, in the page, `Frames.left` (the first `pointerout` from the tracked tooltip to outside it)
+and `Frames.moved` (the last `pointerover` inside it, before the leave), both in ms from the first entry.
+`beforeDelay(what, attempt)` judges a run only when that time is under the 300 ms test delay, runs the body again up to
+3 times in all, and then throws with the measured times: it never passes without a judged run.
+
+### Rows changed (old and new full names, measured times)
+
+Times are page-side, in ms from the first entry, unloaded, 3 runs in each harness (in process, then the fixture twin).
+
+1. R-12 leave row. Pauses before the leave: 100 + 50 ms became 35 + 35 ms. Leave at 199.8, 182.8, 182.8 / 183.2,
+   183.2, 183.5 ms (was 266 to 283 ms). It asserts a move inside the tooltip, no bubble before or after the leave,
+   and frames up to 450 ms.
+   - Old: "Hover delay, moves inside the tooltip, then leaving before the delay (R-12): the pointer enters the trigger,
+     moves onto its inner span and leaves both boxes at 150 ms: no bubble at any frame of a 450 ms wait from the entry"
+   - New: "Hover delay, moves inside the tooltip, then leaving before the delay (R-12): the pointer enters the trigger,
+     moves onto its inner span and leaves both boxes before the delay: no bubble at any frame of a 450 ms wait from the
+     entry"
+2. Re-entry row. Pauses 100 + 100 ms removed; judged on the move back (`Frames.moved`, the later of the two moves). The
+   move back came at 166.5, 149.7, 133.3 / 133.4, 133.4, 133.4 ms (was 333 to 366 ms). It asserts no shown frame
+   before 300 ms, a shown frame before the move back + 300 ms (the earliest a restarted timer could show it), and
+   one by 450 ms.
+   - Old: "Hover delay, moves inside the tooltip before the delay (R-12's delay rule, the matrix's re-entry): the
+     pointer enters the trigger, moves onto its inner span and back at 100 ms intervals: the timer is not restarted,
+     shown by 450 ms from the first entry and not before 150 ms"
+   - New: "Hover delay, moves inside the tooltip before the delay (R-12's delay rule, the matrix's re-entry): the
+     pointer enters the trigger, moves onto its inner span and back onto the trigger's edge, both moves before the
+     delay: the timer is not restarted, not shown before the 300 ms delay from the first entry, shown before 300 ms
+     from the move back and by 450 ms"
+3. "Escape, then a brief hover (FR-033, R-12): shown by keyboard focus and hidden by Escape, focus kept on the
+   trigger; the pointer enters the trigger and leaves both boxes within 100 ms: no bubble at any frame of a 450 ms wait
+   from the entry". Name and pauses unchanged; now judged through `beforeDelay` on the measured leave. Leave at 83.0,
+   82.5, 82.9 / 83.1, 83.3, 83.1 ms, so "within 100 ms" holds.
+
+### Break checks (temporary source edits, reverted, never committed)
+
+- Bubble shown on entry with no delay (`if (delay > 0 && false)` in `#onPointerover`): all three rows fail in both
+  harnesses. Leave row `beforeLeave: true`; re-entry row `beforeDelay: true`; Escape row `never: false`.
+- Re-entry restarts the timer (the `#inside(event.relatedTarget)` return removed from `#onPointerover` and
+  `clearTimeout` added before the new timer): the re-entry row fails in both harnesses with `beforeRestart: false`.
+  `by450` stayed `true` under this break (restart from about 133 ms shows by about 433 ms), so the old "shown by
+  450 ms" bound alone would not catch it; the bound from the move back does.
+
+### Repeat runs at `8c49287`
+
+- `tooltip.test.ts` (in process): 104 of 104 passed, 3 runs of 3. `test/browser/tooltip.test.ts` (fixture twin, same
+  scenarios): 104 of 104 passed, 3 runs of 3.
+- `pnpm test` run 1 (`full-test-8c49287.log`, 13 m 55 s): **1 of 5067 tests failed**, a tooltip row this change does
+  not touch: "Click focus (FR-031): a pointer click on the button trigger and the pointer moved off at once: focus on
+  the trigger without :focus-visible, no bubble at any frame of a 450 ms wait; then Shift+Tab and Tab back (keyboard
+  focus) show it at once" (in process). Alone: 3 of 3 passed. Reading: the same timing class as the old leave row:
+  the click is the entry, and the move off is timed by the host; under load it can come after 300 ms, so the bubble
+  rightly shows. Not changed: whether to put it under `beforeDelay` is a question for the operator.
+- `pnpm test` run 2 (`full-test-8c49287-run2.log`, 13 m 58 s): **5067 of 5067 passed**.
+- The drawer row "Input during the exit, motion on: two close-control clicks …" passed in both runs.
+- The suite is therefore not yet green twice in a row at `8c49287`.
+
+### Mutation at `8c49287`
+
+The changed rows kill mutants in the pointer handlers, the timer and `#hide`, so shards 15 to 17 of the final plan ran
+again, `gate:mutation -- --base 78fe475 --files packages/elements/src/ocelle-tooltip.ts:<lines>`, output appended to
+`mutation.log`. No new survivor; the counts equal the final runs at `1f91513`.
+
+| Shard | Entries | Mutants on changed lines | Survived | Timeouts | Compile errors | Equivalent records | Exit | Time |
+|---|---|---|---|---|---|---|---|---|
+| 15 | `:241-270` | 24 | 0 | 0 | 4 | 0 | 0 | 517 s |
+| 16 | `:271-300` | 39 | 0 | 0 | 10 | 0 | 0 | 525 s |
+| 17 | `:301-330` | 34 | 0 | 0 | 16 | 2 | 0 | 566 s |
+
+## Operator decision: the FR-031 click-focus row and the other immediate-action rows (2026-11-15)
+
+- **Decided by:** the operator, asked in this session as a multiple-choice question.
+- **Problem:** full run 1 at 8c49287 failed on "Click focus (FR-031): a pointer click on the button trigger and the pointer moved off at once …". It passes 3 of 3 on its own. Its move-off is timed outside the page.
+- **Answer:** "Yes, measure it too". The FR-031 row uses the `beforeDelay` method. So do the other two rows flagged with the same weakness:
+  - "Trigger opens an ocelle-dialog before the delay (FR-010, FR-034, R-10)";
+  - the text-field trigger row's `early` check.
+- Each of the three rows gets a break check.
+- **Not chosen:** changing only the FR-031 row; leaving it and re-running.
+
+## The immediate-action rows after the operator's decision (`5d735a8`)
+
+`5d735a8` changes `packages/elements/test/scenarios/tooltip.ts` only (no source, delay or spec change). The stand-in
+`ocelle-test-tip` now also records `Frames.clicked`: the first `click` inside the tracked tooltip after the entry,
+read at the window in the capture phase (before the trigger's own listeners), in ms from the entry. That click also
+takes a frame sample, so a bubble shown by the click's focus is seen at the click's own time and not only at the next
+animation frame. `beforeDelay(what, attempt, bound)` takes an optional bound (default the 300 ms test delay); the rest
+of it is unchanged: a run is judged only when the measured time is under the bound, at most 3 runs, then it throws
+with the measured times.
+
+### Rows changed (old and new full names, measured times)
+
+Times are page-side, in ms from the entry, unloaded, 3 runs in each harness (in process, then the fixture twin), read
+with a temporary probe that was then removed.
+
+1. FR-031 click-focus row. Judged through `beforeDelay` on the move off the trigger (`Frames.left`; the click's own
+   move is the entry). It now also asserts frames up to 450 ms from the click (`to450`). Move off at 49.2, 66.3, 66.4
+   / 33.0, 32.7, 33.1 ms.
+   - Old: "Click focus (FR-031): a pointer click on the button trigger and the pointer moved off at once: focus on the
+     trigger without :focus-visible, no bubble at any frame of a 450 ms wait; then Shift+Tab and Tab back (keyboard
+     focus) show it at once"
+   - New: "Click focus (FR-031): a pointer click on the button trigger and the pointer moved off it before the delay:
+     focus on the trigger without :focus-visible, no bubble at any frame of a 450 ms wait from the click; then
+     Shift+Tab and Tab back (keyboard focus) show it at once"
+2. Dialog-pending row. Judged through `beforeDelay` on the click that opens the dialog (`Frames.clicked`). It now also
+   asserts frames up to 450 ms from the entry (`to450`). Click at 5.2, 6.0, 4.9 / 6.9, 7.0, 8.5 ms.
+   - Old: "Trigger opens an ocelle-dialog before the delay (FR-010, FR-034, R-10): the pointer enters the trigger and
+     clicks it at once, which opens the dialog: the pending bubble does not show, at no frame of a 450 ms wait from
+     the entry"
+   - New: "Trigger opens an ocelle-dialog before the delay (FR-010, FR-034, R-10): the pointer enters the trigger and
+     clicks it before the delay, which opens the dialog: the pending bubble does not show, at no frame of a 450 ms
+     wait from the entry"
+3. "Text-field trigger (FR-029, US3-10, R-12; stated limit): a clicked <input type=text> trigger matches :focus-visible
+   and shows the bubble at once, before the hover delay". Name unchanged (it states no time it does not meet). Judged
+   through `beforeDelay` with a 150 ms bound on the click (`Frames.clicked`), so `early` (a shown frame before 150 ms)
+   is judged only on runs whose click came within 150 ms of the entry. Click at 6.9, 7.9, 8.1 / 9.8, 11.9, 16.7 ms.
+
+Every earlier assertion of the three rows is kept, with the same expected values.
+
+### Break checks (temporary source edits, reverted, never committed)
+
+Each ran the three rows in both harnesses (`tooltip.test.ts` in process, `test/browser/tooltip.test.ts` on the
+fixture, which builds the browser build from the edited source). The results were the same in both.
+
+- B1, bubble shown on entry with no delay (`if (delay > 0 && false)` in `#onPointerover`): the FR-031 row fails
+  (`never: false`), the dialog-pending row fails (`never: false`). With the click's frame sample turned off as well, the
+  same two still fail (the animation frames see it too).
+- B2, the pending delay never ended (`window.clearTimeout(this.#timer)` removed from both `#onPointerout` and
+  `#hide`): the FR-031 row fails (`never: false`), the dialog-pending row fails (`never: false`, and the bubble is in
+  the top layer above the dialog). Removing it from `#onPointerout` alone is equivalent: the leave calls `#hide`,
+  which clears the timer, and all three rows pass.
+- B3, focus without `:focus-visible` counted as keyboard focus (`&& true` for `active.matches(":focus-visible")` in
+  `#onFocusin`): the FR-031 row fails (`never: false`); the dialog-pending row fails too (`never: false`).
+- B4, the keyboard-focus show 200 ms late (`window.setTimeout(() => { this.#show(); }, 200)` in `#onFocusin`): the
+  text-field row fails (`atOnce: false`, `early: false`); the FR-031 row fails (`keyboard: false`).
+- B5, no show on keyboard focus (`if (this.#focused && false)`): the text-field row fails (`atOnce: false`,
+  `early: false`); the FR-031 row fails (`keyboard: false`).
+
+### Repeat runs at `5d735a8`
+
+- `tooltip.test.ts` (in process): 104 of 104 passed, 3 runs of 3. `test/browser/tooltip.test.ts` (fixture twin):
+  104 of 104 passed, 3 runs of 3. The touch files (in process and fixture): 2 of 2 each.
+- `gate:typecheck`, `gate:lint`, `gate:test-lint`: no finding.
+- `pnpm test` run 1 (`full-test-5d735a8.log`, 12 m 42 s): **5067 of 5067 passed**.
+- `pnpm test` run 2 (`full-test-5d735a8-run2.log`, 12 m 36 s): **5067 of 5067 passed**.
+- No row this change does not touch failed in either run, so no other row was changed. The drawer row "Input during
+  the exit, motion on: two close-control clicks: exactly one request and one close, no cancel event, focus on the
+  opener (FR-013, FR-014, R-02, R-06)" passed in both runs.
+
+### Mutation at `5d735a8`
+
+The changed rows kill mutants in the overlay hook (`bubbles.dismiss`), the pointer handlers, `#onFocusin`, `#show`
+and `#hide`, so shards 11 and 15 to 17 of the final plan ran again, `gate:mutation -- --base 78fe475 --files
+packages/elements/src/ocelle-tooltip.ts:<lines>`, output appended to `mutation.log`. No new survivor; the counts equal
+the final runs at `1f91513`.
+
+| Shard | Entries | Mutants on changed lines | Survived | Timeouts | Compile errors | Equivalent records | Exit | Time |
+|---|---|---|---|---|---|---|---|---|
+| 11 | `:121-150` | 5 | 0 | 0 | 4 | 0 | 0 | 475 s |
+| 15 | `:241-270` | 24 | 0 | 0 | 4 | 0 | 0 | 516 s |
+| 16 | `:271-300` | 39 | 0 | 0 | 10 | 0 | 0 | 516 s |
+| 17 | `:301-330` | 34 | 0 | 0 | 16 | 2 | 0 | 551 s |
+
+## Operator decision: the R-12 leave row's margin after tdd-check 4 (2026-11-15)
+
+- **Decided by:** the operator, asked in this session as a multiple-choice question.
+- **Problem:** at 4cd0569, tdd-check 4 failed on the R-12 leave row. Under the check's load the measured leave came at 385.4, 300.9 and 319.9 ms, all past the 300 ms delay, so the row failed with its "no run it can judge" message.
+- **Answer:** "Longer delay on this row". Only this row's page gets a longer hover delay, for example 1000 ms. The measured method keeps judging against that delay.
+  - The default 300 ms delay stays covered by the other delay rows.
+  - This replaces the operator's earlier rejection of a longer delay, which was made before the timings were measured.
+- **Not chosen:** fewer moves with no pauses; more retries.
+
+## The R-12 leave row after the operator's decision (`9a66884`)
+
+`9a66884` changes `packages/elements/test/scenarios/tooltip.ts` only (no source, default delay, other row or spec
+change). The row's page sets `#tip { --ocelle-tooltip-delay: 1000ms; }` through `start`'s rules, the same way the
+"Hover delay 0" and "Hover delay in seconds" rows override the delay (R-12, contracts/elements-overlays.md), so the
+element needs nothing new. `beforeDelay("the leave", …, longDelay)` keeps the measured leave (`Frames.left`) and
+judges a run only when it came before 1000 ms. The wait after the leave is `pause(1000)` then `pause(500)` (each at
+most 1 000 ms, R-15), and the row asserts frames up to 1500 ms from the entry (`toWait`, was `to450`): 1.5 times the
+delay, as 450 ms is for the 300 ms test delay. Its other assertions are unchanged (`moved`, `beforeLeave: false`,
+`afterLeave: false`). The pauses before the leave are unchanged (35 + 35 ms). The default 300 ms delay stays covered by
+the other delay rows.
+
+### Row changed (old and new full names, measured times)
+
+- Old: "Hover delay, moves inside the tooltip, then leaving before the delay (R-12): the pointer enters the trigger,
+  moves onto its inner span and leaves both boxes before the delay: no bubble at any frame of a 450 ms wait from the
+  entry"
+- New: "Hover delay, moves inside the tooltip, then leaving before the delay (R-12): with --ocelle-tooltip-delay:
+  1000ms on the tooltip, the pointer enters the trigger, moves onto its inner span and leaves both boxes before that
+  delay: no bubble at any frame of a 1500 ms wait from the entry"
+- Times, page-side, in ms from the entry, unloaded, 3 runs in each harness (in process / fixture twin), read with a
+  temporary probe that was then removed: leave at 199.3, 199.8, 199.6 / 183.3, 183.4, 183.5 ms; move inside at
+  116.3, 100.0, 116.8 / 100.1, 100.2, 100.0 ms; last frame at 1765.9, 1766.3, 1766.3 / 1749.6, 1749.5, 1750.0 ms.
+  The leaves that failed tdd-check 4 (385.4, 300.9, 319.9 ms) are well under the new 1000 ms bound.
+
+### Break checks (temporary source edits, reverted, never committed)
+
+Each ran the row in both harnesses (`tooltip.test.ts` in process, `test/browser/tooltip.test.ts` on the fixture,
+built from the edited source). The results were the same in both.
+
+- B1, bubble shown on entry with no delay (`if (delay > 0 && false)` in `#onPointerover`): the row fails,
+  `beforeLeave: true`.
+- B2, the pending delay never ended (`window.clearTimeout(this.#timer)` removed from both `#onPointerout` and
+  `#hide`): the row fails, `afterLeave: true` (the timer shows the bubble at about 1000 ms, inside the 1500 ms
+  window; the old 450 ms window would have missed it at this delay).
+
+### Repeat runs at `9a66884`
+
+- `tooltip.test.ts` (in process): 104 of 104 passed, 3 runs of 3. `test/browser/tooltip.test.ts` (fixture twin):
+  104 of 104 passed, 3 runs of 3.
+- `gate:typecheck`, `gate:lint`, `gate:test-lint`: no finding.
+- `pnpm test` run 1 (`full-test-9a66884.log`, 801 s): **1 of 5067 tests failed**, a dialog-scenario row on the
+  drawer's fixture twin that this change does not touch: "Close control: a native button named by close-label holding
+  the close icon, at least --ocelle-target-min in both axes, the token focus ring when focused by keyboard (FR-006)"
+  (`packages/elements/test/browser/drawer.test.ts`). The gate prints no diff, so which field differed is not in the
+  log. Alone: 3 of 3 passed. Not changed, as decided: it is for the operator.
+- `pnpm test` run 2 (`full-test-9a66884-run2.log`, 783 s): **5067 of 5067 passed**.
+- Every tooltip row passed in both runs, the R-12 leave row included.
+- The suite is therefore not yet green twice in a row at `9a66884`.
+
+### Mutation at `9a66884`
+
+The row kills mutants in the pointer handlers, the timer and `#hide` (B1, B2), so shards 15 to 17 of the final plan
+ran again, `gate:mutation -- --base 78fe475 --files packages/elements/src/ocelle-tooltip.ts:<lines>`, output appended
+to `mutation.log`. No new survivor; the counts equal the runs at `1f91513` and `5d735a8`.
+
+| Shard | Entries | Mutants on changed lines | Survived | Timeouts | Compile errors | Equivalent records | Exit | Time |
+|---|---|---|---|---|---|---|---|---|
+| 15 | `:241-270` | 24 | 0 | 0 | 4 | 0 | 0 | 504 s |
+| 16 | `:271-300` | 39 | 0 | 0 | 10 | 0 | 0 | 518 s |
+| 17 | `:301-330` | 34 | 0 | 0 | 16 | 2 | 0 | 557 s |
+
+## Operator decision: dialog/drawer rows that fail under load (2026-11-15)
+
+- **Decided by:** the operator, asked in this session as a multiple-choice question.
+- **Problem:** tdd-check 4 at fc08423 failed on one row out of 5067, "Nested in an open ocelle-drawer: the dialog whose opener (a button of the drawer) is removed before its close: focus on the drawer's initial target (R-05)". Its focus was not the expected `ob`.
+  - In recent full runs, other overlay rows have each failed once under load: the drawer close-control focus-ring row (FR-006) and the drawer "two close-control clicks" row.
+  - Each of these rows passes on its own.
+- **Answer:** "Investigate and fix now". An implementer measures these rows under load, finds the timing each relies on, and fixes each one test-first, with a break check. The source changes only if a real bug shows up. tdd-check then runs again.
+- **Not chosen:** re-running and noting the rows for the review; re-running and listing them as a known gap.
+
+## The dialog/drawer rows after the operator's decision (`157c4cf`)
+
+`157c4cf` changes test code only: `packages/elements/test/scenarios/dialog.ts`, and an opt-in `still` pointer step in
+`packages/elements/test/scenarios/driver.ts` and `packages/elements/test/commands.ts`. There is no change to the
+source, the spec, a contract or an expected value. No source bug showed up. No row was renamed: once fixed, each row
+does what its full name says.
+
+### How the rows were measured
+
+- **Load:** 16 busy loops (`while :; do :; done`) on the 4 cores, with a load average of 18 to 19. `stress-ng` is not
+  installed.
+- **Probes:** temporary test files, removed before the commit.
+  - In process: one page, the row's body in a loop, with window listeners in the capture phase for `pointerdown`,
+    `click`, `focusin` and the overlay events, and the panel's animation `currentTime` at each press.
+  - Fixture twin: a fresh `overlays.html` page per run, with a rAF sampler injected through the DevTools protocol.
+- **Fixture names:** both probes select rows by their full names. The dialog's fixture runner still names its tests
+  with `$name` (tasks.md Rules § Full test names, review phase 2 R1-02, optional), so `-t` cannot pick one of its rows
+  by full name. That runner was not changed.
+
+### Row 1: nested in an open ocelle-drawer, opener removed (R-05)
+
+- **Cause, measured in process:** `openInDrawer` clicked `#oi` right after setting the drawer's `open`.
+  - The drawer's entry had then run 33 ms, with `#oi`'s box at x = -104 (off the viewport).
+  - The press reached no element and focus went from `#oi` to the body, so the dialog opened with no opener (20 of 20
+    runs). Its close then focused the drawer's initial target, `ob`.
+  - The row passed, but without testing what it names: a removed opener is never consulted.
+  - With a pause before the click, the outcome depended on the frame in which the centre was read. Up to 32 ms the
+    click missed. From 33 ms it hit `#oi`, where the 67 ms frame leaves `#oi` about 1 px of margin over the
+    ~40 px the panel still moves during the four pointer moves.
+  - Under the full suite's load, a centre read in that window lands beside `#oi` on the moving panel. Focus then goes
+    to the panel and not `ob`, as in tdd-check 4 at `fc08423`.
+  - Busy loops alone did not reproduce the failure: 30 of 30 runs passed in each harness, the click missing
+    `#oi` each time.
+- **Fix:** `openInDrawer` waits until the drawer's panel runs no animation (a bounded poll of 1 000 ms that fails with
+  a message). It then clicks `#oi` and fails with a message unless focus is on `#oi`. This affects all eight
+  "Nested in an open ocelle-drawer" rows.
+- **Red proof:** with the focus check but without the wait, all eight rows failed in process with "the click on #oi
+  left focus on body, so the dialog would open with no opener in the drawer".
+- **Name:** unchanged: "Nested in an open ocelle-drawer: the dialog whose opener (a button of the drawer) is removed
+  before its close: focus on the drawer's initial target (R-05)".
+
+### Row 2: close control (FR-006)
+
+- **Cause, reproduced on the drawer's fixture twin under load (35, 36 and 38 of 40 runs passed):** every failing run
+  gave `size: { inline: false }` and nothing else.
+  - The row reads the control's box right after Shift+Tab, during the drawer's entry slide.
+  - A rAF sampler showed the control's `getBoundingClientRect().width` at 43.99998474121094 or 44.00001525878906 at
+    some frames of the slide, for example at `translate: -13.3%`, while `offsetWidth` stayed 44. The `>= 44` check
+    fails on those frames.
+- **Fix:** the row waits for `kind.settle`, the drawer's bounded wait for the entry to end, before it reads the box.
+  For the dialog this is a no-op: its fade does not move the panel.
+- **Name:** unchanged: "Close control: a native button named by close-label holding the close icon, at least
+  --ocelle-target-min in both axes, the token focus ring when focused by keyboard (FR-006)".
+
+### Row 3: input during the exit, two close-control clicks
+
+- **Cause, measured in process:**
+  - The first click hit the control and started the exit.
+  - On the drawer, the second click came 64 to 100 ms later: a click of its own, or after the four moves of a
+    path step, each of which waits for a frame. By then the slide had moved the control (x = 281) away from the
+    press, which hit the panel at x = 171 (`pointerdown` target the `<dialog>`, exit at 50 to 83 ms).
+  - So on the drawer the row never clicked the control twice.
+  - Under load, a later second press can come after the exit and land on the page, taking focus from the opener. The
+    gate printed no diff for the failure at `296072b`, so this is a reading.
+  - On the dialog both clicks hit the control.
+- **Fix:**
+  - Both clicks are one pointer path at the control's centre. The second is a new `still` step: no move, so its press
+    follows the first click's release at once (2 to 4 ms later, the exit at 0 ms).
+  - The stand-in's new `clicks` command records each click in the page, before any element's listener: on the
+    control or not, the host's `open` attribute, and the inner `<dialog>` open.
+  - `duringExit` judges a run only when both clicks were on the control, the first while open and the second during
+    the exit (`open` gone, the `<dialog>` still open). It runs the body at most 3 times, then fails with the records.
+    It never passes without a judged run.
+  - The same command reports what the old row did: on the drawer it gave
+    `[{"on":true,"open":true,"panel":true},{"on":false,"open":false,"panel":true}]` in each run, in both harnesses.
+- **Name:** unchanged: "Input during the exit, motion on: two close-control clicks: exactly one request and one close,
+  no cancel event, focus on the opener (FR-013, FR-014, R-02, R-06)".
+
+### Break checks (temporary edits of `src/overlay.ts`, reverted, never committed)
+
+Each row was run in both harnesses: in process (`dialog.test.ts`, `drawer.test.ts`), the drawer's fixture twin
+(`test/browser/drawer.test.ts`), and the dialog's fixture twin through the probe (fresh `overlays.html` per run,
+browser build made from the edited source).
+
+- **B1, a removed opener taken as valid** (`opener.isConnected` dropped from `#returnFocus`). Row 1 fails in process
+  and on the fixture with `focus: "body"`; the close event's `focusPath` is `i1`. The old row (`90e21fd`) passed under
+  this break in both harnesses.
+- **B2, a 43 px close control** (`inline-size: calc(var(--ocelle-target-min) - 1px)`). Row 2 fails for the dialog and
+  the drawer in process, on the drawer's fixture twin, and on the dialog's (`size.inline: false`).
+- **B3, a close-control request during the exit** (`#onCloseClick` calls `#request` and not `requestClose`). Row 3
+  fails for the dialog and the drawer in process and on both fixture twins, with a second
+  `…-close-request` (`open: false`, `dialogOpen: true`). Under this break the old row passed for the drawer in both
+  harnesses, because its second click missed the control, and failed for the dialog.
+- **B3', every request during the exit** (`closing` added to `requestClose`'s check). Row 3 fails in every harness for
+  both kinds. The old drawer row also failed here, because its second click on the panel's backdrop asked for a
+  request.
+
+### Stress loops under the same load
+
+- **New rows,** 20 runs each under the 16 busy loops:
+  - in process: row 1 20/20; row 2 20/20 (dialog), 20/20 (drawer); row 3 20/20 (dialog), 20/20 (drawer);
+  - fixture twin: the same, each 20/20.
+- **Before the fix,** under the same load: row 2 on the drawer's fixture twin passed 35/40, 36/40 and 38/40; rows 1
+  and 3 passed 30/30 in each harness, without testing what they name.
+- **Every row of the four files,** `dialog.test.ts`, `drawer.test.ts` and their fixture twins, with the harness and
+  tooltip files: 1756 of 1756 passed. `gate:typecheck`, `gate:lint` and `gate:test-lint`: no finding.
+
+### Full suite at `157c4cf`
+
+- `pnpm test` run 1 (`full-test-157c4cf.log`, 797 s): **5067 of 5067 passed**.
+- `pnpm test` run 2 (`full-test-157c4cf-run2.log`, 763 s): **5067 of 5067 passed**.
+- No other row failed in either run, so no other row was investigated or changed.
+
+### Mutation
+
+None was run again: the source did not change, so every mutant and its record are as at `9a66884`.

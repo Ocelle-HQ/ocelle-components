@@ -8,6 +8,12 @@
 // before any mount, so the console outcome of FR-016 on the built output is the fixture's (test/browser/).
 // Since 009 (research.md R-17) every mount also adopts test/fixtures/frames.css, the one source of the tested frames,
 // after the token and base sheets, and `viewport()` resizes the test's iframe through `page.viewport`.
+//
+// 008 (research.md R-14, R-15): every mount also adopts the test delay stylesheet (fixtures/tooltip-delay.css), as the
+// fixture pages link it. Keys are real key presses through `userEvent` from `vitest/browser`; pointer and touch input
+// go through the `pointerPath` and `touchTap` commands at points of this frame (test/commands.ts), reduced motion
+// through `emulateReducedMotion`; what the page holds is read by the probe of scenarios/probe.ts, installed when this
+// module loads, before any element of the test file attaches a shadow root.
 /// <reference types="vite/client" />
 import type { LitElement } from "lit";
 import { vi } from "vitest";
@@ -17,10 +23,12 @@ import framesText from "./fixtures/frames.css?raw";
 import { css } from "../../tokens/src/generate.ts";
 import { source } from "../../tokens/src/source.ts";
 import { runningOf } from "./animations.ts";
+import delayText from "./fixtures/tooltip-delay.css?raw";
 import { layoutWait } from "./layout-wait.ts";
 import { decodePng } from "./pixels.ts";
 import { heardTypes } from "./scenarios/driver.ts";
 import type { Box, Driver, Drawing, Paint, Part, Placement, Reading, Sheets, Target, TreeNode } from "./scenarios/driver.ts";
+import { probe } from "./scenarios/probe.ts";
 
 function sheet(text: string): CSSStyleSheet {
   const made = new CSSStyleSheet();
@@ -31,6 +39,8 @@ function sheet(text: string): CSSStyleSheet {
 const tokens = sheet(css(source).replace(/@font-face\s*\{[^}]*\}/g, ""));
 const base = sheet(baseText);
 const frames = sheet(framesText);
+const delay = sheet(delayText);
+probe();
 
 function element(id: string): HTMLElement {
   const found = document.getElementById(id);
@@ -40,15 +50,32 @@ function element(id: string): HTMLElement {
 
 const nextFrame = (): Promise<unknown> => new Promise((resolve) => requestAnimationFrame(resolve));
 
+/** Whether every `<iframe srcdoc>` of the page has loaded its document. */
+function framesLoaded(): boolean {
+  return [...document.querySelectorAll("iframe")].every((frame) => !frame.hasAttribute("srcdoc") || (frame.contentDocument?.URL === "about:srcdoc" && frame.contentDocument.readyState === "complete"));
+}
+
 /**
  * Waits two animation frames, then until every `ocelle-*` element of the page has rendered (009 research.md R-17, the
- * overflow-region contract's rule: a `ResizeObserver` delivery of the first frame and the update it requests are seen).
+ * overflow-region contract's rule: a `ResizeObserver` delivery of the first frame and the update it requests are seen)
+ * and every `<iframe srcdoc>` has loaded (a bounded poll of 1 000 ms, 008 R-15), then for a frame.
  */
 async function settle(): Promise<void> {
   await nextFrame();
   await nextFrame();
   const elements = [...document.querySelectorAll("*")].filter((each) => each.localName.startsWith("ocelle-"));
   await Promise.all(elements.map((each) => (each as Partial<LitElement>).updateComplete ?? Promise.resolve(true)));
+  for (const start = performance.now(); !framesLoaded(); ) {
+    if (performance.now() - start > 1000) throw new Error("an <iframe srcdoc> did not load within 1 000 ms");
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  await new Promise((resolve) => requestAnimationFrame(resolve));
+}
+
+/** The `userEvent.keyboard` text of one press of `key`, with Shift held when `shift`. */
+function keyText(key: string, shift: boolean): string {
+  const text = key === " " ? "[Space]" : `{${key}}`;
+  return shift ? `{Shift>}${text}{/Shift}` : text;
 }
 
 /** The element of a target: the element with the id, or the first match of `inner` in its shadow root. */
@@ -60,7 +87,7 @@ function resolve(target: Target): HTMLElement {
 }
 
 /** A key or chord (`Shift+Tab`, `Ctrl+ArrowRight`) in user-event's keyboard syntax, modifiers held around the key. */
-function chord(key: string): string {
+function chordText(key: string): string {
   const parts = key.split("+").map((part) => (part === "Ctrl" ? "Control" : part));
   const pressed = parts.pop() ?? "";
   return `${parts.map((part) => `{${part}>}`).join("")}{${pressed}}${parts.reverse().map((part) => `{/${part}}`).join("")}`;
@@ -181,10 +208,11 @@ const identities = new Map<Element, number>();
 export function inProcessDriver(): Driver {
   return {
     mount: async (markup, options = {}) => {
-      document.adoptedStyleSheets = options.base === true ? [tokens, base, frames] : [tokens, frames];
+      document.adoptedStyleSheets = options.base === true ? [tokens, base, frames, delay] : [tokens, frames, delay];
       messages.length = 0;
       lastKey = undefined;
       document.documentElement.removeAttribute("data-theme");
+      probe().reset();
       Reflect.deleteProperty(document, Symbol.for("ocelle.progress.sweepStart"));
       document.body.innerHTML = markup;
       await settle();
@@ -275,11 +303,12 @@ export function inProcessDriver(): Driver {
     },
     computed: (target, property) => Promise.resolve(getComputedStyle(resolve(target)).getPropertyValue(property)),
     resolveColour: (value) => {
-      const probe = document.createElement("span");
-      probe.style.color = value;
-      document.body.append(probe);
-      const colour = getComputedStyle(probe).color;
-      probe.remove();
+      const colourProbe = document.createElement("span");
+      probe().ignore(colourProbe);
+      colourProbe.style.color = value;
+      document.body.append(colourProbe);
+      const colour = getComputedStyle(colourProbe).color;
+      colourProbe.remove();
       return Promise.resolve(colour);
     },
     ax: (id) => commands.axTree(id),
@@ -304,6 +333,40 @@ export function inProcessDriver(): Driver {
       });
     },
     messages: () => Promise.resolve([...messages]),
+    press: async (key, options = {}) => {
+      await userEvent.keyboard(keyText(key, options.shift === true));
+      await settle();
+    },
+    hover: async (id, inner) => {
+      await commands.pointerPath([id === null ? { x: 0, y: 0 } : probe().centre(id, inner)]);
+      await settle();
+    },
+    click: async (id, inner, options = {}) => {
+      await commands.pointerPath([{ ...probe().centre(id, inner), down: true, up: true, button: options.button ?? "left" }]);
+      await settle();
+    },
+    pointer: async (path) => {
+      await commands.pointerPath(path);
+      await settle();
+    },
+    touchTap: async (id, inner) => {
+      const { x, y } = probe().centre(id, inner);
+      await commands.touchTap(x, y);
+      await settle();
+    },
+    focusPath: () => Promise.resolve(probe().focusPath()),
+    focusVisible: (id, inner) => Promise.resolve(probe().focusVisible(id, inner)),
+    viewportSize: () => Promise.resolve({ width: window.innerWidth, height: window.innerHeight }),
+    device: () => Promise.resolve(probe().device()),
+    record: (id, names) => {
+      probe().record(id, names);
+      return Promise.resolve();
+    },
+    recorded: () => Promise.resolve(probe().recorded()),
+    ownAnimations: (id, inner) => Promise.resolve(probe().animations(id, inner)),
+    topLayer: () => Promise.resolve(probe().topLayer()),
+    styleAttributes: () => Promise.resolve(probe().styleAttributes()),
+    styleElements: () => Promise.resolve(probe().styleElements()),
     append: async (id, markup) => {
       element(id).insertAdjacentHTML("beforeend", markup);
       await settle();
@@ -327,11 +390,11 @@ export function inProcessDriver(): Driver {
       await page.viewport(width, height);
       await settle();
     },
-    press: async (key) => {
-      await userEvent.keyboard(chord(key));
+    chord: async (key) => {
+      await userEvent.keyboard(chordText(key));
       await settle();
     },
-    click: async (target, point) => {
+    clickAt: async (target, point) => {
       const rect = resolve(target).getBoundingClientRect();
       const root = document.documentElement.getBoundingClientRect();
       await userEvent.click(document.documentElement, { position: { x: rect.left - root.left + point.x, y: rect.top - root.top + point.y }, force: true });
@@ -346,7 +409,7 @@ export function inProcessDriver(): Driver {
       element(from).focus();
       const walked: string[] = [];
       for (let step = 0; step < 40 && walked.at(-1) !== to; step++) {
-        await userEvent.keyboard(chord(backward ? "Shift+Tab" : "Tab"));
+        await userEvent.keyboard(chordText(backward ? "Shift+Tab" : "Tab"));
         walked.push(deepActive());
       }
       await settle();

@@ -76,7 +76,7 @@ describe("ocelle-test-overflow-host, a new box in place of the old one (O3-03, T
     await driver.setAttribute("h", "current", "b");
     const after = { a: attributesOf("a"), b: attributesOf("b") };
     await driver.focus({ id: "h", inner: '.region-box[data-box="b"]' });
-    await driver.press("ArrowRight");
+    await driver.chord("ArrowRight");
     expect({ before, after, scrolled: { a: boxNamed("a").scrollLeft, b: boxNamed("b").scrollLeft } }).toEqual({
       before: { a: filters, b: none },
       after: { a: none, b: filters },
@@ -136,7 +136,7 @@ describe("ocelle-test-overflow-host, a new box in place of the old one (O3-03, T
     await driver.setAttribute("h", "current", "a");
     const again = { a: attributesOf("a"), b: attributesOf("b") };
     await driver.focus({ id: "h", inner: '.region-box[data-box="a"]' });
-    await driver.press("ArrowRight");
+    await driver.chord("ArrowRight");
     expect({ followed, without, again, scrolled: boxNamed("a").scrollLeft }).toEqual({ followed: filters, without: { a: none, b: none }, again: { a: filters, b: none }, scrolled: 40 });
   });
 });

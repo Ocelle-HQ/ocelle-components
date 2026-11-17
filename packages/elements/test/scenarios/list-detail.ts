@@ -305,7 +305,7 @@ export const listDetailScenarios: readonly ListDetailScenario[] = [
     run: async (driver) => {
       await page(driver, "N", `${before}${framed("n", "N")}${after}`);
       const rest = { tabindex: await wrapperTabindex(driver, "n"), texts: await texts(driver, "n"), roles: await roles(driver, "n") };
-      await driver.click("n-lt", { x: 4, y: 4 });
+      await driver.clickAt("n-lt", { x: 4, y: 4 });
       return { rest, clicked: await driver.deepActive(), after: await wrapperTabindex(driver, "n") };
     },
     expected: { rest: { tabindex: [null, null, null], texts: listTexts, roles: [] }, clicked: "body", after: [null, null, null] },
@@ -333,7 +333,7 @@ export const listDetailScenarios: readonly ListDetailScenario[] = [
           inside: detail.x >= frame.x - 0.5 && detail.x + detail.width <= frame.x + frame.width + 0.5,
           pixels: [near(at(image, 1, y), colour), near(at(image, image.width - 2, y), colour), near(at(image, Math.round(frame.width / 2), Math.round(detail.y - frame.y + 1)), colour)],
         };
-        await driver.press("Tab");
+        await driver.chord("Tab");
         const tabbed = { active: await driver.deepActive(), tabindex: await wrapperTabindex(driver, "n") };
         await driver.setAttribute("n", "detail-open", null);
         return { moved, tabbed, back: { active: await driver.deepActive(), tabindex: await wrapperTabindex(driver, "n"), ring: (await ring(driver, "n", "list"))["outline-style"] } };
@@ -356,11 +356,11 @@ export const listDetailScenarios: readonly ListDetailScenario[] = [
     base: false,
     run: async (driver) => {
       await page(driver, "N", `${before}${framed("n", "N")}${after}`);
-      await driver.click("n-l0", { x: 4, y: 4 });
+      await driver.clickAt("n-l0", { x: 4, y: 4 });
       const clicked = await driver.deepActive();
       await driver.setAttribute("n", "detail-open", "");
       const moved = { active: await driver.deepActive(), ring: (await ring(driver, "n", "detail"))["outline-style"] };
-      await driver.press("Tab");
+      await driver.chord("Tab");
       return { clicked, moved, tabbed: await driver.deepActive() };
     },
     expected: { clicked: "n-l0", moved: { active: "n >> div.pane.detail", ring: "none" }, tabbed: "n-d0" },
