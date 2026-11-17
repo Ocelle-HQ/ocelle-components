@@ -111,7 +111,7 @@ export class OcelleFormSelect extends FormControl {
     const select = this.control();
     select.replaceChildren(...[...this.children].filter(mirrored).map(mirror));
     if (this.dirty && ![...select.options].some((each) => each.value === this.current)) {
-      select.selectedIndex = this.firstEnabled();
+      select.selectedIndex = this.firstEnabled([...select.options]);
       this.chosen();
     } else this.showChoice();
     this.syncValidity();
@@ -121,7 +121,7 @@ export class OcelleFormSelect extends FormControl {
   protected showChoice(): void {
     const select = this.control();
     if (this.dirty) select.value = this.current;
-    else select.selectedIndex = this.defaultIndex();
+    else select.selectedIndex = this.defaultIndex([...select.options]);
     this.chosen();
   }
 
@@ -135,15 +135,23 @@ export class OcelleFormSelect extends FormControl {
     this.syncFormValue();
   }
 
-  /** The index of the first enabled option, or -1. */
-  protected firstEnabled(): number {
-    return [...this.control().options].findIndex((each) => !each.matches(":disabled"));
+  /** The index of the first enabled option of `options`, or -1. */
+  protected firstEnabled(options: readonly HTMLOptionElement[]): number {
+    return options.findIndex((each) => !each.matches(":disabled"));
   }
 
-  /** The default selection: the last option marked `selected`, else the first enabled option, else none (-1). */
-  protected defaultIndex(): number {
-    const marked = [...this.control().options].findLastIndex((each) => each.defaultSelected);
-    return marked === -1 ? this.firstEnabled() : marked;
+  /** The default selection among `options`: the last option marked `selected`, else the first enabled option, else none (-1). */
+  protected defaultIndex(options: readonly HTMLOptionElement[]): number {
+    const marked = options.findLastIndex((each) => each.defaultSelected);
+    return marked === -1 ? this.firstEnabled(options) : marked;
+  }
+
+  /**
+   * The options a native select with the host's light-DOM children lists, in tree order: each `<option>` child and each
+   * `<option>` of an `<optgroup>` child, the ones the native select mirrors.
+   */
+  protected listedOptions(): HTMLOptionElement[] {
+    return [...this.querySelectorAll<HTMLOptionElement>(":scope > option, :scope > optgroup > option")];
   }
 
   /** The value as the form submits it: none while no option is selected, as for a native select; the state is the value. */
@@ -153,12 +161,19 @@ export class OcelleFormSelect extends FormControl {
   }
 
   protected override control(): HTMLSelectElement {
-    // The template always renders the select, and the element asks for it only after a render.
+    // The template always renders the select, and every caller runs once it has rendered: the option observer, the
+    // `value` setter and `syncFormValue()` wait for the first update, and the steps a form can call before it (a reset
+    // or a restore in the task of the insertion) do not ask for the select: `initialValue()` reads the light DOM.
     return this.shadowRoot?.getElementById("control") as HTMLSelectElement;
   }
 
+  /**
+   * The default value, read from the light-DOM options as a native select reads its own, so that a form reset before
+   * the first render (in the task of the insertion) has it without the native select (FR-024; O2-01).
+   */
   protected override initialValue(): string {
-    return this.control().options[this.defaultIndex()]?.value ?? "";
+    const options = this.listedOptions();
+    return options[this.defaultIndex(options)]?.value ?? "";
   }
 
   protected override dispatchChange(): void {
