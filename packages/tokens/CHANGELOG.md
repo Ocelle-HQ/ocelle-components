@@ -50,16 +50,19 @@ nothing loads from a CDN, and two new merge checks (Contrast, Brand rules) keep 
     `--ocelle-bar-width`, `--ocelle-ring-step`, and for the inside focus ring of `ocelle-action-row` (012)
     `--ocelle-focus-offset-inset` (`calc(-1 * (var(--ocelle-focus-offset) + var(--ocelle-focus-width)))`, -5 px)
   - size: `--ocelle-target-min`, `--ocelle-icon-size`, `--ocelle-size-dot`, `--ocelle-size-step`,
-    `--ocelle-size-avatar`, `--ocelle-size-rail-item`, `--ocelle-size-visually-hidden`
+    `--ocelle-size-avatar`, `--ocelle-size-rail-item`, `--ocelle-size-visually-hidden`, `--ocelle-tooltip-max-inline`
+    (the maximum inline size of the `ocelle-tooltip` bubble; mission 008)
   - shell: `--ocelle-shell-topbar-height`, `--ocelle-shell-rail-width`, `--ocelle-shell-sidebar-width`,
     `--ocelle-shell-inspector-width`, `--ocelle-shell-main-max`, `--ocelle-shell-collapse-inspector`,
     `--ocelle-shell-collapse-sidebar`, `--ocelle-shell-height`, `--ocelle-footer-h`, `--ocelle-measure-sheet`,
     `--ocelle-measure-sentence`, `--ocelle-measure-page`, `--ocelle-measure-reading`, `--ocelle-measure-cell` and
     `--ocelle-measure-container` (the prose measure, table cell floor and caption cap of `@ocelle/styles`, 003),
-    `--ocelle-dialog-max-inline`, `--ocelle-dialog-max-block`, `--ocelle-bar-block-narrow`
+    `--ocelle-dialog-max-inline`, `--ocelle-dialog-max-block`, `--ocelle-bar-block-narrow`, `--ocelle-drawer-inline`
+    (the inline size of `ocelle-drawer`, the sidebar width; mission 008)
   - elevation: `--ocelle-elevation-sheet`, `--ocelle-elevation-raised`, `--ocelle-elevation-row`,
     `--ocelle-elevation-seg`, `--ocelle-elevation-bar`
-  - motion: `--ocelle-motion-fast`, `--ocelle-motion-base`, `--ocelle-easing-standard`, and for the busy spinner of
+  - motion: `--ocelle-motion-fast`, `--ocelle-motion-base`, `--ocelle-easing-standard`, `--ocelle-tooltip-delay` (the
+    hover delay of `ocelle-tooltip`, not zeroed under reduced motion; mission 008), and for the busy spinner of
     `ocelle-button` (012) `--ocelle-motion-spin` (one turn, `800ms`) and `--ocelle-motion-turn` (its angle, `1turn`)
 - The control tokens of `@ocelle/elements`' `ocelle-button` (mission 012), in the colour group:
   `--ocelle-color-hover-border` (the border of a hovered or pressed bordered control, `--ocelle-color-ink` unless

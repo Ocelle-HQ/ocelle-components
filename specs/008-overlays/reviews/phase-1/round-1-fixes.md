@@ -1,0 +1,8 @@
+# Phase 1 review, round 1: fixes
+
+| ID | Resolution | Red test | Where |
+|----|------------|----------|-------|
+| R1-01 | fixed: `take` now also counts every added element, and each of its descendants, that carries a `style` attribute when it is added (document or any observed shadow root), keeping the delta from `reset()` and the `ignore` rule (the `resolveColour` probe is ignored before it is appended, so the existing `probe: 2` value holds). Two new stand-in acts on `ocelle-harness-nest`: `detached` (a `<span>` given a CSSOM `color` while detached, then appended to the nested root) and `fragment` (a cloned template `<p><i>One</i><b>Two</b></p>` whose `<i>` and `<b>` get a CSSOM `color` in the detached fragment, then the fragment is appended: a Lit-style first-render commit). CSSOM writes are used rather than `style="…"` markup so the strict-CSP fixture reports no `style-src-attr` violation. | `69eb0ce` (`red-fix-1.log`): the two new rows failed in both harnesses (4 failures, `appended: 0` for 1, `committed: 0` for 2) | packages/elements/test/scenarios/probe.ts (`take`, header comment); packages/elements/test/scenarios/harness.ts (stand-in acts, two `styleAttributes()` rows, run by test/harness.test.ts and test/browser/harness.test.ts) |
+| R1-02 | deferred: note; no change required. Touch test files stay at `test/` top level. | none (not behavioural) | vitest.config.ts |
+| R1-03 | deferred: note; the suggested computed-delay check belongs to Phase 2 or 3. | none (not behavioural) | packages/elements/test/fixtures/tooltip-delay.css |
+| R1-04 | deferred: note; the review requires no change. | none | packages/elements/test/scenarios/harness.ts |

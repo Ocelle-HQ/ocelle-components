@@ -13,6 +13,9 @@
 // 012 (research.md R-11): axe-core's `axe.min.js` is served as `axe.js` from node_modules, the server records each
 // request for `link-target.html` (`Served.visits`), the page a link navigates to, and each visit records the pages its
 // context opens after it (`Visit.tabs`, from `context.on("page")`), the new tabs of a modified or middle click.
+// 008 (research.md R-14, R-15): the served directory also holds the test delay stylesheet `tooltip-delay.css`
+// (test/fixtures/), which the overlay and tooltip pages link; every context is a mouse device at 1280 × 800, and
+// `visit(…, { touch: true })` opens its page in a context with `hasTouch` instead, for the touch rows only.
 import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { createRequire } from "node:module";
@@ -39,6 +42,8 @@ const axeScript = createRequire(import.meta.url).resolve("axe-core/axe.min.js");
 
 /** The page a link of the harness navigates to; the server records each request for it. */
 const linkTarget = "link-target.html";
+
+const tooltipDelay = fileURLToPath(new URL("../fixtures/tooltip-delay.css", import.meta.url));
 
 /** The built files each page may load, by served name, and where the global setup put them. */
 const builtFiles: Readonly<Record<string, string>> = {
@@ -71,6 +76,7 @@ export async function serve(built: Built | undefined): Promise<Served> {
   cpSync(fixtures, dir, { recursive: true });
   writeFileSync(join(dir, "tokens.css"), css(source));
   cpSync(baseSheet, join(dir, "base.css"));
+  cpSync(tooltipDelay, join(dir, "tooltip-delay.css"));
   if (existsSync(fonts)) cpSync(fonts, join(dir, "fonts"), { recursive: true });
   cpSync(axeScript, join(dir, "axe.js"));
   const visits: string[] = [];
@@ -127,12 +133,13 @@ export interface Visit {
 }
 
 /**
- * The allowed requests of a page (spec § The strict-CSP fixture): the page itself, its stylesheets, the vendored
+ * The allowed requests of a page (spec § The strict-CSP fixture): the page itself, its stylesheets (the test delay
+ * stylesheet of 008 among them), the vendored
  * font and the scripts the page is allowed (the browser build, and on `scripts` pages the test-only bundles), all
  * same-origin.
  */
 function allowed(origin: string, page: string, scripts: readonly string[]): (url: string) => boolean {
-  const paths = new Set([page, "tokens.css", "base.css", ...scripts]);
+  const paths = new Set([page, "tokens.css", "base.css", "tooltip-delay.css", ...scripts]);
   return (url) => {
     if (!url.startsWith(`${origin}/`)) return false;
     const path = new URL(url).pathname.slice(1);
@@ -140,9 +147,16 @@ function allowed(origin: string, page: string, scripts: readonly string[]): (url
   };
 }
 
+/** How `visit` opens a page. */
+export interface VisitOptions {
+  /** Opens the page in a context with `hasTouch` (a touch device) instead of the default mouse context (008 R-14). */
+  readonly touch?: boolean;
+}
+
 /** Opens `page` of the fixture in a fresh context with the recorders installed before navigation. */
-export async function visit(browser: Browser, origin: string, page: string, scripts: readonly string[] = ["ocelle-elements.js"]): Promise<Visit> {
-  const context = await browser.newContext({ viewport: { width: 1280, height: 800 }, colorScheme: "light" });
+export async function visit(browser: Browser, origin: string, page: string, scripts: readonly string[] = ["ocelle-elements.js"], options: VisitOptions = {}): Promise<Visit> {
+  const touch = options.touch === true ? { hasTouch: true } : {};
+  const context = await browser.newContext({ viewport: { width: 1280, height: 800 }, colorScheme: "light", ...touch });
   const opened = await context.newPage();
   const tabs: Page[] = [];
   context.on("page", (tab) => tabs.push(tab));

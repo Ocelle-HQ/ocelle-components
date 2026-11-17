@@ -44,11 +44,14 @@ describe("the module build (dist/*.js)", () => {
     const own = (specifier: string): boolean => specifier.startsWith("./") && files.includes(specifier.slice(2));
     const lit = (specifier: string): boolean => specifier === "lit" || specifier.startsWith("lit/");
     expect({
-      files: files.filter((name) => ["index.js", "ocelle-icon.js", "ocelle-brand-mark.js", "ocelle-card.js", "ocelle-section-header.js", "ocelle-page-header.js", "ocelle-context-sidebar.js", "ocelle-personal-rail.js", "ocelle-button.js", "ocelle-action-row.js", "browser.js"].includes(name)),
+      files: files.filter((name) => ["index.js", "ocelle-icon.js", "ocelle-brand-mark.js", "ocelle-dialog.js", "ocelle-drawer.js", "ocelle-tooltip.js", "ocelle-card.js", "ocelle-section-header.js", "ocelle-page-header.js", "ocelle-context-sidebar.js", "ocelle-personal-rail.js", "ocelle-button.js", "ocelle-action-row.js", "browser.js"].includes(name)),
       outside: imported.filter(({ specifier }) => !own(specifier) && !lit(specifier)),
       litImported: imported.some(({ specifier }) => lit(specifier)),
       rootImportsIcon: imported.some(({ name, specifier }) => name === "index.js" && specifier === "./ocelle-icon.js"),
       rootImportsMark: imported.some(({ name, specifier }) => name === "index.js" && specifier === "./ocelle-brand-mark.js"),
+      rootImportsDialog: imported.some(({ name, specifier }) => name === "index.js" && specifier === "./ocelle-dialog.js"),
+      rootImportsDrawer: imported.some(({ name, specifier }) => name === "index.js" && specifier === "./ocelle-drawer.js"),
+      rootImportsTooltip: imported.some(({ name, specifier }) => name === "index.js" && specifier === "./ocelle-tooltip.js"),
       rootImportsCard: imported.some(({ name, specifier }) => name === "index.js" && specifier === "./ocelle-card.js"),
       rootImportsHeader: imported.some(({ name, specifier }) => name === "index.js" && specifier === "./ocelle-section-header.js"),
       rootImportsPageHeader: imported.some(({ name, specifier }) => name === "index.js" && specifier === "./ocelle-page-header.js"),
@@ -57,11 +60,14 @@ describe("the module build (dist/*.js)", () => {
       rootImportsButton: imported.some(({ name, specifier }) => name === "index.js" && specifier === "./ocelle-button.js"),
       rootImportsRow: imported.some(({ name, specifier }) => name === "index.js" && specifier === "./ocelle-action-row.js"),
     }).toEqual({
-      files: ["browser.js", "index.js", "ocelle-action-row.js", "ocelle-brand-mark.js", "ocelle-button.js", "ocelle-card.js", "ocelle-context-sidebar.js", "ocelle-icon.js", "ocelle-page-header.js", "ocelle-personal-rail.js", "ocelle-section-header.js"],
+      files: ["browser.js", "index.js", "ocelle-action-row.js", "ocelle-brand-mark.js", "ocelle-button.js", "ocelle-card.js", "ocelle-context-sidebar.js", "ocelle-dialog.js", "ocelle-drawer.js", "ocelle-icon.js", "ocelle-page-header.js", "ocelle-personal-rail.js", "ocelle-section-header.js", "ocelle-tooltip.js"],
       outside: [],
       litImported: true,
       rootImportsIcon: true,
       rootImportsMark: true,
+      rootImportsDialog: true,
+      rootImportsDrawer: true,
+      rootImportsTooltip: true,
       rootImportsCard: true,
       rootImportsHeader: true,
       rootImportsPageHeader: true,
@@ -111,6 +117,48 @@ describe("the module build (dist/*.js)", () => {
     const shipped = styleTemplate(existsSync(join(dist, "ocelle-brand-mark.js")) ? readFileSync(join(dist, "ocelle-brand-mark.js"), "utf8") : "");
     const pairs = JSON.parse(readFileSync(join(elements, "..", "tokens", "contrast", "pairs.json"), "utf8")) as PairEntry[];
     expect(brandPairs(shipped, pairs)).toEqual({ painted: fr026Foregrounds, missing: [] });
+  });
+
+  // 008 tasks.md T019: the dialog's module imports Lit, the registration helper and the overlays' internal base, which
+  // imports the icon it renders; neither imports the package root.
+  it("dist/ocelle-dialog.js imports lit, the registration helper and ./overlay.js, not the package root; dist/overlay.js imports ./ocelle-icon.js", () => {
+    const read = (name: string): string[] => specifiers(existsSync(join(dist, name)) ? readFileSync(join(dist, name), "utf8") : "");
+    const dialog = read("ocelle-dialog.js");
+    const overlay = read("overlay.js");
+    expect({
+      lit: dialog.includes("lit"),
+      define: dialog.includes("./define.js"),
+      base: dialog.includes("./overlay.js"),
+      root: dialog.includes("./index.js") || overlay.includes("./index.js"),
+      icon: overlay.includes("./ocelle-icon.js"),
+    }).toEqual({ lit: true, define: true, base: true, root: false, icon: true });
+  });
+
+  // 008 tasks.md T032: the drawer's module imports Lit, the registration helper and the overlays' internal base, not
+  // the package root and not the dialog's module.
+  it("dist/ocelle-drawer.js imports lit, the registration helper and ./overlay.js, neither the package root nor ./ocelle-dialog.js", () => {
+    const drawer = specifiers(existsSync(join(dist, "ocelle-drawer.js")) ? readFileSync(join(dist, "ocelle-drawer.js"), "utf8") : "");
+    expect({
+      lit: drawer.includes("lit"),
+      define: drawer.includes("./define.js"),
+      base: drawer.includes("./overlay.js"),
+      root: drawer.includes("./index.js"),
+      dialog: drawer.includes("./ocelle-dialog.js"),
+    }).toEqual({ lit: true, define: true, base: true, root: false, dialog: false });
+  });
+
+  // 008 tasks.md T043: the tooltip's module imports Lit and the registration helper; it imports neither the package
+  // root, nor another element, nor the overlays' internal base (which would define ocelle-icon).
+  it("dist/ocelle-tooltip.js imports lit and the registration helper, neither the package root, another element nor ./overlay.js", () => {
+    const tooltip = specifiers(existsSync(join(dist, "ocelle-tooltip.js")) ? readFileSync(join(dist, "ocelle-tooltip.js"), "utf8") : "");
+    expect({
+      exists: existsSync(join(dist, "ocelle-tooltip.js")),
+      lit: tooltip.includes("lit"),
+      define: tooltip.includes("./define.js"),
+      root: tooltip.includes("./index.js"),
+      base: tooltip.includes("./overlay.js"),
+      elements: tooltip.filter((specifier) => specifier.startsWith("./ocelle-")),
+    }).toEqual({ exists: true, lit: true, define: true, root: false, base: false, elements: [] });
   });
 
   it("dist/ocelle-icon.js imports lit and the registration helper, but neither the package root nor another element", () => {
@@ -299,12 +347,15 @@ describe("the module build of ocelle-progress (013)", () => {
 describe("the browser build (dist/browser/ocelle-elements.js)", () => {
   const text = (): string => (existsSync(browserBuild) ? readFileSync(browserBuild, "utf8") : "");
 
-  it("is self-contained: it defines ocelle-icon, ocelle-brand-mark, ocelle-card, ocelle-section-header, ocelle-page-header, ocelle-context-sidebar, ocelle-personal-rail, ocelle-button, ocelle-action-row, ocelle-facts, ocelle-fact, ocelle-empty-state and ocelle-progress, with no import statement and no dynamic import", () => {
+  it("is self-contained: it defines ocelle-icon, ocelle-brand-mark, ocelle-dialog, ocelle-drawer, ocelle-tooltip, ocelle-card, ocelle-section-header, ocelle-page-header, ocelle-context-sidebar, ocelle-personal-rail, ocelle-button, ocelle-action-row, ocelle-facts, ocelle-fact, ocelle-empty-state and ocelle-progress, with no import statement and no dynamic import", () => {
     const code = text();
     expect({
       exists: code !== "",
       definesIcon: code.includes('"ocelle-icon"'),
       definesMark: code.includes('"ocelle-brand-mark"'),
+      definesDialog: code.includes('"ocelle-dialog"'),
+      definesDrawer: code.includes('"ocelle-drawer"'),
+      definesTooltip: code.includes('"ocelle-tooltip"'),
       definesCard: code.includes('"ocelle-card"'),
       definesHeader: code.includes('"ocelle-section-header"'),
       definesPageHeader: code.includes('"ocelle-page-header"'),
@@ -317,7 +368,26 @@ describe("the browser build (dist/browser/ocelle-elements.js)", () => {
       definesProgress: code.includes('"ocelle-progress"'),
       specifiers: specifiers(code),
       dynamicImport: /\bimport\s*\(/.test(code),
-    }).toEqual({ exists: true, definesIcon: true, definesMark: true, definesCard: true, definesHeader: true, definesPageHeader: true, definesSidebar: true, definesRail: true, definesButton: true, definesRow: true, definesFacts: true, definesEmptyState: true, definesProgress: true, specifiers: [], dynamicImport: false });
+    }).toEqual({
+      exists: true,
+      definesIcon: true,
+      definesMark: true,
+      definesDialog: true,
+      definesDrawer: true,
+      definesTooltip: true,
+      definesCard: true,
+      definesHeader: true,
+      definesPageHeader: true,
+      definesSidebar: true,
+      definesRail: true,
+      definesButton: true,
+      definesRow: true,
+      definesFacts: true,
+      definesEmptyState: true,
+      definesProgress: true,
+      specifiers: [],
+      dynamicImport: false,
+    });
   });
 
   it("holds Lit's production build at the locked versions, not its development build, no ssr-dom-shim and no console call", () => {

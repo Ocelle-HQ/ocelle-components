@@ -7,7 +7,7 @@ import type { NavigationRecord } from "../scenarios/driver.ts";
 // listener on `window` for `click` and `auxclick` records each activation of a link, whether it was prevented, which
 // button, which modifiers and which `href`, then prevents it, so the runner page never navigates. This is the
 // in-process body of the link scenarios; the fixture body, on real navigation and new tabs, is in
-// test/browser/harness.test.ts. The record of a click on something that is not a link is empty, beside the link's.
+// test/browser/harness-scenarios.test.ts. The record of a click on something that is not a link is empty, beside the link's.
 const driver = inProcessDriver();
 
 afterEach(async () => {

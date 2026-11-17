@@ -6,8 +6,8 @@ import { baseEnv, cleanUp, repo, runGate } from "./workspace.ts";
 
 // Stryker's vitest-runner uses vitest.mutation.config.ts: every project of vitest.config.ts except gates-integration,
 // tokens-browser, styles-browser, storybook-integration (002 contracts/gates.md § Mutation, 003 research.md R-09) and,
-// since 005 (research.md R-11, R-12), elements (mutated by stryker.elements.config.json), elements-build and
-// elements-browser, so a mutant that only a tool-, browser- or build-starting test covers is reported as NoCoverage
+// since 005 (research.md R-11, R-12), elements (mutated by stryker.elements.config.json, with elements-touch since 008
+// research.md R-14), elements-build and elements-browser, so a mutant that only a tool-, browser- or build-starting test covers is reported as NoCoverage
 // (research.md R-08). The test first asserts that the file exists and only then loads it, so at the red commit it
 // fails on that assertion.
 //
@@ -17,7 +17,7 @@ import { baseEnv, cleanUp, repo, runGate } from "./workspace.ts";
 // default order (project name). The deep-equal of the earlier version (every mutation project equal to its
 // vitest.config.ts counterpart) is replaced by the stricter comparison below: exact names, each project equal to its
 // counterpart once its whole test.sequence is removed (with the two stated split exceptions), each test.sequence
-// exactly as R-05 assigns it, and the collected test modules exactly those of vitest.config.ts outside the seven
+// exactly as R-05 assigns it, and the collected test modules exactly those of vitest.config.ts outside the eight
 // excluded projects, each once.
 interface Project {
   readonly test?: { readonly name?: unknown; readonly sequence?: unknown; readonly [key: string]: unknown };
@@ -39,14 +39,16 @@ const excluded = [
   "styles-browser",
   "storybook-integration",
   "elements",
+  "elements-touch",
   "elements-build",
   "elements-browser",
 ];
 /**
  * The excluded projects as Vitest names a collected module's project: a browser-mode project carries its browser
- * instance, so the in-process elements project (005 research.md R-11) is collected as "elements (chromium)".
+ * instance, so the in-process elements project (005 research.md R-11) is collected as "elements (chromium)" and its
+ * touch twin (008 research.md R-14) as "elements-touch (chromium)".
  */
-const excludedCollected = [...excluded, "elements (chromium)"];
+const excludedCollected = [...excluded, "elements (chromium)", "elements-touch (chromium)"];
 const helper = "gates/test/integration/vitest-order.ts";
 const timeout = 180_000;
 
@@ -81,7 +83,7 @@ function sorted(values: readonly string[]): string[] {
 }
 
 describe("vitest.mutation.config.ts", () => {
-  it("holds every project of vitest.config.ts except gates-integration, tokens-browser, styles-browser, storybook-integration, elements, elements-build and elements-browser, with tokens split for the start order", async () => {
+  it("holds every project of vitest.config.ts except gates-integration, tokens-browser, styles-browser, storybook-integration, elements, elements-touch, elements-build and elements-browser, with tokens split for the start order", async () => {
     expect(existsSync(join(repo, "vitest.mutation.config.ts"))).toBe(true);
     const all = await projectsOf("vitest.config.ts");
     const mutation = await projectsOf("vitest.mutation.config.ts");
@@ -91,6 +93,7 @@ describe("vitest.mutation.config.ts", () => {
       "styles",
       "styles-browser",
       "elements",
+      "elements-touch",
       "elements-node",
       "elements-build",
       "elements-browser",
@@ -127,7 +130,7 @@ describe("vitest.mutation.config.ts", () => {
   });
 
   it(
-    "collects exactly the test modules of vitest.config.ts outside the seven excluded projects, each once",
+    "collects exactly the test modules of vitest.config.ts outside the eight excluded projects, each once",
     async () => {
       const all = await collected("vitest.config.ts");
       const mutation = await collected("vitest.mutation.config.ts");

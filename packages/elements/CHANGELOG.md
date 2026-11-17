@@ -15,6 +15,26 @@ entry points and the browser build's file path (constitution VII).
 - `ocelle-brand-mark`, the Ocelle rosette drawn inline from tokens at the `--ocelle-icon-size` token, for the main
   grounds, the chrome (`ground="chrome"`) or in one colour (`tone="mono"`), decorative unless a `label` or a host
   `aria-label` names it; its properties `ground` and `tone` (reflected) and `label`.
+- `ocelle-dialog`, a modal dialog on a native `<dialog>` shown in the top layer, styled from tokens, with focus moved in
+  on open and returned on close, a Tab cycle, Escape and a close control that ask the host first; its properties
+  `open` (reflected), `label` and `close-label`, its default and `footer` slots, its parts `panel`, `heading`, `body`,
+  `footer` and `close-button`, its CSS custom property `--ocelle-dialog-inline-size`, and its events
+  `ocelle-dialog-close-request` (cancelable) and `ocelle-dialog-close`. Entry point
+  `@ocelle/elements/ocelle-dialog.js` (defines `ocelle-dialog` and the `ocelle-icon` it renders).
+- `ocelle-drawer`, a modal side drawer on a native `<dialog>`: a full-height panel against the inline start or end
+  edge of the viewport, as wide as `--ocelle-drawer-inline`, with the dialog's focus, Escape, close control and
+  events, and a click on the backdrop that asks the host to close it; its properties `side`, `ground` and
+  `heading-hidden` (reflected), `open` (reflected), `label` and `close-label`, its default and `footer` slots, its
+  parts `panel`, `heading`, `body`, `footer` and `close-button`, and its events `ocelle-drawer-close-request`
+  (cancelable, with the reason `"backdrop"` as well) and `ocelle-drawer-close`. Entry point
+  `@ocelle/elements/ocelle-drawer.js` (defines `ocelle-drawer` and the `ocelle-icon` it renders).
+- `ocelle-tooltip`, a tooltip that meets WCAG 1.4.13: its text in a bubble in the top layer beside its trigger, shown
+  after `--ocelle-tooltip-delay` on hover and at once on keyboard focus, hoverable, kept with no timeout while hovered
+  or focused, hidden by Escape, flipped and clamped to the viewport; its properties `text`, `placement`, `disabled` and
+  `describes` (the last three reflected), its default and `description` slots, its part `bubble`, and no event. Entry
+  point `@ocelle/elements/ocelle-tooltip.js` (defines `ocelle-tooltip` only).
+- In the README, the engine floor raised to Chromium 120 and WebKit 17, for the Popover API the tooltip uses (it was
+  Chromium 120 and WebKit 16.4).
 - `ocelle-section-header`, a heading the page slots (`heading`) with an `eyebrow` above it, a `description` under it
   and `actions` at its inline end, each empty slot taking no space; its properties `size` and `variant` (reflected):
   a compact size, and an eyebrow variant that draws the heading as a small upper-case label (011).

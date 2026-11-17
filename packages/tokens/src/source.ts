@@ -213,6 +213,8 @@ export const records = tokenRecords([
   { name: "size-avatar", group: "size", value: "1.6rem" },
   { name: "size-rail-item", group: "size", value: "2.5rem" },
   { name: "size-visually-hidden", group: "size", value: "1px" },
+  // the tooltip bubble's maximum inline size: about 40 characters of font-size-sm (008 research.md R-09)
+  { name: "tooltip-max-inline", group: "size", value: "18rem" },
 
   // A.4 Shell and measure (theme-independent)
   { name: "shell-topbar-height", group: "shell", value: "3.25rem" },
@@ -235,6 +237,9 @@ export const records = tokenRecords([
   { name: "dialog-max-inline", group: "shell", value: "calc(100vw - 2 * var(--ocelle-gutter))", ref: ["gutter"] },
   // the viewport's block size minus two gutters (unit from the console prototype, research.md R-05)
   { name: "dialog-max-block", group: "shell", value: "calc(100dvh - 2 * var(--ocelle-gutter))", ref: ["gutter"] },
+  // the drawer's inline size: the sidebar's width, which #12's personal drawer replaces at narrow widths
+  // (spec-kitty-design#450; 008 research.md R-09)
+  { name: "drawer-inline", group: "shell", value: "var(--ocelle-shell-sidebar-width)", ref: ["shell-sidebar-width"] },
   // decision bar
   { name: "bar-block-narrow", group: "shell", value: "calc(2 * var(--ocelle-target-min) + 3 * var(--ocelle-space-2))", ref: ["target-min", "space-2"] },
 
@@ -270,6 +275,8 @@ export const records = tokenRecords([
   { name: "motion-spin", group: "motion", value: "800ms" }, // one turn of the busy spinner (012); 0ms under reduced motion
   { name: "motion-turn", group: "motion", value: "1turn" }, // the spinner's angle of one turn (012); not a duration
   { name: "easing-standard", group: "motion", value: "cubic-bezier(0.22, 1, 0.36, 1)" },
+  // the tooltip's hover delay; not 0ms under reduced motion, because a delay is not motion (008 research.md R-09)
+  { name: "tooltip-delay", group: "motion", value: "500ms" },
 ]);
 
 export const source: readonly TokenRecord[] = applyOverrides(records, overrides);

@@ -14,6 +14,13 @@ interface ClickOptions {
   readonly button?: "left" | "middle" | "right";
 }
 type PointerAction = "hover" | "click" | "down" | "up";
+interface PathStep {
+  readonly x: number;
+  readonly y: number;
+  readonly down?: boolean;
+  readonly up?: boolean;
+  readonly button?: "left" | "right" | "middle";
+}
 interface ElementCommands {
   readonly axTree: (context: BrowserCommandContext, id: string, scope?: "element" | "subtree") => Promise<unknown>;
   readonly emulateForcedColors: (context: BrowserCommandContext, mode: "active" | "none", palette?: "light" | "dark") => Promise<void>;
@@ -26,6 +33,8 @@ interface ElementCommands {
   readonly pointerCommand: (context: BrowserCommandContext, action: PointerAction, id: string, options?: ClickOptions) => Promise<void>;
   readonly axState: (context: BrowserCommandContext, id: string, inner?: string) => Promise<unknown>;
   readonly axe: (context: BrowserCommandContext, scope?: string) => Promise<unknown>;
+  readonly pointerPath: (context: BrowserCommandContext, steps: readonly PathStep[]) => Promise<void>;
+  readonly touchTap: (context: BrowserCommandContext, x: number, y: number) => Promise<void>;
 }
 const elementCommandsUrl = new URL("./packages/elements/test/commands.ts", import.meta.url).href;
 const elementCommands = async (): Promise<ElementCommands> => (await import(elementCommandsUrl)) as ElementCommands;
@@ -53,10 +62,23 @@ const pointer: BrowserCommand<[action: PointerAction, id: string, options?: Clic
 };
 const axState: BrowserCommand<[id: string, inner?: string]> = async (context, id, inner) => (await elementCommands()).axState(context, id, inner);
 const axe: BrowserCommand<[scope?: string]> = async (context, scope) => (await elementCommands()).axe(context, scope);
+// 008 research.md R-14: real pointer paths and touch taps for the overlay scenarios.
+const pointerPath: BrowserCommand<[steps: readonly PathStep[]]> = async (context, steps) => {
+  await (await elementCommands()).pointerPath(context, steps);
+};
+const touchTap: BrowserCommand<[x: number, y: number]> = async (context, x, y) => {
+  await (await elementCommands()).touchTap(context, x, y);
+};
+const elementBrowserCommands = { axTree, emulateForcedColors, scrollWidth, activeElement, textBoxes, emulateReducedMotion, press, hover, pointer, axState, axe, pointerPath, touchTap };
+
+// The element browser projects run at the fixture's 1280 × 800 (008 research.md R-14), the default one as a mouse
+// device and elements-touch as a touch device (`hasTouch`); both exclude the node, build and fixture suites.
+const elementViewport = { width: 1280, height: 800 };
 
 // Plants and gate-test fixtures are inputs of the gates and their tests, never tests of this repository
 // (FR-028, research.md R-10): every project excludes them.
 const excluded = ["**/node_modules/**", "**/dist/**", "gates/plants/**", "gates/test/fixtures/**"];
+const elementExcluded = [...excluded, "packages/elements/test/node/**", "packages/elements/test/build/**", "packages/elements/test/browser/**"];
 
 // Optional, environment-only Chromium override (research.md R-03, operator decision 2026-11-02): when
 // OCELLE_CHROMIUM_PATH is set and non-empty, the elements project launches that executable; otherwise Playwright's own.
@@ -108,17 +130,38 @@ export default defineConfig({
         // axTree, emulateForcedColors and emulateReducedMotion commands read Chromium's accessibility tree over CDP and
         // switch forced colours and reduced motion for the shared scenario bodies (packages/elements/test/commands.ts);
         // 012's press, hover, pointer, axe and axState drive the keyboard and mouse, read one accessibility node and run
-        // axe (012 research.md R-11). Each test file keeps its own iframe and custom-element registry (isolate, the default).
+        // axe (012 research.md R-11). Each test file keeps its own iframe and custom-element registry (isolate, the
+        // default). 008 (R-14): a 1280 × 800 viewport, as on the fixture, a mouse device; the touch rows
+        // (`test/*.touch.test.ts`) run in elements-touch instead; the commands also drive the real pointer.
         test: {
           name: "elements",
           include: ["packages/elements/**/*.test.ts"],
-          exclude: [...excluded, "packages/elements/test/node/**", "packages/elements/test/build/**", "packages/elements/test/browser/**"],
+          exclude: [...elementExcluded, "packages/elements/test/*.touch.test.ts"],
           browser: {
             enabled: true,
             provider: playwright({ launchOptions }),
             headless: true,
+            viewport: elementViewport,
             instances: [{ browser: "chromium" }],
-            commands: { axTree, emulateForcedColors, emulateReducedMotion, press, hover, pointer, axState, axe, scrollWidth, activeElement, textBoxes },
+            commands: elementBrowserCommands,
+          },
+        },
+      },
+      {
+        // The in-process touch rows (008 research.md R-14): the same browser mode at 1280 × 800 in a context with
+        // `hasTouch`, for `test/*.touch.test.ts` only, with the elements project's excludes, so the fixture's touch
+        // files stay in elements-browser. Mutated with the elements project (vitest.mutation.elements.config.ts).
+        test: {
+          name: "elements-touch",
+          include: ["packages/elements/test/*.touch.test.ts"],
+          exclude: elementExcluded,
+          browser: {
+            enabled: true,
+            provider: playwright({ launchOptions, contextOptions: { hasTouch: true } }),
+            headless: true,
+            viewport: elementViewport,
+            instances: [{ browser: "chromium" }],
+            commands: elementBrowserCommands,
           },
         },
       },

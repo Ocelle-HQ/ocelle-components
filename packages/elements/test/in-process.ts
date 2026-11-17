@@ -13,6 +13,11 @@
 // listener on `window` for `click` and `auxclick` (put back at the end after each recorder listener on `window`): for
 // an activation of a link (an `a` or `area` with `href` on the event's composed path) it records whether it was already
 // prevented, the button, the modifier flags and the `href` attribute, then prevents it, so the runner never navigates.
+// 008 (research.md R-14, R-15): every mount also adopts the test delay stylesheet (fixtures/tooltip-delay.css), as the
+// fixture pages link it. Keys (`inputPress`, operator decision C2) are real key presses through `userEvent` from `vitest/browser`; pointer and touch input
+// go through the `pointerPath` and `touchTap` commands at points of this frame (test/commands.ts), reduced motion
+// through `emulateReducedMotion`; what the page holds is read by the probe of scenarios/probe.ts, installed when this
+// module loads, before any element of the test file attaches a shadow root.
 /// <reference types="vite/client" />
 import type { LitElement } from "lit";
 import { vi } from "vitest";
@@ -21,11 +26,13 @@ import baseText from "../../styles/src/base.css?raw";
 import { css } from "../../tokens/src/generate.ts";
 import { source } from "../../tokens/src/source.ts";
 import { runningOf } from "./animations.ts";
+import delayText from "./fixtures/tooltip-delay.css?raw";
 import { layoutWait } from "./layout-wait.ts";
 import { activeInnerOf, activePath, clickElement, computedOf, copyElement, currentOf, endOrder, focusElement, morphElement, preventNextEvent, recordEvents, resetPage, sentinelId, startOrder, takeRecords } from "./page-side.ts";
 import { decodePng } from "./pixels.ts";
 import { heardTypes } from "./scenarios/driver.ts";
 import type { Box, Driver, Drawing, NavigationRecord, Paint, Part, Placement, Sheets, TreeNode } from "./scenarios/driver.ts";
+import { probe } from "./scenarios/probe.ts";
 
 function sheet(text: string): CSSStyleSheet {
   const made = new CSSStyleSheet();
@@ -35,6 +42,8 @@ function sheet(text: string): CSSStyleSheet {
 
 const tokens = sheet(css(source).replace(/@font-face\s*\{[^}]*\}/g, ""));
 const base = sheet(baseText);
+const delay = sheet(delayText);
+probe();
 
 function element(id: string): HTMLElement {
   const found = document.getElementById(id);
@@ -42,11 +51,29 @@ function element(id: string): HTMLElement {
   return found;
 }
 
-/** Waits until every `ocelle-*` element of the page has rendered, then for a frame. */
+/** Whether every `<iframe srcdoc>` of the page has loaded its document. */
+function framesLoaded(): boolean {
+  return [...document.querySelectorAll("iframe")].every((frame) => !frame.hasAttribute("srcdoc") || (frame.contentDocument?.URL === "about:srcdoc" && frame.contentDocument.readyState === "complete"));
+}
+
+/**
+ * Waits until every `ocelle-*` element of the page has rendered and every `<iframe srcdoc>` has loaded (a bounded poll
+ * of 1 000 ms, R-15), then for a frame.
+ */
 async function settle(): Promise<void> {
   const elements = [...document.querySelectorAll("*")].filter((each) => each.localName.startsWith("ocelle-"));
   await Promise.all(elements.map((each) => (each as Partial<LitElement>).updateComplete ?? Promise.resolve(true)));
+  for (const start = performance.now(); !framesLoaded(); ) {
+    if (performance.now() - start > 1000) throw new Error("an <iframe srcdoc> did not load within 1 000 ms");
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
   await new Promise((resolve) => requestAnimationFrame(resolve));
+}
+
+/** The `userEvent.keyboard` text of one press of `key`, with Shift held when `shift`. */
+function keyText(key: string, shift: boolean): string {
+  const text = key === " " ? "[Space]" : `{${key}}`;
+  return shift ? `{Shift>}${text}{/Shift}` : text;
 }
 
 /** The element matching `inner` in the shadow root of the element with `id`. */
@@ -162,12 +189,13 @@ const identities = new Map<Element, number>();
 export function inProcessDriver(): Driver {
   return {
     mount: async (markup, options = {}) => {
-      document.adoptedStyleSheets = options.base === true ? [tokens, base] : [tokens];
+      document.adoptedStyleSheets = options.base === true ? [tokens, base, delay] : [tokens, delay];
       messages.length = 0;
       navigations.length = 0;
       resetPage();
       lastSink();
       document.documentElement.removeAttribute("data-theme");
+      probe().reset();
       Reflect.deleteProperty(document, Symbol.for("ocelle.progress.sweepStart"));
       document.body.innerHTML = markup;
       await settle();
@@ -251,11 +279,12 @@ export function inProcessDriver(): Driver {
     },
     computed: (id, property, inner) => Promise.resolve(computedOf({ id, property, inner })),
     resolveColour: (value) => {
-      const probe = document.createElement("span");
-      probe.style.color = value;
-      document.body.append(probe);
-      const colour = getComputedStyle(probe).color;
-      probe.remove();
+      const colourProbe = document.createElement("span");
+      probe().ignore(colourProbe);
+      colourProbe.style.color = value;
+      document.body.append(colourProbe);
+      const colour = getComputedStyle(colourProbe).color;
+      colourProbe.remove();
       return Promise.resolve(colour);
     },
     ax: (id) => commands.axTree(id),
@@ -345,6 +374,40 @@ export function inProcessDriver(): Driver {
       morphElement({ id, markup });
       await settle();
     },
+    inputPress: async (key, options = {}) => {
+      await userEvent.keyboard(keyText(key, options.shift === true));
+      await settle();
+    },
+    inputHover: async (id, inner) => {
+      await commands.pointerPath([id === null ? { x: 0, y: 0 } : probe().centre(id, inner)]);
+      await settle();
+    },
+    inputClick: async (id, inner, options = {}) => {
+      await commands.pointerPath([{ ...probe().centre(id, inner), down: true, up: true, button: options.button ?? "left" }]);
+      await settle();
+    },
+    pointer: async (path) => {
+      await commands.pointerPath(path);
+      await settle();
+    },
+    touchTap: async (id, inner) => {
+      const { x, y } = probe().centre(id, inner);
+      await commands.touchTap(x, y);
+      await settle();
+    },
+    focusPath: () => Promise.resolve(probe().focusPath()),
+    focusVisible: (id, inner) => Promise.resolve(probe().focusVisible(id, inner)),
+    viewportSize: () => Promise.resolve({ width: window.innerWidth, height: window.innerHeight }),
+    device: () => Promise.resolve(probe().device()),
+    record: (id, names) => {
+      probe().record(id, names);
+      return Promise.resolve();
+    },
+    recorded: () => Promise.resolve(probe().recorded()),
+    ownAnimations: (id, inner) => Promise.resolve(probe().animations(id, inner)),
+    topLayer: () => Promise.resolve(probe().topLayer()),
+    styleAttributes: () => Promise.resolve(probe().styleAttributes()),
+    styleElements: () => Promise.resolve(probe().styleElements()),
     append: async (id, markup) => {
       element(id).insertAdjacentHTML("beforeend", markup);
       await settle();

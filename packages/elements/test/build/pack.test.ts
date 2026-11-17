@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import { buildPackage, elements, run } from "./package-build.ts";
 
@@ -26,5 +28,23 @@ describe("pnpm pack of @ocelle/elements", () => {
     expect(packed).toContain("dist/ocelle-personal-rail.js");
     expect(packed).toContain("dist/ocelle-button.js");
     expect(packed).toContain("dist/ocelle-action-row.js");
+  });
+
+  // 008 tasks.md T019: the dialog's entry point is packed, and package.json maps it.
+  it("lists dist/ocelle-dialog.js and dist/overlay.js, and the packed package.json maps ./ocelle-dialog.js to dist/ocelle-dialog.js", async () => {
+    const manifest = JSON.parse(await readFile(join(elements, "package.json"), "utf8")) as { exports?: Record<string, string> };
+    expect({ dialog: packed.includes("dist/ocelle-dialog.js"), base: packed.includes("dist/overlay.js"), entry: manifest.exports?.["./ocelle-dialog.js"] }).toEqual({ dialog: true, base: true, entry: "./dist/ocelle-dialog.js" });
+  });
+
+  // 008 tasks.md T032: the drawer's entry point is packed, and package.json maps it.
+  it("lists dist/ocelle-drawer.js, and the packed package.json maps ./ocelle-drawer.js to dist/ocelle-drawer.js", async () => {
+    const manifest = JSON.parse(await readFile(join(elements, "package.json"), "utf8")) as { exports?: Record<string, string> };
+    expect({ drawer: packed.includes("dist/ocelle-drawer.js"), entry: manifest.exports?.["./ocelle-drawer.js"] }).toEqual({ drawer: true, entry: "./dist/ocelle-drawer.js" });
+  });
+
+  // 008 tasks.md T043: the tooltip's entry point is packed, and package.json maps it.
+  it("lists dist/ocelle-tooltip.js, and the packed package.json maps ./ocelle-tooltip.js to dist/ocelle-tooltip.js", async () => {
+    const manifest = JSON.parse(await readFile(join(elements, "package.json"), "utf8")) as { exports?: Record<string, string> };
+    expect({ tooltip: packed.includes("dist/ocelle-tooltip.js"), entry: manifest.exports?.["./ocelle-tooltip.js"] }).toEqual({ tooltip: true, entry: "./dist/ocelle-tooltip.js" });
   });
 });
