@@ -1,0 +1,71 @@
+
+ RUN  v5.0.5 <repo>
+
+ ❯ |elements (chromium)| packages/elements/test/list-detail-pass.test.ts (8 tests | 2 failed) 1364ms
+   ❯ ocelle-list-detail's measurement pass (R-13) (8)
+     × runs once in the frame after three light-DOM changes made in three tasks before that frame, and once more for a change in a later frame 308ms
+     × review R2-01: remeasure() re-chooses the tier from a fresh measurement of the host's border box in the first animation frame after the call, in one pass with a light-DOM change made in the same task: a content-box host 600 px wide with 2% inline padding and collapse-below 640px, whose container narrows from 1000 px to 500 px, shows one column by the end of that frame 239ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |elements (chromium)| packages/elements/test/list-detail-pass.test.ts > ocelle-list-detail's measurement pass (R-13) > runs once in the frame after three light-DOM changes made in three tasks before that frame, and once more for a change in a later frame
+AssertionError: expected { Object (sameFrame, passes, ...) } to deeply equal { Object (sameFrame, passes, ...) }
+
+Failure screenshot:
+  - .vitest/attachments/failure-screenshots/list-detail-pass.test.ts/ocelle-list-detail-s-measurement-pass--R-13----runs-once-in-the-frame-after-three-light-DOM-changes-made-in-three-tasks-before-that-frame--and-once-more-for-a-change-in-a-later-frame.png
+
+- Expected
++ Received
+
+  {
+    "later": 1,
+-   "passes": 1,
++   "passes": 3,
+    "sameFrame": true,
+  }
+
+ ❯ packages/elements/test/list-detail-pass.test.ts:90:45
+     88|     await nextFrame();
+     89|     await nextFrame();
+     90|     expect({ ...counted, later: passes() }).toEqual({ sameFrame: true,…
+       |                                             ^
+     91|   });
+     92|
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=ac948532:5237:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  |elements (chromium)| packages/elements/test/list-detail-pass.test.ts > ocelle-list-detail's measurement pass (R-13) > review R2-01: remeasure() re-chooses the tier from a fresh measurement of the host's border box in the first animation frame after the call, in one pass with a light-DOM change made in the same task: a content-box host 600 px wide with 2% inline padding and collapse-below 640px, whose container narrows from 1000 px to 500 px, shows one column by the end of that frame
+AssertionError: expected { wide: 'two', …(3) } to deeply equal { wide: 'two', …(3) }
+
+- Expected
++ Received
+
+@@ -1,8 +1,8 @@
+  {
+    "inFrame": "one",
+-   "passes": 1,
++   "passes": 2,
+    "stale": {
+      "tier": "two",
+      "width": 620,
+    },
+    "wide": "two",
+
+ ❯ packages/elements/test/list-detail-pass.test.ts:177:56
+    175|     const inFrame = tier();
+    176|     await nextFrame();
+    177|     expect({ wide, stale, inFrame, passes: passes() }).toEqual({ wide:…
+       |                                                        ^
+    178|   });
+    179|
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=ac948532:5237:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 6 passed (8)
+   Start at  03:56:09
+   Duration  2.05s (tests 90%, worker 8%, import 1%)
+

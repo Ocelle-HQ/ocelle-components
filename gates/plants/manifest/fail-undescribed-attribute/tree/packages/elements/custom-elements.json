@@ -1025,6 +1025,147 @@
           "attributes": [
             {
               "default": "undefined",
+              "description": "One column below this length: digits with an optional fraction and `px`, `rem` or `em`, or a unitless `0`, after\ntrimming ASCII whitespace; any other value counts as absent, and the default is `--ocelle-list-detail-collapse` as\ncomputed on the element. Not reflected.",
+              "fieldName": "collapseBelow",
+              "name": "collapse-below",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The inspector stacks under the detail below this length, with the grammar of `collapse-below`; the default is\n`--ocelle-list-detail-inspector-collapse` as computed on the element. Not reflected.",
+              "fieldName": "inspectorBelow",
+              "name": "inspector-below",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "false",
+              "description": "Forces the one-column layout whatever the element's measured size. Reflected.",
+              "fieldName": "narrow",
+              "name": "narrow",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "false",
+              "description": "In one column, shows the detail pane, with the inspector stacked under it, instead of the list; in two or three\ncolumns it has no effect. Reflected.",
+              "fieldName": "detailOpen",
+              "name": "detail-open",
+              "type": {
+                "text": "boolean"
+              }
+            }
+          ],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A list beside its detail, with an optional inspector, that shows one pane at a time below its threshold.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "collapse-below",
+              "default": "undefined",
+              "description": "One column below this length: digits with an optional fraction and `px`, `rem` or `em`, or a unitless `0`, after\ntrimming ASCII whitespace; any other value counts as absent, and the default is `--ocelle-list-detail-collapse` as\ncomputed on the element. Not reflected.",
+              "kind": "field",
+              "name": "collapseBelow",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "inspector-below",
+              "default": "undefined",
+              "description": "The inspector stacks under the detail below this length, with the grammar of `collapse-below`; the default is\n`--ocelle-list-detail-inspector-collapse` as computed on the element. Not reflected.",
+              "kind": "field",
+              "name": "inspectorBelow",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "narrow",
+              "default": "false",
+              "description": "Forces the one-column layout whatever the element's measured size. Reflected.",
+              "kind": "field",
+              "name": "narrow",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "attribute": "detail-open",
+              "default": "false",
+              "description": "In one column, shows the detail pane, with the inspector stacked under it, instead of the list; in two or three\ncolumns it has no effect. Reflected.",
+              "kind": "field",
+              "name": "detailOpen",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "description": "Requests a measurement of the intrinsic sizes for the next animation frame, coalesced with any other trigger, for\na change the element cannot see: content a slotted element renders in its own shadow root, an attribute-only\nchange, or an image or a font loading. In that frame it also re-chooses the tier from a fresh measurement of the\nelement's border box, as after a percentage inline padding that changes with the host's container. On an element\nthat is not in a document, never connected or removed, it does nothing. On an element that is not rendered (in a\nclosed `<dialog>`, under a `display: none` ancestor or `hidden`) the pass writes nothing and the tier stays; the\nelement measures itself afresh once it is rendered.",
+              "kind": "method",
+              "name": "remeasure",
+              "privacy": "public",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            }
+          ],
+          "name": "OcelleListDetail",
+          "slots": [
+            {
+              "description": "The list pane.",
+              "name": "list"
+            },
+            {
+              "description": "The detail pane.",
+              "name": ""
+            },
+            {
+              "description": "The optional inspector pane.",
+              "name": "inspector"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-list-detail"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-list-detail.ts",
+            "name": "OcelleListDetail"
+          },
+          "kind": "js",
+          "name": "OcelleListDetail"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-list-detail.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
               "description": "The heading's size: `regular` or `compact`. Not set, or any other value, draws regular, the heading at\n`--ocelle-font-size-2xl`; `compact` draws it at `--ocelle-font-size-xl`. Reflected.",
               "fieldName": "size",
               "name": "size",
@@ -1414,6 +1555,66 @@
           "attributes": [
             {
               "default": "undefined",
+              "description": "The name of the strip's group while it overflows, trimmed; empty or whitespace-only counts as none, and without one\nan overflowing strip is a tab stop with no role. Not reflected.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string | undefined"
+              }
+            }
+          ],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A horizontal strip that scrolls in the inline direction and is a tab stop and a named group only while it overflows.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "label",
+              "default": "undefined",
+              "description": "The name of the strip's group while it overflows, trimmed; empty or whitespace-only counts as none, and without one\nan overflowing strip is a tab stop with no role. Not reflected.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            }
+          ],
+          "name": "OcelleScroller",
+          "slots": [
+            {
+              "description": "The strip's content.",
+              "name": ""
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-scroller"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-scroller.ts",
+            "name": "OcelleScroller"
+          },
+          "kind": "js",
+          "name": "OcelleScroller"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-scroller.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
               "description": "The heading's size: `regular` or `compact`. Not set, or any other value, draws regular, or compact when the\nheader is in a compact card's `header` slot; a valid value wins over the card. No effect in the eyebrow variant.\nReflected.",
               "fieldName": "size",
               "name": "size",
@@ -1633,6 +1834,187 @@
       ],
       "kind": "javascript-module",
       "path": "src/ocelle-tooltip.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
+              "description": "The name of the board's region while it overflows, trimmed; empty or whitespace-only counts as none, and without\none an overflowing board is a tab stop with no role. Not reflected.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string | undefined"
+              }
+            }
+          ],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A row of lanes that scrolls inside itself, and is a tab stop and a named region, only while the lanes' minimum\nwidths exceed its size.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "label",
+              "default": "undefined",
+              "description": "The name of the board's region while it overflows, trimmed; empty or whitespace-only counts as none, and without\none an overflowing board is a tab stop with no role. Not reflected.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            }
+          ],
+          "name": "OcelleWorkflowBoard",
+          "slots": [
+            {
+              "description": "The lanes; any child is laid out as a lane.",
+              "name": ""
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-workflow-board"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-workflow-board.ts",
+            "name": "OcelleWorkflowBoard"
+          },
+          "kind": "js",
+          "name": "OcelleWorkflowBoard"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-workflow-board.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
+              "description": "The lane's title, shown and used as its name, trimmed; empty or whitespace-only counts as absent, and no title is\nshown. Not reflected.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The count shown after the title with tabular figures, and named after it: a whole number of 0 or more. The\nattribute counts when, after trimming, it is decimal digits alone, at most `Number.MAX_SAFE_INTEGER`; the\nproperty when it is a safe integer of 0 or more; anything else counts as absent. Not reflected.",
+              "fieldName": "count",
+              "name": "count",
+              "type": {
+                "text": "number | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The count's text in the lane's name, such as \"3 work packages\", trimmed; the visible count still shows the\nnumber. Used only while a count is shown. Not reflected.",
+              "fieldName": "countLabel",
+              "name": "count-label",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "`flat` drops the lane's ground, corners and padding and sets the title and count in small uppercase; absent or any\nother value draws the default lane chrome. Reflected.",
+              "fieldName": "variant",
+              "name": "variant",
+              "type": {
+                "text": "\"flat\" | undefined"
+              }
+            }
+          ],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A column of a workflow board with an optional title and count, exposed as one group named by them.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "label",
+              "default": "undefined",
+              "description": "The lane's title, shown and used as its name, trimmed; empty or whitespace-only counts as absent, and no title is\nshown. Not reflected.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "count",
+              "default": "undefined",
+              "description": "The count shown after the title with tabular figures, and named after it: a whole number of 0 or more. The\nattribute counts when, after trimming, it is decimal digits alone, at most `Number.MAX_SAFE_INTEGER`; the\nproperty when it is a safe integer of 0 or more; anything else counts as absent. Not reflected.",
+              "kind": "field",
+              "name": "count",
+              "privacy": "public",
+              "type": {
+                "text": "number | undefined"
+              }
+            },
+            {
+              "attribute": "count-label",
+              "default": "undefined",
+              "description": "The count's text in the lane's name, such as \"3 work packages\", trimmed; the visible count still shows the\nnumber. Used only while a count is shown. Not reflected.",
+              "kind": "field",
+              "name": "countLabel",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "variant",
+              "default": "undefined",
+              "description": "`flat` drops the lane's ground, corners and padding and sets the title and count in small uppercase; absent or any\nother value draws the default lane chrome. Reflected.",
+              "kind": "field",
+              "name": "variant",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"flat\" | undefined"
+              }
+            }
+          ],
+          "name": "OcelleWorkflowLane",
+          "slots": [
+            {
+              "description": "The lane's content.",
+              "name": ""
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-workflow-lane"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-workflow-lane.ts",
+            "name": "OcelleWorkflowLane"
+          },
+          "kind": "js",
+          "name": "OcelleWorkflowLane"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-workflow-lane.ts"
     }
   ],
   "readme": "",

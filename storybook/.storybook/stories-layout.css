@@ -1,8 +1,9 @@
 /*
  * Layout of the base-style stories (003 research.md R-12, PLAN-A11Y-SECURITY-1-006): layout only, no rule of
  * base.css, selectors on data-story attributes only (no class, no style attribute). Since 008, also the ocelle-dialog,
- * ocelle-drawer and ocelle-tooltip stories' blocks, since 011 the personal-rail stories' stand-in items, keyed on their
- * data-story root, and since 013 the ocelle-facts, ocelle-empty-state and ocelle-progress stories' wrappers (below).
+ * ocelle-drawer and ocelle-tooltip stories' blocks; since 009, the tested frames, keyed on data-frame attributes;
+ * since 011, the personal-rail stories' stand-in items, keyed on their data-story root; and since 013 the
+ * ocelle-facts, ocelle-empty-state and ocelle-progress stories' wrappers (below).
  */
 [data-story] {
   padding: var(--ocelle-space-4);
@@ -13,6 +14,27 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   inline-size: 300px;
+}
+
+/*
+ * The tested frames of 009 (research.md R-15, R-17): a copy of the [data-frame] rules of the one frame source,
+ * packages/elements/test/fixtures/frames.css. A storybook-integration test checks the copy; it is not an import,
+ * because the Storybook plant roots do not hold packages/elements/test/.
+ */
+[data-frame="W"] {
+  inline-size: 876px;
+}
+
+[data-frame="R"] {
+  inline-size: 1196px;
+}
+
+[data-frame="N"] {
+  inline-size: 636px;
+}
+
+[data-frame="S"] {
+  inline-size: 288px;
 }
 
 /*

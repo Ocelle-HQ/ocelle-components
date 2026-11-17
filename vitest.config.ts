@@ -33,7 +33,8 @@ const scrollWidth: BrowserCommand = async (context) => (await elementCommands())
 const activeElement: BrowserCommand = async (context) => (await elementCommands()).activeElement(context);
 const textBoxes: BrowserCommand<[id: string]> = async (context, id) => (await elementCommands()).textBoxes(context, id);
 // 013 phase 3 (research.md R-08, contracts/checks.md § Driver additions): reduced motion through the same
-// `page.emulateMedia` helper as forced colours, so neither clears the other.
+// `page.emulateMedia` helper as forced colours, so neither clears the other; 009's overflow-region scenarios
+// (research.md R-17) use it too.
 const emulateReducedMotion: BrowserCommand<[mode: "reduce" | "no-preference"]> = async (context, mode) => {
   await (await elementCommands()).emulateReducedMotion(context, mode);
 };

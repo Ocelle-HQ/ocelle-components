@@ -152,6 +152,8 @@ export const expectedTokens: readonly ExpectedToken[] = [
   plain("space-9", "space", "3rem", width(48)),
   plain("space-10", "space", "4rem", width(64)),
   derived("gutter", "space", "var(--ocelle-space-4)", "1rem", ["space-4"], width(16)),
+  // 009 (research.md R-16, FR-033): the scroller's fade depth and focus clearance.
+  derived("scroller-fade-size", "space", "var(--ocelle-space-7)", "2rem", ["space-7"], width(32)),
   plain("radius-1", "shape", "2px", width(2)),
   plain("radius-2", "shape", "4px", width(4)),
   plain("radius-row", "shape", "6px", width(6)),
@@ -209,6 +211,12 @@ export const expectedTokens: readonly ExpectedToken[] = [
     ["target-min", "space-2"],
     width(112),
   ),
+  // 009 (research.md R-16, FR-033): a board lane's minimum and flex basis, list-detail's list pane, and list-detail's
+  // default `collapse-below` and `inspector-below` thresholds.
+  plain("lane-min-width", "shell", "10rem", width(160)),
+  plain("list-track-width", "shell", "18rem", width(288)),
+  plain("list-detail-collapse", "shell", "40rem", width(640)),
+  plain("list-detail-inspector-collapse", "shell", "60rem", width(960)),
 
   // A.5 Elevation and motion
   {

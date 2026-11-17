@@ -17,17 +17,21 @@ import { axNodes, axSubtree, emulate, emulateMotion, movePointer, readActiveElem
 import { layoutWait } from "../layout-wait.ts";
 import { decodePng } from "../pixels.ts";
 import { heardTypes } from "../scenarios/driver.ts";
-import type { Bounds, Box, Driver, Drawing, Paint, Part, Placement, Sheets, TreeNode } from "../scenarios/driver.ts";
+import type { Bounds, Box, Driver, Drawing, Paint, Part, Placement, Sheets, Target, TreeNode } from "../scenarios/driver.ts";
 import { installProbe } from "../scenarios/probe.ts";
 import type { Probe } from "../scenarios/probe.ts";
 import { policy } from "./serve.ts";
 
 /**
- * Waits in the page until every `ocelle-*` element has rendered and the fonts the page uses have loaded (a font that
- * arrives later would move the text a scenario measures), then for a frame.
+ * Waits in the page for two animation frames, then until every `ocelle-*` element has rendered and the fonts the page
+ * uses have loaded (a font that arrives later would move the text a scenario measures). Two frames since 009
+ * (research.md R-17, the overflow-region contract's rule): a `ResizeObserver` delivery of the first frame and the
+ * update it requests are seen. Since 008 it then also waits until every `<iframe srcdoc>` has loaded, and for a frame.
  */
 function settle(page: Page): Promise<void> {
   return page.evaluate(async () => {
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    await new Promise((resolve) => requestAnimationFrame(resolve));
     const elements = [...document.querySelectorAll("*")].filter((each) => each.localName.startsWith("ocelle-"));
     await Promise.all(elements.map((each) => (each as unknown as { updateComplete?: Promise<unknown> }).updateComplete ?? Promise.resolve()));
     await document.fonts.ready;
@@ -62,6 +66,36 @@ function keyName(key: string, shift: boolean): string {
   return shift ? `Shift+${name}` : name;
 }
 
+/** A key or chord (`Shift+Tab`, `Ctrl+ArrowRight`) in Playwright's key syntax. */
+function chordText(key: string): string {
+  return key
+    .split("+")
+    .map((part) => (part === "Ctrl" ? "Control" : part))
+    .join("+");
+}
+
+/** The deep active element in the page, each level as its id or its local name and classes, joined by " >> ". */
+function deepActive(): string {
+  const levels: string[] = [];
+  let active: Element | null = document.activeElement;
+  while (active !== null) {
+    levels.push(active.id !== "" ? active.id : [active.localName, ...active.classList].join("."));
+    active = active.shadowRoot?.activeElement ?? null;
+  }
+  return levels.join(" >> ");
+}
+
+/** The viewport rectangle of a target's border box. */
+function rectOf(page: Page, target: Target): Promise<{ readonly x: number; readonly y: number; readonly width: number; readonly height: number }> {
+  return page.evaluate(({ target }) => {
+    const host = document.getElementById(typeof target === "string" ? target : target.id);
+    const element = typeof target === "string" ? host : host?.shadowRoot?.querySelector(target.inner);
+    if (element === null || element === undefined) throw new Error(`no target ${JSON.stringify(target)} on the page`);
+    const rect = element.getBoundingClientRect();
+    return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+  }, { target });
+}
+
 /**
  * Runs `act` in the page on the element matching `inner` in the shadow root of the element with `id`, then waits as
  * `settle` does, and also for every `ocelle-*` element in that shadow root.
@@ -93,6 +127,18 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
       since = log.length;
       await page.evaluate(installProbe);
       await page.evaluate((html) => {
+        const recorded = window as unknown as { ocelleLastKey?: KeyboardEvent | undefined; ocelleKeys?: boolean };
+        if (recorded.ocelleKeys !== true) {
+          recorded.ocelleKeys = true;
+          window.addEventListener(
+            "keydown",
+            (event) => {
+              recorded.ocelleLastKey = event;
+            },
+            true,
+          );
+        }
+        recorded.ocelleLastKey = undefined;
         document.adoptedStyleSheets = [];
         document.documentElement.removeAttribute("data-theme");
         (globalThis as unknown as { ocelleProbe: Probe }).ocelleProbe.reset();
@@ -116,6 +162,16 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
         if (value === null) element.removeAttribute(name);
         else element.setAttribute(name, value);
       }, { id, name, value });
+      await settle(page);
+    },
+    call: async (id, name) => {
+      await page.evaluate(({ id, name }) => {
+        const element = document.getElementById(id);
+        if (element === null) throw new Error(`no #${id} on the page`);
+        const method = (element as unknown as Record<string, unknown>)[name];
+        if (typeof method !== "function") throw new Error(`#${id} has no method ${name}`);
+        (method as () => unknown).call(element);
+      }, { id, name });
       await settle(page);
     },
     attribute: (id, name) => page.evaluate(({ id, name }) => document.getElementById(id)?.getAttribute(name) ?? null, { id, name }),
@@ -212,12 +268,13 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
         const round = (value: number): number => Math.round(value * 1000) / 1000;
         return { scaleX: round(matrix.a), scaleY: round(matrix.d), offsetX: round(matrix.e - rect.x), offsetY: round(matrix.f - rect.y) };
       }, id),
-    computed: (id, property) =>
-      page.evaluate(({ id, property }) => {
-        const element = document.getElementById(id);
-        if (element === null) throw new Error(`no #${id} on the page`);
+    computed: (target, property) =>
+      page.evaluate(({ target, property }) => {
+        const host = document.getElementById(typeof target === "string" ? target : target.id);
+        const element = typeof target === "string" ? host : host?.shadowRoot?.querySelector(target.inner);
+        if (element === null || element === undefined) throw new Error(`no target ${JSON.stringify(target)} on the page`);
         return getComputedStyle(element).getPropertyValue(property);
-      }, { id, property }),
+      }, { target, property }),
     resolveColour: (value) =>
       page.evaluate((value) => {
         const probe = document.createElement("span");
@@ -308,6 +365,113 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
       }, { id, markup });
       await settle(page);
     },
+    chord: async (key) => {
+      await page.keyboard.press(chordText(key));
+      await settle(page);
+    },
+    clickAt: async (target, point) => {
+      const rect = await rectOf(page, target);
+      await page.mouse.click(rect.x + point.x, rect.y + point.y);
+      await settle(page);
+    },
+    wheel: async (target, deltaX) => {
+      const rect = await rectOf(page, target);
+      await page.mouse.move(rect.x + rect.width / 2, rect.y + rect.height / 2);
+      await page.mouse.wheel(deltaX, 0);
+      await settle(page);
+    },
+    deepActive: () => page.evaluate(deepActive),
+    tabWalk: async (from, to, backward = false) => {
+      await page.evaluate((from) => {
+        const element = document.getElementById(from);
+        if (element === null) throw new Error(`no #${from} on the page`);
+        element.focus();
+      }, from);
+      const walked: string[] = [];
+      for (let step = 0; step < 40 && walked.at(-1) !== to; step++) {
+        await page.keyboard.press(backward ? "Shift+Tab" : "Tab");
+        walked.push(await page.evaluate(deepActive));
+      }
+      await settle(page);
+      return walked;
+    },
+    focus: async (target) => {
+      await page.evaluate(({ target }) => {
+        const host = document.getElementById(typeof target === "string" ? target : target.id);
+        const element = typeof target === "string" ? host : host?.shadowRoot?.querySelector<HTMLElement>(target.inner);
+        if (element === null || element === undefined) throw new Error(`no target ${JSON.stringify(target)} on the page`);
+        element.focus();
+      }, { target });
+      await settle(page);
+    },
+    scrollLeft: (target) => page.evaluate(({ target }) => {
+      const host = document.getElementById(typeof target === "string" ? target : target.id);
+      const element = typeof target === "string" ? host : host?.shadowRoot?.querySelector(target.inner);
+      if (element === null || element === undefined) throw new Error(`no target ${JSON.stringify(target)} on the page`);
+      return element.scrollLeft;
+    }, { target }),
+    setScrollLeft: async (target, value) => {
+      await page.evaluate(({ target, value }) => {
+        const host = document.getElementById(typeof target === "string" ? target : target.id);
+        const element = typeof target === "string" ? host : host?.shadowRoot?.querySelector(target.inner);
+        if (element === null || element === undefined) throw new Error(`no target ${JSON.stringify(target)} on the page`);
+        element.scrollTo({ left: value, behavior: "instant" });
+      }, { target, value });
+      await settle(page);
+    },
+    lastKeyPrevented: () => page.evaluate(() => (window as unknown as { ocelleLastKey?: KeyboardEvent }).ocelleLastKey?.defaultPrevented ?? false),
+    frameRecord: async (target, read) => {
+      const handle = await page.evaluate(({ target, read }) => {
+        const host = document.getElementById(typeof target === "string" ? target : target.id);
+        const subject = typeof target === "string" ? host : host?.shadowRoot?.querySelector(target.inner);
+        if (subject === null || subject === undefined) throw new Error(`no target ${JSON.stringify(target)} on the page`);
+        const of = read.of;
+        const ofHost = of === undefined ? null : document.getElementById(typeof of === "string" ? of : of.id);
+        const source = of === undefined ? subject : typeof of === "string" ? ofHost : ofHost?.shadowRoot?.querySelector(of.inner);
+        if (source === null || source === undefined) throw new Error(`no reading target ${JSON.stringify(of)} on the page`);
+        const take = (): string => {
+          if ("property" in read) return String((source as unknown as Record<string, unknown>)[read.property]);
+          if ("computed" in read) return getComputedStyle(source).getPropertyValue(read.computed);
+          return String(source.getAttribute(read.attribute));
+        };
+        const record = [take()];
+        const onKey = (): void => {
+          record.push("keydown");
+        };
+        window.addEventListener("keydown", onKey, true);
+        const observer = new ResizeObserver(() => record.push(`resize: ${take()}`));
+        observer.observe(subject, { box: "border-box" });
+        const state = { frame: 0 };
+        const loop = (): void => {
+          record.push(take());
+          state.frame = requestAnimationFrame(loop);
+        };
+        state.frame = requestAnimationFrame(loop);
+        const recorders = ((window as unknown as { ocelleRecorders?: (() => string[])[] }).ocelleRecorders ??= []);
+        recorders.push(() => {
+          cancelAnimationFrame(state.frame);
+          observer.disconnect();
+          window.removeEventListener("keydown", onKey, true);
+          return record;
+        });
+        return recorders.length - 1;
+      }, { target, read });
+      await page.evaluate(async () => {
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+      });
+      return {
+        stop: async () => {
+          await settle(page);
+          return page.evaluate((handle) => {
+            const stop = (window as unknown as { ocelleRecorders: (() => string[])[] }).ocelleRecorders[handle];
+            if (stop === undefined) throw new Error(`no frame record ${String(handle)}`);
+            return stop();
+          }, handle);
+        },
+      };
+    },
+    settle: () => settle(page),
     layout: (id) => page.evaluate(layoutWait, id),
     copy: async (id) => {
       await page.evaluate((id) => {

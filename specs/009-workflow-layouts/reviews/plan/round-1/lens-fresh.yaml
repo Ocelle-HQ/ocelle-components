@@ -1,0 +1,122 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: fresh
+# Probes: playwright-core 1.63.0 (/opt/node-tools) driving Google Chrome for Testing 153.0.8010.12
+# (/usr/bin/google-chrome), headless, viewport 1280 x 800. Scripts are in the session scratchpad
+# (probe.mjs to probe6.mjs); they are not part of the repository.
+findings:
+  - id: PLAN-FRESH-1-001
+    severity: 4
+    title: "The board's track inherits the module's `inline-size: max-content`, so five lanes of ordinary cards overflow Frame W"
+    evidence:
+      - artifact: "contracts/overflow-region.md § Stylesheet: `.region-track` gets `inline-size: max-content; min-inline-size: 100%; box-sizing: border-box`; § Stylesheet, last paragraph: the board 'adds rules to `.region-track` in its own styles; it does not change the module's'"
+      - artifact: "research.md R-08 § Board layout: the board's track adds only `display: flex; gap: var(--ocelle-space-3); min-inline-size: 100%` and `::slotted(*) { flex: 1 1 var(--ocelle-lane-min-width); min-inline-size: var(--ocelle-lane-min-width) }`. It never overrides `inline-size`. Its § Check (FR-015) works out 848/858 px from the flex basis alone"
+      - code: "probe.mjs / probe3.mjs: an 876 px frame with the scroll box, track and lane rules exactly as written. Each of five lanes holds one card <p> 'Card N: implement the overflow region module for the scroller element'. Result: trackWidth 2333 px, scrollWidth 2333 against clientWidth 876, overflowing true, lanes 455 px each. In a Chromium row flex container, max-content is the sum of the items' max-content contributions, not their flex bases"
+      - code: "probe3.mjs, other track sizings in the same 876/636 px frames: `inline-size: auto` fits Frame W (lanes 164 px), but in Frame N the lanes overflow the track, so the track's inline-end padding is not after the last lane (endRoom 0 px; the ring room of FR-014 is lost at the inline end). `inline-size: auto; min-inline-size: min-content` and `fit-content` both fit Frame W and keep 5 px end room with text-only cards"
+      - code: "probe6.mjs, the US2-14 content: lane 2 also holds a nested scroller whose chip row is 400 px. With `fit-content`, Frame W overflows (scrollWidth 1098 px, lanes 208 px), because a scroller's min-content contribution is its content's. With `max-content` on the track and `contain: inline-size` on each lane, the board fits Frame W (876 px, lanes 164 px), overflows in Frame N (858 px, end room 5 px), and still overflows when a 500 px fixed descendant is in the last lane (scrollWidth 1207 px; SPEC-2-06 kept)"
+    claim: |
+      As designed, the board sizes its track from its lanes' max-content widths. Any card whose text is wider on
+      one line than about 160 px, which is every realistic card, makes a board of five lanes overflow Frame W.
+      It then becomes a tab stop and a region, and its lanes are about three times their intended width.
+      US2-1, FR-015, FR-016, SC-003 and US2-14 all fail. This is the headline need of spec-kitty-design#507.
+      The plan's arithmetic (858 of 876 px) uses only the flex basis, so the gap does not show on paper. It also
+      does not show in a test whose cards are short ("WP01"), because US2-1 only says "each holding cards" and
+      does not say what the cards contain. The obvious override, `inline-size: auto`, breaks the inline-end
+      ring room in Frame N (US2-15). `fit-content` breaks US2-14 because of the nested scroller's min-content. The
+      cheapest design that holds every case measured is to make each lane's intrinsic inline size independent of
+      its content.
+    remedies:
+      - "R-08 and contracts/overflow-region.md: state how the board's track gets its inline size. For example, keep the module's `max-content` track and give every slotted child `contain: inline-size` (with the existing `min-inline-size` and flex basis), so each child contributes exactly `--ocelle-lane-min-width` to the track's intrinsic size. Record the probe figures above. Fix US2-1, US2-3, US2-14 and US2-15 test content: each card is a sentence whose one-line max-content is wider than the lane's share. Add the plant 'lane containment removed', which makes US2-1 fail in Frame W."
+  - id: PLAN-FRESH-1-002
+    severity: 3
+    title: "Suppression is cleared by 'a scroll the module did not make', detected with a flag, but scroll events fire after the flag is reset"
+    evidence:
+      - artifact: "research.md R-06 § When the control does not fit: the fade stays suppressed 'until `focusout` from that element or a scroll the module did not make (a flag set around its own assignment)'; data-model.md § Overflow-region state, `suppressed`: 'cleared … on a scroll the module did not make'"
+      - code: "probe.mjs: set `flag = true; box.scrollLeft = 100; flag = false`. The scroll listener had seen nothing synchronously (`[]`). After two animation frames it had seen one event, and it read the flag as 'foreign'. CSSOM View queues scroll events on the pending scroll event targets and fires them in the 'run the scroll steps' part of update-the-rendering, after the assigning task has ended"
+    claim: |
+      In the US1-13 wide-button case, the module aligns the control and suppresses the covering fade with its own
+      `scrollLeft` write. That write's scroll event arrives one frame later, when the flag is already false, so the
+      module treats it as a user scroll and clears the suppression straight away. The fade then comes back over
+      the focused control's ring. That is what FR-001's fallback exists to prevent. The arrow-key steps of R-02
+      cause the same misreading, though nothing is suppressed then. The test either fails, or passes only when it
+      samples before the next frame. A test that samples too early is a timing-dependent, potentially vacuous
+      assertion.
+    remedies:
+      - "R-06, data-model.md and contracts/overflow-region.md: replace the synchronous flag. Either (a) record the `scrollLeft` the module wrote and treat the next scroll event whose position equals it as its own, or (b) clear the suppression on user scroll input (`wheel`, `touchmove`, `pointerdown` on the box, and keys handled by R-02) instead of on `scroll`. The US1-13 wide-button test asserts, two or more animation frames after focus, that the fade is still not drawn over the ring box. Its plant is the flag implementation."
+  - id: PLAN-FRESH-1-003
+    severity: 3
+    title: "Every browser test and baseline runs with Chromium's scrollbars hidden; the design never decides what the strip's native horizontal scrollbar does"
+    evidence:
+      - code: "packages/tokens/test/browser/serve.ts:104-106: `launch()` is `chromium.launch({ executablePath? })`, headless by default, and packages/elements/test/browser/serve.ts:25 re-exports it. playwright-core lib/coreBundle.js:43338-43343: in headless mode Playwright adds `--hide-scrollbars`"
+      - code: "probe.mjs: a 300 px `overflow-x: auto; overflow-y: hidden` box with 20 px content. Headless default: offsetHeight 20, clientHeight 20. Same page with `ignoreDefaultArgs: ['--hide-scrollbars']`: offsetHeight 35, clientHeight 20, so a 15 px classic scrollbar"
+      - artifact: "spec.md FR-001 and US1-13: 'its block size is its content's block size plus that room on each block side'. No artifact of 009 mentions a scrollbar (grep -i scrollbar over specs/009-workflow-layouts: no match). research.md R-05: the mask covers the whole scroll box, so the scrollbar's ends are faded too"
+    claim: |
+      On classic-scrollbar platforms, a scroller or an overflowing board draws a 15 px scrollbar under its
+      content. The Ocelle console is likely used on such platforms, in Chrome on Windows or Linux. The block-size
+      outcome of FR-001 and US1-13 is false there, and the masks fade the scrollbar's ends into the ground. The
+      #10 baselines and the elements-browser tests all run headless with `--hide-scrollbars`, so they cannot see
+      any of this. The tests pass and the stories look right while users see a different layout. The scrollbar is
+      also the only drag affordance a mouse user without a horizontal wheel has. Whether to keep it, thin it or
+      hide it is an unmade design decision.
+    remedies:
+      - "Keep the native scrollbar. FR-001 and US1-13 state the block size as content plus ring room plus the scrollbar where the platform draws one, and the mask stops short of the scrollbar. One browser test runs with `ignoreDefaultArgs: ['--hide-scrollbars']` and asserts the geometry and that the edge fades do not cover the scrollbar."
+      - "Set `scrollbar-width: thin` (or `none`) on the box, recorded as an operator decision with its pointer-access consequence. A non-headless-scrollbar test proves the chosen block size."
+  - id: PLAN-FRESH-1-004
+    severity: 2
+    title: "Arrow-key handling ignores modifiers, so the strip swallows Alt+ArrowLeft (Back) and other modified arrows"
+    evidence:
+      - artifact: "research.md R-02: 'handles `ArrowLeft` and `ArrowRight` itself, only when the keydown's composed target is the scroll box: it calls `preventDefault` … at the extent it still calls `preventDefault`'. contracts/overflow-region.md § Effects: same; no mention of `altKey`, `ctrlKey`, `metaKey`, `shiftKey` or `isComposing`"
+      - code: "Not probed, because headless Chromium has no browser-UI accelerators. Reasoning: Alt+ArrowLeft and Alt+ArrowRight are history navigation in Chrome on Windows and Linux, and page keydown `preventDefault` blocks shortcuts that Chrome does not reserve. Ctrl/Alt+Arrow are also word-jump and assistive-technology keys"
+    claim: |
+      With focus on an overflowing strip or board, the module turns Back and Forward into 40 px scrolls, or into
+      nothing at the extent. Any other modified arrow chord is taken from the user and from assistive technology
+      in the same way. The spec asks only that plain arrows scroll. Without the element, a focused scroll box
+      never takes these chords.
+    remedies:
+      - "R-02 and contracts/overflow-region.md: handle the key only when `altKey`, `ctrlKey`, `metaKey` and `isComposing` are all false (and decide Shift). Add a test, paired with US1-5, that Alt+ArrowLeft and Ctrl+ArrowRight on the focused box are not prevented and do not change `scrollLeft`. Its plant is a handler that ignores modifiers."
+  - id: PLAN-FRESH-1-005
+    severity: 2
+    title: "Permanent `tabindex=\"-1\"` on list-detail's pane wrappers puts three focusable generic nodes in the tree and makes every click in a pane focus it"
+    evidence:
+      - artifact: "research.md R-14 § Pane wrappers: 'Each pane wrapper has `tabindex=\"-1\"` at all times'; R-11 § Tree: 'The panes are plain `div`s with no role (FR-029, US3-14)'; spec US3-14: 'Each pane's slotted content appears in the tree in pane order … as it would without the element'"
+      - code: "probe2.mjs, Chromium full AX tree with ignored nodes filtered (the spec's reading rule). Inside a shadow root, a `<div class=pane tabindex=-1><slot>` is exposed as an unignored `generic (focusable)` node wrapping the slotted paragraph. A plain `<div><slot name=b>` in the same shadow root is ignored, and its paragraph sits directly under the host. The same holds in light DOM: `section > div[tabindex=-1]` adds `generic (focusable)`, while `section > div` does not"
+    claim: |
+      With the pane wrappers always focusable, the list-detail adds three generic nodes of its own. The US3-14
+      tree assertion then either fails or gets written loosely enough to tolerate them, which makes it weaker
+      than the US1-1 equivalent. Clicking any non-focusable spot in a pane (text, padding) also moves focus to
+      the wrapper, because focus goes to the nearest focusable ancestor. That changes `document.activeElement`
+      for hosts in ways they do not expect. R-07 already uses the cheaper pattern for the scroller's host: a
+      temporary `tabindex="-1"`, removed on `focusout`.
+    remedies:
+      - "R-14 and data-model.md: set `tabindex=\"-1\"` on the shown pane's wrapper only when the element moves focus to it, and remove it on the wrapper's `focusout`, as R-07 does. US3-14 asserts that the tree has no node between the host and each pane's slotted content, both at rest and after a pane switch once focus has left the wrapper. Its plant is a permanent `tabindex`."
+      - "Keep the permanent `tabindex` and amend US3-14 to name the three focusable generic wrappers. The exact tree is then asserted with them, as an operator decision."
+  - id: PLAN-FRESH-1-006
+    severity: 2
+    title: "The board misses overflow changes caused by content inside lanes; R-03's track-size argument holds for the scroller only"
+    evidence:
+      - artifact: "research.md R-03: 'A change to slotted content changes the track's size even when no assigned element's own size changes, such as text deep in light DOM or an element added inside a slotted container'; spec FR-002: 'The state follows changes to the box's size and to its content's size or children within one animation frame'"
+      - code: "probe6.mjs: with lanes contained (the only sizing that met US2-1 and US2-14, PLAN-FRESH-1-001), the track is 876 px in Frame W with or without a 500 px fixed descendant in the last lane. Only the box's scrollWidth changes (876 to 1207). probe.mjs: with an `auto` track, the ResizeObserver fired when the wide child was added only because the lane's block size grew. A width-only change inside a lane changes neither the box nor the track"
+      - artifact: "contracts/overflow-region.md § Lifecycle: `slotchange` is listened to only on the slots inside the track. For the board those are its direct children (lanes), not the cards in them"
+    claim: |
+      For the scroller, the track is max-content of the slotted content, so content changes do resize it. For the
+      board, the track's width is meant to be independent of what the lanes contain. Then a card that gains
+      non-shrinking width (SPEC-2-06, last lane) changes the board's scrollable overflow without resizing anything
+      the module observes. In that case the board would not become a tab stop or region, and the end fade would
+      not show. FR-002 promises this state follows within one frame, and R-03 claims it does.
+    remedies:
+      - "R-03 and R-08: for the board, also recompute on a ResizeObserver over each assigned lane (and its content wrapper) and compare `scrollWidth`, or state honestly that a width-only change inside a lane is picked up at the next size, slot or scroll event. Record that as a reading of FR-002 for the squad, and add the SPEC-2-06 test case in which the wide content is added after the first render."
+  - id: PLAN-FRESH-1-007
+    severity: 2
+    title: "Focus handed to the scroller's host (R-07) lands on a node with no token focus ring"
+    evidence:
+      - artifact: "research.md R-07: with no focusable slotted element, focus goes 'to the host. The module first sets `tabindex=\"-1\"` on the host'. contracts/overflow-region.md § Stylesheet styles only `.region-box`, `.region-ring` and `.region-edge`. No `:host(:focus-visible)` rule exists in the plan"
+      - artifact: "constitution III: interactive elements 'show the token focus ring'; spec US1-4 moves keyboard focus there, after a keyboard user has been on the box, so `:focus-visible` matches on the host"
+    claim: |
+      After US1-4's handover with no focusable content, a keyboard user's focus sits on the host. The host shows
+      Chromium's default `outline: auto` (or whatever the host page sets), not the token ring that the box showed
+      a moment before. No test checks it. Every other focus target in this feature, the box and the pane
+      wrappers, is specified with the token ring.
+    remedies:
+      - "R-07 and the module stylesheet: add a `:host(:focus-visible)` rule (or a rule the module documents for each host) that draws the token focus ring inside the host, and Highlight in forced colours. US1-4 asserts the ring's computed colour and width after the handover. Its plant is the rule removed."

@@ -266,7 +266,8 @@ async function frameMap(context: BrowserCommandContext): Promise<(x: number, y: 
 /**
  * Emulates `prefers-reduced-motion` (013 research.md R-08, PLAN-CORRECTNESS-1-013): through Playwright's own
  * `reducedMotion` option of `page.emulateMedia`, beside `emulate()`, so a later forced-colours call keeps it (every
- * `emulateMedia` call sends all the media features, the reduced motion Playwright holds among them).
+ * `emulateMedia` call sends all the media features, the reduced motion Playwright holds among them). 009's scroller
+ * scenarios (research.md R-17) use it too, with the same modes.
  */
 export async function emulateMotion(page: Page, mode: ReducedMotion): Promise<void> {
   await page.emulateMedia({ reducedMotion: mode });
