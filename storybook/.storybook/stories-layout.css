@@ -1,6 +1,8 @@
 /*
  * Layout of the base-style stories (003 research.md R-12, PLAN-A11Y-SECURITY-1-006): layout only, no rule of
- * base.css, selectors on data-story attributes only (no class, no style attribute).
+ * base.css, selectors on data-story attributes only (no class, no style attribute). Since 008, also the ocelle-dialog,
+ * ocelle-drawer and ocelle-tooltip stories' blocks, since 011 the personal-rail stories' stand-in items, keyed on their
+ * data-story root, and since 013 the ocelle-facts, ocelle-empty-state and ocelle-progress stories' wrappers (below).
  */
 [data-story] {
   padding: var(--ocelle-space-4);
@@ -11,6 +13,55 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   inline-size: 300px;
+}
+
+/*
+ * The ocelle-dialog Long scrolling body story's scroll-edge block (008 research.md R-16, operator decision 2026-11-14):
+ * an empty, text-free block between two paragraphs, tall enough to cross the body's scroll edge in the 1280 × 800
+ * capture with room either side, so no paragraph's box sits across that edge inside the viewport.
+ */
+[data-story="dialog-scroll-edge"] {
+  padding: 0;
+  block-size: 10rem;
+}
+
+/*
+ * The ocelle-drawer Long scrolling body story's scroll-edge block (008 research.md R-16, operator decision 2026-11-15,
+ * plan decision 24): an empty, text-free block between two paragraphs, tall enough to cross the body's scroll edge in
+ * the 1280 × 800 capture with room either side, so no paragraph's box sits across that edge inside the viewport.
+ */
+[data-story="drawer-scroll-edge"] {
+  block-size: 10rem;
+}
+
+/*
+ * The ocelle-tooltip stories' delay override (008 research.md R-16, operator decision A at T026): every tooltip story
+ * wraps its markup in this block, so the bubble shows in the same task as the gate's pointer move onto the trigger,
+ * before axe runs two frames later and before the capture; the hover delay itself is a row of the element's test
+ * matrix, not a story.
+ */
+[data-story="tooltip"] {
+  --ocelle-tooltip-delay: 0ms;
+}
+
+/*
+ * The personal-rail stories' stand-in items (011 research.md R-10, FR-038): until #12's ocelle-nav-item exists, the
+ * rail stories hold plain <a> links, sized here to --ocelle-size-rail-item squares that inherit the rail's chrome ink,
+ * as the rail's fixture pages size theirs. The Wrapped story's narrow root is at most 320 px wide, so the horizontal
+ * rail in it wraps, and narrower on a narrower page.
+ */
+[data-story="rail-items"] a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  inline-size: var(--ocelle-size-rail-item);
+  block-size: var(--ocelle-size-rail-item);
+  color: inherit;
+}
+
+[data-story="rail-narrow"] {
+  max-inline-size: 320px;
 }
 
 /*

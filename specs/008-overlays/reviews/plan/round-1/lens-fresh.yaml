@@ -1,0 +1,179 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: fresh
+# Probes: Playwright 1.64.1 Chromium 153.0.8010.12 (the research's browser), scripts kept outside the repository in the
+# session scratchpad. Each finding names the probe and its printed result.
+findings:
+  - id: PLAN-FRESH-1-001
+    severity: 3
+    title: "An open overlay moved in the DOM (removed and re-inserted) is left as a non-modal dialog painted in the page, and showModal() then throws"
+    evidence:
+      - artifact: "data-model.md § Overlay § State: 'any ──(disconnected)──▶ closed (no event; no top-layer entry or inert content left; FR-022)'; spec Edge Cases 'Removed while open'; FR-004 'open ... single source of truth'. Nothing says what `open` is after disconnection or what happens on reconnection."
+      - artifact: "contracts/checks.md § Test matrix, dialog row: 'removal while open' only; no row re-inserts the element."
+      - code: |
+          Probe (scratchpad a.cjs): host with a shadow <dialog>, showModal(), host.remove(), append the host elsewhere.
+          Result: before [open true, :modal true]; after removal [open true, :modal false, no close event];
+          after re-insertion [open true, :modal false, display "block"]; calling showModal() again throws InvalidStateError.
+    claim: |
+      Moving a node (remove then insert, or insertBefore of a connected node) runs disconnectedCallback and
+      connectedCallback. Hosts do this routinely: htmx/idiomorph morphing, keyed list reorders in Svelte, a host
+      "portalling" a dialog to the end of <body>, #12's app shell re-parenting the drawer when it switches between
+      layouts. After the move the inner <dialog> keeps its `open` attribute but is no longer modal: it renders in
+      flow as a non-modal dialog (UA `display: block` reset to tokens, so it looks like a panel stuck in the page),
+      the page is not inert, there is no backdrop, Escape does nothing (no close watcher), and the element's `open`
+      is still true, so the host setting `open = true` again is a no-op in Lit and the element cannot call
+      showModal() without first closing the inner dialog (InvalidStateError). The state diagram's "any → closed"
+      leaves `open` undefined: if it becomes false, the element rewrites the reflected host attribute behind the
+      host's back with no close event (FR-014 says every close dispatches one); if it stays true, the element is in
+      the broken state above. Either way FR-004's single source of truth breaks on an ordinary DOM operation.
+    remedies:
+      - "Decide and write in research (new R-05a) and data-model § State: on disconnect the element calls the inner dialog's close() (silently, no event) and keeps `open` as the host set it; on connect, if `open` is true, it shows modally again (showModal(), initial focus per FR-007, opener recorded afresh). Add the edge case to the spec ('Moved while open') and a test-matrix row: open, remove, re-insert in the same task and in a later task; assert :modal, page inert, one dialog in the top layer, `open` true, no event, FR-047 counts."
+
+  - id: PLAN-FRESH-1-002
+    severity: 3
+    title: "A hover-shown tooltip on the opener stays shown under a newly opened modal, and its window-level Escape listener eats the first Escape meant for the new dialog or drawer"
+    evidence:
+      - artifact: "research.md R-12: 'pointerleave from both clears the timer and hides unless keyboard focus holds'; 'focusout hides unless hovered'; 'while a bubble is shown, a keydown listener in the capture phase on window takes Escape, hides the bubble, and calls preventDefault() and stopPropagation()'."
+      - artifact: "data-model.md § ocelle-tooltip § State lists no transition for 'the trigger becomes inert' or 'a modal opens above'; contracts/checks.md tooltip row has no such path."
+      - code: |
+          Probe (scratchpad a.cjs, part C): mouse resting on a trigger, a popover=manual bubble shown, then showModal()
+          on a dialog. Result: bubble still :popover-open; hit-testing at the bubble returns the dialog (the modal and
+          its backdrop are above it); no pointerleave or mouseleave on the trigger after 300 ms nor after 1.5 s without
+          mouse movement.
+    claim: |
+      The most common consumer path hits this: #12's icon-only nav item or top-bar menu button (the tooltip
+      consumers this feature names) is hovered for the delay, the bubble shows, and the user clicks it to open the
+      personal drawer or a dialog. The click focuses the trigger without :focus-visible, focus then moves into the
+      modal (focusout → "hides unless hovered", and it is still hovered because no boundary event fires while the
+      pointer does not move), so the bubble stays shown, dimmed under the backdrop, over a now-inert trigger. Its
+      capture-phase window listener is still installed, so the user's first Escape in the new modal hides an
+      invisible-to-them, inert bubble and is stopped, and the drawer does not close: the opposite of SC-005's
+      intent, and FR-010's "no tooltip bubble inside it is shown" condition does not apply because the bubble is
+      not inside the overlay. Nothing in the plan or the test matrix exercises a tooltip trigger that opens an
+      overlay.
+    remedies:
+      - "Add to R-12 and the tooltip state diagram: the bubble hides (and stays dismissed until the pointer re-enters) on pointerdown or click on the trigger, and the window Escape listener acts only when the bubble's trigger is not inert (`!trigger.closest('[inert]')` is not enough across modals; check that the trigger is not behind the topmost modal, e.g. via `document.querySelector(':modal')` containment in the flat tree or `checkVisibility`/hit test). Add a test-matrix row: hover a trigger past the delay, click it to open an ocelle-drawer, assert the bubble is hidden and one Escape closes the drawer; and add the spec edge case 'Tooltip trigger opens an overlay'."
+
+  - id: PLAN-FRESH-1-003
+    severity: 3
+    title: "Focus is returned 200 ms after the host closed the overlay, so it overrides focus the host or a follow-up dialog has taken since, and a dialog opened during another's exit records the wrong opener"
+    evidence:
+      - artifact: "research.md R-06: 'Order on close: open becomes false, then the exit animation runs, then <dialog>.close(), then focus returns (R-05), then …-close is dispatched.'"
+      - artifact: "research.md R-05: on close focus the opener if connected, not disabled, not inert; 'Otherwise ... if an overlay beneath is still open, focus goes to that overlay's initial focus target; else focus goes to the document body'."
+      - artifact: "research.md R-05 'at open, record the opener: the deepest active element'; contracts/checks.md dialog row tests 'nested dialog over drawer' and 'rapid toggle' but not 'close A and open B in the same task' nor 'host moves focus while A exits'."
+    claim: |
+      With motion allowed (the default for users; tests run it at 200 ms per R-15), the overlay stays modal for the
+      exit duration after `open` becomes false and only then moves focus. Two ordinary host flows break:
+      (1) Chained dialogs: the Open project dialog's "Open" handler sets `a.open = false` and opens a follow-up
+      `b.open = true` (an error, a confirmation, a next step). B opens above A while A animates out; B records as
+      its opener the deepest active element, which is A's "Open" button. 200 ms later A closes and runs R-05: its
+      opener is behind B's modal (inert), so it falls to "overlay beneath" (there is none beneath A; B is above) and
+      then to "the document body", taking focus out of B. When B later closes, its opener is inside the closed A,
+      not focusable, so focus lands on the body instead of the page control that opened A.
+      (2) Host-directed focus: a host that closes the dialog and focuses the newly created item (a common pattern)
+      has its focus yanked back to the opener when the exit ends. The plan gives hosts no way to know they must
+      wait for `…-close`, and the README is not planned to say so.
+      SC-001 is only tested on single-overlay paths, so these slip through.
+    remedies:
+      - "Amend R-05/R-06: on close, return focus only if focus is still inside the closing overlay or on the body (the host has not moved it); never move focus to the body when it is elsewhere. When an overlay opens while another is closing, and the recorded opener is inside the closing overlay, record that overlay's opener instead. Document in the README that a host moving focus after a close does so in the `…-close` listener. Add test rows with motion at 200 ms: (a) close A and open B in the same task, assert focus stays in B and returns to A's opener when B closes; (b) set open=false then focus another page control, assert focus is not moved by the element."
+
+  - id: PLAN-FRESH-1-004
+    severity: 2
+    title: "The bubble is never re-placed when a scroller inside a shadow root scrolls, including the dialog's own scrolling body"
+    evidence:
+      - artifact: "research.md R-11: 'While shown, it is re-placed on scroll (capture, any scroller) and resize, throttled to one placement per animation frame.'"
+      - artifact: "spec FR-018: the overlay body scrolls (the body part is in the overlay's shadow root); US3 Independent Test: a trigger 'in a scrolling container' and 'inside an open ocelle-dialog and ocelle-drawer'."
+      - code: |
+          Probe (scratchpad b.cjs): a capture-phase scroll listener on window; scroll a light-DOM scroller and a
+          scroller inside an open shadow root. Result: ['win:light'] only. `scroll` is not composed, so a
+          window/document capture listener never sees scrolls inside shadow roots.
+    claim: |
+      The overlay's body scroller is in ocelle-dialog's and ocelle-drawer's shadow root (FR-017, FR-018), and #12's
+      app shell will likely scroll its main region inside its own shadow root. A tooltip whose trigger sits in the
+      long, scrolling body of a dialog (the Open project shape with a long folder list, or a drawer's rail) keeps
+      its bubble at the old coordinates when the body scrolls by keyboard while the trigger has keyboard focus: the
+      bubble floats detached from its trigger in the top layer, possibly over unrelated content. The plan's test
+      matrix tests 'clipped' and 'transformed' containers but no scroll of a shadow-root scroller, so the design
+      choice would pass every planned test.
+    remedies:
+      - "Change R-11: while shown, re-place on every animation frame when the trigger's bounding box changed (one getBoundingClientRect per frame, cheap for at most one shown bubble), or attach scroll listeners to each scrolling ancestor found by walking the flat tree through shadow roots and slots. Add a test-matrix row: a keyboard-focused trigger in an ocelle-dialog's overflowing body, scroll the body, assert the bubble stays beside the trigger within one frame."
+
+  - id: PLAN-FRESH-1-005
+    severity: 2
+    title: "A slotted <form method=\"dialog\"> does not close the overlay at all, so R-03's decision, its README text and the test-matrix row describe a path that does not exist"
+    evidence:
+      - artifact: "research.md R-03: 'A close event on the inner <dialog> that the overlay did not cause (a slotted <form method=\"dialog\"> submit, ...) sets open to false ... and dispatches …-close with detail.reason === \"host\"'; 'A method=\"dialog\" submit closes the overlay with reason host.'"
+      - artifact: "plan.md § Decisions 4: 'a method=\"dialog\" form submit closes with reason host'; contracts/checks.md dialog row: 'form method=\"dialog\" (reason host)'."
+      - code: |
+          Probe (scratchpad c.cjs): <x-h><form method=dialog><button>OK</button></form></x-h> with the form slotted into
+          a shadow-root <dialog> shown modally; click OK. Result: ['submit'], dialog.open true, no close event, no
+          navigation. The HTML form-submission algorithm takes the form's nearest ancestor <dialog> in the DOM tree,
+          and the inner dialog is in the shadow tree, not an ancestor of light-DOM content.
+    claim: |
+      The planned test 'form method="dialog" (reason host)' cannot be made green by any implementation that does not
+      intercept the host's submit events, which R-03 itself rules out; an implementer either fails the red/green
+      check or rewrites the test to the real behaviour without a recorded reason. The README sentence planned by
+      R-03 would tell consumers the opposite of what happens: a consumer porting a native dialog with a
+      method="dialog" Cancel button gets a button that does nothing. The real platform-close path left is only
+      `close()` on the inner dialog through the open shadow root.
+    remedies:
+      - "Rewrite R-03, plan § Decisions 4, the spec edge case 'Form in a dialog' and the test-matrix row: a slotted method=\"dialog\" form does nothing to the overlay (the overlay stays open, `open` stays true, no event); the README tells hosts to close with `open = false` from their own submit handler. Keep the inner `close()` path with reason `host` and test that one."
+
+  - id: PLAN-FRESH-1-006
+    severity: 2
+    title: "Handling Escape with preventDefault on the dialog's keydown kills the native Escape of controls inside it, and the plan does not say how a nested overlay stops its parent's handler"
+    evidence:
+      - artifact: "research.md R-02: 'the overlay handles Escape on keydown (bubble phase, on its <dialog>), calls preventDefault() and runs the request path'. No condition on the event's target, defaultPrevented or isComposing; no stopPropagation; FR-010's 'topmost' rule has no mechanism in R-02."
+      - code: |
+          Probe (scratchpad a.cjs, part B): <input type=search value=abc> focused in a modal dialog.
+          Native: Escape clears the value to '' and the dialog stays open (no cancel).
+          With R-02's handler: value stays 'abc', the handler saw defaultPrevented false, and the overlay would run its
+          close request instead.
+      - code: |
+          Probe (scratchpad c.cjs, nested): two shadow-root dialogs, the inner host slotted inside the outer, each with an
+          R-02 keydown handler. One Escape reaches both: ['i:false', 'o:true'].
+    claim: |
+      The Open project dialog is a picker; a filter or path field in it is likely, and a search field's Escape
+      (clear the query) becomes "close the dialog", losing the user's place. The same happens for any slotted widget
+      whose Escape is a default action rather than a handled event, and for an IME composition cancelled with Escape.
+      For nested overlays (FR-023, edge case 'Two overlays', #12 opening a dialog from the drawer), the parent's
+      handler receives the same Escape; unless the implementation checks `defaultPrevented` or topmost-ness, the
+      drawer beneath also requests its close. The test row exists, but the design decision that makes it pass is
+      absent, and the obvious fix (ignore defaultPrevented) does not cover the native search case.
+    remedies:
+      - "Extend R-02: the overlay ignores a keydown Escape that is already defaultPrevented (nested overlays and widgets that handle Escape), that has `isComposing`, or whose target is a text field whose Escape has a native action (an input of type search with a non-empty value); in those cases it neither prevents nor requests. Add test rows: Escape in a slotted search field with a value clears it and keeps the dialog open with no event; Escape in a nested dialog over a drawer dispatches exactly one request, on the dialog."
+
+  - id: PLAN-FRESH-1-007
+    severity: 2
+    title: "With `describes`, the tooltip writes the consumer's own aria-describedby on the trigger, which a re-rendering host template overwrites"
+    evidence:
+      - artifact: "research.md R-13: 'The tooltip also adds that id to the trigger's aria-describedby, keeping any ids the host put there and removing only its own on change or disconnect.' data-model § ocelle-tooltip: the span and the id 'exist while describes is set and text is not empty'."
+      - code: "packages/elements/README.md:189-191 (§ Host ARIA) and packages/elements/src/naming.ts:6 'The element never writes the host's attribute': the library's convention so far is not to write ARIA attributes the host owns."
+    claim: |
+      The trigger is the host's element, typically rendered by the host's own template (Lit, Svelte, Thymeleaf
+      fragments swapped by htmx). A template that binds aria-describedby on that trigger (a form field pointing at
+      its hint, the common case for `describes` on a native control) rewrites the attribute on its next render and
+      drops the tooltip's id silently; a template that does not bind it but re-creates the trigger (htmx swap,
+      keyed re-render) gives a new trigger the tooltip only updates if `slotchange` fires. The description then
+      disappears from the accessibility tree with nothing failing. No planned test re-renders the trigger's
+      attribute.
+    remedies:
+      - "Add to R-13: the tooltip observes the trigger's aria-describedby with a MutationObserver while `describes` holds and re-adds its id when the host's write removed it; it re-applies on slotchange to a new trigger. Add test rows: host overwrites aria-describedby on the trigger, the description is back after one microtask; trigger replaced, the new trigger is described and the old one no longer carries the id."
+      - "Or state the limit in the README and contract (a host that binds the trigger's aria-describedby must include the tooltip's id, which the tooltip then exposes as a read-only property), and test that property."
+
+  - id: PLAN-FRESH-1-008
+    severity: 2
+    title: "Tooltip placement under dir=\"rtl\" is designed ambiguously and has no test or story"
+    evidence:
+      - artifact: "research.md R-11: replaceSync with '[part=\"bubble\"] { inset-block-start: <y>px; inset-inline-start: <x>px; }'; 'start/end follow :dir(rtl) on the tooltip host'."
+      - artifact: "spec FR-030: placement 'logical under the element's direction'. contracts/checks.md tooltip row: 'each placement; flip; cross-axis clamp' with no direction; data-model § Stories tooltip: no rtl story (the drawer has one)."
+    claim: |
+      Coordinates come from getBoundingClientRect (physical left/top), but the rule writes them into
+      inset-inline-start, which under an rtl bubble is the distance from the right edge. An implementation that
+      writes the measured left into inset-inline-start passes every planned test (all ltr) and mirrors the bubble to
+      the wrong part of the screen in rtl, and placement="start"/"end" plus the flip are only exercised in ltr.
+      FR-030's logical placement is therefore untested.
+    remedies:
+      - "Fix R-11 to write physical `top`/`left` in the placement sheet (the coordinates are physical), with logical behaviour only in choosing the side; add test-matrix rows for placement start and end, flip and clamp under dir=\"rtl\", and one rtl tooltip story."

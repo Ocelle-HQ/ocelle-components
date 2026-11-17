@@ -2,13 +2,17 @@
 // writes into a temporary directory what a host serves: the fixture pages of fixtures/, `tokens.css` from the token
 // generator (the current source, never a pre-built dist/) with the vendored fonts it loads by relative URL, `base.css`
 // copied from packages/styles/src (linked only by the pages that say so), and the files the global setup built
-// (global-setup.ts): the browser build `ocelle-elements.js`, US1 scenario 10's `bundle-a.js` and `bundle-b.js` and User
-// Story 3's test host's file `ocelle-test-host.js`. It serves them on 127.0.0.1 with `Content-Security-Policy:
+// (global-setup.ts): the browser build `ocelle-elements.js`, US1 scenario 10's `bundle-a.js` and `bundle-b.js`, User
+// Story 3's test host's file `ocelle-test-host.js` and 011's `card-bundle.js` (the module build's card alone). It serves them on 127.0.0.1 with `Content-Security-Policy:
 // default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'` on every response. Every page is opened
 // in a fresh context with the recorders installed before navigation, none of them a page script or a request: CSP
 // violations through 002's `addInitScript` collector
 // (packages/tokens/test/browser/serve.ts), requests and their responses through Playwright's `request` and
 // `response` events, and console messages and uncaught errors through its `console` and `pageerror` events.
+//
+// 008 (research.md R-14, R-15): the served directory also holds the test delay stylesheet `tooltip-delay.css`
+// (test/fixtures/), which the overlay and tooltip pages link; every context is a mouse device at 1280 × 800, and
+// `visit(…, { touch: true })` opens its page in a context with `hasTouch` instead, for the touch rows only.
 import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
@@ -30,12 +34,14 @@ export const policy = "default-src 'none'; script-src 'self'; style-src 'self'; 
 const fixtures = fileURLToPath(new URL("./fixtures", import.meta.url));
 const baseSheet = fileURLToPath(new URL("../../../styles/src/base.css", import.meta.url));
 const fonts = fileURLToPath(new URL("../../../tokens/fonts", import.meta.url));
+const tooltipDelay = fileURLToPath(new URL("../fixtures/tooltip-delay.css", import.meta.url));
 
 /** The built files each page may load, by served name, and where the global setup put them. */
 const builtFiles: Readonly<Record<string, string>> = {
   "ocelle-elements.js": "dist/browser/ocelle-elements.js",
   "bundle-a.js": "bundles/bundle-a.js",
   "bundle-b.js": "bundles/bundle-b.js",
+  "card-bundle.js": "bundles/card-bundle.js",
   "ocelle-test-host.js": "test-host/ocelle-test-host.js",
 };
 
@@ -59,6 +65,7 @@ export async function serve(built: Built | undefined): Promise<Served> {
   cpSync(fixtures, dir, { recursive: true });
   writeFileSync(join(dir, "tokens.css"), css(source));
   cpSync(baseSheet, join(dir, "base.css"));
+  cpSync(tooltipDelay, join(dir, "tooltip-delay.css"));
   if (existsSync(fonts)) cpSync(fonts, join(dir, "fonts"), { recursive: true });
   if (built !== undefined && "dir" in built) {
     for (const [name, path] of Object.entries(builtFiles)) if (existsSync(join(built.dir, path))) cpSync(join(built.dir, path), join(dir, name));
@@ -109,12 +116,13 @@ export interface Visit {
 }
 
 /**
- * The allowed requests of a page (spec § The strict-CSP fixture): the page itself, its stylesheets, the vendored
+ * The allowed requests of a page (spec § The strict-CSP fixture): the page itself, its stylesheets (the test delay
+ * stylesheet of 008 among them), the vendored
  * font and the scripts the page is allowed (the browser build, and on `scripts` pages the test-only bundles), all
  * same-origin.
  */
 function allowed(origin: string, page: string, scripts: readonly string[]): (url: string) => boolean {
-  const paths = new Set([page, "tokens.css", "base.css", ...scripts]);
+  const paths = new Set([page, "tokens.css", "base.css", "tooltip-delay.css", ...scripts]);
   return (url) => {
     if (!url.startsWith(`${origin}/`)) return false;
     const path = new URL(url).pathname.slice(1);
@@ -122,9 +130,16 @@ function allowed(origin: string, page: string, scripts: readonly string[]): (url
   };
 }
 
+/** How `visit` opens a page. */
+export interface VisitOptions {
+  /** Opens the page in a context with `hasTouch` (a touch device) instead of the default mouse context (008 R-14). */
+  readonly touch?: boolean;
+}
+
 /** Opens `page` of the fixture in a fresh context with the recorders installed before navigation. */
-export async function visit(browser: Browser, origin: string, page: string, scripts: readonly string[] = ["ocelle-elements.js"]): Promise<Visit> {
-  const context = await browser.newContext({ viewport: { width: 1280, height: 800 }, colorScheme: "light" });
+export async function visit(browser: Browser, origin: string, page: string, scripts: readonly string[] = ["ocelle-elements.js"], options: VisitOptions = {}): Promise<Visit> {
+  const touch = options.touch === true ? { hasTouch: true } : {};
+  const context = await browser.newContext({ viewport: { width: 1280, height: 800 }, colorScheme: "light", ...touch });
   const opened = await context.newPage();
   const log: string[] = [];
   const requests: string[] = [];

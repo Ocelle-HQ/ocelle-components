@@ -1,0 +1,209 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: correctness
+# Checked: spec.md, plan.md, research.md R-01..R-16, data-model.md, contracts/elements-package.md,
+# contracts/checks.md, quickstart.md, sources/README.md, triage/011-layout-headers.md, constitution 1.3.1, against
+# the repository at base fcc55fc (packages/elements src and README, packages/tokens/src/source.ts and
+# contrast/pairs.json, packages/styles/src/base.css, gates/stylelint/token-only.ts, gates/test/*contrast*,
+# gates/test/token-only-parts.test.ts), axe-core 4.14.0 as published on npm (axe.js, gather-internals.js), MDN BCD
+# 8.1.9 for the engine floor, and Chromium probes run with Playwright's chromium_headless_shell-1243 on pages that
+# reproduce the plan's CSS literally (scratchpad probe/p.html and probe/p2.html; outputs quoted below).
+# Confirmed and not reported: the contrast arithmetic (9 main grounds; 160/168/328/149 -> 169/177/346/158/316),
+# the vertical-rail focus-ring arithmetic (52 - 2*4 = 44; 40 px item; 3 + 2 = 5 px ring) given border-box, the
+# token-only allowances claimed in the Constitution Check (identifiers, %, unitless flex numbers, numbers in calc()),
+# the floor claims (:nth-child(of S) Chromium 111 / Safari 9; flex-basis: min-content Chromium 94 / Safari 16), the
+# seven elements of the browser build (2 existing + 5), the MINOR semver statement, and the alias form of
+# color-eyebrow (color-focus and color-current are existing colour aliases with themed ref).
+findings:
+  - id: PLAN-CORRECTNESS-1-001
+    severity: 3
+    title: "R-04's heading column holds the eyebrow, so the actions align with the eyebrow, not the heading (FR-010, FR-019, US1-2, US2-2)"
+    evidence:
+      - artifact: "spec.md FR-010 'the actions at the inline end with their block start at the heading's block start'; US1-2 'the actions at the inline end on the heading's first line'; FR-019 / US2-2 'the actions sit at the inline end with their block start at the heading's block start'"
+      - artifact: "research.md R-04 'a row container (... align-items: flex-start) with two children: the heading column (...) holding the eyebrow, heading and description wrappers, and the actions wrapper'; R-07 'The page header uses the same structure'"
+      - code: "probe p.html (R-04's rules verbatim, eyebrow + h2 + one button, 1280 px): 'sh eyebrow x0 y1312 h17 heading x0 y1334 h27 action x1255 y1312' -- the action's block start is the eyebrow's, 22 px above the heading's"
+    claim: |
+      With the eyebrow inside the heading column and `align-items: flex-start` on the row, the actions' block start
+      is the column's block start, which is the eyebrow's whenever an eyebrow is present. FR-010, FR-019, US1-2 and
+      US2-2 require it at the heading's block start. The plan as written builds the wrong layout for the most common
+      section-header and page-header shape (eyebrow + heading + actions), and the spike's R-04 measurements (a)-(c)
+      do not cover the alignment, so it would first surface in the red/green run.
+    remedies:
+      - "R-04/R-07: take the eyebrow wrapper out of the row: the shadow root is eyebrow wrapper, then (gap --ocelle-space-1, collapsing when the eyebrow is empty) the row of [heading + description column, actions]; the wrap rule then uses the heading/description column's longest word. State in FR-010 that the eyebrow's own min-content does not take part in the side-by-side test, or that it does (and then use a grid with the eyebrow in a row of its own above the heading cell). Add the alignment to the R-04 spike list."
+
+  - id: PLAN-CORRECTNESS-1-002
+    severity: 3
+    title: "Shadow-tree boxes are content-box: the rail's nav is 60 px wide with a 52 px content box, and a horizontal rail overflows by 16 px"
+    evidence:
+      - artifact: "research.md R-10 'Vertical (default): flex-direction: column; inline-size: var(--ocelle-shell-rail-width); min-block-size: 100%; padding-block: var(--ocelle-space-2); padding-inline: var(--ocelle-space-1)' ... 'the vertical content box is 44 px'; 'Horizontal: flex-direction: row; inline-size: 100%; padding: var(--ocelle-space-2)'"
+      - artifact: "spec.md US4-2 '--ocelle-shell-rail-width (52 px) wide ... each item lies inside the rail's content box'; FR-025 '52 px, leaving a 44 px content box'; US4-7 'at 320 px ... no horizontal scroll'"
+      - code: "packages/styles/src/base.css:11-15 ':where(*) ... { box-sizing: border-box; }' is a document rule and does not match shadow-tree elements; no element source sets box-sizing (grep box-sizing packages/elements/src: none)"
+      - code: "probe p.html with base.css's rule on the page: 'rail-v ... nav x0 y0 w60 h149 content-w 52'; 'rail-h bottom-only host w320 nav w336' (inline-size: 100% + 2 x 8 px padding in a 320 px container)"
+    claim: |
+      R-10 puts the rail's inline size and padding on the shadow `nav`, which is content-box (base.css's border-box
+      reset never reaches a shadow tree). The vertical rail draws 60 px wide with a 52 px content box, not 52 / 44,
+      so US4-2's width and the focus-ring arithmetic of R-10 are wrong; the horizontal rail is 16 px wider than its
+      container, so US4-7's "no horizontal scroll at 320 px" fails and the plant "flex-wrap: nowrap" is not what
+      breaks it. A vertical rail with `min-block-size: 100%` plus block padding is also 16 px taller than its
+      container once it fills (US4-2 "600 px tall"). The repository's own record already names this class of fault
+      (knowledge/speckit-flows/findings/frontend-missions.md:89 "a base stylesheet changes every element's host box
+      (box-sizing ...)").
+    remedies:
+      - "R-10 (and R-01 as a convention for every new element): set `box-sizing: border-box` on every shadow-tree box that has both a size and padding, and size the host rather than the inner nav (see PLAN-CORRECTNESS-1-003); add a test with and without base.css linked asserting the rail's border box is 52 px and its content box 44 px, and that a horizontal rail's border box equals its container's inline size."
+
+  - id: PLAN-CORRECTNESS-1-003
+    severity: 3
+    title: "Sidebar and rail do not fill their container: percentage min-block-size on the nav of an auto-height block host resolves to nothing; host size is unspecified"
+    evidence:
+      - artifact: "research.md R-09 '<nav aria-label=…> (R-11) as a flex column filling the host (display: flex; flex-direction: column; min-block-size: 100%)'; R-10 'nav ... min-block-size: 100%'; neither states the host's display or block size"
+      - artifact: "spec.md US3-3 'in a container 600 px tall ... the footer's block end is at the container's block end'; US3-4 'the sidebar's block size is its content's'; US4-2 'both are 600 px tall'; US4-2 '--ocelle-shell-rail-width (52 px) wide'"
+      - code: "probe p.html, host display: block in a 600 px tall div: 'rail-v host w1280 h149 nav w60 h149'; 'side host h203 nav h203' -- neither reaches 600 px, and the rail host is the container's full 1280 px wide while only the nav is narrow"
+    claim: |
+      CSS 2.1 §10.7: a percentage min-height whose containing block's height is not specified explicitly computes to
+      0, so the nav's `min-block-size: 100%` does nothing under a `display: block` host with auto height; the host
+      itself has no block-size rule in the plan. US3-3's pinned footer and US4-2's 600 px rail therefore fail. Fixing
+      it with `block-size: 100%` on the host breaks US3-4 (content taller than the container must grow the sidebar).
+      Separately, a `display: block` rail host is the container's full inline size, so "the rail is 52 px wide"
+      (US4-2) holds only for the nav, not for the element the page and #12's shell place and measure. The section
+      header's host display (inline by default for a custom element) is not stated either (R-04), and the card and
+      sidebar place section headers as blocks.
+    remedies:
+      - "R-09/R-10: state the host box: `:host { display: flex; flex-direction: column; min-block-size: 100%; box-sizing: border-box }` with the nav `flex: 1 0 auto` (fills when shorter, grows when taller); for the vertical rail put `inline-size: var(--ocelle-shell-rail-width)` on the host, for the horizontal rail `inline-size: 100%` on the host. Add host-box measurements to the R-09/R-10 spike. R-04: `:host { display: block }` for the section header. Say in the spec which box US4-2's '52 px wide' and US3-3's '600 px' measure (the host)."
+
+  - id: PLAN-CORRECTNESS-1-004
+    severity: 3
+    title: "Pinned footer and bottom group leave their divider stranded: the free space opens between the divider and the footer / bottom group"
+    evidence:
+      - artifact: "research.md R-09 'footer (padding --ocelle-space-4, margin-block-start: auto ...)' and 'the sections wrapper has ... border-block-end when the footer is non-empty'"
+      - artifact: "research.md R-10 'the bottom wrapper has margin-block-start: auto; the divider is border-block-start across the content box', template order primary, divider, bottom"
+      - artifact: "spec.md US3-3 'each divider has --ocelle-space-4 of padding on both sides and there is no other gap between parts ... and the footer's block end is at the container's block end'; FR-022 'one between the default slot and the footer, at its block end'; R-10 / SPEC-2-04 'the gap on each side of the divider' is --ocelle-space-1"
+      - code: "probe p2.html (hosts forced to fill a 600 px container, rules otherwise as R-09/R-10): 'side filled: sections y650 h103 footer y1150' -- the divider at y752, the footer's padding starts 397 px below it; 'rail-v filled: primary y8 h84 divider y96 bottom y552' -- the divider 455 px above the bottom group"
+    claim: |
+      In the case the feature exists for (content shorter than the column, footer or account items pinned to the
+      end) the divider is drawn under the last section / primary item and the footer / bottom group floats alone at
+      the block end. That contradicts US3-3 ("each divider has --ocelle-space-4 on both sides, no other gap") and
+      SPEC-2-04's --ocelle-space-1 on each side of the rail divider, and it is not the prototype's look (#497: rules
+      separate head, navigation and footer, footer pinned). The spec is itself under-specified: with a pinned footer
+      there must be free space somewhere, and FR-022 anchors the divider "at the default slot's block end", which
+      places it on the wrong side of that space. US3-13 (empty default slot) has the same question: R-09 puts that
+      divider on the footer, i.e. on the other side of the free space from the US3-3 case.
+    remedies:
+      - "Divider follows the pinned part (prototype look): spec FR-022/US3-3 say the free space lies between the last section (or the head) and the divider before the footer; R-09 draws that divider as the footer wrapper's border-block-start whenever the footer and any earlier part are non-empty (one rule for US3-3, US3-4 and US3-13); R-10 moves `margin-block-start: auto` to the divider when it is shown (and keeps it on the bottom wrapper only when the divider is hidden), so the bottom group keeps --ocelle-space-1 on each side of its divider."
+      - "Divider follows the content: keep R-09/R-10 as they are and amend US3-3 and SPEC-2-04 to say the free space lies between the divider and the footer / bottom group."
+
+  - id: PLAN-CORRECTNESS-1-005
+    severity: 3
+    title: "Horizontal rail with an empty default slot puts the bottom group at the inline start (US4-6)"
+    evidence:
+      - artifact: "research.md R-10 'Horizontal: ... the bottom wrapper is flex: 0 1 auto; max-inline-size: 50%; display: flex; flex-wrap: wrap; align-self: flex-start; justify-content: flex-end'"
+      - artifact: "spec.md US4-6 'one with bottom items and an empty default slot ... its bottom group sits at the block end (vertical) or the inline end (horizontal)'"
+      - code: "probe p.html, horizontal rail with only a bottom link, primary wrapper and divider display: none: 'bottom x8 y608 w40' -- at the nav's inline-start padding edge"
+    claim: |
+      In the horizontal layout only the primary wrapper's `flex: 1 1 0` pushes the bottom group to the inline end.
+      When the default slot is empty that wrapper is `display: none` (R-03), the bottom wrapper sizes to its content
+      and sits at the inline start; `justify-content: flex-end` only aligns items inside its own content-sized box.
+      US4-6's horizontal case fails as planned; the vertical case is right because it uses an auto margin.
+    remedies:
+      - "R-10 horizontal: give the bottom wrapper `margin-inline-start: auto` (mirrors the vertical `margin-block-start: auto`), and add the horizontal empty-primary case to the R-10 spike list."
+
+  - id: PLAN-CORRECTNESS-1-006
+    severity: 3
+    title: "R-11's two options both fail its own test in Chromium; the repository's pattern (role on the host through ElementInternals) passes and is not considered"
+    evidence:
+      - artifact: "research.md R-11 'Two options are measured: (i) nothing on the host; (ii) ElementInternals with internals.role = \"none\" on the host. The first option that gives exactly one navigation landmark with the expected name, no other node carrying the name ... If neither passes, the operator is asked before the US3 red commit.'"
+      - code: "packages/elements/src/naming.ts:3-5 'Chromium names the host from a present aria-label whatever the element sets'; :22-27 expose() sets internals.role / internals.ariaLabel on the host (005's pattern for ocelle-icon and ocelle-brand-mark)"
+      - code: "probe p2.html, CDP Accessibility.getFullAXTree, ignored nodes filtered: option (i) host aria-label=\"Team\" + inner <nav aria-label=\"Team\">: 'generic \"Team\"' and 'navigation \"Team\"'; option (ii) internals.role='none': 'generic \"Crew\"' and 'navigation \"Crew\"' (role none is dropped because the host carries a global aria-label, ARIA 1.2 presentational-roles conflict resolution); option (iii) internals.role='navigation', internals.ariaLabel=label, no inner nav: 'navigation \"Squad\"' alone, and with aria-label=\"\" and label=\"Projects\" 'navigation \"\"' (blank host aria-label leaves it unnamed, FR-028)"
+      - code: "axe-core 4.14.0 axe.js:32335 listProhibitedAttrs returns [] for a valid custom element name, so aria-prohibited-attr cannot fire on the host in (i); gather-internals.js getElementInternals reads only the properties _internals / internals / internals_ or symbols, not a #private field such as naming.ts's callers use, so (ii)'s internals.role is invisible to axe and cannot change its verdict"
+    claim: |
+      Both measured options leave a second, named generic node on the host, so by R-11's own criterion neither
+      passes and phase 4 stops for an operator question. Option (ii) cannot work in principle (the conflict rule
+      overrides role none whenever aria-label is present, and axe cannot see the role). The option that meets
+      FR-020, FR-024 and FR-028 exactly, with the precedence the README's Host ARIA rule states, is the one 005
+      already uses: the host itself is the landmark through ElementInternals (role "navigation", ariaLabel from the
+      resolved `label`), with no inner `<nav>`; the host attribute wins over internals.ariaLabel natively. This also
+      changes R-09/R-10 (the layout container is a plain div, the landmark is the host) and the story/axe notes
+      (axe 4.14 will not see an internals role held in a #private field; landmark-unique would then not apply).
+    remedies:
+      - "R-11: add option (iii) 'internals.role = \"navigation\" and internals.ariaLabel = accessibleName(label, null) when the host has no aria-label (naming.ts), no inner nav', measure it first; R-09/R-10/plan decision 7 and data-model updated to match; state how axe sees the landmark (expose internals under a name axe's gather-internals reads, or accept that axe does not see it) and adjust R-14's landmark-unique note."
+
+  - id: PLAN-CORRECTNESS-1-007
+    severity: 2
+    title: "R-05's card -> header channel breaks across two copies and leaves the upgrade-order path unspecified, yet the contract says it works whichever is defined first"
+    evidence:
+      - artifact: "research.md R-05 'the browser build and a module-build bundle each carry their own module, and the elements on the page are the first copy's, so they still share one'; 'The section header keeps the value in a Lit state field'"
+      - artifact: "contracts/elements-package.md 'ocelle-card.js does not define ocelle-section-header: a page that slots one imports both (R-05 works whichever is defined first)'"
+      - code: "packages/elements/README.md § Two copies on a page 'two versions or the browser build beside a bundle of the module build ... the first definition wins'; package.json exports one entry per element, so a copy may define only some tags"
+    claim: |
+      The "first copy's elements share one WeakMap" argument assumes each copy defines all elements. With per-element
+      entry points a bundle that imports only `@ocelle/elements/ocelle-card.js` defines the card, and the browser
+      build loaded beside it then defines the section header: the card writes one module's WeakMap, the header reads
+      another, and a compact card never compacts its header, silently. The plan also does not say how the flag
+      reaches a header that is upgraded after the card's first slotchange (an un-upgraded element has no Lit state
+      field; writing a property onto it before upgrade shadows the accessor), how a header defined first learns of a
+      later flag (it must be told to re-render), or how the card recognises a header without importing its class
+      (importing it would define it, contradicting the contract).
+    remedies:
+      - "R-05: key the channel on something both copies share (a `Symbol.for('ocelle.card-compact')` property or a registry on `globalThis`), or switch to a pull model: the header resolves its size from `this.assignedSlot` (open shadow root, slot name `header`, host localName `ocelle-card`, host `density` attribute) and the card notifies directly assigned headers on change; state that the header reads the flag in connectedCallback, that the card matches headers by localName, and add a mixed-copy test (card from the module build, header from the browser build) and an upgrade-order test (header defined after the card)."
+
+  - id: PLAN-CORRECTNESS-1-008
+    severity: 2
+    title: "R-01 keeps layout variant rules outside @media not (forced-colors: active), which FR-001 and the README convention forbid; applying FR-001 as written would break forced-colours layout"
+    evidence:
+      - artifact: "spec.md FR-001 'each written by the README's element conventions (... variant rules inside @media not (forced-colors: active))'"
+      - code: "packages/elements/README.md § Element conventions, Styles: 'Variant rules go inside @media not (forced-colors: active), so a forced-colours rule never has to outrank a variant selector.' (no exception)"
+      - artifact: "research.md R-01 'variant rules sit inside @media not (forced-colors: active) only where a forced-colours rule must reach them (grounds); layout rules do not depend on forced colours and stay outside.'"
+    claim: |
+      The plan's rule is the right one for these elements (inside the media query, `orientation="horizontal"`,
+      `density="compact"` and `size="compact"` would all revert to the default layout in forced colours, failing
+      US4-9's horizontal rail and the compact card), but it contradicts a MUST of the spec and the README's
+      convention, which a phase reviewer checks literally. The README is also the public statement of the
+      convention that later elements follow without a design question.
+    remedies:
+      - "Amend FR-001 to 'variant rules that set colours or grounds inside @media not (forced-colors: active); layout rules outside', and add the README convention change (Styles paragraph) to phase 2's README task with a readme-test statement; record it in the CHANGELOG as documentation."
+
+  - id: PLAN-CORRECTNESS-1-009
+    severity: 2
+    title: "SC-002 (every story at 320 px) has no planned check"
+    evidence:
+      - artifact: "spec.md SC-002 'At 320 px, every story of the five elements has no horizontal scroll and no clipped text (FR-004).'"
+      - artifact: "research.md R-13 reflow only for the scenarios (US1-14, US2-5, US3-10, US4-7); contracts/checks.md § Story test 'each present in the built Storybook and rendering its element ... in light and dark'; R-14 visual and axe gates only"
+    claim: |
+      Reflow is asserted for four scenarios, not for every story; the story test asserts presence and rendering,
+      the visual gate compares pixels at its own viewport and axe does not test reflow (WCAG 1.4.10 is not an axe
+      rule). A story that overflows at 320 px (for example a vertical rail story at 320 px, a page header story with
+      three actions, a card with a long description) passes every planned check, so SC-002 is unmet by the plan.
+    remedies:
+      - "contracts/checks.md § Story test: for each new story, load it at 320 x 800 px and assert `scrollingElement.scrollWidth <= 320` and every slotted text node's box inside its element's box, paired with the element rendering its content (US-level plant `flex-wrap: nowrap`)."
+      - "Narrow SC-002 to the reflow scenarios and say the stories are not reflow-tested."
+
+  - id: PLAN-CORRECTNESS-1-010
+    severity: 2
+    title: "Sidebar sections take padding, borders and negative margins with no display rule; an inline section element breaks FR-021/FR-022"
+    evidence:
+      - artifact: "research.md R-09 'each section (::slotted(:not([slot])) ...) has padding --ocelle-space-4 and border-block-start ...; ... each section takes negative inline margins ... so its border spans the sidebar's whole inline size'"
+      - artifact: "spec.md FR-021 'each assigned element is one section'; README note 'wrap each section in an element' (FR-036); US3 'it uses section headers for its sections'"
+    claim: |
+      Nothing makes a section a block. A section written as a custom element (an `ocelle-section-header`, whose host
+      display R-04 does not set, or #12's future `ocelle-nav-item` group), a `<span>` or an `<a>` is inline: its
+      border-block-start and block padding do not push neighbouring lines, the border spans only its text, and the
+      negative inline margins apply to the first and last line box only. FR-022's "spans the sidebar's whole inline
+      size" then fails for exactly the element the user story names as a section. A `::slotted()` display rule loses
+      to a page rule, but it covers the default display of unknown and inline elements.
+    remedies:
+      - "R-09: add `display: block` to `::slotted(:not([slot]))` (and R-04 `:host { display: block }` for the section header); add a US3-3 variant whose sections are `ocelle-section-header` and `span` elements."
+
+  - id: PLAN-CORRECTNESS-1-011
+    severity: 1
+    title: "R-12 lists the token-only '148' as a token count and its grep misses the plant summary '161'"
+    evidence:
+      - artifact: "research.md R-12 'the token-only named-token count (gates/test/token-only-parts.test.ts, 148) follows'; 'any other found by grep -rn \"160\\|168\\|328\\|149\\|298\" in gates/'"
+      - code: "gates/test/token-only-parts.test.ts:27-28 'it(\"has the 148 named colours of CSS Color 4\" ...) toHaveLength(148)' -- the CSS named colours of gates/stylelint/token-only.ts:33, independent of the token set"
+      - code: "gates/test/integration/plants-robustness.test.ts:122 'contrast: 161 pairs checked in light, 168 in dark (149 required per theme)' -- the planted extra row; becomes 170 after R-12, not matched by R-12's grep"
+    claim: |
+      Adding tokens does not change the number of CSS named colours, so a phase-2 red commit that 'follows' the
+      count would break a correct test; and the planted-row summary (161) is a pinned contrast count R-12's search
+      does not find, so a plant expectation would silently go stale until the gate:plants run fails.
+    remedies:
+      - "R-12: drop the token-only-parts.test.ts item; add plants-robustness.test.ts:122 (161 -> 170) and add 161 to the grep pattern."

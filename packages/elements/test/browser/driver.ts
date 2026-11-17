@@ -5,13 +5,22 @@
 // The accessibility tree is read through a CDP session with the same reader as the `axTree` command
 // (test/commands.ts); forced colours through `page.emulateMedia`. A page that links `base.css` is a page of its own
 // (`<page>-base.html`), so `mount` with `base` must be called on such a page.
+//
+// 008 (research.md R-14): input is real input through Playwright, `page.keyboard`, `page.mouse` and, in a touch
+// context (`visit(…, { touch: true })`), `page.touchscreen`; reduced motion through `page.emulateMedia`; what the page
+// holds is read by the probe of scenarios/probe.ts, installed in the page through the DevTools protocol before the
+// first mount (and before any read that needs it).
 import { inflateSync } from "node:zlib";
 import type { Page } from "playwright";
 import { runningOf } from "../animations.ts";
-import { axNodes, axSubtree, emulate, emulateMotion } from "../commands.ts";
+import { axNodes, axSubtree, emulate, emulateMotion, movePointer, readActiveElement, readScrollWidth, readTextBoxes } from "../commands.ts";
 import { layoutWait } from "../layout-wait.ts";
 import { decodePng } from "../pixels.ts";
+import { heardTypes } from "../scenarios/driver.ts";
 import type { Bounds, Box, Driver, Drawing, Paint, Part, Placement, Sheets, TreeNode } from "../scenarios/driver.ts";
+import { installProbe } from "../scenarios/probe.ts";
+import type { Probe } from "../scenarios/probe.ts";
+import { policy } from "./serve.ts";
 
 /**
  * Waits in the page until every `ocelle-*` element has rendered and the fonts the page uses have loaded (a font that
@@ -22,8 +31,57 @@ function settle(page: Page): Promise<void> {
     const elements = [...document.querySelectorAll("*")].filter((each) => each.localName.startsWith("ocelle-"));
     await Promise.all(elements.map((each) => (each as unknown as { updateComplete?: Promise<unknown> }).updateComplete ?? Promise.resolve()));
     await document.fonts.ready;
+    // Every <iframe srcdoc> has loaded its document: a bounded poll of 1 000 ms (008 research.md R-15).
+    const loaded = (): boolean =>
+      [...document.querySelectorAll("iframe")].every((frame) => !frame.hasAttribute("srcdoc") || (frame.contentDocument?.URL === "about:srcdoc" && frame.contentDocument.readyState === "complete"));
+    for (const start = performance.now(); !loaded(); ) {
+      if (performance.now() - start > 1000) throw new Error("an <iframe srcdoc> did not load within 1 000 ms");
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
     await new Promise((resolve) => requestAnimationFrame(resolve));
   });
+}
+
+type ProbeMethod = { [K in keyof Probe]: Probe[K] extends (...args: never[]) => unknown ? K : never }[keyof Probe];
+
+/** Calls a method of the page's probe (scenarios/probe.ts), installing it first when the page has none. */
+async function probed<K extends ProbeMethod>(page: Page, method: K, ...args: Parameters<Probe[K]>): Promise<ReturnType<Probe[K]>> {
+  await page.evaluate(installProbe);
+  return (await page.evaluate(
+    ({ method, args }) => {
+      const probe = (globalThis as unknown as { ocelleProbe: Record<string, (...each: unknown[]) => unknown> }).ocelleProbe;
+      return probe[method]?.(...args);
+    },
+    { method, args },
+  )) as ReturnType<Probe[K]>;
+}
+
+/** The `page.keyboard` name of one press of `key`, with Shift held when `shift`. */
+function keyName(key: string, shift: boolean): string {
+  const name = key === " " ? "Space" : key;
+  return shift ? `Shift+${name}` : name;
+}
+
+/**
+ * Runs `act` in the page on the element matching `inner` in the shadow root of the element with `id`, then waits as
+ * `settle` does, and also for every `ocelle-*` element in that shadow root.
+ */
+async function inShadow(page: Page, id: string, inner: string, act: "append" | "attribute", args: readonly (string | null)[]): Promise<void> {
+  await page.evaluate(
+    async ({ id, inner, act, args }) => {
+      const root = document.getElementById(id)?.shadowRoot;
+      const target = root?.querySelector(inner);
+      if (root === null || root === undefined || target === null || target === undefined) throw new Error(`no ${inner} in the shadow root of #${id}`);
+      if (act === "append") target.insertAdjacentHTML("beforeend", args[0] ?? "");
+      else if (args[1] === null) target.removeAttribute(args[0] ?? "");
+      else target.setAttribute(args[0] ?? "", args[1] ?? "");
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      const elements = [...root.querySelectorAll("*")].filter((each) => each.localName.startsWith("ocelle-"));
+      await Promise.all(elements.map((each) => (each as unknown as { updateComplete?: Promise<unknown> }).updateComplete ?? Promise.resolve()));
+    },
+    { id, inner, act, args },
+  );
+  await settle(page);
 }
 
 /** The driver of `page`; `log` is the page's console and error record, `withBase` whether the page links base.css. */
@@ -33,9 +91,11 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
     mount: async (markup, options = {}) => {
       if ((options.base === true) !== withBase) throw new Error(`mount ${options.base === true ? "with" : "without"} base.css on a page ${withBase ? "with" : "without"} it`);
       since = log.length;
+      await page.evaluate(installProbe);
       await page.evaluate((html) => {
         document.adoptedStyleSheets = [];
         document.documentElement.removeAttribute("data-theme");
+        (globalThis as unknown as { ocelleProbe: Probe }).ocelleProbe.reset();
         Reflect.deleteProperty(document, Symbol.for("ocelle.progress.sweepStart"));
         document.body.innerHTML = html;
       }, markup);
@@ -161,6 +221,7 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
     resolveColour: (value) =>
       page.evaluate((value) => {
         const probe = document.createElement("span");
+        (globalThis as unknown as { ocelleProbe?: Probe }).ocelleProbe?.ignore(probe);
         probe.style.color = value;
         document.body.append(probe);
         const colour = getComputedStyle(probe).color;
@@ -206,11 +267,47 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
         };
       }, selector),
     messages: () => Promise.resolve(log.slice(since)),
-    viewport: async (width, height) => {
-      await page.setViewportSize({ width, height });
+    press: async (key, options = {}) => {
+      await page.keyboard.press(keyName(key, options.shift === true));
       await settle(page);
     },
-    scrollWidth: () => page.evaluate(() => document.documentElement.scrollWidth),
+    hover: async (id, inner) => {
+      await movePointer(page, [id === null ? { x: 0, y: 0 } : await probed(page, "centre", id, inner)]);
+      await settle(page);
+    },
+    click: async (id, inner, options = {}) => {
+      await movePointer(page, [{ ...(await probed(page, "centre", id, inner)), down: true, up: true, button: options.button ?? "left" }]);
+      await settle(page);
+    },
+    pointer: async (path) => {
+      await movePointer(page, path);
+      await settle(page);
+    },
+    touchTap: async (id, inner) => {
+      const { x, y } = await probed(page, "centre", id, inner);
+      await page.touchscreen.tap(x, y);
+      await settle(page);
+    },
+    focusPath: () => probed(page, "focusPath"),
+    focusVisible: (id, inner) => probed(page, "focusVisible", id, inner),
+    viewportSize: () => page.evaluate(() => ({ width: window.innerWidth, height: window.innerHeight })),
+    device: () => probed(page, "device"),
+    record: async (id, names) => {
+      await probed(page, "record", id, names);
+    },
+    recorded: () => probed(page, "recorded"),
+    ownAnimations: (id, inner) => probed(page, "animations", id, inner),
+    topLayer: () => probed(page, "topLayer"),
+    styleAttributes: () => probed(page, "styleAttributes"),
+    styleElements: () => probed(page, "styleElements"),
+    append: async (id, markup) => {
+      await page.evaluate(({ id, markup }) => {
+        const element = document.getElementById(id);
+        if (element === null) throw new Error(`no #${id} on the page`);
+        element.insertAdjacentHTML("beforeend", markup);
+      }, { id, markup });
+      await settle(page);
+    },
     layout: (id) => page.evaluate(layoutWait, id),
     copy: async (id) => {
       await page.evaluate((id) => {
@@ -309,6 +406,126 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
         if (element === null) throw new Error(`no #${id} on the page`);
         element.remove();
       }, id);
+      await settle(page);
+    },
+    textData: async (id, index, data) => {
+      await page.evaluate(({ id, index, data }) => {
+        const element = document.getElementById(id);
+        if (element === null) throw new Error(`no #${id} on the page`);
+        const text = [...element.childNodes].filter((node) => node.nodeType === Node.TEXT_NODE)[index];
+        if (text === undefined) throw new Error(`#${id} has no text node ${String(index)}`);
+        (text as Text).data = data;
+      }, { id, index, data });
+      await settle(page);
+    },
+    tab: async (shift = false) => {
+      await page.keyboard.press(shift ? "Shift+Tab" : "Tab");
+      await settle(page);
+    },
+    activeElement: () => readActiveElement(page.mainFrame()),
+    viewport: async (width, height) => {
+      await page.setViewportSize({ width, height });
+      await settle(page);
+    },
+    size: async (id, inline, block) => {
+      await page.evaluate(({ id, inline, block }) => {
+        const element = document.getElementById(id);
+        if (element === null) throw new Error(`no #${id} on the page`);
+        for (const [property, value] of [["inline-size", inline], ["block-size", block]] as const) {
+          if (value === null) element.style.removeProperty(property);
+          else element.style.setProperty(property, `${String(value)}px`);
+        }
+      }, { id, inline, block });
+      await settle(page);
+    },
+    scrollWidth: () => readScrollWidth(page.mainFrame()),
+    textBoxes: (id) => readTextBoxes(page.mainFrame(), id),
+    // The recorder lives on the page (a property of `window` that no page script reads), as in-process.ts's does.
+    listen: async (ids) => {
+      await page.evaluate(({ ids, types }) => {
+        interface Listening {
+          readonly records: string[];
+          readonly stop: () => void;
+        }
+        const holder = window as unknown as { ocelleListening?: Listening };
+        holder.ocelleListening?.stop();
+        const watched = new Set(ids);
+        const host = (node: unknown): string | undefined => {
+          for (let at = node instanceof Node ? node : null; at !== null; ) {
+            if (at instanceof Element && watched.has(at.id)) return at.id;
+            const root = at.getRootNode();
+            at = root instanceof ShadowRoot ? root.host : null;
+          }
+          return undefined;
+        };
+        const records: string[] = [];
+        const original = Object.getOwnPropertyDescriptor(EventTarget.prototype, "dispatchEvent")?.value as (this: EventTarget, event: Event) => boolean;
+        EventTarget.prototype.dispatchEvent = function (this: EventTarget, event: Event): boolean {
+          const id = host(this);
+          if (id !== undefined) records.push(`${id}: ${event.type}`);
+          return original.call(this, event);
+        };
+        const capture = (event: Event): void => {
+          const id = event.composedPath().map(host).find((each) => each !== undefined);
+          if (id !== undefined) records.push(`${id}: ${event.type}`);
+        };
+        for (const type of types) window.addEventListener(type, capture, true);
+        holder.ocelleListening = {
+          records,
+          stop: () => {
+            EventTarget.prototype.dispatchEvent = original;
+            for (const type of types) window.removeEventListener(type, capture, true);
+          },
+        };
+      }, { ids, types: heardTypes });
+    },
+    heard: () =>
+      page.evaluate(() => {
+        const holder = window as unknown as { ocelleListening?: { readonly records: string[]; readonly stop: () => void } };
+        const records = [...(holder.ocelleListening?.records ?? [])];
+        holder.ocelleListening?.stop();
+        delete holder.ocelleListening;
+        return records;
+      }),
+    identities: (id) =>
+      page.evaluate((id) => {
+        const host = document.getElementById(id);
+        if (host === null) throw new Error(`no #${id} on the page`);
+        const scope = window as unknown as { ocelleIdentities?: Map<Element, number> };
+        const seen = (scope.ocelleIdentities ??= new Map<Element, number>());
+        return [...(host.shadowRoot?.querySelectorAll("*") ?? [])].map((node) => {
+          const known = seen.get(node);
+          if (known !== undefined) return known;
+          seen.set(node, seen.size + 1);
+          return seen.size;
+        });
+      }, id),
+    shadow: async (id, markup) => {
+      await page.evaluate(async ({ id, markup }) => {
+        const host = document.getElementById(id);
+        if (host === null) throw new Error(`no #${id} on the page`);
+        const root = host.attachShadow({ mode: "open" });
+        root.innerHTML = markup;
+        const elements = [...root.querySelectorAll("*")].filter((each) => each.localName.startsWith("ocelle-"));
+        await Promise.all(elements.map((each) => (each as unknown as { updateComplete?: Promise<unknown> }).updateComplete ?? Promise.resolve()));
+      }, { id, markup });
+      await settle(page);
+    },
+    shadowAppend: (id, inner, markup) => inShadow(page, id, inner, "append", [markup]),
+    shadowAttribute: (id, inner, name, value) => inShadow(page, id, inner, "attribute", [name, value]),
+    shadowComputed: (id, inner, property) =>
+      page.evaluate(({ id, inner, property }) => {
+        const target = document.getElementById(id)?.shadowRoot?.querySelector(inner);
+        if (target === null || target === undefined) throw new Error(`no ${inner} in the shadow root of #${id}`);
+        return getComputedStyle(target).getPropertyValue(property);
+      }, { id, inner, property }),
+    module: async (code) => {
+      // Served as `/module.js` of the page's origin under the fixture's policy; a page that runs it allows that path.
+      const url = new URL("/module.js", page.url()).href;
+      await page.route(url, (route) => route.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", headers: { "Content-Security-Policy": policy }, body: code }));
+      // A string expression, so the test runner's transform does not rewrite the page's own `import()`.
+      await page.evaluate(`import(${JSON.stringify(url)}).then(() => true)`);
+      await settle(page);
     },
     frames: async (count) => {
       await page.evaluate(async (count) => {
