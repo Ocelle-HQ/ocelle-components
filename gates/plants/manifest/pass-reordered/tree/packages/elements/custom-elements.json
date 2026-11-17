@@ -402,8 +402,8 @@
         {
           "tagName": "ocelle-form-input",
           "superclass": {
-            "package": "lit",
-            "name": "LitElement"
+            "name": "FormControl",
+            "module": "/src/form-control.ts"
           },
           "slots": [],
           "name": "OcelleFormInput",
@@ -548,6 +548,10 @@
               "privacy": "public",
               "name": "name",
               "kind": "field",
+              "inheritedFrom": {
+                "name": "FormControl",
+                "module": "src/form-control.ts"
+              },
               "description": "The name the value is submitted under; without one the value is not in the form data. Reflected.",
               "default": "\"\"",
               "attribute": "name"
@@ -560,6 +564,10 @@
               "privacy": "public",
               "name": "label",
               "kind": "field",
+              "inheritedFrom": {
+                "name": "FormControl",
+                "module": "src/form-control.ts"
+              },
               "description": "The visible label, drawn above the control; it names the control after any external `<label>`. Reflected.",
               "default": "\"\"",
               "attribute": "label"
@@ -572,6 +580,10 @@
               "privacy": "public",
               "name": "description",
               "kind": "field",
+              "inheritedFrom": {
+                "name": "FormControl",
+                "module": "src/form-control.ts"
+              },
               "description": "The description, drawn under the label and the control's accessible description. Reflected.",
               "default": "\"\"",
               "attribute": "description"
@@ -584,6 +596,10 @@
               "privacy": "public",
               "name": "error",
               "kind": "field",
+              "inheritedFrom": {
+                "name": "FormControl",
+                "module": "src/form-control.ts"
+              },
               "description": "The error the host sets: shown under the control, it marks the control invalid for assistive technology, is added\nto its description and is announced politely once each time it changes to a new text; it does not block\nsubmission. Whitespace is collapsed and trimmed. Reflected.",
               "default": "\"\"",
               "attribute": "error"
@@ -596,6 +612,10 @@
               "privacy": "public",
               "name": "required",
               "kind": "field",
+              "inheritedFrom": {
+                "name": "FormControl",
+                "module": "src/form-control.ts"
+              },
               "description": "Whether a value is required, as the native constraint. Reflected.",
               "default": "false",
               "attribute": "required"
@@ -608,6 +628,10 @@
               "privacy": "public",
               "name": "disabled",
               "kind": "field",
+              "inheritedFrom": {
+                "name": "FormControl",
+                "module": "src/form-control.ts"
+              },
               "description": "Whether the control is disabled: not focusable, not editable and not in the form data. Reflected.",
               "default": "false",
               "attribute": "disabled"
@@ -618,6 +642,10 @@
               },
               "name": "value",
               "kind": "field",
+              "inheritedFrom": {
+                "name": "FormControl",
+                "module": "src/form-control.ts"
+              },
               "description": "The current value: what the user typed or chose, or what a script, a reset or a restore set. Not reflected.",
               "default": "\"\""
             },
@@ -628,6 +656,10 @@
               "readonly": true,
               "name": "form",
               "kind": "field",
+              "inheritedFrom": {
+                "name": "FormControl",
+                "module": "src/form-control.ts"
+              },
               "description": "The form the control belongs to, or null, as a native control's."
             },
             {
@@ -637,6 +669,10 @@
               "readonly": true,
               "name": "labels",
               "kind": "field",
+              "inheritedFrom": {
+                "name": "FormControl",
+                "module": "src/form-control.ts"
+              },
               "description": "The `<label>` elements associated with the control, as a native control's."
             },
             {
@@ -646,6 +682,10 @@
               "readonly": true,
               "name": "validity",
               "kind": "field",
+              "inheritedFrom": {
+                "name": "FormControl",
+                "module": "src/form-control.ts"
+              },
               "description": "The control's validity, the native control's constraint validation."
             },
             {
@@ -655,6 +695,10 @@
               "readonly": true,
               "name": "validationMessage",
               "kind": "field",
+              "inheritedFrom": {
+                "name": "FormControl",
+                "module": "src/form-control.ts"
+              },
               "description": "The browser's validation message for the native control, or empty when it is valid."
             },
             {
@@ -664,6 +708,10 @@
               "readonly": true,
               "name": "willValidate",
               "kind": "field",
+              "inheritedFrom": {
+                "name": "FormControl",
+                "module": "src/form-control.ts"
+              },
               "description": "Whether the control takes part in constraint validation."
             },
             {
@@ -674,6 +722,10 @@
               },
               "name": "checkValidity",
               "kind": "method",
+              "inheritedFrom": {
+                "name": "FormControl",
+                "module": "src/form-control.ts"
+              },
               "description": "Whether the control satisfies its constraints; when not, it fires `invalid` at the host."
             },
             {
@@ -684,6 +736,10 @@
               },
               "name": "reportValidity",
               "kind": "method",
+              "inheritedFrom": {
+                "name": "FormControl",
+                "module": "src/form-control.ts"
+              },
               "description": "As `checkValidity()`, and when invalid the browser focuses the native control and shows its message."
             },
             {
@@ -703,6 +759,10 @@
               ],
               "name": "focus",
               "kind": "method",
+              "inheritedFrom": {
+                "name": "FormControl",
+                "module": "src/form-control.ts"
+              },
               "description": "Focuses the native control; the host is not a tab stop of its own."
             }
           ],
@@ -850,6 +910,10 @@
                 "text": "string"
               },
               "name": "name",
+              "inheritedFrom": {
+                "name": "FormControl",
+                "module": "src/form-control.ts"
+              },
               "fieldName": "name",
               "description": "The name the value is submitted under; without one the value is not in the form data. Reflected.",
               "default": "\"\""
@@ -859,6 +923,10 @@
                 "text": "string"
               },
               "name": "label",
+              "inheritedFrom": {
+                "name": "FormControl",
+                "module": "src/form-control.ts"
+              },
               "fieldName": "label",
               "description": "The visible label, drawn above the control; it names the control after any external `<label>`. Reflected.",
               "default": "\"\""
@@ -868,6 +936,10 @@
                 "text": "string"
               },
               "name": "description",
+              "inheritedFrom": {
+                "name": "FormControl",
+                "module": "src/form-control.ts"
+              },
               "fieldName": "description",
               "description": "The description, drawn under the label and the control's accessible description. Reflected.",
               "default": "\"\""
@@ -877,6 +949,10 @@
                 "text": "string"
               },
               "name": "error",
+              "inheritedFrom": {
+                "name": "FormControl",
+                "module": "src/form-control.ts"
+              },
               "fieldName": "error",
               "description": "The error the host sets: shown under the control, it marks the control invalid for assistive technology, is added\nto its description and is announced politely once each time it changes to a new text; it does not block\nsubmission. Whitespace is collapsed and trimmed. Reflected.",
               "default": "\"\""
@@ -886,6 +962,10 @@
                 "text": "boolean"
               },
               "name": "required",
+              "inheritedFrom": {
+                "name": "FormControl",
+                "module": "src/form-control.ts"
+              },
               "fieldName": "required",
               "description": "Whether a value is required, as the native constraint. Reflected.",
               "default": "false"
@@ -895,6 +975,10 @@
                 "text": "boolean"
               },
               "name": "disabled",
+              "inheritedFrom": {
+                "name": "FormControl",
+                "module": "src/form-control.ts"
+              },
               "fieldName": "disabled",
               "description": "Whether the control is disabled: not focusable, not editable and not in the form data. Reflected.",
               "default": "false"
@@ -920,8 +1004,8 @@
         {
           "tagName": "ocelle-form-select",
           "superclass": {
-            "package": "lit",
-            "name": "LitElement"
+            "name": "FormControl",
+            "module": "/src/form-control.ts"
           },
           "slots": [],
           "name": "OcelleFormSelect",
@@ -932,6 +1016,10 @@
               },
               "name": "value",
               "kind": "field",
+              "inheritedFrom": {
+                "name": "FormControl",
+                "module": "src/form-control.ts"
+              },
               "description": "The current choice: the value of the option the user chose, or that a script, a reset or a restore selected; a\nvalue no option has selects nothing and reads `\"\"`. Not reflected; a host `value` attribute is ignored.",
               "default": "\"\""
             },
@@ -943,6 +1031,10 @@
               "privacy": "public",
               "name": "name",
               "kind": "field",
+              "inheritedFrom": {
+                "name": "FormControl",
+                "module": "src/form-control.ts"
+              },
               "description": "The name the value is submitted under; without one the value is not in the form data. Reflected.",
               "default": "\"\"",
               "attribute": "name"
@@ -955,6 +1047,10 @@
               "privacy": "public",
               "name": "label",
               "kind": "field",
+              "inheritedFrom": {
+                "name": "FormControl",
+                "module": "src/form-control.ts"
+              },
               "description": "The visible label, drawn above the control; it names the control after any external `<label>`. Reflected.",
               "default": "\"\"",
               "attribute": "label"
@@ -967,6 +1063,10 @@
               "privacy": "public",
               "name": "description",
               "kind": "field",
+              "inheritedFrom": {
+                "name": "FormControl",
+                "module": "src/form-control.ts"
+              },
               "description": "The description, drawn under the label and the control's accessible description. Reflected.",
               "default": "\"\"",
               "attribute": "description"
@@ -979,6 +1079,10 @@
               "privacy": "public",
               "name": "error",
               "kind": "field",
+              "inheritedFrom": {
+                "name": "FormControl",
+                "module": "src/form-control.ts"
+              },
               "description": "The error the host sets: shown under the control, it marks the control invalid for assistive technology, is added\nto its description and is announced politely once each time it changes to a new text; it does not block\nsubmission. Whitespace is collapsed and trimmed. Reflected.",
               "default": "\"\"",
               "attribute": "error"
@@ -991,6 +1095,10 @@
               "privacy": "public",
               "name": "required",
               "kind": "field",
+              "inheritedFrom": {
+                "name": "FormControl",
+                "module": "src/form-control.ts"
+              },
               "description": "Whether a value is required, as the native constraint. Reflected.",
               "default": "false",
               "attribute": "required"
@@ -1003,6 +1111,10 @@
               "privacy": "public",
               "name": "disabled",
               "kind": "field",
+              "inheritedFrom": {
+                "name": "FormControl",
+                "module": "src/form-control.ts"
+              },
               "description": "Whether the control is disabled: not focusable, not editable and not in the form data. Reflected.",
               "default": "false",
               "attribute": "disabled"
@@ -1014,6 +1126,10 @@
               "readonly": true,
               "name": "form",
               "kind": "field",
+              "inheritedFrom": {
+                "name": "FormControl",
+                "module": "src/form-control.ts"
+              },
               "description": "The form the control belongs to, or null, as a native control's."
             },
             {
@@ -1023,6 +1139,10 @@
               "readonly": true,
               "name": "labels",
               "kind": "field",
+              "inheritedFrom": {
+                "name": "FormControl",
+                "module": "src/form-control.ts"
+              },
               "description": "The `<label>` elements associated with the control, as a native control's."
             },
             {
@@ -1032,6 +1152,10 @@
               "readonly": true,
               "name": "validity",
               "kind": "field",
+              "inheritedFrom": {
+                "name": "FormControl",
+                "module": "src/form-control.ts"
+              },
               "description": "The control's validity, the native control's constraint validation."
             },
             {
@@ -1041,6 +1165,10 @@
               "readonly": true,
               "name": "validationMessage",
               "kind": "field",
+              "inheritedFrom": {
+                "name": "FormControl",
+                "module": "src/form-control.ts"
+              },
               "description": "The browser's validation message for the native control, or empty when it is valid."
             },
             {
@@ -1050,6 +1178,10 @@
               "readonly": true,
               "name": "willValidate",
               "kind": "field",
+              "inheritedFrom": {
+                "name": "FormControl",
+                "module": "src/form-control.ts"
+              },
               "description": "Whether the control takes part in constraint validation."
             },
             {
@@ -1060,6 +1192,10 @@
               },
               "name": "checkValidity",
               "kind": "method",
+              "inheritedFrom": {
+                "name": "FormControl",
+                "module": "src/form-control.ts"
+              },
               "description": "Whether the control satisfies its constraints; when not, it fires `invalid` at the host."
             },
             {
@@ -1070,6 +1206,10 @@
               },
               "name": "reportValidity",
               "kind": "method",
+              "inheritedFrom": {
+                "name": "FormControl",
+                "module": "src/form-control.ts"
+              },
               "description": "As `checkValidity()`, and when invalid the browser focuses the native control and shows its message."
             },
             {
@@ -1089,6 +1229,10 @@
               ],
               "name": "focus",
               "kind": "method",
+              "inheritedFrom": {
+                "name": "FormControl",
+                "module": "src/form-control.ts"
+              },
               "description": "Focuses the native control; the host is not a tab stop of its own."
             }
           ],
@@ -1129,6 +1273,10 @@
                 "text": "string"
               },
               "name": "name",
+              "inheritedFrom": {
+                "name": "FormControl",
+                "module": "src/form-control.ts"
+              },
               "fieldName": "name",
               "description": "The name the value is submitted under; without one the value is not in the form data. Reflected.",
               "default": "\"\""
@@ -1138,6 +1286,10 @@
                 "text": "string"
               },
               "name": "label",
+              "inheritedFrom": {
+                "name": "FormControl",
+                "module": "src/form-control.ts"
+              },
               "fieldName": "label",
               "description": "The visible label, drawn above the control; it names the control after any external `<label>`. Reflected.",
               "default": "\"\""
@@ -1147,6 +1299,10 @@
                 "text": "string"
               },
               "name": "description",
+              "inheritedFrom": {
+                "name": "FormControl",
+                "module": "src/form-control.ts"
+              },
               "fieldName": "description",
               "description": "The description, drawn under the label and the control's accessible description. Reflected.",
               "default": "\"\""
@@ -1156,6 +1312,10 @@
                 "text": "string"
               },
               "name": "error",
+              "inheritedFrom": {
+                "name": "FormControl",
+                "module": "src/form-control.ts"
+              },
               "fieldName": "error",
               "description": "The error the host sets: shown under the control, it marks the control invalid for assistive technology, is added\nto its description and is announced politely once each time it changes to a new text; it does not block\nsubmission. Whitespace is collapsed and trimmed. Reflected.",
               "default": "\"\""
@@ -1165,6 +1325,10 @@
                 "text": "boolean"
               },
               "name": "required",
+              "inheritedFrom": {
+                "name": "FormControl",
+                "module": "src/form-control.ts"
+              },
               "fieldName": "required",
               "description": "Whether a value is required, as the native constraint. Reflected.",
               "default": "false"
@@ -1174,6 +1338,10 @@
                 "text": "boolean"
               },
               "name": "disabled",
+              "inheritedFrom": {
+                "name": "FormControl",
+                "module": "src/form-control.ts"
+              },
               "fieldName": "disabled",
               "description": "Whether the control is disabled: not focusable, not editable and not in the form data. Reflected.",
               "default": "false"

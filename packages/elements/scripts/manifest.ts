@@ -1,18 +1,18 @@
 // The custom-elements manifest generator (005 FR-007, research.md R-06; reviews/phase-2/spike.md § 2): the analyzer
 // (@custom-elements-manifest/analyzer 0.11.0, a root devDependency) runs in process through its `create` API with its
-// Lit plugin over packages/elements/src/ocelle-*.ts, as its CLI does with custom-elements-manifest.config.mjs, and the
-// output is normalised: every element declaration states its slots, events, CSS parts and CSS custom properties, empty
-// when it has none (FR-007); `IconName` in a type is expanded to the union of the icon names, read from the
-// `IconName` type of src/icons.ts (US1-11); modules are ordered by path, by code point; members and attributes that
-// are not public are dropped, and so are the observed `aria-label`, `role`, `hidden`, `form`, `aria-invalid`,
+// Lit plugin over packages/elements/src/ocelle-*.ts and the named internal bases, the form controls' src/form-control.ts
+// (specs/010-feedback-forms FR-034, O3-01) and, where present, the overlays' src/overlay.ts (008 research.md R-01), as
+// its CLI does with custom-elements-manifest.config.mjs, and the output is normalised: the internal bases' modules are
+// removed, so the manifest publishes the element modules only, while the members an element inherits from a base stay
+// listed on it with `inheritedFrom` and its superclass names the base, as the analyzer writes them (no fold); a base in
+// any other file of src/ is not read; every element declaration states its slots, events, CSS parts and CSS custom
+// properties, empty when it has none (FR-007); `IconName` in a type is expanded to the union of the icon names, read
+// from the `IconName` type of src/icons.ts (US1-11); modules are ordered by path, by code point; members and attributes
+// that are not public are dropped, and so are the observed `aria-label`, `role`, `hidden`, `form`, `aria-invalid`,
 // `aria-required`, `aria-disabled` and `aria-description` attributes, standard attributes and not members (FR-034;
-// specs/010-feedback-forms FR-034); every object's keys are sorted, so the file is stable. The analyzer reads, with the
-// element modules, the internal modules their classes extend, so that an element derived from an internal base class
-// (src/form-control.ts) gets the base's members and attributes; the output is then folded (specs/010-feedback-forms PLAN-CORRECTNESS-1-004, FR-034, #27):
-// only the element modules src/ocelle-*.ts are kept, the inherited entries lose their `inheritedFrom`, and a superclass
-// in a module that is not kept is replaced by that class's own superclass, so no new kind of source path appears.
-// `node scripts/manifest.ts` (the package's `manifest` script) writes custom-elements.json; the manifest gate
-// (gates/bin/manifest.ts) generates the same into memory and compares.
+// specs/010-feedback-forms FR-034); every object's keys are sorted, so the file is stable. `node scripts/manifest.ts`
+// (the package's `manifest` script) writes custom-elements.json; the manifest gate (gates/bin/manifest.ts) generates the
+// same into memory and compares.
 import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -40,6 +40,13 @@ type Json = Record<string, unknown>;
 
 const sourceDir = "packages/elements/src";
 const element = /^ocelle-[\w-]+\.ts$/;
+/**
+ * The internal bases (008 research.md R-01, operator decision "analyse, then drop it", 2026-11-14; specs/010-feedback-forms
+ * operator round 3, "Main's rule + FormControl", 2026-11-17): read with the element modules, so the members an element
+ * inherits from one are listed on the element with `inheritedFrom`, then removed from the published manifest, which
+ * holds no internal module.
+ */
+const internalBases = ["form-control.ts", "overlay.ts"];
 /** Attributes every element may observe that are standard attributes, not its members (FR-034). */
 const standardAttributes = new Set(["aria-label", "role", "hidden", "form", "aria-invalid", "aria-required", "aria-disabled", "aria-description"]);
 const memberLists = ["slots", "events", "cssParts", "cssProperties"] as const;
@@ -113,57 +120,16 @@ export function iconNames(text: string): string[] {
   return [];
 }
 
-/** Whether a module path (`src/<file>`, or `/src/<file>` as a superclass names it) is an element module. */
-function isElementModule(path: string): boolean {
-  return element.test(path.slice(path.lastIndexOf("/") + 1));
-}
-
-/** An entry without its `inheritedFrom`. */
-function own(entry: Json): Json {
-  const rest = { ...entry };
-  delete rest.inheritedFrom;
-  return rest;
-}
-
-/**
- * The analyzer's output folded onto the element modules: the modules that are not element modules dropped, the
- * entries of each declaration's member and attribute lists and of the four lists of FR-007 without `inheritedFrom`
- * (each list stated, empty when the analyzer gave none), and a superclass declared in a dropped module replaced by that
- * class's own superclass, until it names a package or an element module.
- */
-export function fold(raw: Manifest): Manifest {
-  const modules = list(raw.modules);
-  const classes = new Map<string, Json>(modules.flatMap((module) => list(module.declarations).map((declaration) => [`/${String(module.path)}#${String(declaration.name)}`, declaration] as const)));
-  const superclassOf = (superclass: Json): Json => {
-    const base = typeof superclass.module === "string" && !isElementModule(superclass.module) ? classes.get(`${superclass.module}#${String(superclass.name)}`) : undefined;
-    return isObject(base?.superclass) ? superclassOf(base.superclass) : superclass;
-  };
-  const folded = (declaration: Json): Json => {
-    const out: Json = { ...declaration };
-    for (const key of ["members", "attributes", ...memberLists] as const) out[key] = list(declaration[key]).map(own);
-    if (isObject(declaration.superclass)) out.superclass = superclassOf(declaration.superclass);
-    return out;
-  };
-  const kept = modules.filter((module) => isElementModule(String(module.path)));
-  return { ...raw, modules: kept.map((module) => ({ ...module, declarations: list(module.declarations).map(folded) })) };
-}
-
-/** The local modules (`src/<file>`) that the classes of `raw` extend and that are not element modules. */
-function bases(raw: Manifest): string[] {
-  const superclasses = list(raw.modules).flatMap((module) => list(module.declarations).map((declaration) => declaration.superclass).filter(isObject));
-  const paths = superclasses.map((superclass) => superclass.module).filter((path): path is string => typeof path === "string" && !isElementModule(path));
-  return [...new Set(paths.map((path) => path.slice(1)))];
-}
-
 export function generate(root: string): Promise<Manifest> {
   const dir = join(root, sourceDir);
-  const files = existsSync(dir) ? readdirSync(dir).filter((name) => element.test(name)) : [];
+  // Stryker disable next-line ArrayDeclaration: equivalent, a missing directory then lists one name, "Stryker was here", which is neither an ocelle-*.ts module nor an internal base, so nothing is read and the generator rejects as with none (T025)
+  const names = existsSync(dir) ? readdirSync(dir) : [];
+  const files = names.filter((name) => element.test(name));
   if (files.length === 0) return Promise.reject(new Error(`no element module ${sourceDir}/ocelle-*.ts under ${root}`));
-  const read = (path: string): TypeScript.SourceFile => ts.createSourceFile(path, readFileSync(join(root, "packages/elements", path), "utf8"), ts.ScriptTarget.ES2015, true);
-  const elements = files.map((name) => `src/${name}`);
-  // The element modules, then again with the internal modules their classes extend, so that those classes' members fold in.
-  const first = create({ modules: elements.map(read), plugins: litPlugin() });
-  const raw = fold(create({ modules: [...elements, ...bases(first)].map(read), plugins: litPlugin() }));
+  const read = [...files, ...names.filter((name) => internalBases.includes(name))];
+  const modules = read.map((name) => ts.createSourceFile(`src/${name}`, readFileSync(join(dir, name), "utf8"), ts.ScriptTarget.ES2015, true));
+  const analysed = create({ modules, plugins: litPlugin() });
+  const raw = { ...analysed, modules: list(analysed.modules).filter((module) => !internalBases.some((name) => module.path === `src/${name}`)) };
   const icons = join(dir, iconsFile);
   return Promise.resolve(normalise(raw, existsSync(icons) ? iconNames(readFileSync(icons, "utf8")) : []));
 }
