@@ -32,7 +32,7 @@ function page(inner: string, attributes = 'label="Folders"'): string {
   return `<button id="before" type="button">Before</button><ocelle-listbox id="lb" ${attributes}>${inner}</ocelle-listbox><button id="after" type="button">After</button><p id="away">Away from the list</p>`;
 }
 
-/** The `index`-th option of `#lb` (or of `parent`), as a target and as the focused element `activeElement` names. */
+/** The `index`-th option of `#lb` (or of `parent`), as a target and as the focused element `focusedElement` names. */
 function opt(index: number, parent = "lb"): Target & Focused {
   return { parent, kind: "ocelle-option", index };
 }
@@ -46,7 +46,7 @@ async function mount(driver: Driver, inPage: InPage, markup: string): Promise<vo
   await inPage(() => {
     window.scrollTo(0, 0);
   }, null);
-  if (markup.includes('id="away"')) await driver.hover("away");
+  if (markup.includes('id="away"')) await driver.hoverTarget("away");
 }
 
 /**
@@ -312,7 +312,7 @@ export const listboxScenarios: readonly ListboxScenario[] = [
         await driver.focus(opt(1));
         await driver.mutate("lb", change === "remove" ? [{ remove: 3 }, { remove: 1 }] : [{ move: 0, before: "end" }, { move: 0, before: "end" }]);
         await inPage(frames, undefined);
-        return { focus: await driver.activeElement(), tree: await tree(driver), events: await inPage(recordedEvents, null) };
+        return { focus: await driver.focusedElement(), tree: await tree(driver), events: await inPage(recordedEvents, null) };
       },
       expected: change === "remove" ? { focus: opt(1), tree: exposed("Folders", ["alpha", "gamma"]), events: [] } : { focus: opt(3), tree: exposed("Folders", ["gamma", "delta", "alpha", "beta"]), events: [] },
     }),
@@ -329,7 +329,7 @@ export const listboxScenarios: readonly ListboxScenario[] = [
         await driver.focus(opt(1));
         await inPage(changeAndSet, how);
         await inPage(frames, undefined);
-        return { focus: await driver.activeElement(), tree: await tree(driver), tabindexes: await inPage(tabindexes, "lb"), value: await inPage(valueOf, "lb"), events: await inPage(recordedEvents, null) };
+        return { focus: await driver.focusedElement(), tree: await tree(driver), tabindexes: await inPage(tabindexes, "lb"), value: await inPage(valueOf, "lb"), events: await inPage(recordedEvents, null) };
       },
       expected: afterChangeAndSet(how),
     }),
@@ -342,10 +342,10 @@ export const listboxScenarios: readonly ListboxScenario[] = [
       await mount(driver, inPage, page(options(folderNames)));
       await inPage(recordEvents, null);
       await driver.focus("before");
-      await driver.press("Tab");
-      const first = await driver.activeElement();
-      await driver.press("Tab");
-      return { tree: await tree(driver), first, second: await driver.activeElement(), tabindexes: await inPage(tabindexes, "lb"), events: await inPage(recordedEvents, null) };
+      await driver.pressKeys("Tab");
+      const first = await driver.focusedElement();
+      await driver.pressKeys("Tab");
+      return { tree: await tree(driver), first, second: await driver.focusedElement(), tabindexes: await inPage(tabindexes, "lb"), events: await inPage(recordedEvents, null) };
     },
     expected: { tree: exposed("Folders", folderNames), first: opt(0), second: after, tabindexes: ["0", "-1", "-1", "-1", "-1"], events: [] },
   },
@@ -357,11 +357,11 @@ export const listboxScenarios: readonly ListboxScenario[] = [
       await mount(driver, inPage, page(options(folderNames)));
       await inPage(recordEvents, null);
       await driver.focus("before");
-      await driver.press("Tab");
+      await driver.pressKeys("Tab");
       const focus: unknown[] = [];
       for (const key of ["ArrowDown", "ArrowDown", "ArrowDown", "ArrowUp"]) {
-        await driver.press(key);
-        focus.push(await driver.activeElement());
+        await driver.pressKeys(key);
+        focus.push(await driver.focusedElement());
       }
       return { focus, tree: await tree(driver), value: await inPage(valueOf, "lb"), keys: await driver.keydownRecord(), events: await inPage(recordedEvents, null) };
     },
@@ -386,11 +386,11 @@ export const listboxScenarios: readonly ListboxScenario[] = [
     run: async (driver, inPage) => {
       await mount(driver, inPage, page(options(folderNames)));
       await driver.focus("before");
-      await driver.press("Tab");
+      await driver.pressKeys("Tab");
       const focus: unknown[] = [];
       for (const key of ["ArrowUp", "End", "ArrowDown"]) {
-        await driver.press(key);
-        focus.push(await driver.activeElement());
+        await driver.pressKeys(key);
+        focus.push(await driver.focusedElement());
       }
       return { focus, keys: (await driver.keydownRecord()).slice(1) };
     },
@@ -409,10 +409,10 @@ export const listboxScenarios: readonly ListboxScenario[] = [
     run: async (driver, inPage) => {
       await mount(driver, inPage, page(options(folderNames)));
       await driver.focus(opt(2));
-      await driver.press("End");
-      const end = await driver.activeElement();
-      await driver.press("Home");
-      return { end, home: await driver.activeElement() };
+      await driver.pressKeys("End");
+      const end = await driver.focusedElement();
+      await driver.pressKeys("Home");
+      return { end, home: await driver.focusedElement() };
     },
     expected: { end: opt(4), home: opt(0) },
   },
@@ -424,7 +424,7 @@ export const listboxScenarios: readonly ListboxScenario[] = [
       await mount(driver, inPage, page(options(folderNames)));
       await inPage(recordEvents, null);
       await driver.focus(opt(2));
-      await driver.press("Enter");
+      await driver.pressKeys("Enter");
       return {
         tree: await tree(driver),
         value: await inPage(valueOf, "lb"),
@@ -453,11 +453,11 @@ export const listboxScenarios: readonly ListboxScenario[] = [
       await inPage(recordEvents, null);
       await driver.focus(opt(3));
       const start = await driver.scrollOffset();
-      await driver.press(" ");
+      await driver.pressKeys(" ");
       const space = { tree: await tree(driver), value: await inPage(valueOf, "lb"), scroll: await driver.scrollOffset() };
-      await driver.press(" ");
-      await driver.press("Enter");
-      return { start, space, again: { tree: await tree(driver), scroll: await driver.scrollOffset(), focus: await driver.activeElement() }, events: await inPage(recordedEvents, null), keys: await driver.keydownRecord() };
+      await driver.pressKeys(" ");
+      await driver.pressKeys("Enter");
+      return { start, space, again: { tree: await tree(driver), scroll: await driver.scrollOffset(), focus: await driver.focusedElement() }, events: await inPage(recordedEvents, null), keys: await driver.keydownRecord() };
     },
     expected: {
       start: { x: 0, y: 0 },
@@ -478,21 +478,21 @@ export const listboxScenarios: readonly ListboxScenario[] = [
     run: async (driver, inPage) => {
       await mount(driver, inPage, page(options(folderNames), 'label="Folders" value="beta"'));
       await driver.focus("before");
-      await driver.press("Tab");
-      const selectedIn = await driver.activeElement();
-      await driver.press("Tab");
-      const out = await driver.activeElement();
-      await driver.press("Tab", ["Shift"]);
-      const selectedBack = await driver.activeElement();
+      await driver.pressKeys("Tab");
+      const selectedIn = await driver.focusedElement();
+      await driver.pressKeys("Tab");
+      const out = await driver.focusedElement();
+      await driver.pressKeys("Tab", ["Shift"]);
+      const selectedBack = await driver.focusedElement();
       await mount(driver, inPage, page(options(folderNames)));
       await driver.focus("before");
-      await driver.press("Tab");
-      const firstIn = await driver.activeElement();
-      await driver.press("ArrowDown");
-      await driver.press("ArrowDown");
-      await driver.press("Tab");
-      await driver.press("Tab", ["Shift"]);
-      return { selectedIn, out, selectedBack, firstIn, lastFocusedBack: await driver.activeElement() };
+      await driver.pressKeys("Tab");
+      const firstIn = await driver.focusedElement();
+      await driver.pressKeys("ArrowDown");
+      await driver.pressKeys("ArrowDown");
+      await driver.pressKeys("Tab");
+      await driver.pressKeys("Tab", ["Shift"]);
+      return { selectedIn, out, selectedBack, firstIn, lastFocusedBack: await driver.focusedElement() };
     },
     expected: { selectedIn: opt(1), out: after, selectedBack: opt(1), firstIn: opt(0), lastFocusedBack: opt(2) },
   },
@@ -502,8 +502,8 @@ export const listboxScenarios: readonly ListboxScenario[] = [
     run: async (driver, inPage) => {
       await mount(driver, inPage, page(options(folderNames)));
       await inPage(recordEvents, null);
-      await driver.click(opt(4));
-      return { tree: await tree(driver), focus: await driver.activeElement(), value: await inPage(valueOf, "lb"), events: await inPage(recordedEvents, null) };
+      await driver.clickTarget(opt(4));
+      return { tree: await tree(driver), focus: await driver.focusedElement(), value: await inPage(valueOf, "lb"), events: await inPage(recordedEvents, null) };
     },
     expected: { tree: exposed("Folders", folderNames, 4), focus: opt(4), value: "epsilon", events: [change("epsilon")] },
   },
@@ -515,18 +515,18 @@ export const listboxScenarios: readonly ListboxScenario[] = [
       await mount(driver, inPage, page(options(folderNames, [1])));
       await inPage(recordEvents, null);
       await driver.focus(opt(0));
-      await driver.press("ArrowDown");
-      const skipped = await driver.activeElement();
-      await driver.click(opt(1), { force: true });
-      const disabledClick = { tree: await tree(driver), focus: await driver.activeElement(), events: await inPage(recordedEvents, null) };
-      await driver.click(opt(3));
-      const enabledClick = { tree: await tree(driver), focus: await driver.activeElement(), events: await inPage(recordedEvents, null) };
+      await driver.pressKeys("ArrowDown");
+      const skipped = await driver.focusedElement();
+      await driver.clickTarget(opt(1), { force: true });
+      const disabledClick = { tree: await tree(driver), focus: await driver.focusedElement(), events: await inPage(recordedEvents, null) };
+      await driver.clickTarget(opt(3));
+      const enabledClick = { tree: await tree(driver), focus: await driver.focusedElement(), events: await inPage(recordedEvents, null) };
       await mount(driver, inPage, page(options(folderNames, [0, 4])));
       await driver.focus(opt(2));
-      await driver.press("End");
-      const end = await driver.activeElement();
-      await driver.press("Home");
-      return { skipped, disabledClick, enabledClick, end, home: await driver.activeElement() };
+      await driver.pressKeys("End");
+      const end = await driver.focusedElement();
+      await driver.pressKeys("Home");
+      return { skipped, disabledClick, enabledClick, end, home: await driver.focusedElement() };
     },
     expected: {
       skipped: opt(2),
@@ -546,8 +546,8 @@ export const listboxScenarios: readonly ListboxScenario[] = [
       await driver.setProperty("lb", "value", "delta");
       const property = { tree: await tree(driver), value: await inPage(valueOf, "lb"), tabindexes: await inPage(tabindexes, "lb") };
       await driver.focus("before");
-      await driver.press("Tab");
-      const stop = await driver.activeElement();
+      await driver.pressKeys("Tab");
+      const stop = await driver.focusedElement();
       await driver.setProperty("lb", "value", "zeta");
       const missing = { tree: await tree(driver), value: await inPage(valueOf, "lb") };
       await driver.setProperty("lb", "value", "delta");
@@ -577,11 +577,11 @@ export const listboxScenarios: readonly ListboxScenario[] = [
       await mount(driver, inPage, page(options(folderNames)));
       await inPage(recordEvents, null);
       await driver.focus("before");
-      await driver.press("Tab");
+      await driver.pressKeys("Tab");
       const focus: unknown[] = [];
       for (const key of ["ArrowDown", "Escape", "ArrowLeft", "ArrowRight", "g", "Tab"]) {
-        await driver.press(key);
-        focus.push(await driver.activeElement());
+        await driver.pressKeys(key);
+        focus.push(await driver.focusedElement());
       }
       return { focus, keys: await driver.keydownRecord(), tree: await tree(driver), events: await inPage(recordedEvents, null) };
     },
@@ -635,16 +635,16 @@ export const listboxScenarios: readonly ListboxScenario[] = [
       await inPage(recordEvents, null);
       await driver.focus(opt(1));
       await driver.mutate("lb", [{ remove: 1 }]);
-      const removed = { focus: await driver.activeElement(), tree: await tree(driver), value: await inPage(valueOf, "lb") };
+      const removed = { focus: await driver.focusedElement(), tree: await tree(driver), value: await inPage(valueOf, "lb") };
       await driver.mutate("lb", [{ remove: 2 }]);
-      const last = await driver.activeElement();
+      const last = await driver.focusedElement();
       await driver.mutate("lb", [{ append: '<ocelle-option value="zeta">zeta</ocelle-option>' }, { move: 0, before: "end" }]);
       const reordered = await tree(driver);
       await driver.focus(opt(1));
-      await driver.press("End");
-      const end = await driver.activeElement();
-      await driver.press("Home");
-      return { removed, last, reordered, end, home: await driver.activeElement(), events: await inPage(recordedEvents, null) };
+      await driver.pressKeys("End");
+      const end = await driver.focusedElement();
+      await driver.pressKeys("Home");
+      return { removed, last, reordered, end, home: await driver.focusedElement(), events: await inPage(recordedEvents, null) };
     },
     expected: {
       removed: { focus: opt(2), tree: exposed("Folders", ["alpha", "gamma", "delta"], null, [1]), value: "" },
@@ -665,12 +665,12 @@ export const listboxScenarios: readonly ListboxScenario[] = [
       const highlight = await driver.resolveColour("Highlight");
       const canvas = await driver.resolveColour("Canvas");
       await driver.focus("before");
-      await driver.press("Tab");
+      await driver.pressKeys("Tab");
       // The resolved Highlight colour is named, so the expectation can state it (it is the platform's, not a token).
       const named = (value: unknown): unknown => JSON.parse(JSON.stringify(value).split(highlight).join("Highlight")) as unknown;
       const observed = {
         distinct: highlight !== canvas,
-        focus: await driver.activeElement(),
+        focus: await driver.focusedElement(),
         selected: named(await bar(driver, opt(2))),
         others: [await bar(driver, opt(0)), await bar(driver, opt(4))],
         ring: named(await ring(driver, opt(2))),
@@ -689,13 +689,13 @@ export const listboxScenarios: readonly ListboxScenario[] = [
       await mount(driver, inPage, page(options(ten)));
       await driver.rules("#lb { max-block-size: 150px; }");
       await driver.focus("before");
-      await driver.press("Tab");
+      await driver.pressKeys("Tab");
       const first = await inPage(ringInside, 0);
-      await driver.press("End");
-      const last = { focus: await driver.activeElement(), inside: await inPage(ringInside, 9) };
-      await driver.press("Home");
-      for (let step = 0; step < 6; step += 1) await driver.press("ArrowDown");
-      const scrolled = { focus: await driver.activeElement(), inside: await inPage(ringInside, 6) };
+      await driver.pressKeys("End");
+      const last = { focus: await driver.focusedElement(), inside: await inPage(ringInside, 9) };
+      await driver.pressKeys("Home");
+      for (let step = 0; step < 6; step += 1) await driver.pressKeys("ArrowDown");
+      const scrolled = { focus: await driver.focusedElement(), inside: await inPage(ringInside, 6) };
       const listHeight = (await driver.box("lb", '[part="list"]')).height;
       return { first, last, scrolled, bounded: listHeight > 0 && listHeight <= 150 };
     },
@@ -708,7 +708,7 @@ export const listboxScenarios: readonly ListboxScenario[] = [
     run: async (driver, inPage) => {
       await mount(driver, inPage, page('<ocelle-option>alpha</ocelle-option><ocelle-option value="">beta</ocelle-option><ocelle-option>gamma</ocelle-option>'));
       await inPage(recordEvents, null);
-      await driver.click(opt(1));
+      await driver.clickTarget(opt(1));
       const clicked = { value: await inPage(valueOf, "lb"), events: await inPage(recordedEvents, null) };
       const values = await inPage(() => [...(document.getElementById("lb")?.children ?? [])].map((child) => [(child as unknown as { value: unknown }).value, child.getAttribute("value")]), null);
       await driver.setProperty("lb", "value", "2");
@@ -739,20 +739,20 @@ export const listboxScenarios: readonly ListboxScenario[] = [
       await driver.setProperty("lb", "value", "gamma");
       const firstSet = (await inPage(mutations, null)) > 0;
       await driver.focus("before");
-      await driver.press("Tab");
+      await driver.pressKeys("Tab");
       await driver.mutate("lb", [{ child: 2, attribute: "disabled", value: "" }]);
-      const disabled = { tree: await tree(driver), value: await inPage(valueOf, "lb"), focus: await driver.activeElement(), tabindexes: await inPage(tabindexes, "lb") };
+      const disabled = { tree: await tree(driver), value: await inPage(valueOf, "lb"), focus: await driver.focusedElement(), tabindexes: await inPage(tabindexes, "lb") };
       await inPage(mutations, null);
       await driver.setProperty("lb", "value", "gamma");
       const currentSet = { mutations: await inPage(mutations, null), tree: await tree(driver), value: await inPage(valueOf, "lb") };
-      await driver.press("Enter");
-      await driver.press(" ");
-      const keys = { focus: await driver.activeElement(), events: await inPage(recordedEvents, null) };
-      await driver.press("ArrowDown");
-      await driver.press("Enter");
-      await driver.click(opt(2), { force: true });
-      await driver.press("ArrowUp");
-      return { firstSet, disabled, currentSet, keys, final: { tree: await tree(driver), focus: await driver.activeElement(), events: await inPage(recordedEvents, null) } };
+      await driver.pressKeys("Enter");
+      await driver.pressKeys(" ");
+      const keys = { focus: await driver.focusedElement(), events: await inPage(recordedEvents, null) };
+      await driver.pressKeys("ArrowDown");
+      await driver.pressKeys("Enter");
+      await driver.clickTarget(opt(2), { force: true });
+      await driver.pressKeys("ArrowUp");
+      return { firstSet, disabled, currentSet, keys, final: { tree: await tree(driver), focus: await driver.focusedElement(), events: await inPage(recordedEvents, null) } };
     },
     expected: {
       firstSet: true,
@@ -779,7 +779,7 @@ export const listboxScenarios: readonly ListboxScenario[] = [
         await mount(driver, inPage, page(options(["alpha", "beta"])));
         await inPage(recordEvents, null);
         await driver.setProperty("lb", "value", "delta");
-        if (forget === "click") await driver.click(opt(0));
+        if (forget === "click") await driver.clickTarget(opt(0));
         else await driver.setProperty("lb", "value", forget);
         await driver.mutate("lb", [appendDelta]);
         forgotten.push({ tree: await tree(driver), value: await inPage(valueOf, "lb"), events: await inPage(recordedEvents, null) });
@@ -811,13 +811,13 @@ export const listboxScenarios: readonly ListboxScenario[] = [
       await mount(driver, inPage, page(options(six, [5]), 'label="Folders" value="beta"'));
       await inPage(recordEvents, null);
       await driver.focus("before");
-      await driver.press("Tab");
-      await driver.press("Enter");
-      await driver.click(opt(3), { count: 2 });
-      await driver.press("ArrowDown");
-      await driver.press("Enter");
-      await driver.click(opt(5), { count: 2, force: true });
-      return { tree: await tree(driver), focus: await driver.activeElement(), events: await inPage(recordedEvents, null) };
+      await driver.pressKeys("Tab");
+      await driver.pressKeys("Enter");
+      await driver.clickTarget(opt(3), { count: 2 });
+      await driver.pressKeys("ArrowDown");
+      await driver.pressKeys("Enter");
+      await driver.clickTarget(opt(5), { count: 2, force: true });
+      return { tree: await tree(driver), focus: await driver.focusedElement(), events: await inPage(recordedEvents, null) };
     },
     expected: {
       tree: exposed("Folders", [...folderNames, "zeta"], 4, [5]),
@@ -833,14 +833,14 @@ export const listboxScenarios: readonly ListboxScenario[] = [
       await mount(driver, inPage, page(options(["alpha", "beta", "gamma"]), 'label="Folders" value="beta"'));
       await inPage(recordEvents, null);
       await driver.focus("before");
-      await driver.press("Tab");
+      await driver.pressKeys("Tab");
       await driver.mutate("lb", [{ move: 1, before: "end" }]);
-      const moved = { focus: await driver.activeElement(), tree: await tree(driver), tabindexes: await inPage(tabindexes, "lb") };
-      await driver.press("ArrowUp");
-      const up = await driver.activeElement();
-      await driver.press("ArrowDown");
+      const moved = { focus: await driver.focusedElement(), tree: await tree(driver), tabindexes: await inPage(tabindexes, "lb") };
+      await driver.pressKeys("ArrowUp");
+      const up = await driver.focusedElement();
+      await driver.pressKeys("ArrowDown");
       await driver.mutate("lb", [{ reinsert: 2 }]);
-      return { moved, up, reinserted: { focus: await driver.activeElement(), tree: await tree(driver) }, events: await inPage(recordedEvents, null) };
+      return { moved, up, reinserted: { focus: await driver.focusedElement(), tree: await tree(driver) }, events: await inPage(recordedEvents, null) };
     },
     expected: {
       moved: { focus: opt(2), tree: exposed("Folders", ["alpha", "gamma", "beta"], 2), tabindexes: ["-1", "-1", "0"] },
@@ -856,14 +856,14 @@ export const listboxScenarios: readonly ListboxScenario[] = [
     run: async (driver, inPage) => {
       await mount(driver, inPage, page(options(["alpha", "beta", "gamma"]), 'label="Folders" value="beta"'));
       await driver.focus("before");
-      await driver.press("Tab");
+      await driver.pressKeys("Tab");
       await driver.mutate("lb", [{ move: 1, before: "end" }]);
-      const kept = await driver.activeElement();
-      await driver.click("away");
-      const left = await driver.activeElement();
+      const kept = await driver.focusedElement();
+      await driver.clickTarget("away");
+      const left = await driver.focusedElement();
       await driver.mutate("lb", [{ move: 2, before: 0 }]);
       await inPage(frames, undefined);
-      return { kept, left, later: await driver.activeElement(), tree: await tree(driver) };
+      return { kept, left, later: await driver.focusedElement(), tree: await tree(driver) };
     },
     expected: { kept: opt(2), left: null, later: null, tree: exposed("Folders", ["beta", "alpha", "gamma"], 0) },
   },
@@ -876,14 +876,14 @@ export const listboxScenarios: readonly ListboxScenario[] = [
       run: async (driver, inPage) => {
         await mount(driver, inPage, page(options(["alpha", "beta", "gamma"]), 'label="Folders" value="beta"'));
         await driver.focus("before");
-        await driver.press("Tab");
+        await driver.pressKeys("Tab");
         await driver.mutate("lb", [{ move: 1, before: "end" }]);
-        const kept = await driver.activeElement();
+        const kept = await driver.focusedElement();
         await inPage(rerenderOnBlur, { what, when });
-        if (input === "Tab") await driver.press("Tab");
-        else await driver.click("after");
+        if (input === "Tab") await driver.pressKeys("Tab");
+        else await driver.clickTarget("after");
         await inPage(frames, undefined);
-        return { kept, left: await driver.activeElement() };
+        return { kept, left: await driver.focusedElement() };
       },
       expected: { kept: opt(2), left: after },
     }),
@@ -898,13 +898,13 @@ export const listboxScenarios: readonly ListboxScenario[] = [
       await mount(driver, inPage, page(options(ten, all)));
       await driver.rules("#lb { max-block-size: 100px; }");
       await driver.focus("before");
-      await driver.press("Tab");
-      const disabled = await driver.activeElement();
+      await driver.pressKeys("Tab");
+      const disabled = await driver.focusedElement();
       await mount(driver, inPage, page(options(ten, all.filter((index) => index !== 3))));
       await driver.rules("#lb { max-block-size: 100px; }");
       await driver.focus("before");
-      await driver.press("Tab");
-      return { disabled, oneEnabled: await driver.activeElement() };
+      await driver.pressKeys("Tab");
+      return { disabled, oneEnabled: await driver.focusedElement() };
     },
     expected: { disabled: after, oneEnabled: opt(3) },
   },
@@ -948,13 +948,13 @@ export const listboxScenarios: readonly ListboxScenario[] = [
     run: async (driver, inPage) => {
       await mount(driver, inPage, page(options(folderNames)));
       await driver.focus("before");
-      await driver.press("Tab");
-      await driver.press("ArrowDown");
-      await driver.press("ArrowDown");
-      const focus = await driver.activeElement();
-      await driver.hover(opt(3));
+      await driver.pressKeys("Tab");
+      await driver.pressKeys("ArrowDown");
+      await driver.pressKeys("ArrowDown");
+      const focus = await driver.focusedElement();
+      await driver.hoverTarget(opt(3));
       const next = { fill: await driver.computed(opt(3), "background-color"), ring: await ringPixels(driver, 2) };
-      await driver.hover(opt(1));
+      await driver.hoverTarget(opt(1));
       const previous = { fill: await driver.computed(opt(1), "background-color"), ring: await ringPixels(driver, 2) };
       return { focus, next, previous };
     },
@@ -975,7 +975,7 @@ export const listboxScenarios: readonly ListboxScenario[] = [
       await driver.theme("dark");
       const dark = await bar(driver, opt(1));
       await driver.theme(null);
-      await driver.hover(opt(1));
+      await driver.hoverTarget(opt(1));
       return { light, dark, height, hovered: { fill: await driver.computed(opt(1), "background-color"), bar: await bar(driver, opt(1)) } };
     },
     expected: { light: selectedBar(accentLight), dark: selectedBar(accentDark), height: 44, hovered: { fill: hoverLight, bar: selectedBar(accentLight) } },
@@ -986,9 +986,9 @@ export const listboxScenarios: readonly ListboxScenario[] = [
     fixture: true,
     run: async (driver, inPage) => {
       await mount(driver, inPage, page(options(folderNames, [2])));
-      await driver.hover(opt(2));
+      await driver.hoverTarget(opt(2));
       const disabled = await driver.computed(opt(2), "background-color");
-      await driver.hover(opt(3));
+      await driver.hoverTarget(opt(3));
       return { disabled, enabled: await driver.computed(opt(3), "background-color") };
     },
     expected: { disabled: transparent, enabled: hoverLight },
@@ -999,7 +999,7 @@ export const listboxScenarios: readonly ListboxScenario[] = [
     fixture: true,
     run: async (driver, inPage) => {
       await mount(driver, inPage, page(options(folderNames)));
-      await driver.click(opt(1));
+      await driver.clickTarget(opt(1));
       return {
         bar: await bar(driver, opt(1)),
         motion: [await driver.computed(opt(1), "transition-duration"), await driver.computed(opt(1), "animation-name"), await driver.computedPart(opt(1), "::before", "transition-duration")],
@@ -1014,10 +1014,10 @@ export const listboxScenarios: readonly ListboxScenario[] = [
     run: async (driver, inPage) => {
       await mount(driver, inPage, `<button id="before" type="button">Before</button><ocelle-option id="lone" value="alpha">alpha</ocelle-option><ocelle-listbox id="lb" label="Folders">${options(["alpha"])}</ocelle-listbox><button id="after" type="button">After</button>`);
       await driver.focus("before");
-      await driver.press("Tab");
-      const first = await driver.activeElement();
-      await driver.press("Tab");
-      return { lone: await tree(driver, "lone"), tabindex: await driver.attribute("lone", "tabindex"), listbox: await tree(driver), first, second: await driver.activeElement() };
+      await driver.pressKeys("Tab");
+      const first = await driver.focusedElement();
+      await driver.pressKeys("Tab");
+      return { lone: await tree(driver, "lone"), tabindex: await driver.attribute("lone", "tabindex"), listbox: await tree(driver), first, second: await driver.focusedElement() };
     },
     expected: { lone: [], tabindex: null, listbox: exposed("Folders", ["alpha"]), first: opt(0), second: after },
   },
@@ -1030,7 +1030,7 @@ export const listboxScenarios: readonly ListboxScenario[] = [
       await inPage(recordEvents, null);
       await driver.setProperty("lb", "value", "same");
       const set = await tree(driver);
-      await driver.click(opt(2));
+      await driver.clickTarget(opt(2));
       return { set, clicked: await tree(driver), value: await inPage(valueOf, "lb"), events: await inPage(recordedEvents, null) };
     },
     expected: {
@@ -1047,12 +1047,12 @@ export const listboxScenarios: readonly ListboxScenario[] = [
     run: async (driver, inPage) => {
       await mount(driver, inPage, page(""));
       await driver.focus("before");
-      await driver.press("Tab");
-      const empty = { tree: await tree(driver), focus: await driver.activeElement() };
+      await driver.pressKeys("Tab");
+      const empty = { tree: await tree(driver), focus: await driver.focusedElement() };
       await driver.mutate("lb", [{ append: '<ocelle-option value="alpha">alpha</ocelle-option>' }]);
       await driver.focus("before");
-      await driver.press("Tab");
-      return { empty, appended: { tree: await tree(driver), focus: await driver.activeElement() } };
+      await driver.pressKeys("Tab");
+      return { empty, appended: { tree: await tree(driver), focus: await driver.focusedElement() } };
     },
     expected: { empty: { tree: [{ role: "listbox", name: "Folders" }], focus: after }, appended: { tree: exposed("Folders", ["alpha"]), focus: opt(0) } },
   },
@@ -1063,12 +1063,12 @@ export const listboxScenarios: readonly ListboxScenario[] = [
     run: async (driver, inPage) => {
       const start = await inPage(() => [window.innerWidth, window.innerHeight], null);
       await mount(driver, inPage, page(`<ocelle-option value="long">${longLabel}</ocelle-option>${options(["short"])}`));
-      await driver.viewportSize(320, 640);
+      await driver.setViewportSize(320, 640);
       const long = (await driver.box(opt(0))).height;
       const short = (await driver.box(opt(1))).height;
       const sideways = await inPage(() => document.documentElement.scrollWidth > document.documentElement.clientWidth, null);
       const observed = { grew: long > short && short === 44, sideways, tree: await tree(driver) };
-      await driver.viewportSize(start[0] ?? 0, start[1] ?? 0);
+      await driver.setViewportSize(start[0] ?? 0, start[1] ?? 0);
       return observed;
     },
     expected: { grew: true, sideways: false, tree: exposed("Folders", [longLabel, "short"]) },
@@ -1216,11 +1216,11 @@ export const listboxScenarios: readonly ListboxScenario[] = [
       await mount(driver, inPage, page('<span id="note">A note</span><ocelle-option>alpha</ocelle-option><ocelle-option>beta</ocelle-option>'));
       await inPage(recordEvents, null);
       await driver.focus("before");
-      await driver.press("Tab");
-      const first = await driver.activeElement();
-      await driver.press("ArrowUp");
-      const up = await driver.activeElement();
-      await driver.click(opt(1));
+      await driver.pressKeys("Tab");
+      const first = await driver.focusedElement();
+      await driver.pressKeys("ArrowUp");
+      const up = await driver.focusedElement();
+      await driver.clickTarget(opt(1));
       const values = await inPage(() => [...(document.getElementById("lb")?.querySelectorAll("ocelle-option") ?? [])].map((option) => (option as unknown as { value: unknown }).value), null);
       return { first, up, tree: await tree(driver), note: await driver.attribute("note", "tabindex"), values, events: await inPage(recordedEvents, null) };
     },
@@ -1234,21 +1234,21 @@ export const listboxScenarios: readonly ListboxScenario[] = [
     run: async (driver, inPage) => {
       await mount(driver, inPage, page('<ocelle-option value="alpha">alpha <span id="inner" tabindex="-1">inner</span></ocelle-option><ocelle-option value="beta">beta</ocelle-option><ocelle-option value="gamma">gamma</ocelle-option>'));
       await driver.focus("before");
-      await driver.press("Tab");
-      await driver.press("ArrowDown");
-      await driver.press("ArrowDown");
-      const moved = await driver.activeElement();
+      await driver.pressKeys("Tab");
+      await driver.pressKeys("ArrowDown");
+      await driver.pressKeys("ArrowDown");
+      const moved = await driver.focusedElement();
       await driver.focus("inner");
-      await driver.press("ArrowDown");
-      const inner = { focus: await driver.activeElement(), tabindexes: await inPage(tabindexes, "lb") };
+      await driver.pressKeys("ArrowDown");
+      const inner = { focus: await driver.focusedElement(), tabindexes: await inPage(tabindexes, "lb") };
       await inPage(() => {
         document.getElementById("lb")?.children[1]?.addEventListener("keydown", (event) => {
           event.preventDefault();
         });
       }, null);
       await driver.focus(opt(1));
-      await driver.press("ArrowDown");
-      return { moved, inner, handled: await driver.activeElement(), keys: (await driver.keydownRecord()).map((each) => each.defaultPrevented) };
+      await driver.pressKeys("ArrowDown");
+      return { moved, inner, handled: await driver.focusedElement(), keys: (await driver.keydownRecord()).map((each) => each.defaultPrevented) };
     },
     expected: { moved: opt(2), inner: { focus: { id: "inner" }, tabindexes: ["-1", "-1", "0"] }, handled: opt(1), keys: [false, true, true, false, true] },
   },
@@ -1269,16 +1269,16 @@ export const listboxScenarios: readonly ListboxScenario[] = [
         }
       }, null);
       await driver.focus("before");
-      await driver.press("Tab");
-      await driver.press("ArrowDown");
-      await driver.press("ArrowDown");
-      await driver.press("Tab");
+      await driver.pressKeys("Tab");
+      await driver.pressKeys("ArrowDown");
+      await driver.pressKeys("ArrowDown");
+      await driver.pressKeys("Tab");
       await driver.mutate("lb", [{ move: 2, before: 0 }]);
-      const left = await driver.activeElement();
-      await driver.press("Tab", ["Shift"]);
-      const back = await driver.activeElement();
+      const left = await driver.focusedElement();
+      await driver.pressKeys("Tab", ["Shift"]);
+      const back = await driver.focusedElement();
       await driver.mutate("lb", [{ move: 0, before: "end" }]);
-      return { left, back, moved: await driver.activeElement() };
+      return { left, back, moved: await driver.focusedElement() };
     },
     expected: { left: after, back: opt(0), moved: opt(2) },
   },
@@ -1291,7 +1291,7 @@ export const listboxScenarios: readonly ListboxScenario[] = [
       await mount(driver, inPage, page(options(["alpha", "beta", "gamma", "delta"])));
       await driver.focus(opt(1));
       await driver.mutate("lb", [{ remove: 1 }]);
-      const moved = await driver.activeElement();
+      const moved = await driver.focusedElement();
       await inPage(() => {
         const listbox = document.getElementById("lb");
         listbox?.addEventListener(
@@ -1304,7 +1304,7 @@ export const listboxScenarios: readonly ListboxScenario[] = [
       }, null);
       await driver.mutate("lb", [{ remove: 1 }]);
       await inPage(frames, undefined);
-      return { moved, kept: await driver.activeElement(), tree: await tree(driver) };
+      return { moved, kept: await driver.focusedElement(), tree: await tree(driver) };
     },
     expected: { moved: opt(1), kept: after, tree: exposed("Folders", ["alpha", "delta"]) },
   },
@@ -1315,12 +1315,12 @@ export const listboxScenarios: readonly ListboxScenario[] = [
     run: async (driver, inPage) => {
       await mount(driver, inPage, page(""));
       await driver.focus("before");
-      await driver.click("lb");
-      const padding = await driver.activeElement();
+      await driver.clickTarget("lb");
+      const padding = await driver.focusedElement();
       await mount(driver, inPage, page(options(["alpha"])));
       await driver.focus("before");
-      await driver.click(opt(0));
-      return { padding, option: await driver.activeElement() };
+      await driver.clickTarget(opt(0));
+      return { padding, option: await driver.focusedElement() };
     },
     expected: { padding: before, option: opt(0) },
   },

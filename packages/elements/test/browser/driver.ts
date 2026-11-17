@@ -208,11 +208,11 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
       }, target);
       await settle(page);
     },
-    press: async (key, modifiers = []) => {
+    pressKeys: async (key, modifiers = []) => {
       await page.keyboard.press([...modifiers, key].join("+"));
       await settle(page);
     },
-    click: async (target, options = {}) => {
+    clickTarget: async (target, options = {}) => {
       const handle = await page.evaluateHandle((target) => (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.resolve(target), target);
       try {
         await handle.click({ button: options.button ?? "left", modifiers: [...(options.modifiers ?? [])], clickCount: options.count ?? 1, force: options.force ?? false });
@@ -221,7 +221,7 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
       }
       await settle(page);
     },
-    hover: async (target) => {
+    hoverTarget: async (target) => {
       const handle = await page.evaluateHandle((target) => (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.resolve(target), target);
       try {
         await handle.hover();
@@ -230,7 +230,7 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
       }
       await settle(page);
     },
-    activeElement: () => page.evaluate(() => (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.focused()),
+    focusedElement: () => page.evaluate(() => (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.focused()),
     mutate: async (target, steps) => {
       await page.evaluate(({ target, steps }) => {
         (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.mutate(target, steps);
@@ -264,7 +264,7 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
         return getComputedStyle(part, pseudo).getPropertyValue(property);
       }, { target, which, property }),
     scrollOffset: () => page.evaluate(() => ({ x: window.scrollX, y: window.scrollY })),
-    viewportSize: async (width, height) => {
+    setViewportSize: async (width, height) => {
       await page.setViewportSize({ width, height });
       await settle(page);
     },

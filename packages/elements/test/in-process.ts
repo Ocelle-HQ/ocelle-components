@@ -204,19 +204,19 @@ export function inProcessDriver(): Driver {
       resolve(target).focus();
       await settle();
     },
-    press: async (key, modifiers = []) => {
+    pressKeys: async (key, modifiers = []) => {
       await userEvent.keyboard(keyboardText(key, modifiers));
       await settle();
     },
-    click: async (target, options = {}) => {
+    clickTarget: async (target, options = {}) => {
       await userEvent.click(resolve(target), { button: options.button ?? "left", modifiers: [...(options.modifiers ?? [])], clickCount: options.count ?? 1, force: options.force ?? false });
       await settle();
     },
-    hover: async (target) => {
+    hoverTarget: async (target) => {
       await userEvent.hover(resolve(target));
       await settle();
     },
-    activeElement: () => {
+    focusedElement: () => {
       installPageHelpers();
       return Promise.resolve(pageHelpers().focused());
     },
@@ -249,7 +249,7 @@ export function inProcessDriver(): Driver {
       return Promise.resolve(getComputedStyle(part, pseudo).getPropertyValue(property));
     },
     scrollOffset: () => Promise.resolve({ x: window.scrollX, y: window.scrollY }),
-    viewportSize: async (width, height) => {
+    setViewportSize: async (width, height) => {
       await page.viewport(width, height);
       await settle();
     },

@@ -71,7 +71,7 @@ describe("ocelle-listbox and ocelle-option, in process (US1)", () => {
       }
     }
     await driver.mount('<ocelle-listbox id="lb" label="Folders"><ocelle-option value="alpha">alpha</ocelle-option><ocelle-option value="beta">beta</ocelle-option></ocelle-listbox>');
-    await driver.click({ parent: "lb", kind: "ocelle-option", index: 1 });
+    await driver.clickTarget({ parent: "lb", kind: "ocelle-option", index: 1 });
     const states = await driver.axStates("lb", "subtree");
     expect({
       thrown,

@@ -68,7 +68,7 @@ async function mount(driver: Driver, inPage: InPage, markup: string): Promise<vo
   await inPage(() => {
     window.scrollTo(0, 0);
   }, null);
-  if (markup.includes('id="away"')) await driver.hover("away");
+  if (markup.includes('id="away"')) await driver.hoverTarget("away");
 }
 
 /**
@@ -458,16 +458,16 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
       await mount(driver, inPage, page(segmentsOf(lanes), 'label="Lane filter" value="all"'));
       await inPage(recordEvents, null);
       await driver.focus("before");
-      await driver.press("Tab");
-      const first = await driver.activeElement();
-      await driver.press("Tab");
+      await driver.pressKeys("Tab");
+      const first = await driver.focusedElement();
+      await driver.pressKeys("Tab");
       return {
         tree: await tree(driver),
         selection: await selection(driver, inPage),
         tabindexes: await inPage(tabindexes, "sc"),
         value: await inPage(valueOf, "sc"),
         first,
-        next: await driver.activeElement(),
+        next: await driver.focusedElement(),
         events: await inPage(recordedEvents, null),
       };
     },
@@ -481,9 +481,9 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
       await mount(driver, inPage, page(segmentsOf(lanes), 'label="Lane filter" value="all"'));
       await inPage(recordEvents, null);
       await driver.focus("before");
-      await driver.press("Tab");
-      await driver.press("ArrowRight");
-      return { focus: await driver.activeElement(), tree: await tree(driver), tabindexes: await inPage(tabindexes, "sc"), value: await inPage(valueOf, "sc"), events: await inPage(recordedEvents, null), keys: await driver.keydownRecord() };
+      await driver.pressKeys("Tab");
+      await driver.pressKeys("ArrowRight");
+      return { focus: await driver.focusedElement(), tree: await tree(driver), tabindexes: await inPage(tabindexes, "sc"), value: await inPage(valueOf, "sc"), events: await inPage(recordedEvents, null), keys: await driver.keydownRecord() };
     },
     expected: {
       focus: seg(1),
@@ -505,11 +505,11 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
       await mount(driver, inPage, page(segmentsOf(lanes), 'label="Lane filter" value="all"'));
       await inPage(recordEvents, null);
       await driver.focus(seg(0));
-      await driver.press("ArrowRight");
-      await driver.press("Enter");
-      const enter = { tree: await tree(driver), value: await inPage(valueOf, "sc"), tabindexes: await inPage(tabindexes, "sc"), focus: await driver.activeElement() };
-      await driver.press("ArrowRight");
-      await driver.press(" ");
+      await driver.pressKeys("ArrowRight");
+      await driver.pressKeys("Enter");
+      const enter = { tree: await tree(driver), value: await inPage(valueOf, "sc"), tabindexes: await inPage(tabindexes, "sc"), focus: await driver.focusedElement() };
+      await driver.pressKeys("ArrowRight");
+      await driver.pressKeys(" ");
       return { enter, space: { tree: await tree(driver), value: await inPage(valueOf, "sc"), tabindexes: await inPage(tabindexes, "sc") }, events: await inPage(recordedEvents, null) };
     },
     expected: {
@@ -526,10 +526,10 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
       await mount(driver, inPage, page(segmentsOf(lanes), 'label="Lane filter" value="all"'));
       await inPage(recordEvents, null);
       await driver.focus(seg(0));
-      await driver.press("ArrowRight");
-      await driver.press("Enter");
-      await driver.press("Enter");
-      await driver.press(" ");
+      await driver.pressKeys("ArrowRight");
+      await driver.pressKeys("Enter");
+      await driver.pressKeys("Enter");
+      await driver.pressKeys(" ");
       return { tree: await tree(driver), value: await inPage(valueOf, "sc"), events: await inPage(recordedEvents, null), keys: (await driver.keydownRecord()).map((key) => key.defaultPrevented) };
     },
     expected: { tree: exposed("Lane filter", lanes, 1), value: "mine", events: [change("mine")], keys: [true, true, true, true] },
@@ -545,16 +545,16 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
       await driver.focus(seg(3));
       const walk: unknown[] = [];
       for (const key of ["ArrowRight", "ArrowLeft", "ArrowDown", "ArrowUp", "Home", "End", "ArrowUp", "ArrowDown"]) {
-        await driver.press(key);
-        walk.push(await driver.activeElement());
+        await driver.pressKeys(key);
+        walk.push(await driver.focusedElement());
       }
       await driver.dir("box", "rtl");
       await driver.focus(seg(0));
-      await driver.press("ArrowLeft");
-      const rtlLeft = await driver.activeElement();
-      await driver.press("ArrowRight");
-      await driver.press("ArrowRight");
-      const rtlRight = await driver.activeElement();
+      await driver.pressKeys("ArrowLeft");
+      const rtlLeft = await driver.focusedElement();
+      await driver.pressKeys("ArrowRight");
+      await driver.pressKeys("ArrowRight");
+      const rtlRight = await driver.focusedElement();
       return { walk, rtl: [rtlLeft, rtlRight], tree: await tree(driver), events: await inPage(recordedEvents, null) };
     },
     expected: {
@@ -571,8 +571,8 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
     run: async (driver, inPage) => {
       await mount(driver, inPage, page(segmentsOf(lanes), 'label="Lane filter" value="all"'));
       await inPage(recordEvents, null);
-      await driver.click(seg(2));
-      return { focus: await driver.activeElement(), tree: await tree(driver), value: await inPage(valueOf, "sc"), tabindexes: await inPage(tabindexes, "sc"), events: await inPage(recordedEvents, null) };
+      await driver.clickTarget(seg(2));
+      return { focus: await driver.focusedElement(), tree: await tree(driver), value: await inPage(valueOf, "sc"), tabindexes: await inPage(tabindexes, "sc"), events: await inPage(recordedEvents, null) };
     },
     expected: { focus: seg(2), tree: exposed("Lane filter", lanes, 2), value: "blocked", tabindexes: ["-1", "-1", "0", "-1"], events: [change("blocked")] },
   },
@@ -585,21 +585,21 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
       await mount(driver, inPage, page(segmentsOf(lanes, [1]), 'label="Lane filter" value="all"'));
       await inPage(recordEvents, null);
       await driver.focus(seg(0));
-      await driver.press("ArrowRight");
-      const right = await driver.activeElement();
-      await driver.press("ArrowLeft");
-      const left = await driver.activeElement();
-      await driver.click(seg(1), { force: true });
-      const clicked = { focus: await driver.activeElement(), tree: await tree(driver), events: await inPage(recordedEvents, null) };
-      await driver.click(seg(3));
-      const done = { focus: await driver.activeElement(), value: await inPage(valueOf, "sc"), events: await inPage(recordedEvents, null) };
+      await driver.pressKeys("ArrowRight");
+      const right = await driver.focusedElement();
+      await driver.pressKeys("ArrowLeft");
+      const left = await driver.focusedElement();
+      await driver.clickTarget(seg(1), { force: true });
+      const clicked = { focus: await driver.focusedElement(), tree: await tree(driver), events: await inPage(recordedEvents, null) };
+      await driver.clickTarget(seg(3));
+      const done = { focus: await driver.focusedElement(), value: await inPage(valueOf, "sc"), events: await inPage(recordedEvents, null) };
       await mount(driver, inPage, page(segmentsOf(lanes, [0, 3])));
       const firstEnabled = { tree: await tree(driver), value: await inPage(valueOf, "sc") };
       await driver.focus(seg(2));
-      await driver.press("Home");
-      const home = await driver.activeElement();
-      await driver.press("End");
-      return { right, left, clicked, done, firstEnabled, ends: [home, await driver.activeElement()] };
+      await driver.pressKeys("Home");
+      const home = await driver.focusedElement();
+      await driver.pressKeys("End");
+      return { right, left, clicked, done, firstEnabled, ends: [home, await driver.focusedElement()] };
     },
     expected: {
       right: seg(2),
@@ -701,7 +701,7 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
       const fill = (value: unknown): unknown => ({ ...(value as Record<string, unknown>), fill: "any" });
       const plain = { pressed: named(fill(await inPage(paintOf, 0))), other: named(fill(await inPage(paintOf, 1))) };
       await driver.focus(seg(0));
-      await driver.press("ArrowRight");
+      await driver.pressKeys("ArrowRight");
       const focused = named(await ring(driver, seg(1)));
       await driver.forcedColors("none");
       await mount(driver, inPage, page(segmentsOf(lanes), 'label="Lane filter" value="all" joined'));
@@ -765,16 +765,16 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
       await driver.rules("#tall { block-size: 3000px; }");
       await inPage(recordEvents, null);
       await driver.focus(seg(0));
-      await driver.press("Escape");
-      await driver.press("m");
-      const unhandled = { focus: await driver.activeElement(), value: await inPage(valueOf, "sc") };
-      await driver.press("ArrowRight");
-      const moved = await driver.activeElement();
-      await driver.press("ArrowLeft");
-      await driver.press(" ");
+      await driver.pressKeys("Escape");
+      await driver.pressKeys("m");
+      const unhandled = { focus: await driver.focusedElement(), value: await inPage(valueOf, "sc") };
+      await driver.pressKeys("ArrowRight");
+      const moved = await driver.focusedElement();
+      await driver.pressKeys("ArrowLeft");
+      await driver.pressKeys(" ");
       const space = { value: await inPage(valueOf, "sc"), scroll: await driver.scrollOffset() };
-      await driver.press("Tab");
-      return { unhandled, moved, space, tabbed: await driver.activeElement(), events: await inPage(recordedEvents, null), keys: await driver.keydownRecord() };
+      await driver.pressKeys("Tab");
+      return { unhandled, moved, space, tabbed: await driver.focusedElement(), events: await inPage(recordedEvents, null), keys: await driver.keydownRecord() };
     },
     expected: {
       unhandled: { focus: seg(0), value: "all" },
@@ -800,7 +800,7 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
       await mount(driver, inPage, page(segmentsOf(lanes, [], false)));
       await inPage(recordEvents, null);
       const first = await inPage(valueOf, "sc");
-      await driver.click(seg(2));
+      await driver.clickTarget(seg(2));
       return { first, value: await inPage(valueOf, "sc"), events: await inPage(recordedEvents, null), attributes: await inPage(() => [...document.querySelectorAll("#sc > ocelle-segment")].map((each) => each.getAttribute("value")), null) };
     },
     expected: { first: "0", value: "2", events: [change("2")], attributes: [null, null, null, null] },
@@ -816,20 +816,20 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
       await driver.focus(seg(1));
       await driver.setProperty("sc", "value", "nope");
       await driver.setProperty("sc", "value", "");
-      const kept = { tree: await tree(driver), value: await inPage(valueOf, "sc"), tabindexes: await inPage(tabindexes, "sc"), focus: await driver.activeElement() };
+      const kept = { tree: await tree(driver), value: await inPage(valueOf, "sc"), tabindexes: await inPage(tabindexes, "sc"), focus: await driver.focusedElement() };
       await driver.mutate("sc", [{ remove: 1 }]);
       await inPage(frames, undefined);
-      const removed = { tree: await tree(driver), value: await inPage(valueOf, "sc"), tabindexes: await inPage(tabindexes, "sc"), focus: await driver.activeElement(), events: await inPage(recordedEvents, null) };
+      const removed = { tree: await tree(driver), value: await inPage(valueOf, "sc"), tabindexes: await inPage(tabindexes, "sc"), focus: await driver.focusedElement(), events: await inPage(recordedEvents, null) };
       await mount(driver, inPage, page(segmentsOf(lanes), 'label="Lane filter" value="mine"'));
       await inPage(recordEvents, null);
       await driver.focus(seg(1));
       await driver.mutate("sc", [{ child: 1, attribute: "disabled", value: "" }]);
       await inPage(frames, undefined);
-      const disabled = { tree: await tree(driver), value: await inPage(valueOf, "sc"), tabindexes: await inPage(tabindexes, "sc"), focus: await driver.activeElement(), events: await inPage(recordedEvents, null) };
+      const disabled = { tree: await tree(driver), value: await inPage(valueOf, "sc"), tabindexes: await inPage(tabindexes, "sc"), focus: await driver.focusedElement(), events: await inPage(recordedEvents, null) };
       await mount(driver, inPage, page(segmentsOf(lanes, [0, 1, 2, 3]), 'label="Lane filter" value="mine"'));
       await driver.focus("before");
-      await driver.press("Tab");
-      return { kept, removed, disabled, none: { tree: await tree(driver), value: await inPage(valueOf, "sc"), tabindexes: await inPage(tabindexes, "sc"), focus: await driver.activeElement() } };
+      await driver.pressKeys("Tab");
+      return { kept, removed, disabled, none: { tree: await tree(driver), value: await inPage(valueOf, "sc"), tabindexes: await inPage(tabindexes, "sc"), focus: await driver.focusedElement() } };
     },
     expected: {
       kept: { tree: exposed("Lane filter", lanes, 1), value: "mine", tabindexes: ["-1", "0", "-1", "-1"], focus: seg(1) },
@@ -853,7 +853,7 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
       await mount(driver, inPage, page(segmentsOf(["All", "Mine"]), 'label="Lane filter" value="all"'));
       await inPage(recordEvents, null);
       await driver.setProperty("sc", "value", "blocked");
-      await driver.click(seg(1));
+      await driver.clickTarget(seg(1));
       await driver.mutate("sc", [{ append: segmentOf("Blocked") }]);
       const user = { tree: await tree(driver), value: await inPage(valueOf, "sc"), events: await inPage(recordedEvents, null) };
       await mount(driver, inPage, page(segmentsOf(["All", "Mine"]), 'label="Lane filter" value="all"'));
@@ -949,16 +949,16 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
       await mount(driver, inPage, page(segmentsOf(lanes), 'label="Lane filter" value="mine" joined'));
       await measured(driver, inPage);
       await driver.focus("before");
-      await driver.press("Tab");
-      await driver.press("ArrowLeft");
-      const focusBefore = { focus: await driver.activeElement(), lines: ((await joinedLines(driver, 1)) as { between: unknown }).between };
-      await driver.press("ArrowRight");
-      await driver.press("ArrowRight");
-      const focusAfter = { focus: await driver.activeElement(), lines: ((await joinedLines(driver, 1)) as { between: unknown }).between };
+      await driver.pressKeys("Tab");
+      await driver.pressKeys("ArrowLeft");
+      const focusBefore = { focus: await driver.focusedElement(), lines: ((await joinedLines(driver, 1)) as { between: unknown }).between };
+      await driver.pressKeys("ArrowRight");
+      await driver.pressKeys("ArrowRight");
+      const focusAfter = { focus: await driver.focusedElement(), lines: ((await joinedLines(driver, 1)) as { between: unknown }).between };
       await driver.setProperty("sc", "value", "all");
-      await driver.press("ArrowLeft");
-      await driver.hover(seg(2));
-      const hovered = { focus: await driver.activeElement(), fill: await driver.computed(seg(2), "background-color"), lines: ((await joinedLines(driver, 1)) as { between: unknown }).between };
+      await driver.pressKeys("ArrowLeft");
+      await driver.hoverTarget(seg(2));
+      const hovered = { focus: await driver.focusedElement(), fill: await driver.computed(seg(2), "background-color"), lines: ((await joinedLines(driver, 1)) as { between: unknown }).between };
       return { focusBefore, focusAfter, hovered };
     },
     expected: {
@@ -977,14 +977,14 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
       await mount(driver, inPage, page(segmentsOf(lanes), 'label="Lane filter" value="all" joined'));
       await measured(driver, inPage);
       await driver.focus("before");
-      await driver.press("Tab");
-      await driver.press("ArrowRight");
-      const besidePressed = { focus: await driver.activeElement(), ring: await ringPixels(driver, 1) };
-      await driver.hover(seg(2));
+      await driver.pressKeys("Tab");
+      await driver.pressKeys("ArrowRight");
+      const besidePressed = { focus: await driver.focusedElement(), ring: await ringPixels(driver, 1) };
+      await driver.hoverTarget(seg(2));
       const besideHovered = { fill: await driver.computed(seg(2), "background-color"), ring: await ringPixels(driver, 1) };
-      await driver.press("ArrowLeft");
-      await driver.hover(seg(1));
-      const pressedFocused = { focus: await driver.activeElement(), fill: await driver.computed(seg(1), "background-color"), ring: await ringPixels(driver, 0) };
+      await driver.pressKeys("ArrowLeft");
+      await driver.hoverTarget(seg(1));
+      const pressedFocused = { focus: await driver.focusedElement(), fill: await driver.computed(seg(1), "background-color"), ring: await ringPixels(driver, 0) };
       return { besidePressed, besideHovered, pressedFocused };
     },
     expected: {
@@ -1000,7 +1000,7 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
     run: async (driver, inPage) => {
       await mount(driver, inPage, page(segmentsOf(lanes), 'label="Lane filter" value="all"'));
       await driver.focus("before");
-      await driver.press("Tab");
+      await driver.pressKeys("Tab");
       const light = { ring: await ring(driver, seg(0)), pixels: await ringPixels(driver, 0) };
       await driver.theme("dark");
       return { light, dark: await ring(driver, seg(0)) };
@@ -1021,7 +1021,7 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
       await driver.theme("dark");
       const dark = await inPage(paintOf, 1);
       await driver.theme(null);
-      await driver.hover(seg(1));
+      await driver.hoverTarget(seg(1));
       return { light, dark, hovered: await inPage(paintOf, 1) };
     },
     expected: { light: paint(lowLight, "3px", accentLight), dark: paint(lowDark, "3px", accentDark), hovered: paint(hoverLight, "3px", accentLight) },
@@ -1033,15 +1033,15 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
     fixture: true,
     run: async (driver, inPage) => {
       await mount(driver, inPage, page(segmentsOf(lanes, [2]), 'label="Lane filter" value="all"'));
-      await driver.hover(seg(2));
+      await driver.hoverTarget(seg(2));
       const plainDisabled = await inPage(paintOf, 2);
-      await driver.hover(seg(1));
+      await driver.hoverTarget(seg(1));
       const plainEnabled = await inPage(paintOf, 1);
       await mount(driver, inPage, page(segmentsOf(lanes, [2]), 'label="Lane filter" value="all" joined'));
       await measured(driver, inPage);
-      await driver.hover(seg(2));
+      await driver.hoverTarget(seg(2));
       const joinedDisabled = { fill: await driver.computed(seg(2), "background-color"), lines: ((await joinedLines(driver, 2)) as { between: unknown }).between };
-      await driver.hover(seg(1));
+      await driver.hoverTarget(seg(1));
       const joinedEnabled = { fill: await driver.computed(seg(1), "background-color"), lines: ((await joinedLines(driver, 1)) as { between: unknown }).between };
       return { plainDisabled, plainEnabled, joinedDisabled, joinedEnabled };
     },
@@ -1058,8 +1058,8 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
     fixture: true,
     run: async (driver, inPage) => {
       await mount(driver, inPage, page(segmentsOf(lanes), 'label="Lane filter" value="all"'));
-      await driver.click(seg(1));
-      await driver.hover("away");
+      await driver.clickTarget(seg(1));
+      await driver.hoverTarget("away");
       return { paint: await inPage(paintOf, 1), motion: [await driver.computed(seg(1), "transition-duration"), await driver.computed(seg(1), "animation-name"), await driver.computedPart(seg(1), "::before", "transition-duration")] };
     },
     expected: { paint: paint(lowLight, "3px", accentLight), motion: ["0s", "none", "0s"] },
@@ -1071,8 +1071,8 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
     run: async (driver, inPage) => {
       await mount(driver, inPage, `<button id="before" type="button">Before</button><ocelle-segment id="lone" value="all">All</ocelle-segment><div id="box"><ocelle-segmented-choice id="sc" label="Lane filter">${segmentsOf(["All"])}</ocelle-segmented-choice></div><button id="after" type="button">After</button>`);
       await driver.focus("before");
-      await driver.press("Tab");
-      const first = await driver.activeElement();
+      await driver.pressKeys("Tab");
+      const first = await driver.focusedElement();
       const lone = (await driver.axStates("lone", "subtree")).filter((node) => interactiveRoles.has(node.role)).map((node) => node.role);
       return { lone, tabindex: await driver.attribute("lone", "tabindex"), group: await tree(driver), first };
     },
@@ -1087,7 +1087,7 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
       await inPage(recordEvents, null);
       await driver.setProperty("sc", "value", "same");
       const set = await tree(driver);
-      await driver.click(seg(2));
+      await driver.clickTarget(seg(2));
       return { set, clicked: await tree(driver), value: await inPage(valueOf, "sc"), events: await inPage(recordedEvents, null) };
     },
     expected: { set: exposed("Lane filter", ["All", "One", "Two"], 1), clicked: exposed("Lane filter", ["All", "One", "Two"], 2), value: "same", events: [change("same")] },
@@ -1100,12 +1100,12 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
       run: async (driver, inPage) => {
         const start = await inPage(() => [window.innerWidth, window.innerHeight], null);
         await mount(driver, inPage, page(segmentOf(longLabel, { values: false }) + segmentOf("Short"), `label="Lane filter"${variant === "joined" ? " joined" : ""}`));
-        await driver.viewportSize(320, 640);
+        await driver.setViewportSize(320, 640);
         const long = (await driver.box(seg(0))).height;
         const short = (await driver.box(seg(1))).height;
         const sideways = await inPage(() => document.documentElement.scrollWidth > document.documentElement.clientWidth, null);
         const observed = { grew: long > 44 && short === 44, sideways, tree: await tree(driver) };
-        await driver.viewportSize(start[0] ?? 0, start[1] ?? 0);
+        await driver.setViewportSize(start[0] ?? 0, start[1] ?? 0);
         return observed;
       },
       expected: { grew: true, sideways: false, tree: exposed("Lane filter", [longLabel, "Short"]) },
@@ -1317,7 +1317,7 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
         const third = document.querySelectorAll("#sc > ocelle-segment")[2];
         return [third?.getAttribute("value") ?? null, (third as unknown as { value?: unknown } | undefined)?.value ?? null];
       }, null);
-      await driver.click(seg(2));
+      await driver.clickTarget(seg(2));
       return { removed, value: await inPage(valueOf, "sc"), events: await inPage(recordedEvents, null) };
     },
     expected: { removed: [null, "2"], value: "2", events: [change("2")] },
@@ -1378,7 +1378,7 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
         await driver.focus(seg(1));
         await driver.mutate("sc", change === "remove" ? [{ remove: 3 }, { remove: 1 }] : [{ move: 0, before: "end" }, { move: 0, before: "end" }]);
         await inPage(frames, undefined);
-        return { focus: await driver.activeElement(), tree: await tree(driver), events: await inPage(recordedEvents, null) };
+        return { focus: await driver.focusedElement(), tree: await tree(driver), events: await inPage(recordedEvents, null) };
       },
       expected: change === "remove" ? { focus: seg(1), tree: exposed("Lane filter", ["All", "Blocked"], 1), events: [] } : { focus: seg(3), tree: exposed("Lane filter", ["Blocked", "Done", "All", "Mine"], 3), events: [] },
     }),
@@ -1395,7 +1395,7 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
         await driver.focus(seg(1));
         await inPage(changeAndSet, how);
         await inPage(frames, undefined);
-        return { focus: await driver.activeElement(), tree: await tree(driver), tabindexes: await inPage(tabindexes, "sc"), value: await inPage(valueOf, "sc"), events: await inPage(recordedEvents, null) };
+        return { focus: await driver.focusedElement(), tree: await tree(driver), tabindexes: await inPage(tabindexes, "sc"), value: await inPage(valueOf, "sc"), events: await inPage(recordedEvents, null) };
       },
       expected:
         how.change === "remove"
@@ -1413,12 +1413,12 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
           await mount(driver, inPage, page(segmentsOf(["All", "Mine"])));
           await driver.focus(seg(0));
           await driver.mutate("sc", [{ move: 0, before: "end" }]);
-          const kept = await driver.activeElement();
+          const kept = await driver.focusedElement();
           await inPage(rerenderOnBlur, what);
-          if (input === "Tab") await driver.press("Tab", ["Shift"]);
-          else await driver.click("after");
+          if (input === "Tab") await driver.pressKeys("Tab", ["Shift"]);
+          else await driver.clickTarget("after");
           await inPage(frames, undefined);
-          return { kept, left: await driver.activeElement() };
+          return { kept, left: await driver.focusedElement() };
         },
         expected: { kept: seg(1), left: input === "Tab" ? before : after },
       }),
@@ -1433,11 +1433,11 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
       await mount(driver, inPage, page(segmentsOf(["All", "Mine"])));
       await driver.focus(seg(0));
       await driver.mutate("sc", [{ move: 0, before: "end" }]);
-      const kept = await driver.activeElement();
-      await driver.click("away");
+      const kept = await driver.focusedElement();
+      await driver.clickTarget("away");
       await driver.mutate("sc", [{ move: 1, before: 0 }]);
       await inPage(frames, undefined);
-      return { kept, left: await driver.activeElement() };
+      return { kept, left: await driver.focusedElement() };
     },
     expected: { kept: seg(1), left: null },
   },
@@ -1449,7 +1449,7 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
       await mount(driver, inPage, page(segmentsOf(["All", "Mine", "Blocked", "Done", "Later"]), 'label="Lane filter" value="mine"'));
       await driver.focus(seg(1));
       await driver.mutate("sc", [{ remove: 1 }]);
-      const moved = await driver.activeElement();
+      const moved = await driver.focusedElement();
       await inPage(() => {
         document.getElementById("sc")?.addEventListener(
           "focusout",
@@ -1461,7 +1461,7 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
       }, null);
       await driver.mutate("sc", [{ remove: 1 }]);
       await inPage(frames, undefined);
-      const kept = await driver.activeElement();
+      const kept = await driver.focusedElement();
       await mount(driver, inPage, page(segmentsOf(lanes), 'label="Lane filter" value="mine"'));
       await inPage(() => {
         for (const child of document.querySelectorAll("#sc > ocelle-segment")) {
@@ -1475,10 +1475,10 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
       await driver.focus(seg(1));
       await driver.mutate("sc", [{ child: 1, attribute: "disabled", value: "" }]);
       await inPage(frames, undefined);
-      const disabled = { focus: await driver.activeElement(), value: await inPage(valueOf, "sc") };
-      await driver.press("Tab", ["Shift"]);
+      const disabled = { focus: await driver.focusedElement(), value: await inPage(valueOf, "sc") };
+      await driver.pressKeys("Tab", ["Shift"]);
       await driver.mutate("sc", [{ move: 0, before: "end" }]);
-      return { moved, kept, disabled, left: await driver.activeElement() };
+      return { moved, kept, disabled, left: await driver.focusedElement() };
     },
     expected: { moved: seg(1), kept: after, disabled: { focus: seg(2), value: "blocked" }, left: before },
   },
@@ -1525,13 +1525,13 @@ export const segmentedChoiceScenarios: readonly SegmentedChoiceScenario[] = [
     run: async (driver, inPage) => {
       await mount(driver, inPage, page(`<span id="note">Lanes:</span>${segmentsOf(["All", "Mine"])}`));
       await driver.focus("before");
-      await driver.press("Tab");
+      await driver.pressKeys("Tab");
       return {
         note: await inPage(() => ["aria-pressed", "aria-disabled", "tabindex"].map((name) => document.getElementById("note")?.getAttribute(name) ?? null), null),
         tree: await tree(driver),
         value: await inPage(valueOf, "sc"),
         tabindexes: await inPage(tabindexes, "sc"),
-        focus: await driver.activeElement(),
+        focus: await driver.focusedElement(),
       };
     },
     expected: { note: [null, null, null], tree: exposed("Lane filter", ["All", "Mine"]), value: "all", tabindexes: ["0", "-1"], focus: seg(0) },

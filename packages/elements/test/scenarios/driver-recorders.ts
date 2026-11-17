@@ -46,7 +46,7 @@ export const driverRecorderScenarios: readonly DriverScenario[] = [
     run: async (driver, inPage) => {
       await driver.mount('<input id="k" aria-label="Keys">');
       await driver.focus("k");
-      await driver.press("x");
+      await driver.pressKeys("x");
       await driver.mount('<input id="k" aria-label="Keys">');
       await inPage(() => {
         document.getElementById("k")?.addEventListener("keydown", (event) => {
@@ -54,8 +54,8 @@ export const driverRecorderScenarios: readonly DriverScenario[] = [
         });
       }, null);
       await driver.focus("k");
-      await driver.press("ArrowDown");
-      await driver.press("a");
+      await driver.pressKeys("ArrowDown");
+      await driver.pressKeys("a");
       return driver.keydownRecord();
     },
     expected: [
@@ -141,7 +141,7 @@ export const driverRecorderScenarios: readonly DriverScenario[] = [
       await driver.rules(hostRules);
       await inPage(activationHost, "deferred");
       const record = await driver.activationRecord("f", watched);
-      await driver.click("f");
+      await driver.clickTarget("f");
       return record();
     },
     expected: [
@@ -160,7 +160,7 @@ export const driverRecorderScenarios: readonly DriverScenario[] = [
       await driver.rules(hostRules);
       await inPage(activationHost, "synchronous");
       const record = await driver.activationRecord("f", { request: "test-request" });
-      await driver.click("f");
+      await driver.clickTarget("f");
       return record();
     },
     expected: [

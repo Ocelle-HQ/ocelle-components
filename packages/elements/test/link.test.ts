@@ -60,7 +60,7 @@ describe("ocelle-link, in process (US5)", () => {
     await driver.mount('<p id="para">See <ocelle-link id="link">the mission log</ocelle-link>.</p>');
     const events: unknown[] = [];
     document.addEventListener("ocelle-link-activate", (event) => events.push((event as CustomEvent<unknown>).detail), { once: true });
-    await driver.click("link");
+    await driver.clickTarget("link");
     const states = await driver.axStates("para", "subtree");
     expect({ thrown, defined: customElements.get("ocelle-link"), links: states.filter((node) => node.role === "link").map((node) => node.name), events }).toEqual({
       thrown: [],

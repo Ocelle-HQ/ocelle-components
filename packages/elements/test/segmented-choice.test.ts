@@ -60,7 +60,7 @@ describe("ocelle-segmented-choice and ocelle-segment, in process (US3)", () => {
       }
     }
     await driver.mount('<ocelle-segmented-choice id="sc" label="Lane filter"><ocelle-segment value="all">All</ocelle-segment><ocelle-segment value="mine">Mine</ocelle-segment></ocelle-segmented-choice>');
-    await driver.click({ parent: "sc", kind: "ocelle-segment", index: 1 });
+    await driver.clickTarget({ parent: "sc", kind: "ocelle-segment", index: 1 });
     const states = await driver.axStates("sc", "subtree");
     expect({
       thrown,

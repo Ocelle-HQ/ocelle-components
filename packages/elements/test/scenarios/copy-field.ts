@@ -378,10 +378,10 @@ export const copyFieldScenarios: readonly CopyFieldScenario[] = [
         const start = await inPage(() => [window.innerWidth, window.innerHeight], null);
         await mount(driver, inPage, page(`value="${longCommand}"`));
         if (theme === "dark") await driver.theme("dark");
-        await driver.viewportSize(320, 640);
+        await driver.setViewportSize(320, 640);
         const read = (await inPage(overflow, null)) as Record<string, unknown> | null;
         const observed = { overflow: read === null ? null : { ...read, lines: Number(read.lines) > 4 }, tree: await tree(driver) };
-        await driver.viewportSize(start[0] ?? 0, start[1] ?? 0);
+        await driver.setViewportSize(start[0] ?? 0, start[1] ?? 0);
         return observed;
       },
       expected: { overflow: { sideways: false, scrolling: [], lines: true, inside: true }, tree: exposed({ text: longCommand }) },
@@ -415,7 +415,7 @@ export const copyFieldScenarios: readonly CopyFieldScenario[] = [
       await inPage(recordRequests, null);
       await clickControl(driver, inPage);
       await inPage(frames, undefined);
-      return { requests: await inPage(recordedRequests, null), clipboard: await driver.clipboardCalls(), focused: await driver.activeElement() };
+      return { requests: await inPage(recordedRequests, null), clipboard: await driver.clipboardCalls(), focused: await driver.focusedElement() };
     },
     expected: { requests: [request(command)], clipboard: [], focused: control },
   },
@@ -427,19 +427,19 @@ export const copyFieldScenarios: readonly CopyFieldScenario[] = [
       await mount(driver, inPage, page(withCommand));
       await inPage(recordRequests, null);
       await driver.focus("before");
-      await driver.press("Tab");
-      const focused = await driver.activeElement();
-      await driver.press("Enter");
+      await driver.pressKeys("Tab");
+      const focused = await driver.focusedElement();
+      await driver.pressKeys("Enter");
       await inPage(frames, undefined);
       const enter = await inPage(recordedRequests, null);
-      await driver.press(" ");
+      await driver.pressKeys(" ");
       await inPage(frames, undefined);
       const space = await inPage(recordedRequests, null);
-      await driver.press("Escape");
-      await driver.press("a");
+      await driver.pressKeys("Escape");
+      await driver.pressKeys("a");
       await inPage(frames, undefined);
       const keys = (await driver.keydownRecord()).filter((each) => each.key === "Escape" || each.key === "a");
-      return { focused, enter, space, after: await inPage(recordedRequests, null), keys, still: await driver.activeElement() };
+      return { focused, enter, space, after: await inPage(recordedRequests, null), keys, still: await driver.focusedElement() };
     },
     expected: {
       focused: control,
@@ -600,7 +600,7 @@ export const copyFieldScenarios: readonly CopyFieldScenario[] = [
     fixture: true,
     run: async (driver, inPage) => {
       await mount(driver, inPage, page(withCommand));
-      await driver.hover("away");
+      await driver.hoverTarget("away");
       const text = await driver.box("cf", '[part="value"]');
       const copy = await driver.box("cf", '[part="copy-control"]');
       return {
@@ -629,9 +629,9 @@ export const copyFieldScenarios: readonly CopyFieldScenario[] = [
     run: async (driver, inPage) => {
       await mount(driver, inPage, page(withCommand));
       await driver.focus("before");
-      await driver.press("Tab");
+      await driver.pressKeys("Tab");
       const outline = async (): Promise<string> => `${await partStyle(driver, "copy-control", "outline-style")} ${await partStyle(driver, "copy-control", "outline-width")} ${await partStyle(driver, "copy-control", "outline-offset")} ${await partStyle(driver, "copy-control", "outline-color")}`;
-      const light = { focused: await driver.activeElement(), outline: await outline(), pixels: await ringPixels(driver) };
+      const light = { focused: await driver.focusedElement(), outline: await outline(), pixels: await ringPixels(driver) };
       await driver.theme("dark");
       return { light, dark: { outline: await outline(), pixels: await ringPixels(driver) } };
     },
@@ -647,7 +647,7 @@ export const copyFieldScenarios: readonly CopyFieldScenario[] = [
     run: async (driver, inPage) => {
       await mount(driver, inPage, page(withCommand));
       await driver.theme("dark");
-      await driver.hover("away");
+      await driver.hoverTarget("away");
       return { paint: await fieldPaint(driver), lines: await fieldLines(driver, lineColours) };
     },
     expected: {
@@ -693,7 +693,7 @@ export const copyFieldScenarios: readonly CopyFieldScenario[] = [
     fixture: true,
     run: async (driver, inPage) => {
       await mount(driver, inPage, page(withCommand));
-      await driver.hover("away");
+      await driver.hoverTarget("away");
       await driver.forcedColors("active", "light");
       const buttonBorder = await driver.resolveColour("ButtonBorder");
       const buttonText = await driver.resolveColour("ButtonText");
@@ -715,7 +715,7 @@ export const copyFieldScenarios: readonly CopyFieldScenario[] = [
       let iconInk = 0;
       if (icon !== null) for (let y = icon.y + 0.5; y < icon.y + icon.height; y += 1) for (let x = icon.x + 0.5; x < icon.x + icon.width; x += 1) if (colourAt(s, x, y) === over(buttonText, ground)) iconInk += 1;
       await driver.focus("before");
-      await driver.press("Tab");
+      await driver.pressKeys("Tab");
       const ring = (await ringPixels(driver)).map((colour) => colour === over(highlight, canvas));
       await driver.forcedColors("none");
       return {
@@ -999,7 +999,7 @@ export const copyFieldScenarios: readonly CopyFieldScenario[] = [
     run: async (driver, inPage) => {
       await mount(driver, inPage, page(withCommand));
       await driver.focus("before");
-      await driver.press("Tab");
+      await driver.pressKeys("Tab");
       return {
         ring: await partStyle(driver, "copy-control", "outline-color"),
         motion: [
@@ -1055,5 +1055,5 @@ async function clickAt(driver: Driver, inPage: InPage, inner: string, count: num
     sheet.replaceSync(`#probe { position: fixed; left: ${String(box.left + box.width / 2 - 1)}px; top: ${String(box.top + box.height / 2 - 1)}px; inline-size: 2px; block-size: 2px; pointer-events: none; }`);
     document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet];
   }, inner);
-  await driver.click("probe", { count, force: true });
+  await driver.clickTarget("probe", { count, force: true });
 }

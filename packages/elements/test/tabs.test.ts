@@ -69,7 +69,7 @@ describe("ocelle-tabs, ocelle-tab and ocelle-tab-panel, in process (US2)", () =>
       }
     }
     await driver.mount('<ocelle-tabs id="tb" label="Mission views"><ocelle-tab value="spec">Spec</ocelle-tab><ocelle-tab value="plan">Plan</ocelle-tab><ocelle-tab-panel><p>Spec content</p></ocelle-tab-panel><ocelle-tab-panel><p>Plan content</p></ocelle-tab-panel></ocelle-tabs>');
-    await driver.click({ parent: "tb", kind: "ocelle-tab", index: 1 });
+    await driver.clickTarget({ parent: "tb", kind: "ocelle-tab", index: 1 });
     const states = await driver.axStates("tb", "subtree");
     expect({
       thrown,

@@ -67,17 +67,17 @@ const widths = "#p > * { display: inline-block; block-size: 10px; } .w10 { inlin
 
 export const driverCommandScenarios: readonly DriverScenario[] = [
   {
-    // Plant: `press` dropping its modifiers (ArrowDown then has shift and control false).
+    // Plant: `pressKeys` dropping its modifiers (ArrowDown then has shift and control false).
     name: "press sends the key with its modifiers held as trusted input to the focused element, and releases them",
     fixture: true,
     run: async (driver, inPage) => {
       await driver.mount('<input id="k" aria-label="Keys">');
       await inPage(recordKeys, "k");
       await driver.focus("k");
-      await driver.press("ArrowDown", ["Shift", "Control"]);
-      await driver.press(" ");
-      await driver.press("a", ["Alt"]);
-      await driver.press("End", ["Meta"]);
+      await driver.pressKeys("ArrowDown", ["Shift", "Control"]);
+      await driver.pressKeys(" ");
+      await driver.pressKeys("a", ["Alt"]);
+      await driver.pressKeys("End", ["Meta"]);
       return inPage(recorded, "__keys");
     },
     expected: [
@@ -88,16 +88,16 @@ export const driverCommandScenarios: readonly DriverScenario[] = [
     ],
   },
   {
-    // Plants: `click` ignoring `count` (one click only), `click` that is not real input (no mousedown, untrusted).
+    // Plants: `clickTarget` ignoring `count` (one click only), `clickTarget` that is not real input (no mousedown, untrusted).
     name: "click gives one trusted left click by default, and count 2 gives a double click",
     fixture: true,
     run: async (driver, inPage) => {
       await driver.mount(button);
       await inPage(recordMouse, "c");
-      await driver.click("c");
+      await driver.clickTarget("c");
       const once = await inPage(recorded, "__mouse");
       await inPage(recordMouse, "c");
-      await driver.click("c", { count: 2 });
+      await driver.clickTarget("c", { count: 2 });
       return { once, twice: await inPage(recorded, "__mouse") };
     },
     expected: {
@@ -106,19 +106,19 @@ export const driverCommandScenarios: readonly DriverScenario[] = [
     },
   },
   {
-    // Plants: `click` ignoring `button` (a left click), `click` ignoring `modifiers` (shift and alt false).
+    // Plants: `clickTarget` ignoring `button` (a left click), `clickTarget` ignoring `modifiers` (shift and alt false).
     name: "click presses the button it is given with the modifiers held: middle with Shift, right with Alt",
     fixture: true,
     run: async (driver, inPage) => {
       await driver.mount(button);
       await inPage(recordMouse, "c");
-      await driver.click("c", { button: "middle", modifiers: ["Shift"] });
+      await driver.clickTarget("c", { button: "middle", modifiers: ["Shift"] });
       const middle = await inPage(recorded, "__mouse");
       await inPage(recordMouse, "c");
-      await driver.click("c", { button: "right", modifiers: ["Alt"] });
+      await driver.clickTarget("c", { button: "right", modifiers: ["Alt"] });
       const right = await inPage(recorded, "__mouse");
       await inPage(recordMouse, "c");
-      await driver.click("c", { modifiers: ["Control", "Meta"] });
+      await driver.clickTarget("c", { modifiers: ["Control", "Meta"] });
       return { middle, right, left: await inPage(recorded, "__mouse") };
     },
     expected: {
@@ -141,20 +141,20 @@ export const driverCommandScenarios: readonly DriverScenario[] = [
         document.getElementById("p")?.addEventListener("click", (event) => clicked.push((event.target as Element).className));
       }, null);
       const box = await driver.box(second);
-      await driver.click(second);
+      await driver.clickTarget(second);
       await driver.focus({ parent: "p", kind: "span", index: 2 });
       return {
         width: box.width,
         computed: await driver.computed({ parent: "p", kind: "span", index: 0 }, "inline-size"),
         other: await driver.computed({ parent: "p", kind: "b", index: 0 }, "inline-size"),
         clicked: await inPage(recorded, "__clicked"),
-        focused: await driver.activeElement(),
+        focused: await driver.focusedElement(),
       };
     },
     expected: { width: 30, computed: "10px", other: "20px", clicked: ["w30"], focused: { parent: "p", kind: "span", index: 2 } },
   },
   {
-    // Plant: `activeElement` stopping at the first shadow host (it then gives { id: "outer" } for the two inner foci).
+    // Plant: `focusedElement` stopping at the first shadow host (it then gives { id: "outer" } for the two inner foci).
     name: "activeElement follows focus through nested shadow roots and names what it finds; null when only the body is focused",
     fixture: true,
     run: async (driver, inPage) => {
@@ -170,19 +170,19 @@ export const driverCommandScenarios: readonly DriverScenario[] = [
       const focusIn = (selector: string): void => {
         (document.getElementById("outer")?.shadowRoot?.getElementById("inner")?.shadowRoot?.querySelector(selector) as HTMLElement | null)?.focus();
       };
-      const seen: unknown[] = [await driver.activeElement()];
+      const seen: unknown[] = [await driver.focusedElement()];
       await inPage(focusIn, "#deep");
-      seen.push(await driver.activeElement());
+      seen.push(await driver.focusedElement());
       await inPage(focusIn, '[part="act"]');
-      seen.push(await driver.activeElement());
+      seen.push(await driver.focusedElement());
       await inPage(focusIn, "button:not([id]):not([part])");
-      seen.push(await driver.activeElement());
+      seen.push(await driver.focusedElement());
       await driver.focus({ parent: "p", kind: "span", index: 1 });
-      seen.push(await driver.activeElement());
+      seen.push(await driver.focusedElement());
       await inPage(() => {
         (document.activeElement as HTMLElement | null)?.blur();
       }, null);
-      seen.push(await driver.activeElement());
+      seen.push(await driver.focusedElement());
       return seen;
     },
     expected: [null, { id: "deep" }, { host: "inner", part: "act" }, { unidentified: "button" }, { parent: "p", kind: "span", index: 1 }, null],
@@ -282,7 +282,7 @@ export const driverCommandScenarios: readonly DriverScenario[] = [
     expected: { host: "1px", after: "3px", part: "5px", before: "7px" },
   },
   {
-    // Plants: a constant page scroll offset ({ x: 0, y: 0 }), a `viewportSize` that does not resize.
+    // Plants: a constant page scroll offset ({ x: 0, y: 0 }), a `setViewportSize` that does not resize.
     name: "scrollOffset is the page's scroll position and viewportSize resizes the viewport",
     fixture: true,
     run: async (driver, inPage) => {
@@ -293,9 +293,9 @@ export const driverCommandScenarios: readonly DriverScenario[] = [
         window.scrollTo(40, 120);
       }, null);
       const scrolled = await driver.scrollOffset();
-      await driver.viewportSize(500, 400);
+      await driver.setViewportSize(500, 400);
       const size = await inPage(() => [window.innerWidth, window.innerHeight], null);
-      await driver.viewportSize(start[0] ?? 0, start[1] ?? 0);
+      await driver.setViewportSize(start[0] ?? 0, start[1] ?? 0);
       await inPage(() => {
         window.scrollTo(0, 0);
       }, null);
@@ -304,7 +304,7 @@ export const driverCommandScenarios: readonly DriverScenario[] = [
     expected: { scrolled: { x: 40, y: 120 }, size: [500, 400], back: { x: 0, y: 0 } },
   },
   {
-    // Plant: `hover` that does not move the pointer (the target then never matches :hover and sees no mouse event).
+    // Plant: `hoverTarget` that does not move the pointer (the target then never matches :hover and sees no mouse event).
     // Since 014 phase 2, for the hover paint of the listbox (spec Edge Cases "Hover").
     name: "hover moves the pointer onto the target with real input, so it matches :hover, and presses no button",
     fixture: true,
@@ -319,21 +319,21 @@ export const driverCommandScenarios: readonly DriverScenario[] = [
         }
       }, null);
       const before = await inPage(() => document.getElementById("c")?.matches(":hover") ?? null, null);
-      await driver.hover("c");
+      await driver.hoverTarget("c");
       const after = await inPage(() => document.getElementById("c")?.matches(":hover") ?? null, null);
-      return { before, after, events: await inPage(recorded, "__hover"), focused: await driver.activeElement() };
+      return { before, after, events: await inPage(recorded, "__hover"), focused: await driver.focusedElement() };
     },
     expected: { before: false, after: true, events: [{ type: "mouseover", trusted: true, buttons: 0 }], focused: null },
   },
   {
-    // Plant: `click` ignoring `force` (Playwright then waits for an aria-disabled target to be enabled, and the click
+    // Plant: `clickTarget` ignoring `force` (Playwright then waits for an aria-disabled target to be enabled, and the click
     // times out). Since 014 phase 2, for the clicks on disabled options (US1-10, US1-18, US1-20).
     name: "click with force clicks a target Playwright counts as disabled, an aria-disabled element, with real input",
     fixture: true,
     run: async (driver, inPage) => {
       await driver.mount('<div id="c" role="option" aria-selected="false" aria-disabled="true" tabindex="-1">Disabled</div>');
       await inPage(recordMouse, "c");
-      await driver.click("c", { force: true });
+      await driver.clickTarget("c", { force: true });
       return inPage(recorded, "__mouse");
     },
     expected: [mouse("mousedown", 0, 1), mouse("mouseup", 0, 1), mouse("click", 0, 1)],

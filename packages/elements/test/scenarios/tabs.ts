@@ -11,7 +11,7 @@
 // in-process harness (test/tabs.test.ts) runs every body; the fixture harness (test/browser/tabs.test.ts) runs the
 // bodies marked `fixture`.
 //
-// The tabs write generated ids on their children (research.md R-02), so the driver's `activeElement` would name a
+// The tabs write generated ids on their children (research.md R-02), so the driver's `focusedElement` would name a
 // focused tab or panel by an id that depends on a per-document counter. `where` names the focused element by its place
 // instead: `{ tab: i }` or `{ panel: i }` among the children of `#tb`, else its own id.
 //
@@ -69,7 +69,7 @@ async function mount(driver: Driver, inPage: InPage, markup: string): Promise<vo
   await inPage(() => {
     window.scrollTo(0, 0);
   }, null);
-  if (markup.includes('id="away"')) await driver.hover("away");
+  if (markup.includes('id="away"')) await driver.hoverTarget("away");
 }
 
 /**
@@ -395,7 +395,7 @@ export const tabsScenarios: readonly TabsScenario[] = [
       await mount(driver, inPage, page(tabsOf(views)));
       await inPage(recordEvents, null);
       await driver.focus("before");
-      await driver.press("Tab");
+      await driver.pressKeys("Tab");
       const first = await inPage(where, null);
       return {
         tree: await tree(driver),
@@ -430,8 +430,8 @@ export const tabsScenarios: readonly TabsScenario[] = [
       await mount(driver, inPage, page(tabsOf(views)));
       await inPage(recordEvents, null);
       await driver.focus("before");
-      await driver.press("Tab");
-      await driver.press("ArrowRight");
+      await driver.pressKeys("Tab");
+      await driver.pressKeys("ArrowRight");
       return {
         focus: await inPage(where, null),
         tree: await tree(driver),
@@ -462,9 +462,9 @@ export const tabsScenarios: readonly TabsScenario[] = [
       await mount(driver, inPage, page(tabsOf(views), 'label="Mission views" value="tasks"'));
       await inPage(recordEvents, null);
       await driver.focus(tab(2));
-      await driver.press("ArrowRight");
+      await driver.pressKeys("ArrowRight");
       const right = { focus: await inPage(where, null), tree: await tree(driver) };
-      await driver.press("ArrowLeft");
+      await driver.pressKeys("ArrowLeft");
       return { right, left: { focus: await inPage(where, null), tree: await tree(driver) }, events: await inPage(recordedEvents, null) };
     },
     expected: {
@@ -480,9 +480,9 @@ export const tabsScenarios: readonly TabsScenario[] = [
       await mount(driver, inPage, page(tabsOf(views), 'label="Mission views" value="plan"'));
       await inPage(recordEvents, null);
       await driver.focus(tab(1));
-      await driver.press("Home");
+      await driver.pressKeys("Home");
       const home = { focus: await inPage(where, null), value: await inPage(valueOf, "tb") };
-      await driver.press("End");
+      await driver.pressKeys("End");
       return { home, end: { focus: await inPage(where, null), value: await inPage(valueOf, "tb") }, events: await inPage(recordedEvents, null), keys: await driver.keydownRecord() };
     },
     expected: {
@@ -503,12 +503,12 @@ export const tabsScenarios: readonly TabsScenario[] = [
       const markup = `<div id="wrap">${page(tabsOf(views))}</div>`;
       await mount(driver, inPage, markup);
       await driver.focus(tab(0));
-      await driver.press("ArrowLeft");
+      await driver.pressKeys("ArrowLeft");
       const ltr = await inPage(where, null);
       await mount(driver, inPage, markup);
       await driver.dir("wrap", "rtl");
       await driver.focus(tab(0));
-      await driver.press("ArrowLeft");
+      await driver.pressKeys("ArrowLeft");
       return { ltr, rtl: await inPage(where, null), value: await inPage(valueOf, "tb") };
     },
     expected: { ltr: { tab: 2 }, rtl: { tab: 1 }, value: "plan" },
@@ -521,19 +521,19 @@ export const tabsScenarios: readonly TabsScenario[] = [
     run: async (driver, inPage) => {
       await mount(driver, inPage, page(tabsOf(views)));
       await driver.focus("before");
-      await driver.press("Tab");
+      await driver.pressKeys("Tab");
       const tabStop = await inPage(where, null);
-      await driver.press("Tab");
+      await driver.pressKeys("Tab");
       const inPanel = await inPage(where, null);
       const ringOnPanel = await outline(driver, panel(0));
-      await driver.press("Tab");
+      await driver.pressKeys("Tab");
       const out = await inPage(where, null);
-      await driver.press("Tab", ["Shift"]);
-      await driver.press("Tab", ["Shift"]);
+      await driver.pressKeys("Tab", ["Shift"]);
+      await driver.pressKeys("Tab", ["Shift"]);
       const back = await inPage(where, null);
       await mount(driver, inPage, page(tabsOf(["Spec", "Plan"]).replace("<p>Spec content</p>", '<p>Spec content</p><button id="in-panel" type="button">Edit</button>')));
       await driver.focus(tab(0));
-      await driver.press("Tab");
+      await driver.pressKeys("Tab");
       const toButton = await inPage(where, null);
       return { tabStop, inPanel, ringOnPanel, out, back, toButton, panelTabindex: await inPage(() => document.querySelector("#tb > ocelle-tab-panel")?.getAttribute("tabindex") ?? null, null) };
     },
@@ -555,17 +555,17 @@ export const tabsScenarios: readonly TabsScenario[] = [
       await mount(driver, inPage, page(tabsOf(views, [1])));
       await inPage(recordEvents, null);
       await driver.focus(tab(0));
-      await driver.press("ArrowRight");
+      await driver.pressKeys("ArrowRight");
       const skipped = { focus: await inPage(where, null), value: await inPage(valueOf, "tb") };
-      await driver.click(tab(1), { force: true });
+      await driver.clickTarget(tab(1), { force: true });
       const disabledClick = { tree: await tree(driver), focus: await inPage(where, null), events: await inPage(recordedEvents, null) };
-      await driver.click(tab(0));
+      await driver.clickTarget(tab(0));
       const enabledClick = { tree: await tree(driver), focus: await inPage(where, null) };
       await mount(driver, inPage, page(tabsOf(["Spec", "Plan", "Tasks", "Notes"], [0, 3]), 'label="Mission views" value="plan"'));
       await driver.focus(tab(1));
-      await driver.press("End");
+      await driver.pressKeys("End");
       const end = await inPage(where, null);
-      await driver.press("Home");
+      await driver.pressKeys("Home");
       return { skipped, disabledClick, enabledClick, end, home: await inPage(where, null) };
     },
     expected: {
@@ -603,7 +603,7 @@ export const tabsScenarios: readonly TabsScenario[] = [
       const four = ["Spec", "Plan", "Tasks", "Notes"];
       await mount(driver, inPage, page(four.map((name) => tabOf(name)).join("") + views.map((name) => panelOf(name)).join("")));
       await driver.focus(tab(0));
-      await driver.press("End");
+      await driver.pressKeys("End");
       const extraTab = { tree: await tree(driver), focus: await inPage(where, null), tabs: await inPage(tabsShown, "tb") };
       await mount(driver, inPage, page(views.map((name) => tabOf(name)).join("") + four.map((name) => panelOf(name)).join("")));
       await driver.setProperty("tb", "value", "tasks");
@@ -623,14 +623,14 @@ export const tabsScenarios: readonly TabsScenario[] = [
       const start = await inPage(() => [window.innerWidth, window.innerHeight], null);
       const many = ["Specification", "Planning", "Tasks", "Research", "Contracts", "Quickstart"];
       await mount(driver, inPage, page(tabsOf(many)));
-      await driver.viewportSize(320, 640);
+      await driver.setViewportSize(320, 640);
       const rows = new Set<number>();
       for (let index = 0; index < many.length; index += 1) rows.add(Math.round((await driver.box(tab(index))).y));
       const sideways = await inPage(() => document.documentElement.scrollWidth > document.documentElement.clientWidth, null);
       await driver.focus(tab(2));
-      await driver.press("ArrowRight");
+      await driver.pressKeys("ArrowRight");
       const observed = { wrapped: rows.size > 1, sideways, next: await inPage(where, null), within: (await driver.box("tb")).width <= 320 };
-      await driver.viewportSize(start[0] ?? 0, start[1] ?? 0);
+      await driver.setViewportSize(start[0] ?? 0, start[1] ?? 0);
       return observed;
     },
     expected: { wrapped: true, sideways: false, next: { tab: 3 }, within: true },
@@ -647,7 +647,7 @@ export const tabsScenarios: readonly TabsScenario[] = [
       const highlight = await driver.resolveColour("Highlight");
       const canvas = await driver.resolveColour("Canvas");
       await driver.focus("before");
-      await driver.press("Tab");
+      await driver.pressKeys("Tab");
       const named = (value: unknown): unknown => JSON.parse(JSON.stringify(value).split(highlight).join("Highlight")) as unknown;
       const forced = {
         distinct: highlight !== canvas,
@@ -672,7 +672,7 @@ export const tabsScenarios: readonly TabsScenario[] = [
       await mount(driver, inPage, page(tabsOf(views)));
       const first = { association: await inPage(association, null), tree: await tree(driver), controls: await controls(driver, tab(0)) };
       await driver.focus(tab(0));
-      await driver.press("ArrowRight");
+      await driver.pressKeys("ArrowRight");
       return { first, moved: { association: await inPage(association, null), tree: await tree(driver) } };
     },
     expected: {
@@ -706,15 +706,15 @@ export const tabsScenarios: readonly TabsScenario[] = [
       await driver.rules("#tall { block-size: 3000px; }");
       await inPage(recordEvents, null);
       await driver.focus(tab(1));
-      await driver.press("Enter");
-      await driver.press(" ");
+      await driver.pressKeys("Enter");
+      await driver.pressKeys(" ");
       const selected = { value: await inPage(valueOf, "tb"), scroll: await driver.scrollOffset(), events: await inPage(recordedEvents, null) };
       await driver.focus(tab(0));
       await driver.setProperty("tb", "value", "tasks");
-      await driver.press("Enter");
+      await driver.pressKeys("Enter");
       const enter = { focus: await inPage(where, null), tree: await tree(driver), shown: await inPage(shown, "tb") };
       await driver.focus(tab(1));
-      await driver.press(" ");
+      await driver.pressKeys(" ");
       return { selected, enter, space: { value: await inPage(valueOf, "tb"), scroll: await driver.scrollOffset() }, events: await inPage(recordedEvents, null), keys: await driver.keydownRecord() };
     },
     expected: {
@@ -738,9 +738,9 @@ export const tabsScenarios: readonly TabsScenario[] = [
       await mount(driver, inPage, page(tabsOf(views)));
       await inPage(recordEvents, null);
       await driver.focus(tab(0));
-      for (const key of ["ArrowUp", "ArrowDown", "Escape", "t"]) await driver.press(key);
+      for (const key of ["ArrowUp", "ArrowDown", "Escape", "t"]) await driver.pressKeys(key);
       const unhandled = { focus: await inPage(where, null), value: await inPage(valueOf, "tb"), events: await inPage(recordedEvents, null) };
-      await driver.press("ArrowRight");
+      await driver.pressKeys("ArrowRight");
       return { unhandled, handled: { focus: await inPage(where, null), value: await inPage(valueOf, "tb") }, events: await inPage(recordedEvents, null), keys: await driver.keydownRecord() };
     },
     expected: {
@@ -763,10 +763,10 @@ export const tabsScenarios: readonly TabsScenario[] = [
     run: async (driver, inPage) => {
       await mount(driver, inPage, page(tabsOf(views)));
       await inPage(recordEvents, null);
-      await driver.click(tab(0));
-      await driver.press("Home");
+      await driver.clickTarget(tab(0));
+      await driver.pressKeys("Home");
       const same = { focus: await inPage(where, null), value: await inPage(valueOf, "tb"), events: await inPage(recordedEvents, null) };
-      await driver.press("ArrowRight");
+      await driver.pressKeys("ArrowRight");
       return { same, events: await inPage(recordedEvents, null) };
     },
     expected: { same: { focus: { tab: 0 }, value: "spec", events: [] }, events: [change("plan")] },
@@ -779,8 +779,8 @@ export const tabsScenarios: readonly TabsScenario[] = [
       await mount(driver, inPage, page(tabsOf(views, [], false)));
       await inPage(recordEvents, null);
       await driver.focus(tab(0));
-      await driver.press("ArrowRight");
-      await driver.press("ArrowRight");
+      await driver.pressKeys("ArrowRight");
+      await driver.pressKeys("ArrowRight");
       const values = await inPage(() => [...document.querySelectorAll("#tb > ocelle-tab")].map((each) => [(each as unknown as { value: unknown }).value, each.getAttribute("value")]), null);
       return { value: await inPage(valueOf, "tb"), events: await inPage(recordedEvents, null), values };
     },
@@ -872,7 +872,7 @@ export const tabsScenarios: readonly TabsScenario[] = [
       await inPage(recordEvents, null);
       await driver.mutate("tb", [0, 1, 2].map((child) => ({ child, attribute: "disabled", value: "" })));
       await driver.focus("before");
-      await driver.press("Tab");
+      await driver.pressKeys("Tab");
       const none = { tree: await tree(driver), shown: await inPage(shown, "tb"), tabindexes: await inPage(tabindexes, "tb"), value: await inPage(valueOf, "tb"), tabbed: await inPage(where, null) };
       await driver.mutate("tb", [{ child: 2, attribute: "disabled", value: null }]);
       return { none, enabled: { tree: await tree(driver), shown: await inPage(shown, "tb"), value: await inPage(valueOf, "tb") }, events: await inPage(recordedEvents, null) };
@@ -900,7 +900,7 @@ export const tabsScenarios: readonly TabsScenario[] = [
       await mount(driver, inPage, page(tabsOf(two)));
       await inPage(recordEvents, null);
       await driver.setProperty("tb", "value", "tasks");
-      await driver.click(tab(1));
+      await driver.clickTarget(tab(1));
       await driver.mutate("tb", appendTasks);
       const afterUser = { tree: await tree(driver), value: await inPage(valueOf, "tb"), events: await inPage(recordedEvents, null) };
       await mount(driver, inPage, page(tabsOf(two)));
@@ -956,8 +956,8 @@ export const tabsScenarios: readonly TabsScenario[] = [
       }, null);
       await inPage(recordEvents, null);
       await driver.focus("inner-button");
-      await driver.press("Enter");
-      await driver.press(" ");
+      await driver.pressKeys("Enter");
+      await driver.pressKeys(" ");
       const clicks = await inPage(() => (window as unknown as { __clicks: number }).__clicks, null);
       await driver.focus("field");
       await inPage(() => {
@@ -965,15 +965,15 @@ export const tabsScenarios: readonly TabsScenario[] = [
       }, null);
       const caret: unknown[] = [];
       for (const key of ["ArrowLeft", "Home", "End"]) {
-        await driver.press(key);
+        await driver.pressKeys(key);
         caret.push(await inPage(() => (document.getElementById("field") as HTMLInputElement | null)?.selectionStart ?? null, null));
       }
       await driver.focus(tab(0, "inner"));
-      await driver.press("ArrowRight");
+      await driver.pressKeys("ArrowRight");
       const nested = { focus: await inPage(where, null), inner: await inPage(valueOf, "inner") };
       const outer = { value: await inPage(valueOf, "tb"), shown: await inPage(shown, "tb"), events: await inPage(recordedEvents, null) };
       await driver.focus(tab(1));
-      await driver.press("ArrowRight");
+      await driver.pressKeys("ArrowRight");
       return { clicks, caret, nested, outer, paired: { focus: await inPage(where, null), value: await inPage(valueOf, "tb") }, keys: (await driver.keydownRecord()).map((key) => key.defaultPrevented) };
     },
     expected: {
@@ -999,8 +999,8 @@ export const tabsScenarios: readonly TabsScenario[] = [
       }, null);
       await inPage(recordEvents, null);
       await driver.focus("inner-button");
-      await driver.press("Enter");
-      await driver.press(" ");
+      await driver.pressKeys("Enter");
+      await driver.pressKeys(" ");
       const clicks = await inPage(() => (window as unknown as { __clicks: number }).__clicks, null);
       await driver.focus("field");
       await inPage(() => {
@@ -1008,15 +1008,15 @@ export const tabsScenarios: readonly TabsScenario[] = [
       }, null);
       const caret: unknown[] = [];
       for (const key of ["ArrowLeft", "Home", "End"]) {
-        await driver.press(key);
+        await driver.pressKeys(key);
         caret.push(await inPage(() => (document.getElementById("field") as HTMLInputElement | null)?.selectionStart ?? null, null));
       }
       await driver.focus({ parent: "lanes", kind: "ocelle-segment", index: 0 });
-      await driver.press("ArrowRight");
-      const segments = { focus: await driver.activeElement(), value: await inPage(valueOf, "lanes"), pressed: await inPage(() => [...document.querySelectorAll("#lanes > ocelle-segment")].map((each) => each.getAttribute("aria-pressed")), null) };
+      await driver.pressKeys("ArrowRight");
+      const segments = { focus: await driver.focusedElement(), value: await inPage(valueOf, "lanes"), pressed: await inPage(() => [...document.querySelectorAll("#lanes > ocelle-segment")].map((each) => each.getAttribute("aria-pressed")), null) };
       const outer = { value: await inPage(valueOf, "tb"), shown: await inPage(shown, "tb"), events: await inPage(recordedEvents, null) };
       await driver.focus(tab(1));
-      await driver.press("ArrowRight");
+      await driver.pressKeys("ArrowRight");
       return { clicks, caret, segments, outer, paired: { focus: await inPage(where, null), value: await inPage(valueOf, "tb"), events: await inPage(recordedEvents, null) }, keys: (await driver.keydownRecord()).map((key) => key.defaultPrevented) };
     },
     expected: {
@@ -1037,19 +1037,19 @@ export const tabsScenarios: readonly TabsScenario[] = [
       await inPage(defineShadowLink, null);
       await mount(driver, inPage, page(tabOf("Spec") + tabOf("Plan") + panelOf("Spec", '<x-shadow-link id="lnk">the log</x-shadow-link>') + panelOf("Plan")));
       await driver.focus(tab(0));
-      await driver.press("Tab");
+      await driver.pressKeys("Tab");
       const link = { focus: await inPage(where, null), panelTabindex: await inPage(() => document.querySelector("#tb > ocelle-tab-panel")?.getAttribute("tabindex") ?? null, null) };
       await mount(driver, inPage, page(tabOf("Spec") + tabOf("Plan") + panelOf("Spec", '<button id="only" type="button">Only</button>') + panelOf("Plan")));
       await driver.focus(tab(0));
-      await driver.press("Tab");
+      await driver.pressKeys("Tab");
       const button = await inPage(where, null);
       await driver.mutate(panel(0), [{ remove: 0 }]);
       await driver.focus(tab(0));
-      await driver.press("Tab");
+      await driver.pressKeys("Tab");
       const removed = { focus: await inPage(where, null), ring: await outline(driver, panel(0)) };
       await driver.mutate(panel(0), [{ append: '<button id="again" type="button">Again</button>' }]);
       await driver.focus(tab(0));
-      await driver.press("Tab");
+      await driver.pressKeys("Tab");
       return { link, button, removed, added: await inPage(where, null) };
     },
     expected: {
@@ -1068,15 +1068,15 @@ export const tabsScenarios: readonly TabsScenario[] = [
     run: async (driver, inPage) => {
       await mount(driver, inPage, page(tabOf("Spec") + tabOf("Plan") + panelOf("Spec", '<ocelle-link id="lnk">the mission log</ocelle-link>') + panelOf("Plan")));
       await driver.focus(tab(0));
-      await driver.press("Tab");
+      await driver.pressKeys("Tab");
       const link = { focus: await inPage(where, null), panelTabindex: await inPage(() => document.querySelector("#tb > ocelle-tab-panel")?.getAttribute("tabindex") ?? null, null) };
       await mount(driver, inPage, page(tabOf("Spec") + tabOf("Plan") + panelOf("Spec", '<button id="only" type="button">Only</button>') + panelOf("Plan")));
       await driver.focus(tab(0));
-      await driver.press("Tab");
+      await driver.pressKeys("Tab");
       const button = await inPage(where, null);
       await driver.mutate(panel(0), [{ remove: 0 }]);
       await driver.focus(tab(0));
-      await driver.press("Tab");
+      await driver.pressKeys("Tab");
       return { link, button, removed: { focus: await inPage(where, null), ring: await outline(driver, panel(0)) } };
     },
     expected: {
@@ -1162,8 +1162,8 @@ export const tabsScenarios: readonly TabsScenario[] = [
           await driver.mutate("tb", [{ move: 0, before: 2 }]);
           const kept = await inPage(where, null);
           await inPage(rerenderOnBlur, what);
-          if (input === "Tab") await driver.press("Tab", ["Shift"]);
-          else await driver.click("after");
+          if (input === "Tab") await driver.pressKeys("Tab", ["Shift"]);
+          else await driver.clickTarget("after");
           await inPage(frames, undefined);
           return { kept, left: await inPage(where, null) };
         },
@@ -1179,14 +1179,14 @@ export const tabsScenarios: readonly TabsScenario[] = [
     run: async (driver, inPage) => {
       await mount(driver, inPage, page(tabsOf(views)));
       await driver.focus("before");
-      await driver.press("Tab");
-      await driver.press("ArrowRight");
+      await driver.pressKeys("Tab");
+      await driver.pressKeys("ArrowRight");
       await driver.setProperty("tb", "value", "spec");
       const focus = await inPage(where, null);
       const besideSelected = await ringPixels(driver, 1);
-      await driver.hover(tab(2));
+      await driver.hoverTarget(tab(2));
       const next = { fill: await driver.computed(tab(2), "background-color"), ring: await ringPixels(driver, 1) };
-      await driver.hover(tab(0));
+      await driver.hoverTarget(tab(0));
       const previous = { fill: await driver.computed(tab(0), "background-color"), ring: await ringPixels(driver, 1) };
       return { focus, besideSelected, next, previous };
     },
@@ -1208,7 +1208,7 @@ export const tabsScenarios: readonly TabsScenario[] = [
       await driver.theme("dark");
       const dark = await bar(driver, tab(1));
       await driver.theme(null);
-      await driver.hover(tab(1));
+      await driver.hoverTarget(tab(1));
       return { light, dark, height, hovered: { fill: await driver.computed(tab(1), "background-color"), bar: await bar(driver, tab(1)) } };
     },
     expected: { light: selectedBar(accentLight), dark: selectedBar(accentDark), height: 44, hovered: { fill: hoverLight, bar: selectedBar(accentLight) } },
@@ -1219,9 +1219,9 @@ export const tabsScenarios: readonly TabsScenario[] = [
     fixture: true,
     run: async (driver, inPage) => {
       await mount(driver, inPage, page(tabsOf(views, [2])));
-      await driver.hover(tab(2));
+      await driver.hoverTarget(tab(2));
       const disabled = await driver.computed(tab(2), "background-color");
-      await driver.hover(tab(1));
+      await driver.hoverTarget(tab(1));
       return { disabled, enabled: await driver.computed(tab(1), "background-color") };
     },
     expected: { disabled: transparent, enabled: hoverLight },
@@ -1232,7 +1232,7 @@ export const tabsScenarios: readonly TabsScenario[] = [
     fixture: true,
     run: async (driver, inPage) => {
       await mount(driver, inPage, page(tabsOf(views)));
-      await driver.click(tab(1));
+      await driver.clickTarget(tab(1));
       return {
         bar: await bar(driver, tab(1)),
         motion: [await driver.computed(tab(1), "transition-duration"), await driver.computed(tab(1), "animation-name"), await driver.computedPart(tab(1), "::before", "transition-duration")],
@@ -1247,7 +1247,7 @@ export const tabsScenarios: readonly TabsScenario[] = [
     run: async (driver, inPage) => {
       await mount(driver, inPage, `<button id="before" type="button">Before</button><ocelle-tab id="lone-tab" value="spec">Spec</ocelle-tab><ocelle-tab-panel id="lone-panel"><p>Alone</p></ocelle-tab-panel><ocelle-tabs id="tb" label="Mission views">${tabsOf(["Spec"])}</ocelle-tabs><button id="after" type="button">After</button>`);
       await driver.focus("before");
-      await driver.press("Tab");
+      await driver.pressKeys("Tab");
       const first = await inPage(where, null);
       const lone = [...(await driver.axStates("lone-tab", "subtree")), ...(await driver.axStates("lone-panel", "subtree"))].filter((node) => interactiveRoles.has(node.role)).map((node) => node.role);
       return { lone, tabindex: [await driver.attribute("lone-tab", "tabindex"), await driver.attribute("lone-panel", "tabindex")], tabs: await tree(driver), first };
@@ -1263,7 +1263,7 @@ export const tabsScenarios: readonly TabsScenario[] = [
       await inPage(recordEvents, null);
       await driver.setProperty("tb", "value", "same");
       const set = await tree(driver);
-      await driver.click(tab(2));
+      await driver.clickTarget(tab(2));
       return { set, clicked: await tree(driver), value: await inPage(valueOf, "tb"), events: await inPage(recordedEvents, null) };
     },
     expected: { set: exposed("Mission views", ["Spec", "One", "Two"], 1), clicked: exposed("Mission views", ["Spec", "One", "Two"], 2), value: "same", events: [change("same")] },
@@ -1275,12 +1275,12 @@ export const tabsScenarios: readonly TabsScenario[] = [
     run: async (driver, inPage) => {
       const start = await inPage(() => [window.innerWidth, window.innerHeight], null);
       await mount(driver, inPage, page(tabOf(longLabel, { values: false }) + tabOf("Short") + panelOf("Long") + panelOf("Short")));
-      await driver.viewportSize(320, 640);
+      await driver.setViewportSize(320, 640);
       const long = (await driver.box(tab(0))).height;
       const short = (await driver.box(tab(1))).height;
       const sideways = await inPage(() => document.documentElement.scrollWidth > document.documentElement.clientWidth, null);
       const observed = { grew: long > short && short === 44, sideways, tree: await tree(driver) };
-      await driver.viewportSize(start[0] ?? 0, start[1] ?? 0);
+      await driver.setViewportSize(start[0] ?? 0, start[1] ?? 0);
       return observed;
     },
     expected: { grew: true, sideways: false, tree: exposed("Mission views", [longLabel, "Short"]) },
@@ -1340,7 +1340,7 @@ export const tabsScenarios: readonly TabsScenario[] = [
       await mount(driver, inPage, page('<ocelle-tab id="own-tab" value="spec">Spec</ocelle-tab><ocelle-tab value="plan">Plan</ocelle-tab><ocelle-tab-panel id="own-panel"><p>Spec content</p></ocelle-tab-panel>' + panelOf("Plan")));
       const owned = await inPage(() => [document.getElementById("own-tab")?.getAttribute("aria-controls"), document.getElementById("own-panel")?.getAttribute("aria-labelledby")], null);
       const controlled = await controls(driver, "own-tab");
-      await driver.click(tab(1));
+      await driver.clickTarget(tab(1));
       await inPage(() => {
         const host = document.getElementById("tb");
         const leaving = [...(host?.querySelectorAll("ocelle-tab, ocelle-tab-panel") ?? [])];
@@ -1463,7 +1463,7 @@ export const tabsScenarios: readonly TabsScenario[] = [
         return [third?.getAttribute("value") ?? null, (third as unknown as { value?: unknown } | undefined)?.value ?? null];
       }, null);
       await driver.focus(tab(1));
-      await driver.press("ArrowRight");
+      await driver.pressKeys("ArrowRight");
       return { removed, value: await inPage(valueOf, "tb"), events: await inPage(recordedEvents, null) };
     },
     expected: { removed: [null, "2"], value: "2", events: [change("2")] },
@@ -1497,7 +1497,7 @@ export const tabsScenarios: readonly TabsScenario[] = [
       await inPage(frames, undefined);
       const added = await inPage(association, null);
       await driver.focus(tab(1));
-      await driver.press("ArrowRight");
+      await driver.pressKeys("ArrowRight");
       return { added, tabindexes: await inPage(() => [...document.querySelectorAll("#tb > ocelle-tab-panel")].map((each) => each.getAttribute("tabindex")), null) };
     },
     expected: {
@@ -1584,7 +1584,7 @@ export const tabsScenarios: readonly TabsScenario[] = [
       await driver.focus(tab(0));
       await driver.mutate("tb", [{ move: 0, before: 2 }]);
       const kept = await inPage(where, null);
-      await driver.click("away");
+      await driver.clickTarget("away");
       await driver.mutate("tb", [{ move: 1, before: 0 }]);
       await inPage(frames, undefined);
       return { kept, left: await inPage(where, null) };
@@ -1623,8 +1623,8 @@ export const tabsScenarios: readonly TabsScenario[] = [
         }
       }, null);
       await driver.focus("before");
-      await driver.press("Tab");
-      await driver.press("Tab", ["Shift"]);
+      await driver.pressKeys("Tab");
+      await driver.pressKeys("Tab", ["Shift"]);
       await driver.mutate("tb", [{ move: 0, before: 2 }]);
       return { moved, kept, left: await inPage(where, null) };
     },

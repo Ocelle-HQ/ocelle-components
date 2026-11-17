@@ -6,10 +6,10 @@
 // element's shadow root.
 //
 // Since 014 (research.md R-11, T006) a target is an element's `id` or a child of a parent (`Target`): the index-th
-// element child of tag `kind` of the element with id `parent`. Real keyboard and pointer input (`press`, `click`), the
-// focused element through shadow roots (`activeElement`), DOM steps in one task (`mutate`), a resize that does not wait
+// element child of tag `kind` of the element with id `parent`. Real keyboard and pointer input (`pressKeys`, `clickTarget`), the
+// focused element through shadow roots (`focusedElement`), DOM steps in one task (`mutate`), a resize that does not wait
 // for a frame and the wait for its observations (`resize`, `afterResizeDelivery`), shadow parts' and pseudo-elements'
-// computed styles (`computedPart`), the page's scroll offset and viewport (`scrollOffset`, `viewportSize`), the
+// computed styles (`computedPart`), the page's scroll offset and viewport (`scrollOffset`, `setViewportSize`), the
 // recorders (keydowns at the document in the bubble phase, clipboard calls, the order of an activation, accessibility
 // tree updates) and the accessibility states (`axStates`) are the driver's too.
 import type { AxNode, AxScope, AxState, AxUpdate, ForcedColors, Palette, Target } from "../commands.ts";
@@ -22,7 +22,7 @@ export type { Pixels } from "../pixels.ts";
 export type Modifier = "Alt" | "Control" | "Meta" | "Shift";
 
 /**
- * How `click` clicks: the mouse button (left by default), the modifiers held, and the number of clicks (1 by default).
+ * How `clickTarget` clicks: the mouse button (left by default), the modifiers held, and the number of clicks (1 by default).
  * With `force` the click skips Playwright's actionability checks, so a target it counts as disabled (an
  * `aria-disabled="true"` element) is still clicked with real input (014 phase 2).
  */
@@ -81,7 +81,7 @@ export interface ActivationOptions {
 }
 
 /**
- * One entry of an activation's record (research.md R-07): the activating `click` in the capture phase at the document
+ * One entry of an activation's record (research.md R-07): the activating `clickTarget` in the capture phase at the document
  * (`activation`), the same click in the bubble phase at the document, after the target's own handlers in that task
  * (`activation end`), the first animation frame callback registered in the activation's task (`frame`), and each
  * request (`request`); each with the number of requests before it, the `read` text and the `property` value (null when
@@ -238,13 +238,13 @@ export interface Driver {
   /** Focuses the target (`focus()`). */
   focus(target: Target): Promise<void>;
   /** Presses `key` (a key name such as `"ArrowDown"`, or one character) on the focused element with `modifiers` held, as real keyboard input. */
-  press(key: string, modifiers?: readonly Modifier[]): Promise<void>;
+  pressKeys(key: string, modifiers?: readonly Modifier[]): Promise<void>;
   /** Clicks the centre of the target with real mouse input. */
-  click(target: Target, options?: ClickOptions): Promise<void>;
+  clickTarget(target: Target, options?: ClickOptions): Promise<void>;
   /** Moves the mouse to the centre of the target with real input, pressing no button (014 phase 2). */
-  hover(target: Target): Promise<void>;
+  hoverTarget(target: Target): Promise<void>;
   /** The focused element, through shadow roots, or null when nothing but the body is focused. */
-  activeElement(): Promise<Focused | null>;
+  focusedElement(): Promise<Focused | null>;
   /** Applies `steps` to the target's children synchronously, in one task, then waits for every element to render. */
   mutate(target: Target, steps: readonly Step[]): Promise<void>;
   /** Sets the target's `inline-size` through the CSSOM, without waiting for a frame. */
@@ -259,7 +259,7 @@ export interface Driver {
   /** The page's scroll offset. */
   scrollOffset(): Promise<Offset>;
   /** Sets the page's viewport to `width` × `height` CSS pixels and waits for every element to render. */
-  viewportSize(width: number, height: number): Promise<void>;
+  setViewportSize(width: number, height: number): Promise<void>;
   /** The keydown events the document saw in the bubble phase since the last `mount`. */
   keydownRecord(): Promise<Keydown[]>;
   /** The clipboard calls the page made since the last `mount` (none is ever made for real). */
