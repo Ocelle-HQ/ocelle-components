@@ -179,6 +179,8 @@ pitfalls up front. Each entry names where it was found. New entries are added as
   record as a coverage claim and write the removed-element test instead.
 - **013 R4-03**: a story file for an element a later phase adds breaks the scaffold run of an earlier phase, because
   the Storybook setup loads every story. The run exits 2, and the TDD check reads that as red.
+- **009 O3-01**: a story that sets `scrollLeft` once after `updateComplete` captures the wrong position when the content grows later (fonts, late layout). The visual baselines then record the bug. Re-apply the position from a `ResizeObserver` on the box and its track, and test it by growing the content after the first position.
+- **009 L1-01, R6-01**: an element that measures its own intrinsic sizes must skip measuring while it has no box (`getClientRects().length === 0`: a closed `<dialog>`, a `display: none` ancestor, a `hidden` host). It must then measure once it becomes rendered, not only if a pass was skipped. A `MutationObserver` that does not watch attributes misses a class swap made while hidden. Test every hidden route against a twin that was rendered from the start.
 
 # Candidates for a frontend profile or lens
 

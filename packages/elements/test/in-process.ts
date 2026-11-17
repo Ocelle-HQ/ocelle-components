@@ -6,6 +6,8 @@
 // go through the `axTree` and `emulateForcedColors` browser commands (vitest.config.ts, test/commands.ts). Console
 // messages are recorded from each mount on; Lit's development build, which Vite resolves here, warns once at import,
 // before any mount, so the console outcome of FR-016 on the built output is the fixture's (test/browser/).
+// Since 009 (research.md R-17) every mount also adopts test/fixtures/frames.css, the one source of the tested frames,
+// after the token and base sheets, and `viewport()` resizes the test's iframe through `page.viewport`.
 //
 // 008 (research.md R-14, R-15): every mount also adopts the test delay stylesheet (fixtures/tooltip-delay.css), as the
 // fixture pages link it. Keys are real key presses through `userEvent` from `vitest/browser`; pointer and touch input
@@ -17,6 +19,7 @@ import type { LitElement } from "lit";
 import { vi } from "vitest";
 import { commands, page, userEvent } from "vitest/browser";
 import baseText from "../../styles/src/base.css?raw";
+import framesText from "./fixtures/frames.css?raw";
 import { css } from "../../tokens/src/generate.ts";
 import { source } from "../../tokens/src/source.ts";
 import { runningOf } from "./animations.ts";
@@ -24,7 +27,7 @@ import delayText from "./fixtures/tooltip-delay.css?raw";
 import { layoutWait } from "./layout-wait.ts";
 import { decodePng } from "./pixels.ts";
 import { heardTypes } from "./scenarios/driver.ts";
-import type { Box, Driver, Drawing, Paint, Part, Placement, Sheets, TreeNode } from "./scenarios/driver.ts";
+import type { Box, Driver, Drawing, Paint, Part, Placement, Reading, Sheets, Target, TreeNode } from "./scenarios/driver.ts";
 import { probe } from "./scenarios/probe.ts";
 
 function sheet(text: string): CSSStyleSheet {
@@ -35,6 +38,7 @@ function sheet(text: string): CSSStyleSheet {
 
 const tokens = sheet(css(source).replace(/@font-face\s*\{[^}]*\}/g, ""));
 const base = sheet(baseText);
+const frames = sheet(framesText);
 const delay = sheet(delayText);
 probe();
 
@@ -44,16 +48,21 @@ function element(id: string): HTMLElement {
   return found;
 }
 
+const nextFrame = (): Promise<unknown> => new Promise((resolve) => requestAnimationFrame(resolve));
+
 /** Whether every `<iframe srcdoc>` of the page has loaded its document. */
 function framesLoaded(): boolean {
   return [...document.querySelectorAll("iframe")].every((frame) => !frame.hasAttribute("srcdoc") || (frame.contentDocument?.URL === "about:srcdoc" && frame.contentDocument.readyState === "complete"));
 }
 
 /**
- * Waits until every `ocelle-*` element of the page has rendered and every `<iframe srcdoc>` has loaded (a bounded poll
- * of 1 000 ms, R-15), then for a frame.
+ * Waits two animation frames, then until every `ocelle-*` element of the page has rendered (009 research.md R-17, the
+ * overflow-region contract's rule: a `ResizeObserver` delivery of the first frame and the update it requests are seen)
+ * and every `<iframe srcdoc>` has loaded (a bounded poll of 1 000 ms, 008 R-15), then for a frame.
  */
 async function settle(): Promise<void> {
+  await nextFrame();
+  await nextFrame();
   const elements = [...document.querySelectorAll("*")].filter((each) => each.localName.startsWith("ocelle-"));
   await Promise.all(elements.map((each) => (each as Partial<LitElement>).updateComplete ?? Promise.resolve(true)));
   for (const start = performance.now(); !framesLoaded(); ) {
@@ -68,6 +77,54 @@ function keyText(key: string, shift: boolean): string {
   const text = key === " " ? "[Space]" : `{${key}}`;
   return shift ? `{Shift>}${text}{/Shift}` : text;
 }
+
+/** The element of a target: the element with the id, or the first match of `inner` in its shadow root. */
+function resolve(target: Target): HTMLElement {
+  if (typeof target === "string") return element(target);
+  const found = element(target.id).shadowRoot?.querySelector<HTMLElement>(target.inner);
+  if (found === null || found === undefined) throw new Error(`no ${target.inner} in the shadow root of #${target.id}`);
+  return found;
+}
+
+/** A key or chord (`Shift+Tab`, `Ctrl+ArrowRight`) in user-event's keyboard syntax, modifiers held around the key. */
+function chordText(key: string): string {
+  const parts = key.split("+").map((part) => (part === "Ctrl" ? "Control" : part));
+  const pressed = parts.pop() ?? "";
+  return `${parts.map((part) => `{${part}>}`).join("")}{${pressed}}${parts.reverse().map((part) => `{/${part}}`).join("")}`;
+}
+
+/** One level of the deep active element: its id, or its local name and classes. */
+function describe(node: Element): string {
+  return node.id !== "" ? node.id : [node.localName, ...node.classList].join(".");
+}
+
+/** The deep active element, each level from the document down through shadow roots, joined by " >> ". */
+function deepActive(): string {
+  const levels: string[] = [];
+  let active: Element | null = document.activeElement;
+  while (active !== null) {
+    levels.push(describe(active));
+    active = active.shadowRoot?.activeElement ?? null;
+  }
+  return levels.join(" >> ");
+}
+
+/** A frame record's reading of an element, as text. */
+function reading(subject: HTMLElement, read: Reading): string {
+  if ("property" in read) return String((subject as unknown as Record<string, unknown>)[read.property]);
+  if ("computed" in read) return getComputedStyle(subject).getPropertyValue(read.computed);
+  return String(subject.getAttribute(read.attribute));
+}
+
+/** The last keydown the window saw since the last mount (`lastKeyPrevented`). */
+let lastKey: KeyboardEvent | undefined;
+window.addEventListener(
+  "keydown",
+  (event) => {
+    lastKey = event;
+  },
+  true,
+);
 
 /** The element matching `inner` in the shadow root of the element with `id`. */
 function inShadow(id: string, inner: string): Element {
@@ -151,8 +208,9 @@ const identities = new Map<Element, number>();
 export function inProcessDriver(): Driver {
   return {
     mount: async (markup, options = {}) => {
-      document.adoptedStyleSheets = options.base === true ? [tokens, base, delay] : [tokens, delay];
+      document.adoptedStyleSheets = options.base === true ? [tokens, base, frames, delay] : [tokens, frames, delay];
       messages.length = 0;
+      lastKey = undefined;
       document.documentElement.removeAttribute("data-theme");
       probe().reset();
       Reflect.deleteProperty(document, Symbol.for("ocelle.progress.sweepStart"));
@@ -166,6 +224,13 @@ export function inProcessDriver(): Driver {
     setAttribute: async (id, name, value) => {
       if (value === null) element(id).removeAttribute(name);
       else element(id).setAttribute(name, value);
+      await settle();
+    },
+    call: async (id, name) => {
+      const target = element(id) as unknown as Record<string, unknown>;
+      const method = target[name];
+      if (typeof method !== "function") throw new Error(`#${id} has no method ${name}`);
+      (method as () => unknown).call(target);
       await settle();
     },
     attribute: (id, name) => Promise.resolve(element(id).getAttribute(name)),
@@ -236,7 +301,7 @@ export function inProcessDriver(): Driver {
       const rect = svg.getBoundingClientRect();
       return Promise.resolve({ scaleX: round(matrix.a), scaleY: round(matrix.d), offsetX: round(matrix.e - rect.x), offsetY: round(matrix.f - rect.y) });
     },
-    computed: (id, property) => Promise.resolve(getComputedStyle(element(id)).getPropertyValue(property)),
+    computed: (target, property) => Promise.resolve(getComputedStyle(resolve(target)).getPropertyValue(property)),
     resolveColour: (value) => {
       const colourProbe = document.createElement("span");
       probe().ignore(colourProbe);
@@ -325,6 +390,70 @@ export function inProcessDriver(): Driver {
       await page.viewport(width, height);
       await settle();
     },
+    chord: async (key) => {
+      await userEvent.keyboard(chordText(key));
+      await settle();
+    },
+    clickAt: async (target, point) => {
+      const rect = resolve(target).getBoundingClientRect();
+      const root = document.documentElement.getBoundingClientRect();
+      await userEvent.click(document.documentElement, { position: { x: rect.left - root.left + point.x, y: rect.top - root.top + point.y }, force: true });
+      await settle();
+    },
+    wheel: async (target, deltaX) => {
+      await userEvent.wheel(resolve(target), { delta: { x: deltaX } });
+      await settle();
+    },
+    deepActive: () => Promise.resolve(deepActive()),
+    tabWalk: async (from, to, backward = false) => {
+      element(from).focus();
+      const walked: string[] = [];
+      for (let step = 0; step < 40 && walked.at(-1) !== to; step++) {
+        await userEvent.keyboard(chordText(backward ? "Shift+Tab" : "Tab"));
+        walked.push(deepActive());
+      }
+      await settle();
+      return walked;
+    },
+    focus: async (target) => {
+      resolve(target).focus();
+      await settle();
+    },
+    scrollLeft: (target) => Promise.resolve(resolve(target).scrollLeft),
+    setScrollLeft: async (target, value) => {
+      resolve(target).scrollTo({ left: value, behavior: "instant" });
+      await settle();
+    },
+    lastKeyPrevented: () => Promise.resolve(lastKey?.defaultPrevented ?? false),
+    frameRecord: async (target, read) => {
+      const subject = resolve(target);
+      const source = read.of === undefined ? subject : resolve(read.of);
+      const record = [reading(source, read)];
+      const onKey = (): void => {
+        record.push("keydown");
+      };
+      window.addEventListener("keydown", onKey, true);
+      const observer = new ResizeObserver(() => record.push(`resize: ${reading(source, read)}`));
+      observer.observe(subject, { box: "border-box" });
+      let frame = 0;
+      const loop = (): void => {
+        record.push(reading(source, read));
+        frame = requestAnimationFrame(loop);
+      };
+      frame = requestAnimationFrame(loop);
+      await nextFrame();
+      await nextFrame();
+      return {
+        stop: async () => {
+          await settle();
+          cancelAnimationFrame(frame);
+          observer.disconnect();
+          window.removeEventListener("keydown", onKey, true);
+          return record;
+        },
+      };
+    },
+    settle,
     size: async (id, inline, block) => {
       const style = element(id).style;
       for (const [property, value] of [["inline-size", inline], ["block-size", block]] as const) {

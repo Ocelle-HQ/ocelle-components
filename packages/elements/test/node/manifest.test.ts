@@ -277,7 +277,7 @@ describe("generate(root) on the repository's element source", () => {
     const manifest = await generate(repo);
     const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
     expect(manifest.schemaVersion).toBe("1.0.0");
-    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-card.ts", "src/ocelle-context-sidebar.ts", "src/ocelle-dialog.ts", "src/ocelle-drawer.ts", "src/ocelle-empty-state.ts", "src/ocelle-fact.ts", "src/ocelle-facts.ts", "src/ocelle-icon.ts", "src/ocelle-page-header.ts", "src/ocelle-personal-rail.ts", "src/ocelle-progress.ts", "src/ocelle-section-header.ts", "src/ocelle-tooltip.ts"]);
+    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-card.ts", "src/ocelle-context-sidebar.ts", "src/ocelle-dialog.ts", "src/ocelle-drawer.ts", "src/ocelle-empty-state.ts", "src/ocelle-fact.ts", "src/ocelle-facts.ts", "src/ocelle-icon.ts", "src/ocelle-list-detail.ts", "src/ocelle-page-header.ts", "src/ocelle-personal-rail.ts", "src/ocelle-progress.ts", "src/ocelle-scroller.ts", "src/ocelle-section-header.ts", "src/ocelle-tooltip.ts", "src/ocelle-workflow-board.ts", "src/ocelle-workflow-lane.ts"]);
     const [icon] = modules.find((module) => module.path === "src/ocelle-icon.ts")?.declarations ?? [];
     expect(icon).toMatchObject({
       kind: "class",
@@ -326,6 +326,79 @@ describe("generate(root) on the repository's element source", () => {
       { name: "ground", fieldName: "ground", type: { text: '"chrome" | undefined' }, default: "undefined", described: true },
       { name: "tone", fieldName: "tone", type: { text: '"mono" | undefined' }, default: "undefined", described: true },
       { name: "label", fieldName: "label", type: { text: "string | undefined" }, default: "undefined", described: true },
+    ]);
+  });
+
+  it("declares ocelle-scroller with its tag name, class, label (string | undefined, not reflected, described), one default slot, described, and no event, part or CSS property (009 contracts/elements.md, T018)", async () => {
+    const manifest = await generate(repo);
+    const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [scroller] = modules.find((module) => module.path === "src/ocelle-scroller.ts")?.declarations ?? [];
+    expect(scroller).toMatchObject({ kind: "class", name: "OcelleScroller", tagName: "ocelle-scroller", customElement: true, events: [], cssParts: [], cssProperties: [] });
+    const described = (list: unknown): Record<string, unknown>[] =>
+      ((list ?? []) as Record<string, unknown>[]).map(({ description, ...rest }) => ({ ...rest, described: typeof description === "string" && description !== "" }));
+    expect(described(scroller?.members)).toEqual([{ kind: "field", name: "label", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "label", described: true }]);
+    expect(described(scroller?.attributes)).toEqual([{ name: "label", fieldName: "label", type: { text: "string | undefined" }, default: "undefined", described: true }]);
+    expect(described(scroller?.slots)).toEqual([{ name: "", described: true }]);
+  });
+
+  it("declares ocelle-workflow-board with its tag name, class, label (string | undefined, not reflected, described), one default slot, described, and no event, part or CSS property (009 contracts/elements.md, T035)", async () => {
+    const manifest = await generate(repo);
+    const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [board] = modules.find((module) => module.path === "src/ocelle-workflow-board.ts")?.declarations ?? [];
+    expect(board).toMatchObject({ kind: "class", name: "OcelleWorkflowBoard", tagName: "ocelle-workflow-board", customElement: true, events: [], cssParts: [], cssProperties: [] });
+    const described = (list: unknown): Record<string, unknown>[] =>
+      ((list ?? []) as Record<string, unknown>[]).map(({ description, ...rest }) => ({ ...rest, described: typeof description === "string" && description !== "" }));
+    expect(described(board?.members)).toEqual([{ kind: "field", name: "label", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "label", described: true }]);
+    expect(described(board?.attributes)).toEqual([{ name: "label", fieldName: "label", type: { text: "string | undefined" }, default: "undefined", described: true }]);
+    expect(described(board?.slots)).toEqual([{ name: "", described: true }]);
+  });
+
+  it('declares ocelle-workflow-lane with its tag name, class, label (string | undefined), count (number | undefined), count-label / countLabel (string | undefined), not reflected, and variant ("flat" | undefined), reflected, each described with the default undefined, one default slot, described, and no event, part or CSS property (009 contracts/elements.md, T035)', async () => {
+    const manifest = await generate(repo);
+    const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [lane] = modules.find((module) => module.path === "src/ocelle-workflow-lane.ts")?.declarations ?? [];
+    expect(lane).toMatchObject({ kind: "class", name: "OcelleWorkflowLane", tagName: "ocelle-workflow-lane", customElement: true, events: [], cssParts: [], cssProperties: [] });
+    const described = (list: unknown): Record<string, unknown>[] =>
+      ((list ?? []) as Record<string, unknown>[]).map(({ description, ...rest }) => ({ ...rest, described: typeof description === "string" && description !== "" }));
+    expect(described(lane?.members)).toEqual([
+      { kind: "field", name: "label", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "label", described: true },
+      { kind: "field", name: "count", privacy: "public", type: { text: "number | undefined" }, default: "undefined", attribute: "count", described: true },
+      { kind: "field", name: "countLabel", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "count-label", described: true },
+      { kind: "field", name: "variant", privacy: "public", type: { text: '"flat" | undefined' }, default: "undefined", attribute: "variant", reflects: true, described: true },
+    ]);
+    expect(described(lane?.attributes)).toEqual([
+      { name: "label", fieldName: "label", type: { text: "string | undefined" }, default: "undefined", described: true },
+      { name: "count", fieldName: "count", type: { text: "number | undefined" }, default: "undefined", described: true },
+      { name: "count-label", fieldName: "countLabel", type: { text: "string | undefined" }, default: "undefined", described: true },
+      { name: "variant", fieldName: "variant", type: { text: '"flat" | undefined' }, default: "undefined", described: true },
+    ]);
+    expect(described(lane?.slots)).toEqual([{ name: "", described: true }]);
+  });
+
+  it("declares ocelle-list-detail with its tag name, class, collapse-below / collapseBelow and inspector-below / inspectorBelow (string | undefined, not reflected, default undefined), narrow and detail-open / detailOpen (boolean, reflected, default false), the method remeasure(): void, each described, the list, default and inspector slots, described, and no event, part or CSS property (009 contracts/elements.md, FR-025, FR-030, T051)", async () => {
+    const manifest = await generate(repo);
+    const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [listDetail] = modules.find((module) => module.path === "src/ocelle-list-detail.ts")?.declarations ?? [];
+    expect(listDetail).toMatchObject({ kind: "class", name: "OcelleListDetail", tagName: "ocelle-list-detail", customElement: true, events: [], cssParts: [], cssProperties: [] });
+    const described = (list: unknown): Record<string, unknown>[] =>
+      ((list ?? []) as Record<string, unknown>[]).map(({ description, ...rest }) => ({ ...rest, described: typeof description === "string" && description !== "" }));
+    expect(described(listDetail?.members)).toEqual([
+      { kind: "field", name: "collapseBelow", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "collapse-below", described: true },
+      { kind: "field", name: "inspectorBelow", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "inspector-below", described: true },
+      { kind: "field", name: "narrow", privacy: "public", type: { text: "boolean" }, default: "false", attribute: "narrow", reflects: true, described: true },
+      { kind: "field", name: "detailOpen", privacy: "public", type: { text: "boolean" }, default: "false", attribute: "detail-open", reflects: true, described: true },
+      { kind: "method", name: "remeasure", privacy: "public", return: { type: { text: "void" } }, described: true },
+    ]);
+    expect(described(listDetail?.attributes)).toEqual([
+      { name: "collapse-below", fieldName: "collapseBelow", type: { text: "string | undefined" }, default: "undefined", described: true },
+      { name: "inspector-below", fieldName: "inspectorBelow", type: { text: "string | undefined" }, default: "undefined", described: true },
+      { name: "narrow", fieldName: "narrow", type: { text: "boolean" }, default: "false", described: true },
+      { name: "detail-open", fieldName: "detailOpen", type: { text: "boolean" }, default: "false", described: true },
+    ]);
+    expect(described(listDetail?.slots)).toEqual([
+      { name: "list", described: true },
+      { name: "", described: true },
+      { name: "inspector", described: true },
     ]);
   });
 

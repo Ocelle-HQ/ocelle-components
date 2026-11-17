@@ -1,6 +1,6 @@
 {
   "expect": "fail",
-  "why": "A changed token value (color-ink, light) changes every story-theme that shows it: differs on the one hundred light story-themes measured in the pinned container (FR-004, US2 scenario 2), the twelve the phase 1 spike listed, the eight of mission 005's stories that show color-ink (all but elements-ocelle-brand-mark--chrome, measured for plan decision 29), the eight ocelle-dialog stories of mission 008 (measured in phase 2, R-16), the four ocelle-drawer stories on the sheet ground (all but the two on the chrome ground, measured in phase 3), the nine ocelle-tooltip stories (measured in phase 4), the eleven of 011's section header and card stories that show it (all but elements-ocelle-section-header--empty-heading, measured in the pinned container under docker for 011 phase 2), the four of 011's page header stories that show it (all but elements-ocelle-page-header--empty-heading, measured in the pinned container under docker for 011 phase 3) and the eleven of 011's context sidebar stories, which all show it (measured in the pinned container under docker for 011 phase 4), the twenty-two ocelle-facts stories of mission 013 (measured in its phase 1), the six ocelle-empty-state stories with a heading (measured in its phase 2; the actions-only story shows no color-ink), the panel-loading story (its heading) and the four ocelle-progress stories with a visible label (labelled, labelled compact, value text, right to left; measured in its phase 3, the bars without a visible label show no color-ink), and none in dark. None of 011's eight personal rail stories shows it: the rail is drawn in the chrome ink on the chrome, and nothing else in those stories is text (measured in the pinned container under docker for 011 phase 5). A story added later that shows color-ink in light adds its line here (research.md R-07).",
+  "why": "A changed token value (color-ink, light) changes every story-theme that shows it: differs on the one hundred and sixteen light story-themes measured in the pinned container (FR-004, US2 scenario 2), the twelve the phase 1 spike listed, the eight of mission 005's stories that show color-ink (all but elements-ocelle-brand-mark--chrome, measured for plan decision 29), the eight ocelle-dialog stories of mission 008 (measured in phase 2, R-16), the four ocelle-drawer stories on the sheet ground (all but the two on the chrome ground, measured in phase 3), the nine ocelle-tooltip stories (measured in phase 4), the ten of 009's board and lane stories that show color-ink (all but elements-ocelle-workflow-board--no-lanes, an empty board; measured in the pinned container), the six of 009's list-detail stories, whose panes show text in color-ink, the eleven of 011's section header and card stories that show it (all but elements-ocelle-section-header--empty-heading, measured in the pinned container under docker for 011 phase 2), the four of 011's page header stories that show it (all but elements-ocelle-page-header--empty-heading, measured in the pinned container under docker for 011 phase 3) and the eleven of 011's context sidebar stories, which all show it (measured in the pinned container under docker for 011 phase 4), the twenty-two ocelle-facts stories of mission 013 (measured in its phase 1), the six ocelle-empty-state stories with a heading (measured in its phase 2; the actions-only story shows no color-ink), the panel-loading story (its heading) and the four ocelle-progress stories with a visible label (labelled, labelled compact, value text, right to left; measured in its phase 3, the bars without a visible label show no color-ink), and none in dark. None of 011's eight personal rail stories shows it: the rail is drawn in the chrome ink on the chrome, and nothing else in those stories is text (measured in the pinned container under docker for 011 phase 5). A story added later that shows color-ink in light adds its line here (research.md R-07).",
   "findings": [
     {
       "location": "base-styles--base-page/light",
@@ -240,6 +240,70 @@
     },
     {
       "location": "tokens--motion/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-workflow-board--five-lanes/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-workflow-board--five-lanes-narrow/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-workflow-board--one-lane/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-workflow-board--right-to-left/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-workflow-lane--default-with-count/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-workflow-lane--default-without-count/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-workflow-lane--flat-with-count/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-workflow-lane--flat-without-count/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-workflow-lane--long-title/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-workflow-lane--untitled-with-count/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-list-detail--three-columns/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-list-detail--two-columns-inspector-stacked/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-list-detail--one-column-list/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-list-detail--one-column-detail/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-list-detail--no-inspector/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-list-detail--right-to-left/light",
       "rule": "differs"
     },
     {

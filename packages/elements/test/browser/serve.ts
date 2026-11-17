@@ -1,9 +1,12 @@
 // The strict-CSP fixture of the element suites (005 spec § The strict-CSP fixture; research.md R-11, T015). Each suite
 // writes into a temporary directory what a host serves: the fixture pages of fixtures/, `tokens.css` from the token
 // generator (the current source, never a pre-built dist/) with the vendored fonts it loads by relative URL, `base.css`
-// copied from packages/styles/src (linked only by the pages that say so), and the files the global setup built
+// copied from packages/styles/src (linked only by the pages that say so), `frames.css` copied from test/fixtures (009's
+// tested frames, R-17; linked only by the pages that say so), and the files the global setup built
 // (global-setup.ts): the browser build `ocelle-elements.js`, US1 scenario 10's `bundle-a.js` and `bundle-b.js`, User
-// Story 3's test host's file `ocelle-test-host.js` and 011's `card-bundle.js` (the module build's card alone). It serves them on 127.0.0.1 with `Content-Security-Policy:
+// Story 3's test host's file `ocelle-test-host.js`, since 009 the test-only slotted controls `ocelle-test-controls.js`
+// and (phase 4) `ocelle-test-list-detail.js`, and 011's `card-bundle.js` (the module build's card alone). It serves
+// them on 127.0.0.1 with `Content-Security-Policy:
 // default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'` on every response. Every page is opened
 // in a fresh context with the recorders installed before navigation, none of them a page script or a request: CSP
 // violations through 002's `addInitScript` collector
@@ -34,6 +37,8 @@ export const policy = "default-src 'none'; script-src 'self'; style-src 'self'; 
 const fixtures = fileURLToPath(new URL("./fixtures", import.meta.url));
 const baseSheet = fileURLToPath(new URL("../../../styles/src/base.css", import.meta.url));
 const fonts = fileURLToPath(new URL("../../../tokens/fonts", import.meta.url));
+/** The one source of 009's tested frames (research.md R-17), served as `frames.css` for the pages that link it. */
+const framesSheet = fileURLToPath(new URL("../fixtures/frames.css", import.meta.url));
 const tooltipDelay = fileURLToPath(new URL("../fixtures/tooltip-delay.css", import.meta.url));
 
 /** The built files each page may load, by served name, and where the global setup put them. */
@@ -43,6 +48,8 @@ const builtFiles: Readonly<Record<string, string>> = {
   "bundle-b.js": "bundles/bundle-b.js",
   "card-bundle.js": "bundles/card-bundle.js",
   "ocelle-test-host.js": "test-host/ocelle-test-host.js",
+  "ocelle-test-controls.js": "test-controls/ocelle-test-controls.js",
+  "ocelle-test-list-detail.js": "test-controls/ocelle-test-list-detail.js",
 };
 
 const types: Readonly<Record<string, string>> = {
@@ -65,6 +72,7 @@ export async function serve(built: Built | undefined): Promise<Served> {
   cpSync(fixtures, dir, { recursive: true });
   writeFileSync(join(dir, "tokens.css"), css(source));
   cpSync(baseSheet, join(dir, "base.css"));
+  cpSync(framesSheet, join(dir, "frames.css"));
   cpSync(tooltipDelay, join(dir, "tooltip-delay.css"));
   if (existsSync(fonts)) cpSync(fonts, join(dir, "fonts"), { recursive: true });
   if (built !== undefined && "dir" in built) {
@@ -116,13 +124,12 @@ export interface Visit {
 }
 
 /**
- * The allowed requests of a page (spec § The strict-CSP fixture): the page itself, its stylesheets (the test delay
- * stylesheet of 008 among them), the vendored
- * font and the scripts the page is allowed (the browser build, and on `scripts` pages the test-only bundles), all
- * same-origin.
+ * The allowed requests of a page (spec § The strict-CSP fixture): the page itself, its stylesheets (009's
+ * `frames.css` and 008's test delay stylesheet among them), the vendored font and the scripts the page is allowed (the
+ * browser build, and on `scripts` pages the test-only bundles), all same-origin.
  */
 function allowed(origin: string, page: string, scripts: readonly string[]): (url: string) => boolean {
-  const paths = new Set([page, "tokens.css", "base.css", "tooltip-delay.css", ...scripts]);
+  const paths = new Set([page, "tokens.css", "base.css", "frames.css", "tooltip-delay.css", ...scripts]);
   return (url) => {
     if (!url.startsWith(`${origin}/`)) return false;
     const path = new URL(url).pathname.slice(1);

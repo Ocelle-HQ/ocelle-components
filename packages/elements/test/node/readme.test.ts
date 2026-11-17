@@ -16,8 +16,25 @@ import { describe, expect, it } from "vitest";
 // `viewBox` rule and the lint's `1lh` limit) and the naming rule (T045, SC-007). Phase 5 adds the mark (T056): its
 // variants and grounds, the tokens it reads, its box and the percentage-height rule, forced colours, the light-mode
 // spot, behaviour without `tokens.css`, its entry point, its licence sentence and the trademark note of FR-030 (in the
-// README and in the repository's `NOTICE`), and the CHANGELOG's final surface list (FR-031). 013 phase 3 adds
-// `ocelle-progress` (T043, T043a): its statements, its entry point, its mapping rows by role name and its CHANGELOG names.
+// README and in the repository's `NOTICE`), and the CHANGELOG's final surface list (FR-031). Since 009 phase 2 (T019,
+// T029): `ocelle-scroller` (its attribute, slot, tokens, tree, keyboard, handover, fades, clearance, scrollbar, naming
+// guidance, shrink-to-fit hosts and reduced motion), the overflow-region module's interface under the element
+// conventions, the Host ARIA rule scoped per element, the styles rule with the per-instance sheet, the mask properties
+// in the engine floor, its entry point, and its CHANGELOG entries. Since 009 phase 3 (T036, T043):
+// `ocelle-workflow-board` (its layout, attribute, slot, tokens, tree, lane content, ground, wide content, nested images,
+// shrink-to-fit hosts and the width-only change) and `ocelle-workflow-lane` (its attributes, the name rule with no
+// built-in word, the hidden visible text, no live region, the `color-sheet` ground, the flat variant, its tokens and
+// the title wrapping), their entry points and their CHANGELOG entries. Since 009 phase 4 (T052, T060):
+// `ocelle-list-detail` (its attributes, slots, `remeasure()`, tokens, widths and borders, the focus rule, the upgrade
+// rule and the host's own landmarks), the container-tier convention under the element conventions (one assertion per
+// item of FR-034: the own measured size, the grammar and its resolution, the token default and its fallback, exclusive
+// bounds, the forcing boolean, no `container-type`, tier-independent intrinsic sizes, the re-measure triggers, the
+// unseen changes and `remeasure()`, the cost of one pass, the loop message and setting the attributes from a task),
+// its entry point and its CHANGELOG entries. Since the landing pass (O5-01, T079): becoming rendered as a re-measure
+// trigger, and a pass or `remeasure()` on an element that is not rendered writing nothing, in both places. Since 009 phase 5 (T062): the four frames as the tested screen sizes, WebKit
+// not measured for the layout elements' focus behaviour, the print note and the states that do not apply.
+// 013 phase 3 adds `ocelle-progress` (T043, T043a): its statements, its entry point, its mapping rows by role name and its
+// CHANGELOG names.
 /** A file's text, relative to the package; empty while it does not exist, so each assertion reports what is missing. */
 function read(file: string): string {
   const url = new URL(`../../${file}`, import.meta.url);
@@ -35,7 +52,10 @@ const fragments = [
   "Every element class carries the JSDoc tag `@tagname <tag>`, and every public property a description and `@default undefined`: the manifest takes the tag name and the defaults from them",
   "An element that observes a standard attribute such as `aria-label` adds it to `observedAttributes` without declaring a property, so the manifest does not list it",
   // styles (FR-003, R-03, R-04, R-09)
-  "An element's styles are one `css` tagged template assigned to `static styles`, built only from `--ocelle-*` tokens and the values the `style-lint` gate allows, so every instance adopts one shared stylesheet",
+  // since 009 (T019, FR-030): the shared sheets and at most one per-instance sheet of measured figures, replacing "one
+  // shared stylesheet"
+  "An element's styles are its shared `static styles`, one or more `css` tagged templates built only from `--ocelle-*` tokens and the values the `style-lint` gate allows, which every instance adopts, plus at most one per-instance constructed stylesheet that holds only px figures the element measured from layout",
+  "The per-instance sheet never holds a value from an attribute, a property, a token's text or slotted text, and it is written through `CSSStyleRule.style`, never through an element's `style`: the overflow-region module's mask size and `ocelle-list-detail`'s intrinsic sizes are its two uses",
   "No template has a `style` attribute or a `<style>` element",
   "Every element's styles hold `:host([hidden]) { display: none; }` beside its `:host` display rule, which would otherwise beat the user-agent `[hidden]` rule.",
   // amended by 011 (FR-001, FR-036; research.md R-01): colour and ground variants inside the query, layout-only ones outside
@@ -76,10 +96,15 @@ const fragments = [
   "Constructable stylesheets (`adoptedStyleSheets`): Chromium 73, WebKit 16.4",
   "An element that uses a feature newer than the floor raises the floor in this section, the one list of the floor features, and records the feature in its own feature's research",
   "Only Chromium is measured. WebKit (Kitty Desktop on macOS and Linux) is not: its accessibility tree, forced colours and mirroring are an open limitation",
+  // since 009 (T019, R-18)
+  "`mask-image`, and `mask-size`, `mask-position`, `mask-origin`, `mask-clip`, `mask-repeat` and `mask-composite`, unprefixed: Chromium 120, WebKit 15.4",
   // forwarded slots, for shell authors (011 FR-036, the spec's Empty slot; research.md R-03 § Forwarded slots; phase 1 review R2-01, landing L1-04)
   "A shell that forwards a slot of its own into an element of this package, such as `<slot name=\"footer\" slot=\"footer\"></slot>` in its shadow root, assigns that `<slot>` element to the element's slot. The element counts it as content even when nothing is assigned to the forwarded slot, so the part takes its wrapper, gap, padding or divider with nothing in it. Forward a slot only when it has content, or remove the forwarding `<slot>` when it has none.",
   // host ARIA (FR-034, PLAN-A11Y-SECURITY-1-002 (a), 1-003 (a))
-  "A host `aria-label` names the element as `label` does, and when present it decides alone: a blank host `aria-label` leaves the element unlabelled even with a `label`",
+  // since 009 (T019, PLAN-CORRECTNESS-1-005 (a)): the rule scoped per element, replacing the package-wide sentence
+  "A host `aria-label` names the element as `label` does. For `ocelle-icon` and `ocelle-brand-mark`, when present it decides alone: a blank host `aria-label` leaves the element unlabelled even with a `label`",
+  "For `ocelle-scroller`, `ocelle-workflow-board` and `ocelle-workflow-lane` a blank host `aria-label` counts as absent, so `label` still names the element: Chromium names a host from a present `aria-label` and does not fall back from a blank one, so these elements put their role and name on a node in their shadow root, named by the host's non-blank `aria-label`, trimmed, or else by `label`",
+  "`ocelle-list-detail` takes no name: a host `aria-label` is not used",
   "When both are set, the host `aria-label` is the name; removing it falls back to `label`",
   "Chromium uses a host `aria-label` as written, surrounding spaces included, so pass it trimmed; the element never rewrites it",
   "A host `aria-hidden=\"true\"` hides the element, labelled or not",
@@ -125,6 +150,112 @@ const fragments = [
   // the mark's licence and the trademark note (FR-029, FR-030, US4 scenario 10)
   "The mark is the project's own drawing of the Ocelle rosette, redrawn from the geometry of Ocelle's app icon, under Apache-2.0",
   "\"Ocelle\" and the rosette mark are trademarks of their owner. The Apache-2.0 licence grants no right to use them (section 6 of the licence); they may be used only to refer to Ocelle",
+  // the overflow-region module, under the element conventions (009 FR-011, FR-034; contracts/overflow-region.md; T019)
+  "The overflow-region module (`src/overflow-region.ts`, internal) gives an element a scroll box that is a tab stop and a named group, or region, only while it overflows: `ocelle-scroller` uses it, and so does any later element with a scroll region",
+  "Inputs: the host element (`new OverflowRegion(host, { box, role, step })`), `box`, a function that returns the scroll box in the host's shadow root, `role`, `\"group\"` by default or `\"region\"`, `step`, 40 px by default, and the label through `setLabel(label)`; the host lists `aria-label` in `observedAttributes` and re-renders on its change",
+  "Outputs, read by the host's render: `overflowing`, `offStart`, `offEnd`, `fadeStart`, `fadeEnd`, `fadeAttribute` (`\"start\"`, `\"end\"`, `\"both\"` or undefined) and `name`; the module requests an update when one changes",
+  "Effects, on the scroll box and the module's own shadow nodes only, never on the host: the box's `tabindex`, `role` and `aria-label`, the arrow keys on the box, the focus clearance of slotted controls and the focus handover when overflow ends",
+  // the Lifecycle statement as contracts/overflow-region.md § Lifecycle has it (009 phase 2 review R2-02, landing review
+  // L1-03 and L1-04, operator round phase 2 round 3, O3-03 and O3-04; T070)
+  "Lifecycle: when the host connects, it adds its `keydown`, `focusin` and `focusout` listeners on the host and its `ResizeObserver`; after each update it follows the box, and on a new box, or none, it first lets go of the old one (unobserved, its `scroll` and `slotchange` listeners and its frame's `focusout` listener taken off, its `tabindex`, `role` and `aria-label` removed), so the new box takes them over; when the host disconnects, it disconnects the observer and takes its three listeners off the host, and the box keeps its attributes as last set; it emits no event",
+  "The host renders `.region-frame` holding `.region-box` (with `data-fade` bound through `ifDefined`), whose `.region-track` holds the content, then `.region-ring` and two `.region-edge` elements (`start`, `end`), all but the box `aria-hidden`, and adds `overflowRegionStyles` to its `static styles`",
+  "An element that uses the module does not set `tabindex`, `role` or `aria-label` on the box, handle the arrow keys on it, add a second fade or edge cue, scroll it smoothly, bind `data-fade` without `ifDefined`, or set the mask's size or a ring on `.region-frame` itself",
+  // ocelle-scroller (009 FR-001 to FR-010, FR-034; contracts/elements.md § `ocelle-scroller`; Edge Cases; T019)
+  "`ocelle-scroller` lays out its slotted content in one box that scrolls in the inline direction only; it is a tab stop and a named group only while its content overflows",
+  "`label` (attribute and property, not reflected): the name of the scroller's group while it overflows, trimmed; empty or whitespace-only counts as none",
+  "It has one default slot, the strip's content",
+  "`ocelle-scroller` reads the tokens `--ocelle-focus-offset`, `--ocelle-focus-width`, `--ocelle-color-focus`, `--ocelle-scroller-fade-size`, `--ocelle-color-ink` (as a mask colour only) and `--ocelle-border-width` (the forced-colours edge line)",
+  "While it overflows and has a name, the scroller is one `group` node with that name, holding its content; it is not a landmark. While it overflows without a name it is a tab stop with no role and no name. While its content fits it adds no tab stop and no role, beyond the `generic` node the host gets from an `id` or a host `aria-label`",
+  "While it overflows, the scroller is a tab stop before its content. `ArrowLeft` and `ArrowRight` on the focused scroller, without a modifier, scroll it 40 px with no animation; `Home`, `End`, arrows with Alt, Ctrl, Meta or Shift, and every key pressed while a slotted control has focus get the browser's default",
+  "When the content stops overflowing while the scroller has focus, focus moves to its first focusable slotted element, also inside a slotted element's open shadow root, and otherwise to the scroller itself, which shows the focus ring inside its box",
+  "Each inline edge with content off-screen fades the content toward transparency over `--ocelle-scroller-fade-size`; in forced colours it shows a 1 px `CanvasText` line instead",
+  "A slotted control focused with a focus ring is scrolled into view with its ring, at least the fade depth from each edge that fades; a control too wide for that keeps the fade off the side it would cover until focus leaves it or the box is scrolled",
+  "The platform's horizontal scrollbar is kept: where it takes space it adds its thickness to the scroller's block size, and it is never faded",
+  "Always give a scroller a `label`. A scroller repeated per item takes a name that identifies the item, such as \"Tags of WP-12\", not the same name on every card",
+  "In a shrink-to-fit host (a default flex item, a dialog, a table cell) the scroller takes its content's size and does not overflow, so the page may scroll sideways instead: give the scroller a definite or maximum inline size there so that it scrolls",
+  "Under reduced motion nothing the scroller does animates. The browser's own scrolling of the strip on a key pressed while a slotted control has focus is not the scroller's and may animate, also under reduced motion; the element does not control it",
+  "`ocelle-scroller` has no event, CSS part or CSS custom property",
+  // ocelle-workflow-board (009 FR-012 to FR-016, FR-034; contracts/elements.md § `ocelle-workflow-board`; Edge Cases;
+  // research.md R-08, R-10; T036)
+  "`ocelle-workflow-board` lays its children out in one row in the inline direction, `--ocelle-space-3` apart: each child takes at least `--ocelle-lane-min-width` and the children share any extra space equally; when their minimum widths exceed its size, the board scrolls inside itself",
+  "`label` (attribute and property, not reflected): the name of the board's region while it overflows, trimmed; empty or whitespace-only counts as none",
+  "It has one default slot, the lanes",
+  "`ocelle-workflow-board` reads the tokens `--ocelle-lane-min-width`, `--ocelle-space-3`, `--ocelle-focus-offset`, `--ocelle-focus-width`, `--ocelle-color-focus`, `--ocelle-scroller-fade-size`, `--ocelle-color-ink` (as a mask colour only) and `--ocelle-border-width` (the forced-colours edge line)",
+  "While it overflows and has a name, the board is one `region` landmark with that name, holding its lanes. Otherwise its tree, keyboard, focus, fades and scrollbar are those of `ocelle-scroller`, through the same overflow-region module",
+  "A board holds lanes. Any other child is laid out as a lane: it takes the same minimum and the same equal share",
+  "No content widens a lane past its share: text wraps, and a word wider than the lane breaks inside it. Content that cannot shrink, such as an element of fixed inline size, is not clipped: it overflows its lane over the next one, and when it reaches past the board's end the board scrolls. Put wide content, such as a row of chips, in an `ocelle-scroller`",
+  "`base.css` caps images nested in a card at the lane's width; a host without it caps them itself",
+  "The board paints no ground of its own: put it, and its flat lanes, on a main ground",
+  "In a shrink-to-fit host (a default flex item, a dialog, a table cell) the board takes its lanes' minimum widths and gaps and does not overflow, so the page may scroll sideways instead: give the board a definite or maximum inline size there so that it scrolls",
+  "A change inside a lane that changes only the inline size of a descendant, and neither the board's size nor a lane's, is picked up at the board's next size, slot or scroll event",
+  "`ocelle-workflow-board` has no event, CSS part or CSS custom property",
+  // ocelle-workflow-lane (009 FR-017 to FR-021, FR-034; contracts/elements.md § `ocelle-workflow-lane`; research.md
+  // R-09, R-10; T036)
+  "`ocelle-workflow-lane` is a column of a board with an optional title, an optional count and a variant. It has one default slot, the lane's content",
+  "`label` (attribute and property, not reflected): the lane's title, shown and used as its name, trimmed; empty or whitespace-only counts as absent, and no title is shown",
+  "`count` (attribute and property, not reflected): a whole number of 0 or more, shown after the title with tabular figures as plain digits (`03` shows 3). The attribute counts only when, after trimming, it is decimal digits alone, at most `Number.MAX_SAFE_INTEGER`; the property, when it is a safe integer of 0 or more; anything else counts as absent",
+  "`count-label` (attribute, and property `countLabel`, not reflected): the count's text in the name, trimmed, such as \"3 work packages\"; the visible count still shows the number",
+  "`variant` (attribute and property, reflected): `flat` drops the lane's ground, corners and padding and sets the title and count in small uppercase; any other value gives the default",
+  "The lane is one `group` named by its title, then \", \" and the `count-label` or the count when a count is shown (\"Ready, 3\"); without a title, by the count's text alone; without a shown count, by the title alone. With neither it adds no role and no name. A non-blank host `aria-label` names the group alone",
+  "No word is added to the name in any language: a host that wants words passes them in `count-label`",
+  "The visible title and count are hidden from the accessibility tree, so the name is not read twice",
+  "The lane is not a live region: a change of `count` or `count-label` updates the visible count and the name, and is not announced",
+  "The default lane's ground is `--ocelle-color-sheet`, which differs from `--ocelle-color-canvas`, `--ocelle-color-panel`, `--ocelle-color-inspector` and `--ocelle-color-pane` in both themes, with `--ocelle-radius-row` corners and `--ocelle-space-3` padding; its title is `--ocelle-font-size-sm` at `--ocelle-font-weight-strong` in `--ocelle-color-ink`, and its count follows in `--ocelle-color-ink-muted`. In forced colours it draws a 1 px `CanvasText` border",
+  "The flat lane has no ground, corners or padding of its own: its cards sit on the board's ground. Its title and count are `--ocelle-font-size-xs` at `--ocelle-font-weight-strong` in `--ocelle-color-ink-soft`, uppercase, spaced by `--ocelle-tracking-eyebrow`, in `--ocelle-font-sans` with tabular figures. In forced colours it draws no border",
+  "`ocelle-workflow-lane` reads the tokens `--ocelle-color-sheet`, `--ocelle-radius-row`, `--ocelle-space-3`, `--ocelle-font-size-sm`, `--ocelle-font-size-xs`, `--ocelle-font-weight-strong`, `--ocelle-color-ink`, `--ocelle-color-ink-soft`, `--ocelle-color-ink-muted`, `--ocelle-tracking-eyebrow`, `--ocelle-font-sans`, `--ocelle-figures` and `--ocelle-border-width`; the board gives it `--ocelle-lane-min-width`",
+  "A long title wraps between words, and a word wider than the lane breaks inside it; the lane does not widen for it, and the count stays visible",
+  "`ocelle-workflow-lane` has no event, CSS part or CSS custom property",
+  // ocelle-list-detail (009 FR-022 to FR-029, FR-034; contracts/elements.md § `ocelle-list-detail`; research.md R-11,
+  // R-13, R-14; Edge Cases; T052)
+  "`ocelle-list-detail` lays out a list beside the selected record's detail, with an optional inspector: three columns when there is room for them, two with the inspector stacked under the detail, and one pane at a time below its threshold or when the host sets `narrow`",
+  "`collapse-below` (attribute, and property `collapseBelow`, not reflected): one column below this length; the default is `--ocelle-list-detail-collapse` (40rem) as computed on the element",
+  "`inspector-below` (attribute, and property `inspectorBelow`, not reflected): the inspector stacks under the detail below this length; the default is `--ocelle-list-detail-inspector-collapse` (60rem) as computed on the element",
+  "`narrow` (attribute and property, reflected): forces the one-column layout whatever the element's size",
+  "`detail-open` (attribute, and property `detailOpen`, reflected): in one column, shows the detail pane, with the inspector stacked under it, instead of the list; in two or three columns it has no effect",
+  "`remeasure()`: requests a measurement of the element's intrinsic sizes for the next animation frame, for a change the element cannot see (the container-tier convention lists them), and in that frame re-chooses the tier from a fresh measurement of the element's border box. On an element that is not in a document, never connected or removed, it does nothing: a never-connected element measures itself at its first render anyway, and after changing a removed element, call `remeasure()` once it is inserted again",
+  // since the landing pass (operator round phase 4 round 5, O5-01; T079): not rendered
+  "On an element in a document that is not rendered, with no box (in a closed `<dialog>`, under a `display: none` ancestor or with `hidden`), a pass or a call of `remeasure()` writes nothing and leaves the figures and the tier as they were; once the element is rendered (the dialog opened, the ancestor or the host shown) it measures itself afresh, with no call of `remeasure()` needed",
+  "It has three slots: `list`, the list pane; the default slot, the detail pane; and `inspector`, the optional inspector pane. An empty `inspector` slot adds no track, no border and no space",
+  "`ocelle-list-detail` reads the tokens `--ocelle-list-track-width`, `--ocelle-shell-inspector-width`, `--ocelle-list-detail-collapse`, `--ocelle-list-detail-inspector-collapse`, `--ocelle-color-rule`, `--ocelle-border-width`, `--ocelle-focus-width` and `--ocelle-color-focus`",
+  "The list pane is `--ocelle-list-track-width` wide, the inspector `--ocelle-shell-inspector-width`, its border included, and the detail takes the rest; a 1 px `--ocelle-color-rule` border, decorative only, runs between adjacent panes, in `CanvasText` in forced colours",
+  "When a layout or `detail-open` change hides the pane that holds focus, the element moves focus to the start of the pane that is shown: that pane takes focus by script only, never as a tab stop, and shows the focus ring inset, in `Highlight` in forced colours. Focus outside the hidden pane is not moved. The way back to the list is the host's own control; the element emits no event",
+  "At upgrade, focus is moved only when it is inside a pane that the first layout hides",
+  "The element adds no role, landmark or name of its own: the host names its own landmarks or headings in the panes",
+  "`ocelle-list-detail` has no event, CSS part or CSS custom property",
+  // the container-tier convention, under the element conventions (009 FR-025, FR-034, SC-009; contracts/elements.md
+  // § Container-tier convention; research.md R-12, R-13; T052)
+  "The container-tier convention: a tier is chosen from the element's own border-box inline size, measured by a `ResizeObserver`, never from the viewport. `ocelle-list-detail` follows it, and so does any later element with tiers",
+  "A threshold is a `*-below` attribute. After trimming ASCII whitespace it accepts exactly `^(?:0|[0-9]+(?:\\.[0-9]+)?(?:px|rem|em))$`, units in any ASCII letter case: `rem` resolves at the root's computed font size and `em` at the host's, and every other value counts as absent",
+  "Without the attribute, the threshold is its token as computed on the element, parsed with the same grammar, so a host that sets the token on the element or an ancestor moves it; a token value that is not an accepted form gives the token's published value",
+  "Bounds are exclusive: the narrower tier applies only below the threshold, and at exactly the threshold the wider tier applies",
+  "A boolean attribute set by the host, such as `narrow`, forces the narrowest tier",
+  "No `container-type` is set on a host that may shrink to fit, such as a flex item, a dialog or a table cell: it would collapse to 0 px there",
+  "The element's intrinsic inline sizes do not depend on the tier it shows: its max-content size is that of its widest tier and its min-content size that of its narrowest, so a shrink-to-fit host cannot make the tier alternate",
+  "The intrinsic sizes are measured in one pass, at most once per animation frame and never inside a `ResizeObserver` callback, after a slot change or a light-DOM node or text change in any pane, shown or hidden, after a call of `remeasure()`, and, synchronously, before a tier change the host sets through an attribute or a property",
+  // since the landing pass (operator round phase 4 round 5, O5-01; T079): becoming rendered is a trigger
+  "Becoming rendered is a re-measure trigger too: an element first rendered or changed while it had no box, in a closed `<dialog>`, under a `display: none` ancestor or with `hidden`, measures its intrinsic sizes afresh in the next animation frame once it is rendered (the dialog opened, the ancestor or the host shown), never inside the `ResizeObserver` callback that sees it, and then has the size and the tier it has when rendered from the start; the host need not call `remeasure()`",
+  "While the element is not rendered, a pass or a call of `remeasure()` writes nothing: the figures, the measured size and the tier stay as they were, and no figure becomes `NaN` or the 0 px of the missing box",
+  "Changes with no light-DOM node or text change are not seen and wait for the next of these: an image or a font loading, content a slotted element renders in its own shadow root, and an attribute-only change such as a class swap; the host calls `remeasure()` after one",
+  // the known limitations and their remedy (phase 4 review round 2, R2-01 and R2-02; operator decision P4)
+  "The element's own inline padding and borders are added to each and are no floor of either",
+  "A change of the element's own inline padding or borders alone re-chooses the tier. Two cases are known limitations, and the host calls `remeasure()` after a change in either; it re-chooses the tier from a fresh measurement of the element's border box in the next animation frame",
+  "a percentage inline padding that changes with the host's container while the element's content box keeps its size, such as a content-box host with a fixed or capped inline size and percentage gutters: the change may go unseen, unless, for example, the host's container is positioned and the host is not; otherwise the tier stays stale until `remeasure()` or the next change the element sees",
+  "a host whose content box is narrower than its own inline padding and borders: a change of a px or em padding or of a border alone is seen there too, and only a percentage padding may go unseen, as above",
+  "One pass renders every pane in the measurement grid twice and restores it: about 10 ms (7 to 19 ms) with a 1000-row list. Attribute changes, such as a selection's `class` or `aria-selected`, run none; light-DOM swaps and text changes run at most one per frame",
+  "Content a consumer mutates inside its own `ResizeObserver` callback can still make the browser report \"ResizeObserver loop completed with undelivered notifications.\" through layout alone, when the shown layout grows a shrink-to-fit host; the element does not cause it and cannot prevent it",
+  "Hosts set `narrow`, `detail-open` and the `*-below` thresholds from a task, not from a `ResizeObserver` callback",
+  // since 009 phase 5 (T062, FR-034): the frames of User Scenarios as the tested screen sizes
+  "The layout elements are tested in four frames that stand for screens, each a block box of a stated inline size on a page whose viewport is wider than the frame, so the element's own measurement is tested, not the viewport's; the figures assume a 16 px root font size",
+  "Frame W, 876 px: the 1280 px window beside a context sidebar, 1280 px less the rail (52 px), the sidebar (320 px) and two gutters (32 px)",
+  "Frame R, 1196 px: the 1280 px window with the rail only",
+  "Frame N, 636 px: the narrow tier, at a 720 px viewport (`--ocelle-shell-collapse-sidebar`, 45rem), where the sidebar has collapsed",
+  "Frame S, 288 px: the 320 px reflow width",
+  // since 009 phase 5 (T062, FR-034; spec User Scenarios, Engines): WebKit and the layout elements' focus behaviour
+  "WebKit is not measured for the layout elements either: the tab stop of `ocelle-scroller` and `ocelle-workflow-board` while they overflow, their arrow keys, their focus handover when overflow ends and `ocelle-list-detail`'s focus moves are untested there",
+  // since 009 phase 5 (T062; spec Edge Cases, Print)
+  "These elements are screen layouts. In print, a board shows its lanes as the browser lays them out, and content off-screen in a scroller is not printed",
+  // since 009 phase 5 (T062; research.md R-15, Not applicable)
+  "Loading, error and disabled states do not apply to `ocelle-scroller`, `ocelle-workflow-board`, `ocelle-workflow-lane` and `ocelle-list-detail`: they are layout elements, with no such state and no story for one",
   // ocelle-section-header (011 FR-036, FR-010 to FR-013, FR-031, SC-006; contracts/elements-package.md § Tokens each element reads)
   '<ocelle-section-header> <span slot="eyebrow">Mission</span> <h2 slot="heading">Runs</h2> <p slot="description">Every run of the mission, newest first.</p> <button slot="actions" type="button">New run</button> </ocelle-section-header>',
   "It creates no heading of its own: slot one heading element (`h1` to `h6`) in `heading`, and its level is the page's. The page's own rules for that heading win over the header's styles.",
@@ -296,6 +427,10 @@ const entryRows = [
   "| `@ocelle/elements` | `dist/index.js` | every element; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-icon.js` | `dist/ocelle-icon.js` | `ocelle-icon` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-brand-mark.js` | `dist/ocelle-brand-mark.js` | `ocelle-brand-mark` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-scroller.js` | `dist/ocelle-scroller.js` | `ocelle-scroller` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-workflow-board.js` | `dist/ocelle-workflow-board.js` | `ocelle-workflow-board` only, not the lane; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-workflow-lane.js` | `dist/ocelle-workflow-lane.js` | `ocelle-workflow-lane` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-list-detail.js` | `dist/ocelle-list-detail.js` | `ocelle-list-detail` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-dialog.js` | `dist/ocelle-dialog.js` | `ocelle-dialog` and the `ocelle-icon` it renders; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-drawer.js` | `dist/ocelle-drawer.js` | `ocelle-drawer` and the `ocelle-icon` it renders; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-tooltip.js` | `dist/ocelle-tooltip.js` | `ocelle-tooltip` only; for hosts with a bundler |",
@@ -431,7 +566,7 @@ describe("packages/elements/README.md", () => {
   it("lists exactly the entry points of package.json's exports in its Entry points table (FR-002)", () => {
     const manifest = JSON.parse(read("package.json")) as { exports?: Record<string, string> };
     expect(tableRows(read("README.md"), "Entry points")).toEqual(entryRows);
-    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-dialog.js", "./ocelle-drawer.js", "./ocelle-tooltip.js", "./ocelle-card.js", "./ocelle-section-header.js", "./ocelle-page-header.js", "./ocelle-context-sidebar.js", "./ocelle-personal-rail.js", "./ocelle-facts.js", "./ocelle-fact.js", "./ocelle-empty-state.js", "./ocelle-progress.js", "./browser.js", "./custom-elements.json"]);
+    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-scroller.js", "./ocelle-workflow-board.js", "./ocelle-workflow-lane.js", "./ocelle-list-detail.js", "./ocelle-dialog.js", "./ocelle-drawer.js", "./ocelle-tooltip.js", "./ocelle-card.js", "./ocelle-section-header.js", "./ocelle-page-header.js", "./ocelle-context-sidebar.js", "./ocelle-personal-rail.js", "./ocelle-facts.js", "./ocelle-fact.js", "./ocelle-empty-state.js", "./ocelle-progress.js", "./browser.js", "./custom-elements.json"]);
   });
 
   it("lists the thirteen names of the set, whether each mirrors and the consumer need it meets, in its Icons table (US2-1, FR-018, SC-007)", () => {
@@ -689,6 +824,22 @@ describe("packages/elements/CHANGELOG.md", () => {
     "`@ocelle/elements/ocelle-brand-mark.js`",
     "`ground` and `tone` (reflected) and `label`",
     "the slot convention for icons in controls",
+    // since 009 (T029, FR-035)
+    "`ocelle-scroller`",
+    "`@ocelle/elements/ocelle-scroller.js`",
+    "the overflow-region module convention",
+    // since 009 phase 3 (T043, FR-035)
+    "`ocelle-workflow-board`",
+    "`ocelle-workflow-lane`",
+    "`@ocelle/elements/ocelle-workflow-board.js`",
+    "`@ocelle/elements/ocelle-workflow-lane.js`",
+    "`label`, `count`, `count-label` and `variant` (reflected)",
+    // since 009 phase 4 (T060, FR-035)
+    "`ocelle-list-detail`",
+    "`@ocelle/elements/ocelle-list-detail.js`",
+    "`collapse-below`, `inspector-below`, `narrow` (reflected) and `detail-open` (reflected)",
+    "`remeasure()`",
+    "the container-tier convention",
     // 008 (T019, T024): the dialog's surface
     "`ocelle-dialog`",
     "`@ocelle/elements/ocelle-dialog.js`",
