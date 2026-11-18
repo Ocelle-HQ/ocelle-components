@@ -122,6 +122,18 @@ async function settle(): Promise<void> {
   await new Promise((resolve) => requestAnimationFrame(resolve));
 }
 
+/**
+ * Waits until every `ocelle-*` element of the page has rendered, then for a frame: the wait of the form and announcement
+ * steps of specs/010-feedback-forms (`insert`, `batch`, `type`, `pressOn`, ...), as it was before 009's two-frame
+ * `settle`. Their scenarios time a change in fractions of the test W = 100 ms from the step's end (`after`), so the
+ * step returns one rendering update after the change, not three (the landing's second merge of main).
+ */
+async function updated(): Promise<void> {
+  const elements = [...document.querySelectorAll("*")].filter((each) => each.localName.startsWith("ocelle-"));
+  await Promise.all(elements.map((each) => (each as Partial<LitElement>).updateComplete ?? Promise.resolve(true)));
+  await new Promise((resolve) => requestAnimationFrame(resolve));
+}
+
 /** The `userEvent.keyboard` text of one press of `key`, with Shift held when `shift`. */
 function keyText(key: string, shift: boolean): string {
   const text = key === " " ? "[Space]" : `{${key}}`;
@@ -571,7 +583,7 @@ export function inProcessDriver(): InProcessDriver {
         const parsed = new DOMParser().parseFromString(`<!doctype html><body>${markup}`, "text/html");
         container.append(...[...parsed.body.childNodes].map((node) => document.adoptNode(node)));
       } else container.append(...built(markup));
-      await settle();
+      await updated();
     },
     laterTask,
     insertInteractive: async (containerId, markup) => {
@@ -579,7 +591,7 @@ export function inProcessDriver(): InProcessDriver {
       await driver.readyState("interactive");
       const at = performance.now();
       element(containerId).innerHTML = markup;
-      await settle();
+      await updated();
       return at;
     },
     after: async (ms) => {
@@ -593,7 +605,7 @@ export function inProcessDriver(): InProcessDriver {
     // The phase 2 steps (specs/010-feedback-forms T011).
     batch: async (operations) => {
       for (const operation of operations) operate(operation);
-      await settle();
+      await updated();
     },
     property: (id, name) => {
       const value = (element(id) as unknown as Record<string, unknown>)[name];
@@ -630,30 +642,30 @@ export function inProcessDriver(): InProcessDriver {
     },
     reset: async (formId) => {
       form(formId).reset();
-      await settle();
+      await updated();
     },
     type: async (id, text) => {
       element(id).focus();
       await userEvent.keyboard(typed(text));
-      await settle();
+      await updated();
     },
     pressOn: async (id, key) => {
       element(id).focus();
       keyed = true;
       await userEvent.keyboard(keys(key));
-      await settle();
+      await updated();
     },
     blur: async () => {
       let active = document.activeElement;
       while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement;
       (active as HTMLElement | null)?.blur();
-      await settle();
+      await updated();
     },
     clickPoint: async (id, at) => {
       // Playwright's position is from the padding box; `at` is from the border box.
       const target = element(id);
       await userEvent.click(target, { position: { x: at.x - target.clientLeft, y: at.y - target.clientTop } });
-      await settle();
+      await updated();
     },
     focusChain: () => {
       const path: string[] = [];
@@ -670,7 +682,7 @@ export function inProcessDriver(): InProcessDriver {
       element(containerId).innerHTML = markup.replaceAll("ocelle-first-load", tag);
       await driver.liveCapture.start(containerId);
       define(tag, class extends (base as typeof HTMLElement) {});
-      await settle();
+      await updated();
       return tag;
     },
     readyState: (value) => {

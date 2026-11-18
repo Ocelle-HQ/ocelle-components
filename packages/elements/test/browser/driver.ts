@@ -49,6 +49,21 @@ function settle(page: Page): Promise<void> {
   });
 }
 
+/**
+ * Waits in the page until every `ocelle-*` element has rendered and the fonts have loaded, then for a frame: the wait
+ * of the form and announcement steps of specs/010-feedback-forms (`insert`, `batch`, `type`, `pressOn`, ...), as it was
+ * before 009's two-frame `settle`, so they return one rendering update after their change (the landing's second merge
+ * of main).
+ */
+function updated(page: Page): Promise<void> {
+  return page.evaluate(async () => {
+    const elements = [...document.querySelectorAll("*")].filter((each) => each.localName.startsWith("ocelle-"));
+    await Promise.all(elements.map((each) => (each as unknown as { updateComplete?: Promise<unknown> }).updateComplete ?? Promise.resolve()));
+    await document.fonts.ready;
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+  });
+}
+
 /** The page's time now. */
 const now = (page: Page): Promise<number> => page.evaluate(() => performance.now());
 
@@ -373,7 +388,7 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
     },
     insert: async (containerId, markup, how) => {
       await insertIn(page, containerId, markup, how);
-      await settle(page);
+      await updated(page);
     },
     laterTask: async () => {
       await page.evaluate(async () => {
@@ -438,7 +453,7 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
           else (byId(operation.id) as HTMLElement).focus();
         }
       }, operations);
-      await settle(page);
+      await updated(page);
     },
     property: (id, name) =>
       page.evaluate(({ id, name }) => {
@@ -480,7 +495,7 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
         (globalThis as unknown as { ocelleFirstLoad: unknown }).ocelleFirstLoad = given;
       }, { markup: markup.replaceAll("ocelle-first-load", tag) });
       await driver.liveCapture.startDocument(page.url());
-      await settle(page);
+      await updated(page);
     },
     defineSecond: async (tag) => {
       // A second copy's guarded registration, as src/define.ts makes it: a defined tag is left as it is.
@@ -518,18 +533,18 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
         if (!(form instanceof HTMLFormElement)) throw new Error(`#${formId} is not a form`);
         form.reset();
       }, formId);
-      await settle(page);
+      await updated(page);
     },
     type: async (id, text) => {
       await page.evaluate((id) => document.getElementById(id)?.focus(), id);
       await page.keyboard.type(text);
-      await settle(page);
+      await updated(page);
     },
     pressOn: async (id, key) => {
       await page.evaluate((id) => document.getElementById(id)?.focus(), id);
       keyed = true;
       await page.keyboard.press(key);
-      await settle(page);
+      await updated(page);
     },
     blur: async () => {
       await page.evaluate(() => {
@@ -537,7 +552,7 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
         while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement;
         (active as HTMLElement | null)?.blur();
       });
-      await settle(page);
+      await updated(page);
     },
     clickPoint: async (id, at) => {
       const box = await page.evaluate((id) => {
@@ -547,7 +562,7 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
         return { x: rect.x, y: rect.y };
       }, id);
       await page.mouse.click(box.x + at.x, box.y + at.y);
-      await settle(page);
+      await updated(page);
     },
     focusChain: () =>
       page.evaluate(() => {
