@@ -187,6 +187,236 @@ const proseSelectors = prose.flatMap((rule) => rule.selectors);
 /** data-model.md § Rule table, identifier wrap: one rule, last in the file (R-03). */
 const wrap: RuleEntry = { media: [], selectors: ['[data-ocelle-wrap="anywhere"]'], declarations: [["overflow-wrap", "anywhere"]] };
 
+/** 019 contracts/styles-data-table.md § Block 1 (research R-06, R-07, R-18, R-20): the data-table rules at (0,0,0), after the wrap rule, in order. */
+const dataTableBlock1: readonly RuleEntry[] = [
+  {
+    media: [],
+    selectors: [":where(ocelle-data-table > table)"],
+    declarations: [
+      ["border-collapse", "collapse"],
+      ["inline-size", "100%"],
+      ["margin", "0"],
+      ["font-family", "var(--ocelle-font-sans)"],
+      ["font-variant-numeric", "var(--ocelle-figures)"],
+    ],
+  },
+  {
+    media: [],
+    selectors: [":where(ocelle-data-table > table > caption)"],
+    declarations: [
+      ["font-size", "var(--ocelle-font-size-sm)"],
+      ["font-weight", "var(--ocelle-font-weight-medium)"],
+      ["line-height", "var(--ocelle-line-height-normal)"],
+      ["color", "var(--ocelle-color-ink)"],
+      ["text-align", "start"],
+      ["padding-block-end", "var(--ocelle-space-2)"],
+      ["position", "static"],
+      ["max-inline-size", "calc(var(--data-table-box-size, var(--ocelle-measure-container)) - 2 * (var(--ocelle-focus-offset) + var(--ocelle-focus-width)) - var(--data-table-end-fade, 0 * var(--ocelle-scroller-fade-size)))"],
+    ],
+  },
+  {
+    media: [],
+    selectors: [":where(ocelle-data-table > table > :is(thead, tbody, tfoot) > tr > :is(td, th))"],
+    declarations: [
+      ["padding", "var(--ocelle-space-1) var(--ocelle-space-2)"],
+      ["font-size", "var(--ocelle-font-size-sm)"],
+      ["line-height", "var(--ocelle-line-height-compact)"],
+      ["color", "var(--ocelle-color-ink-soft)"],
+      ["text-align", "start"],
+      ["vertical-align", "top"],
+      ["border-block-end", "var(--ocelle-border-width) solid var(--ocelle-color-rule)"],
+    ],
+  },
+  {
+    media: [],
+    selectors: [":where(ocelle-data-table > table > thead > tr > th, ocelle-data-table > table > :is(thead, tbody, tfoot) > tr > th[scope=\"col\"], ocelle-data-table > table > :is(thead, tbody, tfoot) > tr > th[scope=\"colgroup\"])"],
+    declarations: [
+      ["font-size", "var(--ocelle-font-size-eyebrow)"],
+      ["font-weight", "var(--ocelle-font-weight-eyebrow)"],
+      ["text-transform", "uppercase"],
+      ["letter-spacing", "var(--ocelle-tracking-eyebrow)"],
+      ["color", "var(--ocelle-color-eyebrow)"],
+      ["border-block-end-color", "var(--ocelle-color-rule-strong)"],
+    ],
+  },
+  {
+    media: [],
+    selectors: [":where(ocelle-data-table > table > :is(thead, tbody, tfoot) > tr > th[scope=\"row\"], ocelle-data-table > table > :is(thead, tbody, tfoot) > tr > th[scope=\"rowgroup\"], ocelle-data-table > table > :is(tbody, tfoot) > tr > th:not([scope]))"],
+    declarations: [
+      ["font-size", "var(--ocelle-font-size-sm)"],
+      ["font-weight", "var(--ocelle-font-weight-medium)"],
+      ["text-transform", "none"],
+      ["letter-spacing", "normal"],
+      ["color", "var(--ocelle-color-ink)"],
+      ["border-block-end-color", "var(--ocelle-color-rule)"],
+    ],
+  },
+  {
+    media: [],
+    selectors: [":where(ocelle-data-table > table > :is(tbody, tfoot):last-child > tr:last-child > :is(td, th))"],
+    declarations: [
+      ["border-block-end", "0"],
+    ],
+  },
+  {
+    media: [],
+    selectors: [":where(ocelle-data-table[wrap=\"anywhere\"] > table > :is(tbody, tfoot) > tr > td)"],
+    declarations: [
+      ["overflow-wrap", "anywhere"],
+    ],
+  },
+  {
+    media: [],
+    selectors: [":where(ocelle-data-table[sticky-header] > table)"],
+    declarations: [
+      ["border-collapse", "separate"],
+      ["border-spacing", "0"],
+    ],
+  },
+  {
+    media: [],
+    selectors: [":where(ocelle-data-table[sticky-header] > table > thead)"],
+    declarations: [
+      ["position", "sticky"],
+      ["inset-block-start", "calc(-1 * (var(--ocelle-focus-offset) + var(--ocelle-focus-width)))"],
+    ],
+  },
+  {
+    media: [],
+    selectors: [":where(ocelle-data-table[sticky-header] > table > thead > tr > :is(td, th))"],
+    declarations: [
+      ["background-color", "var(--ocelle-color-sheet)"],
+    ],
+  },
+  {
+    media: [],
+    selectors: [":where(ocelle-data-table[striped] > table > tbody > tr:nth-child(even) > :is(td, th))"],
+    declarations: [
+      ["background-color", "var(--ocelle-color-inset)"],
+    ],
+  },
+  {
+    media: ["@media (hover: hover)"],
+    selectors: [":where(ocelle-data-table > table > tbody > tr:hover > :is(td, th))"],
+    declarations: [
+      ["background-color", "var(--ocelle-color-hover-bg)"],
+    ],
+  },
+  {
+    media: ["@media (forced-colors: active)"],
+    selectors: [":where(ocelle-data-table > table > :is(thead, tbody, tfoot) > tr > :is(td, th))"],
+    declarations: [
+      ["color", "CanvasText"],
+      ["border-block-end-color", "CanvasText"],
+    ],
+  },
+  {
+    media: ["@media (forced-colors: active)"],
+    selectors: [":where(ocelle-data-table > table > tbody > tr > :first-child)"],
+    declarations: [
+      ["border-inline-start", "var(--ocelle-bar-width) solid Canvas"],
+    ],
+  },
+  {
+    media: ["@media (forced-colors: active)"],
+    selectors: [":where(ocelle-data-table[striped] > table > tbody > tr:nth-child(even) > :first-child)"],
+    declarations: [
+      ["border-inline-start-color", "CanvasText"],
+    ],
+  },
+  {
+    media: ["@media (forced-colors: active)", "@media (hover: hover)"],
+    selectors: [":where(ocelle-data-table > table > tbody > tr:hover > :first-child)"],
+    declarations: [
+      ["border-inline-start-color", "Highlight"],
+    ],
+  },
+];
+
+/** 019 contracts/styles-data-table.md § Block 2 (R-06, R-18): the prose override at (0,1,0), after block 1. */
+const dataTableBlock2: readonly RuleEntry[] = [
+  {
+    media: [],
+    selectors: ["[data-ocelle-prose=\"\"] :where(ocelle-data-table > table)"],
+    declarations: [
+      ["display", "table"],
+      ["overflow-x", "visible"],
+      ["max-inline-size", "none"],
+      ["container-type", "normal"],
+      ["margin-block", "0"],
+      ["border-collapse", "collapse"],
+    ],
+  },
+  {
+    media: [],
+    selectors: ["[data-ocelle-prose=\"\"] :where(ocelle-data-table[sticky-header] > table)"],
+    declarations: [
+      ["border-collapse", "separate"],
+    ],
+  },
+  {
+    media: [],
+    selectors: ["[data-ocelle-prose=\"\"] :where(ocelle-data-table > table > caption)"],
+    declarations: [
+      ["position", "static"],
+      ["inset-inline-start", "auto"],
+      ["max-inline-size", "calc(var(--data-table-box-size, var(--ocelle-measure-container)) - 2 * (var(--ocelle-focus-offset) + var(--ocelle-focus-width)) - var(--data-table-end-fade, 0 * var(--ocelle-scroller-fade-size)))"],
+      ["text-align", "start"],
+      ["font-size", "var(--ocelle-font-size-sm)"],
+      ["line-height", "var(--ocelle-line-height-normal)"],
+    ],
+  },
+  {
+    media: [],
+    selectors: ["[data-ocelle-prose=\"\"] :where(ocelle-data-table > table > :is(thead, tbody, tfoot) > tr > :is(td, th))"],
+    declarations: [
+      ["min-inline-size", "auto"],
+      ["padding", "var(--ocelle-space-1) var(--ocelle-space-2)"],
+      ["border-block-end", "var(--ocelle-border-width) solid var(--ocelle-color-rule)"],
+      ["text-align", "start"],
+    ],
+  },
+  {
+    media: [],
+    selectors: ["[data-ocelle-prose=\"\"] :where(ocelle-data-table > table > thead > tr > th, ocelle-data-table > table > :is(thead, tbody, tfoot) > tr > th[scope=\"col\"], ocelle-data-table > table > :is(thead, tbody, tfoot) > tr > th[scope=\"colgroup\"])"],
+    declarations: [
+      ["font-size", "var(--ocelle-font-size-eyebrow)"],
+      ["font-variant-numeric", "var(--ocelle-figures)"],
+      ["font-weight", "var(--ocelle-font-weight-eyebrow)"],
+      ["border-block-end-color", "var(--ocelle-color-rule-strong)"],
+    ],
+  },
+  {
+    media: [],
+    selectors: ["[data-ocelle-prose=\"\"] :where(ocelle-data-table > table > :is(thead, tbody, tfoot) > tr > th[scope=\"row\"], ocelle-data-table > table > :is(thead, tbody, tfoot) > tr > th[scope=\"rowgroup\"], ocelle-data-table > table > :is(tbody, tfoot) > tr > th:not([scope]))"],
+    declarations: [
+      ["font-size", "var(--ocelle-font-size-sm)"],
+      ["font-variant-numeric", "var(--ocelle-figures)"],
+      ["font-weight", "var(--ocelle-font-weight-medium)"],
+      ["border-block-end-color", "var(--ocelle-color-rule)"],
+    ],
+  },
+  {
+    media: [],
+    selectors: ["[data-ocelle-prose=\"\"] :where(ocelle-data-table > table > :is(tbody, tfoot):last-child > tr:last-child > :is(td, th))"],
+    declarations: [
+      ["border-block-end", "0"],
+    ],
+  },
+];
+
+/** 019 contracts/styles-data-table.md § Block 4 (R-19): the numeric-cell hook, after block 2, last in the file. */
+const dataTableBlock4: readonly RuleEntry[] = [
+  {
+    media: [],
+    selectors: ["[data-ocelle-align=\"end\"]"],
+    declarations: [
+      ["text-align", "end"],
+      ["font-variant-numeric", "var(--ocelle-figures)"],
+    ],
+  },
+];
+
 /** How many problems a check reports on each plant string. */
 function reports(check: (sheet: ReturnType<typeof parse>) => string[], plants: readonly string[]): number[] {
   return plants.map((plant) => check(parse(plant)).length);
@@ -206,9 +436,27 @@ describe("src/base.css as shipped (buildPlan(text)[0].content)", () => {
     expect(rules(root).slice(start, start + prose.length)).toEqual(prose);
   });
 
-  it("ends with the identifier-wrap rule of data-model § Rule table, right after the prose rules, with exactly its declaration (R-03)", () => {
+  // 019 phase 1 (research R-06, R-19; PLAN-CORRECTNESS-1-005): the file now ends with the wrap rule, then the data
+  // table's block 1, then its prose override (block 2), then the numeric-cell hook (block 4), in that order.
+  it("ends with the identifier-wrap rule right after the prose rules, then the data-table block 1, block 2 and block 4, in that order, with exactly their declarations (R-03; 019 R-06, R-19)", () => {
     const start = baseLayer.length + compactScale.length + prose.length;
-    expect(rules(root).slice(start)).toEqual([wrap]);
+    expect(rules(root).slice(start)).toEqual([wrap, ...dataTableBlock1, ...dataTableBlock2, ...dataTableBlock4]);
+  });
+
+  it("019 R-06, R-18, R-20: block 1's selectors are each wrapped whole in :where() at (0,0,0), the hover rule and the forced-colours Highlight band rule inside @media (hover: hover); block 2's and block 4's at (0,1,0)", () => {
+    expect({
+      block1: dataTableBlock1.flatMap((rule) => rule.selectors).map(specificity),
+      hover: dataTableBlock1.filter((rule) => rule.selectors.some((selector) => selector.includes("tr:hover"))).map((rule) => rule.media),
+      block2: dataTableBlock2.flatMap((rule) => rule.selectors).map(specificity),
+      block4: dataTableBlock4.flatMap((rule) => rule.selectors).map(specificity),
+      shipped: selectors(root).filter((selector) => selector.includes("ocelle-data-table") || selector.includes("data-ocelle-align")).length,
+    }).toEqual({
+      block1: dataTableBlock1.flatMap((rule) => rule.selectors).map(() => [0, 0, 0]),
+      hover: [["@media (hover: hover)"], ["@media (forced-colors: active)", "@media (hover: hover)"]],
+      block2: dataTableBlock2.flatMap((rule) => rule.selectors).map(() => [0, 1, 0]),
+      block4: [[0, 1, 0]],
+      shipped: 23,
+    });
   });
 
   it("US1-3: has the focus rule's four longhands and the forced-colours rule, and declares no motion and no forced-color-adjust: none", () => {

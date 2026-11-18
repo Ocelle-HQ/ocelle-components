@@ -424,6 +424,11 @@ export function inProcessDriver(): Driver {
       resolve(target).scrollTo({ left: value, behavior: "instant" });
       await settle();
     },
+    scrollTop: (target) => Promise.resolve(resolve(target).scrollTop),
+    setScrollTop: async (target, value) => {
+      resolve(target).scrollTo({ top: value, behavior: "instant" });
+      await settle();
+    },
     lastKeyPrevented: () => Promise.resolve(lastKey?.defaultPrevented ?? false),
     frameRecord: async (target, read) => {
       const subject = resolve(target);

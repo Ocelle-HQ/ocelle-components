@@ -186,6 +186,17 @@ describe("the in-process driver", () => {
     }).toEqual({ before: [0, 0], after: [120, 300], inner: 300, scrolls: [120] });
   });
 
+  // 019 T079: the block-axis readers of the overflow-region module's block-axis option, as scrollLeft and setScrollLeft.
+  it("scrollTop(target) reads and setScrollTop(target, value) writes an instant scroll, on a light-DOM box with smooth scroll-behavior and on a shadow box", async () => {
+    await driver.mount('<div id="box"><div id="tall"></div></div><driver-host id="h"></driver-host>');
+    await driver.rules("#box { block-size: 100px; overflow-y: auto; scroll-behavior: smooth; } #tall { inline-size: 20px; block-size: 1000px; }");
+    const before = [await driver.scrollTop("box"), await driver.scrollTop({ id: "h", inner: ".scroll" })];
+    const at: number[] = [];
+    document.getElementById("box")?.addEventListener("scroll", () => at.push(document.getElementById("box")?.scrollTop ?? -1));
+    await driver.setScrollTop("box", 120);
+    expect({ before, after: await driver.scrollTop("box"), scrolls: at, left: document.getElementById("box")?.scrollLeft }).toEqual({ before: [0, 0], after: 120, scrolls: [120], left: 0 });
+  });
+
   it("lastKeyPrevented() is false after mount, true after a key the page prevents and false after one it does not", async () => {
     await driver.mount('<button id="a" type="button">A</button>');
     const button = document.getElementById("a");

@@ -20,7 +20,9 @@
 //   that imports nothing;
 // - since 009 phase 4 (US3 scenario 12, research.md R-13): the test-only slotted elements of list-detail's intrinsic
 //   sizes, test/fixtures/list-detail-controls.ts bundled the same way into
-//   `<dir>/test-controls/ocelle-test-list-detail.js`.
+//   `<dir>/test-controls/ocelle-test-list-detail.js`;
+// - since 019 (T079): the overflow-region module's block-axis test host, test/fixtures/overflow-host-block.ts bundled
+//   the same way, with its own copy of Lit, into `<dir>/test-controls/ocelle-test-overflow-block.js`.
 // The directory, or the reason the builds failed, is provided to the tests, which report it: a failed build is a
 // failing test of its own, and every page then lacks the scripts it loads.
 import { spawnSync } from "node:child_process";
@@ -122,6 +124,19 @@ async function testControls(dir: string): Promise<void> {
       emptyOutDir: false,
       minify: false,
       lib: { entry: join(elements, "test", "fixtures", "list-detail-controls.ts"), formats: ["es"], fileName: () => "ocelle-test-list-detail.js" },
+    },
+  });
+  // Since 019 (T079): the overflow-region module's block-axis test host, with its own copy of Lit.
+  await build({
+    configFile: false,
+    root: elements,
+    logLevel: "error",
+    resolve: { conditions: ["module", "browser", "production"] },
+    build: {
+      outDir: join(dir, "test-controls"),
+      emptyOutDir: false,
+      minify: false,
+      lib: { entry: join(elements, "test", "fixtures", "overflow-host-block.ts"), formats: ["es"], fileName: () => "ocelle-test-overflow-block.js" },
     },
   });
 }

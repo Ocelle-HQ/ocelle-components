@@ -277,7 +277,7 @@ describe("generate(root) on the repository's element source", () => {
     const manifest = await generate(repo);
     const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
     expect(manifest.schemaVersion).toBe("1.0.0");
-    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-card.ts", "src/ocelle-context-sidebar.ts", "src/ocelle-dialog.ts", "src/ocelle-drawer.ts", "src/ocelle-empty-state.ts", "src/ocelle-fact.ts", "src/ocelle-facts.ts", "src/ocelle-icon.ts", "src/ocelle-list-detail.ts", "src/ocelle-page-header.ts", "src/ocelle-personal-rail.ts", "src/ocelle-progress.ts", "src/ocelle-scroller.ts", "src/ocelle-section-header.ts", "src/ocelle-tooltip.ts", "src/ocelle-workflow-board.ts", "src/ocelle-workflow-lane.ts"]);
+    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-card.ts", "src/ocelle-context-sidebar.ts", "src/ocelle-data-table.ts", "src/ocelle-dialog.ts", "src/ocelle-drawer.ts", "src/ocelle-empty-state.ts", "src/ocelle-fact.ts", "src/ocelle-facts.ts", "src/ocelle-icon.ts", "src/ocelle-list-detail.ts", "src/ocelle-page-header.ts", "src/ocelle-personal-rail.ts", "src/ocelle-progress.ts", "src/ocelle-scroller.ts", "src/ocelle-section-header.ts", "src/ocelle-tooltip.ts", "src/ocelle-workflow-board.ts", "src/ocelle-workflow-lane.ts"]);
     const [icon] = modules.find((module) => module.path === "src/ocelle-icon.ts")?.declarations ?? [];
     expect(icon).toMatchObject({
       kind: "class",
