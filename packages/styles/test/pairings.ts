@@ -43,3 +43,17 @@ export function uncheckedPairings(pairs: readonly PairEntry[], pairings: readonl
       .map((theme) => `${pairing.fg} on ${pairing.bg} in ${theme}`),
   );
 }
+
+/** The nine main grounds (002's contrast table; the value hook's and the data table's grounds). */
+export const mainGrounds: readonly string[] = ["color-canvas", "color-sheet", "color-pane", "color-panel", "color-inspector", "color-rail", "color-inset", "color-accent-low", "color-hover-bg"];
+
+/**
+ * 019 (contracts/styles-data-table.md § Block 1; research.md R-06, R-13, R-18, R-20): the data table's text colours
+ * (body cells `ink-soft`, column headers `eyebrow`, row headers and the caption `ink`) on each of the nine main grounds,
+ * the three grounds block 1 paints (`sheet` for the pinned header, `inset` for the stripe, `hover-bg` for the hover)
+ * among them. Transcribed by hand from R-06, never read from base.css.
+ */
+export const dataTablePairings: readonly Pairing[] = ["color-ink-soft", "color-eyebrow", "color-ink"].flatMap((fg) => mainGrounds.map((bg) => ({ fg, bg })));
+
+/** The grounds block 1 paints. */
+export const dataTableGrounds: readonly string[] = ["color-hover-bg", "color-inset", "color-sheet"];

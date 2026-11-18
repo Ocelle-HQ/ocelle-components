@@ -8,7 +8,7 @@ import * as root from "../src/index.ts";
 // `ocelle-workflow-lane`, and since 009 phase 4 (T051) `ocelle-list-detail`; since 011 `ocelle-card`,
 // `ocelle-section-header`, `ocelle-page-header` (T027), `ocelle-context-sidebar` (T034) and `ocelle-personal-rail`
 // (T042); and since 013 `ocelle-facts`, `ocelle-fact`, `ocelle-empty-state` and `ocelle-progress`. This file's own
-// iframe (Vitest browser mode, isolate on) holds only what this import defines.
+// iframe (Vitest browser mode, isolate on) holds only what this import defines. Since 019 (T010) also `ocelle-data-table`.
 describe("importing src/index.ts", () => {
   it("defines ocelle-icon, ocelle-brand-mark, ocelle-scroller, ocelle-workflow-board, ocelle-workflow-lane, ocelle-list-detail, ocelle-card, ocelle-section-header, ocelle-page-header, ocelle-context-sidebar and ocelle-personal-rail as the OcelleIcon, OcelleBrandMark, OcelleScroller, OcelleWorkflowBoard, OcelleWorkflowLane, OcelleListDetail, OcelleCard, OcelleSectionHeader, OcellePageHeader, OcelleContextSidebar and OcellePersonalRail it exports", () => {
     const exported = root as Record<string, unknown>;
@@ -85,5 +85,16 @@ describe("importing src/index.ts", () => {
       progress: customElements.get("ocelle-progress"),
       track: document.getElementById("p")?.shadowRoot?.querySelector('[part="track"]') !== null && document.getElementById("p")?.shadowRoot !== null,
     }).toEqual({ type: "function", progress: exported.OcelleProgress, track: true });
+  });
+
+  it("defines ocelle-data-table as the OcelleDataTable it exports, and a data table renders its region with the table assigned (019)", async () => {
+    const exported = root as Record<string, unknown>;
+    document.body.innerHTML = '<ocelle-data-table id="d"><table id="t"><tbody><tr><td>WP01</td></tr></tbody></table></ocelle-data-table>';
+    await (document.getElementById("d") as unknown as { updateComplete: Promise<unknown> }).updateComplete;
+    expect({
+      type: typeof exported.OcelleDataTable,
+      table: customElements.get("ocelle-data-table"),
+      assigned: document.getElementById("d")?.shadowRoot?.querySelector<HTMLSlotElement>(".region-box slot")?.assignedNodes().map((node) => (node as Element).id),
+    }).toEqual({ type: "function", table: exported.OcelleDataTable, assigned: ["t"] });
   });
 });

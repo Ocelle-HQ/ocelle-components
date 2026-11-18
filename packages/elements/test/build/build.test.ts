@@ -380,3 +380,16 @@ describe("the browser build (dist/browser/ocelle-elements.js)", () => {
     }).toEqual({ opens: true, statements: [] });
   });
 });
+
+// 019 (FR-040, contracts/ocelle-data-table.md; tasks.md T010): the data table's module imports lit, the registration
+// helper and 009's overflow-region module it is built on, and neither the package root nor another element's module.
+describe("the module build's data-table module", () => {
+  it("dist/ocelle-data-table.js imports lit, the registration helper and the overflow-region module, and neither the package root nor another element", () => {
+    const imported = specifiers(existsSync(join(dist, "ocelle-data-table.js")) ? readFileSync(join(dist, "ocelle-data-table.js"), "utf8") : "");
+    expect({
+      lit: imported.includes("lit"),
+      own: imported.filter((specifier) => specifier.startsWith("./")),
+      outside: imported.filter((specifier) => !specifier.startsWith("./") && specifier !== "lit" && !specifier.startsWith("lit/")),
+    }).toEqual({ lit: true, own: ["./define.js", "./overflow-region.js"], outside: [] });
+  });
+});

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The data-table rules of base.css on an undefined ocelle-data-table</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="base.css">
+</head>
+<body>
+<main id="main">
+<ocelle-data-table id="dt" wrap="anywhere" striped sticky-header>
+<table id="t"><caption id="cap">Work packages</caption>
+<thead id="head"><tr><th id="corner" scope="row">Item</th><th id="h1">Lane</th><th id="h2" data-ocelle-align="end">Estimate</th></tr></thead>
+<tbody>
+<tr><th id="rh1">WP01</th><td id="c1">Spec</td><td id="n1" data-ocelle-align="end">3</td></tr>
+<tr hidden><th>WP02</th><td>Hidden</td><td>1</td></tr>
+<tr><th id="rh3">WP03</th><td id="c3">Plan</td><td id="n3" data-ocelle-align="start">2</td></tr>
+<tr><th id="rh4">WP04</th><td id="c4">Build</td><td id="n4">5</td></tr>
+</tbody>
+<tbody><tr><td id="g1">a</td><td>b</td><td>c</td></tr><tr><td id="g2">a</td><td>b</td><td>c</td></tr></tbody>
+<tfoot><tr><td id="f1">Total</td><td>x</td><td>10</td></tr></tfoot>
+</table>
+</ocelle-data-table>
+<ocelle-data-table id="plain"><table id="pt0"><tbody><tr><td id="p1">Outer<table><tbody><tr><td id="nested">Nested</td></tr></tbody></table></td><td id="p2">x</td></tr></tbody></table></ocelle-data-table>
+<div data-ocelle-prose="" id="prose">
+<ocelle-data-table id="pdt" sticky-header><table id="pt"><caption id="pcap">Prose</caption><thead><tr><th id="ph">Id</th><th id="pn" data-ocelle-align="end">Est</th></tr></thead><tbody><tr><td id="pc">a</td><td id="pnum" data-ocelle-align="end">1</td></tr><tr><td id="pc2">b</td><td>2</td></tr></tbody></table></ocelle-data-table>
+<ocelle-data-table id="pdt2"><table id="pt2"><tbody><tr><td id="pq">a</td></tr></tbody></table></ocelle-data-table>
+<table id="plaint"><tbody><tr><td id="plc">a</td><td id="pln" data-ocelle-align="end">2</td></tr></tbody></table>
+</div>
+<p id="probe">probe</p>
+</main>
+</body>
+</html>

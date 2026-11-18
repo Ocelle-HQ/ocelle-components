@@ -54,8 +54,10 @@ const fragments = [
   // styles (FR-003, R-03, R-04, R-09)
   // since 009 (T019, FR-030): the shared sheets and at most one per-instance sheet of measured figures, replacing "one
   // shared stylesheet"
-  "An element's styles are its shared `static styles`, one or more `css` tagged templates built only from `--ocelle-*` tokens and the values the `style-lint` gate allows, which every instance adopts, plus at most one per-instance constructed stylesheet that holds only px figures the element measured from layout",
-  "The per-instance sheet never holds a value from an attribute, a property, a token's text or slotted text, and it is written through `CSSStyleRule.style`, never through an element's `style`: the overflow-region module's mask size and `ocelle-list-detail`'s intrinsic sizes are its two uses",
+  // amended by 019 phase 1 (research.md R-07, recheck Q2 (c)): at most one per-instance sheet of the element's own, plus
+  // the overflow-region module's beside it, and the data table's caption cap among the uses
+  "An element's styles are its shared `static styles`, one or more `css` tagged templates built only from `--ocelle-*` tokens and the values the `style-lint` gate allows, which every instance adopts, plus at most one per-instance constructed stylesheet of its own that holds only px figures the element measured from layout, and, in an element that uses the overflow-region module, the module's per-instance sheet beside it",
+  "A per-instance sheet never holds a value from an attribute, a property, a token's text or slotted text, and it is written through `CSSStyleRule.style`, never through an element's `style`: the overflow-region module's mask size, `ocelle-list-detail`'s intrinsic sizes and `ocelle-data-table`'s caption cap (its box size and end fade depth) are its uses",
   "No template has a `style` attribute or a `<style>` element",
   "Every element's styles hold `:host([hidden]) { display: none; }` beside its `:host` display rule, which would otherwise beat the user-agent `[hidden]` rule.",
   // amended by 011 (FR-001, FR-036; research.md R-01): colour and ground variants inside the query, layout-only ones outside
@@ -103,7 +105,7 @@ const fragments = [
   // host ARIA (FR-034, PLAN-A11Y-SECURITY-1-002 (a), 1-003 (a))
   // since 009 (T019, PLAN-CORRECTNESS-1-005 (a)): the rule scoped per element, replacing the package-wide sentence
   "A host `aria-label` names the element as `label` does. For `ocelle-icon` and `ocelle-brand-mark`, when present it decides alone: a blank host `aria-label` leaves the element unlabelled even with a `label`",
-  "For `ocelle-scroller`, `ocelle-workflow-board` and `ocelle-workflow-lane` a blank host `aria-label` counts as absent, so `label` still names the element: Chromium names a host from a present `aria-label` and does not fall back from a blank one, so these elements put their role and name on a node in their shadow root, named by the host's non-blank `aria-label`, trimmed, or else by `label`",
+  "For `ocelle-scroller`, `ocelle-workflow-board`, `ocelle-workflow-lane` and `ocelle-data-table` a blank host `aria-label` counts as absent, so `label` still names the element: Chromium names a host from a present `aria-label` and does not fall back from a blank one, so these elements put their role and name on a node in their shadow root, named by the host's non-blank `aria-label`, trimmed, or else by `label`",
   "`ocelle-list-detail` takes no name: a host `aria-label` is not used",
   "When both are set, the host `aria-label` is the name; removing it falls back to `label`",
   "Chromium uses a host `aria-label` as written, surrounding spaces included, so pass it trimmed; the element never rewrites it",
@@ -152,7 +154,10 @@ const fragments = [
   "\"Ocelle\" and the rosette mark are trademarks of their owner. The Apache-2.0 licence grants no right to use them (section 6 of the licence); they may be used only to refer to Ocelle",
   // the overflow-region module, under the element conventions (009 FR-011, FR-034; contracts/overflow-region.md; T019)
   "The overflow-region module (`src/overflow-region.ts`, internal) gives an element a scroll box that is a tab stop and a named group, or region, only while it overflows: `ocelle-scroller` uses it, and so does any later element with a scroll region",
-  "Inputs: the host element (`new OverflowRegion(host, { box, role, step })`), `box`, a function that returns the scroll box in the host's shadow root, `role`, `\"group\"` by default or `\"region\"`, `step`, 40 px by default, and the label through `setLabel(label)`; the host lists `aria-label` in `observedAttributes` and re-renders on its change",
+  // amended by 019 phase 1 (FR-018, inventory decision IQ-2; contracts/overflow-region-block-axis.md): the block-axis option
+  "Inputs: the host element (`new OverflowRegion(host, { box, role, step, blockAxis, blockStartBox })`), `box`, a function that returns the scroll box in the host's shadow root, `role`, `\"group\"` by default or `\"region\"`, `step`, 40 px by default, the block-axis option `blockAxis`, a function that returns whether the box also scrolls in the block axis, and `blockStartBox`, a function that returns the box the host pins at the block start or `null`, and the label through `setLabel(label)`; the host lists `aria-label` in `observedAttributes` and re-renders on its change",
+  "`ocelle-data-table` with `sticky-header` is the only user that sets the block-axis option. While it is on and the box overflows in the block axis, the module sets `data-axis=\"both\"` on the box, handles ArrowUp and ArrowDown, leaves PageUp, PageDown, Home, End, Space and Shift+Space to the browser, keeps a focused element clear of the pinned box, and fades the block end while content is below (`data-block-fade=\"end\"`, drawn by `.region-edge.block-end` as a line in forced colours)",
+  "`ocelle-scroller`, `ocelle-workflow-board` and `ocelle-workflow-lane` do not set it, and nothing changes for them",
   "Outputs, read by the host's render: `overflowing`, `offStart`, `offEnd`, `fadeStart`, `fadeEnd`, `fadeAttribute` (`\"start\"`, `\"end\"`, `\"both\"` or undefined) and `name`; the module requests an update when one changes",
   "Effects, on the scroll box and the module's own shadow nodes only, never on the host: the box's `tabindex`, `role` and `aria-label`, the arrow keys on the box, the focus clearance of slotted controls and the focus handover when overflow ends",
   // the Lifecycle statement as contracts/overflow-region.md § Lifecycle has it (009 phase 2 review R2-02, landing review
@@ -418,6 +423,33 @@ const fragments = [
   "The label is text only: there is no slot for a rich label",
   "The element has no slot: text inside it (a \"7/12\" fallback) shows only before the element is defined, and after that it is neither shown nor exposed; the bar keeps its own name and value",
   "`ocelle-progress` emits no event and adds no tab stop",
+  // ocelle-data-table (019 FR-001 to FR-019, FR-040, FR-056, FR-058; contracts/ocelle-data-table.md; research.md R-01 to
+  // R-07, R-16, R-18 to R-20; tasks.md T013)
+  "`ocelle-data-table` holds one native `<table>` as its first child and shows it unchanged in a scroll region: `<ocelle-data-table label=\"Work packages\"><table>…</table></ocelle-data-table>`",
+  "A container whose content is one native element is styled by `@ocelle/styles` rules scoped to it and assigns that element by manual slot assignment; other children are not shown",
+  "`ocelle-data-table` uses the overflow-region module, as `ocelle-scroller`, `ocelle-workflow-board` and `ocelle-workflow-lane` do",
+  "The region's name is the host `aria-label` when it is not blank, else `label`, else the caption's text; give an overflowing table a caption or a `label`",
+  "Give an overflowing table a `label` that differs from its caption's text: a region named by its caption is announced with the table's own name",
+  "Sizing: a wrapper that is itself the flex or grid item, around the element, needs `min-inline-size: 0` too. In a shrink-to-fit host (a dialog, an inline-block, a start-aligned flex) the data table takes its table's width and overflows only when its own inline size is bounded",
+  "The `hidden` attribute, not CSS, hides part of a caption from the name",
+  "The caption scrolls with the table until the overflow-region module's pinned-start option lands",
+  "The caption's longest word widens the table; in a bounded host a caption word wider than the box overflows it and the region scrolls",
+  "The look comes from `@ocelle/styles`: link its `base.css` on the page, or adopt it in a consumer's shadow root",
+  "Inside a `data-ocelle-prose` container a consumer rule on the table needs a specificity above (0,1,0), or (0,1,0) placed after `@ocelle/styles`",
+  "Printed, content past the box is clipped; a consumer who prints sets a print rule of its own",
+  "Before upgrade the table is styled by `@ocelle/styles` with no scroll region",
+  "Chromium names each column header by its drawn upper-case text, so the accessible names of column headers follow the upper case",
+  "Base-style hook: the element writes `--data-table-box-size` (the box's measured inline size) and `--data-table-end-fade` (the end fade's depth while it shows) for `@ocelle/styles`' caption cap. Both are public surface of `@ocelle/elements` and `@ocelle/styles`, and a consumer does not set them",
+  "No change the data table makes to its region leaves it in a state a fresh load would not give",
+  "`sticky-header` pins the `<thead>` while the body scrolls in a block size the page bounds on the host with its own `block-size` or `max-block-size`; with no bound nothing scrolls in the block axis",
+  "The caption scrolls away in the block axis. ArrowUp and ArrowDown scroll the region, and PageUp, PageDown, Home, End, Space and Shift+Space scroll it as the browser does",
+  "The block end fades while rows are below, never under the header, with a line in forced colours",
+  "A bounded table prints its box only",
+  "`striped` gives each `<tbody>`'s even rows the `--ocelle-color-inset` ground, hidden rows counted",
+  "A hovered body row takes the `--ocelle-color-hover-bg` ground: a look only, with no event, no tab stop and no cursor; always on where the device can hover, nothing on a touch screen",
+  "In the light theme a hovered striped row shows no change, because `hover-bg` equals `inset` there",
+  "For an end-aligned numeric column, put `@ocelle/styles`' `data-ocelle-align=\"end\"` on the column's cells",
+  "No data-table row of the mapping reads \"pending inventory\"",
   // two copies on a page (FR-006, Edge Cases)
   "Two copies of the package on one page, two versions or the browser build beside a bundle of the module build, cannot both define an element: the first definition wins and the second import throws nothing",
 ];
@@ -443,6 +475,7 @@ const entryRows = [
   "| `@ocelle/elements/ocelle-fact.js` | `dist/ocelle-fact.js` | `ocelle-fact` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-empty-state.js` | `dist/ocelle-empty-state.js` | `ocelle-empty-state` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-progress.js` | `dist/ocelle-progress.js` | `ocelle-progress` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-data-table.js` | `dist/ocelle-data-table.js` | `ocelle-data-table` only; for hosts with a bundler |",
   "| `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |",
   "| `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |",
 ];
@@ -547,6 +580,27 @@ const progressMapping: readonly (readonly [string, string])[] = [
   ["progress centred", "`ocelle-empty-state`'s `visual` slot, which centres the bar and spans it up to the reading measure"],
 ];
 
+/**
+ * The data table's rows of the README's kitty-mission-ui mapping (019 FR-058, research.md R-16, inventory decisions IQ-1
+ * (a), IQ-6 (a), IQ-7 (a)): one row per modifier, state and structure role of the library's data table (it has no
+ * part), each role name with the element, attribute or hook, or the consumer's remedy, or "none", exactly. Keyed by role
+ * name; no class-family name appears in this test (013's operator decision I1).
+ */
+const dataTableMapping: readonly (readonly [string, string])[] = [
+  ["data table scroller", "`ocelle-data-table`'s region: a named `group` tab stop only while the table overflows, with the overflow-region focus ring; give an overflowing table a `label` that differs from its caption"],
+  ["data table class", "the consumer's own `<table>` inside `ocelle-data-table`, with no class"],
+  ["data table caption", "the table's `<caption>`, styled by `@ocelle/styles`"],
+  ["data table header cells", "the eyebrow column headers of `@ocelle/styles`; for sentence case, the consumer's own rule on the header cells, which wins over the (0,0,0) rules"],
+  ["data table body cells", "the compact body cells of `@ocelle/styles`"],
+  ["data table numeric cell", "`data-ocelle-align=\"end\"` on the column's cells, `@ocelle/styles`' hook"],
+  ["data table sticky header", "`ocelle-data-table sticky-header`, with the page's block bound on the host (`block-size` or `max-block-size`)"],
+  ["data table zebra rows", "`ocelle-data-table striped`"],
+  ["data table row hover", "built in: the hover ground of `@ocelle/styles` on a device that can hover"],
+  ["data table forced colours", "built in: system colours for text and rules, and the row band for the stripe and the hover"],
+  ["data table overflowing", "built in: the region's tab stop, role and name while the table overflows"],
+  ["data table tone", "none: the data table carries no tone"],
+];
+
 /** The table rows of one `##` section of the README, as written, without the header and the separator rows. */
 function tableRows(text: string, heading: string): string[] {
   const section = new RegExp(`^## ${heading}\\n([\\s\\S]*?)(?=^## |(?![\\s\\S]))`, "m").exec(text)?.[1] ?? "";
@@ -566,7 +620,7 @@ describe("packages/elements/README.md", () => {
   it("lists exactly the entry points of package.json's exports in its Entry points table (FR-002)", () => {
     const manifest = JSON.parse(read("package.json")) as { exports?: Record<string, string> };
     expect(tableRows(read("README.md"), "Entry points")).toEqual(entryRows);
-    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-scroller.js", "./ocelle-workflow-board.js", "./ocelle-workflow-lane.js", "./ocelle-list-detail.js", "./ocelle-dialog.js", "./ocelle-drawer.js", "./ocelle-tooltip.js", "./ocelle-card.js", "./ocelle-section-header.js", "./ocelle-page-header.js", "./ocelle-context-sidebar.js", "./ocelle-personal-rail.js", "./ocelle-facts.js", "./ocelle-fact.js", "./ocelle-empty-state.js", "./ocelle-progress.js", "./browser.js", "./custom-elements.json"]);
+    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-scroller.js", "./ocelle-workflow-board.js", "./ocelle-workflow-lane.js", "./ocelle-list-detail.js", "./ocelle-dialog.js", "./ocelle-drawer.js", "./ocelle-tooltip.js", "./ocelle-card.js", "./ocelle-section-header.js", "./ocelle-page-header.js", "./ocelle-context-sidebar.js", "./ocelle-personal-rail.js", "./ocelle-facts.js", "./ocelle-fact.js", "./ocelle-empty-state.js", "./ocelle-progress.js", "./ocelle-data-table.js", "./browser.js", "./custom-elements.json"]);
   });
 
   it("lists the thirteen names of the set, whether each mirrors and the consumer need it meets, in its Icons table (US2-1, FR-018, SC-007)", () => {
@@ -590,6 +644,16 @@ describe("packages/elements/README.md", () => {
   it.each(progressMapping)("maps the role %s to its element and variant or the consumer's remedy in the kitty-mission-ui mapping (013 FR-058)", (role, covered) => {
     const row = tableRows(read("README.md"), "Mapping from kitty-mission-ui").map((line) => line.slice(2, -2).split(" | ")).find((cells) => cells[1] === role);
     expect(row?.[2]).toBe(covered);
+  });
+
+  it.each(dataTableMapping)("maps the role %s to its element, attribute or hook, or the consumer's remedy, in the kitty-mission-ui mapping (019 FR-058)", (role, covered) => {
+    const row = tableRows(read("README.md"), "Mapping from kitty-mission-ui").map((line) => line.slice(2, -2).split(" | ")).find((cells) => cells[1] === role);
+    expect(row?.[2]).toBe(covered);
+  });
+
+  it("maps every data-table role and none reads pending inventory (019 FR-058, IQ-1 (a))", () => {
+    const rows = tableRows(read("README.md"), "Mapping from kitty-mission-ui").map((line) => line.slice(2, -2).split(" | ")).filter((cells) => (cells[1] ?? "").startsWith("data table "));
+    expect({ roles: rows.map((cells) => cells[1]), pending: rows.filter((cells) => /pending inventory/i.test(cells[2] ?? "")).length }).toEqual({ roles: dataTableMapping.map(([role]) => role), pending: 0 });
   });
 
   it("names the @ocelle/tokens peer dependency of package.json", () => {
@@ -892,9 +956,19 @@ describe("packages/elements/CHANGELOG.md", () => {
     "`show-label`",
     "`size=\"compact\"`",
     "`ground=\"tinted\"`",
+    // 019 phase 1 (T021, T081; constitution VII, analysis I7 (a))
+    "`ocelle-data-table`",
+    "`@ocelle/elements/ocelle-data-table.js`",
+    "`sticky-header` (reflected) and `striped` (reflected)",
+    "the base-style hook `--data-table-box-size` and `--data-table-end-fade`",
     ...["chevron-start", "chevron-end", "chevron-up", "chevron-down", "arrow-start", "arrow-end", "menu", "close", "folder", "file", "search", "table", "copy"].map((name) => `\`${name}\``),
   ])("names %s under Unreleased / Added (constitution VII, FR-031, SC-008)", (surface) => {
     expect(added).toContain(surface);
+  });
+
+  // 019 phase 1 (T081): the overflow-region module's block-axis option, an internal change.
+  it("names the overflow-region module's block-axis option as an internal change with no effect on ocelle-scroller or ocelle-workflow-board", () => {
+    expect(flat(unreleased)).toContain("The overflow-region module gains a block-axis option, used only by `ocelle-data-table` with `sticky-header`; an internal change with no effect on `ocelle-scroller` or `ocelle-workflow-board`");
   });
 });
 

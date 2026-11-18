@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { define } from "../src/define.ts";
+import type * as DataTableModule from "../src/ocelle-data-table.ts";
 
 // Guarded registration (005 FR-006, research.md R-02, T014): `define` defines a free tag, and for a tag already
 // defined it does nothing and throws nothing, so the first definition stays. Vitest's browser mode gives this file its
@@ -21,5 +22,27 @@ describe("define(tag, constructor)", () => {
     }).not.toThrow();
     expect(customElements.get("ocelle-define-twice")).toBe(First);
     expect(document.createElement("ocelle-define-twice")).toBeInstanceOf(First);
+  });
+
+  // 019 (contracts/checks.md § Bodies that the platform alone could pass, "define twice"; tasks.md T010): two copies of
+  // the package's records elements. The first copy's class is defined; the second copy's `define` call is a no-op, so
+  // the tag resolves to the first copy's class, and an instance renders its shadow structure. Phases 2 and 3 add the
+  // timeline and the chain to this body.
+  it("two copies of the records elements: the first definition wins, the tag resolves to the first copy's class, and it renders its shadow structure", async () => {
+    const copy = (name: string): Promise<typeof DataTableModule> => import(/* @vite-ignore */ `../src/ocelle-data-table.ts?copy=${name}`) as Promise<typeof DataTableModule>;
+    const first = await copy("first");
+    const second = await copy("second");
+    const element = document.createElement("ocelle-data-table");
+    element.innerHTML = '<table id="t"><tbody><tr><td>WP01</td></tr></tbody></table>';
+    document.body.append(element);
+    await (element as unknown as { updateComplete: Promise<unknown> }).updateComplete;
+    const box = element.shadowRoot?.querySelector(".region-box") ?? null;
+    element.remove();
+    expect({
+      distinct: first.OcelleDataTable !== second.OcelleDataTable,
+      dataTable: customElements.get("ocelle-data-table") === first.OcelleDataTable,
+      instance: element instanceof first.OcelleDataTable,
+      box: box !== null,
+    }).toEqual({ distinct: true, dataTable: true, instance: true, box: true });
   });
 });

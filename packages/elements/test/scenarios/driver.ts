@@ -314,6 +314,10 @@ export interface Driver {
   scrollLeft(target: Target): Promise<number>;
   /** Sets the target's `scrollLeft` with an instant scroll, then settles. */
   setScrollLeft(target: Target, value: number): Promise<void>;
+  /** The target's `scrollTop` (019 T079, the block-axis option of the overflow-region module). */
+  scrollTop(target: Target): Promise<number>;
+  /** Sets the target's `scrollTop` with an instant scroll, then settles (019 T079). */
+  setScrollTop(target: Target, value: number): Promise<void>;
   /** Whether the last keydown the window saw since the last `mount` was default-prevented; false when there was none. */
   lastKeyPrevented(): Promise<boolean>;
   /**

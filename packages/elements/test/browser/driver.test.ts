@@ -284,6 +284,30 @@ describe("the fixture driver", { timeout: 60_000 }, () => {
     expect({ observed, recorded: await page.finish() }).toEqual({ observed: { before: [0, 0], after: [120, 300], inner: 300, scrolls: [120] }, recorded: clean });
   });
 
+  // 019 T079: the block-axis readers of the overflow-region module's block-axis option, as scrollLeft and setScrollLeft.
+  it("scrollTop(target) reads and setScrollTop(target, value) writes an instant scroll, on a light-DOM box with smooth scroll-behavior and on a shadow box", async () => {
+    const page = await open();
+    const driver = fixtureDriver(page.page, page.log);
+    await defineHost(page.page);
+    await driver.mount('<div id="box"><div id="tall"></div></div><driver-host id="h"></driver-host>');
+    await driver.rules("#box { block-size: 100px; overflow-y: auto; scroll-behavior: smooth; } #tall { inline-size: 20px; block-size: 1000px; }");
+    const before = [await driver.scrollTop("box"), await driver.scrollTop({ id: "h", inner: ".scroll" })];
+    await page.page.evaluate(() => {
+      const at: number[] = [];
+      (window as unknown as { at: number[] }).at = at;
+      const box = document.getElementById("box");
+      box?.addEventListener("scroll", () => at.push(box.scrollTop));
+    });
+    await driver.setScrollTop("box", 120);
+    const observed = {
+      before,
+      after: await driver.scrollTop("box"),
+      scrolls: await page.page.evaluate(() => (window as unknown as { at: number[] }).at),
+      left: await page.page.evaluate(() => document.getElementById("box")?.scrollLeft),
+    };
+    expect({ observed, recorded: await page.finish() }).toEqual({ observed: { before: [0, 0], after: 120, scrolls: [120], left: 0 }, recorded: clean });
+  });
+
   it("lastKeyPrevented() is false after mount, true after a key the page prevents and false after one it does not", async () => {
     const page = await open();
     const driver = fixtureDriver(page.page, page.log);

@@ -1212,3 +1212,184 @@ describe("every progressbar in the stories of the four elements is named (013 PL
     });
   }
 });
+
+// 019 phase 1 (tasks.md T014; contracts/checks.md § Stories; I3): the 21 data-table stories. Each is in the built index
+// and renders its `ocelle-data-table` in light and dark with no request outside the origin; loaded at 320 × 800 the
+// page does not scroll sideways and the host has a size; the overflowing named stories expose a named `group` (the host
+// `aria-label` story "Deployments", the blank host `aria-label` story "Work packages", spike Q1 (b)); the bounded
+// sticky-header story is a `group` named "Work packages" scrolling in the block axis only at 1280 px with
+// `data-block-fade="end"` at rest (Q-I4); the unbounded one has no `data-axis`, `overflow-y: hidden`, no block scroll, no
+// tab stop, no group and no fade, with its table separated (C1 (b), Q-3 (c)); the room-rule one is a block-scrolling
+// `group` with no fade, the space below its `<thead>` above 0 and below twice the fade depth (fixes-2 Q-1 (b)); and the
+// two hover stories declare `parameters.ocelle.pointer.hover` with one selector matching one body cell, the striped
+// one's on an even row (IQ-2 to IQ-5).
+const dataTableStories = [
+  "fits",
+  "overflows-named-by-label",
+  "overflows-named-by-caption",
+  "overflows-unnamed",
+  "overflows-named-by-host-aria-label",
+  "overflows-blank-host-aria-label",
+  "row-headers",
+  "corner-header",
+  "wrap-anywhere",
+  "inside-prose",
+  "right-to-left",
+  "empty-body",
+  "width-320",
+  "no-table",
+  "sticky-header-bounded",
+  "sticky-header-unbounded",
+  "sticky-header-room-rule",
+  "numeric-column",
+  "striped",
+  "row-hovered",
+  "striped-even-row-hovered",
+].map((name) => `elements-ocelle-data-table--${name}`);
+
+/** Opens a data-table story at `width` × 800 and waits for its elements. */
+async function openDataTable(id: string, theme: "light" | "dark", width = 1280): Promise<{ readonly page: Page; readonly outside: readonly string[] }> {
+  if (browser === undefined) throw new Error("the suite did not start");
+  const page = await browser.newPage({ viewport: { width, height: 800 }, reducedMotion: "reduce" });
+  const outside: string[] = [];
+  page.on("request", (request) => {
+    if (!request.url().startsWith(`${origin}/`)) outside.push(request.url());
+  });
+  await page.goto(`${origin}/iframe.html?id=${id}&viewMode=story&globals=theme:${theme}`, { waitUntil: "load" });
+  await page.waitForSelector("#storybook-root ocelle-data-table", { state: "attached", timeout: 10_000 }).catch(() => undefined);
+  await page.evaluate(async () => {
+    await Promise.all([...document.querySelectorAll("#storybook-root ocelle-data-table")].map((each) => (each as unknown as { updateComplete?: Promise<unknown> }).updateComplete ?? Promise.resolve()));
+    await document.fonts.ready;
+    for (let frame = 0; frame < 3; frame += 1) await new Promise((resolve) => requestAnimationFrame(resolve));
+  });
+  return { page, outside };
+}
+
+/** The first data table's region: its box's attributes and figures, `overflow-y`, the fade depth and the <thead>'s end. */
+function readRegion(page: Page): Promise<unknown> {
+  return page.evaluate(() => {
+    const host = document.querySelector("#storybook-root ocelle-data-table");
+    const box = host?.shadowRoot?.querySelector(".region-box");
+    if (host === null || box === null || box === undefined) return null;
+    const rect = box.getBoundingClientRect();
+    const head = host.querySelector(":scope > table > thead")?.getBoundingClientRect();
+    const edge = host.shadowRoot?.querySelector(".region-edge.block-end")?.getBoundingClientRect();
+    return {
+      tabindex: box.getAttribute("tabindex"),
+      role: box.getAttribute("role"),
+      name: box.getAttribute("aria-label"),
+      axis: box.getAttribute("data-axis"),
+      blockFade: box.getAttribute("data-block-fade"),
+      overflowY: getComputedStyle(box).overflowY,
+      blockScroll: box.scrollHeight - box.clientHeight,
+      inlineScroll: box.scrollWidth - box.clientWidth,
+      collapse: getComputedStyle(host.querySelector(":scope > table") ?? host).borderCollapse,
+      space: head === undefined ? null : rect.top + box.clientHeight - head.bottom,
+      depth: edge?.height ?? 0,
+    };
+  });
+}
+
+describe("the ocelle-data-table stories in the built Storybook (019 FR-050, T014)", { timeout: 60_000 }, () => {
+  it("are all in the built index", () => {
+    const index = JSON.parse(readFileSync(join(built.out, "index.json"), "utf8")) as { entries?: Record<string, unknown> };
+    expect(dataTableStories.filter((id) => index.entries?.[id] === undefined)).toEqual([]);
+  });
+
+  for (const id of dataTableStories) {
+    for (const theme of ["light", "dark"] as const) {
+      it(`${id} in ${theme}: renders its ocelle-data-table with no request outside the origin`, async () => {
+        const { page, outside } = await openDataTable(id, theme);
+        const observed = await page.evaluate(() => ({ theme: document.documentElement.dataset.theme, defined: customElements.get("ocelle-data-table") !== undefined, region: document.querySelector("#storybook-root ocelle-data-table")?.shadowRoot?.querySelector(".region-box") !== null }));
+        await page.close();
+        expect({ observed, outside }).toEqual({ observed: { theme, defined: true, region: true }, outside: [] });
+      });
+    }
+
+    it(`${id} at 320 px: the page does not scroll sideways and the host has a size`, async () => {
+      const { page } = await openDataTable(id, "light", 320);
+      const observed = await page.evaluate(() => {
+        const host = document.querySelector("#storybook-root ocelle-data-table")?.getBoundingClientRect();
+        return { scrollWidth: document.documentElement.scrollWidth, sized: host !== undefined && host.width > 0 && host.height > 0 };
+      });
+      const scrollWidth = await readScrollWidth(page.mainFrame());
+      await page.close();
+      expect({ ...observed, read: scrollWidth }).toEqual({ scrollWidth: 320, sized: true, read: 320 });
+    });
+  }
+
+  it.each([
+    ["overflows-named-by-label", "Work packages"],
+    ["overflows-named-by-caption", "Work packages"],
+    ["overflows-named-by-host-aria-label", "Deployments"],
+    ["overflows-blank-host-aria-label", "Work packages"],
+  ])("%s: the overflowing region is a group named %s", async (name, label) => {
+    const { page } = await openDataTable(`elements-ocelle-data-table--${name}`, "light");
+    const region = (await readRegion(page)) as { tabindex: string | null; role: string | null; name: string | null } | null;
+    await page.close();
+    expect(region === null ? null : { tabindex: region.tabindex, role: region.role, name: region.name }).toEqual({ tabindex: "0", role: "group", name: label });
+  });
+
+  it("sticky header, bounded / unbounded / under the room rule, at 1280 px: block scroll and the fade as Q-I4, Q-3 (c), C1 (b) and fixes-2 Q-1 (b) state", async () => {
+    const read = async (name: string): Promise<Record<string, unknown> | null> => {
+      const { page } = await openDataTable(`elements-ocelle-data-table--${name}`, "light");
+      const region = (await readRegion(page)) as Record<string, unknown> | null;
+      await page.close();
+      return region;
+    };
+    const bounded = await read("sticky-header-bounded");
+    const unbounded = await read("sticky-header-unbounded");
+    const room = await read("sticky-header-room-rule");
+    const pick = (region: Record<string, unknown> | null, keys: readonly string[]): unknown => (region === null ? null : Object.fromEntries(keys.map((key) => [key, region[key]])));
+    expect({
+      bounded: pick(bounded, ["tabindex", "role", "name", "axis", "blockFade"]),
+      boundedScrolls: bounded !== null && Number(bounded.blockScroll) > 1 && Number(bounded.inlineScroll) <= 1,
+      unbounded: pick(unbounded, ["tabindex", "role", "name", "axis", "blockFade", "overflowY", "blockScroll", "collapse"]),
+      room: pick(room, ["tabindex", "role", "name", "blockFade"]),
+      roomScrolls: room !== null && Number(room.blockScroll) > 1,
+      roomSpace: room !== null && Number(room.space) > 0 && Number(room.space) < 2 * Number(room.depth),
+    }).toEqual({
+      bounded: { tabindex: "0", role: "group", name: "Work packages", axis: "both", blockFade: "end" },
+      boundedScrolls: true,
+      unbounded: { tabindex: null, role: null, name: null, axis: null, blockFade: null, overflowY: "hidden", blockScroll: 0, collapse: "separate" },
+      room: { tabindex: "0", role: "group", name: "Work packages", blockFade: null },
+      roomScrolls: true,
+      roomSpace: true,
+    });
+  });
+
+  it("the two hover stories declare parameters.ocelle.pointer.hover with one selector each, matching one body cell inside the viewport, the striped one's on an even row", async () => {
+    const source = readStories("data-table.stories.ts");
+    const selectors = [...source.matchAll(/pointer:\s*\{\s*hover:\s*"([^"]+)"\s*\}/g)].map((match) => match[1] ?? "");
+    const check = async (name: string, selector: string): Promise<unknown> => {
+      const { page } = await openDataTable(`elements-ocelle-data-table--${name}`, "light");
+      const observed = await page.evaluate((selector) => {
+        const matches = [...document.querySelectorAll(selector)];
+        const cell = matches[0];
+        const row = cell?.parentElement;
+        const rect = cell?.getBoundingClientRect();
+        return {
+          matches: matches.length,
+          bodyCell: cell !== undefined && /^(TD|TH)$/.test(cell.tagName) && row?.parentElement?.tagName === "TBODY",
+          even: row === null || row === undefined ? null : ([...(row.parentElement?.children ?? [])].indexOf(row) + 1) % 2 === 0,
+          inside: rect !== undefined && rect.width > 0 && rect.left >= 0 && rect.top >= 0 && rect.right <= 1280 && rect.bottom <= 800,
+        };
+      }, selector);
+      await page.close();
+      return observed;
+    };
+    const hovered = selectors.length === 2 ? await check("row-hovered", selectors[0] ?? "") : null;
+    const striped = selectors.length === 2 ? await check("striped-even-row-hovered", selectors[1] ?? "") : null;
+    expect({ declared: selectors.length, hovered, striped }).toEqual({
+      declared: 2,
+      hovered: { matches: 1, bodyCell: true, even: false, inside: true },
+      striped: { matches: 1, bodyCell: true, even: true, inside: true },
+    });
+  });
+});
+
+/** A stories file's text, empty while it does not exist. */
+function readStories(file: string): string {
+  const url = new URL(`../../stories/${file}`, import.meta.url);
+  return existsSync(url) ? readFileSync(url, "utf8") : "";
+}

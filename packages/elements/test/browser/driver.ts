@@ -120,6 +120,7 @@ async function inShadow(page: Page, id: string, inner: string, act: "append" | "
 
 /** The driver of `page`; `log` is the page's console and error record, `withBase` whether the page links base.css. */
 export function fixtureDriver(page: Page, log: readonly string[], withBase = false): Driver {
+  let moduleRuns = 0;
   let since = log.length;
   return {
     mount: async (markup, options = {}) => {
@@ -419,6 +420,21 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
       }, { target, value });
       await settle(page);
     },
+    scrollTop: (target) => page.evaluate(({ target }) => {
+      const host = document.getElementById(typeof target === "string" ? target : target.id);
+      const element = typeof target === "string" ? host : host?.shadowRoot?.querySelector(target.inner);
+      if (element === null || element === undefined) throw new Error(`no target ${JSON.stringify(target)} on the page`);
+      return element.scrollTop;
+    }, { target }),
+    setScrollTop: async (target, value) => {
+      await page.evaluate(({ target, value }) => {
+        const host = document.getElementById(typeof target === "string" ? target : target.id);
+        const element = typeof target === "string" ? host : host?.shadowRoot?.querySelector(target.inner);
+        if (element === null || element === undefined) throw new Error(`no target ${JSON.stringify(target)} on the page`);
+        element.scrollTo({ top: value, behavior: "instant" });
+      }, { target, value });
+      await settle(page);
+    },
     lastKeyPrevented: () => page.evaluate(() => (window as unknown as { ocelleLastKey?: KeyboardEvent }).ocelleLastKey?.defaultPrevented ?? false),
     frameRecord: async (target, read) => {
       const handle = await page.evaluate(({ target, read }) => {
@@ -685,7 +701,10 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
       }, { id, inner, property }),
     module: async (code) => {
       // Served as `/module.js` of the page's origin under the fixture's policy; a page that runs it allows that path.
-      const url = new URL("/module.js", page.url()).href;
+      // Since 019 (T006, T079): each run has its own query, so a body may run several modules on one page (the module
+      // map would otherwise return the first run's module without evaluating the new code).
+      moduleRuns += 1;
+      const url = new URL(`/module.js?run=${String(moduleRuns)}`, page.url()).href;
       await page.route(url, (route) => route.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", headers: { "Content-Security-Policy": policy }, body: code }));
       // A string expression, so the test runner's transform does not rewrite the page's own `import()`.
       await page.evaluate(`import(${JSON.stringify(url)}).then(() => true)`);
