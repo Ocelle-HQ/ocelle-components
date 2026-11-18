@@ -349,6 +349,29 @@ round 3. T071 waits for phase 4 fix-2 (T049e) for its plant names.
 **Checkpoint**: T067 is ticked on the recorded gate-step figures, and the gate docs state the measured sizing and
 rule (f) as amended; `tdd-check.sh 6` reports `pass`.
 
+### Fix round 3 (operator round from landing round 2: O4-01 to O4-05)
+
+On 2026-11-18 the operator folded landing review round 2's R2-01 (blocking: the merge of main b594b7e, mission 009, at
+feac2fa made phase 6 O2-02's sizing figures stale again) and the notes on the same text (phase 6 round 3 R3-01,
+R3-02; landing round 2 R2-02; phase 4 round 4 R4-01) into this pull request, recorded as phase 6 round 4
+(`reviews/phase-6/round-4.md`; landing review `reviews/landing/round-2.md`). Verbatim "Fold R2-01 + notes
+(Recommended)": "Record a phase 6 operator round. The planner adds the task, implementer-ivan fixes all the figures
+and wording, and a phase 6 round 4 review plus landing round 3 check them. All of it is docs and comments." All five
+findings are documentation and comments and change no behaviour, so they need no red commit (constitution VIII: no
+behaviour); the label is fix-3, reviewed as phase 6 round 5 and landing round 3. The records of what was decided at
+171 stories (`reviews/phase-6/ci-run.md`, T067's tick) stay as they are (landing round 2 R2-01). Figures are taken
+from round 4 and the orchestrator, never measured or estimated here.
+
+- [ ] T073 [US5] O4-01 (landing round 2 R2-01) and O4-02 (phase 6 round 3 R3-01), both on the plant-sizing text: in `gates/README.md` (the plant-sharding paragraph, lines 61-67 at round 4) and the `shardSize` comment of `gates/lib/plant-runner.ts` (lines 266-269 at round 4; comment only, no code), state the state after merging 009: **194 stories** and **77 shards (4 + 48 + 25)** (as `pnpm run gate:plants -- --plan`, the `storybook-build` pin in `gates/test/integration/storybook-build.test.ts` and `gates/test/plant-runner.test.ts` show), and cite CI run 44298568583 (ac2d73a, attempt 1, 148/148 jobs) with round 4's figures: the longest plant gate step 524 s (shard 39), none over 570 s; the longest job wall time 692 s (shard 21), 29 shards over 570 s; 9.71 runner-hours of Plants job wall time. A gate-step total the orchestrator does not supply is said to be not recorded, not estimated. Run 44098238937 (171 stories, 76 shards) may stay, labelled as before 009's merge. Keep "split count of 76 exceeded" and "triage record pending". O4-02: in the same paragraph (line 61 at round 4) replace "approved by the operator at 012 phase 1's review" with 8dc8147's wording in specs/006-storybook-workbench/plan.md: put to the operator at 012 phase 1's review and accepted at phase 2 (012 tasks.md T067; 012 reviews/phase-2/notes.md, "Story count", "decided by the operator: proceed"). The same correction to `specs/006-storybook-workbench/plan.md` (the Complexity Tracking intro, line 634 at round 4, and the row "Plant roots hold every repository story", line 639 at round 4) is planner territory: hand its replacement text to the orchestrator to route, as T070's was, and do not edit that file here. If `gates/test/gates-readme.test.ts` pins a wording that changes, that test changes in the same commit.
+- [ ] T074 [US5] O4-04 (landing round 2 R2-02): the `otherShardSize` comment of `gates/lib/plant-runner.ts` (lines 278-279 at round 4; comment only, no code) says 80 "deals the repository's 232 into 3 shards"; correct it to 244 into 4 shards, as pinned in `gates/test/plant-runner.test.ts` (`others: 244`, `4 + 48 + 25`). The 232 figures in specs/006-storybook-workbench/plan.md's decision 30 text (lines 324-396) record the measurement of 2026-11-12 and are not changed.
+- [ ] T075 [US5] O4-03 (phase 6 round 3 R3-02): in `specs/012-button-action-row/reviews/phase-6/round-2-fixes.md` (the O2-02 row, line 9) and `reviews/phase-6/notes.md` (§ Fix round 2, the T070 bullet, line 253), which say the 006 plan.md row is "not edited here / in this commit" and hand its text to the orchestrator, add that the routed edits to `specs/006-storybook-workbench/plan.md` landed in 904e5cf (the row) and 226e29e (the Complexity Tracking intro), and the approval wording in 8dc8147 (also named by R3-02). Leave the existing sentences; add to them.
+- [ ] T076 [US5] O4-05 (phase 4 round 4 R4-01): in `specs/012-button-action-row/reviews/phase-4/plants.md` § "Operator decision on the fix-2 plants record", correct the bullet at line 67 ("`--affected 55ec410` selects all 312 plants") to 317 plants (`--affected 55ec410 --list` prints "317 of 317 plants selected" after 009's merge: 244 + 48 + 25), saying that 312 held before 009's merge. The operator's answer at line 62 ("all 312 plants") is a verbatim quote and is not altered; add after it a bracketed note that the total was 312 before 009's merge and is 317 after it.
+- [ ] T077 [US5] Run `pnpm test` (the gates-readme and plant-runner tests included), `pnpm run gate:typecheck` and `gate:lint` (the comment edits of T073 and T074); record T073 to T076 in `reviews/phase-6/notes.md` under "Fix round 3" and in a new `reviews/phase-6/round-4-fixes.md` (as `round-2-fixes.md`: each finding, its resolution, "none (docs only)" as the red test, and where), the handed-over 006 plan.md text noted there; commit (`docs(012-button-action-row): phase 6 fix-3 — O4-01 to O4-05`), signed off. Then run `.specify/extensions/story/scripts/tdd-check.sh 6` (`pass`; a base sub-check that exits 2 "could not run" because of the landing merges is as phase 6 round 3 R3-03 recorded). Reviewed as phase 6 round 5, then landing round 3.
+
+**Checkpoint**: the gate docs, the plant-runner comments and 006's Complexity Tracking text state 194 stories,
+77 shards and run 44298568583; the split-count wording and the plant totals match the record; `tdd-check.sh 6`
+reports `pass`.
+
 ---
 
 ## Dependencies & Execution Order
@@ -362,6 +385,9 @@ rule (f) as amended; `tdd-check.sh 6` reports `pass`.
   green, check), reviewed as phase 4 round 3; phase 6 fix-2 (T069 to T072) is a documentation unit with no red commit,
   reviewed as phase 6 round 3. T071 needs T049e's plant names, so phase 4 fix-2 goes first; T069 needs the
   orchestrator's CI figures (shard 23's attempt 2 included), and T070 needs T069's figures.
+- Landing operator round of 2026-11-18 (phase 6 round 4): phase 6 fix-3 (T073 to T077) is a documentation unit with
+  no red commit, reviewed as phase 6 round 5 and landing round 3; T073 to T076 are independent, T077 last. T073's
+  edit to specs/006-storybook-workbench/plan.md is routed by the orchestrator to the planner.
 
 ## Parallel Opportunities
 
