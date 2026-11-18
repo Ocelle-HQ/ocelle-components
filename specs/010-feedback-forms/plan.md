@@ -162,12 +162,17 @@ VIII, and I for the internal setter), after round 3's fixes (rows I, III and VII
     against 7:00 is replaced by this record; the whole-diff `gate:mutation -- --base 2004e82` must still exit 0.
     T002's and T025's timings (phases 1 and 2) stand as recorded. Phase 4 has no shard-timing stop of its own; its
     element shards are under the same gap. A mutation shard over CI's limit for it (10 minutes, or 45 for a shard
-    holding element source) is still a stop.
-    After the second merge of `main` the element shards took 2493–2717 s on CI (run 44354367030), because the `elements`
-    project's `fileParallelism: false` (phase 2 stop 1, decision (b)) ran all of its files one at a time, so operator
-    round 7 (`reviews/phase-2/round-7.md`, O7-01, which replaces round 6's 75-minute limit) keeps the 45-minute limit
-    and moves only this mission's timing-sensitive in-process files into a serial project `elements-timing`, mutated
-    with `elements`, which runs its files in parallel again as on `main` (T025g to T025j).
+    holding element source) is still a stop; after operator round 8 the element-shard limit is 75 minutes.
+    After the second merge of `main` the element shards took 2493–2717 s on CI (run 44354367030), one cancelled at 45
+    minutes. Operator round 6 (`reviews/phase-2/round-6.md`, O6-01) decided a 75-minute element-shard limit;
+    round 7 (`reviews/phase-2/round-7.md`, O7-01) replaced that with a split of the `elements` project, its
+    timing-sensitive files in a serial project `elements-timing` and the rest in parallel; round 8
+    (`reviews/phase-2/round-8.md`, O8-01, O8-02) withdrew the split and its red commit `636207eb` and restored the
+    75-minute limit for a shard holding `packages/elements/src/` (10 minutes for any other; T025k to T025n). Round 7
+    was withdrawn because Stryker's Vitest runner (`@stryker-mutator/vitest-runner` 10.1.1) forces `maxWorkers: 1`, so
+    a Stryker run takes its test files one at a time whatever `fileParallelism` says: the split left the element dry
+    run at about 1273 s and made the cancelled shard slower on this machine, 2748 s to 3515 s
+    (`reviews/phase-2/mutation.md` § O7-01). The `elements` project keeps `fileParallelism: false` (decision (b)).
 12. **Manifest of the internal base class, mission 008's rule** (operator decision "Main's rule + FormControl
     (Recommended)", 2026-11-17, `reviews/phase-3/round-3.md` O3-01; the clash in `reviews/landing/merge-stop-2.md`):
     the generator reads every `src/ocelle-*.ts` and the named internal bases `src/overlay.ts` (mission 008, research
