@@ -593,11 +593,13 @@ through the Vitest browser `userEvent.keyboard` (Playwright provider, trusted ev
 
 **Driver extensions** (phase 1, each with a unit test that fails before it exists):
 
-- `press(key)`, `click(target, { button, modifiers, count })` (`count: 2` for US1-20's double-click), `keydownRecord()`
+Landing decision 3 (`reviews/landing/operator-decisions.md`, `reviews/landing/merge-notes.md`) renamed the methods that collided with main's: `press`→`pressKeys`, `click`→`clickTarget`, `hover`→`hoverTarget`, `activeElement`→`focusedElement`, `viewportSize`→`setViewportSize`; `Target` is now `string | { id, inner } | { parent, kind, index }`, found by the one `resolve` in `packages/elements/test/page-helpers.ts`, and `axStates`/`axUpdates` take `AxTarget` (id and child forms only).
+
+- `pressKeys(key)`, `clickTarget(target, { button, modifiers, count })` (`count: 2` for US1-20's double-click), `keydownRecord()`
   (a `document` bubble listener recording key and `defaultPrevented`);
 - child addressing (PLAN-TESTABILITY-1-006): a target is an id or `{ parent, kind, index }` (the parent's id, the
-  child tag, the index among the parent's children of that tag), accepted by focus, click, box, computed and tree
-  reads; `activeElement()` returns `{ id }` or `{ parent, kind, index }` through shadow roots;
+  child tag, the index among the parent's children of that tag), accepted by focus, `clickTarget`, box, computed and tree
+  reads; `focusedElement()` returns `{ id }` or `{ parent, kind, index }` through shadow roots;
 - `mutate(target, steps)`: a list of DOM steps (append markup, remove child n, move child n before m or to the end,
   re-insert child n in place, set or remove an attribute on child n, set a property) applied synchronously in one
   task, then settled; it builds US1-14, US1-19, US1-21, US2-18 to US2-20, US3-15 to US3-18 and R-05's
@@ -605,7 +607,7 @@ through the Vitest browser `userEvent.keyboard` (Playwright provider, trusted ev
 - `resize(target, inlineSize)` that does not settle, and `afterResizeDelivery(target)` that resolves from a test
   `ResizeObserver` registered on the target (R-06);
 - `computedPart(target, part | pseudo, property)` reading a shadow part's or a pseudo-element's computed style (R-15);
-- `scrollOffset()` of the page and `viewportSize(width, height)` (the Space and sideways-scroll pairings);
+- `scrollOffset()` of the page and `setViewportSize(width, height)` (the Space and sideways-scroll pairings);
 - `activationRecord(target)`: installs US4-6's capture listener, its `requestAnimationFrame` and microtask entries
   and the request entry (R-07), and returns the ordered record;
 - `axUpdates(target)`: enables CDP's `Accessibility` domain, fetches the target's node and records its

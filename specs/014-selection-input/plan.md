@@ -264,8 +264,8 @@ unreflected `status` attribute. Each "does not" outcome among them is paired in 
    - Recheck against #10 as merged (FR-053, R-12): compare gate ids, story id scheme, pointer/focus parameters,
      baseline command, contributor note and contracts; record in `reviews/phase-1/recheck-10.md`; fix plan and tasks
      before phase 2 (documentation; exemption with reason).
-   - Driver extensions, tests first (R-11): `press`, `click` with button, modifiers and count, child addressing by
-     `{ parent, kind, index }`, `activeElement` through shadow roots returning that identity, `mutate` (several DOM
+   - Driver extensions, tests first (R-11): `pressKeys`, `clickTarget` with button, modifiers and count, child addressing by
+     `{ parent, kind, index }`, `focusedElement` through shadow roots returning that identity, `mutate` (several DOM
      steps in one task), the non-settling `resize` and `afterResizeDelivery`, `computedPart`, page scroll offset and
      viewport size, the keydown recorder, the clipboard observer installed at every mount and fixture page, the
      separate `axStates` command (005's `axTree` unchanged), `activationRecord` and the `axUpdates` recorder of
