@@ -153,8 +153,12 @@ While `sticky-header` is present (the property `stickyHeader` reflects it; any v
   operator's decision G1 (a), 2026-11-18) and keeps a focused body element clear of the pinned `<thead>` and of the
   block-end fade, measured from the `<thead>`'s current laid-out block-end edge (A1 (c), decided (a) after T082,
   spike-2 Q-1 (a); [overflow-region-block-axis.md](overflow-region-block-axis.md) § The pinned-box measure): under
-  a tall caption in a small bound the block-end fade is absent at rest until the caption scrolls away. The element adds no listener
-  and no scroll write.
+  a tall caption in a small bound the block-end fade is absent at rest until the caption scrolls away. A focusable
+  element in the caption (a link) precedes the `<thead>` in tree order, so the module bounds its clearance by the
+  box's client block-start edge instead (the operator's answer to Q-S2-1 (a), 2026-11-18;
+  [overflow-region-block-axis.md](overflow-region-block-axis.md) § Effects, Focus clearance): tabbed to at rest it
+  is not scrolled, and tabbed to once the caption has scrolled under the pinned header the box scrolls back to show
+  it whole, above the `<thead>`. The element adds no listener and no scroll write.
 - **The block-end fade (operator decision Q-I4, 2026-11-18).** While rows are below the box's block end the module
   writes `data-block-fade="end"` on the box and fades its block end over the fade depth; never at the block start,
   never under the pinned `<thead>` (the module's room rule: no fade when less than twice the fade depth shows below

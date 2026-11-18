@@ -92,3 +92,7 @@
   block-axis scrollbar room only while the region overflows in the block axis (FR-018, US1-20, a right-to-left edge
   case); Q-4 (a) keeps the block-end edge off the rows outside forced colours (FR-018). No story or count changes; no
   `[NEEDS CLARIFICATION]` marker. Every item above still holds.
+- Phase 1 spike 2, Q-S2-1 (answered 2026-11-18, end of `reviews/phase-1/operator-spike-2-decisions.md`): (a), a
+  focused element before the pinned header (a caption link) is kept inside the box, its clearance bounded by the box's
+  block-start edge (FR-017, FR-018, US1-26, the caption-link edge case). US1-26 gains a testable caption-link half; no
+  story or count changes; no `[NEEDS CLARIFICATION]` marker. Every item above still holds.

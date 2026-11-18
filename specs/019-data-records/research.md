@@ -1017,6 +1017,13 @@ from 009's inline fades where one applies:
   block-end fade: clear of the pinned box above and of the fade below (if it still shows at the new position), and
   for a ring box taller than that space, aligned below the pinned box with the fade suppressed until `focusout` or a
   `scroll` of more than 1 px from the recorded `scrollTop`. `blockClearanceScroll` returns `{ scrollTop, suppressEnd }`.
+  A focused element before the pinned box in tree order (a link in the caption) sits above the `<thead>` in flow, so
+  no scroll position puts it below `pinnedEnd`: measured from it, the clearance would scroll the link towards the
+  header at rest (or clamp and suppress the fade) and could not clear it once the caption is under the pinned header.
+  For such an element the upper bound is the box's client block-start edge (the operator's answer to Q-S2-1 (a),
+  2026-11-18, raised in `reviews/phase-1/spike-2-fixes.md`): the `<thead>` follows it in flow and cannot cover it,
+  and the box scrolls back to show it; `blockClearanceScroll` takes this as `before`. Not measured in spike 2: the
+  implementer measures it with T082's Q-3 (c) addendum before the red commit and stops if it fails.
   The depth is measured from layout, the block size of a new `.region-edge.block-end` (009's rule: never parse a
   custom property's text).
 - **Forced colours.** Masks are not drawn in forced colours (009's rule sits inside `@media not (forced-colors:
@@ -1102,8 +1109,9 @@ done and stays the implementer's to tick; the new points get a second spike task
 A result that contradicts this section stops for the operator.
 
 **Result (spike 2, T082, 2026-11-18; `reviews/phase-1/spike-2.md`).** Every point above was measured in Chromium 156
-with hidden and classic scrollbars. It held, apart from four points the operator decided on 2026-11-18
-(`reviews/phase-1/operator-spike-2-decisions.md`, human:jeroennouwsdev; changes in `reviews/phase-1/spike-2-fixes.md`):
+with hidden and classic scrollbars. It held, apart from four points the operator decided on 2026-11-18, with one
+question those decisions raised (Q-S2-1) answered the same day (`reviews/phase-1/operator-spike-2-decisions.md`,
+human:jeroennouwsdev; changes in `reviews/phase-1/spike-2-fixes.md`):
 
 - **Q-1 (a), the pinned-box measure:** the current edge (above).
 - **Q-2 (a), the header pinned 5 px low:** block 1's negative block-start inset on the `<thead>` (above). Measured:
@@ -1121,6 +1129,10 @@ with hidden and classic scrollbars. It held, apart from four points the operator
   inline scrollbar the gutter causes.
 - **Q-4 (a), axe and `.region-edge.block-end`:** zero-wide outside forced colours (above); measured clean (no
   violation, no incomplete result, `scrollable-region-focusable` passing).
+- **Q-S2-1 (a), a focusable element before the pinned box** (asked in `reviews/phase-1/spike-2-fixes.md`, answered
+  2026-11-18): the block clearance's upper bound for it is the box's client block-start edge (Focus clearance,
+  above). Not measured in the spike: the implementer measures a caption link at rest and past the caption with the
+  Q-3 (c) addendum before the red commit (T082) and stops if it fails.
 
 The settled facts the red bodies use: the mask layer order and `mask-composite: add, add, intersect, add`; the
 gutter 15 px in both scrollbar modes; "within 0.5 px" is inclusive (`≤ 0.5`), the separated row rules being exactly

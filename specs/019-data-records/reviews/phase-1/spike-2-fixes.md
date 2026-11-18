@@ -57,3 +57,25 @@ happens. Options:
   own focus scroll alone brings it into view, and it may sit under the pinned header. Documented in the README.
 - (c) Leave the contract as it is and have the implementer measure the caption-link case before the red commit; a
   wrong result stops for the operator then.
+
+## Operator answer to Q-S2-1 applied
+
+Answer recorded at the end of `reviews/phase-1/operator-spike-2-decisions.md` (2026-11-18, human:jeroennouwsdev):
+(a), for a focusable element before the pinned box (a link in the caption) the block clearance's upper bound is the
+box's client block-start edge, so the box scrolls back to show it. Design artifacts only; no source or test file is
+touched. T082 stays open: its addendum now also measures this case before the red commit.
+
+| Item | Change | Where |
+|---|---|---|
+| Q-S2-1 (a) | Rule: when the focused element precedes `blockStartBox()` in tree order (`DOCUMENT_POSITION_PRECEDING`, not `CONTAINS`), the upper bound is the client block-start edge instead of `pinnedEnd`; the smallest scroll back; nothing written or suppressed when already inside (a caption link at rest); the block-end bound, the room rule (still from `pinnedEnd`) and the fallback (aligned at the client block-start edge) unchanged | contracts/overflow-region-block-axis.md (§ The pinned-box measure, § Effects: Focus clearance) |
+| Q-S2-1 (a) | `blockClearanceScroll({ ring, box, pinnedEnd, fade, before })`: `before` selects the client block-start bound; new pure case "before the pinned box" (with `before` a ring box between the client block start and `pinnedEnd` unchanged, paired without `before` moved; a ring box above the client block start scrolled back to it) | contracts/overflow-region-block-axis.md (§ Pure functions, § Tests); tasks.md T079 |
+| Q-S2-1 (a) | New module body: the captioned test host's block holds a link on its second line; 300 px bound: at rest `scrollTop` 0 and `data-block-fade="end"` kept; past the block the ring box's block-start edge at the client block-start edge within 0.5 px, its block-end edge at or above the pinned child's current block-start edge, `elementFromPoint` returning the link; paired with the link below the pinned child | contracts/overflow-region-block-axis.md § Tests; tasks.md T079 (fixture, bodies) |
+| Q-S2-1 (a) | The data table's module bullet: a caption link is bounded by the client block-start edge, not scrolled at rest, scrolled back past the caption | contracts/ocelle-data-table.md § Sticky header row (Module) |
+| Q-S2-1 (a) | Why and the answer; not measured in spike 2, measured with the Q-3 (c) addendum | research.md R-18 (Focus clearance, Result) |
+| Q-S2-1 (a) | FR-018 sentence; FR-017's focus bullet names the caption; US1-26 gains the caption-link half (300 px bound, at rest and past the caption); new edge case "A link in the caption of a sticky table"; decision block bullet | spec.md; checklists/requirements.md § Notes |
+| Q-S2-1 (a) | Oracles: geometry (US1-26's caption link), keyboard (US1-26 helpers; the module bodies' caption link); a "platform alone" row for the at-rest half, paired with the past-caption half; one element plant (the clearance measuring an element before the pinned box from `pinnedEnd`, guard US1-26's caption-link half and T079's element-before body) | contracts/checks.md § Oracles, keyboard table, § Bodies that the platform alone could pass, § Element plants; tasks.md T024 |
+| Q-S2-1 (a) | T080's US1-26 body carries the caption link; T082's addendum measures the case (100 and 300 px bounds, at rest and past the caption, LTR and RTL, Chromium's focus scroll alone recorded first; a past-caption result it already meets is a failure, since the red body would pass at red); stop-and-ask point extended; decisions in force and plan decision item 5 | tasks.md T080, T082, § Stop-and-ask points, § Phase 1 spike 2 decisions in force; plan.md § Decisions on phase 1's second spike |
+
+Counts: no story, baseline or task added, removed or renumbered (phase 1: 21 stories, 42 baselines; mission 44 and
+88). Element plants in T024 and contracts/checks.md: one more (Q-S2-1). `units.sh` reports phase 1 with 27 tasks, 25
+open, as before; T082 stays open.

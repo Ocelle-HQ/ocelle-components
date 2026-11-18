@@ -417,6 +417,11 @@ Answered by the operator on 2026-11-18 (`reviews/phase-1/operator-spike-2-decisi
    commit (T082) and stops if it fails (tasks.md § Stop-and-ask points).
 4. **Q-4, axe and the block-end edge. Decided: (a).** `.region-edge.block-end` is `inline-size: 0` outside forced
    colours and full width inside them, where it draws the line; measured clean. One element plant guards it.
+5. **Q-S2-1, a focusable element above the pinned `<thead>` (asked in `spike-2-fixes.md`). Decided: (a).** For a
+   focused element that precedes the pinned box in tree order (a caption link) the block clearance's upper bound is
+   the box's client block-start edge, so the box scrolls back to show it; `blockClearanceScroll` takes it as
+   `before`. US1-26 and T079's captioned bodies carry a caption link; T082's addendum measures it before the red
+   commit; one element plant guards it.
 
 The spike's settled facts for the red bodies (research R-18's and R-20's Results): the mask layer order and
 `mask-composite: add, add, intersect, add`; "within 0.5 px" inclusive (`≤ 0.5`); the stripe per `<tbody>`; a

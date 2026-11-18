@@ -193,6 +193,10 @@ decisions in `reviews/phase-1/operator-spike-2-decisions.md`, changes listed in 
   implementer measures this before phase 1's red commit and stops if it fails (FR-008, FR-018, US1-20).
 - Q-4, axe-core reported a serious `color-contrast` incomplete result on the rows under the block-end edge: (a), the
   edge is zero-wide outside forced colours (FR-018).
+- Q-S2-1, a focusable element above the pinned header (a link in the caption), which no scroll position puts below
+  the header's current edge (raised by the changes for Q-1, answered 2026-11-18): (a), for an element before the
+  pinned header the block clearance's upper bound is the box's client block-start edge, so the box scrolls back to
+  show it; the implementer measures it before phase 1's red commit (FR-018, US1-26).
 
 ## Scope
 
@@ -380,7 +384,12 @@ the block-axis keyboard and focus clearance, the block-end fade, the row grounds
     300 px bound, **Then** the fade shows at rest with its block-start edge at or below the header row's current
     block-end edge; **Given** a link in the first body row, **When** the user tabs to it at rest and past the caption,
     **Then** its focus ring box is at or below the header row's current block-end edge (within 0.5 px) and inside
-    the box (the operator's decisions A1 (c), 2026-11-18, and Q-1 (a) on phase 1's second spike; FR-018).
+    the box; **Given** a link on the caption's second line and the 300 px bound, **When** the user tabs to it at
+    rest, **Then** the box does not scroll and the block-end fade still shows; **When** the box is scrolled past the
+    caption and the user tabs to the link again, **Then** the box scrolls back so the link's focus ring box is wholly
+    inside the box, its block-start edge at the box's client block-start edge (within 0.5 px), and above the header
+    row, which does not cover it (the operator's decisions A1 (c), 2026-11-18, Q-1 (a) on phase 1's second spike and
+    the answer to Q-S2-1 (a); FR-018).
 27. **Given** the US1-21 table at 320 px, scrolled to the inline middle and the block start, **When** it renders,
     **Then** the inline fades of 009's contract and the block-end fade show together, the box carrying both
     `data-fade="both"` and `data-block-fade="end"`, and a point under both fades is faded by both; **Given** a link in
@@ -579,6 +588,11 @@ the chip variant.
   in view at the block start, the `<thead>` sits below it and is not yet pinned; the space is measured from the header
   row's current block-end edge (A1 (c), decided (a) after phase 1's second spike), so under a tall caption in a small
   bound no fade shows at rest until the caption scrolls away.
+- **A link in the caption of a sticky table.** The caption sits above the header row, so the link can never be below
+  the pinned header; the focus clearance keeps it inside the box instead. Tabbed to while it shows, nothing scrolls
+  and no fade is held off; tabbed to after the caption has scrolled under the pinned header, the box scrolls back
+  just far enough to show its focus ring whole, the header row below it (FR-018, US1-26; the operator's answer to
+  Q-S2-1 (a)).
 - **Sticky header, right-to-left, overflowing only sideways.** No block-axis scrollbar room is reserved while nothing
   overflows in the block axis, so the table's start is reachable by scrolling (FR-008, FR-018; the operator's
   decision Q-3 (c) on phase 1's second spike).
@@ -783,7 +797,8 @@ the chip variant.
   - the header cells paint the opaque ground `--ocelle-color-sheet` (the operator's decision Q-I1, 2026-11-18), so no
     row shows through, and the header rule
     travels with the pinned row (the table uses separated borders with no spacing, which draws the row rules as before);
-  - a focused element in a body row is kept clear of the pinned header row (US1-19, WCAG 2.4.11);
+  - a focused element in a body row is kept clear of the pinned header row (US1-19, WCAG 2.4.11), and a focused
+    element in the caption, above the header row, is scrolled back into view whole (US1-26, FR-018);
   - the cell rules ship in `@ocelle/styles` like FR-005's, at (0,0,0) outside prose and with FR-012's override inside
     it.
   Setting or removing the attribute after mount takes effect without a page reload. The README MUST state the bound,
@@ -809,7 +824,10 @@ the chip variant.
     twice the fade depth (the operator's decision Q-I6 (a)), no block-end fade is drawn. The room rule and the block
     clearance measure the block-start box by one measure, its current laid-out block-end edge (the operator's
     decision A1 (c), 2026-11-18, decided as Q-1 (a) after phase 1's second spike measured both candidate forms at
-    320 px with a two-line caption). The block-axis scrollbar's room is reserved only while the box overflows in the
+    320 px with a two-line caption). A focused element that comes before the block-start box (a link in the data
+    table's caption) cannot be put below that box, which follows it and cannot cover it: for it the clearance's upper
+    bound is the box's own block-start edge, so the box scrolls back to show it whole and leaves it alone where it
+    already shows (the operator's answer to Q-S2-1 (a), 2026-11-18). The block-axis scrollbar's room is reserved only while the box overflows in the
     block axis (Q-3 (c)), and the block-end edge that measures the fade depth covers no content outside forced
     colours (Q-4 (a)). It combines with the inline fades (a corner under both is faded
     by both), the focus clearance keeps the ring box clear of it, with 009's fallback (the fade held off) for a ring

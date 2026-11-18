@@ -40,7 +40,10 @@ position. At the block start, content above the pinned box (the data table's cap
 content's block size, so under a tall caption in a small bound the room rule fails at rest and the block-end fade is
 absent until the caption scrolls away (the scrollbar is then the only cue; spike-2 § 11: at 320 px with a two-line
 caption, no fade at rest in bounds up to 140 px). In exchange the fade never reaches the pinned box and the block
-clearance always clears the box where it really is. The other candidate measured, the client block start plus the
+clearance always clears the box where it really is. For a focused element that precedes the pinned box in tree order
+(a link in the data table's caption) the block clearance does not measure from `pinnedEnd`: its upper bound is the
+box's client block-start edge (§ Effects, Focus clearance; the operator's answer to Q-S2-1 (a), 2026-11-18). The other
+candidate measured, the client block start plus the
 pinned box's block size "as if pinned", is not used: in a 100 px bound it faded the header's lower 12.6 px at rest
 (spike-2 § 11).
 
@@ -141,7 +144,17 @@ otherwise (as it writes `data-axis`); the host binds nothing for it. `offStart`,
   write, so clamping is included), and the suppression ends on `focusout` from the focused element or on a `scroll`
   whose `scrollTop` differs from the recorded value by more than 1 px. A scroll by one of the keys the browser keeps
   is such a scroll. No block-axis scroll is made when the focused
-  element is inside the pinned box. The write is an instant `scrollTop` assignment. Chromium's own focus scroll runs
+  element is inside the pinned box. **An element before the pinned box** (the operator's answer to Q-S2-1 (a),
+  2026-11-18): when the focused element precedes `blockStartBox()` in tree order (`compareDocumentPosition` reports
+  it `DOCUMENT_POSITION_PRECEDING` and not `DOCUMENT_POSITION_CONTAINS`; the data table's caption and anything in
+  it), the upper bound of the space is the box's client block-start edge instead of `pinnedEnd`: the pinned box
+  follows the element in flow, so it is below the element at every scroll position and cannot cover it, and no
+  scroll position puts the element below `pinnedEnd`. The box scrolls back by the smallest amount that puts the ring
+  box's block-start edge at or below the client block-start edge (after Chromium's focus scroll, the ring room the
+  scroll left above it); a ring box already inside the space, as a caption link at rest is, writes nothing and
+  suppresses nothing. The block-end bound, the room rule (still from `pinnedEnd`) and the fallback are as above, the
+  fallback aligning the ring box's block-start edge at the client block-start edge. Without it the clearance would
+  scroll such an element towards or under the pinned box, or clamp and suppress the fade at rest. The write is an instant `scrollTop` assignment. Chromium's own focus scroll runs
   before `focusin`, so the clearance reads the position it left and writes once; no frame shows a jump back
   (spike-2 § 6).
 - **Focus handover.** As 009's contract, when overflow ends in both axes while the box has focus.
@@ -156,7 +169,7 @@ otherwise (as it writes `data-axis`); the host binds nothing for it. `offStart`,
 
 | Function | What it returns |
 |---|---|
-| `blockClearanceScroll({ ring, box, pinnedEnd, fade })` (new) | `{ scrollTop, suppressEnd }`: the new `scrollTop` for a ring box, given the box's client block span and `scrollTop`, `scrollHeight`, `clientHeight`, `pinnedEnd` (§ The pinned-box measure; the function takes the figure, which the module reads as the pinned box's current edge) and the fade depth; clamped to the scroll range; unchanged when the ring box is already clear. Whether the block-end fade still shows is worked out from the new position (and the room rule), not passed in; `suppressEnd` is true when the ring box cannot be cleared of a fade that still shows (taller than the space) |
+| `blockClearanceScroll({ ring, box, pinnedEnd, fade, before })` (new) | `{ scrollTop, suppressEnd }`: the new `scrollTop` for a ring box, given the box's client block span and `scrollTop`, `scrollHeight`, `clientHeight`, `pinnedEnd` (§ The pinned-box measure; the function takes the figure, which the module reads as the pinned box's current edge), the fade depth and `before` (true when the focused element precedes the pinned box in tree order, Q-S2-1 (a): the upper bound is then the client block-start edge, not `pinnedEnd`, which still decides the room rule); clamped to the scroll range; unchanged when the ring box is already clear. Whether the block-end fade still shows is worked out from the new position (and the room rule), not passed in; `suppressEnd` is true when the ring box cannot be cleared of a fade that still shows (taller than the space) |
 | `blockEdgeState(scrollTop, scrollHeight, clientHeight, pinnedEnd, fade)` (new) | `{ overflowingBlock, offBlockEnd, room }`, with the 1 px tolerance; `overflowingBlock` decides `data-axis` (§ Scrolling); `room` is the room rule, met when `clientHeight − pinnedEnd ≥ 2 × fade` (at exactly twice the depth the fade shows) |
 
 `edgeState`, `clearanceScroll` and `resolveName` are unchanged.
@@ -196,7 +209,10 @@ bound reaches the box; contracts/ocelle-data-table.md).
   scrollbars unmasked, a four-layer `mask-size` in the order of § Effects, Mask figures, and the computed
   `mask-composite` equal to the list `add, add, intersect, add`, in LTR and under `dir="rtl"` with the block
   scrollbar's layer on the left), the pure `blockClearanceScroll` cases (already clear, above, below, below and
-  clear of the fade, near the end where the fade goes, taller than the space with `suppressEnd`, clamped) and the
+  clear of the fade, near the end where the fade goes, taller than the space with `suppressEnd`, clamped, and
+  before the pinned box (Q-S2-1 (a)): with `before` a ring box between the client block start and `pinnedEnd`
+  unchanged, the same ring box without `before` moved, and a ring box above the client block start scrolled back to
+  it, not to `pinnedEnd`) and the
   pure `blockEdgeState` cases (no block overflow, content below, at the end within 1 px, the room rule met and not
   met, with spike-2's figures: `clientHeight` 300 and 100 with `pinnedEnd` 32 and fade 32 met (space 268, 68); 95
   with `pinnedEnd` 32 not met (63); 100 with `pinnedEnd` 80.6 not met (19.4); 140 with `pinnedEnd` 56.6 met (83.4);
@@ -232,6 +248,15 @@ bound reaches the box; contracts/ocelle-data-table.md).
   0.4 px from scroll rounding). Reference figures of the data table in the in-process harness (spike-2 § 11, with the
   negative inset): the header's block-end edge 80.6 px below the client block start at rest and 27 px once pinned,
   fade depth 32 px.
+- The element before the pinned box (Q-S2-1 (a)): the captioned test host with a link on the second line of the
+  block above the pinned child (in the same tree as the pinned child; the first focusable element after the box's own
+  tab stop). In the 300 px bound at the block start, `focus` on the box and `pressTab` to the link: `scrollTop`
+  unchanged at 0, its ring box inside the box at or below the client block-start edge, and `data-block-fade="end"`
+  still (nothing suppressed); then `setScrollTop` past the block (the pinned child at the client block-start edge
+  within 0.5 px), `focus` on the box and `pressTab` to the link again: `scrollTop` lower than before, its ring box's block-start edge at the client block-start edge within 0.5 px, its block-end
+  edge at or above the pinned child's current block-start edge, and `elementFromPoint` at the link's centre
+  returning the link. Paired, in the same body, with a link just below the pinned child cleared to the pinned
+  child's block-end edge (the bound that does apply to it).
 - The block-end fade's bodies on the same host: `data-block-fade="end"` at rest with content below and absent at the
   block end; absent under the room rule (a bound leaving less than twice the fade depth below `pinnedEnd`) while
   content is below; the fade's block-start edge at or below `pinnedEnd` (with no caption, the pinned child's
