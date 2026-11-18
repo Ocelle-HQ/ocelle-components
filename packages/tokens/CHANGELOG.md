@@ -14,6 +14,12 @@ nothing loads from a CDN, and two new merge checks (Contrast, Brand rules) keep 
 `--ocelle-list-detail-inspector-collapse` and `--ocelle-scroller-fade-size`, the five tokens of the workflow layouts of
 `@ocelle/elements`, are additions to the token names: a minor change.
 
+**Controls get their own hover, pressed, inset-focus and spinner tokens (mission 012, #50; part of #7).** Before,
+`ocelle-button` and `ocelle-action-row` had no token for a hovered border, a pressed surface, a focus ring drawn inside
+the row or a busy spinner's turn. Now seven tokens cover them, every motion duration is zeroed under reduced motion
+unless its name ends in `-delay`, and the token build refuses a misplaced delay marker or a duration that is not a
+literal `ms` value. The seven tokens are additions to the token names: a minor change.
+
 ### Added
 
 - `fonts/`: Schibsted Grotesk, the variable `wght` WOFF2 with its SIL Open Font License 1.1 (`OFL.txt`), declared

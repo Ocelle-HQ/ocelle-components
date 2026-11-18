@@ -9,6 +9,13 @@ entry points and the browser build's file path (constitution VII).
 properties, slots and entry points, `remeasure()`, the overflow-region module convention and the container-tier
 convention are additions to the public surface: a minor change.
 
+**Hosts get two controls, `ocelle-button` and `ocelle-action-row`, in the Ocelle look (mission 012, #50; part of
+#7).** Before, a host drew its own buttons and clickable rows, with no shared hover, pressed, busy or current look and
+no way to put ARIA on the inner control. Now both elements wrap one native control, switch to a link with an `href`,
+move host ARIA onto that control and dispatch a cancelable activate event; the elements, their properties, slots,
+parts, events and entry points are additions (a minor change), and the engine floor rises to Chromium 135 and WebKit
+17.4.
+
 ### Added
 
 - `ocelle-icon`, an icon of the set drawn inline in `currentColor` at the `--ocelle-icon-size` token, decorative
