@@ -1315,6 +1315,55 @@ describe("the ocelle-listbox stories in the built Storybook (014 FR-050, FR-051)
   }
 });
 
+// The composed ocelle-dialog + ocelle-listbox story (014 FR-054; research.md R-12 "Amendment: the composed story";
+// reviews/phase-7/round-2.md O2-01; T114), as 008's composed tooltip story ("Inside an open dialog") is: an open, modal
+// `ocelle-dialog` labelled "Open project" whose body holds the five-folder `ocelle-listbox` with `gamma` selected. On
+// open the dialog moves focus to the first focusable element of its body (008 FR-007), which is the listbox's single
+// tab stop, the selected option (US1 roving tabindex), so `gamma` is focused. The listbox lies inside that dialog and
+// the centre of the `gamma` option hits that option (inside the modal, not behind it). Axe with the axe gate's full
+// rule set reports no violation and no serious or critical incomplete, with no new exception (R-12).
+describe("the composed ocelle-dialog + ocelle-listbox story in the built Storybook (014 FR-054, O2-01)", { timeout: 60_000 }, () => {
+  const id = "elements-ocelle-listbox--inside-an-open-dialog";
+  for (const theme of ["light", "dark"] as const) {
+    it(`${id} in ${theme}: renders an open, modal ocelle-dialog "Open project" holding the five-folder listbox with gamma selected and focused, the gamma option on top at its centre, and axe's full rule set reports no violation and no serious or critical incomplete`, async () => {
+      const { page, outside } = await open(id, theme, "ocelle-option");
+      await page.evaluate(async () => {
+        await Promise.all([...document.querySelectorAll("#storybook-root ocelle-dialog, #storybook-root ocelle-listbox")].map((each) => (each as unknown as { updateComplete?: Promise<unknown> }).updateComplete ?? Promise.resolve()));
+        await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      });
+      const dialogs = await observeDialogs(page);
+      const listboxes = await observeListboxes(page);
+      const placed = await page.evaluate(() => {
+        const dialog = document.querySelector("#storybook-root ocelle-dialog");
+        const listbox = document.querySelector("#storybook-root ocelle-listbox");
+        const option = listbox?.querySelector('ocelle-option[value="gamma"]') ?? null;
+        const box = option?.getBoundingClientRect();
+        return {
+          inDialog: dialog !== null && listbox !== null && listbox.closest("ocelle-dialog") === dialog,
+          onTop: box === undefined ? false : document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2) === option,
+        };
+      });
+      const results = await axeResults(page);
+      expect({
+        dialogs,
+        listboxes,
+        placed,
+        violations: results.violations,
+        incomplete: results.incomplete.filter((each) => each.impact === "serious" || each.impact === "critical"),
+        outside,
+      }).toEqual({
+        dialogs: { theme, base: { linked: true, scheme: theme }, defined: true, dialogs: [shownDialog("Open project")] },
+        listboxes: { theme, defined: [true, true], listboxes: [{ value: "gamma", scrolls: false, options: folderOptions("gamma", "", "gamma") }] },
+        placed: { inDialog: true, onTop: true },
+        violations: [],
+        incomplete: [],
+        outside: [],
+      });
+      await page.close();
+    });
+  }
+});
+
 /**
  * Runs axe-core on a story page with the axe gate's full rule set and context, as `axeViolations` does, and returns each
  * violation's and each incomplete result's rule id and impact (014 FR-051, research.md R-02: the gate counts a serious or
