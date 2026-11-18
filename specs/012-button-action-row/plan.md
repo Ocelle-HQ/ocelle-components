@@ -418,22 +418,43 @@ phase 2),
     in baseline alignment and the row's baseline, and with it the host's, is the first item's: the one-line-tall
     `.icon-slot` wrapper, empty or holding the icon, not the label. A one-line `ocelle-button` in a line of text sets
     its label 4.6 to 6.2 px above the text's baseline (round 5's measurement; a native `<button>` sits on it).
-    *Decision*: the label wrapper becomes part of the convention, a `<span class="label">` holding the default slot
-    between the icon and trailing wrappers (the README's example already renders it), and `iconSlotStyles` gains
-    `.icon-row > .label { align-self: baseline; }`. The label is then the row's only baseline-aligned item, so the
-    row's baseline is the label's first line, and the label stays at the row's start: every position inside the
-    control (the wrappers, the label, the row's padding) and the control's size are unchanged (round 5's probe: 0 px
-    in every case, positions and sizes identical). `.icon-row { align-items: baseline }` also gives 0 px but moves the
-    items inside the row, so it is not used. What changes in 005's convention: a control on it renders its label in
-    `.label`, and its host's baseline is its label's first line; nothing else. `ocelle-action-row` does not render
+    *Decision* (as amended by round 6, below): the label wrapper becomes part of the convention, a
+    `<span class="label">` holding the default slot between the icon and trailing wrappers (the README's example
+    already renders it), and so does the `bare` modifier: a control with no label (an icon-only control) puts the
+    class `bare` on its row. `iconSlotStyles` gains `.icon-row:not(.bare) > .label { align-self: baseline; }`, for
+    labelled rows only. In a labelled row the label is then the row's only baseline-aligned item, so the row's
+    baseline is the label's first line, and the label stays at the row's start: every position inside the control
+    (the wrappers, the label, the row's padding) and the control's size are unchanged (round 5's probe: 0 px in every
+    case, positions and sizes identical). `.icon-row { align-items: baseline }` also gives 0 px but moves the items
+    inside the row, so it is not used. A `bare` row keeps its place: no item takes part in baseline alignment, its
+    baseline stays the icon wrapper's, and its icon sits where a native `<button>` holding an svg puts it in a line of
+    text. What changes in 005's convention: a control on it renders its label in `.label` and marks a row with no
+    label `bare`; a labelled control's host baseline is its label's first line, an icon-only control's is unchanged;
+    nothing else. `ocelle-button` already sets `bare` on a row with no label (review round 1, R1-01), and its own
+    `bare` rules (the slotted icon's and the spinner's gap) stay in `ocelle-button.ts`.
+    *Amendment, round 6* (operator decision, 2026-11-18, human:jeroennouwsdev, multiple choice: "Rule for labelled
+    rows (Recommended)"; operator round `reviews/phase-2/round-6.md`, finding O6-01): the first form of this decision,
+    `.icon-row > .label { align-self: baseline; }` for every row, moved icon-only controls off the line. Their
+    `.label` is empty and zero-height, so its synthesized baseline is its top and the control hung 10.5 to 11.6 px
+    below the line, where it sat 10 px above it like a native `<button>` with an svg (round 6's measurement: default
+    +11.59 px, compact +10.5 px, busy +11.59 px against -10 px before and for the native button). The operator's
+    answer, verbatim: "Apply the rule only to labelled rows: `.icon-row:not(.bare) > .label { align-self: baseline }`,
+    and make the `bare` modifier (no label) part of the convention. Icon-only buttons stay exactly where they were,
+    matching a native button. The planner amends decision 33 and adds an icon-only test case to the red (a second red
+    step under fix-4), then green." The second red step is recorded under the label fix-5, because `red.sh` keeps one
+    record per label and a second `fix-4` would replace the first; it is still part of fix round 4. `ocelle-action-row` does not render
     `.icon-row` (its inner control has its own flex rules, its label wrapper is `.title`, and the host is
     block-level), so the rule does not reach it; phase 2 fix-4 checks that the row's layout, scenarios and baselines
     do not change, and a change there is a stop-and-ask. 005's own documents are not edited: the convention's text is
     the `icon-slot.ts` header comment and the elements README's § Slot convention, which state it. Test-first: a
     one-line button in a line of text has its label on the text's baseline within 0.5 px (red against the current
     rule), paired in the same test with the icon wrapper's and the label's block-start being equal within 0.5 px
-    (plant: `.icon-row { align-items: baseline }` in place of the label rule). Visual baselines that move are
-    regenerated in the pinned container and listed. Tasks T029a to T029e (phase 2 fix-4). No principle is relaxed and
+    (plant: `.icon-row { align-items: baseline }` in place of the label rule); and, from round 6, an icon-only button
+    (default, `compact`, busy) in a line of text has its icon's centre within 0.5 px of where a native `<button>`
+    holding an svg puts it (passes against the code before the rule; plant: the unscoped rule
+    `.icon-row > .label { align-self: baseline; }`), with a README line for the `bare` modifier. Visual baselines that
+    move are regenerated in the pinned container and listed; icon-only stories do not move. Tasks T029a to T029e and
+    T029f to T029h (phase 2 fix round 4: red steps `fix-4` and `fix-5`, one green). No principle is relaxed and
     no exception is recorded, so no Complexity Tracking row is needed.
 
 ## Project Structure

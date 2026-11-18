@@ -681,13 +681,19 @@ squares. It becomes `slot[name="icon"]::slotted(*), slot[name="trailing"]::slott
 `slot.test.ts` gains a case that a non-icon element in the default slot keeps its own box, and US4 a scenario that a
 slotted tag's box fits its text. 005's elements slot icons only in those two slots, so their output is unchanged.
 
-**Label baseline** (operator round at landing, 2026-11-18, `reviews/phase-2/round-5.md` O3-01; plan decision 33): with
+**Label baseline** (operator rounds at landing, 2026-11-18, `reviews/phase-2/round-5.md` O3-01 and
+`reviews/phase-2/round-6.md` O6-01; plan decision 33): with
 `.icon-row { align-items: flex-start }` no item of the row takes part in baseline alignment, so the row's baseline is
 its first item's, the one-line-tall icon wrapper, and a one-line control in a line of text sat its label 4.6 to 6.2 px
 above the text's baseline. The label wrapper, `<span class="label">` around the default slot, is now part of the
-convention, and `iconSlotStyles` sets `.icon-row > .label { align-self: baseline; }`: the label is the row's only
+convention, and so is the `bare` modifier: a control with no label puts the class `bare` on its row. `iconSlotStyles`
+sets `.icon-row:not(.bare) > .label { align-self: baseline; }`, for labelled rows only: the label is the row's only
 baseline-aligned item, so the row's baseline is its first line while every position inside the row stays where it
-was. The row element does not render `.icon-row` and is not affected.
+was. A `bare` row is left as it was: an icon-only control's empty, zero-height label would give the row a baseline
+synthesized from the label's top, and the unscoped rule hung such a control 10.5 to 11.6 px below the line, where it
+sat 10 px above it like a native `<button>` holding an svg (operator round `reviews/phase-2/round-6.md` O6-01, plan
+decision 33 as amended). With the scoped rule an icon-only control's icon sits where a native `<button>` with an svg
+puts it. The row element does not render `.icon-row` and is not affected.
 
 **Rationale**, measured: inside a shrink-to-fit parent every display value gives the content width; a block or flex
 host collapses to 0 only when its parent is forced narrower than its content, and `min-inline-size: min-content`
