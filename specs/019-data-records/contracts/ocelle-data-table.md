@@ -200,7 +200,14 @@ While `sticky-header` is present (the property `stickyHeader` reflects it; any v
   320px following, one frame after each change; spike-2 § Addendum). The rewrite cannot oscillate: a narrower cap can only
   make the table taller, which keeps the block overflow (measured, spike-2 § Addendum A2, A3: no oscillation, no
   loop error). Without
-  `sticky-header` the write is as before.
+  `sticky-header` the write is as before. Tested (the operator's answer to Q-A3 (a), 2026-11-18): the shared sticky
+  caption body runs under the harnesses' hidden scrollbars, where the room is 0 and the subtraction cannot be seen;
+  its classic-scrollbar half, `packages/elements/test/browser/data-table-scrollbar.test.ts` (`elements-browser`,
+  Chromium launched without `--hide-scrollbars` as 009's `test/browser/scrollbar.test.ts`; contracts/checks.md
+  § Harnesses), asserts at 320 px the room above 0, `--data-table-box-size` 305px with every caption line inside the
+  unmasked width, 320px one frame after the bound is lifted and 305px again after it is set, the RTL table at
+  `scrollLeft` 0 and `data-fade="end"` at rest and after each change (the module's `<room>px 100%` mask layer is
+  checked there on T079's test host).
 - **Toggling.** Setting or removing `sticky-header` re-renders; the module re-reads `blockAxis` in `hostUpdated` and
   takes or drops the block axis, `data-axis` (while the table overflows the bound) and `data-block-fade`, and the tab
   stop follows the new overflow state.

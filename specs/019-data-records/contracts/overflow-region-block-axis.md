@@ -208,7 +208,7 @@ bound reaches the box; contracts/ocelle-data-table.md).
 ## Tests (phase 1's red, T079)
 
 - 009's existing tests (`test/overflow-region.test.ts`, `test/overflow-host.test.ts`, the scroller's and the board's
-  scenario and harness files) are not edited and pass unchanged; the one test statement changed is the README
+  scenario and harness files, and the classic-scrollbar `test/browser/scrollbar.test.ts`) are not edited and pass unchanged; the one test statement changed is the README
   sentence on the module's inputs in `test/node/readme.test.ts`, for the new options (named in the red commit's body).
 - New bodies drive a block-axis test host (`test/fixtures/overflow-host-block.ts`, a test-only element built on the
   module with the option on, a bounded block size and a pinned first child, pinned as the data table's `<thead>` is,
@@ -231,7 +231,7 @@ bound reaches the box; contracts/ocelle-data-table.md).
   inline only, no `data-axis`, `overflow-y` `hidden`, the box's `offsetWidth` equal to its `clientWidth` and the
   two-layer `mask-size`; the bound then lowered below the content's block size: `data-axis="both"`, `overflow-y`
   `auto`, the computed `scrollbar-gutter` `auto` (none reserved, Q-A1 (a)), the block-axis scrollbar's room
-  `offsetWidth − clientWidth` 0 (the harnesses' hidden scrollbars) and the four layers, the first `0px 100%`; the
+  `offsetWidth − clientWidth` 0 (the harnesses' hidden scrollbars; the classic half below) and the four layers, the first `0px 100%`; the
   bound lifted again: no `data-axis`. Under `dir="rtl"`, overflowing inline only: `scrollLeft` 0 at rest,
   `data-fade="end"` (not `both`) at rest, and the first row's inline start at the track's start (the content's start
   reachable), paired with the same host bounded in the block axis too carrying `data-axis="both"` with `scrollLeft` 0
@@ -295,5 +295,18 @@ bound reaches the box; contracts/ocelle-data-table.md).
   size while `data-block-fade="end"`, and no line at the block end.
 - One paired body per guard: with the option off, the same host behaves as 009's contract (ArrowDown not handled, no
   `data-axis`, no `data-block-fade` although its content is taller than its bound, two-layer `mask-size`).
+- The classic-scrollbar half (the operator's answer to Q-A3 (a), 2026-11-18): under the harnesses' hidden scrollbars
+  the block-scrollbar layer is `0px 100%` and the room 0, so no body above can tell a module that reads the room from
+  one that writes 0. The classic-scrollbar suite `packages/elements/test/browser/data-table-scrollbar.test.ts`
+  (`elements-browser`, Chromium launched with `ignoreDefaultArgs: ["--hide-scrollbars"]` as 009's
+  `test/browser/scrollbar.test.ts`; T080; contracts/checks.md § Harnesses) runs the mask-figure assertions on this
+  test host, on the fixture page `test/browser/overflow-region-block.test.ts` visits, bounded so it overflows both
+  ways: the room
+  `offsetWidth − clientWidth` above 0 (15 px measured) asserted first, then four `mask-size` layers with the first
+  `<room>px 100%`, at the inline end in LTR and at the left under `dir="rtl"`, the fade layers `<clientWidth>px
+  <clientHeight>px` and the computed `mask-composite` `add, add, intersect, add`; with the bound lifted, the two
+  layers of 009's contract. The same suite runs, on the data table, the RTL lift (`scrollLeft` 0 and `data-fade="end"`
+  at rest, after the bound is lifted and after it is set again) and the sticky caption body with the room
+  subtracted. The test host's other bodies above are not repeated there.
 - "Within 0.5 px" in these bodies, as everywhere in this feature, is inclusive (`|difference| ≤ 0.5`): spike-2 § 8
   measured differences of exactly 0.5 px.

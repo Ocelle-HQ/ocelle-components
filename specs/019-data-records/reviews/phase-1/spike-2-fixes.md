@@ -133,3 +133,32 @@ layer count). Options:
 - (c) Keep hidden scrollbars only; record the subtraction plant as not run with the reason (vacuous under hidden
   scrollbars) in `element-plants.md`, an accepted gap; the README states the classic-scrollbar behaviour without a
   test. Not recommended (constitution VIII: a behaviour with no failing test).
+
+## Operator answer to Q-A3 applied
+
+Answer recorded at the end of `reviews/phase-1/operator-spike-2-decisions.md` (2026-11-18, human:jeroennouwsdev):
+(a), a classic-scrollbar half for T080's sticky caption body, the RTL lift and the mask figure, run in a suite
+launched without `--hide-scrollbars` like 009's `scrollbar.test.ts`. On this branch that file is
+`packages/elements/test/browser/scrollbar.test.ts`, in the `elements-browser` project of `vitest.config.ts` (node
+environment, `packages/elements/test/browser/**/*.test.ts`, global setup `test/browser/global-setup.ts`); its
+`beforeAll` serves `inject("elementsFixture")` and launches Playwright's `chromium` with `ignoreDefaultArgs:
+["--hide-scrollbars"]` (`OCELLE_CHROMIUM_PATH` as `executablePath` when set). Since 009's test files are not edited
+here, the half is a new file in the same project and form: `packages/elements/test/browser/data-table-scrollbar.test.ts`.
+Design artifacts only; no source or test file is touched. T082 stays open for the implementer.
+
+| Item | Change | Where |
+|---|---|---|
+| Q-A3 (a) | The classic-scrollbar suite: file, project, launch, served build, `fixtureDriver`, zero CSP violations; file-local bodies (the in-process harness cannot draw a classic scrollbar); each body asserts `data-axis="both"` and a room above 0 first, so a run with hidden scrollbars fails instead of passing vacuously; 009's `scrollbar.test.ts` not edited | contracts/checks.md § Harnesses; contracts/overflow-region-block-axis.md § Tests (009's unedited files, new classic-half bullet); plan.md § Technical Context (Testing), § Project Structure |
+| Q-A3 (a) | New oracle row "classic scrollbar": the sticky caption body at 320 px (two caption line boxes first; `--data-table-box-size` the measured size less the room, 305px; caption line boxes inside the unmasked extent; bound lifted 320px, set again 305px, one frame after `settle`; no loop error), the RTL lift (both-ways RTL table: `scrollLeft` 0 and `data-fade="end"` at rest, far end reachable, the same after the bound is lifted and set again), T079's mask figure on the block-axis test host (first layer `<room>px 100%`, inline end in LTR, left in RTL; composite list; two layers with the bound lifted) | contracts/checks.md § Oracles; tasks.md T080 (new sub-item), T079 (cross-reference) |
+| Q-A3 (a) | The mask figure runs on T079's test host on the page T079's `test/browser/overflow-region-block.test.ts` visits, as the operator's option named it; the caption body and the RTL lift on the data table's fixture page | contracts/checks.md; contracts/overflow-region-block-axis.md § Tests; contracts/ocelle-data-table.md § Sticky header row (The caption cap); research.md R-18; tasks.md T080 |
+| Q-A3 (a) | Plant guards: the `.box-size` write without the room now guarded by the classic sticky caption body (the hidden-scrollbar bodies named as not its guard); `scrollbar-gutter: stable` also guarded by the classic RTL lift; one new plant, the block-scrollbar mask layer written `0px 100%` whatever the room, guarded by the classic mask figure. Classic guards run in `elements-browser` (`pnpm exec vitest run --project elements-browser packages/elements/test/browser/data-table-scrollbar.test.ts`; the global setup rebuilds the browser build from the planted source), not in process | contracts/checks.md § Element plants (intro, rows); tasks.md T024 |
+| Q-A3 (a) | Mutation: mutants on the room survive the in-process run (room 0); they are not equivalent, and their record names the classic body that kills them and the plant run, as 009's landing review L1-02 settled | contracts/checks.md § Harnesses; research.md R-18; plan.md § Technical Context (Testing); tasks.md T025 |
+| Q-A3 (a) | The red commit carries the new file, its bodies read in `red-phase.log` like the others | tasks.md T015 |
+| Q-A3 (a) | Decision recorded; "open" replaced; the hidden-scrollbar note on the caption cap and the mask composition point at the classic half; rejected options (b) and (c) with reasons | research.md R-18 (Mask composition, The caption cap with a block-axis scrollbar, new Q-A3 (a) paragraph after the Result); plan.md § Summary, § Decisions on phase 1's second spike item 8 (was "Open: Q-A3"); tasks.md § Phase 1 spike 2 decisions in force |
+| Q-A3 (a) | Stop-and-ask bullet: answered; the implementer stops if the suite measures a room of 0 or a plant it guards does not bite; a vacuous plant found while writing the bodies still stops | tasks.md § Stop-and-ask points |
+| Q-A3 (a) | Prerequisite answered; step 1 runs the classic suite and states what it shows | quickstart.md |
+
+Counts: no story, baseline or task added, removed or renumbered (phase 1: 21 stories, 42 baselines; mission 44 and
+88). One test file added to T080 (and so to T015's red commit). Element plants in T024 and contracts/checks.md: one
+more (the block-scrollbar layer written `0px 100%` whatever the room). `units.sh` reports phase 1 with 27 tasks, 25
+open, as before; T082 stays open. No question for the operator.

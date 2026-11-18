@@ -17,8 +17,8 @@ checks: [contracts/checks.md](contracts/checks.md).
 - The phase 1 second spike's decisions (`reviews/phase-1/operator-spike-2-decisions.md`, Q-1 to Q-4) are applied
   (`reviews/phase-1/spike-2-fixes.md`), and the implementer's measurement of Q-3 (c) before the red commit is recorded
   in `reviews/phase-1/spike-2.md` (§ Addendum, T082), its two contradictions answered (Q-A1 (a), no
-  `scrollbar-gutter`; Q-A2 (a), the caption link checked at a partly scrolled position) and applied, with Q-A3 (the
-  guard of the scrollbar-room subtraction) answered before phase 1's red commit.
+  `scrollbar-gutter`; Q-A2 (a), the caption link checked at a partly scrolled position) and applied, and so is Q-A3
+  (a), the classic-scrollbar half that guards the scrollbar-room subtraction, the RTL lift and the mask figure.
 - Each phase's `reviews/phase-<N>/element-plants.md` records every element plant biting (contracts/checks.md).
 - `pnpm install --offline` works (`pnpm run setup:online` after a container restart).
 - For baselines: docker running (`nohup dockerd > /tmp/dockerd.log 2>&1 &`, as root), and #10's pinned container
@@ -29,6 +29,11 @@ checks: [contracts/checks.md](contracts/checks.md).
 1. **Unit and browser tests.** Run `pnpm run gate:unit-tests`. It passes, and the data-table, timeline and chain
    bodies run in both harnesses. 009's tests of the overflow-region module, `ocelle-scroller` and
    `ocelle-workflow-board` pass with no change to their files, beside the block-axis option's own bodies (SC-007).
+   The classic-scrollbar suite runs too: `pnpm exec vitest run --project elements-browser
+   packages/elements/test/browser/data-table-scrollbar.test.ts` passes, its bodies asserting a block-axis scrollbar
+   room above 0 (Chromium launched without `--hide-scrollbars`, as 009's `test/browser/scrollbar.test.ts`), the
+   sticky caption inside the unmasked width with that room subtracted, the RTL table at its start after the bound is
+   lifted and set, and the block-scrollbar mask layer as wide as the room (Q-A3 (a)).
 2. **Static gates.** Run `pnpm run gate:typecheck`, `gate:lint`, `gate:style-lint`, `gate:test-lint`, `gate:csp`,
    `gate:prefix`, `gate:manifest`, `gate:contrast` and `gate:brand-rules`. All pass. The manifest lists the five
    elements with empty event lists.

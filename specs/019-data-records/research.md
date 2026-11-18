@@ -1014,7 +1014,9 @@ from 009's inline fades where one applies:
   product 0.24; with every layer `add`, 1.00 under one fade alone; with the order reversed both scrollbars masked);
   the fade layers at the client area's side, the block-scrollbar layer at its side (left under `dir="rtl"`). The
   figures stay px written to the per-instance sheet (009's R-05). Hosts without the option, and a box with the option
-  but no block overflow (no `data-axis`), keep 009's two layers.
+  but no block overflow (no `data-axis`), keep 009's two layers. Under the harnesses' hidden scrollbars the
+  block-scrollbar layer is `0px 100%`; its classic-scrollbar figure (`<room>px 100%`, the room above 0) is asserted in
+  the classic-scrollbar suite (Q-A3 (a), Result below).
 - **Focus clearance.** 009's inline clearance keeps the ring clear of every edge that will still fade, and falls back
   to suppressing a fade for a ring too large to clear (WCAG 2.4.11). The block clearance does the same against the
   block-end fade: clear of the pinned box above and of the fade below (if it still shows at the new position), and
@@ -1080,8 +1082,10 @@ not change size when the scrollbar comes or goes; contracts/ocelle-data-table.md
 appears only with a block overflow that a narrower cap can only keep (a narrower caption makes the table taller), so
 the write cannot oscillate; measured before the red commit without the gutter (spike-2 § Addendum: 305px and 320px
 following with classic scrollbars, 320px throughout with hidden ones, no loop error, no oscillation). Under hidden
-scrollbars the subtraction is 0, so no hidden-scrollbar body can tell it from no subtraction; which body guards it
-is open (`reviews/phase-1/spike-2-fixes.md` Q-A3). Measured earlier with the gutter always reserved (spike-2 § 7): at 320 px `--data-table-box-size` 305px and every caption line inside the unmasked
+scrollbars the subtraction is 0, so no hidden-scrollbar body can tell it from no subtraction; the operator's
+answer to Q-A3 (a) (2026-11-18) adds a classic-scrollbar half, `packages/elements/test/browser/data-table-scrollbar.test.ts`
+in `elements-browser`, launched without `--hide-scrollbars` as 009's `test/browser/scrollbar.test.ts`, which guards
+it (Result below). Measured earlier with the gutter always reserved (spike-2 § 7): at 320 px `--data-table-box-size` 305px and every caption line inside the unmasked
 width, no loop error over 320 → 600 → 320 px; in the open `<dialog>` the shrink-to-fit host gets two `.box-size`
 callbacks (the gutter appearing after the first delivery widens it once), not one.
 
@@ -1177,6 +1181,27 @@ gutter, the block-axis scrollbar's room 15 px with classic scrollbars and 0 with
 jump back; `PageDown` and `Space` move 262 px in a 300 px box (bodies assert the direction and a non-zero move);
 the keys sent as real key events; the shrink-to-fit `<dialog>` host's two `.box-size` callbacks; a bounded sticky
 table prints its box only (spike-2 § 12).
+
+**Q-A3 (a), a classic-scrollbar half (the operator's answer, 2026-11-18, end of
+`reviews/phase-1/operator-spike-2-decisions.md`).** Without `scrollbar-gutter` the block-axis scrollbar's room is 0
+under `--hide-scrollbars`, which Playwright adds to every headless launch: both harnesses, the stories and the
+baselines. Three things depend on that room and so cannot be seen there: the caption cap's subtraction, the RTL
+table's `scrollLeft` when the scrollbar comes and goes (spike-2 § Addendum A2: −14 with the gutter going, classic
+only), and the block-scrollbar mask layer's figure. Decision: one more fixture-harness file,
+`packages/elements/test/browser/data-table-scrollbar.test.ts`, in the `elements-browser` project (node environment,
+the global setup's browser build), whose `beforeAll` launches Playwright's `chromium` with `ignoreDefaultArgs:
+["--hide-scrollbars"]` as 009's `test/browser/scrollbar.test.ts` does, and drives the data table's fixture page with
+`fixtureDriver`. Its bodies: the sticky caption body at 320 px (the room 15 px, `--data-table-box-size` 305px with
+every caption line inside the unmasked width, 320px one frame after the bound is lifted and 305px after it is set
+again, no loop error); the RTL both-ways table (`scrollLeft` 0 and `data-fade="end"` at rest, the far end reachable,
+and after each change of the bound); and T079's mask figure on the block-axis test host, on the fixture page T079's
+browser file visits (`<room>px 100%` as the first layer, at the left under `dir="rtl"`). Each asserts
+`data-axis="both"` and a room above 0 first. Rejected: (b) the caption cap alone (the RTL lift and the figure would stay unguarded where
+they matter); (c) an accepted gap (a behaviour with no failing test, constitution VIII). The plants that only this
+suite can make fail: the `.box-size` write without the room, the block-scrollbar layer written `0px 100%` whatever the
+room (one new element plant), and, besides its hidden-scrollbar guards, `scrollbar-gutter: stable` (the RTL lift);
+they run in `elements-browser` (contracts/checks.md § Element plants). Mutants on the room survive the in-process
+mutation run (room 0) and are recorded naming the classic body that kills them, as 009's landing review L1-02 did.
 
 ## R-19 The numeric-cell hook (FR-019; inventory decision IQ-3)
 

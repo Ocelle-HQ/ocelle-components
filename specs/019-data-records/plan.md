@@ -102,7 +102,8 @@ history and evidence chain.
   implementer before the red commit (a stop-and-ask point). Q-4 (a): `.region-edge.block-end` is zero-wide outside
   forced colours. T082's addendum: Q-A1 (a), no `scrollbar-gutter` (the scrollbar's room read as `offsetWidth −
   clientWidth`); Q-A2 (a), the caption-link rule asserted at a partly scrolled position, the fully-past position a
-  paired platform-alone assertion; Q-A3 open. Story, baseline and task counts are unchanged. See § Decisions on phase 1's second spike.
+  paired platform-alone assertion; Q-A3 (a), a classic-scrollbar half (`test/browser/data-table-scrollbar.test.ts`,
+  launched without `--hide-scrollbars`) for the sticky caption body, the RTL lift and the mask figure. Story, baseline and task counts are unchanged. See § Decisions on phase 1's second spike.
 
 009, 013 and op 016 are on `main`, and `main` (b594b7e) is merged into this branch (8ee3351, operator decision of
 2026-11-17, `reviews/main-merge.md`). The first task rechecked the plan against it (R-14, `reviews/recheck.md`):
@@ -142,7 +143,14 @@ Requested of 009's owner, not built here: a module option that keeps a pinned st
 - The module's block-axis option (R-18): a new test-only host `packages/elements/test/fixtures/overflow-host-block.ts`
   and its bodies in `packages/elements/test/overflow-region-block.test.ts` (in process) and
   `packages/elements/test/browser/overflow-region-block.test.ts` (fixture), with the pure `blockClearanceScroll` and
-  `blockEdgeState` cases and the block-end fade's bodies (Q-I4). 009's own module, scroller and board tests are not edited and must pass (SC-007); the README sentence on the
+  `blockEdgeState` cases and the block-end fade's bodies (Q-I4). The classic-scrollbar half (Q-A3 (a)):
+  `packages/elements/test/browser/data-table-scrollbar.test.ts` in `elements-browser`, its own `beforeAll` launching
+  Playwright's `chromium` with `ignoreDefaultArgs: ["--hide-scrollbars"]` as 009's `test/browser/scrollbar.test.ts`
+  does: on the data table's fixture page the sticky caption body with the block-axis scrollbar's room subtracted and
+  the RTL lift, and on the block-axis test host's page T079's mask figure with a non-zero block-scrollbar layer (the
+  room is 0 in both harnesses). Its element-plant
+  guards run in that project; mutants on the room, which the in-process mutation run cannot kill, are recorded naming
+  its bodies (009's landing L1-02). 009's own module, scroller and board tests are not edited and must pass (SC-007); the README sentence on the
   module's inputs that `test/node/readme.test.ts` pins changes in phase 1's red, named in its body.
 - The story test in `storybook-integration`, extended per phase with 320 px reflow per container story.
 - #10's gates on the stories: `storybook-build`, `visual` (light and dark baselines from the pinned container) and
@@ -435,8 +443,13 @@ Answered by the operator on 2026-11-18 (`reviews/phase-1/operator-spike-2-decisi
    2 to 12 px above it (spike-2 § Addendum A5), the fully-past position kept as a paired assertion the platform alone
    meets (contracts/checks.md).
 
-Open: Q-A3 (`reviews/phase-1/spike-2-fixes.md`), which body guards the data table's scrollbar-room subtraction now
-that it is 0 under hidden scrollbars; phase 1's red commit waits for it (tasks.md § Stop-and-ask points).
+8. **Q-A3, the scrollbar-room plant cannot bite under hidden scrollbars (`spike-2-fixes.md`). Decided: (a).** A
+   classic-scrollbar half in `packages/elements/test/browser/data-table-scrollbar.test.ts` (`elements-browser`,
+   Chromium launched with `ignoreDefaultArgs: ["--hide-scrollbars"]` as 009's `test/browser/scrollbar.test.ts`), part
+   of T080 and phase 1's red commit: the sticky caption body with the room subtracted, the RTL lift and T079's mask
+   figure on the block-axis test host with a non-zero block-scrollbar layer, each asserting `data-axis="both"` and a room above 0 first. Its
+   plant guards run in `elements-browser`; one element plant added (the block-scrollbar layer written `0px 100%`
+   whatever the room). No task added (contracts/checks.md § Harnesses, § Element plants; research R-18).
 
 The spike's settled facts for the red bodies (research R-18's and R-20's Results): the mask layer order and
 `mask-composite: add, add, intersect, add`; "within 0.5 px" inclusive (`≤ 0.5`); the stripe per `<tbody>`; a
@@ -487,6 +500,7 @@ packages/elements/
 │   ├── {data-table,event-timeline,evidence-chain}.test.ts      # in process (mutated); the chain's no-loop test
 │   ├── overflow-region-block.test.ts, browser/overflow-region-block.test.ts, fixtures/overflow-host-block.ts  # the block-axis option (R-18)
 │   ├── browser/{data-table,event-timeline,evidence-chain}.test.ts
+│   ├── browser/data-table-scrollbar.test.ts                    # classic scrollbars, no --hide-scrollbars (Q-A3 (a), R-18)
 │   ├── define.test.ts                                          # the define-twice fixture gains the five
 │   ├── entry-*.test.ts                                         # the five entry points
 │   ├── node/readme.test.ts (changed in phase 1: the Styles sentences, recheck Q2 (c), and the module's inputs sentence, IQ-2), node/manifest.test.ts, node/chain-no-pill.test.ts
