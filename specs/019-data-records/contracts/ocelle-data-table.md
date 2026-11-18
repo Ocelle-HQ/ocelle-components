@@ -86,6 +86,7 @@ takes its table's width and overflows only when its own inline size is bounded, 
   <div class="region-ring" aria-hidden="true"></div>
   <div class="region-edge start" aria-hidden="true"></div>
   <div class="region-edge end" aria-hidden="true"></div>
+  <div class="region-edge block-end" aria-hidden="true"></div> <!-- the block-axis option's edge (Q-I4) -->
 </div>
 <div class="box-size" aria-hidden="true"></div>   <!-- the caption cap's measuring element, block size 0 -->
 ```
@@ -107,7 +108,8 @@ takes its table's width and overflows only when its own inline size is bounded, 
   as absent. The README's Host ARIA list names the data table with 009's elements (PLAN-CORRECTNESS-1-010). Chromium
   also shows the host as a `generic` node of the host's name beside the `group`; axe-core 4.14.0 reports nothing on
   it, blank or not (spike § 2), so both states have stories (spike Q1 (b), contracts/checks.md § Stories).
-- **Overflow, keys, fades, clearance, handover.** All of this is the module's. The element adds no listener for it.
+- **Overflow, keys, fades, clearance, handover.** All of this is the module's, the block-end fade of the block-axis
+  option included. The element adds no listener for it.
 - **Not touched.** The element writes nothing on the table or its descendants and emits no event.
 
 ## Accessibility tree (Chromium)
@@ -146,14 +148,24 @@ While `sticky-header` is present (the property `stickyHeader` reflects it; any v
   `blockStartBox: () => <the assigned table's first direct <thead> child> ?? null`
   ([overflow-region-block-axis.md](overflow-region-block-axis.md)). The module then puts `data-axis="both"` on the
   box, scrolls it in both axes, takes the tab stop while either axis overflows, handles ArrowUp and ArrowDown and
-  keeps a focused body element clear of the pinned `<thead>`. The element adds no listener and no scroll write.
+  keeps a focused body element clear of the pinned `<thead>` and of the block-end fade. The element adds no listener
+  and no scroll write.
+- **The block-end fade (operator decision Q-I4, 2026-11-18).** While rows are below the box's block end the module
+  writes `data-block-fade="end"` on the box and fades its block end over the fade depth; never at the block start,
+  never under the pinned `<thead>` (the module's room rule: no fade when less than twice the fade depth shows below
+  the header row), together with the inline fades when the table also overflows sideways (a corner faded by both),
+  and in forced colours as a `CanvasText` line drawn by `.region-edge.block-end`. The element renders that edge after
+  009's two (§ Shadow structure, always; it paints nothing and is read by nothing while `sticky-header` is absent)
+  and binds nothing for the fade: no `data-block-fade` binding, no rule of its own on it. The caption's cap is
+  unaffected (the block-end fade is not in the inline axis), and no shadow rule of the element selects on
+  `data-block-fade`.
 - **The bound.** Its own styles add `:host([sticky-header]) { display: flex; flex-direction: column; }`,
   `:host([sticky-header]) .region-frame { display: flex; flex-direction: column; min-block-size: 0; }` and
   `:host([sticky-header]) .region-box { min-block-size: 0; }`, so a block size the page sets on the host
   (`block-size` or `max-block-size`, in the page's own stylesheet) bounds the box, and with no bound the box is as tall
   as the table. The element sets no block size itself and reads no attribute for it.
 - **The pin and its ground.** `@ocelle/styles` (block 1) makes the `<thead>` `position: sticky` at
-  `inset-block-start: 0`, paints its cells `--ocelle-color-sheet` (put to the operator as inventory-fixes Q-I1) and
+  `inset-block-start: 0`, paints its cells `--ocelle-color-sheet` (the operator's decision Q-I1, 2026-11-18) and
   switches the table to `border-collapse: separate` with `border-spacing: 0`, so the header rule travels with the row
   ([styles-data-table.md](styles-data-table.md)). The `<thead>` scrolls with the region in the inline axis, so each
   column header stays above its column.
@@ -163,7 +175,7 @@ While `sticky-header` is present (the property `stickyHeader` reflects it; any v
   clientWidth` (the gutter, read in the same callback), px only, so the caption still wraps inside the box's unmasked
   width (R-07, R-18). Without `sticky-header` the write is as before.
 - **Toggling.** Setting or removing `sticky-header` re-renders; the module re-reads `blockAxis` in `hostUpdated` and
-  takes or drops the block axis and `data-axis`, and the tab stop follows the new overflow state.
+  takes or drops the block axis, `data-axis` and `data-block-fade`, and the tab stop follows the new overflow state.
 
 **Accessibility tree.** Unchanged: the same `group` (while either axis overflows) holding the consumer's table. The
 pinned `<thead>` is the same `row` and `columnheader` nodes.

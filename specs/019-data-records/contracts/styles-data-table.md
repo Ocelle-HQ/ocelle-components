@@ -31,7 +31,7 @@ table of an `ocelle-data-table` is selected, whether the element is defined or n
 | `ocelle-data-table[wrap="anywhere"] > table > :is(tbody, tfoot) > tr > td` | `overflow-wrap: anywhere` |
 | `ocelle-data-table[sticky-header] > table` | `border-collapse: separate`; `border-spacing: 0` (the header rule travels with the pinned row; the row rules, drawn as each cell's block-end border, look as before; FR-017, R-18) |
 | `ocelle-data-table[sticky-header] > table > thead` | `position: sticky`; `inset-block-start: 0` (all header rows pinned as one group; no `z-index`: a positioned row group paints above the unpositioned body rows) |
-| `ocelle-data-table[sticky-header] > table > thead > tr > :is(td, th)` | `background-color: var(--ocelle-color-sheet)` (opaque, so no row shows through; inventory-fixes Q-I1) |
+| `ocelle-data-table[sticky-header] > table > thead > tr > :is(td, th)` | `background-color: var(--ocelle-color-sheet)` (opaque, so no row shows through; the operator's decision Q-I1, 2026-11-18) |
 | `ocelle-data-table[striped] > table > tbody > tr:nth-child(even) > :is(td, th)` | `background-color: var(--ocelle-color-inset)` (FR-060; each `<tbody>` counts its own rows, hidden rows included) |
 | `ocelle-data-table > table > tbody > tr:hover > :is(td, th)` | `background-color: var(--ocelle-color-hover-bg)` (FR-061), after the stripe rule so it wins on a striped row |
 | inside `@media (forced-colors: active)` | text and rules in `CanvasText`, no `forced-color-adjust: none`; the row band (FR-013): `ocelle-data-table > table > tbody > tr > :first-child` gets `border-inline-start: var(--ocelle-bar-width) solid Canvas`, then `CanvasText` on `ocelle-data-table[striped]`'s even rows, then `Highlight` on the hovered row, in that order (R-20); the grounds of the stripe, the hover and the pinned header become the system background, as forced colours draw any ground |
@@ -107,5 +107,6 @@ also states that the accessible names of column headers follow the drawn upper-c
 header by the text block 1's `text-transform: uppercase` draws (spike Q2 (a), 2026-11-18; asserted by T011). And it
 states, for the inventory decisions of 2026-11-18 (asserted by T011): the sticky header row's ground
 (`--ocelle-color-sheet`), its separated border model and the page's block bound on the host; the stripe on even body
-rows per `<tbody>`, hidden rows counted; the hover ground on body rows; the forced-colours row band that stands in for
-both; and the `data-ocelle-align="end"` hook (block 4) with its specificity and placement.
+rows per `<tbody>`, hidden rows counted; the hover ground on body rows, and that a hovered striped row shows no
+change in the light theme, where `hover-bg` and `inset` are equal (the operator's decision Q-I2, 2026-11-18); the
+forced-colours row band that stands in for both; and the `data-ocelle-align="end"` hook (block 4) with its specificity and placement.

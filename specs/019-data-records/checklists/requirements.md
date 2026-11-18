@@ -68,6 +68,11 @@
   (009's module's opt-in block-axis option; FR-008 amended for exactly it; SC-007 now covers 009's tests), FR-019 (the
   `data-ocelle-align="end"` hook), FR-060 (striped rows) and FR-061 (row hover), with US1-17 to US1-25, edge cases and
   FR-013 rows for the three grounds and the forced-colours band; IQ-6 (a) adds a README statement to FR-010. Each new
-  requirement has acceptance scenarios and measurable oracles (contracts/checks.md). Open operator questions Q-I1 to
-  Q-I5 (inventory-fixes) name the plan's defaults; no `[NEEDS CLARIFICATION]` marker is added. Every item above still
-  holds.
+  requirement has acceptance scenarios and measurable oracles (contracts/checks.md). Every item above still holds.
+- Inventory follow-up questions (answered 2026-11-18, end of `reviews/phase-1/inventory-decisions.md`; changes in
+  `reviews/phase-1/inventory-fixes.md` § Follow-up answers applied): Q-I1 to Q-I3 confirm the defaults FR-017 and
+  FR-061 already state; Q-I4 adds the block-end fade to FR-018 (block end only, never under the pinned box, combined
+  with the inline fades, kept clear by the focus clearance, a `CanvasText` line in forced colours), with US1-26 to
+  US1-28, edge cases and two FR-013 rows; Q-I5 adds a one-line pointer in 009's contract file. Two new operator
+  questions, Q-I6 (the fade's room rule) and Q-I7 (a story for the fade's off state), name the defaults the spec
+  follows; no `[NEEDS CLARIFICATION]` marker is added. Every item above still holds.

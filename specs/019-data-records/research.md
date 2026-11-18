@@ -24,6 +24,12 @@ inventory (R-16); IQ-2, the sticky header row, with an opt-in block-axis option 
 numeric-cell hook (R-19); IQ-4 and IQ-5, striped rows and row hover (R-20); IQ-6 (a) and IQ-7 (a), README statements
 (R-16). R-06, R-07, R-13 and R-15 take the additions.
 
+**After the inventory follow-up questions (2026-11-18).** The operator's answers to Q-I1 to Q-I5
+(`reviews/phase-1/inventory-fixes.md`, answered at the end of `reviews/phase-1/inventory-decisions.md`): Q-I1, Q-I2
+and Q-I3 confirm the defaults (the `sheet` header ground, the light-theme hover collision accepted, the hover always
+on; R-13, R-18, R-20); Q-I4 adds a block-end fade to the module's block-axis option (R-18); Q-I5 adds a one-line
+pointer to this mission's amendment in 009's contract file (R-18).
+
 ## R-01 The data table's content model: the consumer's `<table>`, slotted unchanged
 
 **Decision.** `ocelle-data-table` attaches its shadow root with `slotAssignment: "manual"` and renders 009's region
@@ -834,7 +840,7 @@ grounds themselves are decorative (FR-013's table), so they need no non-text pai
 (`data-table-pairs.test.ts`) also ties each ground block 1 paints to a main ground of `source.ts`, and each text colour
 painted on it to a `checked` row on that ground; the rendered bodies (US1-17, US1-23, US1-24) compare each ground with
 its probe-resolved token. In the light theme `hover-bg` and `inset` share the value `#E2DDD3` (`source.ts`), so a
-hovered striped row shows no change in light; the operator is asked (inventory-fixes Q-I2).
+hovered striped row shows no change in light; the operator accepted it (Q-I2, 2026-11-18) and the README notes it.
 
 ## R-14 The recheck against `main` (the first task)
 
@@ -957,9 +963,53 @@ pinned-start option (the caption stays non-sticky, Q-F (b)); that request to 009
 
 **The option** (`blockAxis`, `blockStartBox`): the box scrolls on both axes and reserves the block-axis scrollbar's
 room (`scrollbar-gutter: stable`); it overflows, and so takes the tab stop, role and name, when either axis overflows;
-ArrowUp and ArrowDown scroll it by `step`; the focus clearance also works in the block axis below the pinned box; no
-block-axis fade is drawn (the pinned header and the scrollbar show the block position; inventory-fixes Q-I4 asks the
-operator); the inline fades' mask never covers either scrollbar.
+ArrowUp and ArrowDown scroll it by `step`; the focus clearance also works in the block axis below the pinned box; the
+block end fades while content is below it (Q-I4, below); no fade covers either scrollbar.
+
+**The block-end fade (operator, 2026-11-18, Q-I4: "add a fade at the block end while content is below"; it replaces
+the earlier default of no block fade).** The pinned header and the scrollbar alone were judged too weak a cue that
+rows continue. The module, while the option is on, fades the box's block end over the inline fades' depth
+(`--ocelle-scroller-fade-size`) whenever content is more than 1 px below the client block end, and writes
+`data-block-fade="end"` on the box itself (as it writes `data-axis`), so the host binds nothing new. Choices made, each
+from 009's inline fades where one applies:
+
+- **Block end only.** No block-start fade: the block start is where the header is pinned, and a start fade would
+  fade the header row the option exists to keep in view; the pinned header shows that rows are above.
+- **The room rule.** The fade is drawn only when the space between the pinned box's block-end edge (the client
+  block-start edge without a `<thead>`) and the client block-end edge is at least twice the fade depth, so the fade
+  never reaches under the header and at least as many rows show unfaded as faded; in a smaller bound the scrollbar is
+  the only cue. Twice, not once, because a fade as deep as the whole visible body leaves no row legible at rest
+  (the factor is put to the operator as inventory-fixes Q-I6, this default followed until answered).
+- **Mask composition.** Four layers while the option is on: the inline fade layer and the block-end fade layer, each
+  sized to the client area and opaque when its fade is off; and the two opaque scrollbar layers. The two fade layers
+  intersect (`mask-composite: intersect`; alpha multiplied), so in a corner both fades apply and neither undoes the
+  other, as an `add` would; the scrollbar layers are added to the result, so both scrollbars stay unmasked. The
+  layer order that gives this with CSS's bottom-up compositing is the spike's to confirm (T082); the figures stay
+  px written to the per-instance sheet (009's R-05). Hosts without the option keep 009's two layers.
+- **Focus clearance.** 009's inline clearance keeps the ring clear of every edge that will still fade, and falls back
+  to suppressing a fade for a ring too large to clear (WCAG 2.4.11). The block clearance does the same against the
+  block-end fade: clear of the pinned box above and of the fade below (if it still shows at the new position), and
+  for a ring box taller than that space, aligned below the pinned box with the fade suppressed until `focusout` or a
+  `scroll` of more than 1 px from the recorded `scrollTop`. `blockClearanceScroll` returns `{ scrollTop, suppressEnd }`.
+  The depth is measured from layout, the block size of a new `.region-edge.block-end` (009's rule: never parse a
+  custom property's text).
+- **Forced colours.** Masks are not drawn in forced colours (009's rule sits inside `@media not (forced-colors:
+  active)`); `.region-edge.block-end`, rendered by the host after 009's two edges, draws a `CanvasText` line of
+  `--ocelle-border-width` at the frame's block end while `data-block-fade="end"`, as 009's inline edges do. It is a
+  new class on a new node in the template of a host that sets the option, so 009's hosts and their DOM do not change.
+- **The pinned header in the fade.** It never is (the room rule). The header row's opaque `sheet` ground and the
+  stripes are masked like any content where the fade covers them; the caption, above the header, scrolls away with
+  the body and is masked only when it reaches the box's block end.
+- **The caption cap.** Unchanged: the block-end fade is not in the inline axis, so `--data-table-end-fade` (the inline
+  end fade's depth) and the gutter subtraction stand.
+- **Stories and baselines.** No story is added: the bounded sticky-header story shows the block-end fade at rest
+  (its baselines capture it) and its story test asserts `data-block-fade="end"`. Phase 1 stays at 19 stories and 38
+  baselines, the mission at 42 and 84 (a story for the fade's off state is put to the operator as inventory-fixes
+  Q-I7).
+
+**009's contract file (Q-I5, 2026-11-18).** One line at the top of `specs/009-workflow-layouts/contracts/overflow-region.md`
+points to `contracts/overflow-region-block-axis.md` as this mission's amendment; nothing else of 009's directory is
+changed. The line is added in a documentation commit of its own.
 
 **The data table's side.** `sticky-header` (reflected boolean, unset by default, as `ocelle-card`'s `inset`) turns the
 option on; `blockStartBox` is the assigned table's `<thead>`. `@ocelle/styles` pins the `<thead>` (`position: sticky;
@@ -981,13 +1031,17 @@ done and stays the implementer's to tick; the new points get a second spike task
 - a slotted `<thead>` with `position: sticky` pins to the shadow `.region-box` (the flat tree's scroll container) in
   Chromium, at 1280 and 320 px, scrolled in both axes; the cells' ground is opaque and paints over the body rows;
 - the module with `data-axis="both"` and `scrollbar-gutter: stable`: `clientWidth`, `offsetWidth` and the gutter in
-  LTR and `dir="rtl"` (which side the block-axis scrollbar is on), and a three-layer `mask-size` that leaves both
-  scrollbars unmasked;
+  LTR and `dir="rtl"` (which side the block-axis scrollbar is on), and a four-layer `mask-size` that leaves both
+  scrollbars unmasked, with the layer order and `mask-composite` values under which the inline and block-end fade
+  layers intersect (a corner under both faded by both) and the scrollbar layers add;
+- the block-end fade: at rest with rows below, gone at the block end, its block-start edge at or below the pinned
+  header's block-end edge, absent under the room rule, and in forced colours the `.region-edge.block-end` line in
+  `CanvasText` at the frame's block end;
 - the column flex bound: a `max-block-size` and a `block-size` on the host bound `.region-box`; no bound leaves it as
   tall as the table; the shrink-to-fit hosts of R-02 with `sticky-header` (never 0 px wide);
 - block clearance: a link scrolled under the pinned header reaches a position clear of it after `pressTab`, with
-  Chromium's own focus scrolling and the module's write in the same frame (no jump back); a link inside the header is
-  not cleared;
+  Chromium's own focus scrolling and the module's write in the same frame (no jump back); a link in the faded rows
+  reaches a position clear of the block-end fade; a link inside the header is not cleared;
 - the caption cap with the gutter subtracted: the caption's line boxes inside the unmasked width, and no
   `ResizeObserver` loop error;
 - separated borders: the row rules' rendered positions equal the collapsed ones within 0.5 px, and the header rule
@@ -1030,11 +1084,11 @@ colours are kept as written in forced colours. The band scrolls away with the ro
 sideways (the library documents the same limit; the README says so).
 
 **Known collision.** In the light theme `hover-bg` and `inset` are both `#E2DDD3`, so hovering a striped even row
-shows no change in light (dark: `#2A261F` against `#302B23`). The plan keeps IQ-4 (b)'s and IQ-5 (b)'s tokens and asks
-the operator (inventory-fixes Q-I2).
+shows no change in light (dark: `#2A261F` against `#302B23`). The plan keeps IQ-4 (b)'s and IQ-5 (b)'s tokens; the
+operator accepted the collision (Q-I2, 2026-11-18), and the `@ocelle/elements` and `@ocelle/styles` READMEs note that
+a hovered striped row shows no change in the light theme.
 
-**Hover is always on** (IQ-5 (b) gives no attribute); the operator is asked whether to make it opt-in
-(inventory-fixes Q-I3). The hover adds no event, tab stop, focus or cursor (FR-011). Stories capture it through #10's
+**Hover is always on** (IQ-5 (b) gives no attribute; confirmed by the operator, Q-I3, 2026-11-18). The hover adds no event, tab stop, focus or cursor (FR-011). Stories capture it through #10's
 pointer parameter (`parameters.ocelle.pointer.hover`, one selector matching one row inside the 1280 × 800 viewport).
 
 **To measure in the spike (T082).** `:nth-child(even)` per `<tbody>` with a `hidden` row; the hover ground over a

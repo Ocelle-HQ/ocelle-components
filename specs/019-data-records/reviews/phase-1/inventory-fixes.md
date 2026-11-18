@@ -101,3 +101,53 @@ feature directory. Options:
   entry carry the option.
 - (b) Also add a one-line pointer at the top of 009's contract to the 019 amendment, in a documentation commit of its
   own.
+
+## Follow-up answers applied (Q-I1 to Q-I5)
+
+Source: the operator's answers at the end of `reviews/phase-1/inventory-decisions.md` (2026-11-18,
+human:jeroennouwsdev). Design artifacts only; no source or test file is touched, and no task is ticked.
+
+| Item | Answer | Change | Where |
+|---|---|---|---|
+| Q-I1 | (a) `--ocelle-color-sheet`, the default | Marked decided; the pinned header ground unchanged | spec.md § Operator decisions on the inventory follow-up questions, FR-017; contracts/ocelle-data-table.md § Sticky header row; contracts/styles-data-table.md block 1 table; plan.md § Summary, § Decisions on the library inventory (9); research.md intro |
+| Q-I2 | (a) accept the light-theme collision; the README notes it | Marked decided; the `@ocelle/styles` and `@ocelle/elements` READMEs note that a hovered striped row shows no change in light (statements in T011 and T013, written in T017 and T021) | spec.md FR-061, decisions block; research.md R-13, R-20; contracts/styles-data-table.md § Consumer rules; quickstart.md step 5; tasks.md T011, T013, T021 |
+| Q-I3 | (a) always on, the default | Marked decided | spec.md FR-061, decisions block; research.md R-20; tasks.md T013 |
+| Q-I4 | (b) a block-end fade while content is below (changes the default) | The block-axis option's module now fades the block end: outputs `offBlockEnd` and `fadeBlockEnd`; `data-block-fade="end"` written by the module (the host binds nothing); block end only, never block start; the **room rule** (no fade when less than twice the fade depth shows below the pinned box, so it never reaches under the header); four mask layers (the inline and block-end fade layers intersect, a corner faded by both; the two scrollbar layers added, both scrollbars unmasked; a fade layer whose fade is off is opaque); block focus clearance clear of the fade, with 009's suppression fallback (`blockClearanceScroll` returns `{ scrollTop, suppressEnd }`; new pure `blockEdgeState`); the depth measured from a new `.region-edge.block-end` in the host's template, which also draws the forced-colours `CanvasText` line; the fade goes with the option and with the box; the host must not set `data-block-fade` or style the edge; tests on the block-axis test host | contracts/overflow-region-block-axis.md (header, § Template, § Outputs, § Effects, § Pure functions, § Stylesheet, § What a host must not do, § Tests) |
+| Q-I4 | same | FR-018's "Set" bullet rewritten (no "no block-axis fade"); FR-017 and FR-056 README statements name the fade; FR-013 gains two rows (the block-end fade as a mask, the forced-colours block-end line in `CanvasText`); User Story 1 text and Independent Test; **US1-26** (the fade at rest, gone at the end, back after ArrowUp, its edge below the header, the room rule), **US1-27** (with the sideways fades at 320 px; focus clearance clear of the fade), **US1-28** (forced colours: no mask, the `CanvasText` line, none at the end); edge cases: toggling, the pinned header and the room rule, no `<thead>`, the sideways fades, focus and the fallback, forced colours, no bound | spec.md |
+| Q-I4 | same | The element renders `.region-edge block-end` after 009's two edges (always, bound to nothing), binds no `data-block-fade` and has no rule on it; toggling drops the attribute; the caption cap is unaffected | contracts/ocelle-data-table.md § Shadow structure, § Behaviour, § Sticky header row; data-model.md (overflow state, States) |
+| Q-I4 | same | R-18: the option paragraph, a new § The block-end fade (block end only, the room rule and why twice, mask composition, clearance and fallback, forced colours, the header and caption in the fade, the caption cap unchanged, stories and baselines unchanged), § 009's contract file, and the spike list (four-layer order and `mask-composite`, the fade's states, clearance clear of the fade) | research.md intro, R-18 |
+| Q-I4 | same | Oracles (computed style and geometry for US1-26 and US1-27, keyboard bodies US1-26 and US1-27, forced colours US1-28 and the module's body), the module bodies' helpers (the fallback), three platform-only rows with their paired assertions, the sticky story's note, and six element plants: the fade never drawn, the room rule dropped, the fade layers composited by `add`, the clearance ignoring the fade, the suppression never ending, the forced-colours line removed; "third mask layer dropped" renamed "block-scrollbar mask layer dropped" | contracts/checks.md § Oracles, § Keyboard bodies, § Bodies that the platform alone could pass, § Element plants, § Stories |
+| Q-I4 | same | Plan: Summary bullet, decision 9, row III (no "no block-axis fade"), Technical Context testing (the new pure function and fade bodies), § Phases phase 1 (spike 2's four-layer mask and the fade, the red list's US1-17 to US1-28 and the module bodies) | plan.md |
+| Q-I4 | same | Tasks: US1-1 to US1-28 in the inputs and phase 1 goal; Independent Test; § Library inventory decisions in force; stop-and-ask (the follow-up answers in force; a spike finding no layer order that intersects the fades); T082 (the fade's measurements), T079 (the test host's extra edge, the fade bodies, `blockEdgeState`, the four-layer figures, the option-off guard's `data-block-fade`), T080 (US1-26 to US1-28 and the fade's edge cases), T081 (the fade in the module and its styles; the README entry names it), T016 (the extra edge in the template), T013 and T021 (README statements), T014 (the sticky story's `data-block-fade="end"`), T024 (the six plants) | tasks.md |
+| Q-I4 | same | Quickstart step 5 (the fade at rest, gone at the end, focus, forced colours); checklist notes | quickstart.md; checklists/requirements.md |
+| Q-I4 | stories and baselines | No story added: the bounded sticky-header story shows the fade at rest and its baselines capture it. Phase 1 stays 19 stories and 38 baselines (`(38 added, 0 changed, 0 removed)`); the mission 42 and 84; per-phase `<n>` 38, 22, 24 | contracts/checks.md § Stories; research.md R-18 |
+| Q-I5 | (b) a one-line pointer in 009's contract (changes the default) | One line at the top of `specs/009-workflow-layouts/contracts/overflow-region.md` naming `specs/019-data-records/contracts/overflow-region-block-axis.md`, in a documentation commit of its own (8feb68c); nothing else in `specs/009-workflow-layouts` changed. The amendment's header, FR-018, R-18 and plan decision 9 say so | specs/009-workflow-layouts/contracts/overflow-region.md; contracts/overflow-region-block-axis.md; spec.md FR-018; research.md R-18; plan.md decision 9 |
+
+`tasks.md` still parses: `units.sh` reports phase 1 with 27 tasks, phase 2 26, phase 3 23 and phase 4 4, all open;
+82 task IDs, unique, none renumbered. Element plants of the inventory decisions: 22 (the sixteen above, plus six for
+Q-I4).
+
+### Questions for the operator (after Q-I4)
+
+Each names the default the artifacts above follow until the operator answers. An answer that differs changes the
+block-axis contract, spec, research, checks and tasks before phase 1's red commit (T015); after it, it enters as a
+test-first fix (tasks.md § Stop-and-ask points).
+
+**Q-I6. How much room the block-end fade needs below the pinned header.** A fade as deep as the whole visible body
+leaves no row legible, and a fade must never reach under the pinned header. Options:
+
+- (a) The room rule as written (the default): the fade shows only when at least twice the fade depth (2 × 2rem) shows
+  below the header row; in a smaller bound only the scrollbar shows that rows continue.
+- (b) At least once the fade depth: the fade shows in smaller bounds, and may then cover every visible body row.
+- (c) Always show it while content is below, its depth capped to half the space below the header (a further figure in
+  the module's per-instance sheet, and one more plant).
+
+**Q-I7. A story for the fade's "off" state.** The bounded sticky-header story shows the block-end fade at rest; no
+story shows a sticky table scrolled to its block end (no fade), because a story renders at its initial scroll
+position. Options:
+
+- (a) No further story (the default): the "off" state is proven by US1-26's and US1-28's browser bodies; counts stay
+  19 and 38 in phase 1, 42 and 84 in the mission.
+- (b) Add a story "sticky header, bounded, fits" whose bound is taller than its rows, so it shows a sticky table with
+  no block-end fade (though nothing then scrolls in the block axis): one story, two baselines, phase 1 20 and 40, the
+  mission 43 and 86, and `visual:update`'s phase 1 `<n>` 40.
