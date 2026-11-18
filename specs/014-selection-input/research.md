@@ -684,6 +684,16 @@ scrolled out of the list part (`epsilon` to `kappa`) each have a serious `color-
 They are excepted node by node in `storybook/a11y-exceptions.json`, in the form of #10's Prose document entries, with
 their rows in the plan's Complexity Tracking (T027b). No other story adds an exception.
 
+**Amendment: the composed story** (FR-054; phase 7 operator decision 1, `reviews/phase-7/operator-decisions.md`;
+operator round 2 O2-01, `reviews/phase-7/round-2.md`). #16 merged, so the composed `ocelle-dialog` + `ocelle-listbox`
+story is this feature's. As 008's composed tooltip story ("Inside an open dialog" in `tooltip.stories.ts`) does, it is
+a story of the inner element's file: `listbox.stories.ts` imports `ocelle-dialog` and adds "Inside an open dialog"
+(`elements-ocelle-listbox--inside-an-open-dialog`), an open dialog labelled "Open project" holding the five-folder
+listbox with `gamma` selected and Cancel and Open in its footer. 008's stand-in story
+`elements-ocelle-dialog--open-project` stays. Because both elements exist, the story is the unit under test: the
+landing's red commit holds only its story test, and the story, its baselines (under docker) and the union counts follow
+in green (T114). It adds no axe exception.
+
 **Recheck.** Phase 1's first task first merges `origin/main` (`3828d2f` or later) into the branch as a recorded merge
 commit (analysis I1, operator decision Q1 (a)); the implementer makes it before `base.sh 1`, as an exception to
 `/speckit-story-implement`'s step 2 for phase 1 only (second analysis I1, operator decision Q1 (b)). It then compares this plan with #10 as merged: the gate ids, the story id

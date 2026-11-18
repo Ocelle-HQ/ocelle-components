@@ -339,7 +339,10 @@ unreflected `status` attribute. Each "does not" outcome among them is paired in 
 7. **Polish**: README overview (nine elements, engine floor Chromium 125 / WebKit 17.4 as decided at the phase 4 stop, T059a, module rule) and one README example
    per SC-009 use (the Open project folder picker, tabbed screens, segmented choices, in-text links, copy fields),
    checked by the documentation test, red first (analysis G3); CHANGELOG MINOR entry, the composed dialog
-   + listbox story if #16 has merged (FR-054), a full gate run per quickstart.md.
+   + listbox story if #16 has merged (FR-054), a full gate run per quickstart.md. #16 merged; the composed story
+   (`elements-ocelle-listbox--inside-an-open-dialog`, R-12) is added at the landing after its merge of `main`, test
+   first, with its baselines under docker, the axe run and the union counts the gates assert (phase 7 operator
+   decision 1, operator round 2 O2-01, T114).
 
 ## Complexity Tracking
 

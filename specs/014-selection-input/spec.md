@@ -1031,7 +1031,12 @@ navigate" means the URL, its fragment included, is unchanged (scenario 14).
   hand-picked.
 - **FR-054**: If #16 (mission 008) has merged before this feature lands, this feature adds the composed story of an
   `ocelle-dialog` holding an `ocelle-listbox` (008 spec: "the feature that lands second adds the composed story");
-  otherwise 008 does.
+  otherwise 008 does. #16 has merged and reached this branch with the landing's merge of `main`, so the story is
+  this feature's, added at the landing as a test-first fold (phase 7 operator decision 1, operator round 2 O2-01):
+  the listbox story "Inside an open dialog", an open, modal `ocelle-dialog` labelled "Open project" whose body holds
+  an `ocelle-listbox` labelled "Folders" with a selected folder, which has focus on open, and whose footer holds
+  Cancel and Open, in light and dark, with its baselines (FR-053) and the `axe` gate over it with no exception
+  (FR-051).
 
 **Manifest, documentation, CSP**
 
