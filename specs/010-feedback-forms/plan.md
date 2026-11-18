@@ -158,13 +158,16 @@ VIII, and I for the internal setter), after round 3's fixes (rows I, III and VII
     `claude/042-mutation-shards-by-count`), and reverted on this branch (`14538fa`), history kept so op 017 can start
     from those commits. Mission 010 lands without the rule. CI covers the gap: since op 015 (`ce1d9c7` on `main`) the
     `mutation-shard` job's limit is 45 minutes for a shard holding `packages/elements/src/` and 10 minutes for any
-    other (`.github/workflows/ci.yml` on `main`; 010 takes it when `main` is merged at landing), so the measured and estimated element shards fit it.
-    After the second merge of `main` the element shards took 2493–2717 s on CI (run 44354367030), and operator round 6
-    (`reviews/phase-2/round-6.md`, O6-01, T025e) raised the element-shard limit to 75 minutes; other shards keep 10. At T041 the shard timing
+    other (`.github/workflows/ci.yml` on `main`; 010 takes it when `main` is merged at landing), so the measured and estimated element shards fit it. At T041 the shard timing
     against 7:00 is replaced by this record; the whole-diff `gate:mutation -- --base 2004e82` must still exit 0.
     T002's and T025's timings (phases 1 and 2) stand as recorded. Phase 4 has no shard-timing stop of its own; its
-    element shards are under the same gap. A mutation shard over CI's limit for it (10 minutes, or 75 for a shard
+    element shards are under the same gap. A mutation shard over CI's limit for it (10 minutes, or 45 for a shard
     holding element source) is still a stop.
+    After the second merge of `main` the element shards took 2493–2717 s on CI (run 44354367030), because the `elements`
+    project's `fileParallelism: false` (phase 2 stop 1, decision (b)) ran all of its files one at a time, so operator
+    round 7 (`reviews/phase-2/round-7.md`, O7-01, which replaces round 6's 75-minute limit) keeps the 45-minute limit
+    and moves only this mission's timing-sensitive in-process files into a serial project `elements-timing`, mutated
+    with `elements`, which runs its files in parallel again as on `main` (T025g to T025j).
 12. **Manifest of the internal base class, mission 008's rule** (operator decision "Main's rule + FormControl
     (Recommended)", 2026-11-17, `reviews/phase-3/round-3.md` O3-01; the clash in `reviews/landing/merge-stop-2.md`):
     the generator reads every `src/ocelle-*.ts` and the named internal bases `src/overlay.ts` (mission 008, research
