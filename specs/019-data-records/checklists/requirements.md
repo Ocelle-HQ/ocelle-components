@@ -73,6 +73,13 @@
   `reviews/phase-1/inventory-fixes.md` § Follow-up answers applied): Q-I1 to Q-I3 confirm the defaults FR-017 and
   FR-061 already state; Q-I4 adds the block-end fade to FR-018 (block end only, never under the pinned box, combined
   with the inline fades, kept clear by the focus clearance, a `CanvasText` line in forced colours), with US1-26 to
-  US1-28, edge cases and two FR-013 rows; Q-I5 adds a one-line pointer in 009's contract file. Two new operator
-  questions, Q-I6 (the fade's room rule) and Q-I7 (a story for the fade's off state), name the defaults the spec
-  follows; no `[NEEDS CLARIFICATION]` marker is added. Every item above still holds.
+  US1-28, edge cases and two FR-013 rows; Q-I5 adds a one-line pointer in 009's contract file. Two further
+  questions, Q-I6 (the fade's room rule) and Q-I7 (a story for the fade's off state), were answered with their
+  defaults ((a) and (a), commit 4ad3073, end of `reviews/phase-1/inventory-decisions.md`): twice the fade depth, and
+  no story for the off state; no `[NEEDS CLARIFICATION]` marker is added. Every item above still holds.
+- Re-analysis (answered 2026-11-18, end of `reviews/analysis/operator-decisions.md`; changes in
+  `reviews/analysis/fixes-2.md`): C1 (b) adds an unbounded sticky-header story to FR-050 and a Principle V exception
+  row (plan) for the block-end fade's two scroll-position states; A1 (c) leaves the pinned-box measure to the
+  operator after phase 1's second spike, stated in FR-018 and US1-26 as that pending choice (a stop-and-ask point, not
+  a `[NEEDS CLARIFICATION]` marker); A2 (a) puts the row hover under `(hover: hover)` (FR-061, US1-24); G1 (a) states
+  the browser's block-axis keys in FR-018 and US1-18. Every item above still holds.

@@ -147,8 +147,11 @@ While `sticky-header` is present (the property `stickyHeader` reflects it; any v
 - **Module.** The element constructs its `OverflowRegion` with `blockAxis: () => this.stickyHeader === true` and
   `blockStartBox: () => <the assigned table's first direct <thead> child> ?? null`
   ([overflow-region-block-axis.md](overflow-region-block-axis.md)). The module then puts `data-axis="both"` on the
-  box, scrolls it in both axes, takes the tab stop while either axis overflows, handles ArrowUp and ArrowDown and
-  keeps a focused body element clear of the pinned `<thead>` and of the block-end fade. The element adds no listener
+  box, scrolls it in both axes, takes the tab stop while either axis overflows, handles ArrowUp and ArrowDown (and
+  leaves PageUp, PageDown, Home, End, Space and Shift+Space to the browser, which scrolls the focused box; the
+  operator's decision G1 (a), 2026-11-18) and keeps a focused body element clear of the pinned `<thead>` and of the
+  block-end fade, measured from the pinned-box measure the operator chooses after T082 (A1 (c);
+  [overflow-region-block-axis.md](overflow-region-block-axis.md) § The pinned-box measure). The element adds no listener
   and no scroll write.
 - **The block-end fade (operator decision Q-I4, 2026-11-18).** While rows are below the box's block end the module
   writes `data-block-fade="end"` on the box and fades its block end over the fade depth; never at the block start,
@@ -185,7 +188,7 @@ pinned `<thead>` is the same `row` and `columnheader` nodes.
 - `striped` (reflected, boolean) only reflects: `@ocelle/styles` (block 1) paints the even body rows' cells
   `--ocelle-color-inset` on `ocelle-data-table[striped]` (FR-060). The element reads the property nowhere else.
 - The row hover is `@ocelle/styles`' (block 1) rule on a hovered `<tbody>` row, `--ocelle-color-hover-bg`, after the
-  stripe rule (FR-061). The element adds nothing for it: no listener, no event, no cursor.
+  stripe rule, inside `@media (hover: hover)`, so a device with no hover shows nothing (FR-061; A2 (a)). The element adds nothing for it: no listener, no event, no cursor.
 - An end-aligned numeric column is the consumer's `data-ocelle-align="end"` on its cells, `@ocelle/styles`' hook
   (block 4, FR-019). The element knows nothing of it.
 - In forced colours the stripe and the hover are drawn by the row band of block 1 (FR-013).

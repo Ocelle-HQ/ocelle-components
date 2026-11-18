@@ -881,8 +881,9 @@ lines; phase 4 uses the mission's base (phase 1's), as it changes no source (qui
 `gate:plants` locally (CI's required Plants check judges the full set).
 Baselines: `pnpm run visual:update` only in #10's pinned container under docker (start `dockerd` as root; after a
 container restart, `pnpm run setup:online`); the command must report `<n> added, 0 changed, 0 removed` with `<n>`
-twice the phase's new stories (38, 22 and 24 for phases 1 to 3, from checks.md § Stories; phase 1's 28 since spike
-Q1 (b), 38 since the inventory decisions IQ-2 to IQ-5 added five stories), so no existing baseline
+twice the phase's new stories (40, 22 and 24 for phases 1 to 3, from checks.md § Stories; phase 1's 28 since spike
+Q1 (b), 38 since the inventory decisions IQ-2 to IQ-5 added five stories, 40 since the re-analysis decision C1 (b)
+added the unbounded sticky-header story), so no existing baseline
 moves (013's baselines among them, SC-007). Conflicting PNGs are regenerated in the container, never hand-picked. Mutation follows #23 and op 015 on `main`.
 
 ## R-16 The inventory (FR-058)
@@ -963,8 +964,12 @@ pinned-start option (the caption stays non-sticky, Q-F (b)); that request to 009
 
 **The option** (`blockAxis`, `blockStartBox`): the box scrolls on both axes and reserves the block-axis scrollbar's
 room (`scrollbar-gutter: stable`); it overflows, and so takes the tab stop, role and name, when either axis overflows;
-ArrowUp and ArrowDown scroll it by `step`; the focus clearance also works in the block axis below the pinned box; the
-block end fades while content is below it (Q-I4, below); no fade covers either scrollbar.
+ArrowUp and ArrowDown scroll it by `step`; PageUp, PageDown, Home, End, Space and Shift+Space are left to the
+browser, which scrolls the focused box in the block axis once it has `overflow-y: auto`, and the module neither
+handles nor prevents them (the operator's decision G1 (a) on the re-analysis, 2026-11-18: these were blocked by
+`overflow-y: hidden` before the option, so they are new keyboard paths of the region, each asserted in T079 and
+T080); the focus clearance also works in the block axis below the pinned box; the block end fades while content is
+below it (Q-I4, below); no fade covers either scrollbar.
 
 **The block-end fade (operator, 2026-11-18, Q-I4: "add a fade at the block end while content is below"; it replaces
 the earlier default of no block fade).** The pinned header and the scrollbar alone were judged too weak a cue that
@@ -979,7 +984,16 @@ from 009's inline fades where one applies:
   block-start edge without a `<thead>`) and the client block-end edge is at least twice the fade depth, so the fade
   never reaches under the header and at least as many rows show unfaded as faded; in a smaller bound the scrollbar is
   the only cue. Twice, not once, because a fade as deep as the whole visible body leaves no row legible at rest
-  (the factor is put to the operator as inventory-fixes Q-I6, this default followed until answered).
+  (the operator confirmed the factor two, Q-I6 (a), 2026-11-18).
+- **The pinned-box measure (re-analysis A1 (c), 2026-11-18).** The room rule and the block clearance measure from
+  one point below the pinned box, `pinnedEnd` (contracts/overflow-region-block-axis.md § The pinned-box measure). At
+  the block start the `<thead>` is not yet pinned: a caption above it pushes it down by the caption's height, and a
+  two-line caption at 320 px can push its block-end edge below `clientHeight − fade depth`. The two candidates, the
+  `<thead>`'s current block-end edge (the fade may be absent at rest under a tall caption) and its block size as if
+  pinned (the box's client block start plus the `<thead>`'s block size; the fade shows at rest and US1-26 compares
+  with that point while the caption is in view), give the same point without a caption. T082 measures both at 320 px
+  with a two-line caption and stops for the operator's choice before the scaffold; the captioned bodies of T079 and
+  T080 take their expected values from that choice.
 - **Mask composition.** Four layers while the option is on: the inline fade layer and the block-end fade layer, each
   sized to the client area and opaque when its fade is off; and the two opaque scrollbar layers. The two fade layers
   intersect (`mask-composite: intersect`; alpha multiplied), so in a corner both fades apply and neither undoes the
@@ -1002,10 +1016,12 @@ from 009's inline fades where one applies:
   the body and is masked only when it reaches the box's block end.
 - **The caption cap.** Unchanged: the block-end fade is not in the inline axis, so `--data-table-end-fade` (the inline
   end fade's depth) and the gutter subtraction stand.
-- **Stories and baselines.** No story is added: the bounded sticky-header story shows the block-end fade at rest
-  (its baselines capture it) and its story test asserts `data-block-fade="end"`. Phase 1 stays at 19 stories and 38
-  baselines, the mission at 42 and 84 (a story for the fade's off state is put to the operator as inventory-fixes
-  Q-I7).
+- **Stories and baselines.** The block-end fade adds no story: the bounded sticky-header story shows it at rest (its
+  baselines capture it) and its story test asserts `data-block-fade="end"`; no story for the fade's off state (the
+  operator's decision Q-I7 (a), 2026-11-18). The re-analysis decision C1 (b) (2026-11-18) adds one story for the
+  sticky header with no bound (US1-20), so phase 1 has 20 stories and 40 baselines, the mission 43 and 86. The two
+  scroll-position states (scrolled to the block end, and the room-rule state) are one Principle V exception row in
+  plan.md § Complexity Tracking, proven by US1-26, US1-28 and T079's bodies.
 
 **009's contract file (Q-I5, 2026-11-18).** One line at the top of `specs/009-workflow-layouts/contracts/overflow-region.md`
 points to `contracts/overflow-region-block-axis.md` as this mission's amendment; nothing else of 009's directory is
@@ -1039,6 +1055,14 @@ done and stays the implementer's to tick; the new points get a second spike task
   `CanvasText` at the frame's block end;
 - the column flex bound: a `max-block-size` and a `block-size` on the host bound `.region-box`; no bound leaves it as
   tall as the table; the shrink-to-fit hosts of R-02 with `sticky-header` (never 0 px wide);
+- the pinned-box measure (A1 (c)): at 320 px with a two-line caption above the `<thead>`, at the block start and
+  scrolled past the caption, both candidates (the `<thead>`'s current block-end edge, and the box's client block
+  start plus its block size), the room rule and the fade's block-start edge under each, and where a link just below
+  the header is cleared to under each; the record states both and stops for the operator's choice before the
+  scaffold;
+- the keys the browser keeps (G1 (a)): PageUp, PageDown, Home, End, Space and Shift+Space on the focused box scroll it
+  in the block axis in Chromium, with no `preventDefault` from the module, the block-end fade following and the
+  header staying pinned;
 - block clearance: a link scrolled under the pinned header reaches a position clear of it after `pressTab`, with
   Chromium's own focus scrolling and the module's write in the same frame (no jump back); a link in the faded rows
   reaches a position clear of the block-end fade; a link inside the header is not cleared;
@@ -1088,7 +1112,14 @@ shows no change in light (dark: `#2A261F` against `#302B23`). The plan keeps IQ-
 operator accepted the collision (Q-I2, 2026-11-18), and the `@ocelle/elements` and `@ocelle/styles` READMEs note that
 a hovered striped row shows no change in the light theme.
 
-**Hover is always on** (IQ-5 (b) gives no attribute; confirmed by the operator, Q-I3, 2026-11-18). The hover adds no event, tab stop, focus or cursor (FR-011). Stories capture it through #10's
+**Hover is always on** (IQ-5 (b) gives no attribute; confirmed by the operator, Q-I3, 2026-11-18). The hover adds no event, tab stop, focus or cursor (FR-011).
+
+**Only on a device that can hover (re-analysis A2 (a), 2026-11-18).** Touch browsers apply `:hover` to a tapped row
+until the next tap elsewhere, so an unguarded rule would leave a hover ground on the last row tapped. The hover rule
+and the forced-colours band's `Highlight` rule sit inside `@media (hover: hover)`, as the spec's edge case promises
+("on a device with no hover nothing shows"). Tests: US1-24's no-hover half in 008's touch context (`elements-touch`
+and `visit(…, { touch: true })`, where Chromium matches `(hover: none)`, 008 research R-14), with no driver
+addition; element plants remove each guard. `source.test.ts` transcribes the two rules inside their media block. Stories capture it through #10's
 pointer parameter (`parameters.ocelle.pointer.hover`, one selector matching one row inside the 1280 × 800 viewport).
 
 **To measure in the spike (T082).** `:nth-child(even)` per `<tbody>` with a `hidden` row; the hover ground over a

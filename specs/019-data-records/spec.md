@@ -5,7 +5,8 @@
 **Created**: 2026-11-15
 
 **Status**: Approved at the spec gate (2026-11-15); amended after the plan gate and after the analysis (2026-11-16),
-the recheck (2026-11-17), the phase 1 spike, the library inventory and its follow-up questions (2026-11-18)
+the recheck (2026-11-17), the phase 1 spike, the library inventory and its follow-up questions, and the re-analysis
+(2026-11-18)
 
 **Input**: User description: "Mission for the rest of #13 (triage/019-data-display-follow-on.md; triage/013-data-display.md
 option B), spec directory specs/019-data-records. The operator chose option B at the triage gate: this mission builds
@@ -113,7 +114,7 @@ in `reviews/phase-1/operator-spike-decisions.md`, changes listed in `reviews/pha
 - Q1, the data table named by a host `aria-label`: (b). The pinned axe-core reports no serious or critical finding
   on it, so the data table's region leaves the Principle V exception: phase 1 adds two stories, an overflowing data
   table named by a non-blank host `aria-label` and one with a blank host `aria-label` (14 data-table stories, 37 in
-  all; 19 and 42 since the inventory decisions below). The timeline and the chain stay in the exception until their own spikes measure them (FR-050).
+  all; 19 and 42 since the inventory decisions below, 20 and 43 since the re-analysis). The timeline and the chain stay in the exception until their own spikes measure them (FR-050).
 - Q2, upper-case column-header names: (a). The column headers stay upper case (FR-006). Chromium names each column
   header by its drawn, upper-case text, so US1-1 compares the element's table with the same table outside given the
   same upper case, and asserts that the column headers are named in upper case; both READMEs state it (FR-006).
@@ -154,6 +155,24 @@ in `reviews/phase-1/inventory-fixes.md`, answers at the end of `reviews/phase-1/
   colours (FR-018, US1-26 to US1-28).
 - Q-I5, 009's contract: a one-line pointer to this mission's amendment (`contracts/overflow-region-block-axis.md`) is
   added to `specs/009-workflow-layouts/contracts/overflow-region.md`, nothing else of 009 is changed (FR-018).
+- Q-I6, the room for the block-end fade below the pinned header: (a), twice the fade depth, the default (FR-018).
+- Q-I7, a story for the fade's off state: (a), no new story, the default (FR-050; since the re-analysis below, a
+  Principle V exception row in the plan's Complexity Tracking records it).
+
+**Operator decisions on the re-analysis** (2026-11-18, human:jeroennouwsdev; `analysis-report.md` at 4ad3073,
+decisions at the end of `reviews/analysis/operator-decisions.md`, changes listed in `reviews/analysis/fixes-2.md`):
+
+- C1, block-axis states without a story: (b). A "sticky header, unbounded" story is added (US1-20; phase 1 has 20
+  data-table stories, the mission 43). One Principle V exception row in the plan's Complexity Tracking covers only the
+  two scroll-position states of the block-end fade: scrolled to the block end (the fade off), and the room-rule state
+  (rows below, no fade) (FR-050).
+- A1, where the room rule and the block clearance measure the pinned header from: (c). Phase 1's second spike
+  measures both candidates (the `<thead>`'s current block-end edge, and its block size as if pinned) at 320 px with a
+  two-line caption, and stops for the operator's choice before the scaffold (FR-018, US1-26).
+- A2, the row hover on a device with no hover: (a). The hover rule, and its forced-colours band, apply only under
+  `@media (hover: hover)`, tested under `hover: none` and guarded by an element plant (FR-061, US1-24).
+- G1, the block-axis keys other than ArrowUp and ArrowDown: (a). PageUp, PageDown, Home, End, Space and Shift+Space
+  are left to the browser, which scrolls the focused box in the block axis; tests assert each key (FR-018, US1-18).
 
 ## Scope
 
@@ -284,8 +303,13 @@ the block-axis keyboard and focus clearance, the block-end fade, the row grounds
 18. **Given** that table, **When** it renders, **Then** the scroll box has `tabindex="0"`, role `group` and the name
     "Work packages", although nothing overflows inline; **When** the box is focused and the user presses ArrowDown and
     then ArrowUp, **Then** it scrolls towards the block end and back by the module's step; ArrowLeft and ArrowRight
-    and a modified ArrowDown do not scroll it; **When** the host's bound is removed so the table fits, **Then** the box
-    has no `tabindex`, role or name (FR-018).
+    and a modified ArrowDown do not scroll it; **When** the focused box gets PageDown, PageUp, End, Home, Space and
+    Shift+Space in turn, **Then** the browser scrolls it in the block axis (PageDown and Space towards the block end,
+    PageUp and Shift+Space back, End to the block end, Home to the block start), the module does not handle the key
+    (its default is not prevented), the block-end fade follows the new position (none at the block end, back at the
+    block start) and the `<thead>` stays pinned at the box's client block-start edge (within 0.5 px); **When** the
+    host's bound is removed so the table fits, **Then** the box has no `tabindex`, role or name (FR-018; the operator's
+    decision G1 (a), 2026-11-18).
 19. **Given** that table with a link in its twelfth body row, scrolled so the row sits under the pinned header, **When**
     the user tabs to the link, **Then** the box scrolls in the block axis so the link's focus ring box is wholly below
     the header row's block-end edge and inside the box (WCAG 2.4.11, focus not obscured); **When** a link inside a
@@ -311,7 +335,10 @@ the block-axis keyboard and focus clearance, the block-end fade, the row grounds
 24. **Given** a data table with and without `striped`, **When** the pointer hovers a body cell, **Then** every cell of
     that body row has the background `--ocelle-color-hover-bg`, over a stripe too, and no other row changes; hovering
     a header or footer row paints nothing; no event is emitted, no tab stop is added and the computed `cursor` stays
-    `auto` (FR-061, FR-011).
+    `auto`; **Given** a device with no hover (`(hover: none)`: a touch context), **When** a body row is tapped or the
+    pointer is over it, **Then** no cell of it paints `--ocelle-color-hover-bg` (a striped even row keeps
+    `--ocelle-color-inset`), and in forced colours its row band is not `Highlight` (FR-061, FR-011; the operator's
+    decision A2 (a), 2026-11-18).
 25. **Given** forced colours, **When** a striped table renders with one body row hovered and with `sticky-header` and a
     bound, **Then** the first cell of every body row has an inline-start border of width `--ocelle-bar-width`: in
     `CanvasText` on the even rows of the striped table, in `Highlight` on the hovered row and in `Canvas` on the others,
@@ -323,7 +350,9 @@ the block-axis keyboard and focus clearance, the block-end fade, the row grounds
     below the pinned header row's block-end edge, so the header row and both scrollbars are never faded; **When** it is
     scrolled to its block end, **Then** no block-end fade shows (no `data-block-fade`), and scrolled back by ArrowUp it
     shows again; **Given** a bound that leaves less than twice the fade depth below the header row, **Then** no
-    block-end fade shows although rows are below (FR-018).
+    block-end fade shows although rows are below; **Given** a two-line caption above the header row at 320 px, at the
+    block start, **Then** the fade's block-start edge is compared with the pinned-header measure the operator chooses
+    after phase 1's second spike (the operator's decision A1 (c), 2026-11-18; FR-018).
 27. **Given** the US1-21 table at 320 px, scrolled to the inline middle and the block start, **When** it renders,
     **Then** the inline fades of 009's contract and the block-end fade show together, the box carrying both
     `data-fade="both"` and `data-block-fade="end"`, and a point under both fades is faded by both; **Given** a link in
@@ -518,7 +547,10 @@ the chip variant.
 - **Block-end fade and the pinned header.** The fade is at the block end only, never at the block start, where the
   header row is pinned; its block-start edge is never above the header row's block-end edge. A bound that leaves less
   than twice the fade depth below the header row shows no block-end fade (the scrollbar still shows that rows are
-  below). A table with no `<thead>` measures that space from the box's own block start (FR-018).
+  below). A table with no `<thead>` measures that space from the box's own block start (FR-018). While the caption is
+  in view at the block start, the `<thead>` sits below it and is not yet pinned; whether the space is measured from
+  the header row's current block-end edge or from its block size as if pinned is the operator's choice after phase 1's
+  second spike measures both (A1 (c)).
 - **Block-end fade with the sideways fades.** Both show together when the region overflows in both axes; a corner
   under both is faded by both, the inline fades still span the header row as 009's do, and neither fade covers a
   scrollbar (FR-018).
@@ -533,7 +565,14 @@ the chip variant.
   positions, `:nth-child`), so the visible rows may show two plain or two striped rows together; the README says so.
   Each `<tbody>` starts its own count (FR-060).
 - **Hover on a row holding a link.** The link keeps its colour (`--ocelle-color-link` has a text declaration on
-  `hover-bg`); the hover adds no event, focus or cursor change (FR-061). On a device with no hover nothing shows.
+  `hover-bg`); the hover adds no event, focus or cursor change (FR-061). On a device with no hover nothing shows:
+  the hover rule and its forced-colours band apply only under `@media (hover: hover)`, so a touch screen, where a
+  tapped row keeps `:hover` until the next tap elsewhere, shows no hover ground (the operator's decision A2 (a)).
+- **Block-axis keys other than the arrows.** With `sticky-header` and a bound, PageUp, PageDown, Home, End, Space and
+  Shift+Space on the focused box are the browser's: it scrolls the box in the block axis, the module does not handle
+  or prevent them, and the block-end fade and the pinned header follow as after any scroll (FR-018, the operator's
+  decision G1 (a)). From a focused link in a cell, these keys do what the browser does there; the module touches no
+  key from a descendant.
 - **The numeric hook outside a data table, or on a non-cell element.** The hook sets the same two declarations on any
   element (FR-019); on a 003 prose table it overrides the prose cell's `text-align`. A header cell of a numeric column
   takes it the same way, and keeps its eyebrow type.
@@ -726,13 +765,20 @@ the chip variant.
     statement changed, for the new option).
   - **Set:** the scroll box also scrolls in the block axis. It overflows when its content overflows in either axis
     (more than 1 px), and then takes the tab stop, role and name of 009's contract. ArrowUp and ArrowDown, unmodified
-    and with the box as target, scroll it in the block axis by the module's step. The focus clearance also works in
+    and with the box as target, scroll it in the block axis by the module's step. PageUp, PageDown, Home, End, Space
+    and Shift+Space are left to the browser, which scrolls the focused box in the block axis: the module neither
+    handles nor prevents them, and its edge state, the block-end fade and the host's pinned box follow the scroll as
+    after any other (the operator's decision G1 (a), 2026-11-18). The focus clearance also works in
     the block axis, keeping the ring box clear of the block-start box the host names (the pinned header, which is
     not cleared when it holds the focus itself) and of the box's block end. The focus handover applies when overflow
     ends in both axes, and every scroll write is instant. While content is below the box's block end, the block end
     fades over the fade depth of 009's inline fades (the operator's decision Q-I4, 2026-11-18); there is no
     block-start fade. The fade never covers the block-start box the host names: when the space below it is less than
-    twice the fade depth, no block-end fade is drawn. It combines with the inline fades (a corner under both is faded
+    twice the fade depth (the operator's decision Q-I6 (a)), no block-end fade is drawn. The room rule and the block
+    clearance measure the block-start box by one measure, which phase 1's second spike measures in both candidate
+    forms (its current block-end edge, or its block size as if pinned at the box's client block start) at 320 px with
+    a two-line caption above it, and which the operator chooses before the scaffold (the operator's decision A1 (c),
+    2026-11-18). It combines with the inline fades (a corner under both is faded
     by both), the focus clearance keeps the ring box clear of it, with 009's fallback (the fade held off) for a ring
     box too tall to clear, and in forced colours a line in `CanvasText` at the block end stands in for it. No fade
     covers either scrollbar.
@@ -756,13 +802,15 @@ the chip variant.
   colour, declared on inset (FR-013), and the row rules stay. The rules ship in `@ocelle/styles` at (0,0,0), so a
   consumer rule wins. In forced colours the stripe is drawn by the row band of FR-013's table.
 - **FR-061** (inventory decision IQ-5, 2026-11-18): A hovered body row (a row of a `<tbody>`) MUST paint the ground
-  `--ocelle-color-hover-bg` on all its cells, over a stripe too; header and footer rows do not. The hover is a look
+  `--ocelle-color-hover-bg` on all its cells, over a stripe too; header and footer rows do not. It applies only where
+  the primary pointer can hover: the rule is inside `@media (hover: hover)`, so a device with no hover (a touch screen,
+  where a tapped row keeps `:hover`) shows nothing (the operator's decision A2 (a), 2026-11-18). The hover is a look
   only: no event, no tab stop, no focus and no cursor change (FR-011); the text keeps its colour, declared on hover-bg
   (FR-013). In the light theme `hover-bg` and `inset` have the same value, so a hovered striped row does not change
   there (accepted by the operator's decision Q-I2, 2026-11-18; the README notes it). It is always on, with no
   attribute (the operator's decision Q-I3). The rule
   ships in `@ocelle/styles` at (0,0,0), after the stripe rule. In forced colours the hovered row is drawn by the row
-  band of FR-013's table in `Highlight`.
+  band of FR-013's table in `Highlight`, under the same `@media (hover: hover)` condition.
 
 ### `ocelle-event-timeline` (P2)
 
@@ -870,7 +918,12 @@ the chip variant.
   named by it) and one blank (the region named by `label`), added once the phase 1 spike found the pinned axe-core
   clean on that state (spike Q1 (b), 2026-11-18), and, for the inventory decisions IQ-2 to IQ-5, a bounded
   `sticky-header` table, a table with an end-aligned numeric column, a striped table, a hovered body row and a striped
-  table with an even row hovered (the two hover states through #10's pointer parameter). The states named by a host `aria-label` of the timeline and the
+  table with an even row hovered (the two hover states through #10's pointer parameter), and an unbounded
+  `sticky-header` table (US1-20, the operator's decision C1 (b) on the re-analysis, 2026-11-18). Two scroll-position
+  states of the block-end fade have no story: the bounded table scrolled to its block end (the fade off) and a bound
+  that leaves less than twice the fade depth below the header (rows below, no fade); they are one constitution V
+  exception recorded in the plan's Complexity Tracking, chosen by the operator (re-analysis C1 (b); Q-I7 (a) for the
+  fade's off state), and proven by browser tests (US1-26, US1-28). The states named by a host `aria-label` of the timeline and the
   chain have no story: they are a constitution V exception recorded in the plan's Complexity Tracking, chosen by the
   operator (analysis C1 (c)), and proven by browser tests, until their own phase's spike measures them. Any further
   state without a story is a constitution V exception recorded there and approved by the operator.

@@ -4,7 +4,9 @@
 hosts that set the option below; for every other host 009's contract stands word for word. Spec FR-008 (as amended)
 and FR-018, inventory decision IQ-2 (operator, 2026-11-18, `reviews/phase-1/inventory-decisions.md`), with the
 block-end fade of follow-up decision Q-I4 (operator, 2026-11-18: a fade at the block end while content is below);
-research R-18. The amendment lives in this feature's contracts because this mission makes the change. 009's contract
+research R-18. The re-analysis decisions of 2026-11-18 (`reviews/analysis/operator-decisions.md`) add A1 (c), the
+pinned-box measure chosen after phase 1's second spike (§ The pinned-box measure), and G1 (a), the block-axis keys
+the browser keeps (§ Effects, Keys). The amendment lives in this feature's contracts because this mission makes the change. 009's contract
 file carries one line pointing here (follow-up decision Q-I5, in a documentation commit of its own) and is otherwise
 not edited; the README's § Element conventions entry for the module, which both features document against, names the
 option (T081).
@@ -19,9 +21,26 @@ change: without the option no block-end fade, `data-block-fade` or `.region-edge
 | Input | Form | Notes |
 |---|---|---|
 | block axis | `blockAxis?: () => boolean`, a constructor option, read after each render | absent, or returning `false`: 009's contract exactly. Returning `true`: the effects below. A host may switch it at run time (the data table's `sticky-header` attribute); the module re-reads it in `hostUpdated` and applies the new state to the box it follows |
-| pinned block-start box | `blockStartBox?: () => Element \| null`, a constructor option, read at the time of focus and whenever the edge state is written (the room rule, § Outputs) | the box the host pins at the scroll box's block start (the data table: its table's `<thead>`), or `null`. The module reads its laid-out block size at those times, never a custom property's text (009's contract, § Inputs) |
+| pinned block-start box | `blockStartBox?: () => Element \| null`, a constructor option, read at the time of focus and whenever the edge state is written (the room rule, § Outputs) | the box the host pins at the scroll box's block start (the data table: its table's `<thead>`), or `null`. The module reads it from layout at those times, as the **pinned-box measure** below, never from a custom property's text (009's contract, § Inputs) |
 
 The existing inputs (`box`, `role`, `step`, `setLabel`, the host `aria-label`) are unchanged.
+
+**The pinned-box measure (`pinnedEnd`; re-analysis A1 (c), 2026-11-18).** The room rule (§ Outputs) and the block
+clearance (§ Effects) both measure from one point, `pinnedEnd`: the block position, in the box's client coordinates,
+below which content is not covered by the pinned box. With `blockStartBox()` `null` it is the box's client block-start
+edge. With a pinned box it is one of two candidates, and the operator chooses which after phase 1's second spike
+(T082) measures both at 320 px with a two-line caption above the `<thead>`, before the scaffold:
+
+- **(a) the current edge:** the pinned box's laid-out block-end edge as it is now. At the block start, a caption above
+  the `<thead>` pushes it down by the caption's height, so under a tall caption the fade may be absent at rest until
+  the caption scrolls away;
+- **(b) the block size as if pinned:** the box's client block-start edge plus the pinned box's laid-out block size,
+  whatever the scroll position, so the fade shows at rest under a tall caption and its block-start edge is compared
+  with that point while the caption is in view.
+
+Until the choice, this contract, the pure functions and the tests name `pinnedEnd` only; the bodies whose expected
+values depend on it (the captioned cases, § Tests) are written after the choice and before the red commit. Without a
+caption above the pinned box the two candidates give the same point.
 
 **Template (a host that sets the option).** After 009's `.region-edge start` and `.region-edge end`, the host renders
 one more edge, `<div class="region-edge block-end" aria-hidden="true"></div>`, inside `.region-frame`. It is the
@@ -33,7 +52,7 @@ render it; with the option off nothing reads it and it paints nothing. 009's hos
 | Output | Type | Meaning |
 |---|---|---|
 | `offBlockEnd` | `boolean` | while the option is on: content below the box's client block end by more than 1 px (`scrollHeight − clientHeight − scrollTop > 1`); `false` while it is off |
-| `fadeBlockEnd` | `boolean` | `offBlockEnd`, the **room rule** met (the space between the pinned box's block-end edge, or the box's client block-start edge when `blockStartBox()` is `null`, and the box's client block-end edge is at least twice the fade depth), and not suppressed by the block focus fallback (§ Effects, Focus clearance); the block-end fade and its forced-colours line follow it |
+| `fadeBlockEnd` | `boolean` | `offBlockEnd`, the **room rule** met (the space between `pinnedEnd`, § The pinned-box measure, and the box's client block-end edge is at least twice the fade depth; the factor two is the operator's decision Q-I6 (a)), and not suppressed by the block focus fallback (§ Effects, Focus clearance); the block-end fade and its forced-colours line follow it |
 
 The module itself writes `data-block-fade="end"` on the box while `fadeBlockEnd` is true and removes the attribute
 otherwise (as it writes `data-axis`); the host binds nothing for it. `offStart`, `offEnd`, `fadeStart`, `fadeEnd` and
@@ -53,7 +72,7 @@ otherwise (as it writes `data-axis`); the host binds nothing for it. `offStart`,
   `fadeBlockEnd` holds (§ Outputs): the content fades out over the fade depth (`--ocelle-scroller-fade-size`, the
   same depth as the inline fades) towards the box's client block-end edge. There is never a block-start fade: the
   block start is where the host pins its box (the data table's header row), which a fade would cover. The room rule
-  keeps the fade off the pinned box: when the space below the pinned box is less than twice the fade depth, no
+  keeps the fade off the pinned box: when the space below `pinnedEnd` is less than twice the fade depth, no
   block-end fade is drawn although content is below (the scrollbar still shows it).
 - **Mask figures.** No fade covers either scrollbar or the pinned box. Whenever it writes the edge state, the module
   also reads the block-axis scrollbar's thickness (`offsetWidth − clientWidth`, the box having no inline border) and,
@@ -70,30 +89,38 @@ otherwise (as it writes `data-axis`); the host binds nothing for it. `offStart`,
   and `shiftKey` all false, scroll the box in the block axis by `step` px (an instant `scrollTop` write), and call
   `preventDefault`. `ArrowLeft` and `ArrowRight` keep 009's behaviour unchanged. Any other key, a modified arrow, or a key from a descendant is not touched. Without the
   option, `ArrowUp` and `ArrowDown` are not touched, as in 009's contract.
+- **Keys the browser keeps (re-analysis G1 (a), 2026-11-18).** With the option on the box has `overflow-y: auto`, so
+  while it has focus Chromium scrolls it in the block axis with `PageDown` and `Space` (towards the block end),
+  `PageUp` and `Shift+Space` (back), `End` (to the block end) and `Home` (to the block start). The module leaves these
+  keys to the browser: it neither handles nor prevents them (they are among "any other key" above). The browser's
+  scroll fires `scroll`, so the module recomputes `offBlockEnd` and `fadeBlockEnd` (§ Triggers) and the block-end fade
+  follows; the host's pinned box stays pinned, as for any scroll. Without the option the box keeps 009's
+  `overflow-y: hidden` and these keys do not scroll it in the block axis, as before.
 - **Focus clearance.** On `focusin` of a descendant matching `:focus-visible`, after 009's inline clearance, the box
   scrolls in the block axis by the smallest amount that puts the ring box (the focused element's border box grown by
-  the focus offset and width on each side) wholly between the pinned box's block-end edge (the box's client
-  block-start edge when `blockStartBox()` is `null`) and the block-end fade's block-start edge if the block-end fade
+  the focus offset and width on each side) wholly between `pinnedEnd` (§ The pinned-box measure) and the block-end
+  fade's block-start edge if the block-end fade
   will still show at the new position (an end within 1 px of the scroll range's end does not fade, and the room rule
   applies), else the box's client block-end edge (WCAG 2.4.11). The fade depth is the laid-out block size of
   `.region-edge.block-end` at the time of focus, never a custom property's text (as 009's inline depth). When the ring
-  box is taller than that space, its block-start edge is aligned below the pinned box and the block-end fade is
+  box is taller than that space, its block-start edge is aligned below `pinnedEnd` and the block-end fade is
   **suppressed** (the fallback, as 009's inline one): the module records the `scrollTop` it wrote (read back after the
   write, so clamping is included), and the suppression ends on `focusout` from the focused element or on a `scroll`
-  whose `scrollTop` differs from the recorded value by more than 1 px. No block-axis scroll is made when the focused
+  whose `scrollTop` differs from the recorded value by more than 1 px. A scroll by one of the keys the browser keeps
+  is such a scroll. No block-axis scroll is made when the focused
   element is inside the pinned box. The write is an instant `scrollTop` assignment.
 - **Focus handover.** As 009's contract, when overflow ends in both axes while the box has focus.
 - **Turning the option off, or letting go of the box.** The module removes `data-block-fade` with `data-axis`, and ends
   any block suppression.
 - **Triggers.** As 009's contract (the box and track `ResizeObserver`, `slotchange`, `scroll`); a `scroll` in the
-  block axis recomputes `overflowing`, `offBlockEnd` and `fadeBlockEnd`, and the pinned box's block size is read with
-  them (the room rule). Every output change calls `requestUpdate()`, as in 009's contract.
+  block axis (an arrow, a key the browser keeps, the wheel or a script) recomputes `overflowing`, `offBlockEnd` and
+  `fadeBlockEnd`, and `pinnedEnd` is read with them (the room rule). Every output change calls `requestUpdate()`, as in 009's contract.
 
 ## Pure functions (unit-tested without layout)
 
 | Function | What it returns |
 |---|---|
-| `blockClearanceScroll({ ring, box, pinnedEnd, fade })` (new) | `{ scrollTop, suppressEnd }`: the new `scrollTop` for a ring box, given the box's client block span and `scrollTop`, `scrollHeight`, `clientHeight`, the pinned box's block-end edge and the fade depth; clamped to the scroll range; unchanged when the ring box is already clear. Whether the block-end fade still shows is worked out from the new position (and the room rule), not passed in; `suppressEnd` is true when the ring box cannot be cleared of a fade that still shows (taller than the space) |
+| `blockClearanceScroll({ ring, box, pinnedEnd, fade })` (new) | `{ scrollTop, suppressEnd }`: the new `scrollTop` for a ring box, given the box's client block span and `scrollTop`, `scrollHeight`, `clientHeight`, `pinnedEnd` (§ The pinned-box measure; the function takes the figure, whichever candidate the host-facing module reads) and the fade depth; clamped to the scroll range; unchanged when the ring box is already clear. Whether the block-end fade still shows is worked out from the new position (and the room rule), not passed in; `suppressEnd` is true when the ring box cannot be cleared of a fade that still shows (taller than the space) |
 | `blockEdgeState(scrollTop, scrollHeight, clientHeight, pinnedEnd, fade)` (new) | `{ overflowingBlock, offBlockEnd, room }`, with the 1 px tolerance; `room` is the room rule |
 
 `edgeState`, `clearanceScroll` and `resolveName` are unchanged.
@@ -113,7 +140,8 @@ bound reaches the box; contracts/ocelle-data-table.md).
 
 ## What a host must not do (in addition to 009's list)
 
-- scroll the box in the block axis itself, or handle `ArrowUp` and `ArrowDown` on it;
+- scroll the box in the block axis itself, or handle `ArrowUp` and `ArrowDown` on it, or handle or prevent the keys
+  the browser keeps (§ Effects);
 - set `overflow-y`, `scrollbar-gutter`, `data-axis` or `data-block-fade` on the box;
 - draw a block-axis fade or edge cue of its own, or style `.region-edge.block-end`.
 
@@ -131,9 +159,20 @@ bound reaches the box; contracts/ocelle-data-table.md).
   clear of the fade, near the end where the fade goes, taller than the space with `suppressEnd`, clamped) and the
   pure `blockEdgeState` cases (no block overflow, content below, at the end within 1 px, the room rule met and not
   met).
+- The keys the browser keeps (G1 (a)): with the box focused at the block start, `PageDown`, `PageUp`, `End`, `Home`,
+  `Space` and `Shift+Space` in turn, each asserting that the key's default was not prevented (`lastKeyPrevented()`
+  false), that `scrollTop` moved in the key's direction (to the end for `End`, to 0 for `Home`), that
+  `data-block-fade="end"` follows (absent after `End`, present after `Home`) and that the pinned child's block-start
+  edge is at the box's client block-start edge within 0.5 px; paired, in the same body, with `ArrowDown` scrolling by
+  `step` with its default prevented.
+- The captioned cases (A1 (c)): the test host with a two-line caption above the pinned child at 320 px, at the block
+  start and scrolled past the caption: the room rule and the fade's block-start edge against `pinnedEnd` as chosen,
+  and the block clearance of a link just below the pinned child. Their expected values are written once the operator
+  has chosen the measure after T082.
 - The block-end fade's bodies on the same host: `data-block-fade="end"` at rest with content below and absent at the
-  block end; absent under the room rule (a bound leaving less than twice the fade depth below the pinned box) while
-  content is below; the fade's block-start edge at or below the pinned box's block-end edge; with an inline fade too
+  block end; absent under the room rule (a bound leaving less than twice the fade depth below `pinnedEnd`) while
+  content is below; the fade's block-start edge at or below `pinnedEnd` (with no caption, the pinned child's
+  block-end edge under either candidate); with an inline fade too
   (both attributes, the four layers); the block clearance clear of the fade, and the fallback (a ring box taller than
   the space: the fade suppressed, and shown again after `focusout` and after a scroll of more than 1 px); in forced
   colours, the `.region-edge.block-end` line in `CanvasText` with a width above zero while `data-block-fade="end"`,

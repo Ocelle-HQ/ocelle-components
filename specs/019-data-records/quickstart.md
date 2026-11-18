@@ -49,15 +49,20 @@ checks: [contracts/checks.md](contracts/checks.md).
      edge's width, recheck Q2 (c)) (the base-style hook between the two packages, analysis I7 (a));
      both READMEs and CHANGELOGs name them.
    - **Data table, sticky header.** In the bounded sticky story the region is a tab stop although nothing overflows
-     sideways; ArrowDown and ArrowUp scroll the rows under the pinned header, whose ground hides them. Tabbing to a
+     sideways; ArrowDown and ArrowUp scroll the rows under the pinned header, whose ground hides them, and PageDown,
+     PageUp, End, Home, Space and Shift+Space scroll it as the browser does, the header staying pinned and the fade
+     following (re-analysis G1 (a)). Tabbing to a
      link in a row under the header scrolls the row clear of it. The caption scrolls away (IQ-2). At rest the last
      visible rows fade out at the region's block end, below the header and clear of the scrollbar; at the end of the
      rows the fade is gone; a link tabbed to in the faded rows is scrolled clear of the fade; with forced colours
-     emulated a line marks the block end instead (Q-I4).
+     emulated a line marks the block end instead (Q-I4). In the unbounded sticky story the table shows at its full
+     height, nothing scrolls in the block axis, no fade shows and Tab skips the region (US1-20, re-analysis C1 (b)).
    - **Data table, numeric column, stripes, hover.** The estimate column's figures line up at the cell's end, the
      header too (IQ-3). The striped story shows a ground on every second body row of each group (IQ-4). The hovered
      stories show the row's hover ground; in the light theme a hovered striped row looks unchanged, as the README
      notes (the operator's decision Q-I2). With forced colours emulated, a band at each row's start marks the stripes and the hovered row (IQ-5).
+     With a touch device emulated in the dev tools (`hover: none`), tapping a row shows no hover ground (re-analysis
+     A2 (a)).
    - **Data table, mapping.** The `@ocelle/elements` README's mapping has a row per role of the library's data table
      (R-16), the header look mapped to the eyebrow headers (IQ-7) and the advice to give an overflowing table a `label`
      that differs from its caption (IQ-6).

@@ -27,9 +27,11 @@ while unset.
 
 **States**: fits (no tab stop, no role, no fade) ↔ overflows (tab stop; named `group` or unnamed; fades on the sides
 with content off-screen). With `sticky-header`, "overflows" includes block overflow in a bounded host (ArrowUp and
-ArrowDown scroll; a block-end fade while rows are below, never under the header, a `CanvasText` line in forced
+ArrowDown scroll by the module's step, and PageUp, PageDown, Home, End, Space and Shift+Space by the browser,
+re-analysis G1 (a); a block-end fade while rows are below, never under the header (measured from the pinned-box measure chosen after T082, A1 (c)), a `CanvasText` line in forced
 colours), and the `<thead>` stays at the box's block start. Look states from `@ocelle/styles`:
-striped (even body rows on `inset`) and a hovered body row (on `hover-bg`), each shown in forced colours by the
+striped (even body rows on `inset`) and a hovered body row (on `hover-bg`, only on a device that can hover,
+re-analysis A2 (a)), each shown in forced colours by the
 first-cell row band. A transition happens on any module trigger (R-05; the phase 1 spike found no change that
 escapes them). Column headers are named in the AX tree by their drawn upper-case text (spike Q2 (a)). Focus on the box when overflow ends moves
 to the first focusable cell content or to the frame (009's handover).
