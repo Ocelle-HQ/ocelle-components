@@ -881,9 +881,10 @@ lines; phase 4 uses the mission's base (phase 1's), as it changes no source (qui
 `gate:plants` locally (CI's required Plants check judges the full set).
 Baselines: `pnpm run visual:update` only in #10's pinned container under docker (start `dockerd` as root; after a
 container restart, `pnpm run setup:online`); the command must report `<n> added, 0 changed, 0 removed` with `<n>`
-twice the phase's new stories (40, 22 and 24 for phases 1 to 3, from checks.md § Stories; phase 1's 28 since spike
+twice the phase's new stories (42, 22 and 24 for phases 1 to 3, from checks.md § Stories; phase 1's 28 since spike
 Q1 (b), 38 since the inventory decisions IQ-2 to IQ-5 added five stories, 40 since the re-analysis decision C1 (b)
-added the unbounded sticky-header story), so no existing baseline
+added the unbounded sticky-header story, 42 since the answer to fixes-2 Q-1 (b) added the room-rule sticky-header
+story), so no existing baseline
 moves (013's baselines among them, SC-007). Conflicting PNGs are regenerated in the container, never hand-picked. Mutation follows #23 and op 015 on `main`.
 
 ## R-16 The inventory (FR-058)
@@ -1019,9 +1020,11 @@ from 009's inline fades where one applies:
 - **Stories and baselines.** The block-end fade adds no story: the bounded sticky-header story shows it at rest (its
   baselines capture it) and its story test asserts `data-block-fade="end"`; no story for the fade's off state (the
   operator's decision Q-I7 (a), 2026-11-18). The re-analysis decision C1 (b) (2026-11-18) adds one story for the
-  sticky header with no bound (US1-20), so phase 1 has 20 stories and 40 baselines, the mission 43 and 86. The two
-  scroll-position states (scrolled to the block end, and the room-rule state) are one Principle V exception row in
-  plan.md § Complexity Tracking, proven by US1-26, US1-28 and T079's bodies.
+  sticky header with no bound (US1-20), and the answer to fixes-2 Q-1 (b) (2026-11-18) one for the room-rule state
+  (a bound leaving rows below but less than twice the fade depth under the header, no caption: no fade at rest), so
+  phase 1 has 21 stories and 42 baselines, the mission 44 and 88. The one scroll-position state left, scrolled to the
+  block end, is a Principle V exception row in plan.md § Complexity Tracking, proven by US1-26, US1-28 and T079's
+  bodies.
 
 **009's contract file (Q-I5, 2026-11-18).** One line at the top of `specs/009-workflow-layouts/contracts/overflow-region.md`
 points to `contracts/overflow-region-block-axis.md` as this mission's amendment; nothing else of 009's directory is

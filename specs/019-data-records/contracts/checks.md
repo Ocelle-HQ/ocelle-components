@@ -204,7 +204,7 @@ WebKit, which is not measured.
 
 In `storybook/stories/<element>.stories.ts`, each in light and dark (PLAN-CORRECTNESS-1-007, operator decision (a)):
 
-- **Data table (20):**
+- **Data table (21):**
   - fits;
   - overflows, named by `label`;
   - overflows, named by its caption (no `label`);
@@ -227,6 +227,11 @@ In `storybook/stories/<element>.stories.ts`, each in light and dark (PLAN-CORREC
   - sticky header, unbounded (`sticky-header`, `label="Work packages"`, the same twenty rows, no bound on the host:
     the table at full height, no block scroll, no tab stop at 1280 px and no block-end fade; US1-20, the operator's
     decision C1 (b) on the re-analysis, 2026-11-18);
+  - sticky header, under the room rule (`sticky-header`, `label="Work packages"`, the same twenty rows, no caption, the
+    host's `max-block-size` a `calc()` over tokens in a `data-story` rule of `stories-layout.css`, bounded so that rows
+    are below but less than twice the fade depth shows under the header: at rest the region is a `group` tab stop by
+    its block overflow and draws no block-end fade; with no caption both pinned-box candidates of A1 (c) give the same
+    point; US1-26's room-rule half, the operator's answer to fixes-2 Q-1 (b), 2026-11-18);
   - numeric column (an estimate column whose header and body cells carry `data-ocelle-align="end"`, IQ-3);
   - striped (`striped`, two `<tbody>` groups, IQ-4);
   - row hovered (`parameters.ocelle.pointer.hover` on one body row's first cell, inside the 1280 × 800 viewport,
@@ -261,13 +266,14 @@ In `storybook/stories/<element>.stories.ts`, each in light and dark (PLAN-CORREC
   - standalone steps (analysis C1 (c)): a default and a `variant="chip"` `ocelle-evidence-step` outside a chain, each
     plain text with no marker, ordinal or chip box.
 
-That is 43 stories, 86 baselines: `visual:update` reports 40, 22 and 24 added in phases 1 to 3 (R-15; phase 1's two
+That is 44 stories, 88 baselines: `visual:update` reports 42, 22 and 24 added in phases 1 to 3 (R-15; phase 1's two
 host `aria-label` stories added by spike Q1 (b), 2026-11-18, five by the inventory decisions IQ-2 to IQ-5,
-2026-11-18, and the unbounded sticky-header story by the re-analysis decision C1 (b), 2026-11-18). The block-end fade
-of Q-I4 shows at rest in the bounded sticky-header story, whose baselines capture it. Its two scroll-position states,
-the bounded table scrolled to its block end (the fade off, Q-I7 (a)) and a bound leaving less than twice the fade
-depth below the header (the room rule), have no story: they are plan.md § Complexity Tracking's block-axis row, proven
-by US1-26, US1-28 and T079's block-end fade bodies.
+2026-11-18, the unbounded sticky-header story by the re-analysis decision C1 (b), 2026-11-18, and the room-rule
+sticky-header story by the answer to fixes-2 Q-1 (b), 2026-11-18). The block-end fade of Q-I4 shows at rest in the
+bounded sticky-header story, whose baselines capture it, and the room-rule story's baselines capture a bounded box
+with rows below and no fade. The one scroll-position state left, the bounded table scrolled to its block end (the fade
+off, Q-I7 (a)), has no story: it is plan.md § Complexity Tracking's block-axis row, proven by US1-26, US1-28 and
+T079's block-end fade bodies.
 No existing baseline moves, 009's scroller and board baselines included (SC-007).
 
 The item elements' states are in their container's file, the standalone item included (analysis C1 (c)). Only the

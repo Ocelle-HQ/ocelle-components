@@ -57,6 +57,8 @@ checks: [contracts/checks.md](contracts/checks.md).
      rows the fade is gone; a link tabbed to in the faded rows is scrolled clear of the fade; with forced colours
      emulated a line marks the block end instead (Q-I4). In the unbounded sticky story the table shows at its full
      height, nothing scrolls in the block axis, no fade shows and Tab skips the region (US1-20, re-analysis C1 (b)).
+     In the room-rule sticky story rows are below the few visible ones and the region is a tab stop, but no fade
+     shows: less than twice the fade depth is left under the header (US1-26, fixes-2 Q-1 (b)).
    - **Data table, numeric column, stripes, hover.** The estimate column's figures line up at the cell's end, the
      header too (IQ-3). The striped story shows a ground on every second body row of each group (IQ-4). The hovered
      stories show the row's hover ground; in the light theme a hovered striped row looks unchanged, as the README

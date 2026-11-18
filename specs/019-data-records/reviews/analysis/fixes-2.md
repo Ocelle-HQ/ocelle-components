@@ -44,3 +44,17 @@ red commit, because (b) changes the story set.
 
 A1's measure is not a new question here. The operator chose (c), so T082 records both candidates and stops for that
 choice before the scaffold (tasks.md § Stop-and-ask points).
+
+## Answer to Q-1 applied
+
+- **Answer:** Q-1 (b) (2026-11-18, human:jeroennouwsdev; end of `reviews/analysis/operator-decisions.md`).
+- **Date:** 2026-11-18
+
+No task was added, removed or renumbered, and no task was ticked or unticked (T003, T005 and T082 stay open).
+`units.sh` parses tasks.md as before (phases 1 to 4: 27, 26, 23 and 4 tasks). Counts after this pass: phase 1 has 21
+stories and 42 baselines (`visual:update` `(42 added, 0 changed, 0 removed)`), phases 2 and 3 keep 11 / 22 and 12 / 24,
+the mission 44 stories and 88 baselines. No source code or test file was written.
+
+| ID | Resolution | Where |
+|----|------------|-------|
+| Q-1 | answered: (b). A phase 1 story "sticky header, under the room rule" (`sticky-header`, `label="Work packages"`, the twenty-row table with no caption, the host's `max-block-size` a `calc()` over tokens in a `data-story` rule, bounded so that rows are below but less than twice the fade depth shows under the header: a `group` tab stop by its block overflow, no block-end fade at rest; US1-26's room-rule half). With no caption both pinned-box candidates of A1 (c) give the same point, so the story does not wait for T082's choice. T014 asserts the story's `group` and name, its block overflow, no `data-block-fade`, and the space under the `<thead>` above 0 and below twice the block size of `.region-edge.block-end`, paired with the bounded story's `data-block-fade="end"`. The Principle V exception row in plan.md § Complexity Tracking is renamed "The block-end fade's scrolled-to-end state has no story": scope only the off state at the block end (the room-rule state listed as not in scope, with its story), rationale the initial scroll position alone (the room-rule state is a state at rest and left the row), sunset only #10's initial-scroll parameter (the Q-1 alternative removed from the sunset and from tasks.md's stop-and-ask list), approval Q-I7 (a), C1 (b) and the scope narrowed by Q-1 (b). Counts move from 20 / 40 and 43 / 86 to 21 / 42 and 44 / 88 everywhere they are current; earlier counts stay as history. | plan.md § Summary (spike, inventory and re-analysis bullets), § Scale/Scope, Constitution Check note and row V, § Decisions after the analysis item 1, § Decisions after the phase 1 spike item 1, § Decisions on the re-analysis items 1 and 6 (new), § Phases 1 (red: the story test), § Complexity Tracking (row and notes); spec.md phase 1 spike note, re-analysis block (C1 and new Q-1 bullet), FR-050; contracts/checks.md § Stories (Data table (21), the new story, 44 / 88, 42 / 22 / 24); research.md R-15, R-18 "Stories and baselines"; tasks.md header (spike, inventory and re-analysis decisions in force), § Baselines (`<n>` = 42), stop-and-ask list (the block-axis row's sunset), phase 1 goal, T014, T019, T020, T078 (44 stories); quickstart.md step 5; checklists/requirements.md |

@@ -114,7 +114,7 @@ in `reviews/phase-1/operator-spike-decisions.md`, changes listed in `reviews/pha
 - Q1, the data table named by a host `aria-label`: (b). The pinned axe-core reports no serious or critical finding
   on it, so the data table's region leaves the Principle V exception: phase 1 adds two stories, an overflowing data
   table named by a non-blank host `aria-label` and one with a blank host `aria-label` (14 data-table stories, 37 in
-  all; 19 and 42 since the inventory decisions below, 20 and 43 since the re-analysis). The timeline and the chain stay in the exception until their own spikes measure them (FR-050).
+  all; 19 and 42 since the inventory decisions below, 20 and 43 since the re-analysis, 21 and 44 since fixes-2 Q-1 (b)). The timeline and the chain stay in the exception until their own spikes measure them (FR-050).
 - Q2, upper-case column-header names: (a). The column headers stay upper case (FR-006). Chromium names each column
   header by its drawn, upper-case text, so US1-1 compares the element's table with the same table outside given the
   same upper case, and asserts that the column headers are named in upper case; both READMEs state it (FR-006).
@@ -162,10 +162,10 @@ in `reviews/phase-1/inventory-fixes.md`, answers at the end of `reviews/phase-1/
 **Operator decisions on the re-analysis** (2026-11-18, human:jeroennouwsdev; `analysis-report.md` at 4ad3073,
 decisions at the end of `reviews/analysis/operator-decisions.md`, changes listed in `reviews/analysis/fixes-2.md`):
 
-- C1, block-axis states without a story: (b). A "sticky header, unbounded" story is added (US1-20; phase 1 has 20
-  data-table stories, the mission 43). One Principle V exception row in the plan's Complexity Tracking covers only the
+- C1, block-axis states without a story: (b). A "sticky header, unbounded" story is added (US1-20; phase 1 had 20
+  data-table stories, the mission 43). One Principle V exception row in the plan's Complexity Tracking covered only the
   two scroll-position states of the block-end fade: scrolled to the block end (the fade off), and the room-rule state
-  (rows below, no fade) (FR-050).
+  (rows below, no fade) (FR-050). Narrowed by the answer to fixes-2 Q-1 below.
 - A1, where the room rule and the block clearance measure the pinned header from: (c). Phase 1's second spike
   measures both candidates (the `<thead>`'s current block-end edge, and its block size as if pinned) at 320 px with a
   two-line caption, and stops for the operator's choice before the scaffold (FR-018, US1-26).
@@ -173,6 +173,10 @@ decisions at the end of `reviews/analysis/operator-decisions.md`, changes listed
   `@media (hover: hover)`, tested under `hover: none` and guarded by an element plant (FR-061, US1-24).
 - G1, the block-axis keys other than ArrowUp and ArrowDown: (a). PageUp, PageDown, Home, End, Space and Shift+Space
   are left to the browser, which scrolls the focused box in the block axis; tests assert each key (FR-018, US1-18).
+- Fixes-2 Q-1, the room-rule state (answered 2026-11-18, end of `reviews/analysis/operator-decisions.md`): (b). A
+  "sticky header, under the room rule" story is added (a bound leaving rows below but less than twice the fade depth
+  under the header, so no fade; US1-26's room-rule half): phase 1 has 21 data-table stories, the mission 44. The
+  exception row covers only the scrolled-to-end state (FR-050).
 
 ## Scope
 
@@ -919,11 +923,13 @@ the chip variant.
   clean on that state (spike Q1 (b), 2026-11-18), and, for the inventory decisions IQ-2 to IQ-5, a bounded
   `sticky-header` table, a table with an end-aligned numeric column, a striped table, a hovered body row and a striped
   table with an even row hovered (the two hover states through #10's pointer parameter), and an unbounded
-  `sticky-header` table (US1-20, the operator's decision C1 (b) on the re-analysis, 2026-11-18). Two scroll-position
-  states of the block-end fade have no story: the bounded table scrolled to its block end (the fade off) and a bound
-  that leaves less than twice the fade depth below the header (rows below, no fade); they are one constitution V
-  exception recorded in the plan's Complexity Tracking, chosen by the operator (re-analysis C1 (b); Q-I7 (a) for the
-  fade's off state), and proven by browser tests (US1-26, US1-28). The states named by a host `aria-label` of the timeline and the
+  `sticky-header` table (US1-20, the operator's decision C1 (b) on the re-analysis, 2026-11-18), and a `sticky-header`
+  table under the room rule, bounded so that rows are below but less than twice the fade depth shows under the
+  header, so no block-end fade is drawn (US1-26's room-rule half, the operator's answer to fixes-2 Q-1 (b),
+  2026-11-18). One scroll-position state of the block-end fade has no story: the bounded table scrolled to its block
+  end (the fade off); it is one constitution V exception recorded in the plan's Complexity Tracking, chosen by the
+  operator (re-analysis C1 (b), narrowed by fixes-2 Q-1 (b); Q-I7 (a) for the fade's off state), and proven by
+  browser tests (US1-26, US1-28). The states named by a host `aria-label` of the timeline and the
   chain have no story: they are a constitution V exception recorded in the plan's Complexity Tracking, chosen by the
   operator (analysis C1 (c)), and proven by browser tests, until their own phase's spike measures them. Any further
   state without a story is a constitution V exception recorded there and approved by the operator.

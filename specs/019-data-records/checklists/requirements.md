@@ -83,3 +83,6 @@
   operator after phase 1's second spike, stated in FR-018 and US1-26 as that pending choice (a stop-and-ask point, not
   a `[NEEDS CLARIFICATION]` marker); A2 (a) puts the row hover under `(hover: hover)` (FR-061, US1-24); G1 (a) states
   the browser's block-axis keys in FR-018 and US1-18. Every item above still holds.
+- Fixes-2 Q-1 (answered 2026-11-18, end of `reviews/analysis/operator-decisions.md`): (b) adds a room-rule
+  sticky-header story to FR-050 (21 data-table stories, 44 in all), and the plan's block-axis exception row covers
+  only the scrolled-to-end state. No requirement changes otherwise. Every item above still holds.
