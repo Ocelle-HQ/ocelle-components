@@ -223,3 +223,83 @@ Stryker run timed out was not traced. A likely cause is that the mutant makes a 
 holds, which Lit's attribute callback turns back into a property set, so some other test file of the run hangs. The
 review's run (0 timeouts) reported this mutant killed; the line is unchanged since `0bdb997`.
 
+
+## O7-01 (operator round 7): the cancelled element shard before and after the element project split
+
+Round 7 (`round-7.md`, O7-01; tasks T025h and T025j). The shard CI cancelled at its 45-minute limit on run 44354367030,
+run alone on this machine, one heavy job at a time, timed wall-clock from the command's start to its exit:
+
+```text
+pnpm run gate:mutation -- --base b594b7e98bb5480aad9cc8dcf0bd3f7f378f920f --files gates/bin/contrast.ts,packages/elements/scripts/manifest.ts,packages/elements/src/define.ts,packages/elements/src/form-control.ts:1-30
+```
+
+Machine: this container, 4 CPUs (Intel Xeon @ 2.10 GHz), 15 GB, Chromium 153.0.8010.12 (build 1243, through
+`OCELLE_CHROMIUM_PATH`), `OCELLE_VISUAL_ENGINE=docker`. Stryker's concurrency 8 is split by Stryker into 4 checker and 4
+test runner processes in both runs.
+
+The gate prints Stryker's own output only when it fails, so the dry-run line was read with an observation-only preload
+(`NODE_OPTIONS=--import=<file>`, outside the repository, not committed) that copies the Stryker CLI's stdout and
+stderr, with a time per write, to a scratch file; it changes nothing the gate or Stryker does. The first before run was
+made without it (its gate output is the same, line for line), so its dry-run time is not known; the run was repeated
+with it.
+
+### Before (T025h): at `5c2cd73b`, the red commit's parent
+
+A detached worktree at `636207eb^` (`5c2cd73b`) after `pnpm run setup:offline` there, removed afterwards; every element
+test file in `elements` with `fileParallelism: false` (decision (b)).
+
+| Figure | Run 1 (2026-11-18, 19:16:57Z) | Run 2 (2026-11-18, 20:03:34Z, with the preload) |
+|---|---|---|
+| Wall-clock, whole command | 2754 s (45:54) | 2748 s (45:48) |
+| `stryker.config.json` run (`contrast.ts`, `manifest.ts`) | not read | dry run 32 s (3378 tests); 25 mutants; done in 1:40 |
+| `stryker.elements.config.json` run: dry run (Stryker's initial test run line) | not read | **1273 s** ("Ran 2116 tests in 21 minutes and 13 seconds (net 1261452.8 ms, overhead 11623.2 ms)") |
+| `stryker.elements.config.json` run: mutants | 26 (20 killed, 6 compile errors) | 26 (20 killed, 6 compile errors), 157.19 tests per mutant; done in 44:04 (2644 s) |
+| Gate result | exit 0 | exit 0: "51 mutants on the changed lines of 4 files, none survived; 0 timeouts, 9 compile errors, 1 zero-mutant entry; 2 equivalent records" |
+
+Both runs went past 45 minutes (2700 s) and were let run to their exit, so the before figures are whole-run figures.
+Log of run 2's gate output: `mutation-fix-5-before.log`.
+
+In-process element test files, `pnpm exec vitest list --filesOnly --project elements --project elements-touch` at
+`5c2cd73b`: **81** (78 in `elements`, 3 in `elements-touch`).
+
+### After (T025j (1), (2)): the working tree of T025i, on `636207eb`
+
+The working tree with T025i's change (`elements-timing` holds the eight timing files with `fileParallelism: false`;
+`elements` runs its files in parallel; `vitest.mutation.elements.config.ts` takes `elements`, `elements-timing` and
+`elements-touch`), not yet committed. Run 2026-11-18, 20:50:58Z, with the same preload.
+
+| Figure | Before (run 2) | After | Difference |
+|---|---|---|---|
+| Wall-clock, whole command | 2748 s (45:48) | **3515 s (58:35)** | +767 s (+27.9 %) |
+| `stryker.config.json` run | dry run 32 s, done in 1:40 | dry run 30 s (3379 tests, T025g's new test among them), done in 1:42 | +2 s |
+| `stryker.elements.config.json` dry run | 1273 s (2116 tests, 21:13) | 1275 s (2116 tests, 21:15; net 1262201.3 ms, overhead 12970.7 ms) | +2 s |
+| `stryker.elements.config.json` mutants | 26 (20 killed, 6 compile errors), 157.19 tests per mutant, done in 44:04 | 26 (20 killed, 6 compile errors), **521.58 tests per mutant**, done in 56:49 (3409 s) | +765 s, all after the dry run |
+| Gate result | exit 0, 51 mutants, none survived | exit 0, the same summary line for line: no survivor, no `NoCoverage` | none |
+
+In-process element test files after, `pnpm exec vitest list --filesOnly --project elements --project elements-timing
+--project elements-touch`: **81** (70 in `elements`, the eight timing files in `elements-timing`, 3 in
+`elements-touch`), the same 81 paths as before: every element test still runs exactly once. Log: `mutation-fix-5-after.log`.
+
+**CI estimate.** after / before = 3515 / 2748 = 1.279 (the whole-run figures; neither run was stopped early). Run
+44354367030's element shards, 2493 s to 2717 s, scale to **3189 s to 3475 s**, and the cancelled one (2700 s or more)
+to 3454 s or more: every element shard over 45 minutes.
+
+**Why the split does not shorten the shard.** Stryker's Vitest runner (`@stryker-mutator/vitest-runner` 10.1.1,
+`dist/src/vitest-test-runner.js`, the pool options it passes to `createVitest`) runs every Stryker run with
+`maxWorkers: 1`, so the files of a Stryker run, its dry run included, run one at a time whatever the project's
+`fileParallelism` says. The dry run is unchanged (1273 s, 1275 s). The mutant phase is longer because the split
+changes the order in which the files run (the timing files now run as their own project), and the 16 static mutants,
+which run every test until the first failure, now reach their first failing test later: 157 tests per mutant before,
+522 after. `fileParallelism: false` on `elements` was not the cause of the shard times under Stryker.
+
+**Stop for the operator** (tasks.md, the stop after the element project split of operator round 7; T025j): the after
+run is over 45 minutes (3515 s), and every CI estimate is over 45 minutes. Nothing was changed to work around it; the
+`.github/workflows/ci.yml` limits are unchanged, and T025j (3) and (4) and T025f were not run.
+
+**Outcome (operator round 8, `round-8.md`, O8-01).** The operator answered the stop with "Revert split, 75-minute
+limit (Recommended)". The split is withdrawn: under Stryker it made the cancelled shard slower (2748 s to 3515 s) and
+left the dry run unchanged (1273 s, 1275 s), since `@stryker-mutator/vitest-runner` 10.1.1 passes `maxWorkers: 1` for
+Vitest 4 and later, so files run one at a time whatever `fileParallelism` says. The uncommitted T025i change is
+discarded (T025l), the red commit `636207eb` is reverted with a signed-off revert (T025m; its `fix-5` line stays in
+`red-commits` as the record of the reverted red, with `red-fix-5.log`), `vitest.config.ts` keeps `fileParallelism: false`
+on `elements` as before round 7, and round 6's 75-minute limit for element shards is restored (T025n).
