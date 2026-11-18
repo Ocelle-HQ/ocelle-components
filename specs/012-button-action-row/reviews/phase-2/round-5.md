@@ -1,21 +1,26 @@
 ---
-phase: 1
-round: 3
+phase: 2
+round: 5
 verdict: changes_requested
-base: 0efc2f72bfd57b33dabe5496070eb1fb0d6e61fb
+base: 48cdc9584ab93373eff1544378e118f20eded10e
 head: aa6ac9c9
 tdd_check: pass
 reviewer: human:jeroennouwsdev (operator round, recorded by the orchestrator)
 ---
 
-# Phase 1, round 3: operator round on the icon-row baseline
+# Phase 2, round 5: operator round on the icon-row baseline
 
 <!-- Not a reviewer-renata phase review. On 2026-11-16 mission 018 reported, through the orchestrator, that 005's
 `.icon-row { align-items: flex-start }` may put a one-line ocelle-button about 3 px above the surrounding text
 baseline. The operator chose "Measure at landing". The /ocelle-land pass measured it on 2026-11-18, and the operator
-chose to fold the fix into this pull request. Recorded as an operator round so that the fix procedure (label fix-1
-unless phase 1 already has one; use the next free label) and a round 4 review apply. The operator's answer is quoted
-verbatim. -->
+chose to fold the fix into this pull request. Recorded as an operator round so that the fix procedure (label fix-4, the next free label of phase 2) and a
+round 6 review apply. The operator's answer is quoted
+verbatim.
+
+Correction (orchestrator, 2026-11-18): this round was first committed as reviews/phase-1/round-3.md (274ac07f). The
+question put to the operator named "phase 1 (the button)", the orchestrator's slip: the button is phase 2 (tasks.md
+"Phase 2: User Story 1 - `ocelle-button`"), phase 1 is Setup. The operator chose the button's phase, so the round
+moves here unchanged in substance. -->
 
 Operator, 2026-11-18, multiple choice: "Fold the fix now (Recommended)", described as "Record an operator round on
 phase 1 (the button). The planner adds the task, implementer-ivan writes a failing baseline test and adds the rule to
@@ -32,7 +37,7 @@ offset is the label marker's top minus the paragraph marker's top (negative is a
 | Case | Offset |
 |---|---|
 | `ocelle-button` (default size) | -6.19 px |
-| `size="sm"` | -6.19 px |
+| `size="sm"` (not a size of the element: the default size measured again; the sizes are `default` and `compact`) | -6.19 px |
 | with an `ocelle-icon` in the `icon` slot | -4.59 px |
 | `flush` | -6.19 px |
 | `variant="quiet" flush` | -6.19 px |
