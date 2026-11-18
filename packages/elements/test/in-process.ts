@@ -6,11 +6,20 @@
 // go through the `axTree` and `emulateForcedColors` browser commands (vitest.config.ts, test/commands.ts). Console
 // messages are recorded from each mount on; Lit's development build, which Vite resolves here, warns once at import,
 // before any mount, so the console outcome of FR-016 on the built output is the fixture's (test/browser/).
+// Since 009 (research.md R-17) every mount also adopts test/fixtures/frames.css, the one source of the tested frames,
+// after the token and base sheets, and `viewport()` resizes the test's iframe through `page.viewport`.
+//
+// 008 (research.md R-14, R-15): every mount also adopts the test delay stylesheet (fixtures/tooltip-delay.css), as the
+// fixture pages link it. Keys are real key presses through `userEvent` from `vitest/browser`; pointer and touch input
+// go through the `pointerPath` and `touchTap` commands at points of this frame (test/commands.ts), reduced motion
+// through `emulateReducedMotion`; what the page holds is read by the probe of scenarios/probe.ts, installed when this
+// module loads, before any element of the test file attaches a shadow root.
 /// <reference types="vite/client" />
 import type { LitElement } from "lit";
 import { vi } from "vitest";
 import { commands, page, userEvent } from "vitest/browser";
 import baseText from "../../styles/src/base.css?raw";
+import framesText from "./fixtures/frames.css?raw";
 import { css } from "../../tokens/src/generate.ts";
 import { source } from "../../tokens/src/source.ts";
 import { define } from "../src/define.ts";
@@ -18,9 +27,12 @@ import { setAnnouncerTimingForTests } from "../src/live.ts";
 import type { AnnouncerTiming } from "../src/live.ts";
 import type { Delays, Snapshot } from "./live-reading.ts";
 import { runningOf } from "./animations.ts";
+import delayText from "./fixtures/tooltip-delay.css?raw";
 import { layoutWait } from "./layout-wait.ts";
 import { decodePng } from "./pixels.ts";
-import type { Box, Drawing, Entries, Heard, InProcessDriver, InsertHow, Operation, Paint, Part, Placement, Sheets, TreeNode, Validity } from "./scenarios/driver.ts";
+import { heardTypes } from "./scenarios/driver.ts";
+import type { Box, Drawing, Entries, Heard, InProcessDriver, InsertHow, Operation, Paint, Part, Placement, Reading, Sheets, Target, TreeNode, Validity } from "./scenarios/driver.ts";
+import { probe } from "./scenarios/probe.ts";
 
 /**
  * The one timing constant of the in-process run (specs/010-feedback-forms research R-09, contracts/testing.md
@@ -76,6 +88,9 @@ function sheet(text: string): CSSStyleSheet {
 
 const tokens = sheet(css(source).replace(/@font-face\s*\{[^}]*\}/g, ""));
 const base = sheet(baseText);
+const frames = sheet(framesText);
+const delay = sheet(delayText);
+probe();
 
 function element(id: string): HTMLElement {
   const found = document.getElementById(id);
@@ -83,9 +98,95 @@ function element(id: string): HTMLElement {
   return found;
 }
 
-/** Waits until every `ocelle-*` element of the page has rendered, then for a frame. */
+const nextFrame = (): Promise<unknown> => new Promise((resolve) => requestAnimationFrame(resolve));
+
+/** Whether every `<iframe srcdoc>` of the page has loaded its document. */
+function framesLoaded(): boolean {
+  return [...document.querySelectorAll("iframe")].every((frame) => !frame.hasAttribute("srcdoc") || (frame.contentDocument?.URL === "about:srcdoc" && frame.contentDocument.readyState === "complete"));
+}
+
+/**
+ * Waits two animation frames, then until every `ocelle-*` element of the page has rendered (009 research.md R-17, the
+ * overflow-region contract's rule: a `ResizeObserver` delivery of the first frame and the update it requests are seen)
+ * and every `<iframe srcdoc>` has loaded (a bounded poll of 1 000 ms, 008 R-15), then for a frame.
+ */
 async function settle(): Promise<void> {
+  await nextFrame();
+  await nextFrame();
   const elements = [...document.querySelectorAll("*")].filter((each) => each.localName.startsWith("ocelle-"));
+  await Promise.all(elements.map((each) => (each as Partial<LitElement>).updateComplete ?? Promise.resolve(true)));
+  for (const start = performance.now(); !framesLoaded(); ) {
+    if (performance.now() - start > 1000) throw new Error("an <iframe srcdoc> did not load within 1 000 ms");
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  await new Promise((resolve) => requestAnimationFrame(resolve));
+}
+
+/** The `userEvent.keyboard` text of one press of `key`, with Shift held when `shift`. */
+function keyText(key: string, shift: boolean): string {
+  const text = key === " " ? "[Space]" : `{${key}}`;
+  return shift ? `{Shift>}${text}{/Shift}` : text;
+}
+
+/** The element of a target: the element with the id, or the first match of `inner` in its shadow root. */
+function resolve(target: Target): HTMLElement {
+  if (typeof target === "string") return element(target);
+  const found = element(target.id).shadowRoot?.querySelector<HTMLElement>(target.inner);
+  if (found === null || found === undefined) throw new Error(`no ${target.inner} in the shadow root of #${target.id}`);
+  return found;
+}
+
+/** A key or chord (`Shift+Tab`, `Ctrl+ArrowRight`) in user-event's keyboard syntax, modifiers held around the key. */
+function chordText(key: string): string {
+  const parts = key.split("+").map((part) => (part === "Ctrl" ? "Control" : part));
+  const pressed = parts.pop() ?? "";
+  return `${parts.map((part) => `{${part}>}`).join("")}{${pressed}}${parts.reverse().map((part) => `{/${part}}`).join("")}`;
+}
+
+/** One level of the deep active element: its id, or its local name and classes. */
+function describe(node: Element): string {
+  return node.id !== "" ? node.id : [node.localName, ...node.classList].join(".");
+}
+
+/** The deep active element, each level from the document down through shadow roots, joined by " >> ". */
+function deepActive(): string {
+  const levels: string[] = [];
+  let active: Element | null = document.activeElement;
+  while (active !== null) {
+    levels.push(describe(active));
+    active = active.shadowRoot?.activeElement ?? null;
+  }
+  return levels.join(" >> ");
+}
+
+/** A frame record's reading of an element, as text. */
+function reading(subject: HTMLElement, read: Reading): string {
+  if ("property" in read) return String((subject as unknown as Record<string, unknown>)[read.property]);
+  if ("computed" in read) return getComputedStyle(subject).getPropertyValue(read.computed);
+  return String(subject.getAttribute(read.attribute));
+}
+
+/** The last keydown the window saw since the last mount (`lastKeyPrevented`). */
+let lastKey: KeyboardEvent | undefined;
+window.addEventListener(
+  "keydown",
+  (event) => {
+    lastKey = event;
+  },
+  true,
+);
+
+/** The element matching `inner` in the shadow root of the element with `id`. */
+function inShadow(id: string, inner: string): Element {
+  const found = element(id).shadowRoot?.querySelector(inner);
+  if (found === null || found === undefined) throw new Error(`no ${inner} in the shadow root of #${id}`);
+  return found;
+}
+
+/** Waits as `settle` does, and also for every `ocelle-*` element in the shadow root of the element with `id`. */
+async function settleShadow(id: string): Promise<void> {
+  await settle();
+  const elements = [...(element(id).shadowRoot?.querySelectorAll("*") ?? [])].filter((each) => each.localName.startsWith("ocelle-"));
   await Promise.all(elements.map((each) => (each as Partial<LitElement>).updateComplete ?? Promise.resolve(true)));
   await new Promise((resolve) => requestAnimationFrame(resolve));
 }
@@ -113,6 +214,46 @@ for (const method of ["log", "info", "warn", "error", "debug"] as const) {
 window.addEventListener("error", (event) => {
   messages.push(`error: ${event.message}`);
 });
+
+/** The `id` of the element with one of `ids` that `node` is, or whose shadow tree holds it, or undefined. */
+function recordedHost(node: unknown, ids: ReadonlySet<string>): string | undefined {
+  for (let at = node instanceof Node ? node : null; at !== null; ) {
+    if (at instanceof Element && ids.has(at.id)) return at.id;
+    const root = at.getRootNode();
+    at = root instanceof ShadowRoot ? root.host : null;
+  }
+  return undefined;
+}
+
+/** What `listen` installed: the records, and how to remove it. */
+let listening: { readonly records: string[]; readonly stop: () => void } | undefined;
+
+function listen(ids: readonly string[]): void {
+  listening?.stop();
+  const watched = new Set(ids);
+  const records: string[] = [];
+  const original = Object.getOwnPropertyDescriptor(EventTarget.prototype, "dispatchEvent")?.value as (this: EventTarget, event: Event) => boolean;
+  EventTarget.prototype.dispatchEvent = function (this: EventTarget, event: Event): boolean {
+    const id = recordedHost(this, watched);
+    if (id !== undefined) records.push(`${id}: ${event.type}`);
+    return original.call(this, event);
+  };
+  const capture = (event: Event): void => {
+    const id = event.composedPath().map((node) => recordedHost(node, watched)).find((each) => each !== undefined);
+    if (id !== undefined) records.push(`${id}: ${event.type}`);
+  };
+  for (const type of heardTypes) window.addEventListener(type, capture, true);
+  listening = {
+    records,
+    stop: () => {
+      EventTarget.prototype.dispatchEvent = original;
+      for (const type of heardTypes) window.removeEventListener(type, capture, true);
+    },
+  };
+}
+
+/** The numbers `identities` gave the shadow nodes it has seen. */
+const identities = new Map<Element, number>();
 
 /** The submissions recorded since the last `mount`, by form id (a capture-phase listener that prevents the unload). */
 const submissions = new Map<string, Entries>();
@@ -180,9 +321,9 @@ function keys(key: string): string {
   return `${parts.map((held) => `{${held}>}`).join("")}{${last}}${parts.reverse().map((held) => `{/${held}}`).join("")}`;
 }
 
-/** The events `listen` heard, and the listeners to remove at the next `mount`. */
-const heardEvents: Heard[] = [];
-const listening: (() => void)[] = [];
+/** The events `listenFor` heard, and the listeners to remove at the next `mount`. */
+const heardList: Heard[] = [];
+const listeners: (() => void)[] = [];
 
 /** The id of `target`, or its local name without one. */
 function nameOf(target: EventTarget | null): string {
@@ -289,14 +430,16 @@ export function inProcessDriver(): InProcessDriver {
     mount: async (markup, options = {}) => {
       useTestTiming();
       restoreReadyState();
-      for (const stop of listening.splice(0)) stop();
-      heardEvents.length = 0;
+      for (const stop of listeners.splice(0)) stop();
+      heardList.length = 0;
       removed.clear();
       submissions.clear();
       keyed = false;
-      document.adoptedStyleSheets = options.base === true ? [tokens, base] : [tokens];
+      document.adoptedStyleSheets = options.base === true ? [tokens, base, frames, delay] : [tokens, frames, delay];
       messages.length = 0;
+      lastKey = undefined;
       document.documentElement.removeAttribute("data-theme");
+      probe().reset();
       Reflect.deleteProperty(document, Symbol.for("ocelle.progress.sweepStart"));
       document.body.innerHTML = markup;
       await settle();
@@ -378,13 +521,14 @@ export function inProcessDriver(): InProcessDriver {
       const rect = svg.getBoundingClientRect();
       return Promise.resolve({ scaleX: round(matrix.a), scaleY: round(matrix.d), offsetX: round(matrix.e - rect.x), offsetY: round(matrix.f - rect.y) });
     },
-    computed: (id, property) => Promise.resolve(getComputedStyle(element(id)).getPropertyValue(property)),
+    computed: (target, property) => Promise.resolve(getComputedStyle(resolve(target)).getPropertyValue(property)),
     resolveColour: (value) => {
-      const probe = document.createElement("span");
-      probe.style.color = value;
-      document.body.append(probe);
-      const colour = getComputedStyle(probe).color;
-      probe.remove();
+      const colourProbe = document.createElement("span");
+      probe().ignore(colourProbe);
+      colourProbe.style.color = value;
+      document.body.append(colourProbe);
+      const colour = getComputedStyle(colourProbe).color;
+      colourProbe.remove();
       return Promise.resolve(colour);
     },
     ax: (id) => commands.axTree(id),
@@ -493,7 +637,7 @@ export function inProcessDriver(): InProcessDriver {
       await userEvent.keyboard(typed(text));
       await settle();
     },
-    press: async (id, key) => {
+    pressOn: async (id, key) => {
       element(id).focus();
       keyed = true;
       await userEvent.keyboard(keys(key));
@@ -505,13 +649,13 @@ export function inProcessDriver(): InProcessDriver {
       (active as HTMLElement | null)?.blur();
       await settle();
     },
-    click: async (id, at) => {
+    clickPoint: async (id, at) => {
       // Playwright's position is from the padding box; `at` is from the border box.
       const target = element(id);
       await userEvent.click(target, { position: { x: at.x - target.clientLeft, y: at.y - target.clientTop } });
       await settle();
     },
-    focusPath: () => {
+    focusChain: () => {
       const path: string[] = [];
       let active: Element | null = document.activeElement;
       while (active !== null && active !== document.body) {
@@ -536,13 +680,13 @@ export function inProcessDriver(): InProcessDriver {
     },
     // The phase 3 steps (specs/010-feedback-forms T031 to T033).
     axDetails: (id) => commands.axTree(id, "details"),
-    listen: (ids, types) => {
+    listenFor: (ids, types) => {
       for (const id of ids) {
         const target = element(id);
         for (const type of types) {
           const listener = (event: Event): void => {
             const detail = (event as CustomEvent<unknown>).detail;
-            heardEvents.push({
+            heardList.push({
               type: event.type,
               at: id,
               target: nameOf(event.target),
@@ -553,14 +697,14 @@ export function inProcessDriver(): InProcessDriver {
             });
           };
           target.addEventListener(type, listener);
-          listening.push(() => {
+          listeners.push(() => {
             target.removeEventListener(type, listener);
           });
         }
       }
       return Promise.resolve();
     },
-    heard: () => Promise.resolve(heardEvents.splice(0)),
+    heardEvents: () => Promise.resolve(heardList.splice(0)),
     validity: (id) => Promise.resolve(validityOf(element(id))),
     ids: (id, name) => Promise.resolve(idsOf((element(id) as unknown as Record<string, unknown>)[name])),
     typeOf: (id, name) => Promise.resolve(typeof (element(id) as unknown as Record<string, unknown>)[name]),
@@ -582,11 +726,183 @@ export function inProcessDriver(): InProcessDriver {
       return Promise.resolve(target === null || target === undefined ? "" : getComputedStyle(target, pseudo).getPropertyValue(property));
     },
     instanceOf: (id, constructor) => Promise.resolve(element(id) instanceof (constructor as unknown as typeof HTMLElement)),
+    press: async (key, options = {}) => {
+      await userEvent.keyboard(keyText(key, options.shift === true));
+      await settle();
+    },
+    hover: async (id, inner) => {
+      await commands.pointerPath([id === null ? { x: 0, y: 0 } : probe().centre(id, inner)]);
+      await settle();
+    },
+    click: async (id, inner, options = {}) => {
+      await commands.pointerPath([{ ...probe().centre(id, inner), down: true, up: true, button: options.button ?? "left" }]);
+      await settle();
+    },
+    pointer: async (path) => {
+      await commands.pointerPath(path);
+      await settle();
+    },
+    touchTap: async (id, inner) => {
+      const { x, y } = probe().centre(id, inner);
+      await commands.touchTap(x, y);
+      await settle();
+    },
+    focusPath: () => Promise.resolve(probe().focusPath()),
+    focusVisible: (id, inner) => Promise.resolve(probe().focusVisible(id, inner)),
+    viewportSize: () => Promise.resolve({ width: window.innerWidth, height: window.innerHeight }),
+    device: () => Promise.resolve(probe().device()),
+    record: (id, names) => {
+      probe().record(id, names);
+      return Promise.resolve();
+    },
+    recorded: () => Promise.resolve(probe().recorded()),
+    ownAnimations: (id, inner) => Promise.resolve(probe().animations(id, inner)),
+    topLayer: () => Promise.resolve(probe().topLayer()),
+    styleAttributes: () => Promise.resolve(probe().styleAttributes()),
+    styleElements: () => Promise.resolve(probe().styleElements()),
+    append: async (id, markup) => {
+      element(id).insertAdjacentHTML("beforeend", markup);
+      await settle();
+    },
+    remove: async (id) => {
+      element(id).remove();
+      await settle();
+    },
+    textData: async (id, index, data) => {
+      const text = [...element(id).childNodes].filter((node) => node.nodeType === Node.TEXT_NODE)[index];
+      if (text === undefined) throw new Error(`#${id} has no text node ${String(index)}`);
+      (text as Text).data = data;
+      await settle();
+    },
+    tab: async (shift = false) => {
+      await userEvent.tab({ shift });
+      await settle();
+    },
+    activeElement: () => commands.activeElement(),
     viewport: async (width, height) => {
       await page.viewport(width, height);
       await settle();
     },
-    scrollWidth: () => Promise.resolve(document.documentElement.scrollWidth),
+    chord: async (key) => {
+      await userEvent.keyboard(chordText(key));
+      await settle();
+    },
+    clickAt: async (target, point) => {
+      const rect = resolve(target).getBoundingClientRect();
+      const root = document.documentElement.getBoundingClientRect();
+      await userEvent.click(document.documentElement, { position: { x: rect.left - root.left + point.x, y: rect.top - root.top + point.y }, force: true });
+      await settle();
+    },
+    wheel: async (target, deltaX) => {
+      await userEvent.wheel(resolve(target), { delta: { x: deltaX } });
+      await settle();
+    },
+    deepActive: () => Promise.resolve(deepActive()),
+    tabWalk: async (from, to, backward = false) => {
+      element(from).focus();
+      const walked: string[] = [];
+      for (let step = 0; step < 40 && walked.at(-1) !== to; step++) {
+        await userEvent.keyboard(chordText(backward ? "Shift+Tab" : "Tab"));
+        walked.push(deepActive());
+      }
+      await settle();
+      return walked;
+    },
+    focus: async (target) => {
+      resolve(target).focus();
+      await settle();
+    },
+    scrollLeft: (target) => Promise.resolve(resolve(target).scrollLeft),
+    setScrollLeft: async (target, value) => {
+      resolve(target).scrollTo({ left: value, behavior: "instant" });
+      await settle();
+    },
+    lastKeyPrevented: () => Promise.resolve(lastKey?.defaultPrevented ?? false),
+    frameRecord: async (target, read) => {
+      const subject = resolve(target);
+      const source = read.of === undefined ? subject : resolve(read.of);
+      const record = [reading(source, read)];
+      const onKey = (): void => {
+        record.push("keydown");
+      };
+      window.addEventListener("keydown", onKey, true);
+      const observer = new ResizeObserver(() => record.push(`resize: ${reading(source, read)}`));
+      observer.observe(subject, { box: "border-box" });
+      let frame = 0;
+      const loop = (): void => {
+        record.push(reading(source, read));
+        frame = requestAnimationFrame(loop);
+      };
+      frame = requestAnimationFrame(loop);
+      await nextFrame();
+      await nextFrame();
+      return {
+        stop: async () => {
+          await settle();
+          cancelAnimationFrame(frame);
+          observer.disconnect();
+          window.removeEventListener("keydown", onKey, true);
+          return record;
+        },
+      };
+    },
+    settle,
+    size: async (id, inline, block) => {
+      const style = element(id).style;
+      for (const [property, value] of [["inline-size", inline], ["block-size", block]] as const) {
+        if (value === null) style.removeProperty(property);
+        else style.setProperty(property, `${String(value)}px`);
+      }
+      await settle();
+    },
+    scrollWidth: () => commands.scrollWidth(),
+    textBoxes: (id) => commands.textBoxes(id),
+    listen: (ids) => {
+      listen(ids);
+      return Promise.resolve();
+    },
+    heard: () => {
+      const records = listening?.records ?? [];
+      listening?.stop();
+      listening = undefined;
+      return Promise.resolve([...records]);
+    },
+    identities: (id) => {
+      const root = element(id).shadowRoot;
+      if (root === null) return Promise.resolve([]);
+      return Promise.resolve(
+        [...root.querySelectorAll("*")].map((node) => {
+          const known = identities.get(node);
+          if (known !== undefined) return known;
+          identities.set(node, identities.size + 1);
+          return identities.size;
+        }),
+      );
+    },
+    shadow: async (id, markup) => {
+      element(id).attachShadow({ mode: "open" }).innerHTML = markup;
+      await settleShadow(id);
+    },
+    shadowAppend: async (id, inner, markup) => {
+      inShadow(id, inner).insertAdjacentHTML("beforeend", markup);
+      await settleShadow(id);
+    },
+    shadowAttribute: async (id, inner, name, value) => {
+      if (value === null) inShadow(id, inner).removeAttribute(name);
+      else inShadow(id, inner).setAttribute(name, value);
+      await settleShadow(id);
+    },
+    shadowComputed: (id, inner, property) => Promise.resolve(getComputedStyle(inShadow(id, inner)).getPropertyValue(property)),
+    module: async (code) => {
+      // A blob URL is of the test page's origin; this page has no CSP.
+      const url = URL.createObjectURL(new Blob([code], { type: "text/javascript" }));
+      try {
+        await import(/* @vite-ignore */ url);
+      } finally {
+        URL.revokeObjectURL(url);
+      }
+      await settle();
+    },
     layout: (id) => layoutWait(id),
     copy: async (id) => {
       const range = document.createRange();
@@ -656,10 +972,6 @@ export function inProcessDriver(): InProcessDriver {
       await settle();
     },
     animations: (id) => Promise.resolve(runningOf(id)),
-    remove: (id) => {
-      element(id).remove();
-      return Promise.resolve();
-    },
     frames: async (count) => {
       for (let frame = 0; frame < count; frame++) await new Promise((resolve) => requestAnimationFrame(resolve));
     },

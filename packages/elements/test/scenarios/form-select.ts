@@ -141,7 +141,7 @@ export const formSelectScenarios: readonly FormScenario[] = [
     run: async (driver, tag) => {
       const options = '<option value="todo">To do</option><option value="doing">Doing</option><option value="done" selected>Done</option>';
       await driver.mount(select(tag, 'id="s" label="Lane"', options) + nativeSelect('id="n" aria-label="Lane"', options));
-      await driver.listen(["s"], ["input", "ocelle-form-select-change"]);
+      await driver.listenFor(["s"], ["input", "ocelle-form-select-change"]);
       const steps: { key: string; type?: boolean }[] = [{ key: "ArrowUp" }, { key: "ArrowDown" }, { key: "t", type: true }, { key: "ArrowUp" }];
       const seen: unknown[] = [];
       for (const { key, type } of steps) {
@@ -149,10 +149,10 @@ export const formSelectScenarios: readonly FormScenario[] = [
           await driver.type("s", key);
           await driver.type("n", key);
         } else {
-          await driver.press("s", key);
-          await driver.press("n", key);
+          await driver.pressOn("s", key);
+          await driver.pressOn("n", key);
         }
-        seen.push({ element: await driver.property("s", "value"), native: await driver.property("n", "value"), heard: await driver.heard() });
+        seen.push({ element: await driver.property("s", "value"), native: await driver.property("n", "value"), heard: await driver.heardEvents() });
       }
       const step = (value: string, heard: unknown[]): unknown => ({ element: value, native: value, heard });
       assert.deepEqual(
@@ -201,7 +201,7 @@ export const formSelectScenarios: readonly FormScenario[] = [
     run: async (driver, tag) => {
       const options = (prefix: string): string => `<option id="${prefix}1" value="todo">To do</option><option id="${prefix}2" value="done">Done</option>`;
       await driver.mount(form(select(tag, 'id="s" name="lane" label="Lane"', options("o"))) + form(nativeSelect('id="n" name="lane" aria-label="Lane"', options("n")), "g"));
-      await driver.listen(["s"], ["input", "ocelle-form-select-change"]);
+      await driver.listenFor(["s"], ["input", "ocelle-form-select-change"]);
       const both = (operation: (prefix: string) => Parameters<Driver["batch"]>[0][number]): Promise<void> => driver.batch([operation("o"), operation("n")]);
       const seen: Record<string, unknown> = {};
       const observe = async (step: string): Promise<void> => {
@@ -234,7 +234,7 @@ export const formSelectScenarios: readonly FormScenario[] = [
       const o1 = { value: "todo" };
       const o3 = { value: "later" };
       assert.deepEqual(
-        { ...seen, heard: await driver.heard() },
+        { ...seen, heard: await driver.heardEvents() },
         {
           rendered: state("todo", ["To do", "Done"], [o1, { value: "done" }]),
           added: state("todo", ["To do", "Done", "Later"], [o1, { value: "done" }, o3]),
@@ -258,8 +258,8 @@ export const formSelectScenarios: readonly FormScenario[] = [
       const before = { element: await driver.validity("s"), native: await driver.validity("n") };
       const formValid = { element: await driver.call("f", "checkValidity"), native: await driver.call("g", "checkValidity") };
       const submitted = { element: await driver.submit("f"), native: await driver.submit("g") };
-      await driver.press("s", "ArrowDown");
-      await driver.press("n", "ArrowDown");
+      await driver.pressOn("s", "ArrowDown");
+      await driver.pressOn("n", "ArrowDown");
       const after = { element: await driver.validity("s"), native: await driver.validity("n") };
       const flags = (each: { valueMissing: boolean; valid: boolean }): unknown => ({ valueMissing: each.valueMissing, valid: each.valid });
       assert.deepEqual(
@@ -289,10 +289,10 @@ export const formSelectScenarios: readonly FormScenario[] = [
       await driver.mount(form(select(tag, 'id="s" name="lane" label="Lane"', options)) + form(nativeSelect('id="n" name="lane" aria-label="Lane"', options), "g"));
       const side = async (id: string, formId: string): Promise<unknown> => ({ value: await driver.property(id, "value"), data: await driver.formData(formId) });
       const shown = async (): Promise<unknown> => ({ element: await driver.propertyIn("s", parts.control, "selectedIndex"), native: await driver.property("n", "selectedIndex") });
-      await driver.press("s", "ArrowDown");
-      await driver.press("n", "ArrowDown");
+      await driver.pressOn("s", "ArrowDown");
+      await driver.pressOn("n", "ArrowDown");
       const chosen = { element: await side("s", "f"), native: await side("n", "g") };
-      await driver.listen(["s"], ["input", "ocelle-form-select-change"]);
+      await driver.listenFor(["s"], ["input", "ocelle-form-select-change"]);
       await driver.reset("f");
       await driver.reset("g");
       const reset = { element: await side("s", "f"), native: await side("n", "g"), shown: await shown() };
@@ -304,7 +304,7 @@ export const formSelectScenarios: readonly FormScenario[] = [
       const missing = { element: await side("s", "f"), native: await side("n", "g"), shown: await shown() };
       const both = (value: string, data: unknown): unknown => ({ value, data });
       assert.deepEqual(
-        { chosen, reset, script, missing, heard: await driver.heard() },
+        { chosen, reset, script, missing, heard: await driver.heardEvents() },
         {
           chosen: { element: both("later", [["lane", "later"]]), native: both("later", [["lane", "later"]]) },
           reset: { element: both("done", [["lane", "done"]]), native: both("done", [["lane", "done"]]), shown: { element: 1, native: 1 } },
@@ -348,8 +348,8 @@ export const formSelectScenarios: readonly FormScenario[] = [
       await driver.forcedColors("none");
       const host = await driver.box("s");
       const svg = await driver.box("s", "svg");
-      await driver.click("s", { x: svg.x - host.x + svg.width / 2, y: svg.y - host.y + svg.height / 2 });
-      const focus = await driver.focusPath();
+      await driver.clickPoint("s", { x: svg.x - host.x + svg.width / 2, y: svg.y - host.y + svg.height / 2 });
+      const focus = await driver.focusChain();
       const chevron = expectedIcons["chevron-down"]?.shapes ?? [];
       assert.deepEqual(
         { ...observed, forced: { strokes: forced, visible: forced.length > 0 && forced.every((stroke) => stroke !== canvas) }, focus },

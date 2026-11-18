@@ -1,0 +1,141 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 2
+lens: fresh
+# Probes: Playwright from /opt/node-tools with Chromium 153.0.8010.12 (/opt/pw-browsers), scripts in the session
+# scratchpad outside the repository. Cited as "fresh probe". Also checked and found sound (no finding): Chromium fires
+# pointerout/pointerleave on the hovered trigger within a few ms when a modal opens over the pointer, so a `pending`
+# bubble (verify-2's note on PLAN-CORRECTNESS-1-002) and a bubble under a non-Ocelle modal are hidden by R-12's
+# pointerout rule; native `close()` restores focus to the deep opener (also inside a shadow root) and does not take
+# focus from a second modal, so R-05's "only while focus is ours" agrees with the platform; removing the tabindex of a
+# focused body scroller leaves focus on it in Chromium.
+findings:
+  - id: PLAN-FRESH-2-001
+    severity: 3
+    title: "Focus on the <dialog> itself (after a click on non-focusable content) leaves the Tab cycle, and the next Escapes bypass the veto"
+    evidence:
+      - artifact: "research.md R-04 § Tab cycle: \"`keydown` Tab on the last stop (or Shift+Tab on the first) moves focus to the other end\"; contracts/checks.md § Dialog \"Tab cycle\": \"started from the first stop, the last stop and the close control\"; R-02: the overlay handles Escape on `keydown` on its `<dialog>`"
+      - code: "fresh probe (shadow-root modal <dialog> with a close button and slotted prose): a mouse click on the slotted <p> puts the deep focus on the <dialog> element itself (`h>d`); Shift+Tab then gives document.activeElement = BODY. With focus on BODY, Escape twice with a keydown handler on the <dialog> and a cancel listener that prevents: the keydown handler never runs, log `cancel:true`, `cancel:false`, `close`, dialog closed."
+    claim: |
+      A pointer click on any non-focusable part of the panel (prose, padding, the heading) focuses the `<dialog>` element,
+      which is not one of R-04's stops. Shift+Tab from there is not "Shift+Tab on the first stop", so the wrap does not
+      run and Chromium moves focus to the document body, against FR-008 and SC-002 ("no stop on the document body").
+      From the body, Escape no longer passes through the `<dialog>`'s keydown listener, so R-02's keydown path, which is
+      the only thing that makes the veto hold (R-02 "Measured"), is skipped: the first Escape goes to the cancelable
+      `cancel` (vetoed), the second to the non-cancelable one and the overlay closes with reason `host`. A host that
+      vetoes because of unsaved input loses it after "click the text, Shift+Tab, Escape, Escape", which breaks US1-4
+      and FR-013 with no slotted widget involved, outside the limit R-02 states. No matrix row starts from a focused
+      `<dialog>` or any other focused non-stop (a slotted `tabindex="-1"` element focused by script).
+    remedies:
+      - "R-04: the Tab handler decides from the deep active element's position, not from equality with the first or last stop: when focus is inside the overlay but on no stop (the `<dialog>`, the panel, a `tabindex=-1` element), Tab goes to the next stop after it in flat-tree order and Shift+Tab to the previous one, wrapping at the ends, with `preventDefault()`. Alternatively the overlay handles every Tab explicitly. checks § Dialog \"Tab cycle\": add starts from the focused `<dialog>` (after a click on body prose) and from a focused `tabindex=-1` slotted element, both directions; § Dialog \"Escape\": click on prose, then Escape × {veto, veto then Escape twice}: open with focus inside."
+  - id: PLAN-FRESH-2-002
+    severity: 3
+    title: "R-04's walk ignores keyboard-focusable scrollers, which Chromium tabs to and which base styles rely on for prose tables"
+    evidence:
+      - artifact: "research.md R-04: the walk is \"tabbable in flat-tree order\" with exclusions only; nothing adds a scroll container without a tabindex; spec US1-11 and FR-042: \"prose with a table\" in the dialog body"
+      - code: "packages/styles/src/base.css:190-193 (`[data-ocelle-prose] :where(table) { display: block; overflow-x: auto; … }`); specs/003-base-styles/research.md:259-262: the table's Tab stop is Chromium's keyboard-focusable scrollers, no tabindex"
+      - code: "fresh probe (modal shadow <dialog> with close button, slotted <button id=b1> then a slotted overflowing <div id=scr> with prose and no tabindex, no footer, no wrap code): Tab from the close control gives `b1 scr BODY h>c b1 scr`, so Chromium makes the scroller a stop and leaves the dialog after it"
+    claim: |
+      In Chromium 130 and later an overflowing scroll container with no focusable descendant is a native Tab stop. A wide
+      prose table (mission 003's own styles), a `<pre>` or any overflowing slotted region is such a stop. R-04's walk
+      does not list it, so the overlay's idea of "the last stop" is wrong whenever such a scroller comes last in the
+      body with no footer, or last in the footer. Focus on the scroller is on no walk stop, the wrap does not run, and
+      Tab goes to the document body (probe), against FR-008 and SC-002. If the walk's last stop is instead the element
+      before the scroller, the wrap jumps over the scroller and the table cannot be reached or scrolled by keyboard
+      (WCAG 2.1.1). Chromium 120 to 129 has no such stop, so the cycle also differs inside the floor. The body part's
+      own `tabindex` (R-04 "Body as a stop") covers only the body part, not scrollers in slotted content.
+    remedies:
+      - "R-04 and src/focusable.ts: list as a stop every rendered scroll container (computed `overflow-x` or `overflow-y` of `auto` or `scroll`) that overflows and has no tabbable descendant, as Chromium does, and handle every Tab inside the overlay explicitly (see PLAN-FRESH-2-001) so the sequence is the same from Chromium 120 up. FR-008 states it. checks § Dialog \"Tab cycle\": a body ending in a wide prose table (no links) with no footer, and the same table before a footer, both directions, exact `focusPath()` lists."
+  - id: PLAN-FRESH-2-003
+    severity: 3
+    title: "No rule for input while an overlay is closing: repeated Escape, Enter auto-repeat and a double click on the backdrop can request and close twice"
+    evidence:
+      - artifact: "research.md R-02 \"Topmost\": an overlay is \"removed [from the stack] when its `<dialog>` closes\", that is after the exit (R-06), so a closing overlay is still the top and still acts on Escape; data-model.md § State has no transition from `closing` on Escape, the close control or the backdrop; spec FR-014 \"exactly one `…-close`\"; Edge Cases \"`open` toggled quickly … at most one close event per close\""
+      - artifact: "contracts/checks.md § Dialog \"Rapid toggle\" covers only host writes of `open`; no row sends user input during the 200 ms exit"
+      - code: "research.md R-06: `<dialog>` stays open and modal until the exit animation (200 ms, `motion-base`) ends; the close control and the drawer's backdrop stay painted and hit-testable for that time"
+    claim: |
+      During the exit the overlay is shown, modal and top of the stack, while `open` is already false. A held Escape
+      (key auto-repeat), Enter held on the close control (Enter activates on keydown and repeats), a double click on the
+      drawer's backdrop, or a fast second click on the close control all arrive in that window. The plan lets R-02's
+      keydown, R-02's `cancel` path, the close control and R-07 run their request paths again: a second
+      `…-close-request` for an overlay that is already closing (a host that prompts on the request asks again
+      mid-close), and a second close transition that may dispatch a second `…-close`, against FR-014. If the overlay
+      instead ignores Escape without preventing it, the platform fires `cancel`, which R-02 turns into a request too.
+      The behaviour is unspecified, so the implementation and its mutants are free, and no row can catch it.
+    remedies:
+      - "R-02, R-06, R-07 and data-model § State: while `closing`, Escape is prevented and requests nothing, a `cancel` is prevented and requests nothing, and close-control clicks and backdrop clicks are ignored; only a host `open = true` leaves `closing`. checks § Dialog and § Drawer, motion on: Escape twice within the exit, two close-control clicks and Enter keydown twice within the exit, a double click on the drawer's backdrop: exactly one request and one `…-close`."
+  - id: PLAN-FRESH-2-004
+    severity: 3
+    title: "The native close event is queued and arrives after a reopen, so the 'close the overlay did not cause' rule can close a freshly reopened overlay"
+    evidence:
+      - artifact: "research.md R-03: \"A `close` event on the inner `<dialog>` that the overlay did not cause sets `open` to false, returns focus (R-05) and dispatches `…-close` with `detail.reason === \\\"host\\\"`\" (how causation is told is not stated); R-05a: disconnect calls inner `close()`, re-inserted the host \"sets `open = true` to show it again\"; checks § Dialog \"Moved while open\": re-insert in the same task, \"then `open = true` shows it modally\""
+      - code: "fresh probe (shadow-root <dialog>): `showModal(); close(); showModal()` in one task, the close event fires after it with `open=true modal=true`; `close()`, one microtask (a Lit update), `showModal()`: the same; host removed while modal, `close()`, host re-inserted and `showModal()` in one task: the close event arrives later with `open=true`, `:modal` true"
+    claim: |
+      `HTMLDialogElement.close()` queues its `close` event as a task. Lit's update runs in a microtask, so a host that
+      reopens in its `…-close` listener (R-06 dispatches `…-close` right after `close()`, before the queued event), or
+      that re-inserts a moved overlay and sets `open = true` in the same task (the README's own advice in R-05a), has
+      its `<dialog>` shown again before the stale `close` event arrives. A handler that treats any `close` it did not
+      just cause (for example, a flag set around its own `close()` call) as a platform close then sets `open` to false
+      and dispatches `…-close` with `host` while the `<dialog>` is open and modal: the host's state, the element's
+      `open` and the top layer disagree, or the reopened overlay is closed again. R-03 does not say how causation is
+      decided, and no row reopens across a pending native `close` event.
+    remedies:
+      - "R-03: a native `close` event is a platform close only when the overlay is in `shown`, the inner `<dialog>` is not open at the time of the event, and it is not one the overlay caused (count own `close()` calls and consume one event per call). State it in data-model § State. checks § Dialog: reopen in the `…-close` listener (motion on and under reduced motion): shown, `:modal`, `open` true, exactly one `…-close`; remove, re-insert and set `open = true` in the same task: shown, no `…-close`; and the existing inner `close()` row still gives `host`."
+  - id: PLAN-FRESH-2-005
+    severity: 2
+    title: "The describes span can be removed by a host re-render, and nothing restores it: the unrendered slot fires no slotchange"
+    evidence:
+      - artifact: "research.md R-13 \"Kept against host re-renders\": the `MutationObserver` watches only \"the trigger's `aria-describedby`\"; the span is `<span slot=\"description\" …>` \"assigned to a slot the shadow root does not render\"; spec FR-036: \"The description survives a host re-render\"; Edge Cases \"Host re-renders the trigger's `aria-describedby` … or replaces the trigger\""
+      - code: "fresh probe: host with an open shadow root rendering only `<slot></slot>` and a light-DOM `<span slot=description>`: removing the span fires no `slotchange` on the default slot (log `[]`)"
+    claim: |
+      The span is a child of the tooltip host in the host's own light DOM, which the host's template owns. A host that
+      re-renders the tooltip's children (a morphing update, a keyed re-render, a framework that resets children it did
+      not create) removes the span. The trigger's `aria-describedby` then points at a missing id, the observer sees no
+      attribute change, and no `slotchange` fires because no slot named `description` exists. The description is lost
+      silently, which is the failure FR-036's operator decision was meant to prevent, through the sibling path. No
+      matrix row removes the span.
+    remedies:
+      - "R-13: also observe the host's `childList` (or render a `<slot name=\"description\">` inside a never-painted container in the shadow root so its `slotchange` fires) and re-create the span when it is removed while `describes` holds and `text` is not empty. checks § Tooltip \"`describes` lifecycle\": the host removes the span: the description is back after one microtask, one span, the same id."
+  - id: PLAN-FRESH-2-006
+    severity: 2
+    title: "The body's minimum block size is unconditional, so every dialog body is at least 132 px tall, also a one-line confirmation"
+    evidence:
+      - artifact: "research.md R-18: \"The body has `overflow-y: auto` and `min-block-size: calc(3 * var(--ocelle-target-min))`\" with no condition; spec FR-018 and US1-10 state the minimum only for the short-viewport case"
+      - code: "packages/tokens: `target-min` 2.75rem (research R-18), so the minimum is 8.25rem = 132 px; gates/stylelint/token-only.ts treats `min()` as raw (research R-09 \"Lint\"), so `min(content, …)` is not available"
+    claim: |
+      The fix for PLAN-A11Y-SECURITY-1-004 was meant to keep the body usable at 320 × 256. As written, `min-block-size`
+      applies at every size, so a dialog whose body is one sentence ("Delete this project?") or a short form gets a body
+      box of at least 132 px with empty space under the text, in the default story and in every consumer. That changes
+      the dialog's look beyond the case it fixes, is stated nowhere a reviewer of the baselines would see it, and no row
+      asserts a short body's height either way.
+    remedies:
+      - "Keep the unconditional minimum: state the visible consequence in R-18, FR-018 and the README, and add a geometry row and a story with a one-line body (body block size = 132 px)."
+      - "Make the minimum bind only when the content is taller than it: the element sets an attribute on the body part from the slot content's measured height (not from the body's overflow, which would oscillate once the minimum applies), and the static sheet applies `min-block-size` only under that attribute; rows for a one-line body (body as tall as its content) and the 320 × 256 case."
+  - id: PLAN-FRESH-2-007
+    severity: 1
+    title: "hasTouch on the whole elements project and on every fixture context turns the test browser into a no-hover, coarse-pointer device"
+    evidence:
+      - artifact: "research.md R-14: \"`vitest.config.ts`: the `elements` project … enables touch for the Chromium instance (`hasTouch`)\"; \"`serve.ts`'s `visit()` creates its context with `hasTouch: true`\"; vitest.config.ts:76 (`include: [\"packages/elements/**/*.test.ts\"]`), serve.ts:127 (one context for every fixture page)"
+      - code: "fresh probe, Chromium 153 at 1280 × 800: without hasTouch `(hover: hover)` true, `(pointer: fine)` true, `(any-hover: hover)` true, `maxTouchPoints` 0; with hasTouch all three false and `maxTouchPoints` 1 (mouse input still reports `pointerType` mouse)"
+    claim: |
+      The touch rows need a touchscreen, but the plan switches it on for every element test in both harnesses, including
+      005's and the siblings' (#7, #12, #14). Those then run as a hover-less, coarse-pointer device, which is not the
+      platform the library targets (desktop Kitty, a browser with a mouse) and not #10's capture context. No source uses
+      hover or pointer media queries today, so nothing fails now, but a later element or base-style rule gated on
+      `(hover: hover)` would be tested only in its no-hover branch, silently.
+    remedies:
+      - "R-14: enable touch only where the touch rows run (a second Chromium instance or project with `hasTouch` for the touch scenarios, and a separate fixture context in `serve.ts` for them), and add a harness self-test that the default context matches `(hover: hover)` and `(pointer: fine)`."
+  - id: PLAN-FRESH-2-008
+    severity: 1
+    title: "R-01 still prescribes the @fires tag in an order the analyzer does not document"
+    evidence:
+      - artifact: "research.md R-01: \"`@fires ocelle-dialog-close-request {CustomEvent<{ reason: … }>}`\" (name before type)"
+      - artifact: "reviews/plan/round-1/verify-2.md, PLAN-CORRECTNESS-1-006 note: \"The analyzer's documented form is `@fires {Type} <name> - description`\"; the note was not carried into the artifacts"
+    claim: |
+      The JSDoc tags are the events' only source in the manifest (R-01). Written as R-01 shows, the analyzer may read the
+      type as part of the description or drop it, and the implementer copies the plan's form. The per-entry manifest
+      test would catch it, but only after a red cycle the plan could avoid, and the plan is the place that should show
+      the right form.
+    remedies:
+      - "R-01: write the tags as `@fires {CustomEvent<{ reason: \"escape\" | \"close-button\" }>} ocelle-dialog-close-request - …` (type first, then name, then description) for both overlays."

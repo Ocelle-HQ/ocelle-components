@@ -1,0 +1,126 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 2
+lens: fresh
+# Probes: playwright-core 1.63.0 (/opt/node-tools) driving Google Chrome for Testing 153 (/usr/bin/google-chrome),
+# headless, light DOM, plain CSS standing in for the plan's rules. Scripts p1.mjs to p7.mjs are in this session's
+# scratchpad and are not part of the repository. Pixels decoded from page screenshots via OffscreenCanvas.
+# Settled findings of round 1 (refute.md, verify-1.md) were read and are not repeated; this round attacks their fixes.
+findings:
+  - id: PLAN-FRESH-2-001
+    severity: 3
+    title: "The padding-box clip that was meant to keep the native scrollbar unmasked does not work in Chromium: the scrollbar is faded exactly as without it"
+    evidence:
+      - artifact: "research.md R-05 § The scrollbar stays unmasked: 'the fade layer has `mask-origin: padding-box; mask-clip: padding-box`, and the scrollbar lies between the box's padding box and its border … `mask-composite: add, exclude`'; contracts/overflow-region.md § Stylesheet `.region-box[data-fade]`: 'The fade covers the padding box only, and the scrollbar, outside it, stays opaque'; spec FR-007 and US1-7: the fades 'never cover the horizontal scrollbar where one is drawn'"
+      - artifact: "fixes-1.md, note on PLAN-FRESH-1-003 (a), and verify-1.md: the risk 'that Chromium paints the scrollbar inside the mask's padding box' was left for the phase-2 red run to discover"
+      - code: "p2.mjs/p3.mjs, launched with ignoreDefaultArgs ['--hide-scrollbars'] (15 px classic scrollbar), a 400 px overflow-x:auto box at scrollLeft 100. Scrollbar row, inline-end arrow glyph pixel: plain box 139/139/139; the planned three-layer mask exactly as in the contract 220/220/220; a single fade layer with no clip and no composite 220/220/220 (identical in every sampled pixel, content row included). The composite changes nothing"
+      - code: "p4.mjs, same box with a uniform 50 % alpha mask: `mask-clip: padding-box` 197/197/197, `mask-clip: content-box` 197/197/197, `mask-clip: border-box` 197/197/197 at the arrow glyph (plain 139). Chromium applies the mask to the scrollbar whatever the clip box; only the mask layer's geometry keeps it off: `mask-size: 100% 40px` (the clientHeight) with border-box origin leaves the 15 px scrollbar band fully masked out (255/255/255), so a geometric limit is honoured where the clip box is not"
+    claim: |
+      The operator decided at round 1 to keep the native scrollbar and never fade it, and the fix chose a mechanism
+      that Chromium does not honour on a scroll container: the clip box is ignored for the scrollbar, so the
+      composite of R-05 is equivalent to a plain fade. FR-007, US1-7 and the `scrollbar.test.ts` case of plan phase 2
+      would fail at the red run, and the plan's only fallback is "stop and ask the operator" in the middle of phase 2,
+      after the gate change and the module's styles have been designed around this mask. Since it is now known, the
+      decision should be re-taken before tasks, not discovered during implementation. The only geometry that worked
+      in the probe needs the scrollbar thickness in px, which CSS does not expose, so every remaining option has a
+      cost the operator should weigh.
+    remedies:
+      - "Keep FR-007 as decided: the module measures the scrollbar thickness (`offsetHeight - clientHeight - border`) and limits the fade layer's block size to the box's client height through a per-instance constructed stylesheet (the R-13 mechanism; `mask-size: 100% <clientHeight>px`, border-box origin, the rest of the box opaque by a second layer). R-05, the contract's stylesheet row, the README § Styles convention (see PLAN-FRESH-2-005) and the scrollbar test change; drop the padding-box clip and the `exclude` composite."
+      - "Amend FR-007, US1-7 and US1-13: the fades cover the scrollbar's ends as they cover the content (the scrollbar stays drawn, kept in the block size, and its middle unfaded). The scrollbar test asserts the block size only. R-05 and the contract drop the composite."
+  - id: PLAN-FRESH-2-002
+    severity: 3
+    title: "list-detail's measurement pass runs inside a pane `ResizeObserver` callback and resizes the host, which makes Chromium raise 'ResizeObserver loop completed with undelivered notifications'; and a width-only change in a shown pane is never seen"
+    evidence:
+      - artifact: "research.md R-13 § When it runs: 'a `ResizeObserver` on the host (the `measured` size) and on each shown pane's wrapper (content of a shown pane changing size)'; data-model.md § Re-measure triggers, same; R-13 § Sizer: the max-content figure sets the sizer's `inline-size`, which is the element's size in a shrink-to-fit host (US3-12)"
+      - code: "p7.mjs: a shrink-to-fit host (flex item) holding a zero-height sizer and a pane; one RO observes the host, another the pane, and the pane RO's callback writes the sizer's `inline-size` from the pane content's max-content through an adopted constructed stylesheet (R-13's mechanism). When the pane content becomes wider and taller, the pane RO fires, the host grows from 632 to 985 px inside that delivery, the host's observation (shallower than the pane) is skipped, and `window` receives ErrorEvent 'ResizeObserver loop completed with undelivered notifications.'; the host size is delivered a frame later. The same error appeared at first render when the pane RO was the first to set the sizer"
+      - code: "p7.mjs, same page: when the shown pane's content only becomes wider (nowrap text, same line height), the pane RO does not fire at all: the pane wrapper is sized by its grid track, not its content, so the max-content figure stays stale until some other trigger"
+      - code: "packages/elements/test/scenarios/driver.ts:146 `messages()`: 'The console messages and uncaught errors the page reported since the last `mount`'; Vitest browser mode reports uncaught `error` events as unhandled errors of the run"
+    claim: |
+      The round-1 fix (PLAN-CORRECTNESS-1-008) added a pane `ResizeObserver` as a re-measure trigger without asking
+      what the measurement does from inside a `ResizeObserver` delivery. In every shrink-to-fit host, the setting
+      US3-12 exists for (flex row, dialog, table cell), a shown-pane content change that alters the figures changes the
+      host's size within the delivery. Chromium then fires a window error event: the in-process and fixture runs
+      surface it as an unhandled error, and consumers' error monitors log it on every record switch. The size is also
+      applied a frame late, which the US3-12 frame record would flag only if the test changes content (it does not).
+      Separately, the pane wrapper's size does not follow its content's inline size, so a width-only change in a
+      shown pane (a wider table swapped in at the same height) leaves the intrinsic size stale, the case R-13 says it
+      covers. Neither is in the spike's pass condition.
+    remedies:
+      - "R-13 and data-model.md: replace the shown-pane `ResizeObserver` with the coalesced `MutationObserver` already used for hidden panes, observing all panes' assigned elements (records are delivered as microtasks, before the rendering step, so the sizer is set before any `ResizeObserver` delivery), and keep the host `ResizeObserver` for `measured` only, which never writes the figures. Add to the spike and to US3-12: a detail replaced by a wider and taller block, and by a wider block of the same height, inside a 1196 px flex row, with no window error event (`driver.messages()` empty) and the new size in the first frame record after the change."
+      - "Keep the pane `ResizeObserver`, state the window error and the one-frame lag as accepted in R-13 and the README, have the test harness filter that message, and record the width-only gap as a reading of FR-025 (as FR-014 does for the board). Operator decision."
+  - id: PLAN-FRESH-2-003
+    severity: 2
+    title: "With focus on a slotted link or button, the arrow keys still scroll the strip, animated, under reduced motion; the module leaves those keys to the browser, so FR-009 and US1-11 fail"
+    evidence:
+      - artifact: "spec FR-006 and US1-10: keys while a slotted element has focus are not handled; 'the link receives it as it would without the element'. research.md R-02: 'Keys whose target is a descendant are not touched'. spec FR-009: 'Under `prefers-reduced-motion: reduce` nothing of the scroller animates'; US1-11: 'When … the arrow keys scroll, Then nothing animates'"
+      - artifact: "research.md R-02 § Why (measured): Chromium's own arrow scrolling of a focused scroll box is animated 'also in a context with `reducedMotion: \"reduce\"`'. R-02 measured only the box focused, not a descendant"
+      - code: "p1.mjs, reducedMotion 'reduce', a 300 px overflow-x:auto box of twelve 80 px buttons (and, second run, links), focus on the second item, real ArrowRight: scrollLeft per animation frame 1,4,10,17,25,31,36,39,40 (buttons) and 0,0,3,7,14,21,28,34,38,40 (links); focus stays on the item. Same series with 'no-preference'. The browser scrolls the item's nearest scroll container, the strip, by 40 px over about nine frames"
+    claim: |
+      The plan proves that reduced motion is honoured when the box itself is focused, by taking the key from the
+      browser. The far more common state is focus on a chip or link inside the strip (every Tab after the first
+      lands there, US1-2), and there the same key gets Chromium's animated scroll of the strip, under reduced motion
+      too. So "nothing of the scroller animates" (FR-009) and US1-11 are false for the usual keyboard path, and no
+      planned test can see it: US1-10's test asserts only that the key is not prevented. The spec's two promises
+      (leave descendant keys alone; never animate) cannot both hold in Chromium.
+    remedies:
+      - "Amend FR-009 and US1-11 (operator decision): the element itself never animates and never sets smooth scrolling; the browser's own keyboard scrolling from a focused slotted control is outside the element and may animate (Chromium ignores reduced motion there). R-02 records the measurement and the README states it. US1-10's test asserts the key is not prevented, as now."
+      - "Extend the module (and amend FR-006 and US1-10): on an unmodified ArrowLeft/ArrowRight that reaches the host un-prevented from a descendant that is not a text-entry control, `select`, or inside an element with a composite-widget role, the module performs the same instant 40 px scroll and calls `preventDefault`. Test: under reduced motion, with focus on a slotted link, scrollLeft reaches its final value within one frame; plant: descendant keys left to the browser."
+  - id: PLAN-FRESH-2-004
+    severity: 2
+    title: "The handover ring on `.region-frame` is an outline of the frame, which the masked scroll box (its own stacking context) paints over; US1-4 asserts only the computed outline"
+    evidence:
+      - artifact: "research.md R-07: the frame 'shows the module's own ring on `:focus-visible`: `outline … outline-offset: calc(var(--ocelle-focus-width) * -1)`, inset'; US1-4's test asserts 'that its outline is the token ring inset inside the host's box' (computed values). contracts/overflow-region.md § Stylesheet: `.region-frame` outline; `.region-box` is a child of the frame and carries the mask; the box's own ring is a separate overlay `.region-ring` placed after the box precisely so the mask cannot hide it (R-05 § Ring)"
+      - code: "p6.mjs: a `position: relative` frame with a 3 px inset red outline holding an overflow-x:auto box with full-width blue content. No mask on the box: the frame's left edge pixel is 255/0/0 (ring). An opaque `mask-image` on the box: 0/0/255, the content covers the ring; at 99 % alpha 3/0/252. The top edge, where the box has no content, stays red. A masked element is a stacking context and paints after the frame's outline"
+    claim: |
+      Wherever the box paints over the frame's 2-3 px inset band while it has a mask, the handover ring is not
+      visible: under a classic scrollbar along the bottom edge, and under content at an inline edge once the box
+      overflows again while the frame still holds focus (handover, then the content grows back). It also depends on
+      `data-fade` never being present while nothing fades (PLAN-FRESH-2-006). The round-1 fix copied the ring rule
+      from base.css's prose tables, where no masked child exists, and its test reads computed styles, so it passes
+      with the ring hidden. The scroll box's own ring already avoids this with an overlay drawn after the box.
+    remedies:
+      - "R-07 and the contract: draw the handover ring with the existing overlay (`.region-frame:focus-visible > .region-ring` shows the same token ring, `Highlight` in forced colours), drop the outline on the frame, and assert US1-4's ring on pixels (driver.pixels) in the `overflow: hidden` container, including a case where content overflows again while the frame holds focus, with `--hide-scrollbars` off in the scrollbar test. Plant: the ring as an outline of the frame."
+  - id: PLAN-FRESH-2-005
+    severity: 2
+    title: "list-detail's per-instance stylesheet of px figures contradicts the README's pinned styles convention and FR-030's 'shared static styles', and no task changes either"
+    evidence:
+      - code: "packages/elements/README.md:240-242 § Element conventions, Styles: 'An element's styles are one `css` tagged template assigned to `static styles`, built only from `--ocelle-*` tokens and the values the `style-lint` gate allows, so every instance adopts one shared stylesheet'; packages/elements/test/node/readme.test.ts:36 pins that sentence"
+      - artifact: "spec FR-030: each element follows the element conventions, including 'token-only shared `static styles`'. research.md R-13 § Setting them: 'a per-instance constructed stylesheet adopted on the element's shadow root … the two declarations are set through `CSSStyleRule.style.setProperty`' with px values. plan.md phase 4 Records: 'The README covers the container-tier convention'; phase 2 Records rewrite § Host ARIA only. Constitution Check II says 'element CSS is `token-only`' with no mention of runtime px declarations"
+      - artifact: "constitution II: 'Element CSS contains no raw colour, font, size … literals'"
+    claim: |
+      The round-1 fix for PLAN-CORRECTNESS-1-004 satisfied IV but moved the figures into a second, per-instance,
+      non-token stylesheet. That breaks the README's own rule ('every instance adopts one shared stylesheet', pinned
+      by a test) and FR-030, and it is the first runtime raw size in element CSS, which constitution II forbids on its
+      face and `style-lint` cannot see. Left unstated, the implementer either ships a README that is false for
+      list-detail or meets a reviewer finding in phase 4. #8 and #12 copy the container-tier convention, so the
+      exception, if accepted, needs to be written down once. PLAN-FRESH-2-001's first remedy would add a second
+      instance of the same pattern to the module.
+    remedies:
+      - "Spec FR-030 and the README § Styles convention (red first in readme.test.ts, plan phase 4 Records): an element may add one per-instance constructed sheet holding only px figures it measured from layout, never values from attributes or text, with list-detail as the named case. Constitution Check II records this reading of 'no raw size literals' (measured layout figures are not design values) for the operator at the plan gate, and the `sheets()` driver test asserts the per-root count (shared sheets plus exactly one per instance)."
+  - id: PLAN-FRESH-2-006
+    severity: 1
+    title: "`fadeAttribute` is `\"\"` when nothing fades, and the stylesheet selects on `[data-fade]`, so a Lit binding leaves the mask rule matched on every box"
+    evidence:
+      - artifact: "contracts/overflow-region.md § Use: `data-fade=${this.#region.fadeAttribute}`; § Outputs: `fadeAttribute` is `\"\" | \"start\" | \"end\" | \"both\"`; § Stylesheet: the mask is on `.region-box[data-fade]`"
+      - code: "Lit renders an attribute binding whose value is `\"\"` as `data-fade=\"\"`, which matches `[data-fade]` (attribute presence). Only `nothing` removes it"
+    claim: |
+      As written, a fitting or edge-free box still matches the mask rule. What it then draws depends on how the
+      per-value gradients are split from the base rule, which the contract leaves open; in the worst reading a fitting
+      scroller fades both edges, and in every reading the box becomes a stacking context that hides the handover ring
+      (PLAN-FRESH-2-004). The sample code is what #13 will copy.
+    remedies:
+      - "Contract: `fadeAttribute` is `\"start\" | \"end\" | \"both\" | undefined`, bound with `ifDefined` (or `nothing`), and the mask rules select on the three values only. A test asserts the computed `mask-image` is `none` on a fitting box."
+  - id: PLAN-FRESH-2-007
+    severity: 1
+    title: "Frame W's 18 px of slack is 1 to 3 px on the classic-scrollbar platforms the plan now designs for"
+    evidence:
+      - artifact: "spec User Scenarios, Frame W = 1280 − 52 − 320 − 32 = 876 px; FR-015 and SC-003: five lanes need 858 px; research.md R-04: classic scrollbars (Windows, most Linux desktops) are now a supported case (PLAN-FRESH-1-003 (a))"
+      - code: "p5.mjs, `--hide-scrollbars` off: a 1280 px viewport with a tall page has `documentElement.clientWidth` 1265; an 876 px content cell with `overflow-y: auto` and tall content has `clientWidth` 861 (15 px Linux scrollbar). Chrome on Windows draws 17 px, leaving 859 px"
+    claim: |
+      The consumer need is five lanes beside the sidebar in a 1280 px window. On the console's likely platforms the
+      page's, or the shell's main region's, vertical scrollbar takes 15-17 px from the content cell, so the board fits
+      by 3 px (Linux) or 1 px (Windows) instead of 18 px, and any further px (a non-maximised window's frame, a 1 px
+      border on the cell) makes it overflow. No frame or test covers it, and every run hides scrollbars.
+    remedies:
+      - "Spec Frames and R-17: state that Frame W assumes no vertical scrollbar in the content cell, and add a US2-1 case in an 859 px frame (Frame W less a 17 px scrollbar) that must not overflow; or record, with the operator, that a 1280 px window with a classic page scrollbar is not the target."

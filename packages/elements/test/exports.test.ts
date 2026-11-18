@@ -1,37 +1,21 @@
 import { describe, expect, it } from "vitest";
 
-// The package root's exports (005 FR-032, T021, T052; specs/010-feedback-forms T015, T016c, T034b, T052b; 013 T006,
-// T025, T040): it replaces the skeleton test that asserted the package "exports nothing yet". The root exports the
-// element classes, `OcelleBrandMark`, `OcelleEmptyState`, `OcelleFact`, `OcelleFacts`, `OcelleFormInput`,
-// `OcelleFormSelect`, `OcelleIcon`, `OcelleNotice` and `OcelleProgress`, and nothing else at run time (the `IconName`
-// type is erased; the internal `FormControl` base class is not exported). A module namespace object lists its keys in
-// code-unit order (research R-11).
+// The package root's exports (005 FR-032, T021, T052; 011 FR-001, T016a; specs/010-feedback-forms T015, T016c, T034b,
+// T052b): it replaces the skeleton test that asserted the package "exports nothing yet". The root exports the element
+// classes, `OcelleBrandMark`, `OcelleIcon`, since 009 (T017) `OcelleScroller`, since 009 phase 3 (T034)
+// `OcelleWorkflowBoard` and `OcelleWorkflowLane`, since 009 phase 4 (T051) `OcelleListDetail`, since 011 `OcelleCard`,
+// `OcelleContextSidebar` (011 T035a), `OcellePageHeader` (011 T028a), `OcellePersonalRail` (011 T043a) and
+// `OcelleSectionHeader`, since 008 `OcelleDialog` (008 T017), `OcelleDrawer` (008 T032) and `OcelleTooltip` (008 T043),
+// since 010 `OcelleNotice`, `OcelleFormInput` and `OcelleFormSelect`, since 013 (T006) `OcelleFact` and `OcelleFacts`,
+// since 013 phase 2 (T025) `OcelleEmptyState`, and since 013 phase 3 (T040) `OcelleProgress`, in the module
+// namespace's sorted order, code-unit order (010 research R-11), and nothing else at run time (the `IconName` type is
+// erased; the overflow-region, lane-count, tier and list-detail measurement modules, the overlays' internal base and
+// the form controls' internal `FormControl` base class are internal and not exported).
 describe("@ocelle/elements root exports", () => {
-  it("exports OcelleBrandMark, OcelleEmptyState, OcelleFact, OcelleFacts, OcelleFormInput, OcelleFormSelect, OcelleIcon, OcelleNotice and OcelleProgress and nothing else", async () => {
+  it("exports OcelleBrandMark, OcelleCard, OcelleContextSidebar, OcelleDialog, OcelleDrawer, OcelleEmptyState, OcelleFact, OcelleFacts, OcelleFormInput, OcelleFormSelect, OcelleIcon, OcelleListDetail, OcelleNotice, OcellePageHeader, OcellePersonalRail, OcelleProgress, OcelleScroller, OcelleSectionHeader, OcelleTooltip, OcelleWorkflowBoard and OcelleWorkflowLane and nothing else", async () => {
     const module: Record<string, unknown> = await import("../src/index.ts");
-    expect(Object.keys(module)).toEqual([
-      "OcelleBrandMark",
-      "OcelleEmptyState",
-      "OcelleFact",
-      "OcelleFacts",
-      "OcelleFormInput",
-      "OcelleFormSelect",
-      "OcelleIcon",
-      "OcelleNotice",
-      "OcelleProgress",
-    ]);
-    expect(
-      [
-        module.OcelleBrandMark,
-        module.OcelleEmptyState,
-        module.OcelleFact,
-        module.OcelleFacts,
-        module.OcelleFormInput,
-        module.OcelleFormSelect,
-        module.OcelleIcon,
-        module.OcelleNotice,
-        module.OcelleProgress,
-      ].map((each) => typeof each),
-    ).toEqual(["function", "function", "function", "function", "function", "function", "function", "function", "function"]);
+    const names = ["OcelleBrandMark", "OcelleCard", "OcelleContextSidebar", "OcelleDialog", "OcelleDrawer", "OcelleEmptyState", "OcelleFact", "OcelleFacts", "OcelleFormInput", "OcelleFormSelect", "OcelleIcon", "OcelleListDetail", "OcelleNotice", "OcellePageHeader", "OcellePersonalRail", "OcelleProgress", "OcelleScroller", "OcelleSectionHeader", "OcelleTooltip", "OcelleWorkflowBoard", "OcelleWorkflowLane"];
+    expect(Object.keys(module)).toEqual(names);
+    expect(names.map((name) => typeof module[name])).toEqual(names.map(() => "function"));
   });
 });

@@ -1,0 +1,42 @@
+
+ RUN  v5.0.5 <repo>
+
+ ❯ |elements (chromium)| packages/elements/test/overflow-host.test.ts (8 tests | 1 failed) 3764ms
+   ❯ ocelle-test-overflow-host, a new box in place of the old one (O3-03, T069) (4)
+     × guard: after the swap, a focusout in the old frame leaves a tabindex the host set on that frame: the old frame's focusout listener is gone 317ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |elements (chromium)| packages/elements/test/overflow-host.test.ts > ocelle-test-overflow-host, a new box in place of the old one (O3-03, T069) > guard: after the swap, a focusout in the old frame leaves a tabindex the host set on that frame: the old frame's focusout listener is gone
+AssertionError: expected { focused: true, left: null, …(1) } to deeply equal { focused: true, left: null, …(1) }
+
+Failure screenshot:
+  - .vitest/attachments/failure-screenshots/overflow-host.test.ts/ocelle-test-overflow-host--a-new-box-in-place-of-the-old-one--O3-03--T069----guard--after-the-swap--a-focusout-in-the-old-frame-leaves-a-tabindex-the-host-set-on-that-frame--the-old-frame-s-focusout-listener-is-gone.png
+
+- Expected
++ Received
+
+  {
+    "focused": true,
+    "left": null,
+-   "tabindex": "0",
++   "tabindex": null,
+  }
+
+ ❯ packages/elements/test/overflow-host.test.ts:128:124
+    126|     document.getElementById("before")?.focus();
+    127|     await driver.settle();
+    128|     expect({ focused, left: host().shadowRoot?.activeElement ?? null, …
+       |                                                                                                                            ^
+    129|   });
+    130|
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=ac948532:5237:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 7 passed (8)
+   Start at  04:22:45
+   Duration  4.48s (tests 96%, worker 3%, import 1%)
+

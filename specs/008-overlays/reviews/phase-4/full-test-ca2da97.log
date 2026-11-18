@@ -1,0 +1,10 @@
+$ node gates/bin/test.ts
+gates/test/integration/axe.test.ts:51: unit-tests: axe gate (gates/bin/axe.ts) audits the repository's 88 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029): AssertionError: expected { code: 1, stdout: [ …(3) ], …(1) } to deeply equal { code: +0, …(2) }
+gates/test/integration/axe.test.ts:61: unit-tests: axe gate (gates/bin/axe.ts) fails a story with an unlabelled button in both themes, one critical button-name finding each, naming its selector (US3 scenario 2): AssertionError: expected { code: 1, stdout: [ …(5) ], …(1) } to deeply equal { code: 1, stdout: [ …(3) ], …(1) }
+packages/elements/test/browser/drawer.test.ts:37: unit-tests: ocelle-drawer on the strict-CSP fixture with the browser build (US2) Close control: a native button named by close-label holding the close icon, at least --ocelle-target-min in both axes, the token focus ring when focused by keyboard (FR-006): AssertionError: expected { observed: { …(8) }, …(1) } to deeply equal { observed: { …(8) }, …(1) }
+unit-tests: 3 of 5041 tests failed
+[ELIFECYCLE] Test failed. See above for more details.
+
+real	12m14.943s
+user	11m38.018s
+sys	2m41.362s

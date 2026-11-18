@@ -1,7 +1,7 @@
 // The token source (FR-008, research.md R-01, data-model.md § Token): every token of spec Appendix A as a record, in
 // the order of its tables. Each record's use (Appendix A's "Use" column) is the comment beside it, not data
 // (PLAN-TESTABILITY-1-003 (a)). A derived token (FR-002) writes its source as var(--ocelle-<name>) and lists it in
-// `ref`; a foreground colour carries its contrast kind and intended grounds (A.8 and the ink-on-state-ground pairs of 010 research R-04: 154 required pairs per theme).
+// `ref`; a foreground colour carries its contrast kind and intended grounds (A.8 and the ink-on-state-ground pairs of 010 research R-04: 163 required pairs per theme).
 // `source` is the records with the overrides of overrides.ts applied; the generator, the build and the gates read it.
 // No type assertion wraps the records or the ground lists (`as const`, `satisfies`): Stryker does not mutate inside
 // one, so the values would go untested (op 004). `tokenRecords` keeps the names literal and checks each record instead.
@@ -45,6 +45,14 @@ export const records = tokenRecords([
   { name: "color-ink-soft", group: "colour", value: { light: "#3F3A33", dark: "#CFC9BE" }, contrast: { kind: "text", grounds: main } },
   // muted text
   { name: "color-ink-muted", group: "colour", value: { light: "#5E584F", dark: "#A39D92" }, contrast: { kind: "text", grounds: main } },
+  // eyebrow text, the muted ink (011)
+  {
+    name: "color-eyebrow",
+    group: "colour",
+    value: { light: "var(--ocelle-color-ink-muted)", dark: "var(--ocelle-color-ink-muted)" },
+    ref: { light: ["color-ink-muted"], dark: ["color-ink-muted"] },
+    contrast: { kind: "text", grounds: main },
+  },
   { name: "color-rule", group: "colour", value: { light: "#D9D3C7", dark: "#3A342B" } }, // decorative, never a control boundary
   { name: "color-rule-strong", group: "colour", value: { light: "#B9B1A2", dark: "#4D463A" } }, // decorative
   // inputs, buttons, chips; on accent-low, inset, hover-bg and the state grounds controls use color-accent-strong (#5 rule 1)
@@ -140,6 +148,9 @@ export const records = tokenRecords([
   { name: "font-weight-strong", group: "type", value: "600" },
   { name: "font-weight-display", group: "type", value: "800" },
   { name: "tracking-display", group: "type", value: "-0.03em" }, // display letter spacing
+  { name: "font-size-eyebrow", group: "type", value: "var(--ocelle-font-size-xs)", ref: ["font-size-xs"] }, // eyebrows, 12 px (011)
+  { name: "font-weight-eyebrow", group: "type", value: "var(--ocelle-font-weight-strong)", ref: ["font-weight-strong"] }, // eyebrows (011)
+  { name: "tracking-eyebrow", group: "type", value: "0.08em" }, // eyebrow letter spacing (011)
 
   // A.3 Space, shape, size (theme-independent)
   { name: "space-1", group: "space", value: "0.25rem" },
@@ -153,6 +164,8 @@ export const records = tokenRecords([
   { name: "space-9", group: "space", value: "3rem" },
   { name: "space-10", group: "space", value: "4rem" },
   { name: "gutter", group: "space", value: "var(--ocelle-space-4)", ref: ["space-4"] }, // page and dialog gutter
+  // the scroller's fade depth and focus clearance (009)
+  { name: "scroller-fade-size", group: "space", value: "var(--ocelle-space-7)", ref: ["space-7"] },
   { name: "radius-1", group: "shape", value: "2px" }, // small marks: dots, focus corners
   { name: "radius-2", group: "shape", value: "4px" }, // the one general radius
   { name: "radius-row", group: "shape", value: "6px" }, // rows and cards
@@ -170,6 +183,8 @@ export const records = tokenRecords([
   { name: "size-avatar", group: "size", value: "1.6rem" },
   { name: "size-rail-item", group: "size", value: "2.5rem" },
   { name: "size-visually-hidden", group: "size", value: "1px" },
+  // the tooltip bubble's maximum inline size: about 40 characters of font-size-sm (008 research.md R-09)
+  { name: "tooltip-max-inline", group: "size", value: "18rem" },
 
   // A.4 Shell and measure (theme-independent)
   { name: "shell-topbar-height", group: "shell", value: "3.25rem" },
@@ -192,8 +207,15 @@ export const records = tokenRecords([
   { name: "dialog-max-inline", group: "shell", value: "calc(100vw - 2 * var(--ocelle-gutter))", ref: ["gutter"] },
   // the viewport's block size minus two gutters (unit from the console prototype, research.md R-05)
   { name: "dialog-max-block", group: "shell", value: "calc(100dvh - 2 * var(--ocelle-gutter))", ref: ["gutter"] },
+  // the drawer's inline size: the sidebar's width, which #12's personal drawer replaces at narrow widths
+  // (spec-kitty-design#450; 008 research.md R-09)
+  { name: "drawer-inline", group: "shell", value: "var(--ocelle-shell-sidebar-width)", ref: ["shell-sidebar-width"] },
   // decision bar
   { name: "bar-block-narrow", group: "shell", value: "calc(2 * var(--ocelle-target-min) + 3 * var(--ocelle-space-2))", ref: ["target-min", "space-2"] },
+  { name: "lane-min-width", group: "shell", value: "10rem" }, // a board lane's minimum and flex basis (009)
+  { name: "list-track-width", group: "shell", value: "18rem" }, // list-detail's list pane (009)
+  { name: "list-detail-collapse", group: "shell", value: "40rem" }, // list-detail's default collapse-below (009)
+  { name: "list-detail-inspector-collapse", group: "shell", value: "60rem" }, // list-detail's default inspector-below (009)
 
   // A.5 Elevation (theme-dependent) and motion (theme-independent); light shadows and ring widths from the console
   // prototype (research.md R-05)
@@ -225,6 +247,8 @@ export const records = tokenRecords([
   { name: "motion-fast", group: "motion", value: "120ms" }, // 0ms under reduced motion
   { name: "motion-base", group: "motion", value: "200ms" }, // 0ms under reduced motion
   { name: "easing-standard", group: "motion", value: "cubic-bezier(0.22, 1, 0.36, 1)" },
+  // the tooltip's hover delay; not 0ms under reduced motion, because a delay is not motion (008 research.md R-09)
+  { name: "tooltip-delay", group: "motion", value: "500ms" },
 ]);
 
 export const source: readonly TokenRecord[] = applyOverrides(records, overrides);

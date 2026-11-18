@@ -425,7 +425,7 @@ export const noticeScenarios: readonly NoticeScenario[] = [
         });
         announced(driver, snapshots, [assertive("Saved details")], `US1-12${focused ? " focused link" : ""}: announcements`);
         const link = (await driver.axSubtree("n")).filter((node) => node.role === "link").map((node) => node.name);
-        assert.deepEqual({ focus: await driver.focusPath(), link }, { focus: focused ? ["a#l"] : [], link: ["details"] }, "US1-12: the link");
+        assert.deepEqual({ focus: await driver.focusChain(), link }, { focus: focused ? ["a#l"] : [], link: ["details"] }, "US1-12: the link");
       },
     }),
   ),
@@ -610,7 +610,7 @@ export const noticeScenarios: readonly NoticeScenario[] = [
       });
       announced(driver, snapshots, [polite("Run failed View run")], "US1-15 alert to status, focused link: announcements");
       const link = (await driver.axSubtree("n")).filter((node) => node.role === "link").map((node) => node.name);
-      assert.deepEqual({ focus: await driver.focusPath(), link, role: await driver.hostRole("n") }, { focus: ["a#l"], link: ["View run"], role: "status" }, "US1-15 alert to status, focused link");
+      assert.deepEqual({ focus: await driver.focusChain(), link, role: await driver.hostRole("n") }, { focus: ["a#l"], link: ["View run"], role: "status" }, "US1-15 alert to status, focused link");
     },
   },
   {
@@ -794,8 +794,8 @@ export const noticeScenarios: readonly NoticeScenario[] = [
     run: async (driver, tag) => {
       await driver.mount(`<button id="before" type="button">Before</button>${el(tag, 'id="n"', '<ocelle-icon id="i" name="arrow-end" label="Error"></ocelle-icon> <span id="b">Run failed.</span> <a id="l" href="#run">View run</a>')}`);
       const nodes = (await driver.axSubtree("n")).filter((node) => node.role === "link" || node.role === "image").map(({ role, name }) => ({ role, name }));
-      await driver.press("before", "Tab");
-      assert.deepEqual({ nodes, focus: await driver.focusPath(), icon: await driver.computed("i", "color"), text: await driver.computed("b", "color") }, {
+      await driver.pressOn("before", "Tab");
+      assert.deepEqual({ nodes, focus: await driver.focusChain(), icon: await driver.computed("i", "color"), text: await driver.computed("b", "color") }, {
         nodes: [
           { role: "image", name: "Error" },
           { role: "link", name: "View run" },

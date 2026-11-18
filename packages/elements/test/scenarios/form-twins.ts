@@ -142,10 +142,10 @@ function enterRow(index: number): FormScenario {
       if (row === undefined) throw new Error(`no Enter row ${String(index)}`);
       await driver.mount(form(row.element(tag)) + form(row.native, "g"));
       for (const id of row.fill) await driver.type(id, typed);
-      await driver.press(row.enter[0], "Enter");
-      const element = { submitted: await driver.submit("f"), focus: await driver.focusPath() };
-      await driver.press(row.enter[1], "Enter");
-      const native = { submitted: await driver.submit("g"), focus: await driver.focusPath() };
+      await driver.pressOn(row.enter[0], "Enter");
+      const element = { submitted: await driver.submit("f"), focus: await driver.focusChain() };
+      await driver.pressOn(row.enter[1], "Enter");
+      const native = { submitted: await driver.submit("g"), focus: await driver.focusChain() };
       const label = name.slice(0, name.indexOf(":"));
       assert.deepEqual({ element: element.submitted, native: native.submitted }, { element: row.expected, native: row.expected }, label);
       // Enter leaves focus in the field it was pressed in; with a failed constraint the validation focuses that field.
@@ -163,9 +163,9 @@ export const twinScenarios: readonly FormScenario[] = [
       await driver.mount(form(`<input id="m" name="lane">${input(tag, 'id="t" name="title"')}`));
       await driver.type("m", "Todo");
       await driver.type("t", typed);
-      await driver.press("t", "Enter");
+      await driver.pressOn("t", "Enter");
       const inElement = await driver.submit("f");
-      await driver.press("m", "Enter");
+      await driver.pressOn("m", "Enter");
       const inNative = await driver.submit("f");
       assert.deepEqual({ inElement, inNative }, { inElement: null, inNative: [["lane", "Todo"], ["title", typed]] }, "US2-21 mixed");
     },
@@ -247,10 +247,10 @@ export const restoreInProcess = {
   run: async (driver: InProcessDriver, tag: string, base: abstract new (...args: never[]) => unknown): Promise<void> => {
     await driver.mount(form(input(tag, 'id="t" name="title" value="draft"')));
     assert.deepEqual(await driver.instanceOf("t", base), true, "SC-003 restore in process: the host is an OcelleFormInput");
-    await driver.listen(["t"], ["ocelle-form-input-change", "input"]);
+    await driver.listenFor(["t"], ["ocelle-form-input-change", "input"]);
     await driver.call("t", "formStateRestoreCallback", typed, "restore");
     assert.deepEqual(
-      { value: await driver.property("t", "value"), shown: await driver.propertyIn("t", parts.control, "value"), data: await driver.formData("f"), heard: await driver.heard() },
+      { value: await driver.property("t", "value"), shown: await driver.propertyIn("t", parts.control, "value"), data: await driver.formData("f"), heard: await driver.heardEvents() },
       { value: typed, shown: typed, data: [["title", typed]], heard: [] },
       "SC-003 restore in process",
     );
@@ -299,8 +299,8 @@ function selectTwinRow(row: SelectRow): FormScenario {
       const wrap = (content: string): string => (row.fieldset === true ? `<fieldset disabled>${content}</fieldset>` : content);
       await driver.mount(form(wrap(select(tag, `id="t" ${row.attributes}`, row.options))) + form(wrap(nativeSelect(`id="n" ${row.attributes}`, row.options)), "g"));
       if (row.choose) {
-        await driver.press("t", "ArrowDown");
-        await driver.press("n", "ArrowDown");
+        await driver.pressOn("t", "ArrowDown");
+        await driver.pressOn("n", "ArrowDown");
       }
       if (row.reset === true) {
         await driver.reset("f");
@@ -328,8 +328,8 @@ export const selectTwinScenarios: readonly FormScenario[] = [
       await driver.mount(
         form(select(tag, 'id="t" name="lane" form="other"', choices), "main") + form("", "other") + form(nativeSelect('id="n" name="lane" form="other2"', choices), "main2") + form("", "other2"),
       );
-      await driver.press("t", "ArrowDown");
-      await driver.press("n", "ArrowDown");
+      await driver.pressOn("t", "ArrowDown");
+      await driver.pressOn("n", "ArrowDown");
       const seen = {
         element: { other: await driver.formData("other"), main: await driver.formData("main"), form: await driver.ids("t", "form") },
         native: { other: await driver.formData("other2"), main: await driver.formData("main2"), form: await driver.ids("n", "form") },
@@ -345,8 +345,8 @@ export const selectTwinScenarios: readonly FormScenario[] = [
         return { form: await driver.ids(id, "form"), main: await driver.formData("main"), value: await driver.property(id, "value"), willValidate: validity.willValidate, valid: validity.valid };
       };
       await driver.mount(form("", "main") + select(tag, 'id="t" name="lane"', choices) + nativeSelect('id="n" name="lane"', choices));
-      await driver.press("t", "ArrowDown");
-      await driver.press("n", "ArrowDown");
+      await driver.pressOn("t", "ArrowDown");
+      await driver.pressOn("n", "ArrowDown");
       const chosen = { element: await observe("t"), native: await observe("n") };
       await driver.mount(form("", "main") + select(tag, 'id="t" name="lane" required', placeholder) + nativeSelect('id="n" name="lane" required', placeholder));
       const empty = { element: (await driver.validity("t")).valueMissing, native: (await driver.validity("n")).valueMissing };
@@ -368,8 +368,8 @@ export const selectRestorePage = "no-store/form-select-restore.html";
 export const selectRestoreScenario = {
   name: "US3-7 (US2-16), SC-003 select history restore: a choice made on a no-store page is restored by back navigation into a new document, shown and submitted, as its native twin",
   run: async (driver: FixtureDriver): Promise<void> => {
-    await driver.press("t", "ArrowDown");
-    await driver.press("n", "ArrowDown");
+    await driver.pressOn("t", "ArrowDown");
+    await driver.pressOn("n", "ArrowDown");
     const persisted = await driver.navigateAwayAndBack();
     const element = { value: await driver.property("t", "value"), shown: await driver.propertyIn("t", parts.control, "value"), data: await driver.formData("f") };
     const native = { value: await driver.property("n", "value"), data: await driver.formData("g") };
@@ -392,10 +392,10 @@ export const selectRestoreInProcess = {
   run: async (driver: InProcessDriver, tag: string, base: abstract new (...args: never[]) => unknown): Promise<void> => {
     await driver.mount(form(select(tag, 'id="t" name="lane"', choices)));
     assert.deepEqual(await driver.instanceOf("t", base), true, "SC-003 select restore in process: the host is an OcelleFormSelect");
-    await driver.listen(["t"], ["ocelle-form-select-change", "input"]);
+    await driver.listenFor(["t"], ["ocelle-form-select-change", "input"]);
     await driver.call("t", "formStateRestoreCallback", "done", "restore");
     assert.deepEqual(
-      { value: await driver.property("t", "value"), shown: await driver.propertyIn("t", parts.control, "value"), data: await driver.formData("f"), heard: await driver.heard(), focus: await driver.focusPath() },
+      { value: await driver.property("t", "value"), shown: await driver.propertyIn("t", parts.control, "value"), data: await driver.formData("f"), heard: await driver.heardEvents(), focus: await driver.focusChain() },
       { value: "done", shown: "done", data: [["lane", "done"]], heard: [], focus: [] },
       "SC-003 select restore in process",
     );

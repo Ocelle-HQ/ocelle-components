@@ -42,6 +42,11 @@ const fragments = [
   "The top bar, the icon rail and the personal rail use the chrome tokens in both themes",
   "Digests are shown in groups of four",
   "In light mode the ochre fill is never the only mark of a state",
+  // 008 (tasks.md T033, T035): the drawer's inline size
+  "`--ocelle-drawer-inline` is the inline size of `ocelle-drawer`, the sidebar width `--ocelle-shell-sidebar-width`",
+  // 008 (tasks.md T045, T047): the tooltip's delay and maximum inline size
+  "`--ocelle-tooltip-delay` (`500ms`) is how long the pointer rests on a trigger before `ocelle-tooltip` shows its bubble; it is not set to 0 under `prefers-reduced-motion: reduce`, because a delay is not motion",
+  "`--ocelle-tooltip-max-inline` (`18rem`) is the maximum inline size of the tooltip's bubble",
   "A control drawn on `color-accent-low`, `color-inset`, `color-hover-bg`, `color-danger-bg`, `color-warning-bg`, `color-success-bg`, `color-info-bg` or `color-neutral-bg` is bordered with `color-accent-strong`",
 ];
 

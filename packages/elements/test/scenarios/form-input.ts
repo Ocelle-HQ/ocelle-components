@@ -178,8 +178,8 @@ export const formInputScenarios: readonly FormScenario[] = [
       const label = await driver.box("t", parts.label);
       const control = await driver.box("t", parts.control);
       assert.deepEqual({ drawn: drawn(label), above: drawn(control) && label.y + label.height <= control.y + 0.5 }, { drawn: true, above: true }, "US2-1: the label above the field");
-      await driver.click("t", { x: label.x - host.x + label.width / 2, y: label.y - host.y + label.height / 2 });
-      const clicked = await driver.focusPath();
+      await driver.clickPoint("t", { x: label.x - host.x + label.width / 2, y: label.y - host.y + label.height / 2 });
+      const clicked = await driver.focusChain();
       await driver.blur();
       await driver.batch([{ op: "focus", id: "t" }]);
       const node = await field(driver, "t");
@@ -207,24 +207,24 @@ export const formInputScenarios: readonly FormScenario[] = [
     name: "US2-3: each typed character sends one input event at the host with the new value; leaving the field or Enter sends one ocelle-form-input-change with { value }, bubbling and composed, none without a change, and Enter then leaving the field sends one, before the submission",
     run: async (driver, tag) => {
       await driver.mount(form(input(tag, 'id="t" name="title" label="Title"') + '<button id="go">Go</button>'));
-      await driver.listen(["t"], ["input", "ocelle-form-input-change"]);
-      await driver.listen(["f"], ["submit"]);
+      await driver.listenFor(["t"], ["input", "ocelle-form-input-change"]);
+      await driver.listenFor(["f"], ["submit"]);
       const typedEvent = (value: string): unknown => ({ type: "input", at: "t", target: "t", value, detail: 0, bubbles: true, composed: true });
       const change = (value: string): unknown => ({ type: "ocelle-form-input-change", at: "t", target: "t", value, detail: { value }, bubbles: true, composed: true });
       await driver.type("t", "ab");
-      const typing = await driver.heard();
+      const typing = await driver.heardEvents();
       await driver.blur();
-      const left = await driver.heard();
+      const left = await driver.heardEvents();
       await driver.batch([{ op: "focus", id: "t" }]);
       await driver.blur();
-      const unchanged = await driver.heard();
+      const unchanged = await driver.heardEvents();
       // A focus of the host selects the field's whole value (delegatesFocus), as Tab does: End puts the caret after it.
-      await driver.press("t", "End");
+      await driver.pressOn("t", "End");
       await driver.type("t", "c");
-      await driver.press("t", "Enter");
+      await driver.pressOn("t", "Enter");
       const submitted = await driver.submit("f");
       await driver.blur();
-      const entered = await driver.heard();
+      const entered = await driver.heardEvents();
       assert.deepEqual(
         { typing, left, unchanged, entered, submitted },
         {
@@ -243,10 +243,10 @@ export const formInputScenarios: readonly FormScenario[] = [
     name: 'US2-4: with value="draft", typing then a form reset brings back "draft" with no change event; a script value "x" is shown and in the form data, with no event',
     run: async (driver, tag) => {
       await driver.mount(form(input(tag, 'id="t" name="title" label="Title" value="draft"')));
-      await driver.listen(["t"], ["ocelle-form-input-change"]);
+      await driver.listenFor(["t"], ["ocelle-form-input-change"]);
       const initial = await driver.property("t", "value");
       // A focus of the host selects the field's whole value: End puts the caret after it, so the typed text is added.
-      await driver.press("t", "End");
+      await driver.pressOn("t", "End");
       await driver.type("t", "x");
       const typed = await driver.property("t", "value");
       await driver.reset("f");
@@ -254,7 +254,7 @@ export const formInputScenarios: readonly FormScenario[] = [
       await driver.setProperty("t", "value", "x");
       const script = { value: await driver.property("t", "value"), shown: await driver.propertyIn("t", parts.control, "value"), data: await driver.formData("f") };
       assert.deepEqual(
-        { initial, typed: typed !== "draft" && String(typed).length === 6, reset, script, heard: await driver.heard() },
+        { initial, typed: typed !== "draft" && String(typed).length === 6, reset, script, heard: await driver.heardEvents() },
         { initial: "draft", typed: true, reset: { value: "draft", shown: "draft", data: [["title", "draft"]] }, script: { value: "x", shown: "x", data: [["title", "x"]] }, heard: [] },
         "US2-4",
       );
@@ -270,7 +270,7 @@ export const formInputScenarios: readonly FormScenario[] = [
       const validity = await driver.validity("t");
       const native = await driver.validity("n");
       const reportedValid = await driver.call("t", "reportValidity");
-      const focus = await driver.focusPath();
+      const focus = await driver.focusChain();
       await driver.type("t", "Fix lane");
       const after = await driver.validity("t");
       assert.deepEqual(
@@ -291,8 +291,8 @@ export const formInputScenarios: readonly FormScenario[] = [
           kind: "maxlength",
           attributes: 'maxlength="3" value="abcdef"',
           steps: async (id: string) => {
-            await driver.press(id, "End");
-            await driver.press(id, "Backspace");
+            await driver.pressOn(id, "End");
+            await driver.pressOn(id, "Backspace");
           },
           flag: "tooLong",
         },
@@ -331,8 +331,8 @@ export const formInputScenarios: readonly FormScenario[] = [
       await driver.mount(input(tag, `id="t" ${stepping}`) + `<input id="n" ${stepping}>`);
       const steps: { element: unknown; native: unknown }[] = [];
       for (const key of ["ArrowUp", "ArrowUp", "ArrowUp", "ArrowDown"]) {
-        await driver.press("t", key);
-        await driver.press("n", key);
+        await driver.pressOn("t", key);
+        await driver.pressOn("n", key);
         steps.push({ element: await driver.property("t", "value"), native: await driver.property("n", "value") });
       }
       seen.number = steps;
@@ -413,7 +413,7 @@ export const formInputScenarios: readonly FormScenario[] = [
         await driver.mount(form(kind === "disabled" ? markup : `<fieldset id="s" disabled>${markup}</fieldset>`));
         const observe = async (): Promise<unknown> => {
           await driver.batch([{ op: "focus", id: "t" }]);
-          const focus = await driver.focusPath();
+          const focus = await driver.focusChain();
           const node = await field(driver, "t", control);
           await driver.blur();
           return { focus, disabled: node.disabled, data: await driver.formData("f") };
@@ -444,7 +444,7 @@ export const formInputScenarios: readonly FormScenario[] = [
       await driver.type("t", "x");
       const node = await field(driver, "t");
       assert.deepEqual(
-        { focus: await driver.focusPath(), value: await driver.property("t", "value"), readonly: node.readonly, data: await driver.formData("f") },
+        { focus: await driver.focusChain(), value: await driver.property("t", "value"), readonly: node.readonly, data: await driver.formData("f") },
         { focus: inField(tag), value: "draft", readonly: true, data: [["title", "draft"]] },
         "US2-12",
       );
@@ -456,8 +456,8 @@ export const formInputScenarios: readonly FormScenario[] = [
       await driver.mount(`<label for="t" id="l">Title</label>${kind.markup(tag, 'id="t" name="title"')}`);
       const name = (await field(driver, "t", kind)).name;
       const label = await driver.box("l");
-      await driver.click("l", { x: label.width / 2, y: label.height / 2 });
-      assert.deepEqual({ name, focus: await driver.focusPath(), labels: await driver.ids("t", "labels") }, { name: "Title", focus: inField(tag, "t", kind), labels: ["l"] }, "US2-13 external label");
+      await driver.clickPoint("l", { x: label.width / 2, y: label.height / 2 });
+      assert.deepEqual({ name, focus: await driver.focusChain(), labels: await driver.ids("t", "labels") }, { name: "Title", focus: inField(tag, "t", kind), labels: ["l"] }, "US2-13 external label");
     },
   },
   {
@@ -466,7 +466,7 @@ export const formInputScenarios: readonly FormScenario[] = [
       await driver.mount(`<label for="t" id="l">Title</label>${kind.markup(tag, 'id="t" name="title"')}`);
       await driver.batch([{ op: "text", id: "l", text: "Card title" }]);
       const node = await field(driver, "t", kind);
-      assert.deepEqual({ name: node.name, focused: node.focused, focus: await driver.focusPath() }, { name: "Card title", focused: false, focus: [] }, "US2-13 rename");
+      assert.deepEqual({ name: node.name, focused: node.focused, focus: await driver.focusChain() }, { name: "Card title", focused: false, focus: [] }, "US2-13 rename");
     },
   },
   {
@@ -523,24 +523,24 @@ export const formInputScenarios: readonly FormScenario[] = [
     name: "US2-14: Tab focuses the field once (the host is no second tab stop) with the token focus ring, Shift+Tab leaves it, and element.focus() focuses the field",
     run: async (driver, tag, kind = inputKind) => {
       await driver.mount(`<button id="before">Before</button>${kind.markup(tag, 'id="t" label="Title"')}<button id="after">After</button>`);
-      await driver.press("before", "Tab");
-      const tabbed = await driver.focusPath();
+      await driver.pressOn("before", "Tab");
+      const tabbed = await driver.focusChain();
       const ring = {
         style: await driver.computedIn("t", parts.control, "outline-style"),
         width: await driver.computedIn("t", parts.control, "outline-width"),
         colour: await driver.computedIn("t", parts.control, "outline-color"),
         offset: await driver.computedIn("t", parts.control, "outline-offset"),
       };
-      await driver.press("t", "Tab");
-      const next = await driver.focusPath();
-      await driver.press("after", "Shift+Tab");
-      const back = await driver.focusPath();
-      await driver.press("t", "Shift+Tab");
-      const left = await driver.focusPath();
+      await driver.pressOn("t", "Tab");
+      const next = await driver.focusChain();
+      await driver.pressOn("after", "Shift+Tab");
+      const back = await driver.focusChain();
+      await driver.pressOn("t", "Shift+Tab");
+      const left = await driver.focusChain();
       await driver.blur();
       await driver.call("t", "focus");
       assert.deepEqual(
-        { tabbed, ring, next, back, left, focused: await driver.focusPath() },
+        { tabbed, ring, next, back, left, focused: await driver.focusChain() },
         {
           tabbed: inField(tag, "t", kind),
           ring: { style: "solid", width: px("focus-width"), colour: tokenColour("color-focus", "light"), offset: px("focus-offset") },
@@ -562,7 +562,7 @@ export const formInputScenarios: readonly FormScenario[] = [
       const boundary = await driver.computedIn("t", parts.control, "border-block-start-color");
       const width = await driver.computedIn("t", parts.control, "border-block-start-width");
       const mark = { width: await driver.computedIn("e", parts.control, "border-block-start-width"), visible: system.includes(await driver.computedIn("e", parts.control, "border-block-start-color")), text: await driver.computedIn("e", parts.error, "color") };
-      await driver.press("before", "Tab");
+      await driver.pressOn("before", "Tab");
       const ring = { colour: await driver.computedIn("t", parts.control, "outline-color"), style: await driver.computedIn("t", parts.control, "outline-style") };
       const highlight = await driver.resolveColour("Highlight");
       const canvasText = await driver.resolveColour("CanvasText");
@@ -586,7 +586,7 @@ export const formInputScenarios: readonly FormScenario[] = [
     run: async (driver, tag, kind = inputKind) => {
       let state: unknown;
       const snapshots = await loaded(driver, tag, form(fl('id="t" name="title" label="Title" error="Title is taken"', kind)), async () => {
-        const focus = await driver.focusPath();
+        const focus = await driver.focusChain();
         const shown = drawn(await driver.box("t", parts.error));
         await driver.batch([{ op: "focus", id: "t" }]);
         const node = await field(driver, "t", kind);
@@ -624,7 +624,7 @@ export const formInputScenarios: readonly FormScenario[] = [
         const snapshots = await insertion(driver, swapped(tag, kind), how);
         announced(driver, only(snapshots, ["t"]), [polite("Title is taken", "t")], `US2-20 ${how}: announcements`);
         announced(driver, only(snapshots, ["l"]), [polite("Lane is required", "l")], `US2-20 ${how}: announcements`);
-        assert.deepEqual(await driver.focusPath(), [], `US2-20 ${how}: focus`);
+        assert.deepEqual(await driver.focusChain(), [], `US2-20 ${how}: focus`);
       },
     }),
   ),
@@ -787,7 +787,7 @@ export const formInputScenarios: readonly FormScenario[] = [
         // ocelle-first-load-N-T subclass tag in process (in-process.ts registerFirstLoad). Either form is accepted in
         // both harnesses, every other tag fails; the inner entry is exact, so focus is on the native input.
         const host = new RegExp(`^(?:${tag}|ocelle-first-load-\\d+-\\d+)#t$`, "u");
-        const focus = (await driver.focusPath()).map((each, index) => (index === 0 && host.test(each) ? "<first-load host>#t" : each));
+        const focus = (await driver.focusChain()).map((each, index) => (index === 0 && host.test(each) ? "<first-load host>#t" : each));
         state = { error: drawn(await driver.box("t", parts.error)), description: (await field(driver, "t", kind)).description, focus };
       });
       announced(driver, only(snapshots, ["t"]), [polite("Title is taken", "t")], "Edge case, error while focused: announcements");

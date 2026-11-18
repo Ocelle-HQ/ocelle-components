@@ -1,0 +1,53 @@
+Scope: all 5 workspace projects
+✓ Lockfile passes supply-chain policies (verified 2d ago)
+Lockfile is up to date, resolution step is skipped
+Packages are hard linked from the content-addressable store to the virtual store.
+  Content-addressable store is at: /root/.local/share/pnpm/store/v11
+  Virtual store is at:             node_modules/.pnpm
+Packages: +502
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 502, reused 502, downloaded 0, added 502, done
+.../node_modules/rs-module-lexer postinstall$ node postinstall.js
+.../node_modules/rs-module-lexer postinstall: Done
+
+devDependencies:
++ @custom-elements-manifest/analyzer 0.11.0
++ @eslint/js 10.0.1
++ @stryker-mutator/core 10.1.1
++ @stryker-mutator/typescript-checker 10.1.1
++ @stryker-mutator/vitest-runner 10.1.1
++ @types/node 26.6.5
++ @vitest/browser-playwright 5.0.5
++ @vitest/eslint-plugin 1.6.28
++ axe-core 4.14.0
++ eslint 10.13.0
++ jiti 2.7.0
++ parse5 8.0.1
++ playwright 1.64.1
++ pngjs 7.0.0
++ postcss 8.5.31
++ postcss-lit 1.4.1
++ postcss-selector-parser 7.1.7
++ postcss-value-parser 4.2.0
++ stylelint 17.16.0
++ typescript 6.0.3
++ typescript-eslint 8.72.0
++ vite 8.3.5
++ vitest 5.0.5
+
+Done in 279ms using pnpm v12.16.1
+$ node gates/bin/setup-offline.ts
+setup: installed offline; Chromium at /opt/pw-browsers/chromium-1248/chrome-linux64/chrome
+$ node gates/bin/test.ts
+packages/elements/test/node/changelog.test.ts:25: unit-tests: packages/elements/CHANGELOG.md: the workflow layouts are a minor change (FR-035) states under Unreleased: `ocelle-scroller`, `ocelle-workflow-board`, `ocelle-workflow-lane` and `ocelle-list-detail`, their attributes, properties, slots and entry points, `remeasure()`, the overflow-region module convention and the container-tier convention are additions to the public surface: a minor change: AssertionError: expected ' ### Added - `ocelle-icon`, an icon o…' to contain '`ocelle-scroller`, `ocelle-workflow-b…'
+packages/elements/test/node/changelog.test.ts:35: unit-tests: packages/tokens/CHANGELOG.md: the six layout tokens are a minor change (FR-035) states under Unreleased: `--ocelle-lane-min-width`, `--ocelle-list-track-width`, `--ocelle-list-detail-collapse`, `--ocelle-list-detail-inspector-collapse`, `--ocelle-scroller-fade-size` and `--ocelle-tracking-caps`, the six tokens of the workflow layouts of `@ocelle/elements`, are additions to the token names: a minor change: AssertionError: expected ' **First release: hosts and Ocelle el…' to contain '`--ocelle-lane-min-width`, `--ocelle-…'
+packages/elements/test/node/readme.test.ts:292: unit-tests: packages/elements/README.md states: The layout elements are tested in four frames that stand for screens, each a block box of a stated inline size on a page whose viewport is wider than the frame, so the element's own measurement is tested, not the viewport's; the figures assume a 16 px root font size: AssertionError: expected '# @ocelle/elements The Ocelle web com…' to contain 'The layout elements are tested in fou…'
+packages/elements/test/node/readme.test.ts:292: unit-tests: packages/elements/README.md states: Frame W, 876 px: the 1280 px window beside a context sidebar, 1280 px less the rail (52 px), the sidebar (320 px) and two gutters (32 px): AssertionError: expected '# @ocelle/elements The Ocelle web com…' to contain 'Frame W, 876 px: the 1280 px window b…'
+packages/elements/test/node/readme.test.ts:292: unit-tests: packages/elements/README.md states: Frame R, 1196 px: the 1280 px window with the rail only: AssertionError: expected '# @ocelle/elements The Ocelle web com…' to contain 'Frame R, 1196 px: the 1280 px window …'
+packages/elements/test/node/readme.test.ts:292: unit-tests: packages/elements/README.md states: Frame N, 636 px: the narrow tier, at a 720 px viewport (`--ocelle-shell-collapse-sidebar`, 45rem), where the sidebar has collapsed: AssertionError: expected '# @ocelle/elements The Ocelle web com…' to contain 'Frame N, 636 px: the narrow tier, at …'
+packages/elements/test/node/readme.test.ts:292: unit-tests: packages/elements/README.md states: Frame S, 288 px: the 320 px reflow width: AssertionError: expected '# @ocelle/elements The Ocelle web com…' to contain 'Frame S, 288 px: the 320 px reflow wi…'
+packages/elements/test/node/readme.test.ts:292: unit-tests: packages/elements/README.md states: WebKit is not measured for the layout elements either: the tab stop of `ocelle-scroller` and `ocelle-workflow-board` while they overflow, their arrow keys, their focus handover when overflow ends and `ocelle-list-detail`'s focus moves are untested there: AssertionError: expected '# @ocelle/elements The Ocelle web com…' to contain 'WebKit is not measured for the layout…'
+packages/elements/test/node/readme.test.ts:292: unit-tests: packages/elements/README.md states: These elements are screen layouts. In print, a board shows its lanes as the browser lays them out, and content off-screen in a scroller is not printed: AssertionError: expected '# @ocelle/elements The Ocelle web com…' to contain 'These elements are screen layouts. In…'
+packages/elements/test/node/readme.test.ts:292: unit-tests: packages/elements/README.md states: Loading, error and disabled states do not apply to `ocelle-scroller`, `ocelle-workflow-board`, `ocelle-workflow-lane` and `ocelle-list-detail`: they are layout elements, with no such state and no story for one: AssertionError: expected '# @ocelle/elements The Ocelle web com…' to contain 'Loading, error and disabled states do…'
+unit-tests: 10 of 3773 tests failed
+[ELIFECYCLE] Test failed. See above for more details.

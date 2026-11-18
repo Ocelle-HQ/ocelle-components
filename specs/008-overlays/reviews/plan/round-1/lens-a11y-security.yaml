@@ -1,0 +1,150 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: a11y-security
+# Checked and found sound (no finding): FR-047 / R-11 placement through a constructable sheet (numbers only, no string
+# reaches CSS); WAAPI writes no style attribute; timers take functions; no I/O and no network in any element; no new
+# dependency (plan § Technical Context, package.json unchanged at base e6404b7); `color-focus` is contrast-checked on
+# the chrome grounds (packages/tokens/src/source.ts:79), so the drawer's close-control ring on `ground="chrome"` is
+# covered; `ocelle-icon` is hidden from the tree when unnamed (packages/elements/src/naming.ts `expose`); the
+# describes-mode id reference stays in one tree (R-13); the tooltip Escape veto of an overlay close holds by the
+# keydown preventDefault measured in R-02. Probe of R-02 with focus on non-focusable dialog text (scratch probe a.cjs,
+# Chromium 153.0.8010.12): a click on dialog text focuses the <dialog> itself, so the keydown path still sees Escape
+# and the veto survives three presses; no finding there. Probe of a hover-shown manual popover when a click opens a
+# modal over the trigger: pointerleave fires, so R-12's hide runs; no finding there.
+findings:
+  - id: PLAN-A11Y-SECURITY-1-001
+    severity: 3
+    title: "The explicit Tab wrap makes a long body with no focusable content unreachable by keyboard (FR-018, WCAG 2.1.1)"
+    evidence:
+      - artifact: "spec.md § FR-018: 'the body is reachable by keyboard scrolling when it overflows'. research.md R-04: 'keydown Tab on the last tabbable element (or Shift+Tab on the first) moves focus to the other end and prevents the default', with the walk in src/focusable.ts listing only tabbable elements. No section of research, data-model or contracts gives the body a tabindex or any mechanism for FR-018."
+      - code: "Scratch probe b.cjs (Chromium 153): a modal <dialog> with a header close button and a body div (overflow:auto, 60 paragraphs, nothing focusable). Initial focus = close button; one Tab moves focus to the body scroller (Chromium's keyboard-focusable scrollers, shipped in Chromium 130, above nothing the plan relies on); with focus on the close button PageDown and ArrowDown leave body.scrollTop at 0; body.tabIndex reads -1 (no attribute)."
+    claim: |
+      In the 'long scrolling body' story shape with prose only, the walk's only tabbable element is the close control,
+      so Tab on it is 'Tab on the last tabbable' and the plan wraps to the close control and prevents the default:
+      the native move to the scroller never happens, and with focus on the close control the body does not scroll.
+      At the Chromium 120 floor and on WebKit there are no keyboard-focusable scrollers at all, so the body is never
+      reachable. A keyboard user cannot read the rest of the dialog or drawer body: WCAG 2.1.1 fails, and axe's
+      `scrollable-region-focusable` (impact serious) is the rule that flags such a region, against SC-004.
+    remedies:
+      - "Plan/research R-04: the body part gets tabindex=\"0\" while it overflows and has no tabbable content (a ResizeObserver/slotchange check), is included in the walk, and takes the dialog's name as a region only if that is wanted; add test-matrix rows 'long body, no focusable content: Tab reaches the body and ArrowDown scrolls it' for dialog and drawer, and keep the long-body stories under axe."
+
+  - id: PLAN-A11Y-SECURITY-1-002
+    severity: 3
+    title: "Nested overlays: an outer overlay's keydown listener on its <dialog> also receives the inner overlay's Escape and Tab"
+    evidence:
+      - artifact: "research.md R-02: 'the overlay handles Escape on keydown (bubble phase, on its <dialog>), calls preventDefault() and runs the request path'; R-04 Tab wrap on keydown likewise. No topmost check and no defaultPrevented check is stated, although spec FR-010 says 'while the overlay is the topmost open one' and FR-023 / Edge Cases 'Two overlays' say Escape acts only on the topmost."
+      - code: "Scratch probe c.cjs (Chromium 153): custom element x-ov (open shadow root, <dialog><slot>), an inner x-ov slotted inside an outer one, both showModal(), focus on a button in the inner. One Escape logs 'inner keydown defaultPrevented=false' then 'outer keydown defaultPrevented=true': the composed keydown passes through the outer <dialog> because the inner host is slotted inside it."
+    claim: |
+      #12's personal drawer or a kitty-mission-ui flyout that opens a dialog from its own content (the Edge Case and
+      the test-matrix row 'nested dialog over drawer') puts the dialog's host inside the drawer's slot. As planned,
+      one Escape dispatches both close requests and, unless both are cancelled, closes both overlays; focus then has
+      no overlay to return into (FR-009/FR-023 broken). The outer Tab handler also runs on Tabs inside the inner
+      overlay and may call focus() on an element the inner modal has made inert. A keyboard user loses their place.
+    remedies:
+      - "Research R-02/R-04: each overlay acts on keydown only when the event has not been handled by an inner overlay (check and set a handled marker or defaultPrevented) and its own <dialog> is the topmost modal (e.g. it matches :modal and no later-opened ocelle overlay is open, tracked in a module-level stack); add a test row with the dialog slotted inside the drawer asserting one request event, the drawer still open and focus back inside it."
+
+  - id: PLAN-A11Y-SECURITY-1-003
+    severity: 2
+    title: "Below the WebKit 17 floor the bubble is painted inline and showPopover() throws; the plan's 'no bubble shows' has no mechanism"
+    evidence:
+      - artifact: "plan.md § Risks: 'Linux webview below WebKit 17: no bubble shows. Names are unaffected.' research.md R-10: the bubble is <div part=\"bubble\" popover=\"manual\">, and 'The user-agent [popover] styles (inset, margin, border, padding, background, colour, overflow) are reset' — display is not mentioned; R-10 itself says Kitty Desktop's Linux WebKitGTK version is unverified."
+      - code: "Reasoning from the HTML standard: in an engine without the Popover API the popover attribute is unknown, so the UA rule '[popover]:not(:popover-open) { display: none }' does not exist and the div renders in flow inside the tooltip host; a static rule using :popover-open is an invalid selector there and is dropped whole; HTMLElement.prototype.showPopover is undefined, so calling it throws a TypeError in the pointer and focus handlers."
+    claim: |
+      The plan names this platform as an operator risk and states the outcome as 'no bubble shows'. As designed the
+      outcome would be the bubble's text painted permanently next to every icon-only nav item and every truncated
+      pill tag, breaking #12's rail and #7's ellipsis layout, while being aria-hidden — plus an exception on every
+      hover. The risk statement the operator approves at the plan gate is therefore wrong.
+    remedies:
+      - "Research R-10/R-11: the static sheet hides the bubble by default with a selector valid in every engine (e.g. [part=bubble] { display: none }) and shows it only via a separate :popover-open rule; the element checks 'showPopover' in HTMLElement.prototype once and does nothing when absent; plan § Risks states that mechanism."
+
+  - id: PLAN-A11Y-SECURITY-1-004
+    severity: 2
+    title: "Reflow at 400 % zoom: pinned heading and footer can leave the dialog body with no height (WCAG 1.4.10)"
+    evidence:
+      - artifact: "spec.md US1-10 / FR-018: 'the heading and footer stay visible and the body scrolls'; R-08: a long label wraps; data-model: footer slot of actions. No minimum body size or short-viewport rule appears in research or data-model."
+      - code: "packages/tokens/src/source.ts:194 dialog-max-block = calc(100dvh - 2 * var(--ocelle-gutter)), gutter = space-4 = 1rem (source.ts:148,155); target-min = 2.75rem (source.ts:166). At 1280 x 1024 and 400 % zoom the viewport is 320 x 256 CSS px, so the panel is at most 224 px tall; a header row of at least 44 px (close control) plus a wrapped heading and a footer of two 44 px buttons that wrap to two rows leave the body near or at 0 px."
+    claim: |
+      WCAG 1.4.10 requires content to be usable at 320 CSS px without two-dimensional scrolling loss; a body squeezed
+      to zero by fixed header and footer cannot be scrolled into view, so the dialog's content (the Open project
+      list) becomes unreachable for low-vision users at high zoom. Nothing in the plan or test matrix covers a short
+      viewport.
+    remedies:
+      - "Design: the body keeps a token-derived minimum block size (e.g. min-block-size: calc(3 * var(--ocelle-target-min))) and the panel itself scrolls when the viewport is shorter than header + footer + that minimum; add a test-matrix row and a story at a 320 x 256 viewport asserting the body's content is reachable."
+
+  - id: PLAN-A11Y-SECURITY-1-005
+    severity: 2
+    title: "The tabbable walk ignores rendering, so initial focus and the Tab wrap can target elements that cannot take focus"
+    evidence:
+      - artifact: "research.md R-04: the walk follows open shadow roots and slots with 'disabled, inert, hidden and tabindex=\"-1\" excluded'. Not excluded: display:none or visibility:hidden by CSS, closed <details> content, unchecked radios of a group, elements in closed shadow roots or delegatesFocus hosts."
+      - code: "Reasoning: focus() on a non-rendered element is a no-op; R-04 calls focus() and preventDefault() on the Tab wrap, so when the walk's first element is CSS-hidden, Tab on the real last element does nothing (focus stuck going forward), and initial focus silently stays wherever showModal's own steps put it instead of FR-007's target. The test matrix lists 'a scenario per exclusion' only for the four listed exclusions."
+    claim: |
+      Footer and body content commonly carry CSS-hidden conditional actions and radio groups (a folder picker with
+      options). The keyboard model then deviates from FR-007/FR-008 without any test failing.
+    remedies:
+      - "R-04: the walk excludes elements with no layout box (getClientRects().length === 0) or computed visibility other than visible, treats a radio group as one stop, and after each focus() call checks the deep active element and falls through to the next candidate; add matrix rows for a CSS-hidden first element and a radio group."
+
+  - id: PLAN-A11Y-SECURITY-1-006
+    severity: 2
+    title: "Forced colours for ocelle-dialog is neither designed nor in the test matrix"
+    evidence:
+      - artifact: "contracts/checks.md § Test matrix, dialog row: no 'forced colours' entry; the drawer row has 'forced colours'. research.md gives forced-colours rules only for the bubble (R-09 'In forced colours the bubble gets CanvasText / Canvas and a border'); for the panel, its ::backdrop and the close control's focus indicator (spec FR-021, US1-9) only plan § Constitution Check's 'Forced colours: system colours and visible boundaries'."
+      - code: "packages/elements/test/commands.ts:141-167: emulateForcedColors exists, so the test is cheap. packages/tokens/src/source.ts:102: color-overlay is a translucent rgb() value whose forced-colours rendering on ::backdrop is not stated."
+    claim: |
+      US1-9 and FR-021 require a visible panel boundary, system colours and a backdrop that does not hide the boundary
+      for the dialog; the constitution makes forced colours non-negotiable. No test proves it for the dialog and no
+      design states what the panel border, backdrop and close-control ring become, so a dialog whose only boundary
+      is a shadow (elevation-raised, dropped in forced colours) would ship.
+    remedies:
+      - "Research: state the forced-colours rules for the panel (border-width solid CanvasText), ::backdrop and the close control ring; checks.md: add 'forced colours (panel boundary, close-control focus indicator)' to the dialog row."
+
+  - id: PLAN-A11Y-SECURITY-1-007
+    severity: 2
+    title: "A host aria-label on the role-less overlay host is never exercised by a story, axe or a tree assertion"
+    evidence:
+      - artifact: "data-model § Overlay: 'aria-label | observed host attribute ... Decides the name alone'; R-08 copies it to the inner <dialog>. data-model § Stories and checks.md list no story or matrix row with a host aria-label; FR-044's tree assertions cover US1-8, which uses label only."
+      - code: "packages/elements/README.md:187-196 (Host ARIA): the rule was built for ocelle-icon, whose host gets role img through ElementInternals (src/naming.ts expose) so its aria-label is allowed. The overlay host has no role: an aria-label on a generic element is prohibited in ARIA 1.2 and the host would expose a second named node beside the dialog."
+    claim: |
+      The path the convention most needs proven for overlays (aria-label on a host with no role, plus the same name on
+      the inner dialog) is untested: a duplicated announcement or an axe aria-prohibited-attr result would only be
+      found by a consumer. US1-8 'one node with role dialog ... named' does not cover the host-aria-label case.
+    remedies:
+      - "Add a matrix row and a story with host aria-label (and with both label and aria-label) asserting in the AX tree exactly one named node for the overlay (the modal dialog) and running axe on it."
+      - "Or drop host aria-label support for the overlays (label only) and say so in the README § Host ARIA and FR-005."
+
+  - id: PLAN-A11Y-SECURITY-1-008
+    severity: 1
+    title: "Reduced motion depends only on the motion-base token being zeroed at :root"
+    evidence:
+      - artifact: "research.md R-06: 'The duration is read from the computed --ocelle-motion-base on the host ... A duration of 0 ms skips animate()'; no matchMedia check."
+      - code: "packages/tokens/src/generate.ts:281: the zeroing is ':root { --ocelle-motion-base: 0ms }' inside @media (prefers-reduced-motion: reduce); any host that sets --ocelle-motion-base on an ancestor of the overlay overrides it."
+    claim: |
+      FR-020 says the overlays MUST NOT animate under reduced motion; as planned, a host-level token override (a
+      legitimate token use) turns the drawer's full-width slide back on for users who asked for no motion.
+    remedies:
+      - "R-06: skip animate() when matchMedia('(prefers-reduced-motion: reduce)').matches as well as when the duration is 0; add a test with reduced motion emulated and --ocelle-motion-base overridden on an ancestor."
+
+  - id: PLAN-A11Y-SECURITY-1-009
+    severity: 1
+    title: "A tapped or clicked text input matches :focus-visible, so a tooltip around it shows on tap, against US3-10"
+    evidence:
+      - artifact: "spec.md US3-10: a tap 'focuses it without keyboard focus ... no bubble shows'; FR-031 and R-12 equate keyboard focus with :focus-visible; R-12 'A tap's focus does not match :focus-visible'."
+      - code: "Selectors 4 / UA heuristics (Chromium, WebKit): an element that supports keyboard input (text <input>, <textarea>, contenteditable) matches :focus-visible whatever the modality, so R-12's check passes on a tap or click."
+    claim: |
+      The plan's claim is true for buttons and links only; wrapping a text field shows the bubble on tap and on mouse
+      click, and US3-10 cannot pass for such a trigger.
+    remedies:
+      - "State the limit in the README and spec (triggers are buttons/links; for text fields focus shows the bubble) or also track the last pointerType on pointerdown and suppress a show for focus that follows a touch pointerdown; add a test row either way."
+
+  - id: PLAN-A11Y-SECURITY-1-010
+    severity: 1
+    title: "The describes-mode light-DOM node: how its text and id are written is unspecified"
+    evidence:
+      - artifact: "research.md R-13: 'the tooltip adds one light-DOM child to its host, <span slot=\"ocelle-description\" role=\"tooltip\" hidden id=\"<generated>\">text</span>' and writes the id into the trigger's aria-describedby."
+      - code: "Reasoning: this is the only place an element writes into DOM it does not own; `text` is host data. Written through innerHTML (or Lit's render into the host) it would parse markup, and a non-unique generated id in a tree that already holds that id would point the description at the wrong node."
+    claim: |
+      Small but security-relevant: the plan should pin text insertion to textContent and the id to an ocelle-prefixed,
+      per-document-unique value, and test that markup in `text` is not parsed.
+    remedies:
+      - "R-13: create the span with createElement and set textContent; id 'ocelle-tooltip-desc-<counter>' checked unique in the trigger's root; add a test with text '<b>x</b>' asserting the description is the literal string and the span has no element children."
