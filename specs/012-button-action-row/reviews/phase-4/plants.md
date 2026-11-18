@@ -65,4 +65,7 @@ plants.md with its run link."
 - Local evidence for fix-2: shards 1 to 3 (all 239 non-visual plants, the two new plants included), above; the real
   token source's stylesheet is byte-identical before and after bd9aaca, so no `visual` or `axe` plant sees a change.
 - `--affected 55ec410` selects all 312 plants (shared gate source) and was not run locally.
-- Full evidence: the CI Plants run on the pushed head. Run link: _to be added after the push_.
+- Full evidence: the CI Plants run on the pushed head `ac2d73a` (after merging main `b594b7e`, mission 009, so 244
+  non-visual plants in 4 shards: 77 shards in all). Run
+  [44298568583](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/44298568583), attempt 1: every Plants
+  shard, the Plants verdict and all 148 jobs passed. Longest gate step 524 s (shard 39), none over 570 s.
