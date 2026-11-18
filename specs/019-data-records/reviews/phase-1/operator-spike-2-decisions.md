@@ -15,3 +15,12 @@
 - **Q-S2-1, a focusable element above the pinned `<thead>` (for example a link in the caption;
   `reviews/phase-1/spike-2-fixes.md`):** (a) for an element before the pinned box, the block clearance's upper bound
   is the box's client block-start edge, so the box scrolls back to show it.
+
+## T082 addendum questions (spike-2.md § addendum), 2026-11-18, human:jeroennouwsdev
+
+- **Q-A1, `scrollbar-gutter: stable` loses 15 px of inline scroll range:** (a) drop the gutter; the box has
+  `overflow-y: auto` only while it overflows in the block axis, and the scrollbar's room is read as
+  `offsetWidth − clientWidth` (measured clean in both scrollbar modes and directions).
+- **Q-A2, the caption-link "past the caption" body passes at red:** (a) move US1-26's past-caption half and T079's
+  element-before body to the partly scrolled position (link 2 to 12 px above the edge), and keep the fully-past
+  position as a paired assertion the platform alone meets.
