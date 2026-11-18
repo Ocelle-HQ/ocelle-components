@@ -251,7 +251,9 @@ No red commit: the three findings are records and documentation (round-2-fixes.m
   count of 76 stories is exceeded, and that the plant-design triage record is pending; the model figures (about
   588 s, about 4 stories of headroom, about 11.9 runner-hours) are removed. The Complexity Tracking row of
   specs/006-storybook-workbench/plan.md (line 637) is planner territory: its replacement text was handed to the
-  orchestrator to route, and it is not edited in this commit.
+  orchestrator to route, and it is not edited in this commit. The routed edits to specs/006-storybook-workbench/plan.md
+  landed in 904e5cf (the row) and 226e29e (the Complexity Tracking intro), and the split-count approval wording in
+  8dc8147 (added at fix round 3, O4-03).
 - **T071 (O2-03)**: the `brand-rules` row of gates/README.md keeps the pinned "reduced motion at 0ms for every motion
   duration of the token source (012 changed 002's rule (f), which named two)" and adds the exception (a `-delay` token
   with `delay: true`) and the literal-`ms` rule, with misplaced markers and non-`ms` durations as findings (plan
@@ -259,3 +261,31 @@ No red commit: the three findings are records and documentation (round-2-fixes.m
   phase 4 fix-2's `f-delay-marker-misplaced` and `f-motion-not-ms`, each with a one-line description.
 - **T072 checks**: `pnpm test` **7061 tests passed in 208 files** (the gates-readme test included; 1964 s);
   `gate:typecheck` no type error; `gate:lint` 402 files, no finding.
+
+## Fix round 3 (operator round from landing round 2: O4-01 to O4-05; tasks.md T073 to T077)
+
+Documentation and comments only, no behaviour change, so no red commit (tasks.md, landing operator round of
+2026-11-18). Resolutions: round-4-fixes.md.
+
+- **T073 (O4-01, O4-02)**: gates/README.md (plant sharding) and the `shardSize` comment of gates/lib/plant-runner.ts
+  now state 194 stories after main b594b7e (009) was merged, in 77 shards (4 + 48 + 25), and cite CI run 44298568583
+  on ac2d73a (attempt 1, 148/148 jobs): gate step at most 524 s (shard 39), none at or over 570 s, 24972 s in all,
+  6.94 runner-hours; shard job wall time at most 692 s (shard 21), 29 shards over 570 s, 34745 s in all, 9.65
+  runner-hours over the 77 shard jobs (round-4.md's 9.71 also counts the Plants plan and verdict jobs). Run
+  44098238937 stays, labelled as before 009's merge (171 stories, 76 shards). The split-count approval is
+  8dc8147's wording: put to the operator at 012 phase 1's review and accepted at phase 2. "Exceeded" and "triage
+  record pending" are kept. The 006 plan.md part was made by the planner at cb1ae7ba (not edited here); its wording
+  and figures are the reference, and the three places agree. No gates-readme test pins the changed text.
+- **T074 (O4-04)**: the `otherShardSize` comment says 80 deals the repository's 244 into 4 shards (232 into 3 before
+  009's merge). Comment only.
+- **T075 (O4-03)**: round-2-fixes.md (O2-02 row) and § Fix round 2 (T070 bullet) above keep their sentences and add
+  that the routed 006 plan.md edits landed in 904e5cf (the row) and 226e29e (the Complexity Tracking intro), and the
+  approval wording in 8dc8147.
+- **T076 (O4-05)**: reviews/phase-4/plants.md: the operator's verbatim "all 312 plants" stays, with a bracketed note
+  after it (312 before 009's merge, 317 after it); the `--affected 55ec410` bullet now says 317 plants.
+  `pnpm run gate:plants -- --affected 55ec410 --list` rerun for this fix: "317 of 317 plants selected".
+- **T077 checks**: `pnpm test` **7753 tests passed in 232 files** (the gates-readme and plant-runner tests included).
+  A first full run exited 2 with "Vitest reported errors outside tests: Failed to run the test
+  packages/elements/test/list-detail.test.ts" and no test failure. That file then passed alone (55 tests), and the
+  full rerun passed, so the first exit was a worker start failure, not a test failure. `gate:typecheck` no type
+  error; `gate:lint` 446 files, no finding.

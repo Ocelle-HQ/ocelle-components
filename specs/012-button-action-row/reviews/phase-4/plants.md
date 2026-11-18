@@ -60,11 +60,13 @@ and the reduced-motion block of the real source is the same three durations).
 Recorded by the orchestrator, 2026-11-18. Asked as multiple choice; the operator (human:jeroennouwsdev) answered
 "Shards + CI stand (Recommended)": "Record as your decision that the shard run plus the byte-identical stylesheet
 stands for this round, and that the CI Plants run on the pushed head (all 312 plants) is the full evidence, added to
-plants.md with its run link."
+plants.md with its run link." [Note, phase 6 fix-3 (O4-05): the total was 312 plants before main b594b7e (009) was
+merged and is 317 after it.]
 
 - Local evidence for fix-2: shards 1 to 3 (all 239 non-visual plants, the two new plants included), above; the real
   token source's stylesheet is byte-identical before and after bd9aaca, so no `visual` or `axe` plant sees a change.
-- `--affected 55ec410` selects all 312 plants (shared gate source) and was not run locally.
+- `--affected 55ec410` selects all 317 plants (shared gate source; `--affected 55ec410 --list` prints "317 of 317
+  plants selected" after 009's merge: 244 + 48 + 25; it was 312 before that merge) and was not run locally.
 - Full evidence: the CI Plants run on the pushed head `ac2d73a` (after merging main `b594b7e`, mission 009, so 244
   non-visual plants in 4 shards: 77 shards in all). Run
   [44298568583](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/44298568583), attempt 1: every Plants

@@ -264,19 +264,24 @@ export function aloneDecision(plantPath: string, storyTheme: StoryTheme, alone: 
 
 /**
  * The most `visual` (or `axe`) plants in one shard (plan decisions 23 and 30): 1, one plant per shard (012 research.md
- * R-13, plan decision 15). Its split count of 76 stories is exceeded: at the 171 stories after 012's landing, CI run
- * 44098238937 measured the plant gate step at most 516 s per shard and 22953 s in all, and the job wall time at most
- * 862 s and 34810 s in all (012 reviews/phase-6/ci-run.md); the plant-design triage record is pending (operator,
- * 2026-11-17, 012 phase 6 round 2 O2-01). It was 8, then 4 for the measuring run, then 3 (approved by the operator in
- * answer to tasks.md T046l, "A' size 3", up to its split count of 25 stories). Size 1 is the floor: `plantShards`
- * keeps each plant whole, so no lower setting remains (006 plan.md, Complexity Tracking, "Plant roots hold every
- * repository story").
+ * R-13, plan decision 15). Its split count of 76 stories (put to the operator at 012 phase 1's review and accepted at
+ * phase 2, 012 tasks.md T067) is exceeded: at the 194 stories after main b594b7e (009) was merged, in 77 shards
+ * (4 + 48 + 25), CI run 44298568583 on ac2d73a (012 reviews/phase-6/round-4.md O4-01) measured the plant gate step at
+ * most 524 s per shard (shard 39), none at or over 570 s, and 24972 s in all (6.94 runner-hours), and the shard job's
+ * wall time at most 692 s (shard 21), 29 shards over 570 s, and 34745 s in all (9.65 runner-hours). Before that merge
+ * (171 stories, 76 shards), CI run 44098238937 measured at most 516 s and 22953 s in all for the gate step, and at
+ * most 862 s and 34810 s in all for the job wall time (012 reviews/phase-6/ci-run.md); the plant-design triage record
+ * is pending (operator, 2026-11-17, 012 phase 6 round 2 O2-01). It was 8, then 4 for the measuring run, then 3
+ * (approved by the operator in answer to tasks.md T046l, "A' size 3", up to its split count of 25 stories). Size 1 is
+ * the floor: `plantShards` keeps each plant whole, so no lower setting remains (006 plan.md, Complexity Tracking,
+ * "Plant roots hold every repository story").
  */
 export const shardSize = 1;
 
 /**
  * The most other plants (of the gates other than `visual` and `axe`, and the registry's) in one shard (plan decision
- * 30, operator decision 2026-11-12, "Split its plants"): 80, which deals the repository's 232 into 3 shards.
+ * 30, operator decision 2026-11-12, "Split its plants"): 80, which deals the repository's 244 into 4 shards (232 into
+ * 3 before main b594b7e, 009, was merged).
  */
 export const otherShardSize = 80;
 

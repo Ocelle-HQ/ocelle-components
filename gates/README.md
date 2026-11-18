@@ -58,11 +58,16 @@ plant in one process, the registry check first), which stays what runs locally:
   The approved sizes: 80, approved by the operator (006 plan decision 30), and **1** (012 research.md R-13, 012 plan
   decision 15; it was 3, approved by decision 30 up to its split count of 25 stories). Size 1 is the last
   lever: a plant is never split, so no lower size remains, and a `visual` shard's time still grows with every
-  repository story. Its split count, **76 stories** (approved by the operator at 012 phase 1's review), is exceeded:
-  the repository holds **171 stories** after 012's landing, in 76 shards (3 + 48 + 25). Measured on CI run
-  44098238937 (012 reviews/phase-6/ci-run.md): the plant gate step peaks at **516 s** (shard 40) and totals 22953 s,
-  **6.38 Plants runner-hours** per CI run; the whole job's wall time peaks at **862 s** (shard 33) and totals 34810 s,
-  **9.67 runner-hours**, the excess being runner setup that day. The triage record for a plant design whose shard time
+  repository story. Its split count, **76 stories** (put to the operator at 012 phase 1's review and accepted at
+  phase 2: 012 tasks.md T067; 012 reviews/phase-2/notes.md, "Story count", "decided by the operator: proceed"), is
+  exceeded: the repository holds **194 stories** after main b594b7e (009) was merged, in 77 shards (4 + 48 + 25).
+  Measured on CI run 44298568583 on ac2d73a (attempt 1, all 148 jobs green; 012 reviews/phase-6/round-4.md O4-01):
+  the plant gate step peaks at **524 s** (shard 39), none at or over 570 s, and totals 24972 s, **6.94 Plants
+  runner-hours** per CI run; the shard job's wall time, runner setup included, peaks at **692 s** (shard 21), with 29
+  shards over 570 s, and totals 34745 s, **9.65 runner-hours** over the 77 shard jobs. Before 009's merge (171 stories,
+  76 shards: 3 + 48 + 25), CI run 44098238937 (012 reviews/phase-6/ci-run.md) measured a gate step of at most 516 s
+  (shard 40), 22953 s in all (6.38 runner-hours), and a job wall time of at most 862 s (shard 33), 34810 s in all
+  (9.67 runner-hours), the excess being runner setup that day. The triage record for a plant design whose shard time
   does not grow with the story count is pending (operator, 2026-11-17, 012 phase 6 round 2 O2-01: offered as a
   follow-up issue) (006 plan.md, Complexity Tracking, "Plant roots hold every repository story").
 - `--shard <k>` judges only shard `k`'s plants as the single run would, with no registry or structural check, prints
