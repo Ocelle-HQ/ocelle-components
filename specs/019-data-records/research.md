@@ -864,7 +864,18 @@ phase's red commit (tasks T00x per phase); a gap goes to the operator, and the s
 data-table mapping rows read "pending inventory" and T013 asserts that statement. When the operator supplies the
 modifiers and states with a count each (role names only), the planner records them here in a documentation commit of
 its own, and the rows and their statements are written test first before the pull request lands; SC-001 stays open
-until then (T076). Inventory: pending.
+until then (T076).
+
+**Source (operator, 2026-11-18).** The spec-kitty design library is open source (MIT). Its variant set for the three
+families this mission replaces (`.sk-data-table`, `.sk-event-timeline`, `sk-evidence-chain`) is recorded in
+`sources/spec-kitty-design-inventory.md`, from a read-only clone at commit 19fb6a2 (version 1.0.0): every modifier,
+state, structure role, story, property and part, with its path and what it does, role names only and no code
+(constitution VI). It is the library's own variant set, not kitty-mission-ui's usage: it has no counts and does not
+say which variants kitty-mission-ui uses (built on 1.1.0-rc.10, a later line). The clone holds nothing of #470, #517
+or #533 (its newest cited issue is #419). Whether this set stands in for T005, T028 and T054, and how each variant it
+holds and the spec does not cover is mapped, are the operator's questions in `reviews/phase-1/inventory-questions.md`;
+until they are answered the mapping rows stay as T005 states. Inventory: the library's variant set
+(`sources/spec-kitty-design-inventory.md`); kitty-mission-ui usage counts not supplied.
 
 ## R-17 A request to 009's owner: a pinned start box out of the start fade (PLAN-A11Y-SECURITY-1-002)
 
