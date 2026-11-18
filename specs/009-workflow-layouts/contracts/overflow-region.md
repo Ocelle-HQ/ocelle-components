@@ -1,5 +1,7 @@
 # Contract: the overflow-region module (internal)
 
+> **Amended by mission 019** for hosts that set its opt-in block-axis option: see `specs/019-data-records/contracts/overflow-region-block-axis.md`; for every other host this contract stands as written.
+
 The internal module that gives any element a scroll box that is a tab stop and a named group (or region) only while it
 overflows, with edge state, arrow keys, focus clearance and focus handover (spec FR-001 to FR-011, FR-014; research.md
 R-02 to R-07). This feature's `ocelle-scroller` and `ocelle-workflow-board` use it. #13's `ocelle-code-block` is its

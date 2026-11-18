@@ -12,6 +12,25 @@ built browser build) and `test/scenarios/driver.ts` (the shared driver interface
 - in process, on the element source, through `test/<element>.test.ts` (the `elements` project, mutated);
 - on the built browser build, on strict-CSP fixture pages, through `test/browser/<element>.test.ts`.
 
+**The classic-scrollbar suite (Q-A3 (a), 2026-11-18).** Both harnesses run headless Chromium with Playwright's
+`--hide-scrollbars`, so the block-axis scrollbar's room (`offsetWidth − clientWidth`) is 0 in every shared body.
+`packages/elements/test/browser/data-table-scrollbar.test.ts` (phase 1's red, T080) runs in the `elements-browser`
+project (`vitest.config.ts`: node environment, `packages/elements/test/browser/**/*.test.ts`, the global setup
+`test/browser/global-setup.ts` that builds the browser build into a temporary directory) as 009's
+`test/browser/scrollbar.test.ts` does: its own `beforeAll` takes `inject("elementsFixture")`, serves it with
+`test/browser/serve.ts`, and launches Playwright's `chromium` with `ignoreDefaultArgs: ["--hide-scrollbars"]` (and
+`OCELLE_CHROMIUM_PATH` as `executablePath` when set), so an overflowing box draws a classic scrollbar that takes
+inline room. Its bodies drive, through `fixtureDriver`, the data table's strict-CSP fixture page (the one T010's
+`test/browser/data-table.test.ts` visits) and, for the mask figure, the block-axis test host's page (the one T079's
+`test/browser/overflow-region-block.test.ts` visits), assert zero CSP violations and no console message, and each
+asserts first, as a precondition, `data-axis="both"` and a room above 0 (15 px measured, spike-2 § Addendum), so a
+run that silently hides the scrollbars fails instead of passing vacuously. They are file-local bodies, not shared
+scenario bodies: the in-process harness cannot draw a classic scrollbar. 009's `scrollbar.test.ts` is not edited.
+Stryker mutates the in-process `elements` project only, where the room is 0, so a mutant that drops or misreads the
+room survives there; the mutation record (T025) names the classic-suite body that kills it (file and test name) and
+the element-plant run that shows it failing, as 009's landing review L1-02 settled for its classic-scrollbar case; it
+is not recorded as equivalent.
+
 Each body is named after its scenario (`US1-4 …`) or its edge case. Every acceptance scenario and every edge case
 that states behaviour has a body (FR-052).
 
@@ -21,7 +40,12 @@ that states behaviour has a body (FR-052).
 as `computed(target, property)`, where a target is an id or `{ id, inner }` (013's id form is the string case);
 `reducedMotion(mode)`, with `"reduce"` or `"no-preference"`; and the focus readers `focused()` (013, the innermost
 focused element's id), `deepActive()` (009, the deep active element as a string, `"s1 >> div.region-box"`) and
-`activeElement()` (011, the same element as a record `{ name, id, hosts }`). The one addition is `itemTexts` (R-11).
+`activeElement()` (011, the same element as a record `{ name, id, hosts }`); and `hover(id, inner?)`, used for the
+row hover (US1-24). The additions are `scrollTop` and `setScrollTop` (phase 1, T079, for the block-axis option, R-18)
+and `itemTexts` (phase 2, R-11): three in all. The no-hover bodies of US1-24 (re-analysis A2 (a)) need no addition:
+they run in 008's touch context as merged, the `elements-touch` project (`*.touch.test.ts`, in process) and
+`visit(…, { touch: true })` (fixture), where Chromium matches `(hover: none)` (008 research R-14), read through the
+merged `device()`.
 
 **Layout wait (PLAN-TESTABILITY-1-007).** Every body that reads a layout after a change (a resize, an item added,
 removed, hidden or shown, a `time` or `variant` set, a table swapped) waits with 009's `settle` as merged (the
@@ -32,16 +56,18 @@ used for the lists.
 
 | Oracle | Used by | How |
 |---|---|---|
-| AX tree, table | US1-1, US1-4, US1-6, US1-7, US1-15, US1-16, the R-04 caption-text bodies, the FR-010 host `aria-label` body, the hidden-host bodies | The full Chromium AX tree: compare the element's subtree with the same table outside; region `group` and name |
+| AX tree, table | US1-1, US1-4, US1-6, US1-7, US1-15, US1-16, US1-18, US1-20, the R-04 caption-text bodies, the FR-010 host `aria-label` body, the hidden-host bodies | The full Chromium AX tree: compare the element's subtree with the same table outside, whose column headers a test-only rule gives `text-transform: uppercase` (a constructed sheet adopted by the document in the fixture harness), because Chromium names column headers by their drawn upper-case text (spike Q2 (a)); US1-1 also asserts the column headers' names in upper case ("ID", "TITLE", "LANE", "OWNER", "LINK"); region `group` and name |
 | AX tree, lists, and `itemTexts(list)` (new, R-11) | US2-1, US2-3, US2-5, US2-6, US2-10, US2-11 to US2-14 (US2-14's `slot` change included), the slotted-time edge bodies (R-10), US3-1, US3-6, US3-7, US3-10, the FR-026 bodies (no live region, landmark or heading node in the container's subtree), the hidden-host bodies | `StaticText` names under each `listitem`, joined, collapsed and trimmed. Each assertion also checks the text is not empty. US2-5, US2-6, US3-6 and US3-7 also assert the `listitem` count and that no other child of the container is in the tree. No marker or connector node is in the tree, and a DOM assertion pins `aria-hidden="true"` on every marker wrapper and connector span |
-| computed style | US1-2, US1-3, US1-10, US1-14, US2-3, US2-11, US3-2, US3-4, the `time` bodies (R-10) | `getComputedStyle` on cells, headers, caption, time (the attribute time's `part="time"` and each slotted time node, a `<b slot="time">` included), marker and chip, against the token's computed value read from a probe |
-| geometry | US1-4, US1-12, US2-2, US2-9, US2-11, US2-13, US2-14, US3-2, US3-3, US3-4, US3-5, US3-9, ordinal fit, mixed chips, the `time` bodies, the caption bodies (R-07), the shrink-to-fit bodies (R-02), the timeline connector bodies (R-10) | `getBoundingClientRect` on real elements (markers, connector spans, `<li>`, the chip, the host, the caption's line boxes through a `Range`): marker size, centring on the first line, the caption's start against the table's and its line boxes inside the box's unmasked extent, the host's inline size in a shrink-to-fit host, each timeline connector clear of both dots with `space-1` gaps (0.5 px) and `elementFromPoint` inside each dot returning the marker, connector ends inside the chain, chip block size < `size-step`, the ordinal box inside the marker's padding box, connector centres on the row's marker centre (0.5 px). US1-12, US2-9 and US3-9 assert inline-start edges against the container's: under `dir="rtl"` the first column's, the markers' and the first step's right edges are at the container's right edge, and lines fill towards the left. US3-5 asserts the long step's box stays inside the chain |
-| scroll width | US1-4, US2-4, US3-3, US3-5, 640 px bodies, the flex-item and grid-item bodies (R-02) | page `scrollWidth === innerWidth` |
-| keyboard | US1-5, US1-8, US1-13, US2-7, FR-011 link in a step | See the table below |
+| computed style | US1-2, US1-3, US1-10, US1-14, US1-17 (the header cells' ground), US1-22 (`text-align`, `font-variant-numeric`, the eyebrow type kept), US1-23 and US1-24 (each cell's `background-color` against `--ocelle-color-inset` or `--ocelle-color-hover-bg`, and `cursor`), US1-26 and US1-27 (the box's `data-block-fade` and `data-fade`, its computed `mask-image` layer count, `mask-composite` equal to the list `add, add, intersect, add` and the four `mask-size` figures, top first the block scrollbar's, the inline scrollbar's and the two fades', against the box's client size and scrollbar thicknesses; spike-2 § 3), US1-20 (no `data-axis` and `overflow-y` `hidden` while nothing overflows in the block axis, spike-2 Q-3 (c); after the test-only bound, `data-axis="both"` with `overflow-y` `auto` and the computed `scrollbar-gutter` `auto`, none reserved, Q-A1 (a)), US2-3, US2-11, US3-2, US3-4, the `time` bodies (R-10) | `getComputedStyle` on cells, headers, caption, time (the attribute time's `part="time"` and each slotted time node, a `<b slot="time">` included), marker and chip, against the token's computed value read from a probe |
+| geometry | US1-4, US1-12, US1-17 and US1-21 (the `<thead>`'s block-start edge against the box's client block-start edge once scrolled by the ring room or more, and at its at-rest position, the ring room below the edge or below the caption, back at the block start (block 1's negative inset, spike-2 Q-2 (a)); each column header's inline start against its column's cells, within 0.5 px; `elementFromPoint` at each header cell's centre returning that cell), US1-19 (the link's ring box below the header row's block-end edge and inside the box), US1-26 (the block-end fade's block-start edge, the box's client block-end edge less `.region-edge.block-end`'s block size, at or below the header row's block-end edge; in the captioned case at 320 px, against the `<thead>`'s current block-end edge, A1 (c) decided (a) after T082: in a 100 px bound no fade at rest and a fade once scrolled past the caption, in a 300 px bound a fade at rest, and a row-1 link's ring box cleared to the header's current block-end edge, spike-2 § 11; a caption link, Q-S2-1 (a): in the 300 px bound at rest `scrollTop` unchanged and `data-block-fade="end"` kept; at the partly scrolled position (Q-A2 (a): the link's border box 2 to 12 px above the client block-start edge, asserted first) `scrollTop` lower, its ring box's block-start edge at the client block-start edge, its block-end edge at or above the `<thead>`'s current block-start edge, `elementFromPoint` at its centre returning it and no jump back; and, paired, at the fully-past position (the caption under the pinned header) the link shown whole above the `<thead>`, which the platform alone meets, spike-2 § Addendum A4, A5), US1-27 (the link's ring box above the fade's block-start edge and below the header row), US1-22 (the text's line box end against the cell's content box end, through a `Range`), US2-2, US2-9, US2-11, US2-13, US2-14, US3-2, US3-3, US3-4, US3-5, US3-9, ordinal fit, mixed chips, the `time` bodies, the caption bodies (R-07), the shrink-to-fit bodies (R-02), the timeline connector bodies (R-10) | "Within 0.5 px" is inclusive everywhere (`\|difference\| ≤ 0.5`, never `< 0.5`): spike-2 § 8 measured the separated row rules exactly 0.5 px from the collapsed ones. `getBoundingClientRect` on real elements (markers, connector spans, `<li>`, the chip, the host, the caption's line boxes through a `Range`): marker size, centring on the first line, the caption's start against the table's and its line boxes inside the box's unmasked extent, the host's inline size in a shrink-to-fit host, each timeline connector clear of both dots with `space-1` gaps (0.5 px) and `elementFromPoint` inside each dot returning the marker, connector ends inside the chain, chip block size < `size-step`, the ordinal box inside the marker's padding box, connector centres on the row's marker centre (0.5 px). US1-12, US2-9 and US3-9 assert inline-start edges against the container's: under `dir="rtl"` the first column's, the markers' and the first step's right edges are at the container's right edge, and lines fill towards the left. US3-5 asserts the long step's box stays inside the chain |
+| classic scrollbar (Q-A3 (a)) | the classic-scrollbar suite (`test/browser/data-table-scrollbar.test.ts`): the sticky caption body and the RTL lift of US1-20's block-bounded pair (the data table), and T079's block-axis mask figure (the test host) | Chromium launched without `--hide-scrollbars` (§ Harnesses). Each body asserts `data-axis="both"` and the room `offsetWidth − clientWidth` of `.region-box` above 0 first. **Sticky caption**: a sticky data table at 320 px with a two-line caption (its two line boxes asserted first) and a block bound below the table's block size: `--data-table-box-size` (the computed custom property on `.region-track`, written by the element's per-instance sheet) equal to the measured `.box-size` inline size less the room (305px at 320 px, spike-2 § Addendum), and every caption line box inside the box's unmasked extent (the client inline size, less the end fade while `data-fade` is `end` or `both`) within 0.5 px; the bound lifted at run time: no `data-axis`, room 0 and the cap the measured size (320px), and set again: the room back and the cap 305px again, each read one animation frame after `settle` (never in the task of the change); no `ResizeObserver` loop error over the run. **RTL lift**: the same table under `dir="rtl"`, overflowing both ways: `scrollLeft` 0 and `data-fade="end"` at rest; at the inline range's far end (`scrollWidth − clientWidth`) `data-fade="start"` with the last column's inline end inside the client area within 0.5 px; the bound lifted (the scrollbar goes): `scrollLeft` 0 and `data-fade="end"`, and set again: the same (spike-2 § Addendum A2 measured −14 with the gutter). **Mask figure**: on T079's block-axis test host (`test/fixtures/overflow-host-block.ts`, on the fixture page T079's `test/browser/overflow-region-block.test.ts` visits), bounded so it overflows both ways, in LTR and RTL, four `mask-size` layers with the first, the block-axis scrollbar's, equal to `<room>px 100%` (not `0px`), positioned at the inline end in LTR and at the left under `dir="rtl"`, the third and fourth `<clientWidth>px <clientHeight>px`, and the computed `mask-composite` the list `add, add, intersect, add`; the bound lifted, the two-layer figures of 009's contract |
+| scroll width | US1-4, US1-21, US2-4, US3-3, US3-5, 640 px bodies, the flex-item and grid-item bodies (R-02) | page `scrollWidth === innerWidth` |
+| keyboard | US1-5, US1-8, US1-13, US1-18 (the arrows, and the keys the browser keeps, G1 (a)), US1-19, US1-26, US1-27, US2-7, FR-011 link in a step, the block-axis module bodies | See the table below |
+| pointer | US1-24, the hover halves of US1-25 | the merged driver's `hover(id, inner?)` on a body cell, then `hover(null)`, with an unhovered row in the same body as the paired assertion. US1-24's no-hover half (A2 (a)) runs in the touch context: `device().hover` false asserted first, then `touchTap` on a body cell of a striped table and `hover` on another: no cell of either row has `--ocelle-color-hover-bg`, paired with the striped even row's cells keeping `--ocelle-color-inset`; and under forced colours the tapped row's band is `Canvas` or `CanvasText` (its stripe), never `Highlight` |
 | copy | US1-9, US2-4 | 013's `copy` |
-| forced colours | US1-11, US2-8, US3-8 | `emulateMedia({ forcedColors: "active" })`. Text: a system text colour. Each mark (cell rules, the header rule below the column headers, timeline marker and connector, step ring and connector, chip outline): the border side that draws it has a foreground system colour (`CanvasText`, never the ground's `Canvas`) and a width above zero, and its border box is not empty (PLAN-A11Y-SECURITY-1-001) |
-| contrast, source | US1-11, US2-8, US3-8 | Node checks `packages/elements/test/node/records-pairs.test.ts` and `packages/styles/test/data-table-pairs.test.ts`: each colour painted is tied to a `checked` row of `pairs.json` on the nine main grounds in both themes; a removed-row fixture must fail the check (R-13) |
-| contrast, rendered | US1-11, US2-8, US3-8 | Each rendered colour (cell, header, time, content, marker, ring, ordinal, chip outline) in light and dark equals the probe-resolved value of the token the source names, and that token is then looked up in the declarations (R-13) |
+| forced colours | US1-11, US1-25, US1-28, the module's forced-colours body (T079), US2-8, US3-8 | `emulateMedia({ forcedColors: "active" })`. US1-28: the box's computed `mask-image` is `none`, and `.region-edge.block-end`'s `border-block-end` is `CanvasText` with a width above zero and a non-empty border box as wide as the frame while rows are below, and its width is zero at the block end; outside forced colours the edge's inline size is 0 (spike-2 Q-4 (a)). US1-25: the first body cell's `border-inline-start-width` equals `--ocelle-bar-width` and its colour is `CanvasText` on striped even rows, `Highlight` on the hovered row and `Canvas` otherwise; the pinned header cells' background is not transparent and their block-end border `CanvasText`. Text: a system text colour. Each mark (cell rules, the header rule below the column headers, timeline marker and connector, step ring and connector, chip outline): the border side that draws it has a foreground system colour (`CanvasText`, never the ground's `Canvas`) and a width above zero, and its border box is not empty (PLAN-A11Y-SECURITY-1-001) |
+| contrast, source | US1-11, US1-17, US1-23, US1-24, US2-8, US3-8 | Node checks `packages/elements/test/node/records-pairs.test.ts` and `packages/styles/test/data-table-pairs.test.ts`: each colour painted is tied to a `checked` row of `pairs.json` on the nine main grounds in both themes, and each ground block 1 paints (`sheet`, `inset`, `hover-bg`) is one of the nine main grounds; a removed-row fixture must fail the check (R-13) |
+| contrast, rendered | US1-11, US1-17, US1-23, US1-24, US2-8, US3-8 | Each rendered colour (cell, header, the three grounds, time, content, marker, ring, ordinal, chip outline) in light and dark equals the probe-resolved value of the token the source names, and that token is then looked up in the declarations (R-13) |
 
 **Keyboard bodies and their helpers.**
 
@@ -50,6 +76,11 @@ used for the lists.
 | US1-5 | `focus` on the box, `press("ArrowRight")`, `press("ArrowLeft")`, `scrollLeft` before and after, the fade read from `data-fade` |
 | US1-8 | `setScrollLeft(0)`, `pressTab` until the link has focus, `focused`, `scrollLeft`, `frameRecord` for the ring's box against the fade depths |
 | US1-13 | `focus` on the box, the swap, `settle`, `deepActive` (the handover target) |
+| US1-18 | `focus` on the box, `press("ArrowDown")`, `press("ArrowUp")`, a modified ArrowDown, `press("ArrowRight")` with no inline overflow; the box's block scroll position read by `scrollTop` and set by `setScrollTop`, two driver additions in phase 1's red (T079), the block-axis twins of 009's `scrollLeft` and `setScrollLeft`, each with its own test in both harnesses. The keys the browser keeps (G1 (a)): from the block start, `press("PageDown")`, `press("PageUp")`, `press("End")`, `press("Home")`, `press(" ")` and `press(" ", { shift: true })`, in that order, each from the position the previous key left, each followed by `settle`, `lastKeyPrevented()` (false), `scrollTop` (the key's direction and a non-zero move, never a fixed amount: `PageDown` and `Space` move by less than the client height, 262 px in a 300 px box in spike-2 § 10; the scroll range's end after `End`, 0 after `Home`), the box's `data-block-fade` and the `<thead>`'s block-start edge (0.5 px): at the box's client block-start edge after `PageDown`, `End` and `Space`, at its at-rest position (read before the first key) after `PageUp`, `Home` and `Shift+Space` (spike-2 Q-2 (a)); paired with `ArrowDown`'s `lastKeyPrevented()` true |
+| US1-19 | the box scrolled so row 12 is under the header, `pressTab` to the link, `focused`, `frameRecord` for the ring box against the header's block-end edge; then a link in a header cell focused, the box's block scroll unchanged |
+| US1-26 | `setScrollTop` to the end, `data-block-fade` absent; `focus` on the box, `press("ArrowUp")`, `settle`, `data-block-fade="end"` again. The caption link (Q-S2-1 (a)): `focus` on the box, `pressTab` to the link on the caption's second line, `focused`, `scrollTop` (unchanged at rest), `data-block-fade`; then `setScrollTop` to the partly scrolled position (Q-A2 (a): the link's border box 2 to 12 px above the client block-start edge, read and asserted before the key), `focus` on the box, `pressTab` again, `settle`, `scrollTop` (lower), `frameRecord` for the ring box against the client block-start edge and the `<thead>`'s current block-start edge over the sampled frames (no jump back); then `setScrollTop` past the caption (the fully-past position, the platform-alone pair), `focus` on the box, `pressTab` again, `settle`, `frameRecord` for the link shown whole above the `<thead>` and `elementFromPoint` at its centre |
+| US1-27 | `setScrollTop(0)`, `pressTab` to the link in the faded rows, `focused`, `scrollTop`, `frameRecord` for the ring box against the fade's block-start edge and the header's block-end edge |
+| the block-axis module bodies (T079) | as US1-18 (the keys the browser keeps included), US1-19, US1-26 (its caption link as the element before the pinned child) and US1-27 on the test host, plus `deepActive` for the handover when both axes stop overflowing, and for the block fallback a ring box taller than the space, then `focusout` and a `setScrollTop` of more than 1 px each bringing `data-block-fade="end"` back |
 | US2-7, FR-011 link in a step, FR-026 | `pressTab`, `focused`, `tabWalk` (the link is the only added stop) |
 
 **US1-16 runs twice (PLAN-TESTABILITY-1-011).** Once with 013's `text` on the caption's text node (a `characterData`
@@ -81,13 +112,28 @@ asserts something only the element gives, or is proven by a green-time element p
 | the hidden-host bodies (FR-001, FR-015) | at red the scaffold has no `:host` display rule, so the user-agent `[hidden]` rule hides the host anyway | the same body asserts a sibling without `hidden` renders its shadow structure (`.region-box` with the table assigned, the `<ol>`, or the item's `part="content"`); element plant: `:host([hidden])` removed must fail it at green |
 | FR-026, no landmark or heading | an empty render adds none | the same body asserts the container's named `list` is in the AX tree |
 | US2-14's `slot` change | with no element, a `<time>` child shows wherever it is written | the same body asserts `part="time"` holds the node after `slot="time"` is set and the `<li>` has `has-time`, and neither after `slot` is removed |
+| US1-20, `sticky-header` with no bound | a table with no rule has no block scroll and no tab stop anyway, and no `data-axis` | the same body asserts the table's computed `border-collapse` is `separate` and the `<thead>`'s `position` is `sticky` (the attribute took effect), and, after a test-only bound below the table's block size is set on the host, that the box carries `data-axis="both"` and scrolls in the block axis (spike-2 Q-3 (c)) |
+| US1-24's "no other row changes" and "header rows paint nothing" | no rule paints any ground | the hovered row's cells, in the same body, have `--ocelle-color-hover-bg` (on a striped even row read in the dark theme, where `hover-bg` differs from `inset`; in light they are equal, spike-2 § 8) |
+| US1-23's "odd rows paint none" | no rule paints any ground | the even rows' cells, in the same body, have `--ocelle-color-inset` |
+| US1-22's "other cells stay start-aligned" | cells are start-aligned by default | the hooked cells, in the same body, are end-aligned with their text at the content box's end |
+| the block-axis option off (T079) | 009's module never handles ArrowDown | the same host with the option on, in the same body, scrolls on ArrowDown and carries `data-axis="both"` |
+| US1-19's "a link in a header cell is not cleared" | no clearance happens without the option | the same body first asserts the body-row link is cleared below the header |
+| US1-26's "no block-end fade at the block end" and its room-rule half (Q-I4) | nothing fades in the block axis without the option | the same body first asserts `data-block-fade="end"` and the four-layer mask at the block start with rows below |
+| US1-24's no-hover half (A2 (a)) | at red no rule paints any ground | the same body asserts, in the touch context, a striped even row's cells on `--ocelle-color-inset`; element plant: the `@media (hover: hover)` guard removed must fail it at green |
+| US1-18's "the module does not prevent the keys the browser keeps" (G1 (a)) | a key nobody handles is never prevented | the same body asserts each key scrolled the box in its direction and `data-block-fade` followed, and that `ArrowDown` (the module's key) was prevented |
+| US1-26's caption link "not scrolled at rest" (Q-S2-1 (a)) | with no block clearance nothing scrolls | the same body then asserts, at the partly scrolled position (Q-A2 (a)), the link's ring box brought back to the client block-start edge within 0.5 px, which Chromium's own focus scroll does not do (it aligns the link's border box, leaving the ring box at −4.7 px; spike-2 § Addendum A5); the at-rest half fails under the element plant below |
+| US1-26's caption link "shown whole above the `<thead>`" at the fully-past position, and the same half of T079's element-before body (Q-A2 (a)) | Chromium's own focus scroll centres the link and clamps at `scrollTop` 0 before `focusin`, so the clearance writes nothing there, with or without the `before` rule (spike-2 § Addendum A4): the platform alone meets it, at red too | the same body first asserts the partly scrolled half (the ring box at the client block-start edge within 0.5 px), which fails at red and under the `before` plant; the fully-past half is kept as a regression guard on the guarantee (shown whole, never under the pinned header), not as the evidence of the rule |
+| US1-28's "line gone at the block end" | no line is drawn without the option | the same body first asserts the `CanvasText` line at the block start with rows below |
+| the option-off guard's "no `data-block-fade`" (T079) | 009's module never writes it | the same host with the option on, in the same body, carries `data-block-fade="end"` |
 | the two visible slotted times, one blank (A1) | the light DOM holds both nodes anyway | the same body asserts both are assigned to the `time` slot (`assignedSlot` is the `time` slot) and the item text is time first with no added text |
 
 ## Element plants (CSS-only behaviour Stryker does not mutate)
 
 An element plant mutates green source, so it cannot exist at red (constitution VIII). After each phase's green, each
 plant of the phase is applied to the green source or `base.css`, its guard bodies run in process, and the source is
-restored; nothing is committed. The results go in `reviews/phase-<N>/element-plants.md` (plant, guard, the failing
+restored; nothing is committed. A guard in the classic-scrollbar suite (§ Harnesses, Q-A3 (a)) runs instead in the
+`elements-browser` project, `pnpm exec vitest run --project elements-browser packages/elements/test/browser/data-table-scrollbar.test.ts`,
+whose global setup rebuilds the browser build from the planted source; the record names that command. The results go in `reviews/phase-<N>/element-plants.md` (plant, guard, the failing
 assertion). A plant that does not make its guard fail stops the phase for the operator. `reviews/phase-<N>/plants.md`
 stays op 016's gate-plant record in its set form, which the review compares line by line (PLAN-TESTABILITY-1-004).
 
@@ -145,6 +191,35 @@ stays op 016's gate-plant record in its set form, which the review compares line
 | `role="list"` removed | the explicit-role body |
 | A blank host `aria-label` treated as decisive | US2-10, US3-10 |
 | `:host([hidden])` removed, per element (FR-001, analysis G3) | that element's hidden-host body |
+| The `<thead>`'s `position: sticky` removed (R-18) | US1-17 (the header's edge moves with the rows) |
+| The sticky table's `border-collapse: separate` removed (R-18) | US1-17 (the header rule stays behind; its rendered position at the box's block start fails) |
+| The pinned header cells' `--ocelle-color-sheet` ground removed (R-18) | US1-17 (`elementFromPoint` at a header cell's centre returns a body cell) |
+| Block 2's sticky-table `border-collapse` removed (R-18) | the prose-override node test; US1-17 inside prose |
+| The module's block-axis option ignored (`data-axis` never set) | US1-17, US1-18, the block-axis module bodies |
+| The module's block clearance skipped, or measured without the pinned box | US1-19 |
+| The module handling ArrowDown with the option off | the option-off guard body (T079) |
+| The module's block-scrollbar mask layer dropped (the block-axis scrollbar masked) | the block-axis mask-figure body (T079) |
+| The module's block-scrollbar mask layer written `0px 100%` whatever the room (the room never read; Q-A3 (a)) | the classic-scrollbar suite's mask figure (the first layer `<room>px 100%` with the room above 0, LTR and RTL); under hidden scrollbars the room is 0, so no in-process body can bite |
+| The module's block-end fade never drawn (`data-block-fade` never set; Q-I4) | US1-26, the block-end fade bodies (T079) |
+| The module's room rule dropped (the fade drawn into the pinned header) | US1-26's small-bound half, the room-rule body (T079) |
+| The two fade layers composited by `add` instead of `intersect` | the block-axis mask-figure body (T079: the computed `mask-composite`), US1-27 |
+| The `<thead>`'s negative `inset-block-start` replaced by `0` (spike-2 Q-2 (a)) | US1-17 (the header 5 px below the client block-start edge while scrolled) |
+| `.region-edge.block-end` laid out full width outside forced colours (`inline-size: 0` removed, `inset-inline: 0` outside the forced-colours block; spike-2 Q-4 (a)) | the block-end fade body's edge geometry (T079: inline size 0 outside forced colours) |
+| `scrollbar-gutter: stable` added to `.region-box[data-axis="both"]` (Q-A1 (a)) | the both-ways inline range body (T079: at the far end `data-fade="start"`, not `both`, in LTR; `scrollLeft` 0 and `data-fade="end"` at rest under `dir="rtl"`), US1-20's RTL pair (T080: the block-bounded RTL table at `scrollLeft` 0 at rest); spike-2 § Addendum A1 measured both failing with the gutter under hidden scrollbars; and the classic-scrollbar suite's RTL lift (`scrollLeft` 0 and `data-fade="end"` after the bound is lifted; spike-2 § Addendum A2 measured −14 with the gutter going under classic scrollbars) |
+| The module's block clearance ignoring the block-end fade | US1-27, the fade clearance body (T079) |
+| The module's block clearance measuring an element before the pinned box from `pinnedEnd` (`before` always false; Q-S2-1 (a)) | US1-26's caption-link half at rest (the fade suppressed) and at the partly scrolled position (the ring box at 21.3 px instead of the client block-start edge, spike-2 § Addendum A5; Q-A2 (a)), the element-before-the-pinned-box body's partly scrolled half (T079); not its fully-past half, which the platform alone meets |
+| The module's block suppression never ending (no `focusout` or `scroll` reset) | the block fallback body (T079) |
+| The forced-colours block-end line removed | US1-28, the module's forced-colours body (T079) |
+| The `.box-size` write without the block-axis scrollbar's room (`offsetWidth − clientWidth`) subtracted while `sticky-header` is set (R-18) | the classic-scrollbar suite's sticky caption body (Q-A3 (a): `--data-table-box-size` the measured size less the room above 0, 305px at 320 px, and every caption line box inside the unmasked extent). Under the harnesses' hidden scrollbars the room is 0 (no `scrollbar-gutter`, Q-A1 (a)), so the in-process and fixture sticky caption bodies cannot bite and are not its guard |
+| The host's column flex for `sticky-header` removed | US1-17 (the box is as tall as the table; no block scroll) |
+| `data-ocelle-align` placed before block 2 | US1-22 inside prose |
+| `data-ocelle-align` without `font-variant-numeric` | US1-22 in the plain prose table |
+| The stripe on `:nth-child(odd)` | US1-23 |
+| The stripe rule placed after the hover rule | US1-24 on a striped even row |
+| The hover on `thead` and `tfoot` rows too | US1-24 (header rows paint nothing) |
+| The forced-colours row band removed, or its `Highlight` rule placed before the stripe's | US1-25 |
+| The hover rule's `@media (hover: hover)` guard removed (A2 (a)) | US1-24's no-hover half (a tapped row's cells on `hover-bg` in the touch context) |
+| The forced-colours `Highlight` band rule's `@media (hover: hover)` guard removed (A2 (a)) | US1-24's no-hover half under forced colours (the tapped row's band `Highlight`) |
 
 **Equivalent in Chromium (PLAN-TESTABILITY-1-005).** Removing `aria-hidden` from the timeline's marker wrapper, or
 from a connector span, cannot fail an AX body. The squad's refute pass reran the probe (google-chrome headless,
@@ -158,11 +233,15 @@ WebKit, which is not measured.
 
 In `storybook/stories/<element>.stories.ts`, each in light and dark (PLAN-CORRECTNESS-1-007, operator decision (a)):
 
-- **Data table (12):**
+- **Data table (21):**
   - fits;
   - overflows, named by `label`;
   - overflows, named by its caption (no `label`);
   - overflows, unnamed (no caption, no `label`): the box is focusable with no role and no name;
+  - overflows, named by a host `aria-label` (`aria-label="Deployments"` beside `label="Work packages"`): the region is
+    a `group` named "Deployments" (spike Q1 (b));
+  - overflows, blank host `aria-label` (`aria-label="  "` beside `label="Work packages"`): the region is a `group`
+    named "Work packages" (spike Q1 (b));
   - row headers;
   - corner header;
   - `wrap="anywhere"`;
@@ -170,7 +249,23 @@ In `storybook/stories/<element>.stories.ts`, each in light and dark (PLAN-CORREC
   - right-to-left;
   - empty body;
   - 320 px;
-  - no table (an empty region).
+  - no table (an empty region);
+  - sticky header, bounded (`sticky-header`, `label="Work packages"`, twenty rows, the host's `max-block-size` from a
+    token in a `data-story` rule of `stories-layout.css`; at rest the region is a `group` tab stop by its block
+    overflow and shows the block-end fade; inventory decision IQ-2, follow-up decision Q-I4);
+  - sticky header, unbounded (`sticky-header`, `label="Work packages"`, the same twenty rows, no bound on the host:
+    the table at full height, no block scroll, no tab stop at 1280 px, no block-end fade and no `data-axis`
+    (spike-2 Q-3 (c)); US1-20, the operator's decision C1 (b) on the re-analysis, 2026-11-18);
+  - sticky header, under the room rule (`sticky-header`, `label="Work packages"`, the same twenty rows, no caption, the
+    host's `max-block-size` a `calc()` over tokens in a `data-story` rule of `stories-layout.css`, bounded so that rows
+    are below but less than twice the fade depth shows under the header: at rest the region is a `group` tab stop by
+    its block overflow and draws no block-end fade, the space measured from the `<thead>`'s current block-end edge
+    (A1 (c), decided (a) after T082, spike-2 Q-1 (a)); US1-26's room-rule half, the operator's answer to fixes-2 Q-1 (b), 2026-11-18);
+  - numeric column (an estimate column whose header and body cells carry `data-ocelle-align="end"`, IQ-3);
+  - striped (`striped`, two `<tbody>` groups, IQ-4);
+  - row hovered (`parameters.ocelle.pointer.hover` on one body row's first cell, inside the 1280 × 800 viewport,
+    IQ-5);
+  - striped, an even row hovered (the pointer parameter on an even row of a striped table, IQ-4 and IQ-5).
 - **Timeline (11):**
   - three events;
   - an event without a time;
@@ -200,13 +295,23 @@ In `storybook/stories/<element>.stories.ts`, each in light and dark (PLAN-CORREC
   - standalone steps (analysis C1 (c)): a default and a `variant="chip"` `ocelle-evidence-step` outside a chain, each
     plain text with no marker, ordinal or chip box.
 
-That is 35 stories, 70 baselines: `visual:update` reports 24, 22 and 24 added in phases 1 to 3 (R-15).
+That is 44 stories, 88 baselines: `visual:update` reports 42, 22 and 24 added in phases 1 to 3 (R-15; phase 1's two
+host `aria-label` stories added by spike Q1 (b), 2026-11-18, five by the inventory decisions IQ-2 to IQ-5,
+2026-11-18, the unbounded sticky-header story by the re-analysis decision C1 (b), 2026-11-18, and the room-rule
+sticky-header story by the answer to fixes-2 Q-1 (b), 2026-11-18). The block-end fade of Q-I4 shows at rest in the
+bounded sticky-header story, whose baselines capture it, and the room-rule story's baselines capture a bounded box
+with rows below and no fade. The one scroll-position state left, the bounded table scrolled to its block end (the fade
+off, Q-I7 (a)), has no story: it is plan.md § Complexity Tracking's block-axis row, proven by US1-26, US1-28 and
+T079's block-end fade bodies.
+No existing baseline moves, 009's scroller and board baselines included (SC-007).
 
-The item elements' states are in their container's file, the standalone item included (analysis C1 (c)). No story
-sets a host `aria-label`, blank or not, on any of the three containers: those states are plan.md § Complexity
-Tracking's one Principle V exception (R-09's axe risk), proven by the browser bodies (the FR-010 host `aria-label`
-body, US2-10, US3-10). Each phase's spike (T003, T026, T052) runs axe on the state; a clean result meets the row's
-sunset and goes to the operator, who decides whether the phase adds the story. The story test checks presence in light
+The item elements' states are in their container's file, the standalone item included (analysis C1 (c)). Only the
+data table has stories with a host `aria-label` (the two above): phase 1's spike found axe-core 4.14.0 clean on that
+state, and the operator chose both stories (spike Q1 (b)); the FR-010 host `aria-label` body stays. No story sets a
+host `aria-label`, blank or not, on the timeline or the chain: those states are plan.md § Complexity Tracking's one
+Principle V exception (R-09's axe risk), proven by the browser bodies (US2-10, US3-10). Each remaining phase's spike
+(T026, T052) runs axe on the state; a clean result meets the row's sunset and goes to the operator, who decides
+whether the phase adds the story. The story test checks presence in light
 and dark, 320 px reflow of each story, and that every list in every story has a name except the unnamed chain story,
 the empty stories and the standalone-item stories (which render no list). A story the `axe` gate fails (the unnamed
 overflowing table is the likeliest) is fixed in the story or the element, or goes to the operator with a Complexity

@@ -4,7 +4,9 @@
 
 **Created**: 2026-11-15
 
-**Status**: Approved at the spec gate (2026-11-15); amended after the plan gate and after the analysis (2026-11-16)
+**Status**: Approved at the spec gate (2026-11-15); amended after the plan gate and after the analysis (2026-11-16),
+the recheck (2026-11-17), the phase 1 spike, the library inventory and its follow-up questions, and the re-analysis
+(2026-11-18)
 
 **Input**: User description: "Mission for the rest of #13 (triage/019-data-display-follow-on.md; triage/013-data-display.md
 option B), spec directory specs/019-data-records. The operator chose option B at the triage gate: this mission builds
@@ -84,7 +86,8 @@ Ocelle web console uses them in server-rendered pages under a strict CSP, filled
 
 - C1, states without a story: (c). A standalone `ocelle-timeline-event` and a standalone `ocelle-evidence-step` get a
   story in their container's file; the states named by a host `aria-label` (the data table's region, the timeline,
-  the chain) are one Principle V exception in the plan's Complexity Tracking, proven by browser tests (FR-050).
+  the chain) are one Principle V exception in the plan's Complexity Tracking, proven by browser tests (FR-050). The
+  data table's region left the exception after the phase 1 spike (Q1 (b), below).
 - I7, the caption cap's custom properties: (a). `--data-table-box-size` and `--data-table-end-fade` are a documented
   base-style hook between `@ocelle/elements` and `@ocelle/styles`, public surface under constitution VII (FR-057).
 
@@ -105,12 +108,114 @@ Ocelle web console uses them in server-rendered pages under a strict CSP, filled
 - Q5, the pre-upgrade rules' place: (b). The timeline's and the chain's pre-upgrade rules go in the base layer of
   `base.css`, beside 013's `ocelle-facts` rule, and 003's `source.test.ts` transcribes them in its base-layer slice.
 
+**Operator decisions on the phase 1 spike** (2026-11-18, human:jeroennouwsdev; `reviews/phase-1/spike.md`, decisions
+in `reviews/phase-1/operator-spike-decisions.md`, changes listed in `reviews/phase-1/spike-fixes.md`):
+
+- Q1, the data table named by a host `aria-label`: (b). The pinned axe-core reports no serious or critical finding
+  on it, so the data table's region leaves the Principle V exception: phase 1 adds two stories, an overflowing data
+  table named by a non-blank host `aria-label` and one with a blank host `aria-label` (14 data-table stories, 37 in
+  all; 19 and 42 since the inventory decisions below, 20 and 43 since the re-analysis, 21 and 44 since fixes-2 Q-1 (b)). The timeline and the chain stay in the exception until their own spikes measure them (FR-050).
+- Q2, upper-case column-header names: (a). The column headers stay upper case (FR-006). Chromium names each column
+  header by its drawn, upper-case text, so US1-1 compares the element's table with the same table outside given the
+  same upper case, and asserts that the column headers are named in upper case; both READMEs state it (FR-006).
+- T005, the `.sk-data-table` inventory: "Proceed, map later". Phase 1 proceeds without it; the README's data-table
+  mapping rows (FR-058) read "pending inventory" until the operator supplies the inventory, which is recorded and
+  mapped before the pull request lands. SC-001 stays open until then. Superseded on 2026-11-18 by IQ-1 (a) below.
+
+**Operator decisions on the library inventory** (2026-11-18, human:jeroennouwsdev; questions in
+`reviews/phase-1/inventory-questions.md`, decisions in `reviews/phase-1/inventory-decisions.md`, changes listed in
+`reviews/phase-1/inventory-fixes.md`; the source is the open-source spec-kitty design library, MIT, read from a clone,
+role names only, constitution VI):
+
+- IQ-1, the inventory: (a). The library's own variant set (`sources/spec-kitty-design-inventory.md`, at `main`
+  19fb6a2 and re-read at the newest line, `develop` a6518cd, since no release tag exists) is the inventory for T005,
+  T028 and T054 and SC-001: one README mapping row per modifier, state, structure role and part, no counts (FR-058).
+  The data-table rows no longer read "pending inventory": they are written test first in phase 1.
+- IQ-2, the sticky header row: added in this mission. This mission extends 009's overflow-region module with an
+  opt-in block-axis option (FR-018), and FR-008 is amended to allow exactly that change; `ocelle-scroller` and the
+  workflow board are unchanged (FR-017, FR-018).
+- IQ-3, the numeric end-aligned cell: added, as a documented base-style hook in `@ocelle/styles` (FR-019).
+- IQ-4, zebra rows: added (FR-060). IQ-5, row hover: added (FR-061).
+- IQ-6: (a). FR-010's caption fallback stands; the README tells consumers to give an overflowing table a `label`
+  that differs from its caption (FR-010).
+- IQ-7: (a). The eyebrow headers stand (FR-006); the README maps the library's header look to them (FR-058).
+- IQ-25: the operator pastes #470, #517 and #533 before phase 2's red, and the planner records them verbatim in
+  `sources/`; the #470 hand-off material on `develop` is recorded as background
+  (`sources/issue-470-handoff-background.md`). IQ-8 to IQ-24, and IQ-26 to IQ-28 found on `develop`, are asked before
+  phases 2 and 3.
+
+**Operator decisions on the inventory follow-up questions** (2026-11-18, human:jeroennouwsdev; questions Q-I1 to Q-I5
+in `reviews/phase-1/inventory-fixes.md`, answers at the end of `reviews/phase-1/inventory-decisions.md`):
+
+- Q-I1, the pinned header row's ground: `--ocelle-color-sheet`, the default (FR-017).
+- Q-I2, a hovered striped row in the light theme (`inset` = `hover-bg`): accepted; the README notes it (FR-061).
+- Q-I3, the row hover: always on, the default (FR-061).
+- Q-I4, a fade at the block end: added (changes the default). While the block-axis option is on and content is below
+  the region's block end, the module fades the block end, never under the pinned header, with a line in forced
+  colours (FR-018, US1-26 to US1-28).
+- Q-I5, 009's contract: a one-line pointer to this mission's amendment (`contracts/overflow-region-block-axis.md`) is
+  added to `specs/009-workflow-layouts/contracts/overflow-region.md`, nothing else of 009 is changed (FR-018).
+- Q-I6, the room for the block-end fade below the pinned header: (a), twice the fade depth, the default (FR-018).
+- Q-I7, a story for the fade's off state: (a), no new story, the default (FR-050; since the re-analysis below, a
+  Principle V exception row in the plan's Complexity Tracking records it).
+
+**Operator decisions on the re-analysis** (2026-11-18, human:jeroennouwsdev; `analysis-report.md` at 4ad3073,
+decisions at the end of `reviews/analysis/operator-decisions.md`, changes listed in `reviews/analysis/fixes-2.md`):
+
+- C1, block-axis states without a story: (b). A "sticky header, unbounded" story is added (US1-20; phase 1 had 20
+  data-table stories, the mission 43). One Principle V exception row in the plan's Complexity Tracking covered only the
+  two scroll-position states of the block-end fade: scrolled to the block end (the fade off), and the room-rule state
+  (rows below, no fade) (FR-050). Narrowed by the answer to fixes-2 Q-1 below.
+- A1, where the room rule and the block clearance measure the pinned header from: (c). Phase 1's second spike
+  measures both candidates (the `<thead>`'s current block-end edge, and its block size as if pinned) at 320 px with a
+  two-line caption, and stops for the operator's choice before the scaffold (FR-018, US1-26). Chosen on spike 2:
+  the current edge (Q-1 (a) below).
+- A2, the row hover on a device with no hover: (a). The hover rule, and its forced-colours band, apply only under
+  `@media (hover: hover)`, tested under `hover: none` and guarded by an element plant (FR-061, US1-24).
+- G1, the block-axis keys other than ArrowUp and ArrowDown: (a). PageUp, PageDown, Home, End, Space and Shift+Space
+  are left to the browser, which scrolls the focused box in the block axis; tests assert each key (FR-018, US1-18).
+- Fixes-2 Q-1, the room-rule state (answered 2026-11-18, end of `reviews/analysis/operator-decisions.md`): (b). A
+  "sticky header, under the room rule" story is added (a bound leaving rows below but less than twice the fade depth
+  under the header, so no fade; US1-26's room-rule half): phase 1 has 21 data-table stories, the mission 44. The
+  exception row covers only the scrolled-to-end state (FR-050).
+
+**Operator decisions on phase 1's second spike** (2026-11-18, human:jeroennouwsdev; `reviews/phase-1/spike-2.md`,
+decisions in `reviews/phase-1/operator-spike-2-decisions.md`, changes listed in `reviews/phase-1/spike-2-fixes.md`):
+
+- Q-1, the pinned-box measure (A1 (c)): (a), the `<thead>`'s current laid-out block-end edge. The fade never covers
+  the header; under a tall caption in a small bound it may be absent at rest until the caption scrolls away (FR-018,
+  US1-26).
+- Q-2, the header pinned 5 px low (the region's box keeps the focus ring's room as block padding, and sticky
+  positioning measures from it): (a), a negative block-start inset of that room on the `<thead>`, so no row shows
+  above the pinned header once scrolled and the header keeps the ring room at rest (FR-017, US1-17, US1-18).
+- Q-3, a right-to-left table that overflows only sideways loses its first 15 px to a reserved scrollbar gutter: (c),
+  the region reserves the gutter (the module's `data-axis="both"`) only while it overflows in the block axis; the
+  implementer measures this before phase 1's red commit and stops if it fails (FR-008, FR-018, US1-20).
+- Q-4, axe-core reported a serious `color-contrast` incomplete result on the rows under the block-end edge: (a), the
+  edge is zero-wide outside forced colours (FR-018).
+- Q-S2-1, a focusable element above the pinned header (a link in the caption), which no scroll position puts below
+  the header's current edge (raised by the changes for Q-1, answered 2026-11-18): (a), for an element before the
+  pinned header the block clearance's upper bound is the box's client block-start edge, so the box scrolls back to
+  show it; the implementer measures it before phase 1's red commit (FR-018, US1-26).
+- Q-A1, measured before phase 1's red commit: a reserved scrollbar gutter, even only while the region overflows in
+  the block axis, still cost a table that overflows both ways 15 px of its inline range under hidden scrollbars, and
+  left a right-to-left table 14 px off its start when it went (answered 2026-11-18): (a), no room is reserved for a
+  block-axis scrollbar; the region scrolls in the block axis only while it overflows in that axis, and the
+  scrollbar takes room only where the platform draws one (FR-008, FR-018, US1-20).
+- Q-A2, measured before phase 1's red commit: once the caption has scrolled fully under the pinned header, the
+  browser's own focus scroll already shows a caption link whole, so the caption-link expectation of US1-26 could not
+  fail there (answered 2026-11-18): (a), the expectation that the focus ring is brought exactly to the box's
+  block-start edge is checked with the link partly scrolled out at the top (2 to 12 px above the edge), and the
+  fully scrolled position is kept as a paired check that the browser alone already meets (FR-018, US1-26).
+
 ## Scope
 
 **In scope:** five new custom elements in `@ocelle/elements`: `ocelle-data-table`, `ocelle-event-timeline` with its
 item `ocelle-timeline-event`, and `ocelle-evidence-chain` with its item `ocelle-evidence-step`. This covers their
 stories, tests, manifest entries and README sections; the `@ocelle/styles` rules that style a data table's light-DOM
-cells (FR-005); any new tokens these elements need that no existing token provides (FR-040); and the README's
+cells (FR-005), its sticky header row, striped rows and row hover (FR-017, FR-060, FR-061); the `@ocelle/styles`
+end-alignment hook for numeric cells (FR-019); one opt-in block-axis option in mission 009's internal overflow-region
+module (FR-018, IQ-2); any new tokens these elements need that no existing token provides (FR-040); and the README's
 § Element conventions amendment for a container whose content is one native element (FR-056).
 
 **Out of scope:**
@@ -118,11 +223,11 @@ cells (FR-005); any new tokens these elements need that no existing token provid
 - `ocelle-disclosure` and `ocelle-code-block` (mission 020);
 - mission 013's elements (`ocelle-facts`, `ocelle-fact`, `ocelle-empty-state`, `ocelle-progress`), which this mission
   does not change;
-- mission 009's overflow-region module itself, which this mission uses as its contract states and does not change
-  (FR-008);
+- any change to mission 009's overflow-region module other than FR-018's opt-in block-axis option, and any change to
+  `ocelle-scroller` or `ocelle-workflow-board` (FR-008, FR-018);
 - sorting, filtering, selection, pagination, resizable or sticky columns, and any other interactive table behaviour:
-  the data table is a readout and emits no event;
-- an end-aligned numeric column (#13 does not ask for one; see Assumptions);
+  the data table is a readout and emits no event (the sticky header row of FR-017 and the row hover ground of FR-061
+  are looks, not interactions);
 - copying text to the clipboard (constitution I; #14 and the host);
 - 011's eyebrow tokens, which are on `main` and which the data table's column headers use and do not add (FR-006);
 - the `storybook-build`, `visual` and `axe` gates and #10's pinned container, which are on `main`; this mission writes
@@ -145,17 +250,26 @@ region is no longer a tab stop.
 **Why this priority**: it replaces the `.sk-data-table` class family (#533, epic #1's gap row) and is the only one of
 the three with a scroll region, so it carries the most risk.
 
+A long list uses `sticky-header` with a block size the page bounds, so the column headers stay in view while the rows
+scroll inside the region; a cost column carries `data-ocelle-align="end"` on its cells so its figures line up at the
+end; `striped` puts a ground on every other body row, and a hovered body row is brightened (inventory decisions
+IQ-2 to IQ-5). While rows continue below the region's block end, the last visible rows fade out there (Q-I4).
+
 **Independent Test**: render an `ocelle-data-table` holding a table with a caption, five columns and four rows, one
-cell a 26-character identifier. At 1280 px and 320 px, check the cells' computed type and padding, the header style,
-the region's tab stop and name, the page's scroll width and the accessibility tree.
+cell a 26-character identifier with no space or hyphen in it (so it cannot break and the table overflows at
+320 px). At 1280 px and 320 px, check the cells' computed type and padding, the header style,
+the region's tab stop and name, the page's scroll width and the accessibility tree. Then render twenty rows with
+`sticky-header`, `striped`, an end-aligned numeric column and a bounded host block size, and check the pinned header,
+the block-axis keyboard and focus clearance, the block-end fade, the row grounds and the end alignment.
 
 **Acceptance Scenarios**:
 
 1. **Given** an `ocelle-data-table` holding a `<table>` with a `<caption>`, one header row of five `<th scope="col">`
    cells and four body rows, in a 1280 px block container, **When** it renders, **Then** the accessibility tree in
    Chromium holds one table named by its caption, with five column headers and four data rows, each cell associated
-   with its column header, exactly as the same `<table>` outside the element; the element adds no table, row or cell
-   node of its own (FR-003, FR-004).
+   with its column header, exactly as the same `<table>` outside the element whose column headers are also drawn in
+   upper case; each column header is named by its drawn, upper-case text ("ID" for a header written "Id"); the
+   element adds no table, row or cell node of its own (FR-003, FR-004, FR-006; spike Q2 (a)).
 2. **Given** that table, **When** a body cell's computed style is read, **Then** its font family resolves through
    `--ocelle-font-sans`, its colour through `--ocelle-color-ink-soft`, its `font-variant-numeric` is `tabular-nums`
    through `--ocelle-figures`, and its block and inline padding are the compact token steps the plan names, each
@@ -193,7 +307,8 @@ the region's tab stop and name, the page's scroll width and the accessibility tr
     same table outside a prose container, so the cell padding is still the
     compact padding of US1-2 (FR-012).
 11. **Given** the page in light or dark theme, **When** it renders, **Then** cell text and header text meet the tokens'
-    text-contrast declaration on each main ground (the element paints no ground of its own); the row rules and the
+    text-contrast declaration on each main ground (without `striped`, a hovered row or `sticky-header` no ground is
+    painted; with them, on the grounds FR-013's table names); the row rules and the
     header rule are decorative and are not held to 3:1 (FR-013). **Given** forced colours, **Then** every cell's and
     header's computed text colour is a system colour, and the row rules and the header rule are drawn in a system
     colour and visible (FR-005, FR-013).
@@ -212,6 +327,92 @@ the region's tab stop and name, the page's scroll width and the accessibility tr
 16. **Given** an overflowing data table with no `label` and no host `aria-label`, named "Work packages" by its caption,
     **When** the caption's text changes to "Open work packages", **Then** the region's accessible name becomes "Open
     work packages" (FR-010).
+17. **Given** an `ocelle-data-table` with `sticky-header`, `label="Work packages"`, a host block size bounded by a
+    page rule (`max-block-size`) below the table's height, and a table of a caption, one header row and twenty body
+    rows that fits its 1280 px container inline, **When** the region is scrolled in the block axis to its middle and to
+    its end, **Then** the `<thead>`'s block-start edge stays at the scroll box's client block-start edge (within
+    0.5 px) while the body rows move; the point at the centre of each column header returns that header cell (no body
+    cell paints over it, and its ground is `--ocelle-color-sheet`); the header rule is drawn below the header row at
+    every scroll position; and the page's scroll height does not change (FR-017, FR-018).
+18. **Given** that table, **When** it renders, **Then** the scroll box has `tabindex="0"`, role `group` and the name
+    "Work packages", although nothing overflows inline; **When** the box is focused and the user presses ArrowDown and
+    then ArrowUp, **Then** it scrolls towards the block end and back by the module's step; ArrowLeft and ArrowRight
+    and a modified ArrowDown do not scroll it; **When** the focused box gets PageDown, PageUp, End, Home, Space and
+    Shift+Space in turn, **Then** the browser scrolls it in the block axis (PageDown and Space towards the block end,
+    PageUp and Shift+Space back, End to the block end, Home to the block start), the module does not handle the key
+    (its default is not prevented), the block-end fade follows the new position (none at the block end, back at the
+    block start) and the `<thead>`'s block-start edge is at the box's client block-start edge (within 0.5 px) after
+    each key that leaves the box scrolled, and back at its at-rest position (within 0.5 px) after each key that
+    returns it to the block start (the operator's decision Q-2 (a) on phase 1's second spike); **When** the
+    host's bound is removed so the table fits, **Then** the box has no `tabindex`, role or name (FR-018; the operator's
+    decision G1 (a), 2026-11-18).
+19. **Given** that table with a link in its twelfth body row, scrolled so the row sits under the pinned header, **When**
+    the user tabs to the link, **Then** the box scrolls in the block axis so the link's focus ring box is wholly below
+    the header row's block-end edge and inside the box (WCAG 2.4.11, focus not obscured); **When** a link inside a
+    header cell is focused, **Then** the box does not scroll in the block axis (FR-017, FR-018).
+20. **Given** `sticky-header` with no bound on the host's block size, **When** it renders, **Then** the table is shown
+    at its full height, the scroll box does not scroll in the block axis (its scroll height equals its client height)
+    and reserves no block-axis scrollbar room, and, while it fits inline, it has no `tabindex`, role or name, as
+    without `sticky-header` (FR-017; the operator's decision Q-3 (c) on phase 1's second spike).
+21. **Given** the US1-17 table with the twenty rows' identifiers unbroken, in a 320 px container, **When** the region
+    is scrolled to the inline end and then in the block axis, **Then** the page's scroll width equals the viewport
+    width, the header row stays pinned at the box's block start, each column header stays above its column's cells
+    (equal inline start within 0.5 px) at every scroll position, and the inline fades of 009's contract show as before
+    (FR-017, FR-018, FR-009).
+22. **Given** a table whose estimate column's header and body cells carry `data-ocelle-align="end"`, inside an
+    `ocelle-data-table`, inside a `[data-ocelle-prose]` container, and in a plain prose table, **When** it renders,
+    **Then** each such cell's computed `text-align` is `end` and its `font-variant-numeric` `tabular-nums`, and the
+    inline-end edge of its text's line box is at its content box's inline-end edge (within 0.5 px); under `dir="rtl"`
+    the text sits at the cell's left; the other cells stay start-aligned; and the header keeps its eyebrow type (FR-019).
+23. **Given** `striped` on an `ocelle-data-table` whose table has two `<tbody>` groups of five rows and a `<tfoot>`,
+    **When** it renders in light and dark, **Then** every cell of each group's second and fourth row has the
+    background `--ocelle-color-inset`, every other cell (odd rows, header and footer rows) paints none, the cells' text
+    colours are unchanged (each with a text declaration on inset, FR-013), and the row rules are still drawn; **When**
+    `striped` is removed, **Then** no cell has a ground (FR-060).
+24. **Given** a data table with and without `striped`, **When** the pointer hovers a body cell, **Then** every cell of
+    that body row has the background `--ocelle-color-hover-bg`, over a stripe too, and no other row changes; hovering
+    a header or footer row paints nothing; no event is emitted, no tab stop is added and the computed `cursor` stays
+    `auto`; **Given** a device with no hover (`(hover: none)`: a touch context), **When** a body row is tapped or the
+    pointer is over it, **Then** no cell of it paints `--ocelle-color-hover-bg` (a striped even row keeps
+    `--ocelle-color-inset`), and in forced colours its row band is not `Highlight` (FR-061, FR-011; the operator's
+    decision A2 (a), 2026-11-18).
+25. **Given** forced colours, **When** a striped table renders with one body row hovered and with `sticky-header` and a
+    bound, **Then** the first cell of every body row has an inline-start border of width `--ocelle-bar-width`: in
+    `CanvasText` on the even rows of the striped table, in `Highlight` on the hovered row and in `Canvas` on the others,
+    so the stripes and the hovered row stay distinguishable; the pinned header is opaque (a system background) with its
+    rule in `CanvasText`; and cell text is a system text colour (FR-013, FR-017, FR-060, FR-061).
+26. **Given** the US1-17 table at its block start, **When** it renders, **Then** the region shows a fade at its block
+    end: the scroll box carries `data-block-fade="end"`, and its mask fades the content over the fade depth
+    (`--ocelle-scroller-fade-size`) towards the box's client block-end edge, with the fade's block-start edge at or
+    below the pinned header row's block-end edge, so the header row and both scrollbars are never faded; **When** it is
+    scrolled to its block end, **Then** no block-end fade shows (no `data-block-fade`), and scrolled back by ArrowUp it
+    shows again; **Given** a bound that leaves less than twice the fade depth below the header row, **Then** no
+    block-end fade shows although rows are below; **Given** a two-line caption above the header row at 320 px and a
+    100 px bound, at the block start, **Then** no block-end fade shows although rows are below (less than twice the
+    fade depth lies below the header row's current block-end edge), and once scrolled past the caption the fade shows
+    with its block-start edge at or below the pinned header row's block-end edge; **Given** the same caption and a
+    300 px bound, **Then** the fade shows at rest with its block-start edge at or below the header row's current
+    block-end edge; **Given** a link in the first body row, **When** the user tabs to it at rest and past the caption,
+    **Then** its focus ring box is at or below the header row's current block-end edge (within 0.5 px) and inside
+    the box; **Given** a link on the caption's second line and the 300 px bound, **When** the user tabs to it at
+    rest, **Then** the box does not scroll and the block-end fade still shows; **When** the box is scrolled so the
+    link is partly out of view at the top (its border box 2 to 12 px above the box's client block-start edge) and the
+    user tabs to the link again, **Then** the box scrolls back so the link's focus ring box is wholly inside the box,
+    its block-start edge at the box's client block-start edge (within 0.5 px), and above the header row, which does
+    not cover it, with no jump back; **When** the box is scrolled fully past the caption and the user tabs to the
+    link, **Then** the link is shown whole above the header row (the browser's own focus scroll already does this,
+    so it is a paired check, not the evidence of the rule) (the operator's decisions A1 (c), 2026-11-18, Q-1 (a) on
+    phase 1's second spike and the answers to Q-S2-1 (a) and Q-A2 (a); FR-018).
+27. **Given** the US1-21 table at 320 px, scrolled to the inline middle and the block start, **When** it renders,
+    **Then** the inline fades of 009's contract and the block-end fade show together, the box carrying both
+    `data-fade="both"` and `data-block-fade="end"`, and a point under both fades is faded by both; **Given** a link in
+    the last body row that shows above the box's block end, inside the fade, **When** the user tabs to it, **Then** the
+    box scrolls in the block axis so the link's focus ring box is wholly above the fade's block-start edge (or the
+    fade is gone at the block end) and below the header row (WCAG 2.4.11, FR-018).
+28. **Given** forced colours, **When** the US1-17 table renders at its block start, **Then** no mask is drawn and a
+    line of `--ocelle-border-width` in `CanvasText` marks the region's block end while rows are below, beside the
+    inline lines of 009's contract when it also overflows sideways; scrolled to its block end, **Then** that line is
+    gone (FR-013, FR-018).
 
 ---
 
@@ -381,7 +582,63 @@ the chip variant.
 - **Data table at 200% zoom and 320 px.** The table scrolls inside its region; the page does not scroll sideways (WCAG
   1.4.10's exception for two-dimensional data tables applies to the table's own content, not the page).
 - **Data table print.** The plan's research records what 009's region does in print (scrolled content may be clipped).
-  No print requirement is added here beyond that record; the README states the behaviour.
+  No print requirement is added here beyond that record; the README states the behaviour. A bounded `sticky-header`
+  table prints its box only (rows past the bound are clipped too); the README says so.
+- **Sticky header with no `<thead>`, or with two header rows.** With no `<thead>` nothing is pinned and the table
+  scrolls whole in the block axis. All rows of the `<thead>` are pinned together, as one group (FR-017). A header row
+  written in `<tbody>` (`<th scope="col">` cells there) is not pinned.
+- **Sticky header and the caption.** The caption is above the header row and scrolls away in the block axis with the
+  body; it is not pinned (FR-017; it is not sticky in the inline axis either, Q-F (b)).
+- **Sticky header without a bound.** As US1-20: nothing scrolls in the block axis and nothing changes but the border
+  model (FR-017). The README says the bound is the page's rule on the host.
+- **`sticky-header` toggled after mount.** Setting or removing the attribute switches the region between the two axes
+  and the table's border model without a page reload; the tab stop follows the new overflow state, and the block-end
+  fade goes with the option (FR-017, FR-018).
+- **Block-end fade and the pinned header.** The fade is at the block end only, never at the block start, where the
+  header row is pinned; its block-start edge is never above the header row's block-end edge. A bound that leaves less
+  than twice the fade depth below the header row shows no block-end fade (the scrollbar still shows that rows are
+  below). A table with no `<thead>` measures that space from the box's own block start (FR-018). While the caption is
+  in view at the block start, the `<thead>` sits below it and is not yet pinned; the space is measured from the header
+  row's current block-end edge (A1 (c), decided (a) after phase 1's second spike), so under a tall caption in a small
+  bound no fade shows at rest until the caption scrolls away.
+- **A link in the caption of a sticky table.** The caption sits above the header row, so the link can never be below
+  the pinned header; the focus clearance keeps it inside the box instead. Tabbed to while it shows, nothing scrolls
+  and no fade is held off; tabbed to while it is partly scrolled out at the top, the box scrolls back just far enough
+  to show its focus ring whole, the header row below it; tabbed to after the caption has scrolled fully under the
+  pinned header, it is shown whole above the header row, which the browser's own focus scroll already does (FR-018,
+  US1-26; the operator's answers to Q-S2-1 (a) and Q-A2 (a)).
+- **Sticky header, right-to-left, overflowing only sideways.** No block-axis scrollbar room is reserved while nothing
+  overflows in the block axis, so the table's start is reachable by scrolling (FR-008, FR-018; the operator's
+  decision Q-3 (c) on phase 1's second spike).
+- **Sticky header overflowing both ways, either direction.** No room is reserved beyond the scrollbar the platform
+  draws, so the table's whole inline range is reachable, its end in left-to-right and its start in right-to-left,
+  with scrollbars hidden or shown, and a right-to-left table is not left off its start when the block bound is set
+  or lifted (FR-008, FR-018; the operator's answer to Q-A1 (a)).
+- **Block-end fade with the sideways fades.** Both show together when the region overflows in both axes; a corner
+  under both is faded by both, the inline fades still span the header row as 009's do, and neither fade covers a
+  scrollbar (FR-018).
+- **Block-end fade and focus.** A focused element in the faded rows is scrolled clear of the fade and of the header;
+  one taller than the space between them is aligned below the header and the block-end fade is held off until focus
+  leaves it or the user scrolls, as 009's inline fallback (FR-018, WCAG 2.4.11).
+- **Block-end fade in forced colours.** No mask is drawn; a `CanvasText` line marks the block end while rows are below,
+  as 009's inline lines mark the inline edges (FR-013, FR-018).
+- **Block-end fade without a bound.** With no bound nothing scrolls in the block axis, so no block-end fade shows
+  (US1-20).
+- **Striped rows with hidden rows.** A `hidden` body row still counts in the alternation (the stripes follow source
+  positions, `:nth-child`), so the visible rows may show two plain or two striped rows together; the README says so.
+  Each `<tbody>` starts its own count (FR-060).
+- **Hover on a row holding a link.** The link keeps its colour (`--ocelle-color-link` has a text declaration on
+  `hover-bg`); the hover adds no event, focus or cursor change (FR-061). On a device with no hover nothing shows:
+  the hover rule and its forced-colours band apply only under `@media (hover: hover)`, so a touch screen, where a
+  tapped row keeps `:hover` until the next tap elsewhere, shows no hover ground (the operator's decision A2 (a)).
+- **Block-axis keys other than the arrows.** With `sticky-header` and a bound, PageUp, PageDown, Home, End, Space and
+  Shift+Space on the focused box are the browser's: it scrolls the box in the block axis, the module does not handle
+  or prevent them, and the block-end fade and the pinned header follow as after any scroll (FR-018, the operator's
+  decision G1 (a)). From a focused link in a cell, these keys do what the browser does there; the module touches no
+  key from a descendant.
+- **The numeric hook outside a data table, or on a non-cell element.** The hook sets the same two declarations on any
+  element (FR-019); on a 003 prose table it overrides the prose cell's `text-align`. A header cell of a numeric column
+  takes it the same way, and keeps its eyebrow type.
 - **Caption while the region scrolls.** The caption is part of the table and scrolls with it unless the plan keeps it
   at the region's start edge (as 003's prose table does); either way it is never cut at 320 px (it wraps).
 - **A timeline or chain with no items.** It renders nothing visible, exposes no list item, and throws nothing; whether
@@ -446,6 +703,12 @@ the chip variant.
   | Evidence-step marker ring (`--ocelle-ring-step`) | structural, 3:1 |
   | Evidence-chain connector | decorative, exempt from 3:1 |
   | Chip-step outline | structural, 3:1 (it is the chip's only boundary) |
+  | Data-table stripe ground (`--ocelle-color-inset`, even body rows, FR-060) | decorative ground, exempt from 3:1 against its neighbours (table semantics and the row rules convey rows); text on it is held to the text declaration, inset being a main ground |
+  | Data-table hover ground (`--ocelle-color-hover-bg`, the hovered body row, FR-061) | decorative ground, exempt from 3:1; text on it is held to the text declaration, hover-bg being a main ground |
+  | Data-table pinned header ground (`--ocelle-color-sheet`, FR-017) | a ground, opaque so no row shows through; header text on it is held to the text declaration, sheet being a main ground |
+  | Data-table forced-colours row band (the first body cell's inline-start border, `--ocelle-bar-width`; FR-060, FR-061) | forced colours only: `CanvasText` on striped even rows, `Highlight` on the hovered row, `Canvas` otherwise; it stands in for the two grounds, which forced colours remove |
+  | Region block-end fade (the module's mask, FR-018) | not a line: a mask over the content, as 009's inline fades; drawn only outside forced colours |
+  | Region block-end line (`--ocelle-border-width`, forced colours only; FR-018) | forced colours only: `CanvasText`, as 009's inline edge lines; it stands in for the block-end fade |
 
   A decorative line MAY use `--ocelle-color-rule` or `--ocelle-color-rule-strong`. A structural one MUST use a token
   whose contrast declaration, text or non-text, covers all nine main grounds in both themes: a text declaration
@@ -495,7 +758,10 @@ the chip variant.
   cells (`<th scope="row">`) MUST use the body cell size in `--ocelle-color-ink` at a weight the plan names, not upper
   case. Where the rules meet: `scope="row"` takes the row-header style wherever it is (a corner cell in `<thead>`
   included); a `<th>` with no `scope` in `<tbody>` or `<tfoot>` takes the row-header style; `scope="colgroup"` takes
-  the column-header style and `scope="rowgroup"` the row-header style.
+  the column-header style and `scope="rowgroup"` the row-header style. Because the column headers are drawn in upper
+  case, Chromium names each by its upper-case text; the README of each package (`@ocelle/elements` and
+  `@ocelle/styles`) MUST state that the accessible names of column headers follow the drawn upper-case text (spike
+  Q2 (a), 2026-11-18).
 - **FR-007**: The element MUST take a `wrap` property with the one value `anywhere`, which sets
   `overflow-wrap: anywhere` on its body cells (never on header cells), and a cell element with `data-ocelle-wrap="anywhere"`
   (003's hook) MUST keep that behaviour inside the element. Without it, cell text wraps between words. The element
@@ -507,11 +773,15 @@ the chip variant.
   passed through `setLabel`, and `aria-label` in `observedAttributes`. While the table overflows its column the scroll
   box is a tab stop, named, with arrow-key scrolling, fades, focus clearance and focus handover as the contract states;
   while it fits, the box has no tab stop, role or name. The element MUST NOT reimplement any of the module's behaviour
-  or change the module; a need the module does not meet goes to the operator.
+  or change the module, except for exactly one change: the opt-in block-axis option of FR-018, which this mission adds
+  to the module for the sticky header row (inventory decision IQ-2, 2026-11-18). Any other need the module does not
+  meet goes to the operator.
 - **FR-010**: The region's name MUST be, in order: a non-blank host `aria-label`; else the element's non-blank `label`;
   else the trimmed text content of the table's `<caption>`, read by the element and passed to the module as its
   label (no ID reference), and re-read when the caption changes; else none, which the contract handles (tab stop, no
-  role, no name). The README MUST tell consumers to give an overflowing table a caption or a `label`.
+  role, no name). The README MUST tell consumers to give an overflowing table a caption or a `label`, and to give it
+  a `label` that differs from its caption's text, because a region named by its caption is announced with the same
+  name as the table it holds (inventory decision IQ-6 (a), 2026-11-18: the caption fallback stands).
 - **FR-012**: 003's prose table rules (`[data-ocelle-prose=""] :where(table)`, `:where(th, td)`, `:where(th)` and
   `:where(caption)`, each at specificity (0,1,0)) beat FR-005's (0,0,0) rules inside a `[data-ocelle-prose]`
   container. `@ocelle/styles` MUST therefore ship a separate prose override rule set for a data table's table, cells,
@@ -532,6 +802,85 @@ the chip variant.
   there.
 - **FR-015**: The element's `label` property (string, unset by default) names the region (FR-010) and nothing else; it
   is not shown. A host `aria-hidden="true"` or `hidden` follows the library's Host ARIA rule.
+- **FR-017** (inventory decision IQ-2, 2026-11-18): The element MUST take a `stickyHeader` property, reflected as the
+  boolean attribute `sticky-header` (present with any value, the empty string included; unset by default). While it
+  is set:
+  - the region scrolls on both axes through FR-018's option, and the table's `<thead>` (all its rows, as one group)
+    stays pinned at the scroll box's client block-start edge while the body rows scroll in the block axis (at the
+    block start it sits the focus ring's room below that edge, or below the caption; the operator's decision Q-2 (a)
+    on phase 1's second spike); the caption and any header row outside `<thead>` scroll with the body;
+  - the **block bound** is the page's: the consumer bounds the host's block size with a rule of its own
+    (`block-size` or `max-block-size` on the host; no attribute, no `style` attribute), and the region fills that
+    bound. With no bound the table is shown at full height and nothing scrolls in the block axis (US1-20);
+  - the header cells paint the opaque ground `--ocelle-color-sheet` (the operator's decision Q-I1, 2026-11-18), so no
+    row shows through, and the header rule
+    travels with the pinned row (the table uses separated borders with no spacing, which draws the row rules as before);
+  - a focused element in a body row is kept clear of the pinned header row (US1-19, WCAG 2.4.11), and a focused
+    element in the caption, above the header row, is scrolled back into view whole (US1-26, FR-018);
+  - the cell rules ship in `@ocelle/styles` like FR-005's, at (0,0,0) outside prose and with FR-012's override inside
+    it.
+  Setting or removing the attribute after mount takes effect without a page reload. The README MUST state the bound,
+  the caption's behaviour, the header ground, the block-end fade while rows are below (FR-018) and print.
+- **FR-018** (inventory decision IQ-2): This mission MUST add exactly one change to mission 009's internal
+  overflow-region module: an opt-in **block-axis option**, specified in `contracts/overflow-region-block-axis.md`,
+  which amends `specs/009-workflow-layouts/contracts/overflow-region.md` for hosts that set it:
+  - **Unset (the default):** the module behaves exactly as 009's contract states. `ocelle-scroller`,
+    `ocelle-workflow-board` and the test-only overflow host do not set it, and 009's existing tests pass unchanged
+    (no 009 behaviour test file is edited; the README's pinned sentence on the module's inputs is the one test
+    statement changed, for the new option).
+  - **Set:** the scroll box also scrolls in the block axis. It overflows when its content overflows in either axis
+    (more than 1 px), and then takes the tab stop, role and name of 009's contract. ArrowUp and ArrowDown, unmodified
+    and with the box as target, scroll it in the block axis by the module's step. PageUp, PageDown, Home, End, Space
+    and Shift+Space are left to the browser, which scrolls the focused box in the block axis: the module neither
+    handles nor prevents them, and its edge state, the block-end fade and the host's pinned box follow the scroll as
+    after any other (the operator's decision G1 (a), 2026-11-18). The focus clearance also works in
+    the block axis, keeping the ring box clear of the block-start box the host names (the pinned header, which is
+    not cleared when it holds the focus itself) and of the box's block end. The focus handover applies when overflow
+    ends in both axes, and every scroll write is instant. While content is below the box's block end, the block end
+    fades over the fade depth of 009's inline fades (the operator's decision Q-I4, 2026-11-18); there is no
+    block-start fade. The fade never covers the block-start box the host names: when the space below it is less than
+    twice the fade depth (the operator's decision Q-I6 (a)), no block-end fade is drawn. The room rule and the block
+    clearance measure the block-start box by one measure, its current laid-out block-end edge (the operator's
+    decision A1 (c), 2026-11-18, decided as Q-1 (a) after phase 1's second spike measured both candidate forms at
+    320 px with a two-line caption). A focused element that comes before the block-start box (a link in the data
+    table's caption) cannot be put below that box, which follows it and cannot cover it: for it the clearance's upper
+    bound is the box's own block-start edge, so the box scrolls back to show it whole and leaves it alone where it
+    already shows (the operator's answer to Q-S2-1 (a), 2026-11-18). The box scrolls in the block axis only while it
+    overflows in that axis (Q-3 (c)), no room is reserved for a block-axis scrollbar beyond the scrollbar the
+    platform draws, so the whole inline range stays reachable in both directions (Q-A1 (a)), and the block-end edge that measures the fade depth covers no content outside forced
+    colours (Q-4 (a)). It combines with the inline fades (a corner under both is faded
+    by both), the focus clearance keeps the ring box clear of it, with 009's fallback (the fade held off) for a ring
+    box too tall to clear, and in forced colours a line in `CanvasText` at the block end stands in for it. No fade
+    covers either scrollbar.
+  - 009's own contract file gets one line pointing to `contracts/overflow-region-block-axis.md` (the operator's
+    decision Q-I5) and is otherwise unchanged.
+  - The module stays internal and not public surface (009's contract, constitution VII). The README's § Element
+    conventions entry for the module names the option.
+- **FR-019** (inventory decision IQ-3, 2026-11-18): `@ocelle/styles` MUST add a documented base-style hook for numeric
+  cells: the attribute `data-ocelle-align` with the one value `end`, which sets `text-align: end` and
+  `font-variant-numeric: var(--ocelle-figures)` on the element that carries it, at specificity (0,1,0), and is placed
+  after FR-012's prose override so it wins inside a prose container too. Any other value has no effect. It works on
+  any element (a cell of a data table, of a prose table or any table) and is documented for the body and header cells
+  of a numeric column; it changes nothing else (no font, colour or padding), so a header cell keeps its eyebrow type.
+  It is public surface (constitution VII, MINOR): the `@ocelle/styles` README's Hooks table and CHANGELOG name it,
+  and the `@ocelle/elements` README's data-table section points to it.
+
+- **FR-060** (inventory decision IQ-4, 2026-11-18): The element MUST take a `striped` property, reflected as the
+  boolean attribute `striped` (present with any value; unset by default). While it is set, every cell of each even
+  body row (the second, fourth and so on among the rows of each `<tbody>`, counted by source position, hidden rows
+  included) paints the ground `--ocelle-color-inset`; header and footer rows paint none. The cell text keeps its
+  colour, declared on inset (FR-013), and the row rules stay. The rules ship in `@ocelle/styles` at (0,0,0), so a
+  consumer rule wins. In forced colours the stripe is drawn by the row band of FR-013's table.
+- **FR-061** (inventory decision IQ-5, 2026-11-18): A hovered body row (a row of a `<tbody>`) MUST paint the ground
+  `--ocelle-color-hover-bg` on all its cells, over a stripe too; header and footer rows do not. It applies only where
+  the primary pointer can hover: the rule is inside `@media (hover: hover)`, so a device with no hover (a touch screen,
+  where a tapped row keeps `:hover`) shows nothing (the operator's decision A2 (a), 2026-11-18). The hover is a look
+  only: no event, no tab stop, no focus and no cursor change (FR-011); the text keeps its colour, declared on hover-bg
+  (FR-013). In the light theme `hover-bg` and `inset` have the same value, so a hovered striped row does not change
+  there (accepted by the operator's decision Q-I2, 2026-11-18; the README notes it). It is always on, with no
+  attribute (the operator's decision Q-I3). The rule
+  ships in `@ocelle/styles` at (0,0,0), after the stripe rule. In forced colours the hovered row is drawn by the row
+  band of FR-013's table in `Highlight`, under the same `@media (hover: hover)` condition.
 
 ### `ocelle-event-timeline` (P2)
 
@@ -635,10 +984,21 @@ the chip variant.
   elements have no stories file of their own: their states (with and without time, a slotted time, wrap, hidden, chip,
   and the item outside its container) are stories in their container's file (analysis C1 (c)). Data-table stories
   include a fitting table, an overflowing table (the region focusable and named), a table with row headers, and a
-  table named by its caption. The states named by a host `aria-label` (the data table's region, the timeline and the
-  chain) have no story: they are a constitution V exception recorded in the plan's Complexity Tracking, chosen by the
-  operator (analysis C1 (c)), and proven by browser tests. Any further state without a story is a constitution V
-  exception recorded there and approved by the operator.
+  table named by its caption, and two overflowing tables named through a host `aria-label`: one non-blank (the region
+  named by it) and one blank (the region named by `label`), added once the phase 1 spike found the pinned axe-core
+  clean on that state (spike Q1 (b), 2026-11-18), and, for the inventory decisions IQ-2 to IQ-5, a bounded
+  `sticky-header` table, a table with an end-aligned numeric column, a striped table, a hovered body row and a striped
+  table with an even row hovered (the two hover states through #10's pointer parameter), and an unbounded
+  `sticky-header` table (US1-20, the operator's decision C1 (b) on the re-analysis, 2026-11-18), and a `sticky-header`
+  table under the room rule, bounded so that rows are below but less than twice the fade depth shows under the
+  header, so no block-end fade is drawn (US1-26's room-rule half, the operator's answer to fixes-2 Q-1 (b),
+  2026-11-18). One scroll-position state of the block-end fade has no story: the bounded table scrolled to its block
+  end (the fade off); it is one constitution V exception recorded in the plan's Complexity Tracking, chosen by the
+  operator (re-analysis C1 (b), narrowed by fixes-2 Q-1 (b); Q-I7 (a) for the fade's off state), and proven by
+  browser tests (US1-26, US1-28). The states named by a host `aria-label` of the timeline and the
+  chain have no story: they are a constitution V exception recorded in the plan's Complexity Tracking, chosen by the
+  operator (analysis C1 (c)), and proven by browser tests, until their own phase's spike measures them. Any further
+  state without a story is a constitution V exception recorded there and approved by the operator.
 - **FR-051**: Visual baselines and the `axe` run follow #10 on `main`. Each phase that adds stories MUST commit their
   light and dark baselines, produced in #10's pinned container by its baseline command under docker, and its stories
   MUST pass #10's `storybook-build`, `visual` and `axe` gates with no serious or critical finding and no
@@ -656,23 +1016,34 @@ the chip variant.
 - **FR-056**: The README's § Element conventions MUST record the pattern this mission adds: a container whose content
   is one native element (the data table's `<table>`), styled by `@ocelle/styles` rules scoped to the container because
   shadow styles cannot reach its descendants, and assigned by manual slot assignment. It MUST also list the data table
-  as a user of the overflow-region module beside 009's elements.
+  as a user of the overflow-region module beside 009's elements, the only one that sets the block-axis option
+  (FR-018), and the module's entry MUST name that option and its block-end fade.
 - **FR-057**: Each package changed gets a changelog entry naming its surface additions: the five elements and their
-  properties, any added tokens, and the added `@ocelle/styles` rules (constitution VII, MINOR). The custom properties
+  properties (the data table's `sticky-header` and `striped` among them), any added tokens, the added `@ocelle/styles`
+  rules and the `data-ocelle-align` hook (FR-019) (constitution VII, MINOR). The overflow-region module's block-axis
+  option is internal and not surface (FR-018); the `@ocelle/elements` changelog entry mentions it as an internal
+  change with no effect on `ocelle-scroller` or `ocelle-workflow-board`. The custom properties
   `ocelle-data-table` writes and `@ocelle/styles`' caption cap reads (`--data-table-box-size`,
   `--data-table-end-fade`) are a documented base-style hook between the two packages: both packages' changelogs and
   READMEs name them as surface, and the READMEs say a consumer does not set them (analysis I7 (a)).
-- **FR-058**: The README MUST map each kitty-mission-ui `.sk-data-table` variant, and any event-history or
-  evidence-chain class family the plan's research inventories, to the element and variant that replaces it, or to the
-  consumer's remedy, or to "not this mission" with the operator's decision. The mapping names roles only and copies no
-  code (constitution VI). Readme tests assert the rows by role names, with no `sk-` string in test code (013's operator
-  decision I1). A variant no element covers goes to the operator.
+- **FR-058**: The README MUST map each variant of the inventory to the element and variant that replaces it, or to the
+  consumer's remedy, or to "not this mission" with the operator's decision. The inventory is the spec-kitty design
+  library's own variant set for the three families (research R-16, `sources/spec-kitty-design-inventory.md`, read at
+  `main` 19fb6a2 and `develop` a6518cd; inventory decision IQ-1 (a), 2026-11-18): **one mapping row per modifier,
+  state, structure role and part** of each family, with no counts, plus a row for any variant the operator names from
+  kitty-mission-ui's rc.10 line. The data table's rows are written in phase 1, the timeline's in phase 2 and the
+  chain's in phase 3. The data table's rows include the library's header look mapped to the eyebrow headers, with the
+  consumer's own rule for sentence case (IQ-7 (a)), and the duplicate-name rule mapped to FR-010's `label` advice
+  (IQ-6 (a)). The mapping names roles only and copies no code (constitution VI). Readme tests assert the rows by role
+  names, with no `sk-` string in test code (013's operator decision I1). A variant no element covers goes to the
+  operator. No row reads "pending inventory" (spike decision on T005 superseded by IQ-1 (a)).
 - **FR-059**: Each phase's gate runs MUST use op 016's affected-plants mode once op 016 is on `main` (operator, via the
   orchestrator, 2026-11-15), not a full `gate:plants`; mutation testing follows #23's and op 015's rules on `main`.
 
 ### Key Entities
 
-- **Data table** (`ocelle-data-table`): one consumer `<table>`, a region label, a wrap policy.
+- **Data table** (`ocelle-data-table`): one consumer `<table>`, a region label, a wrap policy, a sticky header row
+  (with the page's block bound) and striped rows; numeric cells carry `@ocelle/styles`' `data-ocelle-align="end"` hook.
 - **Event** (`ocelle-timeline-event`): an optional time (the `time` attribute's text, or marked-up nodes in the `time`
   slot, which take precedence), content (inline markup), a wrap policy.
 - **Event timeline** (`ocelle-event-timeline`): its events in source order, a name.
@@ -684,9 +1055,10 @@ the chip variant.
 
 ### Measurable Outcomes
 
-- **SC-001**: The README mapping (FR-058) has a row for every `.sk-data-table` variant kitty-mission-ui uses, and for
-  every event-history or evidence-chain family the research inventories, each naming the element and variant with no
-  `class` attribute, the consumer's remedy, or "not this mission" with the operator's decision. Checked in review.
+- **SC-001**: The README mapping (FR-058) has a row for every modifier, state, structure role and part of the three
+  families in research R-16's inventory (the library's variant set, inventory decision IQ-1 (a)), and for any rc.10
+  variant the operator names, each naming the element and variant with no `class` attribute, the consumer's remedy,
+  or "not this mission" with the operator's decision, and no row reads "pending inventory". Checked in review (T076).
 - **SC-002**: At 320 px CSS width, every story of the three containers has a page scroll width equal to the viewport
   width.
 - **SC-003**: Every story of the five elements reports no serious or critical axe finding by #10's `axe` gate, in light
@@ -700,7 +1072,8 @@ the chip variant.
   red/green check), and mutation testing under #23's rules leaves no surviving mutant in the phase's changed source,
   except mutants the review records as equivalent with the reason.
 - **SC-007**: The manifest, strict-CSP, prefix and style-lint gates pass with the five elements added, and mission
-  013's elements' tests and baselines are unchanged.
+  013's elements' tests and baselines are unchanged. Mission 009's tests of the overflow-region module,
+  `ocelle-scroller` and `ocelle-workflow-board` pass unchanged after FR-018's option, and their baselines do not move.
 
 ## Assumptions
 
@@ -713,12 +1086,16 @@ the chip variant.
 - The compact cell padding, cell font size, header weight and colours, connector width and chip padding are set in the
   plan from the existing scale. The spec fixes only their order (data-table cells more compact than 003's prose table,
   chip step smaller than a default step).
-- Cells align to the inline start. An end-aligned numeric column is not asked for by #13 and would need an API that is
-  not a class (a later issue); `--ocelle-figures` keeps digits aligned within a column of equal-length numbers.
+- Cells align to the inline start. A numeric column is end-aligned by the consumer through `@ocelle/styles`'
+  `data-ocelle-align="end"` hook on its cells (FR-019, inventory decision IQ-3), not by a class or an element
+  property; `--ocelle-figures` keeps digits aligned within the column.
 - The evidence chain's step markers show ordinals (an informed choice: the prototype's chain is numbered and #13 asks
   for step markers); per-step states (done, current, pending) are not asked for by #13 and are out of scope. The
   timeline's markers have one look; a tone or state on events is out of scope.
 - The data table has no density property: its default is the compact look #13 asks for.
 - Kitty Desktop's WebKit is not measured, the same as the library's existing Engines note. Only Chromium is.
 - The data table is a further user of 009's overflow-region module; the contract names `ocelle-code-block` as its next
-  user, and using it in the data table first changes nothing in the module.
+  user. Using it in the data table changes the module by FR-018's opt-in block-axis option only, which no other user
+  sets (inventory decision IQ-2).
+- The sticky header row needs a bounded block size, which is the page's layout decision (the consumer's rule on the
+  host), as the library's own sticky header needs the consumer's bound.
