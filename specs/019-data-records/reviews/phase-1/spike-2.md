@@ -367,3 +367,148 @@ data-table stories would fail `gate:axe`; R-18 expected no finding.
 - (c) Keep the contract and record the cells under the edge in `storybook/a11y-exceptions.json` for each data-table
   story-theme (an exception per node, each with a sunset); not recommended, and each entry is itself a stop-and-ask
   point.
+
+## Addendum before the red commit: spike-2 Q-3 (c) and Q-S2-1 (a) (T082)
+
+Run on 2026-11-18 in this container (the same versions and harness as above), on a scratch copy of the spike's module
+with the decisions applied: `data-axis="both"` written only while the option is on and `scrollHeight − clientHeight
+> 1` (decided afresh on every measure, the attribute an output change, the mask figures read after it is written),
+`.region-edge.block-end` zero-wide outside forced colours (Q-4 (a)), the `<thead>` at the negative inset (Q-2 (a)),
+`pinnedEnd` the current edge (Q-1 (a)), and `blockClearanceScroll` with `before` (Q-S2-1 (a)); the stand-in data
+table keeps the measured `.box-size` inline size and rewrites `--data-table-box-size` less the current gutter in the
+end fade's single animation frame after the box's `data-axis` changes. Every case ran with hidden scrollbars
+(Playwright's default `--hide-scrollbars`, as the harnesses and the stories run) and with classic scrollbars. Nothing
+of it is committed.
+
+**Outcome: two results contradict the decisions and stop the phase (Q-A1, Q-A2).** No `ResizeObserver` loop error in
+any case, no oscillation of the attribute, the cap rewrite one frame after each change; but with hidden scrollbars the
+gutter still costs a both-axes table 15 px of inline scroll range (LTR and RTL), with classic scrollbars an RTL table
+is left 14 px off its start when the gutter goes, and the caption link's "past the caption" case is met by Chromium's
+own focus scroll alone. No scaffold, no red commit; T082 stays open.
+
+### A1. `data-axis` per overflow case (host `max-block-size: 300px`)
+
+| Case | `data-axis` | `overflow-y` | gutter | at rest: `scrollLeft` / `data-fade` | inline range (far end) | back to `scrollLeft` 0 | mask |
+|---|---|---|---|---|---|---|---|
+| fits (3 rows, 1280 px), LTR and RTL, both runs | absent | `hidden` | 0 | 0 / absent | | | none |
+| inline only (3 rows, 320 px), LTR and RTL, both runs | absent | `hidden` | 0 | 0 / `end`; the first column header's start at the track's start | 170 (LTR) / −169 (RTL) | 0, `end` | 009's two layers, figures as 009 |
+| block only (20 rows, 1280 px), LTR and RTL, both runs | `both` | `auto` | 15 (left in RTL) | 0 / absent; `data-block-fade="end"` | | | four layers, `add, add, intersect, add`, sizes as the contract |
+| both (20 rows, 320 px), LTR, classic | `both` | `auto` | 15 | 0 / `end` | 185 = 490 − 305, `start` at the end | 0 | four layers |
+| both, RTL, classic | `both` | `auto` | 15 | 0 / `end` | −184 | 0 | four layers |
+| **both, LTR, hidden** | `both` | `auto` | 15 | 0 / `end` | **170**: `data-fade="both"` at the far end, the table's last 15 px never reachable | 0 | four layers |
+| **both, RTL, hidden** | `both` | `auto` | 15 | **−14 / `both`**; the track's start 14 px past the client edge | −184 | **−14**: the start never reachable | four layers |
+
+With hidden scrollbars and `scrollbar-gutter: stable`, Chromium reserves the 15 px gutter (`clientWidth` 305) but
+sizes the inline scroll range as if it were not there (range 170 = 490 − 320, against 185 with classic scrollbars):
+in LTR the table's end, in RTL its start, cannot be scrolled into view. Q-3 (c) removed the inline-only case of § 2
+but not this one: a table that overflows both ways keeps the gutter. § 2's "with block overflow too the start is
+reachable" held for classic scrollbars only; its hidden run of the data table already showed `scrollLeft` −14 for RTL
+both axes (`S2-hidden`, not carried into the record). The harnesses, the stories and the baselines run hidden, and
+T080's paired body ("the same table bounded in the block axis carrying `data-axis="both"` with `scrollLeft` 0 at
+rest", RTL at 320 px, both axes) would fail in process at green.
+
+### A2. The bound set and lifted at run time (four-line caption, LTR and RTL, 1280 and 320 px)
+
+Unbounded → `max-block-size: 300px` → none → `block-size: 200px`. In every run and both directions the attribute, the
+gutter and the mask follow (absent, 0, 009's two layers or none; then `both`, 15, four layers with matching sizes;
+then back), each change in the `ResizeObserver` delivery after the rule change, and `--data-table-box-size` rewritten
+in the next animation frame (for example set at 1500.3 ms, rewritten 305px at 1515.9 ms; a frame callback run before
+the rewrite in that frame still reads 320px), never in the task of the change; no `ResizeObserver` loop error. Every caption line inside the
+unmasked width in LTR (both runs) and in RTL with classic scrollbars while bounded. Two failures, both RTL at 320 px:
+
+| Run | Bounded | Lifted (the gutter goes) |
+|---|---|---|
+| hidden | `scrollLeft` −14, `data-fade="both"`, caption line ends past the client edge (329 > 320) (A1's range defect) | −14, `both`, lines past the edge |
+| classic | 0, `end`, lines inside | **−14, `both`**: Chromium keeps the offset the gutter caused, so the table is left 14 px from its start with no user scroll and the caption's lines run past the edge (329 > 320); reachable by scrolling back |
+
+### A3. Block overflow only from a gutter-caused inline scrollbar (1280 px, 6 rows, table 1200, 1260 and 1268 px)
+
+Not reproduced: with the gutter in (a bound below the table's height), the gutter made the track overflow inline by
+up to 13 px (`scrollWidth` 1278, `clientWidth` 1265), but Chromium drew no inline scrollbar for it even with classic
+scrollbars (`offsetHeight − clientHeight` 0). Widening the bound to the table's height + 5 px then ended the block
+overflow and the attribute was removed once; mounted straight into that bound it never appeared. Ten sampled frames
+each: one value throughout, no oscillation, no loop error, in both runs.
+
+### A4. A link in the caption (Q-S2-1 (a)), the spike's "rest" and "past" positions
+
+320 px, the two-line caption "Work packages of mission nineteen, every lane and owner" with "owner" a link on its
+second line (asserted: two line boxes, the link on line 2; caption 48.6 px), 20 rows, bounds 100 and 300 px, LTR and
+RTL, both runs; identical figures throughout.
+
+- **At rest:** tabbed to from the focused box: `scrollTop` 0 before and after in every frame, the ring box at 21.3 to
+  48.3 px below the client block-start edge, the clearance computed with `before` true and writing nothing,
+  `data-block-fade` unchanged (`end` in 300, absent in 100 by the room rule). As the contract states.
+- **Past the caption** (`scrollTop` 79: the caption scrolled away, the header pinned at 0 to 27): **Chromium's focus
+  scroll alone already scrolls the box to 0** (it centres a focused element that is out of view; clamped at the block
+  start), before `focusin`. The link is then at its at-rest position (ring box 21.3 px below the client edge, the
+  `<thead>` 5.3 px below the ring box, `elementFromPoint` returns the link), and the clearance, with or without
+  `before`, writes nothing. The contract's expected value (the ring box's block-start edge at the client block-start
+  edge within 0.5 px) is met by no variant, and the guarantee itself (shown whole, above the `<thead>`) is met by the
+  platform alone, so the red body would pass at red and T024's new plant (`before` always false) would not bite on it.
+
+### A5. The caption link partly scrolled out at the top (measured to find a position that tells the variants apart)
+
+The same table, the link's border-box top placed at −12, −6, −2 and +2 px from the client block-start edge
+(`scrollTop` 38, 32, 28, 24; the caption partly away, the `<thead>` in flow below it, not yet pinned), then tabbed
+to. LTR and RTL, 100 and 300 px, both runs; identical figures:
+
+| Variant | `scrollTop` after | ring box's block-start edge | within 0.5 px of the client edge | `elementFromPoint` | `<thead>` below the ring |
+|---|---|---|---|---|---|
+| Chromium alone (clearance off) | 26 (24 from +2: no scroll, the link itself visible) | −4.7 (−2.7) | no | the link | yes (5.3) |
+| the clearance without `before` (from `pinnedEnd`) | 0 | 21.3 | no | the link | yes |
+| the clearance with `before` (Q-S2-1 (a)) | 21 | **0.3** | **yes** | the link | yes |
+
+One write, no jump back over ten frames. Here the three differ: Chromium aligns the link's border box (not its ring
+box) at the edge, the clearance from `pinnedEnd` scrolls the whole caption back, and the clearance with `before`
+scrolls back by the ring room only. A body at this position fails at red (−4.7) and the `before` plant bites (21.3).
+
+### The same cases without `scrollbar-gutter` (measured for Q-A1)
+
+The scratch module with `scrollbar-gutter: auto` on `[data-axis="both"]` (so `overflow-y: auto` only while the box
+overflows in the block axis, the scrollbar coming and going with it), A1, A2, A4 and A5 again in both runs:
+
+- hidden: no gutter at all (`offsetWidth` = `clientWidth`), the inline range full (170 at 320 px in both directions,
+  the start at `scrollLeft` 0 at rest and after the bound is set and lifted, `data-fade="end"`), four layers with a
+  0 px block-scrollbar layer, `--data-table-box-size` 320px (nothing to subtract), every caption line inside;
+- classic: the real scrollbar takes 15 px while the box overflows in the block axis (on the left in RTL);
+  RTL both axes at `scrollLeft` 0 at rest, range 184, back to 0; after the bound is lifted 0 and `end` (not −14);
+  `--data-table-box-size` 305px and 320px following, rewritten one frame after each change; every caption line
+  inside;
+- no `ResizeObserver` loop error; A4 and A5 unchanged.
+
+## Questions for the operator (addendum)
+
+**Q-A1. The stable gutter still loses 15 px of inline scroll range (A1, A2).** With hidden scrollbars (the harnesses,
+the stories, the baselines) a sticky table that overflows in both axes cannot reach its last 15 px in LTR or its first
+14 px in RTL (`scrollLeft` −14 and `data-fade="both"` at rest); with classic scrollbars an RTL table is left at −14
+when the gutter goes at run time. It contradicts R-18's gutter choice (FR-008: no content lost; WCAG 1.4.10) and
+T080's paired RTL body.
+
+- (a) No `scrollbar-gutter` (spike-2 Q-3 (b) on top of (c)): `[data-axis="both"]` gives `overflow-y: auto` only,
+  still written only while the box overflows in the block axis; the scrollbar's room is the client width the module
+  and the data table already read (`offsetWidth − clientWidth`, 0 with hidden scrollbars). Measured clean in both runs
+  and directions (§ The same cases without `scrollbar-gutter`). Contract, research R-18, FR-018 and the bodies drop
+  "the 15 px gutter" for "the block-axis scrollbar's room, 0 with hidden scrollbars"; the stories lose the 15 px empty
+  band; `.box-size` less `offsetWidth − clientWidth` stays.
+- (b) Keep the gutter and treat hidden scrollbars as a test artefact: the RTL and both-axes bodies run with classic
+  scrollbars only (as 009's `test/browser/scrollbar.test.ts`), and the module resets an RTL box to its start when the
+  gutter goes and the user had not scrolled (not measured); the stories and baselines keep showing the clipped 15 px.
+- (c) Keep the gutter and drop the both-axes RTL guarantee: README statement that a sticky table that overflows both
+  ways under hidden or overlay-like scrollbars loses 15 px at its inline end (LTR) or start (RTL); T080's paired body
+  changes to classic scrollbars. Not recommended (FR-008).
+
+**Q-A2. The caption link "past the caption" is met by Chromium alone (A4).** Once the caption has scrolled under the
+pinned header, Chromium's focus scroll centres the link and clamps at `scrollTop` 0 before `focusin`; the clearance
+writes nothing with or without `before`, the contract's "ring box at the client block-start edge within 0.5 px" never
+holds, and the red body (and T024's `before` plant) would be vacuous there.
+
+- (a) Move the "past the caption" half of US1-26 and T079's element-before body to the partly scrolled position of A5
+  (the link's border box 2 to 12 px above the client edge, the caption partly away): expected ring box at the client
+  block-start edge within 0.5 px, the `<thead>` below it, `elementFromPoint` the link, no jump back; Chromium alone
+  −4.7 (fails at red), without `before` 0 → 21.3 (the plant bites). The fully-past position stays as a "the link shown
+  whole above the `<thead>`" assertion paired with it, recorded as one the platform alone meets.
+- (b) As (a), and drop the fully-past position from the bodies altogether (the platform's centring is not this
+  module's behaviour).
+- (c) Keep the bodies as written and change the expected value at the fully-past position to Chromium's result
+  (`scrollTop` 0, the link at its at-rest position); the `before` rule then has no body that fails without it, and the
+  plant is recorded as not biting (a stop-and-ask point of its own). Not recommended.
