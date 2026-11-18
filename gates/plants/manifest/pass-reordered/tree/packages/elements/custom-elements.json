@@ -254,6 +254,129 @@
       ]
     },
     {
+      "path": "src/ocelle-data-table.ts",
+      "kind": "javascript-module",
+      "exports": [
+        {
+          "name": "OcelleDataTable",
+          "kind": "js",
+          "declaration": {
+            "name": "OcelleDataTable",
+            "module": "src/ocelle-data-table.ts"
+          }
+        }
+      ],
+      "declarations": [
+        {
+          "tagName": "ocelle-data-table",
+          "superclass": {
+            "package": "lit",
+            "name": "LitElement"
+          },
+          "slots": [
+            {
+              "name": "",
+              "description": "The first direct `<table>` child; other children are not shown after upgrade."
+            }
+          ],
+          "name": "OcelleDataTable",
+          "members": [
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "privacy": "public",
+              "name": "label",
+              "kind": "field",
+              "description": "Names the scroll region while the table overflows; not shown. Trimmed; empty or whitespace-only counts as absent.",
+              "default": "undefined",
+              "attribute": "label"
+            },
+            {
+              "type": {
+                "text": "\"anywhere\" | undefined"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "wrap",
+              "kind": "field",
+              "description": "`anywhere` breaks long identifiers in body cells anywhere (`overflow-wrap: anywhere` through `@ocelle/styles`); any\nother value acts as unset.",
+              "default": "undefined",
+              "attribute": "wrap"
+            },
+            {
+              "type": {
+                "text": "boolean | undefined"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "stickyHeader",
+              "kind": "field",
+              "description": "Present (any value): the `<thead>` stays pinned at the region's block start while the body scrolls in a block size\nthe page bounds on the host. Toggles at run time.",
+              "default": "undefined",
+              "attribute": "sticky-header"
+            },
+            {
+              "type": {
+                "text": "boolean | undefined"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "striped",
+              "kind": "field",
+              "description": "Present (any value): each `<tbody>`'s even rows get the `--ocelle-color-inset` ground through `@ocelle/styles`.",
+              "default": "undefined",
+              "attribute": "striped"
+            }
+          ],
+          "kind": "class",
+          "events": [],
+          "description": "A compact data table: a native `<table>` child in a box that scrolls in the inline direction when the table is wider\nthan its room, a tab stop and a named group only while it overflows.",
+          "customElement": true,
+          "cssProperties": [],
+          "cssParts": [],
+          "attributes": [
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "name": "label",
+              "fieldName": "label",
+              "description": "Names the scroll region while the table overflows; not shown. Trimmed; empty or whitespace-only counts as absent.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "\"anywhere\" | undefined"
+              },
+              "name": "wrap",
+              "fieldName": "wrap",
+              "description": "`anywhere` breaks long identifiers in body cells anywhere (`overflow-wrap: anywhere` through `@ocelle/styles`); any\nother value acts as unset.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "boolean | undefined"
+              },
+              "name": "sticky-header",
+              "fieldName": "stickyHeader",
+              "description": "Present (any value): the `<thead>` stays pinned at the region's block start while the body scrolls in a block size\nthe page bounds on the host. Toggles at run time.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "boolean | undefined"
+              },
+              "name": "striped",
+              "fieldName": "striped",
+              "description": "Present (any value): each `<tbody>`'s even rows get the `--ocelle-color-inset` ground through `@ocelle/styles`.",
+              "default": "undefined"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "path": "src/ocelle-dialog.ts",
       "kind": "javascript-module",
       "exports": [
