@@ -87,6 +87,55 @@ export function clearanceScroll({ ring, box, fade, direction }: ClearanceInput):
   return { scrollLeft: direction === "ltr" ? position : 0 - position, suppressStart, suppressEnd };
 }
 
+/** A block span of the viewport, in CSS px from its top edge. */
+export interface BlockSpan {
+  readonly top: number;
+  readonly bottom: number;
+}
+
+/** The scroll box for the block clearance: its client area's block edges in the viewport, and its block scroll metrics. */
+export interface BlockClearanceBox extends BlockSpan {
+  readonly scrollTop: number;
+  readonly scrollHeight: number;
+  readonly clientHeight: number;
+}
+
+/**
+ * What `blockClearanceScroll` reads (019 contracts/overflow-region-block-axis.md § Pure functions): the focused
+ * element's ring box, the box, `pinnedEnd` (in the box's client coordinates), the block-end fade depth, and whether the
+ * focused element precedes the pinned box in tree order.
+ */
+export interface BlockClearanceInput {
+  readonly ring: BlockSpan;
+  readonly box: BlockClearanceBox;
+  readonly pinnedEnd: number;
+  readonly fade: number;
+  readonly before: boolean;
+}
+
+/** The `scrollTop` that clears the ring box, and whether the block-end fade it could not clear is suppressed. */
+export interface BlockClearance {
+  readonly scrollTop: number;
+  readonly suppressEnd: boolean;
+}
+
+/** The block-axis edge state of a scroll box. */
+export interface BlockEdgeState {
+  readonly overflowingBlock: boolean;
+  readonly offBlockEnd: boolean;
+  readonly room: boolean;
+}
+
+/** The block clearance of the block-axis option (019 FR-018). Scaffold: not implemented. */
+export function blockClearanceScroll(input: BlockClearanceInput): BlockClearance {
+  throw new Error(`not implemented: blockClearanceScroll(${JSON.stringify(input)})`);
+}
+
+/** The block-axis edge state of the block-axis option (019 FR-018). Scaffold: not implemented. */
+export function blockEdgeState(scrollTop: number, scrollHeight: number, clientHeight: number, pinnedEnd: number, fade: number): BlockEdgeState {
+  throw new Error(`not implemented: blockEdgeState(${[scrollTop, scrollHeight, clientHeight, pinnedEnd, fade].join(", ")})`);
+}
+
 /** The name in force: the host's non-blank `aria-label`, trimmed, else the trimmed non-blank label, else none (R-01). */
 export function resolveName(hostAriaLabel: string | null, label: string | undefined): string | undefined {
   const host = hostAriaLabel?.trim() ?? "";
@@ -103,6 +152,10 @@ export interface OverflowRegionOptions {
   readonly role?: "group" | "region";
   /** The px the box scrolls per arrow key: 40 by default. */
   readonly step?: number;
+  /** The block-axis option (019 FR-018), read after each update: absent or false, 009's contract exactly. */
+  readonly blockAxis?: () => boolean;
+  /** The box the host pins at the scroll box's block start, or null (019 FR-018). */
+  readonly blockStartBox?: () => Element | null;
 }
 
 /**
@@ -278,6 +331,10 @@ export class OverflowRegion implements ReactiveController {
   fadeEnd = false;
   /** The name in force: the host's non-blank `aria-label`, else the label, trimmed; undefined without one. */
   name: string | undefined;
+  /** Whether content is below the box's client block end by more than 1 px, while the block-axis option is on. */
+  offBlockEnd = false;
+  /** Whether the block end fades: `offBlockEnd`, the room rule met, and not suppressed by the block focus fallback. */
+  fadeBlockEnd = false;
 
   readonly #host: ReactiveControllerHost & HTMLElement;
   readonly #boxOf: () => HTMLElement | null;
