@@ -23,3 +23,12 @@
   (docs/architecture/validation/issue-470-desktop-v2-handoff-stage-a/, kitty-specs/desktop-v2-immutable-handoff-*),
   which the planner records as background.
 - **IQ-8 to IQ-24 (timeline and chain):** asked before phases 2 and 3.
+
+## Follow-up questions (reviews/phase-1/inventory-fixes.md), 2026-11-18, human:jeroennouwsdev
+
+- **Q-I1, the pinned header row's background:** `--ocelle-color-sheet` (the default).
+- **Q-I2, hover on a striped even row in light theme (inset = hover-bg):** accept it; the README notes it.
+- **Q-I3, row hover:** always on (the default).
+- **Q-I4, block-axis end fade:** add a fade at the block end while content is below (changes the default).
+- **Q-I5, pointer in 009's contract:** add a one-line note in `specs/009-workflow-layouts/contracts/overflow-region.md`
+  pointing to this mission's amendment (changes the default).
