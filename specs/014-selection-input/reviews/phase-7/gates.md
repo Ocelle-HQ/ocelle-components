@@ -49,3 +49,26 @@ tests timed out at 5 s in that run under load (unrelated to the phase; they pass
 - **Composed dialog story: deferred to landing.** The `ocelle-dialog` + `ocelle-listbox` story (FR-054) and its docker
   baselines are added during `/ocelle-land` after its merge of `main` (#16 merged as `13af7a9`), as a test-first
   landing fold (operator decision 1, `reviews/phase-7/operator-decisions.md`; `reviews/phase-7/notes.md`).
+
+## Review round 2 (operator round), fix-2: the composed dialog and listbox story (T114)
+
+Run on 2026-11-18 at `e8c3cee` (the story, the listbox fix, the baselines and the union counts), one heavy job at a
+time, with `OCELLE_CHROMIUM_PATH=/opt/pw-browsers/chromium-1243/chrome-linux64/chrome` and
+`OCELLE_VISUAL_ENGINE=docker`. A full `gate:plants` run of the coordinator's shared the machine and docker throughout.
+
+| Command | Exit | Result |
+|---|---|---|
+| `pnpm run visual:update` (docker) | 0 | wrote 2 files (2 added, 0 changed, 0 removed): the composed story in light and dark |
+| `pnpm test` | 0 | 8007 tests passed in 247 files |
+| `pnpm run gate:storybook-build` | 0 | built 178 stories |
+| `pnpm run gate:visual` (docker) | 0 | 356 captures match their baselines (docker only: no cross-engine comparison) |
+| `pnpm run gate:axe` | 0 | 356 story-theme runs, 0 serious or critical; 22 notes (0 incomplete, 22 excepted) |
+| `pnpm run gate:csp` | 0 | 55 files checked, no finding |
+| `pnpm run gate:typecheck` | 0 | no type error |
+| `pnpm run gate:lint` | 0 | 475 files checked, no finding |
+| `pnpm run gate:test-lint` | 0 | 347 files checked, no finding |
+| `pnpm run gate:plants -- --affected ea7eca6^` | 0 | 21 of 314 plants judged, every plant as expected (`plants.md`); `visual/fail-token-changed` at 150 findings |
+| `vitest run packages/elements/test/browser/drawer.test.ts packages/elements/test/driver.test.ts` | 0 | 456 tests passed: the two failures of `ea7eca6`'s red run were load flakes |
+
+The composed story's baselines are docker only; no podman cross-engine check was possible here, and CI confirms them
+at landing (FR-053). The known gap "Composed dialog story: deferred to landing" above is closed by this fold.
