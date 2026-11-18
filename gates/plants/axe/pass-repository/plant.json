@@ -1,4 +1,4 @@
 {
   "expect": "pass",
-  "why": "The repository's stories with the repository's exception entries and the plan they name (exceptions: repository): the ten Prose document color-contrast-incomplete nodes excepted, nothing else; the harness-document rules not run (FR-016, FR-029, US3 scenario 1)."
+  "why": "The repository's stories with the repository's exception entries and the plan they name (exceptions: repository): the ten Prose document color-contrast-incomplete nodes and the data table's 74 nodes of 019 plan.md § Complexity Tracking excepted, nothing else; the harness-document rules not run (FR-016, FR-029, US3 scenario 1)."
 }
