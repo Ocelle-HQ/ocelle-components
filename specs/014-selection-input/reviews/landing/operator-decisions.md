@@ -16,3 +16,11 @@
 - Context: merging origin/main, the shared `Driver` (packages/elements/test/scenarios/driver.ts) has five methods both sides added with different signatures and meanings — `press`, `click`, `hover`, `activeElement`, `viewportSize` — and a different `Target` type. Main's earlier merge of #43 kept both sides by giving the later additions distinct names.
 - Options: rename 014's methods; rename main's methods; unify into overloads; defer the merge.
 - Answer: **"Rename 014's methods (Recommended)"**. 014's five colliding methods get distinct names, `Target` widens to cover both shapes with one shared resolver, and main's landed code is untouched. The planner updates 014's task, research and contract wording to the new names afterwards.
+
+## Decision 4 — landing order and the second merge of main
+
+- Date: 2026-11-18
+- Operator: human:jeroennouwsdev
+- Context: the orchestrator session relayed an operator decision: landings go one at a time, #50 (012), then #49 (010), then #54. #54 merges main again only after #49 has merged. #54 had already merged main once (ac2f991) and T114 (the composed story) was in progress.
+- Options: finish T114 and wait for the second merge; pause T114 until after the second merge; treat the relayed decision as not applying.
+- Answer: **"Finish T114, wait (Recommended)"**. T114 finishes on this branch, with only the feature branch pushed. The landing review and records proceed. No further merge of main until the orchestrator reports #49 merged; then main is merged once, and counts, baselines and CI are redone on top.
