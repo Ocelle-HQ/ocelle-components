@@ -14,6 +14,9 @@ checks: [contracts/checks.md](contracts/checks.md).
   (`reviews/phase-1/inventory-decisions.md`, `reviews/phase-1/inventory-fixes.md`): research R-16 holds the inventory
   (the library's variant set at `main` and `develop`), mapped in the README one row per modifier, state, structure
   role and part, with no row reading "pending inventory" (SC-001; T005, T076).
+- The phase 1 second spike's decisions (`reviews/phase-1/operator-spike-2-decisions.md`, Q-1 to Q-4) are applied
+  (`reviews/phase-1/spike-2-fixes.md`), and the implementer's measurement of Q-3 (c) before the red commit is recorded
+  in `reviews/phase-1/spike-2.md` with no contradiction (T082).
 - Each phase's `reviews/phase-<N>/element-plants.md` records every element plant biting (contracts/checks.md).
 - `pnpm install --offline` works (`pnpm run setup:online` after a container restart).
 - For baselines: docker running (`nohup dockerd > /tmp/dockerd.log 2>&1 &`, as root), and #10's pinned container
@@ -49,14 +52,16 @@ checks: [contracts/checks.md](contracts/checks.md).
      edge's width, recheck Q2 (c)) (the base-style hook between the two packages, analysis I7 (a));
      both READMEs and CHANGELOGs name them.
    - **Data table, sticky header.** In the bounded sticky story the region is a tab stop although nothing overflows
-     sideways; ArrowDown and ArrowUp scroll the rows under the pinned header, whose ground hides them, and PageDown,
+     sideways; ArrowDown and ArrowUp scroll the rows under the pinned header, whose ground hides them and above which no
+     row shows once scrolled (spike-2 Q-2 (a)), and PageDown,
      PageUp, End, Home, Space and Shift+Space scroll it as the browser does, the header staying pinned and the fade
      following (re-analysis G1 (a)). Tabbing to a
      link in a row under the header scrolls the row clear of it. The caption scrolls away (IQ-2). At rest the last
      visible rows fade out at the region's block end, below the header and clear of the scrollbar; at the end of the
      rows the fade is gone; a link tabbed to in the faded rows is scrolled clear of the fade; with forced colours
      emulated a line marks the block end instead (Q-I4). In the unbounded sticky story the table shows at its full
-     height, nothing scrolls in the block axis, no fade shows and Tab skips the region (US1-20, re-analysis C1 (b)).
+     height, nothing scrolls in the block axis, no fade shows, no empty scrollbar gutter is reserved, and Tab skips the
+     region (US1-20, re-analysis C1 (b), spike-2 Q-3 (c)).
      In the room-rule sticky story rows are below the few visible ones and the region is a tab stop, but no fade
      shows: less than twice the fade depth is left under the header (US1-26, fixes-2 Q-1 (b)).
    - **Data table, numeric column, stripes, hover.** The estimate column's figures line up at the cell's end, the

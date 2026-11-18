@@ -337,7 +337,8 @@ against the prose table's query container). The data table bounds its caption wi
   each callback the observer writes the measuring element's unrounded inline size (the entry's
   `contentBoxSize[0].inlineSize`, in px, not transformed), which is `.region-box`'s exact width: 009's box has no
   inline padding or border and, with no bounded block size, no vertical scrollbar. (With `sticky-header` the box
-  reserves a constant block-axis scrollbar gutter, which the write subtracts, R-18.) It never writes `clientWidth`,
+  reserves a block-axis scrollbar gutter while it overflows in the block axis, which the write subtracts and rewrites
+  when it comes or goes, R-18 and spike-2 Q-3 (c).) It never writes `clientWidth`,
   which rounds to a whole pixel (PLAN-FRESH-3-002 verify 1, "No feedback" below). The value is written as the
   inherited custom property `--data-table-box-size` on `.region-track`. It writes it into the element's own per-instance constructed
   stylesheet, adopted after `overflowRegionStyles` and after the module's own per-instance sheet (`replaceSync` once,
@@ -963,8 +964,8 @@ option the module is 009's, byte for byte in behaviour: `ocelle-scroller`, `ocel
 overflow host do not set it, and 009's existing behaviour tests are not edited and pass (SC-007). It is not R-17's
 pinned-start option (the caption stays non-sticky, Q-F (b)); that request to 009's owner stays open.
 
-**The option** (`blockAxis`, `blockStartBox`): the box scrolls on both axes and reserves the block-axis scrollbar's
-room (`scrollbar-gutter: stable`); it overflows, and so takes the tab stop, role and name, when either axis overflows;
+**The option** (`blockAxis`, `blockStartBox`): the box scrolls on both axes and, while it overflows in the block axis
+(`data-axis="both"`, spike-2 Q-3 (c)), reserves the block-axis scrollbar's room (`scrollbar-gutter: stable`); it overflows, and so takes the tab stop, role and name, when either axis overflows;
 ArrowUp and ArrowDown scroll it by `step`; PageUp, PageDown, Home, End, Space and Shift+Space are left to the
 browser, which scrolls the focused box in the block axis once it has `overflow-y: auto`, and the module neither
 handles nor prevents them (the operator's decision G1 (a) on the re-analysis, 2026-11-18: these were blocked by
@@ -986,21 +987,31 @@ from 009's inline fades where one applies:
   never reaches under the header and at least as many rows show unfaded as faded; in a smaller bound the scrollbar is
   the only cue. Twice, not once, because a fade as deep as the whole visible body leaves no row legible at rest
   (the operator confirmed the factor two, Q-I6 (a), 2026-11-18).
-- **The pinned-box measure (re-analysis A1 (c), 2026-11-18).** The room rule and the block clearance measure from
-  one point below the pinned box, `pinnedEnd` (contracts/overflow-region-block-axis.md § The pinned-box measure). At
-  the block start the `<thead>` is not yet pinned: a caption above it pushes it down by the caption's height, and a
-  two-line caption at 320 px can push its block-end edge below `clientHeight − fade depth`. The two candidates, the
-  `<thead>`'s current block-end edge (the fade may be absent at rest under a tall caption) and its block size as if
-  pinned (the box's client block start plus the `<thead>`'s block size; the fade shows at rest and US1-26 compares
-  with that point while the caption is in view), give the same point without a caption. T082 measures both at 320 px
-  with a two-line caption and stops for the operator's choice before the scaffold; the captioned bodies of T079 and
-  T080 take their expected values from that choice.
+- **The pinned-box measure (re-analysis A1 (c), 2026-11-18; decided (a) on spike 2, 2026-11-18).** The room rule and
+  the block clearance measure from one point below the pinned box, `pinnedEnd` (contracts/overflow-region-block-axis.md
+  § The pinned-box measure). At the block start the `<thead>` is not yet pinned: a caption above it pushes it down by
+  the caption's height, and a two-line caption at 320 px can push its block-end edge below `clientHeight − fade
+  depth`. T082 measured both candidates (spike-2 § 11), and the operator chose (a), **the `<thead>`'s current
+  block-end edge** (Q-1 (a)): the fade never covers the header and the clearance always clears the header where it
+  is; under a tall caption in a small bound the fade is absent at rest until the caption scrolls away. Measured at
+  320 px with the two-line caption (in process, fallback font; the header's block-end edge 80.6 px below the client
+  block start at rest, 27 px once pinned, fade depth 32 px): a 100 px bound has no fade at rest (space 19.4 px) and a
+  fade past the caption (73 px); 120 px none at rest; 140 px none at rest and a fade with half the caption away; 300 px
+  a fade at rest, its block-start edge 187.4 px below the header. A link in row 1, tabbed to: in the 100 px bound at
+  rest Chromium's focus scroll and the clearance leave its ring 1 px below the header; past the caption its ring's
+  block-start edge is 0.4 px under the pinned header's block-end edge (scroll rounding, inside the 0.5 px tolerance).
+  The other candidate (client block start plus the `<thead>`'s block size) faded the header's lower 12.6 px at rest in
+  the 100 px bound and is not used. Without a caption the two differ only by the ring room at rest (32 against 27).
 - **Mask composition.** Four layers while the option is on: the inline fade layer and the block-end fade layer, each
   sized to the client area and opaque when its fade is off; and the two opaque scrollbar layers. The two fade layers
   intersect (`mask-composite: intersect`; alpha multiplied), so in a corner both fades apply and neither undoes the
-  other, as an `add` would; the scrollbar layers are added to the result, so both scrollbars stay unmasked. The
-  layer order that gives this with CSS's bottom-up compositing is the spike's to confirm (T082); the figures stay
-  px written to the per-instance sheet (009's R-05). Hosts without the option keep 009's two layers.
+  other, as an `add` would; the scrollbar layers are added to the result, so both scrollbars stay unmasked. Measured
+  (spike-2 § 3, LTR and RTL): top first the block-scrollbar layer, the inline-scrollbar layer, the block-end fade
+  layer and the inline fade layer, with `mask-composite: add, add, intersect, add` (corner alpha 0.24 against the
+  product 0.24; with every layer `add`, 1.00 under one fade alone; with the order reversed both scrollbars masked);
+  the fade layers at the client area's side, the block-scrollbar layer at its side (left under `dir="rtl"`). The
+  figures stay px written to the per-instance sheet (009's R-05). Hosts without the option, and a box with the option
+  but no block overflow (no `data-axis`), keep 009's two layers.
 - **Focus clearance.** 009's inline clearance keeps the ring clear of every edge that will still fade, and falls back
   to suppressing a fade for a ring too large to clear (WCAG 2.4.11). The block clearance does the same against the
   block-end fade: clear of the pinned box above and of the fade below (if it still shows at the new position), and
@@ -1010,7 +1021,10 @@ from 009's inline fades where one applies:
   custom property's text).
 - **Forced colours.** Masks are not drawn in forced colours (009's rule sits inside `@media not (forced-colors:
   active)`); `.region-edge.block-end`, rendered by the host after 009's two edges, draws a `CanvasText` line of
-  `--ocelle-border-width` at the frame's block end while `data-block-fade="end"`, as 009's inline edges do. It is a
+  `--ocelle-border-width` at the frame's block end while `data-block-fade="end"`, as 009's inline edges do. It is
+  full width only in forced colours; outside them it is zero-wide (spike-2 Q-4 (a)), because laid out full width over
+  the rows it made axe-core 4.14.0 report a serious `color-contrast` incomplete result (`bgOverlap`) on those rows in
+  every data table, which the `axe` gate counts (spike-2 § 9). It is a
   new class on a new node in the template of a host that sets the option, so 009's hosts and their DOM do not change.
 - **The pinned header in the fade.** It never is (the room rule). The header row's opaque `sheet` ground and the
   stripes are masked like any content where the fade covers them; the caption, above the header, scrolls away with
@@ -1032,7 +1046,9 @@ changed. The line is added in a documentation commit of its own.
 
 **The data table's side.** `sticky-header` (reflected boolean, unset by default, as `ocelle-card`'s `inset`) turns the
 option on; `blockStartBox` is the assigned table's `<thead>`. `@ocelle/styles` pins the `<thead>` (`position: sticky;
-inset-block-start: 0`), gives its cells the opaque `--ocelle-color-sheet` ground, and switches the sticky table to
+inset-block-start: calc(-1 * (var(--ocelle-focus-offset) + var(--ocelle-focus-width)))`: sticky positioning
+measures from the box's padding edge, and the box keeps the 5 px ring room as block padding, so at `0` the header
+pinned 5 px low with rows showing above it, spike-2 § 1; the operator's decision Q-2 (a)), gives its cells the opaque `--ocelle-color-sheet` ground, and switches the sticky table to
 `border-collapse: separate; border-spacing: 0`: in the collapsed model a sticky row group's borders belong to the
 table and stay behind, so the header rule would not travel with it (the library makes the same switch, behaviour only;
 inventory § 1). Each cell draws only its block-end border, so the row rules look as before. The block bound is the
@@ -1040,9 +1056,16 @@ page's rule on the host; the host and `.region-frame` become a column flex while
 reaches `.region-box` and, with no bound, the box is as tall as the table.
 
 **The caption cap with a block-axis scrollbar (R-07).** R-07's measured width assumes no block-axis scrollbar (the
-box has none without a bounded block size). With the option the gutter is reserved and constant, so the element
-subtracts `offsetWidth − clientWidth` of `.region-box`, read in its `.box-size` callback, from the written
-`--data-table-box-size`. The gutter does not depend on the caption, so the write cannot feed back.
+box has none without a bounded block size). With the option the gutter (15 px in Chromium, drawn or not, spike-2
+§ 2) is reserved while the box overflows in the block axis (spike-2 Q-3 (c)), so the element subtracts
+`offsetWidth − clientWidth` of `.region-box`, read in its `.box-size` callback, from the written
+`--data-table-box-size`, and rewrites it one animation frame after the box's `data-axis` changes (`.box-size` does
+not change size when the gutter comes or goes; contracts/ocelle-data-table.md § The caption cap). The gutter appears
+only with a block overflow that a narrower cap can only keep (a narrower caption makes the table taller), so the
+write cannot oscillate; the implementer measures this before the red commit (T082). Measured with the gutter
+always reserved (spike-2 § 7): at 320 px `--data-table-box-size` 305px and every caption line inside the unmasked
+width, no loop error over 320 → 600 → 320 px; in the open `<dialog>` the shrink-to-fit host gets two `.box-size`
+callbacks (the gutter appearing after the first delivery widens it once), not one.
 
 **To measure in the spike (phase 1, before the scaffold; recorded in `reviews/phase-1/spike-2.md`).** T003's spike is
 done and stays the implementer's to tick; the new points get a second spike task (T082):
@@ -1077,6 +1100,37 @@ done and stays the implementer's to tick; the new points get a second spike task
 - axe on a bounded sticky table (overflowing in the block axis only): no serious or critical finding.
 
 A result that contradicts this section stops for the operator.
+
+**Result (spike 2, T082, 2026-11-18; `reviews/phase-1/spike-2.md`).** Every point above was measured in Chromium 156
+with hidden and classic scrollbars. It held, apart from four points the operator decided on 2026-11-18
+(`reviews/phase-1/operator-spike-2-decisions.md`, human:jeroennouwsdev; changes in `reviews/phase-1/spike-2-fixes.md`):
+
+- **Q-1 (a), the pinned-box measure:** the current edge (above).
+- **Q-2 (a), the header pinned 5 px low:** block 1's negative block-start inset on the `<thead>` (above). Measured:
+  0 px once scrolled 5 px or more, +5 px at rest, also after `PageDown`, `End`, `Space` and `ArrowDown` (0) and
+  `Home`, `PageUp` and `Shift+Space` (+5). US1-17, US1-18 and T079's keys body read "at the client block-start edge
+  once scrolled; at the at-rest position back at the block start". Not measured: once pinned, the block-start ring of
+  a focused control in a header cell (cell padding 4 px, ring room 5 px) may reach 1 px above the client edge.
+- **Q-3 (c), RTL and the gutter:** `data-axis="both"` only while the box overflows in the block axis. Under
+  `dir="rtl"` a box with `scrollbar-gutter: stable` that overflows inline but not in the block axis starts at
+  `scrollLeft` −15 and never reaches 0 (the first 15 px unreachable; with block overflow too it starts at 0). Not
+  measured in the spike: the implementer measures it before the red commit and stops if it fails (T082, a
+  stop-and-ask point): LTR and RTL, hidden and classic scrollbars, inline-only, block-only and both, the bound set
+  and lifted at run time (the attribute, the gutter, the four or two mask layers, the caption cap rewritten, no
+  `ResizeObserver` loop error, no oscillation), and a classic-scrollbar box whose block overflow comes only from the
+  inline scrollbar the gutter causes.
+- **Q-4 (a), axe and `.region-edge.block-end`:** zero-wide outside forced colours (above); measured clean (no
+  violation, no incomplete result, `scrollable-region-focusable` passing).
+
+The settled facts the red bodies use: the mask layer order and `mask-composite: add, add, intersect, add`; the
+gutter 15 px in both scrollbar modes; "within 0.5 px" is inclusive (`≤ 0.5`), the separated row rules being exactly
+0.5 px from the collapsed ones (whole against half pixels) with the header rule 1 px in both; the stripe counted per
+`<tbody>` with a `hidden` row counted; in light a hovered striped row's ground equals the stripe (`rgb(226, 221,
+211)`), so a body asserting the hover over a stripe reads it in dark (`hover-bg` `rgb(42, 38, 31)` against `inset`
+`rgb(48, 43, 35)`) or on an odd row; Chromium's focus scroll runs before `focusin`, the clearance writing once with no
+jump back; `PageDown` and `Space` move 262 px in a 300 px box (bodies assert the direction and a non-zero move);
+the keys sent as real key events; the shrink-to-fit `<dialog>` host's two `.box-size` callbacks; a bounded sticky
+table prints its box only (spike-2 § 12).
 
 ## R-19 The numeric-cell hook (FR-019; inventory decision IQ-3)
 
@@ -1128,6 +1182,14 @@ pointer parameter (`parameters.ocelle.pointer.hover`, one selector matching one 
 **To measure in the spike (T082).** `:nth-child(even)` per `<tbody>` with a `hidden` row; the hover ground over a
 stripe; the band's `Canvas`, `CanvasText` and `Highlight` kept under `emulateMedia({ forcedColors: "active" })`; the
 band reserving its width outside a hover, so a hover changes no cell's box.
+
+**Result (spike 2, T082, 2026-11-18; `reviews/phase-1/spike-2.md` § 8).** All held. With two `<tbody>` groups and a
+`hidden` second row in the first, the hidden row and row 4 of the first group and row 2 of the second are painted
+`inset`, the odd rows not: each `<tbody>` counts its own rows, hidden rows included. A hovered even row computes
+`rgb(226, 221, 211)` in light, equal to `inset` (Q-I2's collision), and `rgb(42, 38, 31)` (`hover-bg`) against
+`inset` `rgb(48, 43, 35)` in dark: a body asserting the hover over a stripe reads it in the dark theme, or on an odd
+row. In forced colours every first body cell has the 3 px band, `Canvas`, `CanvasText` on the striped even rows (the
+hidden one included) and `Highlight` on the hovered row, and the cells' boxes are the same hovered or not.
 
 ## Questions of the plan gate (spec SPEC-1-06 (b)), answered 2026-11-16
 

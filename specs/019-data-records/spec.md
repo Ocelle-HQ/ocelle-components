@@ -168,7 +168,8 @@ decisions at the end of `reviews/analysis/operator-decisions.md`, changes listed
   (rows below, no fade) (FR-050). Narrowed by the answer to fixes-2 Q-1 below.
 - A1, where the room rule and the block clearance measure the pinned header from: (c). Phase 1's second spike
   measures both candidates (the `<thead>`'s current block-end edge, and its block size as if pinned) at 320 px with a
-  two-line caption, and stops for the operator's choice before the scaffold (FR-018, US1-26).
+  two-line caption, and stops for the operator's choice before the scaffold (FR-018, US1-26). Chosen on spike 2:
+  the current edge (Q-1 (a) below).
 - A2, the row hover on a device with no hover: (a). The hover rule, and its forced-colours band, apply only under
   `@media (hover: hover)`, tested under `hover: none` and guarded by an element plant (FR-061, US1-24).
 - G1, the block-axis keys other than ArrowUp and ArrowDown: (a). PageUp, PageDown, Home, End, Space and Shift+Space
@@ -177,6 +178,21 @@ decisions at the end of `reviews/analysis/operator-decisions.md`, changes listed
   "sticky header, under the room rule" story is added (a bound leaving rows below but less than twice the fade depth
   under the header, so no fade; US1-26's room-rule half): phase 1 has 21 data-table stories, the mission 44. The
   exception row covers only the scrolled-to-end state (FR-050).
+
+**Operator decisions on phase 1's second spike** (2026-11-18, human:jeroennouwsdev; `reviews/phase-1/spike-2.md`,
+decisions in `reviews/phase-1/operator-spike-2-decisions.md`, changes listed in `reviews/phase-1/spike-2-fixes.md`):
+
+- Q-1, the pinned-box measure (A1 (c)): (a), the `<thead>`'s current laid-out block-end edge. The fade never covers
+  the header; under a tall caption in a small bound it may be absent at rest until the caption scrolls away (FR-018,
+  US1-26).
+- Q-2, the header pinned 5 px low (the region's box keeps the focus ring's room as block padding, and sticky
+  positioning measures from it): (a), a negative block-start inset of that room on the `<thead>`, so no row shows
+  above the pinned header once scrolled and the header keeps the ring room at rest (FR-017, US1-17, US1-18).
+- Q-3, a right-to-left table that overflows only sideways loses its first 15 px to a reserved scrollbar gutter: (c),
+  the region reserves the gutter (the module's `data-axis="both"`) only while it overflows in the block axis; the
+  implementer measures this before phase 1's red commit and stops if it fails (FR-008, FR-018, US1-20).
+- Q-4, axe-core reported a serious `color-contrast` incomplete result on the rows under the block-end edge: (a), the
+  edge is zero-wide outside forced colours (FR-018).
 
 ## Scope
 
@@ -311,7 +327,9 @@ the block-axis keyboard and focus clearance, the block-end fade, the row grounds
     Shift+Space in turn, **Then** the browser scrolls it in the block axis (PageDown and Space towards the block end,
     PageUp and Shift+Space back, End to the block end, Home to the block start), the module does not handle the key
     (its default is not prevented), the block-end fade follows the new position (none at the block end, back at the
-    block start) and the `<thead>` stays pinned at the box's client block-start edge (within 0.5 px); **When** the
+    block start) and the `<thead>`'s block-start edge is at the box's client block-start edge (within 0.5 px) after
+    each key that leaves the box scrolled, and back at its at-rest position (within 0.5 px) after each key that
+    returns it to the block start (the operator's decision Q-2 (a) on phase 1's second spike); **When** the
     host's bound is removed so the table fits, **Then** the box has no `tabindex`, role or name (FR-018; the operator's
     decision G1 (a), 2026-11-18).
 19. **Given** that table with a link in its twelfth body row, scrolled so the row sits under the pinned header, **When**
@@ -320,7 +338,8 @@ the block-axis keyboard and focus clearance, the block-end fade, the row grounds
     header cell is focused, **Then** the box does not scroll in the block axis (FR-017, FR-018).
 20. **Given** `sticky-header` with no bound on the host's block size, **When** it renders, **Then** the table is shown
     at its full height, the scroll box does not scroll in the block axis (its scroll height equals its client height)
-    and, while it fits inline, it has no `tabindex`, role or name, as without `sticky-header` (FR-017).
+    and reserves no block-axis scrollbar room, and, while it fits inline, it has no `tabindex`, role or name, as
+    without `sticky-header` (FR-017; the operator's decision Q-3 (c) on phase 1's second spike).
 21. **Given** the US1-17 table with the twenty rows' identifiers unbroken, in a 320 px container, **When** the region
     is scrolled to the inline end and then in the block axis, **Then** the page's scroll width equals the viewport
     width, the header row stays pinned at the box's block start, each column header stays above its column's cells
@@ -354,9 +373,14 @@ the block-axis keyboard and focus clearance, the block-end fade, the row grounds
     below the pinned header row's block-end edge, so the header row and both scrollbars are never faded; **When** it is
     scrolled to its block end, **Then** no block-end fade shows (no `data-block-fade`), and scrolled back by ArrowUp it
     shows again; **Given** a bound that leaves less than twice the fade depth below the header row, **Then** no
-    block-end fade shows although rows are below; **Given** a two-line caption above the header row at 320 px, at the
-    block start, **Then** the fade's block-start edge is compared with the pinned-header measure the operator chooses
-    after phase 1's second spike (the operator's decision A1 (c), 2026-11-18; FR-018).
+    block-end fade shows although rows are below; **Given** a two-line caption above the header row at 320 px and a
+    100 px bound, at the block start, **Then** no block-end fade shows although rows are below (less than twice the
+    fade depth lies below the header row's current block-end edge), and once scrolled past the caption the fade shows
+    with its block-start edge at or below the pinned header row's block-end edge; **Given** the same caption and a
+    300 px bound, **Then** the fade shows at rest with its block-start edge at or below the header row's current
+    block-end edge; **Given** a link in the first body row, **When** the user tabs to it at rest and past the caption,
+    **Then** its focus ring box is at or below the header row's current block-end edge (within 0.5 px) and inside
+    the box (the operator's decisions A1 (c), 2026-11-18, and Q-1 (a) on phase 1's second spike; FR-018).
 27. **Given** the US1-21 table at 320 px, scrolled to the inline middle and the block start, **When** it renders,
     **Then** the inline fades of 009's contract and the block-end fade show together, the box carrying both
     `data-fade="both"` and `data-block-fade="end"`, and a point under both fades is faded by both; **Given** a link in
@@ -552,9 +576,12 @@ the chip variant.
   header row is pinned; its block-start edge is never above the header row's block-end edge. A bound that leaves less
   than twice the fade depth below the header row shows no block-end fade (the scrollbar still shows that rows are
   below). A table with no `<thead>` measures that space from the box's own block start (FR-018). While the caption is
-  in view at the block start, the `<thead>` sits below it and is not yet pinned; whether the space is measured from
-  the header row's current block-end edge or from its block size as if pinned is the operator's choice after phase 1's
-  second spike measures both (A1 (c)).
+  in view at the block start, the `<thead>` sits below it and is not yet pinned; the space is measured from the header
+  row's current block-end edge (A1 (c), decided (a) after phase 1's second spike), so under a tall caption in a small
+  bound no fade shows at rest until the caption scrolls away.
+- **Sticky header, right-to-left, overflowing only sideways.** No block-axis scrollbar room is reserved while nothing
+  overflows in the block axis, so the table's start is reachable by scrolling (FR-008, FR-018; the operator's
+  decision Q-3 (c) on phase 1's second spike).
 - **Block-end fade with the sideways fades.** Both show together when the region overflows in both axes; a corner
   under both is faded by both, the inline fades still span the header row as 009's do, and neither fade covers a
   scrollbar (FR-018).
@@ -747,8 +774,9 @@ the chip variant.
   boolean attribute `sticky-header` (present with any value, the empty string included; unset by default). While it
   is set:
   - the region scrolls on both axes through FR-018's option, and the table's `<thead>` (all its rows, as one group)
-    stays pinned at the scroll box's client block-start edge while the body rows scroll in the block axis; the
-    caption and any header row outside `<thead>` scroll with the body;
+    stays pinned at the scroll box's client block-start edge while the body rows scroll in the block axis (at the
+    block start it sits the focus ring's room below that edge, or below the caption; the operator's decision Q-2 (a)
+    on phase 1's second spike); the caption and any header row outside `<thead>` scroll with the body;
   - the **block bound** is the page's: the consumer bounds the host's block size with a rule of its own
     (`block-size` or `max-block-size` on the host; no attribute, no `style` attribute), and the region fills that
     bound. With no bound the table is shown at full height and nothing scrolls in the block axis (US1-20);
@@ -779,10 +807,11 @@ the chip variant.
     fades over the fade depth of 009's inline fades (the operator's decision Q-I4, 2026-11-18); there is no
     block-start fade. The fade never covers the block-start box the host names: when the space below it is less than
     twice the fade depth (the operator's decision Q-I6 (a)), no block-end fade is drawn. The room rule and the block
-    clearance measure the block-start box by one measure, which phase 1's second spike measures in both candidate
-    forms (its current block-end edge, or its block size as if pinned at the box's client block start) at 320 px with
-    a two-line caption above it, and which the operator chooses before the scaffold (the operator's decision A1 (c),
-    2026-11-18). It combines with the inline fades (a corner under both is faded
+    clearance measure the block-start box by one measure, its current laid-out block-end edge (the operator's
+    decision A1 (c), 2026-11-18, decided as Q-1 (a) after phase 1's second spike measured both candidate forms at
+    320 px with a two-line caption). The block-axis scrollbar's room is reserved only while the box overflows in the
+    block axis (Q-3 (c)), and the block-end edge that measures the fade depth covers no content outside forced
+    colours (Q-4 (a)). It combines with the inline fades (a corner under both is faded
     by both), the focus clearance keeps the ring box clear of it, with 009's fallback (the fade held off) for a ring
     box too tall to clear, and in forced colours a line in `CanvasText` at the block end stands in for it. No fade
     covers either scrollbar.

@@ -86,7 +86,7 @@ takes its table's width and overflows only when its own inline size is bounded, 
   <div class="region-ring" aria-hidden="true"></div>
   <div class="region-edge start" aria-hidden="true"></div>
   <div class="region-edge end" aria-hidden="true"></div>
-  <div class="region-edge block-end" aria-hidden="true"></div> <!-- the block-axis option's edge (Q-I4) -->
+  <div class="region-edge block-end" aria-hidden="true"></div> <!-- the block-axis option's edge (Q-I4); zero-wide outside forced colours (spike-2 Q-4 (a)) -->
 </div>
 <div class="box-size" aria-hidden="true"></div>   <!-- the caption cap's measuring element, block size 0 -->
 ```
@@ -147,18 +147,21 @@ While `sticky-header` is present (the property `stickyHeader` reflects it; any v
 - **Module.** The element constructs its `OverflowRegion` with `blockAxis: () => this.stickyHeader === true` and
   `blockStartBox: () => <the assigned table's first direct <thead> child> ?? null`
   ([overflow-region-block-axis.md](overflow-region-block-axis.md)). The module then puts `data-axis="both"` on the
-  box, scrolls it in both axes, takes the tab stop while either axis overflows, handles ArrowUp and ArrowDown (and
+  box while the table overflows the bound in the block axis (and only then, so a right-to-left table that overflows
+  only sideways reserves no scrollbar gutter and keeps its start reachable; spike-2 Q-3 (c)), scrolls it in both axes, takes the tab stop while either axis overflows, handles ArrowUp and ArrowDown (and
   leaves PageUp, PageDown, Home, End, Space and Shift+Space to the browser, which scrolls the focused box; the
   operator's decision G1 (a), 2026-11-18) and keeps a focused body element clear of the pinned `<thead>` and of the
-  block-end fade, measured from the pinned-box measure the operator chooses after T082 (A1 (c);
-  [overflow-region-block-axis.md](overflow-region-block-axis.md) § The pinned-box measure). The element adds no listener
+  block-end fade, measured from the `<thead>`'s current laid-out block-end edge (A1 (c), decided (a) after T082,
+  spike-2 Q-1 (a); [overflow-region-block-axis.md](overflow-region-block-axis.md) § The pinned-box measure): under
+  a tall caption in a small bound the block-end fade is absent at rest until the caption scrolls away. The element adds no listener
   and no scroll write.
 - **The block-end fade (operator decision Q-I4, 2026-11-18).** While rows are below the box's block end the module
   writes `data-block-fade="end"` on the box and fades its block end over the fade depth; never at the block start,
   never under the pinned `<thead>` (the module's room rule: no fade when less than twice the fade depth shows below
   the header row), together with the inline fades when the table also overflows sideways (a corner faded by both),
   and in forced colours as a `CanvasText` line drawn by `.region-edge.block-end`. The element renders that edge after
-  009's two (§ Shadow structure, always; it paints nothing and is read by nothing while `sticky-header` is absent)
+  009's two (§ Shadow structure, always; zero-wide outside forced colours, so it covers no row, spike-2 Q-4 (a); it
+  paints nothing and is read by nothing while `sticky-header` is absent)
   and binds nothing for the fade: no `data-block-fade` binding, no rule of its own on it. The caption's cap is
   unaffected (the block-end fade is not in the inline axis), and no shadow rule of the element selects on
   `data-block-fade`.
@@ -168,17 +171,27 @@ While `sticky-header` is present (the property `stickyHeader` reflects it; any v
   (`block-size` or `max-block-size`, in the page's own stylesheet) bounds the box, and with no bound the box is as tall
   as the table. The element sets no block size itself and reads no attribute for it.
 - **The pin and its ground.** `@ocelle/styles` (block 1) makes the `<thead>` `position: sticky` at
-  `inset-block-start: 0`, paints its cells `--ocelle-color-sheet` (the operator's decision Q-I1, 2026-11-18) and
+  `inset-block-start: calc(-1 * (var(--ocelle-focus-offset) + var(--ocelle-focus-width)))` (the box's block padding,
+  the ring room, taken back: pinned at the box's client block-start edge once scrolled by the ring room or more, with
+  the ring room above it at rest; spike-2 Q-2 (a)), paints its cells `--ocelle-color-sheet` (the operator's decision Q-I1, 2026-11-18) and
   switches the table to `border-collapse: separate` with `border-spacing: 0`, so the header rule travels with the row
   ([styles-data-table.md](styles-data-table.md)). The `<thead>` scrolls with the region in the inline axis, so each
   column header stays above its column.
-- **The caption cap.** `scrollbar-gutter: stable` reserves the block-axis scrollbar's room, so `.box-size`'s inline
-  size exceeds the box's client inline size by a constant gutter. While `sticky-header` is set, the `.box-size`
-  observer's callback writes `--data-table-box-size` as the measured inline size less the box's `offsetWidth −
-  clientWidth` (the gutter, read in the same callback), px only, so the caption still wraps inside the box's unmasked
-  width (R-07, R-18). Without `sticky-header` the write is as before.
+- **The caption cap.** While `data-axis="both"`, `scrollbar-gutter: stable` reserves the block-axis scrollbar's room
+  (15 px in Chromium, drawn or not; spike-2 § 2), so `.box-size`'s inline size exceeds the box's client inline size by
+  the gutter. While `sticky-header` is set, the `.box-size` observer's callback writes `--data-table-box-size` as the
+  measured inline size less the box's `offsetWidth − clientWidth` (the gutter, read in the same callback; 0 while the
+  box has no `data-axis`), px only, so the caption still wraps inside the box's unmasked width (R-07, R-18). The gutter
+  now comes and goes with the block overflow (spike-2 Q-3 (c)) and `.box-size`'s own size does not change when it
+  does, so the element also keeps the last measured `.box-size` inline size, and when the rendered box's `data-axis`
+  changes (the module requests an update for it), `updated()` requests the same single animation frame as the end
+  fade's (at most one pending, cancelled on disconnect), whose callback rewrites `--data-table-box-size` from that
+  size less the current gutter, never in the task of the change. The rewrite cannot oscillate: a narrower cap can only
+  make the table taller, which keeps the block overflow (measured before the red commit, tasks.md T082). Without
+  `sticky-header` the write is as before.
 - **Toggling.** Setting or removing `sticky-header` re-renders; the module re-reads `blockAxis` in `hostUpdated` and
-  takes or drops the block axis, `data-axis` and `data-block-fade`, and the tab stop follows the new overflow state.
+  takes or drops the block axis, `data-axis` (while the table overflows the bound) and `data-block-fade`, and the tab
+  stop follows the new overflow state.
 
 **Accessibility tree.** Unchanged: the same `group` (while either axis overflows) holding the consumer's table. The
 pinned `<thead>` is the same `row` and `columnheader` nodes.

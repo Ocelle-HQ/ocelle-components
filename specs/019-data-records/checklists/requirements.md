@@ -86,3 +86,9 @@
 - Fixes-2 Q-1 (answered 2026-11-18, end of `reviews/analysis/operator-decisions.md`): (b) adds a room-rule
   sticky-header story to FR-050 (21 data-table stories, 44 in all), and the plan's block-axis exception row covers
   only the scrolled-to-end state. No requirement changes otherwise. Every item above still holds.
+- Phase 1 spike 2 (decided 2026-11-18, `reviews/phase-1/operator-spike-2-decisions.md`; changes in
+  `reviews/phase-1/spike-2-fixes.md`): Q-1 (a) settles A1's pending choice as the `<thead>`'s current block-end edge
+  (FR-018, US1-26, the edge case); Q-2 (a) states the pinned header's position (FR-017, US1-18); Q-3 (c) reserves the
+  block-axis scrollbar room only while the region overflows in the block axis (FR-018, US1-20, a right-to-left edge
+  case); Q-4 (a) keeps the block-end edge off the rows outside forced colours (FR-018). No story or count changes; no
+  `[NEEDS CLARIFICATION]` marker. Every item above still holds.

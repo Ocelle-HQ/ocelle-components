@@ -30,9 +30,9 @@ table of an `ocelle-data-table` is selected, whether the element is defined or n
 | `ocelle-data-table > table > :is(tbody, tfoot):last-child > tr:last-child > :is(td, th)` | no rule below the table's last row only; rows of earlier row groups keep theirs (a `<tfoot>` goes after the `<tbody>` groups, as HTML says; the README states the source-order rule) |
 | `ocelle-data-table[wrap="anywhere"] > table > :is(tbody, tfoot) > tr > td` | `overflow-wrap: anywhere` |
 | `ocelle-data-table[sticky-header] > table` | `border-collapse: separate`; `border-spacing: 0` (the header rule travels with the pinned row; the row rules, drawn as each cell's block-end border, look as before; FR-017, R-18) |
-| `ocelle-data-table[sticky-header] > table > thead` | `position: sticky`; `inset-block-start: 0` (all header rows pinned as one group; no `z-index`: a positioned row group paints above the unpositioned body rows) |
+| `ocelle-data-table[sticky-header] > table > thead` | `position: sticky`; `inset-block-start: calc(-1 * (var(--ocelle-focus-offset) + var(--ocelle-focus-width)))` (all header rows pinned as one group; no `z-index`: a positioned row group paints above the unpositioned body rows). The negative inset is the operator's decision Q-2 (a) on phase 1's second spike (2026-11-18): sticky positioning measures from the scroll box's padding edge, and the region's box keeps the ring room as block padding, so at `0` the header pinned 5 px below the box's client block-start edge with the scrolled rows showing above it (spike-2 § 1). With the inset it pins at the client block-start edge once scrolled by the ring room or more, and at the block start keeps the ring room above it |
 | `ocelle-data-table[sticky-header] > table > thead > tr > :is(td, th)` | `background-color: var(--ocelle-color-sheet)` (opaque, so no row shows through; the operator's decision Q-I1, 2026-11-18) |
-| `ocelle-data-table[striped] > table > tbody > tr:nth-child(even) > :is(td, th)` | `background-color: var(--ocelle-color-inset)` (FR-060; each `<tbody>` counts its own rows, hidden rows included) |
+| `ocelle-data-table[striped] > table > tbody > tr:nth-child(even) > :is(td, th)` | `background-color: var(--ocelle-color-inset)` (FR-060; each `<tbody>` counts its own rows, hidden rows included; measured, spike-2 § 8) |
 | `ocelle-data-table > table > tbody > tr:hover > :is(td, th)`, inside `@media (hover: hover)` | `background-color: var(--ocelle-color-hover-bg)` (FR-061), after the stripe rule so it wins on a striped row; only where the primary pointer can hover, so a touch screen, where a tapped row keeps `:hover`, paints nothing (the operator's decision A2 (a) on the re-analysis, 2026-11-18) |
 | inside `@media (forced-colors: active)` | text and rules in `CanvasText`, no `forced-color-adjust: none`; the row band (FR-013): `ocelle-data-table > table > tbody > tr > :first-child` gets `border-inline-start: var(--ocelle-bar-width) solid Canvas`, then `CanvasText` on `ocelle-data-table[striped]`'s even rows, then `Highlight` on the hovered row, in that order (R-20), the `Highlight` rule also inside `@media (hover: hover)` (A2 (a)); the grounds of the stripe, the hover and the pinned header become the system background, as forced colours draw any ground |
 
@@ -106,7 +106,8 @@ The README states all three, and the base-style hook of block 1 (a consumer does
 also states that the accessible names of column headers follow the drawn upper-case text: Chromium names each column
 header by the text block 1's `text-transform: uppercase` draws (spike Q2 (a), 2026-11-18; asserted by T011). And it
 states, for the inventory decisions of 2026-11-18 (asserted by T011): the sticky header row's ground
-(`--ocelle-color-sheet`), its separated border model and the page's block bound on the host; the stripe on even body
+(`--ocelle-color-sheet`), its separated border model and the page's block bound on the host, and that it pins at the
+region's block-start edge once scrolled and keeps the focus ring's room above it at rest (spike-2 Q-2 (a)); the stripe on even body
 rows per `<tbody>`, hidden rows counted; the hover ground on body rows, only on a device that can hover (none on a
 touch screen, A2 (a)), and that a hovered striped row shows no
 change in the light theme, where `hover-bg` and `inset` are equal (the operator's decision Q-I2, 2026-11-18); the
