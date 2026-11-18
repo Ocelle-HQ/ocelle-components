@@ -753,9 +753,9 @@ describe("plantShards and shardSize (plan decision 23)", () => {
       otherSizes: shards.slice(0, otherShards).map((shard) => shard.length <= 80 && shard.every((plant) => !plant.startsWith("visual/") && !plant.startsWith("axe/"))),
       visualAndAxe: shards.slice(otherShards),
     }).toEqual({
-      counts: { visual: 48, axe: 25, others: 239 },
-      shards: 3 + 48 + 25,
-      otherSizes: [true, true, true],
+      counts: { visual: 48, axe: 25, others: 244 },
+      shards: 4 + 48 + 25,
+      otherSizes: [true, true, true, true],
       visualAndAxe: [...visualAndAxe.filter((plant) => plant.startsWith("visual/")).sort(), ...visualAndAxe.filter((plant) => plant.startsWith("axe/")).sort()].map((plant) => [plant]),
     });
   });
