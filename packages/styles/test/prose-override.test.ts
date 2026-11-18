@@ -37,6 +37,7 @@ const parts: Readonly<Record<string, readonly string[]>> = {
 
 /** The targets of the override, each with the override selector suffix that restates it. */
 function targetOf(selector: string): string[] {
+  if (!selector.startsWith(`${hook} `)) return [];
   const inner = selector.slice(hook.length).trim();
   if (!inner.includes("ocelle-data-table")) return [];
   if (inner.includes("[sticky-header] > table)")) return ["sticky table"];

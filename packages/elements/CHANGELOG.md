@@ -9,6 +9,9 @@ entry points and the browser build's file path (constitution VII).
 properties, slots and entry points, `remeasure()`, the overflow-region module convention and the container-tier
 convention are additions to the public surface: a minor change.
 
+The overflow-region module gains a block-axis option, used only by `ocelle-data-table` with `sticky-header`; an
+internal change with no effect on `ocelle-scroller` or `ocelle-workflow-board`.
+
 ### Added
 
 - `ocelle-icon`, an icon of the set drawn inline in `currentColor` at the `--ocelle-icon-size` token, decorative
@@ -128,3 +131,7 @@ convention are additions to the public surface: a minor change.
 - In the README's element conventions, the Styles rule for forced colours: variant rules that set colours or grounds go
   inside `@media not (forced-colors: active)`, and layout-only variant rules stay outside it, so a layout variant keeps
   its layout in forced colours (a documentation change; 011).
+- `ocelle-data-table`: a native `<table>` child in a scroll region, a tab stop and a named group only while it
+  overflows, with `label`, `wrap`, `sticky-header` (reflected) and `striped` (reflected); its entry point
+  `@ocelle/elements/ocelle-data-table.js`; and the base-style hook `--data-table-box-size` and `--data-table-end-fade`,
+  which it writes for `@ocelle/styles`' caption cap.

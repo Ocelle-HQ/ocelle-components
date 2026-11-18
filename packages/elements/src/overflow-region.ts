@@ -126,14 +126,46 @@ export interface BlockEdgeState {
   readonly room: boolean;
 }
 
-/** The block clearance of the block-axis option (019 FR-018). Scaffold: not implemented. */
-export function blockClearanceScroll(input: BlockClearanceInput): BlockClearance {
-  throw new Error(`not implemented: blockClearanceScroll(${JSON.stringify(input)})`);
+/**
+ * The block-axis edge state (019 contracts/overflow-region-block-axis.md § Pure functions): overflowing in the block
+ * axis when the content is more than 1 px taller than the box, content below when more than 1 px of it is, and the
+ * room rule met when at least twice the fade depth lies between `pinnedEnd` and the box's client block end.
+ */
+export function blockEdgeState(scrollTop: number, scrollHeight: number, clientHeight: number, pinnedEnd: number, fade: number): BlockEdgeState {
+  const range = scrollHeight - clientHeight;
+  return { overflowingBlock: range > 1, offBlockEnd: range - scrollTop > 1, room: clientHeight - pinnedEnd >= 2 * fade };
 }
 
-/** The block-axis edge state of the block-axis option (019 FR-018). Scaffold: not implemented. */
-export function blockEdgeState(scrollTop: number, scrollHeight: number, clientHeight: number, pinnedEnd: number, fade: number): BlockEdgeState {
-  throw new Error(`not implemented: blockEdgeState(${[scrollTop, scrollHeight, clientHeight, pinnedEnd, fade].join(", ")})`);
+/**
+ * The smallest block scroll that puts the ring box between its upper bound (`pinnedEnd`, or the client block start for
+ * an element before the pinned box) and the block-end fade's edge where that fade still shows at the new position (an
+ * end within 1 px of the range does not fade, and the room rule applies), else the client block end; clamped to the
+ * scroll range. When no position does, the ring box's block start is aligned with its upper bound and the block-end fade
+ * is reported as suppressed when it would cover it.
+ */
+export function blockClearanceScroll({ ring, box, pinnedEnd, fade, before }: BlockClearanceInput): BlockClearance {
+  const range = box.scrollHeight - box.clientHeight;
+  const at = box.scrollTop;
+  // The ring box in content coordinates, and the upper bound's offset from the client block start.
+  const top = ring.top - box.top + at;
+  const bottom = ring.bottom - box.top + at;
+  const upper = before ? 0 : pinnedEnd;
+  const room = box.clientHeight - pinnedEnd >= 2 * fade;
+  const fadesEnd = (position: number): boolean => room && range - position > 1;
+  const endRoom = (position: number): number => position + box.clientHeight - (fadesEnd(position) ? fade : 0);
+  const clear = (position: number): boolean => top >= position + upper && bottom <= endRoom(position);
+  let position = at;
+  if (top < at + upper) position = Math.max(top - upper, 0);
+  else if (bottom > endRoom(at)) {
+    const depth = room ? fade : 0;
+    position = bottom - box.clientHeight + depth < range - 1 ? bottom - box.clientHeight + depth : range;
+  }
+  let suppressEnd = false;
+  if (!clear(position)) {
+    position = Math.min(Math.max(top - upper, 0), range);
+    suppressEnd = fadesEnd(position) && bottom > position + box.clientHeight - fade;
+  }
+  return { scrollTop: position, suppressEnd };
 }
 
 /** The name in force: the host's non-blank `aria-label`, trimmed, else the trimmed non-blank label, else none (R-01). */
@@ -272,6 +304,147 @@ export const overflowRegionStyles = css`
       border-inline-end: var(--ocelle-border-width) solid CanvasText;
     }
   }
+
+  /*
+   * The block-axis option (019 contracts/overflow-region-block-axis.md § Stylesheet): only while the module writes
+   * data-axis="both" (the option on and the box overflowing in the block axis) the box scrolls in the block axis, with
+   * no scrollbar-gutter, and the mask has four layers, top first: the opaque layer over the block-axis scrollbar on its
+   * side (the right in LTR, the left under rtl), the opaque layer over the inline-axis scrollbar, the block-end fade
+   * (opaque while it is off), and the inline fade (opaque while it is off); the block-end fade intersects the inline
+   * fade and the two opaque layers are added over them. The per-instance sheet sizes the layers.
+   */
+  .region-box[data-axis="both"] {
+    overflow-y: auto;
+  }
+
+  /* The block-end fade's depth measure: zero-wide outside forced colours, so it covers no content. */
+  .region-edge.block-end {
+    inset-block-start: auto;
+    inset-block-end: 0;
+    inset-inline-start: 0;
+    inline-size: 0;
+    block-size: var(--ocelle-scroller-fade-size);
+  }
+
+  @media not (forced-colors: active) {
+    .region-box[data-axis="both"][data-fade="start"],
+    .region-box[data-axis="both"][data-fade="end"],
+    .region-box[data-axis="both"][data-fade="both"],
+    .region-box[data-axis="both"][data-block-fade="end"] {
+      mask-position: right top, left bottom, left top, left top;
+      mask-origin: border-box;
+      mask-clip: border-box;
+      mask-repeat: no-repeat;
+      mask-composite: add, add, intersect, add;
+    }
+
+    :host(:dir(rtl)) .region-box[data-axis="both"][data-fade="start"],
+    :host(:dir(rtl)) .region-box[data-axis="both"][data-fade="end"],
+    :host(:dir(rtl)) .region-box[data-axis="both"][data-fade="both"],
+    :host(:dir(rtl)) .region-box[data-axis="both"][data-block-fade="end"] {
+      mask-position: left top, left bottom, right top, right top;
+    }
+
+    .region-box[data-axis="both"][data-block-fade="end"] {
+      mask-image:
+        linear-gradient(var(--ocelle-color-ink), var(--ocelle-color-ink)),
+        linear-gradient(var(--ocelle-color-ink), var(--ocelle-color-ink)),
+        linear-gradient(to bottom, var(--ocelle-color-ink) calc(100% - var(--ocelle-scroller-fade-size)), transparent),
+        linear-gradient(var(--ocelle-color-ink), var(--ocelle-color-ink));
+    }
+
+    .region-box[data-axis="both"][data-fade="start"] {
+      mask-image:
+        linear-gradient(var(--ocelle-color-ink), var(--ocelle-color-ink)),
+        linear-gradient(var(--ocelle-color-ink), var(--ocelle-color-ink)),
+        linear-gradient(var(--ocelle-color-ink), var(--ocelle-color-ink)),
+        linear-gradient(to right, transparent, var(--ocelle-color-ink) var(--ocelle-scroller-fade-size));
+    }
+
+    .region-box[data-axis="both"][data-fade="start"][data-block-fade="end"] {
+      mask-image:
+        linear-gradient(var(--ocelle-color-ink), var(--ocelle-color-ink)),
+        linear-gradient(var(--ocelle-color-ink), var(--ocelle-color-ink)),
+        linear-gradient(to bottom, var(--ocelle-color-ink) calc(100% - var(--ocelle-scroller-fade-size)), transparent),
+        linear-gradient(to right, transparent, var(--ocelle-color-ink) var(--ocelle-scroller-fade-size));
+    }
+
+    .region-box[data-axis="both"][data-fade="end"] {
+      mask-image:
+        linear-gradient(var(--ocelle-color-ink), var(--ocelle-color-ink)),
+        linear-gradient(var(--ocelle-color-ink), var(--ocelle-color-ink)),
+        linear-gradient(var(--ocelle-color-ink), var(--ocelle-color-ink)),
+        linear-gradient(to left, transparent, var(--ocelle-color-ink) var(--ocelle-scroller-fade-size));
+    }
+
+    .region-box[data-axis="both"][data-fade="end"][data-block-fade="end"] {
+      mask-image:
+        linear-gradient(var(--ocelle-color-ink), var(--ocelle-color-ink)),
+        linear-gradient(var(--ocelle-color-ink), var(--ocelle-color-ink)),
+        linear-gradient(to bottom, var(--ocelle-color-ink) calc(100% - var(--ocelle-scroller-fade-size)), transparent),
+        linear-gradient(to left, transparent, var(--ocelle-color-ink) var(--ocelle-scroller-fade-size));
+    }
+
+    .region-box[data-axis="both"][data-fade="both"] {
+      mask-image:
+        linear-gradient(var(--ocelle-color-ink), var(--ocelle-color-ink)),
+        linear-gradient(var(--ocelle-color-ink), var(--ocelle-color-ink)),
+        linear-gradient(var(--ocelle-color-ink), var(--ocelle-color-ink)),
+        linear-gradient(to right, transparent, var(--ocelle-color-ink) var(--ocelle-scroller-fade-size), var(--ocelle-color-ink) calc(100% - var(--ocelle-scroller-fade-size)), transparent);
+    }
+
+    .region-box[data-axis="both"][data-fade="both"][data-block-fade="end"] {
+      mask-image:
+        linear-gradient(var(--ocelle-color-ink), var(--ocelle-color-ink)),
+        linear-gradient(var(--ocelle-color-ink), var(--ocelle-color-ink)),
+        linear-gradient(to bottom, var(--ocelle-color-ink) calc(100% - var(--ocelle-scroller-fade-size)), transparent),
+        linear-gradient(to right, transparent, var(--ocelle-color-ink) var(--ocelle-scroller-fade-size), var(--ocelle-color-ink) calc(100% - var(--ocelle-scroller-fade-size)), transparent);
+    }
+
+    :host(:dir(rtl)) .region-box[data-axis="both"][data-fade="start"] {
+      mask-image:
+        linear-gradient(var(--ocelle-color-ink), var(--ocelle-color-ink)),
+        linear-gradient(var(--ocelle-color-ink), var(--ocelle-color-ink)),
+        linear-gradient(var(--ocelle-color-ink), var(--ocelle-color-ink)),
+        linear-gradient(to left, transparent, var(--ocelle-color-ink) var(--ocelle-scroller-fade-size));
+    }
+
+    :host(:dir(rtl)) .region-box[data-axis="both"][data-fade="start"][data-block-fade="end"] {
+      mask-image:
+        linear-gradient(var(--ocelle-color-ink), var(--ocelle-color-ink)),
+        linear-gradient(var(--ocelle-color-ink), var(--ocelle-color-ink)),
+        linear-gradient(to bottom, var(--ocelle-color-ink) calc(100% - var(--ocelle-scroller-fade-size)), transparent),
+        linear-gradient(to left, transparent, var(--ocelle-color-ink) var(--ocelle-scroller-fade-size));
+    }
+
+    :host(:dir(rtl)) .region-box[data-axis="both"][data-fade="end"] {
+      mask-image:
+        linear-gradient(var(--ocelle-color-ink), var(--ocelle-color-ink)),
+        linear-gradient(var(--ocelle-color-ink), var(--ocelle-color-ink)),
+        linear-gradient(var(--ocelle-color-ink), var(--ocelle-color-ink)),
+        linear-gradient(to right, transparent, var(--ocelle-color-ink) var(--ocelle-scroller-fade-size));
+    }
+
+    :host(:dir(rtl)) .region-box[data-axis="both"][data-fade="end"][data-block-fade="end"] {
+      mask-image:
+        linear-gradient(var(--ocelle-color-ink), var(--ocelle-color-ink)),
+        linear-gradient(var(--ocelle-color-ink), var(--ocelle-color-ink)),
+        linear-gradient(to bottom, var(--ocelle-color-ink) calc(100% - var(--ocelle-scroller-fade-size)), transparent),
+        linear-gradient(to right, transparent, var(--ocelle-color-ink) var(--ocelle-scroller-fade-size));
+    }
+  }
+
+  @media (forced-colors: active) {
+    .region-edge.block-end {
+      inset-inline: 0;
+      inline-size: auto;
+      block-size: var(--ocelle-scroller-fade-size);
+    }
+
+    .region-box[data-block-fade="end"] ~ .region-edge.block-end {
+      border-block-end: var(--ocelle-border-width) solid CanvasText;
+    }
+  }
 `;
 
 /** Whether an element or one of its ancestors, across shadow boundaries, is `inert`. */
@@ -340,6 +513,8 @@ export class OverflowRegion implements ReactiveController {
   readonly #boxOf: () => HTMLElement | null;
   readonly #role: "group" | "region";
   readonly #step: number;
+  readonly #blockAxis: () => boolean;
+  readonly #blockStartBox: () => Element | null;
   readonly #sheet = new CSSStyleSheet();
   readonly #observer = new ResizeObserver(() => {
     this.#measure();
@@ -354,6 +529,13 @@ export class OverflowRegion implements ReactiveController {
   #suppressed = { start: false, end: false };
   // Stryker disable next-line NumberLiteral: equivalent, it is read only while a suppression is set, and the fallback writes it then
   #written = 0;
+  /** Whether the box carries `data-axis="both"`: the block-axis option on and the box overflowing in the block axis. */
+  #axis = false;
+  /** The block-axis option as last read in `hostUpdated`. */
+  #blockOn = false;
+  /** Whether the block focus fallback suppresses the block-end fade, and the `scrollTop` written then. */
+  #suppressedBlock = false;
+  #writtenTop = 0;
   /** The mask figures last set: the box's client height and its scrollbar's thickness. */
   // Stryker disable next-line StringLiteral: equivalent, no measured figures are the empty text, so the first measure writes them either way
   #figures = "";
@@ -363,6 +545,8 @@ export class OverflowRegion implements ReactiveController {
     this.#boxOf = options.box;
     this.#role = options.role ?? "group";
     this.#step = options.step ?? 40;
+    this.#blockAxis = options.blockAxis ?? ((): boolean => false);
+    this.#blockStartBox = options.blockStartBox ?? ((): Element | null => null);
     this.#sheet.replaceSync(".region-box {}");
     host.addController(this);
   }
@@ -402,8 +586,15 @@ export class OverflowRegion implements ReactiveController {
    */
   hostUpdated(): void {
     const box = this.#boxOf();
+    // The block-axis option (019 FR-018) is re-read after each update; a change applies to the box it follows.
+    const blockOn = this.#blockAxis();
+    const switched = blockOn !== this.#blockOn;
+    this.#blockOn = blockOn;
     // Stryker disable next-line ConditionalExpression: equivalent, releasing and following the same box again unobserves and observes it again and takes off and adds back the same listeners, and the host's setLabel after each update (in updated(), which Lit runs after hostUpdated) writes back the attributes the release removed
-    if (box === this.#box) return;
+    if (box === this.#box) {
+      if (switched) this.#measure();
+      return;
+    }
     if (this.#box !== null) this.#release(this.#box);
     this.#box = box;
     if (box !== null) this.#follow(box);
@@ -455,6 +646,10 @@ export class OverflowRegion implements ReactiveController {
     box.removeAttribute("tabindex");
     box.removeAttribute("role");
     box.removeAttribute("aria-label");
+    box.removeAttribute("data-axis");
+    box.removeAttribute("data-block-fade");
+    this.#axis = false;
+    this.#suppressedBlock = false;
   }
 
   /**
@@ -465,16 +660,34 @@ export class OverflowRegion implements ReactiveController {
   #measure(): void {
     const box = this.#box;
     if (box === null) return;
-    const outputs = (): string => [this.overflowing, this.offStart, this.offEnd, this.fadeStart, this.fadeEnd].join();
+    const outputs = (): string => [this.overflowing, this.offStart, this.offEnd, this.fadeStart, this.fadeEnd, this.#axis, this.offBlockEnd, this.fadeBlockEnd].join();
     const before = outputs();
+    // The block axis first (019 FR-018): `data-axis` follows the block overflow, read with or without the attribute;
+    // writing it can only narrow the client area (a classic scrollbar), so the inline figures are read after it.
+    const blockOn = this.#blockAxis();
+    const pinnedEnd = blockOn ? this.#pinnedEnd(box) : 0;
+    const depth = blockOn ? (box.parentElement?.querySelector(".region-edge.block-end")?.getBoundingClientRect().height ?? 0) : 0;
+    const block = blockEdgeState(box.scrollTop, box.scrollHeight, box.clientHeight, pinnedEnd, depth);
+    this.#axis = blockOn && block.overflowingBlock;
+    if (this.#axis) box.setAttribute("data-axis", "both");
+    else {
+      box.removeAttribute("data-axis");
+      this.#suppressedBlock = false;
+    }
     const state = edgeState(box.scrollLeft, box.scrollWidth, box.clientWidth);
     const focused = this.#host.shadowRoot?.activeElement === box;
-    this.overflowing = state.overflowing;
+    this.overflowing = state.overflowing || this.#axis;
     this.offStart = state.offStart;
     this.offEnd = state.offEnd;
     this.fadeStart = state.offStart && !this.#suppressed.start;
     this.fadeEnd = state.offEnd && !this.#suppressed.end;
-    const figures = `100% ${String(box.clientHeight)}px, 100% ${String(box.offsetHeight - box.clientHeight)}px`;
+    this.offBlockEnd = this.#axis && block.offBlockEnd;
+    this.fadeBlockEnd = this.offBlockEnd && block.room && !this.#suppressedBlock;
+    if (this.fadeBlockEnd) box.setAttribute("data-block-fade", "end");
+    else box.removeAttribute("data-block-fade");
+    const client = `${String(box.clientWidth)}px ${String(box.clientHeight)}px`;
+    const inlineBar = `100% ${String(box.offsetHeight - box.clientHeight)}px`;
+    const figures = this.#axis ? `${String(box.offsetWidth - box.clientWidth)}px 100%, ${inlineBar}, ${client}, ${client}` : `100% ${String(box.clientHeight)}px, ${inlineBar}`;
     // Stryker disable next-line ConditionalExpression: equivalent, writing the same figures again sets the same declaration
     if (figures !== this.#figures) {
       this.#figures = figures;
@@ -484,6 +697,15 @@ export class OverflowRegion implements ReactiveController {
     if (focused && !this.overflowing) this.#handOver(box);
     // Stryker disable next-line ConditionalExpression: equivalent, an update with no changed output renders the same
     if (outputs() !== before) this.#host.requestUpdate();
+  }
+
+  /**
+   * `pinnedEnd` (019 contracts/overflow-region-block-axis.md § The pinned-box measure): the pinned box's current laid-out
+   * block-end edge in the box's client coordinates, or the client block start without one.
+   */
+  #pinnedEnd(box: HTMLElement): number {
+    const pinned = this.#blockStartBox();
+    return pinned === null ? 0 : pinned.getBoundingClientRect().bottom - box.getBoundingClientRect().top;
   }
 
   /** The box's tab stop, role and name for the state (FR-002, FR-010). */
@@ -528,10 +750,18 @@ export class OverflowRegion implements ReactiveController {
   /** The unmodified arrow keys on the box itself: an instant 40 px scroll, prevented also at the extent (R-02). */
   readonly #onKey = (event: KeyboardEvent): void => {
     const box = event.composedPath()[0] as HTMLElement;
+    if (box !== this.#box || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
     const direction = { ArrowLeft: -1, ArrowRight: 1 }[event.key];
-    if (box !== this.#box || direction === undefined || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
-    event.preventDefault();
-    box.scrollTo({ left: box.scrollLeft + direction * this.#step, behavior: "instant" });
+    // The block-axis option (019 FR-018): ArrowUp and ArrowDown while the box scrolls in the block axis; every other
+    // key, PageUp, PageDown, Home, End and Space among them, is left to the browser.
+    const vertical = this.#axis ? { ArrowUp: -1, ArrowDown: 1 }[event.key] : undefined;
+    if (direction !== undefined) {
+      event.preventDefault();
+      box.scrollTo({ left: box.scrollLeft + direction * this.#step, behavior: "instant" });
+    } else if (vertical !== undefined) {
+      event.preventDefault();
+      box.scrollTo({ top: box.scrollTop + vertical * this.#step, behavior: "instant" });
+    }
   };
 
   /**
@@ -558,8 +788,33 @@ export class OverflowRegion implements ReactiveController {
     box.scrollTo({ left: clearance.scrollLeft, behavior: "instant" });
     this.#suppressed = { start: clearance.suppressStart, end: clearance.suppressEnd };
     this.#written = box.scrollLeft;
+    if (this.#axis) this.#clearBlock(box, target, event.composedPath(), room);
     this.#measure();
   };
+
+  /**
+   * The block clearance of the block-axis option (019 contracts/overflow-region-block-axis.md § Effects, Focus
+   * clearance), after the inline one: none for focus inside the pinned box; for an element before it in tree order the
+   * upper bound is the client block start, else `pinnedEnd`; the fade depth is `.region-edge.block-end`'s block size.
+   */
+  #clearBlock(box: HTMLElement, target: Element, path: readonly EventTarget[], room: number): void {
+    const pinned = this.#blockStartBox();
+    if (pinned !== null && path.includes(pinned)) return;
+    const position = pinned === null ? 0 : pinned.compareDocumentPosition(target);
+    const before = (position & Node.DOCUMENT_POSITION_PRECEDING) !== 0 && (position & Node.DOCUMENT_POSITION_CONTAINS) === 0;
+    const rect = target.getBoundingClientRect();
+    const top = box.getBoundingClientRect().top;
+    const clearance = blockClearanceScroll({
+      ring: { top: rect.top - room, bottom: rect.bottom + room },
+      box: { top, bottom: top + box.clientHeight, scrollTop: box.scrollTop, scrollHeight: box.scrollHeight, clientHeight: box.clientHeight },
+      pinnedEnd: this.#pinnedEnd(box),
+      fade: box.parentElement?.querySelector(".region-edge.block-end")?.getBoundingClientRect().height ?? 0,
+      before,
+    });
+    box.scrollTo({ top: clearance.scrollTop, behavior: "instant" });
+    this.#suppressedBlock = clearance.suppressEnd;
+    this.#writtenTop = box.scrollTop;
+  }
 
   /**
    * Focus leaving the control the fallback is for ends the suppression (R-06): while a suppression holds, that control
@@ -567,12 +822,14 @@ export class OverflowRegion implements ReactiveController {
    */
   readonly #onFocusOut = (): void => {
     this.#suppressed = { start: false, end: false };
+    this.#suppressedBlock = false;
     this.#measure();
   };
 
   /** A user's scroll ends the suppression: a position more than 1 px from the one the module wrote (R-06). */
   readonly #onScroll = (): void => {
     if (Math.abs((this.#box?.scrollLeft ?? 0) - this.#written) > 1) this.#suppressed = { start: false, end: false };
+    if (Math.abs((this.#box?.scrollTop ?? 0) - this.#writtenTop) > 1) this.#suppressedBlock = false;
     this.#measure();
   };
 

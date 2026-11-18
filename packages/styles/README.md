@@ -75,6 +75,7 @@ overrides them too.
 | `data-ocelle-value` | (empty), `ink` | compact scale |
 | `data-ocelle-prose` | (empty) | prose |
 | `data-ocelle-wrap` | `anywhere` | identifier wrap |
+| `data-ocelle-align` | `end` | numeric cells |
 
 ## Compact scale
 
@@ -209,6 +210,28 @@ For machine identifiers in dense layouts: mission slugs, ids and paths in list r
   `<span data-ocelle-wrap="anywhere" data-ocelle-value="">…</span>`.
 
 The identifier-wrap family uses no token: `overflow-wrap: anywhere` is a keyword.
+
+## Data tables
+
+`base.css` styles the direct `<table>` child of an `ocelle-data-table`, defined or not, with compact cells, eyebrow column headers in the eyebrow tokens, row headers and a rule between rows. Every data-table selector is inside `:where()`, so its specificity is (0,0,0) and any rule of the page on the same element wins; a table nested in a cell is not styled.
+
+Body cells use `--ocelle-font-size-sm` at `--ocelle-line-height-compact` in `--ocelle-color-ink-soft`, with tabular figures and `--ocelle-space-1` / `--ocelle-space-2` padding. Column headers (in the header row, or with `scope="col"` or `scope="colgroup"`) use `--ocelle-font-size-eyebrow`, `--ocelle-font-weight-eyebrow`, upper case, `--ocelle-tracking-eyebrow` and `--ocelle-color-eyebrow`. Row headers (`scope="row"`, `scope="rowgroup"`, or a `th` with no `scope` in a body or footer row) use the body size, medium weight and `--ocelle-color-ink`; a corner header with `scope="row"` in the header row is a row header. Chromium names each column header by its drawn upper-case text, so the accessible names of column headers follow the upper case ("ID" for "Id"). With `wrap="anywhere"` on the element, body cells break long identifiers anywhere; header cells never do.
+
+The rule below the last row is removed from the last row of the table's last row group, in source order: write a `<tfoot>` after the `<tbody>` groups, as HTML says.
+
+Inside a `data-ocelle-prose` container an override at (0,1,0), placed after the prose rules, restates each data-table value, so a consumer rule there needs a specificity above (0,1,0), or (0,1,0) placed after `@ocelle/styles`. In a consumer's shadow root, adopt `base.css` there too.
+
+Before upgrade the table is styled the same, with no scroll region.
+
+Base-style hook: the caption's cap reads `--data-table-box-size` and `--data-table-end-fade`, which `ocelle-data-table` writes on its track. Both names are public surface of `@ocelle/elements` and `@ocelle/styles` (a rename is a breaking change), and a consumer does not set them. Before upgrade neither is set, and the cap is `--ocelle-measure-container`.
+
+`sticky-header` pins the `<thead>` on a `--ocelle-color-sheet` ground, in the separated border model (`border-collapse: separate`, `border-spacing: 0`), while the page bounds the host's block size with its own `block-size` or `max-block-size`. The pinned header sits at the region's block-start edge once scrolled and keeps the focus ring's room above it at rest.
+
+`striped` gives each `<tbody>`'s even rows the `--ocelle-color-inset` ground, hidden rows counted. A hovered body row takes the `--ocelle-color-hover-bg` ground, only on a device that can hover; on a touch screen nothing changes. In the light theme `hover-bg` and `inset` are equal, so a hovered striped row shows no change there. In forced colours a band at the start of each body row stands in for both: `Canvas`, `CanvasText` on a striped row and `Highlight` on the hovered row; it scrolls away with a row scrolled sideways.
+
+## Numeric cells
+
+`data-ocelle-align="end"` end-aligns a cell with tabular figures, on any element; it sets no font, colour, padding or wrap. Its selector has specificity (0,1,0) and comes after the data-table prose override, so it wins inside prose too. A header cell with the hook keeps its eyebrow type. Any other value has no effect.
 
 ## Replacing kitty-mission-ui's stand-ins
 

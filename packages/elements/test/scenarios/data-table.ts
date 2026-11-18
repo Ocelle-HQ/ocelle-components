@@ -17,7 +17,7 @@ import type { Box, Driver, Palette, Target } from "./driver.ts";
 import type { Scenario } from "./icon.ts";
 import { probe, tokenColour, tokenPx, tokensOf } from "./layout.ts";
 import { layers } from "./overflow-block.ts";
-import { boxAttributes } from "./scroller.ts";
+import { at, boxAttributes, near as nearColour, rgb } from "./scroller.ts";
 
 /** A data-table body; `loop` marks the bodies the in-process harness also wraps in its no-`ResizeObserver`-loop check. */
 export interface DataTableScenario extends Scenario {
@@ -933,6 +933,20 @@ async function headOffset(driver: Driver, id: string): Promise<number | null> {
   return read === null ? null : (await driver.box(`${id}t-head`)).y - read.y;
 }
 
+/**
+ * Whether the header rule is drawn at the pinned `<thead>`'s block end: the rendered pixel of the host on the header
+ * row's last pixel row, at the centre of a header cell, is `--ocelle-color-rule-strong` (in the collapsed border model
+ * the rule stays behind with the rows; contracts/checks.md § Element plants).
+ */
+async function ruleUnderHead(driver: Driver, id: string): Promise<boolean> {
+  const host = await driver.box(id);
+  const head = await driver.box(`${id}t-head`);
+  const cell = await driver.box(`${id}t-h1`);
+  const image = await driver.pixels(id);
+  const pixel = at(image, cell.x + cell.width / 2 - host.x, Math.floor(bottomOf(head) - host.y - 0.5));
+  return nearColour(pixel, rgb(await tokenColour(driver, "color-rule-strong")), 12);
+}
+
 /** The ids of each header cell for which `elementFromPoint` at its centre returns that cell (or its text's parent). */
 async function headersHit(driver: Driver, id: string): Promise<boolean[]> {
   const out: boolean[] = [];
@@ -978,7 +992,7 @@ const stickyBodies: DataTableScenario[] = [
         const out: unknown[] = [];
         for (const top of [Math.round(range / 2), range]) {
           await driver.setScrollTop(boxOf(id), top);
-          out.push({ scrolled: (await driver.scrollTop(boxOf(id))) > room, pinned: near((await headOffset(driver, id)) ?? -99, 0), hit: await headersHit(driver, id), rule: Number.parseFloat(await driver.computed(`${id}t-h0`, "border-bottom-width")) > 0 });
+          out.push({ scrolled: (await driver.scrollTop(boxOf(id))) > room, pinned: near((await headOffset(driver, id)) ?? -99, 0), hit: await headersHit(driver, id), rule: Number.parseFloat(await driver.computed(`${id}t-h0`, "border-bottom-width")) > 0, drawn: await ruleUnderHead(driver, id) });
         }
         return out;
       };
@@ -992,7 +1006,7 @@ const stickyBodies: DataTableScenario[] = [
       return result;
     },
     expected: (() => {
-      const each = { scrolled: true, pinned: true, hit: [true, true, true, true, true], rule: true };
+      const each = { scrolled: true, pinned: true, hit: [true, true, true, true, true], rule: true, drawn: true };
       return { plain: [each, each], prose: [each, each], ground: [true, true], pageHeight: true };
     })(),
   },
@@ -1539,6 +1553,8 @@ export const dataTableTouchScenarios: readonly Scenario[] = [
       await driver.forcedColors("active", "light");
       const colours: Record<string, string> = { [await driver.resolveColour("CanvasText")]: "CanvasText", [await driver.resolveColour("Highlight")]: "Highlight", [await driver.resolveColour("Canvas")]: "Canvas" };
       await driver.touchTap("t-c1-1");
+      // The pointer over the tapped row too: on a device that cannot hover nothing paints the hover band, :hover or not.
+      await driver.hover("t-c1-1");
       const band = colours[await driver.computed("t-c1-0", "border-left-color")] ?? "other";
       const width = Number.parseFloat(await driver.computed("t-c1-0", "border-left-width")) > 0;
       await driver.forcedColors("none");
