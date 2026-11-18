@@ -31,7 +31,11 @@
 // - a pointer focus shows no ring (US1-10) beside the keyboard focus's ring; plant: the ring on `:focus` instead;
 // - the baseline fix moves nothing inside the control (plan decision 33, review round 5 O3-01): beside each one-line
 //   button's label on the text's baseline, its icon wrapper (the spinner while busy) and its label start at the same
-//   block position; plant: `.icon-row { align-items: baseline }` in place of the label's `align-self: baseline`.
+//   block position; plant: `.icon-row { align-items: baseline }` in place of the label's `align-self: baseline`;
+// - the baseline fix leaves an icon-only button where it was (plan decision 33 as amended by review round 6, O6-01):
+//   beside the labelled cases above, an icon-only button's icon (default, compact, busy) has the block-centre of a
+//   native `<button>`'s svg in the same line; plant: the unscoped `.icon-row > .label { align-self: baseline }` in
+//   place of the scoped `.icon-row:not(.bare) > .label` rule.
 import { tokenColour } from "./icon.ts";
 import type { Scenario } from "./icon.ts";
 import type { Box, Driver, EventRecord, Palette } from "./driver.ts";
@@ -789,6 +793,51 @@ export const buttonScenarios: readonly Scenario[] = [
     },
     expected: {
       found: Object.fromEntries(["plain", "compact", "icon", "flush", "quiet", "link", "busy"].map((id) => [id, { baseline: true, rowStart: true }])),
+      axe: [],
+    },
+  },
+  {
+    // Plan decision 33 as amended by review round 6 (O6-01; tasks.md T029f): round 6's method. Each paragraph, body
+    // text at 16 px, holds "Text", a zero-size inline-block marker (on the paragraph's baseline), an icon-only button
+    // (an `ocelle-icon` in the `icon` slot, no label, named by `aria-label`), a native `<button>` holding an `<svg>` with
+    // a `viewBox`, `--ocelle-icon-size` square, and "after". The expected value is the native button's own svg: the
+    // block-centre of the button's icon (the slotted icon, or the spinner's svg while busy) relative to the marker equals
+    // the native svg's relative to the same marker within 0.5 px. Each row also carries `bare`, the guard the scoped
+    // rule depends on.
+    name: "Plan decision 33 (round 6): an icon-only button in a line of text keeps its icon where a native button puts it: its icon's block-centre is the native button's svg's within 0.5 px for the default button, compact and busy, and its row carries `bare`",
+    run: async (driver) => {
+      const cases = [
+        { id: "only", attributes: "", icon: "" },
+        { id: "only-compact", attributes: ' size="compact"', icon: "" },
+        { id: "only-busy", attributes: " busy", icon: ".spinner svg" },
+      ] as const;
+      await driver.mount(
+        cases
+          .map(
+            (each) =>
+              `<p class="line">Text<span class="mark" id="${each.id}-text"></span> <ocelle-button id="${each.id}" aria-label="Open project"${each.attributes}><ocelle-icon id="${each.id}-icon" slot="icon" name="folder"></ocelle-icon></ocelle-button> <button class="native" type="button" aria-label="Open project"><svg id="${each.id}-native" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8" fill="none" stroke="currentColor"></circle></svg></button> after</p>`,
+          )
+          .join(""),
+      );
+      await driver.rules(
+        ".line { font-size: 16px; } .mark { display: inline-block; inline-size: 0; block-size: 0; } .native svg { inline-size: var(--ocelle-icon-size); block-size: var(--ocelle-icon-size); }",
+      );
+      const centre = (box: Box): number => box.y + box.height / 2;
+      const found: Record<string, unknown> = {};
+      for (const each of cases) {
+        const text = await driver.box(`${each.id}-text`);
+        const own = each.icon === "" ? await driver.box(`${each.id}-icon`) : await driver.box(each.id, each.icon);
+        const native = await driver.box(`${each.id}-native`);
+        found[each.id] = {
+          centre: Math.abs(centre(own) - text.y - (centre(native) - text.y)) <= 0.5,
+          square: native.height === icon,
+          bare: (await driver.box(each.id, ".icon-row.bare")).display !== "absent",
+        };
+      }
+      return { found, axe: await severe(driver) };
+    },
+    expected: {
+      found: Object.fromEntries(["only", "only-compact", "only-busy"].map((id) => [id, { centre: true, square: true, bare: true }])),
       axe: [],
     },
   },

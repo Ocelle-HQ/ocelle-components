@@ -131,6 +131,11 @@ const fragments = [
   // it takes part in baseline alignment
   "The control renders, in its shadow root, a row with the class `icon-row` holding `<span class=\"icon-slot\"><slot name=\"icon\"></slot></span>`, its label wrapper `<span class=\"label\"><slot></slot></span>` around the default slot, and `<span class=\"icon-slot trailing\"><slot name=\"trailing\"></slot></span>`, and adds `iconSlotStyles` (`src/icon-slot.ts`, internal) to its `static styles`",
   "The label wrapper takes part in baseline alignment, so the control's baseline is its label's first line and a one-line control in a line of text sits on the text's baseline",
+  // 012 plan decision 33 as amended by phase 2 review round 6 (O6-01; tasks.md T029g): the `bare` modifier is part of
+  // the convention, the label's baseline alignment applies to labelled rows only, and an icon-only control's icon sits
+  // where a native button puts it
+  "A control with no label, such as an icon-only control, puts the class `bare` on its row: the `bare` modifier is part of the convention",
+  "The label's baseline alignment applies to labelled rows only: a `bare` row is not changed, so an icon-only control's icon sits where a native `<button>` with an svg puts it in a line of text",
   "A slotted icon, an `ocelle-icon` or a bare `<svg>`, is `--ocelle-icon-size` square and does not shrink, whatever a normal page rule, `base.css` or its `width` and `height` attributes set",
   "The row sets the type (font size and line height) that the wrappers and the label inherit; each wrapper is one line box tall (`1lh`) with the icon centred in it, so the icon is centred on the label's first line at any type size and leading, overflowing the line box evenly when it is taller",
   "The row's block padding, `calc((var(--ocelle-icon-size) - 1lh) / 2)` from `iconSlotStyles` (0 when the line box is at least the icon size), keeps that overflow inside the control's box",
