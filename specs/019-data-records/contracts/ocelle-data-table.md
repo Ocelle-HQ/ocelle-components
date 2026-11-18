@@ -100,14 +100,19 @@ takes its table's width and overflows only when its own inline size is bounded, 
   watches the subtree (`childList`, `characterData`, and the attributes `hidden`, `aria-hidden` and `alt`) and
   requests an update when the caption text changes.
 - **Host ARIA.** The region takes the module's rule: a non-blank host `aria-label` names it alone, a blank one counts
-  as absent. The README's Host ARIA list names the data table with 009's elements (PLAN-CORRECTNESS-1-010).
+  as absent. The README's Host ARIA list names the data table with 009's elements (PLAN-CORRECTNESS-1-010). Chromium
+  also shows the host as a `generic` node of the host's name beside the `group`; axe-core 4.14.0 reports nothing on
+  it, blank or not (spike § 2), so both states have stories (spike Q1 (b), contracts/checks.md § Stories).
 - **Overflow, keys, fades, clearance, handover.** All of this is the module's. The element adds no listener for it.
 - **Not touched.** The element writes nothing on the table or its descendants and emits no event.
 
 ## Accessibility tree (Chromium)
 
 - **Fits.** The consumer's table exactly: a `table` named by its caption, with `row`, `columnheader`, `rowheader` and
-  `cell`, and no ancestor node from the element.
+  `cell`, and no ancestor node from the element but `generic` wrappers. Each `columnheader` and its static text are
+  named by the drawn, upper-case text of block 1's eyebrow ("ID" for "Id"; spike § 1), as for any table given that
+  style: the element adds nothing to the names. US1-1 compares with an outside table given the same upper case by a
+  test-only rule and asserts the upper-case names; both READMEs state it (spike Q2 (a)).
 - **Overflows, named.** A `group` named by the name in force, holding that same table.
 - **Overflows, unnamed.** The box is focusable with no role and no name, as 009's contract states. The README asks
   for a caption or a `label`.

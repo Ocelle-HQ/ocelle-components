@@ -32,7 +32,7 @@ used for the lists.
 
 | Oracle | Used by | How |
 |---|---|---|
-| AX tree, table | US1-1, US1-4, US1-6, US1-7, US1-15, US1-16, the R-04 caption-text bodies, the FR-010 host `aria-label` body, the hidden-host bodies | The full Chromium AX tree: compare the element's subtree with the same table outside; region `group` and name |
+| AX tree, table | US1-1, US1-4, US1-6, US1-7, US1-15, US1-16, the R-04 caption-text bodies, the FR-010 host `aria-label` body, the hidden-host bodies | The full Chromium AX tree: compare the element's subtree with the same table outside, whose column headers a test-only rule gives `text-transform: uppercase` (a constructed sheet adopted by the document in the fixture harness), because Chromium names column headers by their drawn upper-case text (spike Q2 (a)); US1-1 also asserts the column headers' names in upper case ("ID", "TITLE", "LANE", "OWNER", "LINK"); region `group` and name |
 | AX tree, lists, and `itemTexts(list)` (new, R-11) | US2-1, US2-3, US2-5, US2-6, US2-10, US2-11 to US2-14 (US2-14's `slot` change included), the slotted-time edge bodies (R-10), US3-1, US3-6, US3-7, US3-10, the FR-026 bodies (no live region, landmark or heading node in the container's subtree), the hidden-host bodies | `StaticText` names under each `listitem`, joined, collapsed and trimmed. Each assertion also checks the text is not empty. US2-5, US2-6, US3-6 and US3-7 also assert the `listitem` count and that no other child of the container is in the tree. No marker or connector node is in the tree, and a DOM assertion pins `aria-hidden="true"` on every marker wrapper and connector span |
 | computed style | US1-2, US1-3, US1-10, US1-14, US2-3, US2-11, US3-2, US3-4, the `time` bodies (R-10) | `getComputedStyle` on cells, headers, caption, time (the attribute time's `part="time"` and each slotted time node, a `<b slot="time">` included), marker and chip, against the token's computed value read from a probe |
 | geometry | US1-4, US1-12, US2-2, US2-9, US2-11, US2-13, US2-14, US3-2, US3-3, US3-4, US3-5, US3-9, ordinal fit, mixed chips, the `time` bodies, the caption bodies (R-07), the shrink-to-fit bodies (R-02), the timeline connector bodies (R-10) | `getBoundingClientRect` on real elements (markers, connector spans, `<li>`, the chip, the host, the caption's line boxes through a `Range`): marker size, centring on the first line, the caption's start against the table's and its line boxes inside the box's unmasked extent, the host's inline size in a shrink-to-fit host, each timeline connector clear of both dots with `space-1` gaps (0.5 px) and `elementFromPoint` inside each dot returning the marker, connector ends inside the chain, chip block size < `size-step`, the ordinal box inside the marker's padding box, connector centres on the row's marker centre (0.5 px). US1-12, US2-9 and US3-9 assert inline-start edges against the container's: under `dir="rtl"` the first column's, the markers' and the first step's right edges are at the container's right edge, and lines fill towards the left. US3-5 asserts the long step's box stays inside the chain |
@@ -158,11 +158,15 @@ WebKit, which is not measured.
 
 In `storybook/stories/<element>.stories.ts`, each in light and dark (PLAN-CORRECTNESS-1-007, operator decision (a)):
 
-- **Data table (12):**
+- **Data table (14):**
   - fits;
   - overflows, named by `label`;
   - overflows, named by its caption (no `label`);
   - overflows, unnamed (no caption, no `label`): the box is focusable with no role and no name;
+  - overflows, named by a host `aria-label` (`aria-label="Deployments"` beside `label="Work packages"`): the region is
+    a `group` named "Deployments" (spike Q1 (b));
+  - overflows, blank host `aria-label` (`aria-label="  "` beside `label="Work packages"`): the region is a `group`
+    named "Work packages" (spike Q1 (b));
   - row headers;
   - corner header;
   - `wrap="anywhere"`;
@@ -200,13 +204,16 @@ In `storybook/stories/<element>.stories.ts`, each in light and dark (PLAN-CORREC
   - standalone steps (analysis C1 (c)): a default and a `variant="chip"` `ocelle-evidence-step` outside a chain, each
     plain text with no marker, ordinal or chip box.
 
-That is 35 stories, 70 baselines: `visual:update` reports 24, 22 and 24 added in phases 1 to 3 (R-15).
+That is 37 stories, 74 baselines: `visual:update` reports 28, 22 and 24 added in phases 1 to 3 (R-15; phase 1's two
+host `aria-label` stories added by spike Q1 (b), 2026-11-18).
 
-The item elements' states are in their container's file, the standalone item included (analysis C1 (c)). No story
-sets a host `aria-label`, blank or not, on any of the three containers: those states are plan.md § Complexity
-Tracking's one Principle V exception (R-09's axe risk), proven by the browser bodies (the FR-010 host `aria-label`
-body, US2-10, US3-10). Each phase's spike (T003, T026, T052) runs axe on the state; a clean result meets the row's
-sunset and goes to the operator, who decides whether the phase adds the story. The story test checks presence in light
+The item elements' states are in their container's file, the standalone item included (analysis C1 (c)). Only the
+data table has stories with a host `aria-label` (the two above): phase 1's spike found axe-core 4.14.0 clean on that
+state, and the operator chose both stories (spike Q1 (b)); the FR-010 host `aria-label` body stays. No story sets a
+host `aria-label`, blank or not, on the timeline or the chain: those states are plan.md § Complexity Tracking's one
+Principle V exception (R-09's axe risk), proven by the browser bodies (US2-10, US3-10). Each remaining phase's spike
+(T026, T052) runs axe on the state; a clean result meets the row's sunset and goes to the operator, who decides
+whether the phase adds the story. The story test checks presence in light
 and dark, 320 px reflow of each story, and that every list in every story has a name except the unnamed chain story,
 the empty stories and the standalone-item stories (which render no list). A story the `axe` gate fails (the unnamed
 overflowing table is the likeliest) is fixed in the story or the element, or goes to the operator with a Complexity

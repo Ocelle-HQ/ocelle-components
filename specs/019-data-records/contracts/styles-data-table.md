@@ -80,4 +80,6 @@ browser bodies, with the elements undefined, assert each visible item's box star
 - **Inside prose.** A consumer rule needs a specificity above (0,1,0), or (0,1,0) placed after `@ocelle/styles`.
 - **In a consumer's shadow root.** `@ocelle/styles` is adopted there too.
 
-The README states all three, and the base-style hook of block 1 (a consumer does not set its two properties).
+The README states all three, and the base-style hook of block 1 (a consumer does not set its two properties). It
+also states that the accessible names of column headers follow the drawn upper-case text: Chromium names each column
+header by the text block 1's `text-transform: uppercase` draws (spike Q2 (a), 2026-11-18; asserted by T011).

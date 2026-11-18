@@ -12,7 +12,7 @@ while unset.
 |---|---|---|---|
 | `label` | property / attribute `label` | `string \| undefined` | Names the region (R-04). Trimmed; empty or whitespace-only counts as absent. Not shown. |
 | `wrap` | property / attribute `wrap`, reflected | `"anywhere" \| undefined` | `anywhere` sets `overflow-wrap: anywhere` on body cells through `base.css` (R-06); any other value acts as unset. |
-| host `aria-label` | observed attribute | `string \| null` | Read by the module: non-blank names the region alone; blank counts as absent. |
+| host `aria-label` | observed attribute | `string \| null` | Read by the module: non-blank names the region alone; blank counts as absent. Both states have stories (spike Q1 (b)). |
 | table | derived | `HTMLTableElement \| undefined` | The first direct child with `localName === "table"`; re-derived on every child-list change. |
 | caption text | derived | `string \| undefined` | The assigned table's `caption`'s text nodes in tree order, skipping any element with `hidden` or `aria-hidden="true"` and its subtree, an `<img>` giving its `alt`; white space collapsed and trimmed; empty counts as absent (R-04). Re-read on any change in the subtree (`childList`, `characterData`, `hidden`, `aria-hidden`, `alt`). |
 | name | derived | `string \| undefined` | `label` (non-blank), else caption text, passed to `setLabel`; the module puts a non-blank host `aria-label` first. |
@@ -21,7 +21,8 @@ while unset.
 | overflow state | module (009) | `overflowing`, `offStart`, `offEnd`, `fadeAttribute`, `name` | As 009's contract states. Overflowing: the box is a tab stop, with `role="group"` and `aria-label` when named. |
 
 **States**: fits (no tab stop, no role, no fade) ↔ overflows (tab stop; named `group` or unnamed; fades on the sides
-with content off-screen). A transition happens on any module trigger (R-05). Focus on the box when overflow ends moves
+with content off-screen). A transition happens on any module trigger (R-05; the phase 1 spike found no change that
+escapes them). Column headers are named in the AX tree by their drawn upper-case text (spike Q2 (a)). Focus on the box when overflow ends moves
 to the first focusable cell content or to the frame (009's handover).
 
 ## Event timeline (`ocelle-event-timeline`)

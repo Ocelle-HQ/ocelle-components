@@ -64,6 +64,12 @@ history and evidence chain.
   table's own per-instance sheet holds px figures only, and the README's Styles convention is amended for the count of
   sheets. Q3 (a): phases fold from bases at 8ee3351 or later. Q4 (a): research cites the merged lines. Q5 (b): the
   pre-upgrade list rules go in `base.css`'s base layer beside 013's facts rule. See § Decisions after the recheck.
+- **Decided on the phase 1 spike (2026-11-18).** Q1 (b): two data-table stories named through a host `aria-label`
+  (non-blank and blank), so phase 1 has 14 stories and 28 baselines, and the Principle V exception drops the data
+  table. Q2 (a): the column headers stay upper case; US1-1 compares with an outside table drawn the same way and
+  asserts the upper-case names; both READMEs say so. T005 "Proceed, map later": the data-table mapping rows read
+  "pending inventory" until the inventory is supplied before the pull request lands (SC-001 open). See § Decisions
+  after the phase 1 spike.
 
 009, 013 and op 016 are on `main`, and `main` (b594b7e) is merged into this branch (8ee3351, operator decision of
 2026-11-17, `reviews/main-merge.md`). The first task rechecked the plan against it (R-14, `reviews/recheck.md`):
@@ -125,15 +131,17 @@ monospace; no I/O; one heavy job at a time in this container.
 
 **Scale/Scope**: 5 elements, 0 tokens, 0 contrast rows, 3 `@ocelle/styles` blocks (the data-table rules, their prose
 override, and the four pre-upgrade list-item rules), 1 base-style hook (two custom properties, I7 (a)), 1 driver
-addition, 35 stories (12 in phase 1, 11 in phase 2, 12 in phase 3, each with two baselines: 70 PNGs).
+addition, 37 stories (14 in phase 1, 11 in phase 2, 12 in phase 3, each with two baselines: 74 PNGs; spike Q1 (b)).
 
 ## Constitution Check
 
 *Gate: passes before Phase 0 and again after Phase 1 design (rechecked after squad rounds 1 and 2, and after the plan
 gate's answers of 2026-11-16: decision 1, Q-A, Q-B and Q-C (a), Q-E a named `time` slot; Q-D and Q-F decided at squad
 rounds 1 and 2; Q-G decided (a)), after the analysis decisions of 2026-11-16 (C1 (c), I7 (a)), and after the recheck
-decisions of 2026-11-17 (Q1 (a), Q2 (c), Q3 (a), Q4 (a), Q5 (b)), none of which changes a verdict below. One Principle V
-exception is recorded, chosen by the operator as C1 (c) (Complexity Tracking).*
+decisions of 2026-11-17 (Q1 (a), Q2 (c), Q3 (a), Q4 (a), Q5 (b)), and after the phase 1 spike decisions of 2026-11-18
+(Q1 (b), Q2 (a), T005 "Proceed, map later"), none of which changes a verdict below. One Principle V exception is
+recorded, chosen by the operator as C1 (c) and narrowed to the timeline and the chain by spike Q1 (b) (Complexity
+Tracking).*
 
 | Principle | How this plan meets it |
 |---|---|
@@ -141,7 +149,7 @@ exception is recorded, chosen by the operator as C1 (c) (Complexity Tracking).*
 | II. Tokens only, brand rules | **Tokens**: every value is a token (R-06, R-10, R-12); no new token (R-13); the column headers use 011's eyebrow tokens as they are (recheck Q1 (a)). **No monospace**: cells, times, ordinals and chips use `font-sans` with `figures`. **`color-rule`**: only on decorative lines (the row and header rules, the connectors; FR-013). **Radius**: `radius-2` on the chip (the one radius, never `radius-pill`). The dot and the step marker are round, `border-radius: 50%` with no token: a mark shape, not a corner radius, so the one-radius rule is not engaged and no radius token is added (FR-031, FR-040; Q-D, operator decision (a) on PLAN-CORRECTNESS-1-004). **Ochre**: none. |
 | III. Accessible by construction | **ID references**: none across a root. The table's references stay in the consumer's tree (R-01), and the region is named by copied text (R-04). **Roles**: the table's own roles; a `group` on the region while it overflows (009); `list` and `listitem` on the shadow lists, explicit for WebKit (R-08). **Hidden**: markers, connectors and ordinals are `aria-hidden`; item text is asserted by `itemTexts` (R-11). **Keyboard**: the overflowing region is the only added tab stop, with arrows, clearance and handover from the module; slotted links keep theirs. **Contrast**: text and structural marks use ink tokens with text declarations on the nine main grounds (a slotted time takes the attribute time's `ink-muted` through `::slotted()`); decorative lines are exempt (FR-013), checked by a node check against `pairs.json` and by rendered-colour bodies (R-13). **Forced colours**: every mark is a border drawn in `CanvasText`; the chip's box rule sits outside the variant block (R-10, R-12). **Reflow**: 320 px tests per container, the data table as a flex and a grid item, and in three shrink-to-fit hosts (a dialog, an inline-block, a start-aligned column flex), where it is never 0 px wide (R-02); the caption wraps inside the box's unmasked width at rest (R-07). **Naming**: a blank host `aria-label` counts as absent on the lists, through 009's `resolveName` (R-09); the region's caption name skips hidden parts and reads image `alt` (R-04). **axe**: #10's `axe` gate on every story, with no exception entry planned. |
 | IV. Strict CSP, offline | Adopted stylesheets and `base.css` only. No `style` attribute; the module's mask figures use its per-instance sheet (009), and the data table's measured box width and end fade depth use its own, px figures only (R-07, recheck Q2 (c)). Fixture pages assert zero violations. |
-| V. Storybook, behaviour tests | A story per variant and state, light and dark ([contracts/checks.md](contracts/checks.md) § Stories). The item elements' states are stories in their container's file, the standalone event and the standalone step included (analysis C1 (c)). Every spec'd state has a story, the hidden item, the unnamed overflowing table, the table-less data table and the empty containers included (PLAN-CORRECTNESS-1-007, operator decision (a)), except the states named by a host `aria-label` (the data table's region, the timeline, the chain): one exception row in Complexity Tracking, chosen by the operator (C1 (c)), proven by browser bodies, with a sunset each phase's spike checks. |
+| V. Storybook, behaviour tests | A story per variant and state, light and dark ([contracts/checks.md](contracts/checks.md) § Stories). The item elements' states are stories in their container's file, the standalone event and the standalone step included (analysis C1 (c)). Every spec'd state has a story, the hidden item, the unnamed overflowing table, the table-less data table and the empty containers included (PLAN-CORRECTNESS-1-007, operator decision (a)), except the states named by a host `aria-label` of the timeline and the chain: one exception row in Complexity Tracking, chosen by the operator (C1 (c)), proven by browser bodies, with a sunset each phase's spike checks. The data table's host `aria-label` states, non-blank and blank, have stories since phase 1's spike met the sunset (spike Q1 (b)). |
 | VI. Consumer-driven, own code | Needs: kitty-mission-ui's `.sk-data-table` family and the Desktop V2 primitives (#470, #517, #533). The issues are unread, so their points were the plan gate's questions Q-A to Q-C and Q-E (spec SPEC-1-06 (b)), which the operator answered on 2026-11-16 (Q-E's answer, the `time` slot, is in FR-023). The inventory is an operator input before each red commit (R-16). Nothing is copied, and the README mapping names roles only. |
 | VII. Semver | **MINOR**: five elements, five entry points, three `base.css` blocks and one base-style hook (`--data-table-box-size`, `--data-table-end-fade`, analysis I7 (a)), which couples the two separately versioned packages and so is surface: both CHANGELOGs and both READMEs name it, and a rename or removal is MAJOR from 1.0.0. CHANGELOG entries go in `@ocelle/elements` and `@ocelle/styles`. `@ocelle/tokens` is unchanged. |
 | VIII. Test-first, non-vacuous | A scaffold comes before each red commit. The red commit holds the phase's scenario bodies, the driver test, the node and styles tests and the story-test extension (operator decision I3), and `red.sh` keeps one red record per phase. The red log is read per body: every scenario body fails on an assertion, never on an import or setup error, and each body the platform alone could pass carries a paired assertion only the element gives (contracts/checks.md). Each phase's red commit changes 003's `source.test.ts` for the `base.css` rules that phase's green adds (phase 1 blocks 1 and 2 after the wrap rule, phase 2 the timeline's two pre-upgrade rules and phase 3 the chain's two in its base-layer slice, recheck Q5 (b)), and phase 1's red also changes the two Styles sentences `packages/elements/test/node/readme.test.ts` pins, for the convention amendment of recheck Q2 (c); each red message names its changed test and the reason (R-06, R-07). Item-text bodies also assert a non-empty text (FR-016). Each CSS-only behaviour has a named element plant or a stated reason, because Stryker does not mutate `css` templates or `base.css`; element plants mutate green source, so they run after green, are never committed, and are recorded in `reviews/phase-<N>/element-plants.md` (contracts/checks.md § Element plants). Spikes run before the scaffolds of phases 1 to 3, and a failing spike result goes to the operator. |
@@ -179,7 +187,9 @@ Answered by the operator on 2026-11-16 (`reviews/plan/operator-gate.md`); the ch
    through the operator: a module option that keeps a pinned start box (the caption, sticky once it lands) out of the
    start fade's mask (R-17, PLAN-A11Y-SECURITY-1-002 operator decision (c)). This mission does not change 009's module.
 9. **The inventory (R-16).** The operator supplies kitty-mission-ui's variant inventory before each phase's red
-   commit, as in 013. A gap goes to the operator.
+   commit, as in 013. A gap goes to the operator. Phase 1's `.sk-data-table` inventory is deferred by the operator
+   ("Proceed, map later", 2026-11-18): its mapping rows read "pending inventory" until it is supplied, and it is
+   supplied and mapped before the pull request lands (§ Decisions after the phase 1 spike).
 
 ## Decisions after the analysis
 
@@ -187,9 +197,11 @@ Answered by the operator on 2026-11-16 (`reviews/analysis/operator-decisions.md`
 `reviews/analysis/fixes.md`.
 
 1. **C1, states without a story. Decided: (c).** A story for a standalone `ocelle-timeline-event` in the timeline's
-   file and one for a standalone `ocelle-evidence-step` in the chain's (stories 35, baselines 70). One Principle V
+   file and one for a standalone `ocelle-evidence-step` in the chain's (stories 35, baselines 70; 37 and 74 since the
+   phase 1 spike's Q1 (b)). One Principle V
    exception row (Complexity Tracking) covers only the states named by a host `aria-label`: the data table's region,
-   the timeline and the chain (R-09's axe risk), proven by browser bodies.
+   the timeline and the chain (R-09's axe risk), proven by browser bodies. The data table's region left the row on
+   2026-11-18 (§ Decisions after the phase 1 spike, Q1 (b)).
 2. **I7, the caption cap's custom properties across packages. Decided: (a).** `--data-table-box-size` and
    `--data-table-end-fade` are a documented base-style hook between `@ocelle/elements` (the writer) and
    `@ocelle/styles` (the reader): public surface under constitution VII, named in both CHANGELOGs and READMEs, with a
@@ -220,6 +232,32 @@ Answered by the operator on 2026-11-17 (`reviews/recheck-decisions.md`, human:je
 5. **Q5, the pre-upgrade rules' place. Decided: (b).** The timeline's and the chain's pre-upgrade rules (block 3) go
    in `base.css`'s base layer right after 013's facts rule, before the focus rule, and `source.test.ts` transcribes
    them in its `baseLayer` slice; the last-rule assertion keeps phase 1's form, "the wrap rule, block 1, block 2".
+
+## Decisions after the phase 1 spike
+
+Answered by the operator on 2026-11-18 (`reviews/phase-1/operator-spike-decisions.md`, human:jeroennouwsdev) on the
+two stop-and-ask points of `reviews/phase-1/spike.md` and on T005; the changes are listed in
+`reviews/phase-1/spike-fixes.md`.
+
+1. **Q1, the data table named by a host `aria-label`. Decided: (b).** axe-core 4.14.0, with the `axe` gate's rule
+   selection, reports no violation and no incomplete result on an overflowing or fitting data table named by a
+   non-blank host `aria-label`, nor with a blank one (spike § 2), so the Complexity Tracking row's sunset is met for
+   the data table. Phase 1 adds two stories: "overflows, named by a host `aria-label`" (`aria-label="Deployments"`
+   beside `label="Work packages"`, the region named "Deployments") and "overflows, blank host `aria-label`"
+   (`aria-label="  "` beside `label="Work packages"`, the region named "Work packages"). Phase 1 then has 14 stories
+   and 28 baselines (`visual:update` prints `(28 added, 0 changed, 0 removed)`), the mission 37 and 74. The row drops
+   the data table's region; the timeline and the chain stay in it until their spikes (T026, T052) measure them. T006's
+   FR-010 browser body stays.
+2. **Q2, upper-case column-header names. Decided: (a).** Block 1 keeps `text-transform: uppercase` on the column
+   headers. Chromium names each column header and its static text by the drawn text ("ID", not "Id"; spike § 1), as
+   the elements README already records for 011's eyebrow heading. US1-1's oracle compares the element's subtree with
+   the same table outside given the same column-header `text-transform` by a test-only rule (so the element adds
+   nothing, FR-003, FR-004), plus one assertion that the column headers are named in upper case. Both READMEs state
+   that the accessible names of column headers follow the drawn upper-case text (FR-006; T011, T013).
+3. **T005, the `.sk-data-table` inventory. Decided: "Proceed, map later".** Phase 1's red commit does not wait for
+   it. The README's data-table mapping rows (FR-058) read "pending inventory", which T013 asserts; the inventory is
+   supplied by the operator, recorded in R-16 and mapped test first before the pull request lands, and SC-001 stays
+   open until then (T076).
 
 ## Project Structure
 
@@ -296,7 +334,8 @@ branch's history, and `/ocelle-land` handles the pull request's shape. Phases 1 
 3. **Red commit** (operator decision I3; `red.sh`). It holds the phase's scenario bodies, its edge-case bodies
    (FR-052), driver tests, node and styles tests, README test statements and the story-test extension. It changes
    test files only, and holds no plant (a plant mutates green source). The README mapping rows' statements need
-   R-16's inventory recorded first. The red log is read per body: each scenario body fails on an assertion, not on an
+   R-16's inventory recorded first (phase 1: "pending inventory" until it is supplied, § Decisions after the phase 1
+   spike). The red log is read per body: each scenario body fails on an assertion, not on an
    import or setup error, and the review checks contracts/checks.md § Bodies that the platform alone could pass against
    that log.
 4. **Green.** The phase's source, `base.css` rules, manifest, stories and baselines, README sections and CHANGELOG.
@@ -332,10 +371,12 @@ Every phase with stories also does the following:
    - Recorded on 2026-11-17 in `reviews/recheck.md` (five differences), answered in `reviews/recheck-decisions.md`
      and applied as § Decisions after the recheck states; T001 stays for the implementer to tick.
    - The operator's inventory for R-16 is not a phase 0 item: it is one step per phase, before that phase's red
-     commit (decision 9; tasks T005, T028, T054).
+     commit (decision 9; tasks T005, T028, T054). Phase 1's step is deferred ("Proceed, map later", § Decisions
+     after the phase 1 spike).
    - The `itemTexts` driver addition belongs to phase 2's red commit, not here, so it is proven red first.
 1. **US1 Data table** (P1, MVP).
-   - **Spike.** R-01, R-03, R-05 and R-07:
+   - **Spike.** R-01, R-03, R-05 and R-07 (done 2026-11-17, `reviews/phase-1/spike.md`; answered as § Decisions after
+     the phase 1 spike states):
      - the accessibility tree and axe in and out of the element, fitting and overflowing;
      - the track at `fit-content` at 1280, 600 and 320 px, with and without `wrap="anywhere"`;
      - the swaps of a `tbody` or the whole table, a cell edit and a late web font, each against a fresh load;
@@ -356,7 +397,10 @@ Every phase with stories also does the following:
    - **Red.**
      - US1-1 to US1-16 as shared bodies.
      - US1-7 with a blank caption (SPEC-3-05).
-     - FR-010's host `aria-label` (non-blank decides, blank counts as absent), the state the exception row covers.
+     - FR-010's host `aria-label` (non-blank decides, blank counts as absent), also shown by two stories since spike
+       Q1 (b).
+     - US1-1 against the same table outside given the same column-header upper case by a test-only rule, plus the
+       upper-case names of the column headers (spike Q2 (a)).
      - US1-11's forced colours with the header rule as well as the row rules (analysis G2).
      - US1-10 comparing every property of R-06's list on every target (SPEC-3-01).
      - US1-3 with 011's four eyebrow tokens (SPEC-3-04, recheck Q1 (a)).
@@ -391,18 +435,22 @@ Every phase with stories also does the following:
        caption cap among the uses; named with its reason in the commit message.
      - The `@ocelle/styles` browser tests, the prose-override node test and the data-table contrast node test.
      - The data table's part of `test/node/records-pairs.test.ts` (R-13).
-     - README statements for the data-table section, the conventions amendment (FR-056), its mapping rows, the Host
+     - README statements for the data-table section, the conventions amendment (FR-056), its mapping rows ("pending
+       inventory" until the inventory is supplied, spike decision on T005), the column headers' accessible names
+       following the drawn upper-case text (both packages, spike Q2 (a)), the Host
        ARIA list (the data table added beside 009's elements, with the module's blank-counts-as-absent rule), the
        Sizing line (a wrapper that is the flex or grid item needs `min-inline-size: 0`; in a shrink-to-fit host the
        data table takes its table's width and overflows only when its own inline size is bounded), the caption rules
        (the `hidden` attribute, not CSS, hides part of a caption from the name; the caption scrolls with the table
        until 009's option lands; its longest word widens the table, and in a bounded host a caption word wider than
-       the box overflows it and the region scrolls), and the base-style hook in both packages' README tests (analysis
-       I7 (a)).
+       the box overflows it and the region scrolls), print (printed content past the box is clipped; a consumer who
+       prints sets a print rule of its own, spike § 8), and the base-style hook in both packages' README tests
+       (analysis I7 (a)).
      - The story-test extension.
    - **Green.** `ocelle-data-table.ts`, the `base.css` blocks, exports and the manifest, the stories with baselines,
      the README (section, conventions with the Styles amendment of recheck Q2 (c), overflow-region users, Host ARIA list, sizing, prose specificity, the
-     `<tfoot>` order, print, pre-upgrade, the base-style hook) and the CHANGELOGs, which name the hook as surface. Then the data table's element plants.
+     `<tfoot>` order, print, pre-upgrade, the base-style hook, the upper-case column-header names, the mapping rows
+     reading "pending inventory") and the CHANGELOGs, which name the hook as surface. Then the data table's element plants.
 2. **US2 Event timeline** (P2).
    - **Spike.** R-08, R-09, R-10 and R-11: the tree with `role="list"`, the item-text oracle, the empty connector and
      marker spans, the host `aria-label` against 009's lane (axe's verdict is the exception row's sunset check), and
@@ -484,7 +532,7 @@ time. Phase 3 reuses phase 2's `itemTexts`; both containers import 009's `resolv
 
 | Exception | Principle | Scope | Rationale | Sunset | Approval |
 |---|---|---|---|---|---|
-| The states named by a host `aria-label` have no story | V (a story per variant and per state) | `ocelle-data-table`'s region, `ocelle-event-timeline` and `ocelle-evidence-chain`, each with a host `aria-label`, blank or not (FR-010, FR-022, FR-032; US2-10, US3-10). Each is proven instead by shared browser bodies in both harnesses: T006's FR-010 host `aria-label` body, T030's US2-10 and T055's US3-10. No other state of the five elements is excepted (the standalone event and step have stories, analysis C1 (c)), and no `storybook/a11y-exceptions.json` entry is added. | Each of these hosts keeps the consumer's `aria-label` on a generic host node while the name sits on a shadow node (the region's box or the `<ol>`), so axe may report `aria-prohibited-attr` (serious) on the host, which a story would turn into a failing `axe` gate or an exception entry (R-09). The naming itself is asserted on the Chromium AX tree in both harnesses, so the behaviour has evidence without a story. | Per element: the pinned axe-core reports no serious or critical finding on that element named by a host `aria-label`. Each phase's spike measures it (T003, T026, T052) and the check is repeated on every axe-core upgrade. A clean result is a stop-and-ask point: the operator decides whether that phase adds the state's story and its two baselines (and the row's scope shrinks) or the row stays. | Operator, 2026-11-16, analysis decision C1 (c) (`reviews/analysis/operator-decisions.md`). |
+| The states named by a host `aria-label` have no story | V (a story per variant and per state) | `ocelle-event-timeline` and `ocelle-evidence-chain`, each with a host `aria-label`, blank or not (FR-022, FR-032; US2-10, US3-10). Each is proven instead by shared browser bodies in both harnesses: T030's US2-10 and T055's US3-10. The data table's region is no longer in scope: phase 1's spike found axe-core 4.14.0 clean on it (`reviews/phase-1/spike.md` § 2), and its two states (non-blank and blank host `aria-label`) are stories (spike Q1 (b)), with T006's FR-010 body kept. No other state of the five elements is excepted (the standalone event and step have stories, analysis C1 (c)), and no `storybook/a11y-exceptions.json` entry is added. | Each of these hosts keeps the consumer's `aria-label` on a generic host node while the name sits on a shadow node (the `<ol>`), so axe may report `aria-prohibited-attr` (serious) on the host, which a story would turn into a failing `axe` gate or an exception entry (R-09). The naming itself is asserted on the Chromium AX tree in both harnesses, so the behaviour has evidence without a story. | Per element: the pinned axe-core reports no serious or critical finding on that element named by a host `aria-label`. Each remaining phase's spike measures it (T026, T052) and the check is repeated on every axe-core upgrade. A clean result is a stop-and-ask point: the operator decides whether that phase adds the state's story and its two baselines (and the row's scope shrinks) or the row stays. Met for the data table on 2026-11-17 (T003). | Operator, 2026-11-16, analysis decision C1 (c) (`reviews/analysis/operator-decisions.md`); scope narrowed by the operator on 2026-11-18, spike Q1 (b) (`reviews/phase-1/operator-spike-decisions.md`). |
 
 - A story the `axe` gate fails is fixed in the story or the element. An exception entry, or any further state without
   a story, needs a row here and the operator's approval.

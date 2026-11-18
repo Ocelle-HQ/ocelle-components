@@ -9,6 +9,9 @@ checks: [contracts/checks.md](contracts/checks.md).
   `reviews/recheck.md` (T001) is answered in `reviews/recheck-decisions.md` and applied (`reviews/recheck-fixes.md`).
 - `reviews/recheck.md` records whether 009's pinned-start option (research R-17) is on `main`. If it is, the caption
   is sticky through it at inset 0; if not, it scrolls with the table (Q-F, decided (b)).
+- The phase 1 spike's decisions (`reviews/phase-1/operator-spike-decisions.md`) are applied
+  (`reviews/phase-1/spike-fixes.md`), and research R-16 holds the `.sk-data-table` inventory, mapped in the README
+  with no row reading "pending inventory" (SC-001; T005, T076).
 - Each phase's `reviews/phase-<N>/element-plants.md` records every element plant biting (contracts/checks.md).
 - `pnpm install --offline` works (`pnpm run setup:online` after a container restart).
 - For baselines: docker running (`nohup dockerd > /tmp/dockerd.log 2>&1 &`, as root), and #10's pinned container
@@ -31,10 +34,13 @@ checks: [contracts/checks.md](contracts/checks.md).
    base (T023, T049, T072).
 5. **By hand, in Storybook** (`pnpm --filter storybook run dev`, or the built `storybook-static`):
    - **Data table, headers.** The column headers are small, tracked, uppercase eyebrows in 011's eyebrow tokens, as
-     in the page and section headers (recheck Q1 (a)).
+     in the page and section headers (recheck Q1 (a)). The screen reader reads them in upper case, as drawn, which
+     both READMEs state (spike Q2 (a)).
    - **Data table, overflows.** At 320 px, Tab reaches the region, a screen reader announces the "Work packages"
      group, and the arrows scroll it. At rest the caption wraps inside the box and starts at the table's edge. At
      1280 px Tab skips it.
+   - **Data table, host `aria-label`.** In the two host `aria-label` stories the region is announced as the
+     "Deployments" group (non-blank) and as the "Work packages" group (blank, named by `label`) (spike Q1 (b)).
    - **Data table, hook.** In the dev tools the region's track carries `--data-table-box-size`, and
      `--data-table-end-fade` while the end fade shows, both in px measured from layout (the end fade is the end
      edge's width, recheck Q2 (c)) (the base-style hook between the two packages, analysis I7 (a));

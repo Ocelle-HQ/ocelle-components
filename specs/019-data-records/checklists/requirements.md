@@ -54,3 +54,10 @@
   precedence over the `time` attribute) and adds US2-11 to US2-14; each is testable (checks.md). Q-G, whether an
   empty or hidden slotted time lets the attribute apply, is put back to the operator; the spec states the plan's
   reading until then.
+- Phase 1 spike (2026-11-18, `reviews/phase-1/spike.md`, decisions in `reviews/phase-1/operator-spike-decisions.md`,
+  changes in `reviews/phase-1/spike-fixes.md`): Q1 (b) adds two data-table stories named through a host `aria-label`,
+  non-blank and blank (FR-050; the exception keeps the timeline and the chain only); Q2 (a) keeps the upper-case column
+  headers, and US1-1 and FR-006 now say that each column header is named by its drawn upper-case text, compared with
+  an outside table drawn the same way, with a README statement in both packages; T005 "Proceed, map later": FR-058's
+  data-table rows read "pending inventory" until the inventory is supplied before the pull request lands, and SC-001
+  stays open (measurable: no row reads "pending inventory"). Every item above still holds.

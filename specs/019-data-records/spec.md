@@ -84,7 +84,8 @@ Ocelle web console uses them in server-rendered pages under a strict CSP, filled
 
 - C1, states without a story: (c). A standalone `ocelle-timeline-event` and a standalone `ocelle-evidence-step` get a
   story in their container's file; the states named by a host `aria-label` (the data table's region, the timeline,
-  the chain) are one Principle V exception in the plan's Complexity Tracking, proven by browser tests (FR-050).
+  the chain) are one Principle V exception in the plan's Complexity Tracking, proven by browser tests (FR-050). The
+  data table's region left the exception after the phase 1 spike (Q1 (b), below).
 - I7, the caption cap's custom properties: (a). `--data-table-box-size` and `--data-table-end-fade` are a documented
   base-style hook between `@ocelle/elements` and `@ocelle/styles`, public surface under constitution VII (FR-057).
 
@@ -104,6 +105,20 @@ Ocelle web console uses them in server-rendered pages under a strict CSP, filled
 - Q4, stale line citations: (a). The plan's research cites `base.css` and `source.test.ts` at their merged lines.
 - Q5, the pre-upgrade rules' place: (b). The timeline's and the chain's pre-upgrade rules go in the base layer of
   `base.css`, beside 013's `ocelle-facts` rule, and 003's `source.test.ts` transcribes them in its base-layer slice.
+
+**Operator decisions on the phase 1 spike** (2026-11-18, human:jeroennouwsdev; `reviews/phase-1/spike.md`, decisions
+in `reviews/phase-1/operator-spike-decisions.md`, changes listed in `reviews/phase-1/spike-fixes.md`):
+
+- Q1, the data table named by a host `aria-label`: (b). The pinned axe-core reports no serious or critical finding
+  on it, so the data table's region leaves the Principle V exception: phase 1 adds two stories, an overflowing data
+  table named by a non-blank host `aria-label` and one with a blank host `aria-label` (14 data-table stories, 37 in
+  all). The timeline and the chain stay in the exception until their own spikes measure them (FR-050).
+- Q2, upper-case column-header names: (a). The column headers stay upper case (FR-006). Chromium names each column
+  header by its drawn, upper-case text, so US1-1 compares the element's table with the same table outside given the
+  same upper case, and asserts that the column headers are named in upper case; both READMEs state it (FR-006).
+- T005, the `.sk-data-table` inventory: "Proceed, map later". Phase 1 proceeds without it; the README's data-table
+  mapping rows (FR-058) read "pending inventory" until the operator supplies the inventory, which is recorded and
+  mapped before the pull request lands. SC-001 stays open until then.
 
 ## Scope
 
@@ -146,7 +161,8 @@ region is no longer a tab stop.
 the three with a scroll region, so it carries the most risk.
 
 **Independent Test**: render an `ocelle-data-table` holding a table with a caption, five columns and four rows, one
-cell a 26-character identifier. At 1280 px and 320 px, check the cells' computed type and padding, the header style,
+cell a 26-character identifier with no space or hyphen in it (so it cannot break and the table overflows at
+320 px). At 1280 px and 320 px, check the cells' computed type and padding, the header style,
 the region's tab stop and name, the page's scroll width and the accessibility tree.
 
 **Acceptance Scenarios**:
@@ -154,8 +170,9 @@ the region's tab stop and name, the page's scroll width and the accessibility tr
 1. **Given** an `ocelle-data-table` holding a `<table>` with a `<caption>`, one header row of five `<th scope="col">`
    cells and four body rows, in a 1280 px block container, **When** it renders, **Then** the accessibility tree in
    Chromium holds one table named by its caption, with five column headers and four data rows, each cell associated
-   with its column header, exactly as the same `<table>` outside the element; the element adds no table, row or cell
-   node of its own (FR-003, FR-004).
+   with its column header, exactly as the same `<table>` outside the element whose column headers are also drawn in
+   upper case; each column header is named by its drawn, upper-case text ("ID" for a header written "Id"); the
+   element adds no table, row or cell node of its own (FR-003, FR-004, FR-006; spike Q2 (a)).
 2. **Given** that table, **When** a body cell's computed style is read, **Then** its font family resolves through
    `--ocelle-font-sans`, its colour through `--ocelle-color-ink-soft`, its `font-variant-numeric` is `tabular-nums`
    through `--ocelle-figures`, and its block and inline padding are the compact token steps the plan names, each
@@ -495,7 +512,10 @@ the chip variant.
   cells (`<th scope="row">`) MUST use the body cell size in `--ocelle-color-ink` at a weight the plan names, not upper
   case. Where the rules meet: `scope="row"` takes the row-header style wherever it is (a corner cell in `<thead>`
   included); a `<th>` with no `scope` in `<tbody>` or `<tfoot>` takes the row-header style; `scope="colgroup"` takes
-  the column-header style and `scope="rowgroup"` the row-header style.
+  the column-header style and `scope="rowgroup"` the row-header style. Because the column headers are drawn in upper
+  case, Chromium names each by its upper-case text; the README of each package (`@ocelle/elements` and
+  `@ocelle/styles`) MUST state that the accessible names of column headers follow the drawn upper-case text (spike
+  Q2 (a), 2026-11-18).
 - **FR-007**: The element MUST take a `wrap` property with the one value `anywhere`, which sets
   `overflow-wrap: anywhere` on its body cells (never on header cells), and a cell element with `data-ocelle-wrap="anywhere"`
   (003's hook) MUST keep that behaviour inside the element. Without it, cell text wraps between words. The element
@@ -635,10 +655,12 @@ the chip variant.
   elements have no stories file of their own: their states (with and without time, a slotted time, wrap, hidden, chip,
   and the item outside its container) are stories in their container's file (analysis C1 (c)). Data-table stories
   include a fitting table, an overflowing table (the region focusable and named), a table with row headers, and a
-  table named by its caption. The states named by a host `aria-label` (the data table's region, the timeline and the
-  chain) have no story: they are a constitution V exception recorded in the plan's Complexity Tracking, chosen by the
-  operator (analysis C1 (c)), and proven by browser tests. Any further state without a story is a constitution V
-  exception recorded there and approved by the operator.
+  table named by its caption, and two overflowing tables named through a host `aria-label`: one non-blank (the region
+  named by it) and one blank (the region named by `label`), added once the phase 1 spike found the pinned axe-core
+  clean on that state (spike Q1 (b), 2026-11-18). The states named by a host `aria-label` of the timeline and the
+  chain have no story: they are a constitution V exception recorded in the plan's Complexity Tracking, chosen by the
+  operator (analysis C1 (c)), and proven by browser tests, until their own phase's spike measures them. Any further
+  state without a story is a constitution V exception recorded there and approved by the operator.
 - **FR-051**: Visual baselines and the `axe` run follow #10 on `main`. Each phase that adds stories MUST commit their
   light and dark baselines, produced in #10's pinned container by its baseline command under docker, and its stories
   MUST pass #10's `storybook-build`, `visual` and `axe` gates with no serious or critical finding and no
@@ -666,7 +688,9 @@ the chip variant.
   evidence-chain class family the plan's research inventories, to the element and variant that replaces it, or to the
   consumer's remedy, or to "not this mission" with the operator's decision. The mapping names roles only and copies no
   code (constitution VI). Readme tests assert the rows by role names, with no `sk-` string in test code (013's operator
-  decision I1). A variant no element covers goes to the operator.
+  decision I1). A variant no element covers goes to the operator. Until the operator supplies the `.sk-data-table`
+  inventory, the README's data-table mapping rows read "pending inventory"; the inventory is supplied and mapped
+  before the pull request lands (spike decision on T005, "Proceed, map later", 2026-11-18).
 - **FR-059**: Each phase's gate runs MUST use op 016's affected-plants mode once op 016 is on `main` (operator, via the
   orchestrator, 2026-11-15), not a full `gate:plants`; mutation testing follows #23's and op 015's rules on `main`.
 
@@ -686,7 +710,9 @@ the chip variant.
 
 - **SC-001**: The README mapping (FR-058) has a row for every `.sk-data-table` variant kitty-mission-ui uses, and for
   every event-history or evidence-chain family the research inventories, each naming the element and variant with no
-  `class` attribute, the consumer's remedy, or "not this mission" with the operator's decision. Checked in review.
+  `class` attribute, the consumer's remedy, or "not this mission" with the operator's decision, and no row reads
+  "pending inventory". Checked in review. Open until the operator's `.sk-data-table` inventory is supplied and
+  mapped, which happens before the pull request lands (spike decision on T005, 2026-11-18).
 - **SC-002**: At 320 px CSS width, every story of the three containers has a page scroll width equal to the viewport
   width.
 - **SC-003**: Every story of the five elements reports no serious or critical axe finding by #10's `axe` gate, in light

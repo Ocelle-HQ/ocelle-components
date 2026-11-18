@@ -38,6 +38,21 @@ element against the same table outside: the accessibility tree (table name from 
 `table-fake-caption`, `scrollable-region-focusable` and a full run, fitting and overflowing. Any difference beyond the
 region's `group` node goes to the operator.
 
+**Result (T003, 2026-11-17, `reviews/phase-1/spike.md` § 1).** The shadow wrappers add only `generic` nodes while the
+table fits and the `group` while it overflows; the table's nodes (`table` named by its caption, `rowheader`, `cell`
+under its column header, `headers`/`id` association) are the same inside and outside, and axe `td-headers-attr`,
+`th-has-data-cells`, `table-fake-caption` and a full run pass inside (`scrollable-region-focusable` passes while the
+box overflows). One difference: Chromium names each column header and its static text by its drawn text, upper case
+from block 1's `text-transform` ("ID", not "Id"), as the elements README already records for 011's eyebrow heading.
+The tree is equal when the outside table's column headers are given the same `text-transform` by a test-only rule.
+
+**Decision on the difference (spike Q2 (a), operator, 2026-11-18).** The column headers stay upper case (FR-006).
+US1-1's oracle compares the element's subtree with the same table outside whose column headers get `text-transform:
+uppercase` from a test-only rule (in the fixture harness a constructed sheet adopted by the document, so the strict
+CSP holds), and adds one assertion that the column headers are named in upper case ("ID", "TITLE", "LANE", "OWNER",
+"LINK" for the US1-1 table). Both READMEs state that the accessible names of column headers follow the drawn
+upper-case text (T011, T013).
+
 **Alternatives.** Row and cell item elements rendered with ARIA table roles (Q1 (b), rejected by the operator: more
 tags, ARIA ownership across slots). A data property (Q1 (c), rejected: no server-rendered markup). Moving the table
 into the shadow root (rejected: breaks htmx targets and the consumer's own CSS).
@@ -84,6 +99,16 @@ whose inline size is bounded, a caption word wider than the box less the
 ring room overflows the box as any unbreakable content does, and the region scrolls; the README states this with the
 caption rules.
 
+**Result (T003, 2026-11-17, `reviews/phase-1/spike.md` § 6).** In an open `<dialog>`, a `display: inline-block`
+wrapper and a start-aligned column flex the host is the table plus 10 px of ring room (never 0 px), with one
+`.box-size` callback, one box-size write, a stable width after two more `settle` and no loop error. The one-long-word
+body widens the table to the caption's longest word with no `tabindex` and no `data-fade`. Its precondition (a
+fractional part between 0.1 and 0.4 px) depends on the font, so the test-only `letter-spacing` on the caption is per
+harness: **0.07 px in process** (fallback font, `@font-face` removed; box 91.297 px) and **0.02 px on the fixture**
+with Schibsted Grotesk (box 89.203 px). Without `letter-spacing` the fraction is 0.609 in the fallback font, outside
+the range. A `clientWidth` write raises the loop error at in-range fractions and not at 0.609 or 0.906, so the
+precondition is what makes the plant bite.
+
 **Rationale.** Operator decision Q2 (b); FR-008. The module already gives the conditional tab stop, the named group,
 arrow keys, fades, focus clearance and focus handover, and its triggers (box and track resize, `slotchange` on the
 box, `scroll`) cover a swapped table and a swapped `<tbody>` (R-05).
@@ -112,6 +137,15 @@ box scrolls. No other module rule is overridden, and the module's interface and 
 identifier with and without `wrap="anywhere"`; the track's and table's inline sizes, the box's overflow state, the
 focus clearance on a link off-screen, and the fades. Expected: wrap before overflow; overflow only with an unbroken
 identifier without the policy, or with more columns than fit at their longest word.
+
+**Result (T003, 2026-11-17, `reviews/phase-1/spike.md` § 3).** As expected: cells wrap first, and the table overflows
+only when its min-content width does not fit. A hyphenated identifier (`mission-019-data-records-x`) breaks at its
+hyphens, so the US1 table with it fits at 320 px (310 px). The US1 table with an unbroken 26-character identifier
+(`01JD8X2K7Q9M4N6P3R5T0V2W8Y`) overflows at 320 px (scroll width 504, `group` "Work packages", `data-fade="end"`, page
+scroll width 320). A two-column table with a 26-letter identifier fits at 320 px with or without `wrap="anywhere"`; a
+36-character unbroken identifier overflows (366 / 320) without it and fits with `wrap="anywhere"` set later, as on a
+fresh load. So the US1 table's identifier in the red bodies has no break opportunity (a ULID-like string, not a
+slug), or US1-4 cannot overflow.
 
 **Alternatives (the options at the plan gate; the operator chose (a)).** (a) The host override above (recommended: one
 property, no module change). (b) A `track` sizing option added to 009's module (rejected for this mission: it changes 009's interface,
@@ -366,6 +400,14 @@ against the prose table's query container). The data table bounds its caption wi
   the narrow-column resize, when a `hidden` host is shown, when a cell edit takes a block-host table from fitting to
   overflowing and back with a caption that rewraps across the end fade's depth, and in the shrink-to-fit hosts of
   R-02, the one-long-word body with a box width that rounds down among them. A failure goes to the operator.
+  **Result (T003, 2026-11-17, `reviews/phase-1/spike.md` §§ 5, 6):** the caption computes `position: static`, and
+  `--data-table-box-size` written on `.region-track` reaches it (its computed value is the written px figure); at
+  320 px at rest its cap is 278 px (320 − 10 − 32) and every line is inside the unmasked extent; no loop error in any
+  listed case, and each of R-07's three loop plants raises one. The end-fade body's caption depends on the font: in
+  the in-process harness's fallback font "Deploy approvals Deploy approvals Deploy approvals D" is one line (369.6 px)
+  at the fitting cap of 390 px and two lines inside the unmasked extent (≤ 368 px) once the table overflows, with
+  `--data-table-end-fade` `32px`, equal to `.region-edge.end`'s width. The body asserts its precondition (one line at
+  the fitting cap) first, and the fixture harness, which loads Schibsted Grotesk, may need its own caption text.
 - **The README's Styles convention (recheck Q2 (c)).** `packages/elements/README.md` § Element conventions, Styles
   (lines 1284 to 1289 at 8ee3351), allows "at most one per-instance constructed stylesheet that holds only px figures
   the element measured from layout" and names the overflow-region module's mask size and `ocelle-list-detail`'s
@@ -431,7 +473,10 @@ The spec edge case "never cut at 320 px (it wraps)" is then measured, not only s
 
 Print: the phase 1 spike prints the overflowing story to
 PDF in Chromium and records whether content past the box is clipped; the README states the result and that a consumer
-who prints sets a print rule of its own. No print rule is added (spec edge case). Before upgrade the base rules style
+who prints sets a print rule of its own. No print rule is added (spec edge case). **Result (T003, spike § 8):** the
+region keeps `overflow-x: auto` and the end fade's mask in print, so the columns past the box are clipped and the
+content at the box's end fades; the README states that printed content past the box is clipped and that a consumer
+who prints sets a print rule of its own. Before upgrade the base rules style
 the table, there is no region and no shadow root, so other children show and a wide table can widen the page; the
 README says so (FR-012).
 
@@ -513,10 +558,13 @@ of that export, and T001 rechecks its name and rule (R-14).
 The host's own `aria-label` attribute is the consumer's and is not removed; whether Chromium exposes it on the host's
 generic node, and whether axe reports `aria-prohibited-attr` for it, is measured in phase 2's spike against 009's lane, which renders its named role on a shadow wrapper the same way (branch). If the host
 attribute is exposed as a second name, the element follows whatever 009's lane does on `main` (R-14). No story sets a
-host `aria-label` on the timeline, the chain or the data table: those states are plan.md § Complexity Tracking's one
-Principle V exception (analysis C1 (c), 2026-11-16), proven by the browser bodies (US2-10, US3-10 and the data table's
-FR-010 host `aria-label` body). The spikes (T003, T026, T052) run axe on the state; a clean result meets the row's
-sunset and goes to the operator.
+host `aria-label` on the timeline or the chain: those states are plan.md § Complexity Tracking's one Principle V
+exception (analysis C1 (c), 2026-11-16), proven by the browser bodies (US2-10, US3-10). The spikes (T026, T052) run
+axe on the state; a clean result meets the row's sunset and goes to the operator. For the data table it was met in
+phase 1: axe-core 4.14.0 with the `axe` gate's selection is clean on an overflowing or fitting data table named by a
+non-blank host `aria-label`, on a blank one and on 009's `ocelle-scroller` (`reviews/phase-1/spike.md` § 2; Chromium
+shows the host as a `generic` node of the same name beside the `group`, which axe does not report). The operator chose
+two stories for it, non-blank and blank (spike Q1 (b), 2026-11-18), and T006's FR-010 body stays.
 
 **Rationale.** FR-022 and the README's Host ARIA rule for elements whose role sits on a shadow node (009). The library
 helper `accessibleName` in `naming.ts` implements the other rule ("decides alone"), so the containers do not use it.
@@ -800,7 +848,8 @@ lines; phase 4 uses the mission's base (phase 1's), as it changes no source (qui
 `gate:plants` locally (CI's required Plants check judges the full set).
 Baselines: `pnpm run visual:update` only in #10's pinned container under docker (start `dockerd` as root; after a
 container restart, `pnpm run setup:online`); the command must report `<n> added, 0 changed, 0 removed` with `<n>`
-twice the phase's new stories (24, 22 and 24 for phases 1 to 3, from checks.md § Stories), so no existing baseline
+twice the phase's new stories (28, 22 and 24 for phases 1 to 3, from checks.md § Stories; phase 1's 28 since spike
+Q1 (b)), so no existing baseline
 moves (013's baselines among them, SC-007). Conflicting PNGs are regenerated in the container, never hand-picked. Mutation follows #23 and op 015 on `main`.
 
 ## R-16 The kitty-mission-ui inventory (FR-058)
@@ -809,6 +858,13 @@ moves (013's baselines among them, SC-007). Conflicting PNGs are regenerated in 
 and states, with counts, role names only) and of any event-history or evidence-chain class family. kitty-mission-ui is
 outside this session's GitHub scope, so, as in 013, the inventory is an operator input recorded here before each
 phase's red commit (tasks T00x per phase); a gap goes to the operator, and the surface is not widened by review.
+
+**Phase 1 (T005): "Proceed, map later"** (operator, 2026-11-18, `reviews/phase-1/operator-spike-decisions.md`). The
+`.sk-data-table` inventory is not recorded yet, and phase 1 does not wait for it. Until it is, the README's
+data-table mapping rows read "pending inventory" and T013 asserts that statement. When the operator supplies the
+modifiers and states with a count each (role names only), the planner records them here in a documentation commit of
+its own, and the rows and their statements are written test first before the pull request lands; SC-001 stays open
+until then (T076). Inventory: pending.
 
 ## R-17 A request to 009's owner: a pinned start box out of the start fade (PLAN-A11Y-SECURITY-1-002)
 
