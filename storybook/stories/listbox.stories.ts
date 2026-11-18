@@ -5,8 +5,13 @@
 // listbox defines the option too. The markup has no style attribute (the csp gate's Storybook check): the scrolling
 // listbox's height limit is a rule of stories-layout.css on its data-story attribute. The focused story focuses its
 // option in `play`, which ends before the render signal; the hovered story declares the hover with the pointer
-// parameter (006 FR-031), whose selector matches exactly one option inside the first viewport.
+// parameter (006 FR-031), whose selector matches exactly one option inside the first viewport. The composed story
+// (014 FR-054; research.md R-12 "Amendment: the composed story"; T114), as 008's composed tooltip story "Inside an open
+// dialog" is, puts the five-folder listbox with `gamma` selected in the body of an open `ocelle-dialog` labelled "Open
+// project", with Cancel and Open in its footer, the markup dialog.stories.ts's stand-in story gives with buttons; on
+// open the dialog moves focus to the listbox's single tab stop, the selected option.
 import type { Meta, StoryObj } from "@storybook/html-vite";
+import "../../packages/elements/src/ocelle-dialog.ts";
 import "../../packages/elements/src/ocelle-icon.ts";
 import "../../packages/elements/src/ocelle-listbox.ts";
 
@@ -51,4 +56,10 @@ export const OptionWithIcon: StoryObj = {
   name: "Option with icon",
   render: () =>
     '<ocelle-listbox label="Folders" value="projects"><ocelle-option value="projects"><ocelle-icon slot="icon" name="folder"></ocelle-icon>Projects</ocelle-option><ocelle-option value="notes"><ocelle-icon slot="icon" name="folder"></ocelle-icon>Notes</ocelle-option></ocelle-listbox>',
+};
+
+export const InsideAnOpenDialog: StoryObj = {
+  name: "Inside an open dialog",
+  render: () =>
+    `<ocelle-dialog open label="Open project"><p>Choose a folder.</p>${listbox("gamma")}<button slot="footer" type="button">Cancel</button><button slot="footer" type="button">Open</button></ocelle-dialog>`,
 };
