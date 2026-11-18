@@ -512,3 +512,31 @@ holds, and the red body (and T024's `before` plant) would be vacuous there.
 - (c) Keep the bodies as written and change the expected value at the fully-past position to Chromium's result
   (`scrollTop` 0, the link at its at-rest position); the `before` rule then has no body that fails without it, and the
   plant is recorded as not biting (a stop-and-ask point of its own). Not recommended.
+
+## Addendum confirmation after Q-A1 (a), Q-A2 (a) and Q-A3 (a) (T082)
+
+Run on 2026-11-18 in this container (the same Chromium and Playwright), after the planner applied the answers
+(`spike-2-fixes.md`, aa9a296). The artifacts were read against the addendum's figures: research R-18, FR-018,
+contracts/overflow-region-block-axis.md (§ Effects, § Tests), contracts/ocelle-data-table.md (§ The caption cap),
+contracts/checks.md (§ Harnesses, the "classic scrollbar" oracle, § Element plants), plan.md, quickstart.md and
+tasks.md (T024, T025, T079, T080, T081, T016) state no `scrollbar-gutter`, the room as `offsetWidth − clientWidth`
+(15 px classic, 0 hidden), 305px/320px for the classic caption cap, the partly scrolled caption-link position (2 to
+12 px above the client edge) and the fully-past position as a platform-alone pairing. No figure in them contradicts
+§ The same cases without `scrollbar-gutter` or A5.
+
+Re-measured only what the answers changed, on a plain page (a 320 px box with `overflow-x: auto`, `padding-block:
+5px`, a 490 px track, a sticky `<thead>` at −5 px, 20 rows, a two-line caption with a link; `overflow-y: auto` and
+`max-block-size: 300px` for the bound, `overflow-y: hidden` with no bound; no `scrollbar-gutter`), hidden and
+classic scrollbars, LTR and RTL:
+
+| Run | computed `scrollbar-gutter` | room bounded / lifted / set again | inline range | `scrollLeft` at rest / lifted / set again |
+|---|---|---|---|---|
+| hidden, LTR and RTL | `auto` | 0 / 0 / 0 | 170 (far end 170, −170) | 0 / 0 / 0 |
+| classic, LTR and RTL | `auto` | 15 / 0 / 15 | 185 (far end 185, −185) | 0 / 0 / 0 |
+
+The caption link with Chromium's focus alone (no clearance), its border box placed 12, 6 and 2 px above the client
+block-start edge, then focused: at 12 px Chromium aligns the border box at the edge (ring box about 5 px above it);
+at 6 and 2 px it does not scroll (the ring box 11 and 7 px above). Each misses "the ring box at the client
+block-start edge within 0.5 px", identical in both runs and directions, so Q-A2 (a)'s body fails at red as A5 found.
+
+**Outcome: nothing contradicts the answers; T082 is ticked.** Nothing of it is committed but this section.
