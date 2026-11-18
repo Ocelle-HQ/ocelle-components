@@ -32,3 +32,6 @@
 - **Q-I4, block-axis end fade:** add a fade at the block end while content is below (changes the default).
 - **Q-I5, pointer in 009's contract:** add a one-line note in `specs/009-workflow-layouts/contracts/overflow-region.md`
   pointing to this mission's amendment (changes the default).
+- **Q-I6, room for the block-end fade below the pinned header:** (a) twice the fade depth (the default).
+- **Q-I7, a story for the fade's off state:** (a) no new story (the default); counts stay 19 stories and 38 baselines
+  in phase 1, 42 and 84 for the mission.
