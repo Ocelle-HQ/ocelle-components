@@ -54,3 +54,15 @@ plants judged, every plant as expected" (149 s), "plants: shard 3 of 76: 79 plan
 (179 s): all 239 other plants, the brand-rules gate's 17 among them. The `visual` and `axe` shards were not rerun: the
 fix changes no stylesheet the repository's source produces (`gate:brand-rules` and the tokens tests pass unchanged,
 and the reduced-motion block of the real source is the same three durations).
+
+## Operator decision on the fix-2 plants record (phase 4 round 3, R3-01)
+
+Recorded by the orchestrator, 2026-11-18. Asked as multiple choice; the operator (human:jeroennouwsdev) answered
+"Shards + CI stand (Recommended)": "Record as your decision that the shard run plus the byte-identical stylesheet
+stands for this round, and that the CI Plants run on the pushed head (all 312 plants) is the full evidence, added to
+plants.md with its run link."
+
+- Local evidence for fix-2: shards 1 to 3 (all 239 non-visual plants, the two new plants included), above; the real
+  token source's stylesheet is byte-identical before and after bd9aaca, so no `visual` or `axe` plant sees a change.
+- `--affected 55ec410` selects all 312 plants (shared gate source) and was not run locally.
+- Full evidence: the CI Plants run on the pushed head. Run link: _to be added after the push_.
