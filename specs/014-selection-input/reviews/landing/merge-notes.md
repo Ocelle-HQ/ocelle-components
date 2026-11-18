@@ -67,10 +67,16 @@ Generated or regenerated:
 
 - `packages/elements/custom-elements.json`: regenerated with `pnpm --filter @ocelle/elements run manifest`. Every one
   of the 27 modules equals its entry on the side that owns it.
-- `gates/plants/manifest/fail-lost-attribute`, `fail-undescribed-attribute`, `fail-undescribed-css-part`,
-  `fail-undescribed-css-property`, `fail-undescribed-event`, `fail-undescribed-property` and `fail-undescribed-slot`
-  (`tree/packages/elements/custom-elements.json`): each is the regenerated manifest with that plant's own change
-  applied. The change is the diff of the plant copy against the real manifest, and it is identical on both sides.
+- `gates/plants/manifest/fail-lost-attribute/tree/packages/elements/custom-elements.json`: the regenerated manifest
+  with the plant's change (the icon's `label` attribute removed). The change is the diff of the plant copy against the
+  real manifest, which is identical on both sides.
+- `gates/plants/manifest/fail-undescribed-{attribute,css-part,css-property,event,property,slot}`
+  (`tree/packages/elements/custom-elements.json`): each copy is the generator's output on the repository source with
+  the plant's `src/ocelle-plant.ts` added.
+  - In the merge commit, five of them (all but `-attribute`) were built by patching main's plant diff onto the
+    regenerated manifest. The patch landed on the wrong context, so the plant's declaration also appeared inside
+    another module, and the full plants run reported 5 not-caught plants ("unexpected … stale").
+  - d885610 regenerates them as described above. The five then passed (`gate:plants -- --affected c4eb93a`, exit 0).
 - `gates/plants/manifest/pass-reordered/tree/packages/elements/custom-elements.json`: the regenerated manifest with
   every object's keys reversed. The same transform reproduces both sides' copies byte for byte.
 - `knowledge/speckit-flows/runs/index.md`: rows merged in sorted order (main's 008, 009, 011, 013, then 014). I did not
@@ -163,3 +169,38 @@ These are type and lint fixes only, with no behaviour change:
   assertions became unnecessary (lint). They were removed.
 - `commands.ts`: in main's `reported()`, `?.value?.value` became `?.value.value`, because the merged
   `RawAxProperty.value` is required (lint).
+
+## Follow-up commits
+
+- **d885610** "test(gates): regenerate five manifest plants' copies from their plant source" (see the manifest
+  plants above).
+
+- **c4eb93a** "test(gates): give the visual integration runs 900 s after the merge of main".
+  - **Why.** The first full unit-tests run on the merge failed once, in `gates/test/integration/visual.test.ts`: the
+    test that captures the repository's 354 story-themes twice timed out at 600 s. Run alone it passed in 456 s.
+  - **Change.** The file's `timeout` constant goes from 600 s to 900 s. No assertion changes.
+  - The same full run also failed `browser/drawer.test.ts` once, on "Rapid toggle during the entry, motion on". That
+    was a timing flake under load: the file passed 3 times out of 3 alone, and passed in the full elements-browser run
+    and in the second full unit-tests run. It needed no change.
+
+## Baselines
+
+No visual baseline changed. The visual gate reports 354 captures matching their baselines.
+
+## Gates on the result
+
+| Gate | Exit | Notes |
+|---|---|---|
+| typecheck, lint, test-lint, style-lint, brand-rules, pins, config-copies, prefix, csp | 0 | |
+| contrast | 0 | 175 / 183 pairs, 164 required |
+| manifest | 0 | 27 elements |
+| unit-tests | 0 | 8004 tests in 247 files, on c4eb93a |
+| storybook-build | 0 | 177 stories |
+| visual (docker) | 0 | 354 captures match their baselines |
+| axe | 0 | 354 story-theme runs; 22 notes, all excepted |
+| `vitest run --project elements-browser-file` | 0 | |
+| signoff `--range 3828d2f..HEAD` | 1 | Only main's six squash merges, which have no Signed-off-by line: b594b7e, 13af7a9, bea3130, 23ba5c5, c4c0af4, ce1d9c7 |
+| signoff `--range origin/main..HEAD` | 0 | Every branch commit, the merge included |
+| plants (full) | 1 | 5 manifest plants not caught, fixed by d885610 |
+| plants (`--affected c4eb93a`) | 0 | The 5 manifest plants |
+| mutation `--base 3828d2f --files packages/elements/src/index.ts` | 0 | Zero mutants on the export lines. This is the one mutable file the conflict resolution wrote. |
