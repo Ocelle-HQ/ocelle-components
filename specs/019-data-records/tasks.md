@@ -243,7 +243,7 @@ and `gate:axe` pass.
 
 ### Spike (first)
 
-- [ ] T003 [US1] Spike before the scaffold, scratch files only, recorded in `specs/019-data-records/reviews/phase-1/spike.md` (plan § Phases 1, research R-01, R-02, R-03, R-05, R-07):
+- [X] T003 [US1] Spike before the scaffold, scratch files only, recorded in `specs/019-data-records/reviews/phase-1/spike.md` (plan § Phases 1, research R-01, R-02, R-03, R-05, R-07):
   - the AX tree and a full axe-core 4.14.0 run for the slotted table inside a test element built on 009's module, fitting and overflowing, against the same table outside;
   - the same axe run on an overflowing test element named by a non-blank host `aria-label`, against 009's elements on `main` (the sunset check of plan.md § Complexity Tracking's host `aria-label` row; a clean result is a stop-and-ask point);
   - the track at `inline-size: fit-content` at 1280, 600 and 320 px, with and without `wrap="anywhere"` (cells wrap before the table scrolls);
@@ -266,7 +266,7 @@ and `gate:axe` pass.
 
 ### Inventory (operator step, before the red tasks)
 
-- [ ] T005 [US1] Operator step, answered on 2026-11-18 by IQ-1 (a) (`specs/019-data-records/reviews/phase-1/inventory-decisions.md`), which supersedes the spike's "Proceed, map later": the inventory is the spec-kitty design library's own variant set, recorded by the planner in `specs/019-data-records/sources/spec-kitty-design-inventory.md` (at `main` 19fb6a2 and `develop` a6518cd) and research R-16 in a documentation commit of its own (with the inventory fixes). The implementer confirms before T015 that R-16's data-table table holds one row per modifier, state and structure role of the library's data table (the data table has no part), and ticks this task; T013 asserts each row and T021 writes it, with no "pending inventory" row. A variant the operator names from rc.10, or a variant no element or variant covers, goes to the operator. SC-001 is checked in T076.
+- [X] T005 [US1] Operator step, answered on 2026-11-18 by IQ-1 (a) (`specs/019-data-records/reviews/phase-1/inventory-decisions.md`), which supersedes the spike's "Proceed, map later": the inventory is the spec-kitty design library's own variant set, recorded by the planner in `specs/019-data-records/sources/spec-kitty-design-inventory.md` (at `main` 19fb6a2 and `develop` a6518cd) and research R-16 in a documentation commit of its own (with the inventory fixes). The implementer confirms before T015 that R-16's data-table table holds one row per modifier, state and structure role of the library's data table (the data table has no part), and ticks this task; T013 asserts each row and T021 writes it, with no "pending inventory" row. A variant the operator names from rc.10, or a variant no element or variant covers, goes to the operator. SC-001 is checked in T076.
 
 ### Tests (red, one commit, test files only)
 
