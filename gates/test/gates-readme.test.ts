@@ -52,6 +52,15 @@ describe("gates/README.md (002 FR-022)", () => {
     expect(plants.filter((plant) => !(row?.[4] ?? "").includes(`\`${plant}\``))).toEqual([]);
   });
 
+  it("names, in the style-lint row, the classified linear-gradient() arguments and their plants (009 contracts/gates.md § `style-lint`, T022)", () => {
+    const gates = rows(section("The gates"));
+    const row = gates.find((cells) => cells[0] === "`style-lint`");
+    expect(row?.slice(0, 3)).toEqual(["`style-lint`", "Style lint", "`pnpm run gate:style-lint`"]);
+    expect(row?.[3] ?? "").toContain("since 009 the arguments of `linear-gradient()` are classified as at the top level of a value, and every other gradient function is raw whole");
+    const plants = ["pass-linear-gradient-tokens", "fail-gradient-hex", "fail-gradient-angle", "fail-gradient-length", "fail-radial-gradient"];
+    expect(plants.filter((plant) => !(row?.[4] ?? "").includes(plant))).toEqual([]);
+  });
+
   it("lists manifest in The gates, with its check, command and plants (005 FR-009, research.md R-06)", () => {
     const gates = rows(section("The gates"));
     const row = gates.find((cells) => cells[0] === "`manifest`");

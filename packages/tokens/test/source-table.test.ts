@@ -97,3 +97,49 @@ describe("the JSON export from the real source", () => {
     expect(actual).toEqual(expected);
   });
 });
+
+// 009 (research.md R-16, FR-033): the source's pinned count, 115 tokens of 002 and 003, 011's four eyebrow tokens,
+// 008's three (drawer-inline, tooltip-max-inline and tooltip-delay) and 009's five (since the merge of 011, 009 uses
+// 011's tracking-eyebrow for its uppercase labels and adds no tracking-caps), and the five by name in the generated
+// stylesheet's :root block and the JSON export, with their group and value.
+describe("009's five tokens (FR-033)", () => {
+  const five = [
+    { name: "lane-min-width", group: "shell", value: "10rem" },
+    { name: "list-track-width", group: "shell", value: "18rem" },
+    { name: "list-detail-collapse", group: "shell", value: "40rem" },
+    { name: "list-detail-inspector-collapse", group: "shell", value: "60rem" },
+    { name: "scroller-fade-size", group: "space", value: "var(--ocelle-space-7)", ref: ["space-7"] },
+  ];
+
+  it("pins the source at 127 tokens", () => {
+    expect([source.length, exported.tokens.length, sheet.root.size]).toEqual([127, 127, 127]);
+  });
+
+  it("has each as a plain record with its group, value and references", () => {
+    const records = five.map(({ name }) => source.find((record) => record.name === name));
+    expect(records.map((record) => (record === undefined ? undefined : { name: record.name, group: record.group, value: record.value, ...(record.ref === undefined ? {} : { ref: record.ref }) }))).toEqual(five);
+  });
+
+  it("declares each on :root in tokens.css and exports it in tokens.json, scroller-fade-size resolved to 2rem", () => {
+    expect(five.map(({ name }) => sheet.root.get(full(name)))).toEqual(five.map(({ value }) => value));
+    const byName = new Map(exported.tokens.map((token) => [token.name, token]));
+    expect(five.map(({ name }) => byName.get(full(name)))).toEqual(
+      five.map(({ name, group, value, ref }) => ({ name: full(name), group, value: value === "var(--ocelle-space-7)" ? "2rem" : value, ...(ref === undefined ? {} : { ref: ref.map(full) }) })),
+    );
+  });
+});
+
+// 009 (research.md R-10, PLAN-CORRECTNESS-1-011 (b)): the default board lane is drawn on color-sheet, so color-sheet
+// must differ from every ground a board sits on, in both themes. A guard on the existing values: it holds before 009
+// and is proven able to fail by a plant (reviews/phase-1/plants.md).
+describe("color-sheet as the default lane's ground (R-10)", () => {
+  const grounds = ["color-canvas", "color-panel", "color-inspector", "color-pane"];
+
+  it.each(["light", "dark"] as const)("differs from canvas, panel, inspector and pane in %s", (theme) => {
+    const value = (name: string): string | undefined => (theme === "light" ? sheet.root : sheet.darkAttribute).get(full(name))?.toLowerCase();
+    const lane = value("color-sheet");
+    expect(lane).toMatch(/^#[0-9a-f]{6}$/);
+    expect(grounds.filter((ground) => value(ground) === lane)).toEqual([]);
+    expect(grounds.map((ground) => value(ground))).not.toContain(undefined);
+  });
+});

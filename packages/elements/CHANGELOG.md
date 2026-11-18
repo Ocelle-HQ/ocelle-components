@@ -5,6 +5,10 @@ entry points and the browser build's file path (constitution VII).
 
 ## Unreleased
 
+`ocelle-scroller`, `ocelle-workflow-board`, `ocelle-workflow-lane` and `ocelle-list-detail`, their attributes,
+properties, slots and entry points, `remeasure()`, the overflow-region module convention and the container-tier
+convention are additions to the public surface: a minor change.
+
 ### Added
 
 - `ocelle-icon`, an icon of the set drawn inline in `currentColor` at the `--ocelle-icon-size` token, decorative
@@ -80,8 +84,33 @@ entry points and the browser build's file path (constitution VII).
   `animation-iteration-count` (the bounded sweep). No token is added.
 - In the README, the slot convention for icons in controls that later controls follow: the `icon` and `trailing`
   slots, their size, alignment, gap and colour rules and the naming rule.
+- `ocelle-scroller`, a horizontal strip that scrolls in the inline direction and is a tab stop, and with a `label` a
+  named group, only while its content overflows, with fades on the sides with content off-screen, arrow-key scrolling
+  and focus handling; its property `label` and its default slot; its entry point `@ocelle/elements/ocelle-scroller.js`.
+- `ocelle-workflow-board`, a row of lanes that scrolls inside itself, and is a tab stop and, with a `label`, a named
+  region, only while the lanes' minimum widths exceed its size; its property `label` and its default slot; its entry
+  point `@ocelle/elements/ocelle-workflow-board.js`, which does not define the lane.
+- `ocelle-workflow-lane`, a column of a board with a title and a count, exposed as one group named by them, in a
+  default variant with a sheet ground or a `flat` variant; its properties `label`, `count`, `count-label` and `variant`
+  (reflected) and its default slot; its entry point `@ocelle/elements/ocelle-workflow-lane.js`.
+- `ocelle-list-detail`, a list beside the selected record's detail with an optional inspector, in three columns, two
+  with the inspector stacked, or one pane at a time below its own measured threshold or when the host sets `narrow`,
+  with focus moved to the shown pane when the pane that holds it is hidden; its properties `collapse-below`,
+  `inspector-below`, `narrow` (reflected) and `detail-open` (reflected), its method `remeasure()`, its `list`, default
+  and `inspector` slots, and its entry point `@ocelle/elements/ocelle-list-detail.js`.
+- In the README, the container-tier convention that later elements with tiers follow: the element's own measured
+  size, the `*-below` grammar and its resolution, the token default and its fallback, exclusive bounds, the forcing
+  boolean, no `container-type`, intrinsic sizes that do not depend on the tier, the re-measure triggers and
+  `remeasure()`, and the cost of one pass.
+- In the README, the overflow-region module convention: the internal module's inputs, outputs, effects, lifecycle and
+  structure, which any later element with a scroll region uses; the Host ARIA rule stated per element; and the styles
+  rule that allows one per-instance stylesheet of measured figures.
 - Entry points: `@ocelle/elements` (the package root, defines every element), `@ocelle/elements/ocelle-icon.js`
   (defines `ocelle-icon` only), `@ocelle/elements/ocelle-brand-mark.js` (defines `ocelle-brand-mark` only),
+  `@ocelle/elements/ocelle-scroller.js` (defines `ocelle-scroller` only),
+  `@ocelle/elements/ocelle-workflow-board.js` (defines `ocelle-workflow-board` only),
+  `@ocelle/elements/ocelle-workflow-lane.js` (defines `ocelle-workflow-lane` only),
+  `@ocelle/elements/ocelle-list-detail.js` (defines `ocelle-list-detail` only),
   `@ocelle/elements/ocelle-card.js` (defines `ocelle-card` only), `@ocelle/elements/ocelle-section-header.js`
   (defines `ocelle-section-header` only), `@ocelle/elements/ocelle-page-header.js` (defines `ocelle-page-header` only),
   `@ocelle/elements/ocelle-context-sidebar.js` (defines `ocelle-context-sidebar` only),

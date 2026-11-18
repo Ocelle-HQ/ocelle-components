@@ -1,0 +1,51 @@
+Scope: all 5 workspace projects
+✓ Lockfile passes supply-chain policies (verified 2d ago)
+Lockfile is up to date, resolution step is skipped
+Packages are hard linked from the content-addressable store to the virtual store.
+  Content-addressable store is at: /root/.local/share/pnpm/store/v11
+  Virtual store is at:             node_modules/.pnpm
+Packages: +502
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 502, reused 502, downloaded 0, added 502, done
+.../node_modules/rs-module-lexer postinstall$ node postinstall.js
+.../node_modules/rs-module-lexer postinstall: Done
+
+devDependencies:
++ @custom-elements-manifest/analyzer 0.11.0
++ @eslint/js 10.0.1
++ @stryker-mutator/core 10.1.1
++ @stryker-mutator/typescript-checker 10.1.1
++ @stryker-mutator/vitest-runner 10.1.1
++ @types/node 26.6.5
++ @vitest/browser-playwright 5.0.5
++ @vitest/eslint-plugin 1.6.28
++ axe-core 4.14.0
++ eslint 10.13.0
++ jiti 2.7.0
++ parse5 8.0.1
++ playwright 1.64.1
++ pngjs 7.0.0
++ postcss 8.5.31
++ postcss-lit 1.4.1
++ postcss-selector-parser 7.1.7
++ postcss-value-parser 4.2.0
++ stylelint 17.16.0
++ typescript 6.0.3
++ typescript-eslint 8.72.0
++ vite 8.3.5
++ vitest 5.0.5
+
+Done in 207ms using pnpm v12.16.1
+$ node gates/bin/setup-offline.ts
+setup: installed offline; Chromium at /opt/pw-browsers/chromium-1248/chrome-linux64/chrome
+$ node gates/bin/test.ts
+packages/elements/test/browser/list-detail.test.ts:37: unit-tests: ocelle-list-detail on the strict-CSP fixture with the browser build (US3) US3 review R1-02: a list-detail inside …: AssertionError: expected { observed: { …(3) }, …(1) } to deeply equal { observed: { …(3) }, …(1) }
+packages/elements/test/browser/list-detail.test.ts:37: unit-tests: ocelle-list-detail on the strict-CSP fixture with the browser build (US3) US3 review R1-03: the tier follows a ch…: AssertionError: expected { observed: { …(5) }, …(1) } to deeply equal { observed: { …(5) }, …(1) }
+packages/elements/test/browser/list-detail.test.ts:79: unit-tests: ocelle-list-detail upgrading in server HTML on the strict-CSP fixture (US3, Edge Cases "detail-open before the element upgrades", R-14) with focus on #u-i0 before the build loads, the upgraded element in Frame N shows its first layout, and focus is moved only out of a pane that layout hides: AssertionError: expected { …(2) } to deeply equal { …(2) }
+packages/elements/test/browser/list-detail.test.ts:79: unit-tests: ocelle-list-detail upgrading in server HTML on the strict-CSP fixture (US3, Edge Cases "detail-open before the element upgrades", R-14) with focus on #u-i0 before the build loads, the upgraded element in Frame R shows its first layout, and focus is moved only out of a pane that layout hides: AssertionError: expected { …(2) } to deeply equal { …(2) }
+packages/elements/test/list-detail-upgrade.test.ts:85: unit-tests: ocelle-list-detail at upgrade (R-14) review R1-01: in Frame N, where the first layout shows the inspector, focus inside the inspector is not moved at upgrade: AssertionError: expected { before: 'in-i0', …(4) } to deeply equal { before: 'in-i0', …(4) }
+packages/elements/test/list-detail-upgrade.test.ts:85: unit-tests: ocelle-list-detail at upgrade (R-14) review R1-01: in Frame R, where the first layout shows the inspector, focus inside the inspector is not moved at upgrade: AssertionError: expected { before: 'ir-i0', …(4) } to deeply equal { before: 'ir-i0', …(4) }
+packages/elements/test/list-detail.test.ts:19: unit-tests: ocelle-list-detail, in process (US3) US3 review R1-02: a list-detail inside …: AssertionError: expected { start: 'sh >> z-l0', …(2) } to deeply equal { start: 'sh >> z-l0', …(2) }
+packages/elements/test/list-detail.test.ts:19: unit-tests: ocelle-list-detail, in process (US3) US3 review R1-03: the tier follows a ch…: AssertionError: expected { first: { …(2) }, …(4) } to deeply equal { first: { …(2) }, …(4) }
+unit-tests: 8 of 3747 tests failed
+[ELIFECYCLE] Test failed. See above for more details.

@@ -14,7 +14,13 @@
 //   class it defined on `globalThis.ocelleCards`, so the page can tell its card from the browser build's;
 // - for User Story 3, the test host's file: test/fixtures/test-host.ts bundled by Vite with its own copy of Lit (the
 //   package's pinned dependency, production build) into `<dir>/test-host/ocelle-test-host.js`, one self-contained
-//   module that imports nothing and does not import the browser build (spec § The strict-CSP fixture, FR-023).
+//   module that imports nothing and does not import the browser build (spec § The strict-CSP fixture, FR-023);
+// - since 009 (US1 scenario 4, research.md R-07): the test-only slotted controls of the focus handover,
+//   test/fixtures/shadow-controls.ts bundled by Vite into `<dir>/test-controls/ocelle-test-controls.js`, one module
+//   that imports nothing;
+// - since 009 phase 4 (US3 scenario 12, research.md R-13): the test-only slotted elements of list-detail's intrinsic
+//   sizes, test/fixtures/list-detail-controls.ts bundled the same way into
+//   `<dir>/test-controls/ocelle-test-list-detail.js`.
 // The directory, or the reason the builds failed, is provided to the tests, which report it: a failed build is a
 // failing test of its own, and every page then lacks the scripts it loads.
 import { spawnSync } from "node:child_process";
@@ -94,12 +100,39 @@ async function testHost(dir: string): Promise<void> {
   });
 }
 
+/** The test-only slotted controls' file into `<dir>/test-controls`. */
+async function testControls(dir: string): Promise<void> {
+  await build({
+    configFile: false,
+    root: elements,
+    logLevel: "error",
+    build: {
+      outDir: join(dir, "test-controls"),
+      emptyOutDir: false,
+      minify: false,
+      lib: { entry: join(elements, "test", "fixtures", "shadow-controls.ts"), formats: ["es"], fileName: () => "ocelle-test-controls.js" },
+    },
+  });
+  await build({
+    configFile: false,
+    root: elements,
+    logLevel: "error",
+    build: {
+      outDir: join(dir, "test-controls"),
+      emptyOutDir: false,
+      minify: false,
+      lib: { entry: join(elements, "test", "fixtures", "list-detail-controls.ts"), formats: ["es"], fileName: () => "ocelle-test-list-detail.js" },
+    },
+  });
+}
+
 export default async function setup(project: TestProject): Promise<() => void> {
   const dir = mkdtempSync(join(tmpdir(), "ocelle-elements-fixture-"));
   try {
     await browserBuild(dir);
     await moduleBundles(dir);
     await testHost(dir);
+    await testControls(dir);
     project.provide("elementsFixture", { dir });
   } catch (error) {
     project.provide("elementsFixture", { problem: error instanceof Error ? error.message : String(error) });

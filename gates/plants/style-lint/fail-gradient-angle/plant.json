@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "An angle inside linear-gradient() (mask-image: linear-gradient(45deg, transparent, var(--ocelle-color-ink))) is raw (009 contracts/gates.md § style-lint).",
+  "findings": [
+    {
+      "location": "packages/elements/src/x.ts:6",
+      "rule": "ocelle/token-only",
+      "message": "45deg"
+    }
+  ]
+}

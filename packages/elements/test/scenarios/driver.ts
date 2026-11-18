@@ -82,6 +82,12 @@ export interface Target {
   readonly inner?: string;
 }
 
+/**
+ * An element the input and scroll methods act on: the element with an `id`, or the first element matching `inner` in
+ * that element's shadow root (009 research.md R-17; 009's `Target`, renamed by operator decision D1).
+ */
+export type ElementTarget = string | { readonly id: string; readonly inner: string };
+
 /** A point relative to the top-left corner of an element's border box, in CSS pixels. */
 export interface Point {
   readonly x: number;
@@ -170,6 +176,24 @@ export interface AxeResult {
   readonly impact: string;
   readonly kind: "violation" | "incomplete";
   readonly targets: readonly string[];
+}
+
+/**
+ * What a frame record reads each time it records (009 research.md R-17): a DOM property (`scrollLeft`, `clientHeight`),
+ * a computed CSS property (`mask-image`) or an attribute (`tabindex`), as text (an absent attribute reads `"null"`), of
+ * the record's target or, with `of`, of another element.
+ */
+export type Reading = ({ readonly property: string } | { readonly computed: string } | { readonly attribute: string }) & { readonly of?: ElementTarget };
+
+/** A running frame record (`frameRecord`). */
+export interface FrameRecorder {
+  /**
+   * Settles (`settle`), stops recording and returns the record: the reading at the start, then, in order, `"keydown"`
+   * for each keydown the window saw, the reading in each animation frame, and `"resize: <reading>"` in each callback of
+   * a `ResizeObserver` the record registers on the target's border box when it starts (so it runs after the observers
+   * the page registered before, in the same delivery, and sees a scrollbar that comes or goes).
+   */
+  stop(): Promise<string[]>;
 }
 
 /** One step of a pointer path: a point in the page's (the frame's) coordinates, and a press or release there. */
@@ -284,6 +308,11 @@ export interface Driver {
   setProperty(id: string, name: string, value: string | number | boolean | null | undefined): Promise<void>;
   /** Sets an attribute of the element with `id` (null removes it) and waits for it to render. */
   setAttribute(id: string, name: string, value: string | null): Promise<void>;
+  /**
+   * Calls the method `name` of the element with `id` with no argument, then settles (`settle`): since 009 phase 4,
+   * list-detail's `remeasure()` (research.md R-13).
+   */
+  call(id: string, name: string): Promise<void>;
   /** An attribute of the element with `id`, or null. */
   attribute(id: string, name: string): Promise<string | null>;
   /** Sets a CSS property on the element with `id` through the CSSOM (not governed by the CSP), as a host rule does. */
@@ -321,6 +350,8 @@ export interface Driver {
   ownPlacement(id: string): Promise<Placement>;
   /** The computed value of a CSS property of the element with `id`, or of the first element matching `inner` in its shadow root. */
   computed(id: string, property: string, inner?: string): Promise<string>;
+  /** The computed value of a CSS property of the target, a light-DOM or a shadow element (009's `computed`, renamed by D1). */
+  computedOf(target: ElementTarget, property: string): Promise<string>;
   /** The computed `color` a probe element takes from the CSS colour `value` (a system colour, say). */
   resolveColour(value: string): Promise<string>;
   /** The unignored accessibility nodes of the element with `id` and of its shadow subtree. */
@@ -404,6 +435,51 @@ export interface Driver {
    * element to render.
    */
   morph(id: string, markup: string): Promise<void>;
+  // The input, focus, scroll and frame-record plumbing of 009 research.md R-17.
+  /**
+   * Presses a key or a chord with real keyboard input, never a dispatched event (`:focus-visible` follows real input
+   * only), then settles: `Tab`, `Shift+Tab`, `ArrowLeft`, `ArrowRight`, `Home`, `End`, `Alt+ArrowLeft`,
+   * `Ctrl+ArrowRight`, `Meta+ArrowRight`, `Shift+ArrowRight` (009 research.md R-17). 008's `inputPress(key, options)`
+   * (below) presses one key, with Shift held when asked.
+   */
+  chord(key: string): Promise<void>;
+  /**
+   * A real pointer click at `point` of the target's border box, then a settle. 008's `inputClick(id, inner, options)`
+   * (below) clicks the centre of an element.
+   */
+  clickAt(target: ElementTarget, point: Point): Promise<void>;
+  /** A real wheel event over the centre of the target's border box, `deltaX` CSS px to the right, then a settle. */
+  wheel(target: ElementTarget, deltaX: number): Promise<void>;
+  /**
+   * The deep active element: from `document.activeElement` down through each shadow root's active element, each level
+   * as its `id`, or as its local name and its classes (`div.region-box`) when it has none, joined by `" >> "`
+   * (`"s1 >> div.region-box"`, `"l3"`, `"body"`). 011's `activeElement()` (below) reads the same element as a record.
+   */
+  deepActive(): Promise<string>;
+  /**
+   * Focuses the element with id `from` by script, then presses `Tab` (or `Shift+Tab` when `backward`) until the deep
+   * active element is `to` (an id, or a deep active element as `deepActive()` names it), and returns
+   * `deepActive()` after each press, `to` included; at most 40 presses.
+   */
+  tabWalk(from: string, to: string, backward?: boolean): Promise<string[]>;
+  /**
+   * Focuses the target by script (`focus()`), then settles (009's `focus`, renamed by D1). Chromium's `:focus-visible` follows the last input: after
+   * keyboard input the target matches it, after a pointer click it does not.
+   */
+  focusTarget(target: ElementTarget): Promise<void>;
+  /** The target's `scrollLeft`. */
+  scrollLeft(target: ElementTarget): Promise<number>;
+  /** Sets the target's `scrollLeft` with an instant scroll, then settles. */
+  setScrollLeft(target: ElementTarget, value: number): Promise<void>;
+  /** Whether the last keydown the window saw since the last `mount` was default-prevented; false when there was none. */
+  lastKeyPrevented(): Promise<boolean>;
+  /**
+   * Starts a frame record of `read` on the target (009 research.md R-13, R-17), and returns after two animation frames,
+   * once the record's `ResizeObserver` has delivered its first observation of the target.
+   */
+  frameRecord(target: ElementTarget, read: Reading): Promise<FrameRecorder>;
+  /** Waits two animation frames, then until every `ocelle-*` element of the page has rendered (`updateComplete`). */
+  settle(): Promise<void>;
 
   // The additions of 008 (research.md R-14). Input is real input through the browser (CDP): keys go to the focused
   // element, pointer input to a point of the page, so `:hover`, `:focus-visible` and the pointer events are the
@@ -464,7 +540,12 @@ export interface Driver {
   tab(shift?: boolean): Promise<void>;
   /** The focused element through open shadow roots, with the hosts on its path (test/commands.ts `readActiveElement`). */
   activeElement(): Promise<ActiveElement>;
-  /** Sets the viewport to `width` × `height` CSS px and waits for every element to render; it stays until set again. */
+  /**
+   * Sets the viewport to `width` × `height` CSS px and waits for every element to render; it stays until set again: in
+   * process the test's iframe (`vitest/browser`'s `page.viewport`, 1280 × 800 by vitest.config.ts since 008), on the
+   * fixture pages the page itself (`page.setViewportSize`, 1280 × 800 when the page opens). A 009 frame scenario sets its frame's
+   * viewport before it mounts (009 research.md R-17).
+   */
   viewport(width: number, height: number): Promise<void>;
   /**
    * Sets the `inline-size` and `block-size` of the element with `id` (a container) through the CSSOM, in px; null
@@ -559,7 +640,10 @@ export interface Driver {
    */
   focused(): Promise<string | null>;
   // The additions of 013 phase 3 (contracts/checks.md § Driver additions; tasks.md T037).
-  /** Emulates `prefers-reduced-motion: reduce`, or ends it with `"no-preference"`, and waits for every element to render. */
+  /**
+   * Emulates `prefers-reduced-motion: reduce`, or ends it with `"no-preference"`, beside `forcedColors()`, and waits for
+   * every element to render (since 009 the scroller scenarios use it too).
+   */
   reducedMotion(mode: ReducedMotion): Promise<void>;
   /** The current animations and transitions on the element with `id` and in its shadow root, in tree order. */
   animations(id: string): Promise<Running[]>;

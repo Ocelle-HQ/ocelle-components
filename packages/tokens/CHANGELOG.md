@@ -10,6 +10,10 @@ package (mission 002; #5).** Before, there was no token package: colours, spacin
 shared `--ocelle-*` names. Now a host links `tokens.css` and serves `fonts/` beside it under `font-src 'self'`,
 nothing loads from a CDN, and two new merge checks (Contrast, Brand rules) keep the token values accessible.
 
+`--ocelle-lane-min-width`, `--ocelle-list-track-width`, `--ocelle-list-detail-collapse`,
+`--ocelle-list-detail-inspector-collapse` and `--ocelle-scroller-fade-size`, the five tokens of the workflow layouts of
+`@ocelle/elements`, are additions to the token names: a minor change.
+
 ### Added
 
 - `fonts/`: Schibsted Grotesk, the variable `wght` WOFF2 with its SIL Open Font License 1.1 (`OFL.txt`), declared
@@ -41,10 +45,12 @@ nothing loads from a CDN, and two new merge checks (Contrast, Brand rules) keep 
     prose running text of `@ocelle/styles`, 003), `--ocelle-font-weight-regular`, `--ocelle-font-weight-medium`, `--ocelle-font-weight-strong`,
     `--ocelle-font-weight-display`, `--ocelle-tracking-display`, and the eyebrow tokens of `@ocelle/elements`' section
     header (011): `--ocelle-font-size-eyebrow` (an alias of `--ocelle-font-size-xs`), `--ocelle-font-weight-eyebrow`
-    (an alias of `--ocelle-font-weight-strong`) and `--ocelle-tracking-eyebrow` (`0.08em`)
+    (an alias of `--ocelle-font-weight-strong`) and `--ocelle-tracking-eyebrow` (`0.08em`, also the letter spacing of
+    the flat lane's title, 009)
   - space: `--ocelle-space-1`, `--ocelle-space-2`, `--ocelle-space-3`, `--ocelle-space-4`, `--ocelle-space-5`,
     `--ocelle-space-6`, `--ocelle-space-7`, `--ocelle-space-8`, `--ocelle-space-9`, `--ocelle-space-10`,
-    `--ocelle-gutter`
+    `--ocelle-gutter`, `--ocelle-scroller-fade-size` (`ocelle-scroller`'s fade depth and focus clearance,
+    `--ocelle-space-7`, 009)
   - shape: `--ocelle-radius-1`, `--ocelle-radius-2`, `--ocelle-radius-row`, `--ocelle-radius-shell`,
     `--ocelle-radius-pill`, `--ocelle-border-width`, `--ocelle-focus-width`, `--ocelle-focus-offset`,
     `--ocelle-bar-width`, `--ocelle-ring-step`, and for the inside focus ring of `ocelle-action-row` (012)
@@ -58,7 +64,10 @@ nothing loads from a CDN, and two new merge checks (Contrast, Brand rules) keep 
     `--ocelle-measure-sentence`, `--ocelle-measure-page`, `--ocelle-measure-reading`, `--ocelle-measure-cell` and
     `--ocelle-measure-container` (the prose measure, table cell floor and caption cap of `@ocelle/styles`, 003),
     `--ocelle-dialog-max-inline`, `--ocelle-dialog-max-block`, `--ocelle-bar-block-narrow`, `--ocelle-drawer-inline`
-    (the inline size of `ocelle-drawer`, the sidebar width; mission 008)
+    (the inline size of `ocelle-drawer`, the sidebar width; mission 008), `--ocelle-lane-min-width` (a board lane's
+    minimum and flex basis, `10rem`), `--ocelle-list-track-width` (list-detail's list pane, `18rem`),
+    `--ocelle-list-detail-collapse` and `--ocelle-list-detail-inspector-collapse` (list-detail's default
+    `collapse-below` and `inspector-below`, `40rem` and `60rem`) (the workflow layouts of `@ocelle/elements`, 009)
   - elevation: `--ocelle-elevation-sheet`, `--ocelle-elevation-raised`, `--ocelle-elevation-row`,
     `--ocelle-elevation-seg`, `--ocelle-elevation-bar`
   - motion: `--ocelle-motion-fast`, `--ocelle-motion-base`, `--ocelle-easing-standard`, `--ocelle-tooltip-delay` (the

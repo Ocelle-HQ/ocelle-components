@@ -194,6 +194,8 @@ export const records = tokenRecords([
   { name: "space-9", group: "space", value: "3rem" },
   { name: "space-10", group: "space", value: "4rem" },
   { name: "gutter", group: "space", value: "var(--ocelle-space-4)", ref: ["space-4"] }, // page and dialog gutter
+  // the scroller's fade depth and focus clearance (009)
+  { name: "scroller-fade-size", group: "space", value: "var(--ocelle-space-7)", ref: ["space-7"] },
   { name: "radius-1", group: "shape", value: "2px" }, // small marks: dots, focus corners
   { name: "radius-2", group: "shape", value: "4px" }, // the one general radius
   { name: "radius-row", group: "shape", value: "6px" }, // rows and cards
@@ -242,6 +244,10 @@ export const records = tokenRecords([
   { name: "drawer-inline", group: "shell", value: "var(--ocelle-shell-sidebar-width)", ref: ["shell-sidebar-width"] },
   // decision bar
   { name: "bar-block-narrow", group: "shell", value: "calc(2 * var(--ocelle-target-min) + 3 * var(--ocelle-space-2))", ref: ["target-min", "space-2"] },
+  { name: "lane-min-width", group: "shell", value: "10rem" }, // a board lane's minimum and flex basis (009)
+  { name: "list-track-width", group: "shell", value: "18rem" }, // list-detail's list pane (009)
+  { name: "list-detail-collapse", group: "shell", value: "40rem" }, // list-detail's default collapse-below (009)
+  { name: "list-detail-inspector-collapse", group: "shell", value: "60rem" }, // list-detail's default inspector-below (009)
 
   // A.5 Elevation (theme-dependent) and motion (theme-independent); light shadows and ring widths from the console
   // prototype (research.md R-05)
