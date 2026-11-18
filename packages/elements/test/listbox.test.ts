@@ -2,6 +2,7 @@ import axe from "axe-core";
 import { afterEach, describe, expect, it } from "vitest";
 import { commands } from "vitest/browser";
 import { define } from "../src/define.ts";
+import "../src/ocelle-dialog.ts";
 import { OcelleListbox } from "../src/ocelle-listbox.ts";
 import { OcelleOption } from "../src/ocelle-option.ts";
 import { inProcessDriver } from "./in-process.ts";
@@ -16,7 +17,10 @@ import type { InPage } from "./scenarios/driver.ts";
 // guarded `define` throws nothing and leaves the first, whose listbox still works. And axe-core, the version the axe
 // gate pins, run in process on a listbox and on an option outside one (research.md R-01; added after the mutation run
 // of phase 2): it finds the internals where they are kept, so it reports no aria-allowed-attr, aria-required-parent or
-// aria-required-children violation, while it reads the listbox's and the options' roles.
+// aria-required-children violation, while it reads the listbox's and the options' roles. And the listbox in an
+// `ocelle-dialog` already open when the markup is inserted (014 T114, phase 7 operator decision 2; the composed story of
+// FR-054): the dialog picks its initial focus (008 FR-007) when it opens, so the listbox's tab stop, the selected option,
+// must already be focusable then, and focus lands on it, not on the dialog's close control.
 const driver = inProcessDriver();
 const inPage: InPage = async (fn, arg) => fn(arg);
 
@@ -87,6 +91,23 @@ describe("ocelle-listbox and ocelle-option, in process (US1)", () => {
         ["option", "alpha", false],
         ["option", "beta", true],
       ],
+    });
+  });
+
+  it("T114, decision 2: in an ocelle-dialog open at insertion, as the composed story mounts it, focus lands on the listbox's tab stop, the selected option gamma, at tabindex 0, every other option at -1", async () => {
+    const folders = ["alpha", "beta", "gamma", "delta", "epsilon"];
+    await driver.mount(`<ocelle-dialog id="dlg" open label="Open project"><p>Choose a folder.</p><ocelle-listbox id="lb" label="Folders" value="gamma">${folders.map((name) => `<ocelle-option value="${name}">${name}</ocelle-option>`).join("")}</ocelle-listbox><button slot="footer" type="button">Open</button></ocelle-dialog>`);
+    const dialog = document.getElementById("dlg") as unknown as { updateComplete: Promise<unknown>; shadowRoot: ShadowRoot | null };
+    await dialog.updateComplete;
+    const options = [...document.querySelectorAll("#lb > ocelle-option")];
+    expect({
+      shown: dialog.shadowRoot?.querySelector("dialog")?.open === true,
+      active: document.activeElement?.getAttribute("value") ?? document.activeElement?.localName ?? null,
+      tabindex: options.map((option) => [option.getAttribute("value"), option.getAttribute("tabindex")]),
+    }).toEqual({
+      shown: true,
+      active: "gamma",
+      tabindex: folders.map((name) => [name, name === "gamma" ? "0" : "-1"]),
     });
   });
 });
