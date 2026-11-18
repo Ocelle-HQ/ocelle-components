@@ -36,3 +36,6 @@
   browser; FR-018 and the contract say so; bodies assert each key scrolls the box, the fade follows and the header
   stays pinned.
 - **Low findings:** I1 and I2 are fixed in the same pass; C2 stays as it is.
+- **Fixes-2 Q-1, the room-rule state:** (b) add a 21st phase-1 story for the room-rule state (rows below, no fade):
+  phase 1 has 21 stories and 42 baselines, the mission 44 and 88; the exception row covers only the scrolled-to-end
+  state (2026-11-18, human:jeroennouwsdev).
