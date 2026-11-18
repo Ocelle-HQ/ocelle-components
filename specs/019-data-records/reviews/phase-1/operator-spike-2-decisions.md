@@ -12,3 +12,6 @@
   it before the red commit and stops if it fails.
 - **Q-4, axe `color-contrast` incomplete under `.region-edge.block-end`:** (a) `inline-size: 0` on the edge outside
   forced colours (measured clean).
+- **Q-S2-1, a focusable element above the pinned `<thead>` (for example a link in the caption;
+  `reviews/phase-1/spike-2-fixes.md`):** (a) for an element before the pinned box, the block clearance's upper bound
+  is the box's client block-start edge, so the box scrolls back to show it.
