@@ -22,6 +22,9 @@
 //   named from its name;
 // - the convention adds nothing to the name a control takes from its visible label (US3-11) beside both icons drawn
 //   at the icon size and placed by the convention; plant: a zero-width-space `::before` strut without empty alt text.
+// - the label's baseline fix moves nothing inside the row (012 plan decision 33, phase 2 review round 5 O3-01) beside
+//   the label on the surrounding text's baseline; plant: `.icon-row { align-items: baseline }` in place of the label's
+//   `align-self: baseline`.
 // The centring plant of US3-1 and US3-10 is the strut; their containment plant the `.icon-row` padding rule removed.
 import { expectedDrawing } from "../icons-expected.ts";
 import { image, size, systemColours } from "./icon.ts";
@@ -403,6 +406,27 @@ function scenarios(base: boolean): SlotScenario[] {
         tags: { width: true, height: 24 },
         icons: [icon, icon, icon, icon],
       },
+    },
+    {
+      // 012 plan decision 33 (phase 2 review round 5, O3-01; tasks.md T029b): the convention's label wrapper takes part
+      // in baseline alignment. Each paragraph, body text at 16 px, holds "Text", a zero-size inline-block marker (on the
+      // paragraph's baseline), a test host whose light-DOM label ends with a second zero-size marker (on the label's
+      // baseline), and "after"; the markers' block-starts are compared, and inside the host the icon wrapper's and the
+      // label's. Plant: `.icon-row { align-items: baseline }` in place of the label rule.
+      name: `012 plan decision 33, ${page}: a one-line control on the convention in a line of text, with and without a slotted icon, has its label on the text's baseline within 0.5 px, and its icon wrapper and label start at the same block position inside the row`,
+      run: async (driver) => {
+        const mark = (id: string): string => `<span class="mark" id="${id}"></span>`;
+        const line = (id: string, icon: string): string => `<p class="line">Text${mark(`${id}-text`)} <ocelle-test-host id="${id}">${icon}Open project${mark(`${id}-mark`)}</ocelle-test-host> after</p>`;
+        await mount(driver, line("bare", "") + line("iconed", folder("iconed-icon")));
+        await driver.rules(".line { font-size: 16px; } .mark { display: inline-block; inline-size: 0; block-size: 0; }");
+        const observe = async (id: string): Promise<unknown> => {
+          const [text, label] = [await driver.box(`${id}-text`), await driver.box(`${id}-mark`)];
+          const [wrapper, inner] = [await driver.box(id, ".icon-slot"), await driver.box(id, ".label")];
+          return { baseline: Math.abs(label.y - text.y) <= 0.5, rowStart: Math.abs(wrapper.y - inner.y) <= 0.5 };
+        };
+        return { bare: await observe("bare"), iconed: await observe("iconed") };
+      },
+      expected: { bare: { baseline: true, rowStart: true }, iconed: { baseline: true, rowStart: true } },
     },
   ];
   return list.map((scenario) => ({ ...scenario, base }));

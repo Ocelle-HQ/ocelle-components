@@ -28,7 +28,10 @@
 // - `ground="chrome"` gives the chrome look (US1-4, US1-5, US1-13, US1-14); plant: `chrome` treated as unknown;
 // - a flush hover shows no change only on the hand-written exception grounds (US1-14); plant: the flush hover token
 //   changed;
-// - a pointer focus shows no ring (US1-10) beside the keyboard focus's ring; plant: the ring on `:focus` instead.
+// - a pointer focus shows no ring (US1-10) beside the keyboard focus's ring; plant: the ring on `:focus` instead;
+// - the baseline fix moves nothing inside the control (plan decision 33, review round 5 O3-01): beside each one-line
+//   button's label on the text's baseline, its icon wrapper (the spinner while busy) and its label start at the same
+//   block position; plant: `.icon-row { align-items: baseline }` in place of the label's `align-self: baseline`.
 import { tokenColour } from "./icon.ts";
 import type { Scenario } from "./icon.ts";
 import type { Box, Driver, EventRecord, Palette } from "./driver.ts";
@@ -749,5 +752,44 @@ export const buttonScenarios: readonly Scenario[] = [
       return { empty: await severe(driver, "empty"), named: await severe(driver, "named"), name: (await driver.axState("e", control)).name };
     },
     expected: { empty: ["violation button-name"], named: [], name: "" },
+  },
+  {
+    // Plan decision 33 (review round 5, O3-01; tasks.md T029a): round 5's method. Each paragraph, body text at 16 px,
+    // holds "Text", a zero-size inline-block marker (on the paragraph's baseline), a button whose light-DOM label ends
+    // with a second zero-size marker (on the label's baseline), and "after". The markers' block-starts are compared,
+    // and inside the host the icon wrapper's (the spinner's while busy) and the label's block-starts.
+    name: "Plan decision 33: a one-line button in a line of text sits on the text's baseline: its label's baseline is the paragraph's within 0.5 px for the default button, compact, with an icon, flush, quiet flush, link mode and busy, and its icon wrapper (the spinner while busy) and its label start at the same block position inside the control",
+    run: async (driver) => {
+      const cases = [
+        { id: "plain", attributes: "", icon: false, wrapper: ".icon-slot" },
+        { id: "compact", attributes: ' size="compact"', icon: false, wrapper: ".icon-slot" },
+        { id: "icon", attributes: "", icon: true, wrapper: ".icon-slot" },
+        { id: "flush", attributes: " flush", icon: false, wrapper: ".icon-slot" },
+        { id: "quiet", attributes: ' variant="quiet" flush', icon: false, wrapper: ".icon-slot" },
+        { id: "link", attributes: ' href="#look"', icon: false, wrapper: ".icon-slot" },
+        { id: "busy", attributes: " busy", icon: false, wrapper: ".spinner" },
+      ] as const;
+      const mark = (id: string): string => `<span class="mark" id="${id}"></span>`;
+      await driver.mount(
+        cases
+          .map((each) => {
+            const icon = each.icon ? `<ocelle-icon slot="icon" name="folder"></ocelle-icon>` : "";
+            return `<p class="line">Text${mark(`${each.id}-text`)} <ocelle-button id="${each.id}"${each.attributes}>${icon}Save${mark(`${each.id}-label`)}</ocelle-button> after</p>`;
+          })
+          .join(""),
+      );
+      await driver.rules(".line { font-size: 16px; } .mark { display: inline-block; inline-size: 0; block-size: 0; }");
+      const found: Record<string, unknown> = {};
+      for (const each of cases) {
+        const [text, label] = [await driver.box(`${each.id}-text`), await driver.box(`${each.id}-label`)];
+        const [wrapper, inner] = [await driver.box(each.id, each.wrapper), await driver.box(each.id, ".label")];
+        found[each.id] = { baseline: Math.abs(label.y - text.y) <= 0.5, rowStart: Math.abs(wrapper.y - inner.y) <= 0.5 };
+      }
+      return { found, axe: await severe(driver) };
+    },
+    expected: {
+      found: Object.fromEntries(["plain", "compact", "icon", "flush", "quiet", "link", "busy"].map((id) => [id, { baseline: true, rowStart: true }])),
+      axe: [],
+    },
   },
 ];

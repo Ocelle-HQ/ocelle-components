@@ -36,3 +36,13 @@ describe("packages/tokens/CHANGELOG.md: the five layout tokens are a minor chang
     expect(section).toContain(flat(statement));
   });
 });
+
+// 012 plan decision 33 (phase 2 review round 5, O3-01; tasks.md T029b): the slot convention's label sits on the text
+// baseline, stated once under Unreleased.
+describe("packages/elements/CHANGELOG.md: a one-line control on the slot convention sits on the text's baseline (012 plan decision 33)", () => {
+  const section = unreleased(read("CHANGELOG.md"));
+
+  it.each(["A one-line control on the slot convention, such as `ocelle-button`, now sits on the surrounding text's baseline"])("states under Unreleased: %s", (statement) => {
+    expect(section).toContain(flat(statement));
+  });
+});
