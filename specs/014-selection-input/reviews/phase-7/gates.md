@@ -70,5 +70,8 @@ time, with `OCELLE_CHROMIUM_PATH=/opt/pw-browsers/chromium-1243/chrome-linux64/c
 | `pnpm run gate:plants -- --affected ea7eca6^` | 0 | 21 of 314 plants judged, every plant as expected (`plants.md`); `visual/fail-token-changed` at 150 findings |
 | `vitest run packages/elements/test/browser/drawer.test.ts packages/elements/test/driver.test.ts` | 0 | 456 tests passed: the two failures of `ea7eca6`'s red run were load flakes |
 
+`tdd-check.sh 7` at `5272edc`: `pass` (red `phase` `db65005` and `fix-2` `2b73f1f` both red, the final tests on the
+base exit 2, HEAD exit 0 with 8007 tests passed, no problem). The pnpm store path in the check logs is redacted.
+
 The composed story's baselines are docker only; no podman cross-engine check was possible here, and CI confirms them
 at landing (FR-053). The known gap "Composed dialog story: deferred to landing" above is closed by this fold.
