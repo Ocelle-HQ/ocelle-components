@@ -180,3 +180,9 @@ parts, events and entry points are additions (a minor change), and the engine fl
   Chromium 120 and WebKit 16.4).
 - The slot convention's size rules now apply to the `icon` and `trailing` slots only, so an element in a control's
   other slots keeps its own box; `ocelle-icon` and `ocelle-brand-mark` render as before.
+- A one-line control on the slot convention, such as `ocelle-button`, now sits on the surrounding text's baseline:
+  in a labelled row the convention's label wrapper, `<span class="label">` around the default slot, takes part in
+  baseline alignment, so the control's baseline is its label's first line (before, the label sat 4.6 to 6.2 px above
+  the text's baseline); nothing inside the control moves. A control with no label puts the class `bare` on its row,
+  which the rule skips, so an icon-only control stays where it was, its icon where a native `<button>` with an svg
+  puts it.

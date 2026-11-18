@@ -23,3 +23,20 @@ tests fail (102 of 102 pass without a plant). Run on 2026-11-14 in Chromium 1248
 
 The fixture run (test/browser/button.test.ts) shares the same bodies on the built browser build; the plants were not
 rebuilt into it.
+
+## Fix round 4 (operator rounds 5 and 6: O3-01, O6-01; T029e)
+
+Each plant was applied to `packages/elements/src/icon-slot.ts` in the working tree on top of the green change (the
+scoped rule `.icon-row:not(.bare) > .label { align-self: baseline; }`, over the red commits 19921596 and 082fcd50).
+The plan decision 33 scenarios were run once in process
+(`pnpm exec vitest run --project elements packages/elements/test/button.test.ts packages/elements/test/slot.test.ts
+-t "decision 33"`, 4 tests), and then the source was restored. Without a plant, 4 of 4 pass. Run on 2026-11-18 in
+Chromium 1248.
+
+| Plant | Result | What failed |
+|---|---|---|
+| `.icon-row { align-items: baseline }` in place of the label rule (T029a, T029b) | 3 failed, 1 passed (4) | The block-start checks only: `rowStart` is false for all seven button cases (plain, compact, icon, flush, quiet, link, busy) and for both test-host cases (bare, iconed), with and without `base.css`. Every `baseline` check passes. The icon-only scenario passes. |
+| the unscoped `.icon-row > .label { align-self: baseline; }` in place of the scoped rule (T029f) | 1 failed, 3 passed (4) | The icon-only cases only: `centre` is false for `only`, `only-compact` and `only-busy`. `square` and `bare` stay true. The labelled button scenario and both test-host scenarios pass. |
+
+The fixture run (`test/browser/button.test.ts`, `test/browser/slot.test.ts`) uses the same bodies on the built
+browser build. The plants were not rebuilt into it.

@@ -1301,9 +1301,11 @@ element and variant that replaces it, or the consumer's own remedy.
 
 A control that shows icons follows one slot convention: an `icon` slot before its label and, where it has an end icon
 such as the action row's arrow, a `trailing` slot after it. The control renders, in its shadow root, a row with the
-class `icon-row` holding `<span class="icon-slot"><slot name="icon"></slot></span>`, its label, and
+class `icon-row` holding `<span class="icon-slot"><slot name="icon"></slot></span>`, its label wrapper
+`<span class="label"><slot></slot></span>` around the default slot, and
 `<span class="icon-slot trailing"><slot name="trailing"></slot></span>`, and adds `iconSlotStyles`
-(`src/icon-slot.ts`, internal) to its `static styles`:
+(`src/icon-slot.ts`, internal) to its `static styles`. A control with no label, such as an icon-only control, puts the
+class `bare` on its row: the `bare` modifier is part of the convention.
 
 ```ts
 static override styles = [css`…the control's own rules…`, iconSlotStyles];
@@ -1325,7 +1327,10 @@ A host then slots its icons with no size of its own (here into `ocelle-button`, 
 - **Alignment.** The row sets the type (font size and line height) that the wrappers and the label inherit; each
   wrapper is one line box tall (`1lh`) with the icon centred in it, so the icon is centred on the label's first line
   at any type size and leading, overflowing the line box evenly when it is taller. Set the type on the row, not on the
-  label alone.
+  label alone. The label wrapper takes part in baseline alignment, so the control's baseline is its label's first line
+  and a one-line control in a line of text sits on the text's baseline; nothing inside the control moves for it. The
+  label's baseline alignment applies to labelled rows only: a `bare` row is not changed, so an icon-only control's icon
+  sits where a native `<button>` with an svg puts it in a line of text.
 - **Row padding.** The row's block padding, `calc((var(--ocelle-icon-size) - 1lh) / 2)` from `iconSlotStyles` (0 when
   the line box is at least the icon size), keeps that overflow inside the control's box. A control never sets block
   padding on the row; it puts any further block padding on an element around the row.
