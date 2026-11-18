@@ -1,8 +1,15 @@
 # spec-kitty-design inventory: data table, event timeline, evidence chain
 
 Read on 2026-11-18 from a read-only shallow clone of the public spec-kitty/spec-kitty-design repository (MIT) at
-`/home/user/spec-kitty/spec-kitty-design`, commit `19fb6a224c0c54ad657ac725c2d32b7c67d73728` (`19fb6a2`, "promote
-develop to main", committed 2026-09-22; all packages at version 1.0.0). Pointed out by the operator on 2026-11-18.
+`/home/user/spec-kitty/spec-kitty-design`, at two commits. Pointed out by the operator on 2026-11-18.
+
+| Line | Commit | Committed | Read |
+|---|---|---|---|
+| `main` | `19fb6a224c0c54ad657ac725c2d32b7c67d73728` (`19fb6a2`, "promote develop to main"; all packages at version 1.0.0) | 2026-09-22 | first reading, sections 1 to 3 below |
+| `develop` (`refs/remotes/origin/develop`) | `a6518cd29c53a6f7d61b6dfddefc842143653bca` (`a6518cd`, "docs(acceptance): clarify S visual mapping boundary"; all packages still at version 1.0.0) | 2026-09-28 | re-inventory (IQ-1 (a), operator 2026-11-18: no release tag exists on the remote, so the newest line is read instead of rc.10), § What `develop` adds or changes and the **On `develop`** notes in sections 1 to 3 |
+
+Both are shallow single-commit fetches with no common ancestor in the clone, so the comparison is a tree comparison
+(`git diff 19fb6a2 a6518cd`): 358 paths differ, 354 added and 4 modified, none deleted.
 
 What this is, and what it is not:
 
@@ -28,6 +35,25 @@ headers (`triage/019-data-display-follow-on.md`).
 
 The issues the clone does cite for these families: #176 (data table, styles-only), #213 (event timeline, styles-only
 recipe for detail views), #147 (metric and evidence chain).
+
+**On `develop` (a6518cd).** #470 is now cited, by its Stage A hand-off material (recorded as background in
+`sources/issue-470-handoff-background.md`). #517 and #533 are still cited nowhere in the tree. #470's own issue body is
+not in the tree either; the operator supplies the three bodies (IQ-25, "I'll paste them").
+
+## What `develop` adds or changes for the three families
+
+Read file by file (role names and behaviour only). In short: **no role, modifier, state, story, property or part of
+the three families changes on `develop`**; what it adds is a consumer contract and evidence about two of them.
+
+| What | On `develop` | Bearing |
+|---|---|---|
+| The families' sources: `packages/styles/src/data-table/`, `packages/styles/src/event-timeline/`, `packages/styles/src/evidence-chain/`, `packages/elements/src/evidence-chain/`, the manifest, `docs/design-system/` | **Unchanged**: no path under `packages/` or `docs/design-system/` differs between the two commits | Sections 1 to 3 hold for both lines |
+| The Desktop V2 source contract `contracts/desktop-v2/source-contract.json` (new, #470 Stage A) | **Added.** It names 22 primitive families. `data-table` (form "styles-only", selector the table class) and `event-timeline` (styles-only) are two of them; **`evidence-chain` is not**, while `metric` and `pill-tag` (the parts the library's chain is built from) are. Each family lists its source paths, its public styles entry, a token closure and independently required states | Data table: the required states are default (dark), light mode, responsive narrow (390 px viewport), hover (a body row hovered), focus (the scroller focused, in the sticky-header story) and sticky header; "active" and "disabled" are declared not applicable (no pressed state, no disabled styling). Timeline: default (dark), light mode, responsive narrow (the narrow form) and **compact** (the compact default exemplar); hover, focus, active and disabled declared not applicable ("display-only", "no focusable family control"). Metric: default, light, narrow (long content) and compact; hover and focus not applicable |
+| The data table's token closure in that contract | **Added** | Matches section 1: a muted surface (zebra), a card surface (the sticky header's ground), a medium weight and the muted foreground (the header look of IQ-7), a focus border colour (the scroller's ring) |
+| Visual baselines `apps/storybook/src/tests/visual.spec.ts-snapshots/desktop-v2-*` (new) | **Added**: six data-table states, four timeline states and four metric states, captured from the existing stories by a contract-driven visual test (the visual test file is one of the four modified paths) | Evidence of the library's look per state; no new story |
+| A frozen hand-off payload `handoffs/desktop-v2/6f4cfdda…/artifact/` (new) | **Added**: an export of source commit `6f4cfdda`, 180 payload files. Its data-table and event-timeline files are **byte-identical** to the `packages/` files of both lines (each blob compared); it holds the metric element and styles and the pill-tag element and styles, and **no evidence-chain file** | The timeline and data-table roles a Desktop build vendors offline are exactly those of sections 1 and 2 |
+| Mission and evidence records (`kitty-specs/desktop-v2-immutable-handoff-develop-01M3JSCM/`, `docs/architecture/validation/issue-470-desktop-v2-handoff-stage-a/`, `kitty-ops/`, scripts and node tests for the contract) | **Added** | Background, `sources/issue-470-handoff-background.md` |
+| rc.10 | **Absent**: every package is still at 1.0.0 on `develop`, and no release tag exists on the remote (IQ-1 (a)) | No variant newer than this file is known; the operator names any rc.10-only variant (IQ-1 (a)) |
 
 ## 1. `sk-data-table` (styles only, no element)
 
@@ -66,6 +92,12 @@ only); the stories `sk-data-table-html.stories.ts`. Documented in `docs/design-s
 
 **Stories** (`Primitives/SkDataTable (HTML)`): Default (also the forced-colours baseline), StickyHeader, NarrowScrollable,
 LightMode.
+
+**On `develop` (a6518cd).** Every role, modifier, state and story above is unchanged (the stylesheet, the three
+exemplars and the stories file are byte-identical, also in the hand-off payload). Added: the family's Desktop V2
+contract entry and its six required states with baselines (default dark, light mode, responsive narrow, row hover,
+scroller focus, sticky header), "active" and "disabled" not applicable. How this mission maps each role is settled by
+IQ-1 (a) to IQ-7 (a) (`reviews/phase-1/inventory-decisions.md`) and listed in research R-16.
 
 ## 2. `sk-event-timeline` (styles only, no element)
 
@@ -124,6 +156,13 @@ VerifiedMarker, UnavailableRetention, Narrow, ForcedColors, LightMode, CompactOn
 CompactTwentyEvents, CompactLeadingMarker, CompactLongContent, CompactLinked, CompactNarrow, CompactDegraded,
 CompactForcedColors, CompactLightMode (twenty).
 
+**On `develop` (a6518cd).** Every role, modifier, state, exemplar and story above is unchanged (byte-identical, also
+in the hand-off payload). Added: the family's Desktop V2 contract entry with four required states and baselines:
+default (dark), light mode, responsive narrow (the narrow form at a 390 px viewport) and compact (the compact default
+exemplar, with content and the verification label). Hover, focus, active and disabled are declared not applicable,
+the timeline being "display-only" with "no focusable family control". New question IQ-26
+(`reviews/phase-1/inventory-questions.md`).
+
 ## 3. `sk-evidence-chain` (element, with a styles sheet)
 
 **Paths.** Styles `packages/styles/src/evidence-chain/sk-evidence-chain.css` (the sheet only; no exemplar, no static
@@ -164,3 +203,9 @@ changelog entry (#147).
 **Stories** (`Elements/SkEvidenceChain`): Default (four generic stages), ApprovedExample (four toned stages with
 annotations, in a card in a grid), TwoStages, SixStages, Narrow (mobile viewport, 360 px wrapper), LongContent,
 Empty, InvalidInput (duplicate ids), LightMode.
+
+**On `develop` (a6518cd).** The element, its sheet, its manifest entry and its stories are unchanged. It is **not**
+one of the 22 Desktop V2 families of #470's contract and has no file in the hand-off payload; the contract's `metric`
+(element-backed, required states default, light, narrow and compact) and `pill-tag` families, of which each library
+stage is built (a compact metric with a pill-tag annotation), are. New question IQ-27
+(`reviews/phase-1/inventory-questions.md`).

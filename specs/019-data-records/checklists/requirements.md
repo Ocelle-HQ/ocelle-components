@@ -61,3 +61,13 @@
   an outside table drawn the same way, with a README statement in both packages; T005 "Proceed, map later": FR-058's
   data-table rows read "pending inventory" until the inventory is supplied before the pull request lands, and SC-001
   stays open (measurable: no row reads "pending inventory"). Every item above still holds.
+- Library inventory (2026-11-18, `reviews/phase-1/inventory-questions.md`, decisions in
+  `reviews/phase-1/inventory-decisions.md`, changes in `reviews/phase-1/inventory-fixes.md`): IQ-1 (a) makes the
+  library's variant set the inventory (FR-058 and SC-001 now measurable as one row per modifier, state, structure role
+  and part, no "pending inventory"); IQ-2 to IQ-5 add FR-017 (sticky header row, with the page's block bound), FR-018
+  (009's module's opt-in block-axis option; FR-008 amended for exactly it; SC-007 now covers 009's tests), FR-019 (the
+  `data-ocelle-align="end"` hook), FR-060 (striped rows) and FR-061 (row hover), with US1-17 to US1-25, edge cases and
+  FR-013 rows for the three grounds and the forced-colours band; IQ-6 (a) adds a README statement to FR-010. Each new
+  requirement has acceptance scenarios and measurable oracles (contracts/checks.md). Open operator questions Q-I1 to
+  Q-I5 (inventory-fixes) name the plan's defaults; no `[NEEDS CLARIFICATION]` marker is added. Every item above still
+  holds.

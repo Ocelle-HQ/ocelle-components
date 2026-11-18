@@ -2,7 +2,8 @@
 
 Module `packages/elements/src/ocelle-data-table.ts`, class `OcelleDataTable`, one `define("ocelle-data-table", …)`.
 It uses 009's internal `overflow-region.ts` exactly as `specs/009-workflow-layouts/contracts/overflow-region.md`
-states (branch; rechecked by T001).
+states (rechecked by T001), with the one amendment of [overflow-region-block-axis.md](overflow-region-block-axis.md):
+while `sticky-header` is set it turns the module's block-axis option on (FR-017, FR-018; inventory decision IQ-2).
 
 ## Usage
 
@@ -22,6 +23,8 @@ states (branch; rechecked by T001).
 |---|---|---|---|---|
 | property / attribute | `label` | `string \| undefined` | `undefined` | Names the scroll region while the table overflows; not shown. |
 | property / attribute | `wrap` (reflected) | `"anywhere" \| undefined` | `undefined` | `anywhere` breaks long identifiers in body cells anywhere. |
+| property / attribute | `stickyHeader` / `sticky-header` (reflected, boolean) | `boolean \| undefined` | `undefined` | Present (any value): the `<thead>` stays pinned at the region's block start while the body scrolls in a block size the page bounds on the host (FR-017). |
+| property / attribute | `striped` (reflected, boolean) | `boolean \| undefined` | `undefined` | Present (any value): even body rows get the `--ocelle-color-inset` ground through `@ocelle/styles` (FR-060). |
 | slot | (default) | the first direct `<table>` child | | Other children are not shown after upgrade. |
 | CSS parts | none | | | |
 | CSS custom properties | none | | | |
@@ -67,7 +70,8 @@ sets `--data-table-end-fade` to the measured px inline size of `.region-edge.end
 `var(--ocelle-scroller-fade-size)` (recheck Q2 (c)). It is
 never written in the task in which the fade changes, because that task is inside 009's `ResizeObserver` delivery and
 the rewrap would raise the loop error (PLAN-FRESH-3-002 verify 1). The measuring element is one
-internal node outside 009's structure; nothing of the module changes (FR-008). Both properties are the base-style
+internal node outside 009's structure and changes nothing of the module (FR-008; the module's one change is
+FR-018's block-axis option, § Sticky header row). Both properties are the base-style
 hook of § Public surface (no `--ocelle-` prefix, not in the manifest, documented in both READMEs; analysis I7 (a)).
 
 The README's Sizing line has two parts. A wrapper that is itself the flex or grid item, around the element, needs
@@ -128,12 +132,53 @@ watches the measuring element, whose size the cap cannot change, and writes its 
 is written one frame after the fade changes, outside any `ResizeObserver` delivery, so neither write can feed back
 (R-07). For that one frame the caption may run under a newly shown end fade. 009's start fade masks the box's start edge, so
 a caption pinned at `inset-inline-start: 0` would fade there. The data table asks 009's owner for a module option
-that keeps a pinned start box out of the start fade (R-17) and does not change the module. Until that option is on
+that keeps a pinned start box out of the start fade (R-17) and does not make that change itself (FR-008 allows
+only the block-axis option of FR-018). Until that option is on
 `main`, the caption is not sticky (Q-F, decided (b) by PLAN-FRESH-2-002's option (c)). It scrolls with the table, starts
 at the table's start edge at every scroll position, and is reached by scrolling back. Once the option lands, the
 caption becomes sticky at inset 0, a later MINOR.
 
+## Sticky header row (FR-017, FR-018; research R-18; inventory decision IQ-2)
+
+While `sticky-header` is present (the property `stickyHeader` reflects it; any value, the empty string included):
+
+- **Module.** The element constructs its `OverflowRegion` with `blockAxis: () => this.stickyHeader === true` and
+  `blockStartBox: () => <the assigned table's first direct <thead> child> ?? null`
+  ([overflow-region-block-axis.md](overflow-region-block-axis.md)). The module then puts `data-axis="both"` on the
+  box, scrolls it in both axes, takes the tab stop while either axis overflows, handles ArrowUp and ArrowDown and
+  keeps a focused body element clear of the pinned `<thead>`. The element adds no listener and no scroll write.
+- **The bound.** Its own styles add `:host([sticky-header]) { display: flex; flex-direction: column; }`,
+  `:host([sticky-header]) .region-frame { display: flex; flex-direction: column; min-block-size: 0; }` and
+  `:host([sticky-header]) .region-box { min-block-size: 0; }`, so a block size the page sets on the host
+  (`block-size` or `max-block-size`, in the page's own stylesheet) bounds the box, and with no bound the box is as tall
+  as the table. The element sets no block size itself and reads no attribute for it.
+- **The pin and its ground.** `@ocelle/styles` (block 1) makes the `<thead>` `position: sticky` at
+  `inset-block-start: 0`, paints its cells `--ocelle-color-sheet` (put to the operator as inventory-fixes Q-I1) and
+  switches the table to `border-collapse: separate` with `border-spacing: 0`, so the header rule travels with the row
+  ([styles-data-table.md](styles-data-table.md)). The `<thead>` scrolls with the region in the inline axis, so each
+  column header stays above its column.
+- **The caption cap.** `scrollbar-gutter: stable` reserves the block-axis scrollbar's room, so `.box-size`'s inline
+  size exceeds the box's client inline size by a constant gutter. While `sticky-header` is set, the `.box-size`
+  observer's callback writes `--data-table-box-size` as the measured inline size less the box's `offsetWidth −
+  clientWidth` (the gutter, read in the same callback), px only, so the caption still wraps inside the box's unmasked
+  width (R-07, R-18). Without `sticky-header` the write is as before.
+- **Toggling.** Setting or removing `sticky-header` re-renders; the module re-reads `blockAxis` in `hostUpdated` and
+  takes or drops the block axis and `data-axis`, and the tab stop follows the new overflow state.
+
+**Accessibility tree.** Unchanged: the same `group` (while either axis overflows) holding the consumer's table. The
+pinned `<thead>` is the same `row` and `columnheader` nodes.
+
+## Striped rows, row hover and numeric cells
+
+- `striped` (reflected, boolean) only reflects: `@ocelle/styles` (block 1) paints the even body rows' cells
+  `--ocelle-color-inset` on `ocelle-data-table[striped]` (FR-060). The element reads the property nowhere else.
+- The row hover is `@ocelle/styles`' (block 1) rule on a hovered `<tbody>` row, `--ocelle-color-hover-bg`, after the
+  stripe rule (FR-061). The element adds nothing for it: no listener, no event, no cursor.
+- An end-aligned numeric column is the consumer's `data-ocelle-align="end"` on its cells, `@ocelle/styles`' hook
+  (block 4, FR-019). The element knows nothing of it.
+- In forced colours the stripe and the hover are drawn by the row band of block 1 (FR-013).
+
 ## Look
 
-The cells, headers, caption and rules come from `@ocelle/styles` ([styles-data-table.md](styles-data-table.md)).
-The element itself paints no ground or border.
+The cells, headers, caption, rules, stripes, hover ground, pinned header ground and the forced-colours row band come
+from `@ocelle/styles` ([styles-data-table.md](styles-data-table.md)). The element itself paints no ground or border.

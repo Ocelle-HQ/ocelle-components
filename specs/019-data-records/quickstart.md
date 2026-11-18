@@ -10,8 +10,10 @@ checks: [contracts/checks.md](contracts/checks.md).
 - `reviews/recheck.md` records whether 009's pinned-start option (research R-17) is on `main`. If it is, the caption
   is sticky through it at inset 0; if not, it scrolls with the table (Q-F, decided (b)).
 - The phase 1 spike's decisions (`reviews/phase-1/operator-spike-decisions.md`) are applied
-  (`reviews/phase-1/spike-fixes.md`), and research R-16 holds the `.sk-data-table` inventory, mapped in the README
-  with no row reading "pending inventory" (SC-001; T005, T076).
+  (`reviews/phase-1/spike-fixes.md`), and so are the library inventory decisions
+  (`reviews/phase-1/inventory-decisions.md`, `reviews/phase-1/inventory-fixes.md`): research R-16 holds the inventory
+  (the library's variant set at `main` and `develop`), mapped in the README one row per modifier, state, structure
+  role and part, with no row reading "pending inventory" (SC-001; T005, T076).
 - Each phase's `reviews/phase-<N>/element-plants.md` records every element plant biting (contracts/checks.md).
 - `pnpm install --offline` works (`pnpm run setup:online` after a container restart).
 - For baselines: docker running (`nohup dockerd > /tmp/dockerd.log 2>&1 &`, as root), and #10's pinned container
@@ -20,12 +22,13 @@ checks: [contracts/checks.md](contracts/checks.md).
 ## Validate
 
 1. **Unit and browser tests.** Run `pnpm run gate:unit-tests`. It passes, and the data-table, timeline and chain
-   bodies run in both harnesses.
+   bodies run in both harnesses. 009's tests of the overflow-region module, `ocelle-scroller` and
+   `ocelle-workflow-board` pass with no change to their files, beside the block-axis option's own bodies (SC-007).
 2. **Static gates.** Run `pnpm run gate:typecheck`, `gate:lint`, `gate:style-lint`, `gate:test-lint`, `gate:csp`,
    `gate:prefix`, `gate:manifest`, `gate:contrast` and `gate:brand-rules`. All pass. The manifest lists the five
    elements with empty event lists.
 3. **Storybook.** Run `pnpm run gate:storybook-build`, `gate:visual` and `gate:axe`. All pass. `visual` reports no
-   change to 013's or any earlier baseline (SC-007).
+   change to 013's, 009's or any earlier baseline (SC-007).
 4. **Plants.** Run `pnpm run gate:plants -- --affected $(cat specs/019-data-records/reviews/phase-1/base.sha)`, the
    mission's base (phase 4 changes no source, so its own base would select nothing), one heavy job at a time. It
    exits 0. The run itself goes in `reviews/phase-4/plants.md` in op 016's form (base, command, exit, verbatim output;
@@ -45,6 +48,16 @@ checks: [contracts/checks.md](contracts/checks.md).
      `--data-table-end-fade` while the end fade shows, both in px measured from layout (the end fade is the end
      edge's width, recheck Q2 (c)) (the base-style hook between the two packages, analysis I7 (a));
      both READMEs and CHANGELOGs name them.
+   - **Data table, sticky header.** In the bounded sticky story the region is a tab stop although nothing overflows
+     sideways; ArrowDown and ArrowUp scroll the rows under the pinned header, whose ground hides them. Tabbing to a
+     link in a row under the header scrolls the row clear of it. The caption scrolls away (IQ-2).
+   - **Data table, numeric column, stripes, hover.** The estimate column's figures line up at the cell's end, the
+     header too (IQ-3). The striped story shows a ground on every second body row of each group (IQ-4). The hovered
+     stories show the row's hover ground; in the light theme a hovered striped row looks unchanged (inventory-fixes
+     Q-I2). With forced colours emulated, a band at each row's start marks the stripes and the hovered row (IQ-5).
+   - **Data table, mapping.** The `@ocelle/elements` README's mapping has a row per role of the library's data table
+     (R-16), the header look mapped to the eyebrow headers (IQ-7) and the advice to give an overflowing table a `label`
+     that differs from its caption (IQ-6).
    - **Timeline.** The screen reader reads a list of three items, "14:02 Mission created" first, with no dot or line
      announced. In the marked-up times story each `<time slot="time">` shows above its event's text in the time's
      type and is read first, and the event that also has a `time` attribute shows only its slotted time.

@@ -330,3 +330,57 @@ The library has these, and the spec covers them the same way:
 - A chain of two or six stages and long stage content wrap without page overflow (FR-034).
 - The chain's connectors are hidden from assistive technology (FR-032).
 - The chain has a before-upgrade form; the library has none, so the spec covers more.
+
+## Added after the `develop` re-inventory (2026-11-18)
+
+- **Source:** the re-inventory of the three families on spec-kitty-design `develop` (a6518cd) and the #470 hand-off
+  material there (`sources/spec-kitty-design-inventory.md` § What `develop` adds or changes;
+  `sources/issue-470-handoff-background.md`), made after the operator's decisions of 2026-11-18
+  (`inventory-decisions.md`). `develop` changes no role, modifier, state, story, property or part of the three
+  families; it adds #470's Desktop V2 contract and a frozen hand-off. These questions are for phases 2 and 3, asked
+  with IQ-8 to IQ-24, and nothing here is decided. Phase 1's answers (IQ-1 to IQ-7) are not reopened.
+
+**IQ-26. The timeline's compact and narrow forms are Desktop V2 required states.** #470's contract requires four
+timeline states of the library: default, light mode, responsive narrow (the narrow form) and compact (the compact
+default exemplar, with supporting content and the verification label). IQ-8 and IQ-9 recommend mapping the compact
+form to the default timeline and the narrow form to the container.
+
+- (a) No change: IQ-8 (a) and IQ-9 (a) as recommended. The README maps the compact required state to the default
+  timeline (already at the compact type sizes) and the narrow state to the container; a Desktop V2 screen that vendors
+  the library's compact look is not this mission's consumer.
+- (b) IQ-8 (b): this mission adds `density="compact"` (smaller gaps and gutter), with stories in light and dark, so
+  each Desktop V2 required timeline state has a counterpart. R-10's connector geometry is redone for it.
+- (c) Ask kitty-mission-ui's owner which timeline form the Desktop V2 history uses before phase 2's red, and decide
+  IQ-8 and IQ-9 on that answer.
+
+**Recommendation: (c),** then (a) unless the compact form is the one Desktop uses.
+
+**IQ-27. The evidence chain is not a Desktop V2 family.** #470's contract lists 22 families; the evidence chain is
+not one of them, and the hand-off holds no chain file, while the metric and the pill tag, of which each library stage
+is built, are. The spec bases the chain on #13 (#517, the epic's gap table) and the Desktop V2 prototype's evidence
+chain, and IQ-19 asks whether a stage is an ordinal step or a valued metric.
+
+- (a) No change: phase 3 builds the chain as specified for #13 and the Ocelle console; the README maps the library's
+  chain role by role (IQ-18 to IQ-24), and the metric and pill-tag families are not this mission's (013's
+  `ocelle-facts` and #7's pill tag already serve those needs).
+- (b) Phase 3 waits until the operator confirms from kitty-mission-ui whether Desktop V2 shows the chain at all, and
+  in which form (ordinal steps, or valued metrics as IQ-19 (b)).
+- (c) Phase 3 is dropped from this mission and the chain goes to a later issue; phases 1, 2 and 4 stand, and the
+  counts lose phase 3's 12 stories and 24 baselines.
+
+**Recommendation: (a),** because #13 asks for the chain independently of #470, and IQ-19 already carries the form
+question.
+
+**IQ-28. Kitty Desktop vendors the library's own data table and timeline.** #470's Stage A gives Kitty Desktop a
+frozen, offline copy of the library's styles-only data table and event timeline (byte-identical to the 1.0.0 files),
+with a contract of their states. The spec's Consumers line says kitty-mission-ui replaces those families with this
+library's elements. If Desktop V2 keeps the vendored copy, the timeline's named consumer is the Ocelle console only.
+
+- (a) No change: kitty-mission-ui replaces the families as #13 and the spec state; the hand-off is the library's
+  interim channel, and the README mapping is the replacement path.
+- (b) The spec's Consumers line for phases 2 and 3 names the Ocelle console as the confirmed consumer and
+  kitty-mission-ui as the intended one, until its owner confirms; scope is unchanged.
+- (c) The operator asks kitty-mission-ui's owner before phase 2's red and records the answer in `sources/`; a "no"
+  goes back to the operator for phases 2 and 3.
+
+**Recommendation: (a),** with (c) if the operator has reason to think Desktop V2 keeps the vendored copy.

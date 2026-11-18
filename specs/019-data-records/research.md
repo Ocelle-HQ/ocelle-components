@@ -17,6 +17,13 @@ written as a measured px figure (R-07); Q3 (a), phase folds from bases at 8ee335
 the `base.css` and `source.test.ts` line citations of R-06 and R-07 are those at 8ee3351; Q5 (b), the pre-upgrade
 list rules sit in `base.css`'s base layer beside 013's facts rule (R-06, R-08).
 
+**After the library inventory (2026-11-18).** The operator's decisions on `reviews/phase-1/inventory-questions.md`
+(`reviews/phase-1/inventory-decisions.md`) are applied below and listed in `reviews/phase-1/inventory-fixes.md`:
+IQ-1 (a), the spec-kitty design library's own variant set, re-read at its newest line `develop` (a6518cd), is the
+inventory (R-16); IQ-2, the sticky header row, with an opt-in block-axis option in 009's module (R-18); IQ-3, the
+numeric-cell hook (R-19); IQ-4 and IQ-5, striped rows and row hover (R-20); IQ-6 (a) and IQ-7 (a), README statements
+(R-16). R-06, R-07, R-13 and R-15 take the additions.
+
 ## R-01 The data table's content model: the consumer's `<table>`, slotted unchanged
 
 **Decision.** `ocelle-data-table` attaches its shadow root with `slotAssignment: "manual"` and renders 009's region
@@ -264,9 +271,11 @@ position (204 to 207), and `rules(root).slice(start)` equal to `[wrap]` (209 to 
 rule fails it. Each phase's red commit changes that test for the rules its own green adds, so every green passes it
 (PLAN-CORRECTNESS-1-005, PLAN-FRESH-1-004; recheck Q5 (b)):
 
-- Phase 1's red: the rule table gains block 1 (the data-table rules) and block 2 (the prose override), transcribed
-  with their declarations, after the wrap rule, and the last-rule assertion becomes "the wrap rule, then block 1,
-  then block 2, in that order". That is its final form: no later phase adds a rule after block 2.
+- Phase 1's red: the rule table gains block 1 (the data-table rules, with the sticky-header, stripe, hover and
+  forced-colours band rules of R-18 and R-20), block 2 (the prose override, with the sticky-header table's
+  `border-collapse`) and block 4 (the numeric-cell hook of R-19), transcribed with their declarations, after the wrap
+  rule, and the last-rule assertion becomes "the wrap rule, then block 1, then block 2, then block 4, in that order".
+  That is its final form: no later phase adds a rule after block 4.
 - Phase 2's red: `baseLayer` gains the timeline's two pre-upgrade rules (R-08, block 3's first two: the visible-item
   rule and the `aria-hidden` rule), transcribed with their declarations, right after 013's facts rule and before the
   focus rule, so the base-layer assertion reads "…the code rule, the facts rule, the timeline's two rules, the focus
@@ -278,6 +287,12 @@ Each red commit's message names this change and its reason (Principle VIII: an e
 addition, not to pass). The new
 styles tests follow the package's own layout: browser bodies in `packages/styles/test/browser/data-table.test.ts`, the
 override's node test in `packages/styles/test/prose-override.test.ts` (the package has no `test/node/`).
+
+**Additions for the inventory decisions (2026-11-18).** Block 1 gains the rows of `contracts/styles-data-table.md`
+for `sticky-header` (R-18), `striped` and the row hover (R-20) and the forced-colours row band (R-20); block 2 gains
+the sticky-header table's `border-collapse: separate` (003's prose table rule sets `collapse`, so the override node
+test reads it on that target); block 4, after block 2, is the numeric-cell hook (R-19). 003's prose rules set no
+`background-color`, `position` or `border-spacing` on a table part, so nothing else needs restating.
 
 **Rationale.** Shadow styles cannot reach a slotted table's cells (`::slotted()` reaches the table only). Zero
 specificity outside prose lets a consumer's `td` rule win (US1-14). Inside prose only (0,1,0) after 003's rules can
@@ -315,7 +330,8 @@ against the prose table's query container). The data table bounds its caption wi
   module and is not reached into. This observer sizes the caption only, so R-05's overflow triggers are unchanged. On
   each callback the observer writes the measuring element's unrounded inline size (the entry's
   `contentBoxSize[0].inlineSize`, in px, not transformed), which is `.region-box`'s exact width: 009's box has no
-  inline padding or border and, with no bounded block size, no vertical scrollbar. It never writes `clientWidth`,
+  inline padding or border and, with no bounded block size, no vertical scrollbar. (With `sticky-header` the box
+  reserves a constant block-axis scrollbar gutter, which the write subtracts, R-18.) It never writes `clientWidth`,
   which rounds to a whole pixel (PLAN-FRESH-3-002 verify 1, "No feedback" below). The value is written as the
   inherited custom property `--data-table-box-size` on `.region-track`. It writes it into the element's own per-instance constructed
   stylesheet, adopted after `overflowRegionStyles` and after the module's own per-instance sheet (`replaceSync` once,
@@ -809,6 +825,17 @@ cannot pass on the token source alone:
   `rule-strong`, the step ring in `rule`, the chip outline in `control-border`, the header text in `rule-strong`; the
   rendered body must fail for each.
 
+**Additions for the inventory decisions (2026-11-18).** Still no new token and no new contrast row. The stripe paints
+`--ocelle-color-inset`, the hover `--ocelle-color-hover-bg` and the pinned header `--ocelle-color-sheet` (R-18, R-20):
+three of the nine main grounds, on which every text colour the data table paints (`ink-soft`, `ink`, `color-eyebrow`)
+already has `checked` rows in both themes, and a slotted link keeps `color-link`, declared on all main grounds. The
+grounds themselves are decorative (FR-013's table), so they need no non-text pair. The forced-colours band uses
+`--ocelle-bar-width` and the system colours `Canvas`, `CanvasText` and `Highlight`. The source node check
+(`data-table-pairs.test.ts`) also ties each ground block 1 paints to a main ground of `source.ts`, and each text colour
+painted on it to a `checked` row on that ground; the rendered bodies (US1-17, US1-23, US1-24) compare each ground with
+its probe-resolved token. In the light theme `hover-bg` and `inset` share the value `#E2DDD3` (`source.ts`), so a
+hovered striped row shows no change in light; the operator is asked (inventory-fixes Q-I2).
+
 ## R-14 The recheck against `main` (the first task)
 
 **Decision.** Before any phase starts, task T001 compares, on `main` as merged:
@@ -848,34 +875,54 @@ lines; phase 4 uses the mission's base (phase 1's), as it changes no source (qui
 `gate:plants` locally (CI's required Plants check judges the full set).
 Baselines: `pnpm run visual:update` only in #10's pinned container under docker (start `dockerd` as root; after a
 container restart, `pnpm run setup:online`); the command must report `<n> added, 0 changed, 0 removed` with `<n>`
-twice the phase's new stories (28, 22 and 24 for phases 1 to 3, from checks.md § Stories; phase 1's 28 since spike
-Q1 (b)), so no existing baseline
+twice the phase's new stories (38, 22 and 24 for phases 1 to 3, from checks.md § Stories; phase 1's 28 since spike
+Q1 (b), 38 since the inventory decisions IQ-2 to IQ-5 added five stories), so no existing baseline
 moves (013's baselines among them, SC-007). Conflicting PNGs are regenerated in the container, never hand-picked. Mutation follows #23 and op 015 on `main`.
 
-## R-16 The kitty-mission-ui inventory (FR-058)
+## R-16 The inventory (FR-058)
 
-**Decision.** The README mapping rows need the inventory of kitty-mission-ui's `.sk-data-table` variants (modifiers
-and states, with counts, role names only) and of any event-history or evidence-chain class family. kitty-mission-ui is
-outside this session's GitHub scope, so, as in 013, the inventory is an operator input recorded here before each
-phase's red commit (tasks T00x per phase); a gap goes to the operator, and the surface is not widened by review.
+**Decision (inventory decision IQ-1 (a), operator, 2026-11-18).** The inventory behind the README mapping rows is the
+spec-kitty design library's own variant set for the three families this mission replaces (`.sk-data-table`,
+`.sk-event-timeline`, `sk-evidence-chain`), recorded in `sources/spec-kitty-design-inventory.md` from a read-only
+clone of the open-source library (MIT): first at `main` 19fb6a2 (1.0.0), then re-read at the newest line, `develop`
+a6518cd (2026-09-28), because the remote has no release tags and the operator chose the newest line over rc.10. Role
+names and behaviour only, no code (constitution VI). It stands in for kitty-mission-ui's usage: **one README mapping
+row per modifier, state, structure role and part, no counts**, because a consumer can only use what the library
+defines. A variant that exists only in kitty-mission-ui's rc.10 line gets a row too, when the operator names it. A
+variant no element covers goes to the operator; the surface is not widened by review. This supersedes the spike's
+"Proceed, map later" on T005: no row reads "pending inventory".
 
-**Phase 1 (T005): "Proceed, map later"** (operator, 2026-11-18, `reviews/phase-1/operator-spike-decisions.md`). The
-`.sk-data-table` inventory is not recorded yet, and phase 1 does not wait for it. Until it is, the README's
-data-table mapping rows read "pending inventory" and T013 asserts that statement. When the operator supplies the
-modifiers and states with a count each (role names only), the planner records them here in a documentation commit of
-its own, and the rows and their statements are written test first before the pull request lands; SC-001 stays open
-until then (T076).
+**What `develop` adds.** Nothing to the families' roles, modifiers, states, stories, properties or parts (no path
+under the library's `packages/` or `docs/design-system/` differs). It adds #470's Desktop V2 source contract, which
+lists the data table and the event timeline among 22 families with required states, and not the evidence chain; a
+frozen hand-off payload whose data-table and timeline files are byte-identical to 1.0.0's; and baselines per required
+state (`sources/spec-kitty-design-inventory.md` § What `develop` adds or changes;
+`sources/issue-470-handoff-background.md`). Its bearing on phases 2 and 3 is asked as IQ-26 to IQ-28.
 
-**Source (operator, 2026-11-18).** The spec-kitty design library is open source (MIT). Its variant set for the three
-families this mission replaces (`.sk-data-table`, `.sk-event-timeline`, `sk-evidence-chain`) is recorded in
-`sources/spec-kitty-design-inventory.md`, from a read-only clone at commit 19fb6a2 (version 1.0.0): every modifier,
-state, structure role, story, property and part, with its path and what it does, role names only and no code
-(constitution VI). It is the library's own variant set, not kitty-mission-ui's usage: it has no counts and does not
-say which variants kitty-mission-ui uses (built on 1.1.0-rc.10, a later line). The clone holds nothing of #470, #517
-or #533 (its newest cited issue is #419). Whether this set stands in for T005, T028 and T054, and how each variant it
-holds and the spec does not cover is mapped, are the operator's questions in `reviews/phase-1/inventory-questions.md`;
-until they are answered the mapping rows stay as T005 states. Inventory: the library's variant set
-(`sources/spec-kitty-design-inventory.md`); kitty-mission-ui usage counts not supplied.
+**Phase 1: the data table's rows** (T013 asserts each statement by role name, with no `sk-` string; T021 writes them):
+
+| Library role (kind) | Mapped to |
+|---|---|
+| the scroller wrapper (structure role) | the element's region: a named `group` tab stop only while the table overflows (FR-008, FR-010), with 009's focus ring (the "focus" state of #470's contract); the library's rule that the region's name must differ from the caption maps to the README advice of FR-010: give an overflowing table a `label` that differs from its caption (IQ-6 (a)) |
+| the table class (structure role) | the consumer's own `<table>` inside `ocelle-data-table`, with no class (FR-003, FR-005) |
+| the caption (structure role) | the caption rules of block 1 (R-06, R-07) |
+| the header cells (structure role) | the eyebrow column headers (FR-006); the library's look (medium weight, muted colour, sentence case, no tracking, no row-header style) maps to them, and a consumer that wants sentence case uses its own rule, which wins over the (0,0,0) rules (IQ-7 (a)); row headers are this library's addition |
+| the body cells (structure role) | block 1's compact body cells (FR-005) |
+| the numeric cell (modifier) | `data-ocelle-align="end"` on the column's cells, `@ocelle/styles`' hook (FR-019, IQ-3) |
+| the sticky header (modifier) | `sticky-header` on the element, with the page's block bound on the host (FR-017, FR-018, IQ-2) |
+| zebra rows (state) | `striped` on the element (FR-060, IQ-4) |
+| row hover (state) | the built-in hover ground (FR-061, IQ-5) |
+| forced colours (state) | system colours for text and rules, and the row band for the stripe and the hover (FR-013) |
+| the overflowing scroller (state) | the region's conditional tab stop, role and name (FR-008, FR-010) |
+| tone (state, none by ruling) | none: the data table carries no tone (spec scope); no row colouring |
+
+The data table has no part in the library (styles only), so no part row. #470's contract adds no role: its required
+states (default, light mode, responsive narrow, hover, focus, sticky header) are covered by the rows above.
+
+**Phases 2 and 3 (T028, T054).** The timeline's and the chain's rows come from the same source, one per modifier,
+state, structure role and part, mapped by the operator's answers to IQ-8 to IQ-17 and IQ-26 to IQ-28 (phase 2) and
+IQ-18 to IQ-24 and IQ-27 (phase 3), asked before each phase's red; the issue bodies of #470, #517 and #533 are
+supplied by the operator before phase 2's red and recorded verbatim in `sources/` (IQ-25).
 
 ## R-17 A request to 009's owner: a pinned start box out of the start fade (PLAN-A11Y-SECURITY-1-002)
 
@@ -897,6 +944,102 @@ the table's start edge at rest, so PLAN-FRESH-2-002's misalignment cannot arise.
 **Until then (Q-F, decided (b)).** The caption is not sticky (R-07): it scrolls with the table, is capped so it wraps
 inside the box at rest, and has no inset at any scroll position. PLAN-FRESH-2-002, operator decision (c), 2026-11-16,
 settles round 1's Q-F this way.
+
+## R-18 The sticky header row and the module's block-axis option (FR-017, FR-018; inventory decision IQ-2)
+
+**Decision (operator, 2026-11-18, IQ-2: "Mission changes module").** The sticky header row is added in this mission.
+A pinned header needs a scroll container in the block axis, and the data table's only scroll container is 009's
+`.region-box`, which scrolls inline only (`overflow-y: hidden`). So this mission adds one opt-in option to 009's
+module, specified in `contracts/overflow-region-block-axis.md`, and FR-008 now allows exactly that change. Without the
+option the module is 009's, byte for byte in behaviour: `ocelle-scroller`, `ocelle-workflow-board` and the test-only
+overflow host do not set it, and 009's existing behaviour tests are not edited and pass (SC-007). It is not R-17's
+pinned-start option (the caption stays non-sticky, Q-F (b)); that request to 009's owner stays open.
+
+**The option** (`blockAxis`, `blockStartBox`): the box scrolls on both axes and reserves the block-axis scrollbar's
+room (`scrollbar-gutter: stable`); it overflows, and so takes the tab stop, role and name, when either axis overflows;
+ArrowUp and ArrowDown scroll it by `step`; the focus clearance also works in the block axis below the pinned box; no
+block-axis fade is drawn (the pinned header and the scrollbar show the block position; inventory-fixes Q-I4 asks the
+operator); the inline fades' mask never covers either scrollbar.
+
+**The data table's side.** `sticky-header` (reflected boolean, unset by default, as `ocelle-card`'s `inset`) turns the
+option on; `blockStartBox` is the assigned table's `<thead>`. `@ocelle/styles` pins the `<thead>` (`position: sticky;
+inset-block-start: 0`), gives its cells the opaque `--ocelle-color-sheet` ground, and switches the sticky table to
+`border-collapse: separate; border-spacing: 0`: in the collapsed model a sticky row group's borders belong to the
+table and stay behind, so the header rule would not travel with it (the library makes the same switch, behaviour only;
+inventory § 1). Each cell draws only its block-end border, so the row rules look as before. The block bound is the
+page's rule on the host; the host and `.region-frame` become a column flex while `sticky-header` is set, so the bound
+reaches `.region-box` and, with no bound, the box is as tall as the table.
+
+**The caption cap with a block-axis scrollbar (R-07).** R-07's measured width assumes no block-axis scrollbar (the
+box has none without a bounded block size). With the option the gutter is reserved and constant, so the element
+subtracts `offsetWidth − clientWidth` of `.region-box`, read in its `.box-size` callback, from the written
+`--data-table-box-size`. The gutter does not depend on the caption, so the write cannot feed back.
+
+**To measure in the spike (phase 1, before the scaffold; recorded in `reviews/phase-1/spike-2.md`).** T003's spike is
+done and stays the implementer's to tick; the new points get a second spike task (T082):
+
+- a slotted `<thead>` with `position: sticky` pins to the shadow `.region-box` (the flat tree's scroll container) in
+  Chromium, at 1280 and 320 px, scrolled in both axes; the cells' ground is opaque and paints over the body rows;
+- the module with `data-axis="both"` and `scrollbar-gutter: stable`: `clientWidth`, `offsetWidth` and the gutter in
+  LTR and `dir="rtl"` (which side the block-axis scrollbar is on), and a three-layer `mask-size` that leaves both
+  scrollbars unmasked;
+- the column flex bound: a `max-block-size` and a `block-size` on the host bound `.region-box`; no bound leaves it as
+  tall as the table; the shrink-to-fit hosts of R-02 with `sticky-header` (never 0 px wide);
+- block clearance: a link scrolled under the pinned header reaches a position clear of it after `pressTab`, with
+  Chromium's own focus scrolling and the module's write in the same frame (no jump back); a link inside the header is
+  not cleared;
+- the caption cap with the gutter subtracted: the caption's line boxes inside the unmasked width, and no
+  `ResizeObserver` loop error;
+- separated borders: the row rules' rendered positions equal the collapsed ones within 0.5 px, and the header rule
+  moves with the pinned row;
+- forced colours: the pinned header opaque, its rule `CanvasText`;
+- axe on a bounded sticky table (overflowing in the block axis only): no serious or critical finding.
+
+A result that contradicts this section stops for the operator.
+
+## R-19 The numeric-cell hook (FR-019; inventory decision IQ-3)
+
+**Decision (operator, 2026-11-18, IQ-3 (b)).** A documented base-style hook in `@ocelle/styles`, not an element
+property and not a class: `data-ocelle-align="end"`, as IQ-3's option named it, in the README's Hooks family and
+form (one `data-ocelle-` attribute, one documented value, (0,1,0), like 003's `data-ocelle-wrap`). It sets
+`text-align: end` (mirrored under `dir="rtl"` by the logical keyword) and `font-variant-numeric: var(--ocelle-figures)`
+(already on data-table cells, added for prose tables and any other cell). It goes after block 2 as block 4, so it beats
+003's prose cell rule and block 2's `text-align: start` at the same specificity by order. It works on any element;
+the README documents it for the header and body cells of a numeric column. It is public surface (constitution VII,
+MINOR): the Hooks table, a § Numeric cells section and the CHANGELOG. No token: `end` is a keyword.
+
+**Tests (phase 1's red).** US1-22's bodies (inside a data table, inside prose, in a plain prose table, `dir="rtl"`,
+a header cell keeping its eyebrow type, a cell without the hook staying start-aligned); `source.test.ts`'s last-rule
+assertion (wrap, block 1, block 2, block 4); a styles README statement and the Hooks table row; element plants
+(below).
+
+## R-20 Striped rows, row hover and the forced-colours band (FR-060, FR-061, FR-013; inventory decisions IQ-4, IQ-5)
+
+**Decision (operator, 2026-11-18, IQ-4 (b) and IQ-5 (b)).** `striped` (reflected boolean, unset by default) paints
+each `<tbody>`'s even rows' cells `--ocelle-color-inset`, as IQ-4 (b) named; the row hover paints a hovered `<tbody>`
+row's cells `--ocelle-color-hover-bg`, as IQ-5 (b) named, with no attribute, after the stripe rule so it wins on a
+striped row. Both are block 1 rules at (0,0,0), so a consumer rule wins. Grounds go on the cells, not the row, so a
+cell's own consumer ground wins and the sticky header's cells keep theirs. Both grounds are main grounds, so every
+text colour the data table paints keeps its declaration (R-13); both are decorative (FR-013's table).
+
+**Forced colours.** Forced colours replace every author ground with the system background, so neither the stripe nor
+the hover would show. As the library does (behaviour only, inventory § 1), a band on each body row's first cell
+stands in: `border-inline-start: var(--ocelle-bar-width) solid Canvas` on every first body cell (reserved, so a hover
+moves nothing), `CanvasText` on a striped table's even rows and `Highlight` on the hovered row, in that order. System
+colours are kept as written in forced colours. The band scrolls away with the row when the table is scrolled
+sideways (the library documents the same limit; the README says so).
+
+**Known collision.** In the light theme `hover-bg` and `inset` are both `#E2DDD3`, so hovering a striped even row
+shows no change in light (dark: `#2A261F` against `#302B23`). The plan keeps IQ-4 (b)'s and IQ-5 (b)'s tokens and asks
+the operator (inventory-fixes Q-I2).
+
+**Hover is always on** (IQ-5 (b) gives no attribute); the operator is asked whether to make it opt-in
+(inventory-fixes Q-I3). The hover adds no event, tab stop, focus or cursor (FR-011). Stories capture it through #10's
+pointer parameter (`parameters.ocelle.pointer.hover`, one selector matching one row inside the 1280 × 800 viewport).
+
+**To measure in the spike (T082).** `:nth-child(even)` per `<tbody>` with a `hidden` row; the hover ground over a
+stripe; the band's `Canvas`, `CanvasText` and `Highlight` kept under `emulateMedia({ forcedColors: "active" })`; the
+band reserving its width outside a hover, so a hover changes no cell's box.
 
 ## Questions of the plan gate (spec SPEC-1-06 (b)), answered 2026-11-16
 
