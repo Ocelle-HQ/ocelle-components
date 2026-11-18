@@ -14,8 +14,9 @@ added tasks carry suffixed IDs, e.g. T031a, and no task is renumbered):
   revised) and decision 31 (operator decisions at phase 6, 2026-11-16: the sibling wrappers carry `aria-disabled`
   while the row is unavailable, and an unavailable current row keeps its current surface; T060, T061, T063 and T064
   revised) and decision 32 (operator decision at phase 6, 2026-11-16: `:state(pressed)` is button mode only; added
-  tasks T061a and T064a, T066 revised);
-- research.md, R-01 to R-16;
+  tasks T061a and T064a, T066 revised) and decision 33 (operator decision at landing, 2026-11-18, phase 1 round 3:
+  the slot convention's label wrapper takes part in baseline alignment; added tasks T013a to T013e);
+- research.md, R-01 to R-16 (R-10 § Label baseline added by decision 33);
 - data-model.md;
 - contracts/elements-package.md and contracts/checks.md (§ Edge cases and plan decisions maps every edge case and plan
   decision to a phase, a scenario file and an observable);
@@ -104,6 +105,51 @@ repository; `tdd-check.sh 1` reports `pass`.
 - [X] T013 Run `pnpm run gate:test-lint`, `gate:typecheck`, then `gate:plants` (one at a time) and `gate:mutation -- --base <phase base>` (`gates/lib/plant-runner.ts`)
 
 **Checkpoint**: `tdd-check.sh 1` reports `pass`.
+
+### Fix round 1 (operator round from the landing pass: O3-01)
+
+On 2026-11-16 mission 018 reported, through the orchestrator, that 005's `.icon-row { align-items: flex-start }` may
+put a one-line `ocelle-button` above the surrounding text baseline; the operator chose to measure it at landing. The
+/ocelle-land pass measured it on 2026-11-18 (4.6 to 6.2 px above the baseline; a native `<button>` sits on it), and
+the operator folded the fix into this pull request, recorded as phase 1 round 3 (`reviews/phase-1/round-3.md`).
+Verbatim "Fold the fix now (Recommended)": "Record an operator round on phase 1 (the button). The planner adds the
+task, implementer-ivan writes a failing baseline test and adds the rule to the shared convention in icon-slot.ts,
+regenerating any visual baseline that moves under docker. Then a review round and a landing check. That's one more CI
+run, and 018 starts from the fixed convention." The round is recorded on phase 1 as the operator chose; the code it
+changes is 005's convention as phase 2 amended it (T022, T025; R-10). The rule, as plan decision 33 states it: the
+convention's label wrapper, `<span class="label">` around the default slot, is part of the convention, and
+`iconSlotStyles` sets `.icon-row > .label { align-self: baseline; }`, so the row's (and the host's) baseline is the
+label's first line while every position inside the control stays where it is. This is a behaviour fix, so it is
+test-first; phase 1 has no earlier fix round, so the label is fix-1, reviewed as phase 1 round 4, then a landing check.
+Round 3 measured `size="sm"`, which is not a size value (the sizes are `default` and `compact`), so its "sm" row is the
+default size again; the tests use `compact`.
+
+**Red (one commit)**
+
+- [ ] T013a [P] [US1] O3-01, test-first, the button: in `packages/elements/test/scenarios/button.ts` (shared bodies, run in-process by `packages/elements/test/button.test.ts` and on the strict-CSP fixture by `packages/elements/test/browser/button.test.ts`), a scenario "a one-line button in a line of text sits on the text's baseline": body text at 16 px, a `<p>` holding the text "Text", a zero-size `inline-block` marker on the paragraph's baseline, an `ocelle-button` labelled "Save" whose light-DOM label ends with a second zero-size `inline-block` marker, and the text "after" (round 3's method); the label marker's block-start equals the paragraph marker's within 0.5 px (read with `box()`), for each of: the default button; `size="compact"`; an `ocelle-icon` in the `icon` slot; `flush`; `variant="quiet" flush`; link mode (`href`); and busy. In the same test, for each case (the positive it guards): the icon wrapper's (`.icon-slot`, or the spinner while busy) and the label's (`.label`) block-starts inside the host are equal within 0.5 px, so the fix may not move the items inside the row (plant: `.icon-row { align-items: baseline }` in place of the label rule). Expected values are the markers' and wrappers' own positions, never a figure read from the rule under test.
+- [ ] T013b [P] [US1] O3-01, test-first, the convention and its text:
+  - `packages/elements/test/scenarios/slot.ts` (run by `packages/elements/test/slot.test.ts` and `packages/elements/test/browser/slot.test.ts`): the convention's test host (`test/fixtures/test-host.ts`, which already renders `<span class="label">`) in a line of text, with and without a slotted icon, has its label marker on the paragraph's baseline within 0.5 px, paired with the same block-start check as T013a. Only test files change; if the test host needs a change to hold the case, that change is in this commit.
+  - `packages/elements/test/node/readme.test.ts`: the § Slot convention text names the label wrapper (`<span class="label">` around the default slot) as part of the convention and says that the label takes part in baseline alignment, so a one-line control in a line of text sits on the text's baseline (lines written by hand); `packages/elements/test/node/changelog.test.ts`: one CHANGELOG line that a one-line control on the slot convention, such as `ocelle-button`, now sits on the surrounding text's baseline.
+- [ ] T013c [US1] Commit T013a and T013b alone (`test(012-button-action-row): phase 1 fix-1 red — O3-01`), signed off. Then run `.specify/extensions/story/scripts/red.sh 1 fix-1`. Confirm every new failure is an assertion failure against the current code (the label marker 4.6 to 6.2 px above the paragraph's, the README and CHANGELOG lines missing), not a load error. The block-start check passes at once (positions are already equal); report that in the round's notes, not forced red; its plant proves it.
+
+**Green**
+
+- [ ] T013d [US1] O3-01, over T013a and T013b:
+  - `packages/elements/src/icon-slot.ts`: `iconSlotStyles` gains `.icon-row > .label { align-self: baseline; }`, nothing else in it changes; the header comment names the label wrapper (`<span class="label">` around the default slot, between the icon and trailing wrappers) as part of the convention and says why the rule is there (the row is aligned to the start, so without it no item takes part in baseline alignment and the row's baseline would be the icon wrapper's; with it the row's, and the host's, baseline is the label's first line and no position inside the row moves; 012 plan decision 33, `reviews/phase-1/round-3.md` O3-01).
+  - `packages/elements/src/ocelle-button.ts`: no change expected (it renders `<span class="label">` inside `.icon-row`); if it needs one, it is stated in the notes.
+  - `packages/elements/README.md` § Slot convention: the opening paragraph names the label wrapper, `<span class="label">` around the default slot, as part of the markup, and the **Alignment** bullet adds that the label takes part in baseline alignment, so the control's baseline is its label's first line and a one-line control in a line of text sits on the text's baseline; `packages/elements/CHANGELOG.md` the line of T013b. T013a and T013b now pass.
+  - `ocelle-action-row` shares the convention's stylesheet but does not render `.icon-row` (its inner control has its own flex rules, its label wrapper is `.title`, and the host is block-level), so the rule does not reach it: check that in `packages/elements/src/ocelle-action-row.ts` and state it in the notes; the row's scenarios (`action-row.ts`, `row-states.ts`, both harnesses) pass unchanged and no row baseline moves. A row change, or a row baseline that moves, is a stop-and-ask.
+- [ ] T013e [US1] Run the checks:
+  - the plant of T013a and T013b once (`.icon-row { align-items: baseline }` in place of the label rule: the block-start checks fail, the baseline checks pass), recorded in a new `reviews/phase-1/plants.md` under "Fix round 1";
+  - `pnpm run gate:visual` in the pinned container (docker); every story-theme reported `differs` must differ only by the whole control's offset within its line (no pixel inside a control changes); a change inside a control is a stop-and-ask. Then regenerate only those with `pnpm run visual:update` in the same container (it writes only new or changed baselines), and any visual plant whose own baselines move (for example `fail-token-changed`'s button story-themes) with `pnpm run visual:update -- --plant visual/<name>`; run `gate:visual` again (no finding). List every baseline that moved, and that none of `elements-ocelle-action-row--*` did, in `reviews/phase-1/notes.md`, with the reason for the pull request's description (constitution V);
+  - `pnpm test`, the `elements` and `elements-browser` projects (button, link, busy, slot, action-row and row-states included), `pnpm run gate:typecheck`, `gate:lint`, `gate:style-lint`, `gate:test-lint`, `gate:csp`, `gate:prefix`, `gate:manifest` (no change), `gate:storybook-build` and `gate:axe`;
+  - `pnpm run gate:mutation -- --base <T013c red commit> --files packages/elements/src/icon-slot.ts`, alone, before the commit: no survivor on the changed lines (each record reasoned, R-14).
+
+  Record T013a to T013d in `reviews/phase-1/notes.md` under "Fix round 1" and in a new `reviews/phase-1/round-3-fixes.md` (as `reviews/phase-4/round-2-fixes.md`: the finding, its resolution, the red test and where). Commit green (`fix(012-button-action-row): phase 1 fix-1 — O3-01`), signed off. Then run `.specify/extensions/story/scripts/tdd-check.sh 1` (`pass`; a base sub-check that exits 2 "could not run" because of the landing merges is as phase 6 round 3 R3-03 recorded). Reviewed as phase 1 round 4, then the landing check.
+
+**Checkpoint**: a one-line `ocelle-button` in a line of text, with or without an icon, has its label on the text's
+baseline within 0.5 px; nothing inside the control moves; `ocelle-action-row` and its baselines are unchanged; only
+the baselines that moved are regenerated and listed; `tdd-check.sh 1` reports `pass`.
 
 ---
 
@@ -388,6 +434,9 @@ reports `pass`.
 - Landing operator round of 2026-11-18 (phase 6 round 4): phase 6 fix-3 (T073 to T077) is a documentation unit with
   no red commit, reviewed as phase 6 round 5 and landing round 3; T073 to T076 are independent, T077 last. T073's
   edit to specs/006-storybook-workbench/plan.md is routed by the orchestrator to the planner.
+- Landing operator round of 2026-11-18 (phase 1 round 3): phase 1 fix-1 (T013a to T013e) is one unit (red under
+  `red.sh 1 fix-1`, green, check), reviewed as phase 1 round 4, then the landing check; it is independent of the other
+  fix rounds. T013e's visual run needs the pinned container (docker).
 
 ## Parallel Opportunities
 
