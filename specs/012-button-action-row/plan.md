@@ -412,28 +412,28 @@ phase 2),
     any mode. Tasks T061a and T064a; T066 runs the plant. No principle is relaxed and no exception is recorded, so no
     Complexity Tracking row is needed.
 33. **The slot convention's label sits on the text baseline** (operator decision at landing, 2026-11-18,
-    human:jeroennouwsdev, multiple choice: "Fold the fix now (Recommended)"; operator round `reviews/phase-1/round-3.md`,
+    human:jeroennouwsdev, multiple choice: "Fold the fix now (Recommended)"; operator round `reviews/phase-2/round-5.md`,
     finding O3-01; R-10). *Finding*: 005's convention (`iconSlotStyles` in `packages/elements/src/icon-slot.ts`, as
     012 R-10 amended it) makes `.icon-row` an `inline-flex` row with `align-items: flex-start`, so no item takes part
     in baseline alignment and the row's baseline, and with it the host's, is the first item's: the one-line-tall
     `.icon-slot` wrapper, empty or holding the icon, not the label. A one-line `ocelle-button` in a line of text sets
-    its label 4.6 to 6.2 px above the text's baseline (round 3's measurement; a native `<button>` sits on it).
+    its label 4.6 to 6.2 px above the text's baseline (round 5's measurement; a native `<button>` sits on it).
     *Decision*: the label wrapper becomes part of the convention, a `<span class="label">` holding the default slot
     between the icon and trailing wrappers (the README's example already renders it), and `iconSlotStyles` gains
     `.icon-row > .label { align-self: baseline; }`. The label is then the row's only baseline-aligned item, so the
     row's baseline is the label's first line, and the label stays at the row's start: every position inside the
-    control (the wrappers, the label, the row's padding) and the control's size are unchanged (round 3's probe: 0 px
+    control (the wrappers, the label, the row's padding) and the control's size are unchanged (round 5's probe: 0 px
     in every case, positions and sizes identical). `.icon-row { align-items: baseline }` also gives 0 px but moves the
     items inside the row, so it is not used. What changes in 005's convention: a control on it renders its label in
     `.label`, and its host's baseline is its label's first line; nothing else. `ocelle-action-row` does not render
     `.icon-row` (its inner control has its own flex rules, its label wrapper is `.title`, and the host is
-    block-level), so the rule does not reach it; phase 1 fix-1 checks that the row's layout, scenarios and baselines
+    block-level), so the rule does not reach it; phase 2 fix-4 checks that the row's layout, scenarios and baselines
     do not change, and a change there is a stop-and-ask. 005's own documents are not edited: the convention's text is
     the `icon-slot.ts` header comment and the elements README's § Slot convention, which state it. Test-first: a
     one-line button in a line of text has its label on the text's baseline within 0.5 px (red against the current
     rule), paired in the same test with the icon wrapper's and the label's block-start being equal within 0.5 px
     (plant: `.icon-row { align-items: baseline }` in place of the label rule). Visual baselines that move are
-    regenerated in the pinned container and listed. Tasks T013a to T013e (phase 1 fix-1). No principle is relaxed and
+    regenerated in the pinned container and listed. Tasks T029a to T029e (phase 2 fix-4). No principle is relaxed and
     no exception is recorded, so no Complexity Tracking row is needed.
 
 ## Project Structure
