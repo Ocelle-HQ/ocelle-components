@@ -1369,43 +1369,6 @@
     {
       "declarations": [
         {
-          "attributes": [],
-          "cssParts": [],
-          "cssProperties": [],
-          "customElement": true,
-          "description": "A plant element with one public member that has no description (005 FR-009).",
-          "events": [],
-          "kind": "class",
-          "members": [],
-          "name": "OcellePlant",
-          "slots": [
-            {
-              "name": "icon"
-            }
-          ],
-          "superclass": {
-            "name": "LitElement",
-            "package": "lit"
-          },
-          "tagName": "ocelle-plant"
-        }
-      ],
-      "exports": [
-        {
-          "declaration": {
-            "module": "src/ocelle-plant.ts",
-            "name": "OcellePlant"
-          },
-          "kind": "js",
-          "name": "OcellePlant"
-        }
-      ],
-      "kind": "javascript-module",
-      "path": "src/ocelle-plant.ts"
-    },
-    {
-      "declarations": [
-        {
           "attributes": [
             {
               "default": "undefined",
@@ -1746,6 +1709,43 @@
       ],
       "kind": "javascript-module",
       "path": "src/ocelle-personal-rail.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A plant element with one public member that has no description (005 FR-009).",
+          "events": [],
+          "kind": "class",
+          "members": [],
+          "name": "OcellePlant",
+          "slots": [
+            {
+              "name": "icon"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-plant"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-plant.ts",
+            "name": "OcellePlant"
+          },
+          "kind": "js",
+          "name": "OcellePlant"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-plant.ts"
     },
     {
       "declarations": [
