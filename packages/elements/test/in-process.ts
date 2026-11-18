@@ -1,12 +1,11 @@
-// The in-process driver of the shared scenario bodies (005 research.md R-11, T014): the in-process element projects
-// (`elements`, `elements-timing` for the timing files since specs/010-feedback-forms operator round 7, and
-// `elements-touch`) run the bodies in Vitest's browser mode on the element source the test file imports, so Stryker's
-// mutants of packages/elements/src/** are killed here. The page has the token stylesheet the generator makes from the
-// current source (`css(source)`, its `@font-face` rules removed, so no font is requested) adopted on the document, and,
-// where a scenario mounts with `base: true`, `@ocelle/styles`' base.css after it. The accessibility tree and forced
-// colours go through the `axTree` and `emulateForcedColors` browser commands (vitest.config.ts, test/commands.ts).
-// Console messages are recorded from each mount on; Lit's development build, which Vite resolves here, warns once at
-// import, before any mount, so the console outcome of FR-016 on the built output is the fixture's (test/browser/).
+// The in-process driver of the shared scenario bodies (005 research.md R-11, T014): the `elements` project runs the
+// bodies in Vitest's browser mode on the element source the test file imports, so Stryker's mutants of
+// packages/elements/src/** are killed here. The page has the token stylesheet the generator makes from the current
+// source (`css(source)`, its `@font-face` rules removed, so no font is requested) adopted on the document, and, where a
+// scenario mounts with `base: true`, `@ocelle/styles`' base.css after it. The accessibility tree and forced colours
+// go through the `axTree` and `emulateForcedColors` browser commands (vitest.config.ts, test/commands.ts). Console
+// messages are recorded from each mount on; Lit's development build, which Vite resolves here, warns once at import,
+// before any mount, so the console outcome of FR-016 on the built output is the fixture's (test/browser/).
 // Since 009 (research.md R-17) every mount also adopts test/fixtures/frames.css, the one source of the tested frames,
 // after the token and base sheets, and `viewport()` resizes the test's iframe through `page.viewport`.
 //
