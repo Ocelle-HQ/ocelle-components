@@ -311,7 +311,7 @@ and `gate:axe` pass.
 
 ### Scaffold
 
-- [ ] T004 [US1] Scaffold commit, recorded by `.specify/extensions/story/scripts/scaffold.sh 1`, no behaviour:
+- [X] T004 [US1] Scaffold commit, recorded by `.specify/extensions/story/scripts/scaffold.sh 1`, no behaviour:
   - `packages/elements/src/ocelle-data-table.ts` with `define("ocelle-data-table", OcelleDataTable)`, `@tagname ocelle-data-table`, `static override properties` with `declare` fields `label`, `wrap`, `stickyHeader` (`{ type: Boolean, reflect: true, attribute: "sticky-header" }`) and `striped` (`{ type: Boolean, reflect: true }`), each `| undefined` with `@default undefined` and a description (data-model: `label` "`string | undefined` … Trimmed; empty or whitespace-only counts as absent. Not shown."; `wrap` "`"anywhere" | undefined` … any other value acts as unset."; `stickyHeader` and `striped` as data-model.md states them), and an empty `render()`;
   - the export in `packages/elements/src/index.ts`, the definition in `src/browser.ts`, and `./ocelle-data-table.js` in `packages/elements/package.json` `exports`;
   - no test file.
