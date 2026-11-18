@@ -25,7 +25,8 @@ import { matrixScenarios } from "./scenarios/notice-matrix.ts";
 import { noticeLoadingScenario, noticeScenario } from "./scenarios/notice.ts";
 import type { NoticeScenario } from "./scenarios/notice.ts";
 
-// The plant rows of the elements project (specs/010-feedback-forms contracts/testing.md § Plants; T001c). A row names
+// The plant rows of the elements-timing project (specs/010-feedback-forms contracts/testing.md § Plants; T001c; one of
+// the timing files that run one at a time since operator round 7, O7-01). A row names
 // the family, the plant, the body it runs and the assertion message that body must fail with; it runs the body with the
 // plant, which must reject with that message, and the same body without the plant, which must pass, so a plant that
 // does not bite, or a body that fails on its own, fails the row. Phase 1's rows: the oracle reading (planted readings
@@ -275,7 +276,7 @@ afterEach(async () => {
   await driver.mount("");
 });
 
-describe("plants (elements project)", { timeout: 30_000 }, () => {
+describe("plants (elements-timing project)", { timeout: 30_000 }, () => {
   it.each(rows)("$family: $plant turns $body red", async ({ planted, unplanted, message }) => {
     await expect(planted()).rejects.toThrow(message);
     await expect(unplanted()).resolves.not.toEqual([]);

@@ -10,7 +10,8 @@ import { defineDriverHelpers, driverAdditionScenarios } from "./scenarios/driver
 // `registerFirstLoad` and `readyState` are in-process steps only; the fixture-page steps are
 // test/browser/driver.test.ts.
 // The driver's own methods, in process, each proven against a plain page (009 research.md R-17; T005, T010).
-// `viewport()` resizes the test's iframe from the elements project's 1280 × 800 (vitest.config.ts, since 008). Since
+// `viewport()` resizes the test's iframe from the element projects' 1280 × 800 (vitest.config.ts, since 008; this file
+// runs in elements-timing since specs/010-feedback-forms operator round 7, O7-01). Since
 // phase 2 (T010) every method the US1 scenarios use: real keys and chords (`chord()`), a real click at a point
 // (`clickAt()`) and wheel, the deep active element, the tab walk, `scrollLeft`, the last keydown's `defaultPrevented`,
 // reduced motion, the frame record and the two-frame `settle()`, plus `messages()` and `sheets()` (which 005 added; their plants are in reviews/phase-2/plants.md). The pages are plain

@@ -6,11 +6,12 @@ import type { FakeStryker } from "./mutation-fakes.ts";
 
 // The mutation gate's split by configuration (005 research.md R-12, T019): the selected changed files are split into
 // element source (packages/elements/src/**), which runs under stryker.elements.config.json (its Vitest config holds
-// only the in-process elements project), and every other file, which runs under stryker.config.json; each non-empty
-// group runs once, with its own report deleted first, and the classified results are merged into one verdict. The
-// Stryker double runs only its own configuration's tests, as the real configurations do (mutation-fakes.ts
-// `configuredStryker`): under the wrong configuration a mutant is NoCoverage. So an element-only change that the split
-// lost, or that ran under the default configuration, never passes, and never ends in "nothing to mutate".
+// only the in-process element projects: elements, elements-timing and elements-touch), and every other file, which runs
+// under stryker.config.json; each non-empty group runs once, with its own report deleted first, and the classified
+// results are merged into one verdict. The Stryker double runs only its own configuration's tests, as the real
+// configurations do (mutation-fakes.ts `configuredStryker`): under the wrong configuration a mutant is NoCoverage. So
+// an element-only change that the split lost, or that ran under the default configuration, never passes, and never ends
+// in "nothing to mutate".
 const elementFile = "packages/elements/src/x.ts";
 const gateFile = "gates/lib/x.ts";
 

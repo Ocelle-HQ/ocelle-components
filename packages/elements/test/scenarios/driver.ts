@@ -1,6 +1,7 @@
 // The driver of the shared scenario bodies (005 research.md R-11, T013). A scenario body (scenarios/*.ts) is
 // written once against this interface and run by two harnesses: in process on the element source (test/*.test.ts,
-// the `elements` project, which Stryker mutates) and on the built browser build on strict-CSP fixture pages
+// the `elements` project, and `elements-timing` for the timing-sensitive files, which run one at a time; Stryker
+// mutates both) and on the built browser build on strict-CSP fixture pages
 // (test/browser/*.test.ts, the `elements-browser` project). Every method reads or acts on the page by element `id`;
 // nothing in a body depends on which harness runs it. Elements inside a shadow root are reached by a selector in the
 // element's shadow root.

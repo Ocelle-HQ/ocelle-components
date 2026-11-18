@@ -195,9 +195,10 @@ export const elementsReportPath = "reports/mutation/mutation-elements.json";
 
 /**
  * A Stryker that, as the two configurations do, runs only its own tests (005 research.md R-12): under
- * stryker.elements.config.json (the elements project only) a mutant of `packages/elements/src/**` gets
- * `statusOf(path)` and any other mutant `NoCoverage`; under stryker.config.json (every in-process project but
- * elements) the other way round. Otherwise as `fakeStryker`, writing the report its configuration names.
+ * stryker.elements.config.json (the in-process element projects only: elements, elements-timing and elements-touch) a
+ * mutant of `packages/elements/src/**` gets `statusOf(path)` and any other mutant `NoCoverage`; under
+ * stryker.config.json (every in-process project but those) the other way round. Otherwise as `fakeStryker`, writing the
+ * report its configuration names.
  */
 export function configuredStryker(statusOf: (path: string) => string): FakeStryker {
   return (mutate, files, config = strykerConfig) => {

@@ -30,6 +30,36 @@ const all = projectsOf(base);
 const kept = projectsOf(mutation);
 const keptElements = projectsOf(mutationElements);
 
+/**
+ * The timing-sensitive in-process element files (specs/010-feedback-forms operator round 7, O7-01; decision (b),
+ * reviews/phase-2/decision-stop-1.md): the notice suites, the plants file, the capture and timing files, and the form
+ * suites whose shared bodies run the capture and drive.after at the test W. Only these run one at a time, in
+ * elements-timing; every other in-process element file runs in elements, in parallel as on main.
+ */
+const timingFiles = [
+  "packages/elements/test/notice.test.ts",
+  "packages/elements/test/plants.test.ts",
+  "packages/elements/test/live-capture.test.ts",
+  "packages/elements/test/in-process-timing.test.ts",
+  "packages/elements/test/driver.test.ts",
+  "packages/elements/test/live-timing.test.ts",
+  "packages/elements/test/form-input.test.ts",
+  "packages/elements/test/form-select.test.ts",
+];
+
+/** A project of vitest.config.ts as written, its top-level keys (optimizeDeps) and its test settings. */
+interface RawProject {
+  readonly optimizeDeps?: unknown;
+  readonly test?: {
+    readonly name?: unknown;
+    readonly include?: readonly string[];
+    readonly fileParallelism?: boolean;
+    readonly browser?: { readonly provider?: { readonly options?: { readonly launchOptions?: unknown } } };
+  };
+}
+const raw = (base.test?.projects ?? []) as readonly RawProject[];
+const rawOf = (name: string): RawProject | undefined => raw.find((each) => each.test?.name === name);
+
 /** The repository's test files: every *.test.ts outside installed packages, dot directories, plants and fixtures. */
 const testFiles = globSync("**/*.test.ts", { cwd: repo })
   .map((path) => path.split("\\").join("/"))
@@ -44,9 +74,11 @@ function inProject(project: Project, path: string): boolean {
 describe("vitest.mutation.config.ts", () => {
   // 005 research.md R-12: elements is mutated by stryker.elements.config.json; elements-build and elements-browser
   // start tools or Chromium; elements-node stays. 008 research.md R-14: elements-touch is mutated with elements.
-  const notMutated = ["tokens-browser", "styles-browser", "elements", "elements-touch", "elements-build", "elements-browser", "storybook-integration", "gates-integration"];
+  // Operator round 7 of specs/010-feedback-forms (O7-01): elements-timing, the serial timing files, is mutated with
+  // elements.
+  const notMutated = ["tokens-browser", "styles-browser", "elements", "elements-timing", "elements-touch", "elements-build", "elements-browser", "storybook-integration", "gates-integration"];
 
-  it("excludes exactly tokens-browser, styles-browser, elements, elements-touch, elements-build, elements-browser, storybook-integration and gates-integration from the projects of vitest.config.ts, and splits tokens", () => {
+  it("excludes exactly tokens-browser, styles-browser, elements, elements-timing, elements-touch, elements-build, elements-browser, storybook-integration and gates-integration from the projects of vitest.config.ts, and splits tokens", () => {
     expect(all.map((project) => project.name).filter((name) => !kept.some((project) => project.name === name))).toEqual(notMutated);
     // 007 research.md R-05 (lever 1): the mutation configuration splits tokens in two, source-table.test.ts alone in
     // tokens-source-table and the rest in tokens; every other kept project is unchanged. This replaces the plain
@@ -64,10 +96,13 @@ describe("vitest.mutation.config.ts", () => {
 });
 
 describe("vitest.mutation.elements.config.ts and stryker.elements.config.json (005 research.md R-12)", () => {
-  // 008 research.md R-14: the in-process touch rows kill mutants too, so elements-touch is mutated with elements.
-  it("holds exactly the elements and elements-touch projects of vitest.config.ts", () => {
-    expect(keptElements).toEqual(all.filter((project) => project.name === "elements" || project.name === "elements-touch"));
-    expect(keptElements.map((project) => project.name)).toEqual(["elements", "elements-touch"]);
+  // 008 research.md R-14: the in-process touch rows kill mutants too, so elements-touch is mutated with elements; since
+  // operator round 7 of specs/010-feedback-forms (O7-01), elements-timing too, so per-test coverage still reaches
+  // Stryker.
+  it("holds exactly the elements, elements-timing and elements-touch projects of vitest.config.ts", () => {
+    const names = ["elements", "elements-timing", "elements-touch"];
+    expect(keptElements).toEqual(all.filter((project) => names.includes(project.name)));
+    expect(keptElements.map((project) => project.name)).toEqual(names);
   });
 
   // 008 plan decision 25, research.md R-15 (operator decision 2026-11-15): the elements configuration alone raises
@@ -115,6 +150,28 @@ describe("the Vitest projects", () => {
     expect(ownersOf("packages/elements/test/browser/x.test.ts")).toEqual(["elements-browser"]);
     expect(ownersOf("packages/elements/test/x.test.ts")).toEqual(["elements"]);
     expect(ownersOf("packages/elements/test/scenarios/x.test.ts")).toEqual(["elements"]);
+    // Operator round 7 of specs/010-feedback-forms (O7-01): the eight timing files in elements-timing only; a fake-clock
+    // file and any other element test stay in elements.
+    expect(Object.fromEntries(timingFiles.map((path) => [path, ownersOf(path)]))).toEqual(Object.fromEntries(timingFiles.map((path) => [path, ["elements-timing"]])));
+    expect(ownersOf("packages/elements/test/notice-rules.test.ts")).toEqual(["elements"]);
+  });
+
+  // Operator round 7 of specs/010-feedback-forms (O7-01; operator: "Serial project for timing files (Recommended)"):
+  // only the timing files of decision (b) (reviews/phase-2/decision-stop-1.md) run one at a time, in elements-timing
+  // directly after elements; elements and elements-touch run their files in parallel, as on main. elements-build keeps
+  // its own serial run (two package builds never write dist/ at once).
+  it("run only the eight timing files one at a time, in elements-timing directly after elements", () => {
+    const names = raw.map((each) => each.test?.name);
+    expect(names.indexOf("elements-timing")).toBe(names.indexOf("elements") + 1);
+    expect(rawOf("elements-timing")?.test?.include).toEqual(timingFiles);
+    expect({
+      elements: rawOf("elements")?.test?.fileParallelism,
+      timing: rawOf("elements-timing")?.test?.fileParallelism,
+      touch: rawOf("elements-touch")?.test?.fileParallelism,
+      build: rawOf("elements-build")?.test?.fileParallelism,
+    }).toEqual({ elements: undefined, timing: false, touch: undefined, build: false });
+    expect(Object.keys(rawOf("elements")?.test ?? {})).not.toContain("fileParallelism");
+    expect(Object.keys(rawOf("elements-touch")?.test ?? {})).not.toContain("fileParallelism");
   });
 
   // 008 research.md R-14: the in-process touch rows `test/*.touch.test.ts` run in elements-touch only, with the
@@ -127,14 +184,21 @@ describe("the Vitest projects", () => {
       node: ownersOf("packages/elements/test/node/x.touch.test.ts"),
       build: ownersOf("packages/elements/test/build/x.touch.test.ts"),
     }).toEqual({ inProcess: ["elements-touch"], fixture: ["elements-browser"], node: ["elements-node"], build: ["elements-build"] });
-    expect(all.find((project) => project.name === "elements-touch")?.exclude).toEqual(all.find((project) => project.name === "elements")?.exclude.filter((glob) => glob !== "packages/elements/test/*.touch.test.ts"));
+    // Since operator round 7 of specs/010-feedback-forms (O7-01), elements also excludes the eight timing files, which
+    // elements-timing holds with the same excludes as elements-touch.
+    const excludeOf = (name: string) => all.find((project) => project.name === name)?.exclude;
+    expect(excludeOf("elements-touch")).toEqual(excludeOf("elements")?.filter((glob) => glob !== "packages/elements/test/*.touch.test.ts" && !timingFiles.includes(glob)));
+    expect(excludeOf("elements")).toEqual(expect.arrayContaining(timingFiles));
+    expect(excludeOf("elements-timing")).toEqual(excludeOf("elements-touch"));
   });
 
   // 008 research.md R-14: both browser-mode element projects run at the fixture's 1280 × 800, elements as a mouse
   // device and elements-touch in a context with hasTouch; both register the same commands, 011's document readers
   // (research.md R-13) among them, and the live-region capture's liveStart and liveStop (specs/010-feedback-forms
-  // contracts/testing.md § Live-region capture; the landing's second merge of main).
-  it("run elements and elements-touch in browser mode at 1280 × 800, only elements-touch with hasTouch, with the same commands", () => {
+  // contracts/testing.md § Live-region capture; the landing's second merge of main). Since operator round 7 of
+  // specs/010-feedback-forms (O7-01), elements-timing runs as elements does, with its provider options (launchOptions,
+  // so OCELLE_CHROMIUM_PATH reaches it) and its pre-bundled Lit directives.
+  it("run elements, elements-timing and elements-touch in browser mode at 1280 × 800, only elements-touch with hasTouch, with the same commands", () => {
     const browser = (name: string) => {
       const project = (base.test?.projects ?? []).find((each) => (each as { test?: { name?: unknown } }).test?.name === name) as
         | { test?: { browser?: { enabled?: boolean; viewport?: unknown; provider?: { options?: { contextOptions?: { hasTouch?: boolean } } }; commands?: Record<string, unknown> } } }
@@ -148,10 +212,18 @@ describe("the Vitest projects", () => {
       };
     };
     const commands = ["activeElement", "axTree", "emulateForcedColors", "emulateReducedMotion", "liveStart", "liveStop", "pointerPath", "scrollWidth", "textBoxes", "touchTap"];
-    expect({ elements: browser("elements"), touch: browser("elements-touch") }).toEqual({
+    expect({ elements: browser("elements"), timing: browser("elements-timing"), touch: browser("elements-touch") }).toEqual({
       elements: { enabled: true, viewport: { width: 1280, height: 800 }, hasTouch: false, commands },
+      timing: { enabled: true, viewport: { width: 1280, height: 800 }, hasTouch: false, commands },
       touch: { enabled: true, viewport: { width: 1280, height: 800 }, hasTouch: true, commands },
     });
+    const elements = rawOf("elements");
+    const timing = rawOf("elements-timing");
+    expect(elements?.test?.browser?.provider?.options).toBeDefined();
+    expect(timing?.test?.browser?.provider?.options).toEqual(elements?.test?.browser?.provider?.options);
+    expect(timing?.test?.browser?.provider?.options?.launchOptions).toEqual(elements?.test?.browser?.provider?.options?.launchOptions);
+    expect(elements?.optimizeDeps).toBeDefined();
+    expect(timing?.optimizeDeps).toEqual(elements?.optimizeDeps);
   });
 
   it("run elements-node, elements-build and elements-browser in node, on exactly their own directory", () => {
