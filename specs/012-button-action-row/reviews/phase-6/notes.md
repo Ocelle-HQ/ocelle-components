@@ -289,3 +289,5 @@ Documentation and comments only, no behaviour change, so no red commit (tasks.md
   packages/elements/test/list-detail.test.ts" and no test failure. That file then passed alone (55 tests), and the
   full rerun passed, so the first exit was a worker start failure, not a test failure. `gate:typecheck` no type
   error; `gate:lint` 446 files, no finding.
+- **R5-01, R5-02 (phase 6 round 5; landing round 3 R3-01)**: T073 to T077 ticked in tasks.md (their work is 265e819c);
+  red-phase.log line 8's store path redacted to `<pnpm store>`, as ddb134c9 did in the check logs. Docs only.

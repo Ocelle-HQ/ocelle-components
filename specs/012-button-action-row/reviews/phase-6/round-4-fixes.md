@@ -23,3 +23,5 @@ Supplied by the orchestrator; the same as in specs/006-storybook-workbench/plan.
   9.65 runner-hours); round-4.md is not edited.
 
 Checks: notes.md § Fix round 3.
+
+Phase 6 round 5 R5-01 (landing round 3 R3-01): T073 to T077 ticked in tasks.md, their work being 265e819c; R5-02: red-phase.log line 8 store path redacted to `<pnpm store>`, as ddb134c9 did in the check logs.
