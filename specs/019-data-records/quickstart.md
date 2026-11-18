@@ -16,7 +16,9 @@ checks: [contracts/checks.md](contracts/checks.md).
   role and part, with no row reading "pending inventory" (SC-001; T005, T076).
 - The phase 1 second spike's decisions (`reviews/phase-1/operator-spike-2-decisions.md`, Q-1 to Q-4) are applied
   (`reviews/phase-1/spike-2-fixes.md`), and the implementer's measurement of Q-3 (c) before the red commit is recorded
-  in `reviews/phase-1/spike-2.md` with no contradiction (T082).
+  in `reviews/phase-1/spike-2.md` (§ Addendum, T082), its two contradictions answered (Q-A1 (a), no
+  `scrollbar-gutter`; Q-A2 (a), the caption link checked at a partly scrolled position) and applied, with Q-A3 (the
+  guard of the scrollbar-room subtraction) answered before phase 1's red commit.
 - Each phase's `reviews/phase-<N>/element-plants.md` records every element plant biting (contracts/checks.md).
 - `pnpm install --offline` works (`pnpm run setup:online` after a container restart).
 - For baselines: docker running (`nohup dockerd > /tmp/dockerd.log 2>&1 &`, as root), and #10's pinned container
@@ -59,7 +61,9 @@ checks: [contracts/checks.md](contracts/checks.md).
      link in a row under the header scrolls the row clear of it. The caption scrolls away (IQ-2). At rest the last
      visible rows fade out at the region's block end, below the header and clear of the scrollbar; at the end of the
      rows the fade is gone; a link tabbed to in the faded rows is scrolled clear of the fade; with forced colours
-     emulated a line marks the block end instead (Q-I4). In the unbounded sticky story the table shows at its full
+     emulated a line marks the block end instead (Q-I4). No empty band is reserved beside the rows for a scrollbar
+     that is not drawn (spike-2 Q-A1 (a)); in a 320 px viewport the sticky table scrolls sideways to its last column,
+     and under `dir="rtl"` to its first. In the unbounded sticky story the table shows at its full
      height, nothing scrolls in the block axis, no fade shows, no empty scrollbar gutter is reserved, and Tab skips the
      region (US1-20, re-analysis C1 (b), spike-2 Q-3 (c)).
      In the room-rule sticky story rows are below the few visible ones and the region is a tab stop, but no fade

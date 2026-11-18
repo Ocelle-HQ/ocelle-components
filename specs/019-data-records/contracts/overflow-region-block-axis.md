@@ -11,7 +11,10 @@ the browser keeps (§ Effects, Keys). The operator's decisions on phase 1's seco
 `reviews/phase-1/spike-2-fixes.md`) settle four points: Q-1 (a), the pinned-box measure is the current edge; Q-2 (a),
 the host pins its box with a negative block-start inset (contracts/styles-data-table.md, block 1); Q-3 (c),
 `data-axis="both"` only while the box overflows in the block axis (§ Effects, Scrolling); Q-4 (a),
-`.region-edge.block-end` zero-wide outside forced colours (§ Stylesheet). The amendment lives in this feature's contracts because this mission makes the change. 009's contract
+`.region-edge.block-end` zero-wide outside forced colours (§ Stylesheet). The operator's answers to the T082
+addendum questions (2026-11-18, end of the same decisions file, on `spike-2.md` § Addendum) settle two more: Q-A1 (a),
+no `scrollbar-gutter` (§ Effects, Scrolling); Q-A2 (a), the element-before body at a partly scrolled position (§ Tests).
+The amendment lives in this feature's contracts because this mission makes the change. 009's contract
 file carries one line pointing here (follow-up decision Q-I5, in a documentation commit of its own) and is otherwise
 not edited; the README's § Element conventions entry for the module, which both features document against, names the
 option (T081).
@@ -78,16 +81,23 @@ otherwise (as it writes `data-axis`); the host binds nothing for it. `offStart`,
   **and** the box overflows in the block axis (`scrollHeight − clientHeight > 1`, read with or without the attribute:
   a box with 009's `overflow-y: hidden` still reports its content's scroll height), and removes it when the block
   overflow ends, the option turns off or it lets go of the box. Its stylesheet then gives the box `overflow-y: auto`
-  and `scrollbar-gutter: stable` in place of `overflow-y: hidden`, so the block-axis scrollbar's room is reserved
-  while the box scrolls in the block axis, and not otherwise. Why not always: under `dir="rtl"`, Chromium starts a box
-  with `scrollbar-gutter: stable` that overflows inline but not in the block axis at `scrollLeft` −15 and never
-  scrolls it to 0, so the first 15 px of the content cannot be reached (spike-2 § 2; FR-008, WCAG 1.4.10); with block
-  overflow too the start is reachable. Writing or removing `data-axis` is an output change (`requestUpdate()`), so a
-  host that sizes something by the gutter (the data table's caption cap) re-reads it. The gutter is 15 px in
-  Chromium both with classic scrollbars and with `--hide-scrollbars`, where nothing is drawn in it (spike-2 § 2).
-  When it appears, the client width shrinks: the module reads the mask figures (below) again after writing the
-  attribute. The change is monotone (the gutter only narrows the client area, which cannot end a block overflow), so
-  the attribute cannot oscillate; this is measured before the red commit (a stop-and-ask point, tasks.md T082).
+  in place of `overflow-y: hidden`, and nothing else: **no `scrollbar-gutter`** (the operator's answer to Q-A1 (a),
+  2026-11-18), so the block-axis scrollbar takes its room only while the box scrolls in the block axis and only where
+  the platform draws one. The **block-axis scrollbar's room** is read as the box's `offsetWidth − clientWidth` (the
+  box has no inline border): 15 px in Chromium with classic scrollbars while the box overflows in the block axis, 0
+  with `--hide-scrollbars` (as the harnesses, the stories and the baselines run) and 0 without `data-axis`. Why no
+  gutter: with `scrollbar-gutter: stable` and hidden scrollbars Chromium reserves 15 px (`clientWidth` 305 at 320 px)
+  but sizes the inline scroll range as if they were not reserved, so a box that overflows both ways cannot reach its
+  last 15 px in LTR or its first 14 px in RTL (`scrollLeft` −14 and `data-fade="both"` at rest), and with classic
+  scrollbars an RTL box is left at −14 when the gutter goes at run time (spike-2 § Addendum A1, A2; FR-008, WCAG
+  1.4.10); the same cases without the gutter measured clean in both scrollbar modes and directions (spike-2
+  § Addendum, the same cases without `scrollbar-gutter`). Why `data-axis` only while overflowing (spike-2 Q-3 (c)):
+  without block overflow the box keeps 009's `overflow-y: hidden`, its two-layer mask and its keys exactly. Writing
+  or removing `data-axis` is an output change (`requestUpdate()`), so a host that sizes something by the scrollbar's
+  room (the data table's caption cap) re-reads it. When a classic scrollbar appears, the client width shrinks: the
+  module reads the mask figures (below) again after writing the attribute. The change is monotone (the scrollbar only
+  narrows the client area, which cannot end a block overflow), so the attribute cannot oscillate (spike-2 § Addendum
+  A3: no oscillation and no loop error in either scrollbar mode).
 - **Overflowing.** `overflowing` is true when the content overflows in either axis: `scrollWidth − clientWidth > 1`
   or `scrollHeight − clientHeight > 1`. While overflowing the box takes the tab stop, role and name exactly as 009's
   contract states (§ Effects, Overflowing); otherwise none of them.
@@ -99,11 +109,11 @@ otherwise (as it writes `data-axis`); the host binds nothing for it. `offStart`,
   keeps the fade off the pinned box: when the space below `pinnedEnd` is less than twice the fade depth, no
   block-end fade is drawn although content is below (the scrollbar still shows it).
 - **Mask figures.** No fade covers either scrollbar or the pinned box. While `data-axis="both"`, whenever it writes
-  the edge state, the module also reads the block-axis scrollbar's thickness (`offsetWidth − clientWidth`, the box
-  having no inline border) and, when a figure changed, writes `mask-size` for four layers, listed top first as
-  `mask-image` lists them (measured, spike-2 § 3):
-  1. the opaque layer over the block-axis scrollbar, `<thickness>px 100%`, at the scrollbar's side (the inline end in
-     LTR, the left under `dir="rtl"`, where Chromium puts the scrollbar and the gutter);
+  the edge state, the module also reads the block-axis scrollbar's thickness (its room, `offsetWidth − clientWidth`,
+  § Scrolling; 0 with hidden scrollbars) and, when a figure changed, writes `mask-size` for four layers, listed top
+  first as `mask-image` lists them (measured, spike-2 § 3 and § Addendum):
+  1. the opaque layer over the block-axis scrollbar, `<thickness>px 100%` (`0px 100%` with hidden scrollbars), at the
+     scrollbar's side (the inline end in LTR, the left under `dir="rtl"`, where Chromium puts the scrollbar);
   2. the opaque layer over the inline-axis scrollbar, `100% <inline scrollbar thickness>px`, at the block end (009's
      existing layer);
   3. the block-end fade layer, `<clientWidth>px <clientHeight>px`, at the client area's side;
@@ -178,8 +188,8 @@ otherwise (as it writes `data-axis`); the host binds nothing for it. `offStart`,
 
 | Element | Rules |
 |---|---|
-| `.region-box[data-axis="both"]` | `overflow-y: auto`; `scrollbar-gutter: stable` |
-| `.region-box[data-axis="both"]` with `[data-fade="start"]`, `[data-fade="end"]`, `[data-fade="both"]` or `[data-block-fade="end"]` (selected on these values only, never on presence) | inside `@media not (forced-colors: active)`: four `mask-image` layers, top first (§ Effects, Mask figures; spike-2 § 3): the opaque block-scrollbar layer on its side (`right` in LTR, `left` under `:host(:dir(rtl))`); the opaque inline-scrollbar layer at the block end; the block-end fade, a `linear-gradient` towards the block end, opaque to `calc(100% - var(--ocelle-scroller-fade-size))` and transparent at 100%, while `data-block-fade="end"`, or an opaque `linear-gradient(var(--ocelle-color-ink), var(--ocelle-color-ink))` otherwise; the inline fade `linear-gradient` per `data-fade` value (mirrored under `:host(:dir(rtl))`), or the opaque gradient when `data-fade` is absent; the two fade layers at the client area's side (`left` in LTR, `right` under `:host(:dir(rtl))`, the gutter being on the left). `mask-composite: add, add, intersect, add`; `mask-origin` and `mask-clip` `border-box`, `mask-repeat: no-repeat`; sizes from the per-instance sheet |
+| `.region-box[data-axis="both"]` | `overflow-y: auto`; no `scrollbar-gutter` (the computed value stays `auto`; Q-A1 (a)) |
+| `.region-box[data-axis="both"]` with `[data-fade="start"]`, `[data-fade="end"]`, `[data-fade="both"]` or `[data-block-fade="end"]` (selected on these values only, never on presence) | inside `@media not (forced-colors: active)`: four `mask-image` layers, top first (§ Effects, Mask figures; spike-2 § 3): the opaque block-scrollbar layer on its side (`right` in LTR, `left` under `:host(:dir(rtl))`); the opaque inline-scrollbar layer at the block end; the block-end fade, a `linear-gradient` towards the block end, opaque to `calc(100% - var(--ocelle-scroller-fade-size))` and transparent at 100%, while `data-block-fade="end"`, or an opaque `linear-gradient(var(--ocelle-color-ink), var(--ocelle-color-ink))` otherwise; the inline fade `linear-gradient` per `data-fade` value (mirrored under `:host(:dir(rtl))`), or the opaque gradient when `data-fade` is absent; the two fade layers at the client area's side (`left` in LTR, `right` under `:host(:dir(rtl))`, the block-axis scrollbar being on the left). `mask-composite: add, add, intersect, add`; `mask-origin` and `mask-clip` `border-box`, `mask-repeat: no-repeat`; sizes from the per-instance sheet |
 | `.region-edge.block-end` | always laid out: absolutely positioned at the frame's block end (`inset-block-end: 0`, `inset-inline-start: 0`), `inline-size: 0` (spike-2 Q-4 (a): zero-wide, so it covers no row and axe reports no `color-contrast` incomplete result), `block-size: var(--ocelle-scroller-fade-size)`, `box-sizing: border-box`, no pointer events, nothing painted outside forced colours; the module's block fade-depth measure (its block size; 32 px measured, spike-2 § 4). It overrides 009's inline placement and `inline-size` for `.region-edge` (its class is `block-end`, so 009's `.start` and `.end` rules do not select it) |
 | `.region-edge.block-end`, inside `@media (forced-colors: active)` | `inset-inline: 0`; `inline-size: auto`: the frame's full width, for the line below (measured: depth unchanged, no axe finding outside forced colours) |
 | `.region-box[data-block-fade="end"] ~ .region-edge.block-end` | in forced colours only: `border-block-end: var(--ocelle-border-width) solid CanvasText`, the block-end fade's forced-colours line, as 009's inline lines (no mask is drawn in forced colours) |
@@ -219,12 +229,17 @@ bound reaches the box; contracts/ocelle-data-table.md).
   and exactly twice the depth met).
 - `data-axis` follows the block overflow (spike-2 Q-3 (c)): with the option on, the host bounded so that it overflows
   inline only, no `data-axis`, `overflow-y` `hidden`, the box's `offsetWidth` equal to its `clientWidth` and the
-  two-layer `mask-size`; the bound then lowered below the content's block size: `data-axis="both"`, the gutter
-  (`offsetWidth − clientWidth` above 0) and the four layers; the bound lifted again: no `data-axis`. Under
-  `dir="rtl"`, overflowing inline only: `scrollLeft` 0 at rest, `data-fade="end"` (not `both`) at rest, and the
-  first row's inline start at the track's start (the content's start reachable), paired with the same host bounded
-  in the block axis too carrying `data-axis="both"` with `scrollLeft` 0 at rest. Each change after `settle`, with no
-  `ResizeObserver` loop error.
+  two-layer `mask-size`; the bound then lowered below the content's block size: `data-axis="both"`, `overflow-y`
+  `auto`, the computed `scrollbar-gutter` `auto` (none reserved, Q-A1 (a)), the block-axis scrollbar's room
+  `offsetWidth − clientWidth` 0 (the harnesses' hidden scrollbars) and the four layers, the first `0px 100%`; the
+  bound lifted again: no `data-axis`. Under `dir="rtl"`, overflowing inline only: `scrollLeft` 0 at rest,
+  `data-fade="end"` (not `both`) at rest, and the first row's inline start at the track's start (the content's start
+  reachable), paired with the same host bounded in the block axis too carrying `data-axis="both"` with `scrollLeft` 0
+  and `data-fade="end"` at rest. Overflowing both ways, in LTR and under `dir="rtl"`: the inline scroll range equal to
+  `scrollWidth − clientWidth`, and scrolled to its far end `data-fade="start"` (not `both`) with the last column's
+  inline end inside the client area within 0.5 px (spike-2 § Addendum A1: with a stable gutter the far end lost
+  15 px). The bound set and lifted under `dir="rtl"` at 320 px: `scrollLeft` 0 and `data-fade="end"` after each
+  change. Each change after `settle`, with no `ResizeObserver` loop error.
 - The keys the browser keeps (G1 (a)): with the box focused at the block start, `PageDown`, `PageUp`, `End`, `Home`,
   `Space` and `Shift+Space` in that order, each from the position the previous key left, as real key events
   (spike-2 § 10), each asserting that the key's default was not prevented (`lastKeyPrevented()` false), that
@@ -252,10 +267,22 @@ bound reaches the box; contracts/ocelle-data-table.md).
   block above the pinned child (in the same tree as the pinned child; the first focusable element after the box's own
   tab stop). In the 300 px bound at the block start, `focus` on the box and `pressTab` to the link: `scrollTop`
   unchanged at 0, its ring box inside the box at or below the client block-start edge, and `data-block-fade="end"`
-  still (nothing suppressed); then `setScrollTop` past the block (the pinned child at the client block-start edge
-  within 0.5 px), `focus` on the box and `pressTab` to the link again: `scrollTop` lower than before, its ring box's block-start edge at the client block-start edge within 0.5 px, its block-end
-  edge at or above the pinned child's current block-start edge, and `elementFromPoint` at the link's centre
-  returning the link. Paired, in the same body, with a link just below the pinned child cleared to the pinned
+  still (nothing suppressed). **The expected value is asserted at the partly scrolled position** (the operator's
+  answer to Q-A2 (a), 2026-11-18; spike-2 § Addendum A5): `setScrollTop` so that the link's border box's block-start
+  edge is 2 to 12 px above the client block-start edge (the block partly away, the pinned child in flow below it, not
+  yet pinned; the body asserts that offset first), `focus` on the box and `pressTab` to the link: `scrollTop` lower
+  than before, the ring box's block-start edge at the client block-start edge within 0.5 px, its block-end edge at or
+  above the pinned child's current block-start edge, `elementFromPoint` at the link's centre returning the link, and
+  no jump back (`scrollTop` unchanged over the next frames the body samples). Measured: Chromium's focus scroll alone
+  leaves the ring box at −4.7 px (it aligns the border box, not the ring box), and the clearance from `pinnedEnd`
+  (no `before`) scrolls to 0, the ring box at 21.3 px; only the `before` rule puts it at 0.3 px. Paired, in the same
+  body, with the **fully-past position**, an assertion the platform alone meets (contracts/checks.md § Bodies that
+  the platform alone could pass): `setScrollTop` past the block (the pinned child at the client block-start edge
+  within 0.5 px), `focus` on the box and `pressTab` to the link: the link shown whole above the pinned child (its
+  ring box inside the box, its block-end edge at or above the pinned child's current block-start edge,
+  `elementFromPoint` returning the link). Chromium's focus scroll centres the link and clamps at `scrollTop` 0 before
+  `focusin`, so the clearance writes nothing there (spike-2 § Addendum A4); the "at the client block-start edge"
+  value is not asserted at that position. Paired too with a link just below the pinned child cleared to the pinned
   child's block-end edge (the bound that does apply to it).
 - The block-end fade's bodies on the same host: `data-block-fade="end"` at rest with content below and absent at the
   block end; absent under the room rule (a bound leaving less than twice the fade depth below `pinnedEnd`) while

@@ -197,6 +197,16 @@ decisions in `reviews/phase-1/operator-spike-2-decisions.md`, changes listed in 
   the header's current edge (raised by the changes for Q-1, answered 2026-11-18): (a), for an element before the
   pinned header the block clearance's upper bound is the box's client block-start edge, so the box scrolls back to
   show it; the implementer measures it before phase 1's red commit (FR-018, US1-26).
+- Q-A1, measured before phase 1's red commit: a reserved scrollbar gutter, even only while the region overflows in
+  the block axis, still cost a table that overflows both ways 15 px of its inline range under hidden scrollbars, and
+  left a right-to-left table 14 px off its start when it went (answered 2026-11-18): (a), no room is reserved for a
+  block-axis scrollbar; the region scrolls in the block axis only while it overflows in that axis, and the
+  scrollbar takes room only where the platform draws one (FR-008, FR-018, US1-20).
+- Q-A2, measured before phase 1's red commit: once the caption has scrolled fully under the pinned header, the
+  browser's own focus scroll already shows a caption link whole, so the caption-link expectation of US1-26 could not
+  fail there (answered 2026-11-18): (a), the expectation that the focus ring is brought exactly to the box's
+  block-start edge is checked with the link partly scrolled out at the top (2 to 12 px above the edge), and the
+  fully scrolled position is kept as a paired check that the browser alone already meets (FR-018, US1-26).
 
 ## Scope
 
@@ -385,11 +395,14 @@ the block-axis keyboard and focus clearance, the block-end fade, the row grounds
     block-end edge; **Given** a link in the first body row, **When** the user tabs to it at rest and past the caption,
     **Then** its focus ring box is at or below the header row's current block-end edge (within 0.5 px) and inside
     the box; **Given** a link on the caption's second line and the 300 px bound, **When** the user tabs to it at
-    rest, **Then** the box does not scroll and the block-end fade still shows; **When** the box is scrolled past the
-    caption and the user tabs to the link again, **Then** the box scrolls back so the link's focus ring box is wholly
-    inside the box, its block-start edge at the box's client block-start edge (within 0.5 px), and above the header
-    row, which does not cover it (the operator's decisions A1 (c), 2026-11-18, Q-1 (a) on phase 1's second spike and
-    the answer to Q-S2-1 (a); FR-018).
+    rest, **Then** the box does not scroll and the block-end fade still shows; **When** the box is scrolled so the
+    link is partly out of view at the top (its border box 2 to 12 px above the box's client block-start edge) and the
+    user tabs to the link again, **Then** the box scrolls back so the link's focus ring box is wholly inside the box,
+    its block-start edge at the box's client block-start edge (within 0.5 px), and above the header row, which does
+    not cover it, with no jump back; **When** the box is scrolled fully past the caption and the user tabs to the
+    link, **Then** the link is shown whole above the header row (the browser's own focus scroll already does this,
+    so it is a paired check, not the evidence of the rule) (the operator's decisions A1 (c), 2026-11-18, Q-1 (a) on
+    phase 1's second spike and the answers to Q-S2-1 (a) and Q-A2 (a); FR-018).
 27. **Given** the US1-21 table at 320 px, scrolled to the inline middle and the block start, **When** it renders,
     **Then** the inline fades of 009's contract and the block-end fade show together, the box carrying both
     `data-fade="both"` and `data-block-fade="end"`, and a point under both fades is faded by both; **Given** a link in
@@ -590,12 +603,17 @@ the chip variant.
   bound no fade shows at rest until the caption scrolls away.
 - **A link in the caption of a sticky table.** The caption sits above the header row, so the link can never be below
   the pinned header; the focus clearance keeps it inside the box instead. Tabbed to while it shows, nothing scrolls
-  and no fade is held off; tabbed to after the caption has scrolled under the pinned header, the box scrolls back
-  just far enough to show its focus ring whole, the header row below it (FR-018, US1-26; the operator's answer to
-  Q-S2-1 (a)).
+  and no fade is held off; tabbed to while it is partly scrolled out at the top, the box scrolls back just far enough
+  to show its focus ring whole, the header row below it; tabbed to after the caption has scrolled fully under the
+  pinned header, it is shown whole above the header row, which the browser's own focus scroll already does (FR-018,
+  US1-26; the operator's answers to Q-S2-1 (a) and Q-A2 (a)).
 - **Sticky header, right-to-left, overflowing only sideways.** No block-axis scrollbar room is reserved while nothing
   overflows in the block axis, so the table's start is reachable by scrolling (FR-008, FR-018; the operator's
   decision Q-3 (c) on phase 1's second spike).
+- **Sticky header overflowing both ways, either direction.** No room is reserved beyond the scrollbar the platform
+  draws, so the table's whole inline range is reachable, its end in left-to-right and its start in right-to-left,
+  with scrollbars hidden or shown, and a right-to-left table is not left off its start when the block bound is set
+  or lifted (FR-008, FR-018; the operator's answer to Q-A1 (a)).
 - **Block-end fade with the sideways fades.** Both show together when the region overflows in both axes; a corner
   under both is faded by both, the inline fades still span the header row as 009's do, and neither fade covers a
   scrollbar (FR-018).
@@ -827,8 +845,9 @@ the chip variant.
     320 px with a two-line caption). A focused element that comes before the block-start box (a link in the data
     table's caption) cannot be put below that box, which follows it and cannot cover it: for it the clearance's upper
     bound is the box's own block-start edge, so the box scrolls back to show it whole and leaves it alone where it
-    already shows (the operator's answer to Q-S2-1 (a), 2026-11-18). The block-axis scrollbar's room is reserved only while the box overflows in the
-    block axis (Q-3 (c)), and the block-end edge that measures the fade depth covers no content outside forced
+    already shows (the operator's answer to Q-S2-1 (a), 2026-11-18). The box scrolls in the block axis only while it
+    overflows in that axis (Q-3 (c)), no room is reserved for a block-axis scrollbar beyond the scrollbar the
+    platform draws, so the whole inline range stays reachable in both directions (Q-A1 (a)), and the block-end edge that measures the fade depth covers no content outside forced
     colours (Q-4 (a)). It combines with the inline fades (a corner under both is faded
     by both), the focus clearance keeps the ring box clear of it, with 009's fallback (the fade held off) for a ring
     box too tall to clear, and in forced colours a line in `CanvasText` at the block end stands in for it. No fade

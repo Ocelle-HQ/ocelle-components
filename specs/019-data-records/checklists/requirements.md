@@ -96,3 +96,9 @@
   focused element before the pinned header (a caption link) is kept inside the box, its clearance bounded by the box's
   block-start edge (FR-017, FR-018, US1-26, the caption-link edge case). US1-26 gains a testable caption-link half; no
   story or count changes; no `[NEEDS CLARIFICATION]` marker. Every item above still holds.
+- Phase 1 spike 2, T082 addendum questions (answered 2026-11-18, end of
+  `reviews/phase-1/operator-spike-2-decisions.md`): Q-A1 (a), no room is reserved for a block-axis scrollbar beyond
+  the one the platform draws, so a table overflowing both ways keeps its whole inline range in both directions
+  (FR-018, a new both-ways edge case); Q-A2 (a), US1-26's caption-link expectation is checked with the link partly
+  scrolled out at the top, the fully scrolled position kept as a paired check the browser alone meets (US1-26, the
+  caption-link edge case). No story or count changes; no `[NEEDS CLARIFICATION]` marker. Every item above still holds.

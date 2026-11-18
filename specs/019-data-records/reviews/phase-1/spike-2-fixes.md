@@ -79,3 +79,57 @@ touched. T082 stays open: its addendum now also measures this case before the re
 Counts: no story, baseline or task added, removed or renumbered (phase 1: 21 stories, 42 baselines; mission 44 and
 88). Element plants in T024 and contracts/checks.md: one more (Q-S2-1). `units.sh` reports phase 1 with 27 tasks, 25
 open, as before; T082 stays open.
+
+## Operator answers to the T082 addendum questions applied
+
+Answers recorded at the end of `reviews/phase-1/operator-spike-2-decisions.md` (2026-11-18, human:jeroennouwsdev) on
+`reviews/phase-1/spike-2.md` § Addendum: Q-A1 (a), drop `scrollbar-gutter` (`overflow-y: auto` only while the box
+overflows in the block axis; the scrollbar's room read as `offsetWidth − clientWidth`); Q-A2 (a), US1-26's
+past-caption half and T079's element-before body move to the partly scrolled position (the link 2 to 12 px above the
+client block-start edge), the fully-past position kept as a paired assertion the platform alone meets. Design
+artifacts only; no source or test file is touched. T082 stays unticked for the implementer: its addendum is recorded
+and both contradictions are answered and applied here, so the implementer ticks it once satisfied the section holds
+no further contradiction.
+
+| Item | Change | Where |
+|---|---|---|
+| Q-A1 (a) | `.region-box[data-axis="both"]`: `overflow-y: auto` only, no `scrollbar-gutter` (computed `auto`); the block-axis scrollbar's room is `offsetWidth − clientWidth` (15 px classic, 0 hidden, 0 without `data-axis`); the why (hidden scrollbars: 15 px reserved but the inline range sized without it, a both-ways table losing its LTR end and RTL start; classic: RTL left at −14 when the gutter went); `data-axis` still only while overflowing (Q-3 (c)); the monotonicity argument restated for the scrollbar | contracts/overflow-region-block-axis.md (header, § Effects: Scrolling, Mask figures, § Stylesheet) |
+| Q-A1 (a) | Mask figures: the block-scrollbar layer `0px 100%` under hidden scrollbars; "where Chromium puts the scrollbar" (not "and the gutter") | contracts/overflow-region-block-axis.md § Effects (Mask figures), § Stylesheet; tasks.md T079, T081 |
+| Q-A1 (a) | The caption cap subtracts the scrollbar's room (not "the gutter"); 0 under hidden scrollbars; rewrite one frame after `data-axis` changes, measured 305px/320px with classic scrollbars; the oscillation note now cites the addendum's measurement | contracts/ocelle-data-table.md § Sticky header row (Module, The caption cap); research.md R-07 (the measured width), R-18 (The option, The caption cap with a block-axis scrollbar, The caption cap); data-model.md (box size, overflow state); tasks.md T016 |
+| Q-A1 (a) | New and changed bodies: the `data-axis` body asserts `overflow-y` `auto`, computed `scrollbar-gutter` `auto`, room 0 and the four layers; a both-ways inline-range body in LTR and RTL (range `scrollWidth − clientWidth`, far end `data-fade="start"`, last column inside within 0.5 px); RTL bound set and lifted (`scrollLeft` 0, `data-fade="end"` after each change); T080's RTL pair gains the far end and the lift; US1-20 and the unbounded story assert `overflow-y` `hidden` instead of the now-vacuous `offsetWidth` equal to `clientWidth`; the sticky caption body reads "less the scrollbar's room" | contracts/overflow-region-block-axis.md § Tests; contracts/checks.md § Oracles (computed style, US1-20), § Stories (unbounded); tasks.md T014, T079, T080 |
+| Q-A1 (a) | Element plant: `scrollbar-gutter: stable` added to `.region-box[data-axis="both"]`, guard the both-ways inline range body (T079) and T080's block-bounded RTL pair; the `.box-size` plant renamed to the scrollbar's room, its guard under hidden scrollbars open (Q-A3 below) | contracts/checks.md § Element plants; tasks.md T024 |
+| Q-A1 (a) | FR-018 sentence (no room beyond the scrollbar the platform draws; the whole inline range reachable both ways); new edge case "Sticky header overflowing both ways, either direction"; decision bullet; checklist note | spec.md; checklists/requirements.md § Notes |
+| Q-A2 (a) | The element-before body: at rest unchanged; the expected value (ring box at the client block-start edge within 0.5 px, `<thead>` below, `elementFromPoint` the link, no jump back) at the partly scrolled position (link's border box 2 to 12 px above the edge, asserted first), with A5's figures (Chromium alone −4.7, without `before` 21.3, with it 0.3); paired with the fully-past position asserting only "shown whole above the pinned child" | contracts/overflow-region-block-axis.md § Tests; tasks.md T079 |
+| Q-A2 (a) | US1-26's caption-link half: the same move; the data-table module bullet states the three positions | spec.md US1-26, edge case "A link in the caption of a sticky table", decision bullet; contracts/ocelle-data-table.md § Sticky header row (Module); tasks.md T080 |
+| Q-A2 (a) | Oracles (geometry US1-26, keyboard US1-26 helpers); the platform-alone row for "not scrolled at rest" now pairs with the partly scrolled half; a new platform-alone row for the fully-past half (US1-26 and T079), recorded as met by Chromium's focus scroll alone and kept as a regression guard | contracts/checks.md § Oracles, keyboard table, § Bodies that the platform alone could pass |
+| Q-A2 (a) | The `before` plant's guards: US1-26's caption link at rest and at the partly scrolled position, T079's element-before body at the partly scrolled position; not the fully-past half | contracts/checks.md § Element plants; tasks.md T024 |
+| Q-A2 (a) | Focus clearance: "not measured" replaced by the addendum's figures and the answer | research.md R-18 (Focus clearance), new Result (T082's addendum) |
+| Both | Decisions in force; stop-and-ask points (Q-3 (c) and Q-S2-1 bullets record the stop and the answers; new Q-A3 bullet); T082's addendum text records the outcome and the answers, T082 left open; plan summary and decision items 6 and 7; quickstart prerequisites and step 5 (no empty band, the sticky table reachable to its last column, and its first under RTL) | tasks.md; plan.md § Summary, § Decisions on phase 1's second spike, § Phases (Spike 2); quickstart.md |
+
+Counts: no story, baseline or task added, removed or renumbered (phase 1: 21 stories, 42 baselines; mission 44 and
+88). Element plants in T024 and contracts/checks.md: one more (the gutter back). `units.sh` reports phase 1 with 27
+tasks, 25 open, as before; T082 stays open.
+
+## Question for the operator (after the addendum answers)
+
+**Q-A3. The data table's scrollbar-room subtraction has no biting guard under hidden scrollbars.** With
+`scrollbar-gutter: stable` the room the data table subtracts from `--data-table-box-size` (`offsetWidth −
+clientWidth`) was 15 px in every run, so the plant "the `.box-size` write without the gutter subtracted" made the
+sticky caption body fail. With Q-A1 (a) the room is 0 under `--hide-scrollbars`, which every harness, story and
+baseline uses, so the subtraction and its absence give the same cap there and the plant cannot bite (a plant that
+does not bite stops the phase, contracts/checks.md § Element plants). The subtraction still matters to users with
+classic scrollbars (15 px: without it the caption's last 15 px run under the scrollbar). The same holds, more
+mildly, for the block-scrollbar mask layer's figure (`0px 100%` under hidden scrollbars; its plant still bites on the
+layer count). Options:
+
+- (a) Add a classic-scrollbar half to T080's sticky caption body, run in a suite launched without
+  `--hide-scrollbars` as 009's `packages/elements/test/browser/scrollbar.test.ts` does (fixture harness only): at
+  320 px with block overflow the room 15 px, `--data-table-box-size` the measured size less 15 px and every caption
+  line inside the unmasked width; the bound set and lifted (`305px` and `320px` following one frame after each
+  change, spike-2 § Addendum); the RTL both-ways table at `scrollLeft` 0 at rest and after the lift; and T079's mask
+  figure with a non-zero block-scrollbar layer. The plant is guarded there. No task added; one more browser test file
+  or a new describe block in an existing one.
+- (b) As (a) but only the caption cap half (no RTL or mask figure in classic mode).
+- (c) Keep hidden scrollbars only; record the subtraction plant as not run with the reason (vacuous under hidden
+  scrollbars) in `element-plants.md`, an accepted gap; the README states the classic-scrollbar behaviour without a
+  test. Not recommended (constitution VIII: a behaviour with no failing test).

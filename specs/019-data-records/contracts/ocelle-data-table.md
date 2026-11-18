@@ -148,7 +148,9 @@ While `sticky-header` is present (the property `stickyHeader` reflects it; any v
   `blockStartBox: () => <the assigned table's first direct <thead> child> ?? null`
   ([overflow-region-block-axis.md](overflow-region-block-axis.md)). The module then puts `data-axis="both"` on the
   box while the table overflows the bound in the block axis (and only then, so a right-to-left table that overflows
-  only sideways reserves no scrollbar gutter and keeps its start reachable; spike-2 Q-3 (c)), scrolls it in both axes, takes the tab stop while either axis overflows, handles ArrowUp and ArrowDown (and
+  only sideways keeps 009's `overflow-y: hidden` and its start reachable; spike-2 Q-3 (c); no `scrollbar-gutter` is
+  reserved at any time, so a table overflowing both ways keeps its whole inline range, the operator's answer to
+  Q-A1 (a), 2026-11-18), scrolls it in both axes, takes the tab stop while either axis overflows, handles ArrowUp and ArrowDown (and
   leaves PageUp, PageDown, Home, End, Space and Shift+Space to the browser, which scrolls the focused box; the
   operator's decision G1 (a), 2026-11-18) and keeps a focused body element clear of the pinned `<thead>` and of the
   block-end fade, measured from the `<thead>`'s current laid-out block-end edge (A1 (c), decided (a) after T082,
@@ -157,8 +159,11 @@ While `sticky-header` is present (the property `stickyHeader` reflects it; any v
   element in the caption (a link) precedes the `<thead>` in tree order, so the module bounds its clearance by the
   box's client block-start edge instead (the operator's answer to Q-S2-1 (a), 2026-11-18;
   [overflow-region-block-axis.md](overflow-region-block-axis.md) § Effects, Focus clearance): tabbed to at rest it
-  is not scrolled, and tabbed to once the caption has scrolled under the pinned header the box scrolls back to show
-  it whole, above the `<thead>`. The element adds no listener and no scroll write.
+  is not scrolled; tabbed to with the caption partly scrolled out at the top (the link 2 to 12 px above the box's
+  client block-start edge) the box scrolls back by the smallest amount that brings its ring box to that edge; and
+  tabbed to once the caption has scrolled under the pinned header it is shown whole, above the `<thead>`, which
+  Chromium's own focus scroll already does (it scrolls the box to the block start before `focusin`, so the module
+  writes nothing there; spike-2 § Addendum A4, A5; the operator's answer to Q-A2 (a), 2026-11-18). The element adds no listener and no scroll write.
 - **The block-end fade (operator decision Q-I4, 2026-11-18).** While rows are below the box's block end the module
   writes `data-block-fade="end"` on the box and fades its block end over the fade depth; never at the block start,
   never under the pinned `<thead>` (the module's room rule: no fade when less than twice the fade depth shows below
@@ -181,17 +186,20 @@ While `sticky-header` is present (the property `stickyHeader` reflects it; any v
   switches the table to `border-collapse: separate` with `border-spacing: 0`, so the header rule travels with the row
   ([styles-data-table.md](styles-data-table.md)). The `<thead>` scrolls with the region in the inline axis, so each
   column header stays above its column.
-- **The caption cap.** While `data-axis="both"`, `scrollbar-gutter: stable` reserves the block-axis scrollbar's room
-  (15 px in Chromium, drawn or not; spike-2 § 2), so `.box-size`'s inline size exceeds the box's client inline size by
-  the gutter. While `sticky-header` is set, the `.box-size` observer's callback writes `--data-table-box-size` as the
-  measured inline size less the box's `offsetWidth − clientWidth` (the gutter, read in the same callback; 0 while the
-  box has no `data-axis`), px only, so the caption still wraps inside the box's unmasked width (R-07, R-18). The gutter
-  now comes and goes with the block overflow (spike-2 Q-3 (c)) and `.box-size`'s own size does not change when it
-  does, so the element also keeps the last measured `.box-size` inline size, and when the rendered box's `data-axis`
+- **The caption cap.** While `data-axis="both"`, a classic block-axis scrollbar takes its room (15 px in Chromium;
+  0 with hidden scrollbars, as the harnesses, the stories and the baselines run; no `scrollbar-gutter`, Q-A1 (a)), so
+  `.box-size`'s inline size exceeds the box's client inline size by the scrollbar's room. While `sticky-header` is
+  set, the `.box-size` observer's callback writes `--data-table-box-size` as the measured inline size less the box's
+  `offsetWidth − clientWidth` (the block-axis scrollbar's room, read in the same callback; 0 while the box has no
+  `data-axis` or the scrollbars are hidden), px only, so the caption still wraps inside the box's unmasked width
+  (R-07, R-18). The scrollbar comes and goes with the block overflow (spike-2 Q-3 (c)) and `.box-size`'s own size does
+  not change when it does, so the element also keeps the last measured `.box-size` inline size, and when the rendered box's `data-axis`
   changes (the module requests an update for it), `updated()` requests the same single animation frame as the end
   fade's (at most one pending, cancelled on disconnect), whose callback rewrites `--data-table-box-size` from that
-  size less the current gutter, never in the task of the change. The rewrite cannot oscillate: a narrower cap can only
-  make the table taller, which keeps the block overflow (measured before the red commit, tasks.md T082). Without
+  size less the current scrollbar room, never in the task of the change (measured with classic scrollbars: 305px and
+  320px following, one frame after each change; spike-2 § Addendum). The rewrite cannot oscillate: a narrower cap can only
+  make the table taller, which keeps the block overflow (measured, spike-2 § Addendum A2, A3: no oscillation, no
+  loop error). Without
   `sticky-header` the write is as before.
 - **Toggling.** Setting or removing `sticky-header` re-renders; the module re-reads `blockAxis` in `hostUpdated` and
   takes or drops the block axis, `data-axis` (while the table overflows the bound) and `data-block-fade`, and the tab

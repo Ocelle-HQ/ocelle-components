@@ -98,9 +98,11 @@ history and evidence chain.
 - **Decided on phase 1's second spike (2026-11-18).** T082 measured R-18's and R-20's points
   (`reviews/phase-1/spike-2.md`). Q-1 (a): the pinned-box measure is the `<thead>`'s current block-end edge. Q-2 (a):
   block 1 pins the `<thead>` at a negative block-start inset of the ring room. Q-3 (c): the module sets
-  `data-axis="both"` (and so the scrollbar gutter) only while the box overflows in the block axis, measured by the
+  `data-axis="both"` (`overflow-y: auto`) only while the box overflows in the block axis, measured by the
   implementer before the red commit (a stop-and-ask point). Q-4 (a): `.region-edge.block-end` is zero-wide outside
-  forced colours. Story, baseline and task counts are unchanged. See § Decisions on phase 1's second spike.
+  forced colours. T082's addendum: Q-A1 (a), no `scrollbar-gutter` (the scrollbar's room read as `offsetWidth −
+  clientWidth`); Q-A2 (a), the caption-link rule asserted at a partly scrolled position, the fully-past position a
+  paired platform-alone assertion; Q-A3 open. Story, baseline and task counts are unchanged. See § Decisions on phase 1's second spike.
 
 009, 013 and op 016 are on `main`, and `main` (b594b7e) is merged into this branch (8ee3351, operator decision of
 2026-11-17, `reviews/main-merge.md`). The first task rechecked the plan against it (R-14, `reviews/recheck.md`):
@@ -411,7 +413,8 @@ Answered by the operator on 2026-11-18 (`reviews/phase-1/operator-spike-2-decisi
    body read the header's edge at the client edge once scrolled and at its at-rest position back at the block start.
    One element plant (the inset back to `0`) guards it. No module change.
 3. **Q-3, RTL and the reserved gutter. Decided: (c).** The module writes `data-axis="both"` only while the option
-   is on and the box overflows in the block axis; the gutter comes and goes with it, the module re-reads its mask
+   is on and the box overflows in the block axis; the gutter (dropped by item 6; now the scrollbar) comes and goes
+   with it, the module re-reads its mask
    figures, and the data table rewrites `--data-table-box-size` one frame after `data-axis` changes. US1-20 and the
    unbounded story's test assert no `data-axis`. Not measured in the spike: the implementer measures it before the red
    commit (T082) and stops if it fails (tasks.md § Stop-and-ask points).
@@ -422,6 +425,18 @@ Answered by the operator on 2026-11-18 (`reviews/phase-1/operator-spike-2-decisi
    the box's client block-start edge, so the box scrolls back to show it; `blockClearanceScroll` takes it as
    `before`. US1-26 and T079's captioned bodies carry a caption link; T082's addendum measures it before the red
    commit; one element plant guards it.
+6. **Q-A1, the stable gutter loses 15 px of inline range (T082's addendum). Decided: (a).** No `scrollbar-gutter`:
+   `[data-axis="both"]` gives `overflow-y: auto` only, still written only while the box overflows in the block axis;
+   the scrollbar's room is `offsetWidth − clientWidth` (15 px classic, 0 hidden), which the module's mask figures and
+   the data table's caption cap read. T079 and T080 gain the both-ways inline range bodies (LTR far end, RTL start,
+   the bound set and lifted); one element plant (the gutter back) guards it.
+7. **Q-A2, the caption link "past the caption" met by Chromium alone (T082's addendum). Decided: (a).** US1-26's
+   caption-link half and T079's element-before body assert the ring box at the client block-start edge with the link
+   2 to 12 px above it (spike-2 § Addendum A5), the fully-past position kept as a paired assertion the platform alone
+   meets (contracts/checks.md).
+
+Open: Q-A3 (`reviews/phase-1/spike-2-fixes.md`), which body guards the data table's scrollbar-room subtraction now
+that it is 0 under hidden scrollbars; phase 1's red commit waits for it (tasks.md § Stop-and-ask points).
 
 The spike's settled facts for the red bodies (research R-18's and R-20's Results): the mask layer order and
 `mask-composite: add, add, intersect, add`; "within 0.5 px" inclusive (`≤ 0.5`); the stripe per `<tbody>`; a
@@ -568,7 +583,7 @@ Every phase with stories also does the following:
      - axe on an overflowing element named by a non-blank host `aria-label` (the exception row's sunset check);
      - any change of R-05 the module does not observe (FR-014), named in R-05 and sent to the operator.
    - **Spike 2 (T082, IQ-2 to IQ-5; R-18, R-20), before the scaffold**, recorded in `reviews/phase-1/spike-2.md`: the
-     slotted sticky `<thead>` against the shadow `.region-box`; `data-axis="both"` with `scrollbar-gutter: stable` and
+     slotted sticky `<thead>` against the shadow `.region-box`; `data-axis="both"` with `scrollbar-gutter: stable` (dropped after the addendum, Q-A1 (a)) and
      the four-layer mask in LTR and RTL (the two fade layers intersecting, the scrollbar layers added); the block-end
      fade (at rest, at the end, the room rule, forced colours); the host's column-flex bound (a bound, none, the shrink-to-fit hosts); block
      clearance under the pinned header, clear of the block-end fade and inside the header; the caption cap less the gutter with no loop error; separated
