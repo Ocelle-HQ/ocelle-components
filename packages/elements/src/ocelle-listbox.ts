@@ -138,6 +138,11 @@ export class OcelleListbox extends LitElement {
     super.connectedCallback();
     this.#observer.observe(this, { childList: true, subtree: true, attributes: true, attributeFilter: ["value", "disabled"] });
     this.#apply(this.#model.batch());
+    // The shadow root's list and slot now, not in the first deferred update (014 T114, phase 7 operator decision 2):
+    // until the slot exists the options are not rendered, so the tab stop written above could not take focus, and an
+    // `ocelle-dialog` open at insertion picked its initial focus (008 FR-007) before them, falling back to its close
+    // control. Lit's update returns at once when none is pending.
+    this.performUpdate();
   }
 
   protected override updated(): void {
