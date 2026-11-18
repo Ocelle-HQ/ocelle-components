@@ -24,3 +24,6 @@
 - **Q-A2, the caption-link "past the caption" body passes at red:** (a) move US1-26's past-caption half and T079's
   element-before body to the partly scrolled position (link 2 to 12 px above the edge), and keep the fully-past
   position as a paired assertion the platform alone meets.
+- **Q-A3, the scrollbar-room plant cannot bite under hidden scrollbars (spike-2-fixes.md):** (a) add a
+  classic-scrollbar half for the sticky caption body, the RTL lift and the mask figure, run in a suite launched
+  without `--hide-scrollbars`, like 009's `scrollbar.test.ts`.
