@@ -156,6 +156,54 @@ async function tabToBox(driver: Driver): Promise<void> {
   await driver.pressTab();
 }
 
+/**
+ * Q-M1 (b), T083: focus entering a box handed back before the module's observer measures it. Tabs to the host's box
+ * (keyboard modality), scrolls it to 122 so that row 3's link (content 127 to 147) lies wholly inside the client area
+ * but under the pinned box (client 0 to 27), lets the module go of the box (`current="none"`), then in one module
+ * script, so in one task and before the module's `ResizeObserver` measures the box again: hands the box back, awaits
+ * the host's update, focuses row 3's link and records whether it matches `:focus-visible`. Read after `settle`.
+ * Why row 3 at 122 and not row 0 at 200 (tasks.md T083): a link wholly outside the client area is centred by
+ * Chromium's own focus scroll, which clears it of the pinned box with no block clearance at all (measured: the body
+ * passed against the green source in both halves); a link wholly inside it is not scrolled by Chromium (the option-off
+ * focus guard below, `change: 0` at the same position), so only the module's block clearance can move it.
+ */
+async function handedBack(driver: Driver, id: string, options: HostOptions): Promise<Record<string, unknown>> {
+  await page(driver, host(id, options));
+  await tabToBox(driver);
+  await driver.setScrollTop(boxOf(id), 122);
+  const link = `${id}-r3`;
+  const pinEnd = async (): Promise<number> => {
+    const pin = await driver.box(`${id}-pin`);
+    return pin.y + pin.height;
+  };
+  const underPin = (await ringOf(driver, link)).top < (await pinEnd()) - 0.5;
+  await driver.setAttribute(id, "current", "none");
+  await driver.settle();
+  const letGo = await boxAttribute(driver, id, "data-axis");
+  await driver.module(
+    `const host = document.getElementById(${JSON.stringify(id)});
+host.removeAttribute("current");
+await host.updateComplete;
+const link = document.getElementById(${JSON.stringify(link)});
+link.focus();
+link.setAttribute("data-visible", String(link.matches(":focus-visible")));`,
+  );
+  await driver.settle();
+  const ring = await ringOf(driver, link);
+  const box = await driver.box(id, ".region-box");
+  const fadeShows = (await boxAttribute(driver, id, "data-block-fade")) === "end";
+  const bottom = fadeShows ? await fadeTop(driver, id) : box.y + (await prop(driver, boxOf(id), "clientHeight"));
+  return {
+    underPin,
+    letGo,
+    focusVisible: await driver.attribute(link, "data-visible"),
+    focused: await driver.focused(),
+    belowPin: ring.top >= (await pinEnd()) - 0.5,
+    clearOfEnd: ring.bottom <= bottom + 0.5,
+    scrolledBack: (await driver.scrollTop(boxOf(id))) < 122,
+  };
+}
+
 export const overflowBlockScenarios: readonly Scenario[] = [
   {
     // Plants: `data-axis` never set; `overflowing` read over the inline axis only.
@@ -664,6 +712,13 @@ export const overflowBlockScenarios: readonly Scenario[] = [
       { blockFade: "end" },
     ],
   },
+  {
+    // Q-M1 (b), T083 (contract § Effects, Focus clearance, "When it runs"). Plant: the block clearance gated on the
+    // state the last measurement left (`#axis`), which `#release` set false, instead of the overflow read at focus.
+    name: "block clearance for focus entering a box handed back before the module's observer measures it: a link under the pinned box and focused with a ring in the same task as the hand-back is cleared below the pinned box and clear of the block-end fade (Q-M1 (b))",
+    run: async (driver) => handedBack(driver, "h", { bound: 300 }),
+    expected: { underPin: true, letGo: null, focusVisible: "true", focused: "h-r3", belowPin: true, clearOfEnd: true, scrolledBack: true },
+  },
 ];
 
 /** The option-off guard: the same host without `block-axis` keeps 009's contract exactly. */
@@ -731,5 +786,16 @@ export const overflowBlockGuards: readonly Scenario[] = [
       return moved;
     },
     expected: { o: { focused: "o-r3", at: 122, change: 0 }, w: { focused: "w-r3", at: 122, change: -1 } },
+  },
+  {
+    // Q-M1 (b), T083, the option-off half: the overflow read at focus is the block clearance's condition only with the
+    // option on. The host overflows in the inline axis (rows 600 px wide at 320 px), so the box is a tab stop and the
+    // module's focus handler runs. Plant: the block clearance on block overflow alone, without the option.
+    name: "block axis off (guard), focus entering a box handed back before the module's observer measures it: with the option off the same link stays above the pinned box's block-end edge (no block clearance); paired with the option-on body above",
+    run: async (driver) => {
+      const observed = await handedBack(driver, "o", { bound: 300, wide: true, narrow: true, axis: false });
+      return { underPin: observed.underPin, letGo: observed.letGo, focusVisible: observed.focusVisible, focused: observed.focused, belowPin: observed.belowPin };
+    },
+    expected: { underPin: true, letGo: null, focusVisible: "true", focused: "o-r3", belowPin: false },
   },
 ];
