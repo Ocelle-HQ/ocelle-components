@@ -1,8 +1,10 @@
-# Mutation of phase 1 (T025), in progress
+# Mutation of phase 1 (T025)
 
 Command: `pnpm run gate:mutation -- --base 8d104af23ce177ec4acbbfaba59bf433f9520d6d` (the phase base), Stryker on the
-in-process `elements` and `elements-touch` projects (vitest.mutation.elements.config.ts). T025 is open: the gate still
-exits 1, and two points are for the operator (below).
+in-process `elements` and `elements-touch` projects (vitest.mutation.elements.config.ts) for the element source and on
+the default configuration for the gate source. Run 4, on a474f8f (with T084, T086 and T089), exits 0: no survivor on
+the changed lines of the five changed files. Runs 1 to 3 and the triage below them are kept as they were written, with
+what became of each point in § Final run.
 
 ## Runs
 
@@ -11,6 +13,8 @@ exits 1, and two points are for the operator (below).
 | 1 | 14c0ca2 | exit 1: 30 findings, 467 mutants on changed lines, 288 compile errors. 28 survivors, all in `overflow-region.ts`; every one of the 238 mutants of `ocelle-data-table.ts` a CompileError |
 | 2 | f1e112c (uncommitted then) | exit 1: 2 findings; `overflow-region.ts:660` (`#release`'s `this.#axis = false`) survives; the data table still all compile errors |
 | 3 | 425f115 | exit 1: 48 findings, 455 mutants, 1 timeout, 125 compile errors. `overflow-region.ts`: 149 killed, 1 survivor (`:660`). `ocelle-data-table.ts`: 115 killed, 46 survived, 1 no coverage, 1 timeout |
+| pre-4 | a scratch worktree of 850102d with T089's change, the new bodies and the records (Stryker's concurrency lowered to 2 there only, beside a plant run) | exit 1: 4 findings, 533 mutants. `report.ts`: 3 survivors (lines 145 and 163), killed or recorded in T089's commit; `ocelle-data-table.ts`: 1 survivor, the `true` variant of the new `fadeChanged` line, recorded as equivalent before run 4 |
+| 4 | a474f8f | **exit 0**: `mutation: 533 mutants on the changed lines of 5 files, none survived; 1 timeout, 131 compile errors, 2 zero-mutant entries; 32 equivalent records` (47 min 50 s). `overflow-region.ts`: 150 killed, 50 compile errors, 18 ignored. `ocelle-data-table.ts`: 128 killed, 67 compile errors, 48 ignored. `gates/lib/mutation/report.ts`: 55 killed, 1 timeout (the Regex mutant `^(\s.*)…`, a timeout counts as killed), 14 compile errors, 2 ignored. `gates/bin/mutation.ts` (a comment) and `packages/elements/src/index.ts` have no mutant on their changed lines |
 
 ## overflow-region.ts (T081), commit f1e112c
 
@@ -67,6 +71,47 @@ OverflowRegion` and `blockStartBox`'s `Element | null`. Run 3's survivors were t
   reattach it, and the slot assigns nothing, so no table shows. `connectedCallback` observes again but does not
   re-assign, and nothing requests an update. **For the operator (Q-M2).**
 
+## Final run (run 4, a474f8f)
+
+- **`overflow-region.ts:660`** (`#release`'s `this.#axis = false`, the `true` variant; Q-M1): after T084 the focus
+  handler reads the block overflow at the time of focus, not `#axis`, so the mutant differs from the code in no
+  observable way: until the observer measures the box again, which writes `#axis`, the box has no `tabindex`, so no
+  key reaches it (a scratch body confirmed the box is neither focusable nor focused in that window; only a synthetic
+  `keydown` dispatched by a script on the unfocused box tells the two apart, by `defaultPrevented`). Recorded as
+  equivalent (Stryker disable comment naming T084 and Q-M1 (b)); checked by applying the mutant by hand on T084's tree: the
+  in-process module tests, T083's body among them (`test/overflow*.test.ts` in `elements` and `elements-touch`, 111
+  tests), pass with it.
+- **`ocelle-data-table.ts`, run 3's survivors:**
+  - killed by new shared bodies (4ee0215, both harnesses; each mutant applied by hand and its body seen failing;
+    run 3's line numbers unless "now"):
+    the `img` test and `walk` (lines 25 and 26) and the no-coverage `?? ""` (a visible nested element and an `<img>`
+    without `alt`); the reflection of `wrap`, `sticky-header` and `striped` (45 to 47); the box size on a resize with
+    no fade change (143); a reconnect adopting the sheet once (161); `hidden`, `aria-hidden` and `alt` in the
+    attribute filter (162); a blank `label` (now 235); the end fade at `both` in the frame of an axis change (now
+    258), and run 3's line 223 (now 238) `both` → `false`, which the previous triage called "extra frames only": it is not, a
+    fade going from `start` to `both` then asks for no frame and the end fade stays unwritten (the start-to-both
+    body); `cancelAnimationFrame` in `disconnectedCallback` (now 184; the frame-cancel body: a frame running while
+    the element is detached writes a 0 px end fade that nothing corrects). T086's own lines: the assignment in
+    `connectedCallback` (the slot read in the task of the re-attach) and its `requestUpdate()` (a replacement whose
+    module outputs do not change keeps the old name without it);
+  - recorded as equivalent, with the reasons in the source (run 3's line numbers): `trim` and the blank test of `captionText` (31, 32),
+    `label`'s `{}` (44), the block axis' `true` without `sticky-header` (125), `#endWritten`'s first value (150), the
+    attribute callback's `true` (177), the assignment test's `true` (214), the frame condition's extra frames (225,
+    now split into `fadeChanged` and `axisChanged` so each record names only its own variants), and the equal-value
+    test of `#writeBoxSize` (255);
+  - `disconnectedCallback` re-triaged after T086: the `BlockStatement`, `super.disconnectedCallback()`,
+    `#children.disconnect()` and `#size.disconnect()` are equivalent (with T086 a change made while detached is
+    assigned and updated on connect, a detached `.box-size` reports 0, which the callback ignores, and with the body
+    empty the module's observer stays connected and measures again); each was applied by hand and every data-table
+    body passes with it. `cancelAnimationFrame` is not equivalent and is killed (above);
+  - the block-axis scrollbar's room (224, 225, 244, 245, 252, 253 in run 3): each variant that type-checks was
+    applied by hand and run against the classic-scrollbar suite (`test/browser/data-table-scrollbar.test.ts`, the
+    sticky caption body fails with each, element-plants.md § T025); the records name that file and body. Two
+    variants are equivalent and recorded so: the sticky-header test's `true` (without it the box never has
+    `data-axis`) and `axisChanged`'s `true` (extra frames). The rest of those lines' variants are compile errors.
+- **`gates/lib/mutation/report.ts` (T089):** every mutant on its changed lines killed by T087's and T089's cases, but
+  the `""` of `reason ?? ""` (equivalent: any text with no diagnostic line gives no diagnostic) and the Regex timeout.
+
 ## Red runs of the fixes at the mutation stop (T083, T085, T087)
 
 `red.sh` takes only the labels `phase` and `fix-<round>`, so these red runs are recorded here (tasks.md T083, T085,
@@ -97,4 +142,9 @@ TS7023 at (22,5), for every mutant of the added lines 40 to 42). That run's repo
   type annotations; the in-process and fixture suites of the module and the data table pass (158 and 79 tests), as do
   `gate:typecheck`, `gate:lint`, `gate:test-lint` and `gate:style-lint`. `gate:unit-tests` has not been rerun in full
   since the new bodies.
-- Gate note, not decided here: `gate:mutation` passes a file whose every mutant is a compile error.
+- Gate note: `gate:mutation` passed a file whose every mutant is a compile error. Fixed by T087 to T089 (rule (c)).
+- After run 4: `pnpm run gate:unit-tests` on a474f8f, `unit-tests: 7408 tests passed in 231 files`; `gate:typecheck`,
+  `gate:lint` (439 files), `gate:test-lint` (323 files) and `gate:style-lint` (38 files) with no finding.
+- Plants after run 4 (plants.md § T025): shards 1 to 13 of 29 on a474f8f, every plant as expected (shards 1 to 4
+  are every plant but visual and axe); shards 14 to 29 not run, the second batch stopped by the session's two-hour
+  limit on a background command.

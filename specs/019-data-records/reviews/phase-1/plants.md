@@ -867,3 +867,349 @@ note: plant time: plants/pass-matching: 0.0 s
 plants: shard 4 of 29: 60 plants judged, every plant as expected
 exit: 0
 ```
+
+## T025: after the final source of phase 1 (a474f8f), partial
+
+- base: 8d104af23ce177ec4acbbfaba59bf433f9520d6d
+- command: `OCELLE_VISUAL_ENGINE=docker pnpm run gate:plants -- --shard <n>`, shards in two background batches (the session stops a background command after two hours, and a full run takes longer: --affected selects every plant, as above). Batch 1 ran shards 1 to 7; batch 2 ran shards 8 to 13 and was stopped by that limit in shard 14, before its verdict. Shards 14 to 29 (visual 14 to 20, axe 21 to 29) were not run, so `--verdict` was not run either. The element source changed since ef50a1b's full run by T084, T086 and a474f8f's comments; shards 1 to 4 hold every plant but visual and axe.
+- exit: 0 for each of shards 1 to 13; shard 14 stopped, no exit
+
+```text
+=== shard 1
+$ OCELLE_VISUAL_ENGINE=docker pnpm run gate:plants -- --shard 1
+$ node gates/bin/plants.ts -- --shard 1
+note: plant time: signoff/error-empty-range: 0.2 s
+note: plant time: signoff/pass-unsigned-merge: 0.2 s
+note: plant time: contrast/non-text-below-threshold: 0.6 s
+note: plant time: brand-rules/a-monospace: 0.7 s
+note: plant time: brand-rules/c-wrong-value: 1.0 s
+note: plant time: brand-rules/source-invalid: 1.1 s
+note: plant time: contrast/exempt-disabled-ink: 1.4 s
+note: plant time: prefix/fail-storybook-html-multiline-monospace: 1.7 s
+note: plant time: pins/fail-allow-builds-other-version: 1.9 s
+note: plant time: pins/fail-dangerously-allow-all-builds: 2.1 s
+note: plant time: pins/fail-release-age-exclude: 2.3 s
+note: plant time: pins/fail-node-version-not-exact: 2.6 s
+note: plant time: pins/fail-release-age-strict-missing: 2.8 s
+note: plant time: manifest/break-not-json: 3.7 s
+note: plant time: typecheck/error-missing-reference: 8.5 s
+note: plant time: lint/fail-gate-source: 9.7 s
+note: plant time: style-lint/fail-aspect-calc: 11.4 s
+note: plant time: typecheck/pass-fixture-excluded: 12.4 s
+note: plant time: style-lint/fail-font-weight: 13.2 s
+note: plant time: style-lint/fail-element-stylesheet: 13.9 s
+note: plant time: style-lint/fail-hex-colour: 14.7 s
+note: plant time: style-lint/fail-lh-multiple: 15.5 s
+note: plant time: style-lint/fail-ms-time: 16.2 s
+note: plant time: style-lint/fail-rgb-colour: 17.1 s
+note: plant time: style-lint/fail-styles-other-token-line-height: 17.7 s
+note: plant time: style-lint/pass-anchor-name: 18.6 s
+note: plant time: style-lint/fail-styles-calc-line-height: 19.2 s
+note: plant time: style-lint/fail-translate-length: 20.2 s
+note: plant time: style-lint/pass-empty-string: 20.8 s
+note: plant time: style-lint/pass-known-token: 22.0 s
+note: plant time: style-lint/pass-one-line-calc: 22.6 s
+note: plant time: style-lint/pass-styles-line-height-token: 23.7 s
+note: plant time: style-lint/pass-translate-percentage: 24.3 s
+note: plant time: pins/pass-matching: 24.5 s
+note: plant time: unit-tests/fail-tokens-test: 25.2 s
+note: plant time: unit-tests/pass-styles-only: 25.9 s
+note: plant time: test-lint/error-unparsable: 27.5 s
+note: plant time: unit-tests/fail-elements-chromium: 28.3 s
+note: plant time: test-lint/fail-skipped: 28.9 s
+note: plant time: csp/error-unparsable: 29.0 s
+note: plant time: csp/fail-indirect-eval: 29.8 s
+note: plant time: test-lint/fail-focused: 30.1 s
+note: plant time: csp/fail-set-timeout-string: 30.8 s
+note: plant time: csp/fail-svg-slash-onload: 30.9 s
+note: plant time: prefix/fail-element-name-upper-case: 31.3 s
+note: plant time: pins/fail-workspace-star: 31.5 s
+note: plant time: csp/pass-look-alike-names: 31.6 s
+note: plant time: contrast/source-throws: 31.9 s
+note: plant time: brand-rules/g-forced-colours-override: 32.0 s
+note: plant time: manifest/fail-undescribed-slot: 32.9 s
+note: plant time: manifest/fail-undescribed-css-part: 33.0 s
+note: plant time: config-copies/fail-test-pathspec-narrowed: 33.3 s
+note: plant time: mutation/error-dry-run-fails: 55.4 s
+note: plant time: mutation/pass-element-source: 60.2 s
+note: plant time: mutation/pass-zero-mutant: 77.8 s
+note: plant time: mutation/fail-no-test-runs: 85.2 s
+note: plant time: mutation/fail-element-source-no-coverage: 98.3 s
+note: plant time: storybook-build/fail-empty-index: 2.0 s
+note: plant time: storybook-build/pass-repository: 2.3 s
+note: plant time: plants/fail-shard-in-plant-check: 0.0 s
+note: plant time: plants/pass-split-plant-jobs: 0.0 s
+plants: shard 1 of 29: 61 plants judged, every plant as expected
+exit: 0
+=== shard 2
+$ OCELLE_VISUAL_ENGINE=docker pnpm run gate:plants -- --shard 2
+$ node gates/bin/plants.ts -- --shard 2
+note: plant time: signoff/fail-no-trailer: 0.1 s
+note: plant time: contrast/exempt-not-disabled-ink: 0.4 s
+note: plant time: contrast/not-opaque: 0.5 s
+note: plant time: contrast/text-below-threshold: 0.8 s
+note: plant time: brand-rules/d-rule-as-boundary: 0.9 s
+note: plant time: brand-rules/b-link-equals-accent: 1.2 s
+note: plant time: unit-tests/fail-gates-test: 2.9 s
+note: plant time: test-lint/fail-gate-test: 4.5 s
+note: plant time: prefix/fail-storybook-monospace: 5.1 s
+note: plant time: pins/error-invalid-json: 5.3 s
+note: plant time: typecheck/fail-gate-source: 5.5 s
+note: plant time: pins/fail-allow-builds-unpinned-approval: 5.5 s
+note: plant time: pins/fail-lockfile-outdated: 5.6 s
+note: plant time: pins/fail-package-manager-missing: 5.7 s
+note: plant time: pins/fail-shamefully-hoist: 5.8 s
+note: plant time: pins/fail-workspace-tilde: 5.8 s
+note: plant time: pins/fail-release-age-missing: 6.0 s
+note: plant time: manifest/fail-lost-attribute: 6.7 s
+note: plant time: manifest/pass-reordered: 6.9 s
+note: plant time: style-lint/fail-styles-outside-src: 8.6 s
+note: plant time: typecheck/pass-strict-file: 11.1 s
+note: plant time: unit-tests/pass-elements-only: 14.4 s
+note: plant time: test-lint/fail-assertion-outside-test: 16.1 s
+note: plant time: lint/pass-fixture-excluded: 17.1 s
+note: plant time: unit-tests/pass-tokens-only: 17.6 s
+note: plant time: csp/fail-inline-script: 18.4 s
+note: plant time: test-lint/fail-snapshot-only: 18.6 s
+note: plant time: csp/fail-eval: 19.3 s
+note: plant time: csp/pass-external-script: 19.5 s
+note: plant time: csp/fail-style-attribute: 20.2 s
+note: plant time: csp/pass-storybook-out-of-scope: 20.3 s
+note: plant time: prefix/fail-event-name-built-output: 20.5 s
+note: plant time: prefix/error-invalid-utf8: 20.7 s
+note: plant time: brand-rules/g-system-colour-mapping: 20.9 s
+note: plant time: brand-rules/source-throws: 21.1 s
+note: plant time: manifest/fail-undescribed-css-property: 21.9 s
+note: plant time: style-lint/fail-aspect-ratio-other: 22.6 s
+note: plant time: style-lint/fail-element-template: 23.5 s
+note: plant time: style-lint/fail-iteration-count-fraction: 24.2 s
+note: plant time: style-lint/fail-scale-calc: 25.1 s
+note: plant time: style-lint/fail-gradient-angle: 26.1 s
+note: plant time: style-lint/fail-lh-multiple-calc: 27.1 s
+note: plant time: style-lint/fail-unitless-number: 28.3 s
+note: plant time: style-lint/pass-aspect-square: 29.1 s
+note: plant time: style-lint/pass-fr: 30.2 s
+note: plant time: style-lint/pass-percentage: 30.8 s
+note: plant time: style-lint/pass-system-colour: 32.1 s
+note: plant time: style-lint/pass-line-height: 32.4 s
+note: plant time: style-lint/pass-var-keyword-fallback: 33.7 s
+note: plant time: style-lint/fail-named-colour: 34.1 s
+note: plant time: mutation/error-unresolvable-base: 35.1 s
+note: plant time: style-lint/fail-styles-font-without-line-height: 35.4 s
+note: plant time: config-copies/pass-equal-copies: 35.6 s
+note: plant time: mutation/fail-record-without-reason: 58.3 s
+note: plant time: mutation/pass-fully-checked: 61.4 s
+note: plant time: mutation/fail-element-source-survivor: 79.1 s
+note: plant time: storybook-build/error-config-unreadable: 1.2 s
+note: plant time: storybook-build/fail-not-csf: 1.8 s
+note: plant time: storybook-build/pass-type-error-only: 2.3 s
+note: plant time: plants/fail-affected-in-plant-check: 0.0 s
+note: plant time: plants/fail-skip-container-in-ci: 0.0 s
+plants: shard 2 of 29: 61 plants judged, every plant as expected
+exit: 0
+=== shard 3
+$ OCELLE_VISUAL_ENGINE=docker pnpm run gate:plants -- --shard 3
+$ node gates/bin/plants.ts -- --shard 3
+note: plant time: contrast/repository-values: 0.6 s
+note: plant time: contrast/unknown-token: 1.1 s
+note: plant time: unit-tests/error-no-test-file: 1.5 s
+note: plant time: contrast/figure-mismatch: 1.6 s
+note: plant time: brand-rules/b-ochre-pair-not-excluded: 2.1 s
+note: plant time: manifest/pass-repository: 2.6 s
+note: plant time: signoff/fail-trailer-mismatch: 2.7 s
+note: plant time: brand-rules/e-light-chrome: 2.8 s
+note: plant time: pins/fail-allow-builds-entry: 3.0 s
+note: plant time: pins/fail-allow-builds-unpinned-fsevents: 3.2 s
+note: plant time: contrast/empty-list: 3.3 s
+note: plant time: pins/fail-node-linker-hoisted: 3.4 s
+note: plant time: pins/fail-package-manager-not-exact: 3.5 s
+note: plant time: pins/fail-release-age-short: 3.7 s
+note: plant time: pins/fail-workspace-version-differs: 3.7 s
+note: plant time: style-lint/element-property-clash: 5.7 s
+note: plant time: typecheck/fail-implicit-any: 7.9 s
+note: plant time: lint/pass-voided-promise: 15.3 s
+note: plant time: style-lint/fail-calc-operand: 17.4 s
+note: plant time: lint/error-unparsable: 17.9 s
+note: plant time: style-lint/fail-fit-content-length: 19.4 s
+note: plant time: style-lint/fail-gradient-hex: 19.7 s
+note: plant time: style-lint/fail-lh-paren-factor: 21.2 s
+note: plant time: style-lint/fail-lh-calc-factor: 21.4 s
+note: plant time: style-lint/fail-radial-gradient: 23.0 s
+note: plant time: style-lint/fail-styles-literal-line-height: 23.1 s
+note: plant time: style-lint/fail-styles-percent-line-height: 24.7 s
+note: plant time: style-lint/fail-scale-factor: 24.9 s
+note: plant time: style-lint/fail-unknown-token: 26.7 s
+note: plant time: style-lint/pass-calc-tokens: 26.8 s
+note: plant time: style-lint/pass-grid-fit-content: 28.6 s
+note: plant time: style-lint/pass-linear-gradient-tokens: 28.7 s
+note: plant time: style-lint/pass-test-code: 30.3 s
+note: plant time: style-lint/pass-scale-mirror: 30.4 s
+note: plant time: test-lint/fail-colocated-element-test: 31.8 s
+note: plant time: style-lint/pass-var-token: 32.0 s
+note: plant time: test-lint/fail-no-assertion: 33.2 s
+note: plant time: unit-tests/fail-styles-test: 33.5 s
+note: plant time: csp/fail-event-handler: 34.1 s
+note: plant time: csp/fail-new-function: 34.4 s
+note: plant time: prefix/fail-custom-property-test-code: 34.9 s
+note: plant time: csp/fail-style-attribute-after-newline: 34.9 s
+note: plant time: prefix/pass-name-boundaries: 35.4 s
+note: plant time: csp/pass-function-timer: 35.8 s
+note: plant time: config-copies/error-copy-missing: 35.8 s
+note: plant time: prefix/fail-generic-monospace: 36.3 s
+note: plant time: manifest/fail-stale-property: 36.9 s
+note: plant time: manifest/fail-undescribed-event: 37.3 s
+note: plant time: brand-rules/generator-throws: 37.4 s
+note: plant time: pins/fail-tilde-range: 37.5 s
+note: plant time: test-lint/pass-fixture-excluded: 38.8 s
+note: plant time: unit-tests/pass-fixture-not-run: 39.0 s
+note: plant time: mutation/error-zero-mutant-failing-test: 60.6 s
+note: plant time: mutation/fail-gate-source-survivor: 63.1 s
+note: plant time: mutation/pass-reasoned-record: 85.5 s
+note: plant time: mutation/fail-unchecked-line: 85.5 s
+note: plant time: storybook-build/error-missing-dependencies: 0.4 s
+note: plant time: storybook-build/fail-syntax-error: 1.6 s
+note: plant time: plants/fail-gate-without-entry: 0.0 s
+note: plant time: plants/fail-skip-container-in-shard: 0.0 s
+plants: shard 3 of 29: 60 plants judged, every plant as expected
+exit: 0
+=== shard 4
+$ OCELLE_VISUAL_ENGINE=docker pnpm run gate:plants -- --shard 4
+$ node gates/bin/plants.ts -- --shard 4
+note: plant time: contrast/required-pair-excluded: 0.5 s
+note: plant time: contrast/missing-required-pair: 0.6 s
+note: plant time: contrast/unparsable-list: 1.0 s
+note: plant time: brand-rules/c-extra-radius: 1.1 s
+note: plant time: brand-rules/repository-values: 1.6 s
+note: plant time: manifest/break-missing: 1.9 s
+note: plant time: signoff/pass-agent-self-signoff: 2.1 s
+note: plant time: contrast/excluded-without-reason: 2.1 s
+note: plant time: prefix/pass-outside-packages: 2.6 s
+note: plant time: pins/fail-node-version-missing: 2.8 s
+note: plant time: pins/fail-public-hoist-pattern: 3.0 s
+note: plant time: pins/fail-workspace-caret: 3.1 s
+note: plant time: pins/fail-release-age-strict-false: 3.3 s
+note: plant time: pins/pass-approved-build: 3.5 s
+note: plant time: unit-tests/pass-gates-only: 3.7 s
+note: plant time: pins/fail-allow-builds-missing: 3.7 s
+note: plant time: typecheck/fail-test-code: 7.8 s
+note: plant time: unit-tests/fail-tokens-colocated: 9.5 s
+note: plant time: unit-tests/error-throws-while-loading: 11.4 s
+note: plant time: lint/fail-floating-promise: 12.2 s
+note: plant time: test-lint/fail-conditional-assertion: 12.9 s
+note: plant time: test-lint/fail-not-awaited: 13.8 s
+note: plant time: test-lint/pass-real-assertion: 14.6 s
+note: plant time: style-lint/fail-element-property-misspelt: 15.6 s
+note: plant time: style-lint/fail-font-family: 16.4 s
+note: plant time: style-lint/error-unparsable: 17.3 s
+note: plant time: style-lint/fail-lh-calc-twice: 18.1 s
+note: plant time: style-lint/fail-minmax-auto: 19.0 s
+note: plant time: style-lint/fail-gradient-length: 19.7 s
+note: plant time: style-lint/fail-rem-length: 20.7 s
+note: plant time: style-lint/fail-scale-length: 21.5 s
+note: plant time: style-lint/fail-styles-normal-line-height: 22.4 s
+note: plant time: style-lint/fail-var-fallback: 23.2 s
+note: plant time: style-lint/fail-styles-stylesheet: 24.0 s
+note: plant time: style-lint/pass-element-property: 25.0 s
+note: plant time: style-lint/pass-one-line: 25.7 s
+note: plant time: style-lint/pass-iteration-count: 26.7 s
+note: plant time: style-lint/pass-story: 27.5 s
+note: plant time: style-lint/pass-token-definitions: 28.5 s
+note: plant time: style-lint/pass-zero: 29.1 s
+note: plant time: csp/fail-function-call: 29.5 s
+note: plant time: csp/fail-style-element: 29.9 s
+note: plant time: prefix/fail-named-monospace: 30.2 s
+note: plant time: csp/pass-inline-script-in-source: 30.3 s
+note: plant time: prefix/fail-element-name: 30.8 s
+note: plant time: csp/fail-set-interval-string: 31.1 s
+note: plant time: brand-rules/f-motion-not-zero: 31.6 s
+note: plant time: manifest/fail-undescribed-attribute: 31.8 s
+note: plant time: pins/fail-caret-range: 32.0 s
+note: plant time: config-copies/fail-one-setting-differs: 32.4 s
+note: plant time: manifest/fail-undescribed-property: 32.5 s
+note: plant time: mutation/pass-compile-error: 59.2 s
+note: plant time: mutation/pass-test-only-change: 61.6 s
+note: plant time: mutation/error-checker-failure: 65.9 s
+note: plant time: mutation/fail-disable-all: 84.9 s
+note: plant time: mutation/fail-mixed-survivors: 108.9 s
+note: plant time: storybook-build/error-no-build-script: 0.4 s
+note: plant time: storybook-build/fail-unresolved-import: 2.0 s
+note: plant time: plants/fail-gate-without-job: 0.0 s
+note: plant time: plants/pass-matching: 0.0 s
+plants: shard 4 of 29: 60 plants judged, every plant as expected
+exit: 0
+=== shard 5
+$ OCELLE_VISUAL_ENGINE=docker pnpm run gate:plants -- --shard 5
+$ node gates/bin/plants.ts -- --shard 5
+note: plant time: visual/error-build-fails: 2.9 s
+note: plant time: visual/error-host: 3.0 s
+note: plant time: visual/error-index-pin: 1.2 s
+plants: shard 5 of 29: 3 plants judged, every plant as expected
+exit: 0
+=== shard 6
+$ OCELLE_VISUAL_ENGINE=docker pnpm run gate:plants -- --shard 6
+$ node gates/bin/plants.ts -- --shard 6
+note: plant time: visual/error-no-engine: 0.4 s
+note: plant time: visual/error-tag-pin: 0.4 s
+note: plant time: visual/fail-beacon: 402.1 s
+plants: shard 6 of 29: 3 plants judged, every plant as expected
+exit: 0
+=== shard 7
+$ OCELLE_VISUAL_ENGINE=docker pnpm run gate:plants -- --shard 7
+$ node gates/bin/plants.ts -- --shard 7
+note: plant time: visual/fail-below-fold: 402.3 s
+note: plant time: visual/fail-cache-api: 399.3 s
+note: plant time: visual/fail-clipboard-write: 395.2 s
+plants: shard 7 of 29: 3 plants judged, every plant as expected
+exit: 0
+=== shard 8
+$ OCELLE_VISUAL_ENGINE=docker pnpm run gate:plants -- --shard 8
+$ node gates/bin/plants.ts -- --shard 8
+note: plant time: visual/fail-closed-shadow-root: 389.0 s
+note: plant time: visual/fail-cookie: 394.2 s
+note: plant time: visual/fail-exec-copy: 381.3 s
+plants: shard 8 of 29: 3 plants judged, every plant as expected
+exit: 0
+=== shard 9
+$ OCELLE_VISUAL_ENGINE=docker pnpm run gate:plants -- --shard 9
+$ node gates/bin/plants.ts -- --shard 9
+note: plant time: visual/fail-font-file-missing: 387.7 s
+note: plant time: visual/fail-font-not-loaded: 395.5 s
+note: plant time: visual/fail-hover-style-changed: 388.5 s
+plants: shard 9 of 29: 3 plants judged, every plant as expected
+exit: 0
+=== shard 10
+$ OCELLE_VISUAL_ENGINE=docker pnpm run gate:plants -- --shard 10
+$ node gates/bin/plants.ts -- --shard 10
+note: plant time: visual/fail-indexeddb: 376.7 s
+note: plant time: visual/fail-input-system-font: 383.4 s
+note: plant time: visual/fail-local-storage: 388.5 s
+plants: shard 10 of 29: 3 plants judged, every plant as expected
+exit: 0
+=== shard 11
+$ OCELLE_VISUAL_ENGINE=docker pnpm run gate:plants -- --shard 11
+$ node gates/bin/plants.ts -- --shard 11
+note: plant time: visual/fail-missing-baseline: 398.8 s
+note: plant time: visual/fail-network: 396.2 s
+note: plant time: visual/fail-one-pixel: 392.3 s
+plants: shard 11 of 29: 3 plants judged, every plant as expected
+exit: 0
+=== shard 12
+$ OCELLE_VISUAL_ENGINE=docker pnpm run gate:plants -- --shard 12
+$ node gates/bin/plants.ts -- --shard 12
+note: plant time: visual/fail-other-font: 386.4 s
+note: plant time: visual/fail-overflow-changed: 388.3 s
+note: plant time: visual/fail-pointer-target-below-fold: 391.2 s
+plants: shard 12 of 29: 3 plants judged, every plant as expected
+exit: 0
+=== shard 13
+$ OCELLE_VISUAL_ENGINE=docker pnpm run gate:plants -- --shard 13
+$ node gates/bin/plants.ts -- --shard 13
+note: plant time: visual/fail-pointer-target-missing: 393.3 s
+note: plant time: visual/fail-popover-changed: 392.5 s
+note: plant time: visual/fail-press-style-changed: 403.6 s
+plants: shard 13 of 29: 3 plants judged, every plant as expected
+exit: 0
+=== shard 14
+$ OCELLE_VISUAL_ENGINE=docker pnpm run gate:plants -- --shard 14
+$ node gates/bin/plants.ts -- --shard 14
+```
