@@ -271,6 +271,23 @@ pixel or visual test, no `vitest.config.ts` or `serve.ts` change and no element 
 completeness gate or plant-repository count names test files of `test/browser/`, so none changed. The mutation gate
 was not rerun: no source file changed.
 
+### The red/green check
+
+`tdd-check.sh 6` on `857cd29` reports `pass` (`tdd-check.json`): both red commits fail at their commit (`phase`
+`d4875fa`, `fix-3` `ca18374`: 1 of 8009 tests failed, the subpixel US5-7), the final tests fail against the base and
+the scaffold, and 8009 tests pass at HEAD. It took three runs. In the first two the HEAD run failed one test each, a
+different motion row each time, both from mission 008 and outside this fold: "Rapid toggle during the entry, motion on"
+in `browser/dialog.test.ts`, then the same row in `browser/drawer.test.ts`, each with `entry: []` (the entry animation
+had already ended when it was read). `browser/dialog.test.ts` run alone after the first passed (370 tests), and the
+whole `elements-browser` project after the second passed (1652 tests); the third run passed at HEAD. No test was
+changed for it.
+
+The final tests now fail against the base and the scaffold with exit 2, "no test file found", where the last check
+(`c77845e`) had exit 2 against the base and exit 1 against the scaffold. Since the merge of main the final test set of
+the phase (the test files changed from the base to HEAD, 230 files) includes main's test changes, and overlaid on the
+pre-merge scaffold the suite collects no file. That comes from the merge, not from this fold; both runs still fail, as
+the check needs.
+
 ### CI (to be recorded after the push)
 
 T115 step 5 needs CI green on the fold's head after the orchestrator's push: Unit tests, every Mutation shard and the
