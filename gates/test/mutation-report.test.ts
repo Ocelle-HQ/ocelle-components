@@ -582,6 +582,51 @@ describe("classifyMutants: a checker failure (019, gate gap rule (c))", () => {
     expect(classifyMutants(run, [changed(x, [{ start: 5, end: 6 }])])).toEqual({ ok: true, mutants: 2, findings: [], timeouts: [], compileErrors: [compileError(5), compileError(6)], zeroEntries: [] });
   });
 
+  // T089 (T025's mutation of report.ts): the rule's parts at their edges.
+  it("passes when every mutant carries the diagnostic but one on the changed lines is Killed (its test's message quoting it)", () => {
+    const shared = `${ts(x, 1, 7022)}\n`;
+    const mutants = [mutant("5", 5, "CompileError", shared), mutant("6", 6, "Killed", shared)];
+    const run = { report: reportOf({ [x]: mutants }), exitCode: 0, output: "" };
+    expect(classifyMutants(run, [changed(x, [{ start: 5, end: 6 }])])).toEqual({ ok: true, mutants: 2, findings: [], timeouts: [], compileErrors: [compileError(5)], zeroEntries: [] });
+  });
+
+  it("passes when one CompileError of three lacks the diagnostic the other two share", () => {
+    const shared = `${ts(x, 1, 7022)}\n`;
+    const mutants = [mutant("5", 5, "CompileError", shared), mutant("6", 6, "CompileError", shared), mutant("7", 7, "CompileError", `${ts(x, 2, 2322)}\n`)];
+    const run = { report: reportOf({ [x]: mutants }), exitCode: 0, output: "" };
+    expect(classifyMutants(run, [changed(x, [{ start: 5, end: 7 }])])).toEqual({ ok: true, mutants: 3, findings: [], timeouts: [], compileErrors: [compileError(5), compileError(6), compileError(7)], zeroEntries: [] });
+  });
+
+  it("passes when the other mutant has the same line and code in another path only: the path is part of the diagnostic", () => {
+    const mutants = [mutant("5", 5, "CompileError", `${ts(x, 1, 7022)}\n`), mutant("6", 6, "CompileError", `${ts("packages/tokens/src/caller.ts", 1, 7022)}\n`)];
+    const run = { report: reportOf({ [x]: mutants }), exitCode: 0, output: "" };
+    expect(classifyMutants(run, [changed(x, [{ start: 5, end: 6 }])])).toEqual({ ok: true, mutants: 2, findings: [], timeouts: [], compileErrors: [compileError(5), compileError(6)], zeroEntries: [] });
+  });
+
+  it("passes when the shared text is only on indented lines: a continuation is not a diagnostic", () => {
+    const indented = `${ts(x, 9, 2345)}\n  ${ts(x, 1, 7022)}\n`;
+    const mutants = [mutant("5", 5, "CompileError", indented), mutant("6", 6, "CompileError", `${ts(x, 6, 2322)}\n  ${ts(x, 1, 7022)}\n`)];
+    const run = { report: reportOf({ [x]: mutants }), exitCode: 0, output: "" };
+    expect(classifyMutants(run, [changed(x, [{ start: 5, end: 6 }])])).toEqual({ ok: true, mutants: 2, findings: [], timeouts: [], compileErrors: [compileError(5), compileError(6)], zeroEntries: [] });
+  });
+
+  it("cannot run when the shared diagnostic is below every mutant's lines, as above them", () => {
+    const shared = `${ts(x, 9, 7022)}\n`;
+    const mutants = [mutant("5", 5, "CompileError", shared), mutant("6", 6, "CompileError", shared, 7)];
+    const run = { report: reportOf({ [x]: mutants }), exitCode: 0, output: "" };
+    expect(classifyMutants(run, [changed(x, [{ start: 5, end: 7 }])])).toEqual({
+      ok: false,
+      cause: `mutation: could not run: Stryker's type checker rejects ${x} itself, not its mutants: ${x}(9,3): error TS7022; fix that type error (an explicit type often does) and rerun`,
+    });
+  });
+
+  it("passes when the shared diagnostic is on a line one of the mutants spans", () => {
+    const shared = `${ts(x, 5, 2322)}\n`;
+    const mutants = [mutant("5", 5, "CompileError", shared), mutant("6", 6, "CompileError", shared)];
+    const run = { report: reportOf({ [x]: mutants }), exitCode: 0, output: "" };
+    expect(classifyMutants(run, [changed(x, [{ start: 5, end: 6 }])])).toEqual({ ok: true, mutants: 2, findings: [], timeouts: [], compileErrors: [compileError(5), compileError(6)], zeroEntries: [] });
+  });
+
   it("passes when a statusReason has no parsable diagnostic line: it shares none", () => {
     const unparsable = "x.ts:1:3 - error TS7022: a message.\n";
     const mutants = [mutant("5", 5, "CompileError", unparsable), mutant("6", 6, "CompileError", unparsable)];

@@ -67,6 +67,30 @@ OverflowRegion` and `blockStartBox`'s `Element | null`. Run 3's survivors were t
   reattach it, and the slot assigns nothing, so no table shows. `connectedCallback` observes again but does not
   re-assign, and nothing requests an update. **For the operator (Q-M2).**
 
+## Red runs of the fixes at the mutation stop (T083, T085, T087)
+
+`red.sh` takes only the labels `phase` and `fix-<round>`, so these red runs are recorded here (tasks.md T083, T085,
+T087; `mutation-decisions-fixes.md`). Each red commit holds test files only and came before its fix.
+
+| Task | Red commit | Command | Exit | Failing assertions |
+|---|---|---|---|---|
+| T083 (Q-M1) | 824c53f | `pnpm exec vitest run --project elements packages/elements/test/overflow-region-block.test.ts`, then `--project elements-browser packages/elements/test/browser/overflow-region-block.test.ts` | 1, 1 | in each harness only the new option-on body, "block clearance for focus entering a box handed back before the module's observer measures it …": `belowPin` `true` expected, `false` received; `scrolledBack` `true` expected, `false` received (the precondition fields `underPin`, `letGo`, `focusVisible` and `focused` as expected). The option-off guard passes |
+| T085 (Q-M2) | 016b05a | `pnpm exec vitest run --project elements packages/elements/test/data-table.test.ts -t re-attach`, then `--project elements-browser packages/elements/test/browser/data-table.test.ts -t re-attach` | 1, 1 | the detached half only: `assigned` `["d-n"]` expected, `[]` received; `sized`, `inside` and `overflows` `true` expected, `false` received; `tabindex` `"0"`, `role` `"group"` and `name` `"Open work packages"` expected, `null` received. The attached half (US1-15's path) as expected |
+| T087 (gate gap) | c22e50a | `pnpm exec vitest run --project gates gates/test/mutation-report.test.ts` | 1 | 3 failed, 36 passed: "cannot run on the recorded report …", "… when another changed file of the run has a survivor (exit 2 wins)" and "cannot run in a --files run whose range entry holds the recorded mutants", each `expected { ok: true, … } to deeply equal { ok: false, cause }`. The format pin and the five passing cases pass |
+
+T083's body is stricter than the task's wording, as its commit body says: row 0's link at `scrollTop` 200 lies wholly
+above the client area, and Chromium's own focus scroll centres such a link, which cleared it with no block clearance
+(both halves passed against the green source). The body uses row 3's link at 122 (the existing option-off focus
+guard's measured position), wholly inside the client area under the pinned box, which Chromium does not scroll.
+
+T087's reproduction: the first try, a class field passing `this` to a constructor with a callback in
+`packages/tokens/src/x.ts`, did not reproduce. Bisecting `ocelle-data-table.ts` as it was before 425f115 under Stryker
+10.1.1's own `TypescriptCompiler` (scratch only) found the missing part: the class in the global
+`HTMLElementTagNameMap`. With it the tokens sample reproduces with no Lit and no DOM at run time (TS7022 at (21,12),
+TS7023 at (22,5), for every mutant of the added lines 40 to 42). That run's report, trimmed to the file, is
+`gates/test/fixtures/stryker/checker-failure.report.json`; the same trees are the plant
+`gates/plants/mutation/error-checker-failure/` (T088).
+
 ## Also
 
 - The plant run of `plants.md` was at ef50a1b. The later source changes are a behaviour-neutral refactor, comments and
