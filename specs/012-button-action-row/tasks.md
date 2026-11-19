@@ -441,6 +441,77 @@ from round 4 and the orchestrator, never measured or estimated here.
 77 shards and run 44298568583; the split-count wording and the plant totals match the record; `tdd-check.sh 6`
 reports `pass`.
 
+### Fix round 4 (operator round on the visual integration test's time limit: O7-01)
+
+On 2026-11-19 CI run 44481594952 (571a8ed5, attempt 1) failed one job, Unit tests: the visual integration test
+`gates/test/integration/visual.test.ts:115`, which captures the repository's 388 story-themes twice, timed out at its
+600 s limit (`const timeout = 600_000;`, line 26, shared by the file's tests); run 44298568583 on ac2d73a passed it at
+the same 194 stories. The operator folded a raise into this pull request, recorded as phase 6 round 7
+(`reviews/phase-6/round-7.md`, O7-01, blocking). Verbatim "Fold a limit raise": "Raise the visual integration test's
+timeout, for example to 900 s, test-first as a landing fold with an operator round, plus a review and a CI run. That's
+slower, but it removes the flake for #49, #54 and 018."
+
+- **Test-first.** The operator asked for test-first, so the round has a red commit: a `gates` unit test reads the
+  constant and its comment from `visual.test.ts` and fails against the 600 s limit. The other route the round allows
+  (a behaviour-neutral change shown with hand-applied mutants or other evidence the reviewer accepts, constitution
+  VIII) is not taken. It would leave nothing to stop a later edit from lowering the limit again without its reason,
+  and the operator named test-first. Phase 6's `red-commits` holds only `phase`, and its fix rounds 2 and 3 had no red
+  commit, so the label is **fix-4** (`red.sh 6 fix-4`).
+- **The value: 1200 s** (`1_200_000`). The 600 s run was cut off, so the capture's real time at 194 stories on CI is
+  not known; 600 s is only a lower bound. At 171 stories it took 519 s (landing round 1 R1-06), about 1.52 s per
+  story-theme. At that rate 388 story-themes take about 590 s, just under the limit, so a slower runner crosses it. The time grows with
+  every story, and mission 018 (#49, #54) adds more. The operator's example, 900 s, leaves 300 s above the only lower
+  bound known, so a CI run slower than the cut-off one could fail again within one mission. 1200 s is twice the limit
+  that failed: at the rate the failed run implies (at least 600 / 388 ≈ 1.55 s per story-theme), it holds up to about
+  770 story-themes, about 385 stories. It does not make the test unbounded: a hung capture still fails within
+  20 minutes, and the Unit tests job (2238 s on the failed run) has no job timeout of its own. The test pins
+  1200 s as the lowest limit and 1800 s as the highest. The time still grows with the stories; that stays with the
+  plant-design triage follow-up (decision 15, R1-06, R1-09), and its text gives 194 stories.
+- **Scope.** Only `visual.test.ts`'s limit changes. `gates/test/integration/axe.test.ts:14` and
+  `gates/test/integration/plants-robustness.test.ts:17` also use `const timeout = 600_000;`, but the operator's answer
+  covers the visual test only; they stay as they are, and notes.md says so. Round 7's Plants shard 41 (624 s, over
+  570 s) stays with the plant-design follow-up, as round 7 records.
+- **Places that cite the 600 s limit** (grep at round 7, `519 s`, `519/600`, `600 s limit`, `600_000`; the 600 s in
+  the plant-shard model, "under 10 minutes" and 570 s is the Plants shard budget, not this limit):
+  - `gates/test/integration/visual.test.ts:26`, the constant and its comment: changed (T080).
+  - `specs/006-storybook-workbench/plan.md:640`, the Complexity Tracking row "Plant roots hold every repository
+    story", its sunset column ("the repository visual integration test's 519 s against its 600 s limit"): planner
+    territory, changed by the planner in its own commit with this task list (as cb1ae7ba was), not edited in fix-4.
+  - `specs/012-button-action-row/reviews/phase-6/ci-run.md:133-134` (the follow-up paragraph, "519 s against its
+    600 s limit"): a record of 171 stories, kept; a dated addendum is added after it (T081). Its line 128 is the
+    operator's verbatim answer ("519/600 s") and is not changed.
+  - `specs/012-button-action-row/tasks.md` (§ Fix round 2's intro and T069, "519/600 s"): the operator's verbatim
+    answer and a done task, not changed.
+  - Review records (`reviews/phase-6/round-2.md`, `round-3.md`; `reviews/landing/round-1.md` R1-06, `round-2.md`
+    R2-03, `round-3.md`): records, not changed.
+  - `gates/README.md`, `specs/012-button-action-row/plan.md`, `research.md`, `quickstart.md`, `contracts/` and
+    `specs/006-storybook-workbench/contracts/`: they do not cite this limit (checked at round 7), so they do not
+    change. `reviews/phase-6/notes.md` does not cite it yet; § Fix round 4 records the change (T082).
+
+The work is reviewed as phase 6 round 8, then the landing check.
+
+**Red (one commit)**
+
+- [ ] T078 [US5] O7-01, test-first: a new `gates/test/visual-timeout.test.ts` (in the `gates` project, which runs no integration test) reads `gates/test/integration/visual.test.ts` as text. It finds exactly one `const timeout = <number>;` line, a numeric literal that may contain `_`, and asserts that the value is at least 1_200_000 and at most 1_800_000. It also checks the run of `//` comment lines directly above the constant: that run names CI run `44481594952`, says it timed out at `600 s` at `194 stories` (`388 story-themes`), gives the earlier `519 s` at `171 stories` (R1-06), and names the plant-design follow-up (`R1-06`). Every expected string is written by hand in the test. The header comment of the new test gives the reason (O7-01, `reviews/phase-6/round-7.md`). No other test file changes.
+- [ ] T079 [US5] Commit T078 alone (`test(012-button-action-row): phase 6 fix-4 red — O7-01`), signed off. Then run `.specify/extensions/story/scripts/red.sh 6 fix-4`. Confirm that the failures are assertion failures against the current file (600_000 is below 1_200_000; the comment strings are missing) and not a load error.
+
+**Green**
+
+- [ ] T080 [US5] O7-01, over T078: in `gates/test/integration/visual.test.ts`, change line 26 to `const timeout = 1_200_000;` and add a comment directly above it. The comment says the limit is shared by the file's tests. It says the whole-repository capture grows with every story: 519 s at 171 stories (landing round 1 R1-06); timed out at 600 s at 194 stories (388 story-themes) on CI run 44481594952, which run 44298568583 passed. It says 1200 s is twice the limit that failed (012 reviews/phase-6/round-7.md O7-01, operator 2026-11-19) and that the growth stays with the plant-design triage follow-up (decision 15, R1-06, R1-09). Wording can differ, but the strings of T078 must all be in it. No other line of the file changes, and no test in it changes. T078 now passes.
+- [ ] T081 [US5] O7-01, the record: in `specs/012-button-action-row/reviews/phase-6/ci-run.md`, after the follow-up paragraph (lines 131-134 at round 7), add a dated addendum (2026-11-19, phase 6 round 7 O7-01). It says that at 194 stories the test timed out at 600 s on CI run 44481594952 (571a8ed5) and passed on 44298568583 (ac2d73a), and that fix-4 raised its limit to 1200 s. It also says the follow-up issue's text should give 194 stories and the 519 s as a 171-story figure (landing round 2 R2-03, landing round 3). The existing paragraphs and the operator's verbatim answer stay as they are. Check that `specs/006-storybook-workbench/plan.md:640` (the planner's commit) gives the same figures. If it does not, that is a stop-and-ask; do not edit that file.
+- [ ] T082 [US5] Run the checks:
+  - hand-applied mutants of the file under T078, each applied alone, run, and reverted: `const timeout = 900_000;` (the operator's example, below the floor); `const timeout = 3_600_000;` (above the ceiling); the comment without `44481594952`; and a second `const timeout = ...;` line. Each makes T078 fail. Record each mutant, its failing assertion and the revert in `reviews/phase-6/plants.md` under "Fix round 4";
+  - `pnpm vitest run --project gates-integration gates/test/integration/visual.test.ts`, alone, under docker: every test passes. Record the time of the whole-repository capture test (line 115) at 194 stories in notes.md as a local figure, not a CI one. If it takes over 1140 s (95 % of the limit, as 570 s is of 600 s for the Plants shards), stop and ask;
+  - `pnpm test`, `pnpm run gate:typecheck`, `gate:lint` and `gate:test-lint`.
+
+  Record T078 to T082 in `reviews/phase-6/notes.md` under "Fix round 4": the operator round, the red commit and its label `fix-4`, the value and why, the places that cite the limit and what each did, and that `axe.test.ts` and `plants-robustness.test.ts` keep 600 s. Also record them in a new `reviews/phase-6/round-7-fixes.md` (as `round-4-fixes.md`: the finding, its resolution, the red test and where). `reviews/phase-6/red-commits` holds `fix-4` when green is committed. Commit green (`fix(012-button-action-row): phase 6 fix-4 — O7-01`), signed off. Then run `.specify/extensions/story/scripts/tdd-check.sh 6` (`pass`; a base sub-check that exits 2 "could not run" because of the landing merges is as phase 6 round 3 R3-03 recorded).
+- [ ] T083 [US5] The CI evidence (round 7: "The CI run on the pushed head is the evidence"). The orchestrator pushes, because no agent here may, and supplies the figures. Add to T081's addendum in `ci-run.md` the run id, the head, the attempt, the Unit tests job's result and time, and the whole-repository capture test's duration, all from the orchestrator's figures and none measured or estimated. A Unit tests failure, or a capture over 1140 s, is a stop-and-ask. Commit (`docs(012-button-action-row): phase 6 fix-4 CI record — O7-01`), signed off. If the orchestrator orders round 8 before this run, round 8 reviews T078 to T082 and the landing check reads T083.
+
+**Checkpoint**: the visual integration tests' limit is 1200 s, with its reason and figures in the comment, and
+`gates/test/visual-timeout.test.ts` pins it (at least 1200 s, at most 1800 s); the 006 plan row and `ci-run.md` give
+the raise; `red-commits` holds `fix-4`; `tdd-check.sh 6` reports `pass`; the CI run on the pushed head passes Unit
+tests.
+
 ---
 
 ## Dependencies & Execution Order
@@ -457,6 +528,10 @@ reports `pass`.
 - Landing operator round of 2026-11-18 (phase 6 round 4): phase 6 fix-3 (T073 to T077) is a documentation unit with
   no red commit, reviewed as phase 6 round 5 and landing round 3; T073 to T076 are independent, T077 last. T073's
   edit to specs/006-storybook-workbench/plan.md is routed by the orchestrator to the planner.
+- Landing operator round of 2026-11-19 (phase 6 round 7): phase 6 fix-4 (T078 to T083) is one unit: red under
+  `red.sh 6 fix-4` (T078, T079), then green, the record and the checks (T080 to T082), then the CI record from the
+  orchestrator's push (T083). It is reviewed as phase 6 round 8, then the landing check. T082's visual run needs the
+  pinned container (docker). The 006 plan.md row was edited by the planner with this task list, so no edit is routed.
 - Landing operator rounds of 2026-11-18 (phase 2 rounds 5 and 6): phase 2 fix round 4 (T029a to T029h) is one unit:
   red under `red.sh 2 fix-4` (T029a to T029c), a second red under `red.sh 2 fix-5` (T029f to T029h), then green and
   the checks (T029d, T029e), reviewed as phase 2 round 7, then the landing check; it is independent of the other fix
