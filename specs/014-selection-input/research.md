@@ -858,6 +858,24 @@ by focus), which under forced colours has `forced-color-adjust: none` and a `Hig
   previous option, inside the US1-16 clip (the option scrolled so its ring box lies within `part="list"`'s client
   box). Plant: the option's ring not raised (an outline on the host, or the `::after` without `z-index`).
 
+**Amendment: text antialiasing under the ring samples** (landing L1-01; phase 6 operator round 3, O3-01, "Space the
+test link"; T115).
+
+- **The problem.** A ring sample 3.5 px outside a fragment can fall on the antialiasing fringe of a neighbouring glyph.
+  CI's Chromium draws text with subpixel (LCD) antialiasing, so the coloured fringe of the "e" before the link moved
+  US5-7's left sample by one red level under the translucent Highlight ring. The local default draws grayscale text,
+  so the test passed locally.
+- **The fix.** US5-7's link gets `margin-inline: 0.75em`, which keeps the glyphs clear of the ring band. The sample
+  point and the exact colour comparison are unchanged.
+- **The guard.** One fixture test, `packages/elements/test/browser/link-subpixel.test.ts`, always runs US5-7 under
+  subpixel text: its own browser gets a committed fontconfig (`test/browser/subpixel/fonts.conf`, `rgba=rgb`), and it
+  first asserts that the browser does draw subpixel text. That makes the CI condition visible locally and to
+  `tdd-check.sh`. No other suite's launch changes.
+- **Rejected: an opt-in environment variable.** A red that shows only when the variable is set fails `tdd-check.sh` for
+  any checker without it.
+- **Local executable.** With the fontconfig, `chrome-linux64/chrome` draws subpixel text. The `chrome-headless-shell`
+  wrapper does not, because it passes `--disable-lcd-text`.
+
 ## R-16 Entry points: a parent defines its children; the copy field defines `ocelle-icon`
 
 **Decision** (operator decision PLAN-CORRECTNESS-1-015 (a), 2026-11-13: the source stays TypeScript, `src/*.ts`,

@@ -330,6 +330,51 @@ the `file:` copy navigates to its `file:` target.
 - [X] T099 [US5] Baselines for the link stories with `pnpm run visual:update` in #10's pinned container under docker (`storybook/baselines/`), with any shared baseline (the token stories included) that changes, inspected and committed with the reason in the commit message; move the story-theme counts of `gates/test/integration/visual.test.ts` and add the new light stories that show `color-ink` to `gates/plants/visual/fail-token-changed/plant.json`; record in `reviews/phase-6/notes.md` that no podman cross-engine check was possible and CI confirms the baselines at landing (operator decision 2026-11-14, `reviews/phase-2/operator-decisions.md`; FR-053, SC-007)
 - [X] T100 [US5] Plants recorded in `reviews/phase-6/plants.md`, the `label` path's included (contracts § Pairings: `label` set as the host's `aria-label`; forwarding the host `aria-label` to `part="anchor"`; a story `label` without the visible text); the gates of T028 plus `vitest run --project elements-browser-file`
 
+### Landing fold (operator round 3, 2026-11-19)
+
+The landing review (`reviews/landing/round-1.md`, L1-01 and L1-02) found US5-7 failing in CI in both harnesses, and with
+it every mutation shard. Diagnosis: CI's Chromium draws text with subpixel (LCD) antialiasing, and the coloured fringe of
+the "e" in "See " reaches the left ring sample, 3.5 px outside the link, under the 80%-opaque Highlight ring (red channel
+54 against 55). Locally the test passes because the browser draws grayscale text: the headless-shell wrapper passes
+`--disable-lcd-text`, and the container's fontconfig is grayscale. Phase 6 built US5-7, so the operator recorded the fold
+as phase 6 operator round 3 (`reviews/phase-6/round-3.md`, O3-01): "Space the test link (Recommended)". T093 and T094
+stay as written.
+
+- [ ] T115 [US5] US5-7 independent of text antialiasing (`reviews/phase-6/round-3.md` O3-01; landing L1-01, L1-02; R-15 "Amendment: text antialiasing under the ring samples"), test first. The fix is a test change, so the red step adds what makes the failure visible here: a fixture test that always runs US5-7 under subpixel text. The assertion, the sample point (3.5 px out) and every other pixel test and baseline stay unchanged.
+  1. **Red** (test files only, one commit, `test(014-selection-input): phase 6 fix-3 red — US5-7 with subpixel text`). Two files under `packages/elements/test/browser/`:
+     - `subpixel/fonts.conf`: includes `/etc/fonts/fonts.conf` and, in a `<match target="font">`, assigns `rgba` `rgb`, `lcdfilter` `lcddefault` and `hintstyle` `hintslight`. It changes how glyphs are drawn, not which fonts are used.
+     - `link-subpixel.test.ts` (in `elements-browser`). In its own `beforeAll`, as `scrollbar.test.ts` does, it serves the fixture and launches its own Chromium: the `OCELLE_CHROMIUM_PATH` executable when that is set, otherwise Playwright's own, with `env: { ...process.env, FONTCONFIG_FILE: <the absolute path of subpixel/fonts.conf, from import.meta.url> }`. The shared `launch()`, `serve.ts`, `vitest.config.ts` and every other suite stay as they are.
+     - Its header comment gives the reason (landing L1-01; CI draws subpixel text, the local default draws grayscale).
+     - It has two `it`s. (i) A precondition, asserted unconditionally: black text drawn on white on a page of this browser has pixels whose channels differ by more than 8. The failure message must name the cause: the browser draws no subpixel text, for example because `OCELLE_CHROMIUM_PATH` points at a wrapper that passes `--disable-lcd-text`. Use `chrome-linux64/chrome` as quickstart.md says. This keeps (ii) from passing vacuously. (ii) The body whose name starts with `US5-7:`, found in `linkScenarios` and run unchanged on `link.html`, as `browser/link.test.ts` runs it. The assertion is the same single `toEqual` of `{ observed, clipboard, recorded }` against `{ expected, [], clean }`. US5-7 does not navigate, so it gets a `Navigation` whose members throw. Exactly one body may match, and that is asserted.
+     - Measured on 2026-11-19, black text on white: `chrome-linux64/chrome` with this fontconfig draws 1276 coloured pixels and without it 0; the `chrome-headless-shell` wrapper draws 0 either way; the unwrapped `chrome-headless-shell.real` with the fontconfig draws 1276.
+
+     Run `.specify/extensions/story/scripts/red.sh 6 fix-3` with `OCELLE_CHROMIUM_PATH=/opt/pw-browsers/chromium-1243/chrome-linux64/chrome`, as for every phase 6 run. Confirm `"tests_only":true`, `"red":true` and `"recorded":true`; `red-commits` then holds `phase` and `fix-3 <sha>`. `red-fix-3.log` must show that:
+     - the only failing test is `link-subpixel.test.ts`'s US5-7, and it fails on the `ring` entry of the `toEqual` (the left side `false`);
+     - the precondition passes;
+     - there is no load, launch or setup error;
+     - US5-7 in `link.test.ts` and `browser/link.test.ts` passes, because those still draw grayscale.
+
+     If US5-7 passes under this launch at the red commit, or fails on anything but `ring`, **stop and ask the operator**. Do not move the sample, loosen the colour comparison or add an assertion only to make it red.
+
+     Why not an opt-in fixture behind an environment variable: `tdd-check.sh` re-runs every recorded red commit in a fresh worktree with the environment of whoever runs it. A red that needs the variable reads as "tests pass, so they were not red" for any checker without it. The always-on test is red for every checker. It also keeps a permanent local guard against the antialiasing CI uses.
+  2. **Green** (test file only, one commit, `test(014-selection-input): phase 6 fix-3 — space the US5-7 link from its neighbours (O3-01)`). In the US5-7 body of `packages/elements/test/scenarios/link.ts`, change only the mount to `await mount(driver, inPage, page(""), "#link { margin-inline: 0.75em; }");`. Add a comment saying why: the neighbouring glyphs sit clear of the ring band, so the ring samples do not depend on how the machine antialiases text (landing L1-01). `expected`, `ringPixels`, `over` and the 3.5 px sample stay unchanged. In the same commit, correct the body's plant comment so it names only the plants that bite (see step 4). Run `link-subpixel.test.ts`, `link.test.ts` and `browser/link.test.ts` green.
+  3. **Checks against the operator's required change**. Run each one at a time and record it in `reviews/phase-6/notes.md` under "Landing fold (T115)", with the command and the result.
+     - US5-7 in both harnesses (`--project elements packages/elements/test/link.test.ts -t US5-7` and `--project elements-browser packages/elements/test/browser/link.test.ts -t US5-7`):
+       - grayscale (the default);
+       - CI-like, with `FONTCONFIG_FILE=packages/elements/test/browser/subpixel/fonts.conf` set for the vitest process, which the in-process project's browser inherits too;
+       - in the Playwright Docker image of the pinned Playwright (1.64.1), if Docker is available. If it is not, record that, and CI stands in.
+     - Also run the CI-like pair at the red commit, so the record shows the in-process harness failing there on `ring` and passing after green. This harness has no committed subpixel test, because changing the `elements` project's launch would change every in-process pixel test.
+     - The planted wrong ring still fails US5-7, under both the grayscale and the subpixel launch: plants.md's "the ring removed in forced colours" and "forced-color-adjust: none with the token colour kept", each applied alone to `ocelle-link.ts` and reverted. Record them as new rows in `reviews/phase-6/plants.md` with the launch named.
+  4. **Ring-colour plant record**: checked while writing this task, and recorded here.
+     - The US5-7 plant comment names "the ring in a token colour … in forced colours".
+     - `reviews/phase-6/plants.md` has rows only for the ring removed and for `forced-color-adjust: none` with the token colour (both bite).
+     - `reviews/phase-6/mutation.log` has no ring-colour entry. Stryker mutates the `css` template only as a whole, never the colour inside it, so no mutation record is owed.
+     - The diagnosis showed that changing only `outline-color: Highlight` to `var(--ocelle-color-focus)` is not killed by US5-7. In forced colours Chromium replaces an author outline colour with the system colour unless `forced-color-adjust: none` is set, and that case is the row that bites. The swap is therefore equivalent in Chromium, not a gap in the test.
+     - A record is needed, because the comment claims a plant that does not bite. Add one row to `reviews/phase-6/plants.md`: the colour-only swap, "does not bite: equivalent in Chromium (forced colours force the outline colour)". Step 2's comment correction matches it. Add no test and no source change for it.
+  5. **Check, CI and records**. Run each of these one at a time: `pnpm test`, `gate:typecheck`, `gate:lint`, `gate:test-lint`, and `pnpm run gate:plants -- --affected <the fix-3 red sha>^`. `tdd-check.sh 6` must report `pass`.
+     - Check the diff of the fold: it touches only the two new test files, `scenarios/link.ts` and the phase 6 review records. There must be no baseline, no other pixel or visual test, no `vitest.config.ts` or `serve.ts` change and no element source change.
+     - After the push the orchestrator does, CI must be green on the fold's head: Unit tests, every Mutation shard and the Mutation testing aggregate (L1-02). Every surviving mutant in new or changed code is killed or recorded as equivalent with its reason. Record the run id and the job results in `reviews/phase-6/notes.md` under T115.
+
 **Checkpoint**: `tdd-check.sh 6` reports `pass`.
 
 ---
