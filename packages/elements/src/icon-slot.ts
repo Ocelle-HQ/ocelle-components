@@ -5,6 +5,8 @@
 // `<span class="icon-slot trailing"><slot name="trailing"></slot></span>` after it. A control with no label (an
 // icon-only control) puts the modifier class `bare` on its row.
 // - The row is an `inline-flex` row aligned to the start, so the wrappers and the label start on the same line box.
+//   Its block padding is half the amount by which the icon is taller than one line box (a negative `calc()` padding is
+//   clamped to 0), so an icon that overflows its wrapper stays inside the control's box (PLAN-FRESH-2-002 (a)).
 // - In a labelled row the label wrapper takes part in baseline alignment (`align-self: baseline`). The row is aligned
 //   to the start, so without it no item takes part in baseline alignment and the row's baseline would be its first
 //   item's, the icon wrapper's, which put a one-line control 4.6 to 6.2 px above the baseline of the text around it.
@@ -13,8 +15,6 @@
 //   empty and zero-height, so the rule would give the row a baseline at the label's top and hang the control below the
 //   line; a `bare` row keeps the icon wrapper's baseline, and its icon sits where a native `<button>` with an svg puts
 //   it (012 plan decision 33, reviews/phase-2/round-5.md O3-01, reviews/phase-2/round-6.md O6-01).
-//   Its block padding is half the amount by which the icon is taller than one line box (a negative `calc()` padding is
-//   clamped to 0), so an icon that overflows its wrapper stays inside the control's box (PLAN-FRESH-2-002 (a)).
 // - Each wrapper is exactly one line box tall (`1lh`) with the icon centred in it, so the icon is centred on the
 //   label's first line at any type size and leading, wrapped or not (PLAN-CORRECTNESS-1-004 (a)). No generated
 //   content, so the control's name is its label's.

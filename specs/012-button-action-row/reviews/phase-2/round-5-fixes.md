@@ -25,3 +25,5 @@ baseline alignment applies to labelled rows only, and says where an icon-only co
 Two red steps, one green commit: the first red is labelled `fix-4` and the second `fix-5`, because `red.sh` keeps one
 record per label. Both red steps, the checks, the plants, the baselines that moved and the mutation run are in
 notes.md § Fix round 4 and plants.md § Fix round 4.
+
+R7-02 (round 7): the header comment of `icon-slot.ts` has the two lines on the row's block padding back under the bullet on the `inline-flex` row; they had ended up after the label-baseline bullet, as if about the `bare` row. No wording or code changed.
