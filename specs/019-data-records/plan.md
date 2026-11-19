@@ -195,7 +195,9 @@ decisions of 2026-11-17 (Q1 (a), Q2 (c), Q3 (a), Q4 (a), Q5 (b)), and after the 
 (Q1 (b), Q2 (a), T005 "Proceed, map later"), and after the library inventory decisions of 2026-11-18 (IQ-1 (a),
 IQ-2 to IQ-5 added, IQ-6 (a), IQ-7 (a)), after the follow-up answers Q-I1 to Q-I7, and after the re-analysis
 decisions of 2026-11-18 (C1 (b), A1 (c), A2 (a), G1 (a)) and the answer to fixes-2 Q-1 (b), and after the decisions on
-phase 1's second spike (Q-1 (a), Q-2 (a), Q-3 (c), Q-4 (a)), none of which changes a verdict below. Two Principle V
+phase 1's second spike (Q-1 (a), Q-2 (a), Q-3 (c), Q-4 (a)), none of which changes a verdict below, and after the
+decisions at phase 1's mutation stop (2026-11-19: Q-M1 (b), Q-M2 (a) and the gate gap rule (c)), which change the
+Workflow gates row only. Two Principle V
 exceptions are recorded (Complexity Tracking): the host `aria-label` states, chosen by the operator as C1 (c) and
 narrowed to the timeline and the chain by spike Q1 (b); and the block-end fade's scrolled-to-end state, chosen
 by the operator on the re-analysis (C1 (b), with Q-I7 (a)) and narrowed to that one state by the answer to fixes-2 Q-1
@@ -213,7 +215,7 @@ exception (Complexity Tracking, notes).*
 | VII. Semver | **MINOR**: five elements, five entry points, four `base.css` blocks, the `data-ocelle-align` hook (IQ-3, a documented base-style hook in `@ocelle/styles`' Hooks table) and one base-style hook (`--data-table-box-size`, `--data-table-end-fade`, analysis I7 (a)), which couples the two separately versioned packages and so is surface: both CHANGELOGs and both READMEs name it, and a rename or removal is MAJOR from 1.0.0. CHANGELOG entries go in `@ocelle/elements` and `@ocelle/styles`. `@ocelle/tokens` is unchanged. The overflow-region module's block-axis option is internal, not surface (009's contract § Status); the `@ocelle/elements` CHANGELOG mentions it with no effect on `ocelle-scroller` or `ocelle-workflow-board`. |
 | VIII. Test-first, non-vacuous | A scaffold comes before each red commit. The red commit holds the phase's scenario bodies, the driver test, the node and styles tests and the story-test extension (operator decision I3), and `red.sh` keeps one red record per phase. The red log is read per body: every scenario body fails on an assertion, never on an import or setup error, and each body the platform alone could pass carries a paired assertion only the element gives (contracts/checks.md). Each phase's red commit changes 003's `source.test.ts` for the `base.css` rules that phase's green adds (phase 1 blocks 1 and 2 after the wrap rule, phase 2 the timeline's two pre-upgrade rules and phase 3 the chain's two in its base-layer slice, recheck Q5 (b)), and phase 1's red also changes the two Styles sentences `packages/elements/test/node/readme.test.ts` pins, for the convention amendment of recheck Q2 (c); each red message names its changed test and the reason (R-06, R-07). Item-text bodies also assert a non-empty text (FR-016). Each CSS-only behaviour has a named element plant or a stated reason, because Stryker does not mutate `css` templates or `base.css`; element plants mutate green source, so they run after green, are never committed, and are recorded in `reviews/phase-<N>/element-plants.md` (contracts/checks.md § Element plants). Spikes run before the scaffolds of phases 1 to 3, and a failing spike result goes to the operator. The module's block-axis option (IQ-2) is behaviour, so its bodies are in phase 1's red commit with the data table's, and its changed source is mutation-tested; 009's existing tests of the module, the scroller and the board are not edited (only the README sentence on the module's inputs that `readme.test.ts` pins, named in the red commit's body) and stay green. |
 | Licence, supply chain | No new dependency or asset. |
-| Workflow gates | No gate changes. The gates run unchanged; the gate plants run by op 016's selection locally and in full in CI (R-15). |
+| Workflow gates | One gate change, the operator's decision at phase 1's mutation stop (gate gap, rule (c), 2026-11-19; `reviews/phase-1/operator-mutation-decisions.md`): `gate:mutation` exits 2 ("could not run") on a checker failure, a changed file every one of whose mutants on its changed lines is a CompileError sharing one diagnostic of that file on a line none of them spans, which is how `ocelle-data-table.ts` went untested in T025's first run. It is test-first and proven (VIII, "Gates are proven, too"): a red self-test pinning Stryker 10.1.1's diagnostic format (T087), a breaking plant `error-checker-failure` (T088), then the change in `gates/lib/mutation/report.ts` with `gates/README.md` (T089), against 001's contracts/gate-cli.md and contracts/plants.md as amended in the design on 2026-11-19; 007's verdicts stand and `pass-compile-error` stays a pass plant. The changed gate source is in T025's mutation scope. The other gates run unchanged; the gate plants run by op 016's selection locally and in full in CI (R-15). |
 
 ## Decisions at the plan gate
 
@@ -518,6 +520,14 @@ storybook/stories/{data-table,event-timeline,evidence-chain}.stories.ts
 storybook/.storybook/stories-layout.css                        # wrapper widths on data-story selectors
 storybook/baselines/elements-ocelle-{data-table,event-timeline,evidence-chain}--<story>.{light,dark}.png
 storybook/test/integration/elements-stories.test.ts
+gates/                             # phase 1, the gate gap (rule (c), T087 to T089)
+├── lib/mutation/report.ts         # changed: a checker failure is "could not run" (exit 2)
+├── bin/mutation.ts                # header comment names the new cause; code only if the cause needs it
+├── test/mutation-report.test.ts   # changed: the checker-failure cases and the Stryker 10.1.1 diagnostic format pin
+├── test/fixtures/stryker/checker-failure.report.json   # new: a recorded Stryker 10.1.1 report
+├── plants/mutation/error-checker-failure/{base,head,plant.json}   # new breaking plant
+└── README.md                      # the new exit 2 cause
+specs/001-repository-foundation/contracts/{gate-cli,plants}.md   # amended 2026-11-19 (mutation rows)
 ```
 
 **Structure Decision**: the existing workspace layout, with every file where 005's and 013's conventions put it, and

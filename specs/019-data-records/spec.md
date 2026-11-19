@@ -217,8 +217,9 @@ decisions in `reviews/phase-1/operator-spike-2-decisions.md`, changes listed in 
 - Q-M2, a data table detached, its `<table>` replaced and attached again showed no table: (a), fixed in phase 1, test
   first; the element re-assigns its slot when it is attached (FR-003).
 - The mutation gate passed a file every one of whose mutants the type checker rejected, so `ocelle-data-table` was not
-  mutation-tested at all: fixed in this mission, with a plant; the rule's exact form is open (an operator question,
-  `reviews/phase-1/mutation-decisions-fixes.md` § Open).
+  mutation-tested at all: fixed in this mission, with a plant, by rule (c) (answered after the first changes): the
+  gate reports that it could not run when every such mutant carries one same type error of the file itself, on a line
+  no mutant touched; a mutant the type checker rejects for its own change still passes, as mission 007 decided.
 
 ## Scope
 
