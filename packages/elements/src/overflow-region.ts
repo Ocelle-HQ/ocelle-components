@@ -797,7 +797,10 @@ export class OverflowRegion implements ReactiveController {
     box.scrollTo({ left: clearance.scrollLeft, behavior: "instant" });
     this.#suppressed = { start: clearance.suppressStart, end: clearance.suppressEnd };
     this.#written = box.scrollLeft;
-    if (this.#axis) this.#clearBlock(box, target, event.composedPath(), room);
+    // Q-M1 (b), T084: the option and the block overflow read at the time of focus, never `#axis`, which the last
+    // measurement left; so focus entering a box just handed to the module, before its observer's first delivery, gets
+    // the block clearance too. Reading it writes no `data-axis` and no output; the measure below does, as before.
+    if (this.#blockAxis() && blockEdgeState(box.scrollTop, box.scrollHeight, box.clientHeight, 0, 0).overflowingBlock) this.#clearBlock(box, target, event.composedPath(), room);
     this.#measure();
   };
 
