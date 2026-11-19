@@ -288,6 +288,17 @@ export interface Running {
   readonly currentTime: number | null;
 }
 
+/**
+ * One current animation or transition with a stable identity (018 research.md R-11; contracts/checks.md § Test harness
+ * row 1): 013's `Running` record, and `identity`, a number the page gives each `Animation` object the first time it is
+ * read and keeps for it (the same object reads the same number, a new object a new one), and `iterations`, its
+ * effect's computed iteration count (`"infinite"` for an infinite one).
+ */
+export interface AnimationState extends Running {
+  readonly identity: number;
+  readonly iterations: number | "infinite";
+}
+
 export interface MountOptions {
   /** Links `@ocelle/styles`' `base.css` (after `tokens.css`) on the page. */
   readonly base?: boolean;
@@ -674,6 +685,35 @@ export interface Driver {
    * a node in its shadow root, in order (013 phase 3 review round 1, R1-01: US3-2's "no event is emitted").
    */
   dispatched(id: string, during: () => Promise<void>): Promise<string[]>;
+  // The additions of 018 phase 1 (contracts/checks.md § Test harness rows 1, 2, 7 and 8; tasks.md T008). Rows 3 to 6
+  // are `text`/`textData`, `topLayer`, `focusVisible`/`focusPath` and `click` with `position`/`clickAt` above, as merged.
+  /**
+   * The current animations and transitions on the element with `id` and in its shadow root, in tree order, as
+   * `animations(id)` reads them, each with its stable identity and its iteration count (row 1).
+   */
+  animationStates(id: string): Promise<AnimationState[]>;
+  /**
+   * Pauses every animation of the element matching `inner` in the shadow root of the element with `id` (of the element
+   * itself when `inner` is null), not of its subtree, at `ms` of its current time, then settles (row 2). Rejects when
+   * the element has no animation.
+   */
+  seek(id: string, inner: string | null, ms: number): Promise<void>;
+  /**
+   * Settles (`settle`), then waits until the page's layout holds still (row 7): once per animation frame, after every
+   * `ocelle-*` element's update, it reads the border box of every element of the document and of every open shadow
+   * root after the frame's rendering (so after its `ResizeObserver` delivery and the update that delivery requests),
+   * and returns from the second frame on when two consecutive reads agree and no element has an update pending. An
+   * element with a running animation of its own, and its subtree, is left out of the read (a running animation moves
+   * them every frame). Rejects after 30 frames.
+   */
+  settleLayout(): Promise<void>;
+  /**
+   * The fractional overflow measure of 018 research.md R-09 (row 8), on the target: whether its content's inline extent
+   * (a `Range` from before the first to after the last node assigned to the first `slot` in it, or of its own child
+   * nodes when it holds no slot) passes the inline end of its content box (the inline start when its direction is
+   * right-to-left) by more than 0, in fractional CSS pixels. False when there is no content.
+   */
+  overflows(target: ElementTarget): Promise<boolean>;
 }
 
 /** How `copy` copies the live DOM. */
