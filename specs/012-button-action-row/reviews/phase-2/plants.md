@@ -40,3 +40,16 @@ Chromium 1248.
 
 The fixture run (`test/browser/button.test.ts`, `test/browser/slot.test.ts`) uses the same bodies on the built
 browser build. The plants were not rebuilt into it.
+
+## Operator decision on the fix round 4 plants record (phase 2 round 7, R7-01)
+
+Recorded by the orchestrator, 2026-11-19. Asked as multiple choice; the operator (human:jeroennouwsdev) answered "CI
+Plants stands (Recommended)": "Same as your phase 4 decision. I record it in phase-2/plants.md, the implementer fixes
+the R7-02 comment, then you push and the CI Plants run (all 77 shards on the pushed head) is linked as the full
+evidence. Then a short phase 2 round 8 and landing checks."
+
+- Local evidence for fix round 4: the two plants above, run in process; `gate:visual` under docker on f379592c, 388
+  captures matching after the 10 regenerated `ocelle-button` baselines (notes.md, "Fix round 4").
+- `pnpm run gate:plants -- --affected 48cdc9584ab93373eff1544378e118f20eded10e` selects all 317 plants (shared gate
+  source after the merges) and was not run locally.
+- Full evidence: the CI Plants run on the pushed head. Run link: _to be added after the push_.
