@@ -8,20 +8,25 @@ plant (research.md R-11); plants run in op 016's `--affected` mode only.
 
 ## Test harness (phase 1, red first, after T001)
 
-The driver as merged after 012 and 008 is recorded by T001 (research.md R-01); the methods below are added or
-extended in phase 1, each with a self-test on a plain stand-in page (no `ocelle-*` element of this feature) in
-`test/harness/*.test.ts` (in process) and its browser twin (CSP), before any element exists (research.md R-11).
+The driver as merged on `main` is recorded by T001 (`reviews/phase-1/recheck.md` § The test driver; research.md R-01):
+one `Driver` with 005's, 012's, 009's, 008's, 011's and 013's methods, 008's same-named methods renamed at the merge
+(`inputPress`, `inputClick`, `inputHover`, `ownAnimations`). As amended at the phase-1 recheck (operator decision Q4
+(a)), phase 1 adds or extends only the methods `main` lacks, rows 1, 2, 7 and 8 below, each with a self-test on a
+plain stand-in page (no `ocelle-*` element of this feature) in `test/harness/*.test.ts` (in process) and its browser
+twin (CSP), red before the method exists (research.md R-11). Rows 3 to 6 exist on `main` and are used by the scenarios
+as merged, with no new method and no self-test: a self-test of them would pass before any change and so cannot be in
+the red commit; each scenario negative that uses them is paired with its positive in the same body.
 
-| Method | Self-test (positive and negative on a stand-in) |
-|---|---|
-| animation record: stable identity, `iterations`, `endTime`, `currentTime`, `playState` | a stand-in with a 3-iteration CSS animation reads 3 and its end time; one without reads none; the same `Animation` read twice has the same identity, a re-created one a new identity |
-| `seek(id, inner, ms)` | seeking to 1000 ms reads a current time of 1000 ms and the keyframe value at that time; an unseeked twin reads near 0 |
-| `editText(id, data)` | the host's Text node data changes and a `MutationObserver` with `characterData` sees one record; a twin observer without `characterData` sees none |
-| tooltip shown state (through `topLayer()` or a nested shadow read) | a stand-in `ocelle-tooltip` trigger hovered past the test delay reads shown; the same before the delay and a disabled twin read not shown |
-| `focusVisible` / `focusPath` through nested shadow roots | a keyboard-focused control inside a tooltip inside a shadow host reads focused and focus-visible; a pointer-focused twin reads focused, not focus-visible |
-| click at a point of an element | clicks at each corner inset 1 px of a 24 × 24 px stand-in button are received; a click 1 px outside is not |
-| `settleLayout()` | a stand-in that sets a reactive property from a `ResizeObserver` is read with its final value after `settleLayout()`; the self-test records that a read after `settle()` alone may be stale (why the wait exists) |
-| fractional overflow measure (the helper R-09 uses, run on a stand-in) | an overflow of 0.1 px reads overflow; an exact fit reads none; right-to-left reads the same |
+| Row | Method | Phase 1 | Self-test (positive and negative on a stand-in) |
+|---|---|---|---|
+| 1 | animation record: stable identity, `iterations`, `endTime`, `currentTime`, `playState` | extend (013's `animations(id)` gives `endTime`, `currentTime`, `playState`; identity and `iterations` added, additively, or a sibling) | a stand-in with a 3-iteration CSS animation reads 3 and its end time; one without reads none; the same `Animation` read twice has the same identity, a re-created one a new identity |
+| 2 | `seek(id, inner, ms)` | add | seeking to 1000 ms reads a current time of 1000 ms and the keyframe value at that time; an unseeked twin reads near 0 |
+| 3 | editing a text node's data (the `characterData` path; planned as `editText(id, data)`) | none: 013's `text(id, value)` (the first text node child's data) and 011's `textData(id, index, data)` as merged | — |
+| 4 | tooltip shown state | none: 008's `topLayer()` as merged (`:popover-open` elements in every shadow root the probe saw attached, nested ones included) | — |
+| 5 | `focusVisible` / `focusPath` through nested shadow roots | none: 008's `focusVisible(id, inner?)` and `focusPath()` as merged (the pill's control is in the pill's own shadow root, the tooltip's trigger its light-DOM child there, so `focusVisible(pill, ".control")` reaches it) | — |
+| 6 | click at a point of an element | none: 012's `click(id, { position })` (a point from the top-left corner) and 009's `clickAt(target, point)` as merged | — |
+| 7 | `settleLayout()` | add (013's `layout(id)` settles and reads a `dl`'s box only) | a stand-in that sets a reactive property from a `ResizeObserver` is read with its final value after `settleLayout()`; the self-test records that a read after `settle()` alone may be stale (why the wait exists) |
+| 8 | fractional overflow measure (the helper R-09 uses, run on a stand-in) | add | an overflow of 0.1 px reads overflow; an exact fit reads none; right-to-left reads the same |
 
 ## Scenarios
 
@@ -72,7 +77,7 @@ plain-element twin, and the interactive twins of the static click, static focus 
 | static focus | a click on a static pill inside a focusable ancestor (`tabindex="0"`) focuses the ancestor, as a click on a plain `<span>` twin in the same ancestor does; the pill's shadow root holds no focus | `delegatesFocus` set |
 | US3-8, flex row | in a 220 px flex row beside "Refactor the mission scheduler pipeline", `<ocelle-pill-tag status="warning">Blocked</ocelle-pill-tag>` in each variant and density: the text on one line (one line box), the host at least the word's width plus the padding and border; the same pill with `min-inline-size: 0` set by the host: narrower than the word, the word over more than one line, every character inside the `.pill` box; twin: a 34-letter word in a 100 px block container and in a 100 px grid track breaks inside the pill (more than one line, the text box inside the `.pill` box, the host within the container, and the `.pill` box inside the host and the container: its inline size at most 100 px and its edges within the host's, within 0.5 px); in a 150 px flex row holding "Name" and then the long-word pill, the pill's host is at most the row's inline size, the `.pill` box lies inside the host (its inline size at most the host's, its edges within the host's, within 0.5 px), and the host's right edge lies beyond the row's by the sibling's width (within 0.5 px; the accepted overflow, PLAN-FRESH-3-005), and the twin with `min-inline-size: 0` on that pill fits inside the row (its right edge at most the row's, the word over more than one line, every character inside the `.pill` box) | `overflow-wrap: anywhere` on the text; `min-inline-size: 0` on the static host or `.pill`; the static host `inline-grid`; the `.icon-row` cap removed; `box-sizing: border-box` removed from the static `.pill` (the capped `.pill` is then 126 px and sticks out of its 100 px host and container, 176 px in the 150 px row; PLAN-FRESH-3-002) |
 | stretched host | `<ocelle-pill-tag status="warning">Blocked</ocelle-pill-tag>` in each variant and density, in a 200 px grid track and in a 200 px `flex-direction: column` container (default `align-items: stretch`): the `.pill` box's inline and block size equal the same pill's in a block container (within 0.5 px), one line, the host stretched to 200 px; the long-word twins of US3-8 unchanged, and they, not this body, kill the `box-sizing: border-box` plant (below the cap "Blocked" is the same size with either box model) | `inline-size: fit-content` removed from the static `.pill` |
-| baseline | a static pill, with and without an icon, in each variant, density and status example: inline in a paragraph (`<p>Before <ocelle-pill-tag>Blocked</ocelle-pill-tag> after</p>`) and in an `align-items: baseline` flex row beside "Name", the surrounding text at the pill's font size: the bottom of the pill's first text line (a `Range` over the slotted text) equals the surrounding text's (within 0.5 px), and the pill's height equals the pinned height of its density; twin: a long text that wraps, whose first text line is on the baseline of its own line | the `.icon-row { align-items: baseline }` override removed; `.icon-slot { align-self: flex-start }` removed (the icon no longer at the start) |
+| baseline (amended at the phase-1 recheck, Q2: measures the slot convention as merged, 012 decision 33) | a static pill, with and without an icon, in each variant, density and status example: inline in a paragraph (`<p>Before <ocelle-pill-tag>Blocked</ocelle-pill-tag> after</p>`) and in an `align-items: baseline` flex row beside "Name", the surrounding text at the pill's font size: the bottom of the pill's first text line (a `Range` over the slotted text) equals the surrounding text's (within 0.5 px), the icon wrapper's block-start equals the `.label`'s (within 0.5 px; nothing inside the row moved), and the pill's height equals the pinned height of its density; twin: a long text that wraps, whose first text line is on the baseline of its own line; an icon-only pill (no text, its row `bare`) in the same paragraph and row: its box where T002 measured it (`reviews/phase-1/spikes.md`, written by hand) | the pill's text rendered in a wrapper without the `label` class (the convention's rule no longer reaches it); `bare` set on every row; `bare` never set (the icon-only pill then hangs below the line); `.icon-row { align-items: baseline }` in the pill's own styles (the dropped override: the wrappers' block-starts then differ) |
 | seven names on a static pill | for each of `aria-label`, `aria-labelledby`, `aria-describedby`, `aria-controls`, `aria-current`, `aria-pressed`, `title`: set on an upgraded static pill, then changed: it stays on the host as set and as changed (the positive), no `data-ocelle-moved-*` mirror, no inner control, no custom state | the seven names handed to 012's `MovedAttributes.handle()` while static (moved and mirrored) |
 
 ### US4 bodies
@@ -89,7 +94,7 @@ plain-element twin, and the interactive twins of the static click, static focus 
 | US4-6, ring | the focus ring on both controls from the focus tokens (the `control` class present) | the `control` class dropped |
 | US4-7, target | the control's box ≥ `target-small` (value from `expected.ts`) in both axes; on a one-character compact badge a click at each corner inset 1 px delivers one `click` and one `ocelle-pill-tag-activate`; a click 1 px outside delivers none | `min-block-size` removed |
 | FR-001 of 012, stretched host | a pill host stretched by a flex row (and a grid cell): the control's box equals the host's, and a click 1 px inside the host's edge delivers one `click` and one activate | the host not `inline-grid`; the static `.pill` sizing selected as `.pill` (reaching the control) |
-| baseline | an interactive pill, button and link mode, enabled (its text span `overflow: hidden`, fitting) and disabled, with and without an icon, each variant and density: inline in a paragraph and in an `align-items: baseline` flex row beside "Name", the surrounding text at the pill's font size: the bottom of the pill's text line equals the surrounding text's (within 0.5 px) | the `.icon-row { align-items: baseline }` override removed |
+| baseline (amended at the phase-1 recheck, Q2) | an interactive pill, button and link mode, enabled (its `.label` `overflow: hidden`, fitting) and disabled, with and without an icon, each variant and density: inline in a paragraph and in an `align-items: baseline` flex row beside "Name", the surrounding text at the pill's font size: the bottom of the pill's text line equals the surrounding text's (within 0.5 px) | the interactive render's text wrapper without the `label` class; `bare` set on every row |
 | US4-8, same task | `interactive` removed and `aria-label="New"` set in one task, in both orders: `aria-label="New"` on the host, no mirror; then a later change of a written-back attribute stays on the host with no mirror | `release()` deferred to the update |
 | US4-9, attribute order | `<ocelle-pill-tag title="x" aria-current="page" interactive>` and `… href="/x">` at upgrade (passthrough before the mode attribute), and the same set one by one after creation with the passthrough attribute first: moved, mirrored, `:state(current)` | the mode read from Lit properties; `capture()` not called |
 | interactive click (twin of § US3 static click) | an interactive pill, button and link mode, inside `<a href>` and under an ancestor click listener: the click is guarded as 012 says, beside a static twin in the same places whose click reaches the ancestor with `defaultPrevented` false and runs the link's activation | the guard active while static (`guardHost`'s `active` true in static mode) |
@@ -102,7 +107,7 @@ plain-element twin, and the interactive twins of the static click, static focus 
 | Body | Assertion | Plant |
 |---|---|---|
 | trigger: width | the container narrowed until the text overflows, then widened: truncated and tooltip enabled, then not | the `ResizeObserver` removed |
-| trigger: `characterData` | the host's Text node data edited (`editText`) so the text overflows, then fits | `characterData` or `subtree` false |
+| trigger: `characterData` | the host's Text node data edited (013's `text(id, value)` or 011's `textData`, as merged) so the text overflows, then fits | `characterData` or `subtree` false |
 | trigger: nested `childList` | a nested element's text replaced so the text overflows | `childList` false |
 | trigger: `slotchange` | a child's `slot` attribute changed so the default slot's text grows past the width (no `childList` record on the host) | the `slotchange` listener removed |
 | trigger: `updated()` | `density` switched to `default` in a fixed-width container (the span's box held at its maximum): truncated; `disabled` removed on a long pill: truncated | re-measure in `updated()` removed |
@@ -148,7 +153,7 @@ on disconnection have no public observable; the phase-6 review records them with
 | Phase | Gates |
 |---|---|
 | every phase | typecheck, lint, style-lint, test-lint, unit-tests, manifest, csp, prefix, pins, signoff; plants with op 016's `--affected` mode against the phase's `base.sha` (phase 7: phase 2's `base.sha`, so the run covers the whole feature's diff), recorded in `reviews/phase-N/plants.md` (never the full plant set locally); mutation (one heavy job at a time) |
-| phases adding tokens (US1, US2 if eyebrow, US3, US4) | contrast, brand-rules (rule (f) for `motion-pulse` in US1) |
+| phases adding tokens (US1, US3, US4; US2 adds none, 011's eyebrow tokens being on `main`, phase-1 recheck) | contrast, brand-rules (rule (f) for `motion-pulse` in US1) |
 | phases adding stories (US1 … US5) | storybook-build, visual (baselines in 006's pinned container), axe |
 
 Each phase-end task of tasks.md (T010, T023, T034, T044, T055, T062, T065) names the gates of its rows here.

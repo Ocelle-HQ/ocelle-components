@@ -15,7 +15,7 @@ each re-exported from `@ocelle/elements`.
 |---|---|---|---|---|
 | attribute / property | `tone` | `"info" \| "success" \| "warning" \| "danger" \| "neutral"` | `neutral` | unknown kept in the attribute; property reads `neutral` |
 | attribute / property | `label` | string | `""` | non-blank → role `img` with this name; blank → hidden from AT; the only way to name it (a host `aria-label` is unsupported and not read) |
-| attribute / property | `pulse` | boolean | `false` | one run of `motion-pulse-count` × `motion-pulse` (≤ 5 s by default) per start case (FR-012); a removal and re-addition within one task coalesce and start no run |
+| attribute / property | `pulse` | boolean | `false` | one run of 3 iterations of `motion-pulse` (4.8 s by default, ≤ 5 s; the count is fixed, not a token) per start case (FR-012); a removal and re-addition within one task coalesce and start no run |
 | part | `dot` | | | the solid dot, never animated |
 | part | `ring` | | | the pulse ring, present while `pulse` |
 
@@ -65,10 +65,10 @@ shrink further sets `min-inline-size: 0` on it (its words then break inside it).
 | method | `click()` | | | clicks the inner control (interactive); the native host click while static |
 | event | `click` | `MouseEvent` | | native |
 | event | `ocelle-pill-tag-activate` | `CustomEvent<{}>` | | `bubbles`, `composed`, `cancelable`; before the click's bubble phase; none on a modifier link click, a middle click, disabled or static |
-| custom state | `pressed` | | | button mode, applied `aria-pressed="true"`; never in link mode (the pill's own rule, unlike `ocelle-button` as merged) |
+| custom state | `pressed` | | | button mode, applied `aria-pressed="true"`; never in link mode (as `ocelle-button` as merged on `main`, 012 plan decision 32) |
 | custom state | `current` | | | interactive, applied `aria-current` present and not `false` |
-| slot | (default) | | | the text |
-| slot | `icon` | | | decorative leading icon (005 slot convention) |
+| slot | (default) | | | the text, rendered in the slot convention's `.label` wrapper; the row is `bare` while it holds no text (005's convention as amended by 012 plan decision 33) |
+| slot | `icon` | | | decorative leading icon (005 slot convention, as merged) |
 | part | `pill` | | | the visual box, every mode |
 | part | `control` | | | the inner `button` / `a`, interactive modes |
 

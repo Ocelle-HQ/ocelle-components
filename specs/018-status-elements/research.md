@@ -7,6 +7,11 @@ Facts are as of `main` at `ce1d9c72` and the dependency branches read with `git 
 on `main`; task T001 re-reads every fact marked **(recheck)** against `main` as it is then, and the phase-1 spikes
 (T002) measure those that are behaviour rather than code.
 
+**Phase-1 recheck** (T001, `reviews/phase-1/recheck.md`, read at `4f44aa1d`, the merge of `main` `4911fd0b` into this
+branch): 012, 008, op 016, 011, 009 and 013 are merged. The operator's decisions on its four questions
+(`reviews/phase-1/operator-decisions.md`) and its other facts are folded in below, each marked *phase-1 recheck*; the
+list of changes is `reviews/phase-1/design-amendments.md`.
+
 ## R-01 Dependencies and the order they are taken in
 
 **Decision**: the feature is implemented on a branch that has 012, 008 and op 016 merged from `main` (by
@@ -19,13 +24,17 @@ relies on (012's `control.ts` exports, `ocelle-button`'s activate dispatch, `oce
   `controlState(disabled, unavailable)`, `mirrorOf(name)`, `class MovedAttributes(host, names, changed)` with
   `static observed(names)`, `handle(name, value)`, `connected()` and `get(name)`, `resolveIds(host, value)`,
   `guardHost(host, control, available)` and `controlStyles` (focus ring and forced-colours table). Custom states are
-  toggled inline on `ElementInternals.states` (`ocelle-button.ts` 523-531); the activate dispatch is inline
-  (`ocelle-button.ts` 480-485). 012 raises the engine floor to Chromium 135 / WebKit 17.4.
+  toggled inline on `ElementInternals.states` (`ocelle-button.ts` 516-532 as merged; `pressed` in button mode only,
+  525-526, 012 plan decision 32); the activate dispatch is inline (`ocelle-button.ts` 480-485). 012 raises the engine
+  floor to Chromium 135 / WebKit 17.4. *Phase-1 recheck*: as planned, except the `pressed` state (R-07) and 012 plan
+  decision 33's amendment of the slot convention (R-06).
 - 008 (**recheck**): `packages/elements/src/ocelle-tooltip.ts`, entry `@ocelle/elements/ocelle-tooltip.js`;
   properties `text`, `placement` (`top`, default), `disabled`, `describes`; default slot for the trigger; part
   `bubble`; `:host { display: contents }`; tokens `tooltip-delay`, `tooltip-max-inline`, `drawer-inline`. It does not
   detect truncation: the consumer does (its contract, "#7 and #12").
-- 011 (**recheck**): not on `main` at `ce1d9c72`. Its R-12 defines `font-size-eyebrow` (`var(--ocelle-font-size-xs)`),
+- 011 (**recheck**; *phase-1 recheck*: on `main` at `bea31300` and merged into this branch, its four tokens in
+  `source.ts` as below, so they are used as merged and phase 3 adds no token): not on `main` at `ce1d9c72`. Its R-12
+  defines `font-size-eyebrow` (`var(--ocelle-font-size-xs)`),
   `font-weight-eyebrow` (`var(--ocelle-font-weight-strong)`), `tracking-eyebrow` (`0.08em`) and `color-eyebrow`
   (`var(--ocelle-color-ink-muted)` in both themes, text contrast on the main grounds, 9 rows per theme). R-10 covers
   both cases.
@@ -39,7 +48,15 @@ relies on (012's `control.ts` exports, `ocelle-button`'s activate dispatch, `oce
   `record`/`recorded`, `animations(id, inner?)`, `topLayer()`, `focusVisible(id, inner?)`), and 008's
   `AnimationRecord` has no iterations, end time, current time, identity or seek. T001 records the reconciled driver as
   merged (each method this plan uses, with its signature) and stops on a difference from R-11's list that changes what
-  a scenario can express.
+  a scenario can express. *Phase-1 recheck*: `test/scenarios/driver.ts` as merged holds 005's, 012's, 009's, 008's,
+  011's and 013's methods in one `Driver`. 012's `press(key, modifiers?)`, `click(id, options?: ClickOptions)` (with
+  `inner`, `modifiers`, `button`, `position`), `hover(id, options?)` and `events`/`takeEvents` are as planned; 008's
+  same-named methods are renamed `inputPress`, `inputClick`, `inputHover`, and its `animations(id, inner?)` is
+  `ownAnimations(id, inner?)`; 008's `record`/`recorded`, `topLayer()`, `focusVisible(id, inner?)` and `focusPath()`
+  are as planned; both `reducedMotion` forms are 013's `reducedMotion(mode: ReducedMotion)`. Also there: 013's
+  `animations(id): Running[]` (kind, part, property, playState, endTime, currentTime of the host and every shadow
+  element), `frames(n)`, `layout(id)`, `text(id, value)`; 009's `clickAt(target, point)`, `focusTarget`, `settle()`;
+  011's `textData(id, index, data)`, `size`, `move`. The scenarios use these names.
 
 Per-phase plant runs are always "the affected plants" in op 016's mode; this feature never runs the full plant set
 locally. The first task of implementation (T001) rechecks the task list against op 016 as merged (its command, its
@@ -99,15 +116,19 @@ absolute; inset: 0` on the ring), with `border: var(--ocelle-border-width) solid
 var(--ocelle-radius-pill)` and `color: var(--ocelle-color-<status>)`. Its animation is written as longhands, with no
 delay (the token-only lint rejects a `0s` literal, `gates/stylelint/token-only.ts` 57-69): `animation-name:
 ocelle-pulse; animation-duration: var(--ocelle-motion-pulse); animation-timing-function:
-var(--ocelle-easing-standard); animation-iteration-count: var(--ocelle-motion-pulse-count)`; direction and fill mode
+var(--ocelle-easing-standard); animation-iteration-count: 3`; direction and fill mode
 stay at their initial values (`normal`, `none`, as 012's spinner). The ring grows through `inset`, not `scale` (the lint
 lets `scale` take only -1 or 1 and rejects `transform: scale()`, token-only.ts 134-143, 197-205): the keyframes go
 `from { inset: 0; opacity: 1; }` `to { inset: calc(var(--ocelle-size-indicator) * -0.5); opacity: 0; }`, so the ring
 grows from the dot's 8 px to 16 px and fades out, from an existing token and no new one. The ring is out of flow, so
 the growing `inset` moves nothing around it and never changes the dot's box. At rest (before and after the run) the
 ring has `opacity: 0`, so after the run only the solid dot is seen. `@media (prefers-reduced-motion: reduce) { .ring {
-animation: none; } }`. New tokens (motion group): `motion-pulse` 1600ms and `motion-pulse-count` `3` (3 × 1.6 s = 4.8 s
-≤ 5 s, FR-012; the same margin as 012's spinner, 6 × 800 ms). `gate:style-lint` on the phase's source is the check that
+animation: none; } }`. New token (motion group): `motion-pulse` 1600ms; the count is the literal `3` (3 × 1.6 s =
+4.8 s ≤ 5 s, FR-012; the same margin as 012's spinner, 6 × 800 ms). *Phase-1 recheck* (operator decision Q1 (a)): the
+planned `motion-pulse-count` token is dropped, since the generator's `validateSource()` (`generate.ts` 180-183) refuses
+a motion value that is not a literal `<number>ms` duration, an angle or an easing function, and brand rule (f)
+reports one (`brand-rules.ts` 206-217, "fail closed"); 013's `gate:style-lint` lets `animation-iteration-count` take a
+bare positive integer (`gates/stylelint/token-only.ts` 18-19). `gate:style-lint` on the phase's source is the check that
 every declaration here passes.
 
 The four start cases of FR-012, as amended after squad round 1 (operator decisions on PLAN-CORRECTNESS-1-013 (a) and
@@ -147,15 +168,17 @@ script:
 
 **Rationale**: no timers, no `animationend` listener and no JS state, so no Timeout mutants (op 015) and nothing to
 keep across a disconnection. The rule (f) of 002 as generalised by 012 (**recheck**) sets every motion *duration* to
-0ms under reduced motion: `motion-pulse` is a duration and joins it; `motion-pulse-count` is unitless, which the
-validator accepts (no per-group syntax rule, `generate.ts` 133-168) and rule (f) skips (not a duration). If 008 lands
-after 012 with its `tooltip-delay` exemption, nothing here changes. The element's own `animation: none` under reduced
+0ms under reduced motion: `motion-pulse` is a duration and joins it. (The earlier reading here, that a unitless
+`motion-pulse-count` would pass the validator and be skipped by rule (f), was wrong as merged: both refuse it, so the
+count is the literal 3, phase-1 recheck Q1.) The `tooltip-delay` exemption as merged (`delay: true` on a `-delay`
+motion token) changes nothing here. The element's own `animation: none` under reduced
 motion does not rely on the 0ms duration, and the tests prove that: with the element's rule removed, three 0 ms
 iterations would end at once at opacity 0 and look the same, so the US1-5 body that catches it runs under `reduce`
 with a host rule restoring `--ocelle-motion-pulse: 1600ms` and asserts no animation on the ring, beside its twin under
 no preference with the same host rule, which shows one run. Plant: the element's `animation: none` rule removed.
 
-**Tests**: through the driver's animation record (R-11): existence, `iterations` (3) and `endTime` (≤ 5000), a stable
+**Tests**: through the driver's animation record (R-11): existence, `iterations` (3, written by hand from the
+literal) and `endTime` (≤ 5000), a stable
 identity per animation, and frames sampled by seeking the animation and reading the dot's computed `opacity` and box
 (dot unchanged, ring box changing). Reduced motion and forced colours through the harness's media emulation, reset
 after each test (frontend findings).
@@ -248,7 +271,9 @@ block container; the 34-letter word still breaks inside a 100 px pill in a block
 needed; the long-word twins of US3-8 catch its removal by asserting the `.pill` box inside the host and the container
 (squad round 3, verify 1).
 
-Baseline (squad round 3, operator decision on PLAN-FRESH-3-001, (a)): 005's `iconSlotStyles` sets `.icon-row {
+Baseline (squad round 3, operator decision on PLAN-FRESH-3-001, (a); the means amended at the phase-1 recheck,
+operator decision Q2 (a), see "As amended" below; the paragraph up to there is the round-3 record): 005's
+`iconSlotStyles` sets `.icon-row {
 align-items: flex-start }`, so no item takes part in baseline alignment and the row's baseline is synthesized from its
 first item, the empty or SVG-holding 1lh `.icon-slot`, at its bottom edge (CSS Flexbox § 8.5): with 005's alignment the
 pill's text sat 3.1 px above the surrounding text (probe p5, 14 px text: 21.0 against 24.1 px in a paragraph, 61.1
@@ -264,15 +289,36 @@ The § US3 and § US4 baseline bodies measure it (contracts/checks.md). `ocelle-
 has the same offset; this plan does not change it, and the orchestrator files a note to mission 012 or 005 (plan
 decision 15).
 
-Shadow root (static mode):
+As amended at the phase-1 recheck (operator decision Q2 (a); plan decision 15): 012 found the same offset on
+`ocelle-button` and changed the slot convention as merged (012 plan decision 33, amended at its round 6;
+`icon-slot.ts` 1-31, README § Slot convention). The label wrapper `<span class="label">` around the default slot and the
+`bare` modifier on a row with no label are part of the convention, and `iconSlotStyles` holds `.icon-row:not(.bare) >
+.label { align-self: baseline; }`, so a labelled row's baseline, and its host's, is the label's first line while no
+position inside the row moves (012 measured 0 px of movement). 012 measured `.icon-row { align-items: baseline }`, this
+plan's override, and rejected it because it moves the items inside the row. So the pill drops the override and follows
+the convention as merged: its text is in `.label` (the text span this research calls "the text span" from here on), and
+its `.icon-row` carries `bare` while the pill has no text. Whether it has text is read as `ocelle-button` reads it
+(`ocelle-button.ts` 412-438: non-whitespace text in the default slot's flattened assignment, re-read on the slot's
+`slotchange` and by a `MutationObserver` with `characterData`, `childList` and `subtree` on the host, observed from the
+constructor for the element's lifetime and held weakly, so it needs no disconnection), in every mode; this observer is
+separate from R-09's truncation observers and their lifecycle. The probes above (p5, p6) were taken with the override,
+not with the convention's rule, so the T002 spike measures the pill box on the convention as merged before the bodies
+are written: static and interactive (the enabled `.label` with `overflow: hidden`, R-09) and disabled, with and without
+an icon, inline in a paragraph and in an `align-items: baseline` flex row, and an icon-only `bare` pill's position; a
+labelled case off the baseline by more than 0.5 px stops the phase (stop-and-ask). The § US3 and § US4 baseline bodies
+stay; their plants are in the pill's source (the text wrapper rendered without the `label` class; `bare` set on every
+row), and an icon-only pill's position is pinned as T002 measured it (plant: `bare` never set). The note to 012 or 005
+is moot.
+
+Shadow root (static mode, as amended at the phase-1 recheck):
 
 ```html
 <span part="pill" class="pill status-… variant-… density-…">
-  <span class="icon-row"><span class="icon-slot"><slot name="icon"></slot></span><span class="text"><slot></slot></span></span>
+  <span class="icon-row [bare]"><span class="icon-slot"><slot name="icon"></slot></span><span class="label"><slot></slot></span></span>
 </span>
 ```
 
-with `iconSlotStyles` (005). The `.pill` box carries the density padding, the colours, the border and the radius; the
+with `iconSlotStyles` (005, as amended by 012 decision 33); `bare` only while the pill has no text. The `.pill` box carries the density padding, the colours, the border and the radius; the
 `.icon-row` is nested inside it, so the slot convention's `padding-block` (`calc((var(--ocelle-icon-size) - 1lh) / 2)`,
 `icon-slot.ts`) is on a different box from the density padding and the two never compete. `--ocelle-icon-size: 1lh`
 is set on `.pill` (the convention's one resizing route), so the row's block padding is 0, the 1lh-tall `.icon-slot`
@@ -324,9 +370,10 @@ the forced-colours table apply. The inner control is the host's one stretched gr
 sheet's `display: inline-grid`, as `ocelle-button.ts` 134), so it fills the host in both axes and a host stretched by a
 flex row or a grid cell has no area outside it (012 FR-001, adopted by FR-030); the tooltip host between them is `display: contents`, so
 the control is the grid item. The static `.pill:not(.control)` sizing of R-06 (`inline-size: fit-content`) does not
-match the control, so the control still fills a stretched host; the row's baseline override of R-06 does apply, so a
-one-line interactive pill sits on the surrounding baseline (probe p6 with the override: 25.0 / 25.0 px); the § US4
-baseline body measures an enabled pill, whose text span has `overflow: hidden` for truncation, and a disabled one.
+match the control, so the control still fills a stretched host; the slot convention's label rule (R-06, as amended
+at the phase-1 recheck) applies in every mode, so a one-line interactive pill sits on the surrounding baseline (probe
+p6 measured the earlier override: 25.0 / 25.0 px; T002 re-measures on the convention as merged); the § US4 baseline
+body measures an enabled pill, whose `.label` has `overflow: hidden` for truncation, and a disabled one.
 
 Reused from 012's `control.ts` as merged: `linkHref` decides the mode (FR-002 of 012), `controlState(disabled, false)`
 (the pill has no unavailable state), `MovedAttributes` for `aria-label`, `aria-labelledby`, `aria-describedby`,
@@ -349,12 +396,11 @@ detail: {} }`; if cancelled, `event.preventDefault()`), so its order relative to
 as written"), in button mode only; no value filter. Custom states: `pressed` iff button mode and the applied value is
 `"true"`; `current` iff the applied `aria-current` is present and not `false`.
 
-The `aria-pressed` rule on a link is the pill's own (operator decision on PLAN-CORRECTNESS-1-007, (a)): in link mode
-the pill holds and mirrors `aria-pressed` but applies none and exposes no `:state(pressed)`. `ocelle-button` as merged
-differs: it applies no `aria-pressed` on its link either (`ocelle-button.ts` 509) but sets `:state(pressed)` from the
-held value with no mode check (`ocelle-button.ts` 525; 012 data-model § states). The spec words the pill's rule as its
-own (FR-031, US4-10, Edge Cases), and the difference is recorded for mission 012 as a triage note (**plan decision
-12**), not changed here (`ocelle-button` is not changed by this feature).
+The `aria-pressed` rule on a link (operator decision on PLAN-CORRECTNESS-1-007, (a)): in link mode the pill holds and
+mirrors `aria-pressed` but applies none and exposes no `:state(pressed)`. When this was planned, `ocelle-button` set
+`:state(pressed)` from the held value with no mode check. *Phase-1 recheck*: as merged on `main` it sets `pressed` in
+button mode only (`ocelle-button.ts` 525-526, 012 plan decision 32, a finding routed from this mission), so the two now
+match and **plan decision 12**'s triage note to mission 012 is moot; nothing changes for this feature.
 
 Target size (FR-029, FR-032, FR-043): `min-block-size` and `min-inline-size` `var(--ocelle-target-small)` on the
 inner control in both densities, with `display: inline-flex; align-items: center; justify-content: center`, so a
@@ -576,13 +622,13 @@ tooltip shows. Touch: the tooltip's own behaviour (008), not changed here; the R
 |---|---|---|---|---|
 | `size-indicator` | size | `0.5rem` | the 8 px dot floor (FR-011); `size-dot` is 7.2 px and is the timeline dot | US1 |
 | `motion-pulse` | motion | `1600ms`, `0ms` under reduced motion (rule (f) as generalised by 012) | FR-012, FR-041 | US1 |
-| `motion-pulse-count` | motion | `3` | FR-012, FR-041 (3 × 1.6 s = 4.8 s) | US1 |
-| `font-size-eyebrow`, `font-weight-eyebrow`, `tracking-eyebrow`, `color-eyebrow` | type, colour | as 011's R-12 | only if 011 is not on `main` at US2 (FR-042); then also 011's 9 contrast rows per theme and the count changes R-12 lists, recomputed from `main` | US2 |
+| ~~`motion-pulse-count`~~ | — | — | dropped at the phase-1 recheck (operator decision Q1 (a)): the generator and rule (f) refuse a unitless motion value; the count is the literal `animation-iteration-count: 3` (R-04), 3 × 1.6 s = 4.8 s | — |
+| `font-size-eyebrow`, `font-weight-eyebrow`, `tracking-eyebrow`, `color-eyebrow` | type, colour | as 011's R-12 | not added: on `main` since 011 (`bea31300`), used as merged (FR-042's second branch; phase-1 recheck (c)) | — |
 | `line-height-snug` | type | `1.2` | FR-040 | US3 |
 | `target-small` | size | `1.5rem` | FR-043 (24 px, WCAG 2.5.8) | US4 |
 
 Each token is added red first: `packages/tokens/test/expected.ts` gains the record, the generator's output tests and
-`@ocelle/tokens`' CHANGELOG follow. The pinned contrast counts do not change unless the eyebrow tokens are added here.
+`@ocelle/tokens`' CHANGELOG follow. The pinned contrast counts do not change (the eyebrow tokens are on `main`).
 Names are **plan decision 2** for the operator. The pulse ring's growth needs no token of its own: its extent is half
 of `size-indicator` (R-04).
 
@@ -598,22 +644,29 @@ assertion is paired with a positive one and a measured plant (finding). Media em
 colours, colour scheme) is reset after each test.
 
 **Harness step** (phase 1, red first, after T001; contracts/checks.md § Test harness), modelled on 012's and 008's:
-the driver methods the scenarios need that neither branch has, or has in a form that cannot express them, are added
-and self-tested on plain stand-in pages in both harnesses (`test/harness/*.test.ts` and its browser twin), each "does
-not" paired with a positive, before any element exists:
+the driver methods the scenarios need that the merged driver does not have, or has in a form that cannot express them,
+are added and self-tested on plain stand-in pages in both harnesses (`test/harness/*.test.ts` and its browser twin),
+each "does not" paired with a positive, before any element exists. As amended at the phase-1 recheck (operator decision
+Q4 (a)), these are four: the rows 1, 2, 7 and 8 of § Test harness:
 - an animation record with a stable identity per `Animation` object, `iterations`, `endTime`, `currentTime` and
-  `playState` (008's `animations(id, inner?)` extended or a sibling), and `seek(id, inner, ms)`;
-- `editText(id, data)`: edits the data of the host's text node (the `characterData` path);
-- the tooltip's shown state through 008's `topLayer()` or a nested shadow read of the bubble inside the pill's shadow
-  root;
-- `focusVisible(id, inner?)` and `focusPath()` as merged, with a nested-shadow read for the control inside the
-  tooltip inside the pill;
-- clicks at a chosen point of an element (012's `ClickOptions.position` as merged) for the corner clicks of US4-7;
-- `settleLayout()`: `settle()`, then a second animation frame and every element's `updateComplete` again, so a
+  `playState`: 013's `animations(id)` (`Running`: `endTime`, `currentTime`, `playState`, no identity, no `iterations`)
+  or 008's `ownAnimations(id, inner?)` extended additively, or a sibling, with every existing caller unchanged; and
+  `seek(id, inner, ms)`;
+- `settleLayout()` (013's `layout(id)` settles and reads a `dl`'s box only): `settle()`, then a second animation frame and every element's `updateComplete` again, so a
   `ResizeObserver` callback and the Lit update it causes have run (`settle()` alone awaits one frame, whose callbacks
   run before layout and observer delivery, `in-process.ts` 35-39). Its self-test: a stand-in element that sets a
   reactive property from a `ResizeObserver` is read correctly after `settleLayout()` and, as the positive that the
-  wait is needed, a read after `settle()` alone is allowed to be stale.
+  wait is needed, a read after `settle()` alone is allowed to be stale;
+- the fractional overflow measure of R-09, as a helper run on a stand-in.
+
+Rows 3 to 6 exist on `main` and are used as merged, with no new method and no self-test (a self-test of an existing
+method passes before any change, so it cannot be part of a red commit): editing a text node's data (the
+`characterData` path) is 013's `text(id, value)` or 011's `textData(id, index, data)`; the tooltip's shown state is
+008's `topLayer()`, which reads `:popover-open` elements in every shadow root the probe saw attached, nested ones
+included; `focusVisible(id, inner?)` and `focusPath()` reach the pill's control, which is in the pill's own shadow root
+(the tooltip's trigger is its light-DOM child there); a click at a point is 012's `click(id, { position })` or 009's
+`clickAt(target, point)`. Each scenario negative that relies on them is paired with its positive in the same body, as
+contracts/checks.md requires, so a method that always answered the same would fail that positive.
 A driver method that always answered "no animation" or "tooltip closed" would make the negatives pass vacuously; the
 self-tests rule that out.
 
@@ -662,7 +715,9 @@ re-baseline.
 **Risk**: 012's plan estimates about 4 stories of headroom to the plant split count (76 at `shardSize` 1) after 012,
 and asks for a triage record on a plant design that does not grow with the story count. 21 stories exceed it. T001
 reads the split count and the story total on `main` then; if this feature's stories would exceed it and no such op
-has landed, the run stops and asks the operator (**plan decision 9**). Op 016's `--affected` mode limits the local
+has landed, the run stops and asks the operator (**plan decision 9**). *Phase-1 recheck*: 194 stories on `main`
+against a split count of 76, the plant-design triage still pending; the operator decided to proceed with the 21
+stories (215 in all), the shard question staying with that triage (Q3). Op 016's `--affected` mode limits the local
 plant runs to the plants a phase's diff can affect, so the local cost is the phase's, not the whole set's.
 
 ## R-13 Gates per phase, plants and mutation
@@ -674,7 +729,8 @@ the plants of the phase with op 016's mode, `OCELLE_VISUAL_ENGINE=docker pnpm ru
 $(cat reviews/phase-N/base.sha)`, recorded in `reviews/phase-N/plants.md` in op 016's format, then mutation
 (`gate:mutation`, elements config for element source, default config for token source), one heavy job at a time, with
 007's verdicts and op 015's time limit. A full `gate:plants` is never run locally. Node 26.13.0 and
-`OCELLE_CHROMIUM_PATH` as the frontend findings say. Op 016 as merged is rechecked by T001 (R-01) before the task
+`OCELLE_CHROMIUM_PATH` as the frontend findings say (T001 (f): `/opt/pw-browsers/chromium-1243/chrome-linux64/chrome`,
+Chrome for Testing 153.0.8010.12, here; this container has only Node 22.23.4). Op 016 as merged is rechecked by T001 (R-01) before the task
 list is used: if its command, its `--list` output or its record format differ from what is written here, the tasks are
 amended first. Phase 7 (polish, documentation only) runs its affected plants against phase 2's `base.sha`, not its
 own, so that the run covers the whole feature's diff (plan, phase 7; analysis finding I4).

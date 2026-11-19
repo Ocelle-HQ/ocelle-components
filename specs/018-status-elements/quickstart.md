@@ -4,10 +4,13 @@
 
 - Missions 012 and 008 and op 016 merged into the branch (from `main`, by `/ocelle-land`); T001 done (including the
   recheck of the tasks against op 016 as merged), T002's spikes recorded in `reviews/phase-1/spikes.md`, and the
-  phase-1 harness self-tests passing.
-- Node 26.13.0 and pnpm 12.16.1 as pinned; `pnpm install --frozen-lockfile`.
-- Chromium: `export OCELLE_CHROMIUM_PATH=/opt/pw-browsers/chromium-1243/chrome-linux64/chrome` (or as the frontend
-  findings say for the container at hand).
+  phase-1 harness self-tests passing (rows 1, 2, 7 and 8 of contracts/checks.md § Test harness; rows 3 to 6 are on
+  `main` as merged).
+- Node 26.13.0 and pnpm 12.16.1 as pinned; `pnpm install --frozen-lockfile`. (T001 found only Node 22.23.4 installed
+  in this container; the pinned Node is provided before the gates run, `reviews/phase-1/recheck.md` (f).)
+- Chromium: `export OCELLE_CHROMIUM_PATH=/opt/pw-browsers/chromium-1243/chrome-linux64/chrome` (Chrome for Testing
+  153.0.8010.12, as T001 (f) recorded here; the pinned Playwright's revision 1248 is not installed), or as the frontend
+  findings say for the container at hand.
 - For baselines and plants: dockerd running as root (`nohup dockerd > /tmp/dockerd.log 2>&1 &`; after a container
   restart also `pnpm run setup:online`) and `OCELLE_VISUAL_ENGINE=docker`.
 
@@ -41,7 +44,8 @@ pnpm run gate:mutation                          # alone, never beside plants
   inside a clipping container with its ring whole and no tooltip bubble in either theme (the story focuses it after
   `updateComplete`, as 012's `StoryFocus` does; the bubble is proven by the US5 scenarios). 21 stories in
   all, each in light and dark.
-- By hand in Chromium (not a gate): an indicator with `pulse` pulses about 4.8 s and stops; hovering or tabbing to a
+- By hand in Chromium (not a gate): an indicator with `pulse` pulses about 4.8 s (three runs of `motion-pulse`) and
+  stops; hovering or tabbing to a
   truncated interactive pill shows its full text in the tooltip, Escape hides it; a screen reader reads a metric's
   label as written; the find bar matches a metric's label twice, once on an invisible copy (a known limitation, R-05);
   a pulsing indicator inside a `<details>` does not pulse again when the `<details>` is opened; a pill in a sentence
