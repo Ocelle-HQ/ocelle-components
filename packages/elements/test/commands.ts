@@ -212,7 +212,7 @@ export async function axNodes(session: CDPSession, id: string, frameId?: string)
 
 /** The value of the property `name` of `node`, or undefined. */
 function propertyOf(node: RawAxNode, name: string): unknown {
-  return node.properties?.find((property) => property.name === name)?.value?.value;
+  return node.properties?.find((property) => property.name === name)?.value.value;
 }
 
 /**
