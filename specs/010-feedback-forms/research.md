@@ -590,7 +590,7 @@ over 420 s. Of the planner changes designed for that (element source cut by muta
 mutants weighted, T041b), the first still left shards of static mutants at 435.6 s to 448.4 s
 (`reviews/phase-3/stop-2.md`). Both moved to their own op, op 017 (issue #42), and were reverted here (`14538fa`).
 Mission 010 keeps the 30-line plan and lands without the rule; the shards over 7:00 are recorded as a known gap, which
-CI covers since op 015 (`ce1d9c7` on `main`) with a 45-minute limit for a mutation shard holding element source. At
+CI covers since op 015 (`ce1d9c7` on `main`) with a 45-minute limit for a mutation shard holding element source (75 minutes after operator round 8). At
 T041 this record replaces the shard timing against 7:00; the whole-diff `gate:mutation` must still exit 0.
 
 **The shipped figures under mutation** (operator decision PLAN-FRESH-3-004 (a)). Because every in-process scenario
