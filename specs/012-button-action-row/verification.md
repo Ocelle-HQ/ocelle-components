@@ -13,9 +13,10 @@ merged into the branch as `feac2fa`, after the earlier merges of `23ba5c5` (`8cd
 
 ## 1. The eighteen checks are green
 
-Run https://github.com/Ocelle-HQ/ocelle-components/actions/runs/44298568583 is on head `ac2d73a`, the first head after
-the merge of `b594b7e`. All 148 of its jobs succeeded on attempt 1, so these eighteen checks of
-`specs/001-repository-foundation/contracts/ci-checks.md` are green:
+Run https://github.com/Ocelle-HQ/ocelle-components/actions/runs/44556435164 is on head `89648311`, after phase 2 fix
+round 4 (the icon-row baseline) and phase 6 fix-4 (the visual integration test's limit raised to 1200 s). All 149 of
+its jobs succeeded on attempt 1, so these eighteen checks of `specs/001-repository-foundation/contracts/ci-checks.md`
+are green:
 
 1. Typecheck
 2. Code lint
@@ -38,28 +39,36 @@ the merge of `b594b7e`. All 148 of its jobs succeeded on attempt 1, so these eig
 
 The helper jobs are green too:
 
-- `Mutation plan` and its 51 `Mutation shard` jobs. The slowest, `packages/elements/src/ocelle-button.ts:511-540`,
-  took 2640 s, under its 45-minute (2700 s) limit by 60 s (op 015).
+- `Mutation plan` and its 52 `Mutation shard` jobs. The slowest, `packages/elements/src/ocelle-button.ts:511-540`,
+  took 2648 s, under its 45-minute (2700 s) limit by 52 s (op 015).
 - `Plants plan` and its 77 `Plants shard` jobs (item 2).
 
-Every commit after `ac2d73a` changes only docs, comments, changelogs and review records: no source, test, story or
-configuration file.
+The visual integration test passed inside `Unit tests` (7768 tests in 233 files, 2277 s). The CI log gives no time for
+the whole-repository capture on its own; locally it took 509 s (phase 6 T082).
 
-Status: **done** on `ac2d73a`. Re-confirm on the final head before the merge.
+Every commit after `89648311` changes only review records and the CI record: no source, test, story or configuration
+file.
+
+The earlier green run on `ac2d73a` was https://github.com/Ocelle-HQ/ocelle-components/actions/runs/44298568583. Run
+https://github.com/Ocelle-HQ/ocelle-components/actions/runs/44481594952 on `571a8ed5` failed only the visual integration
+test at its old 600 s limit (phase 6 round 7).
+
+Status: **done** on `89648311`. Re-confirm on the final head before the merge.
 
 ## 2. Plants shard times (mission 006 decision 30; 012 T067)
 
-| Measure | Run 44298568583 (`ac2d73a`, 194 stories, 77 shards) | Run 44098238937 (`497b05f`, 171 stories, 76 shards) |
-|---|---|---|
-| Plants gate step, slowest | 524 s (shard 39), none at or over 570 s | 516 s (shard 40), none at or over 570 s |
-| Plants gate step, total | 24972 s, 6.94 runner-hours | 22953 s, 6.38 runner-hours |
-| Shard job wall time, slowest | 692 s (shard 21), 29 shards over 570 s | 862 s (shard 33), 17 shards over 570 s |
-| Shard job wall time, total | 34745 s, 9.65 runner-hours | 34810 s, 9.67 runner-hours |
+| Measure | Run 44556435164 (`89648311`, 194 stories, 77 shards) | Run 44298568583 (`ac2d73a`, 194 stories, 77 shards) | Run 44098238937 (`497b05f`, 171 stories, 76 shards) |
+|---|---|---|---|
+| Plants gate step, slowest | 616 s (shard 41), 1 at or over 570 s | 524 s (shard 39), none at or over 570 s | 516 s (shard 40), none at or over 570 s |
+| Plants gate step, total | 25357 s, 7.04 runner-hours | 24972 s, 6.94 runner-hours | 22953 s, 6.38 runner-hours |
+| Shard job wall time, slowest | 728 s (shard 41), 30 shards over 570 s | 692 s (shard 21), 29 shards over 570 s | 862 s (shard 33), 17 shards over 570 s |
+| Shard job wall time, total | 35558 s, 9.88 runner-hours | 34745 s, 9.65 runner-hours | 34810 s, 9.67 runner-hours |
 
 The operator accepted the measured cost on 2026-11-17 ("Accept, file plant triage (Recommended)", 012 phase 6 round 2
 O2-01), and T067 is ticked on the gate-step figure. The figures after 009's merge are recorded by the operator's
-decision of 2026-11-18 (phase 6 round 4, O4-01). The split count of 76 stories is exceeded at 194, and the plant-design
-triage is offered as a follow-up issue (`reviews/phase-6/ci-run.md`; 006 `plan.md`, accepted costs).
+decision of 2026-11-18 (phase 6 round 4, O4-01). On `89648311` one shard's gate step (shard 41, 616 s) is over
+570 s. The split count of 76 stories is exceeded at 194, and the plant-design triage, which covers both, is offered as
+a follow-up issue (`reviews/phase-6/ci-run.md`; 006 `plan.md`, accepted costs).
 
 Status: **done** (accepted by the operator; the follow-up issue is to be filed).
 
