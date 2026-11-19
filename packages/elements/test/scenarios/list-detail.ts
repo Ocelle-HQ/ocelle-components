@@ -21,7 +21,7 @@
 // grid. Every "does not" outcome is observed in the same scenario as the positive outcome it guards (spec § "Does not"
 // outcomes, paired), and the plant that makes it fail is named beside it; each plant is run once and recorded in
 // specs/009-workflow-layouts/reviews/phase-4/plants.md (T061).
-import type { Driver, Target } from "./driver.ts";
+import type { Driver, ElementTarget } from "./driver.ts";
 import { systemColours, tokenColour } from "./icon.ts";
 import { pageScrolls, roles } from "./board.ts";
 import type { BoardScenario } from "./board.ts";
@@ -121,8 +121,8 @@ export async function layout(driver: Driver, id: string): Promise<string> {
 /** A pane's physical left, right and top borders: `0px`, or the width and the colour. */
 async function borders(driver: Driver, id: string, pane: string): Promise<{ left: string; right: string; top: string }> {
   const side = async (name: string): Promise<string> => {
-    const width = await driver.computed({ id, inner: `.pane.${pane}` }, `border-${name}-width`);
-    return width === "0px" ? width : `${width} ${await driver.computed({ id, inner: `.pane.${pane}` }, `border-${name}-color`)}`;
+    const width = await driver.computedOf({ id, inner: `.pane.${pane}` }, `border-${name}-width`);
+    return width === "0px" ? width : `${width} ${await driver.computedOf({ id, inner: `.pane.${pane}` }, `border-${name}-color`)}`;
   };
   return { left: await side("left"), right: await side("right"), top: await side("top") };
 }
@@ -140,9 +140,9 @@ async function wrapperTabindex(driver: Driver, id: string): Promise<(string | nu
 
 /** The pane wrapper's focus ring: its computed outline style, width, offset and colour. */
 async function ring(driver: Driver, id: string, pane: string): Promise<Record<string, string>> {
-  const target: Target = { id, inner: `.pane.${pane}` };
+  const target: ElementTarget = { id, inner: `.pane.${pane}` };
   const out: Record<string, string> = {};
-  for (const property of ["outline-style", "outline-width", "outline-offset", "outline-color"]) out[property] = await driver.computed(target, property);
+  for (const property of ["outline-style", "outline-width", "outline-offset", "outline-color"]) out[property] = await driver.computedOf(target, property);
   return out;
 }
 
@@ -184,7 +184,7 @@ async function frames(driver: Driver, count: number): Promise<void> {
 }
 
 /** The tier the grid shows, read in every frame and every `ResizeObserver` delivery on the host. */
-const tierReading = (id: string): { readonly attribute: string; readonly of: Target } => ({ attribute: "data-tier", of: { id, inner: ".grid" } });
+const tierReading = (id: string): { readonly attribute: string; readonly of: ElementTarget } => ({ attribute: "data-tier", of: { id, inner: ".grid" } });
 
 /** A shrink-to-fit case of US3-12: the element's inline size, its layout and the tier over ten frames. */
 async function shrinkToFit(driver: Driver, markup: string): Promise<unknown> {
@@ -212,7 +212,7 @@ async function measuredState(driver: Driver, id: string): Promise<unknown> {
     width: Math.round((await driver.box(id)).width),
     layout: await layout(driver, id),
     tier: await gridTier(driver, id),
-    figures: { sizer: await driver.computed({ id, inner: ".sizer" }, "inline-size"), min: await driver.computed({ id, inner: ".grid" }, "min-inline-size") },
+    figures: { sizer: await driver.computedOf({ id, inner: ".sizer" }, "inline-size"), min: await driver.computedOf({ id, inner: ".grid" }, "min-inline-size") },
   };
 }
 
@@ -719,8 +719,8 @@ export const listDetailScenarios: readonly ListDetailScenario[] = [
       await page(driver, "R", `<div id="x-w"><div class="row">${listDetail("x", "", sized("x"))}</div>${framed("y", "W")}</div>`, { extra: notRenderedRules });
       const figures = async (id: string): Promise<{ tier: string | undefined; sizer: string; min: string }> => ({
         tier: await gridTier(driver, id),
-        sizer: await driver.computed({ id, inner: ".sizer" }, "inline-size"),
-        min: await driver.computed({ id, inner: ".grid" }, "min-inline-size"),
+        sizer: await driver.computedOf({ id, inner: ".sizer" }, "inline-size"),
+        min: await driver.computedOf({ id, inner: ".grid" }, "min-inline-size"),
       });
       const shown = { x: await measuredState(driver, "x"), y: await figures("y") };
       await driver.setAttribute("x-w", "class", "gone");
@@ -941,7 +941,7 @@ export const listDetailFixes: readonly ListDetailScenario[] = [
     base: false,
     run: async (driver) => {
       await page(driver, "N", `${before}<div id="z-frame" data-frame="N"><test-shadow-frame id="sh">${listDetail("z")}</test-shadow-frame></div>`);
-      await driver.focus({ id: "sh", inner: "#z-l0" });
+      await driver.focusTarget({ id: "sh", inner: "#z-l0" });
       const start = await driver.deepActive();
       await driver.setProperty("sh", "open", "open");
       const opened = await driver.deepActive();

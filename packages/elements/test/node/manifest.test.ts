@@ -203,6 +203,18 @@ describe("normalise(raw, names): what an element inherits from an internal base 
   });
 });
 
+describe("normalise(raw, names): standard attributes (012 research.md R-15; tasks.md T033)", () => {
+  it("keeps a standard attribute the element declares with a description, and drops one it observes without declaring", () => {
+    const declared = structuredClone(raw);
+    (declaration(declared).attributes as Json[])[0] = { name: "aria-label", type: { text: "string" }, description: "Moved onto the inner control." };
+    expect({
+      declared: (declaration(normalise(declared, [])).attributes as Json[]).map((attribute) => attribute.name),
+      undeclared: (declaration(normalise(raw, [])).attributes as Json[]).map((attribute) => attribute.name),
+      blank: (declaration(normalise({ ...structuredClone(raw), modules: [{ ...nth(raw.modules, 0, "module"), declarations: [{ ...declaration(raw), attributes: [{ name: "aria-label", description: "" }] }] }] }, [])).attributes as Json[]).map((attribute) => attribute.name),
+    }).toEqual({ declared: ["aria-label", "name", "label"], undeclared: ["name", "label"], blank: [] });
+  });
+});
+
 describe("iconNames(text of src/icons.ts)", () => {
   it.each([
     { label: "a union, after other statements", text: 'export type Other = "x" | "y";\nexport type IconName = "close" | "menu";\n', names: ["close", "menu"] },
@@ -408,13 +420,18 @@ describe("serialise(manifest)", () => {
 const unionOfTheSet =
   '"chevron-start" | "chevron-end" | "chevron-up" | "chevron-down" | "arrow-start" | "arrow-end" | "menu" | "close" | "folder" | "file" | "search" | "table" | "copy" | undefined';
 
+/** The attributes `ocelle-button` moves onto its inner control, in the order it declares them (012 FR-009). */
+const moved = ["aria-expanded", "aria-controls", "aria-current", "aria-haspopup", "aria-pressed", "aria-label", "aria-labelledby", "aria-describedby", "title"];
+
 describe("generate(root) on the repository's element source", () => {
   it("declares ocelle-icon with its tag name, class, name (the union of the thirteen names) and label with types, defaults and attributes, name reflected and label not, and no slot, event, part or CSS property (US1 scenario 11, US2 scenario 1)", async () => {
     const manifest = await generate(repo);
     const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
     expect(manifest.schemaVersion).toBe("1.0.0");
     expect(modules.map((module) => module.path)).toEqual([
+      "src/ocelle-action-row.ts",
       "src/ocelle-brand-mark.ts",
+      "src/ocelle-button.ts",
       "src/ocelle-card.ts",
       "src/ocelle-context-sidebar.ts",
       "src/ocelle-dialog.ts",
@@ -673,6 +690,129 @@ describe("generate(root) on the repository's element source", () => {
       parts: ["label", "control", "description", "error"].map((name) => ({ name, described: true })),
       slots: [],
       cssProperties: [],
+    });
+  });
+
+  it('declares ocelle-button with its tag name, class, variant, size, flush, ground (with "chrome"), label, disabled and busy, the click() method, the default and icon slots, the part control and the event ocelle-button-activate with its detail type, each described (012 FR-009, FR-053; contracts/elements-package.md § ocelle-button)', async () => {
+    const manifest = await generate(repo);
+    const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [button] = modules.find((module) => module.path === "src/ocelle-button.ts")?.declarations ?? [];
+    expect(button).toMatchObject({ kind: "class", name: "OcelleButton", tagName: "ocelle-button", customElement: true, cssProperties: [] });
+    const described = (list: unknown): Record<string, unknown>[] =>
+      ((list ?? []) as Record<string, unknown>[]).map(({ description, ...rest }) => ({ ...rest, described: typeof description === "string" && description !== "" }));
+    const variant = '"primary" | "secondary" | "quiet" | undefined';
+    const size = '"default" | "compact" | undefined';
+    const ground = '"accent-low" | "inset" | "hover-bg" | "state" | "chrome" | undefined';
+    expect(described(button?.members)).toEqual([
+      { kind: "field", name: "variant", privacy: "public", type: { text: variant }, default: "undefined", attribute: "variant", reflects: true, described: true },
+      { kind: "field", name: "size", privacy: "public", type: { text: size }, default: "undefined", attribute: "size", reflects: true, described: true },
+      { kind: "field", name: "flush", privacy: "public", type: { text: "boolean" }, default: "false", attribute: "flush", reflects: true, described: true },
+      { kind: "field", name: "ground", privacy: "public", type: { text: ground }, default: "undefined", attribute: "ground", reflects: true, described: true },
+      { kind: "field", name: "label", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "label", described: true },
+      { kind: "field", name: "disabled", privacy: "public", type: { text: "boolean" }, default: "false", attribute: "disabled", reflects: true, described: true },
+      // 012 phase 4 (tasks.md T043, T048; FR-015): busy.
+      { kind: "field", name: "busy", privacy: "public", type: { text: "boolean" }, default: "false", attribute: "busy", reflects: true, described: true },
+      // 012 phase 3 (tasks.md T033, T037): the link properties.
+      ...["href", "target", "rel", "download"].map((name) => ({ kind: "field", name, privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: name, reflects: true, described: true })),
+      { kind: "method", name: "click", return: { type: { text: "void" } }, described: true },
+    ]);
+    expect(described(button?.attributes)).toEqual([
+      // 012 phase 3 (FR-053; research.md R-15; tasks.md T033): the moved attributes and `title`, then their mirrors, each
+      // declared with `@attr` and a description, before the properties' attributes.
+      ...moved.map((name) => ({ name, type: { text: "string" }, described: true })),
+      ...moved.map((name) => ({ name: `data-ocelle-moved-${name}`, type: { text: "string" }, described: true })),
+      { name: "variant", fieldName: "variant", type: { text: variant }, default: "undefined", described: true },
+      { name: "size", fieldName: "size", type: { text: size }, default: "undefined", described: true },
+      { name: "flush", fieldName: "flush", type: { text: "boolean" }, default: "false", described: true },
+      { name: "ground", fieldName: "ground", type: { text: ground }, default: "undefined", described: true },
+      { name: "label", fieldName: "label", type: { text: "string | undefined" }, default: "undefined", described: true },
+      { name: "disabled", fieldName: "disabled", type: { text: "boolean" }, default: "false", described: true },
+      { name: "busy", fieldName: "busy", type: { text: "boolean" }, default: "false", described: true },
+      ...["href", "target", "rel", "download"].map((name) => ({ name, fieldName: name, type: { text: "string | undefined" }, default: "undefined", described: true })),
+    ]);
+    expect(described(button?.cssStates)).toEqual([
+      { name: "expanded", described: true },
+      { name: "pressed", described: true },
+      { name: "current", described: true },
+    ]);
+    expect(described(button?.slots)).toEqual([
+      { name: "", described: true },
+      { name: "icon", described: true },
+    ]);
+    expect(described(button?.cssParts)).toEqual([{ name: "control", described: true }]);
+    expect(described(button?.events)).toEqual([{ name: "ocelle-button-activate", type: { text: "CustomEvent<Record<string, never>>" }, described: true }]);
+  });
+
+  it("gives ocelle-button no attribute named type, name, value or form, beside its variant attribute (012 FR-022)", async () => {
+    const manifest = await generate(repo);
+    const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [button] = modules.find((module) => module.path === "src/ocelle-button.ts")?.declarations ?? [];
+    const names = ((button?.attributes ?? []) as Record<string, unknown>[]).map((attribute) => attribute.name);
+    const members = ((button?.members ?? []) as Record<string, unknown>[]).map((member) => member.name);
+    expect({ variant: names.includes("variant"), form: names.filter((name) => ["type", "name", "value", "form"].includes(String(name))), formMembers: members.filter((name) => ["type", "name", "value", "form"].includes(String(name))) }).toEqual({
+      variant: true,
+      form: [],
+      formMembers: [],
+    });
+  });
+
+  // 012 phase 5 (tasks.md T053; FR-030, FR-053; contracts/elements-package.md § ocelle-action-row): the row's
+  // properties (with phase 6's current and unavailable, tasks.md T062), the moved attributes and their mirrors, the
+  // slots, parts and the event with its detail type, each described.
+  it('declares ocelle-action-row with its tag name, class, rowId (row-id), label, layout ("row" | "card"), presentation ("default" | "flush"), ground (with "chrome"), href, target, rel, current ("page" | "true"), unavailable and busy, the click() method, the moved aria-label, aria-labelledby, aria-describedby and title with their mirrors, the default, icon, description, tags and trailing slots, the parts control, title, description and tags, and the event ocelle-action-row-activate with its detail type, each described (012 FR-030, FR-053)', async () => {
+    const manifest = await generate(repo);
+    const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [row] = modules.find((module) => module.path === "src/ocelle-action-row.ts")?.declarations ?? [];
+    expect(row).toMatchObject({ kind: "class", name: "OcelleActionRow", tagName: "ocelle-action-row", customElement: true, cssProperties: [] });
+    const described = (list: unknown): Record<string, unknown>[] =>
+      ((list ?? []) as Record<string, unknown>[]).map(({ description, ...rest }) => ({ ...rest, described: typeof description === "string" && description !== "" }));
+    const text = "string | undefined";
+    const layout = '"row" | "card" | undefined';
+    const presentation = '"default" | "flush" | undefined';
+    const ground = '"accent-low" | "inset" | "hover-bg" | "state" | "chrome" | undefined';
+    const rowMoved = ["aria-label", "aria-labelledby", "aria-describedby", "title"];
+    expect(described(row?.members)).toEqual([
+      { kind: "field", name: "rowId", privacy: "public", type: { text }, default: "undefined", attribute: "row-id", reflects: true, described: true },
+      { kind: "field", name: "label", privacy: "public", type: { text }, default: "undefined", attribute: "label", described: true },
+      { kind: "field", name: "layout", privacy: "public", type: { text: layout }, default: "undefined", attribute: "layout", reflects: true, described: true },
+      { kind: "field", name: "presentation", privacy: "public", type: { text: presentation }, default: "undefined", attribute: "presentation", reflects: true, described: true },
+      { kind: "field", name: "ground", privacy: "public", type: { text: ground }, default: "undefined", attribute: "ground", reflects: true, described: true },
+      ...["href", "target", "rel"].map((name) => ({ kind: "field", name, privacy: "public", type: { text }, default: "undefined", attribute: name, reflects: true, described: true })),
+      { kind: "field", name: "current", privacy: "public", type: { text: '"page" | "true" | undefined' }, default: "undefined", attribute: "current", reflects: true, described: true },
+      { kind: "field", name: "unavailable", privacy: "public", type: { text: "boolean" }, default: "false", attribute: "unavailable", reflects: true, described: true },
+      { kind: "field", name: "busy", privacy: "public", type: { text: "boolean" }, default: "false", attribute: "busy", reflects: true, described: true },
+      { kind: "method", name: "click", return: { type: { text: "void" } }, described: true },
+    ]);
+    expect(described(row?.attributes)).toEqual([
+      ...rowMoved.map((name) => ({ name, type: { text: "string" }, described: true })),
+      ...rowMoved.map((name) => ({ name: `data-ocelle-moved-${name}`, type: { text: "string" }, described: true })),
+      { name: "row-id", fieldName: "rowId", type: { text }, default: "undefined", described: true },
+      { name: "label", fieldName: "label", type: { text }, default: "undefined", described: true },
+      { name: "layout", fieldName: "layout", type: { text: layout }, default: "undefined", described: true },
+      { name: "presentation", fieldName: "presentation", type: { text: presentation }, default: "undefined", described: true },
+      { name: "ground", fieldName: "ground", type: { text: ground }, default: "undefined", described: true },
+      ...["href", "target", "rel"].map((name) => ({ name, fieldName: name, type: { text }, default: "undefined", described: true })),
+      { name: "current", fieldName: "current", type: { text: '"page" | "true" | undefined' }, default: "undefined", described: true },
+      { name: "unavailable", fieldName: "unavailable", type: { text: "boolean" }, default: "false", described: true },
+      { name: "busy", fieldName: "busy", type: { text: "boolean" }, default: "false", described: true },
+    ]);
+    expect(described(row?.slots)).toEqual(["", "icon", "description", "tags", "trailing"].map((name) => ({ name, described: true })));
+    expect(described(row?.cssParts)).toEqual(["control", "title", "description", "tags"].map((name) => ({ name, described: true })));
+    expect(described(row?.events)).toEqual([{ name: "ocelle-action-row-activate", type: { text: "CustomEvent<{ rowId: string }>" }, described: true }]);
+  });
+
+  // Plan decisions 30 and 32 (phase 5 review R1-01; tasks.md T062, T064a): the part `control` is described as the
+  // row's icon-and-title control, not its surface, and the button's `pressed` state as button mode only.
+  it("describes the row's part control as its icon-and-title control, not its surface, and the button's pressed state as button mode only (plan decisions 30, 32)", async () => {
+    const manifest = await generate(repo);
+    const declarations = (manifest.modules as { declarations: Record<string, unknown>[] }[]).flatMap((module) => module.declarations);
+    const row = declarations.find((declaration) => declaration.tagName === "ocelle-action-row");
+    const button = declarations.find((declaration) => declaration.tagName === "ocelle-button");
+    const parts = (row?.cssParts ?? []) as { name: string; description: string }[];
+    const states = (button?.cssStates ?? []) as { name: string; description: string }[];
+    expect({ control: parts.find((part) => part.name === "control")?.description, pressed: states.find((state) => state.name === "pressed")?.description }).toEqual({
+      control: "The row's icon-and-title control: the inner `<button>`, or the inner `<a>` in link mode. It is not the row's surface: the description, tags and trailing content are beside it, and `::part(control)` styles do not reach the row's surface or border.",
+      pressed: 'While the moved `aria-pressed` is `"true"`, in button mode only: a link has no pressed state.',
     });
   });
 

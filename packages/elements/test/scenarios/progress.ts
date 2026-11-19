@@ -171,7 +171,7 @@ export const progressScenarios: readonly Scenario[] = [
     run: async (driver) => {
       await mount(driver, '<div class="w400"><ocelle-progress id="p" value="7" max="12" label="Tasks done"></ocelle-progress></div>');
       const before = { bars: await bars(driver, "p"), fill: await mark(driver, "p") };
-      const events = await driver.events("p", () => driver.setProperty("p", "value", 9));
+      const events = await driver.dispatched("p", () => driver.setProperty("p", "value", 9));
       return { before, after: { bars: await bars(driver, "p"), fill: await mark(driver, "p"), animations: await motion(driver, "p"), events } };
     },
     expected: {

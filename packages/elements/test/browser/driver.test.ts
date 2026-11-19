@@ -647,17 +647,17 @@ describe("the fixture driver", { timeout: 60_000 }, () => {
     });
   });
 
-  it("focus(target) focuses a light-DOM and a shadow target by script, matching :focus-visible after keyboard input and not after a pointer click", async () => {
+  it("focusTarget(target) focuses a light-DOM and a shadow target by script, matching :focus-visible after keyboard input and not after a pointer click", async () => {
     const page = await openPlain();
     const driver = fixtureDriver(page.page, page.log);
     await defineHost(page.page);
     await driver.mount('<button id="a" type="button">A</button><button id="b" type="button">B</button><driver-host id="h"></driver-host>');
     await page.page.evaluate(() => document.getElementById("a")?.focus());
     await driver.chord("Tab");
-    await driver.focus({ id: "h", inner: ".inner" });
+    await driver.focusTarget({ id: "h", inner: ".inner" });
     const afterKeys = { active: await driver.deepActive(), visible: await page.page.evaluate(() => document.getElementById("h")?.shadowRoot?.activeElement?.matches(":focus-visible")) };
     await driver.clickAt("a", { x: 2, y: 2 });
-    await driver.focus("b");
+    await driver.focusTarget("b");
     const afterClick = { active: await driver.deepActive(), visible: await page.page.evaluate(() => document.activeElement?.matches(":focus-visible")) };
     expect({ observed: [afterKeys, afterClick], recorded: await page.finish() }).toEqual({
       observed: [
@@ -779,13 +779,13 @@ describe("the fixture driver", { timeout: 60_000 }, () => {
     expect({ resizes, recorded: await page.finish() }).toEqual({ resizes: ["resize: 200", "resize: 120"], recorded: clean });
   });
 
-  it("computed(target, property) reads the computed style of a light-DOM and of a shadow target", async () => {
+  it("computedOf(target, property) reads the computed style of a light-DOM and of a shadow target", async () => {
     const page = await openPlain();
     const driver = fixtureDriver(page.page, page.log);
     await defineHost(page.page);
     await driver.mount('<div id="box"></div><driver-host id="h"></driver-host>');
     await driver.rules("#box { inline-size: 150px; }");
-    const observed = [await driver.computed("box", "inline-size"), await driver.computed({ id: "h", inner: ".scroll" }, "inline-size"), await driver.computed({ id: "h", inner: ".scroll" }, "overflow-x")];
+    const observed = [await driver.computedOf("box", "inline-size"), await driver.computedOf({ id: "h", inner: ".scroll" }, "inline-size"), await driver.computedOf({ id: "h", inner: ".scroll" }, "overflow-x")];
     expect({ observed, recorded: await page.finish() }).toEqual({ observed: ["150px", "200px", "auto"], recorded: clean });
   });
 

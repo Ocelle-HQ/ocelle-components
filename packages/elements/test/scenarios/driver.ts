@@ -73,6 +73,17 @@ export interface Sheets {
   readonly styleElements: number;
 }
 
+/** A modifier key held for a press or a click (Playwright's names). */
+export type Modifier = "Alt" | "Control" | "Meta" | "Shift";
+
+/** A mouse button. */
+export type MouseButton = "left" | "middle" | "right";
+
+/** Where a pointer action lands: the element with the `id`, or the first element matching `inner` in its shadow root. */
+export interface Target {
+  readonly inner?: string;
+}
+
 /**
  * How `insert` puts markup into a container (specs/010-feedback-forms contracts/testing.md § Driver steps):
  * `innerHTML` (the container's `innerHTML` set to the markup), `template` (a `<template>`'s content cloned and
@@ -83,11 +94,11 @@ export type InsertHow = "innerHTML" | "template" | "domparser" | "createElement"
 
 /**
  * An element the input and scroll methods act on: the element with an `id`, or the first element matching `inner` in
- * that element's shadow root (009 research.md R-17).
+ * that element's shadow root (009 research.md R-17; 009's `Target`, renamed by operator decision D1).
  */
-export type Target = string | { readonly id: string; readonly inner: string };
+export type ElementTarget = string | { readonly id: string; readonly inner: string };
 
-/** A point in an element's border box, in CSS px from its top-left corner. */
+/** A point relative to the top-left corner of an element's border box, in CSS pixels. */
 export interface Point {
   readonly x: number;
   readonly y: number;
@@ -158,11 +169,95 @@ export interface Validity {
 /** A plain value a `call` step passes to a method. */
 export type Plain = string | number | boolean | null;
 /**
+ * A click (012 research.md R-06, R-11): always sent with `force: true`, so a click on an unusable control is sent; at
+ * the element's centre, or at `position` from its top-left corner (012 phase 2: the stretched and restyled hosts of
+ * US1-15 and US1-17 are clicked 4 px inside an edge).
+ */
+export interface ClickOptions extends Target {
+  readonly modifiers?: readonly Modifier[];
+  readonly button?: MouseButton;
+  readonly position?: Point;
+}
+
+/**
+ * One event as one listener of the recorder saw it (012 research.md R-11): `at` and `target` are the listener's node
+ * and the event's target there, each `window`, `document`, `#shadow-root` or an element's local name with `#<id>` when
+ * it has one; `detail` is the event's `detail` (a UI event's count, a custom event's payload) or null; `serial` is one
+ * number per event object, from 1 at each mount, so the records of one dispatch share it.
+ */
+export interface EventRecord {
+  readonly type: string;
+  readonly at: string;
+  readonly target: string | null;
+  readonly isTrusted: boolean;
+  readonly bubbles: boolean;
+  readonly composed: boolean;
+  readonly cancelable: boolean;
+  readonly defaultPrevented: boolean;
+  readonly detail: unknown;
+  readonly serial: number;
+}
+
+/**
+ * One activation of a link as the in-process navigation sink saw it (012 research.md R-11): whether something prevented
+ * it before the sink, the button, the modifier flags and the link's `href` attribute.
+ */
+export interface NavigationRecord {
+  readonly type: "click" | "auxclick";
+  readonly defaultPrevented: boolean;
+  readonly button: number;
+  readonly altKey: boolean;
+  readonly ctrlKey: boolean;
+  readonly metaKey: boolean;
+  readonly shiftKey: boolean;
+  readonly href: string;
+}
+
+/**
+ * The accessibility node of one element as Chromium computes it (012 research.md R-11): its role and name, its
+ * description (empty when none), the states (expanded, pressed and hasPopup null when the element states none), and the
+ * ids of the elements it controls. `aria-current` is not here: CDP never reports it (`current`).
+ */
+export interface AxState {
+  readonly role: string;
+  readonly name: string;
+  readonly description: string;
+  readonly disabled: boolean;
+  readonly expanded: boolean | null;
+  readonly pressed: string | null;
+  readonly hasPopup: string | null;
+  readonly busy: boolean;
+  readonly focusable: boolean;
+  readonly controls: readonly string[];
+}
+
+/** An element's `aria-current`, as its attribute and as its `ariaCurrent` reflection (null when absent). */
+export interface Current {
+  readonly attribute: string | null;
+  readonly property: string | null;
+}
+
+/** The reduced-motion preference the page emulates (012; the same type as 013's `ReducedMotion`). */
+export type Motion = ReducedMotion;
+
+/**
+ * One axe result (012 research.md R-11): the rule, its impact, whether a violation or an incomplete result, and each
+ * node's target (shadow levels joined by ` >>> `). Every impact is reported, so a test can see that a moderate rule
+ * 006's selection leaves out (`region`) gives nothing; 006's gate fails on the serious and critical ones.
+ */
+export interface AxeResult {
+  readonly id: string;
+  readonly impact: string;
+  readonly kind: "violation" | "incomplete";
+  readonly targets: readonly string[];
+}
+
+/**
  * What a frame record reads each time it records (009 research.md R-17): a DOM property (`scrollLeft`, `clientHeight`),
  * a computed CSS property (`mask-image`) or an attribute (`tabindex`), as text (an absent attribute reads `"null"`), of
  * the record's target or, with `of`, of another element.
  */
-export type Reading = ({ readonly property: string } | { readonly computed: string } | { readonly attribute: string }) & { readonly of?: Target };
+export type Reading = ({ readonly property: string } | { readonly computed: string } | { readonly attribute: string }) & { readonly of?: ElementTarget };
 
 /** A running frame record (`frameRecord`). */
 export interface FrameRecorder {
@@ -191,8 +286,6 @@ export interface PointerStep {
    */
   readonly still?: boolean;
 }
-
-export type MouseButton = "left" | "right" | "middle";
 
 /**
  * An event recorded by `record()`, with the state read synchronously inside the listener, at dispatch: the host's
@@ -324,8 +417,10 @@ export interface Driver {
   placement(id: string): Promise<Placement>;
   /** The placement of the drawing of the light-DOM `svg` with `id` (its own screen CTM) in that `svg`'s own box. */
   ownPlacement(id: string): Promise<Placement>;
-  /** The computed value of a CSS property of the target (since 009 a shadow target too). */
-  computed(target: Target, property: string): Promise<string>;
+  /** The computed value of a CSS property of the element with `id`, or of the first element matching `inner` in its shadow root. */
+  computed(id: string, property: string, inner?: string): Promise<string>;
+  /** The computed value of a CSS property of the target, a light-DOM or a shadow element (009's `computed`, renamed by D1). */
+  computedOf(target: ElementTarget, property: string): Promise<string>;
   /** The computed `color` a probe element takes from the CSS colour `value` (a system colour, say). */
   resolveColour(value: string): Promise<string>;
   /** The unignored accessibility nodes of the element with `id` and of its shadow subtree. */
@@ -451,21 +546,83 @@ export interface Driver {
   propertyIn(id: string, inner: string, name: string): Promise<unknown>;
   /** The computed value of `property` of the pseudo-element `pseudo` of the first element matching `inner` in the shadow root of `id`. */
   pseudoIn(id: string, inner: string, pseudo: string, property: string): Promise<string>;
+  // 012 (research.md R-11; contracts/checks.md § Test harness): interaction, events, navigation, states and axe.
+  /** Focuses the element with `id` (`focus()`). */
+  focus(id: string): Promise<void>;
+  /** Presses `key` (Playwright's key names; `" "` is Space) through the browser's keyboard, `modifiers` held. */
+  press(key: string, modifiers?: readonly Modifier[]): Promise<void>;
+  /**
+   * Clicks the element with `id` (or its shadow element `inner`) with the mouse, with `force: true`, at its centre or at
+   * `options.position`.
+   */
+  click(id: string, options?: ClickOptions): Promise<void>;
+  /**
+   * Calls the element's own `click()` method in the page, as a host's script does (012 phase 2: US1-2, US1-3), and
+   * waits for every element to render.
+   */
+  callClick(id: string): Promise<void>;
+  /** Moves the mouse to the centre of the element with `id` (or its shadow element `inner`). */
+  hover(id: string, options?: Target): Promise<void>;
+  /** Moves the mouse to the element with `id` (or its shadow element `inner`) and presses the left button there. */
+  pointerDown(id: string, options?: Target): Promise<void>;
+  /** Moves the mouse to the element with `id` and releases the left button there. */
+  pointerUp(id: string): Promise<void>;
+  /**
+   * The sequential focus order: Tab from the start of the page (or, with `reverse`, Shift+Tab from its end) until
+   * focus leaves the page or comes round again; each step the path of focused elements from the document's active
+   * element down through each shadow root's (described as `EventRecord.at` is).
+   */
+  tabOrder(options?: { readonly reverse?: boolean }): Promise<string[][]>;
+  /** The focused element inside the shadow root of the element with `id`, described as `EventRecord.at` is, or null. */
+  activeInner(id: string): Promise<string | null>;
+  /**
+   * Starts recording the events of `types` at the element with `id`, each of its ancestors, `document` and `window`,
+   * in the bubble phase (each listener once, whatever the number of calls); the next `mount` stops it.
+   */
+  events(id: string, types: readonly string[]): Promise<void>;
+  /** The records since the last `takeEvents` (or `mount`), in the order the listeners ran; empties the record. */
+  takeEvents(): Promise<EventRecord[]>;
+  /** Makes the next event of `type` call `preventDefault()` before any other listener of the page sees it. */
+  preventNext(type: string): Promise<void>;
+  /** In process, the navigation sink's records since the last `mount`; the fixture navigates for real instead and throws. */
+  navigations(): Promise<NavigationRecord[]>;
+  /** The accessibility node of the element with `id`, or of the first element matching `inner` in its shadow root. */
+  axState(id: string, inner?: string): Promise<AxState>;
+  /** The `aria-current` of the element with `id`, or of the first element matching `inner` in its shadow root. */
+  current(id: string, inner?: string): Promise<Current>;
+  /**
+   * The violations and incomplete results, every impact, of axe-core on the whole page, or on the element with `scope`,
+   * with 006's rule selection (gates/lib/axe-rules.ts `ruleMeta` and `ruleOptions`, as gates/bin/axe.ts).
+   */
+  axe(scope?: string): Promise<AxeResult[]>;
+  // 012 phase 3 (US2-13): copies of the live DOM and a morph's attribute sync.
+  /**
+   * Copies the live DOM into the container `into` and waits for every element to render: `outerHTML` parses the element
+   * `id`'s `outerHTML`, `clone` appends its `cloneNode(true)`, `innerHTML` writes the container `id`'s `innerHTML`. Each
+   * id in the copy gets `-<into>` appended.
+   */
+  copy(id: string, via: CopyVia, into: string): Promise<void>;
+  /**
+   * Applies a morph's attribute sync (idiomorph's order) of the first element of `markup` to the live element `id`: set
+   * each attribute that differs, then remove, from the last, each live attribute the markup lacks; waits for every
+   * element to render.
+   */
+  morph(id: string, markup: string): Promise<void>;
   // The input, focus, scroll and frame-record plumbing of 009 research.md R-17.
   /**
    * Presses a key or a chord with real keyboard input, never a dispatched event (`:focus-visible` follows real input
    * only), then settles: `Tab`, `Shift+Tab`, `ArrowLeft`, `ArrowRight`, `Home`, `End`, `Alt+ArrowLeft`,
-   * `Ctrl+ArrowRight`, `Meta+ArrowRight`, `Shift+ArrowRight` (009 research.md R-17). 008's `press(key, options)`
+   * `Ctrl+ArrowRight`, `Meta+ArrowRight`, `Shift+ArrowRight` (009 research.md R-17). 008's `inputPress(key, options)`
    * (below) presses one key, with Shift held when asked.
    */
   chord(key: string): Promise<void>;
   /**
-   * A real pointer click at `point` of the target's border box, then a settle. 008's `click(id, inner, options)`
+   * A real pointer click at `point` of the target's border box, then a settle. 008's `inputClick(id, inner, options)`
    * (below) clicks the centre of an element.
    */
-  clickAt(target: Target, point: Point): Promise<void>;
+  clickAt(target: ElementTarget, point: Point): Promise<void>;
   /** A real wheel event over the centre of the target's border box, `deltaX` CSS px to the right, then a settle. */
-  wheel(target: Target, deltaX: number): Promise<void>;
+  wheel(target: ElementTarget, deltaX: number): Promise<void>;
   /**
    * The deep active element: from `document.activeElement` down through each shadow root's active element, each level
    * as its `id`, or as its local name and its classes (`div.region-box`) when it has none, joined by `" >> "`
@@ -479,35 +636,36 @@ export interface Driver {
    */
   tabWalk(from: string, to: string, backward?: boolean): Promise<string[]>;
   /**
-   * Focuses the target by script (`focus()`), then settles. Chromium's `:focus-visible` follows the last input: after
+   * Focuses the target by script (`focus()`), then settles (009's `focus`, renamed by D1). Chromium's `:focus-visible` follows the last input: after
    * keyboard input the target matches it, after a pointer click it does not.
    */
-  focus(target: Target): Promise<void>;
+  focusTarget(target: ElementTarget): Promise<void>;
   /** The target's `scrollLeft`. */
-  scrollLeft(target: Target): Promise<number>;
+  scrollLeft(target: ElementTarget): Promise<number>;
   /** Sets the target's `scrollLeft` with an instant scroll, then settles. */
-  setScrollLeft(target: Target, value: number): Promise<void>;
+  setScrollLeft(target: ElementTarget, value: number): Promise<void>;
   /** Whether the last keydown the window saw since the last `mount` was default-prevented; false when there was none. */
   lastKeyPrevented(): Promise<boolean>;
   /**
    * Starts a frame record of `read` on the target (009 research.md R-13, R-17), and returns after two animation frames,
    * once the record's `ResizeObserver` has delivered its first observation of the target.
    */
-  frameRecord(target: Target, read: Reading): Promise<FrameRecorder>;
+  frameRecord(target: ElementTarget, read: Reading): Promise<FrameRecorder>;
   /** Waits two animation frames, then until every `ocelle-*` element of the page has rendered (`updateComplete`). */
   settle(): Promise<void>;
 
   // The additions of 008 (research.md R-14). Input is real input through the browser (CDP): keys go to the focused
   // element, pointer input to a point of the page, so `:hover`, `:focus-visible` and the pointer events are the
   // browser's own. None of them writes a `style` attribute or a `<style>` element, so FR-047's counts are left alone;
-  // `style()` above does write one and is not used by the overlay scenarios.
+  // `style()` above does write one and is not used by the overlay scenarios. Their key, hover and click methods are
+  // `inputPress`, `inputHover` and `inputClick`, apart from 012's `press`, `hover` and `click` (operator decision C2).
 
   /** Presses and releases `key` (a `KeyboardEvent.key` value: "Tab", "Escape", " ", …), with Shift held when `shift`. */
-  press(key: string, options?: { readonly shift?: boolean }): Promise<void>;
+  inputPress(key: string, options?: { readonly shift?: boolean }): Promise<void>;
   /** Moves the pointer to the centre of the element with `id` (or of `inner` in its shadow root), or with null to (0, 0). */
-  hover(id: string | null, inner?: string): Promise<void>;
+  inputHover(id: string | null, inner?: string): Promise<void>;
   /** Moves the pointer to the centre of the element with `id` (or of `inner`) and clicks there with `button` (`left`). */
-  click(id: string, inner?: string, options?: { readonly button?: MouseButton }): Promise<void>;
+  inputClick(id: string, inner?: string, options?: { readonly button?: MouseButton }): Promise<void>;
   /** Moves the pointer through `path` in order, with intermediate moves, pressing and releasing where a step says so. */
   pointer(path: readonly PointerStep[]): Promise<void>;
   /** A real touch tap at the centre of the element with `id` (or of `inner`); only in a touch context. */
@@ -627,7 +785,7 @@ export interface Driver {
    * copy shortcut) and returns the `text/plain` the copy put on the clipboard, read from the `clipboardData` of a user
    * paste into a scratch text field; the copy event's own `clipboardData` is empty while it is dispatched.
    */
-  copy(id: string): Promise<string>;
+  clipboardCopy(id: string): Promise<string>;
   /** Appends the element with `id` to the element with `parentId`, or to the body when it is null, and waits for every element to render. */
   move(id: string, parentId: string | null): Promise<void>;
   /**
@@ -686,7 +844,7 @@ export interface Driver {
    * on the page for the duration of `during` and restored after it) on the element with `id`, on its shadow root or on
    * a node in its shadow root, in order (013 phase 3 review round 1, R1-01: US3-2's "no event is emitted").
    */
-  events(id: string, during: () => Promise<void>): Promise<string[]>;
+  dispatched(id: string, during: () => Promise<void>): Promise<string[]>;
 }
 
 /** The in-process driver: the shared steps and the steps only the element source can take. */
@@ -712,6 +870,9 @@ export interface FixtureDriver extends Driver {
    */
   navigateAwayAndBack(): Promise<boolean>;
 }
+
+/** How `copy` copies the live DOM. */
+export type CopyVia = "outerHTML" | "clone" | "innerHTML";
 
 /**
  * The event types `listen` also hears in the capture phase on the elements themselves: those an element could emit

@@ -1,0 +1,6 @@
+{
+  "generator": "wrapped",
+  "tokens": [
+    {"add":{"name":"motion-slow","group":"motion","value":"1s"}}
+  ]
+}

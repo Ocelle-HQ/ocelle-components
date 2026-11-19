@@ -10,7 +10,8 @@
 // from the `IconName` type of src/icons.ts (US1-11); modules are ordered by path, by code point; members and attributes
 // that are not public are dropped, and so are the observed `aria-label`, `role`, `hidden`, `form`, `aria-invalid`,
 // `aria-required`, `aria-disabled` and `aria-description` attributes, standard attributes and not members (FR-034;
-// specs/010-feedback-forms FR-034); every object's keys are sorted, so the file is stable. `node scripts/manifest.ts`
+// specs/010-feedback-forms FR-034), unless the element declares one with a description (012 research.md R-15: the
+// controls' moved attributes); every object's keys are sorted, so the file is stable. `node scripts/manifest.ts`
 // (the package's `manifest` script) writes custom-elements.json; the manifest gate (gates/bin/manifest.ts) generates the
 // same into memory and compares.
 import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
@@ -80,12 +81,20 @@ function isPublic(member: Json): boolean {
   return member.privacy !== "private" && member.privacy !== "protected";
 }
 
+/**
+ * An attribute the element declares itself, with a description (a JSDoc `@attr`): kept even when it is a standard
+ * attribute, as the controls' moved ARIA attributes are (012 research.md R-15).
+ */
+function declared(attribute: Json): boolean {
+  return typeof attribute.description === "string" && attribute.description !== "";
+}
+
 function normaliseDeclaration(declaration: Json, union: string | undefined): Json {
   if (declaration.customElement !== true) return declaration;
   const members = list(declaration.members).filter(isPublic);
   const fields = new Set(members.map((member) => member.name));
   const attributes = list(declaration.attributes).filter(
-    (attribute) => !standardAttributes.has(String(attribute.name)) && (attribute.fieldName === undefined || fields.has(attribute.fieldName)),
+    (attribute) => (declared(attribute) || !standardAttributes.has(String(attribute.name))) && (attribute.fieldName === undefined || fields.has(attribute.fieldName)),
   );
   const out: Json = { ...declaration, members: members.map((member) => expanded(member, union)), attributes: attributes.map((attribute) => expanded(attribute, union)) };
   for (const key of memberLists) out[key] = list(declaration[key]);

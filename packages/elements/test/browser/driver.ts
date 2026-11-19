@@ -6,24 +6,36 @@
 // (test/commands.ts); forced colours through `page.emulateMedia`. A page that links `base.css` is a page of its own
 // (`<page>-base.html`), so `mount` with `base` must be called on such a page.
 //
-// 008 (research.md R-14): input is real input through Playwright, `page.keyboard`, `page.mouse` and, in a touch
+// 012 (research.md R-11): keys and the mouse through Playwright's keyboard and mouse (commands.ts `press` and
+// `pointer`, the functions the in-process commands use), one accessibility node through the same CDP reader as the
+// `axState` command, reduced motion through `page.emulateMedia`, axe through commands.ts `audit` with axe-core's
+// `axe.min.js` served same-origin as `axe.js` and added as a `<script src>` (allowed by `script-src 'self'`), and the
+// event recorder and the other page reads as page-side.ts's functions in `page.evaluate`. There is no navigation sink
+// here: a link navigates for real, and the fixture body of a link scenario asserts the page's URL, the new tabs
+// (serve.ts `Visit.tabs`) and the server's visits (`Served.visits`); `navigations()` throws.
+// 008 (research.md R-14): input (`inputPress`, `inputHover`, `inputClick`, `pointer`, `touchTap`; the first three
+// renamed by operator decision C2) is real input through Playwright, `page.keyboard`, `page.mouse` and, in a touch
 // context (`visit(…, { touch: true })`), `page.touchscreen`; reduced motion through `page.emulateMedia`; what the page
 // holds is read by the probe of scenarios/probe.ts, installed in the page through the DevTools protocol before the
 // first mount (and before any read that needs it).
 import { inflateSync } from "node:zlib";
 import type { Page } from "playwright";
 import { runningOf } from "../animations.ts";
-import { axDetails, axNodes, axSubtree, emulate, emulateMotion, movePointer, readActiveElement, readScrollWidth, readTextBoxes } from "../commands.ts";
+import { audit, axDetails, axNodes, axeSetup, axStateOf, axSubtree, emulate, emulateMotion, movePointer, pointer, press, readActiveElement, readScrollWidth, readTextBoxes } from "../commands.ts";
 import { layoutWait } from "../layout-wait.ts";
 import { fixtureCapture } from "../live.ts";
 import type { Snapshot } from "../live-reading.ts";
+import { activeInnerOf, activePath, clickElement, computedOf, copyElement, currentOf, endOrder, focusElement, morphElement, preventNextEvent, recordEvents, resetPage, sentinelId, startOrder, takeRecords } from "../page-side.ts";
 import { decodePng } from "../pixels.ts";
 import { heardTypes } from "../scenarios/driver.ts";
-import type { Bounds, Box, Drawing, Entries, FixtureDriver, Heard, InsertHow, Paint, Part, Placement, Sheets, Target, TreeNode, Validity } from "../scenarios/driver.ts";
+import type { Bounds, Box, Drawing, ElementTarget, Entries, FixtureDriver, Heard, InsertHow, Paint, Part, Placement, Sheets, TreeNode, Validity } from "../scenarios/driver.ts";
 import { installProbe } from "../scenarios/probe.ts";
 import type { Probe } from "../scenarios/probe.ts";
 import { policy } from "./serve.ts";
 import type { Served } from "./serve.ts";
+
+/** The most Tab presses `tabOrder` makes before it stops. */
+const maxSteps = 64;
 
 /**
  * Waits in the page for two animation frames, then until every `ocelle-*` element has rendered and the fonts the page
@@ -137,7 +149,7 @@ function deepActive(): string {
 }
 
 /** The viewport rectangle of a target's border box. */
-function rectOf(page: Page, target: Target): Promise<{ readonly x: number; readonly y: number; readonly width: number; readonly height: number }> {
+function rectOf(page: Page, target: ElementTarget): Promise<{ readonly x: number; readonly y: number; readonly width: number; readonly height: number }> {
   return page.evaluate(({ target }) => {
     const host = document.getElementById(typeof target === "string" ? target : target.id);
     const element = typeof target === "string" ? host : host?.shadowRoot?.querySelector(target.inner);
@@ -186,6 +198,7 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
       since = log.length;
       keyed = false;
       seen = served?.submissions().length ?? 0;
+      await page.evaluate(resetPage);
       await page.evaluate(installProbe);
       await page.evaluate((html) => {
         const holder = globalThis as unknown as { ocelleFormListening?: (() => void)[]; ocelleFormHeard?: unknown[] };
@@ -322,7 +335,8 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
         const round = (value: number): number => Math.round(value * 1000) / 1000;
         return { scaleX: round(matrix.a), scaleY: round(matrix.d), offsetX: round(matrix.e - rect.x), offsetY: round(matrix.f - rect.y) };
       }, id),
-    computed: (target, property) =>
+    computed: (id, property, inner) => page.evaluate(computedOf, { id, property, inner }),
+    computedOf: (target, property) =>
       page.evaluate(({ target, property }) => {
         const host = document.getElementById(typeof target === "string" ? target : target.id);
         const element = typeof target === "string" ? host : host?.shadowRoot?.querySelector(target.inner);
@@ -701,15 +715,81 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
       keyed = false;
       return page.evaluate(() => (globalThis as unknown as { ocellePageshow?: boolean }).ocellePageshow === true);
     },
-    press: async (key, options = {}) => {
+    focus: (id) => page.evaluate(focusElement, id),
+    press: (key, modifiers) => press(page, key, modifiers),
+    click: async (id, options) => {
+      await pointer(page, page.mainFrame(), "click", id, options);
+      await settle(page);
+    },
+    callClick: async (id) => {
+      await page.evaluate(clickElement, id);
+      // A link's click() starts its navigation at once (012 phase 3, US2-1's fixture body): the page that would settle
+      // is gone, which is the outcome the body then reads; any other failure is reported.
+      await settle(page).catch((error: unknown) => {
+        if (!String(error).includes("Execution context was destroyed")) throw error;
+      });
+    },
+    hover: async (id, options) => {
+      await pointer(page, page.mainFrame(), "hover", id, options);
+      await settle(page);
+    },
+    pointerDown: async (id, options) => {
+      await pointer(page, page.mainFrame(), "down", id, options);
+      await settle(page);
+    },
+    pointerUp: async (id) => {
+      await pointer(page, page.mainFrame(), "up", id);
+      await settle(page);
+    },
+    tabOrder: async (options = {}) => {
+      const reverse = options.reverse === true;
+      const order: string[][] = [];
+      await page.evaluate(startOrder, reverse);
+      for (let step = 0; step < maxSteps; step += 1) {
+        await press(page, "Tab", reverse ? ["Shift"] : []);
+        const path = await page.evaluate(activePath);
+        if (path.length === 0 || path[0] === `span#${sentinelId}` || JSON.stringify(path) === JSON.stringify(order[0])) break;
+        order.push(path);
+      }
+      await page.evaluate(endOrder);
+      return order;
+    },
+    activeInner: (id) => page.evaluate(activeInnerOf, id),
+    events: (id, types) => page.evaluate(recordEvents, { id, types }),
+    takeEvents: () => page.evaluate(takeRecords),
+    preventNext: (type) => page.evaluate(preventNextEvent, type),
+    navigations: () => Promise.reject(new Error("navigations(): the fixture has no navigation sink; a link navigates for real (Visit.tabs, Served.visits)")),
+    reducedMotion: async (mode) => {
+      await emulateMotion(page, mode);
+      await settle(page);
+    },
+    axState: async (id, inner) => {
+      const session = await page.context().newCDPSession(page);
+      try {
+        return await axStateOf(session, id, inner);
+      } finally {
+        await session.detach();
+      }
+    },
+    current: (id, inner) => page.evaluate(currentOf, { id, inner }),
+    axe: (scope) => audit(page.mainFrame(), () => page.addScriptTag({ url: "axe.js" }), axeSetup().rules, scope),
+    copy: async (id, via, into) => {
+      await page.evaluate(copyElement, { id, via, into });
+      await settle(page);
+    },
+    morph: async (id, markup) => {
+      await page.evaluate(morphElement, { id, markup });
+      await settle(page);
+    },
+    inputPress: async (key, options = {}) => {
       await page.keyboard.press(keyName(key, options.shift === true));
       await settle(page);
     },
-    hover: async (id, inner) => {
+    inputHover: async (id, inner) => {
       await movePointer(page, [id === null ? { x: 0, y: 0 } : await probed(page, "centre", id, inner)]);
       await settle(page);
     },
-    click: async (id, inner, options = {}) => {
+    inputClick: async (id, inner, options = {}) => {
       await movePointer(page, [{ ...(await probed(page, "centre", id, inner)), down: true, up: true, button: options.button ?? "left" }]);
       await settle(page);
     },
@@ -772,7 +852,7 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
       await settle(page);
       return walked;
     },
-    focus: async (target) => {
+    focusTarget: async (target) => {
       await page.evaluate(({ target }) => {
         const host = document.getElementById(typeof target === "string" ? target : target.id);
         const element = typeof target === "string" ? host : host?.shadowRoot?.querySelector<HTMLElement>(target.inner);
@@ -850,7 +930,7 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
     },
     settle: () => settle(page),
     layout: (id) => page.evaluate(layoutWait, id),
-    copy: async (id) => {
+    clipboardCopy: async (id) => {
       await page.evaluate((id) => {
         const element = document.getElementById(id);
         if (element === null) throw new Error(`no #${id} on the page`);
@@ -936,10 +1016,6 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
         if (current === null || current === document.body) return null;
         return current.id === "" ? `<${current.localName}>` : current.id;
       }),
-      reducedMotion: async (mode) => {
-      await emulateMotion(page, mode);
-      await settle(page);
-    },
     animations: (id) => page.evaluate(runningOf, id),
     remove: async (id) => {
       await page.evaluate((id) => {
@@ -1103,7 +1179,7 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
         range.selectNodeContents(element);
         return { innerText: element.innerText, rects: range.getClientRects().length };
       }, id),
-    events: async (id, during) => {
+    dispatched: async (id, during) => {
       await page.evaluate((id) => {
         const target = document.getElementById(id);
         if (target === null) throw new Error(`no #${id} on the page`);

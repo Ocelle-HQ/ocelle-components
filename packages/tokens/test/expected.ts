@@ -85,7 +85,11 @@ export const expectedTokens: readonly ExpectedToken[] = [
   colour("color-chrome-ink", "#EDE9E1", "#EDE9E1"),
   colour("color-chrome-muted", "#A39D92", "#A39D92"),
   colour("color-chrome-hover", "#211D18", "#24211B"),
+  // 012 (research.md R-08 item 4a, plan decision 20): the pressed surface of a control on the chrome grounds.
+  colour("color-chrome-active", "#3A342B", "#3A342B"),
   colour("color-accent", "#C68A1E", "#C68A1E"),
+  // 012 (research.md R-08 item 3): the primary button's hover fill.
+  colour("color-accent-hover", "#D9A23F", "#D9A23F"),
   colour("color-on-accent", "#15130F", "#15130F"),
   colour("color-accent-low", "#F1E1C0", "#3A2B10"),
   colour("color-accent-strong", "#8F5E0F", "#E0A23A"),
@@ -94,6 +98,10 @@ export const expectedTokens: readonly ExpectedToken[] = [
   colour("color-link", "#84560D", "#E0A23A"),
   colour("color-link-hover", "#15130F", "#F7F4EE"),
   colour("color-hover-bg", "#E2DDD3", "#2A261F"),
+  // 012 (research.md R-08 item 3, #525): the border of a hovered or pressed bordered control, an alias of color-ink a
+  // host overrides on an ancestor; and the pressed surface of secondary, quiet and flush controls.
+  derivedColour("color-hover-border", "color-ink", "#15130F", "#EDE9E1"),
+  colour("color-active-bg", "#D3CCBF", "#3A342B"),
   colour("color-disabled-ink", "#6F685D", "#8C8579"),
   colour("color-disabled-bg", "#E6E1D8", "#2A261F"),
   colour("color-overlay", "rgb(21 19 15 / 0.5)", "rgb(0 0 0 / 0.65)"),
@@ -162,6 +170,8 @@ export const expectedTokens: readonly ExpectedToken[] = [
   plain("border-width", "shape", "1px", width(1)),
   plain("focus-width", "shape", "3px", width(3)),
   plain("focus-offset", "shape", "2px", width(2)),
+  // 012 (research.md R-12; data-model.md § Tokens): the negative offset that draws a focus ring inside a box, -5 px
+  derived("focus-offset-inset", "shape", "calc(-1 * (var(--ocelle-focus-offset) + var(--ocelle-focus-width)))", "calc(-1 * (2px + 3px))", ["focus-offset", "focus-width"], { property: "outline-offset", used: -5 }),
   plain("bar-width", "shape", "3px", width(3)),
   plain("ring-step", "shape", "1.5px", width(1.5)),
   plain("target-min", "size", "2.75rem", width(44)),
@@ -284,6 +294,9 @@ export const expectedTokens: readonly ExpectedToken[] = [
   },
   plain("motion-fast", "motion", "120ms", { property: "transition-duration", used: "0.12s" }),
   plain("motion-base", "motion", "200ms", { property: "transition-duration", used: "0.2s" }),
+  // 012 (research.md R-07; data-model.md § Tokens): one turn of the busy spinner, 0ms under reduced motion, and its angle
+  plain("motion-spin", "motion", "800ms", { property: "transition-duration", used: "0.8s" }),
+  plain("motion-turn", "motion", "1turn", { property: "rotate", used: "360deg" }),
   plain("easing-standard", "motion", "cubic-bezier(0.22, 1, 0.36, 1)", {
     property: "transition-timing-function",
     used: "cubic-bezier(0.22, 1, 0.36, 1)",

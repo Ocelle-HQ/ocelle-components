@@ -226,26 +226,72 @@ describe("brand-rules (e) dark-chrome", () => {
   });
 });
 
+// Rule (f) since 012 (plan decision 29; operator decision at phase 4, option (a); tasks.md T042a): the reduced-motion
+// block sets exactly every motion token whose source value is a duration to 0ms, the set read from the token source,
+// not a list of names; the messages name the motion durations. The cases of 002's rule (f) are kept with the new
+// message; a source with motion-spin needs it in the block, and a motion token that is no duration (motion-turn) is
+// rejected there.
+const onlyDurations = "only the motion durations, each 0ms, belong there";
+const spin: Data = { name: "motion-spin", group: "motion", value: "800ms" };
+const turn: Data = { name: "motion-turn", group: "motion", value: "1turn" };
+
 describe("brand-rules (f) reduced-motion", () => {
   it("rejects a reduced-motion value other than 0ms, at its line in the stylesheet", async () => {
     const ran = await brandRules({ wrapper: wrapper('text.replace("--ocelle-motion-fast: 0ms;", "--ocelle-motion-fast: 60ms;")') });
-    expect(findings(ran)).toEqual([
-      `${cssPath}:${String(lineOf(stylesheet, "--ocelle-motion-fast: 0ms"))}: brand-rules: reduced-motion: --ocelle-motion-fast: 60ms in the reduced-motion block; only --ocelle-motion-fast and --ocelle-motion-base, each 0ms, belong there`,
-    ]);
+    expect(findings(ran)).toEqual([`${cssPath}:${String(lineOf(stylesheet, "--ocelle-motion-fast: 0ms"))}: brand-rules: reduced-motion: --ocelle-motion-fast: 60ms in the reduced-motion block; ${onlyDurations}`]);
   });
 
   it("rejects another property in the reduced-motion block", async () => {
     const ran = await brandRules({ wrapper: wrapper('text.replace("--ocelle-motion-base: 0ms;", "--ocelle-motion-base: 0ms;\\n    --ocelle-easing-standard: linear;")') });
-    expect(findings(ran)).toEqual([
-      `${cssPath}:${String(lineOf(stylesheet, "--ocelle-motion-base: 0ms") + 1)}: brand-rules: reduced-motion: --ocelle-easing-standard: linear in the reduced-motion block; only --ocelle-motion-fast and --ocelle-motion-base, each 0ms, belong there`,
-    ]);
+    expect(findings(ran)).toEqual([`${cssPath}:${String(lineOf(stylesheet, "--ocelle-motion-base: 0ms") + 1)}: brand-rules: reduced-motion: --ocelle-easing-standard: linear in the reduced-motion block; ${onlyDurations}`]);
   });
 
-  it("rejects a reduced-motion block that does not set one of the two, at the block's line", async () => {
+  it("rejects a reduced-motion block that does not set one of the motion durations, at the block's line", async () => {
     const ran = await brandRules({ wrapper: wrapper('text.replace("    --ocelle-motion-base: 0ms;\\n", "")') });
-    expect(findings(ran)).toEqual([
-      `${cssPath}:${String(lineOf(stylesheet, "prefers-reduced-motion: reduce"))}: brand-rules: reduced-motion: the reduced-motion block does not set --ocelle-motion-base to 0ms`,
-    ]);
+    expect(findings(ran)).toEqual([`${cssPath}:${String(lineOf(stylesheet, "prefers-reduced-motion: reduce"))}: brand-rules: reduced-motion: the reduced-motion block does not set --ocelle-motion-base to 0ms`]);
+  });
+
+  it("accepts --ocelle-motion-spin: 0ms from the generator when the source has motion-spin, and rejects the same block without it at the block's line", async () => {
+    const withSpin = [...records, spin];
+    const sheet = css(withSpin as unknown as readonly TokenRecord[]);
+    expect(await brandRules({ records: withSpin })).toEqual({ code: 0, out: ["brand-rules: 7 rules checked"], err: [] });
+    const dropped = await brandRules({ records: withSpin, wrapper: wrapper('text.replace("    --ocelle-motion-spin: 0ms;\\n", "")') });
+    expect(findings(dropped)).toEqual([`${cssPath}:${String(lineOf(sheet, "prefers-reduced-motion: reduce"))}: brand-rules: reduced-motion: the reduced-motion block does not set --ocelle-motion-spin to 0ms`]);
+  });
+
+  it("rejects --ocelle-motion-spin in the block when the source has no motion-spin, since only the source's durations belong there", async () => {
+    const ran = await brandRules({ wrapper: wrapper('text.replace("--ocelle-motion-base: 0ms;", "--ocelle-motion-base: 0ms;\\n    --ocelle-motion-spin: 0ms;")') });
+    expect(findings(ran)).toEqual([`${cssPath}:${String(lineOf(stylesheet, "--ocelle-motion-base: 0ms") + 1)}: brand-rules: reduced-motion: --ocelle-motion-spin: 0ms in the reduced-motion block; ${onlyDurations}`]);
+  });
+
+  it("rejects a motion token that is no duration (motion-turn, an angle) in the block, and does not require it there", async () => {
+    const withTurn = [...records, turn];
+    const sheet = css(withTurn as unknown as readonly TokenRecord[]);
+    expect(await brandRules({ records: withTurn })).toEqual({ code: 0, out: ["brand-rules: 7 rules checked"], err: [] });
+    const ran = await brandRules({ records: withTurn, wrapper: wrapper('text.replace("--ocelle-motion-base: 0ms;", "--ocelle-motion-base: 0ms;\\n    --ocelle-motion-turn: 0ms;")') });
+    expect(findings(ran)).toEqual([`${cssPath}:${String(lineOf(sheet, "--ocelle-motion-base: 0ms") + 1)}: brand-rules: reduced-motion: --ocelle-motion-turn: 0ms in the reduced-motion block; ${onlyDurations}`]);
+  });
+
+  it("requires a duration of group motion only: a duration of another group is not required and is rejected in the block", async () => {
+    const withOther = [...records, { name: "delay-other", group: "shell", value: "50ms" }];
+    const sheet = css(withOther as unknown as readonly TokenRecord[]);
+    expect(await brandRules({ records: withOther })).toEqual({ code: 0, out: ["brand-rules: 7 rules checked"], err: [] });
+    const ran = await brandRules({ records: withOther, wrapper: wrapper('text.replace("--ocelle-motion-base: 0ms;", "--ocelle-motion-base: 0ms;\\n    --ocelle-delay-other: 0ms;")') });
+    expect(findings(ran)).toEqual([`${cssPath}:${String(lineOf(sheet, "--ocelle-motion-base: 0ms") + 1)}: brand-rules: reduced-motion: --ocelle-delay-other: 0ms in the reduced-motion block; ${onlyDurations}`]);
+  });
+
+  // Operator decision C1 (2026-11-17, "(b) Delay opt-out"): a motion duration marked `delay: true` (008's tooltip-delay)
+  // is not a motion duration for rule (f): the block need not set it and must not, while an unmarked motion duration
+  // beside it is still required.
+  it("does not require a motion duration marked as a delay in the block and rejects it there, while still requiring an unmarked one (operator decision C1)", async () => {
+    const withDelay = [...records, { name: "tooltip-delay", group: "motion", value: "500ms", delay: true }, { name: "motion-slow", group: "motion", value: "1200ms" }];
+    const sheet = css(withDelay as unknown as readonly TokenRecord[]);
+    const without = await brandRules({ records: withDelay, wrapper: wrapper('text.replace("    --ocelle-tooltip-delay: 0ms;\\n", "")') });
+    expect(without).toEqual({ code: 0, out: ["brand-rules: 7 rules checked"], err: [] });
+    const within = await brandRules({ records: withDelay, wrapper: wrapper('text.replace("--ocelle-motion-base: 0ms;", "--ocelle-motion-base: 0ms;\\n    --ocelle-tooltip-delay: 0ms;")') });
+    expect(findings(within)).toEqual([`${cssPath}:${String(lineOf(sheet, "--ocelle-motion-base: 0ms") + 1)}: brand-rules: reduced-motion: --ocelle-tooltip-delay: 0ms in the reduced-motion block; ${onlyDurations}`]);
+    const unmarked = await brandRules({ records: withDelay, wrapper: wrapper('text.replace("    --ocelle-motion-slow: 0ms;\\n", "")') });
+    expect(findings(unmarked)).toEqual([`${cssPath}:${String(lineOf(sheet, "prefers-reduced-motion: reduce"))}: brand-rules: reduced-motion: the reduced-motion block does not set --ocelle-motion-slow to 0ms`]);
   });
 
   it("reads the reduced-motion query with any spacing around its colon, and only in @media", async () => {
@@ -258,6 +304,90 @@ describe("brand-rules (f) reduced-motion", () => {
   it("rejects a stylesheet without a reduced-motion block", async () => {
     const ran = await brandRules({ wrapper: wrapper('text.slice(0, text.indexOf("@media (prefers-reduced-motion: reduce)"))') });
     expect(findings(ran)).toEqual([`${cssPath}: brand-rules: reduced-motion: no @media (prefers-reduced-motion: reduce) block`]);
+  });
+});
+
+/**
+ * A generator wrapper (a plant's `generator: "wrapped"`) whose validateSource() lets the `planted` records through (it
+ * validates the rest with the real one), as the plants f-delay-marker-misplaced and f-motion-not-ms place it: the gate
+ * validates the source with the root's validateSource() before the rules run (plan decision 29). css() is the real
+ * one, changed as `change` gives.
+ */
+function laxWrapper(planted: readonly string[], change = "text"): string {
+  return [
+    'import { css as realCss, validateSource as realValidateSource } from "./generate.real.ts";',
+    'import type { TokenRecord } from "./generate.real.ts";',
+    'export * from "./generate.real.ts";',
+    `const planted: readonly string[] = ${JSON.stringify(planted)};`,
+    "export function validateSource(source: readonly TokenRecord[]): void { realValidateSource(source.filter((record) => !planted.includes(record.name))); }",
+    `export function css(source: readonly TokenRecord[]): string { const text = realCss(source); return ${change}; }`,
+    "",
+  ].join("\n");
+}
+
+// Phase 4 round 2 (operator round of 2026-11-17 from the landing review R1-04; plan decision 29 as amended): O2-01,
+// "Names ending in -delay": `delay: true` is accepted only on a motion token whose name ends in `-delay`, and a
+// misplaced marker is a finding at its record that exempts nothing; O2-02, "Fail on non-ms motion": a motion-group
+// value that is not a literal `<number>ms`, an angle or an easing function, and is not a valid delay, is a finding at
+// its record. The appended fixture record is on line 26 of source.ts, motion-base on line 25.
+describe("brand-rules (f) reduced-motion: the delay marker and literal ms durations (phase 4 round 2)", () => {
+  it("reports delay: true on a motion token whose name does not end in -delay, at its record (O2-01)", async () => {
+    const ran = await brandRules({ records: [...records, { name: "motion-pause", group: "motion", value: "300ms", delay: true }], wrapper: laxWrapper(["motion-pause"]) });
+    expect(ran).toEqual({
+      code: 1,
+      out: [`${sourcePath}:26: brand-rules: reduced-motion: motion-pause carries delay: true, which is accepted only on a motion token whose name ends in -delay`, "brand-rules: 1 finding"],
+      err: [],
+    });
+  });
+
+  it("reports delay: true on a token outside group motion, even with a -delay name, at its record (O2-01)", async () => {
+    const ran = await brandRules({ records: [...records, { name: "shell-delay", group: "shell", value: "50ms", delay: true }], wrapper: laxWrapper(["shell-delay"]) });
+    expect(ran).toEqual({
+      code: 1,
+      out: [`${sourcePath}:26: brand-rules: reduced-motion: shell-delay carries delay: true, which is accepted only on a motion token whose name ends in -delay`, "brand-rules: 1 finding"],
+      err: [],
+    });
+  });
+
+  it("reports delay: true on motion-base, and since a misplaced marker exempts nothing, also a block that leaves motion-base out (O2-01)", async () => {
+    const marked = records.map((record) => (record.name === "motion-base" ? { ...record, delay: true } : record));
+    const ran = await brandRules({ records: marked, wrapper: laxWrapper(["motion-base"], 'text.replace("    --ocelle-motion-base: 0ms;\\n", "")') });
+    expect(findings(ran)).toEqual([
+      `${sourcePath}:25: brand-rules: reduced-motion: motion-base carries delay: true, which is accepted only on a motion token whose name ends in -delay`,
+      `${cssPath}:${String(lineOf(stylesheet, "prefers-reduced-motion: reduce"))}: brand-rules: reduced-motion: the reduced-motion block does not set --ocelle-motion-base to 0ms`,
+    ]);
+  });
+
+  it("requires a -delay name without the marker at 0ms in the block, as an ordinary motion duration (O2-01)", async () => {
+    const withFade = [...records, { name: "fade-delay", group: "motion", value: "300ms" }];
+    const sheet = css(withFade as unknown as readonly TokenRecord[]);
+    expect(await brandRules({ records: withFade })).toEqual({ code: 0, out: ["brand-rules: 7 rules checked"], err: [] });
+    const ran = await brandRules({ records: withFade, wrapper: wrapper('text.replace("    --ocelle-fade-delay: 0ms;\\n", "")') });
+    expect(findings(ran)).toEqual([`${cssPath}:${String(lineOf(sheet, "prefers-reduced-motion: reduce"))}: brand-rules: reduced-motion: the reduced-motion block does not set --ocelle-fade-delay to 0ms`]);
+  });
+
+  it.each([
+    { value: "1s", ref: undefined, message: "motion-slow is 1s; a motion duration must be a literal <number>ms value" },
+    { value: "var(--ocelle-motion-base)", ref: ["motion-base"], message: "motion-slow is var(--ocelle-motion-base); a motion duration must be a literal <number>ms value" },
+    { value: "calc(2 * 100ms)", ref: undefined, message: "motion-slow is calc(2 * 100ms); a motion duration must be a literal <number>ms value" },
+    { value: { light: "100ms", dark: "100ms" }, ref: undefined, message: 'motion-slow is {"light":"100ms","dark":"100ms"}; a motion duration must be a literal <number>ms value' },
+  ])("reports the motion duration $value, which is not a literal <number>ms, at its record and does not require it in the block (O2-02)", async ({ value, ref, message }) => {
+    const slow = { name: "motion-slow", group: "motion", value, ...(ref === undefined ? {} : { ref }) };
+    const ran = await brandRules({ records: [...records, slow], wrapper: laxWrapper(["motion-slow"]) });
+    expect(ran).toEqual({ code: 1, out: [`${sourcePath}:26: brand-rules: reduced-motion: ${message}`, "brand-rules: 1 finding"], err: [] });
+  });
+
+  it("keeps the motion values that are no durations out of scope (an angle, an easing function or keyword), and a valid delay whatever its value (O2-02)", async () => {
+    const outOfScope = [
+      ...records,
+      { name: "motion-turn", group: "motion", value: "1turn" },
+      { name: "motion-angle", group: "motion", value: "90deg" },
+      { name: "easing-standard", group: "motion", value: "cubic-bezier(0.22, 1, 0.36, 1)" },
+      { name: "easing-steps", group: "motion", value: "steps(4)" },
+      { name: "easing-in", group: "motion", value: "ease-in" },
+      { name: "fade-delay", group: "motion", value: "1s", delay: true },
+    ];
+    expect(await brandRules({ records: outOfScope })).toEqual({ code: 0, out: ["brand-rules: 7 rules checked"], err: [] });
   });
 });
 

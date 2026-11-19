@@ -379,7 +379,7 @@ export async function start(driver: Driver, markup: string, rules = ""): Promise
 /** Focuses `before` by script, then Tab: keyboard focus arrives on the next stop with `:focus-visible`. */
 export async function tabFrom(driver: Driver, from = "before"): Promise<void> {
   await act(driver, { op: "focus", id: from });
-  await driver.press("Tab");
+  await driver.inputPress("Tab");
 }
 
 const bubblePart = '[part="bubble"]';
@@ -505,7 +505,7 @@ const showRows = [
     async (driver) => {
       await start(driver, page());
       await track(driver);
-      await driver.hover("trg");
+      await driver.inputHover("trg");
       await pause(450);
       await pause(950);
       const f = await frames(driver);
@@ -548,7 +548,7 @@ const showRows = [
       await driver.reducedMotion("reduce");
       try {
         await track(driver);
-        await driver.hover("trg");
+        await driver.inputHover("trg");
         await pause(450);
         return { reduced: (await driver.device()).reducedMotion, delay: delay(await frames(driver)) };
       } finally {
@@ -562,7 +562,7 @@ const showRows = [
     async (driver) => {
       await start(driver, page(), "#tip { --ocelle-tooltip-delay: 0ms; }");
       await track(driver);
-      await driver.hover("trg");
+      await driver.inputHover("trg");
       const f = await frames(driver);
       return { sameTask: f.sameTask, gap: f.sameTaskGap, open: await bubbleOpen(driver) };
     },
@@ -573,7 +573,7 @@ const showRows = [
     async (driver) => {
       await start(driver, page(), "#trg { --ocelle-tooltip-delay: 0ms; }");
       await track(driver);
-      await driver.hover("trg");
+      await driver.inputHover("trg");
       return { sameTask: (await frames(driver)).sameTask };
     },
     { sameTask: true },
@@ -583,7 +583,7 @@ const showRows = [
     async (driver) => {
       await start(driver, page(), "#tip { --ocelle-tooltip-delay: 0.3s; }");
       await track(driver);
-      await driver.hover("trg");
+      await driver.inputHover("trg");
       await pause(450);
       return { delay: delay(await frames(driver)) };
     },
@@ -594,7 +594,7 @@ const showRows = [
     async (driver) => {
       await start(driver, page(), "#tip { --ocelle-tooltip-delay: 300; }");
       await track(driver);
-      await driver.hover("trg");
+      await driver.inputHover("trg");
       return { sameTask: (await frames(driver)).sameTask };
     },
     { sameTask: true },
@@ -667,7 +667,7 @@ const showRows = [
       beforeDelay("the move off the trigger", async () => {
         await start(driver, page());
         await track(driver);
-        await driver.click("trg");
+        await driver.inputClick("trg");
         await driver.pointer([rest]);
         await pause(500);
         const f = await frames(driver);
@@ -675,8 +675,8 @@ const showRows = [
         if (click === null) throw new Error("the click on the trigger: the page recorded no time for it after the entry");
         const last = f.frames.at(-1)?.t ?? 0;
         const clicked = { focus: await driver.focusPath(), visible: await driver.focusVisible("trg"), never: never(f, 0) && last - click >= 400, to450: last >= click + 450 };
-        await driver.press("Tab", { shift: true });
-        await driver.press("Tab");
+        await driver.inputPress("Tab", { shift: true });
+        await driver.inputPress("Tab");
         return { at: f.left, observed: { clicked, keyboard: await bubbleOpen(driver) } };
       }),
     { clicked: { focus: "trg", visible: false, never: true, to450: true }, keyboard: true },
@@ -685,15 +685,15 @@ const showRows = [
     "Late :focus-visible (SPEC-2-03, R-12): click the trigger, move the pointer off both boxes, press Shift: the trigger now matches :focus-visible, yet no bubble at any frame of a 450 ms wait; keyboard focus arriving again (Shift+Tab, Tab) shows it at once",
     async (driver) => {
       await start(driver, page());
-      await driver.click("trg");
+      await driver.inputClick("trg");
       await driver.pointer([rest]);
-      await driver.press("Shift");
+      await driver.inputPress("Shift");
       const visible = await driver.focusVisible("trg");
       await track(driver);
       await pause(450);
       const f = await frames(driver);
-      await driver.press("Tab", { shift: true });
-      await driver.press("Tab");
+      await driver.inputPress("Tab", { shift: true });
+      await driver.inputPress("Tab");
       return { visible, never: never(f, 400), focus: await driver.focusPath(), again: await bubbleOpen(driver) };
     },
     { visible: true, never: true, focus: "trg", again: true },
@@ -703,7 +703,7 @@ const showRows = [
     async (driver) => {
       await start(driver, page());
       await track(driver);
-      await driver.click("trg");
+      await driver.inputClick("trg");
       await pause(450);
       const first = delay(await frames(driver));
       const clicked = { focus: await driver.focusPath(), visible: await driver.focusVisible("trg") };
@@ -713,7 +713,7 @@ const showRows = [
       await pause(950);
       const away = { never: never(await frames(driver), 900), focus: await driver.focusPath() };
       await track(driver);
-      await driver.hover("trg");
+      await driver.inputHover("trg");
       await pause(450);
       return { first, clicked, left, away, again: delay(await frames(driver)) };
     },
@@ -723,14 +723,14 @@ const showRows = [
     "Click focus, then hover, then keyboard focus (US3-12; analysis C3): after the pointer left and the bubble hid with focus on the clicked trigger, Shift+Tab to the page button before it and Tab back onto the trigger (focus arriving with :focus-visible) show it at once",
     async (driver) => {
       await start(driver, page());
-      await driver.click("trg");
+      await driver.inputClick("trg");
       await pause(450);
       const shown = await bubbleOpen(driver);
       await driver.pointer([rest]);
       const left = await bubbleOpen(driver);
-      await driver.press("Tab", { shift: true });
+      await driver.inputPress("Tab", { shift: true });
       const back = await driver.focusPath();
-      await driver.press("Tab");
+      await driver.inputPress("Tab");
       return { shown, left, back, focus: await driver.focusPath(), again: await bubbleOpen(driver) };
     },
     { shown: true, left: false, back: "before", focus: "trg", again: true },
@@ -743,7 +743,7 @@ const showRows = [
         async () => {
           await start(driver, page({ trigger: '<input id="trg" type="text" aria-label="Search">', text: "Search the workspace" }));
           await track(driver);
-          await driver.click("trg");
+          await driver.inputClick("trg");
           const atOnce = await bubbleOpen(driver);
           const f = await frames(driver);
           return { at: f.clicked, observed: { focus: await driver.focusPath(), visible: await driver.focusVisible("trg"), atOnce, early: openTimes(f).some((t) => t < 150) } };
@@ -761,7 +761,7 @@ const leaveRows = [
     "Hoverable gap (US3-2, FR-032, R-11): from the shown bubble's trigger the pointer stops in the gap between trigger and painted box: shown; moves on onto the painted box: shown, and persistence (b): shown at every frame of a 900 ms wait; stops beside the bubble part, outside both boxes: hidden",
     async (driver) => {
       await start(driver, page());
-      await driver.hover("trg");
+      await driver.inputHover("trg");
       await pause(450);
       const trigger = await inspect(driver, "trg");
       const part = await inspect(driver, "tip", bubblePart);
@@ -782,16 +782,16 @@ const leaveRows = [
     "Leave (US3-2, FR-032): shown by hover, the pointer leaves both boxes with no keyboard focus: hidden within one frame; shown by keyboard focus, Tab moves focus on while neither box is hovered: hidden; then shown by hover again, the pointer leaving hides it (the keyboard focus that left no longer holds it)",
     async (driver) => {
       await start(driver, page({ after: '<button id="next">Next</button>' }));
-      await driver.hover("trg");
+      await driver.inputHover("trg");
       await pause(450);
       const hovered = await bubbleOpen(driver);
       await driver.pointer([rest]);
       const left = await bubbleOpen(driver);
       await tabFrom(driver);
       const focused = await bubbleOpen(driver);
-      await driver.press("Tab");
+      await driver.inputPress("Tab");
       const focusout = { focus: await driver.focusPath(), open: await bubbleOpen(driver), layer: await driver.topLayer() };
-      await driver.hover("trg");
+      await driver.inputHover("trg");
       await pause(450);
       const again = await bubbleOpen(driver);
       await driver.pointer([rest]);
@@ -804,11 +804,11 @@ const leaveRows = [
     async (driver) => {
       await start(driver, page({ after: '<button id="next">Next</button>' }));
       await tabFrom(driver);
-      await driver.hover("trg");
+      await driver.inputHover("trg");
       await driver.pointer([rest]);
       const keptByFocus = await bubbleOpen(driver);
-      await driver.hover("trg");
-      await driver.press("Tab");
+      await driver.inputHover("trg");
+      await driver.inputPress("Tab");
       return { keptByFocus, focus: await driver.focusPath(), keptByHover: await bubbleOpen(driver) };
     },
     { keptByFocus: true, focus: "next", keptByHover: true },
@@ -823,7 +823,7 @@ const overlayPage = (tag: "ocelle-dialog" | "ocelle-drawer", body = `<button id=
 
 /** Clicks the opener, opens the overlay `dlg` and records its two events; waits for its entry (motion-base, 200 ms). */
 async function openOverlay(driver: Driver, tag: "ocelle-dialog" | "ocelle-drawer"): Promise<void> {
-  await driver.click("opener");
+  await driver.inputClick("opener");
   await driver.setAttribute("dlg", "open", "");
   await driver.record("dlg", [`${tag}-close-request`, `${tag}-close`]);
   await pause(300);
@@ -850,9 +850,9 @@ const escapeRows = [
         async () => {
           await start(driver, page(), `#tip { --ocelle-tooltip-delay: ${String(longDelay)}ms; }`);
           await tabFrom(driver);
-          await driver.press("Escape");
+          await driver.inputPress("Escape");
           await track(driver);
-          await driver.hover("trg");
+          await driver.inputHover("trg");
           await pause(50);
           await driver.pointer([rest]);
           await pause(1000);
@@ -874,17 +874,17 @@ const escapeRows = [
       await tabFrom(driver);
       const shown = await bubbleOpen(driver);
       await tip(driver, { op: "keys" });
-      await driver.press("Shift");
+      await driver.inputPress("Shift");
       const other = { open: await bubbleOpen(driver), keys: await tip(driver, { op: "keylog" }) };
       await tip(driver, { op: "keys" });
-      await driver.press("Escape");
+      await driver.inputPress("Escape");
       const hidden = !(await bubbleOpen(driver));
       const keys = await tip(driver, { op: "keylog" });
       await track(driver);
       await pause(450);
       const dismissed = never(await frames(driver), 400);
       await track(driver);
-      await driver.hover("trg");
+      await driver.inputHover("trg");
       await pause(450);
       return { shown, other, hidden, keys, dismissed, focus: await driver.focusPath(), again: delay(await frames(driver)) };
     },
@@ -894,10 +894,10 @@ const escapeRows = [
     "Escape (US3-4, FR-033): shown by hover, Escape hides it with the pointer resting on the trigger: dismissed, no bubble at any frame of a 450 ms wait; keyboard focus entering (Tab onto the trigger) shows it again at once",
     async (driver) => {
       await start(driver, page());
-      await driver.hover("trg");
+      await driver.inputHover("trg");
       await pause(450);
       const shown = await bubbleOpen(driver);
-      await driver.press("Escape");
+      await driver.inputPress("Escape");
       await track(driver);
       await pause(450);
       const dismissed = never(await frames(driver), 400);
@@ -912,12 +912,12 @@ const escapeRows = [
       async (driver) => {
         await start(driver, overlayPage(tag));
         await openOverlay(driver, tag);
-        await driver.press("Tab");
+        await driver.inputPress("Tab");
         const shown = { focus: await driver.focusPath(), open: await bubbleOpen(driver), layer: await driver.topLayer() };
         await tip(driver, { op: "keys", id: "dlg" });
-        await driver.press("Escape");
+        await driver.inputPress("Escape");
         const first = { open: await bubbleOpen(driver), state: await state(driver), recorded: await driver.recorded(), keys: await tip(driver, { op: "keylog" }) };
-        await driver.press("Escape");
+        await driver.inputPress("Escape");
         return { shown, first, recorded: await events(driver, 2), state: await state(driver) };
       },
       {
@@ -940,7 +940,7 @@ const escapeRows = [
       await act(driver, { op: "veto", id: "dlg", event: "ocelle-dialog-close-request" });
       await tip(driver, { op: "over", id: "trg", pointerType: "mouse" });
       const behind = await bubbleOpen(driver);
-      await driver.press("Escape");
+      await driver.inputPress("Escape");
       return { behind, recorded: await events(driver, 1), focus: await driver.focusPath() };
     },
     { behind: true, recorded: [overlayEvent("ocelle-dialog", "close-request", "escape", "first")], focus: "first" },
@@ -958,13 +958,13 @@ const opensRows = (["ocelle-dialog", "ocelle-drawer"] as const).map((tag) =>
       await act(driver, { op: "veto", id: "dlg", event: `${tag}-close-request` });
       await driver.record("dlg", [`${tag}-close-request`, `${tag}-close`]);
       await tip(driver, { op: "watchModal", id: "dlg" });
-      await driver.hover("trg");
+      await driver.inputHover("trg");
       await pause(450);
       const shown = await bubbleOpen(driver);
-      await driver.click("trg");
+      await driver.inputClick("trg");
       await pause(300);
       const opened = { atOpen: await tip(driver, { op: "modalLog" }), open: await bubbleOpen(driver), layer: await driver.topLayer(), focus: await driver.focusPath() };
-      await driver.press("Escape");
+      await driver.inputPress("Escape");
       return { shown, opened, recorded: await events(driver, 1) };
     },
     {
@@ -982,7 +982,7 @@ const opensPendingRow = row(
       await start(driver, `<button id="before">Before</button><div id="stage"><ocelle-tooltip id="tip" text="Settings">${button}</ocelle-tooltip></div><ocelle-dialog id="dlg" label="Settings"><button id="inner">Inside</button></ocelle-dialog>${standIns}`);
       await act(driver, { op: "on", id: "trg", event: "click", then: [{ op: "attr", id: "dlg", name: "open", value: "" }] });
       await track(driver);
-      await driver.click("trg");
+      await driver.inputClick("trg");
       await pause(450);
       const f = await frames(driver);
       return { at: f.clicked, observed: { never: never(f, 400), to450: (f.frames.at(-1)?.t ?? 0) >= 450, layer: await driver.topLayer(), focus: await driver.focusPath() } };
@@ -1004,7 +1004,7 @@ const noBubbleRows = [
       async (driver) => {
         await start(driver, page().replace(' text="Projects"', attrs));
         await track(driver);
-        await driver.hover("trg");
+        await driver.inputHover("trg");
         await pause(450);
         await tabFrom(driver);
         const f = await frames(driver);
@@ -1022,7 +1022,7 @@ const noBubbleRows = [
     async (driver) => {
       await start(driver, page().replace(' text="Projects"', ""));
       await track(driver);
-      await driver.hover("trg");
+      await driver.inputHover("trg");
       await pause(450);
       await tabFrom(driver);
       const none = { never: never(await frames(driver), 400), text: (await inspect(driver, "tip", painted)).text };
@@ -1038,7 +1038,7 @@ const noBubbleRows = [
     async (driver) => {
       await start(driver, page());
       await track(driver);
-      await driver.hover("trg");
+      await driver.inputHover("trg");
       await act(driver, { op: "remove", id: "tip" });
       await pause(450);
       return { layer: await driver.topLayer(), messages: await driver.messages() };
@@ -1054,7 +1054,7 @@ const noBubbleRows = [
       await act(driver, { op: "remove", id: "tip" });
       await act(driver, { op: "focus", id: "before" });
       await tip(driver, { op: "keys" });
-      await driver.press("Escape");
+      await driver.inputPress("Escape");
       return { shown, layer: await driver.topLayer(), keys: await tip(driver, { op: "keylog" }) };
     },
     { shown: true, layer: [], keys: ["document-capture:Escape", "document:Escape"] },
@@ -1071,7 +1071,7 @@ const noBubbleRows = [
       `Hidden while shown when ${label} (Edge Cases, FR-030): shown by hover, then hidden within one frame, the top layer empty`,
       async (driver) => {
         await start(driver, page());
-        await driver.hover("trg");
+        await driver.inputHover("trg");
         await pause(450);
         const shown = await bubbleOpen(driver);
         await act(driver, command);
@@ -1104,7 +1104,7 @@ const slotRows = [
       await tabFrom(driver);
       await tip(driver, { op: "insert", id: "tip", markup: '<button id="trg2" aria-label="Second">S</button>', first: true });
       const afterSlot = await bubbleOpen(driver);
-      await driver.hover("trg2");
+      await driver.inputHover("trg2");
       await pause(450);
       const shown = await bubbleOpen(driver);
       await driver.pointer([rest]);
@@ -1119,17 +1119,17 @@ const slotRows = [
       await tip(driver, { op: "insert", id: "tip", markup: '<button id="trg2" aria-label="Second">S</button>', first: true });
       await tip(driver, { op: "move", id: "trg", to: "stage" });
       await track(driver);
-      await driver.hover("trg");
+      await driver.inputHover("trg");
       await pause(450);
       const oldHover = never(await frames(driver), 400);
       await tabFrom(driver);
       const keyboard = { focus: await driver.focusPath(), open: await bubbleOpen(driver) };
-      await driver.press("Tab");
+      await driver.inputPress("Tab");
       await track(driver);
       await pause(450);
       const old = { hover: oldHover, keyboard: never(await frames(driver), 400), focus: await driver.focusPath() };
       await track(driver);
-      await driver.hover("trg2");
+      await driver.inputHover("trg2");
       await pause(450);
       return { old, keyboard, hover: delay(await frames(driver)) };
     },
@@ -1141,7 +1141,7 @@ const slotRows = [
       await start(driver, page({ after: '<ocelle-tooltip id="tip2" text="Files"><button id="trg2" aria-label="Files">F</button></ocelle-tooltip>' }));
       await tabFrom(driver);
       const first = await bubbleOpen(driver);
-      await driver.hover("trg2");
+      await driver.inputHover("trg2");
       await pause(450);
       return { first, focus: await driver.focusPath(), open: [await bubbleOpen(driver), await bubbleOpen(driver, "tip2")], layer: await driver.topLayer() };
     },
@@ -1151,13 +1151,13 @@ const slotRows = [
     "Two tooltips, keyboard focus after the other's hover (FR-034): the first trigger clicked and the pointer moved onto the second, whose bubble shows by hover; Shift+Tab moves focus from the first trigger to the page button and Tab back onto it: the first's bubble shows at once and the second's hides, one bubble in the top layer",
     async (driver) => {
       await start(driver, page({ after: '<ocelle-tooltip id="tip2" text="Files"><button id="trg2" aria-label="Files">F</button></ocelle-tooltip>' }));
-      await driver.click("trg");
-      await driver.hover("trg2");
+      await driver.inputClick("trg");
+      await driver.inputHover("trg2");
       await pause(450);
       const second = await bubbleOpen(driver, "tip2");
-      await driver.press("Tab", { shift: true });
+      await driver.inputPress("Tab", { shift: true });
       const away = await driver.focusPath();
-      await driver.press("Tab");
+      await driver.inputPress("Tab");
       return { second, away, focus: await driver.focusPath(), open: [await bubbleOpen(driver), await bubbleOpen(driver, "tip2")], layer: await driver.topLayer() };
     },
     { second: true, away: "before", focus: "trg", open: [true, false], layer: [tipLayer] },
@@ -1381,7 +1381,7 @@ const insideRows = (["ocelle-dialog", "ocelle-drawer"] as const).map((tag) =>
     async (driver) => {
       await start(driver, overlayPage(tag));
       await openOverlay(driver, tag);
-      await driver.press("Tab");
+      await driver.inputPress("Tab");
       const box = await inspect(driver, "tip", painted);
       return { layer: await driver.topLayer(), onScreen: onScreen(box), hits: await hits(driver, box), side: await placed(driver) };
     },
@@ -1408,7 +1408,7 @@ const followRows = [
     async (driver) => {
       await start(driver, overlayPage("ocelle-dialog", `<button id="first">First</button><p>Top</p><p>More</p><p>More</p><p>More</p><p>More</p><ocelle-tooltip id="tip" text="Projects">${button}</ocelle-tooltip>${paragraphs}`));
       await openOverlay(driver, "ocelle-dialog");
-      await driver.press("Tab");
+      await driver.inputPress("Tab");
       const before = await placed(driver);
       const moved = await tip(driver, { op: "scroll", id: "dlg", inner: '[part="body"]', top: 40 });
       return { focus: await driver.focusPath(), before, moved, after: await placed(driver), open: await bubbleOpen(driver) };
@@ -1515,7 +1515,7 @@ const motionRows = [
     async (driver) => {
       await start(driver, page());
       await track(driver);
-      await driver.hover("trg");
+      await driver.inputHover("trg");
       await pause(450);
       await pause(950);
       const hover = await frames(driver);
@@ -1542,7 +1542,7 @@ const themeRow = row(
     await start(driver, overlayPage("ocelle-dialog"));
     await driver.theme("light");
     await openOverlay(driver, "ocelle-dialog");
-    await driver.press("Tab");
+    await driver.inputPress("Tab");
     const light = (await inspect(driver, "tip", painted, ["background-color", "color"])).styles;
     await driver.theme("dark");
     return {
@@ -1857,8 +1857,8 @@ export const tooltipTouchScenarios: readonly TooltipScenario[] = [
       await pause(450);
       const f = await frames(driver);
       const tapped = { clicks: await act(driver, { op: "log" }), never: never(f, 400), focus: await driver.focusPath(), maxTouchPoints: (await driver.device()).maxTouchPoints > 0 };
-      await driver.press("Tab", { shift: true });
-      await driver.press("Tab");
+      await driver.inputPress("Tab", { shift: true });
+      await driver.inputPress("Tab");
       return { tapped, keyboard: await bubbleOpen(driver) };
     },
     { tapped: { clicks: ["click:true"], never: true, focus: "trg", maxTouchPoints: true }, keyboard: true },

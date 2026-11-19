@@ -1,7 +1,7 @@
 # @ocelle/elements
 
 The Ocelle web components: standards-based custom elements (Lit 3) that work in any page, a server-rendered page
-under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has twenty-one elements:
+under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has twenty-three elements:
 `ocelle-icon`, with a set of thirteen icons, `ocelle-brand-mark`, the Ocelle rosette, `ocelle-notice`, a message box
 that can announce itself, `ocelle-form-input`, a labelled text field that takes part in its form,
 `ocelle-form-select`, a labelled native select for closed choices that takes part in its form, `ocelle-scroller`, a
@@ -10,8 +10,9 @@ horizontal strip that is a tab stop only while it overflows, `ocelle-workflow-bo
 `ocelle-list-detail`, a list beside its detail that collapses to one column by the space it has, `ocelle-dialog`, a
 modal dialog, `ocelle-drawer`, a modal side drawer, `ocelle-tooltip`, a tooltip that shows a short text beside its
 trigger, the layout elements `ocelle-section-header`, `ocelle-card`, `ocelle-page-header`, `ocelle-context-sidebar`
-and `ocelle-personal-rail`, `ocelle-facts` with its item `ocelle-fact`, a label and value sheet, `ocelle-empty-state`,
-an empty or loading panel, and `ocelle-progress`, a progress bar.
+and `ocelle-personal-rail`, two controls that follow the control conventions below, `ocelle-button` and
+`ocelle-action-row`, `ocelle-facts` with its item `ocelle-fact`, a label and value sheet, `ocelle-empty-state`, an
+empty or loading panel, and `ocelle-progress`, a progress bar.
 
 ## Entry points
 
@@ -35,6 +36,8 @@ an empty or loading panel, and `ocelle-progress`, a progress bar.
 | `@ocelle/elements/ocelle-page-header.js` | `dist/ocelle-page-header.js` | `ocelle-page-header` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-context-sidebar.js` | `dist/ocelle-context-sidebar.js` | `ocelle-context-sidebar` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-personal-rail.js` | `dist/ocelle-personal-rail.js` | `ocelle-personal-rail` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-button.js` | `dist/ocelle-button.js` | `ocelle-button` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-action-row.js` | `dist/ocelle-action-row.js` | `ocelle-action-row` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-facts.js` | `dist/ocelle-facts.js` | `ocelle-facts` and its item `ocelle-fact`; for hosts with a bundler |
 | `@ocelle/elements/ocelle-fact.js` | `dist/ocelle-fact.js` | `ocelle-fact` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-empty-state.js` | `dist/ocelle-empty-state.js` | `ocelle-empty-state` only; for hosts with a bundler |
@@ -993,6 +996,312 @@ In forced colours the rail's divider is drawn in a system colour, and a horizont
 `ocelle-personal-rail` has no event, CSS part or CSS custom property and adds no tab stop. The host itself is its one
 navigation landmark, with no other landmark inside it.
 
+## `ocelle-button`
+
+```html
+<ocelle-button>Save</ocelle-button>
+<ocelle-button variant="primary"><ocelle-icon slot="icon" name="folder"></ocelle-icon>Open project</ocelle-button>
+<ocelle-button variant="quiet" size="compact" label="Close"><ocelle-icon slot="icon" name="close"></ocelle-icon></ocelle-button>
+<ocelle-button flush size="compact" href="/projects">Projects</ocelle-button>
+<ocelle-button busy>Saving</ocelle-button>
+<ocelle-button aria-expanded="false" aria-controls="filters">Filters</ocelle-button>
+<ocelle-button variant="quiet" ground="inset">Retry</ocelle-button>
+<ocelle-button variant="quiet" ground="chrome" aria-haspopup="menu" aria-expanded="false">Menu</ocelle-button>
+<ocelle-button variant="quiet" size="compact" title="Close dialog" label="Close"><ocelle-icon slot="icon" name="close"></ocelle-icon></ocelle-button>
+```
+
+`ocelle-button` is a native button in the Ocelle look, or, with an `href`, a link that looks like one. It follows the
+control conventions below: one inner `<button type="button">` (or `<a>` in link mode), the part `control`, in its shadow
+root; a keyboard user and a screen-reader user meet a normal button or a normal link.
+
+- `variant` (attribute and property, reflected): `primary` (filled), `secondary` (the default; bordered on a surface)
+  or `quiet` (bordered, no fill); any other value renders `secondary`.
+- `size` (attribute and property, reflected): `default` (the default; at least `--ocelle-target-min`, 44 px, in both
+  dimensions) or `compact` (the compact text scale, `--ocelle-font-size-sm` and `--ocelle-line-height-compact`, and at
+  least 24 px in both dimensions); any other value renders `default`.
+- `flush` (boolean attribute and property, reflected): no inline padding, no border and no fill, the label in
+  `--ocelle-color-ink`, and the content at the box's inline start, so its label (or icon) lines up with the text around
+  it; the minimum block and inline size of its `size` stay.
+- `ground` (attribute and property, reflected): the ground the button sits on, since an element cannot see its
+  ancestor's colour. `accent-low`, `inset`, `hover-bg` or `state` (any of the state grounds) gives a bordered variant an
+  `--ocelle-color-accent-strong` border; absent or any other value means the main grounds `color-canvas`,
+  `color-sheet`, `color-pane`, `color-panel`, `color-inspector` and `color-rail`, with an
+  `--ocelle-color-control-border` border. `ground="chrome"` is for the chrome grounds (`color-chrome`,
+  `color-chrome-hover`): the label is `--ocelle-color-chrome-ink`, a bordered variant has an
+  `--ocelle-color-chrome-muted` border and no fill, so `secondary` looks like `quiet` there; hover fills with
+  `--ocelle-color-chrome-hover`, pressed with `--ocelle-color-chrome-active`, and both turn the border
+  `--ocelle-color-chrome-ink`; the primary looks as on every ground.
+- `label` (attribute and property, not reflected): the accessible name, trimmed; empty or whitespace-only counts as
+  none.
+- `disabled` (boolean attribute and property, reflected): the disabled state of the control conventions.
+- `busy` (boolean attribute and property, reflected): the button is unavailable (the control conventions) while a host
+  waits for the result of an action, and its inner control reports `aria-busy="true"`; `disabled` wins over `busy`: a
+  disabled busy button is disabled and shows no spinner.
+- `href`, `target`, `rel` and `download` (attributes and properties, reflected): link mode (Link versus button) and the
+  inner link's attributes, set while the link is available; in button mode and on a disabled link they have no effect.
+  With `target="_blank"` and no `rel`, the inner link gets `rel="noopener"`.
+- `ocelle-button` moves `aria-expanded`, `aria-controls`, `aria-current`, `aria-haspopup`, `aria-pressed`, `aria-label`,
+  `aria-labelledby`, `aria-describedby` and `title` (Host ARIA is moved); `aria-pressed` is applied in button mode only,
+  since a link cannot be pressed. Each has its mirror, `data-ocelle-moved-aria-expanded` and so on, and the moved states
+  are the custom states `expanded`, `pressed` and `current`. A moved `title` is the inner control's native tooltip and
+  its description, or its name when nothing else names it.
+- The default slot is the label; the `icon` slot holds one icon before it (the slot convention). With no label in
+  the default slot (no non-whitespace text in what it holds), the icon takes no gap and is centred in the button; a
+  `flush` button still starts it at its inline start. Name such an icon-only button with `label`. The button follows
+  text written into or removed from its own content; a label forwarded through another component's shadow-root
+  `<slot>` is read when that slot's assignment changes, not when the forwarded text changes.
+
+On a container whose surface changes (a list or table row that takes `color-hover-bg` on hover, or `color-accent-low`
+when selected), set `ground` for the changed surface statically (`hover-bg` or `accent-low`):
+`--ocelle-color-accent-strong` meets 3:1 on every main ground, so the border holds in both states.
+
+**Activation.** Each activation that delivers a `click` (a pointer click, Enter or Space, the element's `click()`) also
+dispatches `ocelle-button-activate` from the element: a `CustomEvent` with `bubbles: true`, `composed: true`,
+`cancelable: true` and `detail` `{}`, dispatched before the `click` reaches any bubble-phase listener on the element or
+its ancestors. Its target is the element, which identifies the button. Calling `preventDefault()` on it cancels the
+`click`'s default action; a button has none, so the `click` is still delivered, with `defaultPrevented` `true`. A
+disabled button dispatches neither event. The `click` reaches the host as an ordinary `click` event whose target is the
+element. In link mode, calling `preventDefault()` on `ocelle-button-activate` cancels the navigation. A click with
+Ctrl, Meta, Shift or Alt held dispatches no `ocelle-button-activate`: its `click` is delivered, the element prevents
+nothing and the browser's own modifier handling applies (on Chromium on Linux, Ctrl, Shift and Alt give a new tab, a new
+window or a download and leave the page as it is; Meta is not a link modifier there and navigates the current tab); a
+middle click delivers no `click` and dispatches nothing.
+
+**Busy.** A busy button dispatches neither `ocelle-button-activate` nor a `click`; once `busy` is removed, the next
+activation delivers both. It stays in the tab order and keeps focus when `busy` is set or removed. A busy link has no
+`href` (Unavailable). While busy, a spinner takes the place of the slotted icon, so the button keeps its size; without
+an icon it sits before the label with the slot convention's gap. It never covers the label, is drawn in the control's
+text colour (`currentColor`, the system colour in forced colours) and adds nothing to the accessibility tree. The
+spinner turns six times in 4.8 s and then stays still on the same arc it shows under `prefers-reduced-motion: reduce`,
+where it does not move at all, so it stops within 5 s. A host with long-running work that wants continuous motion
+shows its own pausable indicator. A host that overrides `--ocelle-motion-spin` (one turn of the spinner, 800 ms) keeps
+it at or below 833 ms, so the six turns end within 5 s. The library shows and announces no text while busy (no
+"Loading" string): a host that wants an announcement makes it. A busy button keeps its variant's look.
+
+**Looks.** Hover and pressed change the surface and the border: a bordered variant's border becomes
+`--ocelle-color-hover-border`; the primary fills with `--ocelle-color-accent-hover` on hover and `--ocelle-color-accent`
+when pressed; `secondary` and `quiet` fill with `--ocelle-color-hover-bg` on hover and `--ocelle-color-active-bg` when
+pressed; a flush button changes its surface only. The primary always has an `--ocelle-color-accent-strong` border,
+since the ochre fill alone is no boundary on the light grounds. A disabled button has `--ocelle-color-disabled-ink`
+text and border, on `--ocelle-color-disabled-bg` where its variant has a fill.
+
+A flush button's hover fill is `--ocelle-color-hover-bg`, so its hover shows no change where the ground has that
+colour: on `color-hover-bg` in both themes, on `color-inset` in light, on `color-neutral-bg` in dark, and with `ground="chrome"` on
+`color-chrome-hover` in both themes; hover carries no information there, and focus and pressed still show.
+
+Keyboard focus shows the token focus ring on the inner control (`--ocelle-color-focus`, `--ocelle-focus-width`,
+`--ocelle-focus-offset`); a pointer click does not. The focus ring is drawn outside the button: a container that clips
+(`overflow` other than `visible`) and holds a flush button at its edge keeps at least `--ocelle-focus-offset` +
+`--ocelle-focus-width` of unclipped space around it, for example `padding-inline` of that size with a matching negative
+margin. In forced colours the label and border are `ButtonText`, hover and pressed borders and the focus ring
+`Highlight`, a flush button's hover and pressed a dashed `Highlight` outline, and a disabled button `GrayText`. In
+forced colours a link-mode button's text and border are `LinkText`.
+
+A long label wraps between words inside the button, which grows in block size; it is never truncated. A single word
+wider than the button breaks inside the word.
+
+**Forms.** `ocelle-button` does not take part in forms: its inner control is always `type="button"`, so activating it
+inside a `<form>` neither submits nor resets the form, and it has no `type`, `name`, `value` or `form` attribute. A host
+that submits from it calls `form.requestSubmit()` in its click handler:
+
+```js
+button.addEventListener("click", () => form.requestSubmit());
+```
+
+**Consumer compositions.** Three controls of other components are built from this interface alone, with no style of
+their own beyond token overrides: the breadcrumb item of `ocelle-breadcrumbs` (a compact flush link whose label lines up
+with the page title, the current page marked with `aria-current`), the top bar's menu button (on the chrome, with
+`aria-haspopup` and `aria-expanded`, bound to `"false"` when closed and styled from `:state(expanded)`) and the copy
+control of `ocelle-copy-field` (a flush icon button named by `label`). A consumer listens for `ocelle-button-activate`
+(or the native `click`) on each.
+
+```html
+<!-- the breadcrumb item -->
+<ocelle-button flush size="compact" href="/projects" aria-current="page">Projects</ocelle-button>
+<!-- the top bar's menu button, in a container on --ocelle-color-chrome -->
+<ocelle-button variant="quiet" ground="chrome" aria-haspopup="menu" aria-expanded="false">Menu</ocelle-button>
+<!-- the copy control -->
+<ocelle-button flush label="Copy"><ocelle-icon slot="icon" name="copy"></ocelle-icon></ocelle-button>
+```
+
+`ocelle-button` reads the tokens `--ocelle-target-min`, `--ocelle-space-2`, `--ocelle-space-4`, `--ocelle-space-6`,
+`--ocelle-border-width`, `--ocelle-radius-2`, `--ocelle-font-size-md`, `--ocelle-font-size-sm`,
+`--ocelle-line-height-normal`, `--ocelle-line-height-compact`, `--ocelle-icon-size`, the focus tokens
+`--ocelle-color-focus`, `--ocelle-focus-width` and `--ocelle-focus-offset`, and the colour tokens named above
+(`--ocelle-color-sheet`, `--ocelle-color-ink`, `--ocelle-color-control-border`, `--ocelle-color-accent`,
+`--ocelle-color-on-accent`, `--ocelle-color-accent-strong`, `--ocelle-color-accent-hover`,
+`--ocelle-color-hover-bg`, `--ocelle-color-hover-border`, `--ocelle-color-active-bg`, `--ocelle-color-chrome-ink`,
+`--ocelle-color-chrome-muted`, `--ocelle-color-chrome-hover`, `--ocelle-color-chrome-active`,
+`--ocelle-color-disabled-bg`, `--ocelle-color-disabled-ink`). While busy it also reads the motion tokens
+`--ocelle-motion-spin` and `--ocelle-motion-turn`. It has no CSS custom property of its own.
+
+## `ocelle-action-row`
+
+An activatable row: a leading icon, a title, a description, tags and a trailing icon, activated by pointer or keyboard
+with one `ocelle-action-row-activate` event that carries the row's id, so a host listens once for a whole list.
+
+```html
+<ocelle-action-row row-id="m-42">
+  <ocelle-icon slot="icon" name="folder"></ocelle-icon>
+  Mission 42
+  <span slot="description">Due Friday</span>
+  <span slot="tags">Blocked</span><span slot="tags">Design</span>
+  <ocelle-icon slot="trailing" name="arrow-end"></ocelle-icon>
+</ocelle-action-row>
+```
+
+- `row-id` (property `rowId`, reflected): the row's id, which `ocelle-action-row-activate` carries as `detail.rowId`
+  (`""` when absent).
+- `label` (attribute and property, not reflected): the accessible name, trimmed; empty or whitespace-only counts as
+  none.
+- `layout` (attribute and property, reflected): `row` (the default) puts the icon, the title and the description on
+  one line with the tags and the trailing icon, which move together to a second line when the line cannot hold them.
+  `layout="card"`: the icon and the title on the first line with the trailing icon at its end, then the description,
+  then the tags, each `--ocelle-space-1` below the line above; the title is the part `title`, so a host can adjust it.
+  Tags wrap only between tags: a tag's text is not broken inside a word, except a tag wider than the row, which may
+  break.
+- `presentation` (attribute and property, reflected): `default` (a bordered row on `--ocelle-color-sheet`,
+  `--ocelle-radius-row`) or `flush` (no border and no surface, the block padding `--ocelle-space-1` and the compact
+  text scale); any other value renders `default`.
+- `ground` (attribute and property, reflected): as on `ocelle-button`, it selects the default row's border:
+  `--ocelle-color-control-border` on the main grounds, `--ocelle-color-accent-strong` with `accent-low`, `inset`,
+  `hover-bg` or `state`; `ground="chrome"` gives no fill, a `--ocelle-color-chrome-muted` border, the title in
+  `--ocelle-color-chrome-ink` and the description and tags in `--ocelle-color-chrome-muted`.
+- `href` and `target`, `rel` (attributes and properties, reflected): link mode (Link versus button), with the
+  `noopener` rule of `ocelle-button`; the row has no `download`.
+- `current` (attribute and property, reflected): `page` or `true` marks the current item: the inner control reports
+  `aria-current` with that value and the row shows the current mark, an `--ocelle-color-accent-low` surface
+  (`--ocelle-color-chrome-hover` with `ground="chrome"`) and a bar in `--ocelle-color-current`, `--ocelle-bar-width`
+  wide, at the inline start; any other value is not current. The bar is drawn 7 px inside the row's edge, apart from
+  the focus ring, so on a focused current row the ring and the bar stay two marks. The current mark stays on hover; in
+  forced colours the bar is `Highlight`.
+- `unavailable` (boolean attribute and property, reflected): the row is unavailable (the control conventions): its
+  inner control stays in the tab order with `aria-disabled="true"`, keeps its name and description and is not
+  activated by any click or key; a link row has no `href`. Its title, description, tags and trailing icon are in
+  `--ocelle-color-disabled-ink` (`GrayText` in forced colours), and hovering it changes nothing. An unavailable
+  current row keeps its current surface and `aria-current`, with the bar in `--ocelle-color-disabled-ink`. While the
+  row is unavailable its description, tags and trailing wrappers carry `aria-disabled="true"` too, so a checker reads
+  their text as part of the inactive control.
+- `busy` (boolean attribute and property, reflected): the row's content is updating; its inner control reports
+  `aria-busy="true"`, and activation still dispatches the event: on a row, busy does not mean unavailable.
+- Slots: the default slot (the title), `icon` and `trailing` (the slot convention), `description` and `tags`
+  (elements). CSS parts: `control`, `title`, `description`, `tags`.
+
+Each activation (a pointer click, Enter or Space, the element's `click()`) dispatches `ocelle-action-row-activate` from
+the element: a `CustomEvent` with `bubbles: true`, `composed: true`, `cancelable: true` and `detail` `{ rowId }`.
+In link mode the event is dispatched before the navigation, and calling `preventDefault()` on it cancels the
+navigation. A click with Ctrl, Meta, Shift or Alt held, or a middle click, dispatches no event and the element prevents
+nothing: the browser's own modifier handling applies (on Chromium on Linux a Meta-click navigates the current tab).
+
+The row is named by its title (the default slot), then by `label` or the host's `aria-label` or `aria-labelledby` in
+the name order; its accessible description is the text of the `description` slot followed by that of the `tags` slot,
+unless the host sets `aria-describedby`. A `description` or `tags` element without non-whitespace text (an empty
+`<span slot="description"></span>`, as a server template renders a missing value) contributes nothing and takes no
+space; text written into it later is picked up. `ocelle-action-row` moves `aria-label`, `aria-labelledby`,
+`aria-describedby` and `title` (Host ARIA is moved); a moved `title` describes the row when nothing else does.
+
+The description, tags and trailing content are shown beside the row's control and hidden from assistive technology as
+content: the description and tags reach it as the row's accessible description. A layer of the control covers the
+whole row and takes every click on it, the description, tags and trailing icon included. Interactive content (a link,
+a button, an input) in the `description`, `tags` or `trailing` slot is not supported: it is hidden from assistive
+technology there, and axe reports it as `aria-hidden-focus`. Slotted content that sets its own `pointer-events` takes
+the clicks on it, which the row then ignores (they do not pass through its control). The part `control` is the row's
+icon-and-title control, not its surface: `::part(control)` styles do not reach the row's surface or border.
+
+The host is a grid container (`grid` for `ocelle-action-row`, with `min-inline-size: min-content`, so a
+shrink-wrapping container never makes it 0 wide). Every row is at least `--ocelle-target-min` (44 px) tall in every
+presentation and layout, with the inline padding `--ocelle-space-3`. The title and the description wrap anywhere when
+a word does not fit, so a long identifier never makes the row wider than its container. On hover the surface becomes
+`--ocelle-color-hover-bg` (`--ocelle-color-chrome-hover` on chrome) and a default row's border
+`--ocelle-color-hover-border` (`--ocelle-color-chrome-ink` on chrome); a flush row gets no border and nothing moves.
+A flush row's hover shows no change where the ground has the hover colour, as a flush button's. The title is in
+`--ocelle-color-ink`, the description and tags in `--ocelle-color-ink-soft`. The focus ring is drawn inside the row
+(`--ocelle-focus-offset-inset`), so a scroll container's edge or the next row never clips or covers it. In forced
+colours the text and the border are `ButtonText` (`LinkText` in link mode), the hover border and the focus ring
+`Highlight`, and a flush row's hover a dashed `Highlight` outline. It has no CSS custom property of its own.
+
+## Control conventions
+
+Every control of this library (`ocelle-button`, and the action row, navigation items, copy control and form controls
+after it) follows these rules.
+
+1. **One inner control.** Each control renders exactly one native `<button type="button">` (button mode) or `<a>`
+   (link mode) in an open shadow root attached with `delegatesFocus`; the host has no role and no tabindex.
+   `element.focus()` focuses the inner control, and `element.click()` clicks it, so a click started by `click()` gets
+   the same guarantees as any other click. A click dispatched on the host with `dispatchEvent` is outside the
+   guarantees: it does not pass through the inner control, so the element stops it. The host is a grid container
+   (`inline-grid` for `ocelle-button`) and the inner control its single stretched item, so the inner control fills the
+   host when a flex row or a grid stretches it; a stretched button grows to the row's height (set `align-self` on the
+   element to avoid it). A host may restyle the element's `display` and size: the element also listens for `click` and
+   `auxclick` on the host from its constructor and stops any that did not pass through the inner control, in every
+   state, so host area outside the inner control never activates it. Capture-phase listeners, and listeners added to
+   the element before it is upgraded, are outside that guarantee: they run before the element's own listener.
+2. **Link versus button.** A control is in link mode exactly when its `href` is not empty or whitespace only, parses as
+   a URL against the document's base URL and is not a `javascript:` URL as the URL parser reads it (so `JAVASCRIPT:`,
+   `java\tscript:` and a leading space or control character count); otherwise it is in button mode, with no error for
+   an `href` that does not parse. Link mode renders an `<a>` with the `href` as written and the native link behaviour:
+   Enter activates, Space does not, and modifier clicks get the browser's own modifier handling (the element prevents
+   nothing); button mode renders a `<button type="button">` (Enter and Space activate). Both modes look the same for
+   the same variant. `data:` and `vbscript:` URLs are link mode and left to the host: Chromium blocks a top-level
+   `data:` navigation and runs no `vbscript:`.
+3. **Disabled.** `disabled` means the control cannot be used here at all: the inner control is out of the tab order,
+   reported disabled and not activated. Not activated means: no `ocelle-*` event and no `click` reaching a
+   bubble-phase listener on the element or its ancestors (up to `document` and `window`); capture-phase listeners are
+   outside it. A disabled link has no `href`: it is an `<a role="link" aria-disabled="true">` out of the tab order, so
+   neither a click, a modifier click, a middle click, the context menu nor a drag opens it. **Unavailable.**
+   Unavailable means the control exists but cannot be used right now: the inner control stays in the tab order and
+   keeps focus, reports `aria-disabled="true"`, keeps its name and description so a user can learn why, and is not
+   activated. An unavailable link has no `href` either: it is an `<a role="link" tabindex="0" aria-disabled="true">`
+   that stays focusable, so neither a click, a modifier click, a middle click, Enter, the context menu nor a drag opens
+   it. A busy `ocelle-button` is unavailable; `disabled` wins over it.
+4. **Host ARIA is moved.** The ARIA attributes a control lists, and `title`, are moved from the host onto the inner
+   control: the element applies the value there and removes the attribute from the host, so the state appears once,
+   on the inner control, and `getAttribute` on the host returns `null` afterwards. To clear a moved state, set an
+   empty or whitespace-only value (`aria-controls=""`, `aria-label=""`, `title=""`) or the ARIA off value
+   (`aria-expanded="false"`, `aria-pressed="false"`, `aria-current="false"`); any other value is applied as written.
+   `removeAttribute` on a moved attribute changes nothing, and neither does a framework binding that becomes
+   `undefined`, `null` or `nothing`, so bind the off value:
+
+   | Stack | Bind | Never |
+   |---|---|---|
+   | React | `aria-current={active ? "page" : "false"}`, `aria-expanded={open ? "true" : "false"}`, `aria-controls={open ? "panel" : ""}` | `undefined` or `null` |
+   | Lit | `aria-current=${active ? "page" : "false"}` (an attribute binding with a string) | `nothing`, `ifDefined(undefined)` |
+   | Svelte | `aria-current={active ? "page" : "false"}` | `undefined`, `null` |
+   | htmx, Thymeleaf | render the attribute with the off value (`th:attr="aria-current=${active} ? 'page' : 'false'"`) | omitting the attribute on an element that is updated in place; writing a `data-ocelle-moved-*` attribute |
+
+   Each moved value is mirrored in a host attribute the element owns, `data-ocelle-moved-<attribute>` (for example
+   `data-ocelle-moved-aria-label`), removed when the value is cleared; at upgrade the element reads a mirror back for
+   an attribute the host does not set, and a host attribute set at upgrade wins over its mirror. So copies of the live
+   DOM (`cloneNode(true)`, `innerHTML` and `outerHTML`, htmx's history snapshot) keep names and states. The element
+   restores a mirror that is removed or changed while it holds the value, so a morphing swap (htmx's idiomorph `morph`
+   swap, Turbo 8 page-refresh morphs), which removes every attribute the server markup lacks, keeps the mirrors. Hosts
+   never write or remove a mirror: one written while the element holds no value for it is not read until the next
+   upgrade. With htmx, a swap that replaces the element moves the new element's attributes at upgrade; a morphing swap
+   sets the changed attributes on the live element, which moves them, and the element restores the mirrors the morph
+   removes; htmx's history restore keeps the moved values through the mirrors.
+
+   Since a host attribute selector no longer matches a moved state, `ocelle-button` exposes custom states:
+   `:state(expanded)` while the moved `aria-expanded` is `"true"`, `:state(pressed)` while the moved `aria-pressed` is
+   `"true"` in button mode, and `:state(current)` while the moved `aria-current` is anything but `"false"`, for example
+   `ocelle-button:state(expanded) ocelle-icon`. ID references (`aria-controls`, `aria-labelledby`,
+   `aria-describedby`) are resolved by id in the host's own tree (its document, or the shadow root it is in) when they
+   are set and when the element is connected, and related to the inner control by element reference, never by copying
+   the id into the shadow root; ids not found are skipped, an element in another shadow root is not resolved, and an
+   element added later with the id is picked up only when the attribute is set again. Any other `aria-*` attribute on
+   the host is not supported: it stays on the host and axe flags it. This is the controls' own rule: `ocelle-icon` and
+   `ocelle-brand-mark` keep their host `aria-label` rule (Host ARIA), so the two families differ.
+5. **Name order.** The inner control's name is, in this order: the host's `aria-labelledby`, the host's `aria-label`,
+   the element's `label` (trimmed; empty or whitespace-only counts as none), and otherwise the element's content;
+   slotted icons never contribute. When a control's content is visible, its `label` contains the visible text, ideally
+   at its start, so a user who speaks a control's visible name reaches it (label in name); so does a host
+   `aria-label`. A control with no text, no `label` and no icon has no accessible name: a host mistake that axe
+   reports; the element adds no fallback text.
+6. **Current.** On `ocelle-button`, `aria-current` is passed through to the inner control with any value and draws no
+   visual mark; a host that wants a visible mark styles `:state(current)` or uses a row, whose `current` property draws
+   the mark and sets `aria-current`.
+7. **Primary action.** A primary action uses `size="default"` (44 × 44 px minimum); `variant="primary"` is a look, not
+   what makes an action primary.
+
 ## `ocelle-facts`
 
 ```html
@@ -1254,9 +1563,11 @@ element and variant that replaces it, or the consumer's own remedy.
 
 A control that shows icons follows one slot convention: an `icon` slot before its label and, where it has an end icon
 such as the action row's arrow, a `trailing` slot after it. The control renders, in its shadow root, a row with the
-class `icon-row` holding `<span class="icon-slot"><slot name="icon"></slot></span>`, its label, and
+class `icon-row` holding `<span class="icon-slot"><slot name="icon"></slot></span>`, its label wrapper
+`<span class="label"><slot></slot></span>` around the default slot, and
 `<span class="icon-slot trailing"><slot name="trailing"></slot></span>`, and adds `iconSlotStyles`
-(`src/icon-slot.ts`, internal) to its `static styles`:
+(`src/icon-slot.ts`, internal) to its `static styles`. A control with no label, such as an icon-only control, puts the
+class `bare` on its row: the `bare` modifier is part of the convention.
 
 ```ts
 static override styles = [css`…the control's own rules…`, iconSlotStyles];
@@ -1278,7 +1589,10 @@ A host then slots its icons with no size of its own (here into `ocelle-button`, 
 - **Alignment.** The row sets the type (font size and line height) that the wrappers and the label inherit; each
   wrapper is one line box tall (`1lh`) with the icon centred in it, so the icon is centred on the label's first line
   at any type size and leading, overflowing the line box evenly when it is taller. Set the type on the row, not on the
-  label alone.
+  label alone. The label wrapper takes part in baseline alignment, so the control's baseline is its label's first line
+  and a one-line control in a line of text sits on the text's baseline; nothing inside the control moves for it. The
+  label's baseline alignment applies to labelled rows only: a `bare` row is not changed, so an icon-only control's icon
+  sits where a native `<button>` with an svg puts it in a line of text.
 - **Row padding.** The row's block padding, `calc((var(--ocelle-icon-size) - 1lh) / 2)` from `iconSlotStyles` (0 when
   the line box is at least the icon size), keeps that overflow inside the control's box. A control never sets block
   padding on the row; it puts any further block padding on an element around the row.
@@ -1470,6 +1784,9 @@ form control the control's name is a host `aria-label` with whitespace collapsed
 keeps it as written, surrounding spaces included, so pass it trimmed with single spaces. An unknown icon name exposes
 nothing, named or not.
 
+`ocelle-button` and `ocelle-action-row` follow none of these `aria-label` rules: they move their host ARIA onto their
+inner control instead (Control conventions, Host ARIA is moved).
+
 On `ocelle-icon` and `ocelle-brand-mark`, a host `aria-hidden="true"` hides the element, labelled or not. On
 `ocelle-icon` and `ocelle-brand-mark`, a host `hidden` attribute removes the element: no box and no node, labelled or
 not. On `ocelle-notice` a host `aria-hidden="true"` is not supported: hide the notice with a host `hidden` attribute,
@@ -1496,9 +1813,13 @@ then the first copy's.
 
 ## Engines
 
-Engine floor: Chromium 120+ and WebKit 17+, with no `window.ShadyCSS` polyfill on the page. Each figure is the
+Engine floor: Chromium 135+ and WebKit 17.4+, with no `window.ShadyCSS` polyfill on the page. Each figure is the
 newest feature the elements use:
 
+- ARIA element reflection (`ariaControlsElements`, `ariaLabelledByElements`, `ariaDescribedByElements`): Chromium 135,
+  WebKit 16.4 (the controls' ID references);
+- Custom states (`ElementInternals.states` and `:state()`): Chromium 125, WebKit 17.4 (`ocelle-button`'s moved
+  states);
 - The Popover API: Chromium 114, WebKit 17 (the tooltip's bubble in the top layer; it raised the floor from WebKit 16.4);
 - `:dir()`: Chromium 120, WebKit 16.4 (the inline-direction icons' mirroring);
 - `@media not (forced-colors: active)` (Media Queries 4's `not (…)` without a media type): Chromium 104, WebKit 16.4
@@ -1559,7 +1880,8 @@ An element that
 observes a standard attribute such as `aria-label` adds it to `observedAttributes` without declaring a property, so
 the manifest does not list it. An attribute that is the element's own and has no property of its own, such as
 `ocelle-form-input`'s `value` (its default value), is declared in the manifest with the class's JSDoc tag `@attribute`,
-with its type, default and description.
+with its type, default and description. An element that moves a standard attribute declares it with `@attr` and a
+description, with its mirror, so the manifest lists both.
 
 **Styles.** An element's styles are its shared `static styles`, one or more `css` tagged templates built only from
 `--ocelle-*` tokens and the values the `style-lint` gate allows, which every instance adopts, plus at most one
