@@ -145,6 +145,5 @@ TS7023 at (22,5), for every mutant of the added lines 40 to 42). That run's repo
 - Gate note: `gate:mutation` passed a file whose every mutant is a compile error. Fixed by T087 to T089 (rule (c)).
 - After run 4: `pnpm run gate:unit-tests` on a474f8f, `unit-tests: 7408 tests passed in 231 files`; `gate:typecheck`,
   `gate:lint` (439 files), `gate:test-lint` (323 files) and `gate:style-lint` (38 files) with no finding.
-- Plants after run 4 (plants.md § T025): shards 1 to 13 of 29 on a474f8f, every plant as expected (shards 1 to 4
-  are every plant but visual and axe); shards 14 to 29 not run, the second batch stopped by the session's two-hour
-  limit on a background command.
+- Plants after run 4 (plants.md § T025): all 29 shards on a474f8f, then `--verdict`: `plants: 315 plants of 17 gates
+  and the registry judged, every plant as expected`, exit 0.

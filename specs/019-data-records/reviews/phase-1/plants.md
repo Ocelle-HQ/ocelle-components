@@ -868,11 +868,21 @@ plants: shard 4 of 29: 60 plants judged, every plant as expected
 exit: 0
 ```
 
-## T025: after the final source of phase 1 (a474f8f), partial
+## T025: after the final source of phase 1 (a474f8f)
 
 - base: 8d104af23ce177ec4acbbfaba59bf433f9520d6d
-- command: `OCELLE_VISUAL_ENGINE=docker pnpm run gate:plants -- --shard <n>`, shards in two background batches (the session stops a background command after two hours, and a full run takes longer: --affected selects every plant, as above). Batch 1 ran shards 1 to 7; batch 2 ran shards 8 to 13 and was stopped by that limit in shard 14, before its verdict. Shards 14 to 29 (visual 14 to 20, axe 21 to 29) were not run, so `--verdict` was not run either. The element source changed since ef50a1b's full run by T084, T086 and a474f8f's comments; shards 1 to 4 hold every plant but visual and axe.
-- exit: 0 for each of shards 1 to 13; shard 14 stopped, no exit
+- command: `OCELLE_VISUAL_ENGINE=docker pnpm run gate:plants -- --shard <n>` for every shard n = 1 to 29, as CI's plants-shard job runs them, then `OCELLE_VISUAL_ENGINE=docker pnpm run gate:plants -- --verdict storybook/.visual/plant-shards`, as CI's plants job does. The shards ran in background batches that each fit inside the session's two-hour limit on a background command (`--affected` selects every plant, and a single run takes longer). Shards 1 to 7, then 8 to 13 (that batch was stopped inside shard 14, which is not counted), then 14 to 16, 17 to 20, 21 to 25 and 26 to 29, all on a474f8f's source (HEAD f85d2a1 changes only records).
+- exit: 0 (the verdict); every shard 0
+
+Verdict:
+
+```text
+$ node gates/bin/plants.ts -- --verdict storybook/.visual/plant-shards
+plants: 315 plants of 17 gates and the registry judged, every plant as expected
+exit: 0
+```
+
+Shards 1 to 13:
 
 ```text
 === shard 1
@@ -1209,7 +1219,135 @@ note: plant time: visual/fail-popover-changed: 392.5 s
 note: plant time: visual/fail-press-style-changed: 403.6 s
 plants: shard 13 of 29: 3 plants judged, every plant as expected
 exit: 0
+```
+
+Shards 14 to 29:
+
+```text
 === shard 14
 $ OCELLE_VISUAL_ENGINE=docker pnpm run gate:plants -- --shard 14
 $ node gates/bin/plants.ts -- --shard 14
+note: plant time: visual/fail-random: 386.3 s
+note: plant time: visual/fail-render-throws: 381.1 s
+note: plant time: visual/fail-same-origin-fetch: 374.0 s
+plants: shard 14 of 29: 3 plants judged, every plant as expected
+exit: 0
+=== shard 15
+$ OCELLE_VISUAL_ENGINE=docker pnpm run gate:plants -- --shard 15
+$ node gates/bin/plants.ts -- --shard 15
+note: plant time: visual/fail-same-pixels-other-bytes: 370.8 s
+note: plant time: visual/fail-session-storage: 375.3 s
+note: plant time: visual/fail-storage-left-by-worker: 373.7 s
+plants: shard 15 of 29: 3 plants judged, every plant as expected
+exit: 0
+=== shard 16
+$ OCELLE_VISUAL_ENGINE=docker pnpm run gate:plants -- --shard 16
+$ node gates/bin/plants.ts -- --shard 16
+note: plant time: visual/fail-storage-property: 383.6 s
+note: plant time: visual/fail-stray-baseline: 389.4 s
+note: plant time: visual/fail-throws-on-load: 387.3 s
+plants: shard 16 of 29: 3 plants judged, every plant as expected
+exit: 0
+=== shard 17
+$ OCELLE_VISUAL_ENGINE=docker pnpm run gate:plants -- --shard 17
+$ node gates/bin/plants.ts -- --shard 17
+note: plant time: visual/fail-token-changed: 486.7 s
+note: plant time: visual/fail-websocket: 377.7 s
+note: plant time: visual/fail-xhr: 384.1 s
+plants: shard 17 of 29: 3 plants judged, every plant as expected
+exit: 0
+=== shard 18
+$ OCELLE_VISUAL_ENGINE=docker pnpm run gate:plants -- --shard 18
+$ node gates/bin/plants.ts -- --shard 18
+note: plant time: visual/pass-animation-and-caret: 376.3 s
+note: plant time: visual/pass-below-fold: 376.4 s
+note: plant time: visual/pass-focus-below-fold: 389.2 s
+plants: shard 18 of 29: 3 plants judged, every plant as expected
+exit: 0
+=== shard 19
+$ OCELLE_VISUAL_ENGINE=docker pnpm run gate:plants -- --shard 19
+$ node gates/bin/plants.ts -- --shard 19
+note: plant time: visual/pass-hover-and-press: 383.0 s
+note: plant time: visual/pass-input-font: 390.9 s
+note: plant time: visual/pass-overflow-and-popover: 379.6 s
+plants: shard 19 of 29: 3 plants judged, every plant as expected
+exit: 0
+=== shard 20
+$ OCELLE_VISUAL_ENGINE=docker pnpm run gate:plants -- --shard 20
+$ node gates/bin/plants.ts -- --shard 20
+note: plant time: visual/pass-repository: 381.0 s
+note: plant time: visual/pass-second-render: 378.6 s
+note: plant time: visual/pass-unused-face: 384.0 s
+plants: shard 20 of 29: 3 plants judged, every plant as expected
+exit: 0
+=== shard 21
+$ OCELLE_VISUAL_ENGINE=docker pnpm run gate:plants -- --shard 21
+$ node gates/bin/plants.ts -- --shard 21
+note: plant time: axe/error-bad-exceptions: 0.7 s
+note: plant time: axe/error-build-fails: 2.0 s
+note: plant time: axe/error-exception-plan-not-a-plan: 0.7 s
+plants: shard 21 of 29: 3 plants judged, every plant as expected
+exit: 0
+=== shard 22
+$ OCELLE_VISUAL_ENGINE=docker pnpm run gate:plants -- --shard 22
+$ node gates/bin/plants.ts -- --shard 22
+note: plant time: axe/fail-closed-shadow-root: 198.8 s
+note: plant time: axe/fail-empty: 204.9 s
+note: plant time: axe/fail-excepted-second-node: 198.2 s
+plants: shard 22 of 29: 3 plants judged, every plant as expected
+exit: 0
+=== shard 23
+$ OCELLE_VISUAL_ENGINE=docker pnpm run gate:plants -- --shard 23
+$ node gates/bin/plants.ts -- --shard 23
+note: plant time: axe/fail-hover-near-fold: 198.2 s
+note: plant time: axe/fail-hover-reveals-unlabelled: 204.8 s
+note: plant time: axe/fail-incomplete: 200.8 s
+plants: shard 23 of 29: 3 plants judged, every plant as expected
+exit: 0
+=== shard 24
+$ OCELLE_VISUAL_ENGINE=docker pnpm run gate:plants -- --shard 24
+$ node gates/bin/plants.ts -- --shard 24
+note: plant time: axe/fail-no-box: 203.0 s
+note: plant time: axe/fail-open-shadow-unlabelled: 200.4 s
+note: plant time: axe/fail-outside-root: 201.9 s
+plants: shard 24 of 29: 3 plants judged, every plant as expected
+exit: 0
+=== shard 25
+$ OCELLE_VISUAL_ENGINE=docker pnpm run gate:plants -- --shard 25
+$ node gates/bin/plants.ts -- --shard 25
+note: plant time: axe/fail-pointer-target-below-fold: 200.7 s
+note: plant time: axe/fail-render-throws: 199.5 s
+note: plant time: axe/fail-stale-exception: 206.6 s
+plants: shard 25 of 29: 3 plants judged, every plant as expected
+exit: 0
+=== shard 26
+$ OCELLE_VISUAL_ENGINE=docker pnpm run gate:plants -- --shard 26
+$ node gates/bin/plants.ts -- --shard 26
+note: plant time: axe/fail-throws-on-load: 193.7 s
+note: plant time: axe/fail-two-low-contrast: 192.4 s
+note: plant time: axe/fail-unlabelled-button: 194.0 s
+plants: shard 26 of 29: 3 plants judged, every plant as expected
+exit: 0
+=== shard 27
+$ OCELLE_VISUAL_ENGINE=docker pnpm run gate:plants -- --shard 27
+$ node gates/bin/plants.ts -- --shard 27
+note: plant time: axe/fail-unrecorded-exception: 198.5 s
+note: plant time: axe/pass-excepted: 199.6 s
+note: plant time: axe/pass-excepted-incomplete: 201.7 s
+plants: shard 27 of 29: 3 plants judged, every plant as expected
+exit: 0
+=== shard 28
+$ OCELLE_VISUAL_ENGINE=docker pnpm run gate:plants -- --shard 28
+$ node gates/bin/plants.ts -- --shard 28
+note: plant time: axe/pass-excepted-shadow: 202.1 s
+note: plant time: axe/pass-minor-only: 203.9 s
+note: plant time: axe/pass-repository: 200.0 s
+plants: shard 28 of 29: 3 plants judged, every plant as expected
+exit: 0
+=== shard 29
+$ OCELLE_VISUAL_ENGINE=docker pnpm run gate:plants -- --shard 29
+$ node gates/bin/plants.ts -- --shard 29
+note: plant time: axe/pass-second-render: 206.6 s
+plants: shard 29 of 29: 1 plant judged, every plant as expected
+exit: 0
 ```
