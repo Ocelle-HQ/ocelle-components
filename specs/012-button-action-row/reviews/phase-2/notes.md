@@ -162,3 +162,4 @@ amended to match.
 - The base was `b594b7e`, as the orchestrator gave it: an ancestor of the red commit whose diff of `icon-slot.ts` also
   covers phase 2's earlier change to it. That is a superset of the T029c base.
 - R7-02 (round 7): moved the two lines on the row's block padding in the `icon-slot.ts` header back under the `inline-flex` row bullet; no wording or code changed. `gate:lint` and the readme test pass.
+- R8-01 (round 8): settled; plants.md now links CI run 44556435164 (head 89648311, attempt 1), where all 77 Plants shards and the Plants verdict job passed.

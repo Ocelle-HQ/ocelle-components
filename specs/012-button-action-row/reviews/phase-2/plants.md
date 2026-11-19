@@ -52,4 +52,4 @@ evidence. Then a short phase 2 round 8 and landing checks."
   captures matching after the 10 regenerated `ocelle-button` baselines (notes.md, "Fix round 4").
 - `pnpm run gate:plants -- --affected 48cdc9584ab93373eff1544378e118f20eded10e` selects all 317 plants (shared gate
   source after the merges) and was not run locally.
-- Full evidence: the CI Plants run on the pushed head. Run link: _to be added after the push_.
+- Full evidence: the CI Plants run on the pushed head. Run link: https://github.com/Ocelle-HQ/ocelle-components/actions/runs/44556435164. All 77 Plants shards and the Plants verdict job passed on head 89648311, run 44556435164, attempt 1.

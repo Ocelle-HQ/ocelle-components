@@ -145,3 +145,23 @@ with the 519 s as a 171-story figure (landing round 2 R2-03, landing round 3). s
 (the Complexity Tracking row "Plant roots hold every repository story", planner commit 7802c723) gives the same
 figures: 519 s against the then 600 s limit at 171 stories, the 600 s time-out at 194 stories on run 44481594952 and
 the raise to 1200 s.
+
+CI record on the pushed head (T083; figures supplied by the orchestrator, none measured or estimated here):
+
+- Run: CI run 44556435164 (CI #156), https://github.com/Ocelle-HQ/ocelle-components/actions/runs/44556435164;
+  event `pull_request`, head **89648311** (89648311c0db43152ac59b97aeeaef3dd8c82c58), **attempt 1**, conclusion
+  success. All 149 jobs succeeded on attempt 1.
+- Unit tests job: **success**. Its `pnpm run gate:unit-tests` step took **2277 s** and printed `unit-tests: 7768 tests
+  passed in 233 files`, which includes `gates/test/integration/visual.test.ts` and the pin test
+  `gates/test/visual-timeout.test.ts`.
+- Whole-repository capture test's duration: **not available from the CI log**. The gate prints only the summary line
+  and the job uploads no report. The only upper bound is the 2277 s step, which runs every test, so it says nothing
+  about the 1140 s mark. Under the 1200 s limit a capture over 1200 s would have failed the job, and the job passed.
+  The local figure (T082, docker, notes.md) was 509 s; it is not a CI figure.
+- Visual regression job: success, 489 s wall.
+- Plants: the Plants plan job, 77 Plants shard jobs and the Plants verdict job, all success. Gate step
+  (`pnpm run gate:plants -- --shard`): slowest 616 s (shard 41), 1 shard at or over 570 s, total 25357 s (7.04
+  runner-hours). Shard job wall time: slowest 728 s (shard 41), 30 shards over 570 s, total 35558 s (9.88
+  runner-hours).
+- Mutation: the Mutation plan job and 52 Mutation shard jobs, all success; the slowest is `ocelle-button.ts:511-540`
+  at 2648 s against its 2700 s limit.
