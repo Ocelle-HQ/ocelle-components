@@ -132,3 +132,16 @@ T067 is ticked on the gate-step figure: every shard's gate step is under 570 s. 
 pending: the plant-design triage record (a plant design whose shard time does not grow with the story count; 012
 plan decision 15, landing review R1-09), together with the repository visual integration test's 519 s against its
 600 s limit (landing review R1-06).
+
+## Addendum, 2026-11-19 (phase 6 round 7, O7-01)
+
+The follow-up paragraph above is a record at 171 stories and stays as it is. At **194 stories** (388 story-themes) the
+repository visual integration test's whole-repository capture (`gates/test/integration/visual.test.ts:115`) timed out
+at its **600 s** limit on CI run 44481594952 (571a8ed5, attempt 1; Unit tests failed, 1 of 7765 tests), and passed on
+CI run 44298568583 (ac2d73a) at the same 194 stories. Phase 6 fix-4 raised that file's limit to **1200 s**
+(`const timeout = 1_200_000;`, pinned by `gates/test/visual-timeout.test.ts`; operator 2026-11-19, "1200 s, visual
+only"); `axe.test.ts` and `plants-robustness.test.ts` keep 600 s. The follow-up issue's text should give 194 stories,
+with the 519 s as a 171-story figure (landing round 2 R2-03, landing round 3). specs/006-storybook-workbench/plan.md
+(the Complexity Tracking row "Plant roots hold every repository story", planner commit 7802c723) gives the same
+figures: 519 s against the then 600 s limit at 171 stories, the 600 s time-out at 194 stories on run 44481594952 and
+the raise to 1200 s.

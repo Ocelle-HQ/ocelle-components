@@ -291,3 +291,51 @@ Documentation and comments only, no behaviour change, so no red commit (tasks.md
   error; `gate:lint` 446 files, no finding.
 - **R5-01, R5-02 (phase 6 round 5; landing round 3 R3-01)**: T073 to T077 ticked in tasks.md (their work is 265e819c);
   red-phase.log line 8's store path redacted to `<pnpm store>`, as ddb134c9 did in the check logs. Docs only.
+
+## Fix round 4 (operator round on the visual integration test's time limit: O7-01; tasks.md T078 to T082)
+
+Operator round recorded as phase 6 round 7 (round-7.md): CI run 44481594952 (571a8ed5, attempt 1) failed Unit tests on
+`gates/test/integration/visual.test.ts:115`, the whole-repository capture at 194 stories (388 story-themes) timing out
+at 600 s; run 44298568583 (ac2d73a) had passed it. The operator chose "Fold a limit raise", test-first, and then the
+value "1200 s, visual only (Recommended)". Resolutions: round-7-fixes.md.
+
+- **Red (T078, T079)**: gates/test/visual-timeout.test.ts (new, `gates` project) reads visual.test.ts as text: one
+  `const timeout = <number>;`, at least 1_200_000 and at most 1_800_000, and the `//` run directly above it naming
+  `44481594952`, `600 s`, `194 stories`, `388 story-themes`, `519 s`, `171 stories` and `R1-06`. Committed alone as
+  eb342bda, recorded by `red.sh 6 fix-4` (`"recorded": true`, exit 1; red-fix-4.log, the store path redacted to
+  `<pnpm store>`). Phase 6's red-commits held only `phase` (fix rounds 2 and 3 had no red commit), so the label is
+  `fix-4`. The two new failures are assertion failures: "expected 600000 to be greater than or equal to 1200000" and
+  the comment not containing `44481594952`. The single-declaration test passed at once (a positive; its mutant
+  proves it). The same red run also had four time-outs that are not this step's proof: visual.test.ts:115 at 600 s
+  (the defect itself, reproduced locally) and three plant-repo.test.ts tests at 5 s / 10 s; they ran while other
+  checks (`gates` project, typecheck, lint) loaded the machine, and all passed in the green full run below.
+- **Green (T080)**: visual.test.ts line 26 is now `const timeout = 1_200_000;`, with a comment above it: the limit is
+  shared by the file's tests; 519 s at 171 stories (landing round 1 R1-06); the time-out at 600 s at 194 stories
+  (388 story-themes) on run 44481594952, which 44298568583 passed; 1200 s is twice the limit that failed (round-7.md
+  O7-01, operator 2026-11-19); the growth stays with the plant-design triage follow-up (012 plan decision 15, R1-06,
+  R1-09). No other line and no test of the file changed.
+- **Why 1200 s**: the 600 s run was cut off, so 600 s is only a lower bound of the CI time at 194 stories; 1200 s is
+  twice it, holds to about 770 story-themes at the failed run's implied rate, and still fails a hung capture within
+  20 minutes. The pin allows 1200 s to 1800 s.
+- **Scope**: `gates/test/integration/axe.test.ts` and `gates/test/integration/plants-robustness.test.ts` keep their
+  `const timeout = 600_000;`: the operator's answer covers the visual test only, and they are named in the follow-up
+  issue with the plant-design triage. Plants shard 41's 624 s (round 7) also stays with that follow-up.
+- **Places that cite the limit**: visual.test.ts (changed, T080); specs/006-storybook-workbench/plan.md, the Complexity
+  Tracking row "Plant roots hold every repository story" (changed by the planner at 7802c723, not here; checked for
+  T081: it gives 519 s against the then 600 s limit at 171 stories, the time-out at 600 s at 194 stories on run
+  44481594952 and the raise to 1200 s, the same figures); reviews/phase-6/ci-run.md (the 171-story paragraph and the
+  operator's verbatim "519/600 s" kept, a dated addendum added, T081); tasks.md's verbatim answer and done T069, and
+  the review records, kept; gates/README.md and the other docs do not cite the limit.
+- **T082 mutants**: four hand-applied mutants (900_000, 3_600_000, the comment without the run id, a second
+  declaration), each failing the pin test and reverted: plants.md § Fix round 4. The phase's plant run
+  (`--affected` the phase base) selects all 317 plants; it was not rerun locally, since fix-4 changes no gate source,
+  plant or gate input (plants.md § Fix round 4).
+- **T082 local visual run** (a local figure, not a CI one): `pnpm vitest run --project gates-integration
+  gates/test/integration/visual.test.ts`, alone, under docker, on 2026-11-19: 11 tests passed, 1868 s wall. The
+  whole-repository capture test (line 115) at 194 stories took **509 s**, under the 1140 s stop-and-ask mark. The
+  other long tests: the differs/missing-baseline test 482 s, the baseline command's "writes nothing on an unchanged
+  tree" 580 s (near the old 600 s too, now under 1200 s), the capture freshness test 275 s.
+- **T082 checks**: `pnpm test` **7768 tests passed in 233 files** (2486 s wall); `pnpm vitest run --project gates`
+  2365 tests passed in 67 files; `gate:typecheck` no type error; `gate:lint` 447 files, no finding; `gate:test-lint`
+  328 files, no finding.
+- **T083** (the CI record on the pushed head) is open: it needs the orchestrator's push and figures.

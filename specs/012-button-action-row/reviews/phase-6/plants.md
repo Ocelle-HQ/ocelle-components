@@ -42,3 +42,28 @@ several variants (forced colours with both palettes, the restyled rules in both 
   - Its result with them added is in notes.md, under the run of all 76 shards.
 - The manifest plants' committed-manifest copies were regenerated from the new manifest with each plant's own defect
   reapplied (notes.md, Green notes). Their shards are in the 76-shard run.
+
+## Fix round 4 (O7-01; tasks.md T082): mutants of the visual integration tests' time limit
+
+**Method.** Each mutant was applied alone by hand to `gates/test/integration/visual.test.ts` (the green change of
+T080 in the working tree), then the pin test ran once:
+
+```
+pnpm vitest run --project gates gates/test/visual-timeout.test.ts
+```
+
+Without a mutant it passes (3 tests). After each run the file was restored from a copy of the green file and compared
+with it (identical). Run on 2026-11-19 on top of eb342bda (the fix-4 red commit). Every mutant made the test fail.
+
+| Mutant | Change | Result | Failing assertion |
+|--------|--------|--------|-------------------|
+| below the floor (the operator's example) | `const timeout = 900_000;` | 1 failed, 2 passed | "is at least 1200 s and at most 1800 s": expected 900000 to be greater than or equal to 1200000 |
+| above the ceiling | `const timeout = 3_600_000;` | 1 failed, 2 passed | "is at least 1200 s and at most 1800 s": expected 3600000 to be less than or equal to 1800000 |
+| run id missing from the comment | the comment's `44481594952` replaced by `(the failed run)` | 1 failed, 2 passed | "gives its reason and measurements in the comment directly above it": expected '…' to contain '44481594952' |
+| a second declaration | a second `const timeout = 1_200_000;` line under the first | 1 failed, 2 passed | "is declared exactly once, as a numeric literal": expected [ 30, 31 ] to have a length of 1 but got 2 |
+
+**The plant run of the phase.** `pnpm run gate:plants -- --affected 89a1369c0e2d4ee15eb9ec2598b211fd99ba4809 --list`
+prints "affected: every plant, by gates/bin/plants.ts (shared gate source)" and "317 of 317 plants selected" (the
+shared gate source changed since the phase base, earlier in the phase). Fix-4 changes two test files and no gate source, plant or
+gate input, so no plant can judge it differently; the 77-shard run (about 7 runner-hours of gate step on CI) was not
+repeated locally. The plant gate on CI runs on the pushed head (T083).

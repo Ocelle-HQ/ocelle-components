@@ -23,7 +23,12 @@ import type { Ran } from "./workspace.ts";
 // here has CI and GITHUB_ACTIONS removed from its environment (the CI rule has its own test) and no
 // OCELLE_VISUAL_ENGINE, so the engine is `auto`, docker here. The animation control drives the host browser
 // (OCELLE_CHROMIUM_PATH locally) on the plant story pass-animation-and-caret.
-const timeout = 600_000;
+// The time limit is shared by the file's tests. The whole-repository capture grows with every story: it took 519 s at
+// 171 stories (landing round 1 R1-06), and at 194 stories (388 story-themes) it timed out at the 600 s limit on CI run
+// 44481594952, where run 44298568583 had passed it. 1200 s is twice the limit that failed (012
+// reviews/phase-6/round-7.md O7-01, operator 2026-11-19); gates/test/visual-timeout.test.ts pins it. The growth itself
+// stays with the plant-design triage follow-up (012 plan decision 15, R1-06, R1-09).
+const timeout = 1_200_000;
 const empty = join(repo, "gates/test/fixtures/plant-repo/empty-plant");
 const plantsDir = join(repo, "gates/plants/visual");
 const docker = "only: no cross-engine comparison)";
