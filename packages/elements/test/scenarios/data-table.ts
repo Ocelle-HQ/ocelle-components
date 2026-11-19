@@ -602,6 +602,47 @@ const us1: DataTableScenario[] = [
     expected: { fitsFirst: { tabindex: null, role: null, "aria-label": null }, after: { tabindex: "0", role: "group", "aria-label": "Work packages" }, overflows: true },
   },
   {
+    // Q-M2 (a), T085 (contracts/ocelle-data-table.md § Behaviour, Assignment; FR-003). Plant: connectedCallback that
+    // observes again but neither re-assigns the slot nor requests an update.
+    name: "US1-15 (re-attach, Q-M2): a fitting table replaced, while the element is detached, by one that overflows is shown once the element is attached again: the slot assigns exactly the new table, laid out inside the track, the box a tab stop and a group named by the new caption; paired with the same replacement made while attached",
+    run: async (driver) => {
+      await page(driver, `${dt("d", "", usTable("d-t", { ident: false }))}${dt("a", "", usTable("a-t", { ident: false }))}`, 320);
+      const fitsFirst = { d: await boxAttributes(driver, "d"), a: await boxAttributes(driver, "a") };
+      const replacement = (p: string): string => `<table id="${p}-n"><caption id="${p}-ncap">Open work packages</caption><tbody><tr><td>${identifier}</td><td>${identifier}</td></tr></tbody></table>`;
+      await driver.module(
+        `const host = document.getElementById("d");
+const parent = host.parentNode;
+host.remove();
+const template = document.createElement("template");
+template.innerHTML = ${JSON.stringify(replacement("d"))};
+host.querySelector(":scope > table").replaceWith(template.content);
+parent.append(host);`,
+      );
+      await driver.settle();
+      await driver.replace("a-t", replacement("a"));
+      await driver.settle();
+      const shown = (id: string): Promise<unknown> =>
+        evaluate(
+          driver,
+          `const root = document.getElementById(${JSON.stringify(id)}).shadowRoot;
+const box = root.querySelector(".region-box");
+const track = root.querySelector(".region-track").getBoundingClientRect();
+const table = document.getElementById(${JSON.stringify(`${id}-n`)}).getBoundingClientRect();
+return { assigned: root.querySelector("slot").assignedNodes().map((node) => node.id),
+  sized: table.width > 0 && table.height > 0,
+  inside: table.left >= track.left - 0.5 && table.right <= track.right + 0.5 && table.top >= track.top - 0.5 && table.bottom <= track.bottom + 0.5,
+  overflows: box.scrollWidth - box.clientWidth > 1,
+  tabindex: box.getAttribute("tabindex"), role: box.getAttribute("role"), name: box.getAttribute("aria-label") };`,
+        );
+      return { fitsFirst, detached: await shown("d"), attached: await shown("a") };
+    },
+    expected: {
+      fitsFirst: { d: { tabindex: null, role: null, "aria-label": null }, a: { tabindex: null, role: null, "aria-label": null } },
+      detached: { assigned: ["d-n"], sized: true, inside: true, overflows: true, tabindex: "0", role: "group", name: "Open work packages" },
+      attached: { assigned: ["a-n"], sized: true, inside: true, overflows: true, tabindex: "0", role: "group", name: "Open work packages" },
+    },
+  },
+  {
     name: "US1-16 (characterData): the caption's text node edited with text renames the overflowing region",
     run: async (driver) => {
       await page(driver, dt("dt", "", usTable("t")), 320);
