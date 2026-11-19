@@ -118,10 +118,12 @@ export class OcelleDataTable extends LitElement {
    */
   declare striped: boolean | undefined;
 
-  readonly #region = new OverflowRegion(this, {
+  // Typed explicitly: the initializer refers to `this`, and Stryker's type checker otherwise sees a circular inference
+  // in every mutant of this file and reports each as a compile error (T025).
+  readonly #region: OverflowRegion = new OverflowRegion(this, {
     box: () => this.renderRoot.querySelector<HTMLElement>(".region-box"),
     blockAxis: () => this.stickyHeader === true,
-    blockStartBox: () => this.#table()?.querySelector(":scope > thead") ?? null,
+    blockStartBox: (): Element | null => this.#table()?.querySelector(":scope > thead") ?? null,
   });
 
   /** The element's own per-instance sheet: the caption cap's measured figures on `.region-track`, px only. */
