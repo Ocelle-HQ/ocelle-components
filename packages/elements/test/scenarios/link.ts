@@ -539,11 +539,16 @@ export const linkScenarios: readonly LinkScenario[] = [
   ),
   {
     // Plants: `forced-color-adjust: none` on the anchor with the token colour kept; the underline removed in forced
-    // colours; the ring in a token colour, or removed, in forced colours.
+    // colours; the ring removed in forced colours. The ring's `outline-color: Highlight` swapped for the token colour
+    // alone does not bite: it is equivalent in Chromium, which forces an author outline colour to the system colour in
+    // forced colours unless `forced-color-adjust: none` is set (reviews/phase-6/plants.md, T115).
     name: "US5-7: in forced colours the link with and without href is drawn in the system LinkText colour, underlined, and its keyboard focus ring is visible in Highlight on both sides of the fragment, read from pixels",
     fixtureOnly: false,
     run: async (driver, inPage) => {
-      await mount(driver, inPage, page(""));
+      // The link is spaced from its neighbours, so their glyphs sit clear of the ring band and the ring samples 3.5 px
+      // out do not depend on how the machine antialiases text: with subpixel text (CI) the coloured fringe of the "e"
+      // in "See " moved the left sample under the translucent Highlight ring (landing L1-01, O3-01).
+      await mount(driver, inPage, page(""), "#link { margin-inline: 0.75em; }");
       await driver.hoverTarget("before");
       await driver.forcedColors("active", "light");
       const linkText = await driver.resolveColour("LinkText");
