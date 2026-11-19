@@ -115,8 +115,9 @@ the roving keys skip it (R-04) and Tab does not reach it, so a focused child tha
 SPEC-3-02). A `mousedown` on a disabled child has its default prevented, so a click neither focuses nor selects it.
 Focus moves with `child.focus({ focusVisible: true })` (focus ring on keyboard moves) and the ring is drawn from the
 focus tokens on a raised `:host(:focus-visible)::after` of the option, tab or segment (R-06, R-15; FR-007). The listbox
-writes the tab stop as soon as it connects, not in its first deferred update, and keeps it current afterwards, so a
-container that picks focus at load (an `ocelle-dialog` open at load, 008 FR-007) finds it (phase 7 operator decision 2).
+writes the roving tabindex when it connects and renders its shadow list and slot then too (its first update runs at
+connect, not deferred), so its options are slotted and rendered and a container that picks focus at load (an
+`ocelle-dialog` open at load, 008 FR-007) can focus the tab stop (phase 7 operator decision 2).
 
 **Focus record** (PLAN-CORRECTNESS-1-004, PLAN-FRESH-2-001, PLAN-FRESH-3-001). Chromium blurs a focused element
 synchronously when it is removed or moved (a move is remove + insert); by the time a batch (R-05) runs,
@@ -695,7 +696,8 @@ listbox with `gamma` selected and Cancel and Open in its footer. 008's stand-in 
 `elements-ocelle-dialog--open-project` stays. Because both elements exist, the story is the unit under test: the
 landing's red commit holds only its story test, and the story, its baselines (under docker) and the union counts follow
 in green (T114). It adds no axe exception. On the dialog's first open focus lands on `gamma`, the listbox's tab stop;
-that needs the listbox to write its tab stop when it connects (R-03; phase 7 operator decision 2, a test-first fix in
+that needs the listbox to render its shadow list and slot when it connects, so its options can take focus (R-03;
+phase 7 operator decision 2, a test-first fix in
 `ocelle-listbox` under the same fix-2 red set; 008's dialog code is unchanged).
 
 **Recheck.** Phase 1's first task first merges `origin/main` (`3828d2f` or later) into the branch as a recorded merge
