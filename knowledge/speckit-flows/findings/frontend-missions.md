@@ -188,6 +188,8 @@ pitfalls up front. Each entry names where it was found. New entries are added as
   the Storybook setup loads every story. The run exits 2, and the TDD check reads that as red.
 - **009 O3-01**: a story that sets `scrollLeft` once after `updateComplete` captures the wrong position when the content grows later (fonts, late layout). The visual baselines then record the bug. Re-apply the position from a `ResizeObserver` on the box and its track, and test it by growing the content after the first position.
 - **009 L1-01, R6-01**: an element that measures its own intrinsic sizes must skip measuring while it has no box (`getClientRects().length === 0`: a closed `<dialog>`, a `display: none` ancestor, a `hidden` host). It must then measure once it becomes rendered, not only if a pass was skipped. A `MutationObserver` that does not watch attributes misses a class swap made while hidden. Test every hidden route against a twin that was rendered from the start.
+- **012 O3-01, O6-01**: a slot convention that lines up an icon with a label must be measured on labelled and icon-only controls at every size before it is committed. `align-self: baseline` on the label fixed labelled rows (−6.19 px → 0) and moved icon-only rows by 11 to 17 px. Scope the rule to rows that have a label (`.icon-row:not(.bare)`) and plant the icon-only case.
+- **012 phase 3, plan decision 32**: `:state(pressed)` belongs to button mode only. A link has no pressed state, so a shared control base must set pressed per mode and test both.
 
 # Candidates for a frontend profile or lens
 
