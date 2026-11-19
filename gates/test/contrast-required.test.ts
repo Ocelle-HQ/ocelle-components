@@ -4,9 +4,10 @@ import { requiredPairs } from "../lib/token-source.ts";
 import type { RequiredPair } from "../lib/token-source.ts";
 
 // The required pair set (002 FR-016, spec Appendix A.8, research.md R-07, PLAN-TESTABILITY-1-002): derived from the
-// intended grounds of the real token source, it must equal A.8 as transcribed by hand below, 158 (fg, bg, kind)
-// triples per theme. Removing a ground from source.ts, or a mutant doing so, fails this test even though the gate
-// would still pass on a pair list that lacks the pair.
+// intended grounds of the real token source, it must equal A.8 as transcribed by hand below, with the rows 011
+// research.md R-12 and 012 research.md R-08 add, 196 (fg, bg, kind) triples per theme. Removing a ground from
+// source.ts, or a mutant doing so, fails this test even though the gate would still pass on a pair list that lacks the
+// pair.
 const main = ["color-canvas", "color-sheet", "color-pane", "color-panel", "color-inspector", "color-rail", "color-inset", "color-accent-low", "color-hover-bg"];
 const stateGrounds = ["color-danger-bg", "color-warning-bg", "color-success-bg", "color-info-bg", "color-neutral-bg"];
 
@@ -45,6 +46,15 @@ const a8: readonly (readonly [readonly string[], "text" | "non-text", readonly s
   [["color-control-border"], "non-text", ["color-canvas", "color-sheet", "color-pane", "color-panel", "color-inspector", "color-rail"]],
   [["color-accent-strong"], "non-text", ["color-accent-low", "color-inset", "color-hover-bg"]],
   [["color-accent-strong"], "non-text", stateGrounds],
+  // 012 research.md R-08, items 1, 3, 4a and 5 (the action controls' grounds and states).
+  [["color-ink"], "text", [...stateGrounds, "color-active-bg"]],
+  [["color-hover-border"], "non-text", [...main, ...stateGrounds, "color-active-bg"]],
+  [["color-on-accent"], "text", ["color-accent-hover"]],
+  [["color-chrome-ink"], "text", ["color-chrome-active"]],
+  [["color-disabled-ink"], "text", ["color-chrome", "color-chrome-hover"]],
+  [["color-accent-strong"], "non-text", ["color-canvas", "color-sheet", "color-pane", "color-panel", "color-inspector", "color-rail", "color-chrome", "color-chrome-hover"]],
+  // 012 research.md R-08 item 2 (phase 5): the action row's description and tags ink on the state grounds.
+  [["color-ink-soft"], "text", stateGrounds],
 ];
 
 function triples(pairs: readonly { fg: string; bg: string; kind: string }[]): string[] {
@@ -56,19 +66,19 @@ const expected = triples(a8.flatMap(([fgs, kind, grounds]) => fgs.flatMap((fg) =
 describe("requiredPairs on the real token source (spec A.8)", () => {
   const inTheme = (theme: string): RequiredPair[] => requiredPairs(source).filter((pair) => pair.theme === theme);
 
-  it("is the 158 triples of A.8 in light", () => {
-    expect(expected).toHaveLength(158);
+  it("is the 196 triples of A.8, 011 R-12 and 012 R-08 in light", () => {
+    expect(expected).toHaveLength(196);
     expect(triples(inTheme("light"))).toEqual(expected);
   });
 
-  it("is the 158 triples of A.8 in dark", () => {
+  it("is the 196 triples of A.8, 011 R-12 and 012 R-08 in dark", () => {
     expect(triples(inTheme("dark"))).toEqual(expected);
   });
 
-  it("holds 316 pairs, each once", () => {
+  it("holds 392 pairs, each once", () => {
     const required = requiredPairs(source);
-    expect(new Set(required.map((pair) => `${pair.theme} ${pair.fg} ${pair.bg} ${pair.kind}`)).size).toBe(316);
-    expect(required).toHaveLength(316);
+    expect(new Set(required.map((pair) => `${pair.theme} ${pair.fg} ${pair.bg} ${pair.kind}`)).size).toBe(392);
+    expect(required).toHaveLength(392);
   });
 });
 

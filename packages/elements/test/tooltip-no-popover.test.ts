@@ -21,7 +21,7 @@ describe("ocelle-tooltip without the Popover API, in process (R-10)", () => {
     await Promise.race([customElements.whenDefined("ocelle-tooltip"), pause(1000)]);
     await start(driver, page());
     await track(driver);
-    await driver.hover("trg");
+    await driver.inputHover("trg");
     await pause(450);
     await tabFrom(driver);
     const f = await frames(driver);

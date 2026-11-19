@@ -1,0 +1,135 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: testability
+findings:
+  - id: PLAN-TESTABILITY-1-001
+    severity: 3
+    title: "Link-mode activation logic is tested only on the unmutated fixture harness, so its mutants are NoCoverage, and the in-process plan cannot run a navigating click"
+    evidence:
+      - artifact: "contracts/checks.md § Package tests: `test/browser/button.test.ts`, `test/browser/action-row.test.ts` | `elements-browser` | \"navigation, new-tab and modifier-click scenarios\"; § Test harness: \"Navigation is observable only on the fixture harness; in-process link scenarios assert the click's `defaultPrevented` instead (R-11)\""
+      - artifact: "research.md § R-11: \"link scenarios run on the fixture harness only (...) and the in-process run asserts `defaultPrevented` of the click event instead\"; § R-06: the row's listener \"in link mode (...) ignores clicks with `ctrlKey`, `metaKey`, `shiftKey` or `altKey` and dispatches nothing for `auxclick`\""
+      - code: "stryker.elements.config.json + vitest.mutation.elements.config.ts:6-8: Stryker runs only the `elements` project (in-process); `elements-browser` is never run under mutation"
+      - code: "gates/lib/mutation/report.ts:71: `const surviving = new Set([\"Survived\", \"NoCoverage\"])` (a NoCoverage mutant on a changed line fails the gate)"
+      - code: "packages/elements/test/in-process.ts:66-71: `mount` replaces `document.body.innerHTML` of the Vitest tester iframe; nothing intercepts navigation, so a plain click on an available inner `<a href>` navigates the tester iframe away, and a Ctrl/Meta/Shift or middle click opens a page in the runner's browser context"
+      - code: "packages/elements/test/scenarios/slot.ts:5: shared bodies return an observation and \"each harness asserts the observation equals `expected`\"; eslint.test.config.ts:27 `vitest/no-conditional-expect: error`"
+    claim: |
+      The code that decides link-row activation (the modifier test on ctrlKey/metaKey/shiftKey/altKey, the auxclick
+      handling of the guard, "event first, then preventDefault on the originating click when a listener cancelled")
+      lives in src/ and is mutated only by in-process tests. The plan puts the modifier and middle-click scenarios on
+      the fixture harness, which Stryker never runs, so those mutants are NoCoverage and the mutation gate fails, or
+      the pressure lands on recording them away. The plan's in-process substitute ("assert the click's
+      defaultPrevented") is not workable as written: the positive half (an available link row clicked, nobody
+      prevents) actually navigates the Vitest iframe and kills the run, and the shared-body pattern cannot hold
+      "navigation on one harness, defaultPrevented on the other" without a harness-conditional assertion, which
+      test-lint rejects. A test that is fixture-only also cannot be the evidence for in-process mutants.
+    remedies:
+      - "Plan and contracts/checks.md: the in-process driver gets a navigation sink, a last-in-line bubble listener on `window` for `click` and `auxclick` that records `defaultPrevented`, `button`, the modifier flags and the anchor's `href` and only then calls `preventDefault()`; the link scenarios (US2-1, US2-3, US3-8, US5-1, US5-2, US5-6, decision 7's Alt-click) run in-process as their own bodies asserting the recorded click outcome and the event record, and the fixture bodies assert real navigation and new tabs for the same cases; state which mutants each set kills and that every line of the modifier test, the auxclick guard and the cancel-navigation path is covered in-process."
+  - id: PLAN-TESTABILITY-1-002
+    severity: 3
+    title: "The planned disabled link (an `<a>` without href) lets the click reach bubble-phase listeners; the guard does not cover it, so US2-3's planned test is red at green"
+    evidence:
+      - artifact: "data-model.md § States: \"disabled (button only) | out | (...) `<a role=\\\"link\\\" aria-disabled=\\\"true\\\">` without `href` | not activated: native (button) or no target (link)\"; \"unavailable | (...) guard calls `preventDefault()` and `stopImmediatePropagation()`\" (guard limited to unavailable); research.md § R-06: \"disabled link mode has no `href` (R-02)\""
+      - artifact: "spec US2-3: \"a click is not activated (no navigation, no `click` reaching a bubble-phase listener on the element or its ancestors)\"; FR-003"
+      - code: "probe (Playwright 1.64.1, Chromium 153 at OCELLE_CHROMIUM_PATH, scratchpad q.mjs): host with open shadow root holding `<a role=link aria-disabled=true>Go</a>`, bubble listeners on host and document, `locator.click({ force: true })` → listeners saw `['host', 'doc']`; a middle click fired no `click`"
+    claim: |
+      Removing href stops navigation but not the click event: it is dispatched on the inner `<a>`, is composed, and
+      reaches the host and document bubble listeners. The data model routes disabled link mode to "no target" and
+      keeps the guard for the unavailable state only, so the force-clicked US2-3 test (which the plan correctly
+      plans with `force: true`) fails against the planned design, and a later "fix" could easily weaken the
+      assertion to "no navigation" instead. The design and its test must agree before tasks are cut.
+    remedies:
+      - "data-model.md § States and research.md R-06: the guard runs for every state that is not available (disabled link as well as unavailable): `click` and `auxclick` on a disabled link are stopped with `stopImmediatePropagation()` (and `preventDefault()`); US2-3's planned body keeps the bubble-recorder assertion on element, ancestors, document and window, paired with the enabled link's recorded click, and plants.md names the plant \"guard limited to unavailable\"."
+  - id: PLAN-TESTABILITY-1-003
+    severity: 3
+    title: "\"On each main and state ground\" border selection has no input in the element's interface, so US1-5, FR-018 and FR-042 cannot be written as tests"
+    evidence:
+      - artifact: "spec US1-5: \"a visible border from `--ocelle-color-control-border` (or `--ocelle-color-accent-strong` on `accent-low`, `inset`, `hover-bg` and the state grounds)\"; FR-018, FR-042 (same rule for the row)"
+      - artifact: "research.md § R-08 4: \"`secondary` (...) border `--ocelle-color-control-border` (or `color-accent-strong` on `accent-low`, `inset`, `hover-bg` and the state grounds, #5 rule 1)\"; data-model.md lists no `ground` property and no contextual token for either element; contracts/elements-package.md: \"CSS custom properties | none\""
+      - code: "packages/elements/src/ocelle-brand-mark.ts:22,62: the existing precedent is an explicit reflected `ground` attribute; packages/tokens/src/source.ts:50-71 defines `color-control-border` and `color-accent-strong` as separate tokens with no context-dependent alias"
+    claim: |
+      An element cannot see the colour of the ancestor it sits on. With no `ground` attribute, no contextual token
+      and no base-style hook in the plan, a test cannot state its Given ("rendered on accent-low"), and the only
+      implementations that would pass a test written today are a hidden mechanism the plan never names or always
+      using one border token, which makes the per-ground scenario vacuous (passes whatever the ground). The expected
+      values of US1-5, FR-018's per-ground pairs and FR-042's row-border pairs cannot be written by hand red-first.
+    remedies:
+      - "Fork A: add a reflected `ground` attribute to both elements (values `accent-low`, `inset`, `hover-bg`, `state`; absent = main grounds) selecting `--ocelle-color-accent-strong`, as ocelle-brand-mark does; tests mount each ground with the attribute and assert the computed border colour per ground, with a plant that ignores the attribute."
+      - "Fork B: add a token `--ocelle-color-control-boundary` (default `var(--ocelle-color-control-border)`) that `@ocelle/styles` base.css redefines to `accent-strong` on documented ground hooks (classes or attributes for accent-low, inset, hover-bg and state grounds); the elements read only that token; tests mount the button inside each ground hook and assert the computed border, with a plant that reads `control-border` directly."
+      - "Fork C: drop the per-ground choice: bordered variants and default rows always use `--ocelle-color-accent-strong` (R-08 already adds it to the six main grounds); the spec text of US1-5, FR-018 and FR-042 changes accordingly and the test asserts the single token on every ground."
+  - id: PLAN-TESTABILITY-1-004
+    severity: 3
+    title: "Edge cases and plan decisions 6, 7 and 10 are behaviours with no planned test, so they cannot be red first and their mutants have no killer"
+    evidence:
+      - artifact: "contracts/checks.md § Package tests: scenario files prove \"every acceptance scenario of US1 to US5 once\"; `test/control.test.ts` covers \"mode decision table (...), attribute move and clearing, reference resolution (document, shadow root, missing ids, order), name order, guard\"; SC-001 covers acceptance scenarios only"
+      - artifact: "spec § Edge Cases: \"Both `disabled` and `busy` (...) shows no spinner\"; \"`busy` removed while the pointer is down\"; \"`current` on a button-mode row (...) reports `aria-current`\"; \"Long button label (...) never truncated or clipped\"; \"Row with an icon and an empty title (...) keeps its minimum block size\"; \"`unavailable` and `current` together\"; \"A row with `busy` and `unavailable` (...) no event\"; \"Unknown `variant`, `size`, `layout` or `presentation` value\"; \"The referenced element is added after the host's attribute was set (...) not picked up\"; \"Empty label and no icon (...) axe reports it\""
+      - artifact: "plan.md § Decisions 6 (busy link and unavailable link row keep `href`), 7 (\"Alt-click on an available link row counts as a modifier click\"), 10 (\"the current bar stays drawn (in disabled ink)\"); spec US5-2 lists only Ctrl, Meta and Shift"
+    claim: |
+      Each of these is element behaviour that the implementation must encode (a `disabled` check before the spinner,
+      `altKey` in the modifier test, the disabled-ink bar rule, the rendered absence of `href` for `javascript:`,
+      the empty-title minimum height, the axe result for an unnamed control). None is mapped to a scenario file or a
+      phase's red commit, so Principle VIII's red-first step cannot happen for them, and the matching mutants (for
+      example removing `|| event.altKey`, or the `disabled` short-circuit before the spinner) will survive or be
+      argued equivalent at review time. The edge "axe reports it" is an assertion that axe finds a violation, which
+      the harness's "no serious or critical" axe check would need to invert explicitly.
+    remedies:
+      - "contracts/checks.md gains an \"Edge cases and plan decisions\" table mapping every spec edge case and plan decisions 6, 7 and 10 to a phase, a scenario file and an observable (e.g. disabled+busy: no spinner box and not in tabOrder; Alt-click: no event recorded and click not prevented; unavailable+current: bar computed colour equals `--ocelle-color-disabled-ink`; `javascript:` href: inner `<a>` has no `href` attribute; unnamed control: axe returns `button-name`/`link-name`), each written in that phase's red commit with its plant; a decision that is documentation only (decision 6's context menu) says so."
+  - id: PLAN-TESTABILITY-1-005
+    severity: 2
+    title: "The harness extension has no hover, pointer-down or shadow-part computed style, which hover, active and forced-colours scenarios need"
+    evidence:
+      - artifact: "contracts/checks.md § Test harness: `Driver` gains `focus`, `press`, `click`, `tabOrder`, `activeInner`, `events`/`takeEvents`, `preventNext`, `reducedMotion`, `axe`, `ax`, `current` (no hover, no pointer down/up, no inner-part style)"
+      - artifact: "spec US1-11 (\"enabled, disabled, focused and hovered\"), US1-13 (hover surface), US4-8, US5-4, US5-7 (hover), FR-018 (\"enabled, hover, active, focus, disabled, busy\" pairs), FR-019 (active state), edge case \"`busy` removed while the pointer is down\"; FR-052 \"Tab, Shift+Tab\""
+      - code: "packages/elements/test/scenarios/driver.ts: `computed(id, property)` reads the host only; packages/elements/test/in-process.ts:151 `getComputedStyle(element(id))`; `box(id, inner?)` is the only method taking a shadow selector"
+    claim: |
+      The border, background and colour that every hover, active and forced-colours scenario asserts are on the inner
+      `<button>`/`<a>` (part `control`), not on the host; the existing `computed` cannot read them, and there is no
+      way to hold a pointer over or down on the control. `tabOrder()` walks Tab forwards only, so Shift+Tab is
+      untested. Phase 1 is the planned red-first home of driver methods; adding them ad hoc in later phases skips
+      their own red-first unit tests on plain pages.
+    remedies:
+      - "contracts/checks.md and R-11: add `hover(id, { inner? })`, `pointerDown(id)`/`pointerUp(id)` (Playwright mouse down/up at the control's centre, with `force`), `computed(id, property, inner?)` reading a shadow-root selector, and `tabOrder({ reverse: true })` for Shift+Tab, each with a phase 1 unit test on a plain page pairing a hovered and an unhovered (pressed and unpressed) native button whose `:hover`/`:active` rule changes a computed colour."
+  - id: PLAN-TESTABILITY-1-006
+    severity: 2
+    title: "The event recorder does not record target, listener node or dispatch identity, so \"exactly one\", \"target is the host\" and \"dispatched from the element\" are not assertable"
+    evidence:
+      - artifact: "contracts/checks.md § Test harness: `events(id, types)` / `takeEvents()` \"bubble-phase recorder on element, ancestors, `document`, `window`: type, bubbles, composed, cancelable, defaultPrevented, detail\""
+      - artifact: "spec US1-2: \"one `click` event whose target is the `ocelle-button` element\"; US4-1: \"exactly one `ocelle-action-row-activate` event is dispatched from the element\"; US4-10: \"the event is dispatched exactly once\""
+    claim: |
+      With listeners on four or more nodes, one dispatch yields several records and two dispatches yield twice as
+      many; without the listener node and an event identity, a test cannot tell "one event seen everywhere" from
+      "two events", and without `target` it cannot tell a click retargeted to the host from one dispatched on
+      something else (or an activate event dispatched from the inner control rather than the host). Tests would
+      then assert a magic record count, which a regression in listener placement changes silently.
+    remedies:
+      - "Each record carries `at` (element, an ancestor id, `document`, `window`), `target` (the id or local name as seen at that listener), `isTrusted` and a per-dispatch serial (the same Event object gets one serial); the harness unit tests in phase 1 include a plain-page case with two dispatches and assert two serials, and US1-2, US4-1 and US4-10 assert one serial with `target` equal to the host at every listener."
+  - id: PLAN-TESTABILITY-1-007
+    severity: 2
+    title: "Forced-colours outcomes have no expected values, and the button text colour cannot be told from body text"
+    evidence:
+      - artifact: "spec US1-11 (\"visible in system colours\"), US3-7 (\"in the control's system text colour\"), US4-8 (\"keeps a visible system-colour border\", flush hover \"visible in a system colour\"), US5-4 (bar \"visible in a system colour\"), FR-041; research.md and data-model.md name no system colour per state (only `GrayText` for disabled/unavailable and `currentColor` for the spinner)"
+      - code: "specs/005-icons-brand-mark/reviews/plan/round-1/lens-testability.yaml:94 (probe, Chromium emulated forced colours): ButtonText equals CanvasText in both palettes (rgb(0,0,0) light, rgb(255,255,255) dark); only LinkText and GrayText differ"
+    claim: |
+      "Visible in a system colour" is not an observable a test can compare against a hand-written expected value.
+      In forced colours Chromium replaces author backgrounds, so the hover surface and the current surface vanish
+      unless the design states what carries them (a Highlight border or outline, `forced-color-adjust`), and the
+      plan does not say. And because ButtonText equals CanvasText, a spinner or label painted `CanvasText` instead of
+      the control's colour passes US3-7 and US1-11; those checks can only fail on a link (LinkText) or a disabled
+      control (GrayText).
+    remedies:
+      - "research.md gains a forced-colours table per element and state (enabled, hover, active, focus, disabled/unavailable, busy, current) naming the property and system keyword (e.g. hover: `outline-color: Highlight`; current bar: `background: Highlight` with `forced-color-adjust: none` on the bar; focus: `Highlight`; disabled: `GrayText`); scenarios assert computed values equal `resolveColour(<keyword>)`, and the spinner/label colour scenarios run on a link-mode button (LinkText) and a disabled one (GrayText) so a wrong keyword is distinguishable."
+  - id: PLAN-TESTABILITY-1-008
+    severity: 2
+    title: "The element tests' axe run uses \"006's rule set\", which does not exist on this branch"
+    evidence:
+      - artifact: "research.md § R-11: \"`axe(scope?)`: runs axe-core in the page with 006's rule set and returns serious and critical violations and incomplete results\""
+      - code: "git show origin/claude/010-storybook-workbench:gates/lib/axe-rules.ts: the selection is default rules + wcag2a/2aa/21a/21aa/22aa tags, less `experimental` and the eight harness-document rules (`bypass`, `document-title`, `html-has-lang`, `html-lang-valid`, `html-xml-lang-mismatch`, `landmark-one-main`, `page-has-heading-one`, `region`); `git ls-files gates/lib | grep axe` on this branch: none"
+    claim: |
+      Phase 1 cannot import a module that is not on main, so the harness either copies the selection (two sources
+      that can drift silently before and after #10 lands) or runs axe's defaults, in which case `region`,
+      `landmark-one-main` and `page-has-heading-one` fire on every Vitest and fixture page and the "no serious or
+      critical" assertion becomes noise or gets an ad hoc exclusion list. Neither is stated, and the rule set a test
+      runs is part of what makes its axe assertion able to fail.
+    remedies:
+      - "R-11 and contracts/checks.md: the harness defines its rule selection in one test module with 006's exact semantics and list, pinned by a phase 1 unit test (a page with an unnamed button gives `button-name`; a page with no landmark gives no `region` result); phase 7 replaces it with an import of `gates/lib/axe-rules.ts` once #10 is on main and deletes the copy, as a listed task."

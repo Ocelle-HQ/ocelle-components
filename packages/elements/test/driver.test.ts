@@ -156,14 +156,14 @@ describe("the in-process driver", () => {
     ]);
   });
 
-  it("focus(target) focuses a light-DOM and a shadow target by script, matching :focus-visible after keyboard input and not after a pointer click", async () => {
+  it("focusTarget(target) focuses a light-DOM and a shadow target by script, matching :focus-visible after keyboard input and not after a pointer click", async () => {
     await driver.mount('<button id="a" type="button">A</button><button id="b" type="button">B</button><driver-host id="h"></driver-host>');
     document.getElementById("a")?.focus();
     await driver.chord("Tab");
-    await driver.focus({ id: "h", inner: ".inner" });
+    await driver.focusTarget({ id: "h", inner: ".inner" });
     const afterKeys = { active: await driver.deepActive(), visible: document.getElementById("h")?.shadowRoot?.activeElement?.matches(":focus-visible") };
     await driver.clickAt("a", { x: 2, y: 2 });
-    await driver.focus("b");
+    await driver.focusTarget("b");
     expect([afterKeys, { active: await driver.deepActive(), visible: document.activeElement?.matches(":focus-visible") }]).toEqual([
       { active: "h >> button.inner", visible: true },
       { active: "b", visible: false },
@@ -258,10 +258,10 @@ describe("the in-process driver", () => {
     expect((await recorder.stop()).filter((each) => each.startsWith("resize: "))).toEqual(["resize: 200", "resize: 120"]);
   });
 
-  it("computed(target, property) reads the computed style of a light-DOM and of a shadow target", async () => {
+  it("computedOf(target, property) reads the computed style of a light-DOM and of a shadow target", async () => {
     await driver.mount('<div id="box"></div><driver-host id="h"></driver-host>');
     await driver.rules("#box { inline-size: 150px; }");
-    expect([await driver.computed("box", "inline-size"), await driver.computed({ id: "h", inner: ".scroll" }, "inline-size"), await driver.computed({ id: "h", inner: ".scroll" }, "overflow-x")]).toEqual(["150px", "200px", "auto"]);
+    expect([await driver.computedOf("box", "inline-size"), await driver.computedOf({ id: "h", inner: ".scroll" }, "inline-size"), await driver.computedOf({ id: "h", inner: ".scroll" }, "overflow-x")]).toEqual(["150px", "200px", "auto"]);
   });
 
   it("settle() waits at least two animation frames, then for every ocelle-* element to render", async () => {

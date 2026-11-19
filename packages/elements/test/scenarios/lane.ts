@@ -40,7 +40,7 @@ const named = (shown: string | null, name: string | null): unknown => ({ shown, 
 /** Computed properties of a target, by name. */
 async function styleOf(driver: Driver, target: string | { readonly id: string; readonly inner: string }, properties: readonly string[]): Promise<Record<string, string>> {
   const out: Record<string, string> = {};
-  for (const property of properties) out[property] = await driver.computed(target, property);
+  for (const property of properties) out[property] = await driver.computedOf(target, property);
   return out;
 }
 
@@ -50,7 +50,7 @@ const typeProperties = ["font-family", "font-size", "font-weight", "color", "fon
 async function chrome(driver: Driver, theme: "light" | "dark"): Promise<unknown> {
   await page(driver, "W", `<div data-frame="W">${lane("d", ' label="Ready" count="3"')}</div>`);
   await driver.theme(theme);
-  const ground = await driver.computed("d", "background-color");
+  const ground = await driver.computedOf("d", "background-color");
   const differs: Record<string, boolean> = {};
   for (const other of ["canvas", "panel", "inspector", "pane"]) differs[other] = ground !== (await driver.resolveColour(`var(--ocelle-color-${other})`));
   return {
@@ -289,9 +289,9 @@ export const laneGuards: readonly BoardScenario[] = [
     run: async (driver) => {
       await page(driver, "W", `<div data-frame="W">${lane("l", ' label="Ready" count="3"')}</div>`);
       await driver.setProperty("l", "variant", "flat");
-      const flat = { attribute: await driver.attribute("l", "variant"), ground: await driver.computed("l", "background-color") };
+      const flat = { attribute: await driver.attribute("l", "variant"), ground: await driver.computedOf("l", "background-color") };
       await driver.setProperty("l", "variant", undefined);
-      return { flat, restored: { attribute: await driver.attribute("l", "variant"), ground: await driver.computed("l", "background-color") } };
+      return { flat, restored: { attribute: await driver.attribute("l", "variant"), ground: await driver.computedOf("l", "background-color") } };
     },
     expected: { flat: { attribute: "flat", ground: "rgba(0, 0, 0, 0)" }, restored: { attribute: null, ground: tokenColour("color-sheet", "light") } },
   },

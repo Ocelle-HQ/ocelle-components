@@ -1,0 +1,65 @@
+---
+check: 1
+verdict: issues
+---
+
+# Spec check 1
+
+Scope: `spec.md` (Draft, 2026-11-13) and `checklists/requirements.md`, read against constitution 1.3.1, the tokens in
+`packages/tokens/src/source.ts`, mission 005's README conventions (`packages/elements/README.md`, "Host ARIA") and the
+final 006 design (`origin/claude/010-storybook-workbench:specs/006-storybook-workbench/spec.md`). No earlier check
+or fix note exists. No `[NEEDS CLARIFICATION]` marker is left.
+
+| ID | Severity | Where | Finding | Fix |
+|----|----------|-------|---------|-----|
+| SPEC-1-01 | blocking | spec.md US1 sc3, US2 sc3, US3 sc1, US3 sc8, FR-003 ("no click") | "No `click` event reaches the host's listeners on the element or its ancestors" cannot hold for capture-phase listeners. A click on an `<a>` with no `href`, or on a `<button aria-disabled="true">` (busy), is dispatched by the browser, and capture listeners on `window`, `document` and the host's ancestors run before anything inside the shadow root can stop it. Only a native `disabled` button is never dispatched. As written, a test with a capture listener fails whatever is built, and a test with only bubble listeners does not prove the sentence. | Scope the guarantee to what an element can give, for example "no `click` reaches a bubble-phase listener on the host or its ancestors", or define "activation" as the observable (no navigation, no `ocelle-*` event, bubble listeners not called) and say what capture listeners see. Apply the same wording to FR-003 and FR-033's unavailable row. |
+| SPEC-1-02 | blocking | spec.md FR-006, FR-034, US2 sc8, US4 sc4 | The name precedence puts the host's `aria-label` above the host's `aria-labelledby`. Accessible Name 1.2 does the opposite (`aria-labelledby` wins over `aria-label`), and mission 005's Host ARIA rule says nothing about `aria-labelledby`, so citing it does not settle this. Hosts and later controls (#12, #14) that set both would get a name that differs from every native element. US4 sc4 tests only each attribute alone, so the conflict is never tested. | State the order as Accessible Name 1.2 gives it (`aria-labelledby`, then `aria-label`, then `label`, then content), or keep the inversion and give the reason. Add a scenario where both are set. |
+| SPEC-1-03 | blocking | spec.md US5 sc7 vs Edge Cases "Very long titles and unbreakable identifiers" | US5 sc7 says a tag longer than the card "is the only content allowed to overflow-wrap". The edge case says a card's title wraps unbreakable identifiers per `base.css`'s identifier wrapping (#535), which is an overflow-wrap. A test of sc7 that checks the title does not break inside a word fails against the edge case. | Limit sc7 to the tags region ("within the tags, only a tag longer than the card may break inside a word"), and keep the title rule in the edge case. |
+| SPEC-1-04 | blocking | spec.md FR-031, FR-036, FR-041, US5 sc3, US5 sc6, SC-003 | Contrast coverage is written for the button only. FR-018 and SC-003 speak of "variant, size and state" pairs. For the row, the spec does not name its default border token, does not say that the border meets non-text contrast as a control boundary, and puts no contrast requirement on its states (hover border, current mark on `accent-low`, focus ring on `accent-low` and `hover-bg`, unavailable). Constitution II forbids `--ocelle-color-rule` as a control boundary, and the spec does not stop a plan from choosing it. Only FR-036's new token is given a contrast pair. | Add a row requirement: the default border token (for example `--ocelle-color-control-border`, `--ocelle-color-accent-strong` on the #5 rule-1 grounds), non-text contrast for the border, hover border, current mark and focus ring on every ground the row state puts them on, in both themes. Extend SC-003 to "every variant, size and state of both elements". |
+| SPEC-1-05 | blocking | spec.md FR-012 vs US1 sc12 | FR-012 says `flush` "removes the inline padding" (both sides). US1 sc12 says "no inline padding at the start". A test cannot tell which one is required at the inline end. The spec also does not say whether the variant's border stays: with a 1 px border the label's start sits one border width from the text it aligns with, so "aligned with the start of that text" has no tolerance. See SPEC-1-07 for the border question. | Say which inline sides lose their padding and how alignment is measured: the label's (or icon's) inline-start edge equals the surrounding text's, within 0 px or a stated tolerance. |
+| SPEC-1-06 | blocking | spec.md US4 sc10 | "Then nothing else happens (there is no default action to prevent in button mode)" names no observable and cannot fail (Principle VIII). | State what is checked: `event.defaultPrevented` is `true`, the event is dispatched once, no navigation, no other `ocelle-*` event, and focus stays on the row. Or delete the scenario. |
+| SPEC-1-07 | operator | spec.md FR-010, FR-012, SC-006, Consumer need row #518 | #12's breadcrumb item uses `flush` (#518), but each of the three variants has a border or a fill (`quiet` is "bordered, no fill"). The spec does not say whether a flush breadcrumb button shows a border. SC-006 forbids the host any style of its own "beyond token overrides", so #12 could get a borderless item only by overriding `--ocelle-color-control-border` to a transparent value. | Operator question Q1. |
+| SPEC-1-08 | operator | spec.md FR-031 ("when it is a primary navigation target"), FR-032, US4 sc6 | "Primary navigation target" has no definition and no attribute that selects it, so FR-031's 44 px clause cannot be tested. The minimum block size of a row in the `default` presentation is not stated at all. With `--ocelle-space-1` block padding and the compact text scale (0.875rem × 1.5), a flush row is about 29 px high, below `--ocelle-target-min`. Constitution III asks for the minimum target "where the element is a primary action", so someone has to decide which rows count. | Operator question Q2. |
+| SPEC-1-09 | operator | spec.md FR-033, FR-002, US5 sc1 | In link mode the activate event is dispatched before navigation and `preventDefault()` cancels the navigation. The spec does not say whether the event fires on a modifier click (Ctrl, Meta, Shift) or a middle click. If it fires on a modifier click, a host that routes in-app by calling `preventDefault()` on every activate event breaks "open in new tab" (FR-002). The `detail` carries no modifier information, and adding it after release is a payload change, which is MAJOR (constitution VII). | Operator question Q3. |
+| SPEC-1-10 | operator | spec.md FR-009 (`aria-current` passthrough), FR-030 / FR-037 (`current` property), Edge Cases "`current` on a button-mode row" | The two elements expose "current" through different surfaces: the button through a host `aria-current` passthrough (any token value, and no visual mark is specified), the row through a `current` property limited to `page` and `true` (with a visual mark). The spec presents FR-001 to FR-006 as the conventions later controls follow, and #12's navigation items will need a current state, but "current" is not among those conventions. #12 would have to choose between two patterns. | Operator question Q4. |
+| SPEC-1-11 | note | spec.md US1 sc2 | "and nothing else is emitted" is unbounded. | Say "no `ocelle-*` event is dispatched". |
+| SPEC-1-12 | note | spec.md US1 sc4 ("each main ground"), FR-018 ("the state grounds") | Both ground sets are defined in `source.ts` (`main`, `stateGrounds`) but not in the spec. | Name the token groups, or list the grounds. |
+| SPEC-1-13 | note | spec.md US5 sc3 | The current mark is given as "an `--ocelle-color-accent-strong` mark". The tokens already have `--ocelle-color-current` (the current bar, with contrast declared on `accent-low`). The shape of the "mark" (bar, border, side) is not stated, so a visual test has nothing to check against. | Use `--ocelle-color-current` and name the mark (for example an inline-start bar of a stated token width). |
+| SPEC-1-14 | note | spec.md FR-040 vs US4 sc7 | FR-040 asks for "at least its content's minimum inline size". US4 sc7 asks for "at least the inline size of its content". Read as max-content, these are different measures. | Use one measure in both places (min-content is the one that can hold in a `float` or `inline-block`). |
+| SPEC-1-15 | note | spec.md FR-032 | "wrapping as a whole to a second line when narrow": it is not said what wraps (the tags and trailing group?) or at what width. | Name the group that moves to the second line, and give the trigger as "when the line cannot hold its content". |
+| SPEC-1-16 | note | spec.md FR-030, FR-021 | The row does not say which of `row-id`, `label`, `href`, `target`, `rel` and `current` reflect. It has no `download`, and FR-021's `target="_blank"` gives `rel="noopener"` only for the button. | State reflection per row property, and apply the `noopener` rule to link rows (or say why not). |
+| SPEC-1-17 | note | spec.md Edge Cases (coverage) | The button has no edge cases for a long label or a narrow container (does it wrap, is it truncated, does the 44 px target still hold?). The row has none for an empty title with an icon only. | Add these cases. |
+| SPEC-1-18 | note | spec.md FR-004, FR-001, US2 sc7 | `aria-expanded` is not a global ARIA attribute. Left on a host that has no role (FR-001), it is what axe's `aria-allowed-attr` rule (critical) reports. FR-004 asks for "the host does not also expose them" but does not say whether the author's host attribute stays as written, which US2 sc4 needs to observe changes. | Leave the mechanism to the plan, but have research confirm in Chromium that US2 sc7 can pass with the host attribute kept, and state the host-side contract. |
+| SPEC-1-19 | note | spec.md FR-015 vs FR-035 | `busy` blocks activation on the button and does not on the row. The difference is deliberate (Key Entities), but FR-008's "Control conventions" section does not cover it. | Have the README's conventions section state what `busy` means on each element. |
+| SPEC-1-20 | note | spec.md Edge Cases "`href=\"\"`" | Only `javascript:` is excluded from navigable targets. | Say whether other script-capable schemes (`vbscript:`, `data:`) are treated the same way, or that they are left to the host. |
+| SPEC-1-21 | note | spec.md FR-011, constitution III | `variant="primary" size="compact"` is allowed and is below `--ocelle-target-min`. The operator's 24 px decision covers compact buttons in general. | Say in the README that a primary action uses `size="default"`, so "primary action" in constitution III is not read as `variant="primary"`. |
+| SPEC-1-22 | note | spec.md FR-050, 006 spec FR-031 and Edge Cases | 006's harness supports one hover or press pointer state per story, captures under reduced motion, and has no focus-state parameter and no forced-colours capture. FR-050's "story per state" has to map focus and forced colours to element tests. | The plan names, per state, which harness feature or test proves it. |
+
+## Operator questions
+
+**Q1 (SPEC-1-07).** How should a `flush` `ocelle-button` look in #12's breadcrumb trail?
+- (a) `flush` also removes the border and the fill: a text-like control with only its hover and focus states.
+- (b) `flush` keeps the variant's border and fill. #12 picks a variant, and a borderless breadcrumb needs a token
+  override.
+- (c) Add a fourth, borderless variant (for example `plain`) now for #12, and `flush` only removes padding.
+- (d) Leave the look to #12's own spec. This spec fixes padding only.
+
+**Q2 (SPEC-1-08).** Which `ocelle-action-row` instances must be at least `--ocelle-target-min` (44 px) high?
+- (a) Every row, in every presentation and layout (the flush density reduces padding but not the minimum height).
+- (b) `presentation="default"` rows only. Flush navigation rows may be shorter, but at least 24 px (WCAG 2.5.8).
+- (c) Rows whose host opts in with a new attribute (for example `target-size="min"`). Otherwise at least 24 px.
+
+**Q3 (SPEC-1-09).** On a link-mode `ocelle-action-row`, what happens on a modifier click (Ctrl, Meta, Shift) or a
+middle click?
+- (a) No `ocelle-action-row-activate` is dispatched. The browser's default (new tab or window) happens.
+- (b) The event is dispatched, and `detail` also carries the modifier keys so the host can decide.
+- (c) The event is always dispatched with `{ rowId }` only, and the README tells hosts to check the modifiers on the
+  original click themselves.
+
+**Q4 (SPEC-1-10).** Which surface should controls use for "current" as a shared convention that #12 follows?
+- (a) Keep both as specified: the button passes through any host `aria-current` with no visual mark, and the row has
+  a `current` property (`page` or `true`) with a mark.
+- (b) A `current` property on both elements (and later controls), each with the visual mark. The button drops the
+  `aria-current` passthrough.
+- (c) A host `aria-current` passthrough on both elements, and the row draws its mark from it. The row drops the
+  `current` property.

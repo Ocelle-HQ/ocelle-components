@@ -5,6 +5,15 @@ import type { BrowserCommand, BrowserCommandContext } from "vitest/node";
 // The element tests' browser commands (005 research.md R-11; packages/elements/test/commands.ts), loaded when a command
 // runs: the plant trees of the gates copy this file without the element test code (research.md R-10), so neither
 // loading nor type-checking the configuration may depend on it.
+// 012 (research.md R-11) adds press, hover, pointer, emulateReducedMotion, axe and axState; their argument types are
+// written here, not imported, for the same reason.
+type Modifier = "Alt" | "Control" | "Meta" | "Shift";
+interface ClickOptions {
+  readonly inner?: string;
+  readonly modifiers?: readonly Modifier[];
+  readonly button?: "left" | "middle" | "right";
+}
+type PointerAction = "hover" | "click" | "down" | "up";
 interface PathStep {
   readonly x: number;
   readonly y: number;
@@ -19,6 +28,11 @@ interface ElementCommands {
   readonly activeElement: (context: BrowserCommandContext) => Promise<unknown>;
   readonly textBoxes: (context: BrowserCommandContext, id: string) => Promise<unknown>;
   readonly emulateReducedMotion: (context: BrowserCommandContext, mode: "reduce" | "no-preference") => Promise<void>;
+  readonly pressKey: (context: BrowserCommandContext, key: string, modifiers?: readonly Modifier[]) => Promise<void>;
+  readonly hover: (context: BrowserCommandContext, id: string, inner?: string) => Promise<void>;
+  readonly pointerCommand: (context: BrowserCommandContext, action: PointerAction, id: string, options?: ClickOptions) => Promise<void>;
+  readonly axState: (context: BrowserCommandContext, id: string, inner?: string) => Promise<unknown>;
+  readonly axe: (context: BrowserCommandContext, scope?: string) => Promise<unknown>;
   readonly pointerPath: (context: BrowserCommandContext, steps: readonly PathStep[]) => Promise<void>;
   readonly touchTap: (context: BrowserCommandContext, x: number, y: number) => Promise<void>;
 }
@@ -38,6 +52,17 @@ const textBoxes: BrowserCommand<[id: string]> = async (context, id) => (await el
 const emulateReducedMotion: BrowserCommand<[mode: "reduce" | "no-preference"]> = async (context, mode) => {
   await (await elementCommands()).emulateReducedMotion(context, mode);
 };
+const press: BrowserCommand<[key: string, modifiers?: readonly Modifier[]]> = async (context, key, modifiers) => {
+  await (await elementCommands()).pressKey(context, key, modifiers);
+};
+const hover: BrowserCommand<[id: string, inner?: string]> = async (context, id, inner) => {
+  await (await elementCommands()).hover(context, id, inner);
+};
+const pointer: BrowserCommand<[action: PointerAction, id: string, options?: ClickOptions]> = async (context, action, id, options) => {
+  await (await elementCommands()).pointerCommand(context, action, id, options);
+};
+const axState: BrowserCommand<[id: string, inner?: string]> = async (context, id, inner) => (await elementCommands()).axState(context, id, inner);
+const axe: BrowserCommand<[scope?: string]> = async (context, scope) => (await elementCommands()).axe(context, scope);
 // 008 research.md R-14: real pointer paths and touch taps for the overlay scenarios.
 const pointerPath: BrowserCommand<[steps: readonly PathStep[]]> = async (context, steps) => {
   await (await elementCommands()).pointerPath(context, steps);
@@ -45,7 +70,7 @@ const pointerPath: BrowserCommand<[steps: readonly PathStep[]]> = async (context
 const touchTap: BrowserCommand<[x: number, y: number]> = async (context, x, y) => {
   await (await elementCommands()).touchTap(context, x, y);
 };
-const elementBrowserCommands = { axTree, emulateForcedColors, scrollWidth, activeElement, textBoxes, emulateReducedMotion, pointerPath, touchTap };
+const elementBrowserCommands = { axTree, emulateForcedColors, scrollWidth, activeElement, textBoxes, emulateReducedMotion, press, hover, pointer, axState, axe, pointerPath, touchTap };
 
 // The element browser projects run at the fixture's 1280 × 800 (008 research.md R-14), the default one as a mouse
 // device and elements-touch as a touch device (`hasTouch`); both exclude the node, build and fixture suites.
@@ -104,10 +129,11 @@ export default defineConfig({
         // The in-process element tests (005 research.md R-11): browser mode, element source; mutated by
         // stryker.elements.config.json (R-12). The node, build and fixture tests run in their own projects below. The
         // axTree, emulateForcedColors and emulateReducedMotion commands read Chromium's accessibility tree over CDP and
-        // switch forced colours and reduced motion for the shared scenario bodies (packages/elements/test/commands.ts).
-        // Each test file keeps its own iframe and custom-element registry (isolate, the default). 008 (R-14): a
-        // 1280 × 800 viewport, as on the fixture, a mouse device; the touch rows (`test/*.touch.test.ts`) run in
-        // elements-touch instead; the commands also drive the real pointer.
+        // switch forced colours and reduced motion for the shared scenario bodies (packages/elements/test/commands.ts);
+        // 012's press, hover, pointer, axe and axState drive the keyboard and mouse, read one accessibility node and run
+        // axe (012 research.md R-11). Each test file keeps its own iframe and custom-element registry (isolate, the
+        // default). 008 (R-14): a 1280 × 800 viewport, as on the fixture, a mouse device; the touch rows
+        // (`test/*.touch.test.ts`) run in elements-touch instead; the commands also drive the real pointer.
         test: {
           name: "elements",
           include: ["packages/elements/**/*.test.ts"],

@@ -26,6 +26,14 @@ export interface TokenRecord {
   readonly value: string | Themed<string>;
   readonly ref?: readonly string[] | Themed<readonly string[]>;
   readonly contrast?: Contrast;
+  /**
+   * A duration of group `motion` that is a delay, not motion (operator decision C1, 2026-11-17: 008's tooltip-delay):
+   * reduced motion leaves it, so the reduced-motion block and brand rule (f) skip it. Allowed only on a token of group
+   * `motion` whose name ends in `-delay` (012 phase 4 round 2, O2-01: validateSource() refuses it elsewhere), and such
+   * a token's value may be any one; every other motion value is a literal `<number>ms` duration, an angle or an
+   * easing function (O2-02).
+   */
+  readonly delay?: true;
 }
 
 /** One change of the token source by key (data-model.md § Token overrides). */
@@ -68,6 +76,13 @@ const reference = /var\(--ocelle-([a-z0-9]+(?:-[a-z0-9]+)*)\)/g;
 /** A value that is exactly one token reference. */
 const soleReference = /^var\(--ocelle-([a-z0-9]+(?:-[a-z0-9]+)*)\)$/;
 const hex = /^#[0-9A-Fa-f]{6}$/;
+/** A duration in milliseconds, as a motion token states one (`120ms`). */
+const duration = /^\d+(?:\.\d+)?ms$/;
+/**
+ * A motion value that is no duration (012 plan decision 29 as amended by phase 4 round 2, O2-02; a closed list): a
+ * literal angle, or an easing function or keyword.
+ */
+const notDuration = /^(?:\d+(?:\.\d+)?(?:deg|grad|rad|turn)|(?:cubic-bezier|steps|linear)\(.*\)|linear|ease|ease-in|ease-out|ease-in-out|step-start|step-end)$/;
 const translucent = /^rgb\(\d{1,3} \d{1,3} \d{1,3} \/ (?:0|1|0?\.\d+)\)$/;
 
 /** A record's value in a theme (its one value for a theme-independent token). */
@@ -78,6 +93,11 @@ function valueIn(record: TokenRecord, theme: Theme): string {
 /** The token names a value references, each once, in order of appearance. */
 function references(value: string): string[] {
   return [...new Set([...value.matchAll(reference)].map((match) => String(match[1])))];
+}
+
+/** A delay (operator decision C1; phase 4 round 2, O2-01): marked `delay: true`, of group `motion`, named `-delay`. */
+function isDelay(record: TokenRecord): boolean {
+  return record.delay === true && record.group === "motion" && record.name.endsWith("-delay");
 }
 
 function isList(ref: readonly string[] | Themed<readonly string[]>): ref is readonly string[] {
@@ -157,6 +177,10 @@ function recordProblems(record: TokenRecord, byName: ReadonlyMap<string, TokenRe
   for (const ground of record.contrast?.grounds ?? []) if (!byName.has(ground)) found.push(`${at}: ground names an unknown token ${ground}`);
   if (record.contrast !== undefined && record.group !== "colour") found.push(`${at}: contrast on a token outside the colour group`);
   if (record.contrast?.exempt !== undefined && record.name !== exemptToken) found.push(`${at}: exempt is allowed only on ${exemptToken}`);
+  if (record.delay === true && !isDelay(record)) found.push(`${at}: delay: true is allowed only on a motion token whose name ends in -delay`);
+  if (record.group === "motion" && typeof record.value === "string" && !isDelay(record) && !duration.test(record.value) && !notDuration.test(record.value)) {
+    found.push(`${at}: value ${record.value} of group motion is not a literal <number>ms duration, an angle or an easing function`);
+  }
   if (record.group === "colour" && perTheme) {
     if (record.name === "color-scheme") {
       if (valueIn(record, "light") !== "light" || valueIn(record, "dark") !== "dark") found.push(`${at}: value must be light in light and dark in dark`);
@@ -266,8 +290,19 @@ const fontFace =
   "}\n\n";
 
 /**
+ * The motion durations of a source, in source order: every record of group `motion` whose value is a literal `ms`
+ * duration (012 research.md R-07, plan decision 29), so `motion-turn` (an angle) and `easing-standard` are not among
+ * them, except the delays (operator decision C1: `delay: true`, 008's tooltip-delay). Only a motion token named
+ * `-delay` is a delay, so a misplaced marker exempts nothing; validateSource() refuses it, and any other motion value
+ * that is not a literal `ms` duration, an angle or an easing function (012 phase 4 round 2, O2-01, O2-02).
+ */
+function motionDurations(source: readonly TokenRecord[]): TokenRecord[] {
+  return source.filter((record) => record.group === "motion" && !isDelay(record) && typeof record.value === "string" && duration.test(record.value));
+}
+
+/**
  * The stylesheet text (research.md R-02, R-06): the font face, light and theme-independent values, dark twice, then
- * reduced motion.
+ * reduced motion, which sets every motion duration of the source to `0ms` (012 research.md R-07).
  */
 export function css(source: readonly TokenRecord[]): string {
   const dark = source.filter((record) => typeof record.value !== "string" && record.value.light !== record.value.dark);
@@ -278,7 +313,9 @@ export function css(source: readonly TokenRecord[]): string {
     `:root {\n${lines("  ", "light", source)}}\n\n` +
     `@media (prefers-color-scheme: dark) {\n  :root:not([data-theme="light"]) {\n${lines("    ", "dark", dark)}  }\n}\n\n` +
     `:root[data-theme="dark"] {\n${lines("  ", "dark", dark)}}\n\n` +
-    `@media (prefers-reduced-motion: reduce) {\n  :root {\n${declaration("    ", "motion-fast", "0ms")}${declaration("    ", "motion-base", "0ms")}  }\n}\n`
+    `@media (prefers-reduced-motion: reduce) {\n  :root {\n${motionDurations(source)
+      .map((record) => declaration("    ", record.name, "0ms"))
+      .join("")}  }\n}\n`
   );
 }
 

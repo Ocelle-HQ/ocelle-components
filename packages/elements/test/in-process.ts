@@ -9,8 +9,14 @@
 // Since 009 (research.md R-17) every mount also adopts test/fixtures/frames.css, the one source of the tested frames,
 // after the token and base sheets, and `viewport()` resizes the test's iframe through `page.viewport`.
 //
+// 012 (research.md R-11): keys, the mouse, one accessibility node, reduced motion and axe go through the `press`,
+// `hover`, `pointer`, `axState`, `emulateReducedMotion` and `axe` commands; the event recorder and the other page reads
+// are page-side.ts's functions, called here in the test's frame. The **navigation sink** is the last bubble-phase
+// listener on `window` for `click` and `auxclick` (put back at the end after each recorder listener on `window`): for
+// an activation of a link (an `a` or `area` with `href` on the event's composed path) it records whether it was already
+// prevented, the button, the modifier flags and the `href` attribute, then prevents it, so the runner never navigates.
 // 008 (research.md R-14, R-15): every mount also adopts the test delay stylesheet (fixtures/tooltip-delay.css), as the
-// fixture pages link it. Keys are real key presses through `userEvent` from `vitest/browser`; pointer and touch input
+// fixture pages link it. Keys (`inputPress`, operator decision C2) are real key presses through `userEvent` from `vitest/browser`; pointer and touch input
 // go through the `pointerPath` and `touchTap` commands at points of this frame (test/commands.ts), reduced motion
 // through `emulateReducedMotion`; what the page holds is read by the probe of scenarios/probe.ts, installed when this
 // module loads, before any element of the test file attaches a shadow root.
@@ -25,9 +31,10 @@ import { source } from "../../tokens/src/source.ts";
 import { runningOf } from "./animations.ts";
 import delayText from "./fixtures/tooltip-delay.css?raw";
 import { layoutWait } from "./layout-wait.ts";
+import { activeInnerOf, activePath, clickElement, computedOf, copyElement, currentOf, endOrder, focusElement, morphElement, preventNextEvent, recordEvents, resetPage, sentinelId, startOrder, takeRecords } from "./page-side.ts";
 import { decodePng } from "./pixels.ts";
 import { heardTypes } from "./scenarios/driver.ts";
-import type { Box, Driver, Drawing, Paint, Part, Placement, Reading, Sheets, Target, TreeNode } from "./scenarios/driver.ts";
+import type { Box, Driver, Drawing, ElementTarget, NavigationRecord, Paint, Part, Placement, Reading, Sheets, TreeNode } from "./scenarios/driver.ts";
 import { probe } from "./scenarios/probe.ts";
 
 function sheet(text: string): CSSStyleSheet {
@@ -79,7 +86,7 @@ function keyText(key: string, shift: boolean): string {
 }
 
 /** The element of a target: the element with the id, or the first match of `inner` in its shadow root. */
-function resolve(target: Target): HTMLElement {
+function resolve(target: ElementTarget): HTMLElement {
   if (typeof target === "string") return element(target);
   const found = element(target.id).shadowRoot?.querySelector<HTMLElement>(target.inner);
   if (found === null || found === undefined) throw new Error(`no ${target.inner} in the shadow root of #${target.id}`);
@@ -165,6 +172,37 @@ window.addEventListener("error", (event) => {
   messages.push(`error: ${event.message}`);
 });
 
+const navigations: NavigationRecord[] = [];
+
+function sink(event: Event): void {
+  const mouse = event as MouseEvent;
+  const link = event.composedPath().find((node): node is Element => node instanceof Element && (node.localName === "a" || node.localName === "area") && node.hasAttribute("href"));
+  if (link === undefined) return;
+  navigations.push({
+    type: event.type === "auxclick" ? "auxclick" : "click",
+    defaultPrevented: event.defaultPrevented,
+    button: mouse.button,
+    altKey: mouse.altKey,
+    ctrlKey: mouse.ctrlKey,
+    metaKey: mouse.metaKey,
+    shiftKey: mouse.shiftKey,
+    href: link.getAttribute("href") ?? "",
+  });
+  event.preventDefault();
+}
+
+/** Puts the sink after every other listener of `window` for `click` and `auxclick`. */
+function lastSink(): void {
+  for (const type of ["click", "auxclick"]) {
+    window.removeEventListener(type, sink);
+    window.addEventListener(type, sink);
+  }
+}
+lastSink();
+
+/** The most Tab presses `tabOrder` makes before it stops. */
+const maxSteps = 64;
+
 /** The `id` of the element with one of `ids` that `node` is, or whose shadow tree holds it, or undefined. */
 function recordedHost(node: unknown, ids: ReadonlySet<string>): string | undefined {
   for (let at = node instanceof Node ? node : null; at !== null; ) {
@@ -210,6 +248,9 @@ export function inProcessDriver(): Driver {
     mount: async (markup, options = {}) => {
       document.adoptedStyleSheets = options.base === true ? [tokens, base, frames, delay] : [tokens, frames, delay];
       messages.length = 0;
+      navigations.length = 0;
+      resetPage();
+      lastSink();
       lastKey = undefined;
       document.documentElement.removeAttribute("data-theme");
       probe().reset();
@@ -301,7 +342,8 @@ export function inProcessDriver(): Driver {
       const rect = svg.getBoundingClientRect();
       return Promise.resolve({ scaleX: round(matrix.a), scaleY: round(matrix.d), offsetX: round(matrix.e - rect.x), offsetY: round(matrix.f - rect.y) });
     },
-    computed: (target, property) => Promise.resolve(getComputedStyle(resolve(target)).getPropertyValue(property)),
+    computed: (id, property, inner) => Promise.resolve(computedOf({ id, property, inner })),
+    computedOf: (target, property) => Promise.resolve(getComputedStyle(resolve(target)).getPropertyValue(property)),
     resolveColour: (value) => {
       const colourProbe = document.createElement("span");
       probe().ignore(colourProbe);
@@ -333,15 +375,80 @@ export function inProcessDriver(): Driver {
       });
     },
     messages: () => Promise.resolve([...messages]),
-    press: async (key, options = {}) => {
+    focus: (id) => {
+      focusElement(id);
+      return Promise.resolve();
+    },
+    press: (key, modifiers) => commands.press(key, modifiers),
+    click: async (id, options) => {
+      await commands.pointer("click", id, options);
+      await settle();
+    },
+    callClick: async (id) => {
+      clickElement(id);
+      await settle();
+    },
+    hover: async (id, options) => {
+      await commands.hover(id, options?.inner);
+      await settle();
+    },
+    pointerDown: async (id, options) => {
+      await commands.pointer("down", id, options);
+      await settle();
+    },
+    pointerUp: async (id) => {
+      await commands.pointer("up", id);
+      await settle();
+    },
+    tabOrder: async (options = {}) => {
+      const reverse = options.reverse === true;
+      const order: string[][] = [];
+      startOrder(reverse);
+      for (let step = 0; step < maxSteps; step += 1) {
+        await commands.press("Tab", reverse ? ["Shift"] : []);
+        const path = activePath();
+        if (path.length === 0 || path[0] === `span#${sentinelId}` || JSON.stringify(path) === JSON.stringify(order[0])) break;
+        order.push(path);
+      }
+      endOrder();
+      return order;
+    },
+    activeInner: (id) => Promise.resolve(activeInnerOf(id)),
+    events: (id, types) => {
+      recordEvents({ id, types });
+      lastSink();
+      return Promise.resolve();
+    },
+    takeEvents: () => Promise.resolve(takeRecords()),
+    preventNext: (type) => {
+      preventNextEvent(type);
+      return Promise.resolve();
+    },
+    navigations: () => Promise.resolve([...navigations]),
+    reducedMotion: async (mode) => {
+      await commands.emulateReducedMotion(mode);
+      await settle();
+    },
+    axState: (id, inner) => commands.axState(id, inner),
+    current: (id, inner) => Promise.resolve(currentOf({ id, inner })),
+    axe: (scope) => commands.axe(scope),
+    copy: async (id, via, into) => {
+      copyElement({ id, via, into });
+      await settle();
+    },
+    morph: async (id, markup) => {
+      morphElement({ id, markup });
+      await settle();
+    },
+    inputPress: async (key, options = {}) => {
       await userEvent.keyboard(keyText(key, options.shift === true));
       await settle();
     },
-    hover: async (id, inner) => {
+    inputHover: async (id, inner) => {
       await commands.pointerPath([id === null ? { x: 0, y: 0 } : probe().centre(id, inner)]);
       await settle();
     },
-    click: async (id, inner, options = {}) => {
+    inputClick: async (id, inner, options = {}) => {
       await commands.pointerPath([{ ...probe().centre(id, inner), down: true, up: true, button: options.button ?? "left" }]);
       await settle();
     },
@@ -415,7 +522,7 @@ export function inProcessDriver(): Driver {
       await settle();
       return walked;
     },
-    focus: async (target) => {
+    focusTarget: async (target) => {
       resolve(target).focus();
       await settle();
     },
@@ -511,7 +618,7 @@ export function inProcessDriver(): Driver {
       await settle();
     },
     layout: (id) => layoutWait(id),
-    copy: async (id) => {
+    clipboardCopy: async (id) => {
       const range = document.createRange();
       range.selectNodeContents(element(id));
       const selection = getSelection();
@@ -574,10 +681,6 @@ export function inProcessDriver(): Driver {
       if (current === null || current === document.body) return Promise.resolve(null);
       return Promise.resolve(current.id === "" ? `<${current.localName}>` : current.id);
     },
-      reducedMotion: async (mode) => {
-      await commands.emulateReducedMotion(mode);
-      await settle();
-    },
     animations: (id) => Promise.resolve(runningOf(id)),
     frames: async (count) => {
       for (let frame = 0; frame < count; frame++) await new Promise((resolve) => requestAnimationFrame(resolve));
@@ -604,7 +707,7 @@ export function inProcessDriver(): Driver {
       range.selectNodeContents(target);
       return Promise.resolve({ innerText: target.innerText, rects: range.getClientRects().length });
     },
-    events: async (id, during) => {
+    dispatched: async (id, during) => {
       const target = element(id);
       const seen: string[] = [];
       const native = Object.getOwnPropertyDescriptor(EventTarget.prototype, "dispatchEvent");

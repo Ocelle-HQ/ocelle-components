@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { compositions } from "../scenarios/link.ts";
 
 // The package documentation (005 FR-002, FR-007, FR-008, FR-029, FR-031, FR-033, FR-034, SC-008; research.md R-15;
 // T020), on the model of 003's readme test: the README states the element conventions a later element mission
@@ -41,6 +42,11 @@ function read(file: string): string {
   return existsSync(url) ? readFileSync(url, "utf8") : "";
 }
 const flat = (text: string): string => text.replace(/\s+/g, " ");
+
+/** A control convention: its bold title, then its first rule. */
+function convention(title: string, rule: string): string {
+  return `**${title}.** ${rule}`;
+}
 
 const fragments = [
   // module and registration (FR-002, R-02)
@@ -86,8 +92,11 @@ const fragments = [
   // ocelle-icon's token (FR-007, FR-011, US1-11)
   "`ocelle-icon` reads the token `--ocelle-icon-size`: overriding it on an ancestor resizes every icon in that subtree",
   // engines (FR-008, R-05)
-  // 008 (tasks.md T044; FR-040, research.md R-10): the floor raised to WebKit 17 by the Popover API
-  "Engine floor: Chromium 120+ and WebKit 17+, with no `window.ShadyCSS` polyfill on the page",
+  // 012 phase 3 (tasks.md T033; research.md R-04): the floor rises to Chromium 135 and WebKit 17.4
+  "Engine floor: Chromium 135+ and WebKit 17.4+, with no `window.ShadyCSS` polyfill on the page",
+  "ARIA element reflection (`ariaControlsElements`, `ariaLabelledByElements`, `ariaDescribedByElements`): Chromium 135, WebKit 16.4 (the controls' ID references)",
+  "Custom states (`ElementInternals.states` and `:state()`): Chromium 125, WebKit 17.4 (`ocelle-button`'s moved states)",
+  // 008 (tasks.md T044; FR-040, research.md R-10): the Popover API, WebKit 17, below the floor 012 raised
   "The Popover API: Chromium 114, WebKit 17",
   "`:dir()`: Chromium 120, WebKit 16.4",
   "`@media not (forced-colors: active)` (Media Queries 4's `not (…)` without a media type): Chromium 104, WebKit 16.4",
@@ -118,7 +127,15 @@ const fragments = [
   "Every icon is the project's own drawing, under Apache-2.0; no third-party icon set is used, so `THIRD_PARTY_NOTICES` lists none",
   // the slot convention (FR-020 to FR-022, SC-007; research.md R-03, R-10, R-15; US3 scenario 7)
   "A control that shows icons follows one slot convention: an `icon` slot before its label and, where it has an end icon such as the action row's arrow, a `trailing` slot after it",
-  "The control renders, in its shadow root, a row with the class `icon-row` holding `<span class=\"icon-slot\"><slot name=\"icon\"></slot></span>`, its label, and `<span class=\"icon-slot trailing\"><slot name=\"trailing\"></slot></span>`, and adds `iconSlotStyles` (`src/icon-slot.ts`, internal) to its `static styles`",
+  // 012 plan decision 33 (phase 2 review round 5, O3-01; tasks.md T029b): the label wrapper is part of the markup, and
+  // it takes part in baseline alignment
+  "The control renders, in its shadow root, a row with the class `icon-row` holding `<span class=\"icon-slot\"><slot name=\"icon\"></slot></span>`, its label wrapper `<span class=\"label\"><slot></slot></span>` around the default slot, and `<span class=\"icon-slot trailing\"><slot name=\"trailing\"></slot></span>`, and adds `iconSlotStyles` (`src/icon-slot.ts`, internal) to its `static styles`",
+  "The label wrapper takes part in baseline alignment, so the control's baseline is its label's first line and a one-line control in a line of text sits on the text's baseline",
+  // 012 plan decision 33 as amended by phase 2 review round 6 (O6-01; tasks.md T029g): the `bare` modifier is part of
+  // the convention, the label's baseline alignment applies to labelled rows only, and an icon-only control's icon sits
+  // where a native button puts it
+  "A control with no label, such as an icon-only control, puts the class `bare` on its row: the `bare` modifier is part of the convention",
+  "The label's baseline alignment applies to labelled rows only: a `bare` row is not changed, so an icon-only control's icon sits where a native `<button>` with an svg puts it in a line of text",
   "A slotted icon, an `ocelle-icon` or a bare `<svg>`, is `--ocelle-icon-size` square and does not shrink, whatever a normal page rule, `base.css` or its `width` and `height` attributes set",
   "The row sets the type (font size and line height) that the wrappers and the label inherit; each wrapper is one line box tall (`1lh`) with the icon centred in it, so the icon is centred on the label's first line at any type size and leading, overflowing the line box evenly when it is taller",
   "The row's block padding, `calc((var(--ocelle-icon-size) - 1lh) / 2)` from `iconSlotStyles` (0 when the line box is at least the icon size), keeps that overflow inside the control's box",
@@ -350,6 +367,109 @@ const fragments = [
   "The rail replaces the personal-rail `::part` overrides Kitty Desktop sets on its personal rail",
   "In forced colours the rail's divider is drawn in a system colour, and a horizontal rail keeps its row.",
   "`ocelle-personal-rail` has no event, CSS part or CSS custom property and adds no tab stop. The host itself is its one navigation landmark, with no other landmark inside it.",
+  // 012 (tasks.md T020; contracts/elements-package.md § Control conventions, § ocelle-button): the control conventions
+  // that later controls follow, conventions 1 (one inner control, the filled host, the host guard and its limits), 3
+  // (the disabled half), 5 (the name order, label in name) and 7 (primary action), and the ocelle-button section
+  convention("One inner control", "Each control renders exactly one native `<button type=\"button\">` (button mode) or `<a>` (link mode) in an open shadow root attached with `delegatesFocus`; the host has no role and no tabindex"),
+  "`element.focus()` focuses the inner control, and `element.click()` clicks it, so a click started by `click()` gets the same guarantees as any other click",
+  "A click dispatched on the host with `dispatchEvent` is outside the guarantees: it does not pass through the inner control, so the element stops it",
+  "The host is a grid container (`inline-grid` for `ocelle-button`) and the inner control its single stretched item, so the inner control fills the host when a flex row or a grid stretches it; a stretched button grows to the row's height (set `align-self` on the element to avoid it)",
+  "A host may restyle the element's `display` and size: the element also listens for `click` and `auxclick` on the host from its constructor and stops any that did not pass through the inner control, in every state, so host area outside the inner control never activates it",
+  "Capture-phase listeners, and listeners added to the element before it is upgraded, are outside that guarantee: they run before the element's own listener",
+  convention("Disabled", "`disabled` means the control cannot be used here at all: the inner control is out of the tab order, reported disabled and not activated"),
+  "Not activated means: no `ocelle-*` event and no `click` reaching a bubble-phase listener on the element or its ancestors (up to `document` and `window`); capture-phase listeners are outside it",
+  convention("Name order", "The inner control's name is, in this order: the host's `aria-labelledby`, the host's `aria-label`, the element's `label` (trimmed; empty or whitespace-only counts as none), and otherwise the element's content; slotted icons never contribute"),
+  "When a control's content is visible, its `label` contains the visible text, ideally at its start, so a user who speaks a control's visible name reaches it (label in name)",
+  convention("Primary action", "A primary action uses `size=\"default\"` (44 × 44 px minimum); `variant=\"primary\"` is a look, not what makes an action primary"),
+  // the ocelle-button section (FR-009 to FR-014, FR-018 to FR-020, FR-022, FR-023)
+  "`variant` (attribute and property, reflected): `primary` (filled), `secondary` (the default; bordered on a surface) or `quiet` (bordered, no fill); any other value renders `secondary`",
+  "`size` (attribute and property, reflected): `default` (the default; at least `--ocelle-target-min`, 44 px, in both dimensions) or `compact` (the compact text scale, `--ocelle-font-size-sm` and `--ocelle-line-height-compact`, and at least 24 px in both dimensions); any other value renders `default`",
+  "`flush` (boolean attribute and property, reflected): no inline padding, no border and no fill, the label in `--ocelle-color-ink`, and the content at the box's inline start, so its label (or icon) lines up with the text around it; the minimum block and inline size of its `size` stay",
+  "`ground` (attribute and property, reflected): the ground the button sits on, since an element cannot see its ancestor's colour. `accent-low`, `inset`, `hover-bg` or `state` (any of the state grounds) gives a bordered variant an `--ocelle-color-accent-strong` border; absent or any other value means the main grounds `color-canvas`, `color-sheet`, `color-pane`, `color-panel`, `color-inspector` and `color-rail`, with an `--ocelle-color-control-border` border",
+  "`ground=\"chrome\"` is for the chrome grounds (`color-chrome`, `color-chrome-hover`): the label is `--ocelle-color-chrome-ink`, a bordered variant has an `--ocelle-color-chrome-muted` border and no fill, so `secondary` looks like `quiet` there; hover fills with `--ocelle-color-chrome-hover`, pressed with `--ocelle-color-chrome-active`, and both turn the border `--ocelle-color-chrome-ink`; the primary looks as on every ground",
+  "On a container whose surface changes (a list or table row that takes `color-hover-bg` on hover, or `color-accent-low` when selected), set `ground` for the changed surface statically (`hover-bg` or `accent-low`): `--ocelle-color-accent-strong` meets 3:1 on every main ground, so the border holds in both states",
+  "`label` (attribute and property, not reflected): the accessible name, trimmed; empty or whitespace-only counts as none",
+  "`disabled` (boolean attribute and property, reflected): the disabled state of the control conventions",
+  "Each activation that delivers a `click` (a pointer click, Enter or Space, the element's `click()`) also dispatches `ocelle-button-activate` from the element: a `CustomEvent` with `bubbles: true`, `composed: true`, `cancelable: true` and `detail` `{}`, dispatched before the `click` reaches any bubble-phase listener on the element or its ancestors",
+  "Calling `preventDefault()` on it cancels the `click`'s default action; a button has none, so the `click` is still delivered, with `defaultPrevented` `true`",
+  "A disabled button dispatches neither event",
+  "Hover and pressed change the surface and the border: a bordered variant's border becomes `--ocelle-color-hover-border`; the primary fills with `--ocelle-color-accent-hover` on hover and `--ocelle-color-accent` when pressed; `secondary` and `quiet` fill with `--ocelle-color-hover-bg` on hover and `--ocelle-color-active-bg` when pressed; a flush button changes its surface only",
+  "A flush button's hover fill is `--ocelle-color-hover-bg`, so its hover shows no change where the ground has that colour: on `color-hover-bg` in both themes, on `color-inset` in light, on `color-neutral-bg` in dark, and with `ground=\"chrome\"` on `color-chrome-hover` in both themes; hover carries no information there, and focus and pressed still show",
+  "The focus ring is drawn outside the button: a container that clips (`overflow` other than `visible`) and holds a flush button at its edge keeps at least `--ocelle-focus-offset` + `--ocelle-focus-width` of unclipped space around it, for example `padding-inline` of that size with a matching negative margin",
+  "Keyboard focus shows the token focus ring on the inner control (`--ocelle-color-focus`, `--ocelle-focus-width`, `--ocelle-focus-offset`); a pointer click does not",
+  "In forced colours the label and border are `ButtonText`, hover and pressed borders and the focus ring `Highlight`, a flush button's hover and pressed a dashed `Highlight` outline, and a disabled button `GrayText`",
+  "`ocelle-button` does not take part in forms: its inner control is always `type=\"button\"`, so activating it inside a `<form>` neither submits nor resets the form, and it has no `type`, `name`, `value` or `form` attribute. A host that submits from it calls `form.requestSubmit()` in its click handler",
+  "A long label wraps between words inside the button, which grows in block size; it is never truncated",
+  // 012 phase 3 (tasks.md T033, T038; contracts/elements-package.md § Control conventions 2, 4 and 6, § ocelle-button):
+  // link mode, the moved host ARIA with its recipes, mirrors and custom states, the two surfaces of current, the
+  // link-mode activate event and look, and the engine floor above
+  convention("Link versus button", "A control is in link mode exactly when its `href` is not empty or whitespace only, parses as a URL against the document's base URL and is not a `javascript:` URL as the URL parser reads it (so `JAVASCRIPT:`, `java\\tscript:` and a leading space or control character count); otherwise it is in button mode, with no error for an `href` that does not parse"),
+  "Link mode renders an `<a>` with the `href` as written and the native link behaviour: Enter activates, Space does not, and modifier clicks get the browser's own modifier handling (the element prevents nothing); button mode renders a `<button type=\"button\">` (Enter and Space activate). Both modes look the same for the same variant",
+  "`data:` and `vbscript:` URLs are link mode and left to the host: Chromium blocks a top-level `data:` navigation and runs no `vbscript:`",
+  "A disabled link has no `href`: it is an `<a role=\"link\" aria-disabled=\"true\">` out of the tab order, so neither a click, a modifier click, a middle click, the context menu nor a drag opens it",
+  convention("Host ARIA is moved", "The ARIA attributes a control lists, and `title`, are moved from the host onto the inner control: the element applies the value there and removes the attribute from the host, so the state appears once, on the inner control, and `getAttribute` on the host returns `null` afterwards"),
+  "To clear a moved state, set an empty or whitespace-only value (`aria-controls=\"\"`, `aria-label=\"\"`, `title=\"\"`) or the ARIA off value (`aria-expanded=\"false\"`, `aria-pressed=\"false\"`, `aria-current=\"false\"`); any other value is applied as written",
+  "`removeAttribute` on a moved attribute changes nothing, and neither does a framework binding that becomes `undefined`, `null` or `nothing`, so bind the off value",
+  "| React | `aria-current={active ? \"page\" : \"false\"}`, `aria-expanded={open ? \"true\" : \"false\"}`, `aria-controls={open ? \"panel\" : \"\"}` | `undefined` or `null` |",
+  "| Lit | `aria-current=${active ? \"page\" : \"false\"}` (an attribute binding with a string) | `nothing`, `ifDefined(undefined)` |",
+  "| Svelte | `aria-current={active ? \"page\" : \"false\"}` | `undefined`, `null` |",
+  "| htmx, Thymeleaf | render the attribute with the off value (`th:attr=\"aria-current=${active} ? 'page' : 'false'\"`) | omitting the attribute on an element that is updated in place; writing a `data-ocelle-moved-*` attribute |",
+  "Each moved value is mirrored in a host attribute the element owns, `data-ocelle-moved-<attribute>` (for example `data-ocelle-moved-aria-label`), removed when the value is cleared; at upgrade the element reads a mirror back for an attribute the host does not set, and a host attribute set at upgrade wins over its mirror. So copies of the live DOM (`cloneNode(true)`, `innerHTML` and `outerHTML`, htmx's history snapshot) keep names and states",
+  "The element restores a mirror that is removed or changed while it holds the value, so a morphing swap (htmx's idiomorph `morph` swap, Turbo 8 page-refresh morphs), which removes every attribute the server markup lacks, keeps the mirrors",
+  "Hosts never write or remove a mirror: one written while the element holds no value for it is not read until the next upgrade",
+  "With htmx, a swap that replaces the element moves the new element's attributes at upgrade; a morphing swap sets the changed attributes on the live element, which moves them, and the element restores the mirrors the morph removes; htmx's history restore keeps the moved values through the mirrors",
+  "Since a host attribute selector no longer matches a moved state, `ocelle-button` exposes custom states: `:state(expanded)` while the moved `aria-expanded` is `\"true\"`, `:state(pressed)` while the moved `aria-pressed` is `\"true\"` in button mode, and `:state(current)` while the moved `aria-current` is anything but `\"false\"`, for example `ocelle-button:state(expanded) ocelle-icon`",
+  "ID references (`aria-controls`, `aria-labelledby`, `aria-describedby`) are resolved by id in the host's own tree (its document, or the shadow root it is in) when they are set and when the element is connected, and related to the inner control by element reference, never by copying the id into the shadow root; ids not found are skipped, an element in another shadow root is not resolved, and an element added later with the id is picked up only when the attribute is set again",
+  "Any other `aria-*` attribute on the host is not supported: it stays on the host and axe flags it",
+  "This is the controls' own rule: `ocelle-icon` and `ocelle-brand-mark` keep their host `aria-label` rule (Host ARIA), so the two families differ",
+  "An element that moves a standard attribute declares it with `@attr` and a description, with its mirror, so the manifest lists both",
+  convention("Current", "On `ocelle-button`, `aria-current` is passed through to the inner control with any value and draws no visual mark; a host that wants a visible mark styles `:state(current)` or uses a row, whose `current` property draws the mark and sets `aria-current`"),
+  "`href`, `target`, `rel` and `download` (attributes and properties, reflected): link mode (Link versus button) and the inner link's attributes, set while the link is available; in button mode and on a disabled link they have no effect. With `target=\"_blank\"` and no `rel`, the inner link gets `rel=\"noopener\"`",
+  "`ocelle-button` moves `aria-expanded`, `aria-controls`, `aria-current`, `aria-haspopup`, `aria-pressed`, `aria-label`, `aria-labelledby`, `aria-describedby` and `title` (Host ARIA is moved); `aria-pressed` is applied in button mode only, since a link cannot be pressed",
+  "A moved `title` is the inner control's native tooltip and its description, or its name when nothing else names it",
+  "In link mode, calling `preventDefault()` on `ocelle-button-activate` cancels the navigation. A click with Ctrl, Meta, Shift or Alt held dispatches no `ocelle-button-activate`: its `click` is delivered, the element prevents nothing and the browser's own modifier handling applies (on Chromium on Linux, Ctrl, Shift and Alt give a new tab, a new window or a download and leave the page as it is; Meta is not a link modifier there and navigates the current tab); a middle click delivers no `click` and dispatches nothing",
+  "In forced colours a link-mode button's text and border are `LinkText`",
+  // 012 phase 4 (tasks.md T043, T048; contracts/elements-package.md § Control conventions 3, § ocelle-button): the
+  // unavailable half of convention 3, the busy button, its spinner, the 4.8 s stop and the 833 ms limit of an override
+  convention("Unavailable", "Unavailable means the control exists but cannot be used right now: the inner control stays in the tab order and keeps focus, reports `aria-disabled=\"true\"`, keeps its name and description so a user can learn why, and is not activated"),
+  "An unavailable link has no `href` either: it is an `<a role=\"link\" tabindex=\"0\" aria-disabled=\"true\">` that stays focusable, so neither a click, a modifier click, a middle click, Enter, the context menu nor a drag opens it",
+  "`busy` (boolean attribute and property, reflected): the button is unavailable (the control conventions) while a host waits for the result of an action, and its inner control reports `aria-busy=\"true\"`; `disabled` wins over `busy`: a disabled busy button is disabled and shows no spinner",
+  "A busy button dispatches neither `ocelle-button-activate` nor a `click`; once `busy` is removed, the next activation delivers both",
+  "While busy, a spinner takes the place of the slotted icon, so the button keeps its size; without an icon it sits before the label with the slot convention's gap. It never covers the label, is drawn in the control's text colour (`currentColor`, the system colour in forced colours) and adds nothing to the accessibility tree",
+  "The spinner turns six times in 4.8 s and then stays still on the same arc it shows under `prefers-reduced-motion: reduce`, where it does not move at all, so it stops within 5 s. A host with long-running work that wants continuous motion shows its own pausable indicator",
+  "A host that overrides `--ocelle-motion-spin` (one turn of the spinner, 800 ms) keeps it at or below 833 ms, so the six turns end within 5 s",
+  "The library shows and announces no text while busy (no \"Loading\" string): a host that wants an announcement makes it",
+  "While busy it also reads the motion tokens `--ocelle-motion-spin` and `--ocelle-motion-turn`",
+  // 012 phase 5 (tasks.md T053, T057; contracts/elements-package.md § ocelle-action-row; plan decision 30): the
+  // ocelle-action-row section, its conventions and its interface
+  "The host is a grid container (`grid` for `ocelle-action-row`, with `min-inline-size: min-content`, so a shrink-wrapping container never makes it 0 wide)",
+  "`row-id` (property `rowId`, reflected): the row's id, which `ocelle-action-row-activate` carries as `detail.rowId` (`\"\"` when absent)",
+  "`layout` (attribute and property, reflected): `row` (the default) puts the icon, the title and the description on one line with the tags and the trailing icon, which move together to a second line when the line cannot hold them",
+  "`presentation` (attribute and property, reflected): `default` (a bordered row on `--ocelle-color-sheet`, `--ocelle-radius-row`) or `flush` (no border and no surface, the block padding `--ocelle-space-1` and the compact text scale); any other value renders `default`",
+  "Every row is at least `--ocelle-target-min` (44 px) tall in every presentation and layout, with the inline padding `--ocelle-space-3`",
+  "`ground` (attribute and property, reflected): as on `ocelle-button`, it selects the default row's border: `--ocelle-color-control-border` on the main grounds, `--ocelle-color-accent-strong` with `accent-low`, `inset`, `hover-bg` or `state`; `ground=\"chrome\"` gives no fill, a `--ocelle-color-chrome-muted` border, the title in `--ocelle-color-chrome-ink` and the description and tags in `--ocelle-color-chrome-muted`",
+  "On hover the surface becomes `--ocelle-color-hover-bg` (`--ocelle-color-chrome-hover` on chrome) and a default row's border `--ocelle-color-hover-border` (`--ocelle-color-chrome-ink` on chrome); a flush row gets no border and nothing moves",
+  "`busy` (boolean attribute and property, reflected): the row's content is updating; its inner control reports `aria-busy=\"true\"`, and activation still dispatches the event: on a row, busy does not mean unavailable",
+  "Each activation (a pointer click, Enter or Space, the element's `click()`) dispatches `ocelle-action-row-activate` from the element: a `CustomEvent` with `bubbles: true`, `composed: true`, `cancelable: true` and `detail` `{ rowId }`",
+  "The row is named by its title (the default slot), then by `label` or the host's `aria-label` or `aria-labelledby` in the name order; its accessible description is the text of the `description` slot followed by that of the `tags` slot, unless the host sets `aria-describedby`",
+  "A `description` or `tags` element without non-whitespace text (an empty `<span slot=\"description\"></span>`, as a server template renders a missing value) contributes nothing and takes no space; text written into it later is picked up",
+  "The description, tags and trailing content are shown beside the row's control and hidden from assistive technology as content: the description and tags reach it as the row's accessible description",
+  "Interactive content (a link, a button, an input) in the `description`, `tags` or `trailing` slot is not supported: it is hidden from assistive technology there, and axe reports it as `aria-hidden-focus`",
+  "Slotted content that sets its own `pointer-events` takes the clicks on it, which the row then ignores (they do not pass through its control)",
+  "The part `control` is the row's icon-and-title control, not its surface: `::part(control)` styles do not reach the row's surface or border",
+  "The title and the description wrap anywhere when a word does not fit, so a long identifier never makes the row wider than its container",
+  "The focus ring is drawn inside the row (`--ocelle-focus-offset-inset`), so a scroll container's edge or the next row never clips or covers it",
+  "`ocelle-action-row` moves `aria-label`, `aria-labelledby`, `aria-describedby` and `title` (Host ARIA is moved); a moved `title` describes the row when nothing else does",
+  // 012 phase 6 (tasks.md T062, T065; contracts/elements-package.md § ocelle-action-row; plan decisions 13, 16, 21, 30
+  // and 31): the row's link activation, current, unavailable and card layout
+  "In link mode the event is dispatched before the navigation, and calling `preventDefault()` on it cancels the navigation. A click with Ctrl, Meta, Shift or Alt held, or a middle click, dispatches no event and the element prevents nothing: the browser's own modifier handling applies (on Chromium on Linux a Meta-click navigates the current tab)",
+  "`current` (attribute and property, reflected): `page` or `true` marks the current item: the inner control reports `aria-current` with that value and the row shows the current mark, an `--ocelle-color-accent-low` surface (`--ocelle-color-chrome-hover` with `ground=\"chrome\"`) and a bar in `--ocelle-color-current`, `--ocelle-bar-width` wide, at the inline start; any other value is not current",
+  "The bar is drawn 7 px inside the row's edge, apart from the focus ring, so on a focused current row the ring and the bar stay two marks. The current mark stays on hover; in forced colours the bar is `Highlight`",
+  "`unavailable` (boolean attribute and property, reflected): the row is unavailable (the control conventions): its inner control stays in the tab order with `aria-disabled=\"true\"`, keeps its name and description and is not activated by any click or key; a link row has no `href`. Its title, description, tags and trailing icon are in `--ocelle-color-disabled-ink` (`GrayText` in forced colours), and hovering it changes nothing",
+  "An unavailable current row keeps its current surface and `aria-current`, with the bar in `--ocelle-color-disabled-ink`",
+  "While the row is unavailable its description, tags and trailing wrappers carry `aria-disabled=\"true\"` too, so a checker reads their text as part of the inactive control",
+  "`layout=\"card\"`: the icon and the title on the first line with the trailing icon at its end, then the description, then the tags, each `--ocelle-space-1` below the line above; the title is the part `title`, so a host can adjust it",
+  "Tags wrap only between tags: a tag's text is not broken inside a word, except a tag wider than the row, which may break",
   // ocelle-facts and ocelle-fact (013 FR-003 to FR-014, FR-056; research.md R-01 to R-03, R-07; tasks.md T010, T010a)
   "`ocelle-facts` shows label and value pairs as one description list: each pair is an `ocelle-fact` child, its label the `label` attribute and its value the fact's content, which the sheet never copies or rewrites",
   "With `layout` unset the sheet is two columns while its own inline size, as laid out in two columns, is at least `--ocelle-facts-stack-below`, and one column, each value below its label, below it",
@@ -439,6 +559,8 @@ const entryRows = [
   "| `@ocelle/elements/ocelle-page-header.js` | `dist/ocelle-page-header.js` | `ocelle-page-header` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-context-sidebar.js` | `dist/ocelle-context-sidebar.js` | `ocelle-context-sidebar` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-personal-rail.js` | `dist/ocelle-personal-rail.js` | `ocelle-personal-rail` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-button.js` | `dist/ocelle-button.js` | `ocelle-button` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-action-row.js` | `dist/ocelle-action-row.js` | `ocelle-action-row` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-facts.js` | `dist/ocelle-facts.js` | `ocelle-facts` and its item `ocelle-fact`; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-fact.js` | `dist/ocelle-fact.js` | `ocelle-fact` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-empty-state.js` | `dist/ocelle-empty-state.js` | `ocelle-empty-state` only; for hosts with a bundler |",
@@ -566,7 +688,7 @@ describe("packages/elements/README.md", () => {
   it("lists exactly the entry points of package.json's exports in its Entry points table (FR-002)", () => {
     const manifest = JSON.parse(read("package.json")) as { exports?: Record<string, string> };
     expect(tableRows(read("README.md"), "Entry points")).toEqual(entryRows);
-    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-scroller.js", "./ocelle-workflow-board.js", "./ocelle-workflow-lane.js", "./ocelle-list-detail.js", "./ocelle-dialog.js", "./ocelle-drawer.js", "./ocelle-tooltip.js", "./ocelle-card.js", "./ocelle-section-header.js", "./ocelle-page-header.js", "./ocelle-context-sidebar.js", "./ocelle-personal-rail.js", "./ocelle-facts.js", "./ocelle-fact.js", "./ocelle-empty-state.js", "./ocelle-progress.js", "./browser.js", "./custom-elements.json"]);
+    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-scroller.js", "./ocelle-workflow-board.js", "./ocelle-workflow-lane.js", "./ocelle-list-detail.js", "./ocelle-dialog.js", "./ocelle-drawer.js", "./ocelle-tooltip.js", "./ocelle-card.js", "./ocelle-section-header.js", "./ocelle-page-header.js", "./ocelle-context-sidebar.js", "./ocelle-personal-rail.js", "./ocelle-button.js", "./ocelle-action-row.js", "./ocelle-facts.js", "./ocelle-fact.js", "./ocelle-empty-state.js", "./ocelle-progress.js", "./browser.js", "./custom-elements.json"]);
   });
 
   it("lists the thirteen names of the set, whether each mirrors and the consumer need it meets, in its Icons table (US2-1, FR-018, SC-007)", () => {
@@ -575,6 +697,14 @@ describe("packages/elements/README.md", () => {
 
   it("keeps the rail's item-size sentence and the next one on one line of the README as written, with no line break between them (phase 5 review R2-01, landing L1-05)", () => {
     expect(read("README.md")).toContain("`ocelle-nav-item` is expected to have. The rail sets only the gap");
+  });
+
+  // Plan decision 28 (SC-006; tasks.md T033): the `ocelle-button` section gives the markup of #12's breadcrumb item,
+  // #12's top-bar menu button and #14's copy control, exactly as scenarios/link.ts renders them.
+  it("gives the three consumer compositions in its ocelle-button section, the markup scenarios/link.ts renders (SC-006)", () => {
+    const section = /^## `ocelle-button`\n([\s\S]*?)(?=^## |(?![\s\S]))/m.exec(read("README.md"))?.[1] ?? "";
+    const block = /\*\*Consumer compositions\.\*\*[\s\S]*?```html\n([\s\S]*?)```/.exec(section)?.[1] ?? "";
+    expect(block.split("\n").filter((line) => line !== "" && !line.startsWith("<!--"))).toEqual([compositions.breadcrumb, compositions.menu, compositions.copy]);
   });
 
   it.each(factsMapping)("maps the role %s to its element and variant in the kitty-mission-ui mapping (013 FR-058)", (role, covered) => {
@@ -877,6 +1007,33 @@ describe("packages/elements/CHANGELOG.md", () => {
     "`ocelle-personal-rail`",
     "`@ocelle/elements/ocelle-personal-rail.js`",
     "`orientation` (reflected) and `label`",
+    // 012 (tasks.md T020)
+    "`ocelle-button`",
+    "`@ocelle/elements/ocelle-button.js`",
+    "`ocelle-button-activate`",
+    "`variant`, `size`, `flush` and `ground` (reflected), `label` and `disabled` (reflected)",
+    "the control conventions",
+    "`--ocelle-color-hover-border`",
+    // 012 phase 3 (tasks.md T038)
+    "link mode",
+    "`href`, `target`, `rel` and `download` (reflected)",
+    "`aria-expanded`, `aria-controls`, `aria-current`, `aria-haspopup`, `aria-pressed`, `aria-label`, `aria-labelledby`, `aria-describedby` and `title`",
+    "`data-ocelle-moved-<attribute>`",
+    "`:state(expanded)`, `:state(pressed)` and `:state(current)`",
+    "Chromium 135 and WebKit 17.4",
+    // 012 phase 4 (tasks.md T048)
+    "`busy` (reflected)",
+    "a busy spinner",
+    // 012 phase 5 (tasks.md T057)
+    "`ocelle-action-row`",
+    "`@ocelle/elements/ocelle-action-row.js`",
+    "`ocelle-action-row-activate`",
+    "`row-id`, `layout`, `presentation`, `ground`, `href`, `target`, `rel` and `busy` (reflected) and `label`",
+    "`--ocelle-focus-offset-inset`",
+    // 012 phase 6 (tasks.md T064a, T065)
+    "`current` and `unavailable` (reflected)",
+    "`layout=\"card\"`",
+    "`:state(pressed)` only in button mode",
     // 013 (FR-057): the facts sheet, the empty state and the progress bar, their entry points and properties
     "`ocelle-facts`",
     "`ocelle-fact`",

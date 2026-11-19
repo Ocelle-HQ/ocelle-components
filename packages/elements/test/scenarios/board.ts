@@ -14,7 +14,7 @@
 // board's intrinsic size would widen it. Every "does not" outcome is observed in the same scenario as the positive
 // outcome it guards (spec § "Does not" outcomes, paired), and the plant that makes it fail is named beside it; each
 // plant is run once and recorded in specs/009-workflow-layouts/reviews/phase-3/plants.md (T044).
-import type { Box, Driver, Target } from "./driver.ts";
+import type { Box, Driver, ElementTarget } from "./driver.ts";
 import { systemColours, tokenColour } from "./icon.ts";
 import type { Scenario } from "./icon.ts";
 import { boxAttributes, edgeLines, edges, fadeFor, inside, readOnce, rgb, ringOf, shadowAttribute } from "./scroller.ts";
@@ -82,8 +82,8 @@ export const board = (id: string, inner: string, attributes = ' label="Workflow"
 
 export const ids = (prefix: string, count: number): string[] => Array.from({ length: count }, (_, index) => `${prefix}${String(index)}`);
 
-const boxOf = (id: string): Target => ({ id, inner: ".region-box" });
-const trackOf = (id: string): Target => ({ id, inner: ".region-track" });
+const boxOf = (id: string): ElementTarget => ({ id, inner: ".region-box" });
+const trackOf = (id: string): ElementTarget => ({ id, inner: ".region-track" });
 
 /** `-0` as 0, so a scroll position reads the same in every harness. */
 const zeroed = (value: number): number => value + 0;
@@ -192,8 +192,8 @@ async function cardStep(driver: Driver, id: string, cardId: string): Promise<unk
 export async function borders(driver: Driver, id: string): Promise<string[]> {
   const out: string[] = [];
   for (const side of ["top", "right", "bottom", "left"]) {
-    const width = await driver.computed(id, `border-${side}-width`);
-    out.push(width === "0px" ? "none" : `${width} ${await driver.computed(id, `border-${side}-style`)} ${await driver.computed(id, `border-${side}-color`)}`);
+    const width = await driver.computedOf(id, `border-${side}-width`);
+    out.push(width === "0px" ? "none" : `${width} ${await driver.computedOf(id, `border-${side}-style`)} ${await driver.computedOf(id, `border-${side}-color`)}`);
   }
   return out;
 }
@@ -256,7 +256,7 @@ async function cardRings(driver: Driver, frame: Frame): Promise<unknown> {
   return {
     steps,
     blockScroll: Number(await readOnce(driver, boxOf("b"), "scrollHeight")) - Number(await readOnce(driver, boxOf("b"), "clientHeight")),
-    overflowY: await driver.computed(boxOf("b"), "overflow-y"),
+    overflowY: await driver.computedOf(boxOf("b"), "overflow-y"),
     overflowing: await overflows(driver, "b"),
   };
 }

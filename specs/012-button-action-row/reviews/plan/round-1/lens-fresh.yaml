@@ -1,0 +1,148 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: fresh
+findings:
+  - id: PLAN-FRESH-1-001
+    severity: 3
+    title: "The row's accessible name will include the description and tags text, so the name is not the title"
+    evidence:
+      - artifact: "research.md § R-05: 'otherwise the content (the default slot; slotted icons are decorative ...)'; § R-10: 'the row's inner control is a flex container (row layout: ... the icon/title/description group ..., the tags-and-trailing group ...)'; data-model.md § Shared nameSource: '... else content'"
+      - artifact: "spec.md US4-3 'named by its title'; US4-12 description 'Due Friday Blocked Design'; FR-034 'The row's accessible name follows FR-006 (the title slot as content)'"
+      - code: "Probe (Chromium 153, CDP Accessibility.getFullAXTree): a shadow <button> holding <slot>, <slot name=description>, <slot name=tags> with ariaDescribedByElements set to the slotted description and tags gives name \"Mission 42 Due Friday Blocked\", description \"Due Friday Blocked\". aria-hidden=\"true\" on the shadow wrapper of the description slot does not remove the slotted text from the name (\"Mission 43 Due Monday\"). Setting the inner button's ariaLabelledByElements to a shadow-internal span wrapping only the default slot gives name \"Mission 42\", description \"Due Friday Blocked\"."
+    claim: |
+      Name from content takes every descendant of the inner <button>/<a> in the flat tree, and the plan puts all five
+      slots inside the inner control (it must, for the whole row to be the click and focus target). So with no
+      `label` and no host name, a screen-reader user hears the description and tags twice: once in the name, once in
+      the description. US4-3 and US4-12 fail, and every row in kitty-mission-ui's lists becomes verbose. Hiding the
+      wrappers with aria-hidden does not help (measured). The plan states no mechanism for "the title slot as
+      content", and the name order of R-05 has to change for it: an internal labelledby beats a moved `aria-label` and
+      `label`, so the element must drop it whenever a higher-precedence source is present.
+    remedies:
+      - "R-05 and data-model.md nameSource for the row: when no moved aria-labelledby, moved aria-label or trimmed label is present, set the inner control's ariaLabelledByElements to the shadow-internal wrapper of the default slot (the `title` part); clear it whenever a higher source is present (a moved aria-label or label becomes the inner aria-label; a moved aria-labelledby replaces it). Add a scenario assertion that the name of a row with description and tags is exactly the title text, and a plant that renders name-from-content to show the test fails."
+
+  - id: PLAN-FRESH-1-002
+    severity: 3
+    title: "Moved host ARIA cannot be cleared by removal, the idiom React, Lit, Svelte and Vue use, so aria-current and aria-expanded go stale; spec scenarios still say 'removing'"
+    evidence:
+      - artifact: "spec.md FR-004: 'removeAttribute on an attribute already moved changes nothing'; research.md R-03: 'Frameworks that set attributes declaratively (Svelte, htmx swaps, Thymeleaf renders) set the attribute again on each change, which the element moves again, so their state stays in step'"
+      - artifact: "spec.md US2-4 'removing it reports no expanded state'; US2-5 'removing it removes it'; US2-9 'removing aria-labelledby names it \"Remove\"'; US4-12 'removing aria-describedby restores \"Due Friday Blocked Design\"'"
+      - code: "Probe (Chromium 153): an element observing aria-current that copies the value to its inner button and removes it from the host; host.setAttribute('aria-current','page') then host.removeAttribute('aria-current') then host.ariaCurrent = null: attributeChangedCallback calls are [[aria-current,null,page],[aria-current,page,null]] (the second is the element's own removal; the host's later removals fire nothing), and the inner button keeps aria-current=\"page\"."
+    claim: |
+      R-03's claim that declarative frameworks stay in step holds only for value changes. When a bound value becomes
+      undefined/null/false-y (React `aria-current={active ? "page" : undefined}`, Lit `ifDefined`/`nothing`, Svelte and
+      Vue `undefined`), the framework calls removeAttribute on an attribute the element already removed, so no
+      callback fires and the inner control keeps the old state. That is the normal way #12's breadcrumb and
+      navigation items drop `aria-current` on client-side navigation and the way a disclosure binds
+      `aria-controls` conditionally: a non-current item is announced as the current page. Also, the element cannot
+      tell its own removal from a host removal (both arrive as old→null), so this cannot be fixed later inside the
+      move design. The spec's own acceptance scenarios (US2-4, US2-5, US2-9, US4-12) still require removal to work,
+      so they contradict FR-004 and red tests written from them will either be impossible or quietly reinterpreted.
+    remedies:
+      - "(a) Keep the move; rewrite US2-4, US2-5, US2-9 and US4-12 to 'set to the empty value or \"false\"', add a scenario that removeAttribute after a move is a documented no-op, and give the README one recipe per consumer stack (React, Lit, Svelte, htmx/Thymeleaf) that binds the off value (\"false\", \"\") instead of undefined; #12's spec is told to bind aria-current that way."
+      - "(b) Keep the move and add framework-friendly properties beside it (`expanded`, `current`, `controlsElements`-style setters where undefined clears), so hosts that bind by property get clearing semantics; this is in addition to host ARIA, not instead of it (the operator rejected 'instead'), and it is a larger public surface (MINOR)."
+      - "(c) Revisit the planning decision: keep the attributes on the host, mirror them inside, and cover the host's axe 'needs review' results through 006's per-node exception mechanism with a Complexity Tracking row; removal then works natively, at the cost of a second named generic node."
+
+  - id: PLAN-FRESH-1-003
+    severity: 2
+    title: "host.click() bypasses disabled, busy and unavailable, and never activates a row"
+    evidence:
+      - artifact: "spec.md FR-003 'not activated (... no click reaching a bubble-phase listener on the element or its ancestors)'; research.md R-06: the guard is 'a click listener and an auxclick listener' on the inner control, disabled relies on the native disabled attribute"
+      - code: "Probe (Chromium 153): a host with an open shadow root holding <button disabled>; host.click() → a document bubble listener logs 'doc-bubble:h', the inner listener never runs."
+    claim: |
+      HTMLElement.prototype.click() on the host dispatches a synthetic click on the host itself; it never passes
+      through the inner control, so neither the native disabled check nor the R-06 guard sees it. A disabled or busy
+      ocelle-button then delivers a click to the host's handlers (the double-submit FR-015 exists to prevent), and
+      `row.click()` dispatches no ocelle-action-row-activate and, in link mode, does not navigate. Programmatic
+      click() is common in hosts (keyboard shortcuts, htmx/test tooling, `label`-like wrappers), and a native
+      <button> honours disabled for it. The plan and the harness (R-11 click always goes through Playwright with
+      force) do not cover this path.
+    remedies:
+      - "Both elements override click() to forward to the inner control (`this.control.click()`), so disabled, the guard and the row's activation apply; add scenarios: host.click() on a disabled and on a busy button delivers no click to bubble listeners (paired with an enabled one that delivers exactly one), and host.click() on an available row dispatches one activate event; document that a synthetic dispatchEvent(new MouseEvent('click')) on the host is outside the guarantee."
+
+  - id: PLAN-FRESH-1-004
+    severity: 2
+    title: "A centred inner flex box breaks flush inline-start alignment for short labels and icon-only flush buttons (#12)"
+    evidence:
+      - artifact: "research.md § R-09: 'the inner control is a flex box that centres the slot convention's icon-row' with min-inline-size var(--ocelle-target-min) (default) or var(--ocelle-space-6) (compact); flush: 'minimum sizes of its size unchanged'"
+      - artifact: "spec.md FR-012 'Its content starts at the box's inline start'; US1-12 'with or without an icon, in each size ... the inline-start edge of its label (or, with an icon, of its icon) equals the inline-start edge of that text within 0.5 CSS px'"
+    claim: |
+      With centring and a 44 px (or 24 px) minimum inline size, any flush button whose content is narrower than the
+      minimum (an icon-only flush button, a one-word breadcrumb like 'Home' in compact on some fonts, a single
+      glyph) has its content pushed in from the inline start by half the slack, so US1-12 fails and #12's first
+      breadcrumb does not align with the page title, which is the whole point of #518. The plan never says the
+      centring is dropped under flush.
+    remedies:
+      - "R-09: under `flush`, `justify-content: flex-start` (content at the inline start; the minimum box stays for the target), and US1-12's test includes an icon-only flush button and a flush label narrower than the minimum, in both sizes and under dir=rtl."
+
+  - id: PLAN-FRESH-1-005
+    severity: 2
+    title: "`min-inline-size: min-content` on the row host makes a long identifier in the title push the row wider than its list"
+    evidence:
+      - artifact: "research.md § R-10: 'The host is display: block; min-inline-size: min-content (FR-040)'; spec.md edge case 'in row layout the title wraps, never overflows the row'; base.css identifier wrapping is opt-in ([data-ocelle-wrap=\"anywhere\"], packages/styles/src/base.css:230) and does not reach shadow internals"
+      - code: "Probe (Chromium 153), 200 px container: block with min-inline-size:min-content around a 56-character unbroken id with overflow-wrap:break-word → 457.8 px wide; same with overflow-wrap:anywhere → 200 px; without min-inline-size → 200 px."
+    claim: |
+      FR-040's fix for the zero-width case also makes the row's minimum the widest unbreakable run in its content.
+      Kitty rows carry mission ids, digests and paths; in a narrow pane the row then overflows the list
+      horizontally instead of wrapping. The plan does not say which overflow-wrap the title (and description) use in
+      row layout; only `anywhere` keeps min-content small, `break-word` does not.
+    remedies:
+      - "R-10: give the title and description wrappers `overflow-wrap: anywhere` in both layouts (so min-content stays small and FR-040 still holds), and add a scenario: a row whose title is a 60-character unbroken id inside a 200 px block container is no wider than the container and its title wraps, paired with the shrink-wrap scenario US4-7."
+
+  - id: PLAN-FRESH-1-006
+    severity: 2
+    title: "The current bar has no implementation that meets all of its constraints; the obvious ones each fail one"
+    evidence:
+      - artifact: "spec.md US5-4 / FR-037: bar at the inline start, --ocelle-bar-width, full block size, 'in forced colours the bar stays visible'; FR-031 'on a flush row it adds no border', 'No state of a flush row moves or resizes its content'; research.md R-08 item 3 states only the bar's colour pair, not how it is drawn"
+      - artifact: "#10 (origin/claude/010-storybook-workbench) specs/006-storybook-workbench/research.md:540: 'ordinary patterns (text over a ::before background ...) give a serious color-contrast incomplete', which 006's axe gate counts as a finding; plan.md R-11: element-test axe also fails on serious incomplete results"
+    claim: |
+      An inset box-shadow is forced to none in forced-colours mode (CSS Color Adjust), so the bar vanishes there; a
+      border-inline-start shifts the content by the bar width when `current` toggles (forbidden on flush rows) and
+      is the 'border' the flush row must not gain; a ::before overlay is the pattern 006 says yields a serious
+      color-contrast incomplete. Leaving it to implementation means the phase-6 green step discovers it under a
+      red test it may not loosen.
+    remedies:
+      - "R-10/R-08: fix the drawing now, e.g. a non-text shadow element (a span in the grid/flex at the inline start, outside the text's box) with `background-color: var(--ocelle-color-current)` and `forced-color-adjust: none` replaced in forced colours by a system colour (`Highlight`/`CanvasText`), or a reserved transparent inline-start border on every row whose colour alone changes; add a scenario that toggling current moves no content box (0 px delta) and that axe on a current row returns no color-contrast incomplete."
+
+  - id: PLAN-FRESH-1-007
+    severity: 2
+    title: "Several planned hover states are invisible by the token values, and the active state is not designed at all"
+    evidence:
+      - code: "packages/tokens/src/source.ts:68-71 color-accent-strong; plan's color-hover-border = var(--ocelle-color-accent-strong) (research.md R-08 item 2) → a hovered primary (R-08 item 4: 'keeps its fill and its border changes to --ocelle-color-hover-border') and a default row on accent-low/inset/hover-bg/state grounds (border already accent-strong) show no change"
+      - code: "packages/tokens/src/source.ts:44 color-inset light #E2DDD3 and :93 color-hover-bg light #E2DDD3: identical, so secondary/quiet/flush hover (fill hover-bg) is invisible in light on inset and on the hover-bg ground (a declared main ground)"
+      - artifact: "spec.md FR-018 lists 'active' among the state pairs the contrast check covers; FR-019 'Hover and active states change surface and border through tokens'; research.md R-08 defines no active-state colours"
+    claim: |
+      FR-019 promises hover and active changes; by the chosen tokens the primary button has no hover change on any
+      ground, rows and buttons have none on several declared grounds, and no active state exists in the design, so
+      FR-018's 'active' contrast rows have nothing to measure. Tests written from FR-019 ('changes surface and
+      border') would fail or be weakened to 'computed value equals token X', which passes with no visible change.
+    remedies:
+      - "R-08: define the active state (e.g. primary active = border hover-border plus a 1 px inset or a darker accent token; secondary/quiet active = color-inset or a new color-active-bg) and its contrast rows; state that hover on primary is the border change only when color-hover-border is overridden, or give the primary hover a fill token; for grounds where hover-bg equals the ground, specify the fallback (a hover border on bordered variants) or record in the spec that hover is not distinguishable there and is not information (FR-019's 'no hover-only information')."
+
+  - id: PLAN-FRESH-1-008
+    severity: 2
+    title: "Element reflection is required but the WebKit floor (Kitty Desktop on macOS and Linux) is neither stated nor guarded"
+    evidence:
+      - artifact: "research.md R-04: 'WebKit's floor is stated as unmeasured for this feature'; plan.md Target Platform 'WebKit unmeasured (open limitation)'"
+      - code: "packages/elements/README.md:206 'Engine floor: Chromium 120+ and WebKit 16.4+'; :217-218 'An element that uses a feature newer than the floor raises the floor in this section'; :220 'WebKit (Kitty Desktop on macOS and Linux)'; constitution I names 'a Tauri webview'"
+    claim: |
+      Mission 005 left WebKit behaviour unmeasured but still stated a documented WebKit version per floor feature;
+      this plan states none for ariaControlsElements/ariaLabelledByElements/ariaDescribedByElements, so the README's
+      single floor list becomes wrong for WebKit. Kitty Desktop, the main consumer, renders in WebKit on two of its
+      three platforms; where reflection is missing, `aria-labelledby` names and the row's FR-034 description silently
+      vanish (the moved attribute is gone from the host, so nothing remains). The plan has no feature detection.
+    remedies:
+      - "R-04 and phase 3's spike: state the first WebKit (Safari) release with all three properties from WebKit's release notes or MDN compat data, raise the README's WebKit floor accordingly, and either guard with feature detection (`'ariaLabelledByElements' in Element.prototype`) falling back to an inner aria-label built from the referenced elements' text and leaving the host attribute in place, or record the gap as a Complexity Tracking row with a sunset."
+
+  - id: PLAN-FRESH-1-009
+    severity: 1
+    title: "Moving aria-expanded/aria-current off the host removes the host's styling hook for state"
+    evidence:
+      - artifact: "contracts/elements-package.md convention 4 'getAttribute on the host returns null afterwards'; the button exposes no other state reflection for expanded or current"
+    claim: |
+      A host that rotates a slotted chevron with `ocelle-button[aria-expanded="true"] ocelle-icon { ... }` (the usual
+      disclosure pattern) or styles the current breadcrumb with `[aria-current="page"]` gets no match after the move,
+      and the element offers no replacement (no reflected property, no custom state). It is not documented as a cost.
+    remedies:
+      - "Expose the moved states as custom states on the host (ElementInternals.states: `:state(expanded)`, `:state(current)`), with their engine figures in the README floor, or document the loss in the README's moved-ARIA note with the recommended host pattern (style from the host's own state class)."

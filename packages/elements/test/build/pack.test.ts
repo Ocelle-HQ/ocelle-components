@@ -6,7 +6,7 @@ import { buildPackage, elements, run } from "./package-build.ts";
 // The packed file list (005 FR-029, FR-030; research.md R-15, T016a; analysis L9): after the package's build, `pnpm
 // pack --dry-run --json` lists the licence of the package, Lit's notice and licence text that the browser build's
 // banner points to, the manifest and the browser build's file, and `NOTICE` with the trademark note (FR-030; phase 5,
-// T055).
+// T055); and since 012 (tasks.md T020) `dist/ocelle-button.js`, and (T053) `dist/ocelle-action-row.js`.
 let packed: readonly string[] = [];
 
 beforeAll(async () => {
@@ -26,6 +26,8 @@ describe("pnpm pack of @ocelle/elements", () => {
     expect(packed).toContain("dist/ocelle-page-header.js");
     expect(packed).toContain("dist/ocelle-context-sidebar.js");
     expect(packed).toContain("dist/ocelle-personal-rail.js");
+    expect(packed).toContain("dist/ocelle-button.js");
+    expect(packed).toContain("dist/ocelle-action-row.js");
   });
 
   // 008 tasks.md T019: the dialog's entry point is packed, and package.json maps it.
