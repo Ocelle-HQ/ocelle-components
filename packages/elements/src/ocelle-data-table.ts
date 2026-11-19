@@ -162,6 +162,10 @@ export class OcelleDataTable extends LitElement {
     this.#children.observe(this, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["hidden", "aria-hidden", "alt"] });
     const sizer = root.querySelector(".box-size");
     if (sizer !== null) this.#size.observe(sizer);
+    // Q-M2 (a), T086: the child observer is off while the element is detached, so a <table> replaced then is assigned
+    // here, and the update that follows re-reads the name, the caption cap and the end fade for it.
+    this.#assign();
+    this.requestUpdate();
   }
 
   override disconnectedCallback(): void {
