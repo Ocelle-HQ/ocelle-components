@@ -17,3 +17,11 @@ When the element is detached, its `<table>` replaced and the element reattached,
 ## Gate gap: gate:mutation passes a file whose every mutant is a compile error
 
 **Decision: Fix the gate in this mission.** Add a task so that gate:mutation fails a file whose mutants are all compile errors, with a plant.
+
+## Gate gap rule (follow-up, asked after 8d8320b)
+
+"Fail any file whose mutants are all compile errors" conflicts with mission 007's `pass-compile-error` plant, whose only mutant is a compile error.
+
+**Decision: (c) Checker failure.** gate:mutation exits 2 ("could not run", naming the file and the diagnostic) when all of a file's changed-line mutants are CompileError and share one diagnostic (the same path, line and TS code) on a line none of them spans. `pass-compile-error` stays a pass plant and 007's verdicts stand. A gate self-test pins how Stryker 10.1.1's TypeScript checker formats its diagnostics.
+
+Not chosen: (a) fail on all-compile-error, amending 007; (b) the same with a threshold of two mutants.
