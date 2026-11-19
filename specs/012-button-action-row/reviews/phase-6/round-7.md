@@ -42,3 +42,9 @@ but it removes the flake for #49, #54 and 018."
 ## Verdict
 
 changes_requested (operator round).
+
+## Operator decision on the value (2026-11-19)
+
+Asked as multiple choice after the planner proposed 1200 s (tasks T078–T083, d1788cd6). The operator answered
+"1200 s, visual only (Recommended)": "Go with the planner's 1200 s for the visual test only. Axe and plants-robustness
+keep 600 s and are named in the follow-up issue with the plant-design triage."
