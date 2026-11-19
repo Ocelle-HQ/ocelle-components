@@ -58,6 +58,13 @@ describe("blockClearanceScroll (contract § Pure functions)", () => {
     { name: "before the pinned box, between the client start and the pinned box's edge: unchanged", input: { ring: { top: 115, bottom: 140 }, box, pinnedEnd: 32, fade: 32, before: true }, expected: { scrollTop: 200, suppressEnd: false } },
     { name: "the same ring box not before the pinned box: moved below it", input: { ring: { top: 115, bottom: 140 }, box, pinnedEnd: 32, fade: 32, before: false }, expected: { scrollTop: 183, suppressEnd: false } },
     { name: "before the pinned box, above the client start: scrolled back to the client start, not to the pinned box's edge", input: { ring: { top: 90, bottom: 115 }, box, pinnedEnd: 32, fade: 32, before: true }, expected: { scrollTop: 190, suppressEnd: false } },
+    // T025 (mutation): the room rule, the 1 px end tolerance and the fallback's suppression at their edges.
+    { name: "the room rule not met (a 95 px box, space 63 px): no fade, so a ring box where it would be is unchanged", input: { ring: { top: 170, bottom: 190 }, box: { ...box, clientHeight: 95 }, pinnedEnd: 32, fade: 32, before: false }, expected: { scrollTop: 200, suppressEnd: false } },
+    { name: "the room rule met at exactly twice the depth (a 96 px box): the same ring box scrolled clear of the fade", input: { ring: { top: 170, bottom: 190 }, box: { ...box, clientHeight: 96 }, pinnedEnd: 32, fade: 32, before: false }, expected: { scrollTop: 226, suppressEnd: false } },
+    { name: "1 px from the range's end the fade is off: a ring box in its place is unchanged", input: { ring: { top: 360, bottom: 381 }, box: { ...box, scrollTop: 699 }, pinnedEnd: 32, fade: 32, before: false }, expected: { scrollTop: 699, suppressEnd: false } },
+    { name: "1 px from the range's end, a ring box ending exactly at the client end is unchanged", input: { ring: { top: 370, bottom: 400 }, box: { ...box, scrollTop: 699 }, pinnedEnd: 32, fade: 32, before: false }, expected: { scrollTop: 699, suppressEnd: false } },
+    { name: "a ring box whose clear position falls exactly 1 px before the range's end goes to the end, where the fade is off", input: { ring: { top: 837, bottom: 867 }, box, pinnedEnd: 32, fade: 32, before: false }, expected: { scrollTop: 700, suppressEnd: false } },
+    { name: "above the pinned box's edge at the block start, ending exactly at the fade's edge: at 0, the fade not suppressed", input: { ring: { top: 110, bottom: 368 }, box: { ...box, scrollTop: 0 }, pinnedEnd: 32, fade: 32, before: false }, expected: { scrollTop: 0, suppressEnd: false } },
   ] as const)("$name", ({ input, expected }) => {
     expect(blockClearanceScroll(input)).toEqual(expected);
   });

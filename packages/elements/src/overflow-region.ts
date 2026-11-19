@@ -153,10 +153,13 @@ export function blockClearanceScroll({ ring, box, pinnedEnd, fade, before }: Blo
   const room = box.clientHeight - pinnedEnd >= 2 * fade;
   const fadesEnd = (position: number): boolean => room && range - position > 1;
   const endRoom = (position: number): number => position + box.clientHeight - (fadesEnd(position) ? fade : 0);
-  const clear = (position: number): boolean => top >= position + upper && bottom <= endRoom(position);
+  // The position below keeps the ring box's end within the end room by construction (at the client end or the fade's
+  // edge), or is the range's end, past which nothing can be shown; so only the upper bound is left to check, and a ring
+  // box above that bound needs no branch of its own: the fallback scrolls it back to the bound.
+  // Stryker disable next-line EqualityOperator: equivalent for the `>` variant, it sends a ring box whose top is exactly at the upper bound to the fallback, which computes the same position (top − upper, within the range) and no suppression, since its bottom is within the end room there; the `<` variant on this line is killed by the clearance cases
+  const clear = (position: number): boolean => top >= position + upper;
   let position = at;
-  if (top < at + upper) position = Math.max(top - upper, 0);
-  else if (bottom > endRoom(at)) {
+  if (bottom > endRoom(at)) {
     const depth = room ? fade : 0;
     position = bottom - box.clientHeight + depth < range - 1 ? bottom - box.clientHeight + depth : range;
   }
@@ -505,8 +508,10 @@ export class OverflowRegion implements ReactiveController {
   /** The name in force: the host's non-blank `aria-label`, else the label, trimmed; undefined without one. */
   name: string | undefined;
   /** Whether content is below the box's client block end by more than 1 px, while the block-axis option is on. */
+  // Stryker disable next-line BooleanLiteral: equivalent, the first observer delivery writes it before the first paint, and nothing reads it before
   offBlockEnd = false;
   /** Whether the block end fades: `offBlockEnd`, the room rule met, and not suppressed by the block focus fallback. */
+  // Stryker disable next-line BooleanLiteral: equivalent, the first observer delivery writes it before the first paint, and nothing reads it before
   fadeBlockEnd = false;
 
   readonly #host: ReactiveControllerHost & HTMLElement;
@@ -530,8 +535,10 @@ export class OverflowRegion implements ReactiveController {
   // Stryker disable next-line NumberLiteral: equivalent, it is read only while a suppression is set, and the fallback writes it then
   #written = 0;
   /** Whether the box carries `data-axis="both"`: the block-axis option on and the box overflowing in the block axis. */
+  // Stryker disable next-line BooleanLiteral: equivalent, the first measure writes it before it reads it; before that measure the box has no tabindex, so no key event targets it, and the focus clearance returns while `overflowing` is still false
   #axis = false;
   /** The block-axis option as last read in `hostUpdated`. */
+  // Stryker disable next-line BooleanLiteral: equivalent, the first hostUpdated writes it; the value read there before is used only when the box is the one already followed, which on the first call is none, and the measure then returns at once
   #blockOn = false;
   /** Whether the block focus fallback suppresses the block-end fade, and the `scrollTop` written then. */
   #suppressedBlock = false;
@@ -588,10 +595,12 @@ export class OverflowRegion implements ReactiveController {
     const box = this.#boxOf();
     // The block-axis option (019 FR-018) is re-read after each update; a change applies to the box it follows.
     const blockOn = this.#blockAxis();
+    // Stryker disable next-line ConditionalExpression: equivalent for the `true` variant, an extra measure on an update of the same box reads the same layout and writes the same state (the `false` variant is killed by the run-time switch body of scenarios/overflow-block.ts)
     const switched = blockOn !== this.#blockOn;
     this.#blockOn = blockOn;
     // Stryker disable next-line ConditionalExpression: equivalent, releasing and following the same box again unobserves and observes it again and takes off and adds back the same listeners, and the host's setLabel after each update (in updated(), which Lit runs after hostUpdated) writes back the attributes the release removed
     if (box === this.#box) {
+      // Stryker disable next-line ConditionalExpression: equivalent for the `true` variant, as above
       if (switched) this.#measure();
       return;
     }
@@ -801,11 +810,13 @@ export class OverflowRegion implements ReactiveController {
     const pinned = this.#blockStartBox();
     if (pinned !== null && path.includes(pinned)) return;
     const position = pinned === null ? 0 : pinned.compareDocumentPosition(target);
+    // Stryker disable next-line ConditionalExpression: equivalent for the CONTAINS test's `true` variant, a focused element that contains the pinned box (in the data table the <table>, given a tabindex) starts at the box's content start, so the clearance scrolls to 0 with either upper bound; the other variants on this line are killed (US1-19, US1-26's caption link, the element-before body)
     const before = (position & Node.DOCUMENT_POSITION_PRECEDING) !== 0 && (position & Node.DOCUMENT_POSITION_CONTAINS) === 0;
     const rect = target.getBoundingClientRect();
     const top = box.getBoundingClientRect().top;
     const clearance = blockClearanceScroll({
       ring: { top: rect.top - room, bottom: rect.bottom + room },
+      // Stryker disable next-line ArithmeticOperator: equivalent, blockClearanceScroll reads the box's top, scrollTop, scrollHeight and clientHeight, not its bottom
       box: { top, bottom: top + box.clientHeight, scrollTop: box.scrollTop, scrollHeight: box.scrollHeight, clientHeight: box.clientHeight },
       pinnedEnd: this.#pinnedEnd(box),
       fade: box.parentElement?.querySelector(".region-edge.block-end")?.getBoundingClientRect().height ?? 0,

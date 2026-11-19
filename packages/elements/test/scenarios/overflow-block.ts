@@ -19,7 +19,7 @@ const room = 5;
 const depth = 32;
 
 const rules = [
-  "ocelle-test-overflow-block { font-family: sans-serif; font-size: 16px; line-height: 24px; }",
+  "ocelle-test-overflow-block, ocelle-test-overflow-plain { font-family: sans-serif; font-size: 16px; line-height: 24px; }",
   '[data-width="320"] { inline-size: 320px; }',
   '[data-bound="300"] { max-block-size: 300px; }',
   '[data-bound="100"] { max-block-size: 100px; }',
@@ -41,15 +41,17 @@ interface HostOptions {
   readonly bound?: number;
   readonly narrow?: boolean;
   readonly axis?: boolean;
+  /** The host element: the block host, or the same host built without the option (T025). */
+  readonly tag?: "ocelle-test-overflow-block" | "ocelle-test-overflow-plain";
 }
 
 /** A block host `id` labelled "Rows": an optional caption block, the pinned box, then `rows` rows of links. */
 function host(id: string, options: HostOptions = {}): string {
-  const { rows = 20, wide = false, cap = false, bound, narrow = false, axis = true } = options;
+  const { rows = 20, wide = false, cap = false, bound, narrow = false, axis = true, tag = "ocelle-test-overflow-block" } = options;
   const attributes = [`id="${id}"`, 'label="Rows"', axis ? "block-axis" : "", bound === undefined ? "" : `data-bound="${String(bound)}"`, narrow ? 'data-width="320"' : "", wide ? 'data-rows="wide"' : ""].filter((each) => each !== "").join(" ");
   const caption = cap ? `<div class="cap" id="${id}-cap"><span id="${id}-ct">Work packages<br>by <a id="${id}-cl" href="#c">owner</a></span></div>` : "";
   const body = Array.from({ length: rows }, (_, index) => `<div class="row"><a id="${id}-r${String(index)}" href="#r">r${String(index)}</a></div>`).join("");
-  return `<ocelle-test-overflow-block ${attributes}>${caption}<div class="pin" id="${id}-pin"><a id="${id}-pl" href="#p">pin</a></div>${body}</ocelle-test-overflow-block>`;
+  return `<${tag} ${attributes}>${caption}<div class="pin" id="${id}-pin"><a id="${id}-pl" href="#p">pin</a></div>${body}</${tag}>`;
 }
 
 async function page(driver: Driver, markup: string, width = 1280): Promise<void> {
@@ -595,6 +597,73 @@ export const overflowBlockScenarios: readonly Scenario[] = [
     },
     expected: [{ focused: "b-r1", blockFade: null }, { blockFade: "end" }, { blockFade: "end" }],
   },
+  {
+    // T025 (mutation): the block focus fallback's 1 px tolerance.
+    name: "block clearance fallback, the tolerance: the suppression holds after a scroll of exactly 1 px from the position the module wrote, and ends after one of 3 px (contract § Effects, Focus clearance)",
+    run: async (driver) => {
+      await page(driver, host("b", { bound: 100 }));
+      await driver.rules(".row.tall { block-size: 90px; } .row.tall > a { block-size: 80px; }");
+      await driver.module('document.getElementById("b-r1").parentElement.className = "row tall";');
+      await driver.focus("b-r0");
+      await driver.pressTab();
+      const top = await driver.scrollTop(boxOf("b"));
+      const steps: unknown[] = [{ focused: await driver.focused(), blockFade: await boxAttribute(driver, "b", "data-block-fade") }];
+      await driver.setScrollTop(boxOf("b"), top + 1);
+      steps.push({ moved: (await driver.scrollTop(boxOf("b"))) - top, blockFade: await boxAttribute(driver, "b", "data-block-fade") });
+      await driver.setScrollTop(boxOf("b"), top + 3);
+      steps.push({ moved: (await driver.scrollTop(boxOf("b"))) - top, blockFade: await boxAttribute(driver, "b", "data-block-fade") });
+      return steps;
+    },
+    expected: [{ focused: "b-r1", blockFade: null }, { moved: 1, blockFade: null }, { moved: 3, blockFade: "end" }],
+  },
+  {
+    // T025 (mutation): the state before the first measure.
+    name: "block axis on a host added already bounded: its first measure sees the block overflow, so after settle it carries `data-axis=both` and the block-end fade (`data-block-fade=end`), not suppressed before any focus",
+    run: async (driver) => {
+      await page(driver, '<div id="slot"></div>');
+      await driver.append("slot", host("n", { bound: 300 }));
+      await driver.settle();
+      return { axis: await boxAttribute(driver, "n", "data-axis"), blockFade: await boxAttribute(driver, "n", "data-block-fade"), tabindex: await boxAttribute(driver, "n", "tabindex") };
+    },
+    expected: { axis: "both", blockFade: "end", tabindex: "0" },
+  },
+  {
+    // T025 (mutation): letting go of a box (contracts/overflow-region.md § Lifecycle `hostUpdated`, 009 O3-03).
+    name: "block axis, letting go: a box the host no longer hands the module loses `data-axis` and `data-block-fade` with its tab stop, and gets them back when handed back; a block suppression of the box let go does not outlive it",
+    run: async (driver) => {
+      await page(driver, host("r", { bound: 100 }));
+      await driver.rules(".row.tall { block-size: 90px; } .row.tall > a { block-size: 80px; }");
+      await driver.module('document.getElementById("r-r1").parentElement.className = "row tall";');
+      const read = async (): Promise<Record<string, string | null>> => ({
+        axis: await boxAttribute(driver, "r", "data-axis"),
+        blockFade: await boxAttribute(driver, "r", "data-block-fade"),
+        tabindex: await boxAttribute(driver, "r", "tabindex"),
+      });
+      const steps: unknown[] = [await read()];
+      await driver.setAttribute("r", "current", "none");
+      await driver.settle();
+      steps.push(await read());
+      await driver.setAttribute("r", "current", null);
+      await driver.settle();
+      steps.push(await read());
+      await driver.focus("r-r0");
+      await driver.pressTab();
+      steps.push({ focused: await driver.focused(), blockFade: await boxAttribute(driver, "r", "data-block-fade") });
+      await driver.setAttribute("r", "current", "none");
+      await driver.settle();
+      await driver.setAttribute("r", "current", null);
+      await driver.settle();
+      steps.push({ blockFade: await boxAttribute(driver, "r", "data-block-fade") });
+      return steps;
+    },
+    expected: [
+      { axis: "both", blockFade: "end", tabindex: "0" },
+      { axis: null, blockFade: null, tabindex: null },
+      { axis: "both", blockFade: "end", tabindex: "0" },
+      { focused: "r-r1", blockFade: null },
+      { blockFade: "end" },
+    ],
+  },
 ];
 
 /** The option-off guard: the same host without `block-axis` keeps 009's contract exactly. */
@@ -626,5 +695,41 @@ export const overflowBlockGuards: readonly Scenario[] = [
       off: { axis: null, blockFade: null, taller: true, size: ["100% 300px", "100% 0px"] },
       on: "both",
     },
+  },
+  {
+    // T025 (mutation): the module's default for an absent option.
+    name: "block axis absent (guard): a host built without the option, as 009's are, does not handle ArrowDown and has no `data-axis` or `data-block-fade` although its content is taller than its bound; paired with the block host carrying `data-axis=both`",
+    run: async (driver) => {
+      await page(driver, `${host("p", { wide: true, narrow: true, bound: 300, axis: false, tag: "ocelle-test-overflow-plain" })}${host("w", { wide: true, narrow: true, bound: 300 })}`);
+      await driver.focus(boxOf("p"));
+      await driver.chord("ArrowDown");
+      return {
+        arrowDown: { prevented: await driver.lastKeyPrevented(), scrollTop: await driver.scrollTop(boxOf("p")) },
+        absent: {
+          axis: await boxAttribute(driver, "p", "data-axis"),
+          blockFade: await boxAttribute(driver, "p", "data-block-fade"),
+          taller: (await prop(driver, boxOf("p"), "scrollHeight")) > (await prop(driver, boxOf("p"), "clientHeight")) + 1,
+        },
+        on: await boxAttribute(driver, "w", "data-axis"),
+      };
+    },
+    expected: { arrowDown: { prevented: false, scrollTop: 0 }, absent: { axis: null, blockFade: null, taller: true }, on: "both" },
+  },
+  {
+    // T025 (mutation): the block clearance only while `data-axis=both`.
+    name: "block axis off (guard), focus: with the option off, a link tabbed to under the pinned box stays where it is (no block clearance); paired with the option on, where the same link is scrolled below the pinned box",
+    run: async (driver) => {
+      await page(driver, `${host("o", { wide: true, narrow: true, bound: 300, axis: false })}${host("w", { wide: true, narrow: true, bound: 300 })}`);
+      const moved: Record<string, unknown> = {};
+      for (const id of ["o", "w"]) {
+        await driver.setScrollTop(boxOf(id), 122);
+        const at = await driver.scrollTop(boxOf(id));
+        await driver.focus(`${id}-r4`);
+        await driver.tab(true);
+        moved[id] = { focused: await driver.focused(), at, change: Math.sign((await driver.scrollTop(boxOf(id))) - at) };
+      }
+      return moved;
+    },
+    expected: { o: { focused: "o-r3", at: 122, change: 0 }, w: { focused: "w-r3", at: 122, change: -1 } },
   },
 ];
