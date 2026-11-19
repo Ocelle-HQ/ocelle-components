@@ -97,8 +97,12 @@ takes its table's width and overflows only when its own inline size is bounded, 
   removes the region and the table from the accessibility tree (the Host ARIA rule, FR-015). Browser bodies assert
   both (analysis G3).
 
-- **Assignment.** `slotAssignment: "manual"`. In `updated()`, and on a child-list change seen by its
-  `MutationObserver`, the slot is assigned the first direct `table` child or nothing.
+- **Assignment.** `slotAssignment: "manual"`. In `updated()`, on a child-list change seen by its
+  `MutationObserver`, and in `connectedCallback`, the slot is assigned the first direct `table` child or nothing.
+  The observer is disconnected while the element is detached, so a child-list change made then is seen by no one:
+  `connectedCallback` re-assigns the slot and calls `requestUpdate()`, so a table replaced while the element was
+  detached is shown once it is attached again, with the name, the caption cap and the end fade following it (the
+  operator's decision Q-M2 (a), 2026-11-19; T085, T086).
 - **Name.** `setLabel(label?.trim() || captionText || undefined)` after each render, with `captionText` from R-04:
   the caption's text nodes in tree order, skipping any element with `hidden` or `aria-hidden="true"` and its subtree,
   an `<img>` giving its `alt`, white space collapsed and trimmed; empty counts as absent. The `MutationObserver`

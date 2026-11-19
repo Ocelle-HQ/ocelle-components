@@ -6,7 +6,7 @@
 
 **Status**: Approved at the spec gate (2026-11-15); amended after the plan gate and after the analysis (2026-11-16),
 the recheck (2026-11-17), the phase 1 spike, the library inventory and its follow-up questions, and the re-analysis
-(2026-11-18)
+(2026-11-18), and at phase 1's mutation stop (2026-11-19)
 
 **Input**: User description: "Mission for the rest of #13 (triage/019-data-display-follow-on.md; triage/013-data-display.md
 option B), spec directory specs/019-data-records. The operator chose option B at the triage gate: this mission builds
@@ -207,6 +207,18 @@ decisions in `reviews/phase-1/operator-spike-2-decisions.md`, changes listed in 
   fail there (answered 2026-11-18): (a), the expectation that the focus ring is brought exactly to the box's
   block-start edge is checked with the link partly scrolled out at the top (2 to 12 px above the edge), and the
   fully scrolled position is kept as a paired check that the browser alone already meets (FR-018, US1-26).
+
+**Operator decisions at phase 1's mutation stop** (2026-11-19; `reviews/phase-1/mutation.md`, decisions in
+`reviews/phase-1/operator-mutation-decisions.md`, changes listed in `reviews/phase-1/mutation-decisions-fixes.md`):
+
+- Q-M1, keyboard focus entering a scroll box the region has just been given, before it first measured that box, got
+  no block-axis focus clearance: (b), the clearance decides from the box as it is at the time of focus, so it applies
+  then as it does afterwards (FR-018).
+- Q-M2, a data table detached, its `<table>` replaced and attached again showed no table: (a), fixed in phase 1, test
+  first; the element re-assigns its slot when it is attached (FR-003).
+- The mutation gate passed a file every one of whose mutants the type checker rejected, so `ocelle-data-table` was not
+  mutation-tested at all: fixed in this mission, with a plant; the rule's exact form is open (an operator question,
+  `reviews/phase-1/mutation-decisions-fixes.md` § Open).
 
 ## Scope
 
@@ -734,7 +746,9 @@ the chip variant.
   decision Q1 (a)) and show it, unchanged, inside its region: the element never copies, moves or rewrites the table or
   its cells. Other direct children are neither shown nor exposed. The table is assigned to the region's slot by manual
   slot assignment (the library's slotted-items convention), and the element re-assigns the slot whenever its direct
-  children change, so a `<table>` replaced by a swap is shown at once.
+  children change, so a `<table>` replaced by a swap is shown at once, and when it is attached to a document, so a
+  `<table>` replaced while the element was detached is shown once it is attached again (the operator's decision
+  Q-M2 (a), 2026-11-19).
 - **FR-004**: The accessibility tree MUST expose the consumer's table with the platform's own table semantics (a table
   named by its caption, rows, column and row headers, cells associated with their headers, `headers`/`id` references
   between cells), measured in Chromium against the same table outside the element, with no serious or critical axe

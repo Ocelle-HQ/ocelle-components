@@ -166,7 +166,13 @@ otherwise (as it writes `data-axis`); the host binds nothing for it. `offStart`,
   fallback aligning the ring box's block-start edge at the client block-start edge. Without it the clearance would
   scroll such an element towards or under the pinned box, or clamp and suppress the fade at rest. The write is an instant `scrollTop` assignment. Chromium's own focus scroll runs
   before `focusin`, so the clearance reads the position it left and writes once; no frame shows a jump back
-  (spike-2 § 6).
+  (spike-2 § 6). **When it runs** (the operator's decision Q-M1 (b), 2026-11-19): the block clearance runs when, at
+  the time of focus, the option is on (`blockAxis()`) and the box overflows in the block axis (`scrollHeight −
+  clientHeight > 1`, as § Scrolling reads it), both read then from the box, never from the state the last
+  measurement left. So focus entering a box the module has just been handed (the host renders a new box, or hands
+  back one it let go of) gets the block clearance in the frame before the observer's first measurement of it, as it
+  does afterwards. Reading it does not write `data-axis` or any output; the measurement that follows the clearance
+  does, as before.
 - **Focus handover.** As 009's contract, when overflow ends in both axes while the box has focus.
 - **Block overflow ending, turning the option off, or letting go of the box.** The module removes `data-block-fade`
   with `data-axis`, and ends any block suppression.
@@ -308,5 +314,12 @@ bound reaches the box; contracts/ocelle-data-table.md).
   layers of 009's contract. The same suite runs, on the data table, the RTL lift (`scrollLeft` 0 and `data-fade="end"`
   at rest, after the bound is lifted and after it is set again) and the sticky caption body with the room
   subtracted. The test host's other bodies above are not repeated there.
+- Focus entering a box handed back before its first measurement (Q-M1 (b), T083): the test host with the option on
+  in a 300 px bound, in keyboard modality, scrolled so that row 0's link is out above the pinned child; the box let
+  go (`current="none"`, no `data-axis`) and, in one task before the observer measures it again, handed back and row
+  0's link focused (it matches `:focus-visible`, asserted first). After `settle`: its ring box's block-start edge at
+  or below the pinned child's current block-end edge within 0.5 px and its block-end edge at or above the block-end
+  fade's block-start edge (the client block-end edge where no fade shows). Paired with the same steps with the
+  option off: the ring box still under the pinned child.
 - "Within 0.5 px" in these bodies, as everywhere in this feature, is inclusive (`|difference| ≤ 0.5`): spike-2 § 8
   measured differences of exactly 0.5 px.
