@@ -25,15 +25,16 @@ attribute conventions). FR-002, R-02.
 | `pulse` | attribute `pulse`, reflected | boolean, `false` | ring rendered only while true (R-04) |
 
 Derived: *named* = `label.trim() !== ""` → role `img`, name `label.trim()`; else `aria-hidden`. *Pulsing* = a CSS
-animation on the ring, which exists iff `pulse` and the element is rendered and motion is not reduced; it runs
-`motion-pulse-count` iterations of `motion-pulse` and ends (FR-012). No script state. The dot and the ring take
+animation on the ring, which exists iff `pulse` and the element is rendered and motion is not reduced; it runs 3
+iterations (the literal `animation-iteration-count: 3`, no token; phase-1 recheck Q1) of `motion-pulse` and ends
+(FR-012). No script state. The dot and the ring take
 `--ocelle-radius-pill`, the indicator's dot being a state mark (FR-003, plan decision 3, confirmed at the tasks gate).
 
 Pulse run lifecycle (CSS, R-04):
 
 ```text
 [no ring] --pulse set, rendered (a) / connect with pulse (b) / shown again from display: none or hidden (d)--> [running]
-[running] --after count × duration--> [ended: ring at opacity 0, dot solid]
+[running] --after 3 × motion-pulse--> [ended: ring at opacity 0, dot solid]
 [running|ended] --pulse removed, rendered--> [no ring]
 [running] --reduced motion on--> [no animation]  --reduced motion off (c)--> [running]
 pulse removed and set within one task --> no transition (one Lit update, ring kept)
@@ -82,18 +83,25 @@ Derived:
   span's content box (R-09); internal reactive state, re-measured in every `updated()` while interactive and by the
   observers.
 - **custom states**: `pressed` iff mode = button and applied `aria-pressed` = `"true"` (the pill's own rule; in link
-  mode the held value gives none, unlike `ocelle-button` as merged, plan decision 12); `current` iff mode ≠ static
+  mode the held value gives none, as `ocelle-button` as merged on `main` does too, 012 plan decision 32; plan decision
+  12); `current` iff mode ≠ static
   and applied `aria-current` present and ≠ `"false"` (FR-031).
-- **observers** (`ResizeObserver` on the text span, `MutationObserver` on the host, `slotchange` on the default slot)
-  exist iff connected and mode ≠ static (R-09).
+- **labelled** = the default slot's flattened assigned nodes hold non-whitespace text, read as `ocelle-button` reads
+  it: on the slot's `slotchange` and by a `MutationObserver` (`characterData`, `childList`, `subtree`) on the host
+  held for the element's lifetime, in every mode; while not labelled the `.icon-row` carries `bare` (the slot
+  convention as merged, 012 plan decision 33; R-06, plan decision 15 as amended at the phase-1 recheck).
+- **observers** for truncation (`ResizeObserver` on the text span, the `.label` wrapper; a `MutationObserver` on the
+  host; `slotchange` on the default slot) exist iff connected and mode ≠ static (R-09); the label read's observer
+  above is separate.
 - **interactive host sheet** (the focus-ring clearance cap and margin; the host's `display: inline-grid` and the
   `min-inline-size: 0` chain on host, control, `.icon-row` and text span; the disabled pill's `overflow-wrap:
   anywhere`, R-07) is in `adoptedStyleSheets` iff mode ≠ static. While static the host is `inline-block` with no
   `min-inline-size: 0` anywhere, so a flex row does not shrink it below its longest word, and the `.pill` (selected as
   `.pill:not(.control)`) is `inline-size: fit-content; max-inline-size: 100%; box-sizing: border-box`, so a stretched
-  host does not stretch the visible pill (R-06). In every mode the pill's own styles set `.icon-row { align-items:
-  baseline }` and `.icon-slot { align-self: flex-start }`, so a one-line pill sits on the surrounding baseline (R-06,
-  plan decision 15).
+  host does not stretch the visible pill (R-06). In every mode the text is in the slot convention's `.label` wrapper
+  and `iconSlotStyles` as merged aligns a labelled row on the label's first line (`.icon-row:not(.bare) > .label {
+  align-self: baseline }`), so a one-line pill sits on the surrounding baseline; the pill sets no row alignment of its
+  own (R-06, plan decision 15 as amended at the phase-1 recheck, Q2).
 
 Mode transitions (FR-035, R-08). Every passthrough step runs synchronously in the `interactive`/`href`
 `attributeChangedCallback` that changes the mode; rendering follows in Lit's update.
@@ -116,6 +124,6 @@ disabled or while static (FR-031).
 ## Tokens added (R-10)
 
 `--ocelle-size-indicator` (0.5rem), `--ocelle-motion-pulse` (1600ms; 0ms under reduced motion),
-`--ocelle-motion-pulse-count` (3), `--ocelle-line-height-snug` (1.2), `--ocelle-target-small` (1.5rem), and only if
-mission 011 is not on `main` at US2: `--ocelle-font-size-eyebrow`, `--ocelle-font-weight-eyebrow`,
-`--ocelle-tracking-eyebrow`, `--ocelle-color-eyebrow` as 011's R-12 defines them.
+`--ocelle-line-height-snug` (1.2), `--ocelle-target-small` (1.5rem). Not added (phase-1 recheck): no iteration-count
+token (Q1; the pulse's count is the literal 3), and 011's `--ocelle-font-size-eyebrow`, `--ocelle-font-weight-eyebrow`,
+`--ocelle-tracking-eyebrow`, `--ocelle-color-eyebrow`, which are on `main` and used as merged.

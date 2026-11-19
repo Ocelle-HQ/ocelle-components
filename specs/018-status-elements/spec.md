@@ -112,6 +112,27 @@ applied in `reviews/plan/round-3/fixes-1.md`):
   nothing else of 012's, and its tests are static-only, their interactive twins being user story 4's (I2;
   Assumptions).
 
+**Operator decisions at the phase-1 recheck** (human:jeroennouwsdev, 2026-11-19; `reviews/phase-1/recheck.md`,
+`reviews/phase-1/operator-decisions.md`, applied in `reviews/phase-1/design-amendments.md`):
+
+- Pulse count (Q1), "(a)": no iteration-count token. The token validator and brand rule (f) as merged accept only a
+  duration, an angle or an easing function in the motion group, so the ring runs a fixed count of three written in the
+  element's styles, each iteration as long as the motion token `motion-pulse`. This amends the SPEC-1-02 line above
+  ("a fixed iteration count from a motion token"): the count is fixed in the element, the duration is the token
+  (FR-012, FR-041, US1-4).
+- The pill's baseline (Q2), "(a)": the pill follows the slot convention as merged (mission 012 plan decision 33): its
+  text is in the convention's label wrapper, and a row with no text carries the `bare` modifier, so the convention's
+  own rule puts a one-line pill on the surrounding baseline. The pill no longer overrides the row's alignment in its
+  own styles, as the plan squad round 3 line above says; the behaviour that line asks for (Edge Cases) is unchanged
+  and still checked (FR-026).
+- Plant shards (Q3): the feature proceeds with its 21 stories; the shard question stays with the pending plant-design
+  triage (plan decision 9).
+- Harness rows (Q4), "(a)": phase 1 adds only the test-driver methods `main` does not have; the others are used as
+  merged (plan, contracts/checks.md § Test harness).
+- Facts recorded at the recheck: mission 011's eyebrow tokens are on `main` and are used as they are (FR-042's second
+  branch); `ocelle-button` as merged sets `:state(pressed)` in button mode only (012 plan decision 32), so the pill's
+  link-mode rule of PLAN-CORRECTNESS-1-007 now matches it (FR-031).
+
 **Consumers** (constitution VI): kitty-mission-ui's Kitty Desktop and Kitty Dashboard screens, which today use the
 `sk-pill-tag` (32 uses: `status`, `title`, slotted content, badge use), `sk-status-indicator` (2 uses: `tone`) and
 `sk-metric` (2 uses: `label`, `display-value`) equivalents; spec-kitty-design #498, #509, #524 and #526 name the gaps
@@ -127,7 +148,8 @@ this feature closes. The `sk-*` library is read as requirements only; nothing is
   its contract (§ "#7 and #12") shows, without `describes`. User story 5 cannot start until 008 is on `main`.
 - **Mission 011 / #8** (`specs/011-layout-headers`): the eyebrow tokens of its R-12 (`font-size-eyebrow`,
   `font-weight-eyebrow`, `tracking-eyebrow`, `color-eyebrow`). If 011 has not landed when user story 2 starts, this
-  feature adds those four tokens exactly as R-12 defines them.
+  feature adds those four tokens exactly as R-12 defines them. (011 is on `main` at `bea31300`, merged into this branch,
+  so its tokens are used as they are: phase-1 recheck.)
 - **Op 016 / #41** (`ops/016-plants-affected`, on `main` at `c4c0af45`, merged as #45; it reaches this branch with
   the merge of 012 and 008): supplies `pnpm run gate:plants -- --affected <base>` (and `--list`), which judges only the plants a phase's diff can
   affect, and the record file `reviews/phase-<N>/plants.md` each phase writes and its reviewer checks. It changes no
@@ -187,7 +209,7 @@ accessibility tree.
    `img` named "Running", and nothing else from the element.
 4. **Given** `pulse`, **When** it renders with no motion preference, **Then** an animation runs on a ring around the
    dot, while the dot itself stays fully opaque at its full size in every frame; the animation runs a fixed number of
-   iterations taken from a motion token, ends no later than 5 s after it started, and afterwards no animation runs and
+   iterations (three), each as long as a motion token, ends no later than 5 s after it started, and afterwards no animation runs and
    the dot is shown solid while `pulse` is still set; **When** `pulse` is removed before then, **Then** the animation
    stops; **When** `pulse` is set again (removed and rendered, then added in a later task), **Then** the animation runs
    again on the same terms, while a removal and re-addition within one task start no run; **When** the element is
@@ -200,7 +222,7 @@ accessibility tree.
    indicator is closed and opened again, **Then** no run starts on opening: a run under way when it closed goes on while
    it is closed (and may end unseen), as Chromium does, which a test pins (operator decision, PLAN-FRESH-2-001); and no
    other change starts or restarts it, whatever it is (FR-012 lists the four cases in full; WCAG 2.2.2). The 5 s limit holds for the
-   default values of the pulse's motion tokens (FR-041).
+   default value of the pulse's motion token (FR-041).
 5. **Given** `pulse` and `prefers-reduced-motion: reduce`, **When** it renders, **Then** no animation runs and the dot
    is shown solid; **When** the preference changes to `reduce` while a run is under way, **Then** the run stops at
    once and the dot is shown solid.
@@ -497,7 +519,8 @@ container width, the text and `disabled`; hover, focus and press Escape; read th
   8 px in each dimension and sized from tokens. The dot is shown in every state; it is never transparent, empty or
   outlined only.
 - **FR-012**: With `pulse`, an animation runs on a ring drawn around the dot, never on the dot itself; in every frame
-  the dot keeps its full opacity and size. Its duration and its iteration count come from motion tokens (FR-041), and
+  the dot keeps its full opacity and size. Its iteration duration comes from a motion token and its iteration count is
+  a fixed number written in the element's styles (FR-041; operator decision at the phase-1 recheck, Q1), and
   the whole animation ends at most 5 s after it starts (WCAG 2.2.2); afterwards no animation runs and the dot is
   shown solid while `pulse` stays set. A run starts in exactly these four cases, and this list is complete: (a) when
   `pulse` goes from absent to present while the element is connected and rendered, as a rendered change (a removal
@@ -518,15 +541,15 @@ container width, the text and `disabled`; hover, focus and press Escape; read th
   runs. A case that occurs while the element is not rendered starts no run of its own; the run starts when (d) occurs.
   No other change starts or restarts a run: not a change of `tone`, `label` or any other attribute, the theme, the
   element's size or position, `visibility` or opacity, or scrolling it out of view and back. Without `pulse`, no
-  animation runs (operator decision, SPEC-1-02). The 5 s limit holds for the default values of the pulse's motion
-  tokens, per run (as 012 FR-017 does for its spinner).
+  animation runs (operator decision, SPEC-1-02). The 5 s limit holds for the default value of the pulse's motion
+  token, per run (as 012 FR-017 does for its spinner).
   **The indicator's README rules.** This list is the single source of them: FR-014, FR-016, the Edge Cases,
   contracts/elements-status.md and the tasks refer to it and do not restate it (analysis finding D1). The README
   states: (i) without a `label`, the host places text naming the state next to the indicator, since state is never
   shown by colour alone (FR-014); (ii) `label` is the one way to name it, and a host `aria-label` is unsupported and
   not read (FR-014, US1-8; PLAN-CORRECTNESS-1-005); (iii) it is not a busy or progress signal, #13's
-  `ocelle-progress` is (FR-016); (iv) a host that overrides the pulse's motion tokens keeps their product at or below
-  5 s; (v) each connection, and each time the indicator is shown again, starts a run, so a host that re-inserts,
+  `ocelle-progress` is (FR-016); (iv) a host that overrides the pulse's motion token keeps a run, the token's value
+  times the fixed iteration count, at or below 5 s; (v) each connection, and each time the indicator is shown again, starts a run, so a host that re-inserts,
   moves, re-renders or re-shows an indicator more often than every 5 s (a polled swap, a live re-sort) keeps it
   pulsing, and should keep `pulse` off between changes or keep the element in place (SPEC-3-08); (vi) removing and
   setting `pulse` again within one task starts no run, so a host sets it again in a later task
@@ -572,7 +595,9 @@ container width, the text and `disabled`; hover, focus and press Escape; read th
   (FR-034). On a static pill `label` has no effect. Unknown `variant` and `density` values fall back to their defaults
   and stay in the attribute as written.
 - **FR-026**: Content: the default slot holds the pill's text; the `icon` slot follows mission 005's slot convention.
-  Slotted icons are decorative and add nothing to the accessibility tree.
+  Slotted icons are decorative and add nothing to the accessibility tree. The pill uses the slot convention as merged
+  on `main`, mission 012's amendment included (012 plan decision 33): the text in the convention's label wrapper, and
+  the `bare` modifier when the pill has no text (operator decision at the phase-1 recheck, Q2).
 - **FR-027**: A static pill (neither `interactive` nor a link-mode `href`) is not focusable, has no role of its own,
   exposes its text as plain text, and wraps a full text that does not fit onto further lines; it never truncates. A
   flex row around it does not shrink it below its longest word (Edge Cases, US3-8), and a grid track or a flex column
@@ -614,8 +639,9 @@ container width, the text and `disabled`; hover, focus and press Escape; read th
   unpressed look in forced colours and does not change the pill's box, and exposes the custom state
   `:state(pressed)`; any other value (`false`, `mixed`, which reaches the inner button as written and is reported mixed,
   or a cleared value) gives neither, as on `ocelle-button` (012's data model; operator decision, SPEC-3-03). In link
-  mode no `aria-pressed` value gives the pressed look or `:state(pressed)`: this is the pill's own rule (`ocelle-button`
-  as merged sets its state from the held value in link mode too; operator decision, PLAN-CORRECTNESS-1-007). In button
+  mode no `aria-pressed` value gives the pressed look or `:state(pressed)` (operator decision,
+  PLAN-CORRECTNESS-1-007; `ocelle-button` as merged on `main` does the same since 012 plan decision 32, recorded at the
+  phase-1 recheck). In button
   and link mode a moved `aria-current` present and other than `false` exposes `:state(current)`, with no visual mark of
   its own, as `ocelle-button` does (012 FR-004, FR-009). A custom state follows the value applied to the inner control
   only: an attribute on the host of a static pill, or an `aria-pressed` held but not applied in link mode, gives no
@@ -658,11 +684,12 @@ container width, the text and `disabled`; hover, focus and press Escape; read th
 
 - **FR-040**: `@ocelle/tokens` gains `--ocelle-line-height-snug` with the value 1.2, validated and documented like the
   other line-height tokens.
-- **FR-041**: The indicator's pulse takes its duration and its iteration count from motion tokens (FR-012); where no
-  existing token suits, the plan adds one, and with their default values their product is at most 5 s (FR-012). A
-  token added here follows the token set's reduced-motion rule as it stands on `main` when the token is added; the
-  plan confirms that the token validator accepts an iteration-count (unitless) token in the motion group, or states
-  the change it needs.
+- **FR-041**: The indicator's pulse takes its iteration duration from a motion token, and its iteration count is a
+  fixed number written in the element's styles, not a token (FR-012); where no existing duration token suits, the
+  plan adds one, and with its default value the count times the duration is at most 5 s (FR-012). A token added here
+  follows the token set's reduced-motion rule as it stands on `main` when the token is added. (Amended at the phase-1
+  recheck, operator decision Q1 (a): the token validator and brand rule (f) as merged refuse a unitless value in the
+  motion group, so the count is not a token.)
 - **FR-042**: If mission 011 has not landed when the metric is built, the four eyebrow tokens are added exactly as
   011's R-12 defines them; if it has, they are used as they are.
 - **FR-043**: The interactive pill's minimum block size and minimum inline size (FR-029) come from one token whose
@@ -692,7 +719,7 @@ container width, the text and `disabled`; hover, focus and press Escape; read th
 - **SC-003**: Every status-vocabulary pairing of foreground and ground used by these elements passes the automated
   contrast check (4.5:1 for text, 3:1 for the dot and the badge border) in both themes.
 - **SC-004**: With reduced motion requested, zero animations run on any indicator; with it not requested, the dot is
-  fully visible in 100 % of sampled animation frames, and with the default token values no pulse run lasts longer
+  fully visible in 100 % of sampled animation frames, and with the default token value no pulse run lasts longer
   than 5 s from its start, whether it started by setting `pulse`, by connecting the element, by a change of the
   motion preference or by the element starting to be rendered (FR-012 (d); the opening of a `<details>` is not one of
   these starts, operator decision PLAN-FRESH-2-001).
