@@ -1,0 +1,50 @@
+
+ RUN  v5.0.5 <repo>
+
+ ❯ |elements-browser| packages/elements/test/browser/scrollbar.test.ts (5 tests | 1 failed) 1468ms
+   ❯ ocelle-workflow-board with the platform's classic scrollbar (O3-02, FR-014) (1)
+     × a card's inner block that grows past the board's end makes the board a tab stop and a region named "Board", scrollable by 443 px, though only the box's border box changed 253ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |elements-browser| packages/elements/test/browser/scrollbar.test.ts > ocelle-workflow-board with the platform's classic scrollbar (O3-02, FR-014) > a card's inner block that grows past the board's end makes the board a tab stop and a region named "Board", scrollable by 443 px, though only the box's border box changed
+AssertionError: expected { observed: { …(2) }, …(1) } to deeply equal { observed: { …(2) }, …(1) }
+
+- Expected
++ Received
+
+@@ -7,14 +7,14 @@
+        "role": null,
+        "tabindex": null,
+      },
+      "grown": {
+        "bar": true,
+-       "name": "Board",
++       "name": null,
+        "range": 443,
+-       "role": "region",
+-       "tabindex": "0",
++       "role": null,
++       "tabindex": null,
+      },
+    },
+    "recorded": {
+      "console": [],
+      "failed": [],
+
+ ❯ packages/elements/test/browser/scrollbar.test.ts:209:92
+    207|     await driver.settle();
+    208|     const grown = await state();
+    209|     expect({ observed: { fitting, grown: within(grown) }, recorded: aw…
+       |                                                                                            ^
+    210|       observed: {
+    211|         fitting: { tabindex: null, role: null, name: null, range: 0, b…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 4 passed (5)
+   Start at  03:38:58
+   Duration  2.96s (tests 81%, import 17%, transform 3%)
+

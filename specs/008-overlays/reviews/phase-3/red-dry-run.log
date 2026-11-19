@@ -1,0 +1,44 @@
+
+ RUN  v5.0.5 /home/user/ocelle-components
+
+ ❯ |gates| gates/test/vitest-config.test.ts (10 tests | 1 failed) 205ms
+   ❯ vitest.mutation.elements.config.ts and stryker.elements.config.json (005 research.md R-12) (2)
+     × is stryker.config.json with its own Vitest config and its own report file 10ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |gates| gates/test/vitest-config.test.ts > vitest.mutation.elements.config.ts and stryker.elements.config.json (005 research.md R-12) > is stryker.config.json with its own Vitest config and its own report file
+AssertionError: expected { …(13) } to deeply equal { …(14) }
+
+- Expected
++ Received
+
+@@ -3,11 +3,10 @@
+    "checkers": [
+      "typescript",
+    ],
+    "concurrency": 8,
+    "coverageAnalysis": "perTest",
+-   "dryRunTimeoutMinutes": 30,
+    "incremental": false,
+    "jsonReporter": {
+      "fileName": "reports/mutation/mutation-elements.json",
+    },
+    "mutate": [],
+
+ ❯ gates/test/vitest-config.test.ts:78:50
+     76|     const read = (path: string): Record<string, unknown> => JSON.parse…
+     77|     const general = read("stryker.config.json");
+     78|     expect(read("stryker.elements.config.json")).toEqual({
+       |                                                  ^
+     79|       ...general,
+     80|       vitest: { configFile: "vitest.mutation.elements.config.ts", rela…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 9 passed (10)
+   Start at  01:04:38
+   Duration  697ms (import 50%, tests 36%, transform 13%, worker 1%)
+

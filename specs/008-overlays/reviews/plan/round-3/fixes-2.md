@@ -1,0 +1,8 @@
+# Squad round 3: fixes 2
+
+Applied to the artifacts at the commit that adds this note, from the unresolved rows of `verify-1.md`.
+
+| ID | Resolution | Where |
+|----|------------|-------|
+| PLAN-FRESH-3-001 | fixed | research R-04 § Tab cycle "Positive `tabindex`" (stop list and ends in the engine's sequential navigation order; verify probe measured), the walk (`src/focusable.ts` returns flat-tree order and HTML's tabindex-ordered focus navigation scope order; stops, ends and explicit moves use the latter), § Focus checked and the tests sentence; spec FR-008, SC-002, Edge Cases "Content the overlay cannot see into", US1 scenario 15, US2 scenario 5; checks § Dialog "Middle moves are native" (wraps follow navigation order) and new row "Positive `tabindex` at the ends" (on the flat-tree last and first content stops, with a footer, both directions, exact lists), § Drawer inherited list; data-model § Overlay "Stops"; contract README statement; plan Summary, Constitution Check III, decision 18 |
+| PLAN-FRESH-3-002 | fixed | research R-02 § Topmost, § Decision (fifth exception narrowed to `:popover-open` `auto`/`hint` popovers and `:modal` dialogs), § Close watchers in slotted content (mechanism checks `:popover-open`/`:modal`), new § Non-modal dialogs in slotted content (verify probe outcomes; overlay keeps Escape, veto and Tab handling); spec FR-010, Edge Cases "Escape that slotted content uses", US1 scenario 16, US2 scenario 5; checks § Dialog new row "Slotted non-modal dialogs" (`open` attribute and `show()`, focus in and beside, × {no veto, veto then Escape twice}, Tab cycle), § Drawer inherited list; data-model § Overlay stack; contract README statement; plan Summary, Constitution Check III, decision 19 |

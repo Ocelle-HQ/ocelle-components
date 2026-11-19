@@ -93,6 +93,7 @@ pitfalls up front. Each entry names where it was found. New entries are added as
   `revert-layer` reproduces "the rule is missing". (003 CORRECTNESS-1-009)
 - Setting `font-size` on `<html>` rescales every `rem` token (`--ocelle-target-min` 44 px becomes 38.5 px). Never
   set the root size from a hook. (003 SPEC-1-01)
+- **Forced colours flatten borders and backgrounds** (012 R-07, R-12): a transparent border segment computes to the system colour (a border spinner becomes a full ring) and backgrounds become `Canvas`, so a bar or hover drawn as a background vanishes; draw such marks as SVG strokes in `currentColor` or with forced-colours rules of their own.
 
 ## Values and custom properties
 
@@ -115,6 +116,8 @@ pitfalls up front. Each entry names where it was found. New entries are added as
   caption is longer than the box. (003 A11Y-SECURITY-1-005, FRESH-2-002)
 - Long inline code, bare URLs and `pre` lines break WCAG 1.4.10 at 320 px unless they have
   `overflow-wrap: anywhere` and `pre-wrap`. (003 SPEC-1-09, SPEC-2-02)
+- **A page rule beats `:host` display** (012 PLAN-FRESH-3-001): `display: block` or a fixed height set on the element leaves host area outside the inner control, and a click there reaches `document` with the host as target. Guard on the host, not only by layout.
+- **`min-inline-size: min-content` and long identifiers** (012 PLAN-CORRECTNESS-1-011): with `overflow-wrap: break-word` a long unbreakable title still widens the row past its container; `overflow-wrap: anywhere` keeps it inside.
 
 ## Accessibility behaviour (Chromium)
 
@@ -139,6 +142,10 @@ pitfalls up front. Each entry names where it was found. New entries are added as
 - Wide tables in a screen scroll box lose columns when printed (8 of 12 on A4). Decide print up front. (003 FRESH-3-002)
 - State layout constraints by their cause ("not sized from its content"), not as a closed list of layouts: every
   list the squad wrote missed cases (drawers, non-modal dialogs, table cells, start-aligned items). (003 FRESH-3-003)
+- **Host ARIA stays visible** (012 planning, Chromium 153): a custom element host without a role that keeps `aria-label` or `aria-labelledby` is a named `generic` node beside its inner control; axe gives `aria-allowed-attr` (critical) and `aria-prohibited-attr` (serious) as "needs review", which 006's axe gate fails. An `ElementInternals` role of `none` or `presentation` changes neither. Move such attributes onto the inner control.
+- **Element reflection crosses into the light tree only** (012 R-04): `ariaControlsElements`, `ariaLabelledByElements` and `ariaDescribedByElements` on an inner control relate to light-DOM elements (shadow-including ancestors) but not to elements in a sibling shadow root; Chrome 135 shipped them, Safari 16.4. `ariaOwnsElements` does not exist.
+- **CDP never reports `aria-current`**, even on a light-DOM link: read it from the DOM.
+- **Clicks on unusable controls** (012 R-06): a disabled native `<button>` delivers only `pointerdown` to ancestors; an `aria-disabled` control gets the click, so stop it with `preventDefault()` and `stopImmediatePropagation()` on `click` and `auxclick` (a middle click fires only `auxclick`); capture-phase listeners still see it. Playwright refuses to click an `aria-disabled` element unless `force: true`, so a "not activated" test without it sends no click and passes vacuously.
 
 ## CSP
 
@@ -169,6 +176,20 @@ pitfalls up front. Each entry names where it was found. New entries are added as
   limit (005 landing; every shard of run 43188981994 finished within 6:42).
 - **006 L1-02**: under CI load a surviving mutant can show as a Timeout, which counts as detected. When a mutation shard reports timeouts on changed lines, re-run that range locally before trusting it.
 - **006 L1-04**: an allowlist entry that points to a justification must be checked for the exact form of that pointer (`specs/<feature>/plan.md`), not just for staying inside the repository; the review found a `plan` that pointed to any file.
+- **013 R4-01**: a test that clears a class an element sets from its own size can be undone by that element's own
+  `ResizeObserver`. Clearing `stacked` on a sheet changed its height, the observer put the class back, and the
+  "listener" control passed with `addEventListener` deleted. Give the host a fixed block size (`block-size`,
+  `overflow: hidden`) so clearing the class changes no size, assert that it stays cleared before the dispatch, and plant
+  both halves of a paired test.
+- **013 L1-01**: Stryker equivalent-mutant records on teardown code (`disconnectedCallback`'s body,
+  `removeEventListener`'s event name) hid a missing test for "a removed element stops listening". Treat such a
+  record as a coverage claim and write the removed-element test instead.
+- **013 R4-03**: a story file for an element a later phase adds breaks the scaffold run of an earlier phase, because
+  the Storybook setup loads every story. The run exits 2, and the TDD check reads that as red.
+- **009 O3-01**: a story that sets `scrollLeft` once after `updateComplete` captures the wrong position when the content grows later (fonts, late layout). The visual baselines then record the bug. Re-apply the position from a `ResizeObserver` on the box and its track, and test it by growing the content after the first position.
+- **009 L1-01, R6-01**: an element that measures its own intrinsic sizes must skip measuring while it has no box (`getClientRects().length === 0`: a closed `<dialog>`, a `display: none` ancestor, a `hidden` host). It must then measure once it becomes rendered, not only if a pass was skipped. A `MutationObserver` that does not watch attributes misses a class swap made while hidden. Test every hidden route against a twin that was rendered from the start.
+- **012 O3-01, O6-01**: a slot convention that lines up an icon with a label must be measured on labelled and icon-only controls at every size before it is committed. `align-self: baseline` on the label fixed labelled rows (−6.19 px → 0) and moved icon-only rows by 11 to 17 px. Scope the rule to rows that have a label (`.icon-row:not(.bare)`) and plant the icon-only case.
+- **012 phase 3, plan decision 32**: `:state(pressed)` belongs to button mode only. A link has no pressed state, so a shared control base must set pressed per mode and test both.
 
 # Candidates for a frontend profile or lens
 

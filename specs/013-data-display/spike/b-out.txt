@@ -1,0 +1,166 @@
+Chromium 153.0.8010.12
+
+=== B1 native <progress> in shadow, aria-label from label | determinate: <ocelle-progress label="Uploading" value="30" max="100"></ocelle-progress>
+          StaticText "P"
+        progressbar "Uploading" value=30 valuemin=0 valuemax=100 valuetext=""
+axe focused violations: none
+axe focused passes: aria-allowed-attr,aria-prohibited-attr,aria-valid-attr-value
+axe full serious/critical: none
+axe full minor/moderate: none
+
+=== B1 native <progress> in shadow, aria-label from label | determinate+valuetext: <ocelle-progress label="Uploading" value="3" max="10" valuetext="3 of 10 files"></ocelle-progress>
+          StaticText "P"
+        progressbar "Uploading" value=3 valuemin=0 valuemax=10 valuetext=""
+axe focused violations: none
+axe focused passes: aria-allowed-attr,aria-prohibited-attr,aria-valid-attr-value
+axe full serious/critical: none
+axe full minor/moderate: none
+
+=== B1 native <progress> in shadow, aria-label from label | indeterminate: <ocelle-progress label="Loading"></ocelle-progress>
+          StaticText "P"
+        progressbar "Loading" valuemin=0 valuemax=100 valuetext=""
+axe focused violations: none
+axe focused passes: aria-allowed-attr,aria-prohibited-attr,aria-valid-attr-value
+axe full serious/critical: none
+axe full minor/moderate: none
+
+=== B1 native <progress> in shadow, aria-label from label | host aria-label override: <ocelle-progress label="Uploading" aria-label="Host name" value="30"></ocelle-progress>
+          StaticText "P"
+        generic "Host name"
+          progressbar "Uploading" value=30 valuemin=0 valuemax=100 valuetext=""
+axe focused violations: none
+axe focused passes: aria-allowed-attr,aria-prohibited-attr,aria-valid-attr-value
+axe full serious/critical: none
+axe full minor/moderate: none
+
+=== B1 native <progress> in shadow, aria-label from label | host aria-label only (no label): <ocelle-progress aria-label="Host name" value="30"></ocelle-progress>
+          StaticText "P"
+        generic "Host name"
+          progressbar value=30 valuemin=0 valuemax=100 valuetext=""
+axe focused violations: aria-prohibited-attr(serious,1) ["ocelle-progress"]
+axe focused passes: aria-allowed-attr,aria-valid-attr-value
+axe full serious/critical: aria-prohibited-attr(serious,1)
+axe full minor/moderate: none
+
+=== B1 native <progress> in shadow, aria-label from label | no name at all: <ocelle-progress value="30"></ocelle-progress>
+          StaticText "P"
+        progressbar value=30 valuemin=0 valuemax=100 valuetext=""
+axe focused violations: none
+axe focused passes: 
+axe full serious/critical: none
+axe full minor/moderate: none
+
+=== B2 shadow <div role=progressbar aria-*> | determinate: <ocelle-progress label="Uploading" value="30" max="100"></ocelle-progress>
+          StaticText "P"
+        progressbar "Uploading" value=30 valuemin=0 valuemax=100 valuetext=""
+axe focused violations: none
+axe focused passes: aria-allowed-attr,aria-progressbar-name,aria-prohibited-attr,aria-required-attr,aria-valid-attr-value
+axe full serious/critical: none
+axe full minor/moderate: none
+
+=== B2 shadow <div role=progressbar aria-*> | determinate+valuetext: <ocelle-progress label="Uploading" value="3" max="10" valuetext="3 of 10 files"></ocelle-progress>
+          StaticText "P"
+        progressbar "Uploading" value=3 valuemin=0 valuemax=10 valuetext=""
+axe focused violations: none
+axe focused passes: aria-allowed-attr,aria-progressbar-name,aria-prohibited-attr,aria-required-attr,aria-valid-attr-value
+axe full serious/critical: none
+axe full minor/moderate: none
+
+=== B2 shadow <div role=progressbar aria-*> | indeterminate: <ocelle-progress label="Loading"></ocelle-progress>
+          StaticText "P"
+        progressbar "Loading" valuemin=0 valuemax=100 valuetext=""
+axe focused violations: none
+axe focused passes: aria-allowed-attr,aria-progressbar-name,aria-prohibited-attr,aria-required-attr,aria-valid-attr-value
+axe full serious/critical: none
+axe full minor/moderate: none
+
+=== B2 shadow <div role=progressbar aria-*> | host aria-label override: <ocelle-progress label="Uploading" aria-label="Host name" value="30"></ocelle-progress>
+          StaticText "P"
+        generic "Host name"
+          progressbar "Uploading" value=30 valuemin=0 valuemax=100 valuetext=""
+axe focused violations: none
+axe focused passes: aria-allowed-attr,aria-progressbar-name,aria-prohibited-attr,aria-required-attr,aria-valid-attr-value
+axe full serious/critical: none
+axe full minor/moderate: none
+
+=== B2 shadow <div role=progressbar aria-*> | host aria-label only (no label): <ocelle-progress aria-label="Host name" value="30"></ocelle-progress>
+          StaticText "P"
+        generic "Host name"
+          progressbar value=30 valuemin=0 valuemax=100 valuetext=""
+axe focused violations: aria-progressbar-name(serious,1) [["ocelle-progress","div"]]; aria-prohibited-attr(serious,1) ["ocelle-progress"]
+axe focused passes: aria-allowed-attr,aria-prohibited-attr,aria-required-attr,aria-valid-attr-value
+axe full serious/critical: aria-progressbar-name(serious,1); aria-prohibited-attr(serious,1)
+axe full minor/moderate: none
+
+=== B2 shadow <div role=progressbar aria-*> | no name at all: <ocelle-progress value="30"></ocelle-progress>
+          StaticText "P"
+        progressbar value=30 valuemin=0 valuemax=100 valuetext=""
+axe focused violations: aria-progressbar-name(serious,1) [["ocelle-progress","div"]]
+axe focused passes: aria-allowed-attr,aria-prohibited-attr,aria-required-attr,aria-valid-attr-value
+axe full serious/critical: aria-progressbar-name(serious,1)
+axe full minor/moderate: none
+
+=== B3 ElementInternals role=progressbar on host | determinate: <ocelle-progress label="Uploading" value="30" max="100"></ocelle-progress>
+          StaticText "P"
+        progressbar "Uploading" value=30 valuemin=0 valuemax=100 valuetext=""
+          [ignored] none (uninteresting)
+            [ignored] none (uninteresting)
+axe focused violations: none
+axe focused passes: 
+axe full serious/critical: none
+axe full minor/moderate: none
+
+=== B3 ElementInternals role=progressbar on host | determinate+valuetext: <ocelle-progress label="Uploading" value="3" max="10" valuetext="3 of 10 files"></ocelle-progress>
+          StaticText "P"
+        progressbar "Uploading" value=3 valuemin=0 valuemax=10 valuetext=""
+          [ignored] none (uninteresting)
+            [ignored] none (uninteresting)
+axe focused violations: none
+axe focused passes: 
+axe full serious/critical: none
+axe full minor/moderate: none
+
+=== B3 ElementInternals role=progressbar on host | indeterminate: <ocelle-progress label="Loading"></ocelle-progress>
+          StaticText "P"
+        progressbar "Loading" valuemin=0 valuemax=100 valuetext=""
+          [ignored] none (uninteresting)
+            [ignored] none (uninteresting)
+axe focused violations: none
+axe focused passes: 
+axe full serious/critical: none
+axe full minor/moderate: none
+
+=== B3 ElementInternals role=progressbar on host | host aria-label override: <ocelle-progress label="Uploading" aria-label="Host name" value="30"></ocelle-progress>
+          StaticText "P"
+        progressbar "Host name" value=30 valuemin=0 valuemax=100 valuetext=""
+          [ignored] none (uninteresting)
+            [ignored] none (uninteresting)
+axe focused violations: aria-prohibited-attr(serious,1) ["ocelle-progress"]
+axe focused passes: aria-allowed-attr,aria-valid-attr-value
+axe full serious/critical: aria-prohibited-attr(serious,1)
+axe full minor/moderate: none
+
+=== B3 ElementInternals role=progressbar on host | host aria-label only (no label): <ocelle-progress aria-label="Host name" value="30"></ocelle-progress>
+          StaticText "P"
+        progressbar "Host name" value=30 valuemin=0 valuemax=100 valuetext=""
+          [ignored] none (uninteresting)
+            [ignored] none (uninteresting)
+axe focused violations: aria-prohibited-attr(serious,1) ["ocelle-progress"]
+axe focused passes: aria-allowed-attr,aria-valid-attr-value
+axe full serious/critical: aria-prohibited-attr(serious,1)
+axe full minor/moderate: none
+
+=== B3 ElementInternals role=progressbar on host | no name at all: <ocelle-progress value="30"></ocelle-progress>
+          StaticText "P"
+        progressbar value=30 valuemin=0 valuemax=100 valuetext=""
+          [ignored] none (uninteresting)
+            [ignored] none (uninteresting)
+axe focused violations: none
+axe focused passes: 
+axe full serious/critical: none
+axe full minor/moderate: none
+
+=== light-DOM native <progress> (indeterminate + determinate), styled via appearance:none + ::-webkit-progress-*
+      progressbar "Light DOM indeterminate" valuemin=0 valuemax=1 valuetext=""
+      progressbar "Light DOM determinate" value=40 valuemin=0 valuemax=100 valuetext=""
+matches(:indeterminate): [ true, false ]

@@ -5,6 +5,383 @@
         {
           "attributes": [
             {
+              "description": "Moved onto the inner control (the host keeps no copy): the row's accessible name, over `label` and the title; an empty or whitespace-only value clears it; `removeAttribute` after the move changes nothing.",
+              "name": "aria-label",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Moved onto the inner control: the ids, space-separated, of the elements that name the row, resolved in the host's own tree when set and when the element is connected, over `aria-label`; an empty value clears it.",
+              "name": "aria-labelledby",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Moved onto the inner control: the ids, space-separated, of the elements that describe the row, resolved in the host's own tree; it replaces the description and tags slots' description; an empty value clears it.",
+              "name": "aria-describedby",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Moved onto the inner control: its native tooltip, and its description when nothing else describes the row; an empty value clears it.",
+              "name": "title",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `aria-label`, so copies of the live DOM keep it; hosts do not write or remove it, and the element restores it when it is removed or changed.",
+              "name": "data-ocelle-moved-aria-label",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `aria-labelledby`; hosts do not write or remove it.",
+              "name": "data-ocelle-moved-aria-labelledby",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `aria-describedby`; hosts do not write or remove it.",
+              "name": "data-ocelle-moved-aria-describedby",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `title`; hosts do not write or remove it.",
+              "name": "data-ocelle-moved-title",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The row's id, carried by its `ocelle-action-row-activate` event as `detail.rowId` (`\"\"` when absent). Reflected as\n`row-id`.",
+              "fieldName": "rowId",
+              "name": "row-id",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The accessible name of the row, trimmed; empty or whitespace-only counts as none, and the name is then the title.\nNot reflected.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "`row` (icon, title and description, then the tags and the trailing icon, on one line; the tags and the trailing\nicon move to a second line together when the line cannot hold them) or `card`; absent or any other value renders\n`row`. Reflected.",
+              "fieldName": "layout",
+              "name": "layout",
+              "type": {
+                "text": "\"row\" | \"card\" | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "`default` (a bordered row on a surface) or `flush` (no border and no surface, the compact navigation density);\nabsent or any other value renders `default`. Reflected.",
+              "fieldName": "presentation",
+              "name": "presentation",
+              "type": {
+                "text": "\"default\" | \"flush\" | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The ground the row sits on: `accent-low`, `inset`, `hover-bg` or `state` (a state ground) give a default row an\n`--ocelle-color-accent-strong` border; `chrome` gives the chrome look for the chrome grounds; absent or any other\nvalue means the other main grounds. Reflected.",
+              "fieldName": "ground",
+              "name": "ground",
+              "type": {
+                "text": "\"accent-low\" | \"inset\" | \"hover-bg\" | \"state\" | \"chrome\" | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The link's URL: a non-empty `href` that parses as a URL and is not a `javascript:` URL makes the row a link (an\ninner `<a>` with the `href` as written); any other value is button mode. Reflected.",
+              "fieldName": "href",
+              "name": "href",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The inner link's `target`, in link mode; with `_blank` and no `rel` the link gets `rel=\"noopener\"`. Reflected.",
+              "fieldName": "target",
+              "name": "target",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The inner link's `rel`, in link mode. Reflected.",
+              "fieldName": "rel",
+              "name": "rel",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "`page` or `true`: the row is the current item, reported as `aria-current` with that value on the inner control and\ndrawn with the current mark (an `--ocelle-color-accent-low` surface, `--ocelle-color-chrome-hover` on chrome, and\na bar in `--ocelle-color-current` at the inline start, apart from the focus ring), which stays on hover; absent or\nany other value is not current. Reflected.",
+              "fieldName": "current",
+              "name": "current",
+              "type": {
+                "text": "\"page\" | \"true\" | undefined"
+              }
+            },
+            {
+              "default": "false",
+              "description": "Unavailable: the row exists but cannot be used right now. Its inner control stays in the tab order, reports\n`aria-disabled=\"true\"`, keeps its name and description and is not activated (no event, no click past the element,\nno navigation: a link row has no `href`); it shows the disabled ink and no hover. Reflected.",
+              "fieldName": "unavailable",
+              "name": "unavailable",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "false",
+              "description": "Busy: the row's content is updating; its inner control reports `aria-busy`, and activation still dispatches the\nevent. Reflected.",
+              "fieldName": "busy",
+              "name": "busy",
+              "type": {
+                "text": "boolean"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The row's icon-and-title control: the inner `<button>`, or the inner `<a>` in link mode. It is not the row's surface: the description, tags and trailing content are beside it, and `::part(control)` styles do not reach the row's surface or border.",
+              "name": "control"
+            },
+            {
+              "description": "The title's wrapper, the row's name.",
+              "name": "title"
+            },
+            {
+              "description": "The description slot's wrapper.",
+              "name": "description"
+            },
+            {
+              "description": "The tags slot's wrapper.",
+              "name": "tags"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "An activatable row: a leading icon, a title, a description, tags and a trailing icon, activated by pointer or\nkeyboard with one `ocelle-action-row-activate` event that carries the row's id; a row or a card, bordered or flush,\non the ground the host states, a link with `href`, the current item of a list and an unavailable item.",
+          "events": [
+            {
+              "description": "Dispatched from the element on each activation (a pointer click, Enter, Space in button mode, `click()`), before a link's navigation; bubbles, composed and cancelable, `detail` `{ rowId }`, the current `row-id` or `\"\"`; `preventDefault()` cancels a link's navigation. Not dispatched for a Ctrl, Meta, Shift or Alt click or a middle click in link mode, nor while the row is unavailable.",
+              "name": "ocelle-action-row-activate",
+              "type": {
+                "text": "CustomEvent<{ rowId: string }>"
+              }
+            }
+          ],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "row-id",
+              "default": "undefined",
+              "description": "The row's id, carried by its `ocelle-action-row-activate` event as `detail.rowId` (`\"\"` when absent). Reflected as\n`row-id`.",
+              "kind": "field",
+              "name": "rowId",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "label",
+              "default": "undefined",
+              "description": "The accessible name of the row, trimmed; empty or whitespace-only counts as none, and the name is then the title.\nNot reflected.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "layout",
+              "default": "undefined",
+              "description": "`row` (icon, title and description, then the tags and the trailing icon, on one line; the tags and the trailing\nicon move to a second line together when the line cannot hold them) or `card`; absent or any other value renders\n`row`. Reflected.",
+              "kind": "field",
+              "name": "layout",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"row\" | \"card\" | undefined"
+              }
+            },
+            {
+              "attribute": "presentation",
+              "default": "undefined",
+              "description": "`default` (a bordered row on a surface) or `flush` (no border and no surface, the compact navigation density);\nabsent or any other value renders `default`. Reflected.",
+              "kind": "field",
+              "name": "presentation",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"default\" | \"flush\" | undefined"
+              }
+            },
+            {
+              "attribute": "ground",
+              "default": "undefined",
+              "description": "The ground the row sits on: `accent-low`, `inset`, `hover-bg` or `state` (a state ground) give a default row an\n`--ocelle-color-accent-strong` border; `chrome` gives the chrome look for the chrome grounds; absent or any other\nvalue means the other main grounds. Reflected.",
+              "kind": "field",
+              "name": "ground",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"accent-low\" | \"inset\" | \"hover-bg\" | \"state\" | \"chrome\" | undefined"
+              }
+            },
+            {
+              "attribute": "href",
+              "default": "undefined",
+              "description": "The link's URL: a non-empty `href` that parses as a URL and is not a `javascript:` URL makes the row a link (an\ninner `<a>` with the `href` as written); any other value is button mode. Reflected.",
+              "kind": "field",
+              "name": "href",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "target",
+              "default": "undefined",
+              "description": "The inner link's `target`, in link mode; with `_blank` and no `rel` the link gets `rel=\"noopener\"`. Reflected.",
+              "kind": "field",
+              "name": "target",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "rel",
+              "default": "undefined",
+              "description": "The inner link's `rel`, in link mode. Reflected.",
+              "kind": "field",
+              "name": "rel",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "current",
+              "default": "undefined",
+              "description": "`page` or `true`: the row is the current item, reported as `aria-current` with that value on the inner control and\ndrawn with the current mark (an `--ocelle-color-accent-low` surface, `--ocelle-color-chrome-hover` on chrome, and\na bar in `--ocelle-color-current` at the inline start, apart from the focus ring), which stays on hover; absent or\nany other value is not current. Reflected.",
+              "kind": "field",
+              "name": "current",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"page\" | \"true\" | undefined"
+              }
+            },
+            {
+              "attribute": "unavailable",
+              "default": "false",
+              "description": "Unavailable: the row exists but cannot be used right now. Its inner control stays in the tab order, reports\n`aria-disabled=\"true\"`, keeps its name and description and is not activated (no event, no click past the element,\nno navigation: a link row has no `href`); it shows the disabled ink and no hover. Reflected.",
+              "kind": "field",
+              "name": "unavailable",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "attribute": "busy",
+              "default": "false",
+              "description": "Busy: the row's content is updating; its inner control reports `aria-busy`, and activation still dispatches the\nevent. Reflected.",
+              "kind": "field",
+              "name": "busy",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "description": "Clicks the inner control, so the click passes through it and the row is activated as by any other click.",
+              "kind": "method",
+              "name": "click",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            }
+          ],
+          "name": "OcelleActionRow",
+          "slots": [
+            {
+              "description": "The title: the row's accessible name; the description, the tags and the trailing content never join it.",
+              "name": ""
+            },
+            {
+              "description": "One icon before the title (the slot convention): `--ocelle-icon-size` square, decorative.",
+              "name": "icon"
+            },
+            {
+              "description": "Elements whose text describes the row, after the title; an element without non-whitespace text contributes nothing, and a slot with no such element takes no space.",
+              "name": "description"
+            },
+            {
+              "description": "Elements whose text describes the row after the description, laid out as one group with the trailing icon; a slot with no element holding text takes no space.",
+              "name": "tags"
+            },
+            {
+              "description": "One icon at the end of the row (the slot convention), for example `arrow-end`.",
+              "name": "trailing"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-action-row"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-action-row.ts",
+            "name": "OcelleActionRow"
+          },
+          "kind": "js",
+          "name": "OcelleActionRow"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-action-row.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
               "default": "undefined",
               "description": "The ground the mark sits on: `chrome` for the dark chrome grounds (`color-chrome`, `color-chrome-hover`); absent or\nany other value for the main grounds. Reflected.",
               "fieldName": "ground",
@@ -102,6 +479,1281 @@
         {
           "attributes": [
             {
+              "description": "Moved onto the inner control (the host keeps no copy): `\"true\"` reports expanded, `\"false\"` collapsed, an empty value clears it; `removeAttribute` after the move changes nothing.",
+              "name": "aria-expanded",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Moved onto the inner control: the ids, space-separated, of the elements it controls, resolved in the host's own tree when set and when the element is connected; an empty value clears it.",
+              "name": "aria-controls",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Moved onto the inner control with any value; `\"false\"` or an empty value clears it. It draws no mark.",
+              "name": "aria-current",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Moved onto the inner control: the kind of popup it opens; an empty value clears it.",
+              "name": "aria-haspopup",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Moved onto the inner control in button mode only: `\"true\"` reports pressed, `\"false\"` not pressed, an empty value clears it.",
+              "name": "aria-pressed",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Moved onto the inner control: its accessible name, over `label` and the content; an empty or whitespace-only value clears it.",
+              "name": "aria-label",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Moved onto the inner control: the ids, space-separated, of the elements that name it, resolved in the host's own tree, over `aria-label`; an empty value clears it.",
+              "name": "aria-labelledby",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Moved onto the inner control: the ids, space-separated, of the elements that describe it, resolved in the host's own tree; an empty value clears it.",
+              "name": "aria-describedby",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Moved onto the inner control: its native tooltip and description, or its name when nothing else names it; an empty value clears it.",
+              "name": "title",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `aria-expanded`, so copies of the live DOM keep it; hosts do not write or remove it, and the element restores it when it is removed or changed.",
+              "name": "data-ocelle-moved-aria-expanded",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `aria-controls`; hosts do not write or remove it.",
+              "name": "data-ocelle-moved-aria-controls",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `aria-current`; hosts do not write or remove it.",
+              "name": "data-ocelle-moved-aria-current",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `aria-haspopup`; hosts do not write or remove it.",
+              "name": "data-ocelle-moved-aria-haspopup",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `aria-pressed`; hosts do not write or remove it.",
+              "name": "data-ocelle-moved-aria-pressed",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `aria-label`; hosts do not write or remove it.",
+              "name": "data-ocelle-moved-aria-label",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `aria-labelledby`; hosts do not write or remove it.",
+              "name": "data-ocelle-moved-aria-labelledby",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `aria-describedby`; hosts do not write or remove it.",
+              "name": "data-ocelle-moved-aria-describedby",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `title`; hosts do not write or remove it.",
+              "name": "data-ocelle-moved-title",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The look: `primary` (filled), `secondary` (bordered on a surface) or `quiet` (bordered, no fill); absent or any\nother value renders `secondary`. Reflected.",
+              "fieldName": "variant",
+              "name": "variant",
+              "type": {
+                "text": "\"primary\" | \"secondary\" | \"quiet\" | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "`default` (at least `--ocelle-target-min` in both dimensions) or `compact` (the compact text scale, at least 24 px\nin both dimensions); absent or any other value renders `default`. Reflected.",
+              "fieldName": "size",
+              "name": "size",
+              "type": {
+                "text": "\"default\" | \"compact\" | undefined"
+              }
+            },
+            {
+              "default": "false",
+              "description": "No inline padding, no border and no fill: a text-like control whose content starts at its inline start, with only\nits hover surface and focus ring. Reflected.",
+              "fieldName": "flush",
+              "name": "flush",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The ground the button sits on: `accent-low`, `inset`, `hover-bg` or `state` (a state ground) give a bordered\nvariant an `--ocelle-color-accent-strong` border; `chrome` gives the chrome look for the chrome grounds; absent or\nany other value means the other main grounds. Reflected.",
+              "fieldName": "ground",
+              "name": "ground",
+              "type": {
+                "text": "\"accent-low\" | \"inset\" | \"hover-bg\" | \"state\" | \"chrome\" | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The accessible name of the button, trimmed; empty or whitespace-only counts as none, and the name is then the\ncontent. Not reflected.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "false",
+              "description": "Disabled: out of the tab order, reported disabled and not activated (no `click`, no `ocelle-button-activate`).\nReflected.",
+              "fieldName": "disabled",
+              "name": "disabled",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "false",
+              "description": "Busy: while a host waits for the result of an action the button is unavailable (in the tab order and focusable,\n`aria-disabled`, not activated: no `click`, no `ocelle-button-activate`), reports `aria-busy`, and shows a spinner in\nthe icon's place (six turns in 4.8 s, then still; still under reduced motion); a busy link has no `href`.\n`disabled` wins. Reflected.",
+              "fieldName": "busy",
+              "name": "busy",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The link's URL: a non-empty `href` that parses as a URL and is not a `javascript:` URL puts the button in link mode\n(an inner `<a>` with the `href` as written); any other value is button mode. Reflected.",
+              "fieldName": "href",
+              "name": "href",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The inner link's `target`, in link mode while available; with `_blank` and no `rel` the link gets `rel=\"noopener\"`.\nReflected.",
+              "fieldName": "target",
+              "name": "target",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The inner link's `rel`, in link mode while available. Reflected.",
+              "fieldName": "rel",
+              "name": "rel",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The inner link's `download`, in link mode while available. Reflected.",
+              "fieldName": "download",
+              "name": "download",
+              "type": {
+                "text": "string | undefined"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The inner `<button>`, or the inner `<a>` in link mode.",
+              "name": "control"
+            }
+          ],
+          "cssProperties": [],
+          "cssStates": [
+            {
+              "description": "While the moved `aria-expanded` is `\"true\"`.",
+              "name": "expanded"
+            },
+            {
+              "description": "While the moved `aria-pressed` is `\"true\"`, in button mode only: a link has no pressed state.",
+              "name": "pressed"
+            },
+            {
+              "description": "While the moved `aria-current` is set to any value other than `\"false\"`.",
+              "name": "current"
+            }
+          ],
+          "customElement": true,
+          "description": "A native button in the Ocelle look, or a link that looks like one: three variants, two sizes, a flush look, the\nground it sits on, a label, a disabled and a busy state, an icon slot, link mode with `href`, and host ARIA moved onto\nthe inner control.",
+          "events": [
+            {
+              "description": "Dispatched from the element on each activation that delivers a `click` (a pointer click, Enter, Space in button mode, `click()`), before the `click` reaches any bubble-phase listener on the element or its ancestors; bubbles, composed and cancelable, `detail` `{}`. Calling `preventDefault()` on it cancels the click's default action (in link mode the navigation; in button mode the `click` is still delivered). Not dispatched for a link-mode click with Ctrl, Meta, Shift or Alt held, nor for a middle click. A disabled or busy button dispatches neither.",
+              "name": "ocelle-button-activate",
+              "type": {
+                "text": "CustomEvent<Record<string, never>>"
+              }
+            }
+          ],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "variant",
+              "default": "undefined",
+              "description": "The look: `primary` (filled), `secondary` (bordered on a surface) or `quiet` (bordered, no fill); absent or any\nother value renders `secondary`. Reflected.",
+              "kind": "field",
+              "name": "variant",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"primary\" | \"secondary\" | \"quiet\" | undefined"
+              }
+            },
+            {
+              "attribute": "size",
+              "default": "undefined",
+              "description": "`default` (at least `--ocelle-target-min` in both dimensions) or `compact` (the compact text scale, at least 24 px\nin both dimensions); absent or any other value renders `default`. Reflected.",
+              "kind": "field",
+              "name": "size",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"default\" | \"compact\" | undefined"
+              }
+            },
+            {
+              "attribute": "flush",
+              "default": "false",
+              "description": "No inline padding, no border and no fill: a text-like control whose content starts at its inline start, with only\nits hover surface and focus ring. Reflected.",
+              "kind": "field",
+              "name": "flush",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "attribute": "ground",
+              "default": "undefined",
+              "description": "The ground the button sits on: `accent-low`, `inset`, `hover-bg` or `state` (a state ground) give a bordered\nvariant an `--ocelle-color-accent-strong` border; `chrome` gives the chrome look for the chrome grounds; absent or\nany other value means the other main grounds. Reflected.",
+              "kind": "field",
+              "name": "ground",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"accent-low\" | \"inset\" | \"hover-bg\" | \"state\" | \"chrome\" | undefined"
+              }
+            },
+            {
+              "attribute": "label",
+              "default": "undefined",
+              "description": "The accessible name of the button, trimmed; empty or whitespace-only counts as none, and the name is then the\ncontent. Not reflected.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "disabled",
+              "default": "false",
+              "description": "Disabled: out of the tab order, reported disabled and not activated (no `click`, no `ocelle-button-activate`).\nReflected.",
+              "kind": "field",
+              "name": "disabled",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "attribute": "busy",
+              "default": "false",
+              "description": "Busy: while a host waits for the result of an action the button is unavailable (in the tab order and focusable,\n`aria-disabled`, not activated: no `click`, no `ocelle-button-activate`), reports `aria-busy`, and shows a spinner in\nthe icon's place (six turns in 4.8 s, then still; still under reduced motion); a busy link has no `href`.\n`disabled` wins. Reflected.",
+              "kind": "field",
+              "name": "busy",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "attribute": "href",
+              "default": "undefined",
+              "description": "The link's URL: a non-empty `href` that parses as a URL and is not a `javascript:` URL puts the button in link mode\n(an inner `<a>` with the `href` as written); any other value is button mode. Reflected.",
+              "kind": "field",
+              "name": "href",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "target",
+              "default": "undefined",
+              "description": "The inner link's `target`, in link mode while available; with `_blank` and no `rel` the link gets `rel=\"noopener\"`.\nReflected.",
+              "kind": "field",
+              "name": "target",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "rel",
+              "default": "undefined",
+              "description": "The inner link's `rel`, in link mode while available. Reflected.",
+              "kind": "field",
+              "name": "rel",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "download",
+              "default": "undefined",
+              "description": "The inner link's `download`, in link mode while available. Reflected.",
+              "kind": "field",
+              "name": "download",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "description": "Clicks the inner control, so the click passes through it and is guarded like any other: a disabled button ignores\nit.",
+              "kind": "method",
+              "name": "click",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            }
+          ],
+          "name": "OcelleButton",
+          "slots": [
+            {
+              "description": "The label.",
+              "name": ""
+            },
+            {
+              "description": "One icon before the label (the slot convention): `--ocelle-icon-size` square, decorative; hidden while busy, the spinner in its place.",
+              "name": "icon"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-button"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-button.ts",
+            "name": "OcelleButton"
+          },
+          "kind": "js",
+          "name": "OcelleButton"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-button.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
+              "description": "The card's density: `regular` or `compact`, whose padding and header-to-body gap are smaller and which draws a\nsection header in its `header` slot at the compact size. Not set, or any other value, draws regular. Reflected.",
+              "fieldName": "density",
+              "name": "density",
+              "type": {
+                "text": "\"regular\" | \"compact\" | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "Draws the card on the inset ground, for a card nested inside another surface; present with any value is inset.\nChanges nothing else. Reflected.",
+              "fieldName": "inset",
+              "name": "inset",
+              "type": {
+                "text": "boolean | undefined"
+              }
+            }
+          ],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A card: a header slot above its body, in a regular or compact density, on the sheet or the inset ground.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "density",
+              "default": "undefined",
+              "description": "The card's density: `regular` or `compact`, whose padding and header-to-body gap are smaller and which draws a\nsection header in its `header` slot at the compact size. Not set, or any other value, draws regular. Reflected.",
+              "kind": "field",
+              "name": "density",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"regular\" | \"compact\" | undefined"
+              }
+            },
+            {
+              "attribute": "inset",
+              "default": "undefined",
+              "description": "Draws the card on the inset ground, for a card nested inside another surface; present with any value is inset.\nChanges nothing else. Reflected.",
+              "kind": "field",
+              "name": "inset",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean | undefined"
+              }
+            }
+          ],
+          "name": "OcelleCard",
+          "slots": [
+            {
+              "description": "The card's header, usually an `ocelle-section-header`, which a compact card draws at its compact size.",
+              "name": "header"
+            },
+            {
+              "description": "The card's body.",
+              "name": ""
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-card"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-card.ts",
+            "name": "OcelleCard"
+          },
+          "kind": "js",
+          "name": "OcelleCard"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-card.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
+              "description": "The name of the navigation landmark, trimmed, used while the host has no `aria-label`; empty or whitespace-only\ncounts as none, and the landmark is then unnamed. Not reflected.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string | undefined"
+              }
+            }
+          ],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A context sidebar: a navigation landmark holding a head, sections and a footer, ruled off from each other.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "label",
+              "default": "undefined",
+              "description": "The name of the navigation landmark, trimmed, used while the host has no `aria-label`; empty or whitespace-only\ncounts as none, and the landmark is then unnamed. Not reflected.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            }
+          ],
+          "name": "OcelleContextSidebar",
+          "slots": [
+            {
+              "description": "The sidebar's head, the team or project it belongs to.",
+              "name": "head"
+            },
+            {
+              "description": "The sections, one element each (a `ul` of links, a `div`, an `ocelle-section-header`), drawn as padded blocks with a divider between each two.",
+              "name": ""
+            },
+            {
+              "description": "The sidebar's footer, kept at its block end.",
+              "name": "footer"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-context-sidebar"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-context-sidebar.ts",
+            "name": "OcelleContextSidebar"
+          },
+          "kind": "js",
+          "name": "OcelleContextSidebar"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-context-sidebar.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "false",
+              "description": "Whether the overlay is shown, modally in the top layer; setting it shows or closes the overlay, and the overlay\nsets it to false whenever it closes. Reflected.",
+              "fieldName": "open",
+              "inheritedFrom": {
+                "module": "src/overlay.ts",
+                "name": "OcelleOverlay"
+              },
+              "name": "open",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The overlay's heading and accessible name; a host `aria-label` names it instead when present. A label is required.",
+              "fieldName": "label",
+              "inheritedFrom": {
+                "module": "src/overlay.ts",
+                "name": "OcelleOverlay"
+              },
+              "name": "label",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "\"Close\"",
+              "description": "The accessible name of the close control, in the host's language.",
+              "fieldName": "closeLabel",
+              "inheritedFrom": {
+                "module": "src/overlay.ts",
+                "name": "OcelleOverlay"
+              },
+              "name": "close-label",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The panel, the native `<dialog>`.",
+              "name": "panel"
+            },
+            {
+              "description": "The visible heading, which holds the `label`.",
+              "name": "heading"
+            },
+            {
+              "description": "The body around the default slot, a Tab stop while it overflows.",
+              "name": "body"
+            },
+            {
+              "description": "The footer around the `footer` slot.",
+              "name": "footer"
+            },
+            {
+              "description": "The close control, a native button named by `close-label`.",
+              "name": "close-button"
+            }
+          ],
+          "cssProperties": [
+            {
+              "description": "The dialog's preferred inline size, capped by `--ocelle-dialog-max-inline`; the reading measure (`--ocelle-measure-reading`) by default.",
+              "name": "--ocelle-dialog-inline-size"
+            }
+          ],
+          "customElement": true,
+          "description": "A modal dialog over the page, with a heading, a body, footer actions and a close control; Escape and the close\ncontrol ask the host first, which may keep it open.",
+          "events": [
+            {
+              "description": "The user asked to close the dialog, by Escape or the close control. Cancelable: cancelling it keeps the dialog open.",
+              "name": "ocelle-dialog-close-request",
+              "type": {
+                "text": "CustomEvent<{ reason: \"escape\" | \"close-button\" }>"
+              }
+            },
+            {
+              "description": "The dialog closed, once it has left the top layer and focus has returned, with the request's reason, or `host` when the host set `open` to false or the platform closed it.",
+              "name": "ocelle-dialog-close",
+              "type": {
+                "text": "CustomEvent<{ reason: \"escape\" | \"close-button\" | \"host\" }>"
+              }
+            }
+          ],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "open",
+              "default": "false",
+              "description": "Whether the overlay is shown, modally in the top layer; setting it shows or closes the overlay, and the overlay\nsets it to false whenever it closes. Reflected.",
+              "inheritedFrom": {
+                "module": "src/overlay.ts",
+                "name": "OcelleOverlay"
+              },
+              "kind": "field",
+              "name": "open",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "attribute": "label",
+              "default": "undefined",
+              "description": "The overlay's heading and accessible name; a host `aria-label` names it instead when present. A label is required.",
+              "inheritedFrom": {
+                "module": "src/overlay.ts",
+                "name": "OcelleOverlay"
+              },
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "close-label",
+              "default": "\"Close\"",
+              "description": "The accessible name of the close control, in the host's language.",
+              "inheritedFrom": {
+                "module": "src/overlay.ts",
+                "name": "OcelleOverlay"
+              },
+              "kind": "field",
+              "name": "closeLabel",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "name": "OcelleDialog",
+          "slots": [
+            {
+              "description": "The body: the dialog's content, which scrolls when it is taller than the space left.",
+              "name": ""
+            },
+            {
+              "description": "The actions, laid out at the end of the panel; not rendered while empty.",
+              "name": "footer"
+            }
+          ],
+          "superclass": {
+            "module": "/src/overlay.ts",
+            "name": "OcelleOverlay"
+          },
+          "tagName": "ocelle-dialog"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-dialog.ts",
+            "name": "OcelleDialog"
+          },
+          "kind": "js",
+          "name": "OcelleDialog"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-dialog.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "\"start\"",
+              "description": "The inline edge of the viewport the drawer is placed against, in the drawer's direction: `start` (the left edge\nunder `dir=\"ltr\"`, the right edge under `dir=\"rtl\"`) or `end`. Any other value gives `start`. Reflected.",
+              "fieldName": "side",
+              "name": "side",
+              "type": {
+                "text": "\"start\" | \"end\""
+              }
+            },
+            {
+              "default": "\"sheet\"",
+              "description": "The drawer's ground: `sheet`, or `chrome`, the chrome ground and ink in both themes. Any other value gives `sheet`.\nReflected.",
+              "fieldName": "ground",
+              "name": "ground",
+              "type": {
+                "text": "\"sheet\" | \"chrome\""
+              }
+            },
+            {
+              "default": "false",
+              "description": "Whether the heading is hidden visually: not painted and taking no space, but kept in the accessibility tree as the\ndrawer's heading, with the accessible name unchanged. Reflected.",
+              "fieldName": "headingHidden",
+              "name": "heading-hidden",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "false",
+              "description": "Whether the overlay is shown, modally in the top layer; setting it shows or closes the overlay, and the overlay\nsets it to false whenever it closes. Reflected.",
+              "fieldName": "open",
+              "inheritedFrom": {
+                "module": "src/overlay.ts",
+                "name": "OcelleOverlay"
+              },
+              "name": "open",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The overlay's heading and accessible name; a host `aria-label` names it instead when present. A label is required.",
+              "fieldName": "label",
+              "inheritedFrom": {
+                "module": "src/overlay.ts",
+                "name": "OcelleOverlay"
+              },
+              "name": "label",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "\"Close\"",
+              "description": "The accessible name of the close control, in the host's language.",
+              "fieldName": "closeLabel",
+              "inheritedFrom": {
+                "module": "src/overlay.ts",
+                "name": "OcelleOverlay"
+              },
+              "name": "close-label",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The panel, the native `<dialog>`.",
+              "name": "panel"
+            },
+            {
+              "description": "The heading, which holds the `label`; visually hidden with `heading-hidden`.",
+              "name": "heading"
+            },
+            {
+              "description": "The body around the default slot, a Tab stop while it overflows.",
+              "name": "body"
+            },
+            {
+              "description": "The footer around the `footer` slot.",
+              "name": "footer"
+            },
+            {
+              "description": "The close control, a native button named by `close-label`.",
+              "name": "close-button"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A modal side drawer: a full-height panel against the inline start or end edge of the viewport, with a heading, a\nbody, footer actions and a close control; Escape, the close control and a click on the backdrop ask the host first,\nwhich may keep it open.",
+          "events": [
+            {
+              "description": "The user asked to close the drawer, by Escape, the close control or a primary-button click on the backdrop. Cancelable: cancelling it keeps the drawer open.",
+              "name": "ocelle-drawer-close-request",
+              "type": {
+                "text": "CustomEvent<{ reason: \"escape\" | \"close-button\" | \"backdrop\" }>"
+              }
+            },
+            {
+              "description": "The drawer closed, once it has left the top layer and focus has returned, with the request's reason, or `host` when the host set `open` to false or the platform closed it.",
+              "name": "ocelle-drawer-close",
+              "type": {
+                "text": "CustomEvent<{ reason: \"escape\" | \"close-button\" | \"backdrop\" | \"host\" }>"
+              }
+            }
+          ],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "side",
+              "default": "\"start\"",
+              "description": "The inline edge of the viewport the drawer is placed against, in the drawer's direction: `start` (the left edge\nunder `dir=\"ltr\"`, the right edge under `dir=\"rtl\"`) or `end`. Any other value gives `start`. Reflected.",
+              "kind": "field",
+              "name": "side",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"start\" | \"end\""
+              }
+            },
+            {
+              "attribute": "ground",
+              "default": "\"sheet\"",
+              "description": "The drawer's ground: `sheet`, or `chrome`, the chrome ground and ink in both themes. Any other value gives `sheet`.\nReflected.",
+              "kind": "field",
+              "name": "ground",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"sheet\" | \"chrome\""
+              }
+            },
+            {
+              "attribute": "heading-hidden",
+              "default": "false",
+              "description": "Whether the heading is hidden visually: not painted and taking no space, but kept in the accessibility tree as the\ndrawer's heading, with the accessible name unchanged. Reflected.",
+              "kind": "field",
+              "name": "headingHidden",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "attribute": "open",
+              "default": "false",
+              "description": "Whether the overlay is shown, modally in the top layer; setting it shows or closes the overlay, and the overlay\nsets it to false whenever it closes. Reflected.",
+              "inheritedFrom": {
+                "module": "src/overlay.ts",
+                "name": "OcelleOverlay"
+              },
+              "kind": "field",
+              "name": "open",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "attribute": "label",
+              "default": "undefined",
+              "description": "The overlay's heading and accessible name; a host `aria-label` names it instead when present. A label is required.",
+              "inheritedFrom": {
+                "module": "src/overlay.ts",
+                "name": "OcelleOverlay"
+              },
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "close-label",
+              "default": "\"Close\"",
+              "description": "The accessible name of the close control, in the host's language.",
+              "inheritedFrom": {
+                "module": "src/overlay.ts",
+                "name": "OcelleOverlay"
+              },
+              "kind": "field",
+              "name": "closeLabel",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "name": "OcelleDrawer",
+          "slots": [
+            {
+              "description": "The body: the drawer's content, which fills the panel between the heading and the footer and scrolls when it is taller.",
+              "name": ""
+            },
+            {
+              "description": "The actions, laid out at the end of the panel; not rendered while empty.",
+              "name": "footer"
+            }
+          ],
+          "superclass": {
+            "module": "/src/overlay.ts",
+            "name": "OcelleOverlay"
+          },
+          "tagName": "ocelle-drawer"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-drawer.ts",
+            "name": "OcelleDrawer"
+          },
+          "kind": "js",
+          "name": "OcelleDrawer"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-drawer.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
+              "description": "`panel` fills a list or inspector panel with a larger block padding and larger gaps and a lighter heading. Unset,\nor any other value, gives the default variant. Reflected.",
+              "fieldName": "variant",
+              "name": "variant",
+              "type": {
+                "text": "\"panel\" | undefined"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The centred column, with its block padding and every slot in it. The body's content sits in an internal wrapper inside it, which is not a part.",
+              "name": "body"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "An empty or loading panel: the consumer's own heading, body and actions in one centred column, with an optional\nvisual and eyebrow above the heading.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "variant",
+              "default": "undefined",
+              "description": "`panel` fills a list or inspector panel with a larger block padding and larger gaps and a lighter heading. Unset,\nor any other value, gives the default variant. Reflected.",
+              "kind": "field",
+              "name": "variant",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"panel\" | undefined"
+              }
+            }
+          ],
+          "name": "OcelleEmptyState",
+          "slots": [
+            {
+              "description": "An icon or an `ocelle-progress` above the heading. A progress bar spans the column up to the reading measure; an icon stays centred.",
+              "name": "visual"
+            },
+            {
+              "description": "A short line above the heading (for example \"Refused\"), shown small, medium weight, muted and in upper case. Not a heading: the element adds no role.",
+              "name": "eyebrow"
+            },
+            {
+              "description": "The consumer's own heading element. Its level is the consumer's; the element never adds a heading.",
+              "name": "heading"
+            },
+            {
+              "description": "The body. Each element is a block with no block margins, separated from the next by a small gap; put inline content in one `<p>`.",
+              "name": ""
+            },
+            {
+              "description": "Buttons or links. They wrap when narrow.",
+              "name": "actions"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-empty-state"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-empty-state.ts",
+            "name": "OcelleEmptyState"
+          },
+          "kind": "js",
+          "name": "OcelleEmptyState"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-empty-state.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
+              "description": "The label (term) of this pair. Unset or empty gives an empty term. Reflected.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "`anywhere` breaks a long identifier value anywhere instead of overflowing. The label keeps word wrapping. Unset\nwraps between words. Reflected.",
+              "fieldName": "wrap",
+              "name": "wrap",
+              "type": {
+                "text": "\"anywhere\" | undefined"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The label, rendered only outside `ocelle-facts`.",
+              "name": "label"
+            }
+          ],
+          "cssProperties": [
+            {
+              "description": "As on `ocelle-facts`, for a fact outside a sheet: the value's font size, `--ocelle-font-size-fact` by default.",
+              "name": "--ocelle-facts-value-size"
+            },
+            {
+              "description": "As on `ocelle-facts`, for a fact outside a sheet: the value's line height, `--ocelle-line-height-normal` by default.",
+              "name": "--ocelle-facts-value-line-height"
+            }
+          ],
+          "customElement": true,
+          "description": "One label and value pair of an `ocelle-facts` sheet: the label is the `label` attribute and the value is the\nelement's content. Outside a sheet it shows its label above its value.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "label",
+              "default": "undefined",
+              "description": "The label (term) of this pair. Unset or empty gives an empty term. Reflected.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "wrap",
+              "default": "undefined",
+              "description": "`anywhere` breaks a long identifier value anywhere instead of overflowing. The label keeps word wrapping. Unset\nwraps between words. Reflected.",
+              "kind": "field",
+              "name": "wrap",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"anywhere\" | undefined"
+              }
+            }
+          ],
+          "name": "OcelleFact",
+          "slots": [
+            {
+              "description": "The value.",
+              "name": ""
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-fact"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-fact.ts",
+            "name": "OcelleFact"
+          },
+          "kind": "js",
+          "name": "OcelleFact"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-fact.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
+              "description": "Row spacing: `compact` tightens the gaps for dense screens. Unset gives the default spacing. It does not change\nthe type: in a `data-ocelle-density=\"compact\"` region the values take the region's scale. Reflected.",
+              "fieldName": "density",
+              "name": "density",
+              "type": {
+                "text": "\"compact\" | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "`columns` keeps two columns and `stacked` one column at any size. `grid` shows each pair as a cell, label above\nvalue, in four, two or one columns from the sheet's own inline size (four from twice `--ocelle-facts-stack-below`,\ntwo from it, one below it). Unset, or any other value, switches automatically on the sheet's own two-column inline\nsize; set it for a sheet in a dialog, popover or other shrink-to-fit host, where a short sheet would otherwise\nstack. Reflected.",
+              "fieldName": "layout",
+              "name": "layout",
+              "type": {
+                "text": "\"columns\" | \"stacked\" | \"grid\" | undefined"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The description list grid. Do not set its columns: a `grid-template-columns` rule here overrides every layout.",
+              "name": "list"
+            },
+            {
+              "description": "Each term (label). Carries the fact's `lang` and `dir`.",
+              "name": "label"
+            },
+            {
+              "description": "Each definition (value) box.",
+              "name": "value"
+            }
+          ],
+          "cssProperties": [
+            {
+              "description": "With `layout` unset, below this inline size (the sheet's own, as laid out in two columns) each value stacks under its label; with `layout=\"grid\"`, below it the cells take one column and from twice it four (the sheet's own size as laid out in four columns). An absolute length; a percentage, 0 or an invalid value falls back to the default, 24rem from tokens (`calc(var(--ocelle-space-10) * 6)`).",
+              "name": "--ocelle-facts-stack-below"
+            },
+            {
+              "description": "The values' font size, `--ocelle-font-size-fact` by default. Set by `@ocelle/styles`' density hook (`--ocelle-font-size-sm` in a compact region).",
+              "name": "--ocelle-facts-value-size"
+            },
+            {
+              "description": "The values' line height, `--ocelle-line-height-normal` by default. Set by `@ocelle/styles`' density hook (`--ocelle-line-height-compact` in a compact region).",
+              "name": "--ocelle-facts-value-line-height"
+            }
+          ],
+          "customElement": true,
+          "description": "A label and value sheet: one description list of its `ocelle-fact` children, in two columns, stacked or as a grid of\ncells.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "density",
+              "default": "undefined",
+              "description": "Row spacing: `compact` tightens the gaps for dense screens. Unset gives the default spacing. It does not change\nthe type: in a `data-ocelle-density=\"compact\"` region the values take the region's scale. Reflected.",
+              "kind": "field",
+              "name": "density",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"compact\" | undefined"
+              }
+            },
+            {
+              "attribute": "layout",
+              "default": "undefined",
+              "description": "`columns` keeps two columns and `stacked` one column at any size. `grid` shows each pair as a cell, label above\nvalue, in four, two or one columns from the sheet's own inline size (four from twice `--ocelle-facts-stack-below`,\ntwo from it, one below it). Unset, or any other value, switches automatically on the sheet's own two-column inline\nsize; set it for a sheet in a dialog, popover or other shrink-to-fit host, where a short sheet would otherwise\nstack. Reflected.",
+              "kind": "field",
+              "name": "layout",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"columns\" | \"stacked\" | \"grid\" | undefined"
+              }
+            }
+          ],
+          "name": "OcelleFacts",
+          "slots": [
+            {
+              "description": "The pairs, `ocelle-fact` elements, in source order. Other children, and facts with `hidden` or `aria-hidden=\"true\"`, are not shown.",
+              "name": ""
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-facts"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-facts.ts",
+            "name": "OcelleFacts"
+          },
+          "kind": "js",
+          "name": "OcelleFacts"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-facts.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
               "default": "undefined",
               "description": "The icon's name, one of the set; any other value draws nothing and keeps the box. Reflected.",
               "fieldName": "name",
@@ -184,6 +1836,305 @@
     {
       "declarations": [
         {
+          "attributes": [
+            {
+              "default": "undefined",
+              "description": "One column below this length: digits with an optional fraction and `px`, `rem` or `em`, or a unitless `0`, after\ntrimming ASCII whitespace; any other value counts as absent, and the default is `--ocelle-list-detail-collapse` as\ncomputed on the element. Not reflected.",
+              "fieldName": "collapseBelow",
+              "name": "collapse-below",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The inspector stacks under the detail below this length, with the grammar of `collapse-below`; the default is\n`--ocelle-list-detail-inspector-collapse` as computed on the element. Not reflected.",
+              "fieldName": "inspectorBelow",
+              "name": "inspector-below",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "false",
+              "description": "Forces the one-column layout whatever the element's measured size. Reflected.",
+              "fieldName": "narrow",
+              "name": "narrow",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "false",
+              "description": "In one column, shows the detail pane, with the inspector stacked under it, instead of the list; in two or three\ncolumns it has no effect. Reflected.",
+              "fieldName": "detailOpen",
+              "name": "detail-open",
+              "type": {
+                "text": "boolean"
+              }
+            }
+          ],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A list beside its detail, with an optional inspector, that shows one pane at a time below its threshold.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "collapse-below",
+              "default": "undefined",
+              "description": "One column below this length: digits with an optional fraction and `px`, `rem` or `em`, or a unitless `0`, after\ntrimming ASCII whitespace; any other value counts as absent, and the default is `--ocelle-list-detail-collapse` as\ncomputed on the element. Not reflected.",
+              "kind": "field",
+              "name": "collapseBelow",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "inspector-below",
+              "default": "undefined",
+              "description": "The inspector stacks under the detail below this length, with the grammar of `collapse-below`; the default is\n`--ocelle-list-detail-inspector-collapse` as computed on the element. Not reflected.",
+              "kind": "field",
+              "name": "inspectorBelow",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "narrow",
+              "default": "false",
+              "description": "Forces the one-column layout whatever the element's measured size. Reflected.",
+              "kind": "field",
+              "name": "narrow",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "attribute": "detail-open",
+              "default": "false",
+              "description": "In one column, shows the detail pane, with the inspector stacked under it, instead of the list; in two or three\ncolumns it has no effect. Reflected.",
+              "kind": "field",
+              "name": "detailOpen",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "description": "Requests a measurement of the intrinsic sizes for the next animation frame, coalesced with any other trigger, for\na change the element cannot see: content a slotted element renders in its own shadow root, an attribute-only\nchange, or an image or a font loading. In that frame it also re-chooses the tier from a fresh measurement of the\nelement's border box, as after a percentage inline padding that changes with the host's container. On an element\nthat is not in a document, never connected or removed, it does nothing. On an element that is not rendered (in a\nclosed `<dialog>`, under a `display: none` ancestor or `hidden`) the pass writes nothing and the tier stays; the\nelement measures itself afresh once it is rendered.",
+              "kind": "method",
+              "name": "remeasure",
+              "privacy": "public",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            }
+          ],
+          "name": "OcelleListDetail",
+          "slots": [
+            {
+              "description": "The list pane.",
+              "name": "list"
+            },
+            {
+              "description": "The detail pane.",
+              "name": ""
+            },
+            {
+              "description": "The optional inspector pane.",
+              "name": "inspector"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-list-detail"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-list-detail.ts",
+            "name": "OcelleListDetail"
+          },
+          "kind": "js",
+          "name": "OcelleListDetail"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-list-detail.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
+              "description": "The heading's size: `regular` or `compact`. Not set, or any other value, draws regular, the heading at\n`--ocelle-font-size-2xl`; `compact` draws it at `--ocelle-font-size-xl`. Reflected.",
+              "fieldName": "size",
+              "name": "size",
+              "type": {
+                "text": "\"regular\" | \"compact\" | undefined"
+              }
+            }
+          ],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A screen's page header: a band around a heading the page slots, with an optional eyebrow above, a description under\nthe heading and actions at its inline end, ruled off below.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "size",
+              "default": "undefined",
+              "description": "The heading's size: `regular` or `compact`. Not set, or any other value, draws regular, the heading at\n`--ocelle-font-size-2xl`; `compact` draws it at `--ocelle-font-size-xl`. Reflected.",
+              "kind": "field",
+              "name": "size",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"regular\" | \"compact\" | undefined"
+              }
+            }
+          ],
+          "name": "OcellePageHeader",
+          "slots": [
+            {
+              "description": "The page's own heading element (`h1` to `h6`, usually the screen's `h1`), drawn with the display style; its level is the page's.",
+              "name": "heading"
+            },
+            {
+              "description": "A short label above the heading naming the area, drawn with the eyebrow style.",
+              "name": "eyebrow"
+            },
+            {
+              "description": "A subtitle under the heading.",
+              "name": "description"
+            },
+            {
+              "description": "The screen's controls at the inline end of the heading's first line, wrapping under the description when they do not fit beside the heading.",
+              "name": "actions"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-page-header"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-page-header.ts",
+            "name": "OcellePageHeader"
+          },
+          "kind": "js",
+          "name": "OcellePageHeader"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-page-header.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
+              "description": "The name of the navigation landmark, trimmed, used while the host has no `aria-label`; empty or whitespace-only\ncounts as none, and the landmark is then unnamed. Not reflected.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The layout direction, set by the page or a shell: `vertical` (a column) or `horizontal` (a row that wraps). Not\nset, or any other value, is vertical; the element never changes it itself. Reflected.",
+              "fieldName": "orientation",
+              "name": "orientation",
+              "type": {
+                "text": "\"vertical\" | \"horizontal\" | undefined"
+              }
+            }
+          ],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A personal rail: a navigation landmark holding the page's primary items and a bottom group, on the chrome.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "label",
+              "default": "undefined",
+              "description": "The name of the navigation landmark, trimmed, used while the host has no `aria-label`; empty or whitespace-only\ncounts as none, and the landmark is then unnamed. Not reflected.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "orientation",
+              "default": "undefined",
+              "description": "The layout direction, set by the page or a shell: `vertical` (a column) or `horizontal` (a row that wraps). Not\nset, or any other value, is vertical; the element never changes it itself. Reflected.",
+              "kind": "field",
+              "name": "orientation",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"vertical\" | \"horizontal\" | undefined"
+              }
+            }
+          ],
+          "name": "OcellePersonalRail",
+          "slots": [
+            {
+              "description": "The primary items, icon links for example, from the rail's start.",
+              "name": ""
+            },
+            {
+              "description": "The bottom group, an account link for example, kept at the rail's end.",
+              "name": "bottom"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-personal-rail"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-personal-rail.ts",
+            "name": "OcellePersonalRail"
+          },
+          "kind": "js",
+          "name": "OcellePersonalRail"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-personal-rail.ts"
+    },
+    {
+      "declarations": [
+        {
           "attributes": [],
           "cssParts": [
             {
@@ -217,6 +2168,667 @@
       ],
       "kind": "javascript-module",
       "path": "src/ocelle-plant.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
+              "description": "The current amount, from 0 to `max`: below 0 counts as 0, above `max` as `max`. Unset, `null`, an empty or\nwhitespace-only attribute, or a value that is not a finite number makes the bar indeterminate. Not reflected.",
+              "fieldName": "value",
+              "name": "value",
+              "type": {
+                "text": "number | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The maximum. Unset, not a finite number, or 0 or less counts as 100. Not reflected.",
+              "fieldName": "max",
+              "name": "max",
+              "type": {
+                "text": "number | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "Words for the current value, for example \"7 of 12\", exposed (and shown with `show-label`) while the bar is\ndeterminate, as given. Unset lets the platform announce the value. Not reflected.",
+              "fieldName": "valueText",
+              "name": "value-text",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The accessible name, as text (no rich label). A bar needs a name: set `label`, or a host `aria-label`, which\noverrides it. To name a bar after a nearby heading, pass the heading's text. Not reflected.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "Shows the label as text above the bar (beside it in compact), and the value text while determinate. Unset hides\nboth; the name and value are exposed either way.",
+              "fieldName": "showLabel",
+              "name": "show-label",
+              "type": {
+                "text": "boolean | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "`compact` is a thin bar with the label beside it. Unset, or any other value, gives the default size. Reflected.",
+              "fieldName": "size",
+              "name": "size",
+              "type": {
+                "text": "\"compact\" | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "`tinted` draws the track's boundary in the accent-strong colour, for a bar on an inset, accent-low, hover or state\nground. Unset is for the canvas, sheet, pane, panel, inspector and rail grounds. Reflected.",
+              "fieldName": "ground",
+              "name": "ground",
+              "type": {
+                "text": "\"tinted\" | undefined"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The track, the full inline size of the bar.",
+              "name": "track"
+            },
+            {
+              "description": "The filled part: the determinate extent from the inline start, or the indeterminate mark.",
+              "name": "fill"
+            },
+            {
+              "description": "The visible label, with `show-label`.",
+              "name": "label"
+            },
+            {
+              "description": "The visible value text, with `show-label` while determinate, at the inline end of the label row.",
+              "name": "value-text"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A progress bar: determinate with a `value`, indeterminate without one. Name it with `label`.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "value",
+              "default": "undefined",
+              "description": "The current amount, from 0 to `max`: below 0 counts as 0, above `max` as `max`. Unset, `null`, an empty or\nwhitespace-only attribute, or a value that is not a finite number makes the bar indeterminate. Not reflected.",
+              "kind": "field",
+              "name": "value",
+              "privacy": "public",
+              "type": {
+                "text": "number | undefined"
+              }
+            },
+            {
+              "attribute": "max",
+              "default": "undefined",
+              "description": "The maximum. Unset, not a finite number, or 0 or less counts as 100. Not reflected.",
+              "kind": "field",
+              "name": "max",
+              "privacy": "public",
+              "type": {
+                "text": "number | undefined"
+              }
+            },
+            {
+              "attribute": "value-text",
+              "default": "undefined",
+              "description": "Words for the current value, for example \"7 of 12\", exposed (and shown with `show-label`) while the bar is\ndeterminate, as given. Unset lets the platform announce the value. Not reflected.",
+              "kind": "field",
+              "name": "valueText",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "label",
+              "default": "undefined",
+              "description": "The accessible name, as text (no rich label). A bar needs a name: set `label`, or a host `aria-label`, which\noverrides it. To name a bar after a nearby heading, pass the heading's text. Not reflected.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "show-label",
+              "default": "undefined",
+              "description": "Shows the label as text above the bar (beside it in compact), and the value text while determinate. Unset hides\nboth; the name and value are exposed either way.",
+              "kind": "field",
+              "name": "showLabel",
+              "privacy": "public",
+              "type": {
+                "text": "boolean | undefined"
+              }
+            },
+            {
+              "attribute": "size",
+              "default": "undefined",
+              "description": "`compact` is a thin bar with the label beside it. Unset, or any other value, gives the default size. Reflected.",
+              "kind": "field",
+              "name": "size",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"compact\" | undefined"
+              }
+            },
+            {
+              "attribute": "ground",
+              "default": "undefined",
+              "description": "`tinted` draws the track's boundary in the accent-strong colour, for a bar on an inset, accent-low, hover or state\nground. Unset is for the canvas, sheet, pane, panel, inspector and rail grounds. Reflected.",
+              "kind": "field",
+              "name": "ground",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"tinted\" | undefined"
+              }
+            }
+          ],
+          "name": "OcelleProgress",
+          "slots": [],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-progress"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-progress.ts",
+            "name": "OcelleProgress"
+          },
+          "kind": "js",
+          "name": "OcelleProgress"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-progress.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
+              "description": "The name of the strip's group while it overflows, trimmed; empty or whitespace-only counts as none, and without one\nan overflowing strip is a tab stop with no role. Not reflected.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string | undefined"
+              }
+            }
+          ],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A horizontal strip that scrolls in the inline direction and is a tab stop and a named group only while it overflows.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "label",
+              "default": "undefined",
+              "description": "The name of the strip's group while it overflows, trimmed; empty or whitespace-only counts as none, and without one\nan overflowing strip is a tab stop with no role. Not reflected.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            }
+          ],
+          "name": "OcelleScroller",
+          "slots": [
+            {
+              "description": "The strip's content.",
+              "name": ""
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-scroller"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-scroller.ts",
+            "name": "OcelleScroller"
+          },
+          "kind": "js",
+          "name": "OcelleScroller"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-scroller.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
+              "description": "The heading's size: `regular` or `compact`. Not set, or any other value, draws regular, or compact when the\nheader is in a compact card's `header` slot; a valid value wins over the card. No effect in the eyebrow variant.\nReflected.",
+              "fieldName": "size",
+              "name": "size",
+              "type": {
+                "text": "\"regular\" | \"compact\" | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "`eyebrow` draws the heading with the eyebrow style and renders neither the eyebrow nor the description slot;\n`default`, not set or any other value draws the default heading style. Reflected.",
+              "fieldName": "variant",
+              "name": "variant",
+              "type": {
+                "text": "\"default\" | \"eyebrow\" | undefined"
+              }
+            }
+          ],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A section header around a heading the page slots: an optional eyebrow above, a description under the heading and\nactions at its inline end.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "size",
+              "default": "undefined",
+              "description": "The heading's size: `regular` or `compact`. Not set, or any other value, draws regular, or compact when the\nheader is in a compact card's `header` slot; a valid value wins over the card. No effect in the eyebrow variant.\nReflected.",
+              "kind": "field",
+              "name": "size",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"regular\" | \"compact\" | undefined"
+              }
+            },
+            {
+              "attribute": "variant",
+              "default": "undefined",
+              "description": "`eyebrow` draws the heading with the eyebrow style and renders neither the eyebrow nor the description slot;\n`default`, not set or any other value draws the default heading style. Reflected.",
+              "kind": "field",
+              "name": "variant",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"default\" | \"eyebrow\" | undefined"
+              }
+            }
+          ],
+          "name": "OcelleSectionHeader",
+          "slots": [
+            {
+              "description": "The page's own heading element (`h1` to `h6`), drawn with the header's heading style; its level is the page's.",
+              "name": "heading"
+            },
+            {
+              "description": "A short label above the heading, drawn with the eyebrow style; not rendered in the eyebrow variant.",
+              "name": "eyebrow"
+            },
+            {
+              "description": "Supporting text under the heading; not rendered in the eyebrow variant.",
+              "name": "description"
+            },
+            {
+              "description": "Controls at the inline end of the heading's first line, wrapping under the heading when they do not fit beside it.",
+              "name": "actions"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-section-header"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-section-header.ts",
+            "name": "OcelleSectionHeader"
+          },
+          "kind": "js",
+          "name": "OcelleSectionHeader"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-section-header.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "\"\"",
+              "description": "The bubble's plain text, never parsed as markup. An empty text shows no bubble.",
+              "fieldName": "text",
+              "name": "text",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "\"top\"",
+              "description": "The side of the trigger the bubble is shown on: `top`, `bottom`, `start` or `end`, the last two in the tooltip's\ndirection; it is shown on the opposite side when it does not fit. Reflected.",
+              "fieldName": "placement",
+              "name": "placement",
+              "type": {
+                "text": "\"top\" | \"bottom\" | \"start\" | \"end\""
+              }
+            },
+            {
+              "default": "false",
+              "description": "Whether the tooltip shows no bubble. Reflected.",
+              "fieldName": "disabled",
+              "name": "disabled",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "false",
+              "description": "Whether the text is the trigger's accessible description, for a text that adds to the trigger's name; supported\nonly when the trigger is itself the focusable element. Reflected.",
+              "fieldName": "describes",
+              "name": "describes",
+              "type": {
+                "text": "boolean"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The bubble in the top layer, hidden from assistive technology; its only child paints the text.",
+              "name": "bubble"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A tooltip: a short text in a bubble beside its trigger, shown while the pointer rests on the trigger or the bubble\nor the trigger has keyboard focus, hidden by Escape. The trigger carries its own accessible name; the bubble only\nrepeats or supplements it.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "text",
+              "default": "\"\"",
+              "description": "The bubble's plain text, never parsed as markup. An empty text shows no bubble.",
+              "kind": "field",
+              "name": "text",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "placement",
+              "default": "\"top\"",
+              "description": "The side of the trigger the bubble is shown on: `top`, `bottom`, `start` or `end`, the last two in the tooltip's\ndirection; it is shown on the opposite side when it does not fit. Reflected.",
+              "kind": "field",
+              "name": "placement",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"top\" | \"bottom\" | \"start\" | \"end\""
+              }
+            },
+            {
+              "attribute": "disabled",
+              "default": "false",
+              "description": "Whether the tooltip shows no bubble. Reflected.",
+              "kind": "field",
+              "name": "disabled",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "attribute": "describes",
+              "default": "false",
+              "description": "Whether the text is the trigger's accessible description, for a text that adds to the trigger's name; supported\nonly when the trigger is itself the focusable element. Reflected.",
+              "kind": "field",
+              "name": "describes",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            }
+          ],
+          "name": "OcelleTooltip",
+          "slots": [
+            {
+              "description": "The trigger: the first element assigned, a button or a link that carries its own accessible name.",
+              "name": ""
+            },
+            {
+              "description": "The tooltip's own: with `describes`, the hidden description span it adds to its children; never rendered.",
+              "name": "description"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-tooltip"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-tooltip.ts",
+            "name": "OcelleTooltip"
+          },
+          "kind": "js",
+          "name": "OcelleTooltip"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-tooltip.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
+              "description": "The name of the board's region while it overflows, trimmed; empty or whitespace-only counts as none, and without\none an overflowing board is a tab stop with no role. Not reflected.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string | undefined"
+              }
+            }
+          ],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A row of lanes that scrolls inside itself, and is a tab stop and a named region, only while the lanes' minimum\nwidths exceed its size.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "label",
+              "default": "undefined",
+              "description": "The name of the board's region while it overflows, trimmed; empty or whitespace-only counts as none, and without\none an overflowing board is a tab stop with no role. Not reflected.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            }
+          ],
+          "name": "OcelleWorkflowBoard",
+          "slots": [
+            {
+              "description": "The lanes; any child is laid out as a lane.",
+              "name": ""
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-workflow-board"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-workflow-board.ts",
+            "name": "OcelleWorkflowBoard"
+          },
+          "kind": "js",
+          "name": "OcelleWorkflowBoard"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-workflow-board.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
+              "description": "The lane's title, shown and used as its name, trimmed; empty or whitespace-only counts as absent, and no title is\nshown. Not reflected.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The count shown after the title with tabular figures, and named after it: a whole number of 0 or more. The\nattribute counts when, after trimming, it is decimal digits alone, at most `Number.MAX_SAFE_INTEGER`; the\nproperty when it is a safe integer of 0 or more; anything else counts as absent. Not reflected.",
+              "fieldName": "count",
+              "name": "count",
+              "type": {
+                "text": "number | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The count's text in the lane's name, such as \"3 work packages\", trimmed; the visible count still shows the\nnumber. Used only while a count is shown. Not reflected.",
+              "fieldName": "countLabel",
+              "name": "count-label",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "`flat` drops the lane's ground, corners and padding and sets the title and count in small uppercase; absent or any\nother value draws the default lane chrome. Reflected.",
+              "fieldName": "variant",
+              "name": "variant",
+              "type": {
+                "text": "\"flat\" | undefined"
+              }
+            }
+          ],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A column of a workflow board with an optional title and count, exposed as one group named by them.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "label",
+              "default": "undefined",
+              "description": "The lane's title, shown and used as its name, trimmed; empty or whitespace-only counts as absent, and no title is\nshown. Not reflected.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "count",
+              "default": "undefined",
+              "description": "The count shown after the title with tabular figures, and named after it: a whole number of 0 or more. The\nattribute counts when, after trimming, it is decimal digits alone, at most `Number.MAX_SAFE_INTEGER`; the\nproperty when it is a safe integer of 0 or more; anything else counts as absent. Not reflected.",
+              "kind": "field",
+              "name": "count",
+              "privacy": "public",
+              "type": {
+                "text": "number | undefined"
+              }
+            },
+            {
+              "attribute": "count-label",
+              "default": "undefined",
+              "description": "The count's text in the lane's name, such as \"3 work packages\", trimmed; the visible count still shows the\nnumber. Used only while a count is shown. Not reflected.",
+              "kind": "field",
+              "name": "countLabel",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "variant",
+              "default": "undefined",
+              "description": "`flat` drops the lane's ground, corners and padding and sets the title and count in small uppercase; absent or any\nother value draws the default lane chrome. Reflected.",
+              "kind": "field",
+              "name": "variant",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"flat\" | undefined"
+              }
+            }
+          ],
+          "name": "OcelleWorkflowLane",
+          "slots": [
+            {
+              "description": "The lane's content.",
+              "name": ""
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-workflow-lane"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-workflow-lane.ts",
+            "name": "OcelleWorkflowLane"
+          },
+          "kind": "js",
+          "name": "OcelleWorkflowLane"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-workflow-lane.ts"
     }
   ],
   "readme": "",

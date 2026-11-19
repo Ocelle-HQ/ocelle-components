@@ -1,0 +1,166 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: testability
+# Checked: spec.md, plan.md, research.md, data-model.md, contracts/elements.md, contracts/overflow-region.md,
+# quickstart.md, constitution 1.3.1, against the repository at d3975d2: vitest.config.ts, vitest.mutation.elements.config.ts,
+# stryker.elements.config.json, packages/elements/test/{scenarios/driver.ts,in-process.ts,browser/driver.ts,browser/serve.ts,
+# fixtures/test-host.ts,node/readme.test.ts}, packages/tokens/src/source.ts, specs/005-icons-brand-mark/{plan,research,tasks}.md.
+# Dependency source checked: the vitest 5.0.5 tarball from the npm registry (default browser viewport).
+findings:
+  - id: PLAN-TESTABILITY-1-001
+    severity: 3
+    title: "The shared scenario driver has no keyboard, focus, tab-order, scroll, motion or observer-settle methods, and no phase adds them"
+    evidence:
+      - artifact: "plan.md § Phases 2-4: 'US1 scenarios 1 to 16 as shared bodies in both harnesses'; 'US3 scenarios 1 to 16 in both harnesses'; plan.md § Technical Context 'Testing': '005's harnesses (its research R-11)'; no task or file in § Project Structure extends test/scenarios/driver.ts, test/in-process.ts or test/browser/driver.ts"
+      - code: "packages/elements/test/scenarios/driver.ts:85-150: the Driver interface has mount, setProperty, setAttribute, attribute, style, rules, box, lines, drawing, elements, geometry, dir, pixels, paints, placement, ownPlacement, computed, resolveColour, ax, axSubtree, theme, forcedColors, sheets, messages. Nothing presses a key, tabs, reads the focused element through shadow roots, reads or sets scrollLeft, resizes a box over time, emulates reduced motion or waits for a ResizeObserver delivery"
+      - code: "packages/elements/test/in-process.ts:33-37: settle() waits for updateComplete and then one requestAnimationFrame. In a frame, rAF callbacks run before layout and ResizeObserver delivery, so a read right after settle() sees the state from before the observer fired; contracts/overflow-region.md § Lifecycle itself says tests must wait 'two animation frames'"
+      - code: "vitest.mutation.elements.config.ts and stryker.elements.config.json: Stryker runs only the in-process `elements` project, so a keyboard or focus path that runs only in a fixture suite is never reached by a mutant's tests"
+    claim: |
+      Most of this feature's behaviour is keyboard, focus and scroll behaviour: US1-2 (tab order), US1-4 (focus handover),
+      US1-5 and SC-002 (arrow keys, both directions, page does not scroll), US1-10 (no preventDefault on descendants),
+      US1-11 (reduced motion), US1-13 and US2-15 (tab walk, ring and fade clearance, pointer versus keyboard focus),
+      US3-6 and US3-7 (pane focus, ring after keyboard versus pointer). Constitution V requires every keyboard path to be
+      tested, and VIII requires the tests to reach the mutated source. The plan says these run as shared bodies in both
+      harnesses, but the driver both harnesses implement cannot express any of them, and its settle step reads
+      observer-driven state one frame too early. Left as is, the implementer either writes these tests outside the
+      shared bodies (so in-process and fixture runs diverge, and some paths are only in the unmutated fixture suite), or
+      settles each one ad hoc. Either way the keydown, focusin, focusout and handover code of the module can carry
+      surviving mutants, and an early read can make a "does not" half pass before the state it denies was ever computed.
+      Whether a :focus-visible branch runs at all also depends on real input (CDP or Playwright keyboard and mouse), not
+      on dispatched synthetic events, so the driver has to state which one it uses.
+    remedies:
+      - "Add a driver task, test-first, at the start of phase 2 (as 005's T013 did for its interface) and list the files in plan.md § Project Structure: real keyboard input by key name (Tab, Shift+Tab, ArrowLeft/Right, Home, End) through Playwright or CDP in both harnesses; real pointer click at a point; the deep active element (id plus shadow selector); a tab walk that returns the sequence of deep focused nodes from a sentinel before the element to one after it; scrollLeft read and write; reduced-motion emulation beside forcedColors; whether the last keydown was default-prevented; and a settle that waits for updateComplete after two animation frames (the contract's rule). State in research.md R-17 that every US1-US3 keyboard and focus scenario runs in-process, so the module's event code is mutated against them."
+  - id: PLAN-TESTABILITY-1-002
+    severity: 3
+    title: "Viewport-dependent scenarios have no viewport control; in the mutated harness the viewport is 414 px, which makes the `80vw` rejection case unable to fail"
+    evidence:
+      - artifact: "spec.md § User Scenarios 'Layout frames': 'Each frame is a block box of a stated inline size on a page whose viewport is wider than the frame'; Frame N: 'The viewport is shell-collapse-sidebar (45rem, 720 px)'; Frame S: 'The viewport is 320 px'; US3-10: '`80vw` (1024 px of the 1280 px viewport)'"
+      - artifact: "plan.md § Phases 1 'Frames (exempt). Add Frames W, R, N and S as fixture CSS to the elements-browser harness'"
+      - code: "vitest.config.ts: the `elements` project sets no browser.viewport; vitest 5.0.5 dist/chunks/index.1TqnEahn.js:9112 `resolved.browser.viewport.width ??= 414` (tarball from the npm registry). The in-process page is 414 px wide"
+      - code: "packages/elements/test/browser/serve.ts:127: every fixture context is `viewport: { width: 1280, height: 800 }`, and visit() takes no viewport option"
+      - code: "Arithmetic: at a 414 px viewport `collapse-below=\"80vw\"` is 331 px; Frame W's 876 px is not below it, so an implementation that wrongly accepts `vw` still shows two columns, the same as the rejected outcome. The case cannot fail in the only harness Stryker runs"
+    claim: |
+      The spec's frames and several of its value cases are defined against a specific viewport (1280 px for W and R and
+      the `vw` cases, 720 px for N, 320 px for S and the WCAG 1.4.10 checks), but neither harness can set a viewport per
+      scenario: the in-process one is Vitest's 414 px default and the fixture one is fixed at 1280 × 800. Frame N and
+      Frame S therefore run at the wrong viewport in both harnesses, so "the page has no horizontal scroll at 320 px"
+      (SC-006, US2-9, US3-9) is never measured at 320 px, and the `80vw` case of the US3-10 plant ("any value the browser
+      can resolve to a length accepted") passes against that plant in-process. The `vw` mutants of the grammar may still
+      be killed by the pure tiers.test.ts, but the element-level pairing the spec table names is vacuous where it is
+      mutated.
+    remedies:
+      - "Give the driver a viewport(width, height) method (in-process through vitest/browser page.viewport, in the fixture harness through page.setViewportSize or a visit() option), have each frame scenario set its frame's viewport (1280 for W and R, 720 for N, 320 for S) before mounting, and add to US3-10's test an assertion of the viewport width it relies on, so a run at the wrong viewport fails instead of passing. Record in research.md R-17 that the in-process default is 414 px."
+  - id: PLAN-TESTABILITY-1-003
+    severity: 3
+    title: "No observable is named for the fades; testing the module's `data-fade` output would assert internal state and leave the CSS mask, its RTL mirror and the ring overlay untested"
+    evidence:
+      - artifact: "spec.md US1-6, US1-7: the fade 'covers --ocelle-scroller-fade-size at that edge', 'fades the content itself toward transparency rather than painting a colour, so it is correct on every main ground and in both themes', 'does not cover the scroll box's focus ring'; spec table row 'Both fades always shown'"
+      - artifact: "research.md R-05: the fade is a mask-image selected by `.region-box[data-fade]` rules 'mirrored under :host(:dir(rtl))'; contracts/overflow-region.md § Outputs `fadeAttribute`; plan.md phase 2 names the plants but not what the fade tests measure"
+      - code: "A mask-image has no box: driver.box() and computed() of the box cannot show where content is faded. Only driver.pixels() (packages/elements/test/scenarios/driver.ts, pixels) observes it"
+    claim: |
+      Everything that makes the fade correct is CSS: the gradient direction, the mirror under rtl, the depth, the use of
+      alpha rather than a colour, and the ring overlay sitting outside the mask. The module's logic only chooses a
+      `data-fade` value. If the tests read `data-fade` (or the module's outputs), they pass with the mask rule deleted,
+      with the rtl mirror wrong (US1-6's "under rtl at the start the fade is on the left"), with a painted-colour overlay
+      instead of a mask, or with the ring under the mask, so the plants and Stryker's mutants of the `css` template
+      survive. The plan does not say which it will be, which leaves the cheap vacuous choice open. Likewise the
+      forced-colours lines (US1-8) need an assertion of the drawn line's side and colour, not of the attribute.
+    remedies:
+      - "State in plan.md phase 2 (and research.md R-05) that US1-6, US1-7 and US2-2's fades are asserted on pixels: with opaque content of a known colour on two different grounds and in both themes, the alpha-blended result rises monotonically from the ground at the fading edge to the content colour over fade-size (32 px at 16 px root) and is the content colour inside that depth on a side without a fade, in ltr and rtl; with the scroll box focused by keyboard, the ring's pixels at a fading edge are the full --ocelle-color-focus. US1-8 asserts the computed border colour, side and box of the visible edge element under emulated forced colours. Name `data-fade` as never the assertion of a fade test."
+  - id: PLAN-TESTABILITY-1-004
+    severity: 2
+    title: "\"Within one animation frame\" is tested by waiting two frames, so an update deferred by a frame passes"
+    evidence:
+      - artifact: "spec.md US1-3: 'it becomes the tab stop and the named region within one animation frame after the resize is observed'; FR-002: 'within one animation frame'"
+      - artifact: "research.md R-03: 'The tests wait for the element's updateComplete after two animation frames; that is the \"within one animation frame after the resize is observed\" of US1-3.'; contracts/overflow-region.md § Lifecycle: 'Tests wait for host.updateComplete after two animation frames.'"
+    claim: |
+      The test as described cannot distinguish the required implementation (state written in the ResizeObserver
+      callback, visible in the next paint) from one that defers it by a requestAnimationFrame or a debounce of up to a
+      frame, which is a likely shape for "Performance Goals: updates only when an output changes". The timing clause of
+      US1-3 and FR-002 is therefore not tested at its stated bound, and no plant exists for it.
+    remedies:
+      - "Test the bound directly: the test registers its own ResizeObserver on the scroll box after the element's, and in the first requestAnimationFrame after its callback (or in its callback after awaiting updateComplete) asserts tabindex and role; plant: the module's state write moved into a requestAnimationFrame. Keep the two-frame settle for every other scenario."
+      - "Or relax US1-3 and FR-002 to 'by the second animation frame after the change' and say so in the spec, so the test and the requirement agree."
+  - id: PLAN-TESTABILITY-1-005
+    severity: 2
+    title: "The pointer-focus test has no oracle: \"not moved beyond the browser's own scroll\""
+    evidence:
+      - artifact: "plan.md phase 2, US1-13: 'a separate test that a pointer-focused chip is not moved beyond the browser's own scroll, R-06'; research.md R-06: 'Pointer focus does not apply ... the browser's own focus scrolling is all that happens'; decision 3 at the plan gate"
+    claim: |
+      The test needs a figure to compare with, and "the browser's own scroll" is not one: the test cannot see which
+      part of a scroll change the browser made and which the module made. Written as stated, it invites either an
+      assertion that always holds (scrollLeft did not exceed some loose bound) or an assertion on the module's flag.
+      This is the only test that separates the keyboard-only clearance of decision 3 from clearance on every focus, so
+      the alternative R-06 rejected ('the strip would jump under the pointer') stays untested.
+    remedies:
+      - "Name the oracle: a twin plain `overflow-x: auto` div with the same content, width and starting scrollLeft (no module) receives the same real pointer click on a chip partly under the end fade; the scroller's scrollLeft after the click equals the twin's within 1 px, and the chip's fade side is not suppressed. Plant: clearance applied on every focusin. Add the paired positive in the same test: the same chip focused by Tab is moved clear of the fade."
+  - id: PLAN-TESTABILITY-1-006
+    severity: 2
+    title: "The spike's \"no intermediate layout in a screenshot\" condition cannot fail reliably"
+    evidence:
+      - artifact: "research.md R-13: 'Spike pass condition. ... the measurement pass shows no intermediate layout in a screenshot taken right after a slotchange'; plan.md phase 4 'Spike first ... with no intermediate frame painted'"
+    claim: |
+      A screenshot is taken at whatever frame the protocol captures after the call, not at the frame after the
+      slotchange, so a measurement pass that leaks one painted frame of the all-panes grid will usually be missed. The
+      condition passes whether or not the defect is there, and the spike's result decides whether the operator is asked
+      to relax US3-12. US3-12 itself checks stability over ten frames, but only after it has settled, so the leaked frame
+      is not covered by any test either.
+    remedies:
+      - "Replace the screenshot with a per-frame record: from just before the slotchange, a requestAnimationFrame loop (and a ResizeObserver on the grid) records the grid's column count and each pane's box in every frame until settle; pass when every recorded frame shows the old or the new tier and never the measurement grid. Run the same record as an assertion in US3-12's test, with a plant: the measurement pass split across a requestAnimationFrame."
+  - id: PLAN-TESTABILITY-1-007
+    severity: 2
+    title: "The upgrade focus cases run only in the fixture suite, which Stryker does not run"
+    evidence:
+      - artifact: "plan.md phase 4: 'The upgrade cases of R-14 run on a server-rendered fixture page.'; research.md R-14 'Upgrade': at first render the element moves focus out of a pane the first layout hides, otherwise moves nothing"
+      - code: "vitest.config.ts: the `elements-browser` project comment 'Not mutated (vitest.mutation.config.ts)'; vitest.mutation.elements.config.ts keeps only the `elements` project. In 005 upgrade was tested only in packages/elements/test/browser/icon.test.ts, but 005's elements had no upgrade-specific code; R-14 adds a first-render branch"
+    claim: |
+      R-14's first-render branch is new element source with two outcomes (move, do not move). If its only tests are on
+      the fixture page, every mutant in it is NoCoverage or survives under 007's gate, and the review must either block
+      or record non-equivalent mutants as equivalent. The red/green check also cannot see the in-process harness fail
+      for this behaviour.
+    remedies:
+      - "Add an in-process test file for the upgrade cases: it mounts the server-rendered markup with focus placed inside the list pane (and a twin with focus outside), then dynamic-imports `src/ocelle-list-detail.ts`, so the element upgrades in place (each test file has its own iframe and registry, vitest.config.ts); keep the fixture page as the built-output check."
+  - id: PLAN-TESTABILITY-1-008
+    severity: 2
+    title: "The frames are test oracles but are exempt from tests and defined only for the fixture harness and the stories"
+    evidence:
+      - artifact: "plan.md phase 1: 'Frames (exempt). Add Frames W, R, N and S as fixture CSS to the elements-browser harness, and as [data-story] rules, with no behaviour.'; § Project Structure lists only test/browser/fixtures/frames.css and storybook/.storybook/stories-layout.css"
+      - artifact: "spec.md FR-015, SC-003: five lanes need 858 px against Frame W's 876 px; US3-1, US3-2: 1196 px is 74.75rem against 60rem, 876 px is 54.75rem against 40rem and 60rem"
+    claim: |
+      Every US2 and US3 outcome is decided by a frame's width, with margins as small as 18 px (858 of 876). A frame
+      written as 880 px, or one that includes padding, turns several pairs into passes that do not test the stated
+      sizes, and no test notices because the frames are exempt. The in-process (mutated) harness has no frame source
+      listed at all, so it would get a third copy, and the stories a second; three copies of the same figures can drift.
+    remedies:
+      - "Keep one frame source (a CSS text module read by both drivers through driver.rules() and by the story stylesheet, or a generated file checked by a test), and make the frames not exempt: a test asserts, in both harnesses, each frame's measured inline size (876, 1196, 636, 288 px) at its viewport (PLAN-TESTABILITY-1-002), red before the frame CSS exists."
+  - id: PLAN-TESTABILITY-1-009
+    severity: 2
+    title: "The plan does not say how the pairing plants are run and recorded, and the board's 320 px page-scroll plant is missing"
+    evidence:
+      - artifact: "research.md R-17 'Plants. Each \"does not\" row of the spec's table names its planted defect. The plan's phases name the test that carries each one.'; plan.md phase 3 lists plants for US2-1, US2-5, US2-6, US2-14, US2-15, US2-12, but none for the row 'The page has no horizontal scroll at 320 px (US2-7, US3-9, SC-006) / A board without its own overflow'"
+      - artifact: "spec.md § 'Does not' table, last row, cites US2-7 for the 320 px board; the 320 px board scenario is US2-9 (US2-7 is the flat lane)"
+      - code: "specs/005-icons-brand-mark/tasks.md:25-27,136: each pairing plant 'run once by the implementer and recorded in the phase's' reviews/phase-N/plants.md; 'A plant that does not make its guard fail stops the phase'. No equivalent sentence is in 009's plan.md or research.md"
+    claim: |
+      The pairing plants are this feature's proof that its "does not" tests can fail (constitution VIII; they are not
+      gates, so gate:plants does not run them). Without the 005 rule in the plan, /speckit-tasks has nothing to turn into
+      a plant-run task, a record file or a stop condition, and the board's page-scroll pair has no plant at all. The
+      spec's wrong scenario reference makes the omission easy to repeat.
+    remedies:
+      - "Add to research.md R-17 and each phase in plan.md: every pairing plant is run once against its test, the output recorded in reviews/phase-N/plants.md, and a plant that does not make its test fail stops the phase. Add 'US2-9 (board without its own overflow: the page scrolls)' to phase 3's plant list, and correct the spec table's 'US2-7' to 'US2-9'."
+  - id: PLAN-TESTABILITY-1-010
+    severity: 2
+    title: "Every px figure is tested only at a 16 px root, so rem-to-px conversions in the clearance and tier code can be hard-coded and pass"
+    evidence:
+      - artifact: "contracts/overflow-region.md § Inputs: 'the clearance arithmetic reads their computed px values from the box at the time of focus'; research.md R-12: 'rem: the root element's computed font-size', resolved at every measurement; spec Edge Cases 'Zoom and root font size ... move every figure together'"
+      - code: "packages/tokens/src/source.ts:151 `space-7` is `2rem`; :162-163 focus-width 3px, focus-offset 2px. --ocelle-scroller-fade-size is `var(--ocelle-space-7)`: an unregistered custom property computes to its token text with var() substituted, so getComputedStyle reads `2rem`, not a px figure, and the module must convert it"
+      - artifact: "US3-10 has one em case at a 20 px element font size; no scenario changes the root font size for the scroller's clearance, the board's lane width or the list-detail tokens and rem thresholds"
+    claim: |
+      The module has to turn `2rem` into px, and tiers.ts has to resolve `rem` and token defaults against the root.
+      An implementation that multiplies by 16 instead of reading the root's computed font size passes every planned
+      test, since all of them run at the default root size; so does a test whose oracle reads the token through the
+      same helper. The Edge Case the spec states for zoom and root font size has no test, and those mutants (16 for the
+      computed root size) are equivalent under the planned tests.
+    remedies:
+      - "Add one case per element at a root font size of 20 px with fixed expected figures written in the test: US1-13's clearance of 40 px from a fading edge, the board's lanes at 200 px minimum, and list-detail's 40rem default at 800 px (in a 720 px frame: one column at that root size, two at 16 px); the board in Frame W then overflows (5 x 200 + 48 + 10 = 1058 px)."

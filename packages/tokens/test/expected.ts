@@ -75,6 +75,9 @@ export const expectedTokens: readonly ExpectedToken[] = [
   colour("color-ink", "#15130F", "#EDE9E1"),
   colour("color-ink-soft", "#3F3A33", "#CFC9BE"),
   colour("color-ink-muted", "#5E584F", "#A39D92"),
+  // 011 (FR-030, research.md R-12, data-model.md § Tokens added): the eyebrow colour, an alias of the muted ink in both
+  // themes, with a text contrast entry on every main ground (User Story 1, FR-032).
+  derivedColour("color-eyebrow", "color-ink-muted", "#5E584F", "#A39D92"),
   colour("color-rule", "#D9D3C7", "#3A342B"),
   colour("color-rule-strong", "#B9B1A2", "#4D463A"),
   colour("color-control-border", "#8A8276", "#7A7264"),
@@ -82,7 +85,11 @@ export const expectedTokens: readonly ExpectedToken[] = [
   colour("color-chrome-ink", "#EDE9E1", "#EDE9E1"),
   colour("color-chrome-muted", "#A39D92", "#A39D92"),
   colour("color-chrome-hover", "#211D18", "#24211B"),
+  // 012 (research.md R-08 item 4a, plan decision 20): the pressed surface of a control on the chrome grounds.
+  colour("color-chrome-active", "#3A342B", "#3A342B"),
   colour("color-accent", "#C68A1E", "#C68A1E"),
+  // 012 (research.md R-08 item 3): the primary button's hover fill.
+  colour("color-accent-hover", "#D9A23F", "#D9A23F"),
   colour("color-on-accent", "#15130F", "#15130F"),
   colour("color-accent-low", "#F1E1C0", "#3A2B10"),
   colour("color-accent-strong", "#8F5E0F", "#E0A23A"),
@@ -91,6 +98,10 @@ export const expectedTokens: readonly ExpectedToken[] = [
   colour("color-link", "#84560D", "#E0A23A"),
   colour("color-link-hover", "#15130F", "#F7F4EE"),
   colour("color-hover-bg", "#E2DDD3", "#2A261F"),
+  // 012 (research.md R-08 item 3, #525): the border of a hovered or pressed bordered control, an alias of color-ink a
+  // host overrides on an ancestor; and the pressed surface of secondary, quiet and flush controls.
+  derivedColour("color-hover-border", "color-ink", "#15130F", "#EDE9E1"),
+  colour("color-active-bg", "#D3CCBF", "#3A342B"),
   colour("color-disabled-ink", "#6F685D", "#8C8579"),
   colour("color-disabled-bg", "#E6E1D8", "#2A261F"),
   colour("color-overlay", "rgb(21 19 15 / 0.5)", "rgb(0 0 0 / 0.65)"),
@@ -131,6 +142,11 @@ export const expectedTokens: readonly ExpectedToken[] = [
   plain("font-weight-strong", "type", "600", { property: "font-weight", used: "600" }),
   plain("font-weight-display", "type", "800", { property: "font-weight", used: "800" }),
   plain("tracking-display", "type", "-0.03em", { property: "letter-spacing", used: -0.48 }),
+  // 011 (FR-030, research.md R-12, data-model.md § Tokens added): the eyebrow's size and weight, aliases of the 12 px
+  // size and the strong weight, and its letter spacing, 0.08em of the probe's 16 px (User Story 1, FR-031).
+  derived("font-size-eyebrow", "type", "var(--ocelle-font-size-xs)", "0.75rem", ["font-size-xs"], { property: "font-size", used: "12px" }),
+  derived("font-weight-eyebrow", "type", "var(--ocelle-font-weight-strong)", "600", ["font-weight-strong"], { property: "font-weight", used: "600" }),
+  plain("tracking-eyebrow", "type", "0.08em", { property: "letter-spacing", used: 1.28 }),
 
   // A.3 Space, shape, size
   plain("space-1", "space", "0.25rem", width(4)),
@@ -144,6 +160,8 @@ export const expectedTokens: readonly ExpectedToken[] = [
   plain("space-9", "space", "3rem", width(48)),
   plain("space-10", "space", "4rem", width(64)),
   derived("gutter", "space", "var(--ocelle-space-4)", "1rem", ["space-4"], width(16)),
+  // 009 (research.md R-16, FR-033): the scroller's fade depth and focus clearance.
+  derived("scroller-fade-size", "space", "var(--ocelle-space-7)", "2rem", ["space-7"], width(32)),
   plain("radius-1", "shape", "2px", width(2)),
   plain("radius-2", "shape", "4px", width(4)),
   plain("radius-row", "shape", "6px", width(6)),
@@ -152,6 +170,8 @@ export const expectedTokens: readonly ExpectedToken[] = [
   plain("border-width", "shape", "1px", width(1)),
   plain("focus-width", "shape", "3px", width(3)),
   plain("focus-offset", "shape", "2px", width(2)),
+  // 012 (research.md R-12; data-model.md § Tokens): the negative offset that draws a focus ring inside a box, -5 px
+  derived("focus-offset-inset", "shape", "calc(-1 * (var(--ocelle-focus-offset) + var(--ocelle-focus-width)))", "calc(-1 * (2px + 3px))", ["focus-offset", "focus-width"], { property: "outline-offset", used: -5 }),
   plain("bar-width", "shape", "3px", width(3)),
   plain("ring-step", "shape", "1.5px", width(1.5)),
   plain("target-min", "size", "2.75rem", width(44)),
@@ -161,6 +181,9 @@ export const expectedTokens: readonly ExpectedToken[] = [
   plain("size-avatar", "size", "1.6rem", width(25.6)),
   plain("size-rail-item", "size", "2.5rem", width(40)),
   plain("size-visually-hidden", "size", "1px", width(1)),
+  // 008 (data-model.md § New tokens, research.md R-09): the tooltip bubble's maximum inline size, about 40 characters of
+  // font-size-sm.
+  plain("tooltip-max-inline", "size", "18rem", width(288)),
 
   // A.4 Shell and measure
   plain("shell-topbar-height", "shell", "3.25rem", width(52)),
@@ -187,6 +210,9 @@ export const expectedTokens: readonly ExpectedToken[] = [
   plain("measure-container", "shell", "100cqi", width(1000)),
   derived("dialog-max-inline", "shell", "calc(100vw - 2 * var(--ocelle-gutter))", "calc(100vw - 2 * 1rem)", ["gutter"], width(1248)),
   derived("dialog-max-block", "shell", "calc(100dvh - 2 * var(--ocelle-gutter))", "calc(100dvh - 2 * 1rem)", ["gutter"], width(768)),
+  // 008 (data-model.md § New tokens, research.md R-09): the drawer's inline size, the sidebar's width, which #12's
+  // personal drawer replaces at narrow widths (spec-kitty-design#450).
+  derived("drawer-inline", "shell", "var(--ocelle-shell-sidebar-width)", "20rem", ["shell-sidebar-width"], width(320)),
   derived(
     "bar-block-narrow",
     "shell",
@@ -195,6 +221,12 @@ export const expectedTokens: readonly ExpectedToken[] = [
     ["target-min", "space-2"],
     width(112),
   ),
+  // 009 (research.md R-16, FR-033): a board lane's minimum and flex basis, list-detail's list pane, and list-detail's
+  // default `collapse-below` and `inspector-below` thresholds.
+  plain("lane-min-width", "shell", "10rem", width(160)),
+  plain("list-track-width", "shell", "18rem", width(288)),
+  plain("list-detail-collapse", "shell", "40rem", width(640)),
+  plain("list-detail-inspector-collapse", "shell", "60rem", width(960)),
 
   // A.5 Elevation and motion
   {
@@ -262,10 +294,16 @@ export const expectedTokens: readonly ExpectedToken[] = [
   },
   plain("motion-fast", "motion", "120ms", { property: "transition-duration", used: "0.12s" }),
   plain("motion-base", "motion", "200ms", { property: "transition-duration", used: "0.2s" }),
+  // 012 (research.md R-07; data-model.md § Tokens): one turn of the busy spinner, 0ms under reduced motion, and its angle
+  plain("motion-spin", "motion", "800ms", { property: "transition-duration", used: "0.8s" }),
+  plain("motion-turn", "motion", "1turn", { property: "rotate", used: "360deg" }),
   plain("easing-standard", "motion", "cubic-bezier(0.22, 1, 0.36, 1)", {
     property: "transition-timing-function",
     used: "cubic-bezier(0.22, 1, 0.36, 1)",
   }),
+  // 008 (data-model.md § New tokens, research.md R-09): the tooltip's hover delay; not zeroed under reduced motion,
+  // because a delay is not motion (brand rule (f) sets only motion-fast and motion-base).
+  plain("tooltip-delay", "motion", "500ms", { property: "transition-duration", used: "0.5s" }),
 ];
 
 /** A.6: the tokens that must not exist. */

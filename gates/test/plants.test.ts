@@ -822,16 +822,17 @@ describe("plantArgs", () => {
 
 // Plan decisions 23 and 24 (operator decisions 2026-11-11, "In phase 3 now" and "Measure first"; contracts/plants.md
 // § Shards, § Plant runner changes): each plant's time on stderr, and the three modes of the split plant job. The
-// repository in memory holds 9 visual plants and 3 axe plants, so with the repository's size 3 (plan decision 30) the
-// plan has 5 shards: shard 1 every other plant and the registry's, shard 2 the visual plants error-basic, fail-basic
-// and pass-basic, shard 3 pass-v01 to pass-v03, shard 4 pass-v04 to pass-v06, shard 5 the axe plants. The stopwatch gives 1,250 ms for every plant.
+// repository in memory holds 9 visual plants and 3 axe plants, so with the repository's size 1 (012 research.md R-13;
+// it was 3, plan decision 30) the plan has 13 shards: shard 1 every other plant and the registry's, shards 2 to 10 one
+// visual plant each (error-basic, fail-basic, pass-basic, then pass-v01 to pass-v06), shards 11 to 13 one axe plant
+// each. The stopwatch gives 1,250 ms for every plant.
 describe("plants: plant times and shards (plan decisions 23 and 24)", () => {
   const extra = Array.from({ length: 6 }, (_, index) => `pass-v${String(index + 1).padStart(2, "0")}`);
   const visual = ["error-basic", "fail-basic", "pass-basic", ...extra].map((name) => `visual/${name}`);
   const axe = ["error-basic", "fail-basic", "pass-basic"].map((name) => `axe/${name}`);
   const others = gateIds.filter((id) => id !== "visual" && id !== "axe").flatMap((id) => ["error-basic", "fail-basic", "pass-basic"].map((name) => `${id}/${name}`));
-  // The registry fixture registers axe (006 FR-017): its plants make a fifth shard after the visual ones.
-  const partition = [[...others, "plants/matching", "plants/missing-entry"], visual.slice(0, 3), visual.slice(3, 6), visual.slice(6), axe];
+  // The registry fixture registers axe (006 FR-017): its plants make the last shards, after the visual ones.
+  const partition = [[...others, "plants/matching", "plants/missing-entry"], ...visual.map((plant) => [plant]), ...axe.map((plant) => [plant])];
   const note = (plant: string): string => `note: plant time: ${plant}: 1.3 s`;
 
   function sharded(): Map<string, string> {
@@ -851,7 +852,7 @@ describe("plants: plant times and shards (plan decisions 23 and 24)", () => {
   /** A report of shard `k` in which every plant of the partition was judged as expected. */
   const report = (k: number, changes: Partial<Report> = {}): Report => ({
     shard: k,
-    of: 5,
+    of: 13,
     plants: (partition[k - 1] ?? []).map((plant) => ({ plant, asExpected: true, lines: [], seconds: 1.3 })),
     skipped: [],
     notRun: [],
@@ -898,7 +899,9 @@ describe("plants: plant times and shards (plan decisions 23 and 24)", () => {
   }
 
   const reports = (...list: Report[]): Map<string, string> => new Map(list.map((one) => [`${String(one.shard)}.json`, JSON.stringify(one)]));
-  const complete = (): Report[] => [1, 2, 3, 4, 5].map((k) => report(k));
+  const complete = (): Report[] => Array.from({ length: 13 }, (_, index) => report(index + 1));
+  /** Every shard's report from 3 on, as expected. */
+  const rest = (): Report[] => complete().slice(2);
   /** The repository with a registry finding (--skip-container in the plants job) and a gate without a breaking plant. */
   function flawed(): Map<string, string> {
     const files = sharded();
@@ -921,16 +924,16 @@ describe("plants: plant times and shards (plan decisions 23 and 24)", () => {
 
   it("--plan prints the shard numbers as one JSON line and runs no plant", async () => {
     const run = await shardJob(sharded(), ["--", "--plan"]);
-    expect({ code: run.code, out: run.out, err: run.err, ran: run.ran }).toEqual({ code: 0, out: ["[1,2,3,4,5]"], err: [], ran: [] });
+    expect({ code: run.code, out: run.out, err: run.err, ran: run.ran }).toEqual({ code: 0, out: ["[1,2,3,4,5,6,7,8,9,10,11,12,13]"], err: [], ran: [] });
   });
 
-  it("--shard 2 judges only shard 2's plants, runs no registry check, and writes its report", async () => {
+  it("--shard 2 judges only shard 2's plant, runs no registry check, and writes its report", async () => {
     const run = await shardJob(flawed(), ["--", "--shard", "2"]);
     expect({ code: run.code, out: run.out, err: run.err, ran: run.ran }).toEqual({
       code: 0,
-      out: ["plants: shard 2 of 5: 3 plants judged, every plant as expected"],
-      err: visual.slice(0, 3).map(note),
-      ran: visual.slice(0, 3).map((plant) => `gates/plants/${plant}`),
+      out: ["plants: shard 2 of 13: 1 plant judged, every plant as expected"],
+      err: [note("visual/error-basic")],
+      ran: ["gates/plants/visual/error-basic"],
     });
     expect([...run.written.keys()]).toEqual(["storybook/.visual/plant-shards/2.json"]);
     expect(JSON.parse(run.written.get("storybook/.visual/plant-shards/2.json") ?? "")).toEqual(report(2));
@@ -939,10 +942,10 @@ describe("plants: plant times and shards (plan decisions 23 and 24)", () => {
   it("--shard writes its report also when a plant is not as expected, with that plant's problem lines (exit 1)", async () => {
     const rejected: PlantRun = { exit: 1, stdout: ["a--b/light: visual: differs: x", "visual: 1 finding in 24 story-themes"], stderr: [] };
     const line = "gates/plants/visual/pass-v01: plants: not-accepted: expected exit 0 with no finding, got exit 1 (a--b/light differs)";
-    const run = await shardJob(sharded(), ["--shard", "3"], { runs: { "gates/plants/visual/pass-v01": rejected } });
-    expect({ code: run.code, out: run.out }).toEqual({ code: 1, out: [line, "plants: 1 problem in 3 plants"] });
-    const written = report(3);
-    expect(JSON.parse(run.written.get("storybook/.visual/plant-shards/3.json") ?? "")).toEqual({
+    const run = await shardJob(sharded(), ["--shard", "5"], { runs: { "gates/plants/visual/pass-v01": rejected } });
+    expect({ code: run.code, out: run.out }).toEqual({ code: 1, out: [line, "plants: 1 problem in 1 plant"] });
+    const written = report(5);
+    expect(JSON.parse(run.written.get("storybook/.visual/plant-shards/5.json") ?? "")).toEqual({
       ...written,
       plants: written.plants.map((plant) => (plant.plant === "visual/pass-v01" ? { ...plant, asExpected: false, lines: [line] } : plant)),
     });
@@ -950,15 +953,15 @@ describe("plants: plant times and shards (plan decisions 23 and 24)", () => {
 
   it("--shard 1 judges the other gates' and the registry's plants, and reports neither a registry finding nor a structural problem", async () => {
     const run = await shardJob(flawed(), ["--shard", "1"]);
-    expect({ code: run.code, out: run.out, ran: run.ran.length }).toEqual({ code: 0, out: ["plants: shard 1 of 5: 46 plants judged, every plant as expected"], ran: 44 });
+    expect({ code: run.code, out: run.out, ran: run.ran.length }).toEqual({ code: 0, out: ["plants: shard 1 of 13: 46 plants judged, every plant as expected"], ran: 44 });
   });
 
-  it("--shard 6 exits 2 naming the plan's shard count, and writes no report", async () => {
-    const run = await shardJob(sharded(), ["--shard", "6"]);
+  it("--shard 14 exits 2 naming the plan's shard count, and writes no report", async () => {
+    const run = await shardJob(sharded(), ["--shard", "14"]);
     expect({ code: run.code, out: run.out, err: run.err, ran: run.ran, written: [...run.written.keys()] }).toEqual({
       code: 2,
       out: [],
-      err: ["plants: could not run: there is no shard 6; the plan has 5"],
+      err: ["plants: could not run: there is no shard 14; the plan has 13"],
       ran: [],
       written: [],
     });
@@ -969,8 +972,8 @@ describe("plants: plant times and shards (plan decisions 23 and 24)", () => {
     expect(runs.map((run) => ({ code: run.code, err: run.err, ran: run.ran.length, written: run.written.size }))).toEqual([
       { code: 2, err: ["plants: could not run: --shard needs a shard number"], ran: 0, written: 0 },
       { code: 2, err: ["plants: could not run: --verdict needs a report directory"], ran: 0, written: 0 },
-      { code: 2, err: ["plants: could not run: there is no shard 02; the plan has 5"], ran: 0, written: 0 },
-      { code: 2, err: ["plants: could not run: there is no shard 0; the plan has 5"], ran: 0, written: 0 },
+      { code: 2, err: ["plants: could not run: there is no shard 02; the plan has 13"], ran: 0, written: 0 },
+      { code: 2, err: ["plants: could not run: there is no shard 0; the plan has 13"], ran: 0, written: 0 },
     ]);
   });
 
@@ -997,14 +1000,14 @@ describe("plants: plant times and shards (plan decisions 23 and 24)", () => {
     const run = await shardJob(sharded(), ["--verdict", "dir"], { reports: texts });
     expect({ code: run.code, err: run.err }).toEqual({
       code: 2,
-      err: ["plants: could not run: a-zero.json: shard 0 of 5, but the plan has 5 shards", ...broken.map(([name]) => `plants: could not run: ${name} is not a shard report`)],
+      err: ["plants: could not run: a-zero.json: shard 0 of 13, but the plan has 13 shards", ...broken.map(([name]) => `plants: could not run: ${name} is not a shard report`)],
     });
   });
 
   it("--verdict names every plant of a report that is not its shard's, sorted, and prints the problems before the causes", async () => {
     const two = report(2);
     const moved = { ...two, plants: [...two.plants.filter((plant) => plant.plant !== "visual/error-basic"), { plant: "visual/pass-v06", asExpected: true, lines: [], seconds: 1.3 }] };
-    const run = await shardJob(flawed(), ["--verdict", "dir"], { reports: reports(report(1, { plants: report(1).plants.filter((plant) => plant.plant !== "lint/error-basic") }), moved, report(3), report(4), report(5)) });
+    const run = await shardJob(flawed(), ["--verdict", "dir"], { reports: reports(report(1, { plants: report(1).plants.filter((plant) => plant.plant !== "lint/error-basic") }), moved, ...rest()) });
     expect({ code: run.code, out: run.out, err: run.err }).toEqual({
       code: 2,
       out: [
@@ -1027,62 +1030,62 @@ describe("plants: plant times and shards (plan decisions 23 and 24)", () => {
   });
 
   it("--verdict exits 2 naming a shard with no report", async () => {
-    const run = await shardJob(sharded(), ["--verdict", "dir"], { reports: reports(report(1), report(2), report(4), report(5)) });
-    expect({ code: run.code, out: run.out, err: run.err }).toEqual({ code: 2, out: [], err: ["plants: could not run: shard 3 of 5 reported no result"] });
+    const run = await shardJob(sharded(), ["--verdict", "dir"], { reports: reports(...complete().filter((one) => one.shard !== 3)) });
+    expect({ code: run.code, out: run.out, err: run.err }).toEqual({ code: 2, out: [], err: ["plants: could not run: shard 3 of 13 reported no result"] });
   });
 
   it("--verdict exits 2 on a report of another plan's shard count, and on one that is not a shard report", async () => {
-    const other = await shardJob(sharded(), ["--verdict", "dir"], { reports: reports(report(1), report(2, { of: 3 }), report(3), report(4), report(5)) });
-    expect({ code: other.code, err: other.err }).toEqual({ code: 2, err: ["plants: could not run: 2.json: shard 2 of 3, but the plan has 5 shards", "plants: could not run: shard 2 of 5 reported no result"] });
+    const other = await shardJob(sharded(), ["--verdict", "dir"], { reports: reports(report(1), report(2, { of: 3 }), ...rest()) });
+    expect({ code: other.code, err: other.err }).toEqual({ code: 2, err: ["plants: could not run: 2.json: shard 2 of 3, but the plan has 13 shards", "plants: could not run: shard 2 of 13 reported no result"] });
     const broken = await shardJob(sharded(), ["--verdict", "dir"], { reports: new Map([...reports(...complete()), ["2.json", '{"shard":2}']]) });
-    expect({ code: broken.code, err: broken.err }).toEqual({ code: 2, err: ["plants: could not run: 2.json is not a shard report", "plants: could not run: shard 2 of 5 reported no result"] });
-    const outside = await shardJob(sharded(), ["--verdict", "dir"], { reports: reports(...complete(), report(9)) });
-    expect({ code: outside.code, err: outside.err }).toEqual({ code: 2, err: ["plants: could not run: 9.json: shard 9 of 5, but the plan has 5 shards"] });
+    expect({ code: broken.code, err: broken.err }).toEqual({ code: 2, err: ["plants: could not run: 2.json is not a shard report", "plants: could not run: shard 2 of 13 reported no result"] });
+    const outside = await shardJob(sharded(), ["--verdict", "dir"], { reports: reports(...complete(), report(14)) });
+    expect({ code: outside.code, err: outside.err }).toEqual({ code: 2, err: ["plants: could not run: 14.json: shard 14 of 13, but the plan has 13 shards"] });
   });
 
   it("--verdict exits 2 when a report holds a plant of another shard", async () => {
     const two = report(2);
     const moved = { ...two, plants: [...two.plants, { plant: "visual/pass-v06", asExpected: true, lines: [], seconds: 1.3 }] };
-    const run = await shardJob(sharded(), ["--verdict", "dir"], { reports: reports(report(1), moved, report(3), report(4), report(5)) });
+    const run = await shardJob(sharded(), ["--verdict", "dir"], { reports: reports(report(1), moved, ...rest()) });
     expect({ code: run.code, err: run.err }).toEqual({ code: 2, err: ["plants: could not run: shard 2 judged other plants than the partition gives it: visual/pass-v06"] });
   });
 
   it("--verdict exits 2 on a report with a skipped plant, naming it", async () => {
-    const three = report(3);
-    const skipped = { ...three, plants: three.plants.filter((plant) => plant.plant !== "visual/pass-v03"), skipped: ["visual/pass-v03"] };
-    const run = await shardJob(sharded(), ["--verdict", "dir"], { reports: reports(report(1), report(2), skipped, report(4), report(5)) });
+    const seven = report(7);
+    const skipped = { ...seven, plants: seven.plants.filter((plant) => plant.plant !== "visual/pass-v03"), skipped: ["visual/pass-v03"] };
+    const run = await shardJob(sharded(), ["--verdict", "dir"], { reports: reports(...complete().map((one) => (one.shard === 7 ? skipped : one))) });
     expect({ code: run.code, err: run.err }).toEqual({
       code: 2,
-      err: ["plants: skipped (no container): gates/plants/visual/pass-v03", "plants: could not run: shard 3 skipped 1 visual plant (--skip-container); the Plants check judges every plant"],
+      err: ["plants: skipped (no container): gates/plants/visual/pass-v03", "plants: could not run: shard 7 skipped 1 visual plant (--skip-container); the Plants check judges every plant"],
     });
   });
 
   it("--verdict exits 2 on a report with a plant not run for want of an engine, naming it", async () => {
-    const three = report(3);
-    const notRun = { ...three, plants: three.plants.filter((plant) => plant.plant !== "visual/pass-v02" && plant.plant !== "visual/pass-v03"), notRun: ["visual/pass-v02", "visual/pass-v03"] };
-    const run = await shardJob(sharded(), ["--verdict", "dir"], { reports: reports(report(1), report(2), notRun, report(4), report(5)) });
+    const notRun = (one: Report): Report => (one.shard === 6 || one.shard === 7 ? { ...one, plants: [], notRun: one.plants.map((plant) => plant.plant) } : one);
+    const run = await shardJob(sharded(), ["--verdict", "dir"], { reports: reports(...complete().map(notRun)) });
     expect({ code: run.code, err: run.err }).toEqual({
       code: 2,
       err: [
         "plants: not run (no container engine): gates/plants/visual/pass-v02",
         "plants: not run (no container engine): gates/plants/visual/pass-v03",
-        "plants: could not run: shard 3 could not run 2 visual plants (no container engine); the Plants check judges every plant",
+        "plants: could not run: shard 6 could not run 1 visual plant (no container engine); the Plants check judges every plant",
+        "plants: could not run: shard 7 could not run 1 visual plant (no container engine); the Plants check judges every plant",
       ],
     });
   });
 
   it("--verdict prints the reports' problem lines with the single run's summary of problems (exit 1)", async () => {
     const line = "gates/plants/visual/pass-v01: plants: not-accepted: expected exit 0 with no finding, got exit 1 (a--b/light differs)";
-    const three = report(3);
-    const failing = { ...three, plants: three.plants.map((plant) => (plant.plant === "visual/pass-v01" ? { ...plant, asExpected: false, lines: [line] } : plant)) };
-    const run = await shardJob(sharded(), ["--verdict", "dir"], { reports: reports(report(1), report(2), failing, report(4), report(5)) });
+    const five = report(5);
+    const failing = { ...five, plants: five.plants.map((plant) => (plant.plant === "visual/pass-v01" ? { ...plant, asExpected: false, lines: [line] } : plant)) };
+    const run = await shardJob(sharded(), ["--verdict", "dir"], { reports: reports(...complete().map((one) => (one.shard === 5 ? failing : one))) });
     expect({ code: run.code, out: run.out, err: run.err }).toEqual({ code: 1, out: [line, "plants: 1 problem in 59 plants"], err: [] });
   });
 
   it("--verdict reports the registry finding and the gate without a breaking plant that --shard does not", async () => {
     const one = report(1);
     const without = { ...one, plants: one.plants.filter((plant) => plant.plant !== "lint/error-basic") };
-    const run = await shardJob(flawed(), ["--verdict", "dir"], { reports: reports(without, report(2), report(3), report(4), report(5)) });
+    const run = await shardJob(flawed(), ["--verdict", "dir"], { reports: reports(without, ...complete().slice(1)) });
     expect({ code: run.code, out: run.out, err: run.err, ran: run.ran, read: run.read }).toEqual({
       code: 1,
       out: [
@@ -1094,5 +1097,228 @@ describe("plants: plant times and shards (plan decisions 23 and 24)", () => {
       ran: [],
       read: ["dir"],
     });
+  });
+});
+
+// Op 016 (#41; spec.md scenarios 5 to 8, OR-003 and OR-004; plan.md *The mode* and *Output*): --affected <base> judges
+// only the plants the changed paths select, after the registry check and the structural checks of the whole set;
+// --list judges none. The changed paths come from a double that records each base it is asked for.
+describe("plants: the registry plant of affected-in-ci (op 016)", () => {
+  // Added in the green step for the mutation run: the registry plants' check applies affectedInCiFindings too.
+  it("judges a registry plant whose plants job passes --affected as caught with the finding at ci.yml", async () => {
+    const files = world();
+    files.set("gates/plants/plants/affected/plant.json", failPlant("ci.yml", "affected-in-ci", "the plants job passes --affected"));
+    files.set("gates/plants/plants/affected/gates.json", registryText);
+    files.set("gates/plants/plants/affected/ci.yml", workflow.replace("      - run: pnpm run gate:plants\n", "      - run: pnpm run gate:plants -- --affected HEAD~1\n"));
+    expect(await result(job(files))).toEqual({ code: 0, out: ["plants: 54 plants of 17 gates and the registry judged, every plant as expected"], err: [] });
+  });
+});
+
+describe("plants: --affected <base> (op 016)", () => {
+  interface AffectedRun {
+    readonly code: number;
+    readonly out: string[];
+    readonly err: string[];
+    readonly ran: string[];
+    readonly asked: string[];
+  }
+
+  type Changes = { readonly paths: readonly string[] } | { readonly cause: string };
+
+  async function affectedJob(files: Map<string, string>, args: readonly string[], changes: Changes | undefined): Promise<AffectedRun> {
+    const out: string[] = [];
+    const err: string[] = [];
+    const ran: string[] = [];
+    const asked: string[] = [];
+    const below = (dir: string): string[] => [...files.keys()].filter((path) => path.startsWith(`${dir}/`)).map((path) => path.slice(dir.length + 1));
+    const tools: PlantTools = {
+      read: (path) => Promise.resolve(files.get(path)),
+      dirs: (path) => Promise.resolve([...new Set(below(path).filter((p) => p.includes("/")).map((p) => p.split("/")[0] ?? ""))].sort()),
+      files: (path) => Promise.resolve(below(path).sort()),
+      runPlant: (gate, plant) => {
+        ran.push(plant);
+        return Promise.resolve(recorded(gate, plant));
+      },
+      ...(changes === undefined
+        ? {}
+        : {
+            changed: (base: string) => {
+              asked.push(base);
+              return Promise.resolve(changes);
+            },
+          }),
+    };
+    const io: Io = { cwd: "/work/repo", env: {}, out: (l) => out.push(l), err: (l) => err.push(l) };
+    const context: Context = { root: "/work/repo", toolCwd: "/work/repo", args };
+    return { code: await plants(context, tools, io), out, err, ran: [...ran].sort(), asked };
+  }
+
+  const three = { paths: ["gates/plants/lint/fail-basic/plant.json", "gates/plants/csp/pass-basic/plant.json", "gates/plants/plants/matching/ci.yml", "specs/x/tasks.md"] };
+  const threeNotes = [
+    "note: affected: lint/fail-basic, by gates/plants/lint/fail-basic/plant.json",
+    "note: affected: csp/pass-basic, by gates/plants/csp/pass-basic/plant.json",
+    "note: affected: plants/matching, by gates/plants/plants/matching/ci.yml",
+  ];
+  const none = { paths: ["specs/x/tasks.md", "specs/x/reviews/phase-1/red-phase.log"] };
+  /** The repository with an unknown gate directory, a gate without a breaking plant and an invalid pass plant. */
+  function flawed(): Map<string, string> {
+    const files = world();
+    files.set("gates/plants/no-gate/fail-a/plant.json", passPlant);
+    files.delete("gates/plants/lint/error-basic/plant.json");
+    files.set("gates/plants/mutation/pass-basic/plant.json", JSON.stringify({ expect: "pass", why: "a near-miss", base: "HEAD" }));
+    return files;
+  }
+  const flaws = [
+    "gates/plants/no-gate: plants: unknown-gate: plants of no-gate, which has no registry entry",
+    "gates/plants/lint: plants: missing-plant: gate lint has no error plant",
+    "gates/plants/mutation/pass-basic/plant.json: plants: invalid-plant: a pass plant may not set base",
+    "gates/plants/mutation: plants: missing-plant: gate mutation has no pass plant",
+  ];
+  const affectedInCi = ".github/workflows/ci.yml: plants: affected-in-ci: the plants job passes --affected, so CI would judge only the plants a diff selects";
+  function withAffectedInCi(): Map<string, string> {
+    const files = world();
+    files.set(".github/workflows/ci.yml", workflow.replace("      - run: pnpm run gate:plants\n", "      - run: pnpm run gate:plants -- --affected HEAD~1\n"));
+    return files;
+  }
+
+  it("scenario 6: judges only the three selected plants, notes each with its path, and says this is not the Plants check", async () => {
+    expect(await affectedJob(world(), ["--", "--affected", "abc123"], three)).toEqual({
+      code: 0,
+      out: ["plants: affected since abc123: 3 of 53 plants judged, every plant as expected; not the Plants check"],
+      err: threeNotes,
+      ran: ["gates/plants/csp/pass-basic", "gates/plants/lint/fail-basic"],
+      asked: ["abc123"],
+    });
+  });
+
+  it("scenario 6: a selected plant that is not as expected fails the run, counted among the plants judged", async () => {
+    const files = world();
+    files.set("gates/plants/lint/fail-basic/plant.json", failPlant("packages/tokens/src/x.ts:9", "rule-a", "planted"));
+    const run = await affectedJob(files, ["--affected", "abc123"], three);
+    expect({ code: run.code, out: run.out }).toEqual({
+      code: 1,
+      out: ["gates/plants/lint/fail-basic: plants: not-caught: findings differ: missing packages/tokens/src/x.ts:9 rule-a; unexpected packages/tokens/src/x.ts:1 rule-a", "plants: 1 problem in 3 plants (affected since abc123; not the Plants check)"],
+    });
+  });
+
+  it("scenario 5: judges no plant when nothing is selected, and exits 0 with the no-plant line", async () => {
+    expect(await affectedJob(world(), ["--affected", "abc123"], none)).toEqual({
+      code: 0,
+      out: ["plants: affected since abc123: no plant selected, 0 of 53 plants judged; not the Plants check"],
+      err: [],
+      ran: [],
+      asked: ["abc123"],
+    });
+  });
+
+  it("scenario 7: --list prints the same notes and the selection's summary, and judges no plant", async () => {
+    expect(await affectedJob(world(), ["--affected", "abc123", "--list"], three)).toEqual({
+      code: 0,
+      out: ["plants: affected since abc123: 3 of 53 plants selected, none judged (--list)"],
+      err: threeNotes,
+      ran: [],
+      asked: ["abc123"],
+    });
+  });
+
+  it("still runs the structural checks of the whole set when nothing is selected, and with --list", async () => {
+    const summary = "plants: 4 problems in 0 plants (affected since abc123; not the Plants check)";
+    expect(await affectedJob(flawed(), ["--affected", "abc123"], none)).toEqual({ code: 1, out: [...flaws, summary], err: [], ran: [], asked: ["abc123"] });
+    expect(await affectedJob(flawed(), ["--list", "--affected", "abc123"], three)).toEqual({ code: 1, out: [...flaws, summary], err: threeNotes, ran: [], asked: ["abc123"] });
+  });
+
+  it("reports affected-in-ci for the repository's ci.yml in this mode and in the single run", async () => {
+    expect(await affectedJob(withAffectedInCi(), ["--affected", "abc123"], none)).toEqual({
+      code: 1,
+      out: [affectedInCi, "plants: 1 problem in 0 plants (affected since abc123; not the Plants check)"],
+      err: [],
+      ran: [],
+      asked: ["abc123"],
+    });
+    expect(await result(job(withAffectedInCi()))).toEqual({ code: 1, out: [affectedInCi, "plants: 1 problem in 53 plants"], err: [] });
+  });
+
+  it("judges every plant when a path selects the full set, naming it and its reason", async () => {
+    const run = await affectedJob(world(), ["--affected", "abc123"], { paths: ["gates/plants/lint/fail-basic/plant.json", "gates/lib/registry.ts", "pnpm-lock.yaml"] });
+    expect({ code: run.code, out: run.out, err: run.err, ran: run.ran.length }).toEqual({
+      code: 0,
+      out: ["plants: affected since abc123: 53 of 53 plants judged, every plant as expected; not the Plants check"],
+      err: ["note: affected: every plant, by gates/lib/registry.ts (shared gate source)"],
+      ran: 51,
+    });
+    const unmapped = await affectedJob(world(), ["--affected", "abc123", "--list"], { paths: ["pnpm-lock.yaml"] });
+    expect({ code: unmapped.code, out: unmapped.out, err: unmapped.err, ran: unmapped.ran }).toEqual({
+      code: 0,
+      out: ["plants: affected since abc123: 53 of 53 plants selected, none judged (--list)"],
+      err: ["note: affected: every plant, by pnpm-lock.yaml (not mapped)"],
+      ran: [],
+    });
+  });
+
+  it("with --skip-container skips a selected visual plant and says the run is partial", async () => {
+    const run = await affectedJob(world(), ["--affected", "abc123", "--skip-container"], { paths: ["gates/plants/visual/pass-basic/plant.json", "gates/plants/lint/pass-basic/plant.json"] });
+    expect(run).toEqual({
+      code: 0,
+      out: ["plants: affected since abc123: 1 of 53 plants judged, every plant as expected; not the Plants check; partial run: 1 visual plant not run"],
+      err: [
+        "note: affected: lint/pass-basic, by gates/plants/lint/pass-basic/plant.json",
+        "note: affected: visual/pass-basic, by gates/plants/visual/pass-basic/plant.json",
+        "plants: skipped (no container): gates/plants/visual/pass-basic",
+      ],
+      ran: ["gates/plants/lint/pass-basic"],
+      asked: ["abc123"],
+    });
+  });
+
+  // Added in the green step for the mutation run: the selection reads each plant's baselinesOf from its plant.json,
+  // and a case without one, or with one that is not a plant, names none.
+  it("selects the visual plant whose baselinesOf names a changed plant, and reads past a case without a valid plant.json", async () => {
+    const files = world();
+    files.set("gates/plants/visual/pass-basic/tree/storybook/baselines/a--b.light.png", "png");
+    files.set("gates/plants/visual/fail-below/plant.json", JSON.stringify({ expect: "fail", why: "w", baselinesOf: "pass-basic", findings: [{ location: "a--b/light", rule: "differs" }] }));
+    files.set("gates/plants/lint/fail-no-plant/tree/a.ts", "x");
+    files.set("gates/plants/lint/fail-not-a-plant/plant.json", "[]");
+    const path = "gates/plants/visual/pass-basic/tree/storybook/baselines/a--b.light.png";
+    const run = await affectedJob(files, ["--affected", "abc123", "--list"], { paths: [path] });
+    expect(run).toEqual({
+      code: 1,
+      out: [
+        "gates/plants/lint/fail-no-plant/plant.json: plants: invalid-plant: plant.json is missing",
+        "gates/plants/lint/fail-not-a-plant/plant.json: plants: invalid-plant: plant.json is not an object",
+        "plants: 2 problems in 0 plants (affected since abc123; not the Plants check)",
+      ],
+      err: [`note: affected: visual/fail-below, by ${path}`, `note: affected: visual/pass-basic, by ${path}`],
+      ran: [],
+      asked: ["abc123"],
+    });
+  });
+
+  it("scenario 8: exits 2 naming each argument error, before asking for the changes or running a plant", async () => {
+    const cases = [
+      ["--affected"],
+      ["--affected", "--list"],
+      ["--affected", "abc123", "--plan"],
+      ["--shard", "1", "--affected", "abc123"],
+      ["--affected", "abc123", "--verdict", "dir"],
+      ["--list"],
+    ];
+    const runs = await Promise.all(cases.map((args) => affectedJob(world(), args, three)));
+    const combined = "plants: could not run: --affected is a mode of its own; it cannot be combined with --plan, --shard or --verdict";
+    expect(runs).toEqual(
+      [
+        "plants: could not run: --affected needs a base commit",
+        "plants: could not run: --affected needs a base commit",
+        combined,
+        combined,
+        combined,
+        "plants: could not run: --list needs --affected <base>",
+      ].map((line) => ({ code: 2, out: [], err: [line], ran: [], asked: [] })),
+    );
+  });
+
+  it("scenario 8: exits 2 naming the cause when the base does not resolve, and when the changes cannot be read", async () => {
+    const cause = "--affected no-such-ref does not resolve to a commit; pass the phase's base.sha";
+    expect(await affectedJob(world(), ["--affected", "no-such-ref"], { cause })).toEqual({ code: 2, out: [], err: [`plants: could not run: ${cause}`], ran: [], asked: ["no-such-ref"] });
+    expect(await affectedJob(world(), ["--affected", "abc123"], undefined)).toEqual({ code: 2, out: [], err: ["plants: could not run: --affected needs git to read the changed paths"], ran: [], asked: [] });
   });
 });

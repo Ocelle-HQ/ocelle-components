@@ -1,0 +1,144 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: fresh
+# Probes: Google Chrome for Testing 153.0.8010.12 (/usr/bin/google-chrome), headless, scratch pages in the session
+# scratchpad (not in the repository). Layout read with --dump-dom after rAF; accessibility tree read over CDP
+# Accessibility.getFullAXTree with ignored nodes and RootWebArea/StaticText/InlineTextBox filtered out.
+findings:
+  - id: PLAN-FRESH-1-001
+    severity: 3
+    title: "R-04's row puts the actions at the eyebrow's block start, not the heading's, whenever an eyebrow is present"
+    evidence:
+      - artifact: "research.md § R-04: 'a row container (display: flex; ... align-items: flex-start) with two children: the heading column (...) holding the eyebrow, heading and description wrappers, and the actions wrapper'; R-07: 'The page header uses the same structure'"
+      - artifact: "spec.md FR-010 'the actions at the inline end with their block start at the heading's block start'; US1-2 'the actions at the inline end on the heading's first line'; FR-019 and US2-2 'the actions sit at the inline end with their block start at the heading's block start'"
+      - code: "Probe c.html: R-04's structure with an eyebrow span, an h2 heading (margin 0), a description and a button in actions -> 'eyebrow top 0 heading top 22 actions top 0'. The actions line up with the eyebrow, 22 px above the heading."
+    claim: |
+      Because the eyebrow is inside the heading column and the row aligns its two children at flex-start, the actions'
+      block start is the column's block start, which is the eyebrow's. US1-2, US2-2, FR-010 and FR-019 all require the
+      actions to start at the heading's block start, so both header elements as planned fail their main layout
+      scenario whenever the eyebrow slot is filled, which is the normal page-header case (#529's eyebrow above the
+      title). The R-04 spike items (a)-(c) only check side-by-side versus wrapped and the 320 px break, so the spike
+      would not catch this before red; it surfaces only as a failing green.
+    remedies:
+      - "Take the eyebrow wrapper out of the row: the shadow root is the eyebrow wrapper (block, hidden when empty), then the row of [heading-and-description column, actions]. The eyebrow-to-heading gap becomes the eyebrow wrapper's margin-block-end (or a column gap on an outer flex column), the wrap rule of FR-010 then applies to the heading column and the actions only, and R-03 still hides the empty eyebrow. Amend R-04 and R-07, and add to the R-04 spike a measurement (d): with an eyebrow, the actions' block start equals the heading's."
+  - id: PLAN-FRESH-1-002
+    severity: 3
+    title: "Sizes and padding are set on shadow-root boxes that are content-box: the vertical rail is 60 px wide and the horizontal rail overflows its container"
+    evidence:
+      - artifact: "research.md § R-10 Vertical: '<nav> ... inline-size: var(--ocelle-shell-rail-width); ... padding-inline: var(--ocelle-space-1)'; Horizontal: 'inline-size: 100%; padding: var(--ocelle-space-2)'; focus-ring arithmetic 'the vertical content box is 44 px'"
+      - code: "packages/styles/src/base.css:11-14 sets box-sizing: border-box on :where(*), and packages/styles/test/readme.test.ts:46-48 records that 'The base layer does not reach into shadow roots' and that elements 'do not depend on their host's box-sizing'. grep for box-sizing in packages/elements/src finds nothing, so a shadow <nav> is content-box."
+      - code: "Probe p.html: a shadow nav with inline-size 52px and padding-inline 4px measures 60 px wide; a shadow nav with inline-size 100% and padding 8px inside a 300 px container measures 316 px."
+    claim: |
+      R-10 gives the shadow <nav> an inline size and padding without box-sizing. The UA default is content-box, and
+      base.css's reset never reaches a shadow root, so the vertical rail is 52 + 8 = 60 px instead of FR-025's
+      --ocelle-shell-rail-width (52 px). R-10's focus-ring arithmetic (44 px content box, ring 1 px inside the border
+      box) then holds only by accident of the wider box, and #12's shell column width no longer matches the rail. A
+      horizontal rail is 16 px wider than its container, which gives US4-7 a horizontal scroll at 320 px. The same
+      trap applies to any other shadow box that combines a percentage or token size with padding.
+    remedies:
+      - "State in R-01 (element conventions as used here) that every shadow box given an inline or block size together with padding or a border sets box-sizing: border-box (or that the size goes on a box without padding). Amend R-10 and add to the R-10 spike: the vertical rail's border box is exactly --ocelle-shell-rail-width with base.css linked and without it, and a horizontal rail's border box equals its container's inline size."
+  - id: PLAN-FRESH-1-003
+    severity: 3
+    title: "min-block-size: 100% on the shadow <nav> does not fill a container of definite height: the sidebar footer and the rail's bottom group do not reach the block end"
+    evidence:
+      - artifact: "research.md § R-09: '<nav aria-label=…> ... as a flex column filling the host (display: flex; flex-direction: column; min-block-size: 100%)'; R-10: 'min-block-size: 100%'. Neither item says what the host's display or block size is."
+      - artifact: "spec.md FR-023 'MUST fill its container's block size when its content is shorter, with the footer at the block end'; FR-025 'fills its container's block size'; US3-3 and US4-2 'in a container 600 px tall'"
+      - code: "Probe p.html: host display:block, shadow nav display:flex column with min-block-size:100% and footer margin-block-start:auto, in a <div style='height:600px'> -> nav height 36 (content height; footer not at the bottom). The same in a display:flex or display:grid 600 px container -> 600."
+    claim: |
+      A percentage min-block-size resolves against the containing block's block size. The containing block here is
+      the host, whose height is auto, so the percentage is treated as auto and the nav stays as tall as its content.
+      The sidebar and rail then fill their container only when the container happens to stretch the host (a flex row
+      or a grid). In a plain block container of fixed height, or in a flex column, the footer is not at the block end
+      and the rail's bottom group is not at the bottom. FR-023 and FR-025 say "its container" without restricting the
+      kind of container, and US3-3 and US4-2 do not say whether the 600 px container is a block, flex or grid box. An
+      implementer can make the tests pass by choosing a flex fixture, while the elements stay broken for the console's
+      server-rendered pages and any block-flow layout.
+    remedies:
+      - "Specify the host: :host { display: flex; flex-direction: column; min-block-size: 100% } (vertical rail; the sidebar likewise) with the nav flex: 1 1 auto, so the host's percentage resolves against a definite container height and the nav fills the host. Amend R-09 and R-10, and fix the container kind in US3-3, US3-4 and US4-2, or run each in a block, a flex-row and a grid container of 600 px."
+      - "Alternatively, state in FR-023 and FR-025 that the elements fill their container only when the container stretches them (a grid or flex-row cell, as #12's shell is), make the US3-3 and US4-2 fixtures such a container, and document the limit in the README."
+  - id: PLAN-FRESH-1-004
+    severity: 3
+    title: "Both R-11 options leave a second node named by the host aria-label; a landmark exposed on the host through ElementInternals avoids the problem"
+    evidence:
+      - artifact: "research.md § R-11: the inner '<nav> in the shadow root with aria-label bound to the resolved name'; host options '(i) nothing on the host; (ii) ElementInternals with internals.role = \"none\"'; the first option with 'no other node carrying the name' is used, 'If neither passes, the operator is asked before the US3 red commit'"
+      - code: "Probe a.html (CDP getFullAXTree): a custom element with id and aria-label='Team' whose shadow holds <nav aria-label='Team'> -> nodes 'generic \"Team\"' and 'navigation \"Team\"'. The same with internals.role='none' -> 'generic \"Team2\"' and 'navigation \"Team2\"' (role none is dropped because aria-label is a global property: ARIA presentational-role conflict resolution)."
+      - code: "Same probe, a host with internals.role='navigation', internals.ariaLabel=label and no inner nav: label='Proj' aria-label='Other' -> 'navigation \"Other\"'; label='Proj' aria-label='' -> 'navigation \"\"'; label='Proj' alone -> 'navigation \"Proj\"'; each a single node, with the slotted link inside it."
+      - code: "packages/elements/src/ocelle-icon.ts:87-95 and ocelle-brand-mark.ts:110-118 already name the host through attachInternals() and expose(); 005 lens-a11y-security round 1 recorded that Chromium uses a present host aria-label over internals.ariaLabel."
+    claim: |
+      As measured, both options R-11 plans to compare fail its own criterion of "no other node carrying the name", so
+      phase 1 will stop for the operator before US3, which is a foreseeable stall. The inner-nav design is the cause:
+      the host and the nav each carry the name. If the landmark is put on the host itself (internals.role =
+      "navigation", internals.ariaLabel = the trimmed label), Chromium's own precedence of a host aria-label over
+      ElementInternals gives exactly FR-028's Host ARIA rule: a present aria-label decides alone, a blank one leaves
+      the landmark unnamed, and removing it falls back to label. There is one node and no observedAttributes
+      bookkeeping for the name, and the pattern is the one 005's elements already use. The axe question
+      (aria-prohibited-attr on a custom element that carries aria-label) is the same for both designs, because the
+      host carries the page's aria-label either way. Only that question still needs a measurement.
+    remedies:
+      - "Replace R-11's design with a host landmark: ElementInternals role 'navigation' and ariaLabel from label, no <nav> in the shadow root; keep the measurement before red only for axe 4.14's findings on the four US3-12 and three US4-11 hosts, and for how axe's landmark rules (landmark-unique, region) treat a landmark it cannot see through internals. Update R-09, R-10 and the data model accordingly."
+      - "Keep the inner <nav>, but add the measured fact to R-11 (options i and ii both expose a named generic host) and name the fallback now (for example the host-internals design above), so the spike does not stop the run."
+  - id: PLAN-FRESH-1-005
+    severity: 2
+    title: "R-05's card-to-header flag is a push into a Lit state field: a header defined after the card, or moved between cards, is not covered"
+    evidence:
+      - artifact: "research.md § R-05: 'The card, on its header slot's slotchange and whenever its density changes, calls setCardCompact(header, compact) ... The section header keeps the value in a Lit state field'"
+      - artifact: "contracts/elements-package.md § Entry points: 'ocelle-card.js does not define ocelle-section-header: a page that slots one imports both (R-05 works whichever is defined first)'. No scenario, unit test or plant in contracts/checks.md tests the definition order."
+      - code: "packages/elements/README.md:198-202 ('Two copies on a page ... The elements on the page are then the first copy's'): each tag goes to whichever copy defines it first, so a card from one copy and a section header from another use two different WeakMaps. R-05 says the elements 'still share one'."
+    claim: |
+      When ocelle-card.js runs before ocelle-section-header.js (two module scripts, a lazy import, or a
+      server-rendered page that loads entry points one at a time), the card's slotchange fires while the header is
+      still an un-upgraded HTMLElement. Its Lit state field and requestUpdate do not exist yet, and no further
+      slotchange fires when the header upgrades. The contract's "works whichever is defined first" therefore rests on
+      a mechanism R-05 does not describe. A push model keyed by one boolean per header can also go stale when a header
+      moves from one card to another: the card it left may clear the flag after the card it joined set it. R-05's
+      two-copies claim is also wrong for a page where the card and the header come from different copies.
+    remedies:
+      - "Make the header pull: it resolves its size in willUpdate from its own size, else from this.assignedSlot (name 'header', its root's host an ocelle-card with density='compact'), and the card only asks its directly assigned headers to update (a module-private notify) on slotchange and on a density change. A header that upgrades later resolves correctly on its first update, and a stale flag cannot exist. Add a fixture scenario that defines ocelle-card before ocelle-section-header (separate module scripts) and one that moves a header from a compact card to a regular one."
+      - "Keep the WeakMap, but state that the header reads getCardCompact(this) on connect and on every update, and that setCardCompact calls requestUpdate only when the element is upgraded. Add the definition-order scenario, and correct R-05's two-copies sentence (a mixed-copy page does not compact)."
+  - id: PLAN-FRESH-1-006
+    severity: 2
+    title: "R-01 puts layout variant rules outside @media not (forced-colors: active), against FR-001 and the README convention; following FR-001 literally breaks layout in forced colours"
+    evidence:
+      - artifact: "spec.md FR-001: 'each written by the README's element conventions (... variant rules inside @media not (forced-colors: active))'"
+      - code: "packages/elements/README.md:243-244 (Element conventions, Styles): 'Variant rules go inside @media not (forced-colors: active), so a forced-colours rule never has to outrank a variant selector.'"
+      - artifact: "research.md § R-01: 'variant rules sit inside @media not (forced-colors: active) only where a forced-colours rule must reach them (grounds); layout rules do not depend on forced colours and stay outside'"
+    claim: |
+      R-01's choice is the right one: if density padding, size, eyebrow layout or orientation="horizontal" were inside
+      not (forced-colors), a compact card would get regular padding and a horizontal rail would lay out vertically in
+      forced-colours mode. But FR-001 and the README convention require the opposite, and the plan's Constitution
+      Check and Complexity Tracking do not record the deviation. A phase reviewer who checks FR-001 against the source
+      is bound to file the R-01 layout rules as a finding, and the "fix" makes the elements wrong in forced colours.
+      No scenario measures a variant's layout in forced colours (US1-13, US2-7, US3-9 and US4-9 check borders and
+      colours only), so nothing would catch it.
+    remedies:
+      - "Amend FR-001 (and, in this feature, the README's Styles convention) to say that colour and ground variant rules go inside @media not (forced-colors: active) and layout rules (padding, gap, size, direction) do not. Add a forced-colours layout check, for example US4-9 measuring that the horizontal rail is still a row and US1-13 that the compact card keeps its padding, each with a plant that moves the layout rule inside the media query."
+  - id: PLAN-FRESH-1-007
+    severity: 2
+    title: "SC-002 (every story at 320 px) has no planned test; #10's capture runs at 1280 x 800 only"
+    evidence:
+      - artifact: "spec.md SC-002: 'At 320 px, every story of the five elements has no horizontal scroll and no clipped text (FR-004).'"
+      - artifact: "plan.md, research.md R-13 and R-14, contracts/checks.md, quickstart.md: no mention of SC-002 or of stories at 320 px; R-13's 320 px reflow is in the fixture scenarios (US1-14, US2-5, US3-10, US4-7) only, and the story test (checks.md § Story test) checks presence and rendering in light and dark."
+      - code: "git show 5f49794:gates/lib/capture-plan.ts:48 -> viewport { width: 1280, height: 800 } for every capture; no 320 px capture or check in #10's design as planned against."
+    claim: |
+      The reflow scenarios cover one hand-picked content set per element. SC-002 is broader: every story, so every
+      variant and state, including the compact card with actions, the eyebrow variant with actions, and a sidebar with
+      footer text. No gate or test the plan names reaches it, so SC-002 is claimed with no evidence, and a story whose
+      content overflows at 320 px passes every gate.
+    remedies:
+      - "Extend storybook/test/integration/elements-stories.test.ts (or a new story test) to load every new story at a 320 x 800 viewport and assert scrollWidth <= 320 and that every slotted text node lies inside its element's box, with a plant (a story with an unbreakable nowrap run) that makes it fail. Trace SC-002 to it in plan.md."
+      - "Narrow SC-002 to the reflow scenarios that exist, with the operator's agreement."
+  - id: PLAN-FRESH-1-008
+    severity: 1
+    title: "R-12 treats token-only-parts.test.ts's 148 as a token count; it is the number of CSS Color 4 named colours and must not change"
+    evidence:
+      - artifact: "research.md § R-12: 'the token-only named-token count (gates/test/token-only-parts.test.ts, 148) follows'; contracts/checks.md § Token checks: 'style-lint (token-only named-token count)'"
+      - code: "gates/test/token-only-parts.test.ts:4-5,10-28: '// ... every CSS Color 4 named colour is raw ...' and it('has the 148 named colours of CSS Color 4', () => expect(named.split(' ')).toHaveLength(148))."
+    claim: |
+      Adding four tokens changes nothing in that test. An implementer who follows R-12 and "updates" the 148 alongside
+      the contrast counts would make a red that fails for the wrong reason, or edit the named-colour list to fit. The
+      grep R-12 prescribes also matches unrelated numbers (for example gates/test/pins.test.ts:118's 20160 and the
+      contrast.test.ts ratios 2.8168), so its hit list needs reading, not mass replacement.
+    remedies:
+      - "Delete the token-only clause from R-12 and contracts/checks.md, and list the exact files and lines that pin 160, 168, 328, 149 and 298 (contrast-pairs.test.ts:5,59-67; contrast-required.test.ts:7,58-70, including the hand-transcribed a8 table, which gains a color-eyebrow row; contrast.test.ts:80-81; plants-robustness.test.ts:116-128; token-gates.test.ts:6-27; gates/bin/contrast.ts:116) instead of a grep."

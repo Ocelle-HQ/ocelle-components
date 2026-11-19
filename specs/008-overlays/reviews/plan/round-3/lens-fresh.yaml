@@ -1,0 +1,85 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 3
+lens: fresh
+# Probes: Playwright from /opt/node-tools with its Chromium (/opt/pw-browsers), scripts in the session scratchpad
+# outside the repository (a.cjs to e.cjs). Cited as "fresh probe". Round 3 attacks round 2's fixes (R-02 "Focus on the
+# body", R-02 "While closing", R-03 stale close events, R-04 "every Tab handled" and "Scrollers as stops", R-13 span
+# re-creation, R-14 touch split, R-18 unconditional minimum). Also checked and found sound (no finding):
+# - Native close() queues a close event even on a dialog whose host was removed, and a second close() on a closed
+#   dialog queues none. R-03's count-and-consume stays balanced in the orderings tried (platform close during the exit
+#   with the animation ending first; a disconnect while a platform event is pending).
+# - A script focus() from a Tab keydown handler after a mouse click on prose gives the target :focus-visible true.
+#   So R-04's explicit moves still show a tooltip on keyboard focus (FR-031).
+# - A base-select <select> picker takes its own Escape. The overlay's keydown never requests, with or without R-02's
+#   handler.
+# - R-14's elements-touch excludes now match vitest.config.ts:76.
+findings:
+  - id: PLAN-FRESH-3-001
+    severity: 3
+    title: "Handling every Tab (round 2 fix) makes focusable content the walk cannot see unreachable: closed shadow roots, iframes, UA-shadow controls"
+    evidence:
+      - artifact: "research.md R-04 § Tab cycle: \"it handles **every** Tab and Shift+Tab `keydown` that reaches its `<dialog>` … moves focus to the next stop … and calls `preventDefault()`\"; R-04: \"`src/focusable.ts` holds the 'tabbable in flat-tree order' walk (open shadow roots and slots followed)\"; R-04 'focus inside the overlay on no stop … the first stop after it in flat-tree order'"
+      - artifact: "reviews/plan/round-1/lens-a11y-security.yaml:80 already named 'elements in closed shadow roots or delegatesFocus hosts' as invisible to the walk. Then the wrap ran only at the ends, so the native sequence still reached them. Round 2's every-Tab rule makes that gap a loss of keyboard access."
+      - code: "fresh probe a.cjs (shadow-root modal <dialog> with a close button; slotted b1, a custom element with a closed shadow root holding c1 and c2, an <iframe srcdoc> holding f1 and f2, then b2; no Tab handler): native Tab from the close control gives `b1  xc  xc  fr[f1]  fr[f2]  b2  BODY  h>close  b1`, so both inner buttons and both frame buttons are native stops. The closed host's `shadowRoot` reads null to a walk, and the deep active element while on c1 or c2 is the host `xc`."
+      - code: "same probe: with focus on f1 inside the slotted iframe, a capture keydown listener on the parent document and a keydown listener on the <dialog> record nothing for Tab and Escape (`[]`), and the dialog stays open after Escape"
+    claim: |
+      Round 2 fixed the body leak by taking over every Tab. Every focus move inside an overlay now depends on
+      `focusable.ts` seeing every focusable element. It cannot:
+      - Closed shadow roots. A slotted third-party element with a closed shadow root is not a stop. Tab from b1 jumps
+        to b2. Focus on c1 reads as the host, a "non-stop", so Tab goes to the next stop after the host and skips c2.
+        Both inner buttons were reachable natively (probe).
+      - Iframes. Tab presses inside a slotted iframe never reach the parent document, so they move natively. Whether
+        the walk lists the `<iframe>` itself is unstated. If not, the frame is skipped from outside. Escape inside the
+        frame reaches neither the overlay nor the platform's close watcher, so FR-010's Escape does nothing there, and
+        the spec does not state this limit.
+      - Controls inside user-agent shadow trees, such as `<video controls>` and `<audio controls>`. Chromium tabs
+        through their inner buttons, while the walk sees one element.
+      - Positive `tabindex`. Flat-tree order ignores it, though the native order honours it.
+      Before round 2, these were native stops in the middle of the sequence. Now they are skipped, which fails WCAG
+      2.1.1 for content a host is free to slot, including kitty-mission-ui's flyouts and any embedded preview. No row
+      slots such content, so the walk's blind spots ship untested. "Focus checked" catches only false positives
+      (`focus()` that does nothing), not elements the walk never lists.
+    remedies:
+      - "Hybrid handling. R-04 handles a Tab explicitly only when it would leave the cycle or start off it: focus on the first or last stop in the press's direction (the wrap), on a non-stop of the overlay's own open tree, or on the body (R-02). When the deep active element is an opaque focus container (a host whose shadow root is closed or absent but which holds focus, an `<iframe>`, a media element), or a stop in the middle, the native move runs. A `focusin` check repairs a native move that lands outside the stops (on the body), and the README states that such a repair can cost one press. FR-008 and SC-002 say so. checks § Dialog \"Tab cycle\" adds rows with a slotted closed-shadow-root element of two buttons and a slotted iframe of two buttons, in the middle and as the last content, both directions, with exact `focusPath()` lists (the frame read as its element plus its inner active element). R-02 and FR-010 state that Escape inside a slotted iframe reaches neither the overlay nor the platform."
+      - "Keep every-Tab handling and state the limit. Spec FR-008, the README and the contract say that content in closed shadow roots, iframes and user-agent-shadow controls is reached only as one stop or not at all inside an overlay, and that positive `tabindex` is ignored. R-04 states whether an `<iframe>` is a walk stop. Rows assert the stated behaviour (closed-root element skipped as stated; iframe one stop; Escape in the iframe does nothing). The operator sees the WCAG 2.1.1 cost at the plan gate."
+  - id: PLAN-FRESH-3-002
+    severity: 3
+    title: "The overlay's Escape keydown pre-empts slotted popovers and nested native dialogs: Escape asks to close the overlay instead of the menu"
+    evidence:
+      - artifact: "research.md R-02 § Decision: the overlay ignores an Escape keydown only when it is not the top of the stack, already `defaultPrevented`, `isComposing`, or in a non-empty search field; 'Otherwise it calls `preventDefault()` and runs the request path'. R-02 § Topmost: the stack holds only Ocelle overlays. Spec FR-010 lists the same three exceptions; Edge Cases \"Escape that slotted content uses\" lists no popover or dialog."
+      - code: "fresh probe c.cjs (shadow-root modal <dialog>; slotted `<button popovertarget=m>` and `<div id=m popover=auto>`; menu opened by click, focus on its invoker). Native only: Escape gives `popoverOpen:false, dialogOpen:true`, no `cancel`. With a keydown handler on the <dialog> that prevents an un-prevented Escape (R-02's rule): `popoverOpen:true, dialogOpen:true, log ['overlay request']`. The popover stays open and the overlay's close is requested."
+      - code: "fresh probe d.cjs (a native modal `<dialog id=n>` slotted into the overlay and shown above it). Native only: Escape gives `nested:false, outer:true`. With R-02's handler: `nested:true, outer:true, log ['overlay request']`."
+    claim: |
+      The platform keeps one close-watcher stack. A popover opened inside a modal (`popover="auto"` or `"hint"`) and a
+      `<dialog>` shown from inside it sit above the modal on that stack, and native Escape closes only them. R-02
+      prevents every Escape that bubbles through the overlay's `<dialog>` and is not already prevented, so the platform
+      never sees the press.
+      - The menu, disclosure popover or nested native dialog the user meant to close stays open (probe).
+      - The overlay gets a close request with reason `escape`. Without a veto the whole overlay closes, with the menu
+        still open, and focus returns to the opener.
+      - With a veto nothing closes, and no Escape can close the popover while the overlay is open.
+      R-02's "top of the stack" knows only Ocelle overlays, so a host or third-party native modal shown from slotted
+      content does not count as being above it. The same R-04 rule then also handles Tab inside that nested modal
+      (not probed). kitty-mission-ui's flyouts and dialogs can hold menus, comboboxes and pickers built on
+      `popover="auto"`, the constitution's preferred platform path. Escape is the one key those consumers cannot work
+      around without calling `preventDefault()` on behalf of the platform. No row slots a popover or a native dialog.
+    remedies:
+      - "R-02, FR-010 and Edge Cases: the overlay neither prevents nor requests when another close watcher sits above it within its content: an open `popover=\"auto\"` or `\"hint\"` element, or an open `<dialog>` other than its own, in its flat tree. The mechanism is the implementer's choice, for example capture-phase `toggle` and `close` listeners on its `<dialog>` (non-bubbling events from slotted descendants pass it in capture), or a check at keydown. The platform then closes that element alone, as natively. The same rule makes R-04's Tab handling stand aside while a nested native modal is open. checks § Dialog \"Escape with slotted content\": a slotted `popover=auto` menu open, with focus on its invoker and with focus inside it, × {no veto, veto}: the first Escape closes the menu with no request and no `cancel` on the overlay, and the second requests with `escape`. A slotted native modal `<dialog>` shown above the overlay: Escape closes it alone with no request, and Tab inside it stays inside it."
+  - id: PLAN-FRESH-3-003
+    severity: 1
+    title: "The drawer inherits the dialog's 'one-line body = 132 px' row, but nothing says where the rest of a full-height drawer column goes"
+    evidence:
+      - artifact: "contracts/checks.md § Drawer: 'The dialog's rows with `ocelle-drawer-` events (… long body, one-line body, …, styles …)'; § Dialog 'One-line body': 'the body part's block size (border box) equals the computed `calc(3 * var(--ocelle-target-min))`, 132 px'; § Dialog 'Styles': 'filled: footer box at the panel's end'"
+      - artifact: "research.md R-18: 'The drawer has the same column, at the full block size of the viewport.' Spec FR-017: footer 'laid out at the end of the panel'. reviews/plan/round-2/verify-1.md and verify-2.md (PLAN-FRESH-2-006) noted that no artifact says whether the drawer's body grows, and left it 'open for tasks'."
+    claim: |
+      In the dialog, panel height follows content, so a 132 px body and a footer at the panel's end are the same thing.
+      In a drawer whose panel is the full viewport height (800 px in the test viewport), they are not. Either the body
+      grows to fill the column, and the inherited row's 132 px is wrong, or the body stays 132 px. In that case the
+      footer either sits mid-panel, against FR-017, or is pushed to the end with an empty band above it, a layout no
+      artifact states. A kitty-mission-ui flyout with footer actions is the case that shows it. The inherited row then
+      fixes the drawer's design by accident, or fails against whichever layout the implementer picks. Round 2's
+      verify left this for tasks, but the inherited row already picks an answer.
+    remedies:
+      - "R-18 and data-model: the drawer's body grows to fill the column (`flex: 1 1 auto` with the same token minimum), so the footer sits at the viewport's block end. checks § Drawer replaces the inherited 'one-line body' row with a drawer row: body block size = panel block size minus header and footer boxes, and the footer's block end at the panel's block end."

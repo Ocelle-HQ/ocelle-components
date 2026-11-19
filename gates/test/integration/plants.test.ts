@@ -148,8 +148,8 @@ describe("plant job (gates/bin/plants.ts)", () => {
   );
   // Plan decision 23 (contracts/plants.md § Shards): the Plants check recomputes the partition, so an empty report
   // directory names every shard of the plan. Five visual plant directories (no plant.json, so none runs) give the plan
-  // of plantsRoot() three shards at the repository's size 3 (plan decision 30): shard 1 its other plants, shards 2 and
-  // 3 three and two visual plants.
+  // of plantsRoot() six shards at the repository's size 1 (012 research.md R-13; it was 3, plan decision 30): shard 1
+  // its other plants, shards 2 to 6 one visual plant each.
   it(
     "--verdict on an empty directory exits 2 naming every shard of the repository's plan",
     async () => {
@@ -158,7 +158,126 @@ describe("plant job (gates/bin/plants.ts)", () => {
       const ran = await runGate("gates/bin/plants.ts", ["--root", root, "--verdict", tempDir("reports")], { cwd: tempDir("cwd"), env: baseEnv() });
       expect({ code: ran.code, stderr: ran.stderr }).toEqual({
         code: 2,
-        stderr: [1, 2, 3].map((k) => `plants: could not run: shard ${String(k)} of 3 reported no result`),
+        stderr: [1, 2, 3, 4, 5, 6].map((k) => `plants: could not run: shard ${String(k)} of 6 reported no result`),
+      });
+    },
+    timeout,
+  );
+
+  // Op 016 (spec.md OR-003, scenarios 6 and 8): the changed paths come from git in the root, against the base given.
+  // plantsRoot() is committed as it is, then one plant's plant.json changes in the working tree: only that plant is
+  // judged, after the registry check and the structural checks of the whole set (the other gates' missing plants).
+  it(
+    "--affected HEAD judges only the plant whose plant.json changed since HEAD, and names HEAD in its summary",
+    async () => {
+      const root = plantsRoot();
+      const git = (...args: string[]): void => {
+        execFileSync("git", ["-c", "user.name=t", "-c", "user.email=t@example.invalid", "-c", "commit.gpgsign=false", ...args], { cwd: root, env: baseEnv(), stdio: "ignore" });
+      };
+      git("init", "-q");
+      git("add", "-A");
+      git("commit", "-q", "-m", "plants root");
+      const plant = "gates/plants/config-copies/pass-equal-copies/plant.json";
+      write(join(root, plant), JSON.stringify({ expect: "pass", why: "Fixture: two equal story configuration copies, changed since HEAD." }));
+      const ran = await runGate("gates/bin/plants.ts", ["--root", root, "--affected", "HEAD"], { cwd: tempDir("cwd"), env: baseEnv() });
+      expect({ code: ran.code, stdout: ran.stdout, stderr: ran.stderr.map(timeless) }).toEqual({
+        code: 1,
+        stdout: [
+          ...missing("typecheck", []),
+          ...missing("lint", []),
+          ...missing("style-lint", []),
+          ...missing("unit-tests", []),
+          ...missing("test-lint", []),
+          ...missing("mutation", ["error"]),
+          ...missing("csp", []),
+          ...missing("prefix", []),
+          ...missing("config-copies", ["pass"]),
+          ...missing("pins", ["error"]),
+          ...missing("signoff", ["fail"]),
+          ...missing("contrast", []),
+          ...missing("brand-rules", []),
+          ...missing("manifest", []),
+          ...missing("storybook-build", []),
+          ...missing("visual", []),
+          ...missing("axe", []),
+          "plants: 47 problems in 1 plant (affected since HEAD; not the Plants check)",
+        ],
+        stderr: [`note: affected: config-copies/pass-equal-copies, by ${plant}`, "note: plant time: config-copies/pass-equal-copies: <s> s"],
+      });
+      const unresolved = await runGate("gates/bin/plants.ts", ["--root", root, "--affected", "no-such-ref"], { cwd: tempDir("cwd"), env: baseEnv() });
+      expect(unresolved).toEqual({ code: 2, stdout: [], stderr: ["plants: could not run: --affected no-such-ref does not resolve to a commit; pass the phase's base.sha"] });
+    },
+    timeout,
+  );
+
+  // Op 016 (spec.md Edge Cases, OR-003; phase 1 review round 1, R1-01): untracked files that are not ignored count as
+  // changed, ignored ones do not. plantsRoot() is committed with a .gitignore, then two plants each get a new untracked
+  // file (two, so the NUL split of git's list matters) and a third gets an ignored one: only the two are judged.
+  it(
+    "--affected HEAD judges the plants that hold an untracked file that is not ignored, and not the plant that holds an ignored one",
+    async () => {
+      const root = plantsRoot();
+      const git = (...args: string[]): void => {
+        execFileSync("git", ["-c", "user.name=t", "-c", "user.email=t@example.invalid", "-c", "commit.gpgsign=false", ...args], { cwd: root, env: baseEnv(), stdio: "ignore" });
+      };
+      write(join(root, ".gitignore"), "*.ignored\n");
+      git("init", "-q");
+      git("add", "-A");
+      git("commit", "-q", "-m", "plants root");
+      const untracked = ["gates/plants/mutation/error-unresolvable-base/notes.txt", "gates/plants/signoff/fail-no-trailer/notes.txt"];
+      for (const path of untracked) write(join(root, path), "An untracked file, not ignored.\n");
+      write(join(root, "gates/plants/pins/error-invalid-json/scratch.ignored"), "An ignored file.\n");
+      const ran = await runGate("gates/bin/plants.ts", ["--root", root, "--affected", "HEAD"], { cwd: tempDir("cwd"), env: baseEnv() });
+      expect({ code: ran.code, stdout: ran.stdout, notes: ran.stderr.filter((line) => !line.startsWith("note: plant time: ")), times: times(ran.stderr) }).toEqual({
+        code: 1,
+        stdout: [
+          ...missing("typecheck", []),
+          ...missing("lint", []),
+          ...missing("style-lint", []),
+          ...missing("unit-tests", []),
+          ...missing("test-lint", []),
+          ...missing("mutation", ["error"]),
+          ...missing("csp", []),
+          ...missing("prefix", []),
+          ...missing("config-copies", ["pass"]),
+          ...missing("pins", ["error"]),
+          ...missing("signoff", ["fail"]),
+          ...missing("contrast", []),
+          ...missing("brand-rules", []),
+          ...missing("manifest", []),
+          ...missing("storybook-build", []),
+          ...missing("visual", []),
+          ...missing("axe", []),
+          "plants: 47 problems in 2 plants (affected since HEAD; not the Plants check)",
+        ],
+        notes: [`note: affected: mutation/error-unresolvable-base, by ${String(untracked[0])}`, `note: affected: signoff/fail-no-trailer, by ${String(untracked[1])}`],
+        times: ["note: plant time: mutation/error-unresolvable-base: <s> s", "note: plant time: signoff/fail-no-trailer: <s> s"],
+      });
+    },
+    timeout,
+  );
+
+  // Op 016, operator round 3 of phase 1 (O3-02; spec.md OR-009 and scenario 16): the base resolves, but git diff fails.
+  // A junk GIT_INDEX_FILE leaves rev-parse working and makes git diff (and git ls-files) exit 128, so the job must exit
+  // 2 naming git's first stderr line, not judge an empty selection and exit 0. The line names the index file in most
+  // git versions, so the match leaves that part open.
+  it(
+    "--affected HEAD exits 2 naming git's first stderr line when git diff fails, and judges no plant",
+    async () => {
+      const root = plantsRoot();
+      const git = (...args: string[]): void => {
+        execFileSync("git", ["-c", "user.name=t", "-c", "user.email=t@example.invalid", "-c", "commit.gpgsign=false", ...args], { cwd: root, env: baseEnv(), stdio: "ignore" });
+      };
+      git("init", "-q");
+      git("add", "-A");
+      git("commit", "-q", "-m", "plants root");
+      const junk = join(tempDir("index"), "junk-index");
+      writeFileSync(junk, "not an index\n");
+      const ran = await runGate("gates/bin/plants.ts", ["--root", root, "--affected", "HEAD"], { cwd: tempDir("cwd"), env: { ...baseEnv(), GIT_INDEX_FILE: junk } });
+      expect(ran).toEqual({
+        code: 2,
+        stdout: [],
+        stderr: [expect.stringMatching(/^plants: could not run: git failed \(fatal: (?:.+: )?index file smaller than expected\)$/)],
       });
     },
     timeout,

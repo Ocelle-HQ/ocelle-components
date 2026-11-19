@@ -12,6 +12,8 @@
     {"key":["light","color-disabled-ink","color-inset"],"set":{"figure":"2.80"}},
     {"key":["light","color-disabled-ink","color-accent-low"],"set":{"figure":"2.94"}},
     {"key":["light","color-disabled-ink","color-hover-bg"],"set":{"figure":"2.80"}},
-    {"key":["light","color-disabled-ink","color-disabled-bg"],"set":{"figure":"2.91"}}
+    {"key":["light","color-disabled-ink","color-disabled-bg"],"set":{"figure":"2.91"}},
+    {"key":["light","color-disabled-ink","color-chrome"],"set":{"figure":"4.89"}},
+    {"key":["light","color-disabled-ink","color-chrome-hover"],"set":{"figure":"4.42"}}
   ]
 }

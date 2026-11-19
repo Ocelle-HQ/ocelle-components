@@ -52,6 +52,56 @@ group, `--ocelle-measure-reading` (`68ch`) holds prose paragraphs, list items an
 the inline size of the nearest query container: a prose table is one, so it caps the table's caption at the table's
 visible width. Without a query container, `100cqi` falls back to the small viewport's inline size.
 
+### Tokens for the overlays
+
+`--ocelle-drawer-inline` is the inline size of `ocelle-drawer`, the sidebar width `--ocelle-shell-sidebar-width`
+(`20rem`), which a narrow-width personal drawer replaces; the drawer is never wider than `--ocelle-dialog-max-inline`.
+
+`--ocelle-tooltip-delay` (`500ms`) is how long the pointer rests on a trigger before `ocelle-tooltip` shows its bubble;
+it is not set to 0 under `prefers-reduced-motion: reduce`, because a delay is not motion. `--ocelle-tooltip-max-inline`
+(`18rem`) is the maximum inline size of the tooltip's bubble, about 40 characters of `--ocelle-font-size-sm`.
+
+### Eyebrow tokens
+
+An eyebrow is the small upper-case label above a heading, or a heading drawn as such a label above a list. Four tokens
+give every eyebrow one look: `--ocelle-font-size-eyebrow` (the `--ocelle-font-size-xs` size, 12 px),
+`--ocelle-font-weight-eyebrow` (the `--ocelle-font-weight-strong` weight), `--ocelle-tracking-eyebrow` (`0.08em`, the
+same in both themes) and `--ocelle-color-eyebrow` (the `--ocelle-color-ink-muted` colour in both themes, checked as
+text on every main ground). The three aliases follow their source token. An eyebrow is set in `--ocelle-font-sans`
+with `--ocelle-figures`, never in a monospace family; `@ocelle/elements` draws it upper case with these tokens.
+
+### Tokens for the controls
+
+Some colour tokens exist for the controls of `@ocelle/elements` (`ocelle-button`, mission 012): their hover and
+pressed states. `--ocelle-color-hover-border` is the border of a hovered or pressed bordered control:
+`--ocelle-color-ink` unless a host overrides it on an ancestor. `--ocelle-color-accent-hover` is the hover fill of a
+primary control, with `--ocelle-color-on-accent` text on it. `--ocelle-color-active-bg` is the pressed surface of a
+secondary, quiet or flush control on the main and state grounds. `--ocelle-color-chrome-active` is the pressed surface
+of a control on the chrome grounds, with `--ocelle-color-chrome-ink` text on it. The contrast check covers each with
+the grounds it is used on, and `color-accent-strong`, the primary control's border, on every main, state and chrome
+ground.
+
+Two motion tokens exist for the busy spinner of `ocelle-button`. `--ocelle-motion-spin` is the duration of one turn of
+a busy spinner, `800ms`. `--ocelle-motion-turn` is the angle of one turn, `1turn`; it is not a duration and reduced
+motion does not change it.
+
+Two tokens serve the action row of `@ocelle/elements` (`ocelle-action-row`, mission 012).
+`--ocelle-focus-offset-inset` is the negative offset that draws a focus ring inside a box:
+`calc(-1 * (var(--ocelle-focus-offset) + var(--ocelle-focus-width)))`, -5 px, so a scroll container's edge or the next
+row never clips or covers the ring. `--ocelle-color-ink-soft` is also declared on the state grounds
+(`color-danger-bg`, `color-warning-bg`, `color-success-bg`, `color-info-bg`, `color-neutral-bg`), where an action
+row's description and tags sit; the contrast check covers each pair.
+
+### Reduced motion
+
+Under `prefers-reduced-motion: reduce` every motion duration (`--ocelle-motion-fast`, `--ocelle-motion-base`,
+`--ocelle-motion-spin`) is `0ms`: the stylesheet's reduced-motion block sets each motion token whose value is a
+duration, and nothing else. `--ocelle-easing-standard` and `--ocelle-motion-turn` keep their values, and so does a
+motion token the source marks as a delay, `--ocelle-tooltip-delay`, because a delay is not motion. The brand-rules
+check fails a stylesheet whose block misses a motion duration or sets anything else.
+The token build refuses a misplaced `delay: true` (only a motion token whose name ends in `-delay` may carry it) and a
+motion duration that is not a literal `ms` value (`1s`, `var()` or `calc()`), so every motion duration can be zeroed.
+
 ### Forced colours
 
 The tokens never override the system palette in forced colours: the stylesheet has no `forced-color-adjust: none`,
