@@ -6,3 +6,13 @@
 
 No element source, baseline, pixel or visual test other than US5-7's body, `vitest.config.ts` or `serve.ts` changed.
 The mutation gate was not rerun locally: no source file changed. CI's mutation shards are the check of L1-02.
+
+## Review round 4 response
+
+| ID | Resolution | Red test | Where |
+|----|------------|----------|-------|
+| R4-01 | fixed by operator decision 5 (`operator-decisions.md`, `3e50a6b`): the round-scoped plant run (`--affected ca18374^`) is accepted for fix-3; the full run against `base.sha` after the second merge of main covers phase 6. Cited beside the plant record | none (records) | `reviews/phase-6/plants.md` |
+| R4-02 | acknowledged (note): the base and scaffold legs exit 2 because main's test changes are in the final test set since the merge; for the owner of `tdd-check.sh` | none | none |
+| R4-03 | acknowledged (note): the mission 008 "Rapid toggle during the entry, motion on" row is timing-sensitive; tracking it for mission 008 is for the landing records, not this phase | none | none |
+| R4-04 | acknowledged (note): the subpixel precondition needs Linux fontconfig and a browser that draws LCD text, by design | none | none |
+| R4-05 | done: CI run 44539529359 on `8fd8c47` is green (129 jobs, the 80 Mutation shards and the aggregate included), recorded in `notes.md`; T115 ticked | none | `reviews/phase-6/notes.md`, `tasks.md` |

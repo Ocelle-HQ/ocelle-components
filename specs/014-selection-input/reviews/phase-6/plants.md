@@ -147,3 +147,9 @@ plants: affected since ca18374^: no plant selected, 0 of 314 plants judged; not 
 
 The fold changes only test files (`link-subpixel.test.ts`, `subpixel/fonts.conf`, `scenarios/link.ts`) and these
 records, so no gate plant is affected and the plant repository's counts are unchanged.
+
+Review round 4 (R4-01) found that this base is `ca18374^`, not `base.sha` (`ac2eebe`), which selects all 314 plants
+because the landing merge of main lies in the phase range. Operator decision 5 (`operator-decisions.md`) accepts this
+round-scoped run for fix-3 and closes R4-01: the one full plants run against the phase base, on the head after the
+second merge of main and before hand-off, covers phase 6 as well as phase 7 and is recorded here, in
+`reviews/phase-7/plants.md` and in the landing records. This run stays as supplementary evidence.

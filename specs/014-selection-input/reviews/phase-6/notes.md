@@ -290,5 +290,9 @@ the check needs.
 
 ### CI (to be recorded after the push)
 
-T115 step 5 needs CI green on the fold's head after the orchestrator's push: Unit tests, every Mutation shard and the
-Mutation testing aggregate (L1-02). Not run from here; the run id and job results go here once the push has run.
+Run [44539529359](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/44539529359) on the fold's head
+`8fd8c47` (8fd8c47b8498cbbe34749c79aaedffd4001e4357): conclusion success. The job list, read with `gh run view`
+(read only): 129 jobs, all success. Among them Unit tests, the 80 Mutation shards, the Mutation testing aggregate
+(L1-02), Mutation plan, the 29 Plants shards and the Plants aggregate, Visual regression and Accessibility. US5-7 and
+the mutation shards, red in CI before the fold (landing L1-01, L1-02), are green. No surviving mutant is reported in
+new or changed code; the fold changes no source file. T115 is ticked.
