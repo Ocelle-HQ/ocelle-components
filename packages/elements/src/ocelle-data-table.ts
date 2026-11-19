@@ -28,7 +28,9 @@ function captionText(table: Element | undefined): string | undefined {
     }
   };
   walk(caption);
+  // Stryker disable next-line MethodExpression: equivalent, the name goes through the module's resolveName, which trims it (T025)
   const text = parts.join("").replace(/\s+/g, " ").trim();
+  // Stryker disable next-line ConditionalExpression,StringLiteral: equivalent for the `false` variant and the string, which give "" for a blank caption: resolveName treats a blank name as absent, as undefined; the `true` variant is killed by every caption-named body (T025)
   return text === "" ? undefined : text;
 }
 
@@ -41,6 +43,7 @@ function captionText(table: Element | undefined): string | undefined {
  */
 export class OcelleDataTable extends LitElement {
   static override properties = {
+    // Stryker disable next-line ObjectLiteral: equivalent, String is Lit's default type and label does not reflect (T025)
     label: { type: String },
     wrap: { type: String, reflect: true },
     stickyHeader: { type: Boolean, reflect: true, attribute: "sticky-header" },
@@ -122,6 +125,7 @@ export class OcelleDataTable extends LitElement {
   // in every mutant of this file and reports each as a compile error (T025).
   readonly #region: OverflowRegion = new OverflowRegion(this, {
     box: () => this.renderRoot.querySelector<HTMLElement>(".region-box"),
+    // Stryker disable next-line ConditionalExpression: equivalent for the `true` variant, without sticky-header the host is not a flex column, so its box is as tall as the table and never overflows in the block axis, and the option does nothing (T025)
     blockAxis: () => this.stickyHeader === true,
     blockStartBox: (): Element | null => this.#table()?.querySelector(":scope > thead") ?? null,
   });
@@ -147,6 +151,7 @@ export class OcelleDataTable extends LitElement {
   /** The pending animation frame of the end fade and the box-size rewrite, or 0. */
   #frame = 0;
   /** The end-fade and `data-axis` states the last frame wrote for. */
+  // Stryker disable next-line BooleanLiteral: equivalent, the first update of a fitting table then asks for one frame, which removes an absent property and writes the box size the observer writes (T025)
   #endWritten = false;
   #axisWritten: string | null = null;
 
@@ -168,9 +173,13 @@ export class OcelleDataTable extends LitElement {
     this.requestUpdate();
   }
 
+  // Stryker disable next-line BlockStatement: equivalent since T086 (Q-M2 (a)), with the body empty the module's observer also stays connected (Lit's disconnectedCallback calls its hostDisconnected), so it measures the detached box and the attached box again, and the frames that follow rewrite every figure; the frame-cancel body ("R-07 a table that starts to overflow and is detached before the frame of that change") passes with it (T025)
   override disconnectedCallback(): void {
+    // Stryker disable next-line all: equivalent, the module's hostDisconnected records its own equivalence (overflow-region.ts) (T025)
     super.disconnectedCallback();
+    // Stryker disable next-line all: equivalent since T086 (Q-M2 (a)), a child change made while detached is then assigned and updated while detached, and connectedCallback assigns and updates again, with the same result (T085's body passes with it) (T025)
     this.#children.disconnect();
+    // Stryker disable next-line all: equivalent, a detached .box-size reports an inline size of 0, which the callback ignores, and connectedCallback observes it again, which delivers its size (T025)
     this.#size.disconnect();
     cancelAnimationFrame(this.#frame);
     this.#frame = 0;
@@ -178,6 +187,7 @@ export class OcelleDataTable extends LitElement {
 
   override attributeChangedCallback(name: string, old: string | null, value: string | null): void {
     super.attributeChangedCallback(name, old, value);
+    // Stryker disable next-line ConditionalExpression: equivalent for the `true` variant, an update for another attribute, with no property changed, writes the state already there (T025)
     if (name === "aria-label") this.requestUpdate();
   }
 
@@ -215,6 +225,7 @@ export class OcelleDataTable extends LitElement {
   #assign(): void {
     const table = this.#table();
     const slot = this.renderRoot.querySelector("slot");
+    // Stryker disable next-line ConditionalExpression: equivalent for the `true` variant of the second test, assigning the nodes already assigned changes nothing and fires no slotchange (T025)
     if (slot !== null && slot.assignedNodes()[0] !== table) slot.assign(...(table === undefined ? [] : [table]));
   }
 
@@ -225,8 +236,14 @@ export class OcelleDataTable extends LitElement {
     this.#region.setLabel(label === "" ? captionText(this.#table()) : label);
     const fade = this.#region.fadeAttribute;
     const end = fade === "end" || fade === "both";
+    // Stryker disable next-line LogicalOperator,StringLiteral: not killed in process, where the block-axis scrollbar's room is 0 (--hide-scrollbars); covered by elements-browser (not mutated): test/browser/data-table-scrollbar.test.ts "the sticky caption at 320 px: --data-table-box-size the measured .box-size less the room (305px) with every caption line inside the unmasked extent; 320px once the bound is lifted, 305px again once it is set, each one frame after settle; no ResizeObserver loop error", which fails with this mutant (reviews/phase-1/element-plants.md § T025)
     const axis = this.renderRoot.querySelector(".region-box")?.getAttribute("data-axis") ?? null;
-    if ((end !== this.#endWritten || axis !== this.#axisWritten) && this.#frame === 0) {
+    // Stryker disable next-line ConditionalExpression: equivalent for the `true` variant, it only asks for more frames, and a frame writes what it reads from the box, so an extra frame writes the state already there; the `false` variant is killed by the end-fade bodies (R-07) (T025)
+    const fadeChanged = end !== this.#endWritten;
+    // Stryker disable next-line ConditionalExpression,EqualityOperator: equivalent for the `true` variant, as fadeChanged's (extra frames only; the classic-scrollbar suite passes with it); the `false` variant and the EqualityOperator are not killed in process, where the block-axis scrollbar's room is 0 (--hide-scrollbars); covered by elements-browser (not mutated): test/browser/data-table-scrollbar.test.ts "the sticky caption at 320 px: --data-table-box-size the measured .box-size less the room (305px) with every caption line inside the unmasked extent; 320px once the bound is lifted, 305px again once it is set, each one frame after settle; no ResizeObserver loop error", which fails with this mutant (reviews/phase-1/element-plants.md § T025)
+    const axisChanged = axis !== this.#axisWritten;
+    // Stryker disable next-line ConditionalExpression,LogicalOperator: equivalent, the variants only ask for more frames, and a frame writes what it reads from the box (data-fade, data-axis, the edge's width and the measured size), so an extra frame writes the state already there (T025)
+    if ((fadeChanged || axisChanged) && this.#frame === 0) {
       this.#frame = requestAnimationFrame(() => {
         this.#frame = 0;
         this.#writeFrame();
@@ -245,7 +262,9 @@ export class OcelleDataTable extends LitElement {
       style.setProperty("--data-table-end-fade", `${String(depth)}px`);
     } else style.removeProperty("--data-table-end-fade");
     this.#endWritten = end;
+    // Stryker disable next-line StringLiteral: not killed in process, where the block-axis scrollbar's room is 0 (--hide-scrollbars); covered by elements-browser (not mutated): test/browser/data-table-scrollbar.test.ts "the sticky caption at 320 px: --data-table-box-size the measured .box-size less the room (305px) with every caption line inside the unmasked extent; 320px once the bound is lifted, 305px again once it is set, each one frame after settle; no ResizeObserver loop error", which fails with this mutant (reviews/phase-1/element-plants.md § T025)
     this.#axisWritten = box?.getAttribute("data-axis") ?? null;
+    // Stryker disable next-line all: not killed in process, where the block-axis scrollbar's room is 0 (--hide-scrollbars); covered by elements-browser (not mutated): test/browser/data-table-scrollbar.test.ts "the sticky caption at 320 px: --data-table-box-size the measured .box-size less the room (305px) with every caption line inside the unmasked extent; 320px once the bound is lifted, 305px again once it is set, each one frame after settle; no ResizeObserver loop error", which fails with this mutant (reviews/phase-1/element-plants.md § T025)
     this.#writeBoxSize();
   }
 
@@ -253,9 +272,12 @@ export class OcelleDataTable extends LitElement {
   #writeBoxSize(): void {
     if (this.#measured === undefined) return;
     const box = this.renderRoot.querySelector<HTMLElement>(".region-box");
+    // Stryker disable next-line ConditionalExpression,EqualityOperator,BooleanLiteral: equivalent for the `true` variant of the sticky-header test, without it the box never has data-axis, so the room is 0 (the classic-scrollbar suite passes with it); the other variants of this line that type-check (`!==` and the literal `true` written `false`; the rest are compile errors, box possibly null) are not killed in process, where the block-axis scrollbar's room is 0 (--hide-scrollbars); covered by elements-browser (not mutated): test/browser/data-table-scrollbar.test.ts "the sticky caption at 320 px: --data-table-box-size the measured .box-size less the room (305px) with every caption line inside the unmasked extent; 320px once the bound is lifted, 305px again once it is set, each one frame after settle; no ResizeObserver loop error", which fails with this mutant (reviews/phase-1/element-plants.md § T025)
     const room = this.stickyHeader === true && box !== null ? box.offsetWidth - box.clientWidth : 0;
+    // Stryker disable next-line ArithmeticOperator: not killed in process, where the block-axis scrollbar's room is 0 (--hide-scrollbars); covered by elements-browser (not mutated): test/browser/data-table-scrollbar.test.ts "the sticky caption at 320 px: --data-table-box-size the measured .box-size less the room (305px) with every caption line inside the unmasked extent; 320px once the bound is lifted, 305px again once it is set, each one frame after settle; no ResizeObserver loop error", which fails with this mutant (reviews/phase-1/element-plants.md § T025)
     const value = `${String(this.#measured - room)}px`;
     const style = (this.#sheet.cssRules[0] as CSSStyleRule).style;
+    // Stryker disable next-line ConditionalExpression,StringLiteral: equivalent, the variants set the property to the value it already has (T025)
     if (style.getPropertyValue("--data-table-box-size") !== value) style.setProperty("--data-table-box-size", value);
   }
 }

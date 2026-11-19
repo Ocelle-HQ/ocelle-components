@@ -657,6 +657,7 @@ export class OverflowRegion implements ReactiveController {
     box.removeAttribute("aria-label");
     box.removeAttribute("data-axis");
     box.removeAttribute("data-block-fade");
+    // Stryker disable next-line BooleanLiteral: equivalent since T084 (Q-M1 (b)), the focus handler reads the block overflow at the time of focus, not #axis, and until the observer measures the box again (which writes #axis) the box has no tabindex, so no key reaches it; checked by hand with T083's body (T025)
     this.#axis = false;
     this.#suppressedBlock = false;
   }

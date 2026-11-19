@@ -84,6 +84,33 @@ Each plant was applied to the green source (`packages/elements/src/ocelle-data-t
 | Block 2's column headers font-size removed | `--project styles packages/styles/test/prose-override.test.ts -t restates` | fails (bites) | restates on each target every property a prose rule sets on a table part, the sticky table's border model included, with exactly the not-applicable list | `-   "missing": [], / +   "missing": [ / +     "column header font-size ([data-ocelle-prose=\"\"] :where(th))",` |
 | Block 2's row headers border-block-end-color removed | `--project styles packages/styles/test/prose-override.test.ts -t restates` | fails (bites) | restates on each target every property a prose rule sets on a table part, the sticky table's border model included, with exactly the not-applicable list | `-   "missing": [], / +   "missing": [ / +     "row header border-block-end-color ([data-ocelle-prose=\"\"] :where(th))",` |
 
+## T025: the block-axis scrollbar's room mutants against the classic-scrollbar suite
+
+The mutants of `ocelle-data-table.ts` on the block-axis scrollbar's room survive the in-process run, where the room is
+0 (`--hide-scrollbars`). Each was applied by hand to the final source of T025 (the records' tree), the classic-scrollbar
+suite run, `pnpm exec vitest run --project elements-browser packages/elements/test/browser/data-table-scrollbar.test.ts`
+(its global setup rebuilds the browser build from the planted source), and the source restored; nothing was committed.
+The body that fails is the sticky caption body, "the sticky caption at 320 px: --data-table-box-size the measured
+.box-size less the room (305px) with every caption line inside the unmasked extent; 320px once the bound is lifted,
+305px again once it is set, each one frame after settle; no ResizeObserver loop error"; the records in the source name
+it. Variants that do not type-check (the room's box test, `box` possibly null) are compile errors in Stryker's run and
+were not applied.
+
+| Mutant (line in the final source) | Result | Failing body | Failing assertion (first lines of the diff) |
+|---|---|---|---|
+| `updated()`'s axis read: `?? null` → `&& null` (240) | fails (bites) | the sticky caption body | `- "cap": "measured less the room", / + "cap": "320px against 320", / - "written": "305px",` |
+| `updated()`'s axis read: `"data-axis"` → `""` (240) | fails (bites) | the sticky caption body | `- "cap": "measured less the room", / + "cap": "320px against 320", / - "written": "305px",` |
+| `axisChanged`: `false` (244) | fails (bites) | the sticky caption body | `- "cap": "measured less the room", / + "cap": "320px against 320", / - "written": "305px",` |
+| `axisChanged`: `!==` → `===` (244) | fails (bites) | the sticky caption body | `- "cap": "measured less the room", / + "cap": "320px against 320", / - "written": "305px",` |
+| `#writeFrame`'s `#axisWritten`: `"data-axis"` → `""` (266) | fails (bites) | the sticky caption body | `- "cap": "measured less the room", / + "cap": "305px against 320", / - "written": "320px",` |
+| `#writeFrame`'s `this.#writeBoxSize()` removed (268) | fails (bites) | the sticky caption body | `- "cap": "measured less the room", / + "cap": "320px against 320", / - "written": "305px",` |
+| the room's sticky-header test: `===` → `!==` (276) | fails (bites) | the sticky caption body | `- "cap": "measured less the room", / + "cap": "320px against 320", / - "written": "305px",` |
+| the room's sticky-header test: the literal `true` written `false` (276, Stryker's BooleanLiteral) | fails (bites) | the sticky caption body | `- "cap": "measured less the room", / + "cap": "320px against 320", / - "written": "305px",` |
+| the room: `this.#measured - room` → `+ room` (278) | fails (bites) | the sticky caption body | `- "cap": "measured less the room", / + "cap": "335px against 320", / - "written": "305px",` |
+| the room's sticky-header test: `true` (276) | passes: equivalent, recorded so | none | without `sticky-header` the box never has `data-axis`, so the room is 0 |
+| `axisChanged`: `true` (244), and `fadeChanged`: `true` (242) | passes: equivalent, recorded so | none | extra frames only (the in-process suite passes too) |
+
+
 ## Notes
 
 - Run on 2026-11-18 against the green working tree (before the green commit), with the plant runner's anchors checked
