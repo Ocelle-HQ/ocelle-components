@@ -27,3 +27,11 @@
 - Date: 2026-11-17
 - Operator: human:jeroennouwsdev
 - Answer: **README and record**. The link README states the limitation (axe-core 4.14.0 reports a `color-contrast` incomplete, `bgOverlap`, for slotted link text on exactly two lines; the colours pass the contrast gate). An upstream axe-core report to file is recorded in the phase notes; it is not filed from this run.
+
+## Decision 5 — R4-01, the plant run's base for fix-3
+
+- Date: 2026-11-19
+- Operator: human:jeroennouwsdev
+- Context: phase 6 review round 4 (`reviews/phase-6/round-4.md`) found R4-01 blocking. fix-3's plant run was recorded with `--affected ca18374^` (0 of 314 plants, exit 0), as T115 step 5 said. The procedure requires `base.sha` (ac2eebe), which selects all 314 plants because the landing merge ac2f991 lies in the range. This is the same conflict as phase 7's R3-01, settled by phase 7 decision 3.
+- Options: same as phase 7, where one full run after the second merge of main covers this phase too; a full run on the current head now.
+- Answer: **"Same as phase 7 (Recommended)"**. The round-scoped run is accepted for fix-3, and R4-01 is closed by this decision. The one full plants run against the phase base, on the head after the second merge of main and before hand-off, covers phase 6 as well as phase 7. It is recorded in `reviews/phase-6/plants.md`, `reviews/phase-7/plants.md` and the landing records.
