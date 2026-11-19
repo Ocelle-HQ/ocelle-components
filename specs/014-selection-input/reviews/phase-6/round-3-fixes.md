@@ -1,0 +1,8 @@
+# Phase 6, review round 3 (operator round) fixes
+
+| ID | Resolution | Red test | Where |
+|----|------------|----------|-------|
+| O3-01 | fixed, per the operator's "Space the test link" and T115. US5-7's mount gives the link `margin-inline: 0.75em`, with a comment that says why (the glyphs beside the link sit clear of the ring band, so the ring samples do not depend on text antialiasing; landing L1-01). The assertion, `expected`, `ringPixels`, `over` and the 3.5 px sample are unchanged. The body's plant comment now names only the plants that bite; the ring's colour-only swap is recorded as equivalent in Chromium (`plants.md`, T115 step 4). With the spacing US5-7 passes with grayscale text, with subpixel text (the committed fontconfig) and in the Playwright 1.64.1 Docker image, in both harnesses, and the planted wrong rings still fail it under both launches (`notes.md` "Landing fold (T115)", `plants.md`). The CI run with the mutation shards (L1-02) follows the orchestrator's push. | `ca18374` (`packages/elements/test/browser/link-subpixel.test.ts` and `test/browser/subpixel/fonts.conf`), recorded as `fix-3 ca18374`: under subpixel text US5-7 fails on its `ring` entry (left side `false`) and the precondition passes (`red-fix-3.log`: 1 of 8009 tests failed) | `packages/elements/test/scenarios/link.ts` (`96dd714`); `reviews/phase-6/notes.md`, `plants.md`, `red-commits`, `red-fix-3.log` |
+
+No element source, baseline, pixel or visual test other than US5-7's body, `vitest.config.ts` or `serve.ts` changed.
+The mutation gate was not rerun locally: no source file changed. CI's mutation shards are the check of L1-02.

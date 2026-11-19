@@ -192,3 +192,86 @@ commit after it adds only these records.
   centre lies between two lines) goes to axe-core as an upstream report. It has not been filed from this run.
 - **R1-02, operator decision 3.** The planner added `label` to `data-model.md` § Link state in `039018a`; no change in
   this phase's code or tests.
+
+## Landing fold (T115)
+
+Operator round 3, O3-01 (landing L1-01, L1-02), "Space the test link". Red `ca18374`, green `96dd714`. Every run below
+used `OCELLE_CHROMIUM_PATH=/opt/pw-browsers/chromium-1243/chrome-linux64/chrome` unless it says otherwise, one at a
+time, on 2026-11-19.
+
+### The red step
+
+`ca18374` adds `packages/elements/test/browser/link-subpixel.test.ts` (in `elements-browser` by its path; no
+`vitest.config.ts` change) and `packages/elements/test/browser/subpixel/fonts.conf` (the system `/etc/fonts/fonts.conf`
+with `rgba` `rgb`, `lcdfilter` `lcddefault` and `hintstyle` `hintslight`). The suite launches its own Chromium with
+`FONTCONFIG_FILE` set to the file's absolute path; the shared `launch()`, `serve.ts` and every other suite are
+unchanged. Its precondition counts the pixels of black text on white whose channels differ by more than 8 and needs more
+than 0; its second test is the one body whose name starts with `US5-7:`, asserted to be exactly one, run unchanged with
+a navigation whose members throw.
+
+`red.sh 6 fix-3`: `"tests_only":true,"red":true,"recorded":true`, exit 1; `red-commits` holds `phase` and
+`fix-3 ca18374…`. `red-fix-3.log` (the pnpm store path redacted): "1 of 8009 tests failed", the only failure being
+`link-subpixel.test.ts`'s US5-7; no load, launch or setup error. The precondition and US5-7 in `link.test.ts` and
+`browser/link.test.ts` passed in that run. The gate's summary line does not show the diff, so the same file was run
+alone at the red commit (`vitest run --project elements-browser packages/elements/test/browser/link-subpixel.test.ts`):
+1 failed, 1 passed (the precondition); the one diff hunk is `ring`, `[true, true]` expected, `[false, true]` received
+(the left side).
+
+### Checks against the operator's required change
+
+`FONTCONFIG_FILE` must be an absolute path. With the relative path T115 step 3 gives
+(`FONTCONFIG_FILE=packages/elements/test/browser/subpixel/fonts.conf`), US5-7 passed at the red commit in both harnesses:
+fontconfig resolves a relative `FONTCONFIG_FILE` against its own configuration directory, not the working directory, so
+the file was not loaded and the text stayed grayscale. The CI-like rows below use
+`FONTCONFIG_FILE=$PWD/packages/elements/test/browser/subpixel/fonts.conf` from the repository root. The committed suite
+already uses the absolute path (`fileURLToPath(new URL(…, import.meta.url))`).
+
+The commands: `pnpm exec vitest run --project elements packages/elements/test/link.test.ts -t US5-7` (in process) and
+`pnpm exec vitest run --project elements-browser packages/elements/test/browser/link.test.ts -t US5-7` (fixture), plus
+the subpixel suite `pnpm exec vitest run --project elements-browser packages/elements/test/browser/link-subpixel.test.ts`.
+
+| Launch | Harness | At red `ca18374` | At green `96dd714` |
+|---|---|---|---|
+| grayscale (default) | in process | pass (1 passed, 18 skipped) | pass (1 passed, 18 skipped) |
+| grayscale (default) | fixture | pass (1 passed, 24 skipped) | pass (1 passed, 24 skipped) |
+| CI-like, `FONTCONFIG_FILE` absolute | in process | fails on `ring` only, left `false` (1 failed, 18 skipped) | pass (1 passed, 18 skipped) |
+| CI-like, `FONTCONFIG_FILE` absolute | fixture | fails on `ring` only, left `false` (1 failed, 24 skipped) | pass (1 passed, 24 skipped) |
+| subpixel suite (committed) | fixture | fails on `ring` only, left `false`; precondition passes (1 failed, 1 passed) | pass (2 passed) |
+| Playwright 1.64.1 Docker image | in process | fails on `ring` only, left `false` (1 failed, 18 skipped) | pass (1 passed, 18 skipped) |
+| Playwright 1.64.1 Docker image | fixture | fails on `ring` only, left `false` (1 failed, 24 skipped) | pass (1 passed, 24 skipped) |
+| Playwright 1.64.1 Docker image, subpixel suite | fixture | fails on `ring` only, left `false`; precondition passes (1 failed, 1 passed) | pass (2 passed) |
+
+The Docker rows ran `./node_modules/.bin/vitest run --project …` in
+`mcr.microsoft.com/playwright@sha256:ee15712262f017b8157421b212b12099146645f44b1bc5c0514cbbe6a229b1d0` (the image the
+diagnosis pulled for Playwright 1.64.1: Node 26.13.0, `chromium-1248` and `chromium_headless_shell-1248`), with the
+repository mounted at its own path, `CI=true`, `--ipc=host` and no `OCELLE_CHROMIUM_PATH`, so Playwright's own browsers
+ran with the image's default fontconfig. The red column there ran the green tree with `scenarios/link.ts` checked out
+from `ca18374` and restored after. The image reproduces CI's failure at red in both harnesses and passes after the
+spacing.
+
+The planted wrong rings still fail US5-7 after the spacing, under the grayscale and the subpixel launch, in both
+harnesses and in the subpixel suite; the colour-only swap of the ring is equivalent in Chromium (`plants.md`,
+"Landing fold, operator round 3").
+
+### The gate run
+
+Run one at a time on `96dd714` with `OCELLE_VISUAL_ENGINE=docker` as well.
+
+| Command | Exit | Result |
+|---|---|---|
+| `pnpm run gate:typecheck` | 0 | no type error in the files of tsconfig.json |
+| `pnpm run gate:lint` | 0 | 476 files checked, no finding |
+| `pnpm run gate:test-lint` | 0 | 348 files checked, no finding (the new suite included) |
+| `pnpm test` | 0 | 8009 tests passed in 248 files (the new suite's 2 included) |
+| `pnpm run gate:plants -- --affected ca18374^` | 0 | no plant selected, 0 of 314 plants judged (`plants.md`) |
+
+The fold's diff against `cafa4ba` touches only `test/browser/link-subpixel.test.ts`, `test/browser/subpixel/fonts.conf`,
+`test/scenarios/link.ts` (US5-7's mount and its plant comment) and the phase 6 review records: no baseline, no other
+pixel or visual test, no `vitest.config.ts` or `serve.ts` change and no element source change. No registry,
+completeness gate or plant-repository count names test files of `test/browser/`, so none changed. The mutation gate
+was not rerun: no source file changed.
+
+### CI (to be recorded after the push)
+
+T115 step 5 needs CI green on the fold's head after the orchestrator's push: Unit tests, every Mutation shard and the
+Mutation testing aggregate (L1-02). Not run from here; the run id and job results go here once the push has run.

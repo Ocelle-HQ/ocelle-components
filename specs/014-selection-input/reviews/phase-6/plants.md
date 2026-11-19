@@ -113,3 +113,37 @@ the `javascript:` bodies (US5-9) and the fragment bodies (US5-11, US5-14), and b
 `browser/link.test.ts` (elements-browser) with `-t "US5-13, with href"` on the round 1 fix: US5-13, with href, on the
 fixture … (1 failed | 24 skipped (25)). The Meta click and the new Meta+Enter both emit under it. The source was
 restored byte for byte.
+
+## Landing fold, operator round 3 (T115, O3-01)
+
+The ring plants of US5-7 were run again on the fold's green test commit `96dd714` (the spaced link), each applied
+alone to `ocelle-link.ts`'s `@media (forced-colors: active)` block, run with `-t US5-7` and then reverted. The runner
+checked after each plant that the source file was byte for byte as before it. Each plant ran under two launches, with
+`OCELLE_CHROMIUM_PATH=/opt/pw-browsers/chromium-1243/chrome-linux64/chrome`:
+
+- *grayscale*: the default launch, which draws grayscale text;
+- *subpixel*: `FONTCONFIG_FILE` set to the absolute path of `packages/elements/test/browser/subpixel/fonts.conf` for
+  the vitest process, which both harnesses' browsers inherit, and the committed suite `browser/link-subpixel.test.ts`,
+  which launches its own browser with that file.
+
+| Plant | Launch | Test file (project) | Bites |
+|---|---|---|---|
+| the ring removed in forced colours (`outline: none` for `:focus-visible`) | grayscale | `link.test.ts` (elements); `browser/link.test.ts` (elements-browser) | yes: US5-7 fails on `ring` (1 failed, 18 skipped; 1 failed, 24 skipped) |
+| the ring removed in forced colours | subpixel | `link.test.ts` (elements); `browser/link.test.ts` (elements-browser); `browser/link-subpixel.test.ts` (elements-browser) | yes: US5-7 fails on `ring` in all three (1 failed, 18 skipped; 1 failed, 24 skipped; 1 failed, 1 passed, the precondition passing) |
+| forced-color-adjust: none with the token colour kept (anchor colour and ring in their tokens) | grayscale | `link.test.ts` (elements); `browser/link.test.ts` (elements-browser) | yes: US5-7 fails on `plain`, `ring` and `withHref` (1 failed, 18 skipped; 1 failed, 24 skipped) |
+| forced-color-adjust: none with the token colour kept | subpixel | `link.test.ts` (elements); `browser/link.test.ts` (elements-browser); `browser/link-subpixel.test.ts` (elements-browser) | yes: US5-7 fails on `plain`, `ring` and `withHref` in all three (the precondition passing) |
+| the ring's `outline-color: Highlight` swapped for `var(--ocelle-color-focus)` alone | grayscale and subpixel | the same files | does not bite: equivalent in Chromium (forced colours force the outline colour). In forced colours Chromium replaces an author outline colour with the system colour unless `forced-color-adjust: none` is set, and that case is the row above, which bites. No test and no source change (T115 step 4); US5-7's plant comment no longer names this form |
+
+### The gate plant run of the fold
+
+- base: ca18374^ (cafa4ba2432924c813f7ed69f13059672d6f317a, the parent of the fix-3 red commit, as T115 step 5 names it)
+- command: pnpm run gate:plants -- --affected ca18374^
+- exit: 0
+
+```text
+$ node gates/bin/plants.ts -- --affected 'ca18374^'
+plants: affected since ca18374^: no plant selected, 0 of 314 plants judged; not the Plants check
+```
+
+The fold changes only test files (`link-subpixel.test.ts`, `subpixel/fonts.conf`, `scenarios/link.ts`) and these
+records, so no gate plant is affected and the plant repository's counts are unchanged.
