@@ -1,0 +1,105 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 2
+lens: fresh
+findings:
+  - id: PLAN-FRESH-2-001
+    severity: 3
+    title: "The announcer's restart-on-trigger wait and its cancel-during-hold merge or drop changes made in different tasks, which FR-008 does not allow"
+    evidence:
+      - artifact: "research.md § R-02 Announcing, step 2: 'a new trigger while waiting restarts the wait, so several changes in one task, or close together, write only the final text'; step 4: 'a trigger during the hold goes back to step 1' (step 1 'empties the announcer if it holds a copy')"
+      - artifact: "data-model.md § Announcement transitions, *Announce*: 'a new trigger while waiting restarts the wait ... A trigger while holding starts again from the first step.' The rows 'light-DOM mutation | text and politeness equal the baseline | none' and the note 'an event that matches no row changes nothing: no announcement, no cancellation' leave a pending write running when the text goes back to the baseline."
+      - artifact: "spec.md FR-008: 'the notice announces its text once ... on each later change ... Several changes in one task announce the final text once.' SC-002: 'exactly one announcement per triggering change'. FR-027: 'announced politely once each time its text changes'."
+      - artifact: "contracts/testing.md § Plants and plan.md phase 2: the SC-002 matrix and US1-13 test one trigger, or several in one task. No scenario has two triggers in different tasks less than W (300 ms) apart, or a trigger during the hold."
+      - code: "Chromium ax_object_cache_impl.cc (main, fetched 2026-11-13 from github.com/chromium/chromium), GetDeferredEventsDelay() and the pipeline at about line 3540: serialisations are at least D apart. If a copy is emptied less than D after it is written, that copy can be merged away before any serialisation."
+    claim: |
+      The round-1 fix (operator decision PLAN-FRESH-1-001 (b)) turned "several changes in one task" into "several changes
+      close together". It is a debounce that restarts on every trigger, so:
+      (1) Two changes in different tasks less than W apart (A to B, then B to C 100 ms later) announce only C. FR-008 and
+      SC-002 require B and C to be announced once each, and only same-task changes may merge.
+      (2) A notice whose text changes more often than every W (a progress or count notice fed by SSE every 200 ms) is
+      never announced while it keeps changing.
+      (3) A trigger during the hold empties the copy at once. If that happens less than D after the write, the copy
+      may never have been serialised, so the earlier announcement is lost although its write happened.
+      (4) A to B and then back to A within W: the second mutation matches the "equals the baseline | none" row, so the
+      pending write is neither cancelled nor re-checked. It writes A, which announces text equal to the baseline,
+      against FR-008's "a mutation that leaves both unchanged is not a change".
+      The tests cannot catch any of this, because every planned trigger is alone or in one task. The spec says one thing,
+      the plan builds another, and the suite stays green.
+    remedies:
+      - "(a) Amend FR-008, FR-027 and SC-002 (operator ruling) so that changes closer together than W announce only the final text once, with W and the starvation case in the README. Give the hold a minimum: a trigger during the hold waits until the copy has been current for at least W before step 1. When the wait ends, re-check the text and politeness against the baseline and write nothing if they are equal. Add scenarios: two changes in different tasks 100 ms apart count 1; A, B, A within W counts 0; a trigger 10 ms after a write still counts the first copy (settled)."
+      - "(b) Keep FR-008 as written. Queue triggers instead of restarting: each change that differs from the baseline is written in its turn, and a copy is never emptied before it has been current for W. Re-check against the baseline at write time. Add scenarios: two changes in different tasks 100 ms apart count 2; a run of changes every 200 ms announces each one (or a stated bound); A, B, A within W counts by the baseline rule. Plants for both remedies: 'restart on every trigger' and 'empty on trigger during hold'."
+  - id: PLAN-FRESH-2-002
+    severity: 3
+    title: "internals.ariaLive = 'off' does not stop Chromium's ALERT event, so a role='alert' notice is read twice on insertion and reveal, and is read on a runtime role change where the spec says nothing is announced"
+    evidence:
+      - artifact: "research.md § R-02 The host's node: 'the element therefore sets internals.ariaLive = \"off\" ... What a platform's alert event does for a role=\"alert\" host on insertion is outside the capture (README, limits).' plan.md decision 7 says the same and covers insertion only."
+      - artifact: "spec.md US1 scenario 15: 'When the host sets role=\"alert\" at runtime on a connected notice without announce, Then nothing is announced'; FR-009: 'each triggering change is announced by exactly one live region node ... the host's role never adds a second announcement of a change'."
+      - code: "ui/accessibility/ax_event_generator.cc (chromium main, fetched 2026-11-13): line 394 OnRoleChanged adds Event::ALERT when the new role IsAlert; lines 416-417 OnIgnoredChanged adds Event::ALERT when an alert node becomes unignored (this is the reveal by removing `hidden`); lines 1081-1082 add Event::ALERT for a created alert node (insertion). ax_role_properties.cc IsAlert: kAlert and kAlertDialog. None of these checks the node's live politeness."
+    claim: |
+      The round-1 fix keeps the host's node from being a second live region. Chromium's ALERT event does not depend on
+      live politeness, though. It fires when an alert-role node is created, unignored or given the alert role. Screen
+      readers voice that event with the alert's own content, which here is the visible notice.
+      - For a `role="alert"` notice inserted or revealed after load, the user hears the content on the ALERT event and
+        then the announcer's copy 300 ms later, so two readings for one triggering change.
+      - Setting `role="alert"` at runtime fires ALERT, which reads the notice where US1-15 says nothing is announced.
+      - Going from `status` to `alert` gives an ALERT event and a copy, so two readings again.
+      The capture cannot see platform events, so every test passes. The README limit in R-02 names only insertion, and
+      describes it as unknown rather than as a known double reading. This is a whole supported row of FR-009, and an
+      operator decision ("role implies announce"), that will not work as intended for AT users.
+    remedies:
+      - "(a) For a host `role=\"alert\"`, the element skips the copy for insertion, reveal and a role change to `alert`, because Chromium's ALERT event carries the visible content then. It still writes the copy for text changes and for `alert` to `status`. Record the ALERT source in R-02, the data model and the README. Mark the skipped rows in SC-002 as 'carried by the platform alert event, not by a live region', which needs an operator ruling on FR-009's alert row."
+      - "(b) Keep the design, and state in FR-009, FR-035 and the README that a `role=\"alert\"` notice is read twice on insertion, reveal and `status`-to-`alert` changes, and is read when the role is set at runtime (Chromium ALERT event, ax_event_generator.cc). Recommend `announce` with `tone=\"danger\"` instead. This needs an operator ruling because it narrows US1-15 and FR-009."
+  - id: PLAN-FRESH-2-003
+    severity: 3
+    title: "Real-time announcement waits make the in-process suite too slow for the 10-minute mutation shards, and the plan budgets only Stryker's timeout factor"
+    evidence:
+      - artifact: "research.md § R-09 Mutation: 'The waits W run in real time; the Stryker timeout factor is set from T002's measured scenario times.' plan.md phase 1 T002 measures 'scenario times for the Stryker timeout factor' and gives no budget."
+      - artifact: "contracts/testing.md § Live-region capture: stop() 'waits until no mutation has happened for 2 × 350 ms and two further rendering updates'. Each announcing step therefore takes at least W (300) + hold W (300) + 700 ms of quiet, about 1.3 s, more with pre-load W of 700 ms. plan.md phase 2 SC-002 matrix: 5 tones × 10 triggers and non-triggers × 3 role rows = 150 cells, plus US1-8, US1-9 and US2-20 × 4 insertion ways, and US1-19's four steps."
+      - code: ".github/workflows/ci.yml:84-104 (mutation-shard, timeout-minutes: 10); specs/001-*/spec.md:287 FR-013 'each a separate CI job under a job time limit of 10 minutes'; stryker.elements.config.json: coverageAnalysis perTest, concurrency 8. Stryker's dry run runs the whole elements project once before any mutant."
+    claim: |
+      All announcement code in `src/live.ts`, `src/define.ts` and `src/form-control.ts` is covered by the whole matrix,
+      because every cell runs through the shared Announcer. The estimate: 150 cells at about 1.3 s plus 30 or more
+      further announcement scenarios comes to about 4 minutes of serial test time before the existing suites. That is
+      spent in the dry run, and again for every survivor or equivalent mutant, which runs all of its covering tests. A
+      shard of up to 30 changed lines of `src/live.ts` holds tens of mutants. A shard that is cancelled at 10 minutes
+      fails the required mutation check. The timeout factor does not prevent this, because it only raises per-mutant
+      timeouts. SC-007 then cannot be met in CI for the very code this feature most needs mutated, and the plan has no
+      stop condition for it.
+    remedies:
+      - "Give the in-process project a test-only way to set `D` (for example a module-level setter in `src/live.ts` used only by `test/in-process.ts`), with the capture's `\"settled\"` rule taking the same value in process. Fixture pages keep Chromium's real 150 and 350 ms. Make stop()'s quiet window derive from it (see PLAN-FRESH-2-004). In T002, measure the dry run and a worst-case shard (30 changed lines of `src/live.ts`) against the 10-minute limit, and stop for the operator if a shard exceeds about 7 minutes."
+      - "Alternatively, run the SC-002 matrix in full on fixture pages only, and in process run only the cells needed to kill the mutants T002 names, recorded with the reason; plus the same T002 time measurement and operator stop."
+  - id: PLAN-FRESH-2-004
+    severity: 2
+    title: "stop()'s 700 ms quiet window equals the pre-load W, so a zero count can end before a late write happens"
+    evidence:
+      - artifact: "contracts/testing.md § Live-region capture: 'liveCapture.stop() waits until no mutation has happened for 2 × 350 ms and two further rendering updates have passed, takes a final snapshot'"
+      - artifact: "research.md § R-02 Announcing: 'W = 2 × D ... W is 300 ms or 700 ms'. Step 1 makes no mutation when the announcer is already empty and live, so the next mutation after a trigger is the write, W later."
+      - artifact: "research.md § R-09 and contracts/testing.md `drive.readyState(value)`: in process the element reads `readyState` through the driven function, so with `\"loading\"` it uses D = 350 and W = 700. US1-10 and US2-18 zero counts and the 'first load' plants run on that path."
+    claim: |
+      After a trigger made while the document reads as loading (a driven `readyState`, or the `startDocument` path
+      before load), a wrong write comes 700 ms later. stop() also returns after 700 ms of quiet plus two frames. That is
+      a race with no margin. Even if the write is caught, it is the last state, current for less than `D`, so the
+      `"settled"` rule drops it. A mutant that treats first load as an insertion (`readyState === \"loading\"` negated,
+      or the registration flag ignored) can therefore pass the zero-count assertions, or flake. The 'first load' plants
+      would show this only if the run happens to lose the race.
+    remedies:
+      - "Define stop()'s quiet window from the figures: at least the largest W, plus the hold W, plus the largest D, plus two rendering updates (2100 ms at the real figures, or the in-process test value of PLAN-FRESH-2-003). Add a plant that writes at exactly the pre-load W after a non-trigger (first load under `drive.readyState(\"loading\")`), which must turn US1-10 red under both rules."
+  - id: PLAN-FRESH-2-005
+    severity: 2
+    title: "Emptying the copy W (300 ms) after writing it is chosen from Chromium's serialisation delay, not from how fast assistive technology reads; the capture cannot detect a lost reading"
+    evidence:
+      - artifact: "research.md § R-02 Announcing step 4: 'holds the copy for W and then empties the announcer, so the copy is in the tree only while it is being announced'. § Costs: 'the copy exists only for W around each announcement, so a browse-mode user meets the text twice only within that window'."
+      - artifact: "spec.md 'What announced means here': the measure is the tree only, and no screen reader runs, so a copy emptied before AT reads it still counts as one announcement."
+      - code: "@angular/cdk 22.2.7 (npm tarball, fesm2022/_a11y-module-chunk.mjs:502-546), LiveAnnouncer.announce: it writes the message in a setTimeout of 100 ms and clears it only when the caller passes a `duration` (none by default), otherwise at the next announce(). An established announcer does not empty its region on a fixed short timer by default."
+    claim: |
+      W was derived so that the empty state is serialised before the write. Nothing in the plan shows that 300 ms after
+      the write is enough for a screen reader to fetch the text. Windows screen readers act on the live-region event and
+      then query the node's text out of process, and the browser-side tree is updated by the next serialisation, about
+      150 ms later. A busy AT, or VoiceOver's known lag, that queries after the emptying gets an empty region and speaks
+      nothing. The 300 ms bound comes from the operator's acceptance of the double reading ("bounded to W"). The plan
+      chose that bound without evidence about AT latency, and the tree-based tests pass either way.
+    remedies:
+      - "(a) Keep the copy until the next announcement's step 1, until the notice stops being live, until it is hidden, or until it is removed (the CDK default). Restate the double-reading cost in R-02 and the README as 'until the next announcement', for the operator to re-accept."
+      - "(b) Keep a bounded hold, but set it from an AT-facing figure (for example several seconds) rather than from W. Record in R-02 and the README that the figure is not measured by the capture, and add a scenario asserting that the copy stays settled for the chosen hold."

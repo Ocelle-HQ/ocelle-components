@@ -133,7 +133,10 @@ describe("the Vitest projects", () => {
 
   // 008 research.md R-14: both browser-mode element projects run at the fixture's 1280 × 800, elements as a mouse
   // device and elements-touch in a context with hasTouch; both register the same commands, 011's document readers
-  // (research.md R-13) among them, and since 014 (research.md R-07, R-11) axStates, axUpdatesStart and axUpdatesStop.
+  // (research.md R-13) and 012's press, hover, pointer, axState and axe (012 research.md R-11) among them, and the
+  // live-region capture's liveStart and liveStop (specs/010-feedback-forms contracts/testing.md § Live-region capture;
+  // the landing's second merge of main), and since 014 (research.md R-07, R-11) axStates, axUpdatesStart and
+  // axUpdatesStop.
   it("run elements and elements-touch in browser mode at 1280 × 800, only elements-touch with hasTouch, with the same commands", () => {
     const browser = (name: string) => {
       const project = (base.test?.projects ?? []).find((each) => (each as { test?: { name?: unknown } }).test?.name === name) as
@@ -147,7 +150,7 @@ describe("the Vitest projects", () => {
         commands: Object.keys(options?.commands ?? {}).sort(),
       };
     };
-    const commands = ["activeElement", "axStates", "axTree", "axUpdatesStart", "axUpdatesStop", "emulateForcedColors", "emulateReducedMotion", "pointerPath", "scrollWidth", "textBoxes", "touchTap"];
+    const commands = ["activeElement", "axState", "axStates", "axTree", "axUpdatesStart", "axUpdatesStop", "axe", "emulateForcedColors", "emulateReducedMotion", "hover", "liveStart", "liveStop", "pointer", "pointerPath", "press", "scrollWidth", "textBoxes", "touchTap"];
     expect({ elements: browser("elements"), touch: browser("elements-touch") }).toEqual({
       elements: { enabled: true, viewport: { width: 1280, height: 800 }, hasTouch: false, commands },
       touch: { enabled: true, viewport: { width: 1280, height: 800 }, hasTouch: true, commands },

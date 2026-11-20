@@ -23,9 +23,12 @@ import type { Ran } from "./workspace.ts";
 // here has CI and GITHUB_ACTIONS removed from its environment (the CI rule has its own test) and no
 // OCELLE_VISUAL_ENGINE, so the engine is `auto`, docker here. The animation control drives the host browser
 // (OCELLE_CHROMIUM_PATH locally) on the plant story pass-animation-and-caret.
-// 900 s since the merge of main into 014 (landing): the repository's runs capture 356 story-themes, not 286 or 110,
-// and one such test took 456 s alone and more than 600 s under the full unit-tests run's load.
-const timeout = 900_000;
+// The time limit is shared by the file's tests. The whole-repository capture grows with every story: it took 519 s at
+// 171 stories (landing round 1 R1-06), and at 194 stories (388 story-themes) it timed out at the 600 s limit on CI run
+// 44481594952, where run 44298568583 had passed it. 1200 s is twice the limit that failed (012
+// reviews/phase-6/round-7.md O7-01, operator 2026-11-19); gates/test/visual-timeout.test.ts pins it. The growth itself
+// stays with the plant-design triage follow-up (012 plan decision 15, R1-06, R1-09).
+const timeout = 1_200_000;
 const empty = join(repo, "gates/test/fixtures/plant-repo/empty-plant");
 const plantsDir = join(repo, "gates/plants/visual");
 const docker = "only: no cross-engine comparison)";
@@ -115,11 +118,11 @@ function onePixel(file: Buffer): Buffer {
 
 describe("visual gate (gates/bin/visual.ts)", () => {
   it(
-    "captures the repository's 356 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)",
+    "captures the repository's 518 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)",
     async () => {
       const at = await root();
       const ran = await gate(at);
-      expect(ran).toEqual({ code: 0, stdout: [`visual: 356 captures match their baselines (docker ${docker}`], stderr: [] });
+      expect(ran).toEqual({ code: 0, stdout: [`visual: 518 captures match their baselines (docker ${docker}`], stderr: [] });
       expect([...files(join(at, "storybook/.visual")).keys()]).toEqual([]);
     },
     timeout,
@@ -138,7 +141,7 @@ describe("visual gate (gates/bin/visual.ts)", () => {
         findings: ["tokens--colour/light: visual: differs", "tokens--colour/dark: visual: missing-baseline"],
         stderr: [],
       });
-      expect(ran.stdout.at(-1)).toBe(`visual: 2 findings in 356 story-themes (docker ${docker}`);
+      expect(ran.stdout.at(-1)).toBe(`visual: 2 findings in 518 story-themes (docker ${docker}`);
       const kept = files(join(at, "storybook/.visual"));
       expect([...kept.keys()]).toEqual(["baselines/tokens--colour.dark.png", "baselines/tokens--colour.light.png", "tokens--colour.light.actual.png", "tokens--colour.light.diff.png"]);
       expect(kept.get("baselines/tokens--colour.light.png")?.equals(kept.get("tokens--colour.light.actual.png") ?? Buffer.alloc(0))).toBe(true);
@@ -243,7 +246,7 @@ describe("baseline command (gates/bin/baselines.ts)", () => {
     async () => {
       const at = await root();
       const before = files(join(at, "storybook/baselines"));
-      expect(before.size).toBe(356);
+      expect(before.size).toBe(518);
       expect(await update(at)).toEqual({ code: 0, stdout: ["baselines: wrote 0 files (0 added, 0 changed, 0 removed), 0 bytes in total"], stderr: [] });
       expect(files(join(at, "storybook/baselines"))).toEqual(before);
     },

@@ -115,19 +115,19 @@ function variants(): Variant[] {
       name: "(1) the neighbour color-ink-soft changed in light",
       source: relit(realSource, "color-ink-soft", "#3F3A33", "#403B34"),
       pairs: refigured(realPairs, "color-ink-soft", "#403B34"),
-      summary: "contrast: 175 pairs checked in light, 183 in dark (164 required per theme)",
+      summary: "contrast: 207 pairs checked in light, 215 in dark (196 required per theme)",
     },
     {
       name: "(2) a token inserted before color-ink-soft and a pair inserted first",
       source: inserted.join("\n"),
       pairs: [first, ...realPairs],
-      summary: "contrast: 176 pairs checked in light, 183 in dark (164 required per theme)",
+      summary: "contrast: 208 pairs checked in light, 215 in dark (196 required per theme)",
     },
     {
       name: "(3) the light color-danger changed",
       source: relit(realSource, "color-danger", "#A8322C", "#A5302A"),
       pairs: refigured(realPairs, "color-danger", "#A5302A"),
-      summary: "contrast: 175 pairs checked in light, 183 in dark (164 required per theme)",
+      summary: "contrast: 207 pairs checked in light, 215 in dark (196 required per theme)",
     },
   ];
 }
@@ -176,7 +176,7 @@ afterEach(cleanUp);
 
 describe("contrast and brand-rules plants under neighbouring changes", () => {
   it("has the two gates' plants and the registry's", () => {
-    expect({ others: otherGates.length, plants: plantCount() }).toEqual({ others: 15, plants: 36 });
+    expect({ others: otherGates.length, plants: plantCount() }).toEqual({ others: 15, plants: 39 });
   });
 
   it.each([

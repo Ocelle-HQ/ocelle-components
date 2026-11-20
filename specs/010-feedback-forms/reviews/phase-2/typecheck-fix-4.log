@@ -1,0 +1,2 @@
+$ node gates/bin/typecheck.ts
+typecheck: no type error in the files of tsconfig.json

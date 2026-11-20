@@ -5,8 +5,8 @@
 // tested frames, R-17; linked only by the pages that say so), and the files the global setup built
 // (global-setup.ts): the browser build `ocelle-elements.js`, US1 scenario 10's `bundle-a.js` and `bundle-b.js`, User
 // Story 3's test host's file `ocelle-test-host.js`, since 009 the test-only slotted controls `ocelle-test-controls.js`
-// and (phase 4) `ocelle-test-list-detail.js`, and 011's `card-bundle.js` (the module build's card alone). It serves
-// them on 127.0.0.1 with `Content-Security-Policy:
+// and (phase 4) `ocelle-test-list-detail.js`, 011's `card-bundle.js` (the module build's card alone) and the plant
+// rows' bundle `ocelle-plants.js` (specs/010-feedback-forms). It serves them on 127.0.0.1 with `Content-Security-Policy:
 // default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'` on every response. Every page is opened
 // in a fresh context with the recorders installed before navigation, none of them a page script or a request (since
 // 014 also the driver's page side, test/page-helpers.ts, with the clipboard observer): CSP
@@ -14,11 +14,15 @@
 // (packages/tokens/test/browser/serve.ts), requests and their responses through Playwright's `request` and
 // `response` events, and console messages and uncaught errors through its `console` and `pageerror` events.
 //
+// 012 (research.md R-11): axe-core's `axe.min.js` is served as `axe.js` from node_modules, the server records each
+// request for `link-target.html` (`Served.visits`), the page a link navigates to, and each visit records the pages its
+// context opens after it (`Visit.tabs`, from `context.on("page")`), the new tabs of a modified or middle click.
 // 008 (research.md R-14, R-15): the served directory also holds the test delay stylesheet `tooltip-delay.css`
 // (test/fixtures/), which the overlay and tooltip pages link; every context is a mouse device at 1280 × 800, and
 // `visit(…, { touch: true })` opens its page in a context with `hasTouch` instead, for the touch rows only.
 import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
+import { createRequire } from "node:module";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import { extname, join, normalize } from "node:path";
@@ -39,6 +43,11 @@ export const policy = "default-src 'none'; script-src 'self'; style-src 'self'; 
 const fixtures = fileURLToPath(new URL("./fixtures", import.meta.url));
 const baseSheet = fileURLToPath(new URL("../../../styles/src/base.css", import.meta.url));
 const fonts = fileURLToPath(new URL("../../../tokens/fonts", import.meta.url));
+const axeScript = createRequire(import.meta.url).resolve("axe-core/axe.min.js");
+
+/** The page a link of the harness navigates to; the server records each request for it. */
+const linkTarget = "link-target.html";
+
 /** The one source of 009's tested frames (research.md R-17), served as `frames.css` for the pages that link it. */
 const framesSheet = fileURLToPath(new URL("../fixtures/frames.css", import.meta.url));
 const tooltipDelay = fileURLToPath(new URL("../fixtures/tooltip-delay.css", import.meta.url));
@@ -50,6 +59,7 @@ const builtFiles: Readonly<Record<string, string>> = {
   "bundle-b.js": "bundles/bundle-b.js",
   "card-bundle.js": "bundles/card-bundle.js",
   "ocelle-test-host.js": "test-host/ocelle-test-host.js",
+  "ocelle-plants.js": "plants/ocelle-plants.js",
   "ocelle-test-controls.js": "test-controls/ocelle-test-controls.js",
   "ocelle-test-list-detail.js": "test-controls/ocelle-test-list-detail.js",
 };
@@ -65,6 +75,10 @@ const types: Readonly<Record<string, string>> = {
 export interface Served {
   /** `http://127.0.0.1:<port>`. */
   readonly origin: string;
+  /** The bodies of the form submissions (`POST /submit`) the server received, in order. */
+  readonly submissions: () => readonly string[];
+  /** The requests for `link-target.html` so far, by path, in order. */
+  readonly visits: () => string[];
   readonly close: () => Promise<void>;
 }
 
@@ -77,25 +91,46 @@ export async function serve(built: Built | undefined): Promise<Served> {
   cpSync(framesSheet, join(dir, "frames.css"));
   cpSync(tooltipDelay, join(dir, "tooltip-delay.css"));
   if (existsSync(fonts)) cpSync(fonts, join(dir, "fonts"), { recursive: true });
+  cpSync(axeScript, join(dir, "axe.js"));
+  const visits: string[] = [];
   if (built !== undefined && "dir" in built) {
     for (const [name, path] of Object.entries(builtFiles)) if (existsSync(join(built.dir, path))) cpSync(join(built.dir, path), join(dir, name));
   }
+  const submissions: string[] = [];
   const server = createServer((request, response) => {
-    const path = normalize(new URL(request.url ?? "/", "http://localhost").pathname).replace(/^[/\\]+/, "");
+    const route = normalize(new URL(request.url ?? "/", "http://localhost").pathname).replace(/^[/\\]+/, "");
+    // The submission recorder (specs/010-feedback-forms contracts/testing.md § Forms): a form posted to /submit is
+    // recorded and answered 204, so the page stays where it is.
+    if (request.method === "POST" && route === "submit") {
+      const chunks: Buffer[] = [];
+      request.on("data", (chunk: Buffer) => chunks.push(chunk));
+      request.on("end", () => {
+        submissions.push(Buffer.concat(chunks).toString("utf8"));
+        response.writeHead(204, { "Content-Security-Policy": policy }).end();
+      });
+      return;
+    }
+    // The no-store route: `no-store/<path>` serves `<path>` with `Cache-Control: no-store` (history restore).
+    const noStore = route.startsWith("no-store/");
+    const path = noStore ? route.slice("no-store/".length) : route;
     let body: Buffer;
     try {
       if (path.startsWith("..")) throw new Error("outside the served directory");
       body = readFileSync(join(dir, path));
+      if (path === linkTarget) visits.push(path);
     } catch {
       response.writeHead(404, { "Content-Security-Policy": policy }).end();
       return;
     }
-    response.writeHead(200, { "Content-Type": types[extname(path)] ?? "application/octet-stream", "Content-Security-Policy": policy }).end(body);
+    const headers = { "Content-Type": types[extname(path)] ?? "application/octet-stream", "Content-Security-Policy": policy };
+    response.writeHead(200, noStore ? { ...headers, "Cache-Control": "no-store" } : headers).end(body);
   });
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
   const { port } = server.address() as AddressInfo;
   return {
     origin: `http://127.0.0.1:${String(port)}`,
+    submissions: () => [...submissions],
+    visits: () => [...visits],
     close: async () => {
       await new Promise<void>((resolve) => server.close(() => {
         resolve();
@@ -121,6 +156,8 @@ export interface Visit {
   readonly page: Page;
   /** Every console message and uncaught error since the page opened (the driver reads its own share). */
   readonly log: readonly string[];
+  /** The pages the page's context opened after it (new tabs), in order. */
+  readonly tabs: readonly Page[];
   /** Stops recording, closes the page's context and returns what the recorders saw. */
   readonly finish: () => Promise<Recorded>;
 }
@@ -154,6 +191,8 @@ export async function visit(browser: Browser, origin: string, page: string, scri
   const touch = options.touch === true ? { hasTouch: true } : {};
   const context = await browser.newContext({ viewport: { width: 1280, height: 800 }, colorScheme: "light", ...touch });
   const opened = await context.newPage();
+  const tabs: Page[] = [];
+  context.on("page", (tab) => tabs.push(tab));
   const log: string[] = [];
   const requests: string[] = [];
   const failed: string[] = [];
@@ -173,6 +212,7 @@ export async function visit(browser: Browser, origin: string, page: string, scri
   return {
     page: opened,
     log,
+    tabs,
     finish: async () => {
       const seen = await violations(opened);
       await context.close();

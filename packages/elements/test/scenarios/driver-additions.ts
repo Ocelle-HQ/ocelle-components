@@ -1,5 +1,5 @@
 // The shared bodies of the driver additions of 013 phase 1 (contracts/checks.md § Driver additions; tasks.md T003):
-// `viewport`, `scrollWidth`, `layout`, `copy`, `move`, `text` and `open`, with the readers the facts bodies use
+// `viewport`, `scrollWidth`, `layout`, `clipboardCopy`, `move`, `text` and `open`, with the readers the facts bodies use
 // (`boxes`, `styles`, `structure`). They pin the harnesses, not an element: plain elements and the small helper
 // elements of defineDriverHelpers() stand in, defined by each harness before the bodies run (in process by a call, on
 // the fixture through `page.evaluate`, so the function is self-contained). Run in process by test/driver.test.ts and
@@ -7,7 +7,7 @@
 // - `layout` returns on the second frame for a still element, reads a change made in an animation frame that a
 //   `ResizeObserver` callback scheduled (the deferred measure pass's shape, R-02), never the geometry before it, and
 //   rejects after 10 frames for an element that never settles;
-// - `copy` returns the text a user copy put on the clipboard, unchanged (a U+200B in it is kept, so the US1-4 plant
+// - `clipboardCopy` returns the text a user copy put on the clipboard, unchanged (a U+200B in it is kept, so the US1-4 plant
 //   that inserts one is seen);
 // - `text` makes a `characterData` change, not a `childList` one.
 // Phase 2 (tasks.md T023) adds `pressTab` and `focused`: Tab moves focus in the page's sequential order, into a shadow
@@ -17,7 +17,7 @@
 // takes an element out of the page; `frames` waits that many animation frames; `replace` swaps an element for parsed
 // markup in one mutation; `changeAttributes` sets and removes attributes in one task, so an observer sees them in one
 // delivery; `textOf` reads a shadow element's text; `rendered` tells shown light-DOM text from text that is not
-// rendered (an unslotted child of a shadow host); `events` (review round 1) lists the events script dispatches on an
+// rendered (an unslotted child of a shadow host); `dispatched` (review round 1) lists the events script dispatches on an
 // element and in its shadow root during a change, and not those on another element. `reducedMotion` and the AX value
 // properties have their own tests (test/commands.test.ts), and the loading-episode reset of `mount` is a progress body (scenarios/progress.ts), since it needs the element.
 import type { Scenario } from "./icon.ts";
@@ -220,10 +220,10 @@ export const driverAdditionScenarios: readonly Scenario[] = [
     expected: { narrow: 400, wide: 1000, restored: 1280 },
   },
   {
-    name: "copy: a user copy of a paragraph puts its text on the clipboard unchanged, a U+200B in it kept",
+    name: "clipboardCopy: a user copy of a paragraph puts its text on the clipboard unchanged, a U+200B in it kept",
     run: async (driver) => {
       await driver.mount('<p id="plain">abc def</p><p id="spaced">abc​def</p>');
-      return { plain: await driver.copy("plain"), spaced: await driver.copy("spaced") };
+      return { plain: await driver.clipboardCopy("plain"), spaced: await driver.clipboardCopy("spaced") };
     },
     expected: { plain: "abc def", spaced: "abc​def" },
   },
@@ -383,15 +383,15 @@ export const driverAdditionScenarios: readonly Scenario[] = [
     expected: { valueAsNumber: 7, value: "7", missing: undefined },
   },
   {
-    name: "events: the events script dispatches on an element and in its shadow root while a change runs are listed in order, not those on another element, and a change that dispatches none on it gives an empty list",
+    name: "dispatched: the events script dispatches on an element and in its shadow root while a change runs are listed in order, not those on another element, and a change that dispatches none on it gives an empty list",
     run: async (driver) => {
       await driver.mount('<ocelle-test-emitter id="watched"></ocelle-test-emitter><ocelle-test-emitter id="other"></ocelle-test-emitter>');
-      const during = await driver.events("watched", async () => {
+      const during = await driver.dispatched("watched", async () => {
         await driver.setAttribute("watched", "data-ping", "1");
         await driver.setAttribute("other", "data-ping", "1");
       });
-      const quiet = await driver.events("watched", () => driver.setAttribute("other", "data-ping", "2"));
-      const other = await driver.events("other", () => driver.setAttribute("other", "data-ping", "3"));
+      const quiet = await driver.dispatched("watched", () => driver.setAttribute("other", "data-ping", "2"));
+      const other = await driver.dispatched("other", () => driver.setAttribute("other", "data-ping", "3"));
       return { during, quiet, other };
     },
     expected: { during: ["ocelle-test-ping", "inner-ping"], quiet: [], other: ["ocelle-test-ping", "inner-ping"] },

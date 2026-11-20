@@ -77,8 +77,8 @@ describe("contrast: success", () => {
     expect(await contrast({})).toEqual({ code: 0, out: ["contrast: 6 pairs checked in light, 5 in dark (5 required per theme)"], err: [] });
   });
 
-  it("passes the repository's values: 175 in light, 183 in dark, 164 required per theme (US3 scenario 1; 014 R-17)", async () => {
-    expect(await runGate(run, ["--root", repoRoot])).toEqual({ code: 0, out: ["contrast: 175 pairs checked in light, 183 in dark (164 required per theme)"], err: [] });
+  it("passes the repository's values: 207 in light, 215 in dark, 196 required per theme (US3 scenario 1)", async () => {
+    expect(await runGate(run, ["--root", repoRoot])).toEqual({ code: 0, out: ["contrast: 207 pairs checked in light, 215 in dark (196 required per theme)"], err: [] });
   });
 
   it("counts a pair outside the required set among the pairs checked", async () => {

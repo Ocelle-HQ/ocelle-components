@@ -1,0 +1,154 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 2
+lens: fresh
+# Checked: spec.md, plan.md, research.md, data-model.md, contracts/elements-package.md, contracts/checks.md,
+# quickstart.md, the constitution, round 1 refute.md, fixes-1/2 and verify-1/2, packages/tokens/src/source.ts,
+# packages/elements/src/icon-slot.ts, packages/elements/README.md, packages/styles/README.md and triage 012, at
+# base e47ea6a. Contrast ratios computed from source.ts values with the WCAG relative-luminance formula
+# (scratchpad cr.mjs). One browser probe in Chromium 153 (/opt/pw-browsers/chromium-1243) over CDP: a vanilla custom
+# element with an open shadow root (delegatesFocus), host display inline-block / block, an inner <button> that is a
+# flex box, as R-01, R-09 and R-10 describe; results quoted per finding. No network access.
+findings:
+  - id: PLAN-FRESH-2-001
+    severity: 3
+    title: "The inner control does not fill a stretched host: clicks on the rest of the host bypass the guard and the row's activation"
+    evidence:
+      - artifact: "research.md R-01: 'The host is `display: inline-block` (button) or `display: block` (row)'; R-09: 'the inner control is a flex box that centres the slot convention's `icon-row`'; R-10: 'the row's inner control is a flex container ... The host is `display: block; min-inline-size: min-content`'. Nothing states that the inner control fills the host's block size."
+      - artifact: "spec.md User Story 5: 'On a dashboard the rows are cards' (cards sit in grids, whose items stretch by default); FR-003 / US1-3 / US5-6: no `click` reaches a bubble-phase listener when disabled or unavailable"
+      - code: "probe, Chromium 153: an `inline-block` host holding a disabled flex `<button>` (min-height 44px) in a `display:flex` row beside a 120px sibling: host 120px tall, inner button 44px. A pointer click 5px above the host's bottom edge reached a `document` bubble listener with target and composedPath()[0] = the host: the disabled control delivered a click."
+      - code: "probe: two `display:block` row hosts in a 2-column CSS grid, the second with a wrapping title: host r1 49px, inner button 44px (the inner does not follow the stretched host). A click 5px above r1's bottom edge reached `document` with target the host and never reached the inner button, so no activation would be dispatched."
+    claim: |
+      The guard (R-06) and the row's activation listener live on the inner control, and the visible surface, border and
+      hover are drawn on the inner control. Whenever the host is larger than the inner control, the extra area is the
+      host's own box: a pointer click there never passes through the inner control. A host is stretched in two ordinary
+      layouts: a flex row (`align-items` defaults to stretch: toolbars, header actions, dialog footers) and a grid (the
+      dashboard card grid of US5, where every card in a grid row should be as tall as the tallest one). Measured, the
+      inner control keeps its content height. A disabled or busy button and an unavailable row then deliver a `click`
+      to bubble listeners (FR-003's "not activated" broken). A row's lower area is dead: no event, no navigation. The
+      cards also draw their border and hover at uneven heights inside equal grid cells. Every planned scenario clicks
+      at the inner control's centre in an unconstrained page, so none of them can fail on this.
+    remedies:
+      - "Make the inner control fill the host in both axes: `:host { display: inline-grid }` for the button and `:host { display: grid }` for the row (min-inline-size unchanged), with the inner control as the single stretched grid item (state it in R-01, R-09, R-10 and the data model). Add scenarios to button.ts, busy.ts and action-row.ts, each with a plant that restores `inline-block`/`block`: the host stretched in a flex row (host taller than its content) and in a two-card grid, a click 4px inside the host's bottom edge gives no click to bubble listeners on a disabled and on a busy button, and exactly one activate event on an available row (none on an unavailable row); the two cards' inner boxes are as tall as their grid cells."
+  - id: PLAN-FRESH-2-002
+    severity: 3
+    title: "Moved ARIA lives only in a private field, so serialising or cloning the live DOM (htmx history, cloneNode) silently drops names and states"
+    evidence:
+      - artifact: "research.md R-03: 'the element stores the value in a private field, removes the attribute from the host'; the htmx row of the per-stack table: 'a swap that replaces the element moves the new element's attributes at upgrade'"
+      - artifact: "constitution I: elements must work in 'a server-rendered Thymeleaf and htmx page' (the Ocelle console); spec FR-004 makes the move the rule for #12 and #14 as well"
+      - code: "htmx's history support (default on, `historyCacheSize` 10) snapshots the history element's live innerHTML into localStorage before navigating, and on Back swaps that HTML back in. Light-DOM serialisation (innerHTML, outerHTML, cloneNode(true)) copies host attributes only, not an element's private fields or its shadow root, so the restored or cloned host has no `aria-label`, `aria-labelledby`, `aria-expanded` or `aria-current`. (htmx behaviour from its documented history mechanism; not run here: no htmx in the repository.)"
+    claim: |
+      After the move, the host attribute is gone and the value exists only in the element instance. Any copy made from
+      the live DOM loses it, and the copy upgrades as an element that was never given the attribute. In the console,
+      Back after an hx-boosted navigation restores the page from htmx's snapshot: an icon-only `ocelle-button` named by
+      a host `aria-label` comes back with no accessible name (axe `button-name`, a serious finding), a breadcrumb or nav
+      button loses `aria-current`, and a disclosure loses `aria-expanded`. Nothing reports an error. The same happens to
+      any `cloneNode(true)` of a live control, such as list templating by cloning, drag previews or print copies.
+      R-03's htmx recipe covers swaps of fresh server HTML only. The trade-off is not stated anywhere, and no scenario
+      clones or re-parses an element after a move.
+    remedies:
+      - "Keep a serialisable copy: the element mirrors each moved value into one non-ARIA host attribute it owns (for example `data-ocelle-aria` holding the moved attribute/value pairs, or one `data-ocelle-moved-<name>` per attribute), reads it back at upgrade, and declares it in the manifest (MINOR). Add a scenario: move `aria-label` and `aria-current`, then re-create the element from `host.outerHTML` and from `host.cloneNode(true)`; the copy has the same name and current state (plant: no mirror)."
+      - "Document and steer: the README's htmx/Thymeleaf recipe states that live-DOM snapshots (htmx history, cloneNode, innerHTML round-trips) lose moved ARIA, recommends `label` (not moved, so it survives) over a host `aria-label` on server-rendered pages, and tells htmx hosts to turn the history cache off for pages with these controls (`hx-history=\"false\"` or `htmx.config.historyCacheSize = 0`, so Back refetches); readme.test.ts asserts the note; add a scenario asserting that a clone of a moved element has no name from the moved `aria-label` (documents the limit)."
+  - id: PLAN-FRESH-2-003
+    severity: 3
+    title: "No chrome ground: the button cannot meet contrast on the top bar, where #12's menu button is planned to use it"
+    evidence:
+      - artifact: "plan.md Constitution Check VI: 'consumers #12 (including its menu button's `aria-haspopup`)'; research.md R-16: '#12 (... the menu button's `aria-haspopup`) ... consume'; contracts/elements-package.md intro: 'its menu button: `aria-haspopup`, `aria-expanded`'; triage 012: '`ocelle-top-bar`'s \"menu button\"'"
+      - artifact: "constitution II: 'The top bar, icon rail and personal rail use the dark chrome tokens in both themes'; spec FR-018 and the `ground` attribute cover only the main and state grounds (`accent-low`, `inset`, `hover-bg`, `state`, absent = the six others)"
+      - code: "packages/tokens/src/source.ts:44 `color-ink` light #15130F, :57 `color-chrome` light #15130F: `ink` on chrome is 1.00:1 (computed), as packages/styles/README.md:95 also states; `color-control-border` (source.ts:52-56) and `color-hover-bg` declare no chrome ground. `color-chrome-ink` and `color-chrome-hover` exist (source.ts:58,61)."
+    claim: |
+      The plan names #12's top-bar menu button as a consumer of `ocelle-button` (its `aria-haspopup` was added to the
+      moved list in round 1 for that reason). But the top bar is chrome in both themes, and the button has no rendering
+      for it. A `quiet` or `flush` button's ink label is invisible on light-theme chrome (1.00:1). Its hover fill
+      (`hover-bg`, light) and border (`control-border`) have no checked pair there. `ground` cannot express chrome.
+      SC-006 promises that #12 can build from the documented interface "with no style of its own beyond token
+      overrides", and the contrast check (SC-003) covers no chrome pair. So #12 either restyles the button or re-hand-rolls
+      a menu button, which is what constitution VI's "added to the library, not hand-rolled" forbids.
+    remedies:
+      - "Add `ground=\"chrome\"` to both elements now: text `color-chrome-ink`, hover surface `color-chrome-hover`, active surface and border from chrome tokens (a new chrome hover-border token if none fits), focus ring as today (already declared on chrome); add the chrome rows to pairs.json and the counts, and US1-4/US1-5 cases on `color-chrome` and `color-chrome-hover`."
+      - "Narrow the claim: the spec and contract state that `ocelle-button` is for the main and state grounds only; remove the top-bar menu button from plan.md Constitution Check VI, R-16 and the contract intro, and record that #12's top-bar menu button renders its own inner control that follows the control conventions (or adds a chrome ground to `ocelle-button` in its own feature as a MINOR change)."
+      - "Support chrome by token override: the README gives the override set a chrome container applies (`--ocelle-color-ink: var(--ocelle-color-chrome-ink)`, `--ocelle-color-hover-bg: var(--ocelle-color-chrome-hover)`, and so on), and the contrast check gains the resulting chrome pairs so the recipe is proven, with a story on chrome."
+  - id: PLAN-FRESH-2-004
+    severity: 2
+    title: "The flush-hover exception omits the dark theme: on the `hover-bg` ground, a flush hover equals the ground in both themes"
+    evidence:
+      - artifact: "spec.md FR-019: 'Where the hover surface equals the ground (a `flush` control on `inset` or `hover-bg` in light) the hover shows no change'; US1-14: '... except a `flush` hover on the `inset` and `hover-bg` grounds in light'; research.md R-08 item 3: 'a `flush` control's hover fill (`hover-bg`) equals the `inset` and `hover-bg` grounds in light'; plan.md decision 6: 'on the `inset` and `hover-bg` grounds in light'"
+      - code: "packages/tokens/src/source.ts:93 `color-hover-bg` dark #2A261F. A flush hover fills with `--ocelle-color-hover-bg`, so on the `hover-bg` ground the fill equals the ground in dark too (same token, 1.00:1). Light `inset` and `hover-bg` are both #E2DDD3 (:42, :93); dark `inset` #302B23 differs from dark `hover-bg`."
+    claim: |
+      Round 1's fix (PLAN-FRESH-1-007) worked out the light-theme coincidence (`inset` equals `hover-bg`) but restricted
+      the exception to light, and the `hover-bg` ground is the hover fill itself in every theme. US1-14 as written
+      requires a flush hover to differ from idle on the `hover-bg` ground in dark, which no token value can satisfy.
+      Either the test is written to the spec and fails, or the implementer meets it by inventing a different flush
+      hover on that ground. The README note and the US4-8 flush-row hover inherit the same gap.
+    remedies:
+      - "Correct the exception everywhere it appears (FR-019, US1-14, R-08 item 3, plan decision 6, the README flush-hover note and its readme.test.ts row) to: a `flush` control's hover shows no change on the `hover-bg` ground in both themes and on the `inset` ground in light. Write US1-14's scenario with that exception list exactly (hand-written per theme), so that a plant changing the flush hover token still fails on the other grounds."
+  - id: PLAN-FRESH-2-005
+    severity: 2
+    title: "The inside focus ring and the current bar are the same token and overlap at the inline start, so on a current row the ring is not visible on that side"
+    evidence:
+      - artifact: "research.md R-12: row ring `outline-offset: var(--ocelle-focus-offset-inset)` (-5 px) with `outline-width: var(--ocelle-focus-width)`; bar `inset-inline-start: 0; inline-size: var(--ocelle-bar-width)` inside the inner control; spec US4-9 / FR-041: the ring is 'visible on all four sides'; R-12: 'read ring pixels on all four sides of the focused row'"
+      - code: "packages/tokens/src/source.ts:74-87: `color-focus` and `color-current` are both `var(--ocelle-color-accent-strong)`; :162-164: focus-width 3px, focus-offset 2px, bar-width 3px. The ring therefore occupies the band 2 to 5 px inside the border edge, and the bar 0 to 3 px inside the padding edge (1 to 4 px with a 1 px border). The bands overlap, they are the same colour, and the outline paints over the bar."
+    claim: |
+      On a focused current row (the normal state of the current item in a nav list after the user activates it), the
+      ring's inline-start side merges with the bar into one ochre band 4 to 5 px wide. Focus then shows only on three
+      sides, and the user cannot tell the inline-start edge of the ring from the current mark. There is also a test
+      risk: a "ring pixels on all four sides" check run on a current row passes even with the ring missing on that
+      side, because the bar supplies the same colour there. The plan neither states the overlap nor places the four-side
+      check on a non-current row.
+    remedies:
+      - "State the overlap in R-12 and the README (on a current row the ring's inline-start side coincides with the bar), and specify the tests so they cannot pass on the bar's pixels: the four-side ring check runs on a non-current row (plant: no ring), and a current-row case asserts the ring on the other three sides plus a ring pixel inline-end of the bar band (at bar-width + 1 px). If the operator wants all four sides distinct, draw the bar in the padding beyond the ring band instead (inset-inline-start at the ring's inner edge) and assert both bands."
+  - id: PLAN-FRESH-2-006
+    severity: 2
+    title: "A host `title` (tooltip) recreates the second named generic node the move was meant to remove, and never reaches the inner control"
+    evidence:
+      - artifact: "spec.md header, operator decision at planning: 'a host that keeps `aria-label`, `aria-labelledby` or `aria-expanded` shows as a second named `generic` node'; the edge cases and FR-009/FR-030 say nothing about `title`; R-03: any unlisted `aria-*` stays on the host"
+      - code: "probe, Chromium 153: an inline-block host with `title=\"Close dialog\"` around an inner `<button>`Save</button>: the AX tree has `generic \"Close dialog\"` (the host) beside `button \"Save\"`. The inner button gets no description from the title."
+    claim: |
+      `title` is the most common way hosts give an icon-only or abbreviated button a tooltip, and kitty-mission-ui's
+      37 button uses are likely to include it. On `ocelle-button` it does not behave as on a native button: it names the
+      role-less host (the duplicate named node R-03's measurement rejected), and it adds neither a name fallback nor a
+      description on the real control. A screen-reader user hears the tooltip text on a separate generic node, or not at
+      all, depending on the reader. The spec neither supports, forbids nor documents it. Unlike unlisted `aria-*`, axe
+      raises nothing, so no gate catches it.
+    remedies:
+      - "Add `title` to both elements' moved list (applied to the inner control, where it gives the native tooltip, and becomes the description or name fallback per Accessible Name 1.2); FR-009/FR-030, data model, contract and manifest updated; scenario: host `title` gives one node with the title as description, the host has no `title` (plant: not moved)."
+      - "Declare host `title` unsupported: an edge case and the README say to use `label` for the name and #16's `ocelle-tooltip` for a visible tooltip, with a scenario documenting that a host `title` stays on the host (asserting the extra generic node so the documentation stays true)."
+  - id: PLAN-FRESH-2-007
+    severity: 2
+    title: "`ground` is static, but `hover-bg` is a dynamic ground: a bordered button in a host's hovered row drops to 2.80:1"
+    evidence:
+      - artifact: "spec FR-018: the host states the ground with the reflected `ground` attribute; R-08 item 4: absent means the six main grounds and `--ocelle-color-control-border`"
+      - code: "source.ts:93 `color-hover-bg` is commented 'hovered rows and controls'; computed: `color-control-border` light #8A8276 on `color-hover-bg` light #E2DDD3 = 2.80:1, on `accent-low` light #F1E1C0 = 2.94:1, dark #7A7264 on dark `accent-low` #3A2B10 = 2.88:1 (all below 3:1, which is why #5 rule 1 switches them)"
+    claim: |
+      The `hover-bg` ground exists because a host's list or table rows take it on hover. A `quiet` or `secondary`
+      button placed in such a row (a row action, which a host builds from its own markup, not from `ocelle-action-row`)
+      sits on `hover-bg` only while the row is hovered. A static `ground` attribute cannot follow that, so a host that
+      leaves it absent shows a 2.80:1 control boundary at exactly the moment the user is pointing at the row. The
+      same applies to a row that becomes selected (`accent-low`, 2.94:1 light and 2.88:1 dark). The spec gives hosts no
+      rule for grounds that change, and the contrast check cannot see the case.
+    remedies:
+      - "State the rule in FR-018 and the README: on a container whose surface changes (hover or selection), set `ground` for the changed surface (`hover-bg` or `accent-low`) statically. That is safe because `accent-strong` is declared and meets 3:1 on every main ground after R-08 item 5. Add a story and a scenario (button with `ground=\"hover-bg\"` on canvas and on `hover-bg`: border `accent-strong` on both, pairs in the contrast check)."
+  - id: PLAN-FRESH-2-008
+    severity: 1
+    title: "The 5 s spinner limit depends on a token the plan invites hosts to retune"
+    evidence:
+      - artifact: "research.md R-07: '`--ocelle-motion-spin` on its merits ... one turn's duration is a design value a host may tune for every spinner of the library'; `animation-duration: calc(var(--ocelle-motion-spin) * 6)`; spec FR-017: 'Its animation stops within 5 seconds'"
+    claim: |
+      Any host override of `--ocelle-motion-spin` above about 833 ms (for example 1 s, a common spinner speed) makes the
+      animation run 6 s or more and silently breaks the WCAG 2.2.2 guarantee FR-017 states unconditionally. The README
+      and FR-017 do not say the limit holds only for the default value.
+    remedies:
+      - "FR-017 and the README state that the 5 s limit holds for the default token value and that a host override must keep six turns under 5 s (one turn at most 833 ms); readme.test.ts asserts the sentence."
+  - id: PLAN-FRESH-2-009
+    severity: 1
+    title: "The button keeps an outer ring although FR-012 puts a flush button flush against its container's edge"
+    evidence:
+      - artifact: "research.md R-12: button `outline-offset: var(--ocelle-focus-offset)` (outside); the same section measured that 'an outer ring in an `overflow: auto` list loses both inline sides'; FR-012/US1-12: a flush button's content starts exactly at the inline-start edge of surrounding text (the breadcrumb trail #12 builds)"
+    claim: |
+      Round 1 moved the row's ring inside because a clipping container eats an outer ring. The flush button is designed
+      to sit at its container's inline-start content edge, where an outer ring extends 5 px beyond that edge. If #12's
+      trail (or any toolbar) clips with `overflow: hidden` or `auto` and no padding, keyboard focus on the first crumb
+      loses its inline-start side. Nothing in the README or the contract tells #12 to leave room for it.
+    remedies:
+      - "Add to the README's flush note and to the #12 hand-off in the contract: a container that clips (`overflow` other than `visible`) and holds a flush button at its edge keeps at least `focus-offset + focus-width` of unclipped space around it (for example `padding-inline` of that size with a matching negative margin); readme.test.ts asserts it."

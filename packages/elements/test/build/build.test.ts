@@ -18,7 +18,9 @@ import { buildPackage, elements } from "./package-build.ts";
 // - from phase 5 (T055; US4 scenario 4, the stylesheet as shipped; analysis L5): the pairing check of
 //   test/node/brand-pairs-check.ts on the `css` template of the built dist/ocelle-brand-mark.js finds exactly FR-026's
 //   tokens per variant and every FR-026 pair checked in pairs.json, and dist/ocelle-brand-mark.js imports neither the
-//   package root nor ocelle-icon.js.
+//   package root nor ocelle-icon.js;
+// - 012 (tasks.md T020): dist/ocelle-button.js, imported by the root and importing no other element, and the browser
+//   build defining `ocelle-button`; and (tasks.md T053) dist/ocelle-action-row.js the same way, `ocelle-action-row`.
 // - since 014 phase 2 (research.md R-16, R-17; T017, T018): dist/ocelle-listbox.js imports ./ocelle-option.js (a parent's
 //   entry defines its children) and dist/ocelle-option.js imports no other element; the selection pairs check of
 //   test/node/selection-pairs-check.ts on the `css` templates of the built option and listbox finds R-15's tokens and
@@ -58,7 +60,7 @@ describe("the module build (dist/*.js)", () => {
     const own = (specifier: string): boolean => specifier.startsWith("./") && files.includes(specifier.slice(2));
     const lit = (specifier: string): boolean => specifier === "lit" || specifier.startsWith("lit/");
     expect({
-      files: files.filter((name) => ["index.js", "ocelle-icon.js", "ocelle-brand-mark.js", "ocelle-dialog.js", "ocelle-drawer.js", "ocelle-tooltip.js", "ocelle-card.js", "ocelle-section-header.js", "ocelle-page-header.js", "ocelle-context-sidebar.js", "ocelle-personal-rail.js", "browser.js"].includes(name)),
+      files: files.filter((name) => ["index.js", "ocelle-icon.js", "ocelle-brand-mark.js", "ocelle-dialog.js", "ocelle-drawer.js", "ocelle-tooltip.js", "ocelle-card.js", "ocelle-section-header.js", "ocelle-page-header.js", "ocelle-context-sidebar.js", "ocelle-personal-rail.js", "ocelle-button.js", "ocelle-action-row.js", "browser.js"].includes(name)),
       outside: imported.filter(({ specifier }) => !own(specifier) && !lit(specifier)),
       litImported: imported.some(({ specifier }) => lit(specifier)),
       rootImportsIcon: imported.some(({ name, specifier }) => name === "index.js" && specifier === "./ocelle-icon.js"),
@@ -71,8 +73,10 @@ describe("the module build (dist/*.js)", () => {
       rootImportsPageHeader: imported.some(({ name, specifier }) => name === "index.js" && specifier === "./ocelle-page-header.js"),
       rootImportsSidebar: imported.some(({ name, specifier }) => name === "index.js" && specifier === "./ocelle-context-sidebar.js"),
       rootImportsRail: imported.some(({ name, specifier }) => name === "index.js" && specifier === "./ocelle-personal-rail.js"),
+      rootImportsButton: imported.some(({ name, specifier }) => name === "index.js" && specifier === "./ocelle-button.js"),
+      rootImportsRow: imported.some(({ name, specifier }) => name === "index.js" && specifier === "./ocelle-action-row.js"),
     }).toEqual({
-      files: ["browser.js", "index.js", "ocelle-brand-mark.js", "ocelle-card.js", "ocelle-context-sidebar.js", "ocelle-dialog.js", "ocelle-drawer.js", "ocelle-icon.js", "ocelle-page-header.js", "ocelle-personal-rail.js", "ocelle-section-header.js", "ocelle-tooltip.js"],
+      files: ["browser.js", "index.js", "ocelle-action-row.js", "ocelle-brand-mark.js", "ocelle-button.js", "ocelle-card.js", "ocelle-context-sidebar.js", "ocelle-dialog.js", "ocelle-drawer.js", "ocelle-icon.js", "ocelle-page-header.js", "ocelle-personal-rail.js", "ocelle-section-header.js", "ocelle-tooltip.js"],
       outside: [],
       litImported: true,
       rootImportsIcon: true,
@@ -85,7 +89,33 @@ describe("the module build (dist/*.js)", () => {
       rootImportsPageHeader: true,
       rootImportsSidebar: true,
       rootImportsRail: true,
+      rootImportsButton: true,
+      rootImportsRow: true,
     });
+  });
+
+  it("dist/ocelle-button.js imports lit, the registration helper and the internal control and slot modules, but neither the package root nor another element (012 tasks.md T020)", () => {
+    const imported = specifiers(existsSync(join(dist, "ocelle-button.js")) ? readFileSync(join(dist, "ocelle-button.js"), "utf8") : "");
+    expect({
+      lit: imported.includes("lit"),
+      define: imported.includes("./define.js"),
+      control: imported.includes("./control.js"),
+      iconSlot: imported.includes("./icon-slot.js"),
+      root: imported.includes("./index.js"),
+      elements: imported.filter((specifier) => specifier.startsWith("./ocelle-")),
+    }).toEqual({ lit: true, define: true, control: true, iconSlot: true, root: false, elements: [] });
+  });
+
+  it("dist/ocelle-action-row.js imports lit, the registration helper and the internal control and slot modules, but neither the package root nor another element (012 tasks.md T053)", () => {
+    const imported = specifiers(existsSync(join(dist, "ocelle-action-row.js")) ? readFileSync(join(dist, "ocelle-action-row.js"), "utf8") : "");
+    expect({
+      lit: imported.includes("lit"),
+      define: imported.includes("./define.js"),
+      control: imported.includes("./control.js"),
+      iconSlot: imported.includes("./icon-slot.js"),
+      root: imported.includes("./index.js"),
+      elements: imported.filter((specifier) => specifier.startsWith("./ocelle-")),
+    }).toEqual({ lit: true, define: true, control: true, iconSlot: true, root: false, elements: [] });
   });
 
   it("dist/ocelle-brand-mark.js imports lit and the registration helper, but neither the package root nor ocelle-icon.js (US1-17)", () => {
@@ -452,7 +482,7 @@ describe("the module build of ocelle-progress (013)", () => {
 describe("the browser build (dist/browser/ocelle-elements.js)", () => {
   const text = (): string => (existsSync(browserBuild) ? readFileSync(browserBuild, "utf8") : "");
 
-  it("is self-contained: it defines ocelle-icon, ocelle-brand-mark, ocelle-dialog, ocelle-drawer, ocelle-tooltip, ocelle-card, ocelle-section-header, ocelle-page-header, ocelle-context-sidebar, ocelle-personal-rail, ocelle-facts, ocelle-fact, ocelle-empty-state, ocelle-progress, ocelle-listbox, ocelle-option, ocelle-tabs, ocelle-tab, ocelle-tab-panel, ocelle-segmented-choice, ocelle-segment, ocelle-copy-field and ocelle-link, with no import statement and no dynamic import", () => {
+  it("is self-contained: it defines ocelle-icon, ocelle-brand-mark, ocelle-dialog, ocelle-drawer, ocelle-tooltip, ocelle-card, ocelle-section-header, ocelle-page-header, ocelle-context-sidebar, ocelle-personal-rail, ocelle-button, ocelle-action-row, ocelle-facts, ocelle-fact, ocelle-empty-state, ocelle-progress, ocelle-listbox, ocelle-option, ocelle-tabs, ocelle-tab, ocelle-tab-panel, ocelle-segmented-choice, ocelle-segment, ocelle-copy-field and ocelle-link, with no import statement and no dynamic import", () => {
     const code = text();
     expect({
       exists: code !== "",
@@ -466,6 +496,8 @@ describe("the browser build (dist/browser/ocelle-elements.js)", () => {
       definesPageHeader: code.includes('"ocelle-page-header"'),
       definesSidebar: code.includes('"ocelle-context-sidebar"'),
       definesRail: code.includes('"ocelle-personal-rail"'),
+      definesButton: code.includes('"ocelle-button"'),
+      definesRow: code.includes('"ocelle-action-row"'),
       definesFacts: code.includes('"ocelle-facts"') && code.includes('"ocelle-fact"'),
       definesEmptyState: code.includes('"ocelle-empty-state"'),
       definesProgress: code.includes('"ocelle-progress"'),
@@ -488,6 +520,8 @@ describe("the browser build (dist/browser/ocelle-elements.js)", () => {
       definesPageHeader: true,
       definesSidebar: true,
       definesRail: true,
+      definesButton: true,
+      definesRow: true,
       definesFacts: true,
       definesEmptyState: true,
       definesProgress: true,

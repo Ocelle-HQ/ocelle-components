@@ -39,6 +39,24 @@ describe("validateSource() accepts", () => {
       validateSource(withAdded(disabled));
     }).not.toThrow();
   });
+
+  // Phase 4 round 2 (O2-01, O2-02): a delay marker on a motion token named -delay, whatever its value, and the motion
+  // values that are no durations.
+  it("delay: true on a motion token whose name ends in -delay, and the motion angles and easings (O2-01, O2-02)", () => {
+    expect(() => {
+      validateSource(
+        withAdded(
+          { name: "fade-delay", group: "motion", value: "300ms", delay: true },
+          { name: "hover-delay", group: "motion", value: "1s", delay: true },
+          { name: "motion-turn", group: "motion", value: "1turn" },
+          { name: "motion-angle", group: "motion", value: "90deg" },
+          { name: "easing-standard", group: "motion", value: "cubic-bezier(0.22, 1, 0.36, 1)" },
+          { name: "easing-steps", group: "motion", value: "steps(4)" },
+          { name: "easing-in", group: "motion", value: "ease-in" },
+        ),
+      );
+    }).not.toThrow();
+  });
 });
 
 const cases: readonly { readonly rule: string; readonly records: readonly TokenRecord[]; readonly problems: readonly string[] }[] = [
@@ -246,6 +264,44 @@ const cases: readonly { readonly rule: string; readonly records: readonly TokenR
     rule: "for exempt on a colour token other than color-disabled-ink",
     records: withRecord("color-ink", ink({ light: "#111111", dark: "#EEEEEE" }, { contrast: { kind: "text", grounds: ["color-ground"], exempt: true } })),
     problems: ["token color-ink: exempt is allowed only on color-disabled-ink"],
+  },
+  // Phase 4 round 2 (operator round of 2026-11-17, O2-01 "Names ending in -delay", O2-02 "Fail on non-ms motion"; plan
+  // decision 29 as amended): the token build refuses a misplaced delay marker and a motion value that is neither a
+  // literal <number>ms, an angle nor an easing function (unless the record is a valid delay).
+  {
+    rule: "for delay: true on a motion token whose name does not end in -delay (O2-01)",
+    records: withAdded({ name: "motion-pause", group: "motion", value: "300ms", delay: true }),
+    problems: ["token motion-pause: delay: true is allowed only on a motion token whose name ends in -delay"],
+  },
+  {
+    rule: "for delay: true on a token outside group motion, even with a -delay name (O2-01)",
+    records: withAdded({ name: "shell-delay", group: "shell", value: "50ms", delay: true }),
+    problems: ["token shell-delay: delay: true is allowed only on a motion token whose name ends in -delay"],
+  },
+  {
+    rule: "for delay: true on motion-base (O2-01)",
+    records: withRecord("motion-base", { name: "motion-base", group: "motion", value: "200ms", delay: true }),
+    problems: ["token motion-base: delay: true is allowed only on a motion token whose name ends in -delay"],
+  },
+  {
+    rule: "for a motion duration in seconds (O2-02)",
+    records: withAdded({ name: "motion-slow", group: "motion", value: "1s" }),
+    problems: ["token motion-slow: value 1s of group motion is not a literal <number>ms duration, an angle or an easing function"],
+  },
+  {
+    rule: "for a motion duration that is a var() reference (O2-02)",
+    records: withAdded({ name: "motion-slow", group: "motion", value: "var(--ocelle-motion-base)", ref: ["motion-base"] }),
+    problems: ["token motion-slow: value var(--ocelle-motion-base) of group motion is not a literal <number>ms duration, an angle or an easing function"],
+  },
+  {
+    rule: "for a motion duration that is a calc() (O2-02)",
+    records: withAdded({ name: "motion-slow", group: "motion", value: "calc(2 * 100ms)" }),
+    problems: ["token motion-slow: value calc(2 * 100ms) of group motion is not a literal <number>ms duration, an angle or an easing function"],
+  },
+  {
+    rule: "for a motion value per theme, by the theme rule alone (O2-02)",
+    records: withAdded({ name: "motion-slow", group: "motion", value: { light: "100ms", dark: "100ms" } }),
+    problems: ["token motion-slow: group motion is theme-independent but the value is per theme"],
   },
   {
     rule: "for several rules at once, in source order",

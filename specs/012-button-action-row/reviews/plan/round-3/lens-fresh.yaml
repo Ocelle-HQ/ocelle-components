@@ -1,0 +1,86 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 3
+lens: fresh
+# Round 3 attacks round 2's fixes (reviews/plan/round-2/fixes-1.md, verify-1.md). Probes ran in Chromium 153
+# (/opt/pw-browsers/chromium-1243/chrome-linux64/chrome, playwright-core from /opt/node-tools) on minimal custom
+# elements built to the design as research.md R-01, R-03, R-04 and data-model.md state it; scripts are in the session
+# scratchpad and not part of the repository.
+findings:
+  - id: PLAN-FRESH-3-001
+    severity: 3
+    title: "The stretched-host fix depends on the host keeping display inline-grid/grid; any page rule that sets display on the element reopens the guard bypass"
+    evidence:
+      - artifact: "research.md § R-01 'The host is `display: inline-grid` (button) or `display: grid` (row) ... so the inner control always fills the host's box' and 'no point of the host lies outside the control'; spec FR-001 'every pointer click on the host reaches the inner control'; data-model.md 'layout | host `display`'"
+      - artifact: "contracts/checks.md row 'Stretched host (decision 18)': the plants restore `inline-block`/`block` inside the element; no scenario, edge case or README row covers a host page's own `display` rule on the element (grep for 'display' in spec.md, contracts/, data-model.md finds only the flex-row fixture and the layout row)"
+      - code: "probe: element with `:host { display: inline-grid }` and a disabled inner `<button>` (flex, min 44 px), a `document` click listener, container 400 px. Page rule `x-b { display: block }`: host 400 x 44, inner 46 x 44, a click 4 px inside the host's inline-end edge reached `document` with target X-B. Page rule `x-b { display: flex; width: 100% }`: same, target X-B. `x-b { width: 100% }` alone: inner 400 x 44, no click (the grid stretch holds)."
+      - code: "probe, CSS-only repair: inner control `inline-size: 100%` fixes `display: block` and `display: flex` (inner 400 x 44, no click) but not `display: block; height: 90px` (inner 400 x 44, click at the bottom reached `document` with target X-B)."
+    claim: |
+      `:host { display: ... }` is the lowest-priority rule for the host's display: any author rule on the element in
+      the page (`ocelle-button { display: block }`, a utility class such as `block`/`flex`/`w-full` patterns, a
+      framework's full-width button style) wins. Round 2 made FR-001 and FR-003 rest on the host being a grid
+      container, so a disabled or busy button made full-width with `display: block` or `display: flex` delivers a
+      `click` to the host's bubble listeners from every point right of its label, and an unavailable row does the
+      same; the native `disabled` and the inner guard never see those clicks (target is the host). This is the exact
+      defect PLAN-FRESH-2-001 confirmed, reachable by an ordinary host style instead of a flex parent, and nothing in
+      the spec, README rows or tests tells a host not to set `display`. Full-width action buttons are common in
+      dialogs and narrow panes, so this will meet a consumer.
+    remedies:
+      - "(a) Make the guarantee layout-independent: control.ts also registers, in the constructor (so before any host listener), `click` and `auxclick` listeners on the host itself that stop (`preventDefault()` + `stopImmediatePropagation()`) any click whose `composedPath()[0]` is the host (it did not pass through the inner control) and any click while the state is not available; keep the grid fill for looks. Add scenarios: disabled button, busy button and unavailable row with page rules `display: block`, `display: flex; width: 100%` and `display: block; height: 90px`, clicked 4 px inside the host's inline-end and bottom edges (plant: no host listener). README states that a host may set `display`/size on the element without losing the guarantee."
+      - "(b) Keep the CSS-only design and add `inline-size: 100%; box-sizing: border-box` to the inner control (fixes `block`/`flex` overrides, measured), and state in FR-001, the README and the contract that a host must not set `block-size`/`height` on the element nor a `display` other than the element's (use `inline-size` for full width, `align-self` to avoid the stretch); scenarios for `display: block` and `display: flex; width: 100%` with the plant removing `inline-size: 100%`."
+      - "(c) Document only: FR-001 and the README state that the element's `display` must not be overridden and that a host rule doing so voids FR-003; a scenario pins the documented failure is not claimed."
+  - id: PLAN-FRESH-3-002
+    severity: 2
+    title: "Morphing swaps (htmx's idiomorph extension, Turbo 8 page-refresh morphs) delete the data-ocelle-moved-* mirrors on every update, so PLAN-FRESH-2-002's history-restore guarantee is lost again for htmx hosts that morph"
+    evidence:
+      - artifact: "research.md § R-03 'Mirrors for copies of the live DOM': 'Hosts do not write or remove mirrors (README); a mirror changed by the host after upgrade is not observed'; the htmx row of the per-stack table names only element-replacing swaps and history restore"
+      - artifact: "spec edge case 'Copies of the live DOM': 'A host that edits or removes a mirror attribute is unsupported (documented)'; constitution I names 'a server-rendered Thymeleaf and htmx page' as a target host"
+      - code: "probe: element that moves `aria-label` to its inner button and writes `data-ocelle-moved-aria-label` (R-03), live markup `<x-b aria-label=\"Close\">` → `<x-b data-ocelle-moved-aria-label=\"Close\">`. Applying idiomorph's attribute sync (set every attribute of the new node that differs, then remove, in reverse order, every live attribute absent from the new node) with the same server HTML `<x-b aria-label=\"Close\"></x-b>`: the set re-moves `aria-label` and rewrites the mirror, the removal pass then deletes the mirror; result `<x-b></x-b>`, inner label still 'Close'. A copy made from the container's `innerHTML` afterwards (htmx history snapshot) upgrades with inner `aria-label` null."
+      - code: "not verified offline: idiomorph's source is not in the container; the attribute-sync order above is idiomorph's `syncNodeFrom` as published (no network access in this session)"
+    claim: |
+      A morph library treats the server HTML as the whole truth for attributes, so the element-owned mirrors, which
+      the server never renders, are removed on every morph of the element, with no act by the host. The element keeps
+      its private value, so nothing looks wrong until the next live-DOM copy: htmx's history snapshot before a boosted
+      navigation, then Back, restores icon-only buttons unnamed and current rows without `aria-current`, the very
+      failure round 2 fixed. Morphing is htmx's documented swap for keeping focus and state (the `morph` swap of its
+      idiomorph extension) and Turbo 8's default for page refreshes, so 'the host removes a mirror' is not a host
+      mistake the README can forbid; it is the swap strategy.
+    remedies:
+      - "(a) The element observes its own mirror attributes and, when one is removed or changed while a value is stored, writes it back from the stored value (a morph makes one pass, so the rewrite sticks); R-03, data-model `mirrors` row and FR-004 change from 'not observed' to 'restored'; US2-13 gains a case that applies the idiomorph attribute sync with unchanged server HTML and then copies through `innerHTML` (plant: mirror not restored)."
+      - "(b) Keep 'not observed' and add a morph recipe: the README's htmx row tells morphing hosts to skip the mirrors (idiomorph `callbacks.beforeAttributeUpdated` returning `false` for names starting `data-ocelle-moved-`, and the Turbo equivalent), the edge case names morph swaps, and readme.test.ts asserts the sentence."
+  - id: PLAN-FRESH-3-003
+    severity: 2
+    title: "The plant-shard ceiling at size 1 (76 stories) is reached by the next mission; this feature spends the last shard-size lever without planning what follows"
+    evidence:
+      - artifact: "research.md § R-13 'Shard budget': 'at s ≈ 52 a shard takes ... 533 s at size 1, so only size 1 stays under 10 minutes' and 'At size 1 the model's split count is 76 stories'; plan.md decision 15 and phase 1 put the split count to the operator 'at phase 1's review'"
+      - artifact: "plan.md § Out of this mission: `ocelle-pill-tag`, `ocelle-status-indicator`, `ocelle-metric` follow in the status mission; spec Consumer need: #12 (breadcrumbs, top bar), #14 (link, copy field), #9 (form controls) are the next controls, each bound by FR-050's 'story per variant and per state, in light and dark'"
+      - code: "gates/lib/plant-runner.ts:269 `export const shardSize = 3;` (size 1 is the floor of `plantShards`, whose `visual` group holds whole plants); specs/006-storybook-workbench/plan.md:636 Complexity Tracking 'Plant roots hold every repository story': every `visual` plant captures all repository story-themes, model 387 + size × 1.377 × (2s + 2) s"
+      - code: "arithmetic from that model at size 1: 52 stories 533 s; 76 stories 599 s; the 24 stories of headroom are fewer than this feature alone adds (about 31), so the status mission or #12 crosses the 10-minute shard limit with no remaining `size` to lower"
+    claim: |
+      Lowering `shardSize` to 1 is presented as meeting 006's sunset, but it is the final setting: the per-shard time
+      at size 1 still grows with every repository story because each `visual` plant captures them all. After this
+      feature the repository has about 24 stories of headroom, and the next element mission will exceed it, at
+      which point the Plants job has no setting that keeps a shard under 10 minutes and that mission is blocked on a
+      gate redesign nobody has scheduled. The plan also gives no total for the cost it accepts (73 shards of about
+      387 s fixed time each, roughly 10 runner-hours per CI run at 52 stories, against 25 shards now), which the
+      operator needs when approving the split count at phase 1. Stated now, the redesign can be triaged in parallel;
+      found at the next mission's phase 2, it stops that mission.
+    remedies:
+      - "(a) R-13, plan decision 15 and 006's Complexity Tracking row (as phase 1 updates it) state that size 1 is the last lever, give the headroom after this feature (about 24 stories) and the total Plants runner time per CI run at 52 stories, and phase 1's review asks the operator to open a triage record for a plant design whose shard time does not grow with the repository's story count (for example `visual` plants that capture only the story-themes their changed inputs can affect) before the next element mission starts."
+      - "(b) As (a), and also cut this feature's story count to widen the headroom: `dir=\"rtl\"` as one story per element that shows its states in a grid rather than one RTL story per state, and the chrome and changing-surface grounds as one story per element, with FR-050's per-state coverage kept by the element tests; R-13 gives the new count and its shard figures."
+  - id: PLAN-FRESH-3-004
+    severity: 1
+    title: "An empty slotted description element suppresses the moved title description (US4-16) and is not an 'empty slot' by the assigned-elements rule"
+    evidence:
+      - artifact: "data-model.md § ocelle-action-row 'Description: ... the elements assigned to the `description` slot, then those of the `tags` slot (assigned elements, flattened ...)'; spec US4-16 'with no slotted description or tags the row's description is \"Open the mission\"'; FR-034 'an empty slot contributes nothing'"
+      - code: "probe (CDP full AX tree), inner `<button title=\"Open the mission\">` named by its `[part=title]` wrapper, `ariaDescribedByElements` = assigned elements of the description and tags slots: no slotted elements, set to `[]` → description 'Open the mission'; set to `null` → 'Open the mission'; `<span slot=\"description\"></span>` (empty) slotted → description undefined (the title is dropped); 'Due Friday' slotted → 'Due Friday'"
+    claim: |
+      Server templates commonly emit the slot wrapper with an empty value (`<span slot="description" th:text="${d}">`
+      renders `<span slot="description"></span>` when `d` is null). By the data model's rule that span is an assigned
+      element, so it is referenced as the description, contributes the empty string, and Chromium then does not fall
+      back to the host `title` round 2 moved onto the inner control: the row loses its description although FR-034
+      says an empty slot contributes nothing. The same assigned-elements rule is the only stated notion of 'empty' for
+      FR-031's 'an empty slot takes no space and adds no gap', so the empty span may also keep its gap.
+    remedies:
+      - "Define 'empty' for the description and tags slots as 'no assigned element with non-whitespace text content', recomputed on `slotchange` and on character changes of the assigned elements (a `MutationObserver` on the host's light children, `characterData` and `childList`, subtree), use it both for `ariaDescribedByElements` (only non-empty elements; `null` when none) and for the slot wrappers' `hidden`/gap; add a US4-16 case with an empty `<span slot=\"description\"></span>` (description stays the title) and a US4-6 case asserting the empty span adds no gap, each with a plant using the raw assigned elements."

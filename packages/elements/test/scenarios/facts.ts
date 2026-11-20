@@ -254,7 +254,7 @@ export const factsScenarios: readonly FactsScenario[] = [
       await driver.viewport(320, 800);
       await mount(driver, sheet("s", [fact("Identifier", `<span id="value">${identifier}</span>`, ' id="id-fact" wrap="anywhere"')]));
       await driver.layout("s");
-      return { lines: (await driver.lines("value")).length > 1, copied: await driver.copy("value"), layout: await arrangement(driver, "s") };
+      return { lines: (await driver.lines("value")).length > 1, copied: await driver.clipboardCopy("value"), layout: await arrangement(driver, "s") };
     },
     expected: { lines: true, copied: identifier, layout: "stacked" },
   },

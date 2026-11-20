@@ -1,18 +1,38 @@
 import { describe, expect, it } from "vitest";
 import * as root from "../src/index.ts";
 
-// The package root (005 FR-002, US1 scenario 17's runtime half; research.md R-02, T014, T052; 011 FR-001, T014; 013
-// contracts/elements.md § Modules and exports, T006, T025): importing only src/index.ts defines every element of the
-// package, each as the class the root exports (analysis F1 (a): the mark joins in 005 phase 5): `ocelle-icon`,
-// `ocelle-brand-mark`; since 009 (T017) `ocelle-scroller`, since 009 phase 3 (T034) `ocelle-workflow-board` and
-// `ocelle-workflow-lane`, and since 009 phase 4 (T051) `ocelle-list-detail`; since 011 `ocelle-card`,
-// `ocelle-section-header`, `ocelle-page-header` (T027), `ocelle-context-sidebar` (T034) and `ocelle-personal-rail`
-// (T042); since 013 `ocelle-facts`, `ocelle-fact`, `ocelle-empty-state` and `ocelle-progress`; and since 014 (research.md
-// R-16, T017) `ocelle-listbox` and `ocelle-option` (phase 2), `ocelle-tabs`, `ocelle-tab` and `ocelle-tab-panel` (phase
-// 3), `ocelle-segmented-choice` and `ocelle-segment` (phase 4), `ocelle-copy-field` (phase 5) and `ocelle-link` (phase
-// 6). This file's own iframe (Vitest browser mode, isolate on) holds only what this import defines.
+// The package root (005 FR-002, US1 scenario 17's runtime half; research.md R-02, T014, T052; 011 FR-001, T014;
+// specs/010-feedback-forms T015, T033, T051; 013 contracts/elements.md § Modules and exports, T006, T025): importing
+// only src/index.ts defines every element of the package, each as the class the root exports (analysis F1 (a): the
+// mark joins in 005 phase 5): `ocelle-icon`, `ocelle-brand-mark`; since 009 (T017) `ocelle-scroller`, since 009 phase 3
+// (T034) `ocelle-workflow-board` and `ocelle-workflow-lane`, and since 009 phase 4 (T051) `ocelle-list-detail`; since
+// 011 `ocelle-card`, `ocelle-section-header`, `ocelle-page-header` (T027), `ocelle-context-sidebar` (T034) and
+// `ocelle-personal-rail` (T042); since 010 `ocelle-notice` (phase 2), `ocelle-form-input` (phase 3) and
+// `ocelle-form-select` (phase 4); since 012 `ocelle-button` (tasks.md T018) and `ocelle-action-row` (tasks.md T051);
+// since 013 `ocelle-facts`, `ocelle-fact`, `ocelle-empty-state` and `ocelle-progress`; and since 014 (research.md R-16,
+// T017) `ocelle-listbox`, `ocelle-option`, `ocelle-tabs`, `ocelle-tab`, `ocelle-tab-panel`, `ocelle-segmented-choice`,
+// `ocelle-segment`, `ocelle-copy-field` and `ocelle-link`. This file's own iframe
+// (Vitest browser mode, isolate on) holds only what this import defines.
 describe("importing src/index.ts", () => {
-  it("defines ocelle-icon, ocelle-brand-mark, ocelle-scroller, ocelle-workflow-board, ocelle-workflow-lane, ocelle-list-detail, ocelle-card, ocelle-section-header, ocelle-page-header, ocelle-context-sidebar and ocelle-personal-rail as the OcelleIcon, OcelleBrandMark, OcelleScroller, OcelleWorkflowBoard, OcelleWorkflowLane, OcelleListDetail, OcelleCard, OcelleSectionHeader, OcellePageHeader, OcelleContextSidebar and OcellePersonalRail it exports", () => {
+  it("defines ocelle-icon, ocelle-brand-mark, ocelle-notice, ocelle-form-input and ocelle-form-select as the OcelleIcon, OcelleBrandMark, OcelleNotice, OcelleFormInput and OcelleFormSelect it exports", () => {
+    const exported = root as Record<string, unknown>;
+    expect([exported.OcelleIcon, exported.OcelleBrandMark, exported.OcelleNotice, exported.OcelleFormInput, exported.OcelleFormSelect].map((each) => typeof each)).toEqual([
+      "function",
+      "function",
+      "function",
+      "function",
+      "function",
+    ]);
+    expect({
+      icon: customElements.get("ocelle-icon"),
+      mark: customElements.get("ocelle-brand-mark"),
+      notice: customElements.get("ocelle-notice"),
+      input: customElements.get("ocelle-form-input"),
+      select: customElements.get("ocelle-form-select"),
+    }).toEqual({ icon: exported.OcelleIcon, mark: exported.OcelleBrandMark, notice: exported.OcelleNotice, input: exported.OcelleFormInput, select: exported.OcelleFormSelect });
+  });
+
+  it("defines ocelle-icon, ocelle-brand-mark, ocelle-scroller, ocelle-workflow-board, ocelle-workflow-lane, ocelle-list-detail, ocelle-card, ocelle-section-header, ocelle-page-header, ocelle-context-sidebar, ocelle-personal-rail, ocelle-button and ocelle-action-row as the OcelleIcon, OcelleBrandMark, OcelleScroller, OcelleWorkflowBoard, OcelleWorkflowLane, OcelleListDetail, OcelleCard, OcelleSectionHeader, OcellePageHeader, OcelleContextSidebar, OcellePersonalRail, OcelleButton and OcelleActionRow it exports", () => {
     const exported = root as Record<string, unknown>;
     expect(
       [
@@ -27,8 +47,10 @@ describe("importing src/index.ts", () => {
         exported.OcellePageHeader,
         exported.OcelleContextSidebar,
         exported.OcellePersonalRail,
+        exported.OcelleButton,
+        exported.OcelleActionRow,
       ].map((each) => typeof each),
-    ).toEqual(["function", "function", "function", "function", "function", "function", "function", "function", "function", "function", "function"]);
+    ).toEqual(["function", "function", "function", "function", "function", "function", "function", "function", "function", "function", "function", "function", "function"]);
     expect({
       icon: customElements.get("ocelle-icon"),
       mark: customElements.get("ocelle-brand-mark"),
@@ -41,6 +63,8 @@ describe("importing src/index.ts", () => {
       page: customElements.get("ocelle-page-header"),
       sidebar: customElements.get("ocelle-context-sidebar"),
       rail: customElements.get("ocelle-personal-rail"),
+      button: customElements.get("ocelle-button"),
+      row: customElements.get("ocelle-action-row"),
     }).toEqual({
       icon: exported.OcelleIcon,
       mark: exported.OcelleBrandMark,
@@ -53,6 +77,8 @@ describe("importing src/index.ts", () => {
       page: exported.OcellePageHeader,
       sidebar: exported.OcelleContextSidebar,
       rail: exported.OcellePersonalRail,
+      button: exported.OcelleButton,
+      row: exported.OcelleActionRow,
     });
   });
 

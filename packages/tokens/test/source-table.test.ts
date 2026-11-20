@@ -58,10 +58,12 @@ describe("the stylesheet from the real source", () => {
     expect(independent.length).toBeGreaterThan(0);
   });
 
-  it("sets exactly motion-fast and motion-base to 0ms under reduced motion (FR-007)", () => {
+  // 012 (research.md R-07; tasks.md T042): exactly the motion durations, a stricter replacement of "exactly two".
+  it("sets exactly the motion durations, motion-fast, motion-base and motion-spin, to 0ms under reduced motion, and not motion-turn or easing-standard (FR-007)", () => {
     expect([...sheet.reducedMotion.entries()]).toEqual([
       ["--ocelle-motion-fast", "0ms"],
       ["--ocelle-motion-base", "0ms"],
+      ["--ocelle-motion-spin", "0ms"],
     ]);
   });
 });
@@ -97,9 +99,11 @@ describe("the JSON export from the real source", () => {
 });
 
 // 009 (research.md R-16, FR-033): the source's pinned count, 115 tokens of 002 and 003, 011's four eyebrow tokens,
-// 008's three (drawer-inline, tooltip-max-inline and tooltip-delay) and 009's five (since the merge of 011, 009 uses
-// 011's tracking-eyebrow for its uppercase labels and adds no tracking-caps), and the five by name in the generated
-// stylesheet's :root block and the JSON export, with their group and value.
+// 008's three (drawer-inline, tooltip-max-inline and tooltip-delay), 009's five (since the merge of 011, 009 uses
+// 011's tracking-eyebrow for its uppercase labels and adds no tracking-caps) and, since the merge of 009 into 012,
+// 012's seven (color-chrome-active, color-accent-hover, color-hover-border, color-active-bg, focus-offset-inset,
+// motion-spin and motion-turn), and the five by name in the generated stylesheet's :root block and the JSON export,
+// with their group and value.
 describe("009's five tokens (FR-033)", () => {
   const five = [
     { name: "lane-min-width", group: "shell", value: "10rem" },
@@ -109,8 +113,8 @@ describe("009's five tokens (FR-033)", () => {
     { name: "scroller-fade-size", group: "space", value: "var(--ocelle-space-7)", ref: ["space-7"] },
   ];
 
-  it("pins the source at 127 tokens", () => {
-    expect([source.length, exported.tokens.length, sheet.root.size]).toEqual([127, 127, 127]);
+  it("pins the source at 134 tokens", () => {
+    expect([source.length, exported.tokens.length, sheet.root.size]).toEqual([134, 134, 134]);
   });
 
   it("has each as a plain record with its group, value and references", () => {

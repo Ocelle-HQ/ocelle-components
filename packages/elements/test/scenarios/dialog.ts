@@ -396,7 +396,7 @@ export const none = { styleAttributes: 0, styleElements: 0 };
 export async function presses(driver: Driver, n: number, shift = false, key = "Tab"): Promise<string> {
   const path: string[] = [];
   for (let index = 0; index < n; index += 1) {
-    await driver.press(key, { shift });
+    await driver.inputPress(key, { shift });
     path.push(await driver.focusPath());
   }
   return path.join(" ");
@@ -492,7 +492,7 @@ export function overlayScenarios(kind: OverlayKind) {
   /** A real click at the centre of the element with `id` (or `inner` in its shadow root), once `kind.settle` allows it. */
   const click = async (driver: Driver, id: string, inner?: string): Promise<void> => {
     await kind.settle?.(driver);
-    await driver.click(id, inner);
+    await driver.inputClick(id, inner);
   };
   const requestName = `${kind.prefix}-close-request`;
   const closeName = `${kind.prefix}-close`;
@@ -510,7 +510,7 @@ export function overlayScenarios(kind: OverlayKind) {
    */
   async function open(driver: Driver, id = "dlg", script = false): Promise<void> {
     if (script) await act(driver, { op: "focus", id: "opener" });
-    else await driver.click("opener");
+    else await driver.inputClick("opener");
     await driver.setAttribute(id, "open", "");
     await driver.record(id, both);
   }
@@ -603,7 +603,7 @@ export function overlayScenarios(kind: OverlayKind) {
         if (rules !== undefined) await driver.rules(rules);
         await driver.record("dlg", both);
         await driver.record("after", ["click", "focus"]);
-        await driver.click("opener");
+        await driver.inputClick("opener");
         await driver.setAttribute("dlg", "open", "");
         const focused = await driver.focusPath();
         const layer = await driver.topLayer();
@@ -724,10 +724,10 @@ export function overlayScenarios(kind: OverlayKind) {
         await driver.mount(page(`<button id="b1">B1</button>${wideTable}`));
         await driver.rules(tableRules);
         await open(driver);
-        await driver.press("Tab");
+        await driver.inputPress("Tab");
         const focused = await driver.focusPath();
         const before = await inspect(driver, "tbl");
-        await driver.press("ArrowRight");
+        await driver.inputPress("ArrowRight");
         const scrolled = await eventually(async () => (await inspect(driver, "tbl")).scrollLeft > 0);
         return { focused, overflows: before.scrollWidth > before.clientWidth, start: before.scrollLeft, scrolled };
       },
@@ -808,7 +808,7 @@ export function overlayScenarios(kind: OverlayKind) {
           await focusClose(driver);
           const ends: string[] = [];
           for (let index = 0; index < 6; index += 1) {
-            await driver.press("Tab", { shift: true });
+            await driver.inputPress("Tab", { shift: true });
             ends.push(await driver.focusPath());
           }
           const sentinel = await inspect(driver, "dlg", '[part="panel"] > :last-child');
@@ -1034,9 +1034,9 @@ export function overlayScenarios(kind: OverlayKind) {
         await open(driver);
         await watchPanel(driver);
         if (veto) await act(driver, { op: "veto", id: "dlg", event: requestName });
-        await driver.press("Tab");
+        await driver.inputPress("Tab");
         const at = await driver.focusPath();
-        await driver.press("Escape");
+        await driver.inputPress("Escape");
         return { at, recorded: await after(driver), log: await act(driver, { op: "log" }), state: await state(driver), focus: await driver.focusPath() };
       },
       { at: "fr[f1]", recorded: [], log: [], state: shown, focus: "fr[f1]" },
@@ -1056,7 +1056,7 @@ export function overlayScenarios(kind: OverlayKind) {
       label: "after that click and a Shift+Tab",
       start: async (driver) => {
         await click(driver, "prose");
-        await driver.press("Tab", { shift: true });
+        await driver.inputPress("Tab", { shift: true });
       },
       at: "gone",
     },
@@ -1071,7 +1071,7 @@ export function overlayScenarios(kind: OverlayKind) {
         await watchPanel(driver);
         await start(driver);
         const focused = await driver.focusPath();
-        await driver.press("Escape");
+        await driver.inputPress("Escape");
         return { focused, recorded: await events(driver, 2), log: await logAfter(driver), state: await state(driver), focus: await driver.focusPath() };
       },
       { focused: at, recorded: [request("escape", at), closeEvent("escape", "opener")], log: ["close:false"], state: gone, focus: "opener" },
@@ -1084,7 +1084,7 @@ export function overlayScenarios(kind: OverlayKind) {
         await watchPanel(driver);
         await act(driver, { op: "veto", id: "dlg", event: requestName });
         await start(driver);
-        await driver.press("Escape");
+        await driver.inputPress("Escape");
         return { recorded: await after(driver), log: await act(driver, { op: "log" }), state: await state(driver), focus: await driver.focusPath() };
       },
       { recorded: [request("escape", at)], log: [], state: shown, focus: at },
@@ -1111,7 +1111,7 @@ export function overlayScenarios(kind: OverlayKind) {
         await driver.mount(page('<button id="stopper">Stops Escape</button>'));
         await open(driver);
         await act(driver, { op: "escape", id: "stopper", mode: "stop" });
-        await driver.press("Escape");
+        await driver.inputPress("Escape");
         return { recorded: await events(driver, 2), state: await state(driver) };
       },
       { recorded: [request("escape", "stopper"), closeEvent("escape", "opener")], state: gone },
@@ -1122,7 +1122,7 @@ export function overlayScenarios(kind: OverlayKind) {
         await driver.mount(page('<button id="preventer">Prevents Escape</button>'));
         await open(driver);
         await act(driver, { op: "escape", id: "preventer", mode: "prevent" });
-        await driver.press("Escape");
+        await driver.inputPress("Escape");
         return { recorded: await after(driver), state: await state(driver), focus: await driver.focusPath() };
       },
       { recorded: [], state: shown, focus: "preventer" },
@@ -1132,7 +1132,7 @@ export function overlayScenarios(kind: OverlayKind) {
       async (driver) => {
         await driver.mount(page('<input type="search" id="find" aria-label="Find" value="abc">'));
         await open(driver);
-        await driver.press("Escape");
+        await driver.inputPress("Escape");
         const field = await inspect(driver, "find");
         return { value: field.value, recorded: await after(driver), state: await state(driver), focus: await driver.focusPath() };
       },
@@ -1182,10 +1182,10 @@ export function overlayScenarios(kind: OverlayKind) {
           if (veto) await act(driver, { op: "veto", id: "dlg", event: requestName });
           await openIt(driver);
           const before = { focus: await driver.focusPath(), open: (await inspect(driver, watcher)).popoverOpen };
-          await driver.press("Escape");
+          await driver.inputPress("Escape");
           const first = { recorded: await after(driver), log: await act(driver, { op: "log" }), watcherOpen: (await inspect(driver, watcher)).popoverOpen, state: await state(driver) };
           const focus = await driver.focusPath();
-          await driver.press("Escape");
+          await driver.inputPress("Escape");
           const second = veto ? { recorded: await after(driver), state: await state(driver), focus: await driver.focusPath() } : { recorded: await events(driver, 2), state: await state(driver) };
           return { before, first, focus, second };
         },
@@ -1232,10 +1232,10 @@ export function overlayScenarios(kind: OverlayKind) {
         await open(driver);
         await watchPanel(driver);
         await act(driver, { op: "call", id: "nd", method: "showModal" });
-        await driver.press("Escape");
+        await driver.inputPress("Escape");
         const first = { recorded: await after(driver), log: await act(driver, { op: "log" }), nested: (await inspect(driver, "nd")).open, state: await state(driver) };
         const focus = await driver.focusPath();
-        await driver.press("Escape");
+        await driver.inputPress("Escape");
         return { first, focus, recorded: await events(driver, 2), state: await state(driver) };
       },
       { first: { recorded: [], log: [], nested: false, state: shown }, focus: "sm", recorded: [request("escape", "sm"), closeEvent("escape", "opener")], state: gone },
@@ -1304,7 +1304,7 @@ export function overlayScenarios(kind: OverlayKind) {
         async (driver) => {
           await openNonModal(driver, setup);
           await act(driver, { op: "focus", id: focusAt });
-          await driver.press("Escape");
+          await driver.inputPress("Escape");
           return { recorded: await events(driver, 2), log: await logAfter(driver), slotted: (await inspect(driver, "nm")).open, state: await state(driver) };
         },
         { recorded: [request("escape", focusAt), closeEvent("escape", "opener")], log: ["close:false"], slotted: true, state: gone },
@@ -1332,10 +1332,10 @@ export function overlayScenarios(kind: OverlayKind) {
           await openNonModal(driver, setup);
           if (veto) await act(driver, { op: "veto", id: "dlg", event: requestName });
           await act(driver, { op: "focus", id: "nb" });
-          await driver.press("Escape");
+          await driver.inputPress("Escape");
           const first = { recorded: await after(driver), log: await act(driver, { op: "log" }), slotted: (await inspect(driver, "nm")).open, state: await state(driver) };
           const focus = await driver.focusPath();
-          await driver.press("Escape");
+          await driver.inputPress("Escape");
           const second = veto ? { recorded: await after(driver), state: await state(driver) } : { recorded: await events(driver, 2), state: await state(driver) };
           return { first, focus, second };
         },
@@ -1396,7 +1396,7 @@ export function overlayScenarios(kind: OverlayKind) {
       label: "Enter",
       activate: async (driver: Driver) => {
         await focusClose(driver);
-        await driver.press("Enter");
+        await driver.inputPress("Enter");
       },
       at: "dlg[button]",
     },
@@ -1404,7 +1404,7 @@ export function overlayScenarios(kind: OverlayKind) {
       label: "Space",
       activate: async (driver: Driver) => {
         await focusClose(driver);
-        await driver.press(" ");
+        await driver.inputPress(" ");
       },
       at: "dlg[button]",
     },
@@ -1438,7 +1438,7 @@ export function overlayScenarios(kind: OverlayKind) {
       async (driver) => {
         await driver.mount(page(basic, { attrs: ' close-label="Schließen"' }));
         await open(driver);
-        await driver.press("Tab", { shift: true });
+        await driver.inputPress("Tab", { shift: true });
         // The box is read once the entry has ended: during the drawer's slide (FR-028) the translated box of the
         // 44 px control read 43.99998 px wide at some frames.
         await kind.settle?.(driver);
@@ -1522,9 +1522,9 @@ export function overlayScenarios(kind: OverlayKind) {
       change: undefined,
       focus: "op[in]",
     },
-    { label: "an opener removed before the close: the body, nothing thrown", before: "", opener: (driver: Driver) => driver.click("opener"), change: { op: "remove", id: "opener" } as Act, focus: "body" },
-    { label: "an opener disabled before the close: the body, nothing thrown", before: "", opener: (driver: Driver) => driver.click("opener"), change: { op: "attr", id: "opener", name: "disabled", value: "" } as Act, focus: "body" },
-    { label: "an opener made inert: the body", before: "", opener: (driver: Driver) => driver.click("opener"), change: { op: "attr", id: "opener", name: "inert", value: "" } as Act, focus: "body" },
+    { label: "an opener removed before the close: the body, nothing thrown", before: "", opener: (driver: Driver) => driver.inputClick("opener"), change: { op: "remove", id: "opener" } as Act, focus: "body" },
+    { label: "an opener disabled before the close: the body, nothing thrown", before: "", opener: (driver: Driver) => driver.inputClick("opener"), change: { op: "attr", id: "opener", name: "disabled", value: "" } as Act, focus: "body" },
+    { label: "an opener made inert: the body", before: "", opener: (driver: Driver) => driver.inputClick("opener"), change: { op: "attr", id: "opener", name: "inert", value: "" } as Act, focus: "body" },
     { label: "opened with focus on the body: the body", before: "", opener: (driver: Driver) => act(driver, { op: "blur" }), change: undefined, focus: "body" },
     {
       label: "an opener that is a custom element's inner button, removed while its host stays: the body",
@@ -1542,7 +1542,7 @@ export function overlayScenarios(kind: OverlayKind) {
         await driver.setAttribute("dlg", "open", "");
         await driver.record("dlg", both);
         if (change !== undefined) await act(driver, change);
-        await driver.press("Escape");
+        await driver.inputPress("Escape");
         return { recorded: await events(driver, 2), focus: await driver.focusPath(), messages: await driver.messages() };
       },
       { recorded: [request("escape", "b1"), closeEvent("escape", focus)], focus, messages: [] },
@@ -1561,7 +1561,7 @@ export function overlayScenarios(kind: OverlayKind) {
         const recorded = await events(driver, 1);
         await pause(50);
         const inB = await driver.focusPath();
-        await driver.press("Escape");
+        await driver.inputPress("Escape");
         const all = await events(driver, 3);
         return { aClosed: recorded[0], inB, last: all[2], focus: await driver.focusPath() };
       },
@@ -1602,7 +1602,7 @@ export function overlayScenarios(kind: OverlayKind) {
   /** Opens the outer dialog, watches its own events (those targeted at it, not the inner's that bubble through it), then opens the inner one from `oi` and records the inner's events. */
   async function openNested(driver: Driver): Promise<void> {
     await driver.mount(nested);
-    await driver.click("opener");
+    await driver.inputClick("opener");
     await driver.setAttribute("dlg", "open", "");
     await act(driver, { op: "watch", id: "dlg", events: both });
     await click(driver, "oi");
@@ -1615,7 +1615,7 @@ export function overlayScenarios(kind: OverlayKind) {
       async (driver) => {
         await openNested(driver);
         const at = await driver.focusPath();
-        await driver.press("Escape");
+        await driver.inputPress("Escape");
         const recorded = await events(driver, 2);
         return { at, recorded, outerEvents: await logAfter(driver), outer: { open: (await driver.attribute("dlg", "open")) !== null, modal: (await inspect(driver, "dlg", "dialog")).modal }, focus: await driver.focusPath() };
       },
@@ -1636,7 +1636,7 @@ export function overlayScenarios(kind: OverlayKind) {
       async (driver) => {
         await openNested(driver);
         await act(driver, { op: "remove", id: "oi" });
-        await driver.press("Escape");
+        await driver.inputPress("Escape");
         const recorded = await events(driver, 2);
         return { last: recorded[1], focus: await driver.focusPath() };
       },
@@ -1662,14 +1662,14 @@ export function overlayScenarios(kind: OverlayKind) {
           await pause(100);
           await driver.setAttribute("in2", "open", "");
           await act(driver, { op: "blur" });
-          await driver.press("Escape");
+          await driver.inputPress("Escape");
           await events(driver, 2);
           const recorded = await after(driver);
           const outerEvents = await act(driver, { op: "log" });
           const first = { recorded, outerEvents, outer: { open: (await driver.attribute("dlg", "open")) !== null, modal: (await inspect(driver, "dlg", "dialog")).modal }, layer: await driver.topLayer(), focus: await driver.focusPath() };
           await driver.record("dlg", both);
           await act(driver, { op: "blur" });
-          await driver.press("Escape");
+          await driver.inputPress("Escape");
           const second = (await events(driver, recorded.length + 1)).slice(recorded.length, recorded.length + 1);
           return { first, second };
         },
@@ -1768,7 +1768,7 @@ export function overlayScenarios(kind: OverlayKind) {
           await pause(100);
           await driver.setAttribute("act", "data-wait", "");
           const reopened = { recorded: await driver.recorded(), state: await state(driver) };
-          await driver.press("Escape");
+          await driver.inputPress("Escape");
           await events(driver, 2);
           return { reopened, recorded: await after(driver) };
         },
@@ -1814,7 +1814,7 @@ export function overlayScenarios(kind: OverlayKind) {
       async (driver) => {
         await driver.mount(page(basic));
         await driver.record("dlg", both);
-        await driver.click("opener");
+        await driver.inputClick("opener");
         await act(driver, { op: "seq", ops: [{ op: "set", id: "dlg", name: "open", value: true }, { op: "set", id: "dlg", name: "open", value: false }] });
         return { recorded: await after(driver), state: await state(driver), focus: await driver.focusPath() };
       },
@@ -1825,7 +1825,7 @@ export function overlayScenarios(kind: OverlayKind) {
       async (driver) => {
         await driver.mount(page(basic));
         await open(driver);
-        await driver.press("Escape");
+        await driver.inputPress("Escape");
         await driver.setAttribute("dlg", "open", "");
         // Read at once, within the 200 ms exit: the reopen cancelled the exit animation, it does not run to its end.
         const atReopen = (await driver.ownAnimations("dlg", "dialog")).length;
@@ -1894,7 +1894,7 @@ export function overlayScenarios(kind: OverlayKind) {
           await driver.mount(page(basic));
           await open(driver);
           await act(driver, { op: "on", id: "dlg", event: closeName, then: [{ op: "set", id: "dlg", name: "open", value: true }] });
-          await driver.press("Escape");
+          await driver.inputPress("Escape");
           await events(driver, 2);
           await pause(100);
           await driver.setAttribute("act", "data-wait", "");
@@ -1927,7 +1927,7 @@ export function overlayScenarios(kind: OverlayKind) {
         await open(driver);
         const entry = (await driver.ownAnimations("dlg", "dialog")).map(({ playState, ...rest }) => ({ ...rest, running: playState === "running" }));
         await pause(300);
-        await driver.press("Escape");
+        await driver.inputPress("Escape");
         const exit = (await driver.ownAnimations("dlg", "dialog")).map(({ playState, ...rest }) => ({ ...rest, running: playState === "running" }));
         const during = { attribute: await driver.attribute("dlg", "open"), modal: (await inspect(driver, "dlg", "dialog")).modal };
         return { entry, exit, during, recorded: await events(driver, 2) };
@@ -1948,7 +1948,7 @@ export function overlayScenarios(kind: OverlayKind) {
           if (ancestor !== "") await driver.rules("#wrap { --ocelle-motion-base: 200ms; }");
           await open(driver);
           const entry = await driver.ownAnimations("dlg", "dialog");
-          await driver.press("Escape");
+          await driver.inputPress("Escape");
           const exit = await driver.ownAnimations("dlg", "dialog");
           const recorded = await driver.recorded();
           return { entry, exit, recorded };
@@ -1972,14 +1972,14 @@ export function overlayScenarios(kind: OverlayKind) {
         const footer = await inspect(driver, "dlg", '[part="footer"]');
         const body = await inspect(driver, "dlg", '[part="body"]');
         await focusClose(driver);
-        await driver.press("Tab");
+        await driver.inputPress("Tab");
         const focused = await driver.focusPath();
         const top = (): Promise<number> => inspect(driver, "dlg", '[part="body"]').then((body) => body.scrollTop);
-        await driver.press("ArrowDown");
+        await driver.inputPress("ArrowDown");
         const down = await eventually(async () => (await top()) > 0);
         await pause(300);
         const afterDown = await top();
-        await driver.press("PageDown");
+        await driver.inputPress("PageDown");
         const paged = await eventually(async () => (await top()) > afterDown);
         const ids = Array.from({ length: 39 }, (_, index) => `p${String(index + 1)}`);
         await act(driver, { op: "seq", ops: ids.map((id): Act => ({ op: "remove", id })) });
@@ -2010,9 +2010,9 @@ export function overlayScenarios(kind: OverlayKind) {
           await open(driver);
           const body = await inspect(driver, "dlg", '[part="body"]');
           await focusClose(driver);
-          await driver.press("Tab");
+          await driver.inputPress("Tab");
           const focused = await driver.focusPath();
-          await driver.press("End");
+          await driver.inputPress("End");
           const atEnd = await eventually(async () => {
             const ended = await inspect(driver, "dlg", '[part="body"]');
             return ended.scrollTop + ended.clientHeight >= ended.scrollHeight - 1;
@@ -2148,7 +2148,7 @@ export function overlayScenarios(kind: OverlayKind) {
         await driver.mount(page(basic));
         await driver.forcedColors("active", palette);
         await open(driver);
-        await driver.press("Tab", { shift: true });
+        await driver.inputPress("Tab", { shift: true });
         const panel = await inspect(driver, "dlg", "dialog", ["border-top-style", "border-top-width", "border-top-color", "background-color"]);
         const backdrop = await inspect(driver, "dlg", "dialog", ["background-color"], "::backdrop");
         const control = await inspect(driver, "dlg", close, ["outline-style", "outline-width", "outline-color"]);
@@ -2211,7 +2211,7 @@ export function overlayScenarios(kind: OverlayKind) {
         await driver.mount(page('<input type="text" id="tx" aria-label="Name" value="abc">'));
         await open(driver);
         await watchPanel(driver);
-        await driver.press("Escape");
+        await driver.inputPress("Escape");
         return { recorded: await events(driver, 2), log: await logAfter(driver), value: (await inspect(driver, "tx")).value, state: await state(driver) };
       },
       { recorded: [request("escape", "tx"), closeEvent("escape", "opener")], log: ["close:false"], value: "abc", state: gone },
@@ -2222,7 +2222,7 @@ export function overlayScenarios(kind: OverlayKind) {
         await driver.mount(page('<input type="search" id="find" aria-label="Find">'));
         await open(driver);
         await watchPanel(driver);
-        await driver.press("Escape");
+        await driver.inputPress("Escape");
         return { recorded: await events(driver, 2), log: await logAfter(driver), state: await state(driver) };
       },
       { recorded: [request("escape", "find"), closeEvent("escape", "opener")], log: ["close:false"], state: gone },
@@ -2235,7 +2235,7 @@ export function overlayScenarios(kind: OverlayKind) {
         await watchPanel(driver);
         await click(driver, "inv");
         const before = { focus: await driver.focusPath(), open: (await inspect(driver, "menu")).popoverOpen };
-        await driver.press("Escape");
+        await driver.inputPress("Escape");
         const recorded = await events(driver, 2);
         const log = await logAfter(driver);
         const panel = await inspect(driver, "dlg", "dialog");
@@ -2276,7 +2276,7 @@ export function overlayScenarios(kind: OverlayKind) {
         await driver.rules("#wrap { --ocelle-motion-base: 1000ms; }");
         await open(driver);
         await pause(1100);
-        await driver.press("Escape");
+        await driver.inputPress("Escape");
         const exiting = (await driver.ownAnimations("dlg", "dialog")).map((each) => each.playState);
         await act(driver, { op: "call", id: "dlg", inner: "dialog", method: "close" });
         await pause(300);
@@ -2312,7 +2312,7 @@ export function overlayScenarios(kind: OverlayKind) {
       async (driver) => {
         await driver.mount(page(basic));
         await open(driver);
-        await driver.press("Escape");
+        await driver.inputPress("Escape");
         await act(driver, { op: "dispatch", id: "dlg", inner: "dialog", type: "cancel", cancelable: true });
         await events(driver, 2);
         return { recorded: await after(driver), state: await state(driver), focus: await driver.focusPath() };
@@ -2324,7 +2324,7 @@ export function overlayScenarios(kind: OverlayKind) {
       async (driver) => {
         await driver.mount(page(basic));
         await open(driver);
-        await driver.press("Escape");
+        await driver.inputPress("Escape");
         await act(driver, { op: "call", id: "dlg", inner: "dialog", method: "close" });
         await events(driver, 2);
         return { recorded: await after(driver), state: await state(driver), focus: await driver.focusPath() };
@@ -2372,7 +2372,7 @@ export function overlayScenarios(kind: OverlayKind) {
         await open(driver);
         const entry = (await driver.ownAnimations("dlg", "dialog")).map((each) => each.duration);
         await pause(400);
-        await driver.press("Escape");
+        await driver.inputPress("Escape");
         const exit = (await driver.ownAnimations("dlg", "dialog")).map((each) => each.duration);
         return { entry, exit, recorded: await events(driver, 2) };
       },
@@ -2387,7 +2387,7 @@ export function overlayScenarios(kind: OverlayKind) {
         await driver.mount(page(basic));
         await open(driver);
         await act(driver, { op: "on", id: "dlg", event: requestName, then: [{ op: "remove", id: "dlg" }] });
-        await driver.press("Escape");
+        await driver.inputPress("Escape");
         const recorded = await after(driver);
         return { recorded, property: ((await act(driver, { op: "inspect", id: "dlg" })) as Inspected).open, layer: await driver.topLayer() };
       },
@@ -2398,11 +2398,11 @@ export function overlayScenarios(kind: OverlayKind) {
       async (driver) => {
         await driver.mount(page(basic));
         await open(driver);
-        await driver.press("Escape");
+        await driver.inputPress("Escape");
         await events(driver, 2);
         await act(driver, { op: "blur" });
-        await driver.press("Escape");
-        await driver.press("Tab");
+        await driver.inputPress("Escape");
+        await driver.inputPress("Tab");
         return { recorded: (await after(driver)).map((each) => each.type), focus: await driver.focusPath() };
       },
       { recorded: [requestName, closeName], focus: "after" },
@@ -2411,12 +2411,12 @@ export function overlayScenarios(kind: OverlayKind) {
       "Nested: after the inner dialog closed, the outer handles Tab from the body again: a focused outer button the host removes, then Tab, gives the outer's first stop (R-02, R-04)",
       async (driver) => {
         await openNested(driver);
-        await driver.press("Escape");
+        await driver.inputPress("Escape");
         await events(driver, 2);
         const back = await driver.focusPath();
         await act(driver, { op: "seq", ops: [{ op: "focus", id: "ob" }, { op: "remove", id: "ob" }] });
         const removed = await driver.focusPath();
-        await driver.press("Tab");
+        await driver.inputPress("Tab");
         return { back, removed, focus: await driver.focusPath() };
       },
       { back: "oi", removed: "body", focus: "dlg[button]" },
@@ -2428,7 +2428,7 @@ export function overlayScenarios(kind: OverlayKind) {
         await driver.rules("#wrap { --ocelle-motion-base: -200ms; }");
         await open(driver);
         const entry = await driver.ownAnimations("dlg", "dialog");
-        await driver.press("Escape");
+        await driver.inputPress("Escape");
         const exit = await driver.ownAnimations("dlg", "dialog");
         return { entry, exit, recorded: await driver.recorded(), messages: await driver.messages() };
       },
@@ -2466,7 +2466,7 @@ export function overlayScenarios(kind: OverlayKind) {
         await driver.mount(page(basic));
         await open(driver);
         await act(driver, { op: "on", id: "dlg", event: closeName, then: [{ op: "set", id: "dlg", name: "open", value: true }] });
-        await driver.press("Escape");
+        await driver.inputPress("Escape");
         await events(driver, 2);
         await pause(100);
         await driver.setAttribute("act", "data-wait", "");
@@ -2486,7 +2486,7 @@ export function overlayScenarios(kind: OverlayKind) {
         await act(driver, { op: "seq", ops: [{ op: "call", id: "nm", method: "show" }, { op: "set", id: "dlg", name: "open", value: true }] });
         await pause(100);
         await act(driver, { op: "focus", id: "nb" });
-        await driver.press("Escape");
+        await driver.inputPress("Escape");
         return { recorded: await events(driver, 2), slotted: (await inspect(driver, "nm")).open, state: await state(driver) };
       },
       // show() focused nb, the slotted dialog's button, which is then the opener: hidden with the overlay, it cannot take
@@ -2512,7 +2512,7 @@ export function overlayScenarios(kind: OverlayKind) {
         await open(driver);
         await click(driver, "inv");
         const opened = (await inspect(driver, "menu")).popoverOpen;
-        await driver.press("Escape");
+        await driver.inputPress("Escape");
         return { opened, recorded: await after(driver), menuOpen: (await inspect(driver, "menu")).popoverOpen, state: await state(driver) };
       },
       { opened: true, recorded: [], menuOpen: false, state: shown },
@@ -2567,7 +2567,7 @@ export function overlayScenarios(kind: OverlayKind) {
         await driver.setAttribute("dlgb", "open", "");
         await act(driver, { op: "remove", id: "bb1" });
         const removed = await driver.focusPath();
-        await driver.press("Tab");
+        await driver.inputPress("Tab");
         return { removed, focus: await driver.focusPath(), layer: (await driver.topLayer()).map((each) => each.element) };
       },
       { removed: "body", focus: "dlgb[button]", layer: ["dlg[dialog]", "dlgb[dialog]"] },
@@ -2581,7 +2581,7 @@ export function overlayScenarios(kind: OverlayKind) {
         await driver.setAttribute("dlgb", "open", "");
         await act(driver, { op: "remove", id: "bb1" });
         const removed = await driver.focusPath();
-        await driver.press("Tab");
+        await driver.inputPress("Tab");
         return { removed, focus: await driver.focusPath() };
       },
       { removed: "body", focus: "dlgb[button]" },
@@ -2614,7 +2614,7 @@ export function overlayScenarios(kind: OverlayKind) {
         await act(driver, { op: "remove", id: "dlgb" });
         await act(driver, { op: "remove", id: "a1" });
         const removed = await driver.focusPath();
-        await driver.press("Tab");
+        await driver.inputPress("Tab");
         return { removed, focus: await driver.focusPath() };
       },
       { removed: "body", focus: "dlg[button]" },
@@ -2627,7 +2627,7 @@ export function overlayScenarios(kind: OverlayKind) {
       async (driver) => {
         await driver.mount(page(basic));
         await open(driver);
-        await driver.press("Escape");
+        await driver.inputPress("Escape");
         await events(driver, 2);
         await pause(100);
         await act(driver, { op: "dispatch", id: "dlg", inner: "dialog", type: "close", cancelable: false });
@@ -2702,7 +2702,7 @@ export function overlayScenarios(kind: OverlayKind) {
         await driver.rules("#wrap { --ocelle-motion-base: 300; }");
         await open(driver);
         const entry = await driver.ownAnimations("dlg", "dialog");
-        await driver.press("Escape");
+        await driver.inputPress("Escape");
         const exit = await driver.ownAnimations("dlg", "dialog");
         return { entry, exit, recorded: await driver.recorded() };
       },
@@ -2749,14 +2749,14 @@ export function overlayScenarios(kind: OverlayKind) {
       "Nested: an inner dialog whose opener is removed before its close, the outer's body holding a hidden autofocus button first: focus on the outer's first rendered target (FR-007, R-05)",
       async (driver) => {
         await driver.mount(`<button id="opener">Open</button><${kind.tag} id="dlg" label="Outer"><button id="ha" autofocus hidden>Hidden</button><button id="oi">Open inner</button><${kind.tag} id="inner" label="Inner"><button id="i1">I1</button></${kind.tag}><button id="ob">Outer button</button></${kind.tag}><ocelle-test-act id="act"></ocelle-test-act>`);
-        await driver.click("opener");
+        await driver.inputClick("opener");
         await driver.setAttribute("dlg", "open", "");
         const outerFocus = await driver.focusPath();
         await click(driver, "oi");
         await driver.setAttribute("inner", "open", "");
         await driver.record("inner", both);
         await act(driver, { op: "remove", id: "oi" });
-        await driver.press("Escape");
+        await driver.inputPress("Escape");
         const recorded = await events(driver, 2);
         return { outerFocus, last: recorded[1], focus: await driver.focusPath() };
       },
@@ -2796,7 +2796,7 @@ export function overlayScenarios(kind: OverlayKind) {
         // cancel sequence in a page holds the veto on a second press as well, a plain native <dialog> too, so one such
         // sequence runs first on a stand-in, in this page; its outcome is not asserted.
         await driver.mount('<button id="wopener">Open</button><dialog id="wd"><button id="ws">Stops Escape</button></dialog><ocelle-test-act id="act"></ocelle-test-act>');
-        await driver.click("wopener");
+        await driver.inputClick("wopener");
         await act(driver, { op: "call", id: "wd", method: "showModal" });
         await act(driver, { op: "escape", id: "ws", mode: "stop" });
         await act(driver, { op: "veto", id: "wd", event: "cancel" });
@@ -2807,9 +2807,9 @@ export function overlayScenarios(kind: OverlayKind) {
         await act(driver, { op: "escape", id: "stopper", mode: "stop" });
         await act(driver, { op: "veto", id: "dlg", event: requestName });
         await pause(300);
-        await driver.press("Escape");
+        await driver.inputPress("Escape");
         const first = { recorded: await after(driver), state: await state(driver) };
-        await driver.press("Escape");
+        await driver.inputPress("Escape");
         return { first, recorded: await events(driver, 2), state: await state(driver) };
       },
       { first: { recorded: [request("escape", "stopper")], state: shown }, recorded: [request("escape", "stopper"), closeEvent("host", "opener")], state: gone },
@@ -2941,14 +2941,14 @@ const drawerEvents = ["ocelle-drawer-close-request", "ocelle-drawer-close"];
  */
 async function openInDrawer(driver: Driver): Promise<void> {
   await driver.mount(inDrawer);
-  await driver.click("opener");
+  await driver.inputClick("opener");
   await driver.setAttribute("drw", "open", "");
   await act(driver, { op: "watch", id: "drw", events: drawerEvents });
   for (const start = Date.now(); (await driver.ownAnimations("drw", "dialog")).length > 0; ) {
     if (Date.now() - start > 1000) throw new Error("the entry of #drw did not end within 1 000 ms");
     await pause(20);
   }
-  await driver.click("oi");
+  await driver.inputClick("oi");
   const opener = await driver.focusPath();
   if (opener !== "oi") throw new Error(`the click on #oi left focus on ${opener}, so the dialog would open with no opener in the drawer`);
   await driver.setAttribute("inner", "open", "");
@@ -2970,7 +2970,7 @@ const nestedInDrawerRows = [
     async (driver) => {
       await openInDrawer(driver);
       const at = await driver.focusPath();
-      await driver.press("Escape");
+      await driver.inputPress("Escape");
       const recorded = await events(driver, 2);
       return { at, recorded, drawerEvents: await logAfter(driver), drawer: { open: (await driver.attribute("drw", "open")) !== null, modal: (await inspect(driver, "drw", "dialog")).modal }, focus: await driver.focusPath() };
     },
@@ -2996,7 +2996,7 @@ const nestedInDrawerRows = [
     async (driver) => {
       await openInDrawer(driver);
       await act(driver, { op: "remove", id: "oi" });
-      await driver.press("Escape");
+      await driver.inputPress("Escape");
       const recorded = await events(driver, 2);
       return { last: recorded[1], focus: await driver.focusPath(), drawerEvents: await logAfter(driver) };
     },
@@ -3020,7 +3020,7 @@ const nestedInDrawerRows = [
           const placed = { inDrawer: inside(drawer), inDialog: inside(dialog) };
           await driver.pointer([{ ...point, down: true, up: true }]);
           const clicked = { recorded: await after(driver), drawerEvents: await act(driver, { op: "log" }), state: await overlaysState(driver), focus: await driver.focusPath() };
-          await driver.press("Escape");
+          await driver.inputPress("Escape");
           const recorded = await events(driver, 2);
           return { placed, clicked, escaped: { recorded, drawerEvents: await logAfter(driver), focus: await driver.focusPath() } };
         },

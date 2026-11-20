@@ -8,6 +8,15 @@ import type { BrowserCommand, BrowserCommandContext } from "vitest/node";
 // Since 014 (research.md R-07, R-11): axStates, axUpdatesStart and axUpdatesStop, whose target is an id or a child of a
 // parent with an id.
 type Target = string | { readonly parent: string; readonly kind: string; readonly index: number };
+// 012 (research.md R-11) adds press, hover, pointer, emulateReducedMotion, axe and axState; their argument types are
+// written here, not imported, for the same reason.
+type Modifier = "Alt" | "Control" | "Meta" | "Shift";
+interface ClickOptions {
+  readonly inner?: string;
+  readonly modifiers?: readonly Modifier[];
+  readonly button?: "left" | "middle" | "right";
+}
+type PointerAction = "hover" | "click" | "down" | "up";
 interface PathStep {
   readonly x: number;
   readonly y: number;
@@ -22,15 +31,36 @@ interface ElementCommands {
   readonly activeElement: (context: BrowserCommandContext) => Promise<unknown>;
   readonly textBoxes: (context: BrowserCommandContext, id: string) => Promise<unknown>;
   readonly emulateReducedMotion: (context: BrowserCommandContext, mode: "reduce" | "no-preference") => Promise<void>;
+  readonly pressKey: (context: BrowserCommandContext, key: string, modifiers?: readonly Modifier[]) => Promise<void>;
+  readonly hover: (context: BrowserCommandContext, id: string, inner?: string) => Promise<void>;
+  readonly pointerCommand: (context: BrowserCommandContext, action: PointerAction, id: string, options?: ClickOptions) => Promise<void>;
+  readonly axState: (context: BrowserCommandContext, id: string, inner?: string) => Promise<unknown>;
+  readonly axe: (context: BrowserCommandContext, scope?: string) => Promise<unknown>;
   readonly pointerPath: (context: BrowserCommandContext, steps: readonly PathStep[]) => Promise<void>;
   readonly touchTap: (context: BrowserCommandContext, x: number, y: number) => Promise<void>;
   readonly axStates: (context: BrowserCommandContext, target: Target, scope?: "element" | "subtree") => Promise<unknown>;
   readonly axUpdatesStart: (context: BrowserCommandContext, target: Target) => Promise<void>;
   readonly axUpdatesStop: (context: BrowserCommandContext) => Promise<unknown>;
 }
+// The live-region capture's commands (specs/010-feedback-forms contracts/testing.md § Live-region capture;
+// packages/elements/test/live.ts), loaded as the element commands are, when a command runs.
+interface LiveDelays {
+  readonly loaded: number;
+  readonly loading: number;
+}
+interface LiveCommands {
+  readonly liveStart: (context: BrowserCommandContext, containerId: string, delays: LiveDelays) => Promise<void>;
+  readonly liveStop: (context: BrowserCommandContext, options?: { readonly atLeast?: number }) => Promise<unknown>;
+}
 const elementCommandsUrl = new URL("./packages/elements/test/commands.ts", import.meta.url).href;
 const elementCommands = async (): Promise<ElementCommands> => (await import(elementCommandsUrl)) as ElementCommands;
 const axTree: BrowserCommand<[id: string, scope?: "element" | "subtree"]> = async (context, id, scope) => (await elementCommands()).axTree(context, id, scope);
+const liveCommandsUrl = new URL("./packages/elements/test/live.ts", import.meta.url).href;
+const liveCommands = async (): Promise<LiveCommands> => (await import(liveCommandsUrl)) as LiveCommands;
+const liveStart: BrowserCommand<[containerId: string, delays: LiveDelays]> = async (context, containerId, delays) => {
+  await (await liveCommands()).liveStart(context, containerId, delays);
+};
+const liveStop: BrowserCommand<[options?: { readonly atLeast?: number }]> = async (context, options) => (await liveCommands()).liveStop(context, options);
 const emulateForcedColors: BrowserCommand<[mode: "active" | "none", palette?: "light" | "dark"]> = async (context, mode, palette) => {
   await (await elementCommands()).emulateForcedColors(context, mode, palette);
 };
@@ -50,6 +80,17 @@ const textBoxes: BrowserCommand<[id: string]> = async (context, id) => (await el
 const emulateReducedMotion: BrowserCommand<[mode: "reduce" | "no-preference"]> = async (context, mode) => {
   await (await elementCommands()).emulateReducedMotion(context, mode);
 };
+const press: BrowserCommand<[key: string, modifiers?: readonly Modifier[]]> = async (context, key, modifiers) => {
+  await (await elementCommands()).pressKey(context, key, modifiers);
+};
+const hover: BrowserCommand<[id: string, inner?: string]> = async (context, id, inner) => {
+  await (await elementCommands()).hover(context, id, inner);
+};
+const pointer: BrowserCommand<[action: PointerAction, id: string, options?: ClickOptions]> = async (context, action, id, options) => {
+  await (await elementCommands()).pointerCommand(context, action, id, options);
+};
+const axState: BrowserCommand<[id: string, inner?: string]> = async (context, id, inner) => (await elementCommands()).axState(context, id, inner);
+const axe: BrowserCommand<[scope?: string]> = async (context, scope) => (await elementCommands()).axe(context, scope);
 // 008 research.md R-14: real pointer paths and touch taps for the overlay scenarios.
 const pointerPath: BrowserCommand<[steps: readonly PathStep[]]> = async (context, steps) => {
   await (await elementCommands()).pointerPath(context, steps);
@@ -57,7 +98,7 @@ const pointerPath: BrowserCommand<[steps: readonly PathStep[]]> = async (context
 const touchTap: BrowserCommand<[x: number, y: number]> = async (context, x, y) => {
   await (await elementCommands()).touchTap(context, x, y);
 };
-const elementBrowserCommands = { axTree, emulateForcedColors, scrollWidth, activeElement, textBoxes, emulateReducedMotion, pointerPath, touchTap, axStates, axUpdatesStart, axUpdatesStop };
+const elementBrowserCommands = { axTree, emulateForcedColors, scrollWidth, activeElement, textBoxes, emulateReducedMotion, press, hover, pointer, axState, axe, pointerPath, touchTap, liveStart, liveStop, axStates, axUpdatesStart, axUpdatesStop };
 
 // The element browser projects run at the fixture's 1280 × 800 (008 research.md R-14), the default one as a mouse
 // device and elements-touch as a touch device (`hasTouch`); both exclude the node, build and fixture suites.
@@ -125,14 +166,24 @@ export default defineConfig({
         // The in-process element tests (005 research.md R-11): browser mode, element source; mutated by
         // stryker.elements.config.json (R-12). The node, build and fixture tests run in their own projects below. The
         // axTree, emulateForcedColors and emulateReducedMotion commands read Chromium's accessibility tree over CDP and
-        // switch forced colours and reduced motion for the shared scenario bodies (packages/elements/test/commands.ts).
-        // Each test file keeps its own iframe and custom-element registry (isolate, the default). 008 (R-14): a
-        // 1280 × 800 viewport, as on the fixture, a mouse device; the touch rows (`test/*.touch.test.ts`) run in
-        // elements-touch instead; the commands also drive the real pointer.
+        // switch forced colours and reduced motion for the shared scenario bodies (packages/elements/test/commands.ts);
+        // 012's press, hover, pointer, axe and axState drive the keyboard and mouse, read one accessibility node and run
+        // axe (012 research.md R-11). Each test file keeps its own iframe and custom-element registry (isolate, the
+        // default). Its files run one at a time (specs/010-feedback-forms phase 2 stop 1, operator decision (b),
+        // reviews/phase-2/decision-stop-1.md):
+        // the in-process timing files (the notice suites, the plants file, the capture and timing files) measure gaps
+        // in fractions of the test W = 100 ms, and two pages of this project running at once overshot drive.after by
+        // more than 2W/3. 008 (R-14): a 1280 × 800 viewport, as on the fixture, a mouse device; the touch rows
+        // (`test/*.touch.test.ts`) run in elements-touch instead; the commands also drive the real pointer.
+        // Lit's directives the elements import, bundled before the run, so Vite does not find them during a test file
+        // and reload it (specs/010-feedback-forms phase 3: ocelle-form-input imports class-map and live; 013:
+        // ocelle-facts imports if-defined).
+        optimizeDeps: { include: ["lit/directives/class-map.js", "lit/directives/if-defined.js", "lit/directives/live.js"] },
         test: {
           name: "elements",
           include: ["packages/elements/**/*.test.ts"],
           exclude: [...elementExcluded, "packages/elements/test/*.touch.test.ts"],
+          fileParallelism: false,
           browser: {
             enabled: true,
             provider: playwright({ launchOptions }),

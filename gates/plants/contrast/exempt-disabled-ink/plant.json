@@ -1,4 +1,4 @@
 {
   "expect": "pass",
-  "why": "Light color-disabled-ink at #8A8276, its recorded figures updated, is below 4.5:1 on every ground and passes: disabled ink is exempt from the threshold (FR-017)."
+  "why": "Light color-disabled-ink at #8A8276, its recorded figures updated, is below 4.5:1 on every ground but 012's color-chrome (4.89:1) and passes: disabled ink is exempt from the threshold (FR-017)."
 }

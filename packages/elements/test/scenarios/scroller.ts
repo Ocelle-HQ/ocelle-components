@@ -17,7 +17,7 @@
 // outcomes, paired), and the plant that makes it fail is named beside it; each plant is run once and recorded in
 // specs/009-workflow-layouts/reviews/phase-2/plants.md (T030).
 import type { Pixels } from "../pixels.ts";
-import type { Box, Driver, Palette, Part, Target } from "./driver.ts";
+import type { Box, Driver, Palette, Part, ElementTarget } from "./driver.ts";
 import { systemColours, tokenColour } from "./icon.ts";
 import type { Scenario } from "./icon.ts";
 
@@ -62,7 +62,7 @@ const button = (id: string): string => `<button id="${id}" class="item" type="bu
 const links = (prefix: string, count: number): string => Array.from({ length: count }, (_, index) => link(`${prefix}${String(index)}`)).join("");
 const ids = (prefix: string, count: number): string[] => Array.from({ length: count }, (_, index) => `${prefix}${String(index)}`);
 
-const boxOf = (id: string): Target => ({ id, inner: ".region-box" });
+const boxOf = (id: string): ElementTarget => ({ id, inner: ".region-box" });
 
 /** The box's tab stop, role and name, from the shadow root's elements (null when absent). */
 export async function boxAttributes(driver: Driver, id: string): Promise<Record<string, string | null>> {
@@ -78,7 +78,7 @@ export async function shadowAttribute(driver: Driver, id: string, className: str
 }
 
 /** One reading of a target, through a frame record that is stopped at once. */
-export async function readOnce(driver: Driver, target: Target, property: string): Promise<string> {
+export async function readOnce(driver: Driver, target: ElementTarget, property: string): Promise<string> {
   const record = await (await driver.frameRecord(target, { property })).stop();
   return record[0] ?? "";
 }
@@ -247,7 +247,7 @@ export function regionScenarios(region: Region): Scenario[] {
         await driver.style("frame", "inline-size", "200px");
         await driver.style("frame", "inline-size", "300px");
         const resized = { tabindex: await tabindex.stop(), role: await role.stop() };
-        const track: Target = { id: "s", inner: ".region-track" };
+        const track: ElementTarget = { id: "s", inner: ".region-track" };
         const tabindex2 = await driver.frameRecord(track, { attribute: "tabindex", of: boxOf("s") });
         const role2 = await driver.frameRecord(track, { attribute: "role", of: boxOf("s") });
         await driver.style("f2", "inline-size", "200px");
@@ -435,8 +435,8 @@ async function fades(driver: Driver, ground: "canvas" | "pane", theme: Palette):
       start: near(at(ringAtStart, ringAtStart.width - 2, mid(ringAtStart)), focusColour(theme)),
       middle: [near(at(ringInMiddle, 1, mid(ringInMiddle)), focusColour(theme)), near(at(ringInMiddle, ringInMiddle.width - 2, mid(ringInMiddle)), focusColour(theme))],
     },
-    fit: { fade: await shadowAttribute(driver, "fit", "region-box", "data-fade"), mask: await driver.computed(boxOf("fit"), "mask-image") },
-    overMasked: (await driver.computed(boxOf("l"), "mask-image")) !== "none",
+    fit: { fade: await shadowAttribute(driver, "fit", "region-box", "data-fade"), mask: await driver.computedOf(boxOf("fit"), "mask-image") },
+    overMasked: (await driver.computedOf(boxOf("l"), "mask-image")) !== "none",
   };
 }
 
@@ -459,11 +459,11 @@ export async function edgeLines(driver: Driver, id: string): Promise<unknown> {
   const box = await driver.box(id, ".region-box");
   const out: Record<string, unknown> = {};
   for (const name of ["start", "end"] as const) {
-    const target: Target = { id, inner: `.region-edge.${name}` };
+    const target: ElementTarget = { id, inner: `.region-edge.${name}` };
     const side = async (which: "left" | "right"): Promise<string> => {
-      const width = await driver.computed(target, `border-${which}-width`);
-      const style = await driver.computed(target, `border-${which}-style`);
-      return width === "0px" ? "none" : `${width} ${style} ${await driver.computed(target, `border-${which}-color`)}`;
+      const width = await driver.computedOf(target, `border-${which}-width`);
+      const style = await driver.computedOf(target, `border-${which}-style`);
+      return width === "0px" ? "none" : `${width} ${style} ${await driver.computedOf(target, `border-${which}-color`)}`;
     };
     const edgeBox = await driver.box(id, `.region-edge.${name}`);
     out[name] = {
@@ -475,7 +475,7 @@ export async function edgeLines(driver: Driver, id: string): Promise<unknown> {
       fullHeight: Math.abs(edgeBox.height - box.height) < 0.5 && Math.abs(edgeBox.y - box.y) < 0.5,
     };
   }
-  return { ...out, mask: await driver.computed(boxOf(id), "mask-image") };
+  return { ...out, mask: await driver.computedOf(boxOf(id), "mask-image") };
 }
 
 /** A focused wide button's fallback state: the box's fade attribute over the frames of a record, and its left edge. */
@@ -601,7 +601,7 @@ export const scrollerScenarios: readonly Scenario[] = [
         const [was, now] = [new Set(frames.slice(0, key)), new Set(frames.slice(key + 1))];
         await driver.reducedMotion("no-preference");
         return {
-          transition: [await driver.computed(boxOf("s"), "transition-duration"), await driver.computed(boxOf("s"), "animation-name")],
+          transition: [await driver.computedOf(boxOf("s"), "transition-duration"), await driver.computedOf(boxOf("s"), "animation-name")],
           before: was.size,
           after: now.size,
           changed: [...was][0] !== [...now][0],
@@ -636,7 +636,7 @@ export const scrollerScenarios: readonly Scenario[] = [
           rings,
           height: Math.abs(box.height - (track.height + 2 * room)) < 0.5,
           blockScroll: Number(await readOnce(driver, boxOf(id), "scrollHeight")) - Number(await readOnce(driver, boxOf(id), "clientHeight")),
-          overflowY: await driver.computed(boxOf(id), "overflow-y"),
+          overflowY: await driver.computedOf(boxOf(id), "overflow-y"),
         };
       };
       return { fit: await observe("fit", "f", 3, "f2"), over: await observe("over", "o", 12, "o11") };
@@ -697,9 +697,9 @@ export const scrollerScenarios: readonly Scenario[] = [
       const arrowed = (await fallbackState(driver)).fades;
       await driver.forcedColors("active", "light");
       await driver.tabWalk("before", "wide");
-      const forcedSuppressed = [await driver.computed({ id: "s", inner: ".region-edge.start" }, "border-left-width"), await driver.computed({ id: "s", inner: ".region-edge.end" }, "border-right-width")];
+      const forcedSuppressed = [await driver.computedOf({ id: "s", inner: ".region-edge.start" }, "border-left-width"), await driver.computedOf({ id: "s", inner: ".region-edge.end" }, "border-right-width")];
       await driver.chord("Tab");
-      const forcedBack = [await driver.computed({ id: "s", inner: ".region-edge.start" }, "border-left-width"), await driver.computed({ id: "s", inner: ".region-edge.end" }, "border-right-width")];
+      const forcedBack = [await driver.computedOf({ id: "s", inner: ".region-edge.start" }, "border-left-width"), await driver.computedOf({ id: "s", inner: ".region-edge.end" }, "border-right-width")];
       await driver.forcedColors("none");
       return { focused, ringStart: Math.round(ringStart), wheeled: wheeled.fades, again, left, before7, arrowed, forced: { suppressed: forcedSuppressed, back: forcedBack } };
     },
@@ -859,7 +859,7 @@ export const scrollerGuards: readonly Scenario[] = [
       const twoDifferent = [await driver.scrollLeft(boxOf("s")), await fade()];
       await driver.tabWalk("before", "s >> div.region-box");
       await driver.setScrollLeft(boxOf("s"), 504);
-      await driver.focus("wide");
+      await driver.focusTarget("wide");
       return { focused, left, oneDifferent, twoDifferent, script: [await driver.scrollLeft(boxOf("s")), await fade()] };
     },
     // The wide button's ring box starts at 504 px of the content (six links of 84 px); aligned there it is suppressed

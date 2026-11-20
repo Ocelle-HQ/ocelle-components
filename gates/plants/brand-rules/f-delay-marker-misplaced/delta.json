@@ -1,0 +1,6 @@
+{
+  "generator": "wrapped",
+  "tokens": [
+    {"add":{"name":"motion-pause","group":"motion","value":"300ms","delay":true}}
+  ]
+}
