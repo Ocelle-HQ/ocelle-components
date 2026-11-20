@@ -11,9 +11,10 @@ import { dataTableScenarios } from "./scenarios/data-table.ts";
 // The no-`ResizeObserver`-loop check (research.md R-07, PLAN-FRESH-3-001, PLAN-FRESH-3-002): the bodies marked `loop`
 // (a block host on first load whose caption rewraps between the fallback and the measured cap, the 400 → 600 px
 // narrow-column resize, a `hidden` host shown, both edits of the end-fade body, the shrink-to-fit bodies, the one-long-
-// word body with its rounding precondition first, and the sticky caption body) also assert that neither a window
-// `error` event (captured) nor a `console.error` call carried "ResizeObserver loop" while they ran, beside their own
-// layout outcome; the recorder itself is shown to see a synthetic `ErrorEvent` with that message.
+// word body with its rounding precondition first, the caption grown at run time (review R1-01) and the sticky caption
+// body) also assert that neither a window `error` event (captured) nor a `console.error` call carried "ResizeObserver
+// loop" while they ran, beside their own layout outcome; the recorder itself is shown to see a synthetic `ErrorEvent`
+// with that message.
 const driver = inProcessDriver();
 const loopErrors: string[] = [];
 const loop = "ResizeObserver loop";
