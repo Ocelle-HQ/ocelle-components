@@ -191,7 +191,7 @@ pitfalls up front. Each entry names where it was found. New entries are added as
 - **012 O3-01, O6-01**: a slot convention that lines up an icon with a label must be measured on labelled and icon-only controls at every size before it is committed. `align-self: baseline` on the label fixed labelled rows (−6.19 px → 0) and moved icon-only rows by 11 to 17 px. Scope the rule to rows that have a label (`.icon-row:not(.bare)`) and plant the icon-only case.
 - **012 phase 3, plan decision 32**: `:state(pressed)` belongs to button mode only. A link has no pressed state, so a shared control base must set pressed per mode and test both.
 
-- **010 phase 3 R3-03 (follow-up)**: a form-associated element that sets its form value only after its first render
+- **010 phase 4 R3-03 (follow-up)**: a form-associated element that sets its form value only after its first render
   (`this.hasUpdated && …` in `ocelle-form-select`'s `syncFormValue()`) submits nothing until then, while a native
   select already submits its default. The same gap made landing L1-01 (a reset before the first render lost the
   default option). Set the form value from the light-DOM state at connection, and test a submit and a reset before the
