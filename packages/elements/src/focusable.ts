@@ -48,9 +48,17 @@ function isMedia(element: Element): boolean {
   return element instanceof HTMLMediaElement && element.hasAttribute("controls");
 }
 
-/** Whether `element` has a layout box and is visible. */
+/**
+ * Whether `element` has a layout box, is visible and is rendered: `checkVisibility()` is false in a subtree the engine
+ * skips, such as the content of a closed `<details>` apart from its summary (which Chromium hides with
+ * `content-visibility`, keeping its client rects and its `visibility`) and a `content-visibility: hidden` subtree
+ * (op 022, #57).
+ */
 function rendered(element: Element): boolean {
-  return element.getClientRects().length > 0 && getComputedStyle(element).visibility === "visible";
+  const boxed =
+    // Stryker disable next-line EqualityOperator,ConditionalExpression: equivalent since op 022 for `>= 0` and `true`, checkVisibility() below is false for an element with no box, the only element whose client rects are empty (CSSOM), so this test only spares the style read; `<= 0` and `false` would make no element rendered, which every Tab cycle row shows
+    element.getClientRects().length > 0;
+  return boxed && getComputedStyle(element).visibility === "visible" && element.checkVisibility();
 }
 
 /**
