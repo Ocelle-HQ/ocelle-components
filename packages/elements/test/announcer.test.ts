@@ -177,6 +177,30 @@ describe("the hold", () => {
     expect({ atTrigger, beforeMinimum, atMinimum, written: copy(announcer) }).toEqual({ atTrigger: "A", beforeMinimum: "A", atMinimum: "", written: "B" });
   });
 
+  it("keeps the pending release when a second trigger comes while the copy waits for its minimum hold, so the copy is emptied at W from its write and the wait runs W from the empty state", () => {
+    const announcer = holding("A");
+    vi.advanceTimersByTime(10);
+    read("B");
+    announcer.trigger(false);
+    vi.advanceTimersByTime(10);
+    announcer.trigger(false);
+    const atSecondTrigger = copy(announcer);
+    vi.advanceTimersByTime(W - 21);
+    const beforeMinimum = copy(announcer);
+    vi.advanceTimersByTime(1);
+    const atMinimum = copy(announcer);
+    vi.advanceTimersByTime(W - 1);
+    const beforeWait = copy(announcer);
+    vi.advanceTimersByTime(1);
+    expect({ atSecondTrigger, beforeMinimum, atMinimum, beforeWait, written: copy(announcer) }).toEqual({
+      atSecondTrigger: "A",
+      beforeMinimum: "A",
+      atMinimum: "",
+      beforeWait: "",
+      written: "B",
+    });
+  });
+
   it("holds a copy written after a trigger during the previous hold for its own H, the previous hold's end left out", () => {
     const announcer = holding("A");
     vi.advanceTimersByTime(10);
