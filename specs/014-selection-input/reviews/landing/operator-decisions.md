@@ -50,3 +50,9 @@
   - #61: flaky motion test, dialog and drawer "Rapid toggle during the entry, motion on";
   - #62: prefix or register test-Driver additions per mission;
   - #63: pixel tests should match CI's text rendering locally.
+
+## Decision 8 — hand-off
+
+- Date: 2026-11-20
+- Operator: human:jeroennouwsdev
+- Answers: **"Post summary (Recommended)"**: the landing-summary comment is posted (issuecomment-7049667402). **"Ready after CI (Recommended)"**: PR #54 is marked ready for review once CI on the final head is green, and the hand-off is then reported to the orchestrator. The operator merges.
