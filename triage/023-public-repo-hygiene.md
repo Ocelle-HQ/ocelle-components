@@ -7,7 +7,9 @@ in_scope: [60]
 out_of_scope: [11, 54, 57]
 semver: none
 spec_prompt: "Op 023 (#60, triage/023-public-repo-hygiene.md): redact sandbox paths in the committed logs and records on main with the placeholders of this record, keep and list the four allowed files, add the `sandbox-paths` CI gate (rule exactly as in this record, test-first, with a plant), make red.sh and tdd-check.sh redact the logs they write, and update SECURITY.md and spec 001 FR-032 for the public repository; no history rewrite."
-status: proposed
+status: approved
+decided_by: "human:jeroennouwsdev"
+decided_at: 2026-11-20T16:41:12Z
 ---
 
 # Triage 023: Public repository hygiene (sandbox paths and SECURITY.md)
