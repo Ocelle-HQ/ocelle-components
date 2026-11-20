@@ -1,5 +1,5 @@
 Scope: all 5 workspace projects
-✓ Lockfile passes supply-chain policies (verified 5h ago)
+✓ Lockfile passes supply-chain policies (verified 8h ago)
 Lockfile is up to date, resolution step is skipped
 Packages are hard linked from the content-addressable store to the virtual store.
   Content-addressable store is at: /root/.local/share/pnpm/store/v11
@@ -35,11 +35,10 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 335ms using pnpm v12.16.1
+Done in 198ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /opt/pw-browsers/chromium-1243/chrome-linux64/chrome
 $ node gates/bin/test.ts
-packages/elements/test/browser/dialog.test.ts:36: unit-tests: ocelle-dialog on the strict-CSP fixture with the browser build (US1) Rapid toggle during the entry, motion o…: AssertionError: expected { observed: { entry: [], …(4) }, …(1) } to deeply equal { observed: { …(5) }, …(1) }
 packages/elements/test/browser/harness.test.ts:57: unit-tests: the 018 harness self-tests on the strict-CSP fixture animationStates(id): a 3-iteration CSS …: TypeError: driver.animationStates is not a function
 packages/elements/test/browser/harness.test.ts:57: unit-tests: the 018 harness self-tests on the strict-CSP fixture seek(id, inner, ms): seeking the ring t…: TypeError: driver.animationStates is not a function
 packages/elements/test/browser/harness.test.ts:57: unit-tests: the 018 harness self-tests on the strict-CSP fixture overflows(target): slotted content 0.1 …: TypeError: driver.overflows is not a function
@@ -49,5 +48,5 @@ packages/elements/test/harness/animation.test.ts:12: unit-tests: animationStates
 packages/elements/test/harness/animation.test.ts:12: unit-tests: animationStates and seek, in process (018 § Test harness rows 1 and 2) seek(id, inner, ms): seeking the ring t…: TypeError: driver.animationStates is not a function
 packages/elements/test/harness/layout.test.ts:12: unit-tests: settleLayout, in process (018 § Test harness row 7) settleLayout(): a value a ResizeObserve…: TypeError: driver.settleLayout is not a function
 packages/elements/test/harness/text.test.ts:12: unit-tests: overflows, in process (018 § Test harness row 8) overflows(target): slotted content 0.1 …: TypeError: driver.overflows is not a function
-unit-tests: 10 of 7776 tests failed
+unit-tests: 9 of 7776 tests failed
 [ELIFECYCLE] Test failed. See above for more details.
