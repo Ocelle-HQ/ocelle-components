@@ -35,3 +35,8 @@ name. Evidence: `reviews/phase-1/notes.md`.
    limitation in spec, README and CHANGELOG. Existing rows are not loosened. The implementer then finishes test-first.
 8. **Scenarios 9 and 10 — keep.** The rows the planner added in 3c304ff (icon slotted after first render; icon
    removed beside `S`) stay, in a third test-only commit logged as `reviews/phase-1/red-slot.log`.
+9. **CI-first (standing, relayed by the orchestrator, confirmed by the operator).** Locally only the fast gates
+   (typecheck, lint, style-lint, test-lint, manifest, config-copies, csp, prefix, signoff), `gate:plants --
+   --affected <base>` and the browser/visual tests the phase changes run; multi-hour full local plants and visual
+   runs are skipped and CI's required checks decide the rest before merge. New logs redact local sandbox paths to a
+   placeholder. Applied from mid-T013/T014.
