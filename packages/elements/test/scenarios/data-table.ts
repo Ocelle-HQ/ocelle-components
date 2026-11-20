@@ -17,7 +17,7 @@ import type { Box, Driver, Palette, Target } from "./driver.ts";
 import type { Scenario } from "./icon.ts";
 import { probe, tokenColour, tokenPx, tokensOf } from "./layout.ts";
 import { layers } from "./overflow-block.ts";
-import { boxAttributes } from "./scroller.ts";
+import { at, boxAttributes, near as nearColour, rgb } from "./scroller.ts";
 
 /** A data-table body; `loop` marks the bodies the in-process harness also wraps in its no-`ResizeObserver`-loop check. */
 export interface DataTableScenario extends Scenario {
@@ -602,6 +602,47 @@ const us1: DataTableScenario[] = [
     expected: { fitsFirst: { tabindex: null, role: null, "aria-label": null }, after: { tabindex: "0", role: "group", "aria-label": "Work packages" }, overflows: true },
   },
   {
+    // Q-M2 (a), T085 (contracts/ocelle-data-table.md § Behaviour, Assignment; FR-003). Plant: connectedCallback that
+    // observes again but neither re-assigns the slot nor requests an update.
+    name: "US1-15 (re-attach, Q-M2): a fitting table replaced, while the element is detached, by one that overflows is shown once the element is attached again: the slot assigns exactly the new table, laid out inside the track, the box a tab stop and a group named by the new caption; paired with the same replacement made while attached",
+    run: async (driver) => {
+      await page(driver, `${dt("d", "", usTable("d-t", { ident: false }))}${dt("a", "", usTable("a-t", { ident: false }))}`, 320);
+      const fitsFirst = { d: await boxAttributes(driver, "d"), a: await boxAttributes(driver, "a") };
+      const replacement = (p: string): string => `<table id="${p}-n"><caption id="${p}-ncap">Open work packages</caption><tbody><tr><td>${identifier}</td><td>${identifier}</td></tr></tbody></table>`;
+      await driver.module(
+        `const host = document.getElementById("d");
+const parent = host.parentNode;
+host.remove();
+const template = document.createElement("template");
+template.innerHTML = ${JSON.stringify(replacement("d"))};
+host.querySelector(":scope > table").replaceWith(template.content);
+parent.append(host);`,
+      );
+      await driver.settle();
+      await driver.replace("a-t", replacement("a"));
+      await driver.settle();
+      const shown = (id: string): Promise<unknown> =>
+        evaluate(
+          driver,
+          `const root = document.getElementById(${JSON.stringify(id)}).shadowRoot;
+const box = root.querySelector(".region-box");
+const track = root.querySelector(".region-track").getBoundingClientRect();
+const table = document.getElementById(${JSON.stringify(`${id}-n`)}).getBoundingClientRect();
+return { assigned: root.querySelector("slot").assignedNodes().map((node) => node.id),
+  sized: table.width > 0 && table.height > 0,
+  inside: table.left >= track.left - 0.5 && table.right <= track.right + 0.5 && table.top >= track.top - 0.5 && table.bottom <= track.bottom + 0.5,
+  overflows: box.scrollWidth - box.clientWidth > 1,
+  tabindex: box.getAttribute("tabindex"), role: box.getAttribute("role"), name: box.getAttribute("aria-label") };`,
+        );
+      return { fitsFirst, detached: await shown("d"), attached: await shown("a") };
+    },
+    expected: {
+      fitsFirst: { d: { tabindex: null, role: null, "aria-label": null }, a: { tabindex: null, role: null, "aria-label": null } },
+      detached: { assigned: ["d-n"], sized: true, inside: true, overflows: true, tabindex: "0", role: "group", name: "Open work packages" },
+      attached: { assigned: ["a-n"], sized: true, inside: true, overflows: true, tabindex: "0", role: "group", name: "Open work packages" },
+    },
+  },
+  {
     name: "US1-16 (characterData): the caption's text node edited with text renames the overflowing region",
     run: async (driver) => {
       await page(driver, dt("dt", "", usTable("t")), 320);
@@ -933,6 +974,20 @@ async function headOffset(driver: Driver, id: string): Promise<number | null> {
   return read === null ? null : (await driver.box(`${id}t-head`)).y - read.y;
 }
 
+/**
+ * Whether the header rule is drawn at the pinned `<thead>`'s block end: the rendered pixel of the host on the header
+ * row's last pixel row, at the centre of a header cell, is `--ocelle-color-rule-strong` (in the collapsed border model
+ * the rule stays behind with the rows; contracts/checks.md § Element plants).
+ */
+async function ruleUnderHead(driver: Driver, id: string): Promise<boolean> {
+  const host = await driver.box(id);
+  const head = await driver.box(`${id}t-head`);
+  const cell = await driver.box(`${id}t-h1`);
+  const image = await driver.pixels(id);
+  const pixel = at(image, cell.x + cell.width / 2 - host.x, Math.floor(bottomOf(head) - host.y - 0.5));
+  return nearColour(pixel, rgb(await tokenColour(driver, "color-rule-strong")), 12);
+}
+
 /** The ids of each header cell for which `elementFromPoint` at its centre returns that cell (or its text's parent). */
 async function headersHit(driver: Driver, id: string): Promise<boolean[]> {
   const out: boolean[] = [];
@@ -978,7 +1033,7 @@ const stickyBodies: DataTableScenario[] = [
         const out: unknown[] = [];
         for (const top of [Math.round(range / 2), range]) {
           await driver.setScrollTop(boxOf(id), top);
-          out.push({ scrolled: (await driver.scrollTop(boxOf(id))) > room, pinned: near((await headOffset(driver, id)) ?? -99, 0), hit: await headersHit(driver, id), rule: Number.parseFloat(await driver.computed(`${id}t-h0`, "border-bottom-width")) > 0 });
+          out.push({ scrolled: (await driver.scrollTop(boxOf(id))) > room, pinned: near((await headOffset(driver, id)) ?? -99, 0), hit: await headersHit(driver, id), rule: Number.parseFloat(await driver.computed(`${id}t-h0`, "border-bottom-width")) > 0, drawn: await ruleUnderHead(driver, id) });
         }
         return out;
       };
@@ -992,7 +1047,7 @@ const stickyBodies: DataTableScenario[] = [
       return result;
     },
     expected: (() => {
-      const each = { scrolled: true, pinned: true, hit: [true, true, true, true, true], rule: true };
+      const each = { scrolled: true, pinned: true, hit: [true, true, true, true, true], rule: true, drawn: true };
       return { plain: [each, each], prose: [each, each], ground: [true, true], pageHeight: true };
     })(),
   },
@@ -1515,7 +1570,187 @@ const stickyBodies: DataTableScenario[] = [
 ];
 
 /** Every shared data-table body, run by both harnesses. */
-export const dataTableScenarios: readonly DataTableScenario[] = [...us1, ...captions, ...sizing, ...edges, ...stickyBodies];
+// ---------------------------------------------------------------------------------------------------------------
+// T025 (mutation): bodies for survivors of the element's mutation runs, each named for the contract behaviour it pins
+// (contracts/ocelle-data-table.md; research.md R-04, R-07; the operator's decision Q-M2 (a)).
+
+/** The number of the element's per-instance sheets adopted by its shadow root: one rule, `.region-track`. */
+const perInstanceSheets = (id: string): string =>
+  `[...document.getElementById(${JSON.stringify(id)}).shadowRoot.adoptedStyleSheets].filter((sheet) => sheet.cssRules.length === 1 && sheet.cssRules[0].selectorText === ".region-track").length`;
+
+const mutationBodies: DataTableScenario[] = [
+  {
+    // Plants: an element child read as an <img> (no walk into it); an <img> without alt giving text.
+    name: "R-04 caption text: a visible nested element's text is read and an <img> without alt adds nothing to the region's name",
+    run: async (driver) => {
+      await page(driver, dt("dt", "", usTable("t", { caption: '<b id="t-b">Open</b> work packages<img id="t-img">' })), 320);
+      return (await boxAttributes(driver, "dt"))["aria-label"];
+    },
+    expected: "Open work packages",
+  },
+  {
+    // Plant: a property that does not reflect to its attribute.
+    name: "wrap, stickyHeader and striped set as properties reflect to the wrap, sticky-header and striped attributes",
+    run: async (driver) => {
+      await page(driver, dt("dt", 'label="Work packages"', usTable("t", { ident: false })));
+      const before = { wrap: await driver.attribute("dt", "wrap"), sticky: await driver.attribute("dt", "sticky-header"), striped: await driver.attribute("dt", "striped") };
+      await driver.setProperty("dt", "wrap", "anywhere");
+      await driver.setProperty("dt", "stickyHeader", true);
+      await driver.setProperty("dt", "striped", true);
+      await driver.settle();
+      return { before, after: { wrap: await driver.attribute("dt", "wrap"), sticky: await driver.attribute("dt", "sticky-header"), striped: await driver.attribute("dt", "striped") } };
+    },
+    expected: { before: { wrap: null, sticky: null, striped: null }, after: { wrap: "anywhere", sticky: "", striped: "" } },
+  },
+  {
+    // Plant: the box size written only in the frame of a fade or axis change, not on a resize.
+    name: "R-07 a fitting table resized from 1280 to 1000 px with no fade change: --data-table-box-size follows the measured .box-size each time",
+    run: async (driver) => {
+      await page(driver, dt("dt", 'label="Work packages"', usTable("t", { ident: false })));
+      const read = async (): Promise<unknown> => {
+        await driver.frames(2);
+        const size = await safe(() => driver.box("dt", ".box-size"));
+        const written = await trackProperty(driver, "dt", "--data-table-box-size");
+        return { fade: field(await region(driver, "dt"), "fade"), size: typeof size !== "string" && Math.abs(Number.parseFloat(written) - size.width) <= 0.01, width: typeof size === "string" ? size : Math.round(size.width) };
+      };
+      const wide = await read();
+      await driver.viewport(1000, 800);
+      await driver.settle();
+      return { wide, narrower: await read() };
+    },
+    // The host fills the page's width (the harnesses mount with no body margin).
+    expected: { wide: { fade: null, size: true, width: 1280 }, narrower: { fade: null, size: true, width: 1000 } },
+  },
+  {
+    // Plant: the per-instance sheet adopted again on every connect.
+    name: "a data table detached and attached again adopts its per-instance sheet once, as before",
+    run: async (driver) => {
+      await page(driver, dt("dt", 'label="Work packages"', usTable("t")), 320);
+      const before = await evaluate(driver, `return ${perInstanceSheets("dt")};`);
+      await driver.module(`const host = document.getElementById("dt");
+const parent = host.parentNode;
+host.remove();
+parent.append(host);`);
+      await driver.settle();
+      return { before, after: await evaluate(driver, `return ${perInstanceSheets("dt")};`) };
+    },
+    expected: { before: 1, after: 1 },
+  },
+  {
+    // Plants: the child observer without `hidden`, `aria-hidden` or `alt` in its attribute filter, or with none.
+    name: "R-04 caption text at run time: hidden set on a caption span, aria-hidden=true on another and an <img>'s alt changed each rename the overflowing region",
+    run: async (driver) => {
+      await page(driver, dt("dt", "", usTable("t", { caption: '<span id="t-a">Open </span><span id="t-d">draft </span>work packages<img id="t-i" alt="">' })), 320);
+      const name = async (): Promise<string | null> => (await boxAttributes(driver, "dt"))["aria-label"] ?? null;
+      const steps = [await name()];
+      await driver.setAttribute("t-a", "hidden", "");
+      await driver.settle();
+      steps.push(await name());
+      await driver.setAttribute("t-d", "aria-hidden", "true");
+      await driver.settle();
+      steps.push(await name());
+      await driver.setAttribute("t-i", "alt", "(12)");
+      await driver.settle();
+      steps.push(await name());
+      return steps;
+    },
+    expected: ["Open draft work packages", "draft work packages", "work packages", "work packages(12)"],
+  },
+  {
+    // Plant: the label used untrimmed, so a blank label wins over the caption.
+    name: "FR-010: a blank label (white space only) counts as absent: the caption names the overflowing region",
+    run: async (driver) => {
+      await page(driver, dt("dt", 'label="   "', usTable("t")), 320);
+      return boxAttributes(driver, "dt");
+    },
+    expected: { tabindex: "0", role: "group", "aria-label": "Work packages" },
+  },
+  {
+    // Plant: the frame's end-fade test reading `end` only, so `both` removes --data-table-end-fade.
+    name: "R-07 a sticky-header table scrolled to the middle (data-fade both) whose bound is lifted: the frame of the axis change keeps --data-table-end-fade the px width of .region-edge.end",
+    run: async (driver) => {
+      await page(driver, sticky("s", 'data-bound="300"', { ident: true }), 320);
+      await driver.setScrollLeft({ id: "s", inner: ".region-box" }, 40);
+      await driver.settle();
+      const scrolled = await region(driver, "s");
+      await driver.setAttribute("s", "data-bound", null);
+      await driver.settle();
+      await driver.frames(2);
+      const lifted = await region(driver, "s");
+      const property = await trackProperty(driver, "s", "--data-table-end-fade");
+      return {
+        scrolled: { fade: field(scrolled, "fade"), axis: field(scrolled, "axis") },
+        lifted: { fade: field(lifted, "fade"), axis: field(lifted, "axis"), endFade: lifted !== null && lifted.end > 0 && Math.abs(Number.parseFloat(property) - lifted.end) <= 0.01 },
+      };
+    },
+    expected: { scrolled: { fade: "both", axis: "both" }, lifted: { fade: "both", axis: null, endFade: true } },
+  },
+  {
+    // Plant: the update's end-fade test reading `end` only, so a fade that goes from start to both asks for no frame.
+    name: "R-07 an overflowing table scrolled to its inline end (data-fade start, no --data-table-end-fade) and back to the middle (data-fade both): --data-table-end-fade the px width of .region-edge.end again",
+    run: async (driver) => {
+      await page(driver, dt("dt", 'label="Work packages"', usTable("t")), 320);
+      const box = { id: "dt", inner: ".region-box" };
+      await driver.setScrollLeft(box, 10_000);
+      await driver.settle();
+      await driver.frames(2);
+      const atEnd = { fade: field(await region(driver, "dt"), "fade"), endFade: await trackProperty(driver, "dt", "--data-table-end-fade") };
+      await driver.setScrollLeft(box, 40);
+      await driver.settle();
+      await driver.frames(2);
+      const read = await region(driver, "dt");
+      const property = await trackProperty(driver, "dt", "--data-table-end-fade");
+      return { atEnd, middle: { fade: field(read, "fade"), endFade: read !== null && read.end > 0 && Math.abs(Number.parseFloat(property) - read.end) <= 0.01 } };
+    },
+    expected: { atEnd: { fade: "start", endFade: "" }, middle: { fade: "both", endFade: true } },
+  },
+  {
+    // Plant: disconnectedCallback without cancelAnimationFrame, so the frame an update asked for runs while the element
+    // is detached and writes the end fade's depth from a box with no layout (0px), which no later frame corrects.
+    name: "R-07 a table that starts to overflow and is detached before the frame of that change, then attached again: --data-table-end-fade the px width of .region-edge.end",
+    run: async (driver) => {
+      await page(driver, dt("dt", 'label="Work packages"', usTable("t", { ident: false })), 320);
+      const fits = field(await region(driver, "dt"), "fade");
+      await driver.module(`const host = document.getElementById("dt");
+const parent = host.parentNode;
+document.getElementById("t-c0-0").textContent = ${JSON.stringify(identifier)};
+// The observer sees the overflow in the next frame's rendering step, and the update it asks for requests the frame of
+// the change; a task queued from that frame's animation callbacks runs after the step, before that frame.
+await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
+host.remove();
+await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+parent.append(host);`);
+      await driver.settle();
+      await driver.frames(2);
+      const read = await region(driver, "dt");
+      const property = await trackProperty(driver, "dt", "--data-table-end-fade");
+      return { fits, fade: field(read, "fade"), endFade: read !== null && read.end > 0 && Math.abs(Number.parseFloat(property) - read.end) <= 0.01 };
+    },
+    expected: { fits: null, fade: "end", endFade: true },
+  },
+  {
+    // Q-M2 (a), T086. Plants: connectedCallback without its own assignment (the slot assigned only in the update that
+    // follows), or without requestUpdate() (no update when the module's outputs do not change, so the old name stays).
+    name: "US1-15 (re-attach, Q-M2): an overflowing table replaced while detached by another overflowing one is assigned in the task of the re-attach and names the region by its own caption",
+    run: async (driver) => {
+      await page(driver, dt("d", "", usTable("d-t")), 320);
+      const first = (await boxAttributes(driver, "d"))["aria-label"];
+      await driver.module(`const host = document.getElementById("d");
+const parent = host.parentNode;
+host.remove();
+const template = document.createElement("template");
+template.innerHTML = ${JSON.stringify(`<table id="d-n"><caption>Open work packages</caption><tbody><tr><td>${identifier}</td><td>${identifier}</td></tr></tbody></table>`)};
+host.querySelector(":scope > table").replaceWith(template.content);
+parent.append(host);
+host.setAttribute("data-assigned", host.shadowRoot.querySelector("slot").assignedNodes().map((node) => node.id).join(" "));`);
+      await driver.settle();
+      return { first, inTask: await driver.attribute("d", "data-assigned"), after: await boxAttributes(driver, "d") };
+    },
+    expected: { first: "Work packages", inTask: "d-n", after: { tabindex: "0", role: "group", "aria-label": "Open work packages" } },
+  },
+];
+
+export const dataTableScenarios: readonly DataTableScenario[] = [...us1, ...captions, ...sizing, ...edges, ...stickyBodies, ...mutationBodies];
 
 /**
  * US1-24's no-hover half (re-analysis A2 (a)), run only in the touch context (test/data-table.touch.test.ts and
@@ -1539,6 +1774,8 @@ export const dataTableTouchScenarios: readonly Scenario[] = [
       await driver.forcedColors("active", "light");
       const colours: Record<string, string> = { [await driver.resolveColour("CanvasText")]: "CanvasText", [await driver.resolveColour("Highlight")]: "Highlight", [await driver.resolveColour("Canvas")]: "Canvas" };
       await driver.touchTap("t-c1-1");
+      // The pointer over the tapped row too: on a device that cannot hover nothing paints the hover band, :hover or not.
+      await driver.hover("t-c1-1");
       const band = colours[await driver.computed("t-c1-0", "border-left-color")] ?? "other";
       const width = Number.parseFloat(await driver.computed("t-c1-0", "border-left-width")) > 0;
       await driver.forcedColors("none");

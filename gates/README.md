@@ -132,8 +132,15 @@ The mutation gate exits 2 rather than pass changed code it did not check. That c
 take verbatim as a `mutate` input, checked before Stryker runs, and a `mutate` entry Stryker reports it did not read
 (`Glob pattern "<entry>" did not result in any files.`). Stryker 10.1.1 never reads a file under a folder named
 `node_modules`, `.git`, `.next`, `.nuxt`, `.svelte-kit` or `.stryker-tmp`, in any case. The cause names each such
-path or entry (contracts/gate-cli.md, mutation row; phase 3 round 12, O12-01). A changed file that Stryker read but
-its report does not list has no mutant on its changed lines and passes.
+path or entry (contracts/gate-cli.md, mutation row; phase 3 round 12, O12-01). It also covers a file Stryker's type
+checker rejects itself (mission 019, gate gap rule (c); contracts/gate-cli.md, mutation row, amendment 2026-11-19):
+every mutant on the file's changed lines (a `--files` entry's ranges in a shard run) is a CompileError, and all of
+them carry one diagnostic of the file's own path (same line and TS code, read from Stryker 10.1.1's
+`<path>(<line>,<col>): error TS<code>: <message>` lines) on a line none of them spans. The cause is
+`Stryker's type checker rejects <path> itself, not its mutants: <path>(<line>,<col>): error TS<code>`, with the hint
+to fix that type error (an explicit type often does). Such an exit 2 wins over other files' findings. A CompileError
+outside such a failure (a mutant the checker rejects for its own change) stays invalid and passes, as before. A
+changed file that Stryker read but its report does not list has no mutant on its changed lines and passes.
 
 Since mission 007 (2026-11-10, `specs/007-mutation-gate-strictness/contracts/mutation-output.md`), the gate also prints
 what no test was seen killing on changed lines, after the equivalent records and before the findings: one

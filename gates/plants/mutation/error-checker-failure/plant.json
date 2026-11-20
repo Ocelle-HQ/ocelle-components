@@ -1,0 +1,5 @@
+{
+  "expect": "error",
+  "why": "Every mutant on the changed lines is a CompileError on one diagnostic of the unmutated file, on a line no mutant spans: Stryker's type checker rejects the file itself, so the gate could not mutation-test it (019 gate gap rule (c); 001 contracts/gate-cli.md, mutation row)",
+  "cause": "mutation: could not run: Stryker's type checker rejects packages/tokens/src/x.ts itself"
+}

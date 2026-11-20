@@ -242,3 +242,183 @@
 [data-ocelle-wrap="anywhere"] {
   overflow-wrap: anywhere;
 }
+
+/*
+ * Data table, block 1 (019 FR-005 to FR-007, FR-013, FR-017, FR-060, FR-061; research R-06, R-07, R-18, R-20): the
+ * direct table of an `ocelle-data-table`, defined or not, at specificity (0,0,0), so any consumer rule on the same
+ * element wins. A table nested in a cell is not selected. Compact cells, eyebrow column headers (011's eyebrow tokens;
+ * Chromium names each column header by its drawn upper-case text), row headers, the row rules, the identifier wrap,
+ * the sticky header row, the stripe, the row hover and the forced-colours row band.
+ * The caption's cap reads --data-table-box-size and --data-table-end-fade, which `ocelle-data-table` writes on its
+ * track (a base-style hook between @ocelle/elements and @ocelle/styles, public surface of both; a consumer does not
+ * set them). Before upgrade neither is set and the cap is --ocelle-measure-container with no end fade.
+ */
+:where(ocelle-data-table > table) {
+  border-collapse: collapse;
+  inline-size: 100%;
+  margin: 0;
+  font-family: var(--ocelle-font-sans);
+  font-variant-numeric: var(--ocelle-figures);
+}
+
+:where(ocelle-data-table > table > caption) {
+  font-size: var(--ocelle-font-size-sm);
+  font-weight: var(--ocelle-font-weight-medium);
+  line-height: var(--ocelle-line-height-normal);
+  color: var(--ocelle-color-ink);
+  text-align: start;
+  padding-block-end: var(--ocelle-space-2);
+  position: static;
+  max-inline-size: calc(var(--data-table-box-size, var(--ocelle-measure-container)) - 2 * (var(--ocelle-focus-offset) + var(--ocelle-focus-width)) - var(--data-table-end-fade, 0 * var(--ocelle-scroller-fade-size)));
+}
+
+:where(ocelle-data-table > table > :is(thead, tbody, tfoot) > tr > :is(td, th)) {
+  padding: var(--ocelle-space-1) var(--ocelle-space-2);
+  font-size: var(--ocelle-font-size-sm);
+  line-height: var(--ocelle-line-height-compact);
+  color: var(--ocelle-color-ink-soft);
+  text-align: start;
+  vertical-align: top;
+  border-block-end: var(--ocelle-border-width) solid var(--ocelle-color-rule);
+}
+
+/* Column headers: in the header row, or scoped to a column or a column group. */
+:where(ocelle-data-table > table > thead > tr > th, ocelle-data-table > table > :is(thead, tbody, tfoot) > tr > th[scope="col"], ocelle-data-table > table > :is(thead, tbody, tfoot) > tr > th[scope="colgroup"]) {
+  font-size: var(--ocelle-font-size-eyebrow);
+  font-weight: var(--ocelle-font-weight-eyebrow);
+  text-transform: uppercase;
+  letter-spacing: var(--ocelle-tracking-eyebrow);
+  color: var(--ocelle-color-eyebrow);
+  border-block-end-color: var(--ocelle-color-rule-strong);
+}
+
+/* Row headers, after the column headers, so a corner header with scope="row" in the header row is a row header. */
+:where(ocelle-data-table > table > :is(thead, tbody, tfoot) > tr > th[scope="row"], ocelle-data-table > table > :is(thead, tbody, tfoot) > tr > th[scope="rowgroup"], ocelle-data-table > table > :is(tbody, tfoot) > tr > th:not([scope])) {
+  font-size: var(--ocelle-font-size-sm);
+  font-weight: var(--ocelle-font-weight-medium);
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--ocelle-color-ink);
+  border-block-end-color: var(--ocelle-color-rule);
+}
+
+/* No rule below the table's last row; the rows of earlier row groups keep theirs (a <tfoot> goes after the <tbody>s). */
+:where(ocelle-data-table > table > :is(tbody, tfoot):last-child > tr:last-child > :is(td, th)) {
+  border-block-end: 0;
+}
+
+:where(ocelle-data-table[wrap="anywhere"] > table > :is(tbody, tfoot) > tr > td) {
+  overflow-wrap: anywhere;
+}
+
+/* The sticky header row: the separated border model, so the header rule travels with the pinned row. */
+:where(ocelle-data-table[sticky-header] > table) {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+/* Pinned at the region's client block-start edge once scrolled, the focus ring's room above it at rest. */
+:where(ocelle-data-table[sticky-header] > table > thead) {
+  position: sticky;
+  inset-block-start: calc(-1 * (var(--ocelle-focus-offset) + var(--ocelle-focus-width)));
+}
+
+:where(ocelle-data-table[sticky-header] > table > thead > tr > :is(td, th)) {
+  background-color: var(--ocelle-color-sheet);
+}
+
+/* Each <tbody> counts its own rows, hidden rows included. */
+:where(ocelle-data-table[striped] > table > tbody > tr:nth-child(even) > :is(td, th)) {
+  background-color: var(--ocelle-color-inset);
+}
+
+/* The row hover, after the stripe; only where the primary pointer can hover (none on a touch screen). */
+@media (hover: hover) {
+  :where(ocelle-data-table > table > tbody > tr:hover > :is(td, th)) {
+    background-color: var(--ocelle-color-hover-bg);
+  }
+}
+
+/* Forced colours: text and rules in CanvasText, and the row band that stands in for the stripe and the hover. */
+@media (forced-colors: active) {
+  :where(ocelle-data-table > table > :is(thead, tbody, tfoot) > tr > :is(td, th)) {
+    color: CanvasText;
+    border-block-end-color: CanvasText;
+  }
+
+  :where(ocelle-data-table > table > tbody > tr > :first-child) {
+    border-inline-start: var(--ocelle-bar-width) solid Canvas;
+  }
+
+  :where(ocelle-data-table[striped] > table > tbody > tr:nth-child(even) > :first-child) {
+    border-inline-start-color: CanvasText;
+  }
+
+  @media (hover: hover) {
+    :where(ocelle-data-table > table > tbody > tr:hover > :first-child) {
+      border-inline-start-color: Highlight;
+    }
+  }
+}
+
+/*
+ * Data table, block 2 (019 FR-012; research R-06): the prose override at (0,1,0), after the prose rules, restating
+ * each property the prose rules set on a data table's parts with block 1's value. A consumer rule inside prose needs
+ * a specificity above (0,1,0), or (0,1,0) placed after @ocelle/styles.
+ */
+[data-ocelle-prose=""] :where(ocelle-data-table > table) {
+  display: table;
+  overflow-x: visible;
+  max-inline-size: none;
+  container-type: normal;
+  margin-block: 0;
+  border-collapse: collapse;
+}
+
+[data-ocelle-prose=""] :where(ocelle-data-table[sticky-header] > table) {
+  border-collapse: separate;
+}
+
+[data-ocelle-prose=""] :where(ocelle-data-table > table > caption) {
+  position: static;
+  inset-inline-start: auto;
+  max-inline-size: calc(var(--data-table-box-size, var(--ocelle-measure-container)) - 2 * (var(--ocelle-focus-offset) + var(--ocelle-focus-width)) - var(--data-table-end-fade, 0 * var(--ocelle-scroller-fade-size)));
+  text-align: start;
+  font-size: var(--ocelle-font-size-sm);
+  line-height: var(--ocelle-line-height-normal);
+}
+
+[data-ocelle-prose=""] :where(ocelle-data-table > table > :is(thead, tbody, tfoot) > tr > :is(td, th)) {
+  min-inline-size: auto;
+  padding: var(--ocelle-space-1) var(--ocelle-space-2);
+  border-block-end: var(--ocelle-border-width) solid var(--ocelle-color-rule);
+  text-align: start;
+}
+
+[data-ocelle-prose=""] :where(ocelle-data-table > table > thead > tr > th, ocelle-data-table > table > :is(thead, tbody, tfoot) > tr > th[scope="col"], ocelle-data-table > table > :is(thead, tbody, tfoot) > tr > th[scope="colgroup"]) {
+  font-size: var(--ocelle-font-size-eyebrow);
+  font-variant-numeric: var(--ocelle-figures);
+  font-weight: var(--ocelle-font-weight-eyebrow);
+  border-block-end-color: var(--ocelle-color-rule-strong);
+}
+
+[data-ocelle-prose=""] :where(ocelle-data-table > table > :is(thead, tbody, tfoot) > tr > th[scope="row"], ocelle-data-table > table > :is(thead, tbody, tfoot) > tr > th[scope="rowgroup"], ocelle-data-table > table > :is(tbody, tfoot) > tr > th:not([scope])) {
+  font-size: var(--ocelle-font-size-sm);
+  font-variant-numeric: var(--ocelle-figures);
+  font-weight: var(--ocelle-font-weight-medium);
+  border-block-end-color: var(--ocelle-color-rule);
+}
+
+[data-ocelle-prose=""] :where(ocelle-data-table > table > :is(tbody, tfoot):last-child > tr:last-child > :is(td, th)) {
+  border-block-end: 0;
+}
+
+/*
+ * Numeric cells, block 4 (019 FR-019; research R-19): a hook, `data-ocelle-align="end"` on a cell, at (0,1,0) after
+ * the prose override, so it wins over block 1, over the prose cells and over block 2. Only the value `end`. It sets
+ * no font, colour, padding or wrap.
+ */
+[data-ocelle-align="end"] {
+  text-align: end;
+  font-variant-numeric: var(--ocelle-figures);
+}

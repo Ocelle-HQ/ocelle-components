@@ -256,6 +256,129 @@
         {
           "attributes": [
             {
+              "default": "undefined",
+              "description": "Names the scroll region while the table overflows; not shown. Trimmed; empty or whitespace-only counts as absent.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "`anywhere` breaks long identifiers in body cells anywhere (`overflow-wrap: anywhere` through `@ocelle/styles`); any\nother value acts as unset.",
+              "fieldName": "wrap",
+              "name": "wrap",
+              "type": {
+                "text": "\"anywhere\" | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "Present (any value): the `<thead>` stays pinned at the region's block start while the body scrolls in a block size\nthe page bounds on the host. Toggles at run time.",
+              "fieldName": "stickyHeader",
+              "name": "sticky-header",
+              "type": {
+                "text": "boolean | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "Present (any value): each `<tbody>`'s even rows get the `--ocelle-color-inset` ground through `@ocelle/styles`.",
+              "fieldName": "striped",
+              "name": "striped",
+              "type": {
+                "text": "boolean | undefined"
+              }
+            }
+          ],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A compact data table: a native `<table>` child in a box that scrolls in the inline direction when the table is wider\nthan its room, a tab stop and a named group only while it overflows.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "label",
+              "default": "undefined",
+              "description": "Names the scroll region while the table overflows; not shown. Trimmed; empty or whitespace-only counts as absent.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "wrap",
+              "default": "undefined",
+              "description": "`anywhere` breaks long identifiers in body cells anywhere (`overflow-wrap: anywhere` through `@ocelle/styles`); any\nother value acts as unset.",
+              "kind": "field",
+              "name": "wrap",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"anywhere\" | undefined"
+              }
+            },
+            {
+              "attribute": "sticky-header",
+              "default": "undefined",
+              "description": "Present (any value): the `<thead>` stays pinned at the region's block start while the body scrolls in a block size\nthe page bounds on the host. Toggles at run time.",
+              "kind": "field",
+              "name": "stickyHeader",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean | undefined"
+              }
+            },
+            {
+              "attribute": "striped",
+              "default": "undefined",
+              "description": "Present (any value): each `<tbody>`'s even rows get the `--ocelle-color-inset` ground through `@ocelle/styles`.",
+              "kind": "field",
+              "name": "striped",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean | undefined"
+              }
+            }
+          ],
+          "name": "OcelleDataTable",
+          "slots": [
+            {
+              "description": "The first direct `<table>` child; other children are not shown after upgrade.",
+              "name": ""
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-data-table"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-data-table.ts",
+            "name": "OcelleDataTable"
+          },
+          "kind": "js",
+          "name": "OcelleDataTable"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-data-table.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
               "default": "false",
               "description": "Whether the overlay is shown, modally in the top layer; setting it shows or closes the overlay, and the overlay\nsets it to false whenever it closes. Reflected.",
               "fieldName": "open",

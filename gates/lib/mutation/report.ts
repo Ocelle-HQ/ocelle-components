@@ -13,6 +13,11 @@
 // mutants, each in changed-file order, then start line, start column and mutant id compared as a number (an id that is
 // not a decimal integer after every numeric one, by string), and the zero-mutant entries, the entries with no mutant
 // on their changed lines (named by their `--files` entry, else by path), in changed-file order.
+// Mission 019 (gate gap rule (c); 001 contracts/gate-cli.md, mutation row, amendment 2026-11-19): when every mutant on
+// a changed file's changed lines is a CompileError and all of them carry one diagnostic of that file itself (same
+// path, line and TS code, read from the `statusReason` lines Stryker 10.1.1's TypeScript checker writes as
+// `<path>(<line>,<col>): error TS<code>: <message>`) on a line none of them spans, the checker rejected the file, not
+// its mutants: the gate could not run. A CompileError outside such a failure stays invalid and passes.
 import { oneLine } from "../findings.ts";
 import type { Finding } from "../findings.ts";
 import type { ChangedFile } from "./ranges.ts";
@@ -60,6 +65,7 @@ interface Mutant {
   readonly mutatorName: string;
   readonly replacement?: string;
   readonly status: string;
+  readonly statusReason?: string;
   readonly location: {
     readonly start: { readonly line: number; readonly column: number };
     readonly end: { readonly line: number };
@@ -123,6 +129,43 @@ function byPosition(a: Mutant, b: Mutant): number {
   return x.line - y.line || x.column - y.column || compareIds(a.id, b.id);
 }
 
+/** A diagnostic of Stryker's TypeScript checker in a mutant's `statusReason`. */
+interface Diagnostic {
+  readonly path: string;
+  readonly line: number;
+  readonly column: number;
+  readonly code: string;
+}
+
+/** A diagnostic line of Stryker 10.1.1's TypeScript checker (gates/test/mutation-report.test.ts pins the form). */
+const diagnosticLine = /^(\S.*)\((\d+),(\d+)\): error TS(\d+): /;
+
+/** The diagnostics of a `statusReason`, in its order; a line not of the diagnostic form (a continuation) is skipped. */
+function diagnosticsOf(reason: string | undefined): Diagnostic[] {
+  // Stryker disable next-line StringLiteral: equivalent, a missing statusReason read as any other text with no line of the diagnostic form gives no diagnostic either (T025)
+  return (reason ?? "").split("\n").flatMap((line) => {
+    const match = diagnosticLine.exec(line);
+    return match === null ? [] : [{ path: String(match[1]), line: Number(match[2]), column: Number(match[3]), code: String(match[4]) }];
+  });
+}
+
+/**
+ * The checker failure of a changed file (gate gap rule (c)): when its mutants on changed lines are all CompileError,
+ * the first diagnostic of the first of them that is in `path`, on a line none of the mutants spans, and in every
+ * other mutant's diagnostics (same path, line and code); else undefined. No mutant, or no parsable diagnostic, is none.
+ */
+function checkerFailure(path: string, mutants: readonly Mutant[]): Diagnostic | undefined {
+  if (!mutants.every((mutant) => mutant.status === "CompileError")) return undefined;
+  const [first, ...rest] = mutants;
+  const same = (a: Diagnostic) => (b: Diagnostic): boolean => a.path === b.path && a.line === b.line && a.code === b.code;
+  return diagnosticsOf(first?.statusReason).find(
+    (diagnostic) =>
+      diagnostic.path === path &&
+      mutants.every(({ location: { start, end } }) => diagnostic.line < start.line || diagnostic.line > end.line) &&
+      rest.every((mutant) => diagnosticsOf(mutant.statusReason).some(same(diagnostic))),
+  );
+}
+
 export function classifyMutants(run: StrykerRun, changed: readonly RunEntry[]): MutantVerdict {
   const unread = unreadEntries(run.output);
   if (unread.length > 0) {
@@ -148,6 +191,12 @@ export function classifyMutants(run: StrykerRun, changed: readonly RunEntry[]): 
       file.ranges.some((range) => start.line <= range.end && end.line >= range.start),
     );
     if (onChanged.length === 0) zeroEntries.push(file.entry ?? file.path);
+    const rejected = checkerFailure(file.path, onChanged);
+    if (rejected !== undefined) {
+      const { path, line, column, code } = rejected;
+      const diagnostic = `${path}(${String(line)},${String(column)}): error TS${code}`;
+      return cannotRun(`Stryker's type checker rejects ${file.path} itself, not its mutants: ${diagnostic}; fix that type error (an explicit type often does) and rerun`);
+    }
     const undecided = (status: string): UndecidedMutant[] =>
       onChanged
         .filter((mutant) => mutant.status === status)
