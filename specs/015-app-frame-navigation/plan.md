@@ -23,12 +23,12 @@ Add six independently importable custom elements. The shell owns layout and narr
 | --- | --- |
 | I. Framework-free | Elements expose documented attributes, properties, slots, parts and prefixed events. Register through existing per-element, root and browser entry points. No element I/O |
 | II. Tokens and brand | Compose dark chrome in both themes. Use standard radii and token colors. Publish threshold defaults as layout tokens |
-| III. Accessibility | Use native links, button and modal dialog semantics. Keep ARIA references local, test composed focus, current state, forced colors and the hover/focus bubble |
-| IV. CSP and offline | Lit adopted stylesheets, local assets and native APIs. Run the strict CSP probe on a representative integrated shell |
+| III. Accessibility | Use native links, a named inline nav group, native buttons and modal dialog semantics. Keep ARIA references local. Test distinct landmarks, sequential drawer entry, the primary menu's minimum target size, forced colors and ownership-aware bubble dismissal |
+| IV. CSP and offline | Lit adopted stylesheets, local assets and native APIs. Run the built-output integrated shell probe in the enforced-CSP `elements-browser` project and assert successful behavior with zero policy violations |
 | V. Visual and interaction tests | Commit pinned baselines and test variants, emitted events and actual keyboard outcomes |
 | VI. Consumer scope | Derive behavior from cited Kitty requirements and implement original Ocelle elements |
 | VII. Semver | Additive manifest and token surface. Document changes per affected package |
-| VIII. Test-first | Split into reviewable units, record real red runs before green, run old-code and mutation checks, and add tests before behavioral fixes |
+| VIII. Test-first | Split into reviewable units, record real red runs before green, run old-code and mutation checks, and add tests before behavioral fixes. Put behavior and branch assertions in the mutation-selected Chromium source projects `elements` and `elements-touch` |
 
 The Phase 1 contracts preserve these constraints. Changes to shared drawer, sidebar or threshold code require regression coverage of the existing callers.
 
@@ -40,6 +40,6 @@ The Phase 1 contracts preserve these constraints. Changes to shared drawer, side
 
 ## Delivery order
 
-1. Establish the top bar and the navigation primitives with standalone stories and native key paths.
-2. Establish shell layout and drawer composition against real rail and sidebar fixtures. Keep stable destination identity and exercise boundary, reflow and focus cases before changing shared helpers.
+1. Establish the top bar and the navigation primitives with standalone stories and native key paths. Validate the inline nav pill against the Desktop V2 group with several links, one current page and a separate top-bar action.
+2. Establish shell layout and drawer composition against real rail and sidebar fixtures. Keep stable destination identity and exercise grouped sidebar compaction, distinct navigation landmarks, minimum menu size, resize and focus cases in source browser tests before changing shared helpers.
 3. Add the skip link and integrated shell validation, including a target in a different shadow root and a separately sized frame. Run the public surface and integration gates across all delivered units.
