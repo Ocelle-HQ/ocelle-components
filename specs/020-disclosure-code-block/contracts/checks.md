@@ -60,7 +60,23 @@ and, for the disclosure, `ocelle-icon`; no other).
     (PLAN-FRESH-2-001 (a), PLAN-FRESH-3-001 (a));
   - US2-12 with a base64url digest (groups holding `-`) and a base64 one (`/`), swept over `pre` widths from 60 to
     300 px: every group has one rect and every line's first unit starts at the `pre`'s content-box inline start
-    (PLAN-CORRECTNESS-1-004, PLAN-FRESH-1-005).
+    (PLAN-CORRECTNESS-1-004, PLAN-FRESH-1-005). The sweep strings (analysis A1) are the SHA-256 of `test` with the
+    prefix `sha256:` (7 code points):
+    - base64url, 43 code points after the prefix, 11 groups (`L-qg` holds `-`):
+      `sha256:n4bQgYhMfWWaL-qgxVrQFaO_TxsrC4Is0V1sFbDwCgg`;
+    - base64, 44 code points after the prefix, 11 groups (`FaO/` holds `/`):
+      `sha256:n4bQgYhMfWWaL+qgxVrQFaO/TxsrC4Is0V1sFbDwCgg=`.
+
+    At each width the body also asserts: the prefix has one rect where its inline size (its rect's width read at
+    300 px, where it fits) is at most the `pre`'s content-box inline size, and is not asserted elsewhere; the block
+    holds more than one line (distinct line tops) where the digest's inline size (the units' widths at 300 px plus
+    one `--ocelle-space-1` gap per adjacent pair) is wider than the content box, and one line elsewhere; and the page
+    scroll width equals the viewport width;
+  - US2-12's wide prefix (analysis C1): `ni:sha-256:` followed by the base64url string above, at a `pre` width of
+    60 px: the prefix is wider than the line and has more than one rect (it breaks inside, WCAG 1.4.10), every group
+    has one rect, and the page scroll width equals the viewport width; paired at 300 px with the prefix at one rect;
+  - US2-6's handover when the block widens again while focused is asserted with US2-21's oracle (focus on
+    `.region-frame`, `document.activeElement` the host); US2-21 is the oracle, US2-6 refers to it (analysis B1);
 - **"Does not" outcomes are paired** with a positive outcome in the same body (no event and the state unchanged; not
   a tab stop and the text shown; no toggle on a panel click and the click reaching a `document` listener).
 - **Event counts** are read after the element's `updateComplete` and then the driver's `settle()` (two animation
@@ -95,8 +111,14 @@ and, for the disclosure, `ocelle-icon`; no other).
   light DOM (PLAN-FRESH-1-004). The whole-block copy equals the trimmed digest plus one `\n`; a run of groups equals
   its characters exactly (R-07, PLAN-TESTABILITY-1-002 (b)); fallback named in R-07.
 - **Find in page:** `findText(word)`, a navigation to `#:~:text=` in both harnesses (R-08, § Driver additions).
-- **Break positions:** `getClientRects().length === 1` per group, distinct line tops, and every line's first unit at
-  the `pre`'s content-box inline start (R-07).
+- **Break positions:** `getClientRects().length === 1` per group; the same for the prefix only where it fits the
+  line (a prefix wider than the line breaks inside, FR-033, R-07); distinct line tops where the digest is wider than
+  the `pre`'s content box; every line's first unit at the `pre`'s content-box inline start (R-07). US2-12's oracle is
+  this one and the sweep above, not a reading of US2-12's prose.
+- **Closed panel (FR-008, US1-1, US1-3, US1-5; analysis F2):** for the panel's slotted content, `checkVisibility()`
+  is false, the content is absent from the tab order (Tab from the summary leaves the host) and from the CDP tree;
+  while open, `checkVisibility()` is true and the content is in both. `getClientRects().length` and `visibility` are
+  not used: Chromium skips a closed panel by content-visibility, so its content keeps a rect (R-08).
 - **Forced colours (US1-15; PLAN-TESTABILITY-1-011, PLAN-A11Y-SECURITY-1-004 (a)):** under `forcedColors("active")`,
   the summary's computed `color` equals `resolveColour("CanvasText")` and its `background-color`
   `resolveColour("Canvas")`, the chevron's painted pixels (`paints`) are in that colour, and the focused summary's
@@ -115,6 +137,20 @@ and, for the disclosure, `ocelle-icon`; no other).
   state and exactly one event) in the same body, and takes the reading one frame after the toggle, inside a 200 ms
   transition's duration (PLAN-TESTABILITY-1-007).
 - **Reflow:** page `scrollWidth === innerWidth` at 320 px.
+
+## Story tests (FR-050, SC-002, SC-005, SC-006; analysis E1)
+
+The story-test extension under `storybook/test/` lists each phase's stories, as the existing per-mission extensions
+do (`storybook/test/integration/elements-stories.test.ts`), and runs these checks on every story it lists, light and
+dark where the check reads the look:
+
+| Check | Stories | Reading |
+|---|---|---|
+| defined and rendered, no request outside the origin | every story | as the existing extensions |
+| named summary | every disclosure story | the summary's CDP node has a non-empty name |
+| reflow (SC-002) | `LongSummary`; every wrap-mode code-block story (`Short`, `WrapLongLine`, `Digest`, `DigestWrapping`, `RightToLeft`, `Empty`) | at a 320 px viewport, `document.documentElement.scrollWidth` is 320, beside the element's box wider than 0 |
+| keyboard (SC-005) | every disclosure story; every overflowing scroll story (`ScrollOverflowing`, `ScrollMiddle`, `ScrollEnd`, `ScrollFocused`, `DigestScroll`, `RightToLeftScroll`, and `ScrollUnlabelled` if T021a adds it) | with no pointer event: Tab focuses the (first) summary, Enter toggles it (host `open` flips), Space toggles it back; Tab focuses the scroll box, and the arrow key towards the hidden end, pressed until the position stops changing, brings `abs(scrollLeft)` to `scrollWidth - clientWidth` within 1 px, and the opposite key brings it back to its start |
+| no animation (SC-006) | every story | on a fresh load, within 1400 ms of the first render, under `prefers-reduced-motion: reduce` and under `no-preference` (`matchMedia` asserted in the same body), `document.getAnimations()` has no running animation; for each disclosure story, also one frame after a pointer click on the summary, paired with the toggled state |
 
 ## Plants (CSS-only behaviour Stryker does not mutate)
 

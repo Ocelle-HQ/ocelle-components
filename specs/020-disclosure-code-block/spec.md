@@ -39,7 +39,7 @@ the operator. The operator chose to plan on the recorded copy as it is (SPEC-1-0
 
 **Consumers** (constitution VI): kitty-mission-ui (Kitty Desktop and Kitty Dashboard) and the Ocelle web console, in
 server-rendered pages under a strict CSP with htmx swaps. No kitty-mission-ui inventory of disclosure or code-block
-class uses was supplied for this mission; the plan's research records whether one exists (see FR-048).
+class uses was supplied for this mission; the plan's research records whether one exists (see FR-058).
 
 **Operator decisions while specifying** (2026-11-20, human:jeroennouwsdev):
 
@@ -70,6 +70,10 @@ class uses was supplied for this mission; the plan's research records whether on
   separated by a gap with no space characters, so copied text and the screen-reader reading are the unbroken digest
   (the plan measures both in Chromium); a prefix up to the last colon stays ungrouped; wrap is the default policy and
   scroll is opt-in (FR-023, FR-028 to FR-033).
+- Tasks gate (2026-11-20, `reviews/analysis/operator-decisions.md`), "approve + fix all": the analysis findings are
+  resolved in the design artifacts before phase 1 (`reviews/analysis/fixes-1.md`). The Principle V exception for
+  story-less states is approved, subject to a measure: the unnamed overflowing scroll block keeps its exception only
+  if axe fails it; if axe passes, it gets a story (FR-050).
 
 ## Scope
 
@@ -189,7 +193,9 @@ focus order and the events.
 23. **Given** a closed disclosure, **When** a script sets the host's `aria-expanded="true"`, **Then** it opens as in
     scenario 6 (one event) and the host has no `aria-expanded` attribute; **When** it sets `aria-expanded="false"`,
     **Then** it closes with one event and the attribute is removed again; **When** it sets any other value, **Then**
-    the state does not change, no event fires and the attribute is removed.
+    the state does not change, no event fires and the attribute is removed. **Given** the markup
+    `<ocelle-disclosure open aria-expanded="false">`, **When** it upgrades, **Then** it is closed (the mapped
+    attribute is read after `open` and wins), no event fires and the host has no `aria-expanded` attribute (FR-007).
 
 ---
 
@@ -232,7 +238,7 @@ while overflowing and not, the arrow keys, the selection's copied text and the a
    no animation, and the start fade appears; ArrowLeft scrolls back (the module's keyboard model, unchanged).
 6. **Given** a scroll block whose text fits, **When** it renders, **Then** it is not a tab stop and has no role and no
    name; **When** its container narrows until the text overflows, **Then** it becomes a tab stop named by its label,
-   and **When** it widens again while focused, **Then** focus moves as the module's handover says.
+   and **When** it widens again while focused, **Then** focus is handed over as scenario 21 states (its oracle).
 7. **Given** a scroll block with no `label` and no host `aria-label`, **When** it overflows, **Then** it is a tab stop
    with no role and no name (the module's rule), and the README tells consumers to always give a scroll block a label.
 8. **Given** `dir="rtl"` on an ancestor, **When** a code block holding `--force main.` renders, **Then** the code is
@@ -255,11 +261,14 @@ while overflowing and not, the arrow keys, the selection's copied text and the a
     shadow `pre` (`part="code"`) equals one text run holding the trimmed digest (the host's snapshot also reads its
     unslotted light-DOM text and is not used). The number of StaticText nodes is not asserted.
 12. **Given** a digest block in wrap mode at 288 px, **When** the digest does not fit on one line, **Then** every line
-    break falls at an allowed position: between the prefix and the first group, or between two groups; never inside
-    the prefix or inside a group. Measured from line boxes: the prefix and each group have exactly one rect in
-    `getClientRects()`, the block holds more than one line, and every line's first unit starts at the `pre`'s
-    content-box inline start (no gap at a line's start). The page's scroll width equals the viewport width. The same
-    holds for a digest whose groups hold `-` or `/` (base64url or base64), at every `pre` width from 60 to 300 px.
+    break falls between two units: between the prefix and the first group, or between two groups; never inside a
+    group, and inside the prefix only where the prefix alone is wider than the line (FR-033, WCAG 1.4.10). Measured
+    from line boxes: each group has exactly one rect in `getClientRects()`, the prefix has exactly one rect wherever
+    its own inline size fits the `pre`'s content box, the block holds more than one line wherever the digest's
+    inline size is wider than that content box, and every line's first unit starts at the `pre`'s content-box inline
+    start (no gap at a line's start). The page's scroll width equals the viewport width. The same holds for a digest
+    whose groups hold `-` or `/` (base64url or base64), at every `pre` width from 60 to 300 px; the sweep strings are
+    named in contracts/checks.md.
 13. **Given** a digest block with `overflow="scroll"`, **When** it is narrower than the digest, **Then** the digest stays
     on one line and scrolls as in scenario 4.
 14. **Given** `digest` and content whose length after the prefix is not a multiple of four (for example 10 characters),
@@ -380,10 +389,15 @@ while overflowing and not, the arrow keys, the selection's copied text and the a
   resolved in the host's own tree and related by element reference. The README's off-value table applies. A host
   `aria-expanded` is mapped onto `open`, not moved: `"true"` opens, `"false"` closes, any other value changes nothing,
   and the attribute is removed from the host in every case, with no mirror (the `open` attribute is the persisted
-  state; US1 scenario 23). Any other `aria-*` attribute on the host is not supported.
+  state; US1 scenario 23). At upgrade a host `aria-expanded` is read after `open` and wins, so
+  `<ocelle-disclosure open aria-expanded="false">` upgrades closed and fires no event. Any other `aria-*` attribute on
+  the host is not supported.
 - **FR-008**: The panel MUST be laid out inline, directly after the summary in the element's own box, with no overlay,
-  top layer or positioning outside the element. While closed, the panel's content has no box, is not in the tab order
-  and is not in the accessibility tree, except that the browser's find in page may open it (FR-010).
+  top layer or positioning outside the element. While closed, the panel's content is not rendered, is not in the tab
+  order and is not in the accessibility tree, except that the browser's find in page may open it (FR-010). The
+  observable is the platform's: `checkVisibility()` is false for the panel's content. Chromium skips a closed
+  `details` panel by content-visibility, so slotted content may keep a client rect and `visibility: visible`
+  (research R-08); `getClientRects()` and `visibility` are not the measure.
 
 **Open state**
 
@@ -504,12 +518,14 @@ while overflowing and not, the arrow keys, the selection's copied text and the a
   measure. Only if that measure fails does the fallback apply: the element exposes the unbroken text to assistive
   technology and hides the groups from it, the fallback MUST still meet FR-031 (a copy gives the trimmed text once,
   with no second copy of it and nothing added), and the plan records the measure.
-- **FR-033**: In wrap mode, a line break in a digest MUST fall only between the prefix and the first group or between
-  two groups, never inside the prefix or inside a group (measured as US2 scenario 12 says). In the scroll mode it
-  stays on one line. The README MUST record, in § Element conventions, the
-  library's digest rule for later elements (#14's copy field among them): the prefix up to the last colon, groups of
-  four code points from the start, a `--ocelle-space-1` gap with no added characters, copied and read text unbroken,
-  breaks only between the prefix and the first group or between groups.
+- **FR-033**: In wrap mode, a line break in a digest MUST fall only between two units (the prefix and the first
+  group, or two groups) and never inside a group. A unit wider than the line breaks inside, as FR-023 wraps any text,
+  which keeps WCAG 1.4.10: in practice only a prefix wider than the line, in a very narrow block, since four code
+  points never exceed a line (research R-07; measured as US2 scenario 12 says). In the scroll mode it stays on one
+  line. The README MUST record, in § Element conventions, the library's digest rule for later elements (#14's copy
+  field among them): the prefix up to the last colon, groups of four code points from the start, a `--ocelle-space-1`
+  gap with no added characters, copied and read text unbroken, breaks only between units, a prefix wider than the
+  line breaking inside.
 
 **Look and surface**
 
@@ -530,10 +546,12 @@ while overflowing and not, the arrow keys, the selection's copied text and the a
 - **FR-050**: Each element MUST have a story per variant and per state in `storybook/stories/<element>.stories.ts`,
   rendered in light and dark, following #10's contributor note: for the disclosure at least closed, open, focused,
   hovered, a long wrapping summary, a consumer icon and right-to-left; for the code block at least short, wrap with a
-  long line, scroll overflowing, scroll fitting, digest, digest wrapping at 288 px and right-to-left. The unnamed
-  disclosure (Edge Cases) and the unnamed overflowing scroll block (US2 scenario 7) have no story, because axe fails
-  them by design; browser tests prove them. The plan records these as an exception to constitution V with scope,
-  rationale and a sunset, for the operator at the tasks gate.
+  long line, scroll overflowing, scroll overflowing in the middle and at the end, a focused scroll block, scroll
+  fitting, digest, digest wrapping at 288 px and right-to-left. The unnamed disclosure (Edge Cases) has no story,
+  because axe fails it by design; browser tests prove it. The unnamed overflowing scroll block (US2 scenario 7) has
+  no story only if a measure before its phase's stories shows that axe fails it (`ocelle-scroller`'s unlabelled story,
+  on the same module, passes axe); if axe passes, it gets a story. The plan records the story-less states as an
+  exception to constitution V with scope, rationale and a sunset, approved by the operator at the tasks gate.
 - **FR-051**: Visual baselines and the `axe` run follow #10 on `main`. Each phase that adds stories MUST commit their
   light and dark baselines, produced in #10's pinned container by its baseline command under docker, and its stories
   MUST pass #10's `storybook-build`, `visual` and `axe` gates, `axe` with no serious or critical finding and no
@@ -595,9 +613,10 @@ while overflowing and not, the arrow keys, the selection's copied text and the a
 - **SC-006**: Under reduced motion and without it, no story of the two elements has a running animation or transition.
 - **SC-007**: The manifest, strict-CSP, prefix, style-lint and mutation gates pass with the two elements added;
   `src/overflow-region.ts` and its contract are unchanged by this mission (`git diff` against the branch base shows no
-  change to either).
-- **SC-008**: No file of mission 013's or 019's elements changes (`git diff` against the branch base lists none of
-  their element sources, stories or tests).
+  change to either). The branch base is 4911fd0b for phase 1 and, for phases 2 and 3, the base the phase 2 operator
+  stop records (FR-060), so changes an integration brings in are not counted as this mission's.
+- **SC-008**: No file of mission 013's or 019's elements changes (`git diff` against the branch base, as SC-007
+  defines it per phase, lists none of their element sources, stories or tests).
 
 ## Assumptions
 

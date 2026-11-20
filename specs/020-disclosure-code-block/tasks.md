@@ -8,7 +8,11 @@ plan-squad rounds (`reviews/plan/round-1..3/`, fork decisions in each `refute.md
 - data-model.md;
 - contracts/elements.md: the public surface, README statements and the digest convention;
 - contracts/checks.md: bodies, platform-passable bodies, oracles, plants, driver additions, gates;
-- quickstart.md.
+- quickstart.md;
+- the tasks-gate analysis (`analysis-report.md`, head 33751a9) and the operator's decision "approve + fix all"
+  (`reviews/analysis/operator-decisions.md`, 2026-11-20), resolved in these artifacts by
+  `reviews/analysis/fixes-1.md`. The decision also approves plan.md's Complexity Tracking exception (the story-less
+  states T008 and T028 leave out), the unnamed overflowing scroll block subject to T021a.
 
 **Tests**: required. Constitution Principle VIII applies to every phase.
 
@@ -60,6 +64,8 @@ a repository-wide problem is recorded in research.md § Repository-wide notes an
 - **T020 (phase 2 operator stop)**: always (FR-060).
 - **T021 (phase 2 spike)**: R-07's copy, AX-text or break-position measure fails under the repository's pinned
   browser (FR-031, FR-032; the operator decides).
+- **T021a (phase 2 axe measure)**: axe reports a serious or critical finding on the unnamed overflowing scroll block
+  (the operator confirms that the state keeps the Complexity Tracking exception before T028).
 - **Plants**: a plant that does not bite.
 - **axe**: a new story would need a `storybook/a11y-exceptions.json` entry.
 - **Baselines**: `visual:update` reports a changed or removed baseline of an existing story.
@@ -124,7 +130,10 @@ it with exactly the events of data-model.md § State transitions; the Chromium t
   reflow at 320 px). Each "does not" paired; each platform-passable body carries its element-only assertion
   (contracts/checks.md table). US1-23: host `aria-expanded` `"true"` opens, `"false"` closes, another value changes
   nothing, the attribute is always removed from the host with no mirror, and `<ocelle-disclosure open
-  aria-expanded="false">` upgrades closed with no event.
+  aria-expanded="false">` upgrades closed with no event. A closed panel (US1-1, US1-3, US1-5; FR-008) is read by the
+  contracts/checks.md § Oracles "Closed panel" oracle: `checkVisibility()` false for the panel's content, the content
+  absent from the tab order and from the CDP tree; never `getClientRects().length === 0`, which Chromium's
+  content-visibility skip does not give (R-08).
 - [ ] T005 [US1] `packages/elements/test/scenarios/disclosure.ts`: the FR and edge-case bodies of contracts/checks.md
   for the disclosure: host `display: block` containing summary and open panel (FR-003); marker not shown (FR-003); a
   panel click does not toggle and reaches a `document` listener (FR-004); `element.click()` toggles once and a
@@ -148,8 +157,12 @@ it with exactly the events of data-model.md § State transitions; the Chromium t
 - [ ] T008 [US1] `storybook/stories/disclosure.stories.ts` (`title: "Elements/ocelle-disclosure"`): Closed, Open,
   Focused (declared focus state), Hovered (declared hover state), LongSummary (288 px frame through a `data-story`
   rule in `storybook/.storybook/stories-layout.css`), ConsumerIcon, RightToLeft, Nested (research R-09); no `style`
-  attribute; and the story-test extension under `storybook/test/` that #10's index rules apply to every new story
-  (named summary in every story).
+  attribute; and the story-test extension under `storybook/test/` that #10's index rules apply to every new story,
+  with the checks of contracts/checks.md § Story tests for every disclosure story: named summary; keyboard use, Tab
+  to the summary, Enter and Space toggling it (SC-005); no running animation under reduced motion and without it, on
+  load and one frame after a pointer toggle (SC-006); and for `LongSummary` the page scroll width 320 at a 320 px
+  viewport (SC-002). The unnamed disclosure has no story (plan Complexity Tracking, approved at the tasks gate,
+  `reviews/analysis/operator-decisions.md`).
 
 ### Implementation (green)
 
@@ -194,7 +207,10 @@ it with exactly the events of data-model.md § State transitions; the Chromium t
      `gate:prefix`, `gate:manifest`, `gate:contrast`, `gate:plants -- --affected <phase base>`, `gate:storybook-build`,
      `gate:visual`, `gate:axe` (no exception entry), then `gate:mutation` on the phase's changed source under op 015's
      shards;
-  3. record the Storybook gates' summary lines, the `visual:update` line and that no podman cross-check was possible
+  3. `git diff 4911fd0b -- packages/elements/src/overflow-region.ts specs/009-workflow-layouts/contracts/
+     packages/elements/src/focusable.ts packages/elements/src/overlay.ts` and the same diff over mission 013's and
+     019's element sources, stories and tests are empty (SC-007, SC-008 for phase 1, against its base 4911fd0b);
+  4. record the Storybook gates' summary lines, the `visual:update` line and that no podman cross-check was possible
      in the phase review.
 
 **Checkpoint**: `tdd-check.sh 1` reports `pass`; quickstart steps 1 to 4 pass for the disclosure.
@@ -218,7 +234,9 @@ AX text unbroken; zero CSP violations; the gates of phase 1 pass.
   operator whether mission 019 is on `main` and what it changed in `packages/elements/src/overflow-region.ts` and
   shared files; the operator decides how phase 2 proceeds (for example build on the branch as it is, or have
   `/ocelle-land` integrate first). Recorded alone in `specs/020-disclosure-code-block/reviews/phase-2/
-  operator-019.md`. No task merges `main`.
+  operator-019.md`, which names phase 2's base: the full sha phase 2 builds on (the phase 1 head if the branch is
+  built on as it is, the integrated commit if `/ocelle-land` integrates first). That base is the branch base of
+  SC-007 and SC-008 for phases 2 and 3 (T033, T041). No task merges `main`.
 
 ### Spike
 
@@ -228,6 +246,21 @@ AX text unbroken; zero CSP violations; the gates of phase 1 pass.
   `margin-inline-end` gap, base64url and base64 sweeps 60 to 300 px); R-06's `rtl` opening write
   (`scrollLeft` after `scrollTo({ left: -(scrollWidth - clientWidth), behavior: "instant" })`, `data-fade` `start`).
   A failure stops for the operator.
+- [ ] T021a [US2] Axe measure of the unnamed overflowing scroll block (analysis D1, operator decision at the tasks
+  gate), scratch files only, before T028, recorded in `specs/020-disclosure-code-block/reviews/phase-2/
+  axe-unnamed-scroll.md`: a scratch element (outside `packages/`) rendering research R-06's scroll structure
+  (`.block > .region-frame > .region-box > .region-track > pre.code`) through the unchanged `OverflowRegion` module
+  and `overflowRegionStyles`, holding a line longer than the box so it overflows, with no `label` and no host
+  `aria-label`, mounted in a scratch story and run through the `axe` gate's runner, pinned axe-core and rule set in
+  light and dark; record the box's role, name and `tabindex`, and every axe result (rule id, impact, target).
+  - **axe reports no serious or critical finding**: T028 adds the `ScrollUnlabelled` story and its story test; the
+    planner, through the orchestrator, removes the state from plan.md's Complexity Tracking row and records the
+    result in research R-09 and spec FR-050 in a documentation commit of its own, before T028.
+  - **axe reports one**: stop for the operator (Stop-and-ask points). On the operator's confirmation the planner
+    records the measured rule in research R-09 in a documentation commit of its own, the state keeps the exception,
+    and T028 adds no story for it.
+
+  The scratch files and the scratch story are not committed.
 
 ### Scaffold
 
@@ -249,7 +282,11 @@ AX text unbroken; zero CSP violations; the gates of phase 1 pass.
   trimmed digest plus one `\n` and a run of groups copies exactly; `ariaSnapshot` of the shadow `pre` equals
   `- text: <trimmed digest>` and the CDP StaticText join equals it; break positions; empty block one line tall;
   text changes after the mutation record, `updateComplete` and `settle()`). US2-8 as the visual-order body and the
-  three line-start bodies (`rtl` at rest, `rtl` after a text change, `ltr` control).
+  three line-start bodies (`rtl` at rest, `rtl` after a text change, `ltr` control). US2-12's oracle is
+  contracts/checks.md's (§ Oracles "Break positions" and the US2-12 bullets), as aligned with R-07: one rect per
+  group; one rect for the prefix only where it fits the line; more than one line only where the digest is wider than
+  the `pre`; the named base64url and base64 sweep strings at every width from 60 to 300 px; and the wide-prefix body
+  (`ni:sha-256:` at 60 px, the prefix breaking inside). US2-6's handover is asserted with US2-21's oracle.
 - [ ] T025 [US2] `packages/elements/test/scenarios/code-block.ts`: the FR and edge-case bodies of contracts/checks.md
   for the code block: leading newline shown (FR-020); child markup adds no style and markup-like text stays text in
   wrap and digest mode (FR-020, PLAN-A11Y-SECURITY-1-005); `characterData` changes of the host's text and of a text
@@ -257,8 +294,9 @@ AX text unbroken; zero CSP violations; the gates of phase 1 pass.
   the run-time switch both ways leaving no tab stop, role or name, and the two focus-on-switch bodies with the `.block`
   ring (FR-025); a non-blank host `aria-label` over `label` in scroll mode and a blank one counting as absent
   (FR-026); prefix only, several colons (`ni:sha-256:`), no colon, remainder groups, astral code points
-  (`x:ab😀cdef`), whitespace inside gives no groups (FR-029); the unnamed overflowing scroll block and the wrap-mode
-  host `aria-label` (story-less, Complexity Tracking); a scroll block in a shrink-to-fit flex item (Edge Cases).
+  (`x:ab😀cdef`), whitespace inside gives no groups (FR-029); the unnamed overflowing scroll block (story-less
+  unless T021a adds `ScrollUnlabelled`) and the wrap-mode host `aria-label` (story-less, Complexity Tracking); a
+  scroll block in a shrink-to-fit flex item (Edge Cases).
 - [ ] T026 [P] [US2] Harness files: `packages/elements/test/code-block.test.ts`, `packages/elements/test/browser/
   code-block.test.ts` with `packages/elements/test/browser/fixtures/code-block.html`, each running every body of T024
   and T025; `packages/elements/test/entry-code-block.test.ts`: importing `src/ocelle-code-block.ts` defines
@@ -268,10 +306,19 @@ AX text unbroken; zero CSP violations; the gates of phase 1 pass.
   section, its statements and the § Element conventions "Digests" paragraph of contracts/elements.md in
   `test/node/readme.test.ts`; the changelog entry in `test/node/changelog.test.ts`.
 - [ ] T028 [US2] `storybook/stories/code-block.stories.ts` (`title: "Elements/ocelle-code-block"`): Short,
-  WrapLongLine (288 px frame), ScrollOverflowing, ScrollFitting, Digest, DigestWrapping (288 px frame), DigestScroll,
-  RightToLeft (wrap) and RightToLeftScroll, Empty (research R-09), with `data-story` frame rules in
-  `storybook/.storybook/stories-layout.css`, no `style` attribute, every scroll story with a `label`; and the
-  story-test extension for the new stories.
+  WrapLongLine (288 px frame), ScrollOverflowing, ScrollMiddle and ScrollEnd (overflowing, scrolled after render to
+  half and to all of the box's range, as `ocelle-scroller`'s `OverflowingInTheMiddle` and `OverflowingAtTheEnd` do:
+  fades at both ends, fade at the start only), ScrollFocused (declared focus state: the module's ring on the scroll
+  box), ScrollFitting, Digest, DigestWrapping (288 px frame), DigestScroll, RightToLeft (wrap) and
+  RightToLeftScroll, Empty (research R-09), and ScrollUnlabelled (overflowing, no `label`, no host `aria-label`) only
+  if T021a found no serious or critical axe finding; with `data-story` frame rules in
+  `storybook/.storybook/stories-layout.css`, no `style` attribute, every other scroll story with a `label`; and the
+  story-test extension for the new stories with the checks of contracts/checks.md § Story tests: page scroll width
+  320 at a 320 px viewport for every wrap-mode story (SC-002); for every overflowing scroll story, Tab reaches the
+  scroll box and the arrow keys scroll it end to end with no pointer (SC-005); no running animation in every story
+  under reduced motion and without it (SC-006); `ScrollUnlabelled`, if added, a tab stop with no role and no name.
+  The wrap-mode host `aria-label` (and the unnamed scroll block if T021a kept its exception) has no story (plan
+  Complexity Tracking, approved at the tasks gate).
 
 ### Implementation (green)
 
@@ -307,8 +354,8 @@ AX text unbroken; zero CSP violations; the gates of phase 1 pass.
 - [ ] T032 [US2] Baselines: `pnpm run visual:update` in the pinned container under docker, `(<n> added, 0 changed, 0
   removed)`; commit `storybook/baselines/elements-ocelle-code-block--*.{light,dark}.png`.
 - [ ] T033 [US2] Checks as T013 for the code-block plants (recorded in `reviews/phase-2/plants.md`) and the gates;
-  `git diff 4911fd0b -- packages/elements/src/overflow-region.ts specs/009-workflow-layouts/contracts/` is empty
-  (SC-007).
+  `git diff <phase 2 base> -- packages/elements/src/overflow-region.ts specs/009-workflow-layouts/contracts/` is
+  empty (SC-007), `<phase 2 base>` being the sha T020's record names, never a fixed sha.
 
 **Checkpoint**: `tdd-check.sh 2` reports `pass`; quickstart steps 1 to 4 pass for both elements.
 
@@ -317,18 +364,25 @@ AX text unbroken; zero CSP violations; the gates of phase 1 pass.
 ## Phase 3: Polish & Cross-Cutting Concerns
 
 - [ ] T040 README cross-checks in `packages/elements/README.md`: § Engines needs no floor change (record so in the
-  phase review, or add the feature if one is newer than the floor); the WebKit limitation line names the disclosure
-  marker and the code block's tab stop; the spec's notes SPEC-2-01 ("FR-048" → FR-058) and FR-033's prefix-break
-  wording are corrected in `specs/020-disclosure-code-block/spec.md` to match R-07 (documentation only).
+  phase review, or add the feature if one is newer than the floor); the WebKit line "WebKit is not measured for the
+  layout elements either" adds `ocelle-code-block`'s scroll mode (its tab stop while it overflows, arrow keys, focus
+  handover, the focus move on a switch to wrap and the `rtl` opening write untested there; research R-06 § WebKit);
+  and, only if T001 found that `style-lint` rejects `::-webkit-details-marker`, the WebKit limitation names the
+  disclosure's native marker (research R-01; otherwise the marker gets no line). The spec's FR-033, US2-12, FR-007,
+  FR-008 and the Consumers reference were already aligned by the analysis fixes (`reviews/analysis/fixes-1.md`);
+  T040 changes no spec text.
 - [ ] T041 Full quickstart run (`specs/020-disclosure-code-block/quickstart.md` steps 1 to 4) and SC-007/SC-008 diffs
-  against 4911fd0b (no change to `src/overflow-region.ts`, its contract, `src/focusable.ts`, `src/overlay.ts`, or any
-  file of missions 013 and 019's elements), recorded in `specs/020-disclosure-code-block/reviews/phase-3/checks.md`.
+  against the branch base T020's record names (no change to `src/overflow-region.ts`, its contract,
+  `src/focusable.ts`, `src/overlay.ts`, or any file of missions 013 and 019's elements; phase 1's own range was
+  checked against 4911fd0b by T013), recorded in `specs/020-disclosure-code-block/reviews/phase-3/checks.md`.
 
 ---
 
 ## Dependencies and parallel work
 
 - Phase 1 → Phase 2 → Phase 3. Phase 2 starts only after T020's operator decision.
+- T021a before T028: its result (and, if axe fails, the operator's answer) decides T028's story list and the planner's
+  documentation commit of the result.
 - Within a phase: spike → scaffold → red (T003/T023, T006/T026, T007/T027 in parallel; scenario files and stories
   after the driver additions) → green (element, then manifest, docs, baselines, checks).
 - Phase 2 needs phase 1 only for shared driver files (no element dependency).

@@ -263,6 +263,11 @@ copy).
   slotted element and focuses `.region-frame` (contract, Focus handover).
 - No module option of mission 019 (`blockAxis`, `blockStartBox`) is set, and 019's R-17 is not needed: nothing is
   pinned at the inline start.
+- **WebKit** (analysis fixes C2). The scroll block's tab stop while it overflows, its arrow keys, its focus handover
+  when overflow ends, the focus move on a switch to wrap and the `rtl` opening write are untested in WebKit, as the
+  README's Engines section already says of `ocelle-scroller` and `ocelle-workflow-board` on the same module. The
+  README's WebKit line adds `ocelle-code-block`'s scroll mode to that list (T040). No WebKit behaviour is assumed to
+  differ; none is measured.
 
 **Measured.** None yet for the module path: it is the scroller's, tested by 009. Phase 2's bodies prove the code
 block's use of it (US2-4 to US2-8).
@@ -293,8 +298,10 @@ the content-box inline start. `.digest > .group { white-space: nowrap }` keeps a
   from 60 to 300 px, and with `white-space: nowrap` on the groups at 0 of 241. So the groups are `nowrap` (four code
   points never exceed a line at any width the block can have), while the prefix keeps `overflow-wrap: anywhere`: a
   long prefix in a very narrow block breaks anywhere, which keeps WCAG 1.4.10 (SPEC-2-08). US2-12 has a base64url body
-  swept over those widths; a plant removes the `nowrap`. FR-033's rule becomes: breaks fall between units; a unit wider than the line
-  breaks anywhere inside, as FR-023. The README digest rule says the same.
+  swept over those widths; a plant removes the `nowrap`. FR-033's rule is: breaks fall between units; a unit wider
+  than the line breaks anywhere inside, as FR-023. The README digest rule says the same, and FR-033 and US2-12 were
+  aligned with it by the analysis fixes (C1): the prefix's one-rect assertion holds only where the prefix fits the
+  line. The sweep strings are named in contracts/checks.md (A1).
 - **Copy.** The `wbr` and the margins add no character.
 - **Accessibility text.** Adjacent inline spans are one text run. Playwright's `ariaSnapshot` of the host also
   includes the host's unrendered, unslotted light-DOM text (measured, squad round 1, PLAN-TESTABILITY-1-001: a host
@@ -353,11 +360,23 @@ an `ocelle-dialog` or `ocelle-drawer` a closed panel's link still counts as a st
 (declared hover state), LongSummary (288 px frame), ConsumerIcon, RightToLeft, Nested. `storybook/stories/
 code-block.stories.ts`: Short, WrapLongLine (288 px frame), ScrollOverflowing, ScrollFitting, Digest, DigestWrapping
 (288 px frame), DigestScroll, RightToLeft (a command with leading and trailing neutrals, shown left to right, R-06),
-Empty (one line high by `.code`'s `min-block-size: 1lh`, R-06). Light and dark baselines through `pnpm run visual:update` in #10's
+Empty (one line high by `.code`'s `min-block-size: 1lh`, R-06); added by the analysis fixes (E2), as
+`ocelle-scroller` has them on the same module: ScrollMiddle and ScrollEnd (an overflowing scroll block scrolled to
+half and to all of its range after render, fades at both ends and at the start only), ScrollFocused (declared focus
+state, the module's ring on the scroll box), RightToLeftScroll. Light and dark baselines through `pnpm run visual:update` in #10's
 pinned container under docker (`nohup dockerd`; after a container restart `pnpm run setup:online`); no podman
 cross-check is possible in this environment, which each phase's review notes. Story-less, test-only: the unnamed
-disclosure and the unnamed overflowing scroll block (axe fails both by design); a code block with a host `aria-label`
-in wrap mode (advised against, SPEC-1-14). These are the Complexity Tracking row.
+disclosure (axe fails it by design); a code block with a host `aria-label` in wrap mode (advised against,
+SPEC-1-14). These are the Complexity Tracking row, approved at the tasks gate.
+
+**The unnamed overflowing scroll block** (analysis D1, operator decision at the tasks gate). The claim that axe fails
+it is unproven: `ocelle-scroller`'s `Unlabelled` story (`storybook/stories/scroller.stories.ts`) renders the same
+module with no label and has no `storybook/a11y-exceptions.json` entry, and under the module's name rule an unnamed
+box has no role. T021a measures it before T028: a scratch element rendering R-06's scroll structure through the
+module, overflowing, with no `label` and no host `aria-label`, run through the `axe` gate's runner and rule set in
+light and dark. If axe reports no serious or critical finding, T028 adds a `ScrollUnlabelled` story and the state
+leaves the Complexity Tracking row. If it reports one, the run stops for the operator, the measured rule (id, impact,
+target) is recorded here, and the state keeps the exception. Result: pending T021a.
 
 ## R-10 Tokens (FR-040)
 
@@ -372,7 +391,8 @@ prose `pre`.
 **Decision.** No inventory of disclosure or code-block class uses was supplied (the operator supplied 013's in
 `specs/013-data-display/sources/013-inputs.md`, which names neither family). Without one, the README has no mapping
 rows for these two and the plan gate asks the operator whether to supply one (Decisions for the plan gate). The
-spec's "FR-048" in Consumers means FR-058 (SPEC-2-01); the planner corrects the reference at the first squad fix.
+spec's "FR-048" in Consumers means FR-058 (SPEC-2-01); the reference was corrected by the analysis fixes (F3), the
+first squad fix having left it.
 
 ## R-12 Sequencing against mission 019 (FR-060)
 
