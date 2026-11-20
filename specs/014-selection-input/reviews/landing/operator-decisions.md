@@ -40,3 +40,13 @@
 - Context: the landing rewrite of PR #54's body. It leads with consumers, sets the floor at Chromium 135, describes the two merges and the landing folds, cites CI run 44797053961, and lists three suggested follow-ups without filing them.
 - Options: post as drafted; post with edits; keep the old body.
 - Answer: **"Post as drafted (Recommended)"**. The body was replaced on 2026-11-20.
+
+## Decision 7 — retrospective and follow-up issues
+
+- Date: 2026-11-20
+- Operator: human:jeroennouwsdev
+- Context: the landing retrospective drafted 14 diary entries, two frontend findings and three repository follow-up issues.
+- Answer: **"Write all (Recommended)"** for the diary and findings (503dff7). All three issues are filed:
+  - #61: flaky motion test, dialog and drawer "Rapid toggle during the entry, motion on";
+  - #62: prefix or register test-Driver additions per mission;
+  - #63: pixel tests should match CI's text rendering locally.
