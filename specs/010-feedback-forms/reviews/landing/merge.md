@@ -210,3 +210,96 @@ each of those gates was run again from the start.
 
 Merge-resolution errors found by the gates: two, each fixed in its own `fix(landing)` commit (`6d484388`,
 `8d87751a`).
+
+# Third merge of main (4911fd0b)
+
+`git merge --signoff origin/main` at branch head `763999fc` with `origin/main` at `4911fd0b` (mission 012, button and
+action row, #50), merge base `b594b7e9`. 28 files conflicted; all were resolved in the merge commit `25ed484d`, keeping
+both sides: main's `ocelle-button` and `ocelle-action-row`, its tokens, contrast pairs, driver steps and gate changes,
+and the branch's `ocelle-notice`, `ocelle-form-input` and `ocelle-form-select`. The container restarted after the merge
+and its one fix (`d0e0d164`); the resolution was then checked file by file against both parents and the gates were run
+on the merged tree (below). No conflict needed a design decision: no driver step was added under the same name on both
+sides this time, and the generator merged under O3-01 with main's one new rule. Nothing needed regenerating: the
+committed manifest, the eight manifest plant copies and the story baselines were all fresh at the merge commit. The
+lockfile is unchanged by the merge; `pnpm install --frozen-lockfile` was run and changed nothing.
+
+## Resolution per file
+
+Pinned counts are branch + main - base, from the figures each side pinned, then checked against the gates on the
+merged tree: 448 story-themes (346 + 388 - 286), 450 with the axe plant story, 448 baselines, 224 stories (173 + 194 -
+143), 23 elements (21 + 20 - 18). The contrast figures are main's: main's 012 rows include `color-ink` on the five state
+grounds (012 research.md R-08 item 1), the same five pairs 010 research.md R-04 added, so the union is 207 pairs in
+light and 215 in dark, 422 entries, and 196 required per theme, 392 required pairs (163 + 196 - 158 - 5).
+
+| File | Resolution |
+|---|---|
+| `packages/tokens/src/source.ts` | Main's records (its `color-ink` grounds `[...main, ...stateGrounds, "color-active-bg"]` hold the branch's state grounds), with the branch's reason in `color-ink`'s comment ("on the state grounds (010 R-04) and the pressed surface of a control too") and main's header count ("196 with 012's too"). `packages/tokens/contrast/pairs.json` auto-merged to main's file. |
+| `gates/bin/contrast.ts` | Main's: the Stryker comment's test title "207 pairs in light and 215 in dark, 196 required per theme". |
+| `gates/test/contrast-pairs.test.ts`, `gates/test/contrast.test.ts`, `gates/test/integration/token-gates.test.ts`, `gates/test/integration/plants-robustness.test.ts` | Main's files: 207 and 215 entries, 422 lines, 196 required per theme, `--print` 392 lines; the robustness summaries 207/215 and 208/215, 39 plants (main's three new contrast and brand-rules plants). Main's 012 control-pair test kept. |
+| `gates/test/contrast-required.test.ts` | Main's A.8 transcription with the 011 and 012 rows. The branch's row `[["color-ink"], "text", stateGrounds]` is not repeated: main's 012 row `[["color-ink"], "text", [...stateGrounds, "color-active-bg"]]` holds it, and a second row would list five triples twice. The header comment says so; 196 triples per theme, 392 pairs. |
+| `gates/plants/visual/fail-token-changed/plant.json` | Findings: main's list, with the branch's 30 mission-010 findings where the branch has them; 189 in all (116 of the base, 30 of mission 010, 43 of mission 012), no duplicate, and exactly the union of the two sides' sets (built from the JSON of both). `why`: main's text with the branch's clause on the thirty mission-010 stories, "one hundred and eighty-nine". |
+| `gates/test/integration/axe.test.ts` | 448 story-theme runs, 450 with the plant story; the title 448. Notes unchanged (10 excepted). |
+| `gates/test/integration/visual.test.ts` | 448 captures, 448 story-themes in the findings line, 448 baselines before the baseline command; the title 448. Main's 1200 s time limit and its comment (012 round 7, O7-01) kept. |
+| `gates/test/integration/storybook-build.test.ts` | 224 stories. |
+| `gates/test/integration/manifest.test.ts`, `gates/test/manifest.test.ts` | "manifest: 23 elements checked". |
+| `gates/test/integration/plant-repo.test.ts` | 448 repository story-themes. |
+| `gates/test/vitest-config.test.ts` | The pinned command list is the union in code-unit order, main's `axState`, `axe`, `hover`, `pointer`, `press` with the branch's `liveStart` and `liveStop`; the comment names both. |
+| `vitest.config.ts` | Main's 012 command types and commands (`press`, `hover`, `pointer`, `axState`, `axe`) with the branch's live-capture types and `liveStart`/`liveStop`, all in `elementBrowserCommands`; on the `elements` project the branch's `fileParallelism: false`, its comment (decision-stop-1) and `optimizeDeps` kept, beside main's comment on the 012 commands. |
+| `packages/elements/scripts/manifest.ts` | The branch's generator (O3-01: `internalBases = ["form-control.ts", "overlay.ts"]`, the eight standard attributes) with main's one change, `declared()`: a standard attribute the element declares with a description is kept (012 research.md R-15). No branch element declares one of the eight with `@attr`, so the branch's modules are unchanged by it (below). `custom-elements-manifest.config.mjs` auto-merged to the branch's globs. |
+| `packages/elements/src/index.ts` | Union of the exports in code-point order of name (`OcelleActionRow` and `OcelleButton` among them, each type after its class); the header comment names all 23 elements and both sides' internal modules. `package.json` auto-merged: main's two entries after `ocelle-personal-rail`. |
+| `packages/elements/README.md` | Intro: "twenty-three elements", naming both sides'. Entry points: both sets of rows in the order of `exports`. Sections: main's `ocelle-button` and `ocelle-action-row` sections in main's place, the branch's sections in theirs. The slot convention is main's (the label wrapper and the `bare` modifier of its icon-row fix); Engines is main's (Chromium 135+, WebKit 17.4+; the branch did not change it). Host ARIA: the branch's scoped sentences (as in the second merge); main's sentence "This is the rule of `ocelle-icon` and `ocelle-brand-mark`; the controls move their host ARIA onto their inner control instead" names the branch's form controls among "the controls" otherwise, so it reads "`ocelle-button` and `ocelle-action-row` follow none of these `aria-label` rules: they move their host ARIA onto their inner control instead". Properties: the branch's `@default` and `@attribute` sentences with main's `@attr` sentence. |
+| `packages/elements/test/node/readme.test.ts` | Both sides' fragments, entry rows and CHANGELOG surfaces; main's engine floor and slot-convention fragments in place of the base's; the `exports` key list in `package.json` order. |
+| `packages/elements/test/node/manifest.test.ts` | Both sides' tests; the module path list is the 23 paths in code-point order. |
+| `packages/elements/test/exports.test.ts`, `packages/elements/test/entry-root.test.ts` | The 23 root export keys in code-unit order; the branch's first entry test (icon, mark, notice, input, select) and main's (icon to action row) kept as two tests, the 013 tests after them; header comments of both. |
+| `packages/elements/test/scenarios/driver.ts` | Both sides' types and steps. Main's 012 steps (`focusTarget`, `computedOf`, `clipboardCopy`, `dispatched`, `inputPress`, `inputClick`, `inputHover`, `axState`, `axe` and the rest) and main's rename of `Target` to `ElementTarget` are taken; the branch's form steps keep their merged names `pressOn`, `clickPoint`, `focusChain`, `listenFor`, `heardEvents`, and `call` and `property` keep the merged signatures of the second merge (`call(id, method, ...args)` returning the result; `property` returning undefined for an unset value). No name was added on both sides. |
+| `packages/elements/test/in-process.ts`, `packages/elements/test/browser/driver.ts` | Main's 012 implementations of the base steps it changed (`press`, `hover`, `click`, `focusTarget`, `computedOf`, `clipboardCopy`, `dispatched`; `reducedMotion` removed as main removed it) with the branch's form steps, which keep their one-update wait through `updated()` (`6d484388`), and the unified `call` (it settles) and `property`; the fixture driver returns `FixtureDriver`. |
+| `packages/elements/test/driver.test.ts`, `packages/elements/test/browser/driver.test.ts` | Both sides' tests: main's renamed `focusTarget(target)` and `computedOf(target, property)` tests; on the fixture, main's plain page helper is `openPlain` as in the second merge. |
+| `packages/elements/test/browser/serve.ts` | Both sides' served paths and comments. |
+
+## Generated files
+
+None regenerated; each was checked fresh:
+
+- `packages/elements/custom-elements.json`: `pnpm --filter @ocelle/elements run manifest` left it unchanged. Each of its
+  23 modules equals, object for object, the same module of the branch's or of main's committed manifest.
+- The eight manifest plant copies (`gates/plants/manifest/{fail-lost-attribute,pass-reordered,fail-undescribed-*}`): the
+  procedure of `reviews/phase-3/manifest.md` (T025), with the merged generator, reproduced all eight copies of the
+  branch head from its tree and all eight of main from its tree, byte for byte, and then all eight committed copies of
+  the merge commit from the merged tree.
+- The story baselines: `gate:visual` matches all 448 captures against the committed baselines (main's
+  `tokens--colour`, `tokens--motion` and `tokens--shape` included), so no baseline is stale.
+- `packages/tokens/contrast/pairs.json`: `gate:contrast` passes with it.
+
+## The fix: `axDetails` (`d0e0d164`)
+
+Main made `RawAxProperty.value` required in `packages/elements/test/commands.ts`; the branch's `propertyOf` kept an
+optional chain on it, which `gate:lint` reports as an unnecessary condition. The fix drops the `?.`; no behaviour
+changes, so no test applies (the lint gate is the check).
+
+## Gate results on the merged tree
+
+Run at `d0e0d164` in this container with Chromium build 1243 through `OCELLE_CHROMIUM_PATH` and
+`OCELLE_VISUAL_ENGINE=docker`.
+
+| Gate | Result |
+|---|---|
+| `pnpm install --frozen-lockfile` | exit 0, "Lockfile is up to date" |
+| `gate:typecheck` | exit 0, "no type error in the files of tsconfig.json" |
+| `gate:lint` | exit 0, "505 files checked, no finding" |
+| `gate:style-lint` | exit 0, "47 files checked, no finding" |
+| `gate:test-lint` | exit 0, "380 files checked, no finding" |
+| `gate:config-copies` | exit 0, the two `story-config.yml` copies identical |
+| `gate:csp` | exit 0, "52 files checked, no finding" |
+| `gate:prefix` | exit 0, "609 files checked, no finding" |
+| `gate:contrast` | exit 0, "207 pairs checked in light, 215 in dark (196 required per theme)" |
+| `gate:manifest` | exit 0, "manifest: 23 elements checked, no finding" |
+| `gate:pins` | exit 0, "5 manifests checked, no finding" |
+| `gate:brand-rules` | exit 0, "7 rules checked" |
+| `gate:signoff -- --range 763999fc..HEAD` | exit 1, "1 finding in 3 commits": main's squash commit `4911fd0b` (#50, its human author's) has no `Signed-off-by`. It is in the range because it is the merge's second parent; it is main's commit, not one of the branch's, and cannot be changed without rewriting main. The merge commit and `d0e0d164` have no finding. |
+| `gate:signoff -- --range origin/main..HEAD` | exit 0, "133 commits checked, no finding" (the pull request's range, as in the second merge) |
+| `gate:unit-tests` (the conflicted gates tests) | exit 0, "162 tests passed in 12 files" (31 min): `gates/test/contrast-pairs`, `contrast-required`, `contrast`, `manifest`, `vitest-config` and `gates/test/integration/{axe,manifest,plant-repo,plants-robustness,storybook-build,token-gates,visual}.test.ts`. A first attempt passed `-- --project gates ...` through to Vitest, which took the project names after `--` as file filters; it was stopped and not counted. |
+| `gate:unit-tests --project elements --project elements-touch --project elements-node --project elements-build --project elements-browser` | exit 0, "5093 tests passed in 133 files" (35 min) |
+| `gate:visual` | exit 0 in 648 s, "448 captures match their baselines (docker only: no cross-engine comparison)"; no baseline regenerated |
+| `gate:plants` | `-- --affected origin/main --list` (op 016) selects the full set, "317 of 317 plants selected", by `packages/elements/custom-elements-manifest.config.mjs` (unmapped), so the full set was judged by shard. The plan is 77 shards (`--plan`); old shard reports were cleared. Each shard (`--shard <k>`, three at a time) exited 0 with "every plant as expected"; the visual shards took about 400 s to 810 s each. The kernel killed two `node` processes for memory while shards 1 to 3 (61 plants each) ran side by side; those three shards still reported every plant as expected, and were run again one at a time, each exit 0, "61 plants judged, every plant as expected", with no further kill. Then `--verdict storybook/.visual/plant-shards`: exit 0, "plants: 317 plants of 17 gates and the registry judged, every plant as expected". Among them are the eight manifest plants and `visual/fail-token-changed` with its 189 findings (806 s). |
+
+Merge-resolution errors found by the gates: one, the lint finding fixed in `d0e0d164` (above). There is no other `fix(landing)` commit.
