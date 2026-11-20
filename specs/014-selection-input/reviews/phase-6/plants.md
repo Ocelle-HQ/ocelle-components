@@ -153,3 +153,10 @@ because the landing merge of main lies in the phase range. Operator decision 5 (
 round-scoped run for fix-3 and closes R4-01: the one full plants run against the phase base, on the head after the
 second merge of main and before hand-off, covers phase 6 as well as phase 7 and is recorded here, in
 `reviews/phase-7/plants.md` and in the landing records. This run stays as supplementary evidence.
+
+## The full plants run after the second merge of main
+
+The full run owed by phase 6 operator decision 5 was moved to CI by landing operator decision 5 ("CI carries
+heavy gates"). CI's Plants shards on the final head stand in for it; the CI run id is added after the push. Locally,
+the selection against the phase base on the merge head e47888d selects every plant
+(`pnpm run gate:plants -- --affected ac2eebe229dc860390ba4ba1c69ff1725fe8b1fe --list`: 317 of 317 selected, by shared gate source; exit 0).

@@ -204,3 +204,151 @@ No visual baseline changed. The visual gate reports 354 captures matching their 
 | plants (full) | 1 | 5 manifest plants not caught, fixed by d885610 |
 | plants (`--affected c4eb93a`) | 0 | The 5 manifest plants |
 | mutation `--base 3828d2f --files packages/elements/src/index.ts` | 0 | Zero mutants on the export lines. This is the one mutable file the conflict resolution wrote. |
+
+# Second merge (landing operator decision 4)
+
+- **Merged:** origin/main at 7f61959. This is the single merge; main was fetched right before. It brings mission 012
+  (#50, `ocelle-button`, `ocelle-action-row`), mission 010 (#49, `ocelle-notice`, `ocelle-form-input`,
+  `ocelle-form-select`), triage records (#52) and op 021 (#53). An earlier attempt at 096ee16 was aborted before any
+  commit and is not in the history.
+- **Merge base:** b594b7e.
+- **Merge commit:** e47888d (`git merge --signoff origin/main`, never rebased). It contains only the conflict
+  resolution.
+- **Order:** the three rename commits before the merge, on the branch's own line, are listed below.
+
+## Renames before the merge (landing decision 3: main's landed code untouched, 014 takes distinct names)
+
+| Commit | Old (014) | New | Collides with |
+|---|---|---|---|
+| 8dd5582 | `test/scenarios/link.ts` (ocelle-link's US5 bodies) | `test/scenarios/ocelle-link.ts` | 012's own `test/scenarios/link.ts` (ocelle-button's link mode), the same path |
+| 6876c76 | type `Target` (string \| { id, inner } \| { parent, kind, index }) | `DriverTarget` | 012's `interface Target { inner? }`; 009's union is now main's `ElementTarget` (main's decision D1) |
+| 6876c76 | type `ClickOptions` (button, modifiers, count, force) | `TargetClickOptions` | 012's `ClickOptions` (modifiers, button, position) |
+| 4aa2a6e | `driver.focus(target)` in 014's bodies | `driver.focusNode(target)` | main moved 009's `focus(target)` to `focusTarget` and gave `focus(id)` to 012 |
+| 4aa2a6e | `driver.computed(target, property)` in 014's bodies | `driver.computedNode(target, property)` | main moved 009's `computed` to `computedOf` and gave `computed(id, property, inner?)` to 012 |
+| 3d8ee86 | type `AxState` (test/commands.ts, `axStates`) | `AxNodeState` | 012's `AxState` (scenarios/driver.ts, `axState(id, inner?)`) |
+| e47888d (in the resolution) | `AxScope`'s `"ancestors"` (014 phase 3) | `AxStatesScope = "element" \| "subtree" \| "ancestors"` | main's `AxScope = "element" \| "subtree" \| "details"`, which keys `axTree`'s reader table |
+
+The first merge's renames (`pressKeys`, `clickTarget`, `hoverTarget`, `focusedElement`, `setViewportSize`) still
+stand. For the planner, every 014 name now differs from main's. Spec, tasks, research and contracts wording is not
+touched here, so where it names `scenarios/link.ts`, `Target`, `ClickOptions`, `focus`, `computed`, `AxState` or
+`AxScope` for 014, it should take the new names above.
+
+## Conflict files and their resolution (30)
+
+- **`packages/tokens/src/source.ts`, `packages/tokens/contrast/pairs.json`, `packages/tokens/CHANGELOG.md`**
+  - Main's `color-accent-strong` grounds (`[...main, ...stateGrounds, ...chrome]`, 012 R-08) include 014's six main
+    grounds, so the grounds are main's, with a comment naming 014's selected bars.
+  - The auto-merged pairs.json held 12 duplicate entries (014's six accent-strong pairs per theme, identical to
+    012's). I removed 014's copies, and pairs.json now equals main's byte for byte.
+  - The CHANGELOG keeps both entries.
+- **`packages/elements/test/browser/fixtures/link-target.html` (add/add):** one page serving both missions. It keeps
+  014's `<p id="target">The link target page</p>`, which the link bodies read, and 012's note paragraph. 012's tests
+  read only its URL and the server's visits.
+- **`packages/elements/test/scenarios/link.ts`:** both sides added this path. 014's file was renamed first (8dd5582),
+  so main's file is untouched. 014's US5-7 spacing body and both sides' tests are unchanged.
+- **`packages/elements/test/scenarios/driver.ts`:**
+  - Imports and exports are united.
+  - Main's `Modifier`, `Target`, `ElementTarget` and `ClickOptions` are kept. 014's `DriverTarget` and
+    `TargetClickOptions` sit beside them, and 014's duplicate `Modifier` (identical) is dropped.
+  - Main's `computed`/`computedOf` and `focus`/`focusTarget` are kept, with 014's `computedNode` and `focusNode`
+    beside them.
+  - 014's methods and main's 010/012 methods are both kept.
+  - The temporary `Target = DriverTarget` alias is dropped.
+- **`packages/elements/test/commands.ts`:**
+  - 014's `Target`, `AxNodeState` and `AxUpdate` are kept beside main's `AxDetail`.
+  - One `RawAxProperty`, whose related nodes carry both `backendDOMNodeId` (014) and `idref` (010).
+  - `AxScope` is main's, and `AxStatesScope` is 014's (see the table).
+- **`packages/elements/test/in-process.ts`:**
+  - Imports from both sides.
+  - Main's `resolve(ElementTarget)` is back as main wrote it. 014's page-helper resolver is now `resolveNode`,
+    used by 014's methods only (`box`, `focusNode`, `computedNode`, `clickTarget`, `hoverTarget`, `mutate`,
+    `resize`, `afterResizeDelivery`, `computedPart`, `activationRecord`).
+  - The mount does both sides' resets.
+  - Main's `computed`/`computedOf` are kept.
+- **`packages/elements/test/browser/driver.ts`:**
+  - Imports are united.
+  - Main's methods are as main wrote them: `rectOf`'s signature, `computed`/`computedOf`, `focusTarget` and 012's
+    form listeners at mount.
+  - 014's methods are kept, and 008's old `focus(target)` and `press(key, { shift })` (moved by main) are dropped.
+- **`packages/elements/test/browser/driver.test.ts`:** 014's suite beside 010's driver steps, and main's
+  `openPlain`.
+- **`vitest.config.ts`, `gates/test/vitest-config.test.ts`:** both sides' browser commands. The expected list is the
+  sorted union of 18.
+- **`packages/elements/src/index.ts`, `test/exports.test.ts`, `test/entry-root.test.ts`:** 32 exported classes in
+  code-point order, with main's type exports (`FormInputType`, `IconName`, `NoticeSize`, `NoticeTone`). 014's
+  `customElements.get` checks are kept.
+- **`test/build/build.test.ts`, `test/node/manifest.test.ts`:** both sides' module and declaration tests. Module
+  paths are the sorted union of 32.
+- **`packages/elements/README.md`, `test/node/readme.test.ts`:**
+  - **Overview:** "thirty-two elements", main's list then 014's. The overview test names all 32: `mainElements` gains
+    010's and 012's five.
+  - **Engine floor:** the higher one, Chromium 135+ / WebKit 17.4+ (012). 014's custom-states line folds into 012's
+    bullet ("… (`ocelle-button`'s moved states) and the joined segmented choice's rows (014)"). The overview sentence
+    and its test say Chromium 135.
+  - **Host ARIA:** 014's exceptions paragraph (tabs, link) before main's rewritten `aria-hidden`/`role` paragraph.
+  - **Exports list:** package.json's order.
+- **`gates/plants/manifest/*/tree/packages/elements/custom-elements.json` (pass-reordered conflicted; I rebuilt all
+  eight):**
+  - The six `fail-undescribed-*` copies are the generator's output with the plant's `src/ocelle-plant.ts` added (as
+    d885610).
+  - `fail-lost-attribute` is the regenerated manifest with main's plant `ocelle-icon` module, its one change.
+  - `pass-reordered` is the regenerated manifest with every object's keys reversed.
+- **`packages/elements/custom-elements.json`:** regenerated by `pnpm --filter @ocelle/elements run manifest`. All 32
+  modules equal their entry on the side that owns them.
+- **`gates/plants/visual/fail-token-changed/plant.json`:** the union of the "differs" findings. That is main's 189
+  plus 014's 34 since b594b7e (the 33 of the first merge and T114's composed story), 223 light story-themes. The
+  `why` names both sides.
+- **The other gate count tests and `gates/test/integration/visual.test.ts`:** union counts, below. The visual test
+  takes main's 1200 s time limit, the higher, pinned by main's visual-timeout test.
+
+## Counts (union), and where each is checked
+
+| Count | 014 (3d8ee86) | main (7f61959) | Merged | Checked |
+|---|---|---|---|---|
+| Elements (manifest gate) | 27 | 23 | 32 | locally: `gate:manifest` "32 elements checked" |
+| Contrast pairs light / dark (required per theme) | 175 / 183 (164) | 207 / 215 (196) | 207 / 215 (196) | locally: `gate:contrast` output |
+| Required pairs (`--print` lines) | 328 | 392 | 392 | locally (gates unit tests) |
+| Stories | 178 | 224 | 259 | locally by story-file count (the method gives 143, 178 and 224 on b594b7e, HEAD and main, matching each side's gate test); the storybook-build count is left to CI |
+| Story-themes (visual captures, axe runs, plant repository) | 356 | 448 | 518 (axe plant 520) | left to CI (Visual regression, Accessibility, Unit tests) |
+| fail-token-changed light differs | 150 | 189 | 223 | left to CI (Plants) |
+
+## Baselines
+
+No baseline conflicted, and no baseline is regenerated by this merge.
+
+Main changed no existing token value, but it did change shared element code that 014's elements use:
+- `src/icon-slot.ts`: a labelled row's `.label` is baseline-aligned, and the slotted size rules are scoped to the
+  `icon` and `trailing` slots.
+- `src/ocelle-icon.ts` and `src/icon-svg.ts`: the drawing moved to icon-svg.ts.
+
+014's option, tab and segment rows and the copy field use these. Main states that no position inside a labelled row
+moves, and 014's in-process geometry suites pass on the merge. Whether any 014 baseline's pixels change is left to CI's
+Visual regression on the final head. If one differs, I regenerate it in the pinned container and explain it.
+
+## Gates on the merge (landing decision 5: CI carries the heavy gates)
+
+| Gate | Exit | Notes |
+|---|---|---|
+| typecheck | 0 | on e47888d |
+| lint | 0 | 562 files |
+| test-lint | 0 | 424 files |
+| style-lint | 0 | 60 files |
+| brand-rules | 0 | |
+| pins | 0 | |
+| config-copies | 0 | |
+| prefix | 0 | 619 files |
+| csp | 0 | 55 files |
+| contrast | 0 | 207 / 215, 196 required |
+| manifest | 0 | 32 elements |
+| signoff `--range origin/main..HEAD` | 0 | 120 commits |
+| plants `--affected ac2eebe… --list` (phase 6 base) | 0 | 317 of 317 selected (shared gate source), none judged |
+| plants `--affected 5164806… --list` (phase 7 base) | 0 | 317 of 317 selected, none judged |
+| targeted: gates, elements-node, tokens, storybook, styles projects | 0 | 101 files, 3750 tests |
+| targeted: elements (in process), 29 files the resolution touched or that use the touched driver | 0 | 760 tests |
+| targeted: elements-browser, 10 fixture files (driver, link, link-subpixel, button, action-row, harness-scenarios, listbox, tabs, segmented-choice, copy-field) | 0 | 535 tests |
+| targeted: elements-browser-file and elements-build | 0 | 42 tests |
+| Left to CI: full unit-tests, storybook-build, visual, axe, mutation, the full Plants run | | landing decision 5 |
+
+The mission 008 flake ("Rapid toggle during the entry, motion on") did not show in these targeted runs. The composed
+dialog story's `<details>` focus-trap gap (op 022) was not exercised by them either, so it is still recorded as a known
+gap.

@@ -50,3 +50,10 @@ note: plant time: visual/pass-repository: 447.4 s
 note: plant time: axe/pass-repository: 306.8 s
 plants: affected since ea7eca6^: 21 of 314 plants judged, every plant as expected; not the Plants check
 ```
+
+## The full plants run after the second merge of main
+
+The full run owed by phase 7 operator decision 3 was moved to CI by landing operator decision 5 ("CI carries
+heavy gates"). CI's Plants shards on the final head stand in for it; the CI run id is added after the push. Locally,
+the selection against the phase base on the merge head e47888d selects every plant
+(`pnpm run gate:plants -- --affected 51648060f379f41bd57ed9bf5d0522326fe06b32 --list`: 317 of 317 selected, by shared gate source; exit 0).
