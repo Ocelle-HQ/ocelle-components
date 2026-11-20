@@ -581,6 +581,51 @@ export const buttonScenarios: readonly Scenario[] = [
     },
     expected: { nodes: [{ role: "button", name: "Close" }], subtree: [{ role: "button", name: "Close" }], trimmed: "Close", whitespace: "Save", axe: [] },
   },
+  // Op 022 (#57; ops/022-focus-trap-details-icon-name spec.md scenarios 6 to 8): an icon slotted into ocelle-button is
+  // decorative. A bare svg with a <title> gets no accessibility node and adds nothing to the name, in the button and
+  // the link mode; an ocelle-icon keeps the name the label's.
+  {
+    name: "op 022 (#57) scenario 6: a titled bare <svg> in the icon slot beside the text Open, in the button and the link mode: the inner control is named Open, and the subtree has no image node and no node named Folder (FR-003)",
+    run: async (driver) => {
+      const svg = '<svg slot="icon" viewBox="0 0 16 16"><title>Folder</title><path d="M2 2h12v12H2z"/></svg>';
+      await driver.mount(`<ocelle-button id="b">${svg}Open</ocelle-button> <ocelle-button id="k" href="#x">${svg}Open</ocelle-button>`);
+      const read = async (id: string): Promise<unknown> => {
+        const state = await driver.axState(id, control);
+        const subtree = await driver.axSubtree(id);
+        return { state: { role: state.role, name: state.name }, images: subtree.filter((node) => node.role === "image" || node.role === "img"), folder: subtree.filter((node) => node.name.includes("Folder")) };
+      };
+      return { button: await read("b"), link: await read("k"), axe: await severe(driver) };
+    },
+    expected: {
+      button: { state: { role: "button", name: "Open" }, images: [], folder: [] },
+      link: { state: { role: "link", name: "Open" }, images: [], folder: [] },
+      axe: [],
+    },
+  },
+  {
+    name: 'op 022 (#57) scenario 7: a titled bare <svg> as the only content of an ocelle-button with label="Open project": the inner control is named Open project, and the subtree has no image node and no node named Folder (FR-003, FR-013)',
+    run: async (driver) => {
+      await driver.mount('<ocelle-button id="b" label="Open project"><svg slot="icon" viewBox="0 0 16 16"><title>Folder</title><path d="M2 2h12v12H2z"/></svg></ocelle-button>');
+      const state = await driver.axState("b", control);
+      const subtree = await driver.axSubtree("b");
+      return {
+        state: { role: state.role, name: state.name },
+        images: subtree.filter((node) => node.role === "image" || node.role === "img"),
+        folder: subtree.filter((node) => node.name.includes("Folder")),
+        axe: await severe(driver),
+      };
+    },
+    expected: { state: { role: "button", name: "Open project" }, images: [], folder: [], axe: [] },
+  },
+  {
+    name: "op 022 (#57) scenario 8: an ocelle-icon in the icon slot beside the text Open project: one button node named Open project, as before the fix (FR-003, FR-006)",
+    run: async (driver) => {
+      await driver.mount('<ocelle-button id="b"><ocelle-icon slot="icon" name="folder"></ocelle-icon>Open project</ocelle-button>');
+      const state = await driver.axState("b", control);
+      return { state: { role: state.role, name: state.name }, nodes: await meaningful(driver, "b"), axe: await severe(driver) };
+    },
+    expected: { state: { role: "button", name: "Open project" }, nodes: [{ role: "button", name: "Open project" }], axe: [] },
+  },
   ...(["default", "compact"] as const).flatMap((size) =>
     (["ltr", "rtl"] as const).map(
       (direction): Scenario => ({

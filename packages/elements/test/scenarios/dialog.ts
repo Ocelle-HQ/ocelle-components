@@ -678,6 +678,18 @@ export function overlayScenarios(kind: OverlayKind) {
     },
   ]);
 
+  // Op 022 (#57; ops/022-focus-trap-details-icon-name spec.md scenarios 1, 2, 4 and 5): the content of a closed
+  // <details>, apart from its summary, is not rendered and so is no stop. Chromium hides the closed panel with
+  // content-visibility, so its link keeps a client rect and visibility: visible; only checkVisibility() is false.
+  const closedDetails = '<button id="b1">B1</button><details id="d"><summary id="s">More</summary><a id="l" href="#x">Hidden link</a></details>';
+  const openDetails = '<button id="b1">B1</button><details id="d" open><summary id="s">More</summary><a id="l" href="#x">Hidden link</a></details>';
+  const detailsRows = cycleRows("Tab cycle with a <details> at the end (op 022, #57)", [
+    { label: "a closed <details> last, no footer, from its summary: its link is no stop", content: closedDetails, start: { op: "focus", id: "s" }, n: 3, tab: "dlg[button] b1 s dlg[button] b1", shift: "b1 dlg[button] s b1 dlg[button]" },
+    { label: "a closed <details> last, no footer, from the close control", content: closedDetails, start: "close", n: 3, tab: "b1 s dlg[button] b1 s", shift: "s b1 dlg[button] s b1" },
+    { label: "an open <details> last, no footer, from its summary: its link is a stop", content: openDetails, start: { op: "focus", id: "s" }, n: 4, tab: "l dlg[button] b1 s l dlg[button]", shift: "b1 dlg[button] l s b1 dlg[button]" },
+    { label: "a closed <details> before a footer f1, from its summary", content: closedDetails, footer: '<button id="f1">F1</button>', start: { op: "focus", id: "s" }, n: 4, tab: "f1 dlg[button] b1 s f1 dlg[button]", shift: "b1 dlg[button] f1 s b1 dlg[button]" },
+  ]);
+
   const nonStopRows = cycleRows("Tab cycle from a non-stop (R-04)", [
     { label: "the focused <dialog> after a click on body prose", content: '<button id="b1">B1</button><p id="prose">Some prose to click on.</p><button id="b2">B2</button>', start: "prose", n: 3, tab: "dlg[button] b1 b2 dlg[button] b1", shift: "b2 b1 dlg[button] b2 b1" },
     {
@@ -2844,6 +2856,7 @@ export function overlayScenarios(kind: OverlayKind) {
   return {
     initialRows,
     tabCycleRows,
+    detailsRows,
     nonStopRows,
     bodyStartRows,
     scrollerRows,
@@ -3049,6 +3062,7 @@ export const repeatedEscapeScenario: DialogScenario = dialogBuilt.repeatedEscape
 export const dialogScenarios: readonly DialogScenario[] = [
   ...dialogBuilt.initialRows,
   ...dialogBuilt.tabCycleRows,
+  ...dialogBuilt.detailsRows,
   ...dialogBuilt.nonStopRows,
   ...dialogBuilt.bodyStartRows,
   ...dialogBuilt.scrollerRows,
