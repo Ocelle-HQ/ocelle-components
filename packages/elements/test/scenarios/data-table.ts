@@ -831,6 +831,91 @@ const sizing: DataTableScenario[] = [
     },
     expected: { precondition: true, widened: true, region: { tabindex: null, fade: null } },
   },
+  {
+    name: "R-02 a caption that grows at run time (review R1-01): in an open <dialog>, an inline-block and a start-aligned column flex, a caption word edited longer and the caption's letter-spacing raised to 3 px after mount each leave what a fresh mount of the same caption gives: the host as wide within 1 px, no region overflow, the caption's text inside the caption and the box, the same tab stop and fade",
+    loop: true,
+    run: async (driver) => {
+      const table = (p: string, caption: string, spaced: boolean): string =>
+        `<table id="${p}"><caption id="${p}-cap"${spaced ? ' class="spaced"' : ""}>${caption}</caption><tbody><tr><td>Ok</td><td>3</td></tr></tbody></table>`;
+      const hosts = [
+        { key: "dialog", id: "d", p: "td" },
+        { key: "inlineBlock", id: "i", p: "ti" },
+        { key: "column", id: "c", p: "tc" },
+      ] as const;
+      const markup = (caption: string, spaced: boolean): string => {
+        const [dialog, inlineBlock, column] = hosts.map(({ id, p }) => dt(id, "", table(p, caption, spaced)));
+        return `<dialog id="dlg">${String(dialog)}</dialog><div class="ib">${String(inlineBlock)}</div><div class="col">${String(column)}</div>`;
+      };
+      /** One host's state: its width, the box's overflow, whether the caption's text lies inside the caption and the box. */
+      const state = async (id: string, p: string): Promise<{ width: number; overflows: boolean; inside: boolean; tabindex: string | null; fade: string | null } | string> => {
+        const read = await region(driver, id);
+        if (read === null) return "no region";
+        const text = await evaluate(
+          driver,
+          `const caption = document.getElementById("${p}-cap"); const range = document.createRange(); range.selectNodeContents(caption);
+const rect = range.getBoundingClientRect(); const own = caption.getBoundingClientRect();
+return { left: rect.left, right: rect.right, captionLeft: own.left, captionRight: own.right };`,
+        );
+        const { left, right, captionLeft, captionRight } = text as { left: number; right: number; captionLeft: number; captionRight: number };
+        const inside = left >= captionLeft - 0.5 && right <= captionRight + 0.5 && left >= read.x - 0.5 && right <= read.x + read.clientWidth + 0.5;
+        return { width: (await driver.box(id)).width, overflows: read.scrollWidth - read.clientWidth > 1, inside, tabindex: read.tabindex, fade: read.fade };
+      };
+      const states = async (): Promise<Record<string, Awaited<ReturnType<typeof state>>>> => {
+        const out: Record<string, Awaited<ReturnType<typeof state>>> = {};
+        for (const { key, id, p } of hosts) out[key] = await state(id, p);
+        return out;
+      };
+      /** The grown hosts against the fresh ones: the same width within 1 px, and each state's other fields. */
+      const compare = (grown: Record<string, unknown>, fresh: Record<string, unknown>): Record<string, unknown> => {
+        const out: Record<string, unknown> = {};
+        for (const { key } of hosts) {
+          const a = grown[key];
+          const b = fresh[key];
+          if (typeof a !== "object" || a === null || typeof b !== "object" || b === null) {
+            out[key] = { grown: a, fresh: b };
+            continue;
+          }
+          const { width: grownWidth, ...grownRest } = a as { width: number };
+          const { width: freshWidth, ...freshRest } = b as { width: number };
+          out[key] = { sameWidth: Math.abs(grownWidth - freshWidth) <= 1, grown: grownRest, fresh: freshRest };
+        }
+        return out;
+      };
+      const rule = ".spaced { letter-spacing: 3px; }";
+      const settled = async (): Promise<void> => {
+        await driver.settle();
+        await driver.frames(3);
+      };
+      /** A pass: mount `first`, apply `grow` to each caption, read; then each host replaced by a fresh one with `last`. */
+      const pass = async (first: string, last: string, grow: (p: string) => Promise<void>, spacedFresh: boolean): Promise<unknown> => {
+        await page(driver, markup(first, false), 1280, rule);
+        await driver.open("dlg");
+        await settled();
+        const before = await states();
+        for (const { p } of hosts) await grow(p);
+        await settled();
+        const grown = await states();
+        for (const { id, p } of hosts) await driver.replace(id, dt(id, "", table(p, last, spacedFresh)));
+        await settled();
+        const fresh = await states();
+        const widened: Record<string, boolean> = {};
+        for (const { key } of hosts) {
+          const a = before[key];
+          const b = fresh[key];
+          widened[key] = typeof a === "object" && typeof b === "object" && b.width > a.width + 10;
+        }
+        return { widened, result: compare(grown, fresh) };
+      };
+      const text = await pass("Deploy approvals", "Deploymentsapprovalspending", (p) => driver.text(`${p}-cap`, "Deploymentsapprovalspending"), false);
+      const spacing = await pass("Deployments approvals", "Deployments approvals", (p) => driver.style(`${p}-cap`, "letter-spacing", "3px"), true);
+      return { text, spacing };
+    },
+    expected: (() => {
+      const each = { sameWidth: true, grown: { overflows: false, inside: true, tabindex: null, fade: null }, fresh: { overflows: false, inside: true, tabindex: null, fade: null } };
+      const one = { widened: { dialog: true, inlineBlock: true, column: true }, result: { dialog: each, inlineBlock: each, column: each } };
+      return { text: one, spacing: one };
+    })(),
+  },
 ];
 
 // ---------------------------------------------------------------------------------------------------------------
