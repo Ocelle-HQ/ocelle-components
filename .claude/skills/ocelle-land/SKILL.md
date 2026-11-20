@@ -178,7 +178,7 @@ surface, gate or contract change, as opposed to a mechanical chore: a pin bump, 
       - the folded head's tree equals the old head's;
       - the remap touches only evidence files.
 
-      On failure it leaves HEAD on the old head and exits 1. The old head stays as `refs/ocelle/prefold/landing/<branch>`.
+      On failure it leaves HEAD on the old head and exits 1 when a verification failed, 2 when the fold could not run. The old head is kept as `refs/ocelle/prefold/landing/<branch>` only once the rebuilt commits have passed their checks; a failed or unsigned remap commit removes it again.
    3. Prove the fold, then commit the evidence:
       - `$S/tdd-check.sh N` for every phase (all `pass`, on the new SHAs);
       - `pnpm run gate:signoff -- --range <pr-base>..HEAD`;
