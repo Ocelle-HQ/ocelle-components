@@ -37,7 +37,7 @@ function recorder(built: BuiltRepo, ran: ToolRun | Error, buildError?: Error): R
       calls.push(`removeDir ${dir}`);
       return Promise.resolve();
     },
-    build: { "repo-tree": build("repo-tree"), "commit-repo": build("commit-repo"), "mutation-repo": build("mutation-repo"), workspace: build("workspace") },
+    build: { "repo-tree": build("repo-tree"), "commit-repo": build("commit-repo"), "mutation-repo": build("mutation-repo"), "tracked-tree": build("tracked-tree"), workspace: build("workspace") },
     run: (command, args) => {
       calls.push(`run ${command} ${args.join(" ")}`);
       return ran instanceof Error ? Promise.reject(ran) : Promise.resolve(ran);
