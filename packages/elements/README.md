@@ -38,6 +38,7 @@ empty or loading panel, and `ocelle-progress`, a progress bar.
 | `@ocelle/elements/ocelle-empty-state.js` | `dist/ocelle-empty-state.js` | `ocelle-empty-state` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-progress.js` | `dist/ocelle-progress.js` | `ocelle-progress` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-status-indicator.js` | `dist/ocelle-status-indicator.js` | `ocelle-status-indicator` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-metric.js` | `dist/ocelle-metric.js` | `ocelle-metric` only; for hosts with a bundler |
 | `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |
 | `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |
 
@@ -1279,6 +1280,37 @@ system background.
 **Tokens.** `ocelle-status-indicator` reads the tokens `--ocelle-color-info`, `--ocelle-color-success`,
 `--ocelle-color-warning`, `--ocelle-color-danger`, `--ocelle-color-neutral`, `--ocelle-size-indicator`,
 `--ocelle-radius-pill`, `--ocelle-border-width`, `--ocelle-motion-pulse` and `--ocelle-easing-standard`.
+
+## `ocelle-metric`
+
+```html
+<ocelle-metric label="Open missions" display-value="12"></ocelle-metric>
+<ocelle-metric label="Merged this week" display-value="1,204" layout="row"></ocelle-metric>
+```
+
+`ocelle-metric` shows a label and its value: `<ocelle-metric label="Open missions" display-value="12"></ocelle-metric>`.
+The label is set in the eyebrow style, `--ocelle-font-size-eyebrow`, `--ocelle-font-weight-eyebrow`,
+`--ocelle-tracking-eyebrow` and `--ocelle-color-eyebrow`, and shown uppercase by style only, so assistive technology
+reads it as written. The value is shown in tabular figures (`--ocelle-figures`) in Schibsted Grotesk
+(`--ocelle-font-sans`). The element formats nothing: `display-value` is a pre-formatted string, shown as given, with no
+number formatting and no unit added. `label` and `display-value` are text, never parsed as markup; both reflect.
+`ocelle-metric` emits no event and adds no tab stop.
+
+**Layout.** With `layout="row"` the label and the value share one line, label first, `--ocelle-space-2` apart, and wrap
+onto two lines rather than overflow; with no `layout`, or any other value, they are stacked, the label above the value.
+An unknown `layout` stays in the attribute as written and the `layout` property reads `"stack"`. An empty or absent
+`display-value` adds no placeholder, and the metric keeps the height it has with a one-line value. A long unbroken
+word breaks inside the metric rather than overflow it.
+
+**Accessibility.** The metric is one term and its definition: assistive technology reads the label, then the value, in
+both layouts. The browser's find in page matches a metric's label twice: the visible uppercase label and an invisible
+copy of the label as written, which names the term. The second match's highlight cannot be seen; this is a known
+limitation. In forced colours the label and the value are drawn in the system text colour.
+
+**In a flex row.** In a flex row a metric is not shrunk below its longest word, so a one-word label or value stays on
+one line; a host that wants it to shrink further sets `min-inline-size: 0` on it, and its words then break inside it.
+
+**Parts.** The parts `label` (the term) and `value` (the definition) can be styled with `::part()`.
 
 ## Mapping from kitty-mission-ui
 

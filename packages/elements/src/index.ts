@@ -4,7 +4,7 @@
 // `ocelle-section-header`, `ocelle-page-header`, `ocelle-context-sidebar` and `ocelle-personal-rail`, since 008
 // `ocelle-dialog`, `ocelle-drawer` and `ocelle-tooltip`, since 012 `ocelle-button` and `ocelle-action-row`, and since
 // 013 `ocelle-facts`, `ocelle-fact`, `ocelle-empty-state` and `ocelle-progress`, and since 018
-// `ocelle-status-indicator`, and exports their classes. The
+// `ocelle-status-indicator` and `ocelle-metric`, and exports their classes. The
 // overflow-region, lane-count, tier and list-detail measurement modules and the overlays' internal base are not
 // exported.
 export { OcelleActionRow } from "./ocelle-action-row.ts";
@@ -19,6 +19,7 @@ export { OcelleFact } from "./ocelle-fact.ts";
 export { OcelleFacts } from "./ocelle-facts.ts";
 export { OcelleIcon } from "./ocelle-icon.ts";
 export { OcelleListDetail } from "./ocelle-list-detail.ts";
+export { OcelleMetric } from "./ocelle-metric.ts";
 export type { IconName } from "./ocelle-icon.ts";
 export { OcellePageHeader } from "./ocelle-page-header.ts";
 export { OcellePersonalRail } from "./ocelle-personal-rail.ts";

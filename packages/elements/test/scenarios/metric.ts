@@ -297,6 +297,18 @@ export const metricScenarios: readonly Scenario[] = [
     },
   },
   {
+    name: "US2-5, the label's twin: with no label or an empty one the term is empty and unnamed, no placeholder is added, and the value is still shown as its definition (FR-020, FR-021; mutation finding at phase 3)",
+    run: async (driver) => {
+      await mount(driver, '<ocelle-metric id="none" display-value="12"></ocelle-metric><ocelle-metric id="empty" label="" display-value="12"></ocelle-metric>');
+      const read = async (id: string): Promise<unknown> => ({ eyebrow: await driver.textOf(id, eyebrow), written: await driver.textOf(id, written), value: await driver.textOf(id, value), tree: await tree(driver, id) });
+      return { none: await read("none"), empty: await read("empty") };
+    },
+    expected: {
+      none: { eyebrow: "", written: "", value: "12", tree: ["DescriptionList", "term", "definition", "text 12"] },
+      empty: { eyebrow: "", written: "", value: "12", tree: ["DescriptionList", "term", "definition", "text 12"] },
+    },
+  },
+  {
     name: "US2-6: an unknown, miscased or empty layout stays in the attribute as written, the property reads stack and the metric is stacked, beside a row twin on one line; setting the property writes the attribute as given (FR-020; Edge Cases)",
     run: async (driver) => {
       await mount(driver, 

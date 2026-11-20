@@ -1977,6 +1977,108 @@
       ]
     },
     {
+      "path": "src/ocelle-metric.ts",
+      "kind": "javascript-module",
+      "exports": [
+        {
+          "name": "OcelleMetric",
+          "kind": "js",
+          "declaration": {
+            "name": "OcelleMetric",
+            "module": "src/ocelle-metric.ts"
+          }
+        }
+      ],
+      "declarations": [
+        {
+          "tagName": "ocelle-metric",
+          "superclass": {
+            "package": "lit",
+            "name": "LitElement"
+          },
+          "slots": [],
+          "name": "OcelleMetric",
+          "members": [
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "label",
+              "kind": "field",
+              "description": "The label, shown in the eyebrow style and uppercase, and read by assistive technology as written, as the term's\nname. Text only, never parsed as markup. Reflected.",
+              "default": "undefined",
+              "attribute": "label"
+            },
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "displayValue",
+              "kind": "field",
+              "description": "The value, a string the host has formatted: shown as given in tabular figures, as the term's definition, with no\nnumber formatting and no unit added. Text only, never parsed as markup; empty or unset shows no placeholder.\nReflected as `display-value`.",
+              "default": "undefined",
+              "attribute": "display-value"
+            },
+            {
+              "type": {
+                "text": "\"stack\" | \"row\""
+              },
+              "name": "layout",
+              "kind": "field",
+              "description": "How the label and the value sit: the `layout` attribute when it is `row`, else `stack`. Setting it writes the\nattribute as given.",
+              "default": "\"stack\""
+            }
+          ],
+          "kind": "class",
+          "events": [],
+          "description": "A label and its value, shown as an eyebrow label above (or, in a row, before) a value in tabular figures, and exposed\nas one term and its definition.",
+          "customElement": true,
+          "cssProperties": [],
+          "cssParts": [
+            {
+              "name": "label",
+              "description": "The term: the label, shown uppercase in the eyebrow style and read as written."
+            },
+            {
+              "name": "value",
+              "description": "The definition: the value, in tabular figures, shown as given."
+            }
+          ],
+          "attributes": [
+            {
+              "type": {
+                "text": "\"stack\" | \"row\""
+              },
+              "name": "layout",
+              "description": "How the label and the value sit: `stack`, the default, the label above the value; `row`, both on one line, label first, wrapping onto two lines when there is not room. Any other value is `stack` and stays in the attribute as written."
+            },
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "name": "label",
+              "fieldName": "label",
+              "description": "The label, shown in the eyebrow style and uppercase, and read by assistive technology as written, as the term's\nname. Text only, never parsed as markup. Reflected.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "name": "display-value",
+              "fieldName": "displayValue",
+              "description": "The value, a string the host has formatted: shown as given in tabular figures, as the term's definition, with no\nnumber formatting and no unit added. Text only, never parsed as markup; empty or unset shows no placeholder.\nReflected as `display-value`.",
+              "default": "undefined"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "path": "src/ocelle-page-header.ts",
       "kind": "javascript-module",
       "exports": [
