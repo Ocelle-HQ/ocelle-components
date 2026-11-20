@@ -35,7 +35,7 @@ implemented on main as it is; before P2's red step the run stops and asks the op
 progress on `claude/013-data-display-2`). #13 closes when 019 and this mission have both landed. GitHub could not be
 read from the triage session: #13's text is the copy recorded on 2026-11-13, and the spec-kitty-design issues #470
 (Desktop V2 disclosure) and #520 (code block scroll region) were not read. A requirement they add, read later, goes to
-the operator.
+the operator. The operator chose to plan on the recorded copy as it is (SPEC-1-05, below).
 
 **Consumers** (constitution VI): kitty-mission-ui (Kitty Desktop and Kitty Dashboard) and the Ocelle web console, in
 server-rendered pages under a strict CSP with htmx swaps. No kitty-mission-ui inventory of disclosure or code-block
@@ -55,6 +55,15 @@ class uses was supplied for this mission; the plan's research records whether on
 - Code-block content model (clarify 3), "slotted text": the code is the element's light-DOM text content, shown in a
   preformatted box in the shadow root; a newline directly after the opening tag is kept, unlike a native `pre`, and the
   README says so (FR-020).
+- Code-block content model refined (spec check 1, SPEC-1-01, 2026-11-20), "Copy textContent always": the code is
+  still the element's light-DOM text content as the consumer writes it, but the shadow root renders a copy of
+  `textContent` in every mode and has no default slot. Child markup adds no style; digest groups render from the copy;
+  a mutation observer, not `slotchange`, follows light-DOM text changes; in scroll mode the overflow-region module's
+  focus handover finds no focusable slotted element, so focus goes to the frame by the module's rule (FR-020, FR-024,
+  FR-035).
+- Unread issues (spec check 1, SPEC-1-05, 2026-11-20), "Go ahead on recorded copy": planning goes ahead on #13's copy
+  recorded on 2026-11-13, without #470, #520 or later #13 comments; a disabled disclosure and an exclusive accordion
+  group stay out of scope; any requirement read from those issues later goes back to the operator (Assumptions).
 - Digest rendering and default policy (clarify 4), "gap spans, wrap default": groups of four are adjacent boxes
   separated by a gap with no space characters, so copied text and the screen-reader reading are the unbroken digest
   (the plan measures both in Chromium); a prefix up to the last colon stays ungrouped; wrap is the default policy and
@@ -77,8 +86,8 @@ fits (FR-040).
   tall code block grows and the page scrolls;
 - changes to 009's overflow-region module or its contract (`specs/009-workflow-layouts/contracts/overflow-region.md`):
   the code block uses it exactly as written; a need for a change goes to the operator as a separate op;
-- an exclusive accordion group (the `details` `name` attribute) and a disabled disclosure: #13 asks for neither and
-  #470's required states were not read (Assumptions);
+- an exclusive accordion group (the `details` `name` attribute) and a disabled disclosure: #13 asks for neither, and
+  the operator kept both out of scope while #470 is unread (SPEC-1-05; Assumptions);
 - animation of the disclosure's opening or of its chevron;
 - the `storybook-build`, `visual` and `axe` gates themselves and the pinned container (#10's, on `main`); this mission
   writes the stories they read and commits their baselines (FR-051).
@@ -125,9 +134,11 @@ focus order and the events.
 6. **Given** a disclosure, **When** a script sets `open = true`, or sets the `open` attribute, **Then** it opens as in
    scenario 2 (attribute and property agree) and one `ocelle-disclosure-toggle` with `detail.open === true` fires;
    **When** the script sets `open = true` again, **Then** nothing changes and no event fires.
-7. **Given** a script that sets `open` twice in the same task (true then false), **When** the task ends, **Then** the
-   disclosure is closed and at most one `ocelle-disclosure-toggle` has fired, whose `detail.open` is the final state
-   (`false`); none fires when the final state equals the state before the task.
+7. **Given** a script that sets `open` several times in one task, with events counted by a listener on `document`
+   after a later task has run and the element's `updateComplete` has resolved, **Then**: (a) for a closed disclosure
+   set to true then false, it is closed and exactly 0 `ocelle-disclosure-toggle` events have fired; (b) for an open
+   disclosure set to false then true, it is open and exactly 0 have fired; (c) for a closed disclosure set to true,
+   false and true, it is open and exactly 1 has fired, with `detail.open === true`.
 8. **Given** a disclosure opened by the user, **When** htmx morphs the region with server markup that also has `open`,
    **Then** it stays open; **When** the server markup lacks `open`, **Then** it closes, as the server said (the
    attribute is the state).
@@ -151,6 +162,20 @@ focus order and the events.
 16. **Given** a summary longer than one line in a 320 px wide container, **When** it renders, **Then** the summary
     wraps inside the element, the icon stays centred on its first line (slot convention), and the page's scroll width
     equals the viewport width.
+17. **Given** a consumer icon slotted into the `icon` slot, **When** the disclosure renders closed and then open,
+    **Then** the consumer icon is shown in both states, no `chevron-end` or `chevron-down` is shown, and the icon has
+    no node in the accessibility tree.
+18. **Given** a disclosure, **When** it is open, **Then** the host matches `:state(open)`; **When** it is closed,
+    **Then** it does not.
+19. **Given** an open disclosure with focus on a link in its panel, **When** a script sets `open = false`, **Then** the
+    summary is focused (the shadow root's active element is the summary) and `document.activeElement` is the host,
+    not the body.
+20. **Given** a closed disclosure, **When** a script calls `element.click()`, **Then** it opens with one
+    `ocelle-disclosure-toggle` (`detail.open === true`); **When** a script dispatches a `click` event on the host
+    itself with `dispatchEvent`, **Then** the state does not change and no event fires.
+21. **Given** a disclosure, **When** the pointer hovers the summary, **Then** the summary's background colour differs
+    from its colour without hover (the computed value comes from the token the plan names), and the cursor is
+    `pointer`.
 
 ---
 
@@ -202,13 +227,17 @@ while overflowing and not, the arrow keys, the selection's copied text and the a
    **When** it renders, **Then** `sha256:` is shown as written, followed by 16 groups of four characters with a gap of
    `--ocelle-space-1` between groups and no gap inside a group, and the element's light-DOM text is unchanged.
 10. **Given** that digest block, **When** the user selects the whole block and copies it (the browser's own copy),
-    **Then** the copied plain text is exactly the content as written, with no space, tab or newline added between
-    groups.
-11. **Given** that digest block, **When** the accessibility tree is read in Chromium, **Then** the block's text is the
-    unbroken digest as written, read as one string, not as 16 separate words or nodes with separators.
-12. **Given** a digest block in wrap mode at 288 px, **When** the digest does not fit on one line, **Then** it wraps
-    only between groups (never inside a group, and never between the prefix and the first group unless the prefix
-    alone fills the line), and the page's scroll width equals the viewport width.
+    **Then** the copied plain text is exactly the trimmed content (leading and trailing whitespace removed, FR-029),
+    with no space, tab or newline added between groups.
+11. **Given** that digest block, **When** Chromium's full accessibility tree is read through CDP
+    `Accessibility.getFullAXTree`, **Then** the concatenation, in tree order, of the `name` values of the StaticText
+    nodes that descend from the block's node equals the trimmed digest exactly (no space or other character between
+    groups), and no node between those StaticText nodes contributes a separator; and Playwright's `ariaSnapshot` of the
+    block holds the trimmed digest as one unbroken text run. The number of StaticText nodes is not asserted.
+12. **Given** a digest block in wrap mode at 288 px, **When** the digest does not fit on one line, **Then** every line
+    break falls at an allowed position: between the prefix and the first group, or between two groups; never inside
+    the prefix or inside a group. Measured from line boxes: the prefix and each group have exactly one rect in
+    `getClientRects()`, and the block holds more than one line. The page's scroll width equals the viewport width.
 13. **Given** a digest block with `overflow="scroll"`, **When** it is narrower than the digest, **Then** the digest stays
     on one line and scrolls as in scenario 4.
 14. **Given** `digest` and content whose length after the prefix is not a multiple of four (for example 10 characters),
@@ -223,6 +252,14 @@ while overflowing and not, the arrow keys, the selection's copied text and the a
     system colours, and an overflowing scroll block shows the module's forced-colours edge lines.
 18. **Given** prefers-reduced-motion, **When** a scroll block is scrolled with the arrow keys, **Then** nothing
     animates (the module's writes are instant in every case).
+19. **Given** an empty code block, in wrap mode and with `overflow="scroll"`, **When** it renders, **Then** its block
+    size is one line's height of the block's type (plus its padding) and it is not a tab stop.
+20. **Given** a code block holding `a <b>bold</b> c`, **When** it renders, **Then** the shown text is `a bold c`, the
+    shadow root has no `slot` element, and the computed `font-weight` of the shown
+    word "bold" equals that of "a".
+21. **Given** an overflowing scroll block that is focused, **When** its container widens until the text fits, **Then**
+    focus moves to the block's `.region-frame` (the module's rule when no focusable slotted element exists) and
+    `document.activeElement` is the host.
 
 ---
 
@@ -233,7 +270,7 @@ while overflowing and not, the arrow keys, the selection's copied text and the a
   which axe reports as the host's mistake. No story shows it; a browser test proves it (FR-050).
 - **Disclosure with an empty panel.** Opening it shows nothing below the summary and still fires the event.
 - **Focus inside a closing panel.** When a script closes a disclosure while focus is inside its panel, focus moves to
-  the summary, so it is never lost to the body.
+  the summary, so it is never lost to the body (US1 scenario 19).
 - **Interactive content in the summary.** A link or button slotted into the summary is not supported (a control
   inside a control); the README says so, and the element does not guard against it.
 - **Nested disclosures.** A disclosure inside another's panel works independently; a toggle of the inner one fires one
@@ -243,11 +280,12 @@ while overflowing and not, the arrow keys, the selection's copied text and the a
 - **Disclosure before upgrade.** Until the element is defined its content is plain light DOM: the summary and panel
   are both shown, as unstyled text. The README states it; no pre-upgrade rule is added.
 - **Empty code block.** A code block with no text renders an empty inset box of one line's height; it is never a tab
-  stop.
+  stop (US2 scenario 19).
 - **Leading newline.** A newline directly after `<ocelle-code-block>` is shown as an empty first line (unlike a native
   `pre`, which drops it); the README tells server templates to start the text on the same line.
-- **Markup inside a code block.** Child elements of a code block are not rendered as markup: the block shows its
-  text content only (FR-020), so a `<b>` or a `<code>` inside it adds no style. Text inside them is included.
+- **Markup inside a code block.** Child elements of a code block are not rendered as markup: the shadow root shows a
+  copy of the host's `textContent` and slots nothing (FR-020), so a `<b>` or a `<code>` inside it adds no style. Text
+  inside them is included (US2 scenario 20).
 - **Tabs.** A tab character is shown at the browser's default tab size; the element sets none.
 - **Digest prefix only.** `digest` with content `sha256:` (nothing after the colon) shows the prefix with no groups.
 - **Digest with several colons.** The prefix runs to the last colon (`ni:sha-256:` stays whole).
@@ -281,11 +319,15 @@ while overflowing and not, the arrow keys, the selection's copied text and the a
   wrapper around the default slot. The host has no role and no tabindex. The native disclosure marker is not shown.
 - **FR-004**: The summary MUST be the element's one inner control: `element.focus()` focuses it; it is in the tab
   order; Enter and Space on it toggle the disclosure once each (the native behaviour); a click on it toggles once. A
-  click on the panel does not toggle.
+  click on the panel does not toggle. As the control conventions' rule 1 says, `element.click()` clicks the summary and
+  so toggles once. A `click` dispatched on the host itself with `dispatchEvent` does not pass through the summary and
+  does not toggle; unlike rule 1, the element stops no click on the host, because clicks from the panel's content
+  must reach the page's listeners (US1 scenario 20).
 - **FR-005**: The icon wrapper MUST show `ocelle-icon` `chevron-end` while closed and `chevron-down` while open
   (README § Icons), decorative (no name, hidden from assistive technology), with `chevron-end` mirrored under a
   right-to-left inline direction. A consumer MAY slot its own icon into the `icon` slot, which then replaces the
-  chevron in both states. The icon is on the summary text's first line (slot convention, Alignment).
+  chevron in both states (the same icon open and closed) and stays decorative: hidden from assistive technology
+  (US1 scenario 17). The icon is on the summary text's first line (slot convention, Alignment).
 - **FR-006**: The summary control's accessible name MUST follow the control conventions' name order: the host's
   `aria-labelledby`, then the host's `aria-label`, then the `summary` slot's text. The control exposes its expanded
   state (true while open, false while closed) in the Chromium accessibility tree.
@@ -293,8 +335,7 @@ while overflowing and not, the arrow keys, the selection's copied text and the a
   the summary as the README's control conventions, rule 4, says: applied there, removed from the host, mirrored in
   `data-ocelle-moved-<attribute>`, read back at upgrade, restored when a morph removes the mirror, ID references
   resolved in the host's own tree and related by element reference. The README's off-value table applies. Any other
-  `aria-*` attribute on the host is not supported. Which of these the element exposes as custom states, if any, the
-  plan decides; at least `:state(open)` while open (FR-011).
+  `aria-*` attribute on the host is not supported.
 - **FR-008**: The panel MUST be laid out inline, directly after the summary in the element's own box, with no overlay,
   top layer or positioning outside the element. While closed, the panel's content has no box, is not in the tab order
   and is not in the accessibility tree, except that the browser's find in page may open it (FR-010).
@@ -306,21 +347,27 @@ while overflowing and not, the arrow keys, the selection's copied text and the a
   attribute always matches it after the change. A user toggle (click, Enter, Space, find in page) sets the property and
   reflects the attribute.
 - **FR-010**: When the browser's find in page matches text in a closed panel (Chromium), the disclosure MUST open and
-  behave as after a user toggle (FR-009, FR-012).
-- **FR-011**: The element MUST expose `:state(open)` while open, so consumers can style an open disclosure without a
-  host attribute selector they might morph away.
+  behave as after a user toggle (FR-009, FR-012). The plan measures this under the engine floor (Assumptions); if
+  the measure shows that Chromium does not open the closed panel for slotted light-DOM text, the run stops and the
+  operator decides whether FR-010 and US1 scenario 10 are dropped or another design is planned.
+- **FR-011**: The element MUST expose `:state(open)` while open, and only then, so consumers can style an open
+  disclosure without a host attribute selector they might morph away (US1 scenario 18). It exposes no other custom
+  state.
 - **FR-012**: The element MUST dispatch `ocelle-disclosure-toggle` (a `CustomEvent`, `bubbles: true`,
   `composed: true`, `cancelable: false`) after each change of the open state, whatever caused it, with
-  `detail: { open: boolean }` holding the new state. Changes within one task are coalesced as native `details`
-  coalesces its `toggle`: at most one event per task, carrying the final state, and none when the final state equals
-  the state before. The initial state at upgrade fires no event. The native `toggle` event is not re-dispatched and
+  `detail: { open: boolean }` holding the new state. Changes within one task are coalesced by this rule, which is the
+  definition (stricter than native `details`, which still fires a `toggle` when the final state equals the old one):
+  at most one event per task, carrying the final state, and none when the final state equals the state before the
+  task. The event is dispatched in a later task than the change, after the host's `open` attribute and property
+  reflect the final state (US1 scenario 7). The initial state at upgrade fires no event. The native `toggle` event is not re-dispatched and
   does not leave the shadow root.
 - **FR-013**: When the disclosure closes while focus is inside its panel, focus MUST move to the summary.
 
 **Look**
 
 - **FR-014**: The summary MUST take the library's focus ring (`--ocelle-color-focus`, `--ocelle-focus-width`,
-  `--ocelle-focus-offset`) on keyboard focus, a hover state built from existing tokens, and a pointer cursor; its
+  `--ocelle-focus-offset`) on keyboard focus, a hover state that changes the summary's background colour to an
+  existing token the plan names (US1 scenario 21), and a pointer cursor; its
   target size is at least 24 × 24 CSS px (WCAG 2.5.8). The plan names the tokens for type, colour, gap and padding.
 - **FR-015**: The disclosure MUST NOT animate: no transition or animation on the element, the panel or the icon, with or
   without reduced motion.
@@ -332,10 +379,13 @@ while overflowing and not, the arrow keys, the selection's copied text and the a
 
 ### `ocelle-code-block` (P2)
 
-- **FR-020**: The code MUST be the element's light-DOM text content (its `textContent`), shown as preformatted text in
-  its shadow root: line breaks and runs of spaces as written, including a newline directly after the opening tag.
-  Child elements add no markup or style; their text is included. A change of the light-DOM text (a node added,
-  removed or changed, at any depth) updates the shown text, the digest groups and the overflow state.
+- **FR-020**: The code MUST be the element's light-DOM text content (its `textContent`) as the consumer writes it.
+  The shadow root renders a copy of that text, in every mode (wrap, scroll, digest), as preformatted text: line breaks
+  and runs of spaces as written, including a newline directly after the opening tag. The shadow root has no default
+  slot and slots no light-DOM node, so child elements add no markup or style; their text is included in the copy. The
+  element follows light-DOM text changes with a mutation observer on the host (child nodes and character data, at any
+  depth; `slotchange` cannot see them, as nothing is slotted): a change updates the shown copy, the digest groups and
+  the overflow state (US2 scenario 16).
 - **FR-021**: The block MUST be on `--ocelle-color-inset`, in `--ocelle-font-sans` with `--ocelle-figures`, at
   `--ocelle-line-height-relaxed`, with padding and radius from existing tokens that match 003's prose `pre` rule
   (`--ocelle-space-3`, `--ocelle-radius-2`), and an inline size capped at `--ocelle-measure-reading`. No base-style
@@ -350,13 +400,19 @@ while overflowing and not, the arrow keys, the selection's copied text and the a
   the element's styles, the default role `group` and the default step, the `label` passed through `setLabel` after each
   update, `aria-label` in `observedAttributes`, `data-fade` bound through `ifDefined`; the text does not wrap
   (`white-space: pre`); inline axis only. The element sets none of what the contract's "What a later element must not
-  do" forbids, sets no option mission 019 adds to the module, and needs no change to the module.
+  do" forbids, sets no option mission 019 adds to the module, and needs no change to the module. Under the copy model
+  (FR-020) the track holds no slot, so the module's `slotchange` trigger never fires for the code block: a text change
+  reaches the module through the re-render of the copy, whose new size its `ResizeObserver` on the track sees. The
+  module's focus handover finds no focusable slotted element, so when overflow ends while the box has focus, focus
+  goes to `.region-frame` by the module's rule and `document.activeElement` is the host (US2 scenario 21).
 - **FR-025**: In wrap mode the element MUST NOT render the overflow-region structure or create the module's effects on
   any node (no tab stop, role or name can appear). Switching `overflow` between the two values at run time MUST give
   the other policy's full behaviour, with no tab stop, role or name left behind on a node.
 - **FR-026**: `label` (attribute and property, not reflected, `@default undefined`) MUST name the scroll box while it
   overflows, as the module's name rule says (a non-blank host `aria-label` wins; blank counts as absent). In wrap mode
-  `label` has no effect, and a host `aria-label` is left on the host as written (Host ARIA).
+  `label` has no effect, and a host `aria-label` is left on the host as written (Host ARIA). Because the host has no
+  role in either mode, the README advises against a host `aria-label` on a code block and tells consumers to use
+  `label`; no story sets a host `aria-label` on a code block.
 - **FR-027**: In the scroll policy, the README's `ocelle-scroller` statements on keyboard, focus, fades, scrollbar,
   motion, naming and sizing MUST hold for the code block, and the README section says so by reference.
 
@@ -366,28 +422,35 @@ while overflowing and not, the arrow keys, the selection's copied text and the a
 - **FR-029**: In digest mode, the element MUST take the light-DOM text with leading and trailing whitespace trimmed;
   when it holds no other whitespace, the prefix is everything up to and including its last colon (none when there is
   no colon), and the rest is split into groups of four characters counted from the start, the last group holding the
-  remainder. When the trimmed text holds whitespace, digest mode shows it as the default mode does, with no groups.
+  remainder. A character here is a Unicode code point (a digest is ASCII in practice, where code points and UTF-16
+  code units agree). The groups render from the shadow root's copy (FR-020); the light DOM is not changed. When the trimmed text holds whitespace, digest mode shows it as the default mode does, with no groups.
 - **FR-030**: The prefix and each group MUST be shown as adjacent boxes with a gap of `--ocelle-space-1` between the
   prefix and the first group and between groups, and no gap within a group. No space, tab, newline or other
   character is added to the shown text: the gap is layout only.
 - **FR-031**: A selection of the whole block or any run of groups, copied with the browser's own copy, MUST give the
-  characters as written, with nothing added between groups (measured in Chromium). The element reads and writes no
-  clipboard.
-- **FR-032**: The Chromium accessibility tree MUST expose the digest as one unbroken string, as written (measured; if
-  Chromium splits the groups into separate words, the element exposes the unbroken text to assistive technology and
-  hides the groups from it, and the plan records the measure).
-- **FR-033**: In wrap mode, a digest MUST wrap only between groups or between the prefix and the first group, never
-  inside a group. In the scroll mode it stays on one line. The README MUST record, in § Element conventions, the
+  characters of the trimmed text (FR-029), with nothing added between groups (measured in Chromium). The element
+  reads and writes no clipboard.
+- **FR-032**: The Chromium accessibility tree MUST expose the digest as one unbroken string, equal to the trimmed
+  text. The measure is US2 scenario 11's: in CDP `Accessibility.getFullAXTree`, the `name` values of the StaticText
+  nodes under the block's node, concatenated in tree order, equal the trimmed digest with no separator, and
+  Playwright's `ariaSnapshot` of the block holds it as one text run; the count of StaticText nodes is not part of the
+  measure. Only if that measure fails does the fallback apply: the element exposes the unbroken text to assistive
+  technology and hides the groups from it, the fallback MUST still meet FR-031 (a copy gives the trimmed text once,
+  with no second copy of it and nothing added), and the plan records the measure.
+- **FR-033**: In wrap mode, a line break in a digest MUST fall only between the prefix and the first group or between
+  two groups, never inside the prefix or inside a group (measured as US2 scenario 12 says). In the scroll mode it
+  stays on one line. The README MUST record, in § Element conventions, the
   library's digest rule for later elements (#14's copy field among them): the prefix up to the last colon, groups of
-  four from the start, a `--ocelle-space-1` gap with no added characters, copied and read text unbroken, breaks only
-  between groups.
+  four code points from the start, a `--ocelle-space-1` gap with no added characters, copied and read text unbroken,
+  breaks only between the prefix and the first group or between groups.
 
 **Look and surface**
 
 - **FR-034**: In forced colours the block MUST show its text in `CanvasText` with a visible edge (a border or outline
   in a system colour), and the scroll mode keeps the module's forced-colours edge lines.
-- **FR-035**: `ocelle-code-block` MUST list in its manifest entry: `overflow`, `label`, `digest`; its default slot (the
-  text); no event; the CSS parts the plan names; each list stated even when empty.
+- **FR-035**: `ocelle-code-block` MUST list in its manifest entry: `overflow`, `label`, `digest`; no slot (the slot
+  list stated empty, the description saying the text is read from the light DOM's `textContent`); no event; the CSS
+  parts the plan names; each list stated even when empty.
 
 ### Tokens
 
@@ -417,7 +480,7 @@ while overflowing and not, the arrow keys, the selection's copied text and the a
   one for its long summary (US1 scenario 16).
 - **FR-054**: Every event and payload MUST have an interaction test: `ocelle-disclosure-toggle` for click, Enter,
   Space, property, attribute and find in page, with its `detail`, `bubbles`, `composed` and `cancelable`, and its
-  coalescing (US1 scenarios 2 to 10).
+  coalescing (US1 scenarios 2 to 10), and `element.click()` (US1 scenario 20).
 - **FR-055**: The built output MUST pass the strict-CSP check; the only per-instance stylesheet is the module's
   (README § Element conventions, Styles).
 - **FR-056**: Each changed package gets a changelog entry naming the two added elements, their attributes, slots,
@@ -440,8 +503,8 @@ while overflowing and not, the arrow keys, the selection's copied text and the a
 - **Disclosure**: a summary (slotted content, optionally an icon), a panel (slotted content), an open state, moved
   host ARIA with its mirrors.
 - **Toggle event**: `ocelle-disclosure-toggle`, detail `{ open }`.
-- **Code block**: its text (light-DOM text content), a policy (wrap or scroll), a label for the scroll box, a digest
-  mode.
+- **Code block**: its text (light-DOM text content, rendered in the shadow root as a copy), a policy (wrap or
+  scroll), a label for the scroll box, a digest mode.
 - **Digest**: a prefix (up to the last colon, may be empty) and groups of four characters, the last holding the
   remainder.
 
@@ -455,8 +518,9 @@ while overflowing and not, the arrow keys, the selection's copied text and the a
   page scroll width equal to the viewport width.
 - **SC-003**: Every story of the two elements reports no serious or critical axe finding through #10's `axe` gate, in
   light and dark, with no new `a11y-exceptions.json` entry.
-- **SC-004**: A copy of a digest block's whole text gives exactly the characters as written (0 added characters), and
-  its Chromium accessibility text is the same string.
+- **SC-004**: A copy of a digest block's whole text gives exactly the trimmed characters (0 added characters), and
+  the concatenated StaticText names under the block in CDP `Accessibility.getFullAXTree` are the same string (US2
+  scenario 11's measure).
 - **SC-005**: A keyboard-only user can open, close and pass through a disclosure, and scroll an overflowing scroll
   block end to end, with no pointer, in every story that has them.
 - **SC-006**: Under reduced motion and without it, no story of the two elements has a running animation or transition.
@@ -471,13 +535,16 @@ while overflowing and not, the arrow keys, the selection's copied text and the a
 - #470's required states for the disclosure were not read; the stories cover default, hover, focus and both themes,
   and the narrow width, which are the states the triage record lists for every Desktop V2 family. Disabled does not
   apply: native `details` has no disabled state, and #13 asks for none. A state #470 adds, read later, goes to the
-  operator.
+  operator. The operator chose on 2026-11-20 to plan on #13's recorded copy with #470, #520 and #13's later comments
+  unread, keeping a disabled disclosure and an exclusive accordion group out of scope (SPEC-1-05).
 - #520 was not read; the code block's scroll region is #13's description of it ("a tab stop only while it overflows,
-  the `ocelle-scroller` pattern"), which 009's module implements.
+  the `ocelle-scroller` pattern"), which 009's module implements. A requirement #520 adds, read later, goes to the
+  operator (SPEC-1-05).
 - The overflow-region module on `main` (009) serves the code block as it is. Mission 019's amendments are opt-in and,
   by 009's contract, leave the option-off path unchanged; the operator decides before P2's red step how to proceed
   (FR-060).
 - Chromium's find in page opens a closed `details` (the `beforematch`-free native behaviour since Chromium 97); the
-  plan confirms it under the engine floor. WebKit is not measured, the same as the library's Engines note.
+  plan confirms it under the engine floor, for text slotted through the element's shadow root; if it does not hold,
+  FR-010 goes to the operator. WebKit is not measured, the same as the library's Engines note.
 - `--ocelle-space-1` is the digest group gap; the plan confirms it is legible at the block's type size.
 - No new token is expected; the plan names every token each element reads.
