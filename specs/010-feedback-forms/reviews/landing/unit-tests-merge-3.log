@@ -1,0 +1,3 @@
+$ node gates/bin/test.ts
+unit-tests: 8666 tests passed in 254 files
+EXIT 0

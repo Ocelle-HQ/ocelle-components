@@ -303,3 +303,11 @@ Run at `d0e0d164` in this container with Chromium build 1243 through `OCELLE_CHR
 | `gate:plants` | `-- --affected origin/main --list` (op 016) selects the full set, "317 of 317 plants selected", by `packages/elements/custom-elements-manifest.config.mjs` (unmapped), so the full set was judged by shard. The plan is 77 shards (`--plan`); old shard reports were cleared. Each shard (`--shard <k>`, three at a time) exited 0 with "every plant as expected"; the visual shards took about 400 s to 810 s each. The kernel killed two `node` processes for memory while shards 1 to 3 (61 plants each) ran side by side; those three shards still reported every plant as expected, and were run again one at a time, each exit 0, "61 plants judged, every plant as expected", with no further kill. Then `--verdict storybook/.visual/plant-shards`: exit 0, "plants: 317 plants of 17 gates and the registry judged, every plant as expected". Among them are the eight manifest plants and `visual/fail-token-changed` with its 189 findings (806 s). |
 
 Merge-resolution errors found by the gates: one, the lint finding fixed in `d0e0d164` (above). There is no other `fix(landing)` commit.
+
+### Full unit-test run on the merged head (operator decision 2026-11-20)
+
+The operator chose one full `gate:unit-tests` run on the merged head over rerunning the five phases' TDD checks
+("One full suite on head (Recommended)"): the red commits and their recorded results are unchanged by the merge, so
+each phase's `tdd-check.json` keeps its pre-merge head. The run at b746d15a (only docs commits follow it) exited 0:
+"unit-tests: 8666 tests passed in 254 files", in about 77 minutes, no test timing out
+(`unit-tests-merge-3.log`).
