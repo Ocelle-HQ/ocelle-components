@@ -20,14 +20,17 @@ the row or a busy spinner's turn. Now seven tokens cover them, every motion dura
 unless its name ends in `-delay`, and the token build refuses a misplaced delay marker or a duration that is not a
 literal `ms` value. The seven tokens are additions to the token names: a minor change.
 
+`--ocelle-size-indicator` and `--ocelle-motion-pulse`, the two tokens of `ocelle-status-indicator` of
+`@ocelle/elements`, are additions to the token names: a minor change.
+
 ### Added
 
 - `fonts/`: Schibsted Grotesk, the variable `wght` WOFF2 with its SIL Open Font License 1.1 (`OFL.txt`), declared
   by `@font-face` in `tokens.css` with a relative URL; see the README for the CSP the host needs.
 - `tokens.css`: every token as an `--ocelle-*` custom property, light by default and with no system preference,
   dark under `prefers-color-scheme: dark` unless `data-theme="light"`, and under `data-theme="dark"` on `<html>`;
-  every motion duration (`--ocelle-motion-fast`, `--ocelle-motion-base`, `--ocelle-motion-spin`) at `0ms` under
-  `prefers-reduced-motion: reduce`.
+  every motion duration (`--ocelle-motion-fast`, `--ocelle-motion-base`, `--ocelle-motion-spin`,
+  `--ocelle-motion-pulse`) at `0ms` under `prefers-reduced-motion: reduce`.
 - `tokens.json`: the same tokens with their group and resolved light and dark (or one) value.
 - The package entry: `TokenName`, `tokenNames`, `tokens` and `cssName()`.
 - The tokens, by group:
@@ -63,7 +66,8 @@ literal `ms` value. The seven tokens are additions to the token names: a minor c
     `--ocelle-focus-offset-inset` (`calc(-1 * (var(--ocelle-focus-offset) + var(--ocelle-focus-width)))`, -5 px)
   - size: `--ocelle-target-min`, `--ocelle-icon-size`, `--ocelle-size-dot`, `--ocelle-size-step`,
     `--ocelle-size-avatar`, `--ocelle-size-rail-item`, `--ocelle-size-visually-hidden`, `--ocelle-tooltip-max-inline`
-    (the maximum inline size of the `ocelle-tooltip` bubble; mission 008)
+    (the maximum inline size of the `ocelle-tooltip` bubble; mission 008), `--ocelle-size-indicator` (the dot of
+    `ocelle-status-indicator`, `0.5rem`; 018)
   - shell: `--ocelle-shell-topbar-height`, `--ocelle-shell-rail-width`, `--ocelle-shell-sidebar-width`,
     `--ocelle-shell-inspector-width`, `--ocelle-shell-main-max`, `--ocelle-shell-collapse-inspector`,
     `--ocelle-shell-collapse-sidebar`, `--ocelle-shell-height`, `--ocelle-footer-h`, `--ocelle-measure-sheet`,
@@ -78,7 +82,9 @@ literal `ms` value. The seven tokens are additions to the token names: a minor c
     `--ocelle-elevation-seg`, `--ocelle-elevation-bar`
   - motion: `--ocelle-motion-fast`, `--ocelle-motion-base`, `--ocelle-easing-standard`, `--ocelle-tooltip-delay` (the
     hover delay of `ocelle-tooltip`, not zeroed under reduced motion; mission 008), and for the busy spinner of
-    `ocelle-button` (012) `--ocelle-motion-spin` (one turn, `800ms`) and `--ocelle-motion-turn` (its angle, `1turn`)
+    `ocelle-button` (012) `--ocelle-motion-spin` (one turn, `800ms`) and `--ocelle-motion-turn` (its angle, `1turn`),
+    and for the pulse of `ocelle-status-indicator` (018) `--ocelle-motion-pulse` (one of its three iterations,
+    `1600ms`)
 - The token build refuses a misplaced `delay: true` (only a motion token whose name ends in `-delay` may carry it)
   and a motion duration that is not a literal `ms` value, such as `1s`, `var()` or `calc()` (mission 012).
 - The control tokens of `@ocelle/elements`' `ocelle-button` (mission 012), in the colour group:

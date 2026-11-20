@@ -85,6 +85,11 @@ Two motion tokens exist for the busy spinner of `ocelle-button`. `--ocelle-motio
 a busy spinner, `800ms`. `--ocelle-motion-turn` is the angle of one turn, `1turn`; it is not a duration and reduced
 motion does not change it.
 
+Two tokens exist for `ocelle-status-indicator` of `@ocelle/elements` (mission 018). `--ocelle-size-indicator`
+(`0.5rem`) is the size of the dot of `ocelle-status-indicator`, 8 px at the default root font size.
+`--ocelle-motion-pulse` is the duration of one iteration of the status indicator's pulse, `1600ms`; the indicator runs
+three iterations, 4.8 s in all, within the 5 s limit. The count is fixed in the element, not a token.
+
 Two tokens serve the action row of `@ocelle/elements` (`ocelle-action-row`, mission 012).
 `--ocelle-focus-offset-inset` is the negative offset that draws a focus ring inside a box:
 `calc(-1 * (var(--ocelle-focus-offset) + var(--ocelle-focus-width)))`, -5 px, so a scroll container's edge or the next
@@ -95,7 +100,7 @@ row's description and tags sit; the contrast check covers each pair.
 ### Reduced motion
 
 Under `prefers-reduced-motion: reduce` every motion duration (`--ocelle-motion-fast`, `--ocelle-motion-base`,
-`--ocelle-motion-spin`) is `0ms`: the stylesheet's reduced-motion block sets each motion token whose value is a
+`--ocelle-motion-spin`, `--ocelle-motion-pulse`) is `0ms`: the stylesheet's reduced-motion block sets each motion token whose value is a
 duration, and nothing else. `--ocelle-easing-standard` and `--ocelle-motion-turn` keep their values, and so does a
 motion token the source marks as a delay, `--ocelle-tooltip-delay`, because a delay is not motion. The brand-rules
 check fails a stylesheet whose block misses a motion duration or sets anything else.
