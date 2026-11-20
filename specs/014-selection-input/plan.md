@@ -82,7 +82,8 @@ selection model (`src/selection.ts`) hold the key maps and the value rules of FR
 tested in the in-process project Stryker runs (R-04, R-05, R-13). The segmented choice is a toolbar; its joined
 variant observes its own and its segments' sizes and rounds each row through custom states, raising the engine floor
 to Chromium 125 / WebKit 17.4 (R-06; plan decision 1, decided yes at the phase 4 stop, T059a,
-`reviews/phase-4/decision-1.md`). The listbox emits `ocelle-listbox-activate` for a
+`reviews/phase-4/decision-1.md`); the second merge of main then took mission 012's higher floor, Chromium 135 /
+WebKit 17.4 (`reviews/landing/merge-notes.md`). The listbox emits `ocelle-listbox-activate` for a
 confirm gesture (R-18). The copy field is request-only with a native Copy button and a polite live region written
 outside Lit, and dispatches its request after the cleared region has reached the accessibility tree (R-07). The link
 wraps a native anchor, intercepts plain activations (Enter included on an anchor without `href`), resolves `href` at
@@ -106,8 +107,10 @@ scenario 12 (R-09; not mutated); `storybook-integration` for the story test; #10
 `contrast` gate over `@ocelle/tokens`' extended pair list (R-17).
 
 **Target Platform** (plan decision 1, decided yes at the phase 4 stop, T059a, 2026-11-15,
-`reviews/phase-4/decision-1.md`): Chromium 125+ and WebKit 17.4+ (raised from 120 / 16.4 for `:state()`, R-06); the
-operator confirms that kitty-mission-ui supports these engines. Only Chromium is measured.
+`reviews/phase-4/decision-1.md`): Chromium 135+ and WebKit 17.4+. 014 raised the floor from 120 / 16.4 to Chromium
+125 / WebKit 17.4 for `:state()` (R-06), and the operator confirms that kitty-mission-ui supports WebKit 17.4 and
+Chromium 125 or later; the second merge of main took mission 012's higher Chromium 135 (`reviews/landing/merge-notes.md`).
+Only Chromium is measured.
 
 **Project Type**: library (web components).
 
@@ -130,7 +133,7 @@ attribute, no ID reference across a shadow root, real keyboard input in tests, m
 | IV. Strict CSP, offline | Adopted stylesheets only; no `style` attribute (joined rounding through custom states, R-06; plan decision 1 decided yes); browser build under the fixture's strict CSP in every browser scenario; the `file:` scenario carries the same policy in a `<meta>` element (R-09). |
 | V. Storybook, behaviour tests | Stories per variant and state in light and dark with baselines from #10's pinned container, an icon story per child (R-12); from phase 2 on the baselines are produced under docker in the pinned container and checked by the `visual` gate in each phase, with CI confirming them at landing (operator decision 2026-11-14, `reviews/phase-2/operator-decisions.md`). The states with their own paint have their own stories too: hovered option, tab and segment (default and joined), the focused Copy control and the focused tab panel (FR-050; analysis C1, operator decision Q3 (a)); every event, payload and key path asserted with real input, and every paint claim read from computed styles or pixels, not from baselines alone (R-11, R-15). Stories written in the red commit (operator decision I3). |
 | VI. Consumer-driven, own code | Needs from #14 and spec-kitty-design #511, #521, #522, #527, #534 (read only as requirements, not available to this session); first consumer #16's Open project dialog, whose confirm gesture is `ocelle-listbox-activate` (operator decision PLAN-CORRECTNESS-1-018 (b)). Form association has no consumer need and stays out (spec Assumptions). Nothing copied. |
-| VII. Semver | Nine elements, six events, parts and attributes: MINOR in `@ocelle/elements`. The `copy-control` part's surface is stated as its box, accessible name and events, so the later `ocelle-button` swap is a PATCH under that stated surface (operator decision PLAN-CORRECTNESS-1-017 (a); README, FR-044). The README's module rule is amended (a parent's entry defines its children, R-16). Plan decision 1 is decided yes (T059a, `reviews/phase-4/decision-1.md`), so the engine-floor raise to Chromium 125 / WebKit 17.4 is documented in the README and the changelog (before 1.0.0 the surface may change; a floor raise is named as a notable change); the row-attribute alternative and its README statement (second analysis U2) are not built. `@ocelle/tokens`: new checked pairs only, no token change, named in its changelog (R-17). |
+| VII. Semver | Nine elements, six events, parts and attributes: MINOR in `@ocelle/elements`. The `copy-control` part's surface is stated as its box, accessible name and events, so the later `ocelle-button` swap is a PATCH under that stated surface (operator decision PLAN-CORRECTNESS-1-017 (a); README, FR-044). The README's module rule is amended (a parent's entry defines its children, R-16). Plan decision 1 is decided yes (T059a, `reviews/phase-4/decision-1.md`), so the engine-floor raise to Chromium 125 / WebKit 17.4 is documented in the README and the changelog (before 1.0.0 the surface may change; a floor raise is named as a notable change); since the second merge of main the README's floor is mission 012's Chromium 135 / WebKit 17.4 (`reviews/landing/merge-notes.md`); the row-attribute alternative and its README statement (second analysis U2) are not built. `@ocelle/tokens`: new checked pairs only, no token change, named in its changelog (R-17). |
 | VIII. Test-first, non-vacuous | Each phase red first with story tests in the red commit, after the phase's scaffold (`.claude/skills/speckit-story-implement`); every "does not" outcome paired with a named plant and a falsifiable setup (`contracts/elements.md` § Pairings), plant runs recorded in `reviews/phase-N/plants.md`; the pure modules' tests run in the in-process `elements` project, the one the elements Stryker configuration runs, so their mutants are killed there (R-13); the link's navigation decision is killed in process, not only on the unmutated fixture (R-08, R-11); timing claims measured as the platform orders them (R-06, R-07); #23's rules for timeouts. Phase 1 has one exemption-candidate task (the #10 recheck, documentation only). |
 | Workflow gates | No new gate. The constitution's merge gates as the repository defines them must pass in every phase: `typecheck`, `lint`, `test-lint`, `style-lint`, `brand-rules`, `unit-tests`, `signoff`, `pins`, `config-copies`, `manifest`, `csp`, `contrast`, `prefix`, `plants`, `mutation`, and #10's `storybook-build`, `visual` and `axe` (tasks T028; analysis G4). The `visual` gate runs under docker in these sessions; no podman cross-engine check is possible here, which each phase records, and CI's run of both engines confirms the baselines at landing (operator decision 2026-11-14, `reviews/phase-2/operator-decisions.md`). The Vitest configuration gains `elements-browser-file`, excluded from mutation runs, with its configuration test first (R-09). |
 
@@ -147,7 +150,8 @@ attribute, no ID reference across a shadow root, real keyboard input in tests, m
    Chromium 125 or later, so the floor is raised to Chromium 125 / WebKit 17.4. T064, T066 and T067 apply as
    written; T062a, T064a, T066a and T067a are skipped. The same request asked kitty-mission-ui and the console owners
    whether a clipboard write from the deferred copy request still counts as user-activated in those engines (R-07,
-   PLAN-FRESH-2-004 (a)); that question is not answered by this decision and stays open.
+   PLAN-FRESH-2-004 (a)); that question is not answered by this decision and stays open. Since the second merge of
+   main the floor is mission 012's higher one, Chromium 135 / WebKit 17.4 (`reviews/landing/merge-notes.md`).
 2. **Generated ids for tabs** (R-02): `ocelle-tabs` writes `id`, `aria-controls` (every paired tab) and
    `aria-labelledby` (the assigned panel only, for axe 4.14.0, PLAN-FRESH-2-002) on its light-DOM children; a host's
    own `id` on a child is kept. ARIA element reflection would avoid ids but needs
@@ -222,7 +226,7 @@ packages/elements/
 ├── test/
 │   ├── roving.test.ts, selection.test.ts, link-target.test.ts           # in-process `elements`, no DOM (R-13)
 │   ├── node/readme.test.ts (extended), node/selection-pairs-check.ts, node/selection-pairs.test.ts (R-17)
-│   ├── scenarios/{listbox,tabs,segmented-choice,copy-field,link}.ts, scenarios/driver.ts (extended, R-11)
+│   ├── scenarios/{listbox,tabs,segmented-choice,copy-field,ocelle-link}.ts, scenarios/driver.ts (extended, R-11)
 │   ├── {listbox,tabs,segmented-choice,copy-field,link}.test.ts        # in-process
 │   ├── commands.ts (axStates), in-process.ts, browser/driver.ts (extended)
 │   ├── browser/{listbox,tabs,segmented-choice,copy-field,link}.test.ts # strict-CSP fixture
@@ -303,7 +307,8 @@ unreflected `status` attribute. Each "does not" outcome among them is paired in 
    (`reviews/phase-4/decision-1.md`, R-06 Status). `ocelle-segmented-choice` (toolbar), `ocelle-segment`;
    the joined variant with the internal `ResizeObserver` on the group and its segments and the shared-line technique;
    custom states (R-06) and the engine-floor raise to Chromium 125 / WebKit 17.4 in the README (T064, T066, T067;
-   the row-attribute tasks T062a, T064a, T066a and T067a are skipped); the
+   the row-attribute tasks T062a, T064a, T066a and T067a are skipped; since the second merge of main the README's
+   floor is mission 012's Chromium 135 / WebKit 17.4); the
    focused segment's ring on a raised `::after`, the host not raised by focus
    (R-06); scenarios US3-1 to 19 with resize measurements after the observations' delivery, the four-sided ring read
    beside the pressed and a hovered segment, and the `accent-strong` shared-line read with a focused neighbour on
@@ -336,7 +341,7 @@ unreflected `status` attribute. Each "does not" outcome among them is paired in 
    convention, operator decision 2 during phase 6; a modified activation without `href` does nothing; a host that
    wants a new window handles the event), the axe-core 4.14.0 `color-contrast` incomplete on a link wrapped onto
    exactly two lines (R-08, operator decision 4 during phase 6), each checked by the documentation test (analysis G2).
-7. **Polish**: README overview (nine elements, engine floor Chromium 125 / WebKit 17.4 as decided at the phase 4 stop, T059a, module rule) and one README example
+7. **Polish**: README overview (nine elements, engine floor Chromium 125 / WebKit 17.4 as decided at the phase 4 stop, T059a, module rule; since the second merge of main the overview says "thirty-two elements" and the floor is mission 012's Chromium 135 / WebKit 17.4, `reviews/landing/merge-notes.md`) and one README example
    per SC-009 use (the Open project folder picker, tabbed screens, segmented choices, in-text links, copy fields),
    checked by the documentation test, red first (analysis G3); CHANGELOG MINOR entry, the composed dialog
    + listbox story if #16 has merged (FR-054), a full gate run per quickstart.md. #16 merged; the composed story

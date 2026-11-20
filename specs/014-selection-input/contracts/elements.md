@@ -101,7 +101,9 @@ and panels are not rendered.
 
 Roles `toolbar` (horizontal orientation, operator decision PLAN-A11Y-SECURITY-1-008 (a)) / `button` with
 `aria-pressed`. Custom states on segments for joined rows, set through a feature-checked internal method (R-06):
-internal, not manifest surface. `:state()` sets the package's engine floor at Chromium 125 / WebKit 17.4. Plan
+internal, not manifest surface. `:state()` needs Chromium 125 / WebKit 17.4 and raised the package's engine floor
+there; since the second merge of main the floor is mission 012's higher Chromium 135 / WebKit 17.4
+(`reviews/landing/merge-notes.md`). Plan
 decision 1 is decided yes (the stop before phase 4, T059a, 2026-11-15; `reviews/phase-4/decision-1.md`; R-06 Status),
 so this contract holds. The declined alternative, element-owned `data-ocelle-row-*` attributes on segment hosts with
 the floor unchanged (operator decisions Q2 (c) and, second analysis, Q3 (b), U2), is not built: no segment host

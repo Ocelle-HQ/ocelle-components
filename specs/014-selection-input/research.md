@@ -321,7 +321,8 @@ extra frame (an extra `requestAnimationFrame`), which the measurement must fail.
 frame is not used by this step.
 
 **Engine floor.** `:state()` needs Chromium 125 and WebKit 17.4. This raises the package floor from Chromium 120 /
-WebKit 16.4 to Chromium 125 / WebKit 17.4, recorded in the README's engines section (mission 005's rule) and listed
+WebKit 16.4 to Chromium 125 / WebKit 17.4 (mission 012's Chromium 135 since the second merge of main, Status below),
+recorded in the README's engines section (mission 005's rule) and listed
 under the plan's "Decisions the operator should see". The real trade-off (PLAN-FRESH-1-012):
 
 - custom states (chosen here, and confirmed by the operator's "yes" to plan decision 1, Status below): no host-visible attribute; a cross-element call through the segment (above); the floor
@@ -339,7 +340,9 @@ question with the options "no, keep the floor", "yes, raise the floor" and "wait
 confirms that kitty-mission-ui supports WebKit 17.4 and Chromium 125 or later. The joined segmented choice rounds its
 rows through custom states (`:state()`), and the package floor is raised from Chromium 120 / WebKit 16.4 to Chromium
 125 / WebKit 17.4. Phase 4 implements the custom states as written (T064, T066, T067); the row-attribute tasks T062a,
-T064a, T066a and T067a are skipped by this decision. The history: the decision stayed open at the plan (analysis U1,
+T064a, T066a and T067a are skipped by this decision. Since the second merge of main (landing decision 4,
+`reviews/landing/merge-notes.md`) the package floor is mission 012's higher Chromium 135 / WebKit 17.4; `:state()`
+still needs Chromium 125 / WebKit 17.4, within that floor. The history: the decision stayed open at the plan (analysis U1,
 operator decision Q2 (c), 2026-11-13) and phase 4 stopped for it before T060 (second analysis U1, operator decision
 Q3 (b)). The declined alternative, kept for the record only: the parent would have written `data-ocelle-row-start`,
 `data-ocelle-row-end`, `data-ocelle-first-row` and `data-ocelle-last-row` on segment hosts, element-owned and
@@ -598,10 +601,12 @@ through the Vitest browser `userEvent.keyboard` (Playwright provider, trusted ev
 
 Landing decision 3 (`reviews/landing/operator-decisions.md`, `reviews/landing/merge-notes.md`) renamed the methods that collided with main's: `press`→`pressKeys`, `click`→`clickTarget`, `hover`→`hoverTarget`, `activeElement`→`focusedElement`, `viewportSize`→`setViewportSize`; `Target` is now `string | { id, inner } | { parent, kind, index }`, found by the one `resolve` in `packages/elements/test/page-helpers.ts`, and `axStates`/`axUpdates` take `AxTarget` (id and child forms only).
 
+Landing decision 4's second merge of main (`reviews/landing/operator-decisions.md`, `reviews/landing/merge-notes.md` § Second merge) renamed the rest that collided with main's: 014's link bodies moved to `test/scenarios/ocelle-link.ts`; `Target` is now `DriverTarget` and `ClickOptions` is `TargetClickOptions`; the driver's `focus(target)` and `computed(target, property)` are `focusNode` and `computedNode`; `AxState` is `AxNodeState`, and `axStates`' scope is its own `AxStatesScope` (`"element" | "subtree" | "ancestors"`). In process, 014's methods resolve through `resolveNode` (`packages/elements/test/in-process.ts`), which calls the same page-helpers `resolve`; main's `resolve(ElementTarget)` is main's.
+
 - `pressKeys(key)`, `clickTarget(target, { button, modifiers, count })` (`count: 2` for US1-20's double-click), `keydownRecord()`
   (a `document` bubble listener recording key and `defaultPrevented`);
 - child addressing (PLAN-TESTABILITY-1-006): a target is an id or `{ parent, kind, index }` (the parent's id, the
-  child tag, the index among the parent's children of that tag), accepted by focus, `clickTarget`, box, computed and tree
+  child tag, the index among the parent's children of that tag), accepted by `focusNode`, `clickTarget`, box, `computedNode` and tree
   reads; `focusedElement()` returns `{ id }` or `{ parent, kind, index }` through shadow roots;
 - `mutate(target, steps)`: a list of DOM steps (append markup, remove child n, move child n before m or to the end,
   re-insert child n in place, set or remove an attribute on child n, set a property) applied synchronously in one
