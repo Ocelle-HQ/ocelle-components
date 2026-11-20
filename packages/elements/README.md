@@ -37,6 +37,7 @@ empty or loading panel, and `ocelle-progress`, a progress bar.
 | `@ocelle/elements/ocelle-fact.js` | `dist/ocelle-fact.js` | `ocelle-fact` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-empty-state.js` | `dist/ocelle-empty-state.js` | `ocelle-empty-state` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-progress.js` | `dist/ocelle-progress.js` | `ocelle-progress` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-status-indicator.js` | `dist/ocelle-status-indicator.js` | `ocelle-status-indicator` only; for hosts with a bundler |
 | `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |
 | `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |
 
@@ -1235,6 +1236,49 @@ system-colour outline and the fill is `Highlight`.
 `--ocelle-color-inset`, `--ocelle-color-control-border`, `--ocelle-color-ink`, `--ocelle-color-ink-muted`,
 `--ocelle-font-size-sm`, `--ocelle-figures`, `--ocelle-space-1`, `--ocelle-space-2`, `--ocelle-radius-1`,
 `--ocelle-border-width`, `--ocelle-measure-cell`, `--ocelle-motion-base` and `--ocelle-easing-standard`.
+
+## `ocelle-status-indicator`
+
+```html
+<ocelle-status-indicator tone="success" label="Running" pulse></ocelle-status-indicator>
+<ocelle-status-indicator tone="warning"></ocelle-status-indicator> Blocked
+```
+
+`ocelle-status-indicator` is a status dot: a solid circle in the colour of its `tone`, `info`, `success`, `warning`,
+`danger` or `neutral` (the default). The dot is `--ocelle-size-indicator` (8 px) square, round with the pill radius,
+and never transparent, empty or only outlined. An absent, empty or unknown `tone` shows `neutral`; the attribute keeps
+the value as written and the `tone` property reads `"neutral"`. Setting the property writes the attribute as given.
+`ocelle-status-indicator` emits no event and adds no tab stop.
+
+**Naming.** Without a `label` the indicator is hidden from the accessibility tree: place text naming the state next to
+it, since a state is never shown by colour alone. `label` is the one way to name the indicator: with a non-empty
+`label` it is one image with that name. A host `aria-label` is not supported, and the indicator does not read it. The
+label is trimmed, and an empty or whitespace-only label counts as none. The indicator is not a busy or progress
+signal: it sets no `aria-busy` and no live region. For progress, use `ocelle-progress`.
+
+**Pulse.** With `pulse`, a ring around the dot grows and fades three times, each `--ocelle-motion-pulse` long (4.8 s by
+default), and then only the solid dot is shown; the dot itself never fades, moves or changes size. The pulse ends by
+itself within 5 s (WCAG 2.2.2) and does not come back while `pulse` stays set. A host that overrides
+`--ocelle-motion-pulse` keeps the token's value times three, the fixed iteration count, at or below 5 s: at most
+`1666ms`. Under `prefers-reduced-motion: reduce` no animation runs, with or without `pulse`, and the dot is shown solid;
+a change to `reduce` stops a run at once, and the change back starts one.
+
+**When a run starts.** A run starts when `pulse` is set on a rendered indicator, when the indicator is connected with
+`pulse` set, when it is shown again with `pulse` set, and when reduced motion ends; nothing else starts or restarts
+it, not a change of `tone`, `label`, the theme, its size or position, `visibility` or opacity, nor scrolling it out of
+view and back. Each connection, and each time the indicator is shown again after `display: none` or `hidden`, starts a
+run, so a host that re-inserts, moves, re-renders or re-shows an indicator more often than every 5 s keeps it pulsing:
+keep `pulse` off between changes, or keep the element in place. Removing `pulse` and setting it again within one task
+starts no run; set it again in a later task. A state-preserving move (`moveBefore()`) and a reveal from
+`hidden="until-found"` start no run. Opening a `<details>` around a pulsing indicator starts no run: a run under way
+when it closed goes on while it is closed and may end unseen.
+
+**Forced colours.** In forced colours the dot is drawn in `CanvasText`, and so is the ring, so it stays visible on the
+system background.
+
+**Tokens.** `ocelle-status-indicator` reads the tokens `--ocelle-color-info`, `--ocelle-color-success`,
+`--ocelle-color-warning`, `--ocelle-color-danger`, `--ocelle-color-neutral`, `--ocelle-size-indicator`,
+`--ocelle-radius-pill`, `--ocelle-border-width`, `--ocelle-motion-pulse` and `--ocelle-easing-standard`.
 
 ## Mapping from kitty-mission-ui
 

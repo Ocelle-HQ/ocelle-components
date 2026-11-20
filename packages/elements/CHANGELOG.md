@@ -16,6 +16,9 @@ move host ARIA onto that control and dispatch a cancelable activate event; the e
 parts, events and entry points are additions (a minor change), and the engine floor rises to Chromium 135 and WebKit
 17.4.
 
+`ocelle-status-indicator`, its attributes `tone`, `label` and `pulse` (reflected), its parts `dot` and `ring` and its
+entry point `@ocelle/elements/ocelle-status-indicator.js` are additions to the public surface: a minor change.
+
 ### Added
 
 - `ocelle-icon`, an icon of the set drawn inline in `currentColor` at the `--ocelle-icon-size` token, decorative
@@ -85,6 +88,13 @@ parts, events and entry points are additions (a minor change), and the engine fl
   value text at its inline end), `size` (reflected, `size="compact"`) and `ground` (reflected, `ground="tinted"` for
   tinted grounds); its parts `track`, `fill`, `label` and `value-text`. Entry point
   `@ocelle/elements/ocelle-progress.js` (defines `ocelle-progress` only).
+- `ocelle-status-indicator`, a status dot in the colour of its `tone` (`info`, `success`, `warning`, `danger` or
+  `neutral`, the default and the fallback for an unknown value), named by `label` as one image or hidden from the
+  accessibility tree without one; with `pulse` a ring around the dot grows and fades three times, 4.8 s in all, and
+  then only the solid dot shows, with no animation under reduced motion; its attributes `tone`, `label` and `pulse`
+  (reflected); its parts `dot` and `ring`. Entry point `@ocelle/elements/ocelle-status-indicator.js` (defines
+  `ocelle-status-indicator` only). It reads the new tokens `--ocelle-size-indicator` and `--ocelle-motion-pulse` of
+  `@ocelle/tokens`.
 - The style lint's token-only rule, which checks these elements' styles, admits four values and nothing near them:
   the `grid-template-columns` tracks `fit-content(<percentage>)` and `minmax(0, <flex>)` (the facts columns and
   grid), `translateX(<percentage>)` in `transform` (the progress sweep) and a bare positive integer
