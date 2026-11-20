@@ -149,3 +149,13 @@ something new.
 To be quoted when IQ-18 to IQ-24 and IQ-27 are asked: 517-13 (IQ-18, supports (a)), 517-12 (IQ-19, against (b)),
 517-1 (IQ-21, supports (a)), 517-10 (IQ-22, the consumer's stand-in draws arrows), 517-11 (IQ-27, a kitty-mission-ui
 screen shows the chain, supports (a)). Nothing in the three texts bears on IQ-20, IQ-23 or IQ-24.
+
+## Operator decisions (2026-11-20, multiple choice)
+
+| Question | Decision |
+|---|---|
+| Q-T1, the mono face | (a) No change: cells and headers stay in the sans face with tabular figures, and the README's mapping row maps the prototype's mono cells and headers to them. |
+| Q-T2, 0.06em header tracking | (a) No change: recheck Q1 (a) stands (`--ocelle-tracking-eyebrow`), and the README's header mapping row notes the prototype's 0.06em. |
+| Q-T3, header padding | (a) No change: headers keep the cells' padding, and the README's header mapping row notes the difference. |
+| Q-T4, the pill-shaped chip | (a) No change: the chip keeps `--ocelle-radius-2`, and the README's chain mapping row maps the pill-shaped chip to it. |
+| Q-T5, a column of about 200 px | (b) US3-3 also runs in a 200 px container, as one more body in phase 3's red commit. No story or baseline is added. |
