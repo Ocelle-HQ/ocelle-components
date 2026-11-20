@@ -16,6 +16,13 @@ move host ARIA onto that control and dispatch a cancelable activate event; the e
 parts, events and entry points are additions (a minor change), and the engine floor rises to Chromium 135 and WebKit
 17.4.
 
+**Hosts get a notice and two form fields, `ocelle-notice`, `ocelle-form-input` and `ocelle-form-select`, in the Ocelle
+look (mission 010, #49; #9).** Before, a host built its own message boxes and labelled fields, with no shared tone,
+no announcement to assistive technology and no part in a native form. Now the notice announces its text once when
+asked, and both fields take part in their form like native controls (value, validity, reset and restore) with a label,
+a description and a host-set error; the elements, their properties, slots, parts, events and entry points are
+additions (a minor change).
+
 ### Added
 
 - `ocelle-icon`, an icon of the set drawn inline in `currentColor` at the `--ocelle-icon-size` token, decorative
