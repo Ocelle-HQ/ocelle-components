@@ -14,17 +14,17 @@
 // - `focused` names the focused element through shadow roots; `mutate` applies DOM steps synchronously; `activation`
 //   installs the record of an activation (research.md R-07).
 // `reset` (at every mount) empties the records and removes the activation listeners.
-import type { ActivationEntry, ActivationOptions, Focused, Keydown, Step, Target } from "./scenarios/driver.ts";
+import type { ActivationEntry, ActivationOptions, Focused, Keydown, Step, DriverTarget } from "./scenarios/driver.ts";
 
 /** What `installPageHelpers` puts on `window.__ocelleDriver`. */
 export interface PageHelpers {
-  readonly resolve: (target: Target) => HTMLElement;
+  readonly resolve: (target: DriverTarget) => HTMLElement;
   readonly keydowns: Keydown[];
   readonly clipboard: string[];
   readonly activations: ActivationEntry[];
   readonly focused: () => Focused | null;
-  readonly mutate: (target: Target, steps: readonly Step[]) => void;
-  readonly activation: (target: Target, options: ActivationOptions) => void;
+  readonly mutate: (target: DriverTarget, steps: readonly Step[]) => void;
+  readonly activation: (target: DriverTarget, options: ActivationOptions) => void;
   readonly reset: () => void;
 }
 
@@ -44,7 +44,7 @@ export function installPageHelpers(): void {
   const activations: ActivationEntry[] = [];
   const cleanups: (() => void)[] = [];
 
-  const resolve = (target: Target): HTMLElement => {
+  const resolve = (target: DriverTarget): HTMLElement => {
     if (typeof target === "string") {
       const found = document.getElementById(target);
       if (found === null) throw new Error(`no #${target} on the page`);
@@ -140,7 +140,7 @@ export function installPageHelpers(): void {
     return found as HTMLElement;
   };
 
-  const mutate = (target: Target, steps: readonly Step[]): void => {
+  const mutate = (target: DriverTarget, steps: readonly Step[]): void => {
     const element = resolve(target);
     for (const step of steps) {
       if ("append" in step) element.insertAdjacentHTML("beforeend", step.append);
@@ -162,7 +162,7 @@ export function installPageHelpers(): void {
     }
   };
 
-  const activation = (target: Target, options: ActivationOptions): void => {
+  const activation = (target: DriverTarget, options: ActivationOptions): void => {
     const element = resolve(target);
     let requests = 0;
     const text = (): string | null => {

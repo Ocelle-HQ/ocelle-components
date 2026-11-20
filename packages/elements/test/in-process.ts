@@ -28,7 +28,7 @@ import { layoutWait } from "./layout-wait.ts";
 import { installPageHelpers, pageHelpers } from "./page-helpers.ts";
 import { decodePng } from "./pixels.ts";
 import { heardTypes } from "./scenarios/driver.ts";
-import type { Box, Driver, Drawing, Paint, Part, Placement, Reading, Sheets, Target, TreeNode } from "./scenarios/driver.ts";
+import type { Box, Driver, Drawing, Paint, Part, Placement, Reading, Sheets, DriverTarget, TreeNode } from "./scenarios/driver.ts";
 import { probe } from "./scenarios/probe.ts";
 
 function sheet(text: string): CSSStyleSheet {
@@ -53,7 +53,7 @@ function element(id: string): HTMLElement {
  * The element a target names, of any form (the element with the id, the first match of `inner` in its shadow root, or
  * the index-th child of a tag of a parent): the one shared resolver of test/page-helpers.ts.
  */
-function resolve(target: Target): HTMLElement {
+function resolve(target: DriverTarget): HTMLElement {
   installPageHelpers();
   return pageHelpers().resolve(target);
 }

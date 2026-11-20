@@ -17,7 +17,7 @@ import { axNodes, axStatesOf, axSubtree, emulate, emulateMotion, movePointer, re
 import { layoutWait } from "../layout-wait.ts";
 import { decodePng } from "../pixels.ts";
 import { heardTypes } from "../scenarios/driver.ts";
-import type { Bounds, Box, Driver, Drawing, Paint, Part, Placement, Sheets, Target, TreeNode } from "../scenarios/driver.ts";
+import type { Bounds, Box, Driver, Drawing, Paint, Part, Placement, Sheets, DriverTarget, TreeNode } from "../scenarios/driver.ts";
 import { installProbe } from "../scenarios/probe.ts";
 import type { Probe } from "../scenarios/probe.ts";
 import { policy } from "./serve.ts";
@@ -89,7 +89,7 @@ function deepActive(): string {
 }
 
 /** The viewport rectangle of a target's border box. */
-function rectOf(page: Page, target: Target): Promise<{ readonly x: number; readonly y: number; readonly width: number; readonly height: number }> {
+function rectOf(page: Page, target: DriverTarget): Promise<{ readonly x: number; readonly y: number; readonly width: number; readonly height: number }> {
   return page.evaluate(({ target }) => {
     const element = (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.resolve(target);
     const rect = element.getBoundingClientRect();

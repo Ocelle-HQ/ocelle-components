@@ -22,7 +22,7 @@
 // stand-in bodies stay; phase 4 adds US2-21's body with the real `ocelle-segmented-choice` (T062b), and phase 6 adds
 // US2-22's with the real `ocelle-link` (T093a; reviews/phase-3/notes.md).
 import { tokenColour } from "./icon.ts";
-import type { AxState, AxTarget, Driver, InPage, Target } from "./driver.ts";
+import type { AxState, AxTarget, Driver, InPage, DriverTarget } from "./driver.ts";
 
 /** One body: what it checks, what it must observe, and whether the fixture harness runs it too. */
 export interface TabsScenario {
@@ -197,7 +197,7 @@ async function controls(driver: Driver, target: AxTarget): Promise<unknown> {
  * background (changed after the red run, reviews/phase-3/notes.md): the bar is still read as exactly `--ocelle-bar-width`
  * thick in its colour, on the block-end edge across the whole tab, and with no background.
  */
-async function bar(driver: Driver, target: Target): Promise<unknown> {
+async function bar(driver: Driver, target: DriverTarget): Promise<unknown> {
   const content = await driver.computedPart(target, "::before", "content");
   if (content === "none" || content === "normal") return { content: "none" };
   return {
@@ -219,14 +219,14 @@ function selectedBar(colour: string): unknown {
 const noBar = { content: "none" };
 
 /** The ring of a focused tab: its `::after` border on each side, width and colour. */
-async function ring(driver: Driver, target: Target): Promise<unknown> {
+async function ring(driver: Driver, target: DriverTarget): Promise<unknown> {
   const out: string[] = [];
   for (const side of ["top", "right", "bottom", "left"]) out.push(`${await driver.computedPart(target, "::after", `border-${side}-width`)} ${await driver.computedPart(target, "::after", `border-${side}-color`)}`);
   return out;
 }
 
 /** The outline of a focused panel: width, style, colour and offset. */
-async function outline(driver: Driver, target: Target): Promise<unknown> {
+async function outline(driver: Driver, target: DriverTarget): Promise<unknown> {
   return [await driver.computed(target, "outline-width"), await driver.computed(target, "outline-style"), await driver.computed(target, "outline-color"), await driver.computed(target, "outline-offset")];
 }
 

@@ -10,7 +10,7 @@
 // named beside the body and run once in reviews/phase-2/plants.md. The in-process harness (test/listbox.test.ts) runs
 // every body; the fixture harness (test/browser/listbox.test.ts) runs the bodies marked `fixture`.
 import { tokenColour } from "./icon.ts";
-import type { AxState, Driver, Focused, InPage, Target } from "./driver.ts";
+import type { AxState, Driver, Focused, InPage, DriverTarget } from "./driver.ts";
 
 /** One body: what it checks, what it must observe, and whether the fixture harness runs it too. */
 export interface ListboxScenario {
@@ -33,7 +33,7 @@ function page(inner: string, attributes = 'label="Folders"'): string {
 }
 
 /** The `index`-th option of `#lb` (or of `parent`), as a target and as the focused element `focusedElement` names. */
-function opt(index: number, parent = "lb"): Target & Focused {
+function opt(index: number, parent = "lb"): DriverTarget & Focused {
   return { parent, kind: "ocelle-option", index };
 }
 
@@ -127,7 +127,7 @@ function exposed(name: string, names: readonly string[], selected: number | null
 }
 
 /** The selected bar of an option: the `::before` content, and with content its inline size, inline-start offset and colour. */
-async function bar(driver: Driver, target: Target): Promise<unknown> {
+async function bar(driver: Driver, target: DriverTarget): Promise<unknown> {
   const content = await driver.computedPart(target, "::before", "content");
   if (content === "none" || content === "normal") return { content: "none" };
   return {
@@ -146,7 +146,7 @@ function selectedBar(colour: string): unknown {
 const noBar = { content: "none" };
 
 /** The ring of a focused option: its `::after` border on each side, width and colour. */
-async function ring(driver: Driver, target: Target): Promise<unknown> {
+async function ring(driver: Driver, target: DriverTarget): Promise<unknown> {
   const sides = ["top", "right", "bottom", "left"];
   const out: string[] = [];
   for (const side of sides) out.push(`${await driver.computedPart(target, "::after", `border-${side}-width`)} ${await driver.computedPart(target, "::after", `border-${side}-color`)}`);

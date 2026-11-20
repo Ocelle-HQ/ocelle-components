@@ -31,7 +31,7 @@
 // and the default not prevented, and nothing about the navigation that follows (operator decision 2 during phase 6,
 // R1-01); it asserts the "no navigation in place" of a modified activation for Ctrl, Shift and the middle click.
 import { tokenColour } from "./icon.ts";
-import type { AxState, ClickOptions, Driver, InPage, Modifier, Pixels, Target } from "./driver.ts";
+import type { AxState, TargetClickOptions, Driver, InPage, Modifier, Pixels, DriverTarget } from "./driver.ts";
 
 /**
  * What a fixture body uses to activate a link that may navigate, and to observe what the browser did beside the page:
@@ -41,7 +41,7 @@ import type { AxState, ClickOptions, Driver, InPage, Modifier, Pixels, Target } 
  */
 export interface Navigation {
   readonly host: string;
-  click(target: Target, options?: ClickOptions): Promise<void>;
+  click(target: DriverTarget, options?: TargetClickOptions): Promise<void>;
   press(key: string, modifiers?: readonly Modifier[]): Promise<void>;
   back(): Promise<void>;
   opened(): Promise<string[]>;

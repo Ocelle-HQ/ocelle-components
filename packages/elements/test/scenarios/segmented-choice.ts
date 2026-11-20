@@ -25,7 +25,7 @@
 // `--ocelle-border-width` is a run of 1; the pressed segment's block-end edge, its 3 px bar inside its box above its
 // 1 px line, is a run of 4 in `accent-strong`.
 import { tokenColour } from "./icon.ts";
-import type { AxState, Driver, Focused, InPage, Pixels, Target } from "./driver.ts";
+import type { AxState, Driver, Focused, InPage, Pixels, DriverTarget } from "./driver.ts";
 
 /** One body: what it checks, what it must observe, and whether the fixture harness runs it too. */
 export interface SegmentedChoiceScenario {
@@ -54,7 +54,7 @@ function page(inner: string, attributes = 'label="Lane filter"'): string {
 }
 
 /** The `index`-th segment of `#sc` (or of `parent`), as a driver target and as the driver names it when focused. */
-function seg(index: number, parent = "sc"): Target & Focused {
+function seg(index: number, parent = "sc"): DriverTarget & Focused {
   return { parent, kind: "ocelle-segment", index };
 }
 
@@ -376,7 +376,7 @@ async function ringPixels(driver: Driver, index: number): Promise<string[]> {
 }
 
 /** The ring of a focused segment: its `::after` border on each side, width and colour. */
-async function ring(driver: Driver, target: Target): Promise<unknown> {
+async function ring(driver: Driver, target: DriverTarget): Promise<unknown> {
   const out: string[] = [];
   for (const side of ["top", "right", "bottom", "left"]) out.push(`${await driver.computedPart(target, "::after", `border-${side}-width`)} ${await driver.computedPart(target, "::after", `border-${side}-color`)}`);
   return out;

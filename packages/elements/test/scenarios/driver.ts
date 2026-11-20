@@ -5,7 +5,7 @@
 // nothing in a body depends on which harness runs it. Elements inside a shadow root are reached by a selector in the
 // element's shadow root.
 //
-// Since 014 (research.md R-11, T006) a target may also be a child of a parent (`Target`): the index-th element child of
+// Since 014 (research.md R-11, T006) a target may also be a child of a parent (`DriverTarget`): the index-th element child of
 // tag `kind` of the element with id `parent`. Real keyboard and pointer input (`pressKeys`, `clickTarget`,
 // `hoverTarget`), the focused element through shadow roots (`focusedElement`), DOM steps in one task (`mutate`), a
 // resize that does not wait for a frame and the wait for its observations (`resize`, `afterResizeDelivery`), shadow
@@ -30,7 +30,7 @@ export type Modifier = "Alt" | "Control" | "Meta" | "Shift";
  * With `force` the click skips Playwright's actionability checks, so a target it counts as disabled (an
  * `aria-disabled="true"` element) is still clicked with real input (014 phase 2).
  */
-export interface ClickOptions {
+export interface TargetClickOptions {
   readonly button?: "left" | "middle" | "right";
   readonly modifiers?: readonly Modifier[];
   readonly count?: number;
@@ -172,7 +172,12 @@ export interface Sheets {
  * tag `kind` of the element with id `parent` (the parent's own children, not its shadow root's). The accessibility
  * commands take only the id and child forms (`AxTarget`, test/commands.ts).
  */
-export type Target = string | { readonly id: string; readonly inner: string } | { readonly parent: string; readonly kind: string; readonly index: number };
+export type DriverTarget = string | { readonly id: string; readonly inner: string } | { readonly parent: string; readonly kind: string; readonly index: number };
+/**
+ * 009's name for the input and scroll methods' target, kept for 009's and 013's scenario files until the second merge
+ * of main, where main renamed it `ElementTarget` (operator decision D1) and gave `Target` to 012's pointer options.
+ */
+export type Target = DriverTarget;
 
 /** A point in an element's border box, in CSS px from its top-left corner. */
 export interface Point {
@@ -185,7 +190,7 @@ export interface Point {
  * a computed CSS property (`mask-image`) or an attribute (`tabindex`), as text (an absent attribute reads `"null"`), of
  * the record's target or, with `of`, of another element.
  */
-export type Reading = ({ readonly property: string } | { readonly computed: string } | { readonly attribute: string }) & { readonly of?: Target };
+export type Reading = ({ readonly property: string } | { readonly computed: string } | { readonly attribute: string }) & { readonly of?: DriverTarget };
 
 /** A running frame record (`frameRecord`). */
 export interface FrameRecorder {
@@ -327,7 +332,7 @@ export interface Driver {
    */
   rules(rules: string): Promise<void>;
   /** The border box of the target, or of the first element matching `inner` in its shadow root. */
-  box(target: Target, inner?: string): Promise<Box>;
+  box(target: DriverTarget, inner?: string): Promise<Box>;
   /** The client rects of the element with `id` (`getClientRects()`): for an inline element, one per line it is on. */
   lines(id: string): Promise<Bounds[]>;
   /** What the shadow root of the element with `id` holds. */
@@ -353,7 +358,7 @@ export interface Driver {
   /** The placement of the drawing of the light-DOM `svg` with `id` (its own screen CTM) in that `svg`'s own box. */
   ownPlacement(id: string): Promise<Placement>;
   /** The computed value of a CSS property of the target (since 009 a shadow target too). */
-  computed(target: Target, property: string): Promise<string>;
+  computed(target: DriverTarget, property: string): Promise<string>;
   /** The computed `color` a probe element takes from the CSS colour `value` (a system colour, say). */
   resolveColour(value: string): Promise<string>;
   /** The unignored accessibility nodes of the element with `id` and of its shadow subtree. */
@@ -379,22 +384,22 @@ export interface Driver {
   /** Presses `key` (a key name such as `"ArrowDown"`, or one character) on the focused element with `modifiers` held, as real keyboard input. */
   pressKeys(key: string, modifiers?: readonly Modifier[]): Promise<void>;
   /** Clicks the centre of the target with real mouse input. */
-  clickTarget(target: Target, options?: ClickOptions): Promise<void>;
+  clickTarget(target: DriverTarget, options?: TargetClickOptions): Promise<void>;
   /** Moves the mouse to the centre of the target with real input, pressing no button (014 phase 2). */
-  hoverTarget(target: Target): Promise<void>;
+  hoverTarget(target: DriverTarget): Promise<void>;
   /** The focused element, through shadow roots, or null when nothing but the body is focused. */
   focusedElement(): Promise<Focused | null>;
   /** Applies `steps` to the target's children synchronously, in one task, then waits for every element to render. */
-  mutate(target: Target, steps: readonly Step[]): Promise<void>;
+  mutate(target: DriverTarget, steps: readonly Step[]): Promise<void>;
   /** Sets the target's `inline-size` through the CSSOM, without waiting for a frame. */
-  resize(target: Target, inlineSize: number): Promise<void>;
+  resize(target: DriverTarget, inlineSize: number): Promise<void>;
   /** Resolves once a `ResizeObserver` registered on the target now has had its observations delivered. */
-  afterResizeDelivery(target: Target): Promise<void>;
+  afterResizeDelivery(target: DriverTarget): Promise<void>;
   /**
    * The computed value of `property` of a part of the target's shadow root (`which` the part name), of that part's
    * pseudo-element (`"<part>::before"`), or of the target's own pseudo-element (`"::after"`).
    */
-  computedPart(target: Target, which: string, property: string): Promise<string>;
+  computedPart(target: DriverTarget, which: string, property: string): Promise<string>;
   /** The page's scroll offset. */
   scrollOffset(): Promise<Offset>;
   /** Sets the page's viewport to `width` × `height` CSS pixels and waits for every element to render. */
@@ -404,7 +409,7 @@ export interface Driver {
   /** The clipboard calls the page made since the last `mount` (none is ever made for real). */
   clipboardCalls(): Promise<string[]>;
   /** Starts recording an activation of the target (research.md R-07); the returned function waits and returns the record. */
-  activationRecord(target: Target, options: ActivationOptions): Promise<() => Promise<ActivationEntry[]>>;
+  activationRecord(target: DriverTarget, options: ActivationOptions): Promise<() => Promise<ActivationEntry[]>>;
   /** The unignored accessibility nodes of the target with their states (test/commands.ts `axStates`). */
   axStates(target: AxTarget, scope?: AxScope): Promise<AxState[]>;
   /**
@@ -424,9 +429,9 @@ export interface Driver {
    * A real pointer click at `point` of the target's border box, then a settle. 008's `click(id, inner, options)`
    * (below) clicks the centre of an element.
    */
-  clickAt(target: Target, point: Point): Promise<void>;
+  clickAt(target: DriverTarget, point: Point): Promise<void>;
   /** A real wheel event over the centre of the target's border box, `deltaX` CSS px to the right, then a settle. */
-  wheel(target: Target, deltaX: number): Promise<void>;
+  wheel(target: DriverTarget, deltaX: number): Promise<void>;
   /**
    * The deep active element: from `document.activeElement` down through each shadow root's active element, each level
    * as its `id`, or as its local name and its classes (`div.region-box`) when it has none, joined by `" >> "`
@@ -443,18 +448,18 @@ export interface Driver {
    * Focuses the target by script (`focus()`), then settles. Chromium's `:focus-visible` follows the last input: after
    * keyboard input the target matches it, after a pointer click it does not.
    */
-  focus(target: Target): Promise<void>;
+  focus(target: DriverTarget): Promise<void>;
   /** The target's `scrollLeft`. */
-  scrollLeft(target: Target): Promise<number>;
+  scrollLeft(target: DriverTarget): Promise<number>;
   /** Sets the target's `scrollLeft` with an instant scroll, then settles. */
-  setScrollLeft(target: Target, value: number): Promise<void>;
+  setScrollLeft(target: DriverTarget, value: number): Promise<void>;
   /** Whether the last keydown the window saw since the last `mount` was default-prevented; false when there was none. */
   lastKeyPrevented(): Promise<boolean>;
   /**
    * Starts a frame record of `read` on the target (009 research.md R-13, R-17), and returns after two animation frames,
    * once the record's `ResizeObserver` has delivered its first observation of the target.
    */
-  frameRecord(target: Target, read: Reading): Promise<FrameRecorder>;
+  frameRecord(target: DriverTarget, read: Reading): Promise<FrameRecorder>;
   /** Waits two animation frames, then until every `ocelle-*` element of the page has rendered (`updateComplete`). */
   settle(): Promise<void>;
 

@@ -309,7 +309,7 @@ export const driverCommandScenarios: readonly DriverScenario[] = [
     name: "hover moves the pointer onto the target with real input, so it matches :hover, and presses no button",
     fixture: true,
     run: async (driver, inPage) => {
-      await driver.mount('<div id="away"></div><div id="c" tabindex="-1">Target</div>');
+      await driver.mount('<div id="away"></div><div id="c" tabindex="-1">DriverTarget</div>');
       await driver.rules("#away { block-size: 200px; } #c { inline-size: 120px; block-size: 40px; }");
       await inPage(() => {
         const events: unknown[] = [];
