@@ -83,9 +83,11 @@ describe("packages/tokens/CHANGELOG.md", () => {
     expect([...named].sort()).toEqual(expectedTokens.map((token) => `--ocelle-${token.name}`).sort());
   });
 
-  it("names the contrast pairs of color-accent-strong on the six main grounds under Unreleased / Added (014 FR-058, research.md R-17)", () => {
+  // Since the second merge of main, 012's entry declares color-accent-strong on every main ground, so 014's entry names
+  // its use of those pairs and adds none.
+  it("names the selected bars' color-accent-strong on the main grounds under Unreleased / Added (014 FR-058, research.md R-17)", () => {
     expect(added.replace(/\s+/g, " ")).toContain(
-      "The contrast pair list checks `color-accent-strong` as a non-text colour on `color-canvas`, `color-sheet`, `color-pane`, `color-panel`, `color-inspector` and `color-rail` in both themes, for the selected bars of the selection elements of `@ocelle/elements`; no token name or value changes.",
+      "`@ocelle/elements`' listbox, tabs and segmented choice (mission 014) draw their selected bars in `color-accent-strong` on the main grounds, which the contrast check covers through the grounds above; no token name, value or pair is added.",
     );
   });
 

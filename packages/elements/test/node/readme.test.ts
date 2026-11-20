@@ -1347,8 +1347,10 @@ describe("packages/elements/CHANGELOG.md", () => {
     expect(added).toContain(surface);
   });
 
-  it("records the raised engine floor, Chromium 125 and WebKit 17.4 for custom states, under Unreleased (014 phase 4, plan decision 1)", () => {
-    expect(flat(unreleased)).toContain("The engine floor is Chromium 125 and WebKit 17.4, raised from Chromium 120 and WebKit 16.4 for the custom states (`:state()`) of `ocelle-segment`");
+  // 014 phase 4 (plan decision 1) raised the floor to Chromium 125 for custom states; 012 raised it again to Chromium
+  // 135, so since the second merge of main the entry names what the segment needs within the merged floor.
+  it("records that ocelle-segment's custom states need Chromium 125 and WebKit 17.4, within the Chromium 135 floor, under Unreleased (014 phase 4, plan decision 1)", () => {
+    expect(flat(unreleased)).toContain("`ocelle-segment` uses custom states (`:state()`), which need Chromium 125 and WebKit 17.4: within the engine floor of Chromium 135 and WebKit 17.4 that `ocelle-button` sets (below)");
   });
 });
 
@@ -1466,7 +1468,7 @@ describe("packages/elements/README.md examples, one per consumer use (014 SC-009
 
 /**
  * 014 phase 7 (T111, plan.md VII): the Unreleased lead names this feature's MINOR change, the nine elements, the six
- * events and the engine floor raised to Chromium 125 / WebKit 17.4 (reviews/phase-4/decision-1.md).
+ * events and the custom states' Chromium 125 / WebKit 17.4 within the merged floor (reviews/phase-4/decision-1.md).
  */
 describe("packages/elements/CHANGELOG.md MINOR entry (014 T111)", () => {
   const unreleased = /^## Unreleased\n([\s\S]*?)(?=^## |(?![\s\S]))/m.exec(read("CHANGELOG.md"))?.[1] ?? "";
@@ -1480,8 +1482,8 @@ describe("packages/elements/CHANGELOG.md MINOR entry (014 T111)", () => {
     expect(lead).toContain(`\`${name}\``);
   });
 
-  it("names the engine floor raised to Chromium 125 and WebKit 17.4", () => {
-    expect(lead).toContain("raises the engine floor to Chromium 125 and WebKit 17.4");
+  it("names the custom states' Chromium 125 and WebKit 17.4 within the release's Chromium 135 and WebKit 17.4 floor", () => {
+    expect(lead).toContain("which need Chromium 125 and WebKit 17.4, within the release's engine floor of Chromium 135 and WebKit 17.4");
   });
 });
 

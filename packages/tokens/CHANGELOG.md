@@ -88,6 +88,6 @@ literal `ms` value. The seven tokens are additions to the token names: a minor c
   chrome grounds); their contrast pairs, and `color-accent-strong` declared on every main and chrome ground, join the
   contrast check. `--ocelle-color-ink-soft` is declared on the five state grounds too, for the description and
   tags of `ocelle-action-row` (012).
-- The contrast pair list checks `color-accent-strong` as a non-text colour on `color-canvas`, `color-sheet`,
-  `color-pane`, `color-panel`, `color-inspector` and `color-rail` in both themes, for the selected bars of the
-  selection elements of `@ocelle/elements`; no token name or value changes.
+- `@ocelle/elements`' listbox, tabs and segmented choice (mission 014) draw their selected bars in
+  `color-accent-strong` on the main grounds, which the contrast check covers through the grounds above; no token
+  name, value or pair is added.

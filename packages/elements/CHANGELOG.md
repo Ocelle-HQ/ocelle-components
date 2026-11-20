@@ -9,8 +9,9 @@ entry points and the browser build's file path (constitution VII).
 `ocelle-tab`, `ocelle-tab-panel`, `ocelle-segmented-choice`, `ocelle-segment`, `ocelle-copy-field` and `ocelle-link`,
 and six events, `ocelle-listbox-change`, `ocelle-listbox-activate`, `ocelle-tabs-change`,
 `ocelle-segmented-choice-change`, `ocelle-copy-field-request` and `ocelle-link-activate`, all additions to the
-surface.** The release also raises the engine floor to Chromium 125 and WebKit 17.4, for the custom states of
-`ocelle-segment`; each element, event and entry point is listed under Added.
+surface.** `ocelle-segment` uses custom states (`:state()`), which need Chromium 125 and WebKit 17.4, within the
+release's engine floor of Chromium 135 and WebKit 17.4 (set by `ocelle-button`, below); each element, event and entry
+point is listed under Added.
 
 `ocelle-scroller`, `ocelle-workflow-board`, `ocelle-workflow-lane` and `ocelle-list-detail`, their attributes,
 properties, slots and entry points, `remeasure()`, the overflow-region module convention and the container-tier
@@ -128,7 +129,8 @@ additions (a minor change).
 - `ocelle-listbox`, a single-select listbox of `ocelle-option` children with one tab stop, the keys ArrowUp,
   ArrowDown, Home, End, Enter and Space, and pointer selection; its properties `value` and `label`, its part `list`,
   and its events `ocelle-listbox-change` (a user selection) and `ocelle-listbox-activate` (Enter on the selected
-  option or a double-click), each with `detail` `{ value }`.
+  option or a double-click), each with `detail` `{ value }`. The listbox sets its tab stop as soon as it is connected,
+  so a dialog that is open at page load with a listbox inside focuses the selected option first.
 - `ocelle-option`, an option of the listbox, with its properties `value` and `disabled` (reflected) and its `icon` slot.
 - Entry points `@ocelle/elements/ocelle-listbox.js` (defines `ocelle-listbox` and `ocelle-option`) and
   `@ocelle/elements/ocelle-option.js` (defines `ocelle-option` only). A parent element's module now also defines the
@@ -164,8 +166,8 @@ additions (a minor change).
   middle click, the platform's convention for Meta); its properties `href` (reflected) and `label` (its name instead
   of its text: a host `aria-label` does not name the link), and its part `anchor`.
 - Entry point `@ocelle/elements/ocelle-link.js` (defines `ocelle-link` only).
-- The engine floor is Chromium 125 and WebKit 17.4, raised from Chromium 120 and WebKit 16.4 for the custom states
-  (`:state()`) of `ocelle-segment`.
+- `ocelle-segment` uses custom states (`:state()`), which need Chromium 125 and WebKit 17.4: within the engine floor
+  of Chromium 135 and WebKit 17.4 that `ocelle-button` sets (below).
 - In the README, the slot convention for icons in controls that later controls follow: the `icon` and `trailing`
   slots, their size, alignment, gap and colour rules and the naming rule.
 - `ocelle-scroller`, a horizontal strip that scrolls in the inline direction and is a tab stop, and with a `label` a
