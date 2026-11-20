@@ -133,7 +133,10 @@ The caption is capped by the box's measured width (`--data-table-box-size`, fall
 `--ocelle-measure-container` before the first measurement and before upgrade), less the track's ring room on both
 sides and less the end fade only while it shows, so it wraps inside the box's unmasked width at rest and a fitting
 table's cap is the table's own width. The caption has no inline size containment: its longest word widens the table,
-as CSS tables do, so a fitting table never overflows because of its caption (PLAN-FRESH-3-002 (b)). The observer
+as CSS tables do, so a fitting table never overflows because of its caption (PLAN-FRESH-3-002 (b)); block 1's
+`min-inline-size: min-content` keeps that true under any cap. A caption only adds its longest word to the table's
+width, so with it a caption that grows after load (text edited, a style or a late web font) leaves the table as wide
+as a fresh load does, and the observer follows the box (research R-05's correction, review R1-01). The observer
 watches the measuring element, whose size the cap cannot change, and writes its exact width, and the end fade's share
 is written one frame after the fade changes, outside any `ResizeObserver` delivery, so neither write can feed back
 (R-07). For that one frame the caption may run under a newly shown end fade. 009's start fade masks the box's start edge, so

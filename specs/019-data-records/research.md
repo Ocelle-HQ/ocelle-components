@@ -215,6 +215,31 @@ contained lanes, so no unobserved case is expected.
 set later each left the same overflow state as a fresh load. No README line is needed and T013 adds no conditional
 statement.
 
+**Correction (phase 1 review round 1, R1-01, 2026-11-20).** The result above is incomplete. A caption that grows
+after the first measure, in a shrink-to-fit host (an open `<dialog>`, an inline-block, a start-aligned column flex),
+did not give a fresh load's state: there the box is as wide as the table, so once `--data-table-box-size` was written
+the cap held the caption to the table's old width. A caption word edited longer then overflowed the region and was
+clipped, with a tab stop and `data-fade="end"` a fresh load does not have; the caption's letter-spacing raised after
+mount (as a late web font widens it) overflowed it with no tab stop at all, so the clipped text could not be reached
+by keyboard. T003's spike did not grow a caption, and the red body of the one-long-word case was written around it
+instead of stopping. The operator decided to fix it (`reviews/phase-1/operator-round-1-decisions.md`, (a)):
+
+`@ocelle/styles`' caption rule (block 1) sets `min-inline-size: min-content`, so the caption is never narrower than
+its longest word, whatever the cap: a word that grows widens the table, the box with it in a shrink-to-fit host, and
+the element's `.box-size` observer then writes the wider cap, as on a fresh load; nothing the caption holds
+overflows it. That is the whole fix. A table caption adds only its min-content (its longest word) to the table's width,
+never its max-content, so a caption whose words stay narrower than the cap wraps the same way grown or fresh. The fix
+round measured that: "Deployment approvals pending" edited to "Deployment approvals pending for review" gives a host of
+90.6 px grown and fresh, in all three hosts. A second observer that remeasured at the fallback cap after every track
+change was tried and removed, because no case needs it: every one of its mutants survived. The module's triggers above
+are unchanged, and the element gains no observer.
+
+The shared body "R-02 a caption that grows at run time (review R1-01)" grows a caption by a text edit and by
+letter-spacing raised after mount, in the three hosts, and compares each with a fresh host of the same caption (the
+same width within 1 px, no region overflow, the caption's text inside the caption and the box, the same tab stop and
+fade, no `ResizeObserver` loop error). The README's sizing and fresh-load statements say so, each with a test
+statement (T013).
+
 ## R-06 The cell rules in `@ocelle/styles` (FR-005, FR-006, FR-007, FR-012)
 
 **Decision.** `packages/styles/src/base.css` gains a "data table" block, every selector of which is wrapped whole in
@@ -227,7 +252,7 @@ tokens):
 | Target | Values |
 |---|---|
 | table | `border-collapse: collapse`; `inline-size: 100%` (it fills the track, R-03); `margin: 0`; `font-family: var(--ocelle-font-sans)`; `font-variant-numeric: var(--ocelle-figures)` |
-| caption | `font-size: var(--ocelle-font-size-sm)`; `font-weight: var(--ocelle-font-weight-medium)`; `line-height: var(--ocelle-line-height-normal)`; `color: var(--ocelle-color-ink)`; `text-align: start`; `padding-block-end: var(--ocelle-space-2)`; `position: static` (not sticky until 009's option of R-17 lands; Q-F (b)); the measured `max-inline-size` cap of R-07 and no inline size containment (it scrolls with the table and wraps inside the box's unmasked width at rest; PLAN-FRESH-3-002 (b)) |
+| caption | `font-size: var(--ocelle-font-size-sm)`; `font-weight: var(--ocelle-font-weight-medium)`; `line-height: var(--ocelle-line-height-normal)`; `color: var(--ocelle-color-ink)`; `text-align: start`; `padding-block-end: var(--ocelle-space-2)`; `position: static` (not sticky until 009's option of R-17 lands; Q-F (b)); `min-inline-size: min-content` (its longest word widens the table whatever the cap, R-05's correction); the measured `max-inline-size` cap of R-07 and no inline size containment (it scrolls with the table and wraps inside the box's unmasked width at rest; PLAN-FRESH-3-002 (b)) |
 | body cell (`td`, and `th` per FR-006's row rule) | `padding: var(--ocelle-space-1) var(--ocelle-space-2)` (4 px / 8 px, below 003's 8 px / 12 px); `font-size: var(--ocelle-font-size-sm)`; `line-height: var(--ocelle-line-height-compact)`; `color: var(--ocelle-color-ink-soft)`; `text-align: start`; `vertical-align: top`; `border-block-end: var(--ocelle-border-width) solid var(--ocelle-color-rule)` (decorative, FR-013) |
 | column header (FR-006's selection) | 011's eyebrow tokens (recheck Q1 (a)): `font-size: var(--ocelle-font-size-eyebrow)`; `font-weight: var(--ocelle-font-weight-eyebrow)`; `text-transform: uppercase`; `letter-spacing: var(--ocelle-tracking-eyebrow)`; `color: var(--ocelle-color-eyebrow)`; `border-block-end-color: var(--ocelle-color-rule-strong)` (decorative); same padding as body cells |
 | row header (FR-006's selection) | `font-size: var(--ocelle-font-size-sm)`; `font-weight: var(--ocelle-font-weight-medium)`; `color: var(--ocelle-color-ink)`; no upper case, no tracking |
