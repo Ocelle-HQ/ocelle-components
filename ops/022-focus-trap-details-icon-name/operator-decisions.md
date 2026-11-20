@@ -33,3 +33,5 @@ name. Evidence: `reviews/phase-1/notes.md`.
    from `.label` by `aria-labelledby` only when the icon slot has assigned content (and no host `aria-labelledby`,
    `aria-label` or non-blank `label` names it). The icon + one-character-label axe result is recorded as a known
    limitation in spec, README and CHANGELOG. Existing rows are not loosened. The implementer then finishes test-first.
+8. **Scenarios 9 and 10 — keep.** The rows the planner added in 3c304ff (icon slotted after first render; icon
+   removed beside `S`) stay, in a third test-only commit logged as `reviews/phase-1/red-slot.log`.
