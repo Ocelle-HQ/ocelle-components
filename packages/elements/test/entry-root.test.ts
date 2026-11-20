@@ -7,8 +7,8 @@ import * as root from "../src/index.ts";
 // `ocelle-brand-mark`; since 009 (T017) `ocelle-scroller`, since 009 phase 3 (T034) `ocelle-workflow-board` and
 // `ocelle-workflow-lane`, and since 009 phase 4 (T051) `ocelle-list-detail`; since 011 `ocelle-card`,
 // `ocelle-section-header`, `ocelle-page-header` (T027), `ocelle-context-sidebar` (T034) and `ocelle-personal-rail`
-// (T042); since 012 `ocelle-button` (tasks.md T018) and `ocelle-action-row` (tasks.md T051); and since 013
-// `ocelle-facts`, `ocelle-fact`, `ocelle-empty-state` and `ocelle-progress`. This file's own iframe (Vitest browser
+// (T042); since 012 `ocelle-button` (tasks.md T018) and `ocelle-action-row` (tasks.md T051); since 013
+// `ocelle-facts`, `ocelle-fact`, `ocelle-empty-state` and `ocelle-progress`; and since 018 `ocelle-status-indicator`. This file's own iframe (Vitest browser
 // mode, isolate on) holds only what this import defines.
 describe("importing src/index.ts", () => {
   it("defines ocelle-icon, ocelle-brand-mark, ocelle-scroller, ocelle-workflow-board, ocelle-workflow-lane, ocelle-list-detail, ocelle-card, ocelle-section-header, ocelle-page-header, ocelle-context-sidebar, ocelle-personal-rail, ocelle-button and ocelle-action-row as the OcelleIcon, OcelleBrandMark, OcelleScroller, OcelleWorkflowBoard, OcelleWorkflowLane, OcelleListDetail, OcelleCard, OcelleSectionHeader, OcellePageHeader, OcelleContextSidebar, OcellePersonalRail, OcelleButton and OcelleActionRow it exports", () => {
@@ -92,5 +92,16 @@ describe("importing src/index.ts", () => {
       progress: customElements.get("ocelle-progress"),
       track: document.getElementById("p")?.shadowRoot?.querySelector('[part="track"]') !== null && document.getElementById("p")?.shadowRoot !== null,
     }).toEqual({ type: "function", progress: exported.OcelleProgress, track: true });
+  });
+
+  it("defines ocelle-status-indicator as the OcelleStatusIndicator it exports, and an indicator renders its dot (018)", async () => {
+    const exported = root as Record<string, unknown>;
+    document.body.innerHTML = '<ocelle-status-indicator id="s" tone="success"></ocelle-status-indicator>';
+    await (document.getElementById("s") as unknown as { updateComplete: Promise<unknown> }).updateComplete;
+    expect({
+      type: typeof exported.OcelleStatusIndicator,
+      indicator: customElements.get("ocelle-status-indicator"),
+      dot: document.getElementById("s")?.shadowRoot?.querySelector('[part="dot"]')?.localName,
+    }).toEqual({ type: "function", indicator: exported.OcelleStatusIndicator, dot: "span" });
   });
 });

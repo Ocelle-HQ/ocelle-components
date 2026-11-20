@@ -1417,6 +1417,56 @@ describe("the ocelle-progress stories in the built Storybook (013 US3, I3)", { t
   }
 });
 
+// 018 phase 2 (I3; research.md R-12; tasks.md T017): the `ocelle-status-indicator` stories, `Tones` (every tone, a row
+// without `pulse` and a row with it, each indicator beside text naming its state) and `Labelled` (every tone named by
+// `label`, the success one pulsing). Each renders its indicators in light and dark, defined, each with the story's
+// `tone`, `label` and `pulse` and its 8 px dot drawn, with base.css applied and no request outside the origin.
+
+/** What one story's indicator must show: its attributes, and its dot's drawn size. */
+interface Indicator {
+  readonly tone: string;
+  readonly label: string | null;
+  readonly pulse: boolean;
+  readonly dot: readonly [number, number];
+}
+
+const indicatorTones = ["info", "success", "warning", "danger", "neutral"] as const;
+const indicatorOf = (tone: string, pulse: boolean, label: string | null = null): Indicator => ({ tone, label, pulse, dot: [8, 8] });
+const indicatorLabels: Readonly<Record<string, string>> = { info: "Queued", success: "Running", warning: "Blocked", danger: "Failed", neutral: "Draft" };
+
+const indicatorStories: readonly { readonly id: string; readonly indicators: readonly Indicator[] }[] = [
+  { id: "elements-ocelle-status-indicator--tones", indicators: [...indicatorTones.map((tone) => indicatorOf(tone, false)), ...indicatorTones.map((tone) => indicatorOf(tone, true))] },
+  { id: "elements-ocelle-status-indicator--labelled", indicators: indicatorTones.map((tone) => indicatorOf(tone, tone === "success", indicatorLabels[tone] ?? null)) },
+];
+
+/** What a status indicator story's page shows: its theme, the base stylesheet and its indicators. */
+function observeIndicators(page: Page): Promise<unknown> {
+  return page.evaluate(() => ({
+    theme: document.documentElement.dataset.theme,
+    base: {
+      linked: [...document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')].some((link) => link.href.endsWith("/base.css") && link.sheet !== null),
+      scheme: getComputedStyle(document.documentElement).colorScheme,
+    },
+    defined: customElements.get("ocelle-status-indicator") !== undefined,
+    indicators: [...document.querySelectorAll("#storybook-root ocelle-status-indicator")].map((indicator) => {
+      const dot = indicator.shadowRoot?.querySelector('[part="dot"]')?.getBoundingClientRect();
+      return { tone: indicator.getAttribute("tone"), label: indicator.getAttribute("label"), pulse: indicator.hasAttribute("pulse"), dot: [dot?.width ?? 0, dot?.height ?? 0] };
+    }),
+  }));
+}
+
+describe("the ocelle-status-indicator stories in the built Storybook (018 US1, I3)", { timeout: 60_000 }, () => {
+  for (const { id, indicators } of indicatorStories) {
+    for (const theme of ["light", "dark"] as const) {
+      it(`${id} in ${theme}: renders its indicators with the story's tone, label and pulse and their dots drawn, with base.css applied and no request outside the origin`, async () => {
+        const { page, outside } = await open(id, theme, "ocelle-status-indicator");
+        expect({ ...((await observeIndicators(page)) as object), outside }).toEqual({ theme, base: { linked: true, scheme: theme }, defined: true, indicators, outside: [] });
+        await page.close();
+      });
+    }
+  }
+});
+
 /** A file of the repository, relative to storybook/, or "" when it does not exist. */
 function repositoryFile(path: string): string {
   const url = new URL(`../../${path}`, import.meta.url);

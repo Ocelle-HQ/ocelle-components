@@ -28,7 +28,7 @@ import baseText from "../../styles/src/base.css?raw";
 import framesText from "./fixtures/frames.css?raw";
 import { css } from "../../tokens/src/generate.ts";
 import { source } from "../../tokens/src/source.ts";
-import { runningOf } from "./animations.ts";
+import { advanceOf, moveBeforeOf, runningOf } from "./animations.ts";
 import delayText from "./fixtures/tooltip-delay.css?raw";
 import { layoutWait } from "./layout-wait.ts";
 import { activeInnerOf, activePath, clickElement, computedOf, copyElement, currentOf, endOrder, focusElement, morphElement, preventNextEvent, recordEvents, resetPage, sentinelId, startOrder, takeRecords } from "./page-side.ts";
@@ -737,5 +737,13 @@ export function inProcessDriver(): Driver {
       await commands.settleLayout();
     },
     overflows: (target) => commands.overflows(target),
+    advance: async (id, inner, ms) => {
+      advanceOf({ id, inner, ms });
+      await settle();
+    },
+    moveBefore: async (id, parentId) => {
+      moveBeforeOf({ id, parentId });
+      await settle();
+    },
   };
 }

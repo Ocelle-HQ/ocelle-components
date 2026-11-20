@@ -177,6 +177,8 @@ export const expectedTokens: readonly ExpectedToken[] = [
   plain("target-min", "size", "2.75rem", width(44)),
   plain("icon-size", "size", "1.25rem", width(20)),
   plain("size-dot", "size", "0.45rem", width(7.2)),
+  // 018 (research.md R-10; data-model.md § Tokens added): the status indicator's dot, the 8 px floor of FR-011
+  plain("size-indicator", "size", "0.5rem", width(8)),
   plain("size-step", "size", "1.4rem", width(22.4)),
   plain("size-avatar", "size", "1.6rem", width(25.6)),
   plain("size-rail-item", "size", "2.5rem", width(40)),
@@ -297,6 +299,9 @@ export const expectedTokens: readonly ExpectedToken[] = [
   // 012 (research.md R-07; data-model.md § Tokens): one turn of the busy spinner, 0ms under reduced motion, and its angle
   plain("motion-spin", "motion", "800ms", { property: "transition-duration", used: "0.8s" }),
   plain("motion-turn", "motion", "1turn", { property: "rotate", used: "360deg" }),
+  // 018 (research.md R-04, R-10; operator decision Q1 (a) at the phase-1 recheck): one iteration of the status
+  // indicator's pulse, three of which run (the count is a literal in the element, not a token); 0ms under reduced motion
+  plain("motion-pulse", "motion", "1600ms", { property: "transition-duration", used: "1.6s" }),
   plain("easing-standard", "motion", "cubic-bezier(0.22, 1, 0.36, 1)", {
     property: "transition-timing-function",
     used: "cubic-bezier(0.22, 1, 0.36, 1)",
