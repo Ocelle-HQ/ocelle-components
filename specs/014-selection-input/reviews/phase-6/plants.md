@@ -157,6 +157,11 @@ second merge of main and before hand-off, covers phase 6 as well as phase 7 and 
 ## The full plants run after the second merge of main
 
 The full run owed by phase 6 operator decision 5 was moved to CI by landing operator decision 5 ("CI carries
-heavy gates"). CI's Plants shards on the final head stand in for it; the CI run id is added after the push. Locally,
+heavy gates"). CI's Plants shards on the final head stand in for it. Locally,
 the selection against the phase base on the merge head e47888d selects every plant
 (`pnpm run gate:plants -- --affected ac2eebe229dc860390ba4ba1c69ff1725fe8b1fe --list`: 317 of 317 selected, by shared gate source; exit 0).
+
+The CI run that carried it: [44797053961](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/44797053961) on
+749a41d (the second merge e47888d plus records), conclusion success. The Plants plan job, 77 Plants shards and the
+Plants verdict job all succeeded; the verdict job printed `plants: 317 plants of 17 gates and the registry judged,
+every plant as expected`. Under landing decision 5 this run stands in for the full run that phase 6 operator decision 5 asked for.

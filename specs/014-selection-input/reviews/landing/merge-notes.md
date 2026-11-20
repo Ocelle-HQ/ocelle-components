@@ -308,9 +308,9 @@ touched here, so where it names `scenarios/link.ts`, `Target`, `ClickOptions`, `
 | Elements (manifest gate) | 27 | 23 | 32 | locally: `gate:manifest` "32 elements checked" |
 | Contrast pairs light / dark (required per theme) | 175 / 183 (164) | 207 / 215 (196) | 207 / 215 (196) | locally: `gate:contrast` output |
 | Required pairs (`--print` lines) | 328 | 392 | 392 | locally (gates unit tests) |
-| Stories | 178 | 224 | 259 | locally by story-file count (the method gives 143, 178 and 224 on b594b7e, HEAD and main, matching each side's gate test); the storybook-build count is left to CI |
-| Story-themes (visual captures, axe runs, plant repository) | 356 | 448 | 518 (axe plant 520) | left to CI (Visual regression, Accessibility, Unit tests) |
-| fail-token-changed light differs | 150 | 189 | 223 | left to CI (Plants) |
+| Stories | 178 | 224 | 259 | locally by story-file count (the method gives 143, 178 and 224 on b594b7e, HEAD and main, matching each side's gate test); CI run 44797053961 (Storybook build and Unit tests: success) |
+| Story-themes (visual captures, axe runs, plant repository) | 356 | 448 | 518 (axe plant 520) | CI run 44797053961 (Visual regression, Accessibility, Unit tests: success) |
+| fail-token-changed light differs | 150 | 189 | 223 | CI run 44797053961 (Plants: success) |
 
 ## Baselines
 
@@ -322,32 +322,40 @@ Main changed no existing token value, but it did change shared element code that
 - `src/ocelle-icon.ts` and `src/icon-svg.ts`: the drawing moved to icon-svg.ts.
 
 014's option, tab and segment rows and the copy field use these. Main states that no position inside a labelled row
-moves, and 014's in-process geometry suites pass on the merge. Whether any 014 baseline's pixels change is left to CI's
-Visual regression on the final head. If one differs, I regenerate it in the pinned container and explain it.
+moves, and 014's in-process geometry suites pass on the merge. Whether any 014 baseline's pixels change was left to CI's
+Visual regression on the final head. CI run 44797053961 passed Visual regression: no 014 baseline moved, so the
+icon-slot change needed no baseline.
 
 ## Gates on the merge (landing decision 5: CI carries the heavy gates)
 
-| Gate | Exit | Notes |
-|---|---|---|
-| typecheck | 0 | on e47888d |
-| lint | 0 | 562 files |
-| test-lint | 0 | 424 files |
-| style-lint | 0 | 60 files |
-| brand-rules | 0 | |
-| pins | 0 | |
-| config-copies | 0 | |
-| prefix | 0 | 619 files |
-| csp | 0 | 55 files |
-| contrast | 0 | 207 / 215, 196 required |
-| manifest | 0 | 32 elements |
-| signoff `--range origin/main..HEAD` | 0 | 120 commits |
-| plants `--affected ac2eebe… --list` (phase 6 base) | 0 | 317 of 317 selected (shared gate source), none judged |
-| plants `--affected 5164806… --list` (phase 7 base) | 0 | 317 of 317 selected, none judged |
-| targeted: gates, elements-node, tokens, storybook, styles projects | 0 | 101 files, 3750 tests |
-| targeted: elements (in process), 29 files the resolution touched or that use the touched driver | 0 | 760 tests |
-| targeted: elements-browser, 10 fixture files (driver, link, link-subpixel, button, action-row, harness-scenarios, listbox, tabs, segmented-choice, copy-field) | 0 | 535 tests |
-| targeted: elements-browser-file and elements-build | 0 | 42 tests |
-| Left to CI: full unit-tests, storybook-build, visual, axe, mutation, the full Plants run | | landing decision 5 |
+CI: run [44797053961](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/44797053961) on 749a41d (the merge e47888d plus records and the log redaction, 749a41d "docs(014-selection-input): redact sandbox paths in the phase logs"), conclusion success, 177 of 177 jobs successful.
+
+| Gate | Local exit | CI (run 44797053961) | Notes |
+|---|---|---|---|
+| typecheck | 0 | Typecheck: success | on e47888d |
+| lint | 0 | Code lint: success | 562 files |
+| test-lint | 0 | Test lint: success | 424 files |
+| style-lint | 0 | Style lint: success | 60 files |
+| brand-rules | 0 | Brand rules: success |  |
+| pins | 0 | Install and pins: success |  |
+| config-copies | 0 | Story config copies: success |  |
+| prefix | 0 | Prefix: success | 619 files |
+| csp | 0 | Content security: success | 55 files |
+| contrast | 0 | Contrast: success | 207 / 215, 196 required |
+| manifest | 0 | Custom-elements manifest: success | 32 elements |
+| signoff `--range origin/main..HEAD` | 0 | Sign-off: success | 120 commits locally |
+| plants `--affected ac2eebe… --list` (phase 6 base) | 0 |  | 317 of 317 selected (shared gate source), none judged |
+| plants `--affected 5164806… --list` (phase 7 base) | 0 |  | 317 of 317 selected, none judged |
+| full plants run | not run (landing decision 5) | Plants plan, 77 Plants shards and Plants: success | the Plants job: "plants: 317 plants of 17 gates and the registry judged, every plant as expected" |
+| unit-tests | not run in full; targeted runs below | Unit tests: success |  |
+| storybook-build | not run (decision 5) | Storybook build: success |  |
+| visual (docker) | not run (decision 5) | Visual regression: success | no baseline moved |
+| axe | not run (decision 5) | Accessibility: success |  |
+| mutation | not run (decision 5) | Mutation plan, 80 Mutation shards and Mutation testing: success |  |
+| targeted: gates, elements-node, tokens, storybook, styles projects | 0 |  | 101 files, 3750 tests |
+| targeted: elements (in process), 29 files the resolution touched or that use the touched driver | 0 |  | 760 tests |
+| targeted: elements-browser, 10 fixture files (driver, link, link-subpixel, button, action-row, harness-scenarios, listbox, tabs, segmented-choice, copy-field) | 0 |  | 535 tests |
+| targeted: elements-browser-file and elements-build | 0 |  | 42 tests |
 
 The mission 008 flake ("Rapid toggle during the entry, motion on") did not show in these targeted runs. The composed
 dialog story's `<details>` focus-trap gap (op 022) was not exercised by them either, so it is still recorded as a known
