@@ -10,7 +10,7 @@ Red commit: ad17b16 (`red-commits`: `fix-1`), recorded by `red.sh 1 fix-1`, log 
 | R1-03 | fixed | none: a weak test, strengthened in the fix commit (see below) | tasks.md T080; the US1-26 captioned body's name, comment and `restLink.endPast` |
 | R1-04 | fixed (recorded) | none: both cases run against the code from before their fixes and fail, `round-1-r104-before-fix.log` | this record |
 | R1-05 | deferred: the operator accepted the rule as built and moves both gaps to the run's after-run notes as a gate follow-up, which the orchestrator writes | none (note) | none |
-| R1-06 | fixed | none (record) | `plants.md`, replaced by this round's run, whose first section prints the trigger as `--list` does |
+| R1-06 | fixed | none (record) | `plants.md`, replaced by this round's run (as the fix command asks). It opens with the `--list` run, which names the trigger `gates/lib/mutation/report.ts (shared gate source)`. The phase's earlier sections (T088, T089, T025) are in git history at 74a4877 |
 | R1-07 | fixed | none (comment) | `packages/elements/test/scenarios/data-table.ts`: the JSDoc is above `dataTableScenarios` again |
 
 ## R1-01
@@ -83,3 +83,19 @@ Both were run in a worktree at ad17b16 (every test of the phase), with `gates/li
 `round-1-r104-before-fix.log`. The gate case fails with `expected { ok: true, … } to deeply equal { ok: false, … }`
 (exit 1). The T086 body fails in both harnesses with `inTask` `""` for `"d-n"` (exit 1 each). Each would have been red
 before its fix.
+
+## Checks after the fix (a09b878's source)
+
+| Check | Result |
+|---|---|
+| `gate:unit-tests` | `unit-tests: 7419 tests passed in 231 files`, exit 0 |
+| `gate:typecheck` | `typecheck: no type error in the files of tsconfig.json` |
+| `gate:lint` | `lint: 439 files checked, no finding` |
+| `gate:test-lint` | `test-lint: 323 files checked, no finding` |
+| `gate:style-lint` | `style-lint: 38 files checked, no finding` |
+| `gate:manifest` | `manifest: 19 elements checked, no finding` |
+| `gate:storybook-build` | `storybook-build: built 164 stories`, exit 0 |
+| `gate:visual` (`OCELLE_VISUAL_ENGINE=docker`) | `visual: 328 captures match their baselines (docker only: no cross-engine comparison)`, exit 0; no baseline changed |
+| `gate:axe` (`OCELLE_VISUAL_ENGINE=docker`) | `axe: 328 story-theme runs, 0 serious or critical; 84 notes (0 incomplete, 84 excepted)`, exit 0 |
+| `gate:mutation -- --base 8d104af` | `mutation: 533 mutants on the changed lines of 5 files, none survived; 8 timeouts, 131 compile errors, 2 zero-mutant entries; 32 equivalent records`, exit 0 (on 0707d27's source the same run gave exit 1, 24 survivors, all in ocelle-data-table.ts; see R1-01) |
+| `gate:plants` | `--list`: `315 of 315 plants selected`; shards 1 to 29 each exit 0; `--verdict`: `plants: 315 plants of 17 gates and the registry judged, every plant as expected`, exit 0 (`plants.md`) |
