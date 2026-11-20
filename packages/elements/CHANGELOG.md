@@ -16,6 +16,13 @@ move host ARIA onto that control and dispatch a cancelable activate event; the e
 parts, events and entry points are additions (a minor change), and the engine floor rises to Chromium 135 and WebKit
 17.4.
 
+**Hosts get a notice and two form fields, `ocelle-notice`, `ocelle-form-input` and `ocelle-form-select`, in the Ocelle
+look (mission 010, #49; #9).** Before, a host built its own message boxes and labelled fields, with no shared tone,
+no announcement to assistive technology and no part in a native form. Now the notice announces its text once when
+asked, and both fields take part in their form like native controls (value, validity, reset and restore) with a label,
+a description and a host-set error; the elements, their properties, slots, parts, events and entry points are
+additions (a minor change).
+
 ### Added
 
 - `ocelle-icon`, an icon of the set drawn inline in `currentColor` at the `--ocelle-icon-size` token, decorative
@@ -26,6 +33,28 @@ parts, events and entry points are additions (a minor change), and the engine fl
 - `ocelle-brand-mark`, the Ocelle rosette drawn inline from tokens at the `--ocelle-icon-size` token, for the main
   grounds, the chrome (`ground="chrome"`) or in one colour (`tone="mono"`), decorative unless a `label` or a host
   `aria-label` names it; its properties `ground` and `tone` (reflected) and `label`.
+- `ocelle-notice`, a message box whose look follows its tone (`info`, `success`, `warning`, `danger`, `neutral`), with
+  an optional heading and a regular or compact size, that announces its text once through a live region of its own
+  when `announce` or a host `role` of `alert` or `status` asks for it; its properties `tone`, `size` and `announce`
+  (reflected); the slots `heading` and the default slot (the body), the CSS parts `heading` and `body`, and no event;
+  its entry point `@ocelle/elements/ocelle-notice.js`.
+- `ocelle-form-input`, a labelled text field with an optional description and a host-set error that takes part in its
+  form like a native input (form-associated, through `ElementInternals`); its attributes and reflected properties
+  `name`, `label`, `description`, `error`, `required`, `disabled`, `type`, `placeholder`, `autocomplete`, `inputmode`,
+  `pattern`, `min`, `max`, `step`, `minlength`, `maxlength` and `readonly`; the `value` attribute (its default value),
+  the properties `value`, `form`, `labels`, `validity`, `validationMessage` and `willValidate` and the methods
+  `checkValidity()`, `reportValidity()` and `focus()`; the event `ocelle-form-input-change` with `detail: { value }`,
+  no slot, and the CSS parts `label`, `control`, `description` and `error`; its entry point
+  `@ocelle/elements/ocelle-form-input.js`.
+- `ocelle-form-select`, a labelled native select for closed choices with an optional description and a host-set error
+  that takes part in its form like a native select (form-associated, through `ElementInternals`), with its options
+  from its light-DOM `<option>` and `<optgroup>` children and the `chevron-down` open-list indicator; its attributes
+  and reflected properties `name`, `label`, `description`, `error`, `required` and `disabled`; the properties `value`,
+  `form`, `labels`, `validity`, `validationMessage` and `willValidate` and the methods `checkValidity()`,
+  `reportValidity()` and `focus()`; the event `ocelle-form-select-change` with `detail: { value }`, no slot, and the
+  CSS parts `label`, `control`, `description` and `error`; its entry point `@ocelle/elements/ocelle-form-select.js`.
+- In the README, the form-control convention that later form-like elements follow: form association, naming,
+  description, error and its announcement, host ARIA, events and implicit submission.
 - `ocelle-dialog`, a modal dialog on a native `<dialog>` shown in the top layer, styled from tokens, with focus moved in
   on open and returned on close, a Tab cycle, Escape and a close control that ask the host first; its properties
   `open` (reflected), `label` and `close-label`, its default and `footer` slots, its parts `panel`, `heading`, `body`,

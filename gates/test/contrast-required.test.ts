@@ -5,9 +5,10 @@ import type { RequiredPair } from "../lib/token-source.ts";
 
 // The required pair set (002 FR-016, spec Appendix A.8, research.md R-07, PLAN-TESTABILITY-1-002): derived from the
 // intended grounds of the real token source, it must equal A.8 as transcribed by hand below, with the rows 011
-// research.md R-12 and 012 research.md R-08 add, 196 (fg, bg, kind) triples per theme. Removing a ground from
-// source.ts, or a mutant doing so, fails this test even though the gate would still pass on a pair list that lacks the
-// pair.
+// research.md R-12 and 012 research.md R-08 add, 196 (fg, bg, kind) triples per theme. The five ink-on-state-ground
+// triples of specs/010-feedback-forms research.md R-04 (`color-ink` on each state ground, FR-005) are among 012's
+// (R-08 item 1), so they are listed once. Removing a ground from source.ts, or a mutant doing so, fails this test even
+// though the gate would still pass on a pair list that lacks the pair.
 const main = ["color-canvas", "color-sheet", "color-pane", "color-panel", "color-inspector", "color-rail", "color-inset", "color-accent-low", "color-hover-bg"];
 const stateGrounds = ["color-danger-bg", "color-warning-bg", "color-success-bg", "color-info-bg", "color-neutral-bg"];
 

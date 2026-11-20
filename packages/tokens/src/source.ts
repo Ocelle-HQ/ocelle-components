@@ -40,7 +40,7 @@ export const records = tokenRecords([
   { name: "color-inspector", group: "colour", value: { light: "#F1EEE8", dark: "#15130F" } }, // right inspector, ruled off
   { name: "color-rail", group: "colour", value: { light: "#E9E5DD", dark: "#1C1A15" } }, // context sidebar
   { name: "color-inset", group: "colour", value: { light: "#E2DDD3", dark: "#302B23" } }, // wells, digest backgrounds
-  // body text; on the state grounds and the pressed surface of a control too (012 research.md R-08 item 1)
+  // body text; on the state grounds (010 R-04) and the pressed surface of a control too (012 research.md R-08 item 1)
   {
     name: "color-ink",
     group: "colour",

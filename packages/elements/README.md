@@ -1,8 +1,10 @@
 # @ocelle/elements
 
 The Ocelle web components: standards-based custom elements (Lit 3) that work in any page, a server-rendered page
-under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has twenty elements:
-`ocelle-icon`, with a set of thirteen icons, `ocelle-brand-mark`, the Ocelle rosette, `ocelle-scroller`, a
+under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has twenty-three elements:
+`ocelle-icon`, with a set of thirteen icons, `ocelle-brand-mark`, the Ocelle rosette, `ocelle-notice`, a message box
+that can announce itself, `ocelle-form-input`, a labelled text field that takes part in its form,
+`ocelle-form-select`, a labelled native select for closed choices that takes part in its form, `ocelle-scroller`, a
 horizontal strip that is a tab stop only while it overflows, `ocelle-workflow-board` with its
 `ocelle-workflow-lane`s, a row of lanes that scrolls inside itself when it is narrower than they are,
 `ocelle-list-detail`, a list beside its detail that collapses to one column by the space it has, `ocelle-dialog`, a
@@ -19,6 +21,9 @@ empty or loading panel, and `ocelle-progress`, a progress bar.
 | `@ocelle/elements` | `dist/index.js` | every element; for hosts with a bundler |
 | `@ocelle/elements/ocelle-icon.js` | `dist/ocelle-icon.js` | `ocelle-icon` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-brand-mark.js` | `dist/ocelle-brand-mark.js` | `ocelle-brand-mark` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-notice.js` | `dist/ocelle-notice.js` | `ocelle-notice` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-form-input.js` | `dist/ocelle-form-input.js` | `ocelle-form-input` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-form-select.js` | `dist/ocelle-form-select.js` | `ocelle-form-select` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-scroller.js` | `dist/ocelle-scroller.js` | `ocelle-scroller` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-workflow-board.js` | `dist/ocelle-workflow-board.js` | `ocelle-workflow-board` only, not the lane; for hosts with a bundler |
 | `@ocelle/elements/ocelle-workflow-lane.js` | `dist/ocelle-workflow-lane.js` | `ocelle-workflow-lane` only; for hosts with a bundler |
@@ -158,6 +163,263 @@ In forced colours the ring and the spot are painted in `currentColor` in every v
 context. On the light main grounds the ochre spot measures 2.6:1: the ring carries the mark, and a host that needs
 every part at 3:1 uses `tone="mono"`. `ocelle-brand-mark` has no slot, event, CSS part or CSS custom property.
 
+## `ocelle-notice`
+
+```html
+<ocelle-notice tone="success">Saved.</ocelle-notice>
+<ocelle-notice tone="danger" announce>
+  <span slot="heading">Run failed</span>
+  The lane stopped at step 3. <a href="/runs/7">View run 7</a>
+</ocelle-notice>
+<ocelle-notice size="compact" tone="warning">Disk almost full.</ocelle-notice>
+```
+
+`ocelle-notice` shows a message about a state or result in a box whose look follows its tone, with an optional
+heading, in the regular or the compact size.
+
+- `tone` (attribute and property, reflected): `info` (the default), `success`, `warning`, `danger` or `neutral`; any
+  other value behaves as `info` and the property reads `"info"`, while the attribute keeps the value as written. The
+  box's ground is `--ocelle-color-<tone>-bg`, with a bar of `--ocelle-bar-width` in `--ocelle-color-<tone>` along its
+  inline-start edge; the text is `--ocelle-color-ink`. The bar and the ground differ from one tone to another only by
+  colour, and not at all in forced colours, so the host's text must state the tone, as "Run failed" or "Saved." does:
+  the look of the box alone does not tell a warning from a success.
+- `size` (attribute and property, reflected): `regular` (the default) or `compact`; any other value behaves as
+  `regular` and the property reads `"regular"`, while the attribute keeps the value as written. The compact size sets
+  the text in `--ocelle-font-size-sm` and `--ocelle-line-height-compact`, the scale of the base styles' compact density,
+  with a smaller padding.
+- `announce` (boolean attribute and property, reflected): the notice announces its text once, politely for `info`,
+  `success` and `neutral` and assertively for `warning` and `danger`.
+
+Slots: `heading` (optional; only elements are assigned to it) and the default slot, the body. CSS parts: `heading` and
+`body`. The notice has no event and no CSS custom property of its own. `ocelle-notice` reads the tokens
+`--ocelle-color-<tone>`, `--ocelle-color-<tone>-bg`, `--ocelle-color-ink`, `--ocelle-radius-row`,
+`--ocelle-bar-width`, `--ocelle-border-width`, `--ocelle-space-1` to `--ocelle-space-4`, `--ocelle-font-size-subhead`,
+`--ocelle-font-size-sm`, `--ocelle-font-weight-strong`, `--ocelle-line-height-tight` and
+`--ocelle-line-height-compact`. Slotted content keeps its own semantics and focus: the notice sets no `tabindex` and
+traps no focus. Long unbroken text wraps inside the box at any character. In forced colours the box has a border of
+`--ocelle-border-width` in `CanvasText`, the bar in `CanvasText` too, and the text is `CanvasText` on `Canvas`.
+
+**Heading.** The heading is absent when no element is assigned to the `heading` slot or the text content of its
+elements is empty or whitespace only: it then draws no box and leaves no gap, so a server template can write
+`<span slot="heading"></span>` for a null heading. The rule reads text content only, so a heading whose only content is
+an `ocelle-icon` or an `img` is absent, and a heading whose only text is inside an `aria-hidden="true"` element is drawn
+but adds nothing to the announced text. A present heading is drawn above the body at `--ocelle-font-weight-strong`, in
+`--ocelle-font-size-subhead` and `--ocelle-line-height-tight` with a gap of `--ocelle-space-2` (compact:
+`--ocelle-font-size-sm`, `--ocelle-line-height-compact`, `--ocelle-space-1`).
+
+**Announced text.** The announced text is the heading text, then the body text, joined by one space: the text nodes, the
+`label` of an `ocelle-icon` and the `alt` of an `img`, skipping elements with `hidden` or `aria-hidden="true"` and
+`script`, `style` and `template` elements. Other accessible names (`title`, a slotted element's `aria-label`) do not
+count. For other slotted content (an element with `role="img"` and an `aria-label`, an `svg`, CSS-generated content,
+content hidden by a host rule without `hidden`) the announced text is not specified.
+
+**When it announces.** "Announced" in this library's tests means a change of a live region's text in Chromium's
+accessibility tree, read from the states that Chromium can hand to assistive technology; no screen reader runs in the
+tests. With `announce`, a notice announces its text when it is inserted after the page has loaded, when its `hidden`
+is removed, and on each change of its text or of its politeness. A notice that is part of the page as first loaded is
+not announced: one connected while `document.readyState` is `"loading"`, or upgraded by the registration of the
+definition. A notice inserted after the build has loaded is announced, however it is inserted (`innerHTML`, a
+`<template>`, a `DOMParser` document, an htmx swap or `document.createElement`). Load the build before any swap or
+script inserts announcing notices: a notice upgraded by the registration does not announce. Setting `announce`, or a
+host `role` of `alert` or `status`, on an existing notice announces nothing: its current text is the baseline for the
+next change. Moving a notice within the page in one task, or a re-render, announces nothing; the same text set again,
+or a change of whitespace only, is no change. Removing `announce` stops the announcements.
+
+**How it announces.** The notice announces through a separate live region in its shadow root, visually hidden and
+atomic, that never holds the visible content: a copy of the text is written into it `W` after the last trigger. `W` is
+twice Chromium's accessibility serialisation delay, 150 ms once `document.readyState` is `"complete"` and 350 ms before
+(`AXObjectCacheImpl::GetDeferredEventsDelay()` in `ax_object_cache_impl.cc`), so 300 ms after load and 700 ms before;
+the region is empty for that time first, so a screen reader is handed the whole text as a change. The wait also ends
+no earlier than `W` of the load state in which the region last became empty, counted from then, so a change right
+after a first load is written no earlier than the pre-load `W` after the notice was first rendered (about 650 to 690
+ms after the change on Chromium), since the tests' reading of Chromium's serialisation holds an empty state begun
+before the load to the pre-load delay. Changes closer together than `W`, in one task or in different tasks, merge: only the final text is announced, once, and a text that
+is back to the last announced text when the wait ends announces nothing. A text that keeps changing more often than
+every `W` is not announced until it stops changing. A copy is held for `H`, 5000 ms, or until the next announcement but
+at least `W`, and then removed. `H` is a chosen figure, not measured: the tests cannot see when a screen reader fetches
+the text. For up to `H` a browse-mode user may meet the text twice, in the notice and in the copy.
+
+**Host roles.** A host `role="alert"` announces assertively and `role="status"` politely whatever the tone, with or
+without `announce`; with a role that gives the host's node no live politeness, such as `note`, `region` or `none`, the
+notice behaves as with no role. The host's node keeps the role and is never a second live region. For a host
+`role="alert"`, the insertion, the reveal and a change of the role to `alert` write no copy: Chromium's alert event for
+the host's node reads the notice (`ui/accessibility/ax_event_generator.cc`, lines 394, 416-417 and 1081-1082). The alert
+event is Chromium's behaviour and is not measured; WebKit is not measured, and its live regions in shadow roots are an
+open limitation. What the event does for a `role="alert"` notice of the page as first loaded is not measured either,
+and a later Chromium may change it. Text or a `tone` set in the same task as that insertion, reveal or role change is
+part of the alert reading and is not announced again. A change made in a later task but before Chromium's next
+serialisation is read twice, by the alert event and by the copy, so set the text before, or in the same task as, the
+insertion, reveal or role change. A notice inserted or revealed as `role="alert"` and changed to `role="status"` in the
+same task announces its text politely once, as a `status` notice would, since no alert event fires. Later text changes
+of a `role="alert"` notice announce assertively through the copy.
+
+**Hiding.** Only the host's own `hidden` attribute hides and reveals the notice: removing it announces the current
+text once, as an insertion does, and changes while hidden are not announced. A notice shown by a hidden ancestor (a
+container with `hidden`, a closed `<details>`, a `display: none` panel) is not announced by its live region; a
+`role="alert"` notice shown that way is read by Chromium's alert event all the same.
+
+## Form controls
+
+`ocelle-form-input` and later form-like elements are form-associated custom elements: the native control, its visible
+label, its description and its error live in one open shadow root, so every ID reference among them stays inside it.
+This is the convention every form-like element of this library follows. The host takes part in its form through
+`ElementInternals`: it submits its value under `name` (nothing without `name` or while disabled), joins the form a
+`form` attribute names, follows a disabled `<fieldset>`, restores its default value on a form reset and its state on
+history restore, and is associated with an external `<label for>`. The `form` attribute joins the form it names, as
+on a native control; it is a standard attribute and the manifest does not list it.
+
+**Members.** Shared attributes and properties: `name`, `label`, `description`, `error`, `required` and `disabled` (all
+reflected), and the `value` property. The host exposes `form`, `labels`, `validity`, `validationMessage`,
+`willValidate`, `checkValidity()` and `reportValidity()` as a native control does; `focus()` on the host focuses the
+inner control, and the host is not a tab stop of its own. The host's validity flags and message are the inner
+control's native constraint validation, and `reportValidity()` focuses the inner control and makes the browser show its
+message. CSS parts: `label`, `control`, `description` and `error`. Slots: none: the label, the description and the
+error are text attributes.
+
+**Naming.** The inner control's accessible name is a host `aria-label` that is not blank, alone; otherwise the text of
+each external `<label>` in `labels` order, then the `label` text, each with whitespace collapsed and trimmed, joined by
+one space; with none of them the control has no name, and one is required. When a visible label is drawn (`label` or
+an external `<label>`), a host `aria-label` must contain the visible label text; any other combination is not
+supported. A label that is associated later is picked up when the control next renders or takes focus; a changed text
+of an associated label renames the control at once. The `description` is the control's accessible description,
+followed by a host `aria-description` and the error. A host `aria-label` and `aria-description` also stay on the host's
+node, so Chromium exposes the host as a generic with the same name and description beside the control. A host
+`aria-labelledby` and a host `aria-describedby` are not supported: they would reference across the shadow root; use
+`label`, `aria-label` or `description` instead. A host `aria-invalid`, `aria-required` or `aria-disabled` reaches the
+inner control only with the value `"true"`, combined with the element's own `error`, `required` and `disabled`; write
+only `"true"` or nothing: any other value is not supported. Prefer the element's own attributes. A host
+`aria-required="true"` adds no constraint, and a host `aria-disabled="true"` leaves the control focusable.
+
+**Events.** The native `input` event of the inner control reaches the host with `value` already updated; each
+committed change dispatches `ocelle-form-input-change`, a `CustomEvent` with `detail: { value }`, `bubbles` and
+`composed`; a change by script, by reset or by restore dispatches none. For htmx, trigger on
+`hx-trigger="ocelle-form-input-change"` (or `input`): the native `change` event does not leave the shadow root, and
+htmx's default trigger for an unknown element is `click`. A plain form submit or `hx-post` on the form needs nothing,
+since the values are in the form's data.
+
+**Size and look.** The host is `display: block` and the control fills its inline size; the element sets no width of
+its own, so in a filter bar the page sets the element's width or places it as a flex or grid item. The label is drawn
+above the control, the description under the label and the error under the control. The form controls are for the main
+grounds; a control on a state ground, `--ocelle-color-accent-low`, an inset or a hover ground is not supported.
+
+**Error.** A non-empty `error` is shown under the control in `--ocelle-color-danger`, with the control's boundary in
+`--ocelle-color-danger` at `--ocelle-bar-width`, makes the control invalid for assistive technology, is added after the
+description to its accessible description, and is announced politely once each time it changes to a new text. The
+error does not block submission or change the form's validity: the host clears it. It is announced through a separate
+live region in the control's shadow root, as `ocelle-notice` announces, with the same wait `W`, hold `H` and merging.
+Setting `error` to empty resets the baseline, so the same text set again is announced again; a change of whitespace
+only is no change; changes closer together than `W` merge. An `error` in the page as first loaded is not announced and
+does not move focus: it is read with the control's description when the user reaches it, so put an error summary or a
+notice at the top of the page and focus it. A control inserted after the build has loaded with an `error` announces it
+politely once, each control its own; moving a control within the page in one task announces nothing. Load the build
+before any swap or script inserts form controls with `error`: a control upgraded by the registration does not announce.
+Only the host's own `hidden` attribute counts as a reveal for a form control: removing it announces the current error
+once; a control shown through a hidden ancestor announces nothing.
+
+**Implicit submission.** In a form with no submit button that holds a native text input and a form control, Enter in
+the native input submits, since the browser does not count the custom element as a field that blocks implicit
+submission; Enter in the form control does not.
+
+**Before the definition loads.** Before the definition has loaded, a form control is not in its form's data and is
+not validated; to hide undefined elements, add a rule such as `ocelle-form-input:not(:defined) { visibility: hidden; }`
+to the page's own stylesheet. The base stylesheet ships no such rule.
+
+**Limits.** Not measured: restore by autofill, where the browser draws the validation message, the `email` keyboard
+hint and the masking of `password`. WebKit is not measured for form controls: its form association and
+`ElementInternals` are an open limitation.
+
+## `ocelle-form-input`
+
+```html
+<form method="post" action="/lanes">
+  <ocelle-form-input name="title" label="Title" description="Shown on the lane card" required></ocelle-form-input>
+  <ocelle-form-input name="email" label="Email" type="email" autocomplete="email" error="Email is taken"></ocelle-form-input>
+  <button>Save</button>
+</form>
+```
+
+`ocelle-form-input` is a labelled text field with an optional description and a host-set error, that takes part in its
+form like a native input. It follows the form-control convention above.
+
+- `type` (attribute and property, reflected): `text` (the default), `email`, `url`, `tel`, `search`, `password` or
+  `number`; any other value behaves as `text` and the property reads `"text"`, while the attribute keeps the value as
+  written.
+- `placeholder`, `autocomplete`, `inputmode` (`inputMode`), `pattern`, `min`, `max` and `step` (strings), `minlength`
+  (`minLength`) and `maxlength` (`maxLength`) (numbers) and `readonly` (`readOnly`, boolean), attributes and reflected
+  properties, pass to the inner field unchanged; an absent one reads `undefined` (`readOnly` reads `false`).
+- The input's `value` attribute is its default value, restored on reset; the `value` property is the current value.
+  Changing the attribute changes the current value only while the user has not edited it and no script has set `value`
+  since the last reset. There is no `defaultValue` property.
+
+Pressing Enter in the field dispatches `ocelle-form-input-change` if the value changed, then submits the form as a
+native input does. Event: `ocelle-form-input-change`, `detail: { value }`. CSS parts: `label`, `control`,
+`description` and `error`. Slots: none. No CSS custom property of its own. `ocelle-form-input` reads the tokens
+`--ocelle-color-sheet`, `--ocelle-color-control-border`, `--ocelle-color-ink`, `--ocelle-color-ink-muted`,
+`--ocelle-color-danger`, `--ocelle-color-focus`, `--ocelle-color-disabled-bg`, `--ocelle-color-disabled-ink`,
+`--ocelle-border-width`, `--ocelle-bar-width`, `--ocelle-radius-2`, `--ocelle-target-min`, `--ocelle-focus-width`,
+`--ocelle-focus-offset`, `--ocelle-font-size-sm`, `--ocelle-font-weight-strong`, `--ocelle-line-height-normal`,
+`--ocelle-space-1`, `--ocelle-space-2` and `--ocelle-space-3`. The label is in `--ocelle-font-size-sm`,
+`--ocelle-font-weight-strong` and `--ocelle-line-height-normal` in `--ocelle-color-ink`; the field is on
+`--ocelle-color-sheet` with a boundary of `--ocelle-border-width` in `--ocelle-color-control-border`, radius
+`--ocelle-radius-2`, at least `--ocelle-target-min` high, with the token focus ring on `:focus-visible` and the
+disabled colours when disabled; the description is in `--ocelle-color-ink-muted` and the error in
+`--ocelle-color-danger`, both in `--ocelle-font-size-sm` and `--ocelle-line-height-normal`. The placeholder is in
+`--ocelle-color-ink-muted`. The field inherits the host's font. In forced colours the boundary is `CanvasText`, the
+focus ring `Highlight`, and the error keeps its boundary at `--ocelle-bar-width`. Long unbroken text in the label, the
+description or the error wraps at any character.
+
+## `ocelle-form-select`
+
+```html
+<form method="get" action="/board">
+  <ocelle-form-select name="lane" label="Lane" description="Only cards in this lane are shown">
+    <option value="">All lanes</option>
+    <optgroup label="Active">
+      <option value="todo">To do</option>
+      <option value="doing" selected>Doing</option>
+    </optgroup>
+    <option value="done">Done</option>
+  </ocelle-form-select>
+  <button>Filter</button>
+</form>
+```
+
+`ocelle-form-select` is a labelled native select for closed choices, with an optional description and a host-set
+error, that takes part in its form like a native select. It follows the form-control convention above. Attributes and
+reflected properties: `name`, `label`, `description`, `error`, `required` and `disabled`. Properties: `value`, `form`,
+`labels`, `validity`, `validationMessage` and `willValidate`. Methods: `checkValidity()`, `reportValidity()` and
+`focus()`.
+
+- Its choices are its light-DOM `<option>` and `<optgroup>` children, written as for a native `<select>`: the native
+  select inside mirrors their order, labels, values, `selected` (the default selection, restored on reset) and
+  `disabled`, and follows every later change to them. The light-DOM children are not rendered and not exposed, so a
+  server-rendered page needs no script to fill the select. One choice only: there is no `multiple` and no `size`.
+- A host `value` attribute is ignored: the default selection is the last option marked `selected`, or the first
+  enabled option without one. The `value` property is the current choice; setting it to a value no option has selects
+  nothing and reads `""`, as on a native select. There is no `defaultValue` property. With nothing selected (no
+  option, or such a value), the select submits nothing, as a native select.
+- When the chosen option is removed, the choice falls back to the first enabled option, as on a native select, with
+  no event.
+- The native select's own keys are unchanged: ArrowDown and ArrowUp change the choice, and typing a letter selects the
+  next option whose label starts with it. Each change the user makes dispatches `ocelle-form-select-change`.
+- The open-list indicator is the `chevron-down` icon of the set, drawn in `currentColor` at `--ocelle-icon-size` at
+  the inline end of the select, decorative and visible in forced colours; it takes no pointer events, so a click on it
+  reaches the select. Importing `@ocelle/elements/ocelle-form-select.js` defines `ocelle-form-select` only: the select
+  draws its indicator itself and does not define `ocelle-icon`.
+
+Event: `ocelle-form-select-change`, `detail: { value }`. CSS parts: `label`, `control`, `description` and `error`.
+Slots: none. No CSS custom property of its own. For htmx, trigger on `hx-trigger="ocelle-form-select-change"` (or
+`input`). `ocelle-form-select` reads the tokens `--ocelle-color-sheet`, `--ocelle-color-control-border`,
+`--ocelle-color-ink`, `--ocelle-color-ink-muted`, `--ocelle-color-danger`, `--ocelle-color-focus`,
+`--ocelle-color-disabled-bg`, `--ocelle-color-disabled-ink`, `--ocelle-border-width`, `--ocelle-bar-width`,
+`--ocelle-radius-2`, `--ocelle-target-min`, `--ocelle-focus-width`, `--ocelle-focus-offset`, `--ocelle-font-size-sm`,
+`--ocelle-font-weight-strong`, `--ocelle-line-height-normal`, `--ocelle-space-1`, `--ocelle-space-2`,
+`--ocelle-space-3` and `--ocelle-icon-size`, the last for its indicator. The label, the select, the description and the
+error are drawn as for `ocelle-form-input`; the select leaves room for the indicator at its inline end.
+
+Before the definition has loaded, a select's `<option>` children may show as text, as the browser draws an unknown
+element's content; the rule above for undefined elements hides them. Not measured for `ocelle-form-select`: that
+Alt+Down or Space opens the list, and how the browser draws the open list.
 ## `ocelle-dialog`
 
 ```html
@@ -1509,20 +1771,34 @@ gap, padding or divider with nothing in it. Forward a slot only when it has cont
 ## Host ARIA
 
 A host `aria-label` names the element as `label` does. For `ocelle-icon` and `ocelle-brand-mark`, when present it
-decides alone: a blank host `aria-label` leaves the element unlabelled even with a `label`. For `ocelle-scroller`,
-`ocelle-workflow-board` and `ocelle-workflow-lane` a blank host `aria-label` counts as absent, so `label` still names
-the element: Chromium names a host from a present `aria-label` and does not fall back from a blank one, so these
-elements put their role and name on a node in their shadow root, named by the host's non-blank `aria-label`, trimmed,
-or else by `label`. `ocelle-list-detail` takes no name: a host `aria-label` is not used. When both are set, the host
-`aria-label` is the name; removing it falls back to `label`. Chromium uses a host `aria-label` as written, surrounding spaces included, so pass it trimmed;
-the element never rewrites it. An unknown icon name exposes nothing, named or not.
+decides alone: a blank host `aria-label` leaves the element unlabelled even with a `label`. On a form control a host
+`aria-label` that is not blank names the control alone; a blank one, empty or whitespace only, is skipped, and the
+labels and `label` name the control. For `ocelle-scroller`, `ocelle-workflow-board` and `ocelle-workflow-lane` a blank
+host `aria-label` counts as absent, so `label` still names the element: Chromium names a host from a present
+`aria-label` and does not fall back from a blank one, so these elements put their role and name on a node in their
+shadow root, named by the host's non-blank `aria-label`, trimmed, or else by `label`. `ocelle-list-detail` takes no
+name: a host `aria-label` is not used. On `ocelle-icon` and `ocelle-brand-mark`, when both are set, the host
+`aria-label` is the name; removing it falls back to `label`. On `ocelle-icon` and `ocelle-brand-mark`, Chromium uses a
+host `aria-label` as written, surrounding spaces included, so pass it trimmed; the element never rewrites it. On a
+form control the control's name is a host `aria-label` with whitespace collapsed and trimmed, while the host's node
+keeps it as written, surrounding spaces included, so pass it trimmed with single spaces. An unknown icon name exposes
+nothing, named or not.
 
-This is the rule of `ocelle-icon` and `ocelle-brand-mark`; the controls move their host ARIA onto their inner control
-instead (Control conventions, Host ARIA is moved).
+`ocelle-button` and `ocelle-action-row` follow none of these `aria-label` rules: they move their host ARIA onto their
+inner control instead (Control conventions, Host ARIA is moved).
 
-A host `aria-hidden="true"` hides the element, labelled or not. A host `hidden` attribute removes the element: no box
-and no node, labelled or not. A host `role` or `aria-hidden="false"` is not supported: name the element with `label` or
-`aria-label` instead.
+On `ocelle-icon` and `ocelle-brand-mark`, a host `aria-hidden="true"` hides the element, labelled or not. On
+`ocelle-icon` and `ocelle-brand-mark`, a host `hidden` attribute removes the element: no box and no node, labelled or
+not. On `ocelle-notice` a host `aria-hidden="true"` is not supported: hide the notice with a host `hidden` attribute,
+which gives it no box and announces nothing while it is set. On a form control a host `aria-hidden="true"` is not
+supported, since the control stays focusable: hide the control with a host `hidden` attribute instead. On `ocelle-icon`
+and `ocelle-brand-mark`, a host `role` or `aria-hidden="false"` is not supported: name the element with `label` or
+`aria-label` instead. On a form control a host `role` or `aria-hidden="false"` is not supported: name the control with
+`label`, a `<label>` or `aria-label` instead. `ocelle-notice` takes a
+host `role` as its section says: `alert` and `status` make it announce, a role that gives its node no live politeness
+leaves it as without a role, and `log`, other live roles and a host `aria-live`, `aria-atomic`, `aria-relevant` or
+`aria-hidden="false"` are not supported. On the other elements, a host `aria-hidden="true"` hides the element, a host
+`hidden` attribute removes it, and a host `role` or `aria-hidden="false"` is not supported.
 
 With a host `aria-label`, an open `ocelle-dialog` exposes one named node, its modal dialog, named by the host
 `aria-label`; while it is closed, Chromium exposes the host itself as a named generic node. With a host `aria-label`,
@@ -1597,11 +1873,15 @@ the same tag does nothing and throws nothing. The module exports the class and d
 `HTMLElementTagNameMap`; `src/index.ts` re-exports it.
 
 **Properties.** Elements declare their reactive properties with `static override properties = { … }` and `declare`
-fields, not decorators. Every element class carries the JSDoc tag `@tagname <tag>`, and every public property a
-description and `@default undefined`: the manifest takes the tag name and the defaults from them. An element that
+fields, not decorators. Every element class carries the JSDoc tag `@tagname <tag>`, every public property a
+description, and every public property that can be set a `@default` tag with the value the property reads before
+anything sets it, `@default undefined` for an optional one: the manifest takes the tag name and the defaults from them.
+An element that
 observes a standard attribute such as `aria-label` adds it to `observedAttributes` without declaring a property, so
-the manifest does not list it. An element that moves a standard attribute declares it with `@attr` and a description,
-with its mirror, so the manifest lists both.
+the manifest does not list it. An attribute that is the element's own and has no property of its own, such as
+`ocelle-form-input`'s `value` (its default value), is declared in the manifest with the class's JSDoc tag `@attribute`,
+with its type, default and description. An element that moves a standard attribute declares it with `@attr` and a
+description, with its mirror, so the manifest lists both.
 
 **Styles.** An element's styles are its shared `static styles`, one or more `css` tagged templates built only from
 `--ocelle-*` tokens and the values the `style-lint` gate allows, which every instance adopts, plus at most one

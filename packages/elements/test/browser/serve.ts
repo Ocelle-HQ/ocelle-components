@@ -5,8 +5,8 @@
 // tested frames, R-17; linked only by the pages that say so), and the files the global setup built
 // (global-setup.ts): the browser build `ocelle-elements.js`, US1 scenario 10's `bundle-a.js` and `bundle-b.js`, User
 // Story 3's test host's file `ocelle-test-host.js`, since 009 the test-only slotted controls `ocelle-test-controls.js`
-// and (phase 4) `ocelle-test-list-detail.js`, and 011's `card-bundle.js` (the module build's card alone). It serves
-// them on 127.0.0.1 with `Content-Security-Policy:
+// and (phase 4) `ocelle-test-list-detail.js`, 011's `card-bundle.js` (the module build's card alone) and the plant
+// rows' bundle `ocelle-plants.js` (specs/010-feedback-forms). It serves them on 127.0.0.1 with `Content-Security-Policy:
 // default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'` on every response. Every page is opened
 // in a fresh context with the recorders installed before navigation, none of them a page script or a request: CSP
 // violations through 002's `addInitScript` collector
@@ -57,6 +57,7 @@ const builtFiles: Readonly<Record<string, string>> = {
   "bundle-b.js": "bundles/bundle-b.js",
   "card-bundle.js": "bundles/card-bundle.js",
   "ocelle-test-host.js": "test-host/ocelle-test-host.js",
+  "ocelle-plants.js": "plants/ocelle-plants.js",
   "ocelle-test-controls.js": "test-controls/ocelle-test-controls.js",
   "ocelle-test-list-detail.js": "test-controls/ocelle-test-list-detail.js",
 };
@@ -72,6 +73,8 @@ const types: Readonly<Record<string, string>> = {
 export interface Served {
   /** `http://127.0.0.1:<port>`. */
   readonly origin: string;
+  /** The bodies of the form submissions (`POST /submit`) the server received, in order. */
+  readonly submissions: () => readonly string[];
   /** The requests for `link-target.html` so far, by path, in order. */
   readonly visits: () => string[];
   readonly close: () => Promise<void>;
@@ -91,8 +94,23 @@ export async function serve(built: Built | undefined): Promise<Served> {
   if (built !== undefined && "dir" in built) {
     for (const [name, path] of Object.entries(builtFiles)) if (existsSync(join(built.dir, path))) cpSync(join(built.dir, path), join(dir, name));
   }
+  const submissions: string[] = [];
   const server = createServer((request, response) => {
-    const path = normalize(new URL(request.url ?? "/", "http://localhost").pathname).replace(/^[/\\]+/, "");
+    const route = normalize(new URL(request.url ?? "/", "http://localhost").pathname).replace(/^[/\\]+/, "");
+    // The submission recorder (specs/010-feedback-forms contracts/testing.md § Forms): a form posted to /submit is
+    // recorded and answered 204, so the page stays where it is.
+    if (request.method === "POST" && route === "submit") {
+      const chunks: Buffer[] = [];
+      request.on("data", (chunk: Buffer) => chunks.push(chunk));
+      request.on("end", () => {
+        submissions.push(Buffer.concat(chunks).toString("utf8"));
+        response.writeHead(204, { "Content-Security-Policy": policy }).end();
+      });
+      return;
+    }
+    // The no-store route: `no-store/<path>` serves `<path>` with `Cache-Control: no-store` (history restore).
+    const noStore = route.startsWith("no-store/");
+    const path = noStore ? route.slice("no-store/".length) : route;
     let body: Buffer;
     try {
       if (path.startsWith("..")) throw new Error("outside the served directory");
@@ -102,12 +120,14 @@ export async function serve(built: Built | undefined): Promise<Served> {
       response.writeHead(404, { "Content-Security-Policy": policy }).end();
       return;
     }
-    response.writeHead(200, { "Content-Type": types[extname(path)] ?? "application/octet-stream", "Content-Security-Policy": policy }).end(body);
+    const headers = { "Content-Type": types[extname(path)] ?? "application/octet-stream", "Content-Security-Policy": policy };
+    response.writeHead(200, noStore ? { ...headers, "Cache-Control": "no-store" } : headers).end(body);
   });
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
   const { port } = server.address() as AddressInfo;
   return {
     origin: `http://127.0.0.1:${String(port)}`,
+    submissions: () => [...submissions],
     visits: () => [...visits],
     close: async () => {
       await new Promise<void>((resolve) => server.close(() => {

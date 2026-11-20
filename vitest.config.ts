@@ -36,9 +36,25 @@ interface ElementCommands {
   readonly pointerPath: (context: BrowserCommandContext, steps: readonly PathStep[]) => Promise<void>;
   readonly touchTap: (context: BrowserCommandContext, x: number, y: number) => Promise<void>;
 }
+// The live-region capture's commands (specs/010-feedback-forms contracts/testing.md § Live-region capture;
+// packages/elements/test/live.ts), loaded as the element commands are, when a command runs.
+interface LiveDelays {
+  readonly loaded: number;
+  readonly loading: number;
+}
+interface LiveCommands {
+  readonly liveStart: (context: BrowserCommandContext, containerId: string, delays: LiveDelays) => Promise<void>;
+  readonly liveStop: (context: BrowserCommandContext, options?: { readonly atLeast?: number }) => Promise<unknown>;
+}
 const elementCommandsUrl = new URL("./packages/elements/test/commands.ts", import.meta.url).href;
 const elementCommands = async (): Promise<ElementCommands> => (await import(elementCommandsUrl)) as ElementCommands;
 const axTree: BrowserCommand<[id: string, scope?: "element" | "subtree"]> = async (context, id, scope) => (await elementCommands()).axTree(context, id, scope);
+const liveCommandsUrl = new URL("./packages/elements/test/live.ts", import.meta.url).href;
+const liveCommands = async (): Promise<LiveCommands> => (await import(liveCommandsUrl)) as LiveCommands;
+const liveStart: BrowserCommand<[containerId: string, delays: LiveDelays]> = async (context, containerId, delays) => {
+  await (await liveCommands()).liveStart(context, containerId, delays);
+};
+const liveStop: BrowserCommand<[options?: { readonly atLeast?: number }]> = async (context, options) => (await liveCommands()).liveStop(context, options);
 const emulateForcedColors: BrowserCommand<[mode: "active" | "none", palette?: "light" | "dark"]> = async (context, mode, palette) => {
   await (await elementCommands()).emulateForcedColors(context, mode, palette);
 };
@@ -70,7 +86,7 @@ const pointerPath: BrowserCommand<[steps: readonly PathStep[]]> = async (context
 const touchTap: BrowserCommand<[x: number, y: number]> = async (context, x, y) => {
   await (await elementCommands()).touchTap(context, x, y);
 };
-const elementBrowserCommands = { axTree, emulateForcedColors, scrollWidth, activeElement, textBoxes, emulateReducedMotion, press, hover, pointer, axState, axe, pointerPath, touchTap };
+const elementBrowserCommands = { axTree, emulateForcedColors, scrollWidth, activeElement, textBoxes, emulateReducedMotion, press, hover, pointer, axState, axe, pointerPath, touchTap, liveStart, liveStop };
 
 // The element browser projects run at the fixture's 1280 × 800 (008 research.md R-14), the default one as a mouse
 // device and elements-touch as a touch device (`hasTouch`); both exclude the node, build and fixture suites.
@@ -132,12 +148,21 @@ export default defineConfig({
         // switch forced colours and reduced motion for the shared scenario bodies (packages/elements/test/commands.ts);
         // 012's press, hover, pointer, axe and axState drive the keyboard and mouse, read one accessibility node and run
         // axe (012 research.md R-11). Each test file keeps its own iframe and custom-element registry (isolate, the
-        // default). 008 (R-14): a 1280 × 800 viewport, as on the fixture, a mouse device; the touch rows
+        // default). Its files run one at a time (specs/010-feedback-forms phase 2 stop 1, operator decision (b),
+        // reviews/phase-2/decision-stop-1.md):
+        // the in-process timing files (the notice suites, the plants file, the capture and timing files) measure gaps
+        // in fractions of the test W = 100 ms, and two pages of this project running at once overshot drive.after by
+        // more than 2W/3. 008 (R-14): a 1280 × 800 viewport, as on the fixture, a mouse device; the touch rows
         // (`test/*.touch.test.ts`) run in elements-touch instead; the commands also drive the real pointer.
+        // Lit's directives the elements import, bundled before the run, so Vite does not find them during a test file
+        // and reload it (specs/010-feedback-forms phase 3: ocelle-form-input imports class-map and live; 013:
+        // ocelle-facts imports if-defined).
+        optimizeDeps: { include: ["lit/directives/class-map.js", "lit/directives/if-defined.js", "lit/directives/live.js"] },
         test: {
           name: "elements",
           include: ["packages/elements/**/*.test.ts"],
           exclude: [...elementExcluded, "packages/elements/test/*.touch.test.ts"],
+          fileParallelism: false,
           browser: {
             enabled: true,
             provider: playwright({ launchOptions }),

@@ -4,10 +4,12 @@
 // (test/browser/*.test.ts, the `elements-browser` project). Every method reads or acts on the page by element `id`;
 // nothing in a body depends on which harness runs it. Elements inside a shadow root are reached by a selector in the
 // element's shadow root.
-import type { ActiveElement, AxNode, ForcedColors, Palette, ReducedMotion, TextBox } from "../commands.ts";
+import type { ActiveElement, AxDetail, AxNode, ForcedColors, Palette, ReducedMotion, TextBox } from "../commands.ts";
+import type { DocumentCapture, LiveCapture } from "../live.ts";
 import type { Pixels } from "../pixels.ts";
 
-export type { ActiveElement, AxNode, ForcedColors, Palette, ReducedMotion, TextBox } from "../commands.ts";
+export type { ActiveElement, AxDetail, AxNode, ForcedColors, Palette, ReducedMotion, TextBox } from "../commands.ts";
+export type { DocumentCapture, LiveCapture, Snapshot, StopOptions } from "../live.ts";
 export type { Pixels } from "../pixels.ts";
 
 /** An element's border box, relative to the viewport, and its computed `display`. */
@@ -83,6 +85,14 @@ export interface Target {
 }
 
 /**
+ * How `insert` puts markup into a container (specs/010-feedback-forms contracts/testing.md § Driver steps):
+ * `innerHTML` (the container's `innerHTML` set to the markup), `template` (a `<template>`'s content cloned and
+ * appended), `domparser` (the body nodes of a `DOMParser` document adopted and appended), `createElement` (the
+ * elements built with `document.createElement`, their attributes and children set before insertion, then appended).
+ */
+export type InsertHow = "innerHTML" | "template" | "domparser" | "createElement";
+
+/**
  * An element the input and scroll methods act on: the element with an `id`, or the first element matching `inner` in
  * that element's shadow root (009 research.md R-17; 009's `Target`, renamed by operator decision D1).
  */
@@ -94,6 +104,70 @@ export interface Point {
   readonly y: number;
 }
 
+/** Form entries as `[name, value]` pairs, in order (a file's value is its name). */
+export type Entries = readonly (readonly [string, string])[];
+
+/** The announcement wait `W` in force, by the document's load state, in milliseconds. */
+export interface Waits {
+  readonly loaded: number;
+  readonly loading: number;
+}
+
+/**
+ * One DOM operation of a `batch` step (specs/010-feedback-forms phase 2): `insert` appends `markup` to the container by
+ * fragment parsing (`insertAdjacentHTML("beforeend", …)`), `text` replaces the element's children with one text node
+ * (`textContent`), `attribute` sets an attribute (null removes it), `property` sets a property, `move` appends the
+ * element to another container (a removal and an insertion in one operation; an element a `remove` removed is found
+ * by its id too), `remove` removes it, `focus` focuses it. `data` (phase 4) sets the data of the element's first child
+ * node, a text node, so the change is a `characterData` mutation and not a `childList` one. `reset` (phase 4, operator
+ * round 2) resets the form with the id (`HTMLFormElement.reset()`), so a reset can share the task of an insertion.
+ */
+export type Operation =
+  | { readonly op: "insert"; readonly container: string; readonly markup: string }
+  | { readonly op: "text"; readonly id: string; readonly text: string }
+  | { readonly op: "data"; readonly id: string; readonly data: string }
+  | { readonly op: "attribute"; readonly id: string; readonly name: string; readonly value: string | null }
+  | { readonly op: "property"; readonly id: string; readonly name: string; readonly value: string | number | boolean | null }
+  | { readonly op: "move"; readonly id: string; readonly to: string }
+  | { readonly op: "remove"; readonly id: string }
+  | { readonly op: "reset"; readonly id: string }
+  | { readonly op: "focus"; readonly id: string };
+
+/**
+ * One event a `listen` step heard (specs/010-feedback-forms phase 3): its type, the id of the element it was heard on,
+ * the id of its target as the listener saw it (the local name for an element without an id), the `value` property of
+ * the element it was heard on at that moment, its `detail` (a structured copy, null when it has none), and whether it
+ * bubbles and is composed.
+ */
+export interface Heard {
+  readonly type: string;
+  readonly at: string;
+  readonly target: string;
+  readonly value: unknown;
+  readonly detail: unknown;
+  readonly bubbles: boolean;
+  readonly composed: boolean;
+}
+
+/** An element's validity (`validity`'s flags), `validationMessage` and `willValidate`. */
+export interface Validity {
+  readonly valid: boolean;
+  readonly valueMissing: boolean;
+  readonly typeMismatch: boolean;
+  readonly patternMismatch: boolean;
+  readonly tooLong: boolean;
+  readonly tooShort: boolean;
+  readonly rangeUnderflow: boolean;
+  readonly rangeOverflow: boolean;
+  readonly stepMismatch: boolean;
+  readonly badInput: boolean;
+  readonly customError: boolean;
+  readonly message: string;
+  readonly willValidate: boolean;
+}
+
+/** A plain value a `call` step passes to a method. */
+export type Plain = string | number | boolean | null;
 /**
  * A click (012 research.md R-06, R-11): always sent with `force: true`, so a click on an unusable control is sent; at
  * the element's centre, or at `position` from its top-left corner (012 phase 2: the stretched and restyled hosts of
@@ -308,11 +382,6 @@ export interface Driver {
   setProperty(id: string, name: string, value: string | number | boolean | null | undefined): Promise<void>;
   /** Sets an attribute of the element with `id` (null removes it) and waits for it to render. */
   setAttribute(id: string, name: string, value: string | null): Promise<void>;
-  /**
-   * Calls the method `name` of the element with `id` with no argument, then settles (`settle`): since 009 phase 4,
-   * list-detail's `remeasure()` (research.md R-13).
-   */
-  call(id: string, name: string): Promise<void>;
   /** An attribute of the element with `id`, or null. */
   attribute(id: string, name: string): Promise<string | null>;
   /** Sets a CSS property on the element with `id` through the CSSOM (not governed by the CSP), as a host rule does. */
@@ -373,6 +442,110 @@ export interface Driver {
   sheets(selector: string): Promise<Sheets>;
   /** The console messages and uncaught errors the page reported since the last `mount`. */
   messages(): Promise<string[]>;
+  /** The live-region capture (contracts/testing.md § Live-region capture). */
+  readonly liveCapture: LiveCapture;
+  /** Puts `markup` into the element with `containerId` the way `how` says. */
+  insert(containerId: string, markup: string, how: InsertHow): Promise<void>;
+  /**
+   * Returns after a `MessageChannel` round trip of its own, posted after the previous step, and one rendering update,
+   * so a removal and an insertion separated by it are in different tasks.
+   */
+  laterTask(): Promise<void>;
+  /**
+   * Inserts `markup` into the element with `containerId` while `document.readyState` is `"interactive"`, with the
+   * elements already defined, the capture armed before the insertion; returns the insertion's page time.
+   */
+  insertInteractive(containerId: string, markup: string): Promise<number>;
+  /**
+   * Returns no earlier than `ms` after the previous step's end, measured in the page, with the gap it achieved in page
+   * milliseconds (from the previous step's end to its own return).
+   */
+  after(ms: number): Promise<number>;
+  /** The announcement wait `W` in force for both load states, against which scenario bodies state their times. */
+  readonly W: Waits;
+  /** The announcer's hold `H` in force, in milliseconds (specs/010-feedback-forms research.md R-02). */
+  readonly H: number;
+  /**
+   * Runs `operations` in order in one task of the page, then waits until every `ocelle-*` element has rendered, so
+   * several changes of one step are changes "in one task" (specs/010-feedback-forms US1 scenarios 13 and 15).
+   */
+  batch(operations: readonly Operation[]): Promise<void>;
+  /**
+   * A property of the element with `id`, as the page holds it (013 phase 3: a converted attribute): a string, number or
+   * boolean as it is, an unset one as undefined, null and anything else as null.
+   */
+  property(id: string, name: string): Promise<unknown>;
+  /** The computed value of a CSS property of the first element matching `inner` in the shadow root of `id`, or "" without one. */
+  computedIn(id: string, inner: string, property: string): Promise<string>;
+  /** The content box (border and padding removed) of the first element matching `inner` in the shadow root of `id`. */
+  contentBox(id: string, inner: string): Promise<Bounds>;
+  /**
+   * Puts `markup` into the container as part of the page as first loaded, its literal tag `ocelle-first-load` replaced
+   * by `tag`, with the capture armed from before: in process the elements are upgraded by the registration of a fresh
+   * subclass of `tag`'s class (`registerFirstLoad`); on fixture pages the page is navigated afresh (`startDocument`)
+   * and its parser writes the markup, which the build loaded after it upgrades.
+   */
+  firstLoad(containerId: string, markup: string, tag: string): Promise<void>;
+  /**
+   * Defines `tag` once more as a second copy of the package would: through the guarded registration, with another
+   * class; the first definition stays (Edge Cases, two copies).
+   */
+  defineSecond(tag: string): Promise<void>;
+  /** The role of host `id` in the final snapshot of the last capture `liveCapture.stop()` returned. */
+  hostRole(id: string): Promise<string>;
+  /** The entries of `new FormData(form)` of the form with `formId`. */
+  formData(formId: string): Promise<Entries>;
+  /**
+   * Submits the form with `formId` through its own submitter (its first submit button, or `requestSubmit()` when it
+   * has none), or, after a key step, takes the submission that step made; returns the submitted entries, or null when
+   * nothing was submitted.
+   */
+  submit(formId: string): Promise<Entries | null>;
+  /** Resets the form with `formId`. */
+  reset(formId: string): Promise<void>;
+  /** Focuses the element with `id` and types `text` with the keyboard. */
+  type(id: string, text: string): Promise<void>;
+  // The form steps of specs/010-feedback-forms phase 3 that share a name with 008's or 009's are named `pressOn`,
+  // `clickPoint`, `focusChain`, `listenFor` and `heardEvents` (the landing's second merge of main).
+  /** Focuses the element with `id` and presses `key` (a key name, such as `Enter`). */
+  pressOn(id: string, key: string): Promise<void>;
+  /** Moves focus away from the focused element. */
+  blur(): Promise<void>;
+  /** A pointer click at the point `at` of the border box of the element with `id`. */
+  clickPoint(id: string, at: Point): Promise<void>;
+  /** The focused element through shadow roots, outermost first, each as `localName` or `localName#id`. */
+  focusChain(): Promise<string[]>;
+  // The phase 3 steps (specs/010-feedback-forms T031 to T033).
+  /** The unignored accessibility nodes of the element with `id` and of its shadow subtree, with descriptions and states. */
+  axDetails(id: string): Promise<AxDetail[]>;
+  /**
+   * Starts recording the events of `types` that reach each element of `ids` (a listener on the element, bubble phase),
+   * in the order they are heard, until the next `mount`.
+   */
+  listenFor(ids: readonly string[], types: readonly string[]): Promise<void>;
+  /** The events heard since the last `heardEvents` (or `listenFor`), in order; the record is then emptied. */
+  heardEvents(): Promise<Heard[]>;
+  /** The validity flags, `validationMessage` and `willValidate` of the element with `id`. */
+  validity(id: string): Promise<Validity>;
+  /**
+   * The ids of the elements a property of the element with `id` holds: of the element itself for an element, of each
+   * item for a list (a `NodeList`, say), none for null or undefined.
+   */
+  ids(id: string, name: string): Promise<string[]>;
+  /** `typeof` the property `name` of the element with `id`. */
+  typeOf(id: string, name: string): Promise<string>;
+  /** Whether `name in element` holds for the element with `id`. */
+  has(id: string, name: string): Promise<boolean>;
+  /**
+   * Calls the method `method` of the element with `id` with `args`, then settles (`settle`); its result as `property`
+   * reads one (specs/010-feedback-forms phase 3; since 009 phase 4 list-detail's `remeasure()`, research.md R-13, with no
+   * argument).
+   */
+  call(id: string, method: string, ...args: readonly Plain[]): Promise<unknown>;
+  /** A property of the first element matching `inner` in the shadow root of `id`, as `property` reads one; null without one. */
+  propertyIn(id: string, inner: string, name: string): Promise<unknown>;
+  /** The computed value of `property` of the pseudo-element `pseudo` of the first element matching `inner` in the shadow root of `id`. */
+  pseudoIn(id: string, inner: string, pseudo: string, property: string): Promise<string>;
   // 012 (research.md R-11; contracts/checks.md § Test harness): interaction, events, navigation, states and axe.
   /** Focuses the element with `id` (`focus()`). */
   focus(id: string): Promise<void>;
@@ -659,8 +832,6 @@ export interface Driver {
    * waits for every element to render (013 phase 3: a value set and removed before a frame).
    */
   changeAttributes(id: string, changes: readonly (readonly [string, string | null])[]): Promise<void>;
-  /** The value of the property `name` of the element with `id`, as the page holds it (013 phase 3: a converted attribute). */
-  property(id: string, name: string): Promise<unknown>;
   /** The text content of the first element matching `inner` in the shadow root of the element with `id`, or null when there is none. */
   textOf(id: string, inner: string): Promise<string | null>;
   /**
@@ -674,6 +845,30 @@ export interface Driver {
    * a node in its shadow root, in order (013 phase 3 review round 1, R1-01: US3-2's "no event is emitted").
    */
   dispatched(id: string, during: () => Promise<void>): Promise<string[]>;
+}
+
+/** The in-process driver: the shared steps and the steps only the element source can take. */
+export interface InProcessDriver extends Driver {
+  /**
+   * Mounts `markup` into the element with `containerId`, the literal tag `ocelle-first-load` replaced by a fresh
+   * test-only tag, arms the capture on the container, then defines the fresh tag as `class extends base {}` through
+   * `define` of src/define.ts, so the elements are upgraded by the registration (first load). Returns the fresh tag.
+   */
+  registerFirstLoad(containerId: string, markup: string, base: CustomElementConstructor): Promise<string>;
+  /** Makes `document.readyState` read `value` until the next `mount` or the next call (null: the real value). */
+  readyState(value: DocumentReadyState | null): Promise<void>;
+  /** Whether the element with `id` is an instance of `constructor`. */
+  instanceOf(id: string, constructor: abstract new (...args: never[]) => unknown): Promise<boolean>;
+}
+
+/** The fixture driver: the shared steps, the document mode of the capture and history navigation. */
+export interface FixtureDriver extends Driver {
+  readonly liveCapture: DocumentCapture;
+  /**
+   * Navigates away from the page (a page served with `Cache-Control: no-store`) and back through history; returns
+   * the `persisted` flag of the `pageshow` event of the page shown again.
+   */
+  navigateAwayAndBack(): Promise<boolean>;
 }
 
 /** How `copy` copies the live DOM. */

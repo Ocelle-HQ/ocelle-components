@@ -218,7 +218,7 @@ the four 60-line entries of `packages/tokens/src/source.ts` took 188 s, 251 s an
 mission 007's bound of 176 s; `specs/007-mutation-gate-strictness/evidence/README.md`).
 `--plan` reports the number of shards and of cuts it made on stderr, in one line,
 `mutation: plan: <s> shards, <c> cuts within files (...)`, and the JSON on stdout stays the one array the job
-reads. Each `mutation-shard` job passes its shard's entries unchanged to `--files` and runs under a 10-minute limit, or 45 minutes when its entries include `packages/elements/src/` source, whose Stryker dry run may take up to 30 minutes (op 015). `.github/workflows/cache.yml`
+reads. Each `mutation-shard` job passes its shard's entries unchanged to `--files` and runs under a 10-minute limit, or 75 minutes when its entries include `packages/elements/src/` source, whose Stryker dry run may take up to 30 minutes (op 015; mission 010 operator rounds 6 and 8). `.github/workflows/cache.yml`
 (cache warming on `main`) is not a gate.
 
 ## Deferred gates (FR-026)

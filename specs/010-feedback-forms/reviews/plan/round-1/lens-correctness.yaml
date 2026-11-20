@@ -1,0 +1,144 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: correctness
+findings:
+  - id: PLAN-CORRECTNESS-1-001
+    severity: 4
+    title: "First-load detection treats every HTML-string insertion (innerHTML, template, DOMParser, so htmx swaps) as first load, so they never announce"
+    evidence:
+      - artifact: "research.md § R-02 'First load': \"the constructor records `this.isConnected` (true only when an already-connected element is upgraded); the first `connectedCallback` counts as first load when that was true or `document.readyState` is `\"loading\"`\"; R-06 \"First load is detected as for the notice\"; data-model.md Notice 'first load: upgraded while connected, or connected while readyState === loading'"
+      - artifact: "spec.md US1 scenario 8 (\"a script or an htmx swap inserts `<ocelle-notice announce ...>Saved</ocelle-notice>`\" → announced once), US2 scenario 20 (htmx swap of a fragment with two erroring controls → each announced once), FR-027 (SPEC-2-03). spec.md FR-008 'First load and insertion' itself says first load is \"already connected at the moment its definition upgrades it, whenever that happens\", which these insertions also satisfy literally"
+      - code: "Probe (scratchpad probe.cjs, Playwright against /opt/pw-browsers/chromium-1243, Chromium 153), defined element recording isConnected in its constructor, inserted after load: innerHTML ctorConnected=true; insertAdjacentHTML true; template.content.cloneNode true; template.content moved true; DOMParser + adoptNode true; createContextualFragment false; createElement false. Fragment-parsed elements are created undefined and upgraded on insertion, already connected."
+      - code: "Probe 2 (scratchpad probe2.cjs): a module flag set around customElements.define distinguishes the cases: parsed-before-define ctorConnected=true inDefine=true; innerHTML-after-define ctorConnected=true inDefine=false. packages/elements/src/define.ts:7-9 is the one place every element is defined."
+    claim: |
+      With R-02's rule, a notice or form control inserted by innerHTML, insertAdjacentHTML, a template, or DOMParser
+      is constructed while already connected. R-02 counts that as first load, so it does not withhold and announces
+      nothing. These are the paths a server-rendered host uses: htmx swaps parse the response into a fragment, and
+      scripts set innerHTML. So the console's main case (US1 scenario 8 with htmx, US2 scenario 20, FR-027 SPEC-2-03)
+      would silently not announce. Only createElement insertions would work. If the scenarios insert with
+      createElement, the tests can pass while the defect ships. The spec's own FR-008 wording ("already connected at
+      the moment its definition upgrades it, whenever that happens") is what invites this reading. It contradicts
+      scenario 8 and US2 scenario 20 for these insertions.
+    remedies:
+      - "Spec FR-008 'First load and insertion': define first load as 'connected while document.readyState is \"loading\", or upgraded by the registration of its definition (the customElements.define call), whenever that happens'; an upgrade on insertion after registration (fragment parsing: innerHTML, insertAdjacentHTML, template, DOMParser, htmx) is an insertion. Research R-02/R-06 and data-model: detect it with a module-level 'defining' flag set around customElements.define in src/define.ts (or the element module), not with isConnected in the constructor. Add scenarios (US1 8/9, US2 20) that insert by innerHTML and by template content as well as by createElement, and a plant that uses the isConnected rule."
+  - id: PLAN-CORRECTNESS-1-002
+    severity: 3
+    title: "Enter dispatches ocelle-form-input-change twice: the plan's keydown dispatch plus Chromium's own native change on Enter, which the plan also re-dispatches"
+    evidence:
+      - artifact: "research.md § R-05 'Events': inner `change` \"is listened to in the shadow root and re-dispatched as `ocelle-form-<x>-change`\"; 'Implicit submission': \"on Enter (`keydown`, not composing) in the inner field, the element dispatches the change event if the value changed, then applies HTML's implicit-submission rule\""
+      - artifact: "spec.md US2 scenario 3: \"when ... the user presses Enter, Then exactly one `ocelle-form-input-change` event\"; FR-030 \"after the `ocelle-form-input-change` event if the value changed\""
+      - code: "Probe (scratchpad probe3.cjs, Chromium 153): a form-associated host with an inner <input> (form owner null), type 'ab', press Enter: 'keydown Enter' then 'native change value=ab'; a second Enter gives no change. With preventDefault() on the Enter keydown, no native change fires. Probe4: a native input in a form gives keydown, change, submit, in that order."
+    claim: |
+      Chromium fires a native `change` on the inner input after the Enter keydown, even though that input has no form
+      owner. R-05 dispatches its own change event in the keydown handler and also re-dispatches every native `change`.
+      Without a shared guard, Enter after an edit emits two `ocelle-form-input-change` events, and the second comes
+      after the implicit submission has started. That breaks US2 scenario 3's "exactly one" and FR-030's order. The
+      plan does not name a single commit path or a last-committed-value guard covering both sources.
+    remedies:
+      - "R-05: one commit path. On Enter, call preventDefault() on the keydown (which, as measured, suppresses Chromium's native change), dispatch the change event if the value differs from the last committed value, then run implicit submission. Also guard the native-change re-dispatch with the same last-committed value. Add a US2 scenario 3 assertion that counts change events across Enter followed by blur."
+  - id: PLAN-CORRECTNESS-1-003
+    severity: 3
+    title: "ocelle-form-select importing ./ocelle-icon.js breaks the README's tested convention that importing an element module defines that element and no other"
+    evidence:
+      - artifact: "research.md § R-07: \"The indicator is an `ocelle-icon name=\"chevron-down\"` in the shadow root ... The select module imports `./ocelle-icon.js` so the icon is defined.\"; plan.md Source Code: \"ocelle-form-select.ts # new element (imports ./ocelle-icon.js)\""
+      - code: "packages/elements/README.md § Element conventions 'Module and registration': \"importing the module defines that element and no other\", pinned by packages/elements/test/node/readme.test.ts:29; packages/elements/test/entry-icon.test.ts asserts an entry import defines its own tag and not the other element"
+      - code: "packages/elements/src/icons.ts:41 exports `icons` and :110 `iconOf()` (the drawings as data, internal), so the select can draw the chevron without defining ocelle-icon"
+      - artifact: "contracts/elements.md shared 'Tokens read' does not list `icon-size`, which an `ocelle-icon` in the select's shadow root reads (README § ocelle-icon)"
+    claim: |
+      Importing `@ocelle/elements/ocelle-form-select.js` would also define `ocelle-icon`. That contradicts the
+      published convention and its README test, and the select's entry test (written like entry-icon.test.ts) could
+      not pass as the convention requires. The plan neither amends the convention nor avoids the import. The token
+      list is also incomplete for the README's 'tokens each element reads'.
+    remedies:
+      - "Draw the chevron in the select's own shadow root from src/icons.ts (iconOf('chevron-down'), aria-hidden SVG in currentColor), so the select module defines only ocelle-form-select; state the token it sizes by in contracts/elements.md."
+      - "Keep ocelle-icon and amend the convention explicitly: the README rule becomes 'defines that element and the elements it renders', with the readme test, the select's entry test and contracts/elements.md (icon-size in tokens read) changed in the select phase, recorded as a convention change."
+  - id: PLAN-CORRECTNESS-1-004
+    severity: 3
+    title: "The manifest generator will not declare the base class's members or focus(), and will list the newly observed standard attributes; the plan has no change to it"
+    evidence:
+      - artifact: "research.md § R-05: `src/form-control.ts` (`OcelleFormControl`, not an entry point) owns name, label, description, error, required, disabled, form, labels, validity, validationMessage, willValidate, checkValidity, reportValidity; spec FR-034 requires all of these and `focus()` declared; contracts/elements.md lists them"
+      - code: "packages/elements/custom-elements-manifest.config.mjs:6 `globs: [\"src/ocelle-*.ts\"]`; packages/elements/scripts/manifest.ts:43 `const element = /^ocelle-[\\w-]+\\.ts$/` (only ocelle-*.ts modules analysed), :45 `const standardAttributes = new Set([\"aria-label\"])` (the only observed standard attribute dropped; the header comment says the analyzer lists observed attributes and the script drops them)"
+      - code: "Not run: node_modules is not installed in this checkout, so the analyzer could not be executed; the claim rests on the glob and on the analyzer resolving inheritance only from analysed modules."
+    claim: |
+      `form-control.ts` falls outside the analysed glob, so the members inherited from `OcelleFormControl` will not
+      appear in either form element's manifest entry. `focus()` is inherited from HTMLElement (delegatesFocus needs no
+      override), so it will not appear either. The notice observes `role` and `hidden`, and the controls observe
+      `aria-invalid`, `aria-required`, `aria-disabled` and `aria-description`. Those will appear as attributes unless
+      the drop list grows, and FR-034 forbids that. The manifest gate only compares against a regeneration, so it
+      passes on the incomplete manifest. FR-034 and SC-005 fail without any gate going red. The plan's phases name
+      "manifest regeneration" only. FR-034 also forbids a new kind of source path (#27), which constrains how
+      form-control.ts may enter the analysis.
+    remedies:
+      - "Plan phase 3: a task, test first in test/node/manifest.test.ts, that changes scripts/manifest.ts (and the config) so the form elements' entries carry the base class's members (for example by analysing src/form-control.ts and folding its members into each subclass entry, then dropping the internal module, so no new path kind appears, #27), declares focus() (an override with a description in the base class, or a normalisation step), and extends standardAttributes with role, hidden, form, aria-invalid, aria-required, aria-disabled, aria-description."
+  - id: PLAN-CORRECTNESS-1-005
+    severity: 2
+    title: "R-04 names the wrong place for the 149-pair count and misses pairs.json and the gate tests that must change"
+    evidence:
+      - artifact: "research.md § R-04: \"Add the five state grounds to `color-ink`'s contrast grounds in `packages/tokens/src/source.ts` ... The token tests' pair counts (`expected.ts`, \\\"149 required pairs per theme\\\") grow by five per theme.\"; plan.md phase 2 \"tokens contrast records (R-04) with the token tests' new counts\""
+      - code: "grep: packages/tokens/test/expected.ts has no pair count. The 149 lives in gates/test/contrast-required.test.ts:7,58-63 (A.8 transcribed by hand; color-ink appears only with `main`), gates/test/contrast.test.ts:80-81, gates/test/integration/token-gates.test.ts:13-16, gates/test/integration/plants-robustness.test.ts:116-128 (\"160 ... 168 ... 149\") and the comment at gates/bin/contrast.ts:116"
+      - code: "gates/bin/contrast.ts:74-77 reports `missing-required-pair` for a required pair absent from packages/tokens/contrast/pairs.json; grep shows no color-ink row on any -bg state ground in pairs.json"
+    claim: |
+      Changing source.ts alone turns the contrast gate red: ten new required pairs (five per theme) are missing from
+      pairs.json. It also breaks the hand-transcribed A.8 test and three gate-output tests, none of which the plan
+      names. The new counts are 165/173/154, not "expected.ts" figures. An implementer following R-04 edits a file that
+      holds no count and finds the real ones only when the gates fail. The A.8 test exists to stop silent changes to
+      the required set, so changing it is a deliberate edit and should be planned as one.
+    remedies:
+      - "R-04 and plan phase 2: list pairs.json (ten computed rows, figures as in R-04), gates/test/contrast-required.test.ts (add [[\"color-ink\"], \"text\", stateGrounds] to A.8, 149→154), the summary strings in gates/test/contrast.test.ts, gates/test/integration/token-gates.test.ts and plants-robustness.test.ts (160/168/149 → 165/173/154), and the comment at gates/bin/contrast.ts:116; drop the expected.ts reference."
+  - id: PLAN-CORRECTNESS-1-006
+    severity: 2
+    title: "Host ARIA 'either one' combination does leave a differing state on the host for \"false\" values, against FR-022"
+    evidence:
+      - artifact: "research.md § R-05 'Host ARIA': \"invalid = `error` non-empty or host `aria-invalid=\\\"true\\\"`; required = `required` or host `aria-required=\\\"true\\\"` ... The host's own attribute is not rewritten (005 convention), so its node carries the same value as the inner control, never a differing one.\"; plan.md decision 3 \"(it never differs from the inner control's state)\""
+      - artifact: "spec.md FR-022: host aria-invalid, aria-required, aria-disabled, aria-description \"must reach the inner control and must not stay as a second, differing state on the host's node\""
+    claim: |
+      The "never differs" claim holds only for "true". A server template that writes `aria-invalid="false"` while
+      `error` is set leaves the host node not invalid and the inner control invalid. The same happens with
+      `aria-required="false"` plus `required`, `aria-disabled="false"` plus `disabled`, and a host
+      `aria-description` whose inner description is the combined one. These are exactly the states FR-022 forbids.
+      Templates often emit the attribute with "false" (for example `aria-invalid="${hasError}"`). The plan states a
+      false invariant at the plan gate (decision 3), so the operator decides on wrong information.
+    remedies:
+      - "R-05/decision 3: state the \"false\" cases and settle them: e.g. a host value other than \"true\" is unsupported and documented in the README (and FR-022 amended to say the rule covers \"true\" only), or the element's own state wins and the README says host \"false\" is overridden; either way correct the 'never differs' claim and add a scenario per attribute with the \"false\" value."
+  - id: PLAN-CORRECTNESS-1-007
+    severity: 2
+    title: "data-model.md says setting role alert/status never announces, which contradicts FR-008 and US1 scenario 15 when the politeness changes"
+    evidence:
+      - artifact: "data-model.md § Announcement transitions: \"| `announce` set, or role set to `alert`/`status` | — | none (baseline) |\""
+      - artifact: "spec.md US1 scenario 15: \"when the host then changes the role to `status`, Then the current text is announced politely once\"; FR-008 'Live host role at runtime': adding a live role on a notice with `announce` \"is a change ... when the politeness it gives differs from the baseline's, and then announces the current text once\""
+    claim: |
+      The row has no condition, so it applies to every role set. That includes changing alert→status (scenario 15)
+      and adding `role="alert"` to an `info` notice that has `announce`, both of which must announce. The separate
+      "politeness changes" row then contradicts it, and the table gives no precedence. An implementer or test writer
+      working from the data model gets scenario 15 wrong.
+    remedies:
+      - "data-model.md: give the row a condition, 'the notice was not live before (no `announce` and no live role)', and add a row 'live role added, removed or changed while live, politeness differs from the baseline | not hidden | withhold one frame'; same politeness → none."
+  - id: PLAN-CORRECTNESS-1-008
+    severity: 2
+    title: "Engine floor is raised in phase 5, but :state() is used from phase 2; the floor raise's consumer and semver impact is not stated"
+    evidence:
+      - artifact: "plan.md phase 5: \"engine floor raised (decision 2)\"; research.md § R-03: notice styles select on `:host(:state(tone-danger))` (phase 2), \"custom states raise the README's floor to Chromium 125 and WebKit 17.4\""
+      - code: "packages/elements/README.md § Engines: floor \"Chromium 120+ and WebKit 16.4+\"; \"An element that uses a feature newer than the floor raises the floor in this section ... and records the feature in its own feature's research\""
+      - artifact: "plan.md Constitution Check VII lists only additions as MINOR; the floor raise for Kitty Desktop (WebKit webview, spec Engines) is not given a semver or changelog statement; FR-036 says the floor 'is raised' but the CHANGELOG line in phases 2-4 names only the new surface"
+    claim: |
+      Phases 2 to 4 would ship elements that need Chromium 125 and WebKit 17.4 while the README still says 120 and
+      16.4. That breaks the README's own rule and misinforms the consumers who read the floor. The raise also drops
+      WebKit 16.4 to 17.3 for every element the package ships, including the existing ones, since one browser build
+      holds them all. The plan does not say whether that counts as a surface change or name it in the changelog.
+    remedies:
+      - "Plan: raise the floor (README § Engines entry for `:state()`, and the CHANGELOG naming it) in phase 2 with the notice, the first element that uses it, and state its semver classification (or move the floor to the operator decision with the fallback of R-03 chosen before phase 2)."
+  - id: PLAN-CORRECTNESS-1-009
+    severity: 1
+    title: "contracts/testing.md's liveCapture.start(id) targets an element that does not exist yet in the insertion scenarios"
+    evidence:
+      - artifact: "contracts/testing.md: \"`liveCapture.start(id)` installs the paused-mutation recorder on the element with `id` (its host, its shadow roots, its parent)\"; research.md § R-01: \"installed ... on the element under test (its host, its shadow root, and its parent for insertion)\""
+      - artifact: "spec.md US1 scenarios 8, 9 and US2 scenario 20 (the element, or two controls in one fragment, are inserted during the step being captured)"
+    claim: |
+      Before an insertion step there is no element with that id to install on. US2 scenario 20 captures two hosts
+      inserted together. The contract does not say what `id` names in those cases (a container?), nor how the
+      recorder reaches a shadow root created after it is armed. As written, the contract cannot express the scenarios
+      it exists for.
+    remedies:
+      - "contracts/testing.md: `liveCapture.start(containerId)` observes the container subtree and attaches to every ocelle-* host (and its shadow roots, nested ones included) as it is inserted; snapshots keep regions keyed per host, so 'at or inside the first control's host' is checkable."
