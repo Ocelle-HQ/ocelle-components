@@ -319,6 +319,7 @@ export function inProcessDriver(): Driver {
       return Promise.resolve({ scaleX: round(matrix.a), scaleY: round(matrix.d), offsetX: round(matrix.e - rect.x), offsetY: round(matrix.f - rect.y) });
     },
     computed: (target, property) => Promise.resolve(getComputedStyle(resolve(target)).getPropertyValue(property)),
+    computedNode: (target, property) => Promise.resolve(getComputedStyle(resolve(target)).getPropertyValue(property)),
     resolveColour: (value) => {
       const colourProbe = document.createElement("span");
       probe().ignore(colourProbe);
@@ -433,6 +434,10 @@ export function inProcessDriver(): Driver {
       return walked;
     },
     focus: async (target) => {
+      resolve(target).focus();
+      await settle();
+    },
+    focusNode: async (target) => {
       resolve(target).focus();
       await settle();
     },

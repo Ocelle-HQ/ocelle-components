@@ -271,6 +271,8 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
       }, id),
     computed: (target, property) =>
       page.evaluate(({ target, property }) => getComputedStyle((window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.resolve(target)).getPropertyValue(property), { target, property }),
+    computedNode: (target, property) =>
+      page.evaluate(({ target, property }) => getComputedStyle((window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.resolve(target)).getPropertyValue(property), { target, property }),
     resolveColour: (value) =>
       page.evaluate((value) => {
         const probe = document.createElement("span");
@@ -321,6 +323,12 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
       }, selector),
     messages: () => Promise.resolve(log.slice(since)),
     focus: async (target) => {
+      await page.evaluate((target) => {
+        (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.resolve(target).focus();
+      }, target);
+      await settle(page);
+    },
+    focusNode: async (target) => {
       await page.evaluate((target) => {
         (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.resolve(target).focus();
       }, target);

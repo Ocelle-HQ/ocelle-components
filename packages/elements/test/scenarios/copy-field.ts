@@ -426,7 +426,7 @@ export const copyFieldScenarios: readonly CopyFieldScenario[] = [
     run: async (driver, inPage) => {
       await mount(driver, inPage, page(withCommand));
       await inPage(recordRequests, null);
-      await driver.focus("before");
+      await driver.focusNode("before");
       await driver.pressKeys("Tab");
       const focused = await driver.focusedElement();
       await driver.pressKeys("Enter");
@@ -546,11 +546,11 @@ export const copyFieldScenarios: readonly CopyFieldScenario[] = [
     fixture: true,
     run: async (driver, inPage) => {
       await mount(driver, inPage, page(withCommand));
-      const before = { paint: await fieldPaint(driver), elements: await shadowElements(driver), region: await driver.computed("cf", "color") };
+      const before = { paint: await fieldPaint(driver), elements: await shadowElements(driver), region: await driver.computedNode("cf", "color") };
       await inPage(answerWith, failed);
       await clickControl(driver, inPage);
       await inPage(frames, undefined);
-      return { before, after: { paint: await fieldPaint(driver), elements: await shadowElements(driver), region: await driver.computed("cf", "color") }, tree: await tree(driver) };
+      return { before, after: { paint: await fieldPaint(driver), elements: await shadowElements(driver), region: await driver.computedNode("cf", "color") }, tree: await tree(driver) };
     },
     expected: {
       before: {
@@ -628,7 +628,7 @@ export const copyFieldScenarios: readonly CopyFieldScenario[] = [
     fixture: true,
     run: async (driver, inPage) => {
       await mount(driver, inPage, page(withCommand));
-      await driver.focus("before");
+      await driver.focusNode("before");
       await driver.pressKeys("Tab");
       const outline = async (): Promise<string> => `${await partStyle(driver, "copy-control", "outline-style")} ${await partStyle(driver, "copy-control", "outline-width")} ${await partStyle(driver, "copy-control", "outline-offset")} ${await partStyle(driver, "copy-control", "outline-color")}`;
       const light = { focused: await driver.focusedElement(), outline: await outline(), pixels: await ringPixels(driver) };
@@ -714,7 +714,7 @@ export const copyFieldScenarios: readonly CopyFieldScenario[] = [
       }, null);
       let iconInk = 0;
       if (icon !== null) for (let y = icon.y + 0.5; y < icon.y + icon.height; y += 1) for (let x = icon.x + 0.5; x < icon.x + icon.width; x += 1) if (colourAt(s, x, y) === over(buttonText, ground)) iconInk += 1;
-      await driver.focus("before");
+      await driver.focusNode("before");
       await driver.pressKeys("Tab");
       const ring = (await ringPixels(driver)).map((colour) => colour === over(highlight, canvas));
       await driver.forcedColors("none");
@@ -998,7 +998,7 @@ export const copyFieldScenarios: readonly CopyFieldScenario[] = [
     fixture: true,
     run: async (driver, inPage) => {
       await mount(driver, inPage, page(withCommand));
-      await driver.focus("before");
+      await driver.focusNode("before");
       await driver.pressKeys("Tab");
       return {
         ring: await partStyle(driver, "copy-control", "outline-color"),
@@ -1006,7 +1006,7 @@ export const copyFieldScenarios: readonly CopyFieldScenario[] = [
           await partStyle(driver, "copy-control", "transition-duration"),
           await partStyle(driver, "copy-control", "animation-name"),
           await partStyle(driver, "value", "transition-duration"),
-          await driver.computed("cf", "transition-duration"),
+          await driver.computedNode("cf", "transition-duration"),
         ],
       };
     },

@@ -355,7 +355,7 @@ const focusDark = tokenColour("color-focus", "dark");
 
 /** Tabs from the button before the paragraph onto the link. */
 async function tabToLink(driver: Driver): Promise<void> {
-  await driver.focus("before");
+  await driver.focusNode("before");
   await driver.pressKeys("Tab");
 }
 
@@ -386,7 +386,7 @@ export const linkScenarios: readonly LinkScenario[] = [
       const nodes = await tree(driver);
       await tabToLink(driver);
       const focused = await driver.focusedElement();
-      const host = await driver.computed("link", "display");
+      const host = await driver.computedNode("link", "display");
       await driver.pressKeys("Tab");
       const next = await driver.focusedElement();
       await driver.hoverTarget("before");
@@ -633,7 +633,7 @@ export const linkScenarios: readonly LinkScenario[] = [
       await mount(driver, inPage, `<button id="before" type="button">Before</button><p id="para">${links} <ocelle-link id="go" href="#nav-1">to the first section</ocelle-link></p><p id="nav-1">The first section</p><p id="away">Away</p>`);
       await inPage(recordEvents, null);
       for (const id of ["j1", "j2", "j3", "j4"]) {
-        await driver.focus(id);
+        await driver.focusNode(id);
         await driver.pressKeys("Enter");
         await driver.clickTarget(id);
       }
@@ -663,7 +663,7 @@ export const linkScenarios: readonly LinkScenario[] = [
       await mount(driver, inPage, refusedPage(refused));
       await inPage(recordEvents, null);
       for (const id of ["j1", "j2", "j3", "j4"]) {
-        await driver.focus(id);
+        await driver.focusNode(id);
         await navigation.press("Enter");
         await navigation.click(id);
       }
@@ -707,7 +707,7 @@ export const linkScenarios: readonly LinkScenario[] = [
         document.head.prepend(element);
         return document.baseURI;
       }, null);
-      await driver.focus("link");
+      await driver.focusNode("link");
       await navigation.press("Enter");
       await navigation.click("link");
       const withBase = { where: await inPage(where, null), dialogs: await navigation.dialogs() };
@@ -744,7 +744,7 @@ export const linkScenarios: readonly LinkScenario[] = [
         document.head.prepend(element);
         return document.baseURI;
       }, null);
-      await driver.focus("k1");
+      await driver.focusNode("k1");
       await driver.pressKeys("Enter");
       await driver.clickTarget("k2");
       await inPage(frames, undefined);
@@ -752,7 +752,7 @@ export const linkScenarios: readonly LinkScenario[] = [
       await inPage(() => {
         document.getElementById("kitty-base")?.remove();
       }, null);
-      await driver.focus("k1");
+      await driver.focusNode("k1");
       await driver.pressKeys("Enter");
       await inPage(frames, undefined);
       return { before, base, withBase, after: { hash: ((await inPage(where, null)) as Record<string, unknown>).hash, anchor: await anchor(driver, "k1") }, events: await inPage(recordedEvents, null) };
@@ -786,7 +786,7 @@ export const linkScenarios: readonly LinkScenario[] = [
       await navigation.click("link", { modifiers: ["Control"] });
       await navigation.click("link", { modifiers: ["Shift"] });
       await navigation.click("link", { button: "middle" });
-      await driver.focus("link");
+      await driver.focusNode("link");
       await navigation.press("Enter", ["Control"]);
       await navigation.press("Enter", ["Shift"]);
       const modified = { where: await inPage(where, null), events: await inPage(recordedEvents, null), clicks: await inPage(recordedClicks, null), opened: await navigation.opened() };
@@ -796,7 +796,7 @@ export const linkScenarios: readonly LinkScenario[] = [
       await mount(driver, inPage, page('href="link-target.html"'));
       await inPage(recordEvents, null);
       await inPage(recordClicks, null);
-      await driver.focus("link");
+      await driver.focusNode("link");
       await navigation.press("Enter", ["Meta"]);
       const metaEnter = { events: await inPage(recordedEvents, null), clicks: await inPage(recordedClicks, null) };
       await navigation.back();
@@ -829,13 +829,13 @@ export const linkScenarios: readonly LinkScenario[] = [
       await inPage(recordClicks, null);
       for (const modifier of ["Control", "Meta", "Shift"] as const) await driver.clickTarget("link", { modifiers: [modifier] });
       await driver.clickTarget("link", { button: "middle" });
-      await driver.focus("link");
+      await driver.focusNode("link");
       for (const modifier of ["Control", "Meta", "Shift"] as const) await driver.pressKeys("Enter", [modifier]);
       await inPage(frames, undefined);
       const modified = { events: await inPage(recordedEvents, null), clicks: await inPage(recordedClicks, null), stayed: await inPage(stayedHere, null) };
       await driver.clickTarget("link");
       await driver.clickTarget("link", { modifiers: ["Alt"] });
-      await driver.focus("link");
+      await driver.focusNode("link");
       await driver.pressKeys("Enter", ["Alt"]);
       await inPage(frames, undefined);
       return { modified, plain: { events: await inPage(recordedEvents, null), clicks: ((await inPage(recordedClicks, null)) as unknown[]).slice(4), stayed: await inPage(stayedHere, null) } };
@@ -867,7 +867,7 @@ export const linkScenarios: readonly LinkScenario[] = [
         history.replaceState(history.state, "", location.pathname + location.search);
       }, null);
       await inPage(cancelEvents, null);
-      await driver.focus("link");
+      await driver.focusNode("link");
       await driver.pressKeys("Enter");
       await driver.clickTarget("link");
       await inPage(frames, undefined);
@@ -969,7 +969,7 @@ export const linkScenarios: readonly LinkScenario[] = [
       await tabToLink(driver);
       return {
         ring: await anchorStyle(driver, "outline-color"),
-        motion: [await anchorStyle(driver, "transition-duration"), await anchorStyle(driver, "animation-name"), await driver.computed("link", "transition-duration")],
+        motion: [await anchorStyle(driver, "transition-duration"), await anchorStyle(driver, "animation-name"), await driver.computedNode("link", "transition-duration")],
       };
     },
     expected: { ring: focusLight, motion: ["0s", "none", "0s"] },

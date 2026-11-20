@@ -73,7 +73,7 @@ export const driverCommandScenarios: readonly DriverScenario[] = [
     run: async (driver, inPage) => {
       await driver.mount('<input id="k" aria-label="Keys">');
       await inPage(recordKeys, "k");
-      await driver.focus("k");
+      await driver.focusNode("k");
       await driver.pressKeys("ArrowDown", ["Shift", "Control"]);
       await driver.pressKeys(" ");
       await driver.pressKeys("a", ["Alt"]);
@@ -142,11 +142,11 @@ export const driverCommandScenarios: readonly DriverScenario[] = [
       }, null);
       const box = await driver.box(second);
       await driver.clickTarget(second);
-      await driver.focus({ parent: "p", kind: "span", index: 2 });
+      await driver.focusNode({ parent: "p", kind: "span", index: 2 });
       return {
         width: box.width,
-        computed: await driver.computed({ parent: "p", kind: "span", index: 0 }, "inline-size"),
-        other: await driver.computed({ parent: "p", kind: "b", index: 0 }, "inline-size"),
+        computed: await driver.computedNode({ parent: "p", kind: "span", index: 0 }, "inline-size"),
+        other: await driver.computedNode({ parent: "p", kind: "b", index: 0 }, "inline-size"),
         clicked: await inPage(recorded, "__clicked"),
         focused: await driver.focusedElement(),
       };
@@ -177,7 +177,7 @@ export const driverCommandScenarios: readonly DriverScenario[] = [
       seen.push(await driver.focusedElement());
       await inPage(focusIn, "button:not([id]):not([part])");
       seen.push(await driver.focusedElement());
-      await driver.focus({ parent: "p", kind: "span", index: 1 });
+      await driver.focusNode({ parent: "p", kind: "span", index: 1 });
       seen.push(await driver.focusedElement());
       await inPage(() => {
         (document.activeElement as HTMLElement | null)?.blur();
@@ -273,7 +273,7 @@ export const driverCommandScenarios: readonly DriverScenario[] = [
         }
       }, null);
       return {
-        host: await driver.computed("cp", "padding-left"),
+        host: await driver.computedNode("cp", "padding-left"),
         after: await driver.computedPart("cp", "::after", "padding-left"),
         part: await driver.computedPart("cp", "x", "padding-left"),
         before: await driver.computedPart("cp", "x::before", "padding-left"),

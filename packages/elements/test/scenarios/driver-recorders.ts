@@ -45,7 +45,7 @@ export const driverRecorderScenarios: readonly DriverScenario[] = [
     fixture: true,
     run: async (driver, inPage) => {
       await driver.mount('<input id="k" aria-label="Keys">');
-      await driver.focus("k");
+      await driver.focusNode("k");
       await driver.pressKeys("x");
       await driver.mount('<input id="k" aria-label="Keys">');
       await inPage(() => {
@@ -53,7 +53,7 @@ export const driverRecorderScenarios: readonly DriverScenario[] = [
           if (event.key === "ArrowDown") event.preventDefault();
         });
       }, null);
-      await driver.focus("k");
+      await driver.focusNode("k");
       await driver.pressKeys("ArrowDown");
       await driver.pressKeys("a");
       return driver.keydownRecord();

@@ -359,6 +359,8 @@ export interface Driver {
   ownPlacement(id: string): Promise<Placement>;
   /** The computed value of a CSS property of the target (since 009 a shadow target too). */
   computed(target: DriverTarget, property: string): Promise<string>;
+  /** The computed value of a CSS property of the target, of any `DriverTarget` form (014's name for `computed`). */
+  computedNode(target: DriverTarget, property: string): Promise<string>;
   /** The computed `color` a probe element takes from the CSS colour `value` (a system colour, say). */
   resolveColour(value: string): Promise<string>;
   /** The unignored accessibility nodes of the element with `id` and of its shadow subtree. */
@@ -449,6 +451,8 @@ export interface Driver {
    * keyboard input the target matches it, after a pointer click it does not.
    */
   focus(target: DriverTarget): Promise<void>;
+  /** Focuses the target, of any `DriverTarget` form, by script (`focus()`), then settles (014's name for `focus`). */
+  focusNode(target: DriverTarget): Promise<void>;
   /** The target's `scrollLeft`. */
   scrollLeft(target: DriverTarget): Promise<number>;
   /** Sets the target's `scrollLeft` with an instant scroll, then settles. */
