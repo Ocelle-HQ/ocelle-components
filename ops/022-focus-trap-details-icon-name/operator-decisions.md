@@ -24,3 +24,12 @@ name. Evidence: `reviews/phase-1/notes.md`.
 6. **Chromium 156 — re-measure first.** `pnpm run setup:online` installed the pinned Playwright Chromium
    156.0.8078.4; the blocker was measured on 153. The implementer re-runs scenario 6 with only `aria-hidden` on 156
    first; if it passes there, it stops and the operator is asked before `aria-labelledby` is added.
+
+## After the T008 stop condition (f5b0bdf)
+
+7. **Icon fix — relation only with an icon.** On Chromium 156 `aria-hidden` alone still leaves the name
+   `Folder Open`. The planned relation (whenever `#name()` is undefined) turned 14 existing button rows red on axe
+   `incomplete label-content-name-mismatch` for one-character content. FR-003 is amended: the inner control is named
+   from `.label` by `aria-labelledby` only when the icon slot has assigned content (and no host `aria-labelledby`,
+   `aria-label` or non-blank `label` names it). The icon + one-character-label axe result is recorded as a known
+   limitation in spec, README and CHANGELOG. Existing rows are not loosened. The implementer then finishes test-first.
