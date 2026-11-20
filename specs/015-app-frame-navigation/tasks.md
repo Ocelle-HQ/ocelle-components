@@ -4,7 +4,7 @@ See the [spec](spec.md), [plan](plan.md), [contracts](contracts/elements.md), [s
 
 ## Phase 1: Setup
 
-- [ ] T001 Verify the pinned Node, pnpm and Chromium setup using `package.json` and `CONTRIBUTING.md`. Record the runnable baseline commands in `specs/015-app-frame-navigation/reviews/phase-1/`.
+- [X] T001 Verify the pinned Node, pnpm and Chromium setup using `package.json` and `CONTRIBUTING.md`. Record the runnable baseline commands in `specs/015-app-frame-navigation/reviews/phase-1/`.
 
 ## Phase 2: Foundational primitives
 
