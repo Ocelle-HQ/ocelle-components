@@ -29,6 +29,7 @@
     "gate:storybook-build": "node gates/bin/storybook-build.ts",
     "gate:visual": "node gates/bin/visual.ts",
     "gate:axe": "node gates/bin/axe.ts",
+    "gate:sandbox-paths": "node gates/bin/sandbox-paths.ts",
     "visual:update": "node gates/bin/baselines.ts"
   },
   "devDependencies": {

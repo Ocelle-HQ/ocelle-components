@@ -1,0 +1,10 @@
+{
+  "expect": "fail",
+  "why": "A file beside two allowed files, in their directory: the allowed list is exact files, never a directory or a glob (op 023, FR-003).",
+  "findings": [
+    {
+      "location": "gates/test/fixtures/pins/pnpm/other.ndjson:1",
+      "rule": "sandbox-path"
+    }
+  ]
+}

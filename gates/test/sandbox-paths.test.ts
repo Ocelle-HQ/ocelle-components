@@ -61,8 +61,21 @@ describe("parseGrep", () => {
     });
   });
 
-  it("throws on a record that is not path, line and text", () => {
-    expect(() => parseGrep("logs/a.log:2:text\n")).toThrow("unexpected git grep output: a record without a path and a line number");
+  it("throws on a record that is not path, line and text, or whose line is not a line number", () => {
+    const problem = "unexpected git grep output: a record without a path and a line number";
+    const thrown = ["logs/a.log:2:text\n", "a.log\u00002x\u0000t\n", "a.log\u0000x2\u0000t\n", "a.log\u00000\u0000t\n", "a.log\u00002\n"].map((stdout) => {
+      try {
+        parseGrep(stdout);
+        return "no error";
+      } catch (error) {
+        return error instanceof Error ? error.message : String(error);
+      }
+    });
+    expect(thrown).toEqual([problem, problem, problem, problem, problem]);
+  });
+
+  it("reads a last record without its newline", () => {
+    expect(parseGrep("a.log\u00002\u0000t")).toEqual([finding("a.log", 2)]);
   });
 });
 
@@ -86,11 +99,13 @@ describe("verdict", () => {
   it("maps any other git grep exit to exit 2 with git's first error line", () => {
     expect([
       verdict({ tracked: 2, code: 128, stdout: "", stderr: "fatal: bad pathspec\nusage: more\n" }),
+      verdict({ tracked: 2, code: 128, stdout: "", stderr: "\n  \nfatal: after blank lines\n" }),
       verdict({ tracked: 2, code: 3, stdout: "", stderr: "" }),
       verdict({ tracked: 2, code: null, stdout: "", stderr: "" }),
       verdict({ tracked: 2, code: 0, stdout: "", stderr: "" }),
     ]).toEqual([
       { exit: 2, cause: "sandbox-paths: could not run: git grep failed (exit 128): fatal: bad pathspec" },
+      { exit: 2, cause: "sandbox-paths: could not run: git grep failed (exit 128): fatal: after blank lines" },
       { exit: 2, cause: "sandbox-paths: could not run: git grep failed (exit 3)" },
       { exit: 2, cause: "sandbox-paths: could not run: git grep failed (ended by a signal)" },
       { exit: 2, cause: "sandbox-paths: could not run: git grep reported a match but printed no record" },
