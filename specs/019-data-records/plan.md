@@ -104,6 +104,12 @@ history and evidence chain.
   clientWidth`); Q-A2 (a), the caption-link rule asserted at a partly scrolled position, the fully-past position a
   paired platform-alone assertion; Q-A3 (a), a classic-scrollbar half (`test/browser/data-table-scrollbar.test.ts`,
   launched without `--hide-scrollbars`) for the sticky caption body, the RTL lift and the mask figure. Story, baseline and task counts are unchanged. See § Decisions on phase 1's second spike.
+- **Decided on the issue texts and the phase 2 inventory (2026-11-20).** Q-T1 to Q-T3 (a): phase 1's rules stand,
+  and the README's data-table rows note #533's mono face, 0.06em tracking and header padding (phase 2, T037, T047).
+  Q-T4 (a): the chip keeps `--ocelle-radius-2`, and the chain's row maps the pill-shaped chip to it. Q-T5 (b): US3-3
+  also runs in a 200 px container. IQ-8 to IQ-17, IQ-26 and IQ-28 (a): README mapping statements only, among them an
+  `id` on `ocelle-timeline-event` as the consumer's fragment target. Story, baseline and task counts are unchanged.
+  See § Decisions on the issue texts and the phase 2 inventory.
 
 009, 013 and op 016 are on `main`, and `main` (b594b7e) is merged into this branch (8ee3351, operator decision of
 2026-11-17, `reviews/main-merge.md`). The first task rechecked the plan against it (R-14, `reviews/recheck.md`):
@@ -459,6 +465,28 @@ The spike's settled facts for the red bodies (research R-18's and R-20's Results
 `mask-composite: add, add, intersect, add`; "within 0.5 px" inclusive (`≤ 0.5`); the stripe per `<tbody>`; a
 hovered striped row read in dark; the browser's keys as real key events, asserted by direction and a non-zero move.
 
+## Decisions on the issue texts and the phase 2 inventory
+
+Answered by the operator on 2026-11-20 (`reviews/issue-texts-check.md` § Operator decisions;
+`reviews/phase-2-inventory-decisions.md`); the changes are listed in `reviews/decisions-applied-phase-2.md`.
+
+1. **Q-T1 to Q-T3, #533's mono face, 0.06em header tracking and header padding. Decided: (a).** Phase 1's rules,
+   tests and baselines stand (constitution II, recheck Q1 (a), R-06). The README's data-table header-cells and
+   body-cells rows gain three notes (R-16). Phase 1 is folded and phase 4 runs no red commit, so phase 2 asserts them
+   in its red (T037) and writes them in its green (T047), in the same two files as the timeline's rows.
+2. **Q-T4, #517's pill-shaped chip. Decided: (a).** The chip keeps `--ocelle-radius-2` (FR-035); the chain's mapping
+   row maps the pill-shaped chip to it (T062, T070).
+3. **Q-T5, #517's column of about 200 px. Decided: (b).** US3-3 also runs in a 200 px container, one more body in
+   phase 3's red (T055); the spike measures line ends there too (T052, R-12). FR-034 names the width; FR-053's
+   320 px reflow test is unchanged. No story or baseline is added.
+4. **IQ-8 to IQ-17, IQ-26 and IQ-28. Decided: (a) each.** No attribute, slot, part or story is added to the
+   timeline; every answer is a README mapping statement, listed in R-16's phase 2 table and in the two timeline
+   contracts' § README mapping, asserted in T037 and written in T047. IQ-15 (a) adds one statement beyond a row:
+   an `id` on `ocelle-timeline-event` is the consumer's fragment target, written test first. IQ-28 (a) changes no row.
+   IQ-27 is the chain's and is asked with IQ-18 to IQ-24.
+
+Story, baseline and task counts are unchanged (the mission 44 stories and 88 baselines).
+
 ## Project Structure
 
 ### Documentation (this feature)
@@ -738,8 +766,9 @@ Every phase with stories also does the following:
      - README statements (the section, the Host ARIA list, the overflow-region users of `resolveName`, "Before
        upgrade" with the slotted time shown inline, and the `time` slot of Q-E: it takes precedence over the
        attribute, carries `datetime`, `title`, `lang`, `dir` or an htmx target, which the attribute cannot, one time
-       element per event, and a consumer rule on the slotted node beating the `::slotted()` type), mapping rows and
-       the story-test extension.
+       element per event, and a consumer rule on the slotted node beating the `::slotted()` type), mapping rows (R-16's
+       phase 2 table, with the `id` fragment-target line of IQ-15 (a)), the data table's three #533 notes (Q-T1 to
+       Q-T3 (a), § Decisions on the issue texts and the phase 2 inventory) and the story-test extension.
    - **Green.** `timeline-time.ts` (`hasTime(event)`, `hasSlottedTime(event)`), `ocelle-timeline-event.ts` (the `time`
      slot, its `::slotted()` rules and its own observer) and `ocelle-event-timeline.ts` (its observer on the events'
      subtrees), the two pre-upgrade rules in `base.css`'s base layer after the facts rule (with the layer's header
@@ -748,11 +777,11 @@ Every phase with stories also does the following:
      CHANGELOGs (the `time` slot named as surface). Then the timeline's element plants, the slot plants of checks.md
      among them.
 3. **US3 Evidence chain** (P3).
-   - **Spike.** R-12: line ends at 1280, 600 and 320 px and after the R-12 changes, two-digit fit for ordinal 20, the
+   - **Spike.** R-12: line ends at 1280, 600, 320 and 200 px (Q-T5 (b)) and after the R-12 changes, two-digit fit for ordinal 20, the
      chip's block size, the shared centre line with chips, `dir="rtl"`, and axe on a chain named by a host
      `aria-label` (the exception row's sunset check).
    - **Red.**
-     - US3-1 to US3-10, with US3-6 per SPEC-3-02 (ordinals are positions among visible steps, chip steps counted;
+     - US3-1 to US3-10, with US3-3 also in a 200 px container (Q-T5 (b)), US3-6 per SPEC-3-02 (ordinals are positions among visible steps, chip steps counted;
        includes a chip hidden and shown again), the ordinal-fit body for twenty steps (SPEC-3-03), and US3-8's
        forced-colours and rendered-contrast halves (R-12, R-13).
      - The mixed-chips geometry body (each connector's centre on the row's marker centre within 0.5 px, R-12).
@@ -764,8 +793,8 @@ Every phase with stories also does the following:
        rules in the `baseLayer` slice right after the timeline's, before the focus rule; the last-rule assertion
        unchanged; named with its reason in the commit message.
      - The chain's entries in the define-twice body and in `test/node/records-pairs.test.ts`.
-     - The no-pill node test, README statements ("Before upgrade" among them), mapping rows and the story-test
-       extension.
+     - The no-pill node test, README statements ("Before upgrade" among them), mapping rows (the pill-shaped chip
+       mapped to `variant="chip"` with `--ocelle-radius-2`, Q-T4 (a)) and the story-test extension.
    - **Green.** `ocelle-evidence-step.ts` and `ocelle-evidence-chain.ts`, the two pre-upgrade rules in `base.css`'s
      base layer after the timeline's,
      exports, the manifest, the 12 stories with baselines (the standalone step among them), the README section and the CHANGELOGs. Then the chain's element

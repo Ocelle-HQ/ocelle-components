@@ -776,7 +776,7 @@ CDP session (013's `commands.ts` reads the AX tree for value properties).
   `li[data-line-end] > .connector { display: none; }` hides that connector. The connector is absolutely positioned in
   padding that exists either way, so toggling it changes no size and the observer should not loop; the write happens
   in the observer callback. The result depends only on the current layout, so it is the same whatever the history. The
-  phase 3 spike measures it at 1280, 600 and 320 px, after a step's text changes, a step added and hidden, a late web
+  phase 3 spike measures it at 1280, 600, 320 and 200 px (#517's column, Q-T5 (b)), after a step's text changes, a step added and hidden, a late web
   font and `dir="rtl"`, against a fresh load.
 - **No observer loop, tested (PLAN-TESTABILITY-1-007).** "Should not loop" is proven by 013's in-process test, in
   `packages/elements/test/evidence-chain.test.ts`: around a run of changes (the host resized 1280 → 320 → 1280 px, a
@@ -941,8 +941,8 @@ state (`sources/spec-kitty-design-inventory.md` § What `develop` adds or change
 | the scroller wrapper (structure role) | the element's region: a named `group` tab stop only while the table overflows (FR-008, FR-010), with 009's focus ring (the "focus" state of #470's contract); the library's rule that the region's name must differ from the caption maps to the README advice of FR-010: give an overflowing table a `label` that differs from its caption (IQ-6 (a)) |
 | the table class (structure role) | the consumer's own `<table>` inside `ocelle-data-table`, with no class (FR-003, FR-005) |
 | the caption (structure role) | the caption rules of block 1 (R-06, R-07) |
-| the header cells (structure role) | the eyebrow column headers (FR-006); the library's look (medium weight, muted colour, sentence case, no tracking, no row-header style) maps to them, and a consumer that wants sentence case uses its own rule, which wins over the (0,0,0) rules (IQ-7 (a)); row headers are this library's addition |
-| the body cells (structure role) | block 1's compact body cells (FR-005) |
+| the header cells (structure role) | the eyebrow column headers (FR-006); the library's look (medium weight, muted colour, sentence case, no tracking, no row-header style) maps to them, and a consumer that wants sentence case uses its own rule, which wins over the (0,0,0) rules (IQ-7 (a)); row headers are this library's addition. Added in phase 2 (T037, T047; #533, Q-T1 to Q-T3 (a)): the prototype's mono headers map to the sans face with tabular figures (no monospace, constitution II); its 0.06em header tracking maps to `--ocelle-tracking-eyebrow` (recheck Q1 (a)); its larger header padding (`--sk-space-3`) maps to the cells' padding, so each header's text starts on its column's text line |
+| the body cells (structure role) | block 1's compact body cells (FR-005). Added in phase 2 (T037, T047; #533, Q-T1 (a)): the prototype's mono cells map to the sans face with tabular figures (no monospace, constitution II) |
 | the numeric cell (modifier) | `data-ocelle-align="end"` on the column's cells, `@ocelle/styles`' hook (FR-019, IQ-3) |
 | the sticky header (modifier) | `sticky-header` on the element, with the page's block bound on the host (FR-017, FR-018, IQ-2) |
 | zebra rows (state) | `striped` on the element (FR-060, IQ-4) |
@@ -959,7 +959,49 @@ state, structure role and part, mapped by the operator's answers to IQ-8 to IQ-1
 IQ-18 to IQ-24 and IQ-27 (phase 3), asked before each phase's red; the issue bodies of #470, #517 and #533 are
 supplied by the operator before phase 2's red and recorded verbatim in `sources/` (IQ-25): recorded on 2026-11-20 as
 `sources/issue-470.md`, `sources/issue-517.md` and `sources/issue-533.md`, and compared with the answers in force in
-`reviews/issue-texts-check.md`.
+`reviews/issue-texts-check.md`. IQ-27 concerns the chain and is asked with phase 3's questions.
+
+**The data table's notes from #533 (Q-T1 to Q-T3 (a), operator, 2026-11-20).** The three notes in the header-cells
+and body-cells rows above change no rule, token, test of phase 1 or baseline. Phase 1 is approved and folded, and
+phase 4 runs no red commit (every task of it is exempt), so the notes are asserted in phase 2's red (T037) and written
+in its green (T047), beside the timeline's rows, in the same two files.
+
+**Phase 2: the event timeline's rows** (operator, 2026-11-20, `reviews/phase-2-inventory-decisions.md`: IQ-8 to
+IQ-17, IQ-26 and IQ-28, each (a); T037 asserts each statement by role name, with no `sk-` string; T047 writes them):
+
+| Library role (kind) | Mapped to |
+|---|---|
+| the list (structure role) | `ocelle-event-timeline`: an ordered list of its `ocelle-timeline-event` children in source order, named by `label` or a non-blank host `aria-label` (FR-020, FR-022); the library's measure cap maps to the container, and a consumer that wants a cap sets `max-inline-size` on the host (IQ-9 (a)) |
+| the item (structure role) | each `ocelle-timeline-event`, one list item with a drawn dot and a gapped connector to the next visible event (FR-021); long identifiers break with `wrap="anywhere"` on the event (FR-024) |
+| the summary (structure role) | the consumer's markup in the event's content, for example a `<strong>` title followed by text; rules on those light-DOM nodes are the consumer's (IQ-10 (a)) |
+| the metadata: the time (structure role) | the event's `time` attribute or `time` slot, on its own line above the content (Q-C (a), FR-023); the library's time after the title maps to that order, and the item text stays time first (IQ-12 (a)) |
+| the metadata: the actor and further facts (structure role) | the consumer's markup in the event's content; a later issue covers a metadata slot (IQ-11 (a)) |
+| the supporting content (structure role) | the consumer's markup in the event's content (IQ-10 (a)) |
+| the trailing verification label (structure role) | the consumer's text in the event's content, worded in text; a later issue covers a trust slot (IQ-13 (a)) |
+| the leading marker (structure role) | the default dot; a later issue covers a marker slot (IQ-14 (a)) |
+| compact (modifier; a #470 required state) | the default timeline, already at the compact type sizes; more density is the consumer's rules on `::part(time)` and `::part(content)`; a later issue covers a density property (IQ-8 (a), IQ-26 (a)) |
+| narrow (modifier; #470's responsive narrow state) | the container: the timeline follows its column's width; for a cap, `max-inline-size` on the host (IQ-9 (a), IQ-26 (a)) |
+| one event (state) | built in: a list of one item, with no connector (FR-020, FR-021) |
+| two events, the first with supporting content (state) | built in: the events in source order, the supporting content the consumer's markup in the content (FR-020, IQ-10 (a)) |
+| twenty events (state) | built in: the events in the supplied order; the element neither sorts nor formats times (FR-020, FR-023) |
+| a long transition (state) | built in: content wraps between words inside the event; `wrap="anywhere"` for identifiers (FR-024) |
+| the linked event (state) | a link in the event's content keeps its tab stop (US2-7); an `id` on `ocelle-timeline-event` is the consumer's fragment target (IQ-15 (a)) |
+| degraded (state, no library role) | a rule in the consumer's own stylesheet (no inline style, constitution IV), with the degraded state stated in text beside the timeline, never by muting alone (IQ-16 (a)) |
+| unavailable retention (state) | 013's `ocelle-empty-state` in place of the timeline; an announcement is the consumer's own notice or live region (IQ-17 (a), FR-026) |
+| forced colours (state) | built in: the dot and connector in `CanvasText`, the text in a system text colour (FR-013) |
+| light mode (state; a #470 required state) | built in: the light and dark themes (FR-013) |
+
+The compact exemplars (one event, default, twenty events, leading marker, long content, linked, narrow, degraded,
+forced colours, light mode) are the compact modifier with one of the states or roles above, so each maps by the
+compact row and that row; the verified-marker exemplar maps by the trailing verification label's row and the
+narrow exemplar by the narrow row. The library's timeline has no part (styles only), so no part row. #470's contract adds no role: its required states
+(default, light mode, responsive narrow, compact) are covered by the rows above, and hover, focus, active and disabled
+are declared not applicable there. IQ-28 (a) changes no row: kitty-mission-ui replaces the families as #13 and the
+spec state, and the README mapping is its replacement path.
+
+**Phase 3: the chip's row (Q-T4 (a), operator, 2026-11-20).** Among the chain's rows (T054), the row for the
+library's compact step, which #517 asks to be pill-shaped, maps the pill-shaped chip to `variant="chip"` with
+`--ocelle-radius-2`, never the pill radius (constitution II, FR-035); T062 asserts it and T070 writes it.
 
 ## R-17 A request to 009's owner: a pinned start box out of the start fade (PLAN-A11Y-SECURITY-1-002)
 
