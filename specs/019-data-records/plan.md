@@ -78,7 +78,7 @@ history and evidence chain.
   009's overflow-region module (FR-008 amended, FR-018; 009's tests unchanged). IQ-3: `@ocelle/styles`'
   `data-ocelle-align="end"` hook for numeric cells (block 4). IQ-4 and IQ-5: `striped` rows on `inset` and a row hover
   on `hover-bg`, with a forced-colours row band. IQ-6 (a) and IQ-7 (a): README statements. Phase 1 grows to 19
-  stories and 38 baselines (the mission 42 and 84; 20, 40, 43 and 86 since the re-analysis; 21, 42, 44 and 88 since fixes-2 Q-1 (b)). See § Decisions on the
+  stories and 38 baselines (the mission 42 and 84; 20, 40, 43 and 86 since the re-analysis; 21, 42, 44 and 88 since fixes-2 Q-1 (b); the mission 46 and 92 since the phase 2 spike). See § Decisions on the
   library inventory.
 - **Decided on the inventory follow-up questions (2026-11-18).** Q-I1 to Q-I3 confirm the defaults (the `sheet`
   header ground; the light-theme hover collision accepted and noted in the README; the hover always on). Q-I4: the
@@ -90,7 +90,7 @@ history and evidence chain.
   stories and 40 baselines and the mission 43 and 86, and one more Principle V exception row covered the block-end
   fade's two scroll-position states (scrolled to the block end; the room-rule state). Fixes-2 Q-1 (b): a "sticky
   header, under the room rule" story (rows below, no fade), so phase 1 has 21 stories and 42 baselines and the
-  mission 44 and 88, and that row covers only the scrolled-to-end state. A1 (c): T082 measures
+  mission 44 and 88 (46 and 92 since the phase 2 spike), and that row covers only the scrolled-to-end state. A1 (c): T082 measures
   both pinned-box measures at 320 px with a two-line caption and stops for the operator's choice before the scaffold.
   A2 (a): the row hover (and its forced-colours band) under `@media (hover: hover)`, with a no-hover body and element
   plants. G1 (a): PageUp, PageDown, Home, End, Space and Shift+Space are the browser's on the block-axis box, stated
@@ -110,6 +110,14 @@ history and evidence chain.
   also runs in a 200 px container. IQ-8 to IQ-17, IQ-26 and IQ-28 (a): README mapping statements only, among them an
   `id` on `ocelle-timeline-event` as the consumer's fragment target. Story, baseline and task counts are unchanged.
   See § Decisions on the issue texts and the phase 2 inventory.
+- **Decided on the phase 2 spike (2026-11-20).** T026 measured R-08 to R-11 (`reviews/phase-2/spike.md`). Q1 (b): two
+  timeline stories named through a host `aria-label` (non-blank and blank), so phase 2 has 13 stories and 26
+  baselines and the mission 46 and 92, and the Principle V exception drops the timeline (the chain stays until T052).
+  Q2 (a): the explicit `list` and `listitem` roles stay, and axe's `aria-required-children` and
+  `aria-required-parent`, which it applies to them in place of its `list` and `listitem` rules, are the rules US2-1
+  and US3-1 name. Q3 (a): the dot is drawn by one border side of its whole size, `border-block-start:
+  var(--ocelle-size-dot) solid var(--ocelle-color-ink-muted)`, so it has no unpainted centre. See § Decisions on the
+  phase 2 spike.
 
 009, 013 and op 016 are on `main`, and `main` (b594b7e) is merged into this branch (8ee3351, operator decision of
 2026-11-17, `reviews/main-merge.md`). The first task rechecked the plan against it (R-14, `reviews/recheck.md`):
@@ -188,9 +196,9 @@ monospace; no I/O; one heavy job at a time in this container.
 **Scale/Scope**: 5 elements, 0 tokens, 0 contrast rows, 4 `@ocelle/styles` blocks (the data-table rules, their prose
 override, the four pre-upgrade list-item rules, and the numeric-cell hook), 2 documented base-style hooks (the caption
 cap's two custom properties, I7 (a); the `data-ocelle-align` attribute, IQ-3), 1 internal module option (009's
-block-axis option, IQ-2), 3 driver additions (`scrollTop` and `setScrollTop` in phase 1, `itemTexts` in phase 2), 44
-stories (21 in phase 1, 11 in phase 2, 12 in phase 3, each with two baselines: 88 PNGs; spike Q1 (b), inventory
-decisions IQ-2 to IQ-5, re-analysis C1 (b), fixes-2 Q-1 (b)).
+block-axis option, IQ-2), 3 driver additions (`scrollTop` and `setScrollTop` in phase 1, `itemTexts` in phase 2), 46
+stories (21 in phase 1, 13 in phase 2, 12 in phase 3, each with two baselines: 92 PNGs; spike Q1 (b), inventory
+decisions IQ-2 to IQ-5, re-analysis C1 (b), fixes-2 Q-1 (b), phase 2 spike Q1 (b)).
 
 ## Constitution Check
 
@@ -203,9 +211,10 @@ IQ-2 to IQ-5 added, IQ-6 (a), IQ-7 (a)), after the follow-up answers Q-I1 to Q-I
 decisions of 2026-11-18 (C1 (b), A1 (c), A2 (a), G1 (a)) and the answer to fixes-2 Q-1 (b), and after the decisions on
 phase 1's second spike (Q-1 (a), Q-2 (a), Q-3 (c), Q-4 (a)), none of which changes a verdict below, and after the
 decisions at phase 1's mutation stop (2026-11-19: Q-M1 (b), Q-M2 (a) and the gate gap rule (c)), which change the
-Workflow gates row only. Two Principle V
+Workflow gates row only, and after the phase 2 spike decisions of 2026-11-20 (Q1 (b), Q2 (a), Q3 (a)), which change
+rows III and V only by narrowing the exception and naming axe's rules. Two Principle V
 exceptions are recorded (Complexity Tracking): the host `aria-label` states, chosen by the operator as C1 (c) and
-narrowed to the timeline and the chain by spike Q1 (b); and the block-end fade's scrolled-to-end state, chosen
+narrowed to the timeline and the chain by spike Q1 (b), then to the chain by the phase 2 spike's Q1 (b); and the block-end fade's scrolled-to-end state, chosen
 by the operator on the re-analysis (C1 (b), with Q-I7 (a)) and narrowed to that one state by the answer to fixes-2 Q-1
 (b). IQ-2's change to 009's module is the operator's decision under FR-008 as amended, not a principle
 exception (Complexity Tracking, notes).*
@@ -214,9 +223,9 @@ exception (Complexity Tracking, notes).*
 |---|---|
 | I. Names, no I/O, small interface, manifest | **Tags**: `ocelle-data-table`, `ocelle-event-timeline`, `ocelle-timeline-event`, `ocelle-evidence-chain`, `ocelle-evidence-step`. **Events**: none. **I/O**: none. **Properties**: `label`, `wrap`, `stickyHeader` (attribute `sticky-header`), `striped` (data table; the two booleans reflected, as `ocelle-card`'s `inset`, IQ-2, IQ-4); `label` (timeline, chain); `time`, `wrap` (event); `variant`, `wrap` (step). Every property is `\| undefined` with `@default undefined`; `wrap`, `variant`, `time`, `sticky-header` and `striped` reflect, because the styles or the container's observer read them (`time`: PLAN-CORRECTNESS-1-003). **Parts**: `list` on the two containers; `time` and `content` on the event; `content` on the step. **CSS hooks**: one base-style hook between the packages, `--data-table-box-size` and `--data-table-end-fade`, written by the data table and read by `@ocelle/styles`' caption cap (analysis I7 (a); row VII); and `@ocelle/styles`' `data-ocelle-align="end"` hook for numeric cells (IQ-3, FR-019), a `data-ocelle-` attribute set by the consumer, not an element member; no element declares a CSS custom property in the manifest. **Internal module**: 009's overflow-region module gains the opt-in block-axis option (IQ-2, FR-018), internal and outside the manifest as the module is. **Slots**: the default slot of each element, and the event's named `time` slot (Q-E), which the manifest declares. The manifest declares everything, with every list stated ([contracts/](contracts/)). No element module exports a function: the internal `hasTime` and `hasSlottedTime` live in `src/timeline-time.ts`, outside the manifest glob and the exports map, and a manifest test statement pins that (R-10). The caption's measured width and the end fade's depth are custom properties with no `--ocelle-` prefix (the prefix is the tokens'), documented as the base-style hook above, not manifest members: the element writes them and its styles never read them (R-07). |
 | II. Tokens only, brand rules | **Tokens**: every value is a token (R-06, R-10, R-12); no new token (R-13); the column headers use 011's eyebrow tokens as they are (recheck Q1 (a)). **No monospace**: cells, times, ordinals and chips use `font-sans` with `figures`. **`color-rule`**: only on decorative lines (the row and header rules, the connectors; FR-013). **Radius**: `radius-2` on the chip (the one radius, never `radius-pill`). The dot and the step marker are round, `border-radius: 50%` with no token: a mark shape, not a corner radius, so the one-radius rule is not engaged and no radius token is added (FR-031, FR-040; Q-D, operator decision (a) on PLAN-CORRECTNESS-1-004). **Ochre**: none. **Grounds** (IQ-2, IQ-4, IQ-5): the pinned header on `color-sheet`, stripes on `color-inset`, the hover on `color-hover-bg`, three main grounds, never a rule token; the forced-colours row band is `bar-width` in system colours (R-18, R-20). |
-| III. Accessible by construction | **ID references**: none across a root. The table's references stay in the consumer's tree (R-01), and the region is named by copied text (R-04). **Roles**: the table's own roles; a `group` on the region while it overflows (009); `list` and `listitem` on the shadow lists, explicit for WebKit (R-08). **Hidden**: markers, connectors and ordinals are `aria-hidden`; item text is asserted by `itemTexts` (R-11). **Keyboard**: the overflowing region is the only added tab stop, with arrows, clearance and handover from the module; slotted links keep theirs. **Contrast**: text and structural marks use ink tokens with text declarations on the nine main grounds (a slotted time takes the attribute time's `ink-muted` through `::slotted()`); decorative lines are exempt (FR-013), checked by a node check against `pairs.json` and by rendered-colour bodies (R-13). **Forced colours**: every mark is a border drawn in `CanvasText`; the chip's box rule sits outside the variant block (R-10, R-12); the stripe and the hover, whose grounds forced colours remove, are drawn by a first-cell row band in `CanvasText` and `Highlight`, and the pinned header is opaque (R-18, R-20). **Sticky header** (IQ-2): the module keeps a focused body element clear of the pinned header (WCAG 2.4.11), the block-axis region is a tab stop only while it overflows, with ArrowUp and ArrowDown from the module and PageUp, PageDown, Home, End, Space and Shift+Space left to the browser, each a tested keyboard path (re-analysis G1 (a)), and its block end fades while rows are below (Q-I4), never under the header, with the ring kept clear of the fade and a `CanvasText` line in forced colours (R-18); the block-axis scrollbar's room is reserved only while the region overflows in the block axis, so a right-to-left table that overflows only sideways keeps its start reachable (WCAG 1.4.10; spike-2 Q-3 (c)), and the block-end edge is zero-wide outside forced colours, so axe reports nothing on the rows under it (spike-2 Q-4 (a)). **Hover** (IQ-5): a look only, no event, tab stop or cursor, and only under `@media (hover: hover)`, so a touch screen's tapped row keeps no hover ground (re-analysis A2 (a)). **Reflow**: 320 px tests per container, the data table as a flex and a grid item, and in three shrink-to-fit hosts (a dialog, an inline-block, a start-aligned column flex), where it is never 0 px wide (R-02); the caption wraps inside the box's unmasked width at rest (R-07). **Naming**: a blank host `aria-label` counts as absent on the lists, through 009's `resolveName` (R-09); the region's caption name skips hidden parts and reads image `alt` (R-04). **axe**: #10's `axe` gate on every story, with no exception entry planned. |
+| III. Accessible by construction | **ID references**: none across a root. The table's references stay in the consumer's tree (R-01), and the region is named by copied text (R-04). **Roles**: the table's own roles; a `group` on the region while it overflows (009); `list` and `listitem` on the shadow lists, explicit for WebKit (R-08), so axe judges them by `aria-required-children` and `aria-required-parent`, not by its `list` and `listitem` rules, which skip elements with a `role` attribute (phase 2 spike Q2 (a)). **Hidden**: markers, connectors and ordinals are `aria-hidden`; item text is asserted by `itemTexts` (R-11). **Keyboard**: the overflowing region is the only added tab stop, with arrows, clearance and handover from the module; slotted links keep theirs. **Contrast**: text and structural marks use ink tokens with text declarations on the nine main grounds (a slotted time takes the attribute time's `ink-muted` through `::slotted()`); decorative lines are exempt (FR-013), checked by a node check against `pairs.json` and by rendered-colour bodies (R-13). **Forced colours**: every mark is a border drawn in `CanvasText` (the timeline dot by its one `border-block-start` side, phase 2 spike Q3 (a)); the chip's box rule sits outside the variant block (R-10, R-12); the stripe and the hover, whose grounds forced colours remove, are drawn by a first-cell row band in `CanvasText` and `Highlight`, and the pinned header is opaque (R-18, R-20). **Sticky header** (IQ-2): the module keeps a focused body element clear of the pinned header (WCAG 2.4.11), the block-axis region is a tab stop only while it overflows, with ArrowUp and ArrowDown from the module and PageUp, PageDown, Home, End, Space and Shift+Space left to the browser, each a tested keyboard path (re-analysis G1 (a)), and its block end fades while rows are below (Q-I4), never under the header, with the ring kept clear of the fade and a `CanvasText` line in forced colours (R-18); the block-axis scrollbar's room is reserved only while the region overflows in the block axis, so a right-to-left table that overflows only sideways keeps its start reachable (WCAG 1.4.10; spike-2 Q-3 (c)), and the block-end edge is zero-wide outside forced colours, so axe reports nothing on the rows under it (spike-2 Q-4 (a)). **Hover** (IQ-5): a look only, no event, tab stop or cursor, and only under `@media (hover: hover)`, so a touch screen's tapped row keeps no hover ground (re-analysis A2 (a)). **Reflow**: 320 px tests per container, the data table as a flex and a grid item, and in three shrink-to-fit hosts (a dialog, an inline-block, a start-aligned column flex), where it is never 0 px wide (R-02); the caption wraps inside the box's unmasked width at rest (R-07). **Naming**: a blank host `aria-label` counts as absent on the lists, through 009's `resolveName` (R-09); the region's caption name skips hidden parts and reads image `alt` (R-04). **axe**: #10's `axe` gate on every story, with no exception entry planned. |
 | IV. Strict CSP, offline | Adopted stylesheets and `base.css` only. No `style` attribute; the module's mask figures use its per-instance sheet (009), and the data table's measured box width and end fade depth use its own, px figures only (R-07, recheck Q2 (c)). Fixture pages assert zero violations. |
-| V. Storybook, behaviour tests | A story per variant and state, light and dark ([contracts/checks.md](contracts/checks.md) § Stories); the inventory decisions add five data-table stories (a bounded sticky header, a numeric column, striped rows, a hovered row and a striped table with an even row hovered, the two hover states through #10's pointer parameter), the re-analysis adds a sixth, the sticky header with no bound (US1-20, C1 (b)), and the answer to fixes-2 Q-1 (b) a seventh, the sticky header under the room rule (a bound leaving rows below but less than twice the fade depth under the header: no fade; US1-26's room-rule half). The item elements' states are stories in their container's file, the standalone event and the standalone step included (analysis C1 (c)). Every spec'd state has a story, the hidden item, the unnamed overflowing table, the table-less data table and the empty containers included (PLAN-CORRECTNESS-1-007, operator decision (a)), except the states named by a host `aria-label` of the timeline and the chain: one exception row in Complexity Tracking, chosen by the operator (C1 (c)), proven by browser bodies, with a sunset each phase's spike checks. The data table's host `aria-label` states, non-blank and blank, have stories since phase 1's spike met the sunset (spike Q1 (b)). The block-end fade's scrolled-to-end state (the bounded table scrolled to its block end, the fade off) is a second exception row, chosen by the operator (re-analysis C1 (b); Q-I7 (a); narrowed to that state by fixes-2 Q-1 (b)), proven by US1-26, US1-28 and T079's bodies. |
+| V. Storybook, behaviour tests | A story per variant and state, light and dark ([contracts/checks.md](contracts/checks.md) § Stories); the inventory decisions add five data-table stories (a bounded sticky header, a numeric column, striped rows, a hovered row and a striped table with an even row hovered, the two hover states through #10's pointer parameter), the re-analysis adds a sixth, the sticky header with no bound (US1-20, C1 (b)), and the answer to fixes-2 Q-1 (b) a seventh, the sticky header under the room rule (a bound leaving rows below but less than twice the fade depth under the header: no fade; US1-26's room-rule half). The item elements' states are stories in their container's file, the standalone event and the standalone step included (analysis C1 (c)). Every spec'd state has a story, the hidden item, the unnamed overflowing table, the table-less data table and the empty containers included (PLAN-CORRECTNESS-1-007, operator decision (a)), except the states named by a host `aria-label` of the chain: one exception row in Complexity Tracking, chosen by the operator (C1 (c)), proven by browser bodies, with a sunset phase 3's spike checks. The data table's host `aria-label` states, non-blank and blank, have stories since phase 1's spike met the sunset (spike Q1 (b)), and the timeline's since phase 2's spike met it (phase 2 spike Q1 (b)). The block-end fade's scrolled-to-end state (the bounded table scrolled to its block end, the fade off) is a second exception row, chosen by the operator (re-analysis C1 (b); Q-I7 (a); narrowed to that state by fixes-2 Q-1 (b)), proven by US1-26, US1-28 and T079's bodies. |
 | VI. Consumer-driven, own code | Needs: kitty-mission-ui's `.sk-data-table` family and the Desktop V2 primitives (#470, #517, #533). The issues are unread, so their points were the plan gate's questions Q-A to Q-C and Q-E (spec SPEC-1-06 (b)), which the operator answered on 2026-11-16 (Q-E's answer, the `time` slot, is in FR-023); the operator pastes their bodies before phase 2's red (IQ-25), recorded verbatim on 2026-11-20 (`sources/issue-470.md`, `sources/issue-517.md`, `sources/issue-533.md`) and compared with the answers in force in `reviews/issue-texts-check.md`. The inventory is the open-source library's own variant set, read from a clone at `main` and `develop` (IQ-1 (a), R-16); #470's hand-off material on `develop` is recorded as background (`sources/issue-470-handoff-background.md`). The sticky header, numeric cell, stripes and hover are added because the library defines them and the operator chose to cover them (IQ-2 to IQ-5). Nothing is copied: the sources record role names and behaviour in their own words, and the README mapping names roles only. |
 | VII. Semver | **MINOR**: five elements, five entry points, four `base.css` blocks, the `data-ocelle-align` hook (IQ-3, a documented base-style hook in `@ocelle/styles`' Hooks table) and one base-style hook (`--data-table-box-size`, `--data-table-end-fade`, analysis I7 (a)), which couples the two separately versioned packages and so is surface: both CHANGELOGs and both READMEs name it, and a rename or removal is MAJOR from 1.0.0. CHANGELOG entries go in `@ocelle/elements` and `@ocelle/styles`. `@ocelle/tokens` is unchanged. The overflow-region module's block-axis option is internal, not surface (009's contract § Status); the `@ocelle/elements` CHANGELOG mentions it with no effect on `ocelle-scroller` or `ocelle-workflow-board`. |
 | VIII. Test-first, non-vacuous | A scaffold comes before each red commit. The red commit holds the phase's scenario bodies, the driver test, the node and styles tests and the story-test extension (operator decision I3), and `red.sh` keeps one red record per phase. The red log is read per body: every scenario body fails on an assertion, never on an import or setup error, and each body the platform alone could pass carries a paired assertion only the element gives (contracts/checks.md). Each phase's red commit changes 003's `source.test.ts` for the `base.css` rules that phase's green adds (phase 1 blocks 1 and 2 after the wrap rule, phase 2 the timeline's two pre-upgrade rules and phase 3 the chain's two in its base-layer slice, recheck Q5 (b)), and phase 1's red also changes the two Styles sentences `packages/elements/test/node/readme.test.ts` pins, for the convention amendment of recheck Q2 (c); each red message names its changed test and the reason (R-06, R-07). Item-text bodies also assert a non-empty text (FR-016). Each CSS-only behaviour has a named element plant or a stated reason, because Stryker does not mutate `css` templates or `base.css`; element plants mutate green source, so they run after green, are never committed, and are recorded in `reviews/phase-<N>/element-plants.md` (contracts/checks.md § Element plants). Spikes run before the scaffolds of phases 1 to 3, and a failing spike result goes to the operator. The module's block-axis option (IQ-2) is behaviour, so its bodies are in phase 1's red commit with the data table's, and its changed source is mutation-tested; 009's existing tests of the module, the scroller and the board are not edited (only the README sentence on the module's inputs that `readme.test.ts` pins, named in the red commit's body) and stay green. |
@@ -268,10 +277,11 @@ Answered by the operator on 2026-11-16 (`reviews/analysis/operator-decisions.md`
 1. **C1, states without a story. Decided: (c).** A story for a standalone `ocelle-timeline-event` in the timeline's
    file and one for a standalone `ocelle-evidence-step` in the chain's (stories 35, baselines 70; 37 and 74 since the
    phase 1 spike's Q1 (b); 42 and 84 since the inventory decisions; 43 and 86 since the re-analysis; 44 and 88 since
-   fixes-2 Q-1 (b)). One Principle V
+   fixes-2 Q-1 (b); 46 and 92 since the phase 2 spike's Q1 (b)). One Principle V
    exception row (Complexity Tracking) covers only the states named by a host `aria-label`: the data table's region,
    the timeline and the chain (R-09's axe risk), proven by browser bodies. The data table's region left the row on
-   2026-11-18 (§ Decisions after the phase 1 spike, Q1 (b)).
+   2026-11-18 (§ Decisions after the phase 1 spike, Q1 (b)), and the timeline on 2026-11-20 (§ Decisions on the phase
+   2 spike, Q1 (b)).
 2. **I7, the caption cap's custom properties across packages. Decided: (a).** `--data-table-box-size` and
    `--data-table-end-fade` are a documented base-style hook between `@ocelle/elements` (the writer) and
    `@ocelle/styles` (the reader): public surface under constitution VII, named in both CHANGELOGs and READMEs, with a
@@ -317,8 +327,10 @@ two stop-and-ask points of `reviews/phase-1/spike.md` and on T005; the changes a
    (`aria-label="  "` beside `label="Work packages"`, the region named "Work packages"). Phase 1 then has 14 stories
    and 28 baselines (`visual:update` prints `(28 added, 0 changed, 0 removed)`), the mission 37 and 74 (19, 38, 42
    and 84 since the inventory decisions' five stories, § Decisions on the library inventory; 20, 40, 43 and 86 since
-   the re-analysis, § Decisions on the re-analysis; 21, 42, 44 and 88 since fixes-2 Q-1 (b), the same section). The row drops
-   the data table's region; the timeline and the chain stay in it until their spikes (T026, T052) measure them. T006's
+   the re-analysis, § Decisions on the re-analysis; 21, 42, 44 and 88 since fixes-2 Q-1 (b), the same section; the
+   mission 46 and 92 since the phase 2 spike's Q1 (b), § Decisions on the phase 2 spike). The row drops
+   the data table's region; the timeline and the chain stay in it until their spikes (T026, T052) measure them (the
+   timeline left it on 2026-11-20). T006's
    FR-010 browser body stays.
 2. **Q2, upper-case column-header names. Decided: (a).** Block 1 keeps `text-transform: uppercase` on the column
    headers. Chromium names each column header and its static text by the drawn text ("ID", not "Id"; spike § 1), as
@@ -413,7 +425,7 @@ Answered by the operator on 2026-11-18 (end of `reviews/analysis/operator-decisi
    The story has no caption; its space is measured from the `<thead>`'s current block-end edge (A1 (c), decided (a)
    on phase 1's second spike), which at rest lies the ring room plus the header's block size below the client
    block start. Phase 1 has 21 stories and 42 baselines (`visual:update` prints `(42 added, 0 changed, 0 removed)`), the
-   mission 44 and 88. The block-axis exception row (§ Complexity Tracking) now covers only the scrolled-to-end state.
+   mission 44 and 88 (46 and 92 since the phase 2 spike's Q1 (b)). The block-axis exception row (§ Complexity Tracking) now covers only the scrolled-to-end state.
 
 ## Decisions on phase 1's second spike
 
@@ -485,7 +497,43 @@ Answered by the operator on 2026-11-20 (`reviews/issue-texts-check.md` § Operat
    an `id` on `ocelle-timeline-event` is the consumer's fragment target, written test first. IQ-28 (a) changes no row.
    IQ-27 is the chain's and is asked with IQ-18 to IQ-24.
 
-Story, baseline and task counts are unchanged (the mission 44 stories and 88 baselines).
+Story, baseline and task counts are unchanged (the mission 44 stories and 88 baselines; 46 and 92 since the phase 2
+spike's Q1 (b), § Decisions on the phase 2 spike).
+
+## Decisions on the phase 2 spike
+
+Answered by the operator on 2026-11-20 (`reviews/phase-2/operator-spike-decisions.md`) on the three stop-and-ask
+points of `reviews/phase-2/spike.md` (T026); the changes are listed in `reviews/phase-2/spike-fixes.md`.
+
+1. **Q1, the timeline named by a host `aria-label`. Decided: (b).** axe-core 4.14.0, with the `axe` gate's rule
+   selection, reports no violation and no incomplete result on a timeline named by a non-blank host `aria-label`, nor
+   with a blank one (spike § 2), and Chromium shows the host as a `generic` node of the same name beside the `list`,
+   as on 009's lane, so the Complexity Tracking row's sunset is met for the timeline. Phase 2 adds two stories: "named
+   by a host `aria-label`" (`aria-label="History"` beside `label="Mission history"`, the list named "History") and
+   "blank host `aria-label`" (`aria-label="  "` beside `label="Mission history"`, the list named "Mission history").
+   Phase 2 then has 13 stories and 26 baselines (`visual:update` prints `(26 added, 0 changed, 0 removed)`), the
+   mission 46 and 92 (21, 13 and 12 stories in phases 1 to 3). The row drops the timeline; the chain stays in it until
+   T052 measures it. US2-10's browser bodies (T030) stay.
+2. **Q2, axe's `list` and `listitem` rules. Decided: (a).** The explicit `role="list"` and `role="listitem"` stay
+   (R-08, for WebKit). axe-core selects `ol`, `ul` and `li` for its `list` and `listitem` rules only without a `role`
+   attribute, so those rules are inapplicable here; its `aria-required-children` and `aria-required-parent` rules
+   judge the list's structure instead, and pass (spike § 1). US2-1, R-08, contracts/checks.md and T030 name them in
+   place of `list` and `listitem`, met by the `axe` gate on the timeline's stories (element tests run no axe); US3-1
+   names them for the chain, and T052 confirms the same selection there.
+3. **Q3, the dot's unpainted centre. Decided: (a).** Chromium floors a border width to whole device pixels, so four
+   sides of `calc(var(--ocelle-size-dot) / 2)` computed 3px each on the 7.1875 px box and left a 1.19 px hole at a
+   device pixel ratio of 1 and of 2 (spike § 5). The dot is drawn with one side only, `border-block-start:
+   var(--ocelle-size-dot) solid var(--ocelle-color-ink-muted)`, with `box-sizing: border-box`, the `--ocelle-size-dot`
+   box and `border-radius: 50%` kept: the side computes 7px and the dot paints solid. It is still a border, so forced
+   colours draw it in `CanvasText` and the `background-color` element plant is unchanged. The timeline contract's
+   § Marks, R-10 and checks.md's forced-colours oracle name the block-start side as the drawing side (width above zero,
+   `CanvasText`); T030's US2-8 and T042 follow.
+
+The spike's settled facts, for the red bodies: the dot lays out at 7.1875 px, so US2-2 compares its size with the
+probe-resolved `--ocelle-size-dot` within 0.5 px; the connector's gaps measured 4.016 px and 4.000 px, inside the
+0.5 px tolerance; each dot's centre is within 0.02 px of its first line's; a slotted `<time>` adds a `time` node, so
+`itemTexts` reads `StaticText` at any depth under each `listitem` (R-11); the connector's `calc()` form needs no new
+`style-lint` allowance (R-10). No task is added, removed or renumbered.
 
 ## Project Structure
 
@@ -736,10 +784,14 @@ Every phase with stories also does the following:
      marker spans, the host `aria-label` against 009's lane (axe's verdict is the exception row's sunset check), and
      the `time` slot (a slotted `<time>` after the content
      read first, an unrendered slot leaving an empty or hidden slotted node out of the tree and layout, and
-     `::slotted(*)` setting the type over a `<b>`'s UA bold).
+     `::slotted(*)` setting the type over a `<b>`'s UA bold). Done 2026-11-20 (`reviews/phase-2/spike.md`), with three
+     stop-and-ask points answered as § Decisions on the phase 2 spike states.
    - **Red.**
      - `itemTexts` and its test, in both harnesses.
-     - US2-1 to US2-14, with US2-8's forced-colours and rendered-contrast halves (R-10, R-13).
+     - US2-1 to US2-14, with US2-8's forced-colours and rendered-contrast halves (R-10, R-13; the dot's drawing side
+       its `border-block-start`, the connector's its `border-inline-start`, phase 2 spike Q3 (a)). US2-1's axe clause
+       (`aria-required-children` and `aria-required-parent`, phase 2 spike Q2 (a)) is met by the `axe` gate on the
+       stories, not by a body.
      - The `time` bodies of R-10: set, changed and cleared by property after mount, `time=""` and `time=" "`.
      - The `time` slot bodies of R-10 (Q-E): US2-11 to US2-14 (a slotted `<time datetime>` after the content shown
        above it and read first, with the attribute time's type, a `<b slot="time">` included; the attribute ignored
@@ -768,18 +820,20 @@ Every phase with stories also does the following:
        attribute, carries `datetime`, `title`, `lang`, `dir` or an htmx target, which the attribute cannot, one time
        element per event, and a consumer rule on the slotted node beating the `::slotted()` type), mapping rows (R-16's
        phase 2 table, with the `id` fragment-target line of IQ-15 (a)), the data table's three #533 notes (Q-T1 to
-       Q-T3 (a), § Decisions on the issue texts and the phase 2 inventory) and the story-test extension.
+       Q-T3 (a), § Decisions on the issue texts and the phase 2 inventory) and the story-test extension (13 timeline
+       stories, the two host `aria-label` stories by their list names, phase 2 spike Q1 (b)).
    - **Green.** `timeline-time.ts` (`hasTime(event)`, `hasSlottedTime(event)`), `ocelle-timeline-event.ts` (the `time`
      slot, its `::slotted()` rules and its own observer) and `ocelle-event-timeline.ts` (its observer on the events'
      subtrees), the two pre-upgrade rules in `base.css`'s base layer after the facts rule (with the layer's header
-     comment), exports, the manifest (the `time` slot included), the 11
-     stories with baselines (the standalone event among them), the README section (with the Host ARIA list update and the `time` slot) and the
+     comment), exports, the manifest (the `time` slot included), the 13
+     stories with baselines (the standalone event and the two host `aria-label` stories among them), the README section (with the Host ARIA list update and the `time` slot) and the
      CHANGELOGs (the `time` slot named as surface). Then the timeline's element plants, the slot plants of checks.md
      among them.
 3. **US3 Evidence chain** (P3).
    - **Spike.** R-12: line ends at 1280, 600, 320 and 200 px (Q-T5 (b)) and after the R-12 changes, two-digit fit for ordinal 20, the
      chip's block size, the shared centre line with chips, `dir="rtl"`, and axe on a chain named by a host
-     `aria-label` (the exception row's sunset check).
+     `aria-label` (the exception row's sunset check), with axe's `aria-required-children` and `aria-required-parent`
+     applying to the chain's explicit roles and `list` and `listitem` inapplicable (US3-1, phase 2 spike Q2 (a)).
    - **Red.**
      - US3-1 to US3-10, with US3-3 also in a 200 px container (Q-T5 (b)), US3-6 per SPEC-3-02 (ordinals are positions among visible steps, chip steps counted;
        includes a chip hidden and shown again), the ordinal-fit body for twenty steps (SPEC-3-03), and US3-8's
@@ -814,13 +868,13 @@ time. Phase 3 reuses phase 2's `itemTexts`; both containers import 009's `resolv
 
 | Exception | Principle | Scope | Rationale | Sunset | Approval |
 |---|---|---|---|---|---|
-| The states named by a host `aria-label` have no story | V (a story per variant and per state) | `ocelle-event-timeline` and `ocelle-evidence-chain`, each with a host `aria-label`, blank or not (FR-022, FR-032; US2-10, US3-10). Each is proven instead by shared browser bodies in both harnesses: T030's US2-10 and T055's US3-10. The data table's region is no longer in scope: phase 1's spike found axe-core 4.14.0 clean on it (`reviews/phase-1/spike.md` § 2), and its two states (non-blank and blank host `aria-label`) are stories (spike Q1 (b)), with T006's FR-010 body kept. No other state of the five elements is excepted (the standalone event and step have stories, analysis C1 (c)), and no `storybook/a11y-exceptions.json` entry is added. | Each of these hosts keeps the consumer's `aria-label` on a generic host node while the name sits on a shadow node (the `<ol>`), so axe may report `aria-prohibited-attr` (serious) on the host, which a story would turn into a failing `axe` gate or an exception entry (R-09). The naming itself is asserted on the Chromium AX tree in both harnesses, so the behaviour has evidence without a story. | Per element: the pinned axe-core reports no serious or critical finding on that element named by a host `aria-label`. Each remaining phase's spike measures it (T026, T052) and the check is repeated on every axe-core upgrade. A clean result is a stop-and-ask point: the operator decides whether that phase adds the state's story and its two baselines (and the row's scope shrinks) or the row stays. Met for the data table on 2026-11-17 (T003). | Operator, 2026-11-16, analysis decision C1 (c) (`reviews/analysis/operator-decisions.md`); scope narrowed by the operator on 2026-11-18, spike Q1 (b) (`reviews/phase-1/operator-spike-decisions.md`). |
+| The states named by a host `aria-label` have no story | V (a story per variant and per state) | `ocelle-evidence-chain` with a host `aria-label`, blank or not (FR-032; US3-10), proven instead by shared browser bodies in both harnesses: T055's US3-10. The data table's region is no longer in scope: phase 1's spike found axe-core 4.14.0 clean on it (`reviews/phase-1/spike.md` § 2), and its two states (non-blank and blank host `aria-label`) are stories (spike Q1 (b)), with T006's FR-010 body kept. Nor is `ocelle-event-timeline`: phase 2's spike found axe-core 4.14.0 clean on it (`reviews/phase-2/spike.md` § 2), and its two states are stories (phase 2 spike Q1 (b)), with T030's US2-10 body kept. No other state of the five elements is excepted (the standalone event and step have stories, analysis C1 (c)), and no `storybook/a11y-exceptions.json` entry is added. | The chain's host keeps the consumer's `aria-label` on a generic host node while the name sits on a shadow node (the `<ol>`), so axe may report `aria-prohibited-attr` (serious) on the host, which a story would turn into a failing `axe` gate or an exception entry (R-09). The naming itself is asserted on the Chromium AX tree in both harnesses, so the behaviour has evidence without a story. | Per element: the pinned axe-core reports no serious or critical finding on that element named by a host `aria-label`. Phase 3's spike measures it (T052) and the check is repeated on every axe-core upgrade. A clean result is a stop-and-ask point: the operator decides whether that phase adds the state's story and its two baselines (and the row goes) or the row stays. Met for the data table on 2026-11-17 (T003) and for the timeline on 2026-11-20 (T026). | Operator, 2026-11-16, analysis decision C1 (c) (`reviews/analysis/operator-decisions.md`); scope narrowed by the operator on 2026-11-18, spike Q1 (b) (`reviews/phase-1/operator-spike-decisions.md`), and on 2026-11-20, phase 2 spike Q1 (b) (`reviews/phase-2/operator-spike-decisions.md`). |
 | The block-end fade's scrolled-to-end state has no story | V (a story per variant and per state) | `ocelle-data-table` with `sticky-header` and a bound (FR-017, FR-018), in one state only: scrolled to the block end, where the block-end fade is off (no `data-block-fade`, no mask, no forced-colours line). It is proven instead by shared bodies in both harnesses: US1-26's block-end half (no fade at the block end, back after ArrowUp) and US1-28 (the line gone at the block end) in T080, and T079's block-end fade bodies (absent at the block end) and `blockEdgeState`'s at-the-end cases on the test host, each "does not" paired with the fade at rest. Not in scope: the bounded table at rest with the fade (story "sticky header, bounded"), the table with no bound (story "sticky header, unbounded", US1-20, added by C1 (b)) and the room-rule state, rows below with less than twice the fade depth under the header and no fade (story "sticky header, under the room rule", added by fixes-2 Q-1 (b)); no other state of the five elements, and no `storybook/a11y-exceptions.json` entry. | A story renders at its initial scroll position, so the off state at the block end cannot be shown without a scroll parameter #10's stories do not have. The state differs from the bounded story only in the module's `data-block-fade` decision, which the bodies read directly (attribute, mask layers, the forced-colours line), with no pixel needed. The room-rule state is a state at rest, drawn by a smaller bound with no scroll parameter, so it left this row for a story (fixes-2 Q-1 (b)). | #10's stories gain an initial-scroll parameter: then the off state gets a story and its two baselines, and the row goes. A stop-and-ask point; the phase's `<n>` changes with the story. | Operator, 2026-11-18: the fade's off state by Q-I7 (a) (`reviews/phase-1/inventory-decisions.md`); the row by the re-analysis decision C1 (b); its scope narrowed to the off state by the answer to fixes-2 Q-1 (b) (both at the end of `reviews/analysis/operator-decisions.md`). |
 | 74 axe incomplete results on the data table's stories are excepted, node by node | III (accessible: serious and critical incomplete results fail the `axe` gate) | `storybook/a11y-exceptions.json`, 74 entries naming this plan, one per row of the table "axe exceptions under FR-029" below, and nothing else: `color-contrast-incomplete` (serious) on the cells that the data table's scroll box partly clips (`elmPartiallyObscured`), at the inline end in the overflowing stories (overflows named by label, by caption, by host `aria-label`, with a blank host `aria-label`, unnamed; right to left; width 320) and at the block end in the bounded ones (sticky header, bounded; sticky header, under the room rule), both themes; and `th-has-data-cells-incomplete` (serious) on the `<table>` of the empty-body story, both themes. No other node, story or rule. | axe cannot compute the contrast of text the scroll box partly clips, so it reports the node as incomplete, which the `axe` gate counts as a finding (006 FR-029); the contrast of the same cell colours is decided elsewhere (US1-11's token pairs in both themes, `gate:contrast`). The empty-body story shows an edge case of the spec (a table whose `<tbody>` holds no row), where axe cannot tell which data cells the header cells name. 006 excepted the prose table's clipped column the same way (006 plan.md § Complexity Tracking). | Per rule: the clipped-cell entries go with the op that fixes the color-contrast incomplete results of cells partly clipped by `ocelle-data-table`'s scroll box; the empty-body entries go with the op that settles axe's th-has-data-cells incomplete result on that state; each op to be opened by the operator. A changed or vanished node is a `stale-exception` and a stop-and-ask. | Operator, 2026-11-18, phase 1 stop T022, decision (a) (`reviews/phase-1/operator-stop-decisions.md`). |
 
 - A story the `axe` gate fails is fixed in the story or the element. An exception entry, or any further state without
-  a story, needs a row here and the operator's approval. Three rows stand: the host `aria-label` states of the timeline
-  and the chain, the block-end fade's scrolled-to-end state (re-analysis C1 (b), narrowed by fixes-2 Q-1 (b)), and
+  a story, needs a row here and the operator's approval. Three rows stand: the host `aria-label` states of the chain
+  (the timeline left the row by the phase 2 spike's Q1 (b)), the block-end fade's scrolled-to-end state (re-analysis C1 (b), narrowed by fixes-2 Q-1 (b)), and
   the data table's 74 axe incomplete results (phase 1 stop T022 (a)), whose nodes are the table below.
 - The host rule on `.region-track` (R-03) is a styling override inside the data table's own stylesheet, and the
   measured caption width and end fade depth (R-07) are written by the data table into its own per-instance sheet, px

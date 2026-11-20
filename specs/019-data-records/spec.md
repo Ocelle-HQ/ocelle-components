@@ -88,7 +88,8 @@ Ocelle web console uses them in server-rendered pages under a strict CSP, filled
 - C1, states without a story: (c). A standalone `ocelle-timeline-event` and a standalone `ocelle-evidence-step` get a
   story in their container's file; the states named by a host `aria-label` (the data table's region, the timeline,
   the chain) are one Principle V exception in the plan's Complexity Tracking, proven by browser tests (FR-050). The
-  data table's region left the exception after the phase 1 spike (Q1 (b), below).
+  data table's region left the exception after the phase 1 spike (Q1 (b), below), and the timeline after the phase 2
+  spike (Q1 (b), below).
 - I7, the caption cap's custom properties: (a). `--data-table-box-size` and `--data-table-end-fade` are a documented
   base-style hook between `@ocelle/elements` and `@ocelle/styles`, public surface under constitution VII (FR-057).
 
@@ -115,7 +116,7 @@ in `reviews/phase-1/operator-spike-decisions.md`, changes listed in `reviews/pha
 - Q1, the data table named by a host `aria-label`: (b). The pinned axe-core reports no serious or critical finding
   on it, so the data table's region leaves the Principle V exception: phase 1 adds two stories, an overflowing data
   table named by a non-blank host `aria-label` and one with a blank host `aria-label` (14 data-table stories, 37 in
-  all; 19 and 42 since the inventory decisions below, 20 and 43 since the re-analysis, 21 and 44 since fixes-2 Q-1 (b)). The timeline and the chain stay in the exception until their own spikes measure them (FR-050).
+  all; 19 and 42 since the inventory decisions below, 20 and 43 since the re-analysis, 21 and 44 since fixes-2 Q-1 (b); 46 in all since the phase 2 spike's Q1 (b)). The timeline and the chain stay in the exception until their own spikes measure them (FR-050); the timeline left it after the phase 2 spike (below).
 - Q2, upper-case column-header names: (a). The column headers stay upper case (FR-006). Chromium names each column
   header by its drawn, upper-case text, so US1-1 compares the element's table with the same table outside given the
   same upper case, and asserts that the column headers are named in upper case; both READMEs state it (FR-006).
@@ -179,7 +180,8 @@ decisions at the end of `reviews/analysis/operator-decisions.md`, changes listed
   are left to the browser, which scrolls the focused box in the block axis; tests assert each key (FR-018, US1-18).
 - Fixes-2 Q-1, the room-rule state (answered 2026-11-18, end of `reviews/analysis/operator-decisions.md`): (b). A
   "sticky header, under the room rule" story is added (a bound leaving rows below but less than twice the fade depth
-  under the header, so no fade; US1-26's room-rule half): phase 1 has 21 data-table stories, the mission 44. The
+  under the header, so no fade; US1-26's room-rule half): phase 1 has 21 data-table stories, the mission 44 (46 since
+  the phase 2 spike's Q1 (b)). The
   exception row covers only the scrolled-to-end state (FR-050).
 
 **Operator decisions on phase 1's second spike** (2026-11-18, human:jeroennouwsdev; `reviews/phase-1/spike-2.md`,
@@ -243,6 +245,19 @@ decisions in `reviews/phase-1/operator-spike-2-decisions.md`, changes listed in 
   content with an `id` on `ocelle-timeline-event` as the consumer's fragment target, the degraded form to a rule in the
   consumer's own stylesheet plus the state in text, and unavailable retention to 013's `ocelle-empty-state`
   (FR-058). Kitty-mission-ui replaces the families as stated (IQ-28).
+
+**Operator decisions on the phase 2 spike** (2026-11-20; `reviews/phase-2/spike.md`, decisions in
+`reviews/phase-2/operator-spike-decisions.md`, changes listed in `reviews/phase-2/spike-fixes.md`):
+
+- Q1, the timeline named by a host `aria-label`: (b). The pinned axe-core reports no serious or critical finding on
+  it, non-blank or blank, so the timeline leaves the Principle V exception: phase 2 adds two stories, a timeline named
+  by a non-blank host `aria-label` and one with a blank host `aria-label` (13 timeline stories, 46 in all). The chain
+  stays in the exception until its own spike measures it (FR-050).
+- Q2, axe's `list` and `listitem` rules do not apply to the explicit roles: (a). The lists keep their explicit `list`
+  and `listitem` roles, kept for WebKit; axe judges their structure by its `aria-required-children` and
+  `aria-required-parent` rules, which US2-1 and US3-1 name in place of `list` and `listitem`.
+- Q3, the dot's painted shape: (a). The dot is painted whole, with no unpainted centre, and is still drawn in the
+  system text colour in forced colours (FR-021, US2-8); no requirement changes, and the plan names how it is drawn.
 
 ## Scope
 
@@ -475,7 +490,8 @@ the reading order and the page's scroll width.
    **When** the accessibility tree is read in Chromium, **Then** it holds one list named "Mission history" with three
    list items in source order, each item's item text (FR-016) being its time, a space and its content (for example
    "14:02 Mission created"); no marker or connector is in the tree, and axe reports no serious or critical finding,
-   `list` and `listitem` included (FR-020, FR-022, FR-016).
+   `aria-required-children` and `aria-required-parent` included, which axe applies to the explicit `list` and
+   `listitem` roles in place of its `list` and `listitem` rules (phase 2 spike Q2 (a)) (FR-020, FR-022, FR-016).
 2. **Given** the same element, **When** its markers are measured, **Then** each event has one marker of inline and block
    size `--ocelle-size-dot`, centred on the first line of its event, and a connector joins each marker to the next
    one; the last event has no connector after it (FR-021).
@@ -553,7 +569,9 @@ the chip variant.
 1. **Given** an `ocelle-evidence-chain` with `label="Evidence"` and six `ocelle-evidence-step` children, **When** the
    accessibility tree is read in Chromium, **Then** it holds one list named "Evidence" with six list items in source
    order, each item's item text (FR-016) being its content only (for example "Red commit": no visible number, no
-   connector text); axe reports no serious or critical finding (FR-030, FR-032, FR-016).
+   connector text); axe reports no serious or critical finding, `aria-required-children` and `aria-required-parent`
+   included, which axe applies to the explicit `list` and `listitem` roles (phase 2 spike Q2 (a); phase 3's spike
+   confirms it for the chain) (FR-030, FR-032, FR-016).
 2. **Given** the chain in a 1280 px container where the six steps fit, **When** it renders, **Then** the steps sit in
    one row from the inline start, in source order, each default step with a marker of inline and block size
    `--ocelle-size-step` drawn with a ring of `--ocelle-ring-step` showing the step's ordinal (1 to 6) in tabular figures,
@@ -1033,9 +1051,11 @@ the chip variant.
   2026-11-18). One scroll-position state of the block-end fade has no story: the bounded table scrolled to its block
   end (the fade off); it is one constitution V exception recorded in the plan's Complexity Tracking, chosen by the
   operator (re-analysis C1 (b), narrowed by fixes-2 Q-1 (b); Q-I7 (a) for the fade's off state), and proven by
-  browser tests (US1-26, US1-28). The states named by a host `aria-label` of the timeline and the
-  chain have no story: they are a constitution V exception recorded in the plan's Complexity Tracking, chosen by the
-  operator (analysis C1 (c)), and proven by browser tests, until their own phase's spike measures them. Any further
+  browser tests (US1-26, US1-28). Timeline stories include two timelines named through a host `aria-label`: one
+  non-blank (the list named by it) and one blank (the list named by `label`), added once the phase 2 spike found the
+  pinned axe-core clean on that state (phase 2 spike Q1 (b), 2026-11-20). The states named by a host `aria-label` of
+  the chain have no story: they are a constitution V exception recorded in the plan's Complexity Tracking, chosen by
+  the operator (analysis C1 (c)), and proven by browser tests, until phase 3's spike measures them. Any further
   state without a story is a constitution V exception recorded there and approved by the operator.
 - **FR-051**: Visual baselines and the `axe` run follow #10 on `main`. Each phase that adds stories MUST commit their
   light and dark baselines, produced in #10's pinned container by its baseline command under docker, and its stories

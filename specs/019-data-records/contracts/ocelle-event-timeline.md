@@ -59,14 +59,16 @@ attribute is non-blank.
 
 | Element | Styles |
 |---|---|
-| `.marker` | `box-sizing: border-box`; inline and block size `--ocelle-size-dot`; `border: calc(var(--ocelle-size-dot) / 2) solid var(--ocelle-color-ink-muted)`; `border-radius: 50%` (a mark shape, Q-D) |
+| `.marker` | `box-sizing: border-box`; inline and block size `--ocelle-size-dot`; `border-block-start: var(--ocelle-size-dot) solid var(--ocelle-color-ink-muted)` and no other border side, so the one side fills the box with no unpainted centre (phase 2 spike Q3 (a): four sides of `calc(var(--ocelle-size-dot) / 2)` floor to 3px each and leave a hole, `reviews/phase-2/spike.md` § 5); `border-radius: 50%` (a mark shape, Q-D) |
 | `.connector` | no inline size; `border-inline-start: var(--ocelle-border-width) solid var(--ocelle-color-rule-strong)` (decorative); block start and end insets as `calc()` over tokens from the two `<li>`'s types, `size-dot`, `space-1` and the row gap `space-3` (R-10) |
 
 ## Forced colours (PLAN-A11Y-SECURITY-1-001)
 
 Every mark is a border, never a background (forced colours forces `background-color` to `Canvas`). Outside the
-variant block: `@media (forced-colors: active) { .marker, .connector { border-color: CanvasText; } }`. The time and
-content text take the system text colour. No `forced-color-adjust: none`.
+variant block: `@media (forced-colors: active) { .marker, .connector { border-color: CanvasText; } }`. The side that
+draws each mark is the marker's `border-block-start` and the connector's `border-inline-start`: each is `CanvasText`
+with a width above zero (R-10, contracts/checks.md § Oracles, forced colours). The time and content text take the
+system text colour. No `forced-color-adjust: none`.
 
 ## Behaviour
 
@@ -78,15 +80,23 @@ content text take the system text colour. No `forced-color-adjust: none`.
   emptied, filled, hidden or shown all re-decide the classes (plan gate Q-E). A record from inside an event's content
   re-renders to the same classes, which changes nothing. The `has-time` and `next-has-time` classes use the internal
   `hasTime(event)` predicate of `timeline-time.ts`, the same one the event uses for its time box (R-10).
-- The name is `resolveName(host aria-label, label)`, set on the `<ol>` (R-09).
+- The name is `resolveName(host aria-label, label)`, set on the `<ol>` (R-09). Chromium also shows the host as a
+  `generic` node of the host's name beside the `list`, as on 009's lane; axe-core 4.14.0 reports nothing on it, blank
+  or not (`reviews/phase-2/spike.md` § 2), so both states have stories (phase 2 spike Q1 (b), contracts/checks.md
+  § Stories).
 - No live region, landmark, heading or tab stop.
 
 ## Accessibility tree (Chromium)
 
 `list` (named or not) > `listitem` × N. Each item's text (FR-016) is "time content", or the content alone; the time
 is the slotted time's text when the event has one, else the `time` attribute's, and never both. No marker or
-connector appears in the tree; each marker wrapper and connector span carries `aria-hidden="true"`.
+connector appears in the tree; each marker wrapper and connector span carries `aria-hidden="true"`. A slotted
+`<time>` adds a `time` node around its `StaticText` (R-11).
 
+axe judges the list's structure by `aria-required-children` and `aria-required-parent`, which it applies to the
+explicit `role="list"` and `role="listitem"`; its `list` and `listitem` rules select only elements with no `role`
+attribute and so do not apply (phase 2 spike Q2 (a), R-08). The `axe` gate on the timeline's stories meets US2-1's
+axe clause.
 ## Before upgrade
 
 `@ocelle/styles` sets, in `base.css`'s base layer beside 013's facts rule (recheck Q5 (b)), `:where(ocelle-event-timeline:not(:defined) >

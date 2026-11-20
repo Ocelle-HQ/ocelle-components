@@ -85,6 +85,9 @@ checks: [contracts/checks.md](contracts/checks.md).
    - **Timeline.** The screen reader reads a list of three items, "14:02 Mission created" first, with no dot or line
      announced. In the marked-up times story each `<time slot="time">` shows above its event's text in the time's
      type and is read first, and the event that also has a `time` attribute shows only its slotted time.
+   - **Timeline, host `aria-label`.** In the two host `aria-label` stories the list is announced as "History"
+     (non-blank) and as "Mission history" (blank, named by `label`) (phase 2 spike Q1 (b)). At high zoom each dot is
+     a solid disc, with no lighter centre (phase 2 spike Q3 (a)).
    - **Chain, wrapped.** The steps wrap at 320 px with no connector at a line's end, and the ordinals read 1 to 6 on
      the visible default steps.
    - **Standalone items.** The standalone-event and standalone-step stories show their items as plain text with no
