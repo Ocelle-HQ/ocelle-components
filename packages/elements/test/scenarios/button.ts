@@ -618,6 +618,21 @@ export const buttonScenarios: readonly Scenario[] = [
     expected: { state: { role: "button", name: "Open project" }, images: [], folder: [], axe: [] },
   },
   {
+    name: 'op 022 (#57) scenario 7, link mode: a titled bare <svg> as the only content of an ocelle-button with href="#x" and label="Open project": the inner link is named Open project, and the subtree has no image node and no node named Folder (FR-003, phase-1 decision 1)',
+    run: async (driver) => {
+      await driver.mount('<ocelle-button id="k" href="#x" label="Open project"><svg slot="icon" viewBox="0 0 16 16"><title>Folder</title><path d="M2 2h12v12H2z"/></svg></ocelle-button>');
+      const state = await driver.axState("k", control);
+      const subtree = await driver.axSubtree("k");
+      return {
+        state: { role: state.role, name: state.name },
+        images: subtree.filter((node) => node.role === "image" || node.role === "img"),
+        folder: subtree.filter((node) => node.name.includes("Folder")),
+        axe: await severe(driver),
+      };
+    },
+    expected: { state: { role: "link", name: "Open project" }, images: [], folder: [], axe: [] },
+  },
+  {
     name: "op 022 (#57) scenario 8: an ocelle-icon in the icon slot beside the text Open project: one button node named Open project, as before the fix (FR-003, FR-006)",
     run: async (driver) => {
       await driver.mount('<ocelle-button id="b"><ocelle-icon slot="icon" name="folder"></ocelle-icon>Open project</ocelle-button>');
@@ -625,6 +640,72 @@ export const buttonScenarios: readonly Scenario[] = [
       return { state: { role: state.role, name: state.name }, nodes: await meaningful(driver, "b"), axe: await severe(driver) };
     },
     expected: { state: { role: "button", name: "Open project" }, nodes: [{ role: "button", name: "Open project" }], axe: [] },
+  },
+  // Op 022 (#57; spec.md scenarios 9 and 10, phase-1 decision 7): the name follows the icon slot after the first
+  // render. An icon slotted later adds nothing to the name; an icon moved out leaves the content naming the control.
+  {
+    name: 'op 022 (#57) scenario 9: a titled bare <svg> beside the text Open, first in slot="aside" and then moved into the icon slot, in the button and the link mode: the inner control is named Open, and the subtree has no image node and no node named Folder (FR-003, phase-1 decision 7)',
+    run: async (driver) => {
+      const svg = (id: string): string => `<svg id="${id}" slot="aside" viewBox="0 0 16 16"><title>Folder</title><path d="M2 2h12v12H2z"/></svg>`;
+      await driver.mount(`<ocelle-button id="b">${svg("b-svg")}Open</ocelle-button> <ocelle-button id="k" href="#x">${svg("k-svg")}Open</ocelle-button>`);
+      await driver.setAttribute("b-svg", "slot", "icon");
+      await driver.setAttribute("k-svg", "slot", "icon");
+      const read = async (id: string): Promise<unknown> => {
+        const state = await driver.axState(id, control);
+        const subtree = await driver.axSubtree(id);
+        return { state: { role: state.role, name: state.name }, images: subtree.filter((node) => node.role === "image" || node.role === "img"), folder: subtree.filter((node) => node.name.includes("Folder")) };
+      };
+      return { button: await read("b"), link: await read("k"), axe: await severe(driver) };
+    },
+    expected: {
+      button: { state: { role: "button", name: "Open" }, images: [], folder: [] },
+      link: { state: { role: "link", name: "Open" }, images: [], folder: [] },
+      axe: [],
+    },
+  },
+  {
+    name: "op 022 (#57) scenario 10: a titled bare <svg> in the icon slot beside the one-character text S, then moved out of the icon slot (slot=\"aside\"), in the button and the link mode: the inner control is named S, and axe reports no serious or critical result (FR-003, phase-1 decision 7)",
+    run: async (driver) => {
+      const svg = (id: string): string => `<svg id="${id}" slot="icon" viewBox="0 0 16 16"><title>Folder</title><path d="M2 2h12v12H2z"/></svg>`;
+      await driver.mount(`<ocelle-button id="b">${svg("b-svg")}S</ocelle-button> <ocelle-button id="k" href="#x">${svg("k-svg")}S</ocelle-button>`);
+      await driver.setAttribute("b-svg", "slot", "aside");
+      await driver.setAttribute("k-svg", "slot", "aside");
+      const read = async (id: string): Promise<unknown> => {
+        const state = await driver.axState(id, control);
+        return { role: state.role, name: state.name };
+      };
+      return { button: await read("b"), link: await read("k"), axe: await severe(driver) };
+    },
+    expected: { button: { role: "button", name: "S" }, link: { role: "link", name: "S" }, axe: [] },
+  },
+  // Op 022 (#57) pin from the phase-1 mutation run: the label wrapper names the control only when nothing on the host
+  // names it (the forwarded icon slot's pin is in `forwardedIconScenarios`).
+  {
+    name: 'op 022 (#57) a titled bare <svg> in the icon slot beside the text Open, with label="Open project" or a host aria-label="Open project", in the button and the link mode: the inner control is named Open project, not by its label wrapper, and the subtree has no image node and no node named Folder (FR-003, name order)',
+    run: async (driver) => {
+      const svg = '<svg slot="icon" viewBox="0 0 16 16"><title>Folder</title><path d="M2 2h12v12H2z"/></svg>';
+      await driver.mount(
+        `<ocelle-button id="b" label="Open project">${svg}Open</ocelle-button> <ocelle-button id="k" href="#x" label="Open project">${svg}Open</ocelle-button>` +
+          ` <ocelle-button id="a" aria-label="Open project">${svg}Open</ocelle-button> <ocelle-button id="l" href="#x" aria-label="Open project">${svg}Open</ocelle-button>`,
+      );
+      const read = async (id: string): Promise<unknown> => {
+        const state = await driver.axState(id, control);
+        const subtree = await driver.axSubtree(id);
+        return { state: { role: state.role, name: state.name }, images: subtree.filter((node) => node.role === "image" || node.role === "img"), folder: subtree.filter((node) => node.name.includes("Folder")) };
+      };
+      return { label: { button: await read("b"), link: await read("k") }, ariaLabel: { button: await read("a"), link: await read("l") }, axe: await severe(driver) };
+    },
+    expected: {
+      label: {
+        button: { state: { role: "button", name: "Open project" }, images: [], folder: [] },
+        link: { state: { role: "link", name: "Open project" }, images: [], folder: [] },
+      },
+      ariaLabel: {
+        button: { state: { role: "button", name: "Open project" }, images: [], folder: [] },
+        link: { state: { role: "link", name: "Open project" }, images: [], folder: [] },
+      },
+      axe: [],
+    },
   },
   ...(["default", "compact"] as const).flatMap((size) =>
     (["ltr", "rtl"] as const).map(
@@ -885,5 +966,23 @@ export const buttonScenarios: readonly Scenario[] = [
       found: Object.fromEntries(["only", "only-compact", "only-busy"].map((id) => [id, { centre: true, square: true, bare: true }])),
       axe: [],
     },
+  },
+];
+
+/**
+ * Op 022 (#57) pin from the phase-1 mutation run: the label wrapper names the control only when the icon slot's
+ * flattened assignment holds an element. It needs the test-only `test-icon-forwarder` (test/fixtures/shadow-controls.ts),
+ * which `button.html` on the strict-CSP fixture does not load, so it runs in process only (test/button.test.ts), the
+ * run the mutation gate uses.
+ */
+export const forwardedIconScenarios: readonly Scenario[] = [
+  {
+    name: "op 022 (#57) an ocelle-button in another element's shadow root, its icon slot fed only by that element's empty icon slot, beside the one-character text S: the button is named S and axe reports no serious or critical result, as with no icon (FR-003, flattened assignment)",
+    run: async (driver) => {
+      await driver.mount('<test-icon-forwarder id="fw"></test-icon-forwarder>');
+      const subtree = await driver.axSubtree("fw");
+      return { controls: subtree.filter((node) => node.role === "button"), axe: await severe(driver) };
+    },
+    expected: { controls: [{ role: "button", name: "S" }], axe: [] },
   },
 ];
