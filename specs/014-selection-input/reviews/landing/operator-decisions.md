@@ -32,3 +32,11 @@
 - Context: the orchestrator session relayed a proposal from the operator. The repository is now public, so CI minutes are free. After the second merge of main (7f61959), only the fast gates and the `gate:plants --affected <base> --list` selection run locally. The 4–5 h full local plants run is skipped, and CI's required Plants, Visual regression, Unit tests and Mutation checks on the final head decide. This changes phase 6 decision 5 and phase 7 decision 3, which owed one full local plants run after the second merge. The orchestrator later reported this as the operator's standing decision for every session.
 - Options: CI carries the heavy gates; keep the full local run.
 - Answer: **"CI carries heavy gates (Recommended)"**. Run locally: the fast gates, contrast, the plants selection list, the conflicting baselines regenerated in the pinned container, and targeted tests for the files the resolution touched. Then ask the operator before the push. CI's full Plants shards, Visual regression, Unit tests and Mutation on the final head stand in for the full local plants run in the phase 6 and phase 7 records. The CI run id is recorded there after the push.
+
+## Decision 6 — the PR body
+
+- Date: 2026-11-20
+- Operator: human:jeroennouwsdev
+- Context: the landing rewrite of PR #54's body. It leads with consumers, sets the floor at Chromium 135, describes the two merges and the landing folds, cites CI run 44797053961, and lists three suggested follow-ups without filing them.
+- Options: post as drafted; post with edits; keep the old body.
+- Answer: **"Post as drafted (Recommended)"**. The body was replaced on 2026-11-20.
