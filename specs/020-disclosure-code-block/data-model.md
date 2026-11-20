@@ -9,21 +9,23 @@ The public state of the two elements and how it changes. The surface itself is i
 |---|---|---|---|
 | `open` | attribute `open` and property, reflected | `true`; `false` or `undefined` (closed) | `undefined` and `false` are one closed state; after a user close the property is `false` and the attribute absent (R-02) |
 | summary | light-DOM children with `slot="summary"` | any phrasing content | the summary control's name when no host `aria-labelledby` or `aria-label`; interactive content not supported |
-| icon | light-DOM child with `slot="icon"` | an `ocelle-icon` or bare `svg` | replaces the chevron in both states; decorative |
+| icon | light-DOM child with `slot="icon"` | an `ocelle-icon` or bare `svg` | replaces the chevron in both states; decorative: the icon wrapper is `aria-hidden="true"`, so a titled bare `svg` adds no node and no name (R-01) |
 | panel | other light-DOM children (default slot) | any flow content | hidden while closed by the platform's `details`, revealable by find in page |
 | moved ARIA | host `aria-label`, `aria-labelledby`, `aria-describedby`, `title` | strings; ID lists | moved to the summary, mirrored in `data-ocelle-moved-*` (control conventions rule 4) |
+| mapped ARIA | host `aria-expanded` | `"true"`, `"false"`, other | mapped onto `open` (`"true"` opens, `"false"` closes, other values change nothing) and removed from the host in every case; no mirror (R-03) |
 | reported state | internal | boolean | the last state an `ocelle-disclosure-toggle` reported; set at the first update from the initial `open` |
 
 ### State transitions
 
 | From | Trigger | To | Event |
 |---|---|---|---|
-| closed | click, Enter, Space on the summary; `element.click()`; find in page; `open = true`; `setAttribute("open", "")`; a morph that adds `open` | open | one `ocelle-disclosure-toggle`, `detail.open === true`, in a later task, after the attribute is reflected |
-| open | click, Enter, Space; `element.click()`; `open = false`; `removeAttribute("open")`; a morph that removes `open` | closed | one, `detail.open === false`; focus in the panel moves to the summary |
-| any | several changes in one task ending in the starting state | unchanged | none |
-| any | several changes in one task ending in the other state | the other state | exactly one, with the final state |
+| closed | click, Enter, Space on the summary; `element.click()`; find in page; `open = true`; `setAttribute("open", "")`; a morph that adds `open`; host `aria-expanded="true"` | open | one `ocelle-disclosure-toggle`, `detail.open === true`, in a later task, after the attribute is reflected |
+| open | click, Enter, Space; `element.click()`; `open = false`; `removeAttribute("open")`; a morph that removes `open`; host `aria-expanded="false"` | closed | one, `detail.open === false`; focus in the panel, also inside a panel control's shadow root, moves to the summary |
+| any | several changes before the native `toggle` runs (always those in one task) ending in the state last reported | unchanged | none |
+| any | several changes before the native `toggle` runs ending in the other state | the other state | exactly one, with the final state |
+| any | host `aria-expanded` with a value other than `"true"` or `"false"` | unchanged | none; the attribute is removed |
 | any | the same state set again | unchanged | none |
-| at upgrade | initial `open` present or absent | that state | none |
+| at upgrade | initial `open` present or absent, then a host `aria-expanded` of `"true"` or `"false"` if present (it wins) | that state | none |
 
 Custom state: `:state(open)` exactly while open.
 
@@ -31,8 +33,8 @@ Custom state: `:state(open)` exactly while open.
 
 | Field | Source | Values | Notes |
 |---|---|---|---|
-| text | the host's `textContent`, read at each render | string | followed by a `MutationObserver` (child list, character data, subtree); children's markup ignored |
-| `overflow` | attribute and property, reflected | `scroll` (trimmed, ASCII case-insensitive) is the scroll policy; anything else or absent is wrap | |
+| text | the host's `textContent`, read at each render | string | followed by a `MutationObserver` (child list, character data, subtree); children's markup ignored; shown left to right in every page direction (R-06) |
+| `overflow` | attribute and property, reflected | `scroll` (trimmed, ASCII case-insensitive) is the scroll policy; anything else or absent is wrap | a switch to wrap while the scroll box has focus moves focus to `.block` (temporary `tabindex="-1"`, removed on `focusout`, R-06) |
 | `label` | attribute and property, not reflected | string | names the scroll box while it overflows; trimmed, blank counts as none; a non-blank host `aria-label` wins |
 | `digest` | boolean attribute and property, reflected | `true`; `false` or `undefined` | |
 | overflow state | the overflow-region module's outputs (scroll mode only) | `overflowing`, `fadeAttribute`, `name` | module-owned; nothing written to the host |
@@ -43,12 +45,14 @@ Custom state: `:state(open)` exactly while open.
 2. If `trimmed` holds a whitespace character, no digest: shown as in the default mode.
 3. Code points: `Array.from(trimmed)`.
 4. `prefix` = the code points up to and including the last `:` (empty when there is no `:`).
-5. `groups` = the rest, in runs of four from the start; the last run holds the remainder (1 to 4).
-6. Units = `prefix` (when not empty) followed by `groups`; rendered as inline spans joined by `<wbr>`.
+5. `groups` = the rest, in runs of four code points from the start; the last run holds the remainder (1 to 4).
+6. Units = `prefix` (when not empty) followed by `groups`; rendered with `map` as inline spans joined by `<wbr>`, each
+   unit a Lit text binding; groups `nowrap`, the gap a `margin-inline-end` on every unit but the last (R-07).
 
 Examples: `sha256:` + 64 hex gives `sha256:` and 16 groups; `ni:sha-256:abcd1` gives `ni:sha-256:`, `abcd`, `1`;
-`sha256:` alone gives the prefix and no groups; `abcdefghij` gives `abcd`, `efgh`, `ij`; the empty string gives no
-units (an empty block).
+`sha256:` alone gives the prefix and no groups; `abcdefghij` gives `abcd`, `efgh`, `ij`; `x:ab😀cdef` gives `x:`,
+`ab😀c`, `def` (no lone surrogate); the empty string gives no units (an empty block, one line high by `.code`'s
+`min-block-size: 1lh`).
 
 ### Mode matrix
 

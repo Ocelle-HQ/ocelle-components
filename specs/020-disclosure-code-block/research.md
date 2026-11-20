@@ -8,11 +8,11 @@ FR-010, FR-031, FR-032).
 
 ## R-01 Disclosure structure (spec FR-003 to FR-008; operator clarify 1)
 
-**Decision.** The shadow root (open, `delegatesFocus`) renders:
+**Decision.** The shadow root (open, without `delegatesFocus`; squad round 1, PLAN-FRESH-1-001 (a)) renders:
 
 ```html
 <details part="details">
-  <summary class="control" part="summary"><span class="icon-row"><span class="icon-slot"><slot name="icon"><ocelle-icon class="chevron" name="chevron-end | chevron-down"></ocelle-icon></slot></span><span class="label"><slot name="summary"></slot></span></span></summary>
+  <summary class="control" part="summary"><span class="icon-row"><span class="icon-slot" aria-hidden="true"><slot name="icon"><ocelle-icon class="chevron" name="chevron-end | chevron-down"></ocelle-icon></slot></span><span class="label"><slot name="summary"></slot></span></span></summary>
   <div class="panel" part="panel"><slot></slot></div>
 </details>
 ```
@@ -27,9 +27,22 @@ FR-010, FR-031, FR-032).
   margin-inline-end: var(--ocelle-space-2) }`, the same box the convention gives a slotted icon. A plant guards it
   (contracts/checks.md).
 - The chevron's `name` is bound to the state; `chevron-end` mirrors under RTL by `ocelle-icon`'s own rule (README §
-  Icons). Unlabelled, `ocelle-icon` is hidden from assistive technology (`aria-hidden="true"` on its svg, no name), so
-  the chevron and a consumer `ocelle-icon` without `label` are decorative. The README tells consumers never to label
-  a slotted icon (slot convention, Naming).
+  Icons). The icon wrapper carries `aria-hidden="true"`, which hides the fallback chevron and any slotted icon in the
+  flat tree: a bare `<svg>` (which the slot convention allows, README § Slot convention) otherwise keeps an `image`
+  node and adds its `<title>` to the summary's name (squad round 1, PLAN-A11Y-SECURITY-1-003: measured, a slotted
+  `<svg><title>Folder</title>` gave the summary the name "Folder Advanced" and an `image` node "Folder"). US1-17's
+  body slots a titled bare svg. The README tells consumers never to label a slotted icon (slot convention, Naming).
+- **Focus without `delegatesFocus`** (squad round 1, PLAN-FRESH-1-001 (a), operator decision). With `delegatesFocus`,
+  a pointer click on any non-focusable part of the host's flat tree, the slotted panel content included, focuses the
+  shadow root's first focusable element, the summary: measured, a click on the text of a tall open panel moved focus
+  to the summary and scrolled the page from 1372 px to 0, and a Space after it closed the panel. The disclosure is
+  the first control whose host also holds content, so it attaches its root without `delegatesFocus` and overrides
+  `focus(options)` to call the summary's `focus(options)` (as `click()` is overridden, R-03); before the first render
+  there is no summary and `focus()` does nothing. The summary is natively focusable and in the tab order inside the
+  shadow root, and `document.activeElement` is still the host by retargeting, so US1-4 and US1-19 read the same. This
+  is a second departure from control conventions rule 1 (R-03); the README section says so. US1-22's body clicks
+  panel text in a scrolled, tall open panel and presses Space; it must fail red with `delegatesFocus` restored (a
+  plant, contracts/checks.md).
 - The native marker: `summary { list-style: none }` (Chromium 89+). WebKit draws its marker through
   `::-webkit-details-marker`; whether `style-lint` admits that selector is checked in phase 1. If it does not, WebKit's
   marker is recorded as an open limitation beside the Engines note (WebKit is not measured; the operator decided at
@@ -62,17 +75,33 @@ operator.
      (`bubbles`, `composed`, not `cancelable`, `detail: { open }`).
 - The last reported state is set at the first `updated()` from the initial `open`, so the upgrade fires nothing
   (US1-9), whatever native `toggle` the first render queues.
-- Coalescing follows from the platform: a property changed twice in one task is rendered once by Lit (a microtask),
-  so `details.open` changes at most once; the native `toggle` is queued as a task and merged by the platform's toggle
-  task tracker. A native `toggle` whose final state equals the reported state (oldState equal to newState) fires no
-  `ocelle-disclosure-toggle`, which is the spec's stricter rule (SPEC-1-06). The three cases of US1-7 give 0, 0 and 1
-  event.
+- Coalescing is the platform's (FR-012 as amended by the operator, squad round 1, PLAN-CORRECTNESS-1-003 (a)): a
+  property changed twice in one task is rendered once by Lit (a microtask), so `details.open` changes at most once
+  per render; the native `toggle` is queued as a task and the platform's toggle task tracker merges every change made
+  before it runs, which can span tasks (measured: `details.open = false` in a `setTimeout(0)` and `= true` in a
+  microtask gave one native `toggle`, `closed` to `closed`; with a MessageChannel task between the two sets, two
+  toggles). So there is at most one `ocelle-disclosure-toggle` per native `toggle`, with the final state. A native
+  `toggle` whose final state equals the reported state (oldState equal to newState) fires none, which is the spec's
+  stricter rule (SPEC-1-06). The three cases of US1-7 give 0, 0 and 1 event. The README says the event count is not
+  a count of changes.
 - A morph that keeps `open` changes nothing and fires none; one that removes it closes the disclosure and fires one
-  event with `open: false` (SPEC-2-05, US1-8). The tests count after the next task and `updateComplete`.
-- **Focus out of a closing panel (FR-013).** In `willUpdate`, when `open` goes from true to false, the element notes
-  whether the deep active element (`focusable.ts`'s `deepActive()`) is inside the host but not in the summary; in
-  `updated` it then focuses the summary. A user close always starts from the summary, so this only acts on script and
-  morph closes.
+  event with `open: false` (SPEC-2-05, US1-8). The tests read the count after the element's `updateComplete`, then
+  the driver's `settle()` (two animation frames, then every element's `updateComplete`): a `setTimeout(0)` can run
+  before the native `toggle` task (measured, squad round 1, PLAN-TESTABILITY-1-004), while the native `toggle` runs
+  before the next animation frame (measured order: the set, `toggle`, the frame). Every zero-count body ends with a
+  positive control under the same wait (contracts/checks.md).
+- **Focus out of a closing panel (FR-013; squad round 1, PLAN-CORRECTNESS-1-002).** In `willUpdate`, when `open` goes
+  from true to false, the element notes whether focus is in the panel: the active element of the host's root
+  (`(this.getRootNode() as Document | ShadowRoot).activeElement`, retargeted) is a light-DOM descendant of the host
+  (`this.contains(active) && active !== this`), as `ocelle-list-detail.ts` does; in `updated` it then focuses the
+  summary. Focus on the summary itself retargets to the host and is excluded. `deepActive()` with `this.contains` is
+  not used: it returns the innermost element, which `contains` misses when it sits in the shadow root of a control in
+  the panel (an `ocelle-button`, a nested disclosure's summary; measured). A close does not always start from the
+  summary: `element.click()` from a script, or an assistive technology's default action, can close while focus is in
+  the panel. Those close through the native path, and focus is still in the panel when the native `toggle` runs
+  (measured: a focused slotted link, then `summary.click()`: the link was still focused in the `toggle` handler), so
+  the same `willUpdate` check, run from the handler's property set, sees it. US1-19 has bodies for a light-DOM link,
+  a focused `ocelle-button` and a nested disclosure's summary.
 
 **Rationale.** It matches native `details` (the attribute is the state) and htmx: the server's attribute wins on a
 morph, which is what the operator chose.
@@ -88,23 +117,40 @@ fire for the initial state and for property sets the native element coalesces).
   summary gets `aria-label` and `title` as attributes, and `ariaLabelledByElements` and `ariaDescribedByElements` from
   `resolveIds`, re-resolved on connect, as `ocelle-button` does. The mirrors and the manifest's `@attr` entries follow
   the control conventions. The native name order (labelledby, aria-label, content) gives FR-006 with no code of ours.
-- A host `aria-expanded` is not moved: `open` is the state and the summary exposes it natively. A host
-  `aria-expanded` stays on the host, unsupported, as any unlisted `aria-*`; the README tells consumers to use `open`.
-  This departs from constitution III's list ("aria-expanded … reaches the real inner control"); it is recorded in
-  Complexity Tracking for the operator (SPEC-2-09).
+- **A host `aria-expanded` is mapped onto `open`** (operator decision, squad round 1, PLAN-CORRECTNESS-1-008 (a);
+  constitution III, SPEC-2-09). `aria-expanded` is in `observedAttributes`; when it appears on the host (in the markup
+  at upgrade, set by a script, or added by a morph) the element reads it and removes it from the host: `"true"` sets
+  `open = true`, `"false"` (README rule 4's off value) sets `open = false`, and any other value changes nothing. There
+  is no mirror: the `open` attribute is the persisted state, so a morph keeps the state through `open`. At upgrade
+  it is read after `open`, so it wins, and like any initial state fires no event (US1-9). The element's own removal
+  is not a change. The summary exposes the expanded state natively, so the state reaches the inner control once and
+  no host `aria-expanded` is left for axe to flag (README rule 4). US1-23 is its body. No exception to Principle III
+  remains.
 - `element.click()` is overridden to click the summary, so it toggles once (FR-004). The element does **not** use
   `guardHost`: the panel holds the consumer's content, whose clicks must reach the page's listeners. A click
   dispatched on the host itself does not pass through the summary and the native element ignores it, so it toggles
   nothing, with no guard. This departs from control conventions rule 1's guard, which assumes the host holds only the
-  control; the README section says so.
+  control; the README section says so. The second departure from rule 1 is the root without `delegatesFocus` (R-01),
+  for the same reason: the host holds the panel's content.
 
 ## R-04 Look of the disclosure (FR-014 to FR-016; SPEC-1-09)
 
-**Decision.** Tokens: summary `font-size-md`, `font-weight-medium`, `line-height-normal`, `color-ink`; block padding
+**Decision.** Host: `:host { display: block }` and `:host([hidden]) { display: none }` (FR-001, FR-003; README §
+Element conventions, Styles, wants a `:host` display rule beside the hidden rule). Without it a custom element host is
+`display: inline` around the block `details` (measured, squad round 1, PLAN-CORRECTNESS-1-006). A body asserts the
+host's computed display is `block` and that its border box contains the summary and the open panel; a plant removes
+the rule. Tokens: summary `font-size-md`, `font-weight-medium`, `line-height-normal`, `color-ink`; block padding
 `space-1`, inline padding `space-1`, `radius-2`; hover `background-color: var(--ocelle-color-hover-bg)` inside
 `@media not (forced-colors: active)`; cursor `pointer`. Panel: `padding-block-start: var(--ocelle-space-2)`,
 `padding-inline-start: calc(var(--ocelle-icon-size) + var(--ocelle-space-2) + var(--ocelle-space-1))`, so panel text
-starts under the summary label. The focus ring and forced colours come from `controlStyles` (`.control`). No
+starts under the summary label. The focus ring comes from `controlStyles` (`.control`). **Forced colours** (operator
+decision, squad round 1, PLAN-A11Y-SECURITY-1-004 (a)): `controlStyles` gives `.control` `ButtonText` and relies on a
+native button's `ButtonFace` (`control.ts:169-179`, comment at `control.ts:29`), but a `summary` computes a
+transparent background in forced colours (measured), so the element adds, inside `@media (forced-colors: active)`,
+`summary.control { color: CanvasText; background-color: Canvas }`, the system pair for content; the chevron follows
+through `currentColor`, the ring stays `Highlight`. `controlStyles`' forced-colours hover border has no effect on the
+summary, which has no border; no forced-colours hover state is added. US1-15 asserts that the summary's computed
+`color` and `background-color` resolve to `CanvasText` and `Canvas` (`resolveColour`). No
 `transition` or `animation` anywhere in the element's styles (FR-015), checked by the story test's animation read and
 a style assertion. The summary's block size is `1lh` of `line-height-normal` at 16 px plus the row and summary
 padding, at least 24 px (FR-014); the test asserts the summary's border box is at least 24 × 24 CSS px. Hover is
@@ -118,11 +164,19 @@ transparent otherwise (SPEC-1-09). No new token.
 `requestUpdate()`. The shadow root has no slot, so the light-DOM children are not rendered: child markup adds no
 style, and nothing in the light DOM is focusable through the element. The text is rendered as one text binding inside
 `<pre class="code" part="code">` in wrap mode, or as the digest spans (R-07). Templates hold no whitespace inside
-the `pre`, because it would be shown.
+the `pre`, because it would be shown. The copy and every digest unit are Lit text bindings (`${text}` inside the `pre`
+and inside each span, the units built with `map`), never `unsafeHTML`, `innerHTML` or `DOMParser`, so markup-like text
+stays text (squad round 1, PLAN-A11Y-SECURITY-1-005). A wrap body and a digest body hold escaped markup-like text
+(`&lt;b&gt;x&lt;/b&gt;` and `&lt;img/src=x/onerror=alert(1)&gt;` in the source) and assert the shadow root has no `b` or
+`img` element and the shown text equals those characters.
 
 - **Leading newline.** A newline directly after the opening tag is part of `textContent` and is shown (the HTML
   parser drops it only for `pre`, `listing` and `textarea`). US2's leading-newline body asserts the shown first line
   is empty, and the README tells templates to start the text on the tag's line.
+- **Observer options** (squad round 1, PLAN-TESTABILITY-1-008). US2-16 has a body for each trigger: a child-list
+  change (an htmx-style swap, `textContent` set), a `characterData` change of the host's text node (the driver's
+  `text`), and a `characterData` change of a text node inside a child element (`<b>`, the driver's `textData` on it,
+  the `subtree` option); each asserts the shown copy and, in digest mode, the groups follow.
 - **Wait rule.** Tests of a text change wait for the mutation record, then `updateComplete`, then the driver's
   `settle()` (two animation frames), as US1-7 does (SPEC-2-05).
 
@@ -138,7 +192,16 @@ copy).
   full-width block up to 68ch.
 - Wrap mode renders `<div class="block" part="block"><pre class="code" part="code">…</pre></div>`. `.block` has the
   ground (`color-inset`), `padding: var(--ocelle-space-3)`, `border-radius: var(--ocelle-radius-2)` and a
-  `var(--ocelle-border-width) solid transparent` border, which forced colours paint in `CanvasText` (FR-034). `.code`
+  `var(--ocelle-border-width) solid transparent` border, which forced colours paint in `CanvasText` (FR-034).
+  `.block` also has `direction: ltr; unicode-bidi: isolate` (operator decision, squad round 1, PLAN-FRESH-1-002 (a)):
+  code is shown left to right in every page direction, because under an inherited `rtl` the bidi algorithm moves
+  leading and trailing neutrals (measured: `--force main.` read `.force main--` on screen while it copies as
+  written). The scroll box inherits `ltr`, so in scroll mode the block starts at the left and fades at the right
+  under an `rtl` page too (US2-8); a body asserts the visual order of `--force main.` under an `rtl` ancestor.
+  `.code` has `min-block-size: 1lh` (style-lint admits `1lh` as a whole value, `gates/stylelint/token-only.ts:14`),
+  so an empty `pre`, which has no line box and is 0 px high (measured, squad round 1, PLAN-CORRECTNESS-1-005), keeps
+  one line (US2-19): the oracle is the block size equal to one computed line height of `.code` plus `.block`'s
+  padding and border, in both modes; a plant removes the rule. `.code`
   has `margin: 0`, `font-family: var(--ocelle-font-sans)`, `font-variant-numeric: var(--ocelle-figures)`,
   `font-size: var(--ocelle-font-size-md)` (the body size, as 003's prose `pre` inherits it), `line-height: var(--ocelle-line-height-relaxed)`, `white-space: pre-wrap`,
   `overflow-wrap: anywhere`. The `pre` sets its own font family: `base.css`'s rule does not reach a shadow root and the
@@ -148,7 +211,14 @@ copy).
   shows, `white-space: pre` on `.code`. The controller is created once in the constructor with `box: () =>
   this.renderRoot.querySelector(".region-box")`; in wrap mode `box()` is null, so the module follows no box and writes
   nothing (its `hostUpdated` releases a box that went away and removes its `tabindex`, `role` and `aria-label`; the
-  box node itself is gone with the scroll template), which gives FR-025 on a switch. The module's per-instance sheet is
+  box node itself is gone with the scroll template), which gives FR-025 on a switch. **Focus on the switch**
+  (operator decision, squad round 1, PLAN-CORRECTNESS-1-010 (b)): the module's `#release` only takes off attributes
+  and listeners, and its handover runs only when overflow ends (`overflow-region.ts` 392-402), so a focused
+  `.region-box` removed by the re-render would drop focus to the body. In `willUpdate`, when the policy leaves
+  `scroll` while the `.region-box` is the shadow root's active element, the element notes it; in `updated` it gives
+  `.block` a temporary `tabindex="-1"`, focuses it, and removes the attribute on `.block`'s `focusout`. A body
+  switches `overflow` with the box focused and asserts `document.activeElement` is the host, the shadow root's active
+  element is `.block`, and after focus leaves `.block` has no `tabindex`. The module is not changed. The module's per-instance sheet is
   adopted in both modes; in wrap mode its one rule matches nothing.
 - `label` passed through `setLabel(this.label)` in `updated()`; `aria-label` in `observedAttributes` with
   `requestUpdate()` on change, exactly as `ocelle-scroller` does.
@@ -166,23 +236,37 @@ block's use of it (US2-4 to US2-8).
 
 **Decision.** In digest mode the trimmed text, when it holds no whitespace, is split into code points
 (`Array.from`), the prefix runs to and includes the last `:`, and the rest is cut into groups of four from the start.
-They render as inline spans joined by `<wbr>`:
+They render as inline spans joined by `<wbr>`, each unit a Lit text binding inside its span, the units built with
+`map` (never `unsafeHTML` or `innerHTML`, R-05):
 
 ```html
 <pre class="code digest" part="code"><span class="prefix">sha256:</span><wbr><span class="group">9f86</span><wbr><span class="group">d081</span>…</pre>
 ```
 
-with `.digest > wbr + span { margin-inline-start: var(--ocelle-space-1) }`: every unit after a `wbr` gets the gap, so
-the first unit, prefix or group, has none (the test asserts the gap per adjacent pair). The wrap
-mode keeps `white-space: pre-wrap; overflow-wrap: anywhere`; the scroll mode `white-space: pre`.
+with `.digest > span:not(:last-child) { margin-inline-end: var(--ocelle-space-1) }`: every unit but the last carries
+the gap after it (the test asserts the gap per adjacent pair). The gap is on the unit before each break, not after
+it: a `margin-inline-start` on the unit after each `wbr` starts every continuation line `space-1` in (measured at
+150 px, squad round 1, PLAN-FRESH-1-005), while a trailing margin is invisible at a line's end, so every line starts
+at the `pre`'s content edge and the copied text is unchanged. US2-12 asserts that every line's first unit starts at
+the content-box inline start. `.digest > .group { white-space: nowrap }` keeps a group whole; the prefix has no
+`nowrap`, so a prefix wider than the line still breaks inside (WCAG 1.4.10). The wrap mode keeps
+`white-space: pre-wrap; overflow-wrap: anywhere` on the `pre`; the scroll mode `white-space: pre`.
 
-- **Break positions.** `<wbr>` is the only break opportunity between groups (hex has none of its own). With
-  `overflow-wrap: anywhere`, a unit breaks inside only when it alone is wider than the line, so a group (four
-  characters) never breaks at any width the block can have, and a long prefix in a very narrow block breaks anywhere,
-  which keeps WCAG 1.4.10 (SPEC-2-08). FR-033's rule becomes: breaks fall between units; a unit wider than the line
+- **Break positions.** `<wbr>` is the intended break opportunity between groups. Hex has none of its own, but `-`
+  and `/` are UAX #14 break opportunities, so a base64url or base64 group can break inside: measured (squad round 1,
+  PLAN-CORRECTNESS-1-004), with groups holding `-` or `/`, a group had more than one rect at 45 of 241 `pre` widths
+  from 60 to 300 px, and with `white-space: nowrap` on the groups at 0 of 241. So the groups are `nowrap` (four code
+  points never exceed a line at any width the block can have), while the prefix keeps `overflow-wrap: anywhere`: a
+  long prefix in a very narrow block breaks anywhere, which keeps WCAG 1.4.10 (SPEC-2-08). US2-12 has a base64url body
+  swept over those widths; a plant removes the `nowrap`. FR-033's rule becomes: breaks fall between units; a unit wider than the line
   breaks anywhere inside, as FR-023. The README digest rule says the same.
 - **Copy.** The `wbr` and the margins add no character.
-- **Accessibility text.** Adjacent inline spans are one text run.
+- **Accessibility text.** Adjacent inline spans are one text run. Playwright's `ariaSnapshot` of the host also
+  includes the host's unrendered, unslotted light-DOM text (measured, squad round 1, PLAN-TESTABILITY-1-001: a host
+  holding `LIGHTTEXT` gave `- text: LIGHTTEXT sha256:9f86d081`), so a host snapshot cannot fail for the grouping and
+  is not used. The snapshot is taken of the shadow `pre` (`part="code"`) and asserted equal to `- text: <trimmed
+  digest>` (operator decision (a)); the CDP StaticText concatenation under the block's node is the other half of the
+  measure.
 
 **Measured** (Chromium 157, a 200 px wide shadow `div` with `pre-wrap` and `overflow-wrap: anywhere`, 16 px sans,
 `sha256:` and 16 groups):
@@ -198,10 +282,18 @@ written in all three; the node count differs and is not asserted (SPEC-1-04). A 
 `ni:sha-256:` and no `nowrap`: the prefix (wider than the line) had 2 rects, every group 1. So the inline-span layout
 is chosen; `inline-block` and flex are rejected by the copy and snapshot measures. FR-032's fallback is not needed.
 
-**Copy driver.** Ctrl+C with `clipboard-read` and `clipboard-write` granted, then `navigator.clipboard.readText()`,
-works in headless Chromium. If the repository's pinned browser or harness refuses the permission, the nearest driver
-is `document.execCommand("copy")` with a `copy` listener reading `getData` of the default action, recorded as a gap
-(FR-052).
+**Copy driver** (squad round 1, PLAN-FRESH-1-004, PLAN-TESTABILITY-1-002 (b)). The existing
+`driver.clipboardCopy(id)` selects the host's light-DOM contents (`selectNodeContents`), which under the copy model has
+no box: measured, Ctrl+C after it left a clipboard pre-filled with a sentinel unchanged. So US2-10 uses shadow-aware
+copy methods (contracts/checks.md § Driver additions), each clearing the clipboard to a sentinel first, pressing the
+platform copy shortcut with `clipboard-read` and `clipboard-write` granted, and reading `navigator.clipboard.readText()`
+on an `https://` origin (`about:blank` has no `navigator.clipboard`). Measured on the R-07 structure: a triple click on
+the shadow `pre`, then Ctrl+C, copies the trimmed digest followed by one `\n` (the platform ends a whole-block
+selection with a block newline, which is not an element character); a selection over a run of group spans inside the
+`pre` (`setBaseAndExtent` over its children) copies exactly their characters. US2-10 asserts both (operator decision
+(b)): the whole-block copy equals the trimmed digest plus one `\n`, and the run copy equals the run exactly. If the
+repository's pinned browser or harness refuses the permission, the nearest driver is `document.execCommand("copy")`
+with a `copy` listener reading `getData` of the default action, recorded as a gap (FR-052).
 
 ## R-08 Find in page (FR-010; SPEC-1-10)
 
@@ -223,7 +315,8 @@ tree (SPEC-2-02).
 **Decision.** `storybook/stories/disclosure.stories.ts`: Closed, Open, Focused (declared focus state), Hovered
 (declared hover state), LongSummary (288 px frame), ConsumerIcon, RightToLeft, Nested. `storybook/stories/
 code-block.stories.ts`: Short, WrapLongLine (288 px frame), ScrollOverflowing, ScrollFitting, Digest, DigestWrapping
-(288 px frame), DigestScroll, RightToLeft, Empty. Light and dark baselines through `pnpm run visual:update` in #10's
+(288 px frame), DigestScroll, RightToLeft (a command with leading and trailing neutrals, shown left to right, R-06),
+Empty (one line high by `.code`'s `min-block-size: 1lh`, R-06). Light and dark baselines through `pnpm run visual:update` in #10's
 pinned container under docker (`nohup dockerd`; after a container restart `pnpm run setup:online`); no podman
 cross-check is possible in this environment, which each phase's review notes. Story-less, test-only: the unnamed
 disclosure and the unnamed overflowing scroll block (axe fails both by design); a code block with a host `aria-label`
@@ -253,4 +346,9 @@ changed `src/overflow-region.ts`, and the operator decides how to proceed. Nothi
 
 ## Repository-wide notes for the orchestrator
 
-None found so far. A finding of this kind is recorded here and reported for a separate op, not fixed in this mission.
+A finding of this kind is recorded here and reported for a separate op, not fixed in this mission.
+
+- **`ocelle-button`'s icon slot may expose a bare `<svg>`** (from squad round 1, PLAN-A11Y-SECURITY-1-003; not
+  measured on `ocelle-button`). The slot convention allows a bare `<svg>` as a slotted icon (README § Slot convention)
+  and `src/icon-slot.ts` adds no `aria-hidden`; in the disclosure probe a titled bare svg kept an `image` node and
+  added its title to the control's name. `ocelle-button` (and any other icon-slot user) may have the same gap.
