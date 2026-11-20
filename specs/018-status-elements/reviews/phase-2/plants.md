@@ -1,6 +1,6 @@
 # Plants of phase 2
 
-- base: b48309ce699109f445e650f624e8abb196982a73
+- base: 4fc2ed5b90303d239a97d0beb430c7f295f3c825
 - command: `OCELLE_VISUAL_ENGINE=docker pnpm run gate:plants -- --affected $(cat specs/018-status-elements/reviews/phase-2/base.sha) --list`
 - exit: 0
 
