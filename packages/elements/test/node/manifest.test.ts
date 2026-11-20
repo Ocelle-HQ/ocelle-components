@@ -292,7 +292,7 @@ describe("generate(root) on the repository's element source", () => {
     const manifest = await generate(repo);
     const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
     expect(manifest.schemaVersion).toBe("1.0.0");
-    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-action-row.ts", "src/ocelle-brand-mark.ts", "src/ocelle-button.ts", "src/ocelle-card.ts", "src/ocelle-context-sidebar.ts", "src/ocelle-dialog.ts", "src/ocelle-drawer.ts", "src/ocelle-empty-state.ts", "src/ocelle-fact.ts", "src/ocelle-facts.ts", "src/ocelle-icon.ts", "src/ocelle-list-detail.ts", "src/ocelle-page-header.ts", "src/ocelle-personal-rail.ts", "src/ocelle-progress.ts", "src/ocelle-scroller.ts", "src/ocelle-section-header.ts", "src/ocelle-tooltip.ts", "src/ocelle-workflow-board.ts", "src/ocelle-workflow-lane.ts"]);
+    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-action-row.ts", "src/ocelle-brand-mark.ts", "src/ocelle-button.ts", "src/ocelle-card.ts", "src/ocelle-context-sidebar.ts", "src/ocelle-dialog.ts", "src/ocelle-drawer.ts", "src/ocelle-empty-state.ts", "src/ocelle-fact.ts", "src/ocelle-facts.ts", "src/ocelle-icon.ts", "src/ocelle-list-detail.ts", "src/ocelle-page-header.ts", "src/ocelle-personal-rail.ts", "src/ocelle-progress.ts", "src/ocelle-scroller.ts", "src/ocelle-section-header.ts", "src/ocelle-status-indicator.ts", "src/ocelle-tooltip.ts", "src/ocelle-workflow-board.ts", "src/ocelle-workflow-lane.ts"]);
     const [icon] = modules.find((module) => module.path === "src/ocelle-icon.ts")?.declarations ?? [];
     expect(icon).toMatchObject({
       kind: "class",
@@ -798,6 +798,55 @@ describe("generate(root) on the repository's element source", () => {
 
   // 013 phase 3 (T048; contracts/elements.md § `ocelle-progress`): every list stated, every member described; the host
   // `aria-label` is observed, not declared (README § Element conventions).
+  // 018 (tasks.md T016; contracts/elements-status.md § `ocelle-status-indicator`): `tone` (the vocabulary, default
+  // "neutral", an attribute-backed accessor), `label` and `pulse` (reflected), each described; the parts dot and ring;
+  // no event, method, slot, CSS property or custom state, paired with the positive presence of `tone`; the host
+  // `aria-label` is not read, so it is not declared.
+  it('declares ocelle-status-indicator with tone (the five values, default "neutral"), label (string | undefined) and pulse (boolean | undefined), both reflected, the parts dot and ring, and no event, method, slot, CSS property or custom state, each described', async () => {
+    const manifest = await generate(repo);
+    const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [indicator] = modules.find((module) => module.path === "src/ocelle-status-indicator.ts")?.declarations ?? [];
+    const named = (list: unknown): unknown => ((list ?? []) as Record<string, unknown>[]).map(({ name, description }) => ({ name, described: typeof description === "string" && description !== "" }));
+    const described = (list: unknown): Record<string, unknown>[] =>
+      ((list ?? []) as Record<string, unknown>[]).map(({ description, ...rest }) => ({ ...rest, described: typeof description === "string" && description !== "" }));
+    const tone = '"info" | "success" | "warning" | "danger" | "neutral"';
+    expect({ kind: indicator?.kind, name: indicator?.name, tagName: indicator?.tagName, customElement: indicator?.customElement, events: indicator?.events }).toEqual({
+      kind: "class",
+      name: "OcelleStatusIndicator",
+      tagName: "ocelle-status-indicator",
+      customElement: true,
+      events: [],
+    });
+    expect(described(indicator?.members)).toEqual([
+      { kind: "field", name: "label", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "label", reflects: true, described: true },
+      { kind: "field", name: "pulse", privacy: "public", type: { text: "boolean | undefined" }, default: "undefined", attribute: "pulse", reflects: true, described: true },
+      { kind: "field", name: "tone", type: { text: tone }, default: '"neutral"', described: true },
+    ]);
+    expect(described(indicator?.attributes)).toEqual([
+      { name: "tone", type: { text: tone }, described: true },
+      { name: "label", fieldName: "label", type: { text: "string | undefined" }, default: "undefined", described: true },
+      { name: "pulse", fieldName: "pulse", type: { text: "boolean | undefined" }, default: "undefined", described: true },
+    ]);
+    expect({
+      slots: indicator?.slots,
+      parts: named(indicator?.cssParts),
+      properties: indicator?.cssProperties,
+      states: indicator?.cssStates,
+      methods: ((indicator?.members ?? []) as Record<string, unknown>[]).filter((member) => member.kind === "method"),
+      ariaLabel: JSON.stringify(indicator).includes('"aria-label"'),
+    }).toEqual({
+      slots: [],
+      parts: [
+        { name: "dot", described: true },
+        { name: "ring", described: true },
+      ],
+      properties: [],
+      states: undefined,
+      methods: [],
+      ariaLabel: false,
+    });
+  });
+
   it('declares ocelle-progress with value and max (number | undefined), valueText, label, showLabel, size ("compact" | undefined, reflected) and ground ("tinted" | undefined, reflected), no slot, the parts track, fill, label and value-text, and no event or CSS property, each described', async () => {
     const manifest = await generate(repo);
     const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];

@@ -19,7 +19,8 @@ import { buildPackage, elements } from "./package-build.ts";
 //   tokens per variant and every FR-026 pair checked in pairs.json, and dist/ocelle-brand-mark.js imports neither the
 //   package root nor ocelle-icon.js;
 // - 012 (tasks.md T020): dist/ocelle-button.js, imported by the root and importing no other element, and the browser
-//   build defining `ocelle-button`; and (tasks.md T053) dist/ocelle-action-row.js the same way, `ocelle-action-row`.
+//   build defining `ocelle-button`; and (tasks.md T053) dist/ocelle-action-row.js the same way, `ocelle-action-row`;
+// - 018 (tasks.md T016): dist/ocelle-status-indicator.js the same way, `ocelle-status-indicator`.
 const dist = join(elements, "dist");
 const browserBuild = join(dist, "browser", "ocelle-elements.js");
 
@@ -341,6 +342,26 @@ describe("the module build of ocelle-progress (013)", () => {
   it("the css template of dist/ocelle-progress.js paints the mark and edge in color-accent-strong, the track in color-inset and its boundary in color-control-border or, tinted, color-accent-strong, each pair a checked row of pairs.json", () => {
     const pairs = JSON.parse(readFileSync(join(elements, "..", "tokens", "contrast", "pairs.json"), "utf8")) as PairEntry[];
     expect(progressPairsCheck(progressTemplate(read("ocelle-progress.js")), pairs)).toEqual({ painted: expectedPainted, missing: [] });
+  });
+});
+
+// 018 (tasks.md T016): dist/ocelle-status-indicator.js imports lit, the registration helper and the internal naming and
+// status modules, and no element module nor the root; the root imports it, and the browser build defines the element.
+describe("the module build of ocelle-status-indicator (018)", () => {
+  const read = (name: string): string => (existsSync(join(dist, name)) ? readFileSync(join(dist, name), "utf8") : "");
+
+  it("dist/ocelle-status-indicator.js imports lit, ./define.js, ./naming.js and ./status.js, and no element module nor the root, and dist/index.js imports it", () => {
+    const imported = specifiers(read("ocelle-status-indicator.js"));
+    expect({
+      lit: imported.includes("lit"),
+      own: imported.filter((specifier) => specifier.startsWith("./")),
+      rootImportsIt: specifiers(read("index.js")).includes("./ocelle-status-indicator.js"),
+      status: existsSync(join(dist, "status.js")),
+    }).toEqual({ lit: true, own: ["./define.js", "./naming.js", "./status.js"], rootImportsIt: true, status: true });
+  });
+
+  it("the browser build defines ocelle-status-indicator", () => {
+    expect(read(join("browser", "ocelle-elements.js")).includes('"ocelle-status-indicator"')).toBe(true);
   });
 });
 

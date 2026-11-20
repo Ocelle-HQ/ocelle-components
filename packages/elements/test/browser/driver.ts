@@ -22,7 +22,7 @@
 // commands.ts on the page's main frame, the code the in-process browser commands run.
 import { inflateSync } from "node:zlib";
 import type { Page } from "playwright";
-import { runningOf } from "../animations.ts";
+import { advanceOf, moveBeforeOf, runningOf } from "../animations.ts";
 import { audit, axNodes, axeSetup, axStateOf, axSubtree, emulate, emulateMotion, movePointer, pointer, press, readActiveElement, readAnimationStates, readOverflows, readScrollWidth, readTextBoxes, seekIn, settleLayoutIn } from "../commands.ts";
 import { layoutWait } from "../layout-wait.ts";
 import { activeInnerOf, activePath, clickElement, computedOf, copyElement, currentOf, endOrder, focusElement, morphElement, preventNextEvent, recordEvents, resetPage, sentinelId, startOrder, takeRecords } from "../page-side.ts";
@@ -853,5 +853,13 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
       await settleLayoutIn(page.mainFrame());
     },
     overflows: (target) => readOverflows(page.mainFrame(), target),
+    advance: async (id, inner, ms) => {
+      await page.evaluate(advanceOf, { id, inner, ms });
+      await settle(page);
+    },
+    moveBefore: async (id, parentId) => {
+      await page.evaluate(moveBeforeOf, { id, parentId });
+      await settle(page);
+    },
   };
 }

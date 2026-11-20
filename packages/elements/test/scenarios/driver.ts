@@ -714,6 +714,19 @@ export interface Driver {
    * right-to-left) by more than 0, in fractional CSS pixels. False when there is no content.
    */
   overflows(target: ElementTarget): Promise<boolean>;
+  // The additions of 018 phase 2 (tasks.md T012): a run moved on in time without pausing it, and a state-preserving
+  // move, for the pulse bodies of scenarios/status-indicator.ts (contracts/checks.md § US1 bodies).
+  /**
+   * Sets the current time of every animation of the element matching `inner` in the shadow root of the element with
+   * `id` to `ms`, leaving each running (unlike `seek`, which pauses), then settles. Rejects when the element has no
+   * animation, so a run never passes as moved on when there was none.
+   */
+  advance(id: string, inner: string, ms: number): Promise<void>;
+  /**
+   * Moves the element with `id` to the end of the element with `parentId` with `moveBefore()`, the state-preserving
+   * move, and waits for every element to render; rejects where the engine has no `moveBefore()`.
+   */
+  moveBefore(id: string, parentId: string): Promise<void>;
 }
 
 /** How `copy` copies the live DOM. */

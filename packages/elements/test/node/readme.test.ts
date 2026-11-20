@@ -35,7 +35,8 @@ import { compositions } from "../scenarios/link.ts";
 // trigger, and a pass or `remeasure()` on an element that is not rendered writing nothing, in both places. Since 009 phase 5 (T062): the four frames as the tested screen sizes, WebKit
 // not measured for the layout elements' focus behaviour, the print note and the states that do not apply.
 // 013 phase 3 adds `ocelle-progress` (T043, T043a): its statements, its entry point, its mapping rows by role name and its
-// CHANGELOG names.
+// CHANGELOG names. 018 phase 2 adds `ocelle-status-indicator` (T016): its section, its README rules (i) to (viii), its
+// entry point and its CHANGELOG names.
 /** A file's text, relative to the package; empty while it does not exist, so each assertion reports what is missing. */
 function read(file: string): string {
   const url = new URL(`../../${file}`, import.meta.url);
@@ -565,6 +566,7 @@ const entryRows = [
   "| `@ocelle/elements/ocelle-fact.js` | `dist/ocelle-fact.js` | `ocelle-fact` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-empty-state.js` | `dist/ocelle-empty-state.js` | `ocelle-empty-state` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-progress.js` | `dist/ocelle-progress.js` | `ocelle-progress` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-status-indicator.js` | `dist/ocelle-status-indicator.js` | `ocelle-status-indicator` only; for hosts with a bundler |",
   "| `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |",
   "| `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |",
 ];
@@ -688,7 +690,7 @@ describe("packages/elements/README.md", () => {
   it("lists exactly the entry points of package.json's exports in its Entry points table (FR-002)", () => {
     const manifest = JSON.parse(read("package.json")) as { exports?: Record<string, string> };
     expect(tableRows(read("README.md"), "Entry points")).toEqual(entryRows);
-    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-scroller.js", "./ocelle-workflow-board.js", "./ocelle-workflow-lane.js", "./ocelle-list-detail.js", "./ocelle-dialog.js", "./ocelle-drawer.js", "./ocelle-tooltip.js", "./ocelle-card.js", "./ocelle-section-header.js", "./ocelle-page-header.js", "./ocelle-context-sidebar.js", "./ocelle-personal-rail.js", "./ocelle-button.js", "./ocelle-action-row.js", "./ocelle-facts.js", "./ocelle-fact.js", "./ocelle-empty-state.js", "./ocelle-progress.js", "./browser.js", "./custom-elements.json"]);
+    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-scroller.js", "./ocelle-workflow-board.js", "./ocelle-workflow-lane.js", "./ocelle-list-detail.js", "./ocelle-dialog.js", "./ocelle-drawer.js", "./ocelle-tooltip.js", "./ocelle-card.js", "./ocelle-section-header.js", "./ocelle-page-header.js", "./ocelle-context-sidebar.js", "./ocelle-personal-rail.js", "./ocelle-button.js", "./ocelle-action-row.js", "./ocelle-facts.js", "./ocelle-fact.js", "./ocelle-empty-state.js", "./ocelle-progress.js", "./ocelle-status-indicator.js", "./browser.js", "./custom-elements.json"]);
   });
 
   it("lists the thirteen names of the set, whether each mirrors and the consumer need it meets, in its Icons table (US2-1, FR-018, SC-007)", () => {
@@ -727,6 +729,54 @@ describe("packages/elements/README.md", () => {
     const pin = manifest.peerDependencies?.["@ocelle/tokens"];
     expect(pin).toBe("workspace:0.0.0");
     expect(readme).toContain(`"@ocelle/tokens": "${String(pin)}"`);
+  });
+});
+
+/**
+ * The `ocelle-status-indicator` section (018 FR-007, FR-010 to FR-016, FR-041; contracts/elements-status.md; tasks.md
+ * T016): what it is, its tone and its fallback, the pulse and reduced motion, forced colours, the tokens it reads, no
+ * event and no tab stop, and each of the indicator's README rules (i) to (viii) of spec.md FR-012, their single source,
+ * one assertion each, read in that section.
+ */
+const indicatorFragments = [
+  "`ocelle-status-indicator` is a status dot: a solid circle in the colour of its `tone`, `info`, `success`, `warning`, `danger` or `neutral` (the default)",
+  "An absent, empty or unknown `tone` shows `neutral`; the attribute keeps the value as written and the `tone` property reads `\"neutral\"`",
+  "With `pulse`, a ring around the dot grows and fades three times, each `--ocelle-motion-pulse` long (4.8 s by default), and then only the solid dot is shown; the dot itself never fades, moves or changes size",
+  "Under `prefers-reduced-motion: reduce` no animation runs, with or without `pulse`, and the dot is shown solid",
+  "In forced colours the dot is drawn in `CanvasText`",
+  "`ocelle-status-indicator` reads the tokens `--ocelle-color-info`, `--ocelle-color-success`, `--ocelle-color-warning`, `--ocelle-color-danger`, `--ocelle-color-neutral`, `--ocelle-size-indicator`, `--ocelle-radius-pill`, `--ocelle-border-width`, `--ocelle-motion-pulse` and `--ocelle-easing-standard`",
+  "`ocelle-status-indicator` emits no event and adds no tab stop",
+];
+
+/** The indicator's README rules (i) to (viii) of spec.md FR-012, in order, one statement each. */
+const indicatorRules = [
+  // (i)
+  "Without a `label` the indicator is hidden from the accessibility tree: place text naming the state next to it, since a state is never shown by colour alone",
+  // (ii)
+  "`label` is the one way to name the indicator: with a non-empty `label` it is one image with that name. A host `aria-label` is not supported, and the indicator does not read it",
+  // (iii)
+  "The indicator is not a busy or progress signal: it sets no `aria-busy` and no live region. For progress, use `ocelle-progress`",
+  // (iv)
+  "A host that overrides `--ocelle-motion-pulse` keeps the token's value times three, the fixed iteration count, at or below 5 s: at most `1666ms`",
+  // (v)
+  "Each connection, and each time the indicator is shown again after `display: none` or `hidden`, starts a run, so a host that re-inserts, moves, re-renders or re-shows an indicator more often than every 5 s keeps it pulsing: keep `pulse` off between changes, or keep the element in place",
+  // (vi)
+  "Removing `pulse` and setting it again within one task starts no run; set it again in a later task",
+  // (vii)
+  "A state-preserving move (`moveBefore()`) and a reveal from `hidden=\"until-found\"` start no run",
+  // (viii)
+  "Opening a `<details>` around a pulsing indicator starts no run: a run under way when it closed goes on while it is closed and may end unseen",
+];
+
+describe("packages/elements/README.md: ocelle-status-indicator (018)", () => {
+  const section = flat(/^## `ocelle-status-indicator`\n([\s\S]*?)(?=^## |(?![\s\S]))/m.exec(read("README.md"))?.[1] ?? "");
+
+  it.each(indicatorFragments)("states in its section: %s", (fragment) => {
+    expect(section).toContain(flat(fragment));
+  });
+
+  it.each(indicatorRules)("states the README rule in its section: %s", (rule) => {
+    expect(section).toContain(flat(rule));
   });
 });
 
@@ -1049,6 +1099,10 @@ describe("packages/elements/CHANGELOG.md", () => {
     "`show-label`",
     "`size=\"compact\"`",
     "`ground=\"tinted\"`",
+    // 018 (tasks.md T016): the status indicator, its entry point and its attributes
+    "`ocelle-status-indicator`",
+    "`@ocelle/elements/ocelle-status-indicator.js`",
+    "`tone`, `label` and `pulse` (reflected)",
     ...["chevron-start", "chevron-end", "chevron-up", "chevron-down", "arrow-start", "arrow-end", "menu", "close", "folder", "file", "search", "table", "copy"].map((name) => `\`${name}\``),
   ])("names %s under Unreleased / Added (constitution VII, FR-031, SC-008)", (surface) => {
     expect(added).toContain(surface);

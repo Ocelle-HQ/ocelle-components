@@ -3,7 +3,7 @@
 // self-contained (no import, no outer name). It lists the current animations and transitions (`getAnimations()`,
 // which leaves out a finished animation that fills nothing) of the element with `id` and of every element of its
 // shadow root, in tree order. 018 phase 1 adds `animationStatesOf` (with a stable identity and the iteration count) and
-// `seekOf`, self-contained in the same way.
+// `seekOf`, self-contained in the same way, and 018 phase 2 `advanceOf` (a current time set without pausing).
 import type { AnimationState, Running } from "./scenarios/driver.ts";
 
 /** The current animations and transitions on the element with `id` and in its shadow root. */
@@ -99,4 +99,31 @@ export function seekOf({ id, inner, ms }: { readonly id: string; readonly inner:
     animation.pause();
     animation.currentTime = ms;
   }
+}
+
+/**
+ * Sets the current time of every animation of the element matching `inner` in the shadow root of the element with `id`
+ * to `ms`, without pausing it, so it runs on from there (018 phase 2; contracts/checks.md § US1 bodies). Self-contained
+ * like `runningOf`. Throws when the element has none, so an advance never passes silently.
+ */
+export function advanceOf({ id, inner, ms }: { readonly id: string; readonly inner: string; readonly ms: number }): void {
+  const host = document.getElementById(id);
+  if (host === null) throw new Error(`no #${id} on the page`);
+  const target = host.shadowRoot?.querySelector(inner) ?? null;
+  if (target === null) throw new Error(`advance: no ${inner} in the shadow root of #${id}`);
+  const animations = target.getAnimations();
+  if (animations.length === 0) throw new Error(`advance: no animation on ${inner}`);
+  for (const animation of animations) animation.currentTime = ms;
+}
+
+/**
+ * Moves the element with `id` to the end of the element with `parentId` with the state-preserving `moveBefore()` (018
+ * phase 2). Self-contained like `runningOf`. Throws where the engine has no `moveBefore()`.
+ */
+export function moveBeforeOf({ id, parentId }: { readonly id: string; readonly parentId: string }): void {
+  const element = document.getElementById(id);
+  const parent = document.getElementById(parentId);
+  if (element === null || parent === null) throw new Error(`no #${id} or #${parentId} on the page`);
+  if (!("moveBefore" in parent)) throw new Error("moveBefore: not supported by this engine");
+  parent.moveBefore(element, null);
 }

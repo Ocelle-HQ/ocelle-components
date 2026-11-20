@@ -6,7 +6,7 @@ import { expectedTokens, excludedNames } from "./expected.ts";
 // the host contract (load once, the theme rule, the color-scheme hand-off to #6, forced colours and the box-shadow
 // caveat, the rendered brand rules, and from phase 4 the font's CSP allowance `font-src 'self'`, FR-012), and the
 // changelog's "Unreleased" section lists every token under "Added". 012 (research.md R-08) adds the roles of the four
-// control colour tokens.
+// control colour tokens. 018 adds the status indicator's dot size and pulse duration.
 // Whitespace is normalised, so a fragment may wrap across lines.
 /** A package file's text; empty while it does not exist, so each assertion below reports what is missing. */
 function read(file: string): string {
@@ -57,12 +57,16 @@ const fragments = [
   // 012 (research.md R-07; tasks.md T042): the spinner's motion tokens and the reduced-motion rule for every duration
   "`--ocelle-motion-spin` is the duration of one turn of a busy spinner, `800ms`",
   "`--ocelle-motion-turn` is the angle of one turn, `1turn`; it is not a duration and reduced motion does not change it",
-  "Under `prefers-reduced-motion: reduce` every motion duration (`--ocelle-motion-fast`, `--ocelle-motion-base`, `--ocelle-motion-spin`) is `0ms`",
+  // 018 (research.md R-10; tasks.md T015): motion-pulse joins the list, a stricter replacement of the three names
+  "Under `prefers-reduced-motion: reduce` every motion duration (`--ocelle-motion-fast`, `--ocelle-motion-base`, `--ocelle-motion-spin`, `--ocelle-motion-pulse`) is `0ms`",
   // Operator decision C1 (landing of 012 with 008): a motion token marked as a delay keeps its value
   "and so does a motion token the source marks as a delay, `--ocelle-tooltip-delay`, because a delay is not motion",
   // 012 (research.md R-08 item 2, R-12; tasks.md T052): the inside focus ring offset and the description ink's grounds
   "`--ocelle-focus-offset-inset` is the negative offset that draws a focus ring inside a box: `calc(-1 * (var(--ocelle-focus-offset) + var(--ocelle-focus-width)))`, -5 px",
   "`--ocelle-color-ink-soft` is also declared on the state grounds (`color-danger-bg`, `color-warning-bg`, `color-success-bg`, `color-info-bg`, `color-neutral-bg`), where an action row's description and tags sit",
+  // 018 (research.md R-03, R-04, R-10; tasks.md T015): the status indicator's two tokens
+  "`--ocelle-size-indicator` (`0.5rem`) is the size of the dot of `ocelle-status-indicator`, 8 px at the default root font size",
+  "`--ocelle-motion-pulse` is the duration of one iteration of the status indicator's pulse, `1600ms`; the indicator runs three iterations, 4.8 s in all, within the 5 s limit",
 ];
 
 describe("packages/tokens/README.md", () => {
