@@ -3,8 +3,8 @@ import type { Browser } from "playwright";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 import type { InPage } from "../scenarios/driver.ts";
-import { linkScenarios } from "../scenarios/link.ts";
-import type { Navigation } from "../scenarios/link.ts";
+import { linkScenarios } from "../scenarios/ocelle-link.ts";
+import type { Navigation } from "../scenarios/ocelle-link.ts";
 import { fixtureDriver } from "./driver.ts";
 import { clean, serve, visit } from "./serve.ts";
 import type { Served } from "./serve.ts";
@@ -18,7 +18,7 @@ import type { Served } from "./serve.ts";
 // `rgba` `rgb`) so that the CI condition shows on every machine:
 // - a precondition: black text on white in this browser has coloured pixels, so the body below cannot pass vacuously
 //   on a browser that draws grayscale text;
-// - US5-7's shared body, found by name in scenarios/link.ts and run unchanged on link.html, as browser/link.test.ts
+// - US5-7's shared body, found by name in scenarios/ocelle-link.ts and run unchanged on link.html, as browser/link.test.ts
 //   runs it. US5-7 does not navigate, so its navigation throws.
 // No other suite's launch changes.
 const built = inject("elementsFixture");

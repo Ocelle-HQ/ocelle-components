@@ -1,14 +1,14 @@
 import type { Browser, Page } from "playwright";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 import type { InPage } from "../scenarios/driver.ts";
-import { linkScenarios } from "../scenarios/link.ts";
-import type { Navigation } from "../scenarios/link.ts";
+import { linkScenarios } from "../scenarios/ocelle-link.ts";
+import type { Navigation } from "../scenarios/ocelle-link.ts";
 import { fixtureDriver } from "./driver.ts";
 import { clean, launch, serve, visit } from "./serve.ts";
 import type { Served } from "./serve.ts";
 
 // User Story 5's browser scenarios for `ocelle-link` on the strict-CSP fixture with the built browser build (014 spec
-// § The strict-CSP fixture; research.md R-08, R-11, T094): every shared body of scenarios/link.ts, each on its own
+// § The strict-CSP fixture; research.md R-08, R-11, T094): every shared body of scenarios/ocelle-link.ts, each on its own
 // link.html page, which loads the browser build and nothing else. For User Story 5 the allowed list also holds the link
 // target page, link-target.html, served beside it with the same policy (spec § The strict-CSP fixture), which the
 // navigating bodies open. Each runs with zero CSP violations, no request outside the allowed list, no failed request,

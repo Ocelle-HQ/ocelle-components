@@ -4,12 +4,12 @@ import { commands } from "vitest/browser";
 import { define } from "../src/define.ts";
 import { OcelleLink } from "../src/ocelle-link.ts";
 import { inProcessDriver } from "./in-process.ts";
-import { linkScenarios } from "./scenarios/link.ts";
-import type { Navigation } from "./scenarios/link.ts";
+import { linkScenarios } from "./scenarios/ocelle-link.ts";
+import type { Navigation } from "./scenarios/ocelle-link.ts";
 import type { InPage } from "./scenarios/driver.ts";
 
 // User Story 5's browser scenarios for `ocelle-link`, in process on the element source (014 research.md R-08, R-11,
-// T094): every shared body of scenarios/link.ts that is not fixture-only on the in-process driver, each with no
+// T094): every shared body of scenarios/ocelle-link.ts that is not fixture-only on the in-process driver, each with no
 // clipboard call by the page at its end (SC-006); the navigations here are same-document fragments and `javascript:`
 // hrefs that would set a marker (R-11 "Navigation in process"), so the element's navigation decision, its
 // `defaultPrevented` check and its `location.assign` are killed in process, where Stryker mutates the source. The
