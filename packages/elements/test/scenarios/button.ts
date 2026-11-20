@@ -641,6 +641,43 @@ export const buttonScenarios: readonly Scenario[] = [
     },
     expected: { state: { role: "button", name: "Open project" }, nodes: [{ role: "button", name: "Open project" }], axe: [] },
   },
+  // Op 022 (#57; spec.md scenarios 9 and 10, phase-1 decision 7): the name follows the icon slot after the first
+  // render. An icon slotted later adds nothing to the name; an icon moved out leaves the content naming the control.
+  {
+    name: 'op 022 (#57) scenario 9: a titled bare <svg> beside the text Open, first in slot="aside" and then moved into the icon slot, in the button and the link mode: the inner control is named Open, and the subtree has no image node and no node named Folder (FR-003, phase-1 decision 7)',
+    run: async (driver) => {
+      const svg = (id: string): string => `<svg id="${id}" slot="aside" viewBox="0 0 16 16"><title>Folder</title><path d="M2 2h12v12H2z"/></svg>`;
+      await driver.mount(`<ocelle-button id="b">${svg("b-svg")}Open</ocelle-button> <ocelle-button id="k" href="#x">${svg("k-svg")}Open</ocelle-button>`);
+      await driver.setAttribute("b-svg", "slot", "icon");
+      await driver.setAttribute("k-svg", "slot", "icon");
+      const read = async (id: string): Promise<unknown> => {
+        const state = await driver.axState(id, control);
+        const subtree = await driver.axSubtree(id);
+        return { state: { role: state.role, name: state.name }, images: subtree.filter((node) => node.role === "image" || node.role === "img"), folder: subtree.filter((node) => node.name.includes("Folder")) };
+      };
+      return { button: await read("b"), link: await read("k"), axe: await severe(driver) };
+    },
+    expected: {
+      button: { state: { role: "button", name: "Open" }, images: [], folder: [] },
+      link: { state: { role: "link", name: "Open" }, images: [], folder: [] },
+      axe: [],
+    },
+  },
+  {
+    name: "op 022 (#57) scenario 10: a titled bare <svg> in the icon slot beside the one-character text S, then moved out of the icon slot (slot=\"aside\"), in the button and the link mode: the inner control is named S, and axe reports no serious or critical result (FR-003, phase-1 decision 7)",
+    run: async (driver) => {
+      const svg = (id: string): string => `<svg id="${id}" slot="icon" viewBox="0 0 16 16"><title>Folder</title><path d="M2 2h12v12H2z"/></svg>`;
+      await driver.mount(`<ocelle-button id="b">${svg("b-svg")}S</ocelle-button> <ocelle-button id="k" href="#x">${svg("k-svg")}S</ocelle-button>`);
+      await driver.setAttribute("b-svg", "slot", "aside");
+      await driver.setAttribute("k-svg", "slot", "aside");
+      const read = async (id: string): Promise<unknown> => {
+        const state = await driver.axState(id, control);
+        return { role: state.role, name: state.name };
+      };
+      return { button: await read("b"), link: await read("k"), axe: await severe(driver) };
+    },
+    expected: { button: { role: "button", name: "S" }, link: { role: "link", name: "S" }, axe: [] },
+  },
   ...(["default", "compact"] as const).flatMap((size) =>
     (["ltr", "rtl"] as const).map(
       (direction): Scenario => ({
