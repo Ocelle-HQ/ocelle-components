@@ -7,7 +7,9 @@ in_scope: [12]
 out_of_scope: [1, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 16, 17, 55, 56, 57, 58, 60, 61, 62, 63]
 semver: minor
 spec_prompt: "Build the six public app frame and navigation elements from #12 (triage/024-app-frame-navigation.md) in @ocelle/elements: ocelle-app-shell with rail, context sidebar and content plus a sidebar-only project layout, a collapsed icon-column tier, consumer-set container thresholds following the #15 convention, the no-team personal drawer on ocelle-drawer, and opt-outs for block-end and inline-end content padding; ocelle-top-bar with brand mark, product name, actions and menu control; ocelle-nav-item with icon, label, aria-current and an accessible compact hover/focus label bubble; ocelle-nav-pill for Desktop V2; ocelle-breadcrumbs aligned with the page title; and ocelle-skip-link that moves focus by element reference or selector across supported shadow boundaries. Preserve the landed component contracts, cover keyboard behavior at each tier transition and reflow at 320 px, and meet #7's per-element checklist. Use the upstream issues as consumer requirements and implement original Ocelle elements."
-status: proposed
+status: approved
+decided_by: "human:MOES-Media"
+decided_at: 2026-11-20T21:54:03Z
 ---
 
 # Triage 024: App frame and navigation (#12)
