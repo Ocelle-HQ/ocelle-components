@@ -1,5 +1,5 @@
 
- RUN  v5.0.5 /home/user/ocelle-components
+ RUN  v5.0.5 <repo>
 
  ❯ |gates-integration| gates/test/integration/plant-repo.test.ts (20 tests | 4 failed) 776ms
    ❯ the configuration set of a repository root without some node_modules or entries (005 research.md R-12) (6)
