@@ -1,9 +1,9 @@
 ---
-analyzed_at: 2026-11-20T22:29:22Z
-head: b693ed8d7a95217bbcd0662ebf4bc704699a14b9
-critical: 1
+analyzed_at: 2026-11-20T22:30:23Z
+head: e968e1812c10f78982e4abcfdb4b043cdfd4c8e8
+critical: 0
 high: 0
-medium: 2
+medium: 0
 low: 0
 coverage: 100
 ---
@@ -12,48 +12,47 @@ coverage: 100
 
 | ID | Category | Severity | Location(s) | Summary | Recommendation |
 |----|----------|----------|-------------|---------|----------------|
-| D1 | Constitution alignment | CRITICAL | tasks.md T027–T030, plan.md Constitution Check VIII and delivery order, constitution Principle VIII | T030 introduces the built-shell interaction test in Phase 7, after Phase 6 completes the last behavior it exercises. The Phase 7 baseline already has tier changes, drawer entry and dismissal, and skip-focus transfer. The available runner and working behavior do not give this phase a valid red run or the required old-code failure. | Write the built-output test as part of Phase 6 before implementing skip focus. Use the existing shell and drawer as setup. The red test must fail on the missing skip behavior with the fixture operational, then pass and rerun in Phase 7. Keep Phase 7 for verification and documentation. |
-| E1 | Coverage detail | MEDIUM | spec.md US3.5 and FR-010, tasks.md T003, T016, T022, quickstart.md Source browser tests item 6 | The validation guide calls for an explicit long translated compact label case with forced colors and reduced motion. T003 covers bubble interaction, T016 specifies forced colors and reduced motion only for shell reflow, and T022 names Escape ownership and touch. The explicit bubble visibility, legibility and no-overflow assertions can disappear if the assignee follows only those task descriptions. | Put the guide's compact bubble checks into T003 or T022. Verify the full label, visible focus, and no page overflow with a long translated label, and exercise the relevant forced-colors and reduced-motion behavior. |
-| E2 | Coverage detail | MEDIUM | tasks.md T031, plan.md Constitution Check, constitution Development Workflow and Quality Gates | The final verification task enumerates a subset of repository gates. The story procedure and pull-request checks still cover additional gates, including typecheck, lint, prefix, test-quality lint, gate plants and signoff. The final evidence task does not say how it accounts for those results across the complete branch. | Refer expressly to the full constitution gate list in T031 and record branch-wide evidence or the controlling pull-request check for each gate. |
 
 ### Coverage Summary Table
 
 | Requirement Key | Has Task? | Task IDs | Notes |
 |-----------------|-----------|----------|-------|
-| FR-001 | Yes | T008–T013, T014, T017, T019 | Layout, regions and single active navigation |
-| FR-002 | Yes | T008, T010, T032 | Both thresholds, inputs, defaults, package tokens and documentation |
+| FR-001 | Yes | T008–T014, T017, T019 | Layout, regions and single active navigation |
+| FR-002 | Yes | T008, T010, T032 | Both thresholds, inputs, defaults and published tokens |
 | FR-003 | Yes | T008, T010, T013 | Independent logical edge opt-outs and LTR/RTL |
 | FR-004 | Yes | T014–T019, T022 | Modal behavior, transition focus and Escape ownership |
-| FR-005 | Yes | T002, T004, T007, T016 | Native menu activation, expansion, intent, hit bounds and narrow text |
-| FR-006 | Yes | T003, T005, T007, T009, T011, T022 | Link semantics, compact context, labels and bubble behavior |
-| FR-007 | Yes | T020, T023, T025, T026 | Ordered inline group, current link, standalone loading and variants |
-| FR-008 | Yes | T021, T024–T026 | Landmark, current page and logical wrap/alignment |
+| FR-005 | Yes | T002, T004, T007, T016 | Native activation, expansion, intent and target size |
+| FR-006 | Yes | T003, T005, T007, T009, T011, T022 | Link semantics, compact context, long labels, focus and bubble behavior |
+| FR-007 | Yes | T020, T023, T025, T026 | Inline group, current link, entry and variants |
+| FR-008 | Yes | T021, T024–T026 | Landmark, current page, wrapping and alignment |
 | FR-009 | Yes | T027–T030 | Both focus targets, fallback, next Tab and built output |
-| FR-010 | Yes | T004, T007, T013, T016, T019, T026, T029–T031 | Token styles, theme and environment checks. See E1 for explicit bubble coverage |
-| FR-011 | Yes | T006–T007, T012–T013, T018–T019, T025–T031 | Public surface, variants, keyboard, event and mutation evidence. See D1 for red ordering |
-| SC-001 | Yes | T008, T010, T013, T014, T019 | Tier boundary fixtures and all layouts |
+| FR-010 | Yes | T003–T004, T007, T013, T016, T019, T026, T028, T030–T031 | Token styling, themes, forced colors, reduced motion and strict CSP |
+| FR-011 | Yes | T006–T007, T012–T013, T018–T019, T025–T031 | Public surface, states, keyboard, event and mutation evidence |
+| SC-001 | Yes | T008, T010, T013, T014, T019 | Threshold fixtures and all layouts |
 | SC-002 | Yes | T009, T014–T015, T017–T018 | Exact targets, same-tier changes and asynchronous recovery |
-| SC-003 | Yes | T002, T014, T016, T019 | Three layouts at 320 px and full keyboard route |
+| SC-003 | Yes | T002, T014, T016, T019 | Three layouts at 320 px and the keyboard route |
 | SC-004 | Yes | T003, T014, T020–T021, T027–T030 | Labels, current state, narrow reachability and skip focus |
-| SC-005 | Yes | T006–T007, T012–T013, T018–T019, T025–T026, T029–T031 | Stories, baselines, accessibility, manifest and CSP |
+| SC-005 | Yes | T006–T007, T012–T013, T018–T019, T025–T026, T028, T030–T031 | Stories, baselines, accessibility, manifest and CSP |
 
-### Constitution Alignment Issues
+### Previous Findings
 
-D1 requires moving the built-output behavior check ahead of the behavior it proves, in accordance with Principle VIII.
+- D1 is resolved. T028 places the built-output interaction probe in Phase 6 before skip-focus implementation and specifies why the red run must fail. The shell and drawer are already available for fixture setup. T031 reruns the same probe in Phase 7.
+- E1 is resolved. T003 explicitly covers a long translated compact label, focus, overflow, forced colors and reduced motion.
+- E2 is resolved. T031 requires evidence or a controlling pull-request check for every gate in the constitution.
 
 ### Unmapped Tasks
 
-None. T001 is the common setup for the pinned runtime and browser. T032 fulfills the plan's deliverable and Constitution Principle VII package changelog requirements.
+None. T001 establishes the pinned runtime and browser. T032 delivers the public documentation and package changelogs.
 
 ### Metrics
 
 - Total requirements 16, including 11 functional requirements and five buildable success criteria
 - Total tasks 32
-- Coverage 100% by requirement-to-task mapping, with coverage detail in E1 and E2
+- Coverage 100%
 - Ambiguity count 0
 - Duplication count 0
-- Critical issues 1
+- Critical issues 0
 
 ### Next Actions
 
-Resolve D1 in `tasks.md` before `/speckit-implement`. Tighten E1 and the evidence scope in E2, then rerun `/speckit-squad-analyze` against the revised task order.
+Proceed to the tasks approval gate. After approval, start implementation with the verified phase order and record the built-output probe's operational fixture and missing skip-focus failure in the Phase 6 red evidence.
