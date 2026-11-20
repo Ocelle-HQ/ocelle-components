@@ -95,3 +95,21 @@ ocelle-timeline-event:not([hidden]):not([aria-hidden="true"])) { display: block;
 visible events show one per line and an `aria-hidden="true"` event is not shown, as after upgrade (R-08,
 PLAN-FRESH-2-005). Their attribute times do not show before upgrade (rendered in shadow); a slotted time is light DOM
 and shows inline where written. The README's "Before upgrade" line says both.
+
+## README mapping (FR-058, research R-16)
+
+The README's event-timeline mapping rows are research R-16's phase 2 table (operator, 2026-11-20,
+`reviews/phase-2-inventory-decisions.md`), asserted by role name in phase 2's red (T037) and written in its green
+(T047). The rows this element carries:
+
+- The list maps to this element, an ordered list in source order; the library's measure cap and its narrow form map
+  to the container, and the consumer's remedy for a cap is `max-inline-size` on the host (IQ-9 (a), IQ-26 (a)).
+- The compact form maps to the default timeline, already at the compact type sizes; more density is the consumer's
+  rules on `::part(time)` and `::part(content)`, and a later issue covers a density property (IQ-8 (a), IQ-26 (a)).
+- The degraded form maps to a rule in the consumer's own stylesheet (no inline style), with the state stated in text,
+  never by muting alone (IQ-16 (a)).
+- Unavailable retention maps to 013's `ocelle-empty-state` in place of the timeline; an announcement is the
+  consumer's own notice or live region (IQ-17 (a), FR-026).
+- Forced colours and light mode are built in (FR-013).
+
+No attribute, slot, part or story is added for any of them.

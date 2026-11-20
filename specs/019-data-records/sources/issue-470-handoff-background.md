@@ -3,7 +3,7 @@
 Recorded on 2026-11-18 from the read-only clone at `/home/user/spec-kitty/spec-kitty-design`, line `develop`, commit
 `a6518cd` (2026-09-28), on the operator's decision IQ-25 (`reviews/phase-1/inventory-decisions.md`). **Background
 only**: this is the library's record of its own work on #470, not #470's issue body, which the operator supplies
-(IQ-25, "I'll paste them") and which is recorded verbatim beside this file when it comes. Constitution VI: statements
+(IQ-25, "I'll paste them") and which is recorded verbatim beside this file when it comes (recorded on 2026-11-20 as `sources/issue-470.md`). Constitution VI: statements
 and role names in this file's own words; no code, markup, style rule, data or asset is copied. `sk-` names are the
 library's roles, never names in this library.
 
@@ -44,6 +44,10 @@ library's roles, never names in this library.
   until a later Stage B selects a stable `develop` source commit, repeats the gates there and commits the immutable
   artifact. The frozen artifact on `develop` is from source commit `6f4cfdda`; its consumer-compatibility report
   states that no compatibility acceptance is claimed yet.
+  **Added on 2026-11-20 from #470's comment of 2026-09-28** (`sources/issue-470.md`): the Stage B hand-off artifact
+  was delivered by PR #489, merged into `develop` at `a6518cd`, the commit read here, so the frozen artifact above is
+  the delivered one. The comment calls this artifact delivery, not acceptance: native closeout is still held, the
+  consumer compatibility (K1/K2) is a separate decision, and #470 stays open.
 - **Rights.** The library's own files are MIT; one font's full token stylesheet cannot be redistributed while its
   terms are unresolved, so the hand-off ships a scoped token derivative. (No bearing here: this library vendors only
   Schibsted Grotesk, constitution IV.)

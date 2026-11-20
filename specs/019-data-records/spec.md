@@ -32,7 +32,8 @@ surface)."
 2026-11-15). Mission 013 (`specs/013-data-display`, PR #43) built `ocelle-facts`, `ocelle-fact`, `ocelle-empty-state`
 and `ocelle-progress`. This mission builds three more of #13's elements. `ocelle-disclosure` and `ocelle-code-block`
 are mission 020's (`specs/020-disclosure-code-block`, own session), and #13 stays open until 020 lands. The
-spec-kitty-design issues #13 cites for these three (#470, #517, #533) were not read from this session. The requirements
+spec-kitty-design issues #13 cites for these three (#470, #517, #533) were not read from this session (their bodies
+were recorded in `sources/` on 2026-11-20, IQ-25 below). The requirements
 below come from #13's body (re-read on 2026-11-15: unchanged since 2026-11-02, no comments), the epic #1's gap table
 and the triage record. Planning proceeds on #13's text (operator decision SPEC-1-06 (b), below): the plan's research
 lists each point #470, #517 and #533 could change as an open question for the plan gate, where the operator answers.
@@ -142,7 +143,9 @@ role names only, constitution VI):
 - IQ-25: the operator pastes #470, #517 and #533 before phase 2's red, and the planner records them verbatim in
   `sources/`; the #470 hand-off material on `develop` is recorded as background
   (`sources/issue-470-handoff-background.md`). IQ-8 to IQ-24, and IQ-26 to IQ-28 found on `develop`, are asked before
-  phases 2 and 3.
+  phases 2 and 3. The bodies were supplied and recorded verbatim on 2026-11-20 (`sources/issue-470.md`,
+  `sources/issue-517.md`, `sources/issue-533.md`); `reviews/issue-texts-check.md` compares them with the answers in
+  force, and no requirement changes on their account until the operator answers its questions.
 
 **Operator decisions on the inventory follow-up questions** (2026-11-18, human:jeroennouwsdev; questions Q-I1 to Q-I5
 in `reviews/phase-1/inventory-fixes.md`, answers at the end of `reviews/phase-1/inventory-decisions.md`):
@@ -220,6 +223,26 @@ decisions in `reviews/phase-1/operator-spike-2-decisions.md`, changes listed in 
   mutation-tested at all: fixed in this mission, with a plant, by rule (c) (answered after the first changes): the
   gate reports that it could not run when every such mutant carries one same type error of the file itself, on a line
   no mutant touched; a mutant the type checker rejects for its own change still passes, as mission 007 decided.
+
+**Operator decisions on the issue texts and the phase 2 inventory** (2026-11-20; questions in
+`reviews/issue-texts-check.md` and `reviews/phase-1/inventory-questions.md`, decisions in
+`reviews/issue-texts-check.md` § Operator decisions and `reviews/phase-2-inventory-decisions.md`, changes listed in
+`reviews/decisions-applied-phase-2.md`):
+
+- Q-T1 to Q-T3, #533's mono face, 0.06em header tracking and header padding: (a). Phase 1's rules stand; the README's
+  data-table mapping rows map the prototype's mono cells and headers to the sans face with tabular figures, its
+  tracking to `--ocelle-tracking-eyebrow` and its header padding to the cells' padding (FR-058).
+- Q-T4, #517's pill-shaped chip: (a). The chip keeps `--ocelle-radius-2` (FR-035); the README's chain mapping row maps
+  the pill-shaped chip to it (FR-058).
+- Q-T5, #517's column of about 200 px: (b). US3-3 also runs in a 200 px container (FR-034); no story or baseline is
+  added.
+- IQ-8 to IQ-17, IQ-26 and IQ-28: (a). The timeline adds no attribute, slot, part or story; the README maps the
+  compact form to the default timeline, the narrow form to the container (`max-inline-size` on the host for a cap), the
+  summary, actor, facts and verification label to the consumer's markup in the content, the library's time position
+  to the time above the content (Q-C), the leading marker to the default dot, the linked event to a link in the
+  content with an `id` on `ocelle-timeline-event` as the consumer's fragment target, the degraded form to a rule in the
+  consumer's own stylesheet plus the state in text, and unavailable retention to 013's `ocelle-empty-state`
+  (FR-058). Kitty-mission-ui replaces the families as stated (IQ-28).
 
 ## Scope
 
@@ -538,7 +561,7 @@ the chip variant.
 3. **Given** the same chain in a 320 px container, **When** it renders, **Then** the steps wrap onto further lines,
    each line filled from the inline start in source order, no step is cut or overlaps another, no connector extends
    past the chain's inline edges or crosses from one line to the next, and the page's scroll width equals the viewport
-   width (FR-034, FR-009).
+   width (FR-034, FR-009). The same holds in a 200 px container, #517's narrow column (Q-T5 (b)).
 4. **Given** a step with `variant="chip"` beside a default step, **When** it renders, **Then** it has no marker and no
    ordinal; its outline's computed corner radius is the value of `--ocelle-radius-2`, not of `--ocelle-radius-pill`;
    its rendered block size is less than `--ocelle-size-step`; its content's computed font size is one step below the
@@ -966,7 +989,7 @@ the chip variant.
   is too small for them, filled line by line in source order (mirrored under `dir="rtl"`), with token gaps. A connector
   MUST be drawn between consecutive steps on the same line and MUST NOT extend past the chain's inline edges or cross
   from one line to the next. A step's content wraps between words inside the step and never widens the chain beyond its
-  container; nothing overflows or is cut at 320 px.
+  container; nothing overflows or is cut at 320 px, nor in a 200 px container (US3-3, Q-T5 (b)).
 - **FR-035**: `ocelle-evidence-step` MUST offer a `variant` property with the one value `chip` (unset by default; any
   other value acts as unset; operator decision Q4 (a)). A chip step has no marker or ordinal and shows its content
   inside an outline of width `--ocelle-ring-step` (or another existing token the plan names) with corner radius
@@ -1049,7 +1072,11 @@ the chip variant.
   kitty-mission-ui's rc.10 line. The data table's rows are written in phase 1, the timeline's in phase 2 and the
   chain's in phase 3. The data table's rows include the library's header look mapped to the eyebrow headers, with the
   consumer's own rule for sentence case (IQ-7 (a)), and the duplicate-name rule mapped to FR-010's `label` advice
-  (IQ-6 (a)). The mapping names roles only and copies no code (constitution VI). Readme tests assert the rows by role
+  (IQ-6 (a)), and, added in phase 2, #533's mono cells and headers, 0.06em header tracking and header padding mapped
+  to the sans face with tabular figures, `--ocelle-tracking-eyebrow` and the cells' padding (Q-T1 to Q-T3 (a)). The
+  timeline's rows are research R-16's phase 2 table (IQ-8 to IQ-17 and IQ-26 (a)), among them an `id` on
+  `ocelle-timeline-event` as the consumer's fragment target (IQ-15 (a)). The chain's rows include the pill-shaped chip
+  mapped to `variant="chip"` with `--ocelle-radius-2` (Q-T4 (a)). The mapping names roles only and copies no code (constitution VI). Readme tests assert the rows by role
   names, with no `sk-` string in test code (013's operator decision I1). A variant no element covers goes to the
   operator. No row reads "pending inventory" (spike decision on T005 superseded by IQ-1 (a)).
 - **FR-059**: Each phase's gate runs MUST use op 016's affected-plants mode once op 016 is on `main` (operator, via the

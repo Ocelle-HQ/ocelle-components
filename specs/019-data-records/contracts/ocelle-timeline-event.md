@@ -94,3 +94,23 @@ role.
 An attribute time does not show (it is rendered in shadow). A slotted time is light DOM and shows inline where it is
 written, before the content when written first; an `aria-hidden="true"` one shows, unexposed, until upgrade. The
 README's "Before upgrade" line says both. No `@ocelle/styles` rule is added for it.
+
+## README mapping (FR-058, research R-16)
+
+The README's event-timeline mapping rows are research R-16's phase 2 table (operator, 2026-11-20,
+`reviews/phase-2-inventory-decisions.md`), asserted by role name in phase 2's red (T037) and written in its green
+(T047). The rows this element carries:
+
+- The item maps to this element, one list item with the default dot and a gapped connector; long identifiers break
+  with `wrap="anywhere"`.
+- The summary, the supporting content, the actor and further facts, and the trailing verification label map to the
+  consumer's markup in the content; the verification label is worded in text. Later issues cover a metadata slot and a
+  trust slot (IQ-10 (a), IQ-11 (a), IQ-13 (a)).
+- The time's position after the title maps to the time above the content (Q-C (a)); the item text stays time first
+  (IQ-12 (a)).
+- The leading marker maps to the default dot; a later issue covers a marker slot (IQ-14 (a)).
+- The linked event maps to a link in the content (US2-7), and an `id` on `ocelle-timeline-event` is the consumer's
+  fragment target (IQ-15 (a)). This is one README statement, written test first in phase 2 (T037, T047); the
+  element reads and writes no `id`.
+
+No attribute, slot, part or story is added for any of them.

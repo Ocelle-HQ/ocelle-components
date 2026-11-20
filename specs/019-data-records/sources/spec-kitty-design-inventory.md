@@ -28,9 +28,10 @@ Not in the clone. A search of the whole tree (`docs/`, `kitty-specs/`, `CHANGELO
 numbers occur only as unrelated line numbers and counts. The highest issue number the clone's CHANGELOGs and docs cite
 is #419, so this snapshot predates all three. Nothing here states their content, and nothing here contradicts a
 plan-gate answer on their behalf. What this repository already records of them is unchanged: #470 is titled
-"Desktop V2 application-primitives consumer contract and immutable train handoff" and lists data-table,
-event-timeline and evidence-chain among the Desktop V2 primitives (`specs/013-data-display/sources/013-inputs.md`,
-`specs/009-workflow-layouts/sources/issues.md`); #517 and #533 are cited by #13 for the chip step and the eyebrow
+"Desktop V2 application-primitives consumer contract and immutable train handoff" (`specs/013-data-display/sources/013-inputs.md`,
+`specs/009-workflow-layouts/sources/issues.md`). **Corrected on 2026-11-20** from #470's body (`sources/issue-470.md`):
+#470 lists 22 families, data-table and event-timeline among them but **not** evidence-chain; the epic's scope line in
+009's sources names evidence-chain only among the families it adds after "plus", beside #470's list. #517 and #533 are cited by #13 for the chip step and the eyebrow
 headers (`triage/019-data-display-follow-on.md`).
 
 The issues the clone does cite for these families: #176 (data table, styles-only), #213 (event timeline, styles-only
@@ -38,7 +39,9 @@ recipe for detail views), #147 (metric and evidence chain).
 
 **On `develop` (a6518cd).** #470 is now cited, by its Stage A hand-off material (recorded as background in
 `sources/issue-470-handoff-background.md`). #517 and #533 are still cited nowhere in the tree. #470's own issue body is
-not in the tree either; the operator supplies the three bodies (IQ-25, "I'll paste them").
+not in the tree either; the operator supplies the three bodies (IQ-25, "I'll paste them"). Supplied and recorded
+verbatim on 2026-11-20: `sources/issue-470.md`, `sources/issue-517.md`, `sources/issue-533.md`; compared with the
+operator's answers in `reviews/issue-texts-check.md`.
 
 ## What `develop` adds or changes for the three families
 
