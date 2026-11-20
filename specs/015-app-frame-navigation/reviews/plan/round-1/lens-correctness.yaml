@@ -1,0 +1,39 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: correctness
+findings:
+  - id: PLAN-CORRECTNESS-1-001
+    severity: 4
+    title: "Nav pill contract diverges from the Desktop V2 primitive"
+    evidence:
+      - artifact: "spec.md FR-007 and Assumptions and contracts/elements.md specify one native destination per nav pill."
+      - code: "At #470's accepted input SHA 173774af635cf34aeb13ea03a3bdaa12c651557d, packages/styles/src/nav-pill/sk-nav-pill.html lines 3–8 render a named nav with four links and one aria-current. Verified through the GitHub contents endpoint."
+      - artifact: "research.md R5 and upstream https://github.com/spec-kitty/spec-kitty-design/issues/73 record the responsive group and optional upstream drawer behavior."
+    claim: |
+      The upstream primitive named by #12 owns a group of destinations. The approved specification made its single-link interpretation an assumption for plan review. Individual links satisfy part of that pattern, but the public contract as proposed delivers no group at all and leaves its semantics and presentation to each consumer. The actual Ocelle ownership of responsive behavior is a product choice because the shell already defines a narrow modal.
+    remedies:
+      - "Specify a named navigation group containing native links and current-state support, with the shell continuing to own narrow modal behavior. Identify any remaining #73 behavior that consumer evidence requires."
+      - "Keep one destination link per nav pill and explicitly choose consumer-owned group composition for Desktop V2. Record the intentional deviation, the required group semantics, and the consumer validation fixture before implementation."
+  - id: PLAN-CORRECTNESS-1-002
+    severity: 3
+    title: "Collapsed layout lacks a contract that can compact the landed sidebar and its nested destinations"
+    evidence:
+      - artifact: "spec.md Layout and tier behavior and FR-001 require a mission or project sidebar icon column. contracts/elements.md says the shell presents compact nav items and leaves supported composition and necessary host integration to future documentation."
+      - code: "packages/elements/src/ocelle-context-sidebar.ts:34–39 accepts sections including ul lists. Lines 67–77 and 95–100 apply space-4 wrapper and section padding. Lines 154–162 render head, sections and footer with no compact input."
+      - artifact: "specs/011-layout-headers/spec.md near line 166 assigns icon-column coordination to app-shell. Its research.md R-05 records a scoped agreement between a parent and slotted components for inherited density."
+    claim: |
+      A narrow grid track and a change to a directly slotted destination cannot by themselves compact the landed sidebar's wrappers, head, footer or destinations nested inside lists. The plan needs to define how state reaches the actual sidebar composition and who controls it. Otherwise the shell can pass with flat dummy links and present full text chrome in real consumers.
+    remedies:
+      - "Define the supported sidebar composition, including nested native list sections, which chrome remains visible, and how a collapsed context sets and clears effective compact chrome and destination state without changing consumer-authored inputs. Define any additive sidebar interface and prove wider and drawer tiers restore normal presentation."
+  - id: PLAN-CORRECTNESS-1-003
+    severity: 2
+    title: "The planned navigation part leaves landmark ownership undefined"
+    evidence:
+      - artifact: "contracts/elements.md exposes a shell navigation part and accepts rail and sidebar slot content. spec.md FR-001 requires only navigation for the active tier and no empty landmarks."
+      - code: "packages/elements/src/ocelle-context-sidebar.ts:145–150 and packages/elements/src/ocelle-personal-rail.ts:157–164 assign the navigation role to the existing hosts using ElementInternals."
+    claim: |
+      If the new shell's navigation wrapper is also a navigation landmark, the documented landed composition yields nested navigation landmarks with potentially overlapping names. If it is neutral, the contract currently fails to say who names landmarks for bare slot compositions. Define ownership so wrapper choice, accessible names and empty regions are consistent across destination reprojection.
+    remedies:
+      - "Define the shell's navigation wrappers as neutral layout parts and specify which slot compositions own and name navigation landmarks in wide and narrow tiers. Verify the named landmark count for real rail/sidebar composition and for an omitted region."
