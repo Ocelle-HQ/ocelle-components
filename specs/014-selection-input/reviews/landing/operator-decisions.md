@@ -24,3 +24,11 @@
 - Context: the orchestrator session relayed an operator decision: landings go one at a time, #50 (012), then #49 (010), then #54. #54 merges main again only after #49 has merged. #54 had already merged main once (ac2f991) and T114 (the composed story) was in progress.
 - Options: finish T114 and wait for the second merge; pause T114 until after the second merge; treat the relayed decision as not applying.
 - Answer: **"Finish T114, wait (Recommended)"**. T114 finishes on this branch, with only the feature branch pushed. The landing review and records proceed. No further merge of main until the orchestrator reports #49 merged; then main is merged once, and counts, baselines and CI are redone on top.
+
+## Decision 5 — CI carries the heavy gates after the second merge of main
+
+- Date: 2026-11-20
+- Operator: human:jeroennouwsdev
+- Context: the orchestrator session relayed a proposal from the operator. The repository is now public, so CI minutes are free. After the second merge of main (7f61959), only the fast gates and the `gate:plants --affected <base> --list` selection run locally. The 4–5 h full local plants run is skipped, and CI's required Plants, Visual regression, Unit tests and Mutation checks on the final head decide. This changes phase 6 decision 5 and phase 7 decision 3, which owed one full local plants run after the second merge. The orchestrator later reported this as the operator's standing decision for every session.
+- Options: CI carries the heavy gates; keep the full local run.
+- Answer: **"CI carries heavy gates (Recommended)"**. Run locally: the fast gates, contrast, the plants selection list, the conflicting baselines regenerated in the pinned container, and targeted tests for the files the resolution touched. Then ask the operator before the push. CI's full Plants shards, Visual regression, Unit tests and Mutation on the final head stand in for the full local plants run in the phase 6 and phase 7 records. The CI run id is recorded there after the push.
