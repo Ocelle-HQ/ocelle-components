@@ -25,7 +25,14 @@ and, for the disclosure, `ocelle-icon`; no other).
     summary, 0 events, followed by a summary click counted as 1 (FR-003, PLAN-FRESH-1-001 (a)); `scrollY` is not read
     after Space, which pages the document when focus is on the body (PLAN-FRESH-2-004); red with `delegatesFocus`;
   - US1-17 with a bare `<svg slot="icon"><title>Folder</title>…</svg>`: the summary's name is the summary text alone
-    and no `image` node exists under it (PLAN-A11Y-SECURITY-1-003);
+    and no `image` node exists under it (PLAN-A11Y-SECURITY-1-003); read from the CDP tree, not `ariaSnapshot`,
+    which reads the summary text alone even when the title leaks (phase 1 spike, `reviews/phase-1/spike.md` § 1);
+  - the summary's name from `.label` (FR-006; phase 1 operator decision (a), research R-01, R-03): with no host
+    label, the summary's `ariaLabelledByElements` is the one `.label` wrapper and the CDP name is the summary text
+    alone; a host `aria-label` (at upgrade and set later) clears it (`ariaLabelledByElements` empty or `null`) and
+    names the summary; a host `aria-labelledby` set beside it wins (its resolved list, its text the name); removing
+    each in turn restores `aria-label`, then the `.label` reference and the summary text; an empty summary with no
+    host label has the `.label` reference and an empty CDP name (Edge Cases);
   - US1-19 in three bodies: focus on a light-DOM link, on an `ocelle-button` in the panel, and on a nested
     disclosure's summary, each closed by `open = false`, asserting the outer summary is the shadow root's active
     element and the host is `document.activeElement` (PLAN-CORRECTNESS-1-002);

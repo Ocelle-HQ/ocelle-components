@@ -32,6 +32,18 @@ FR-010, FR-031, FR-032).
   node and adds its `<title>` to the summary's name (squad round 1, PLAN-A11Y-SECURITY-1-003: measured, a slotted
   `<svg><title>Folder</title>` gave the summary the name "Folder Advanced" and an `image` node "Folder"). US1-17's
   body slots a titled bare svg. The README tells consumers never to label a slotted icon (slot convention, Naming).
+- **The summary is named from its `.label` wrapper by element reference** (phase 1 spike, T001,
+  `reviews/phase-1/spike.md` § 1; operator decision (a), `reviews/phase-1/operator-spike-decisions.md`). The wrapper
+  removes the slotted svg's node but not its `<title>` from the name computed from content: under the pinned Chromium
+  156.0.8078.4 the summary was still named "Folder Advanced" (cases A, B, D, E of the spike; hidden text written in
+  the shadow root itself is left out, slotted text is not). So while the host gives no `aria-labelledby` and no
+  `aria-label`, the element sets the summary's `ariaLabelledByElements` to `[.label]`, the wrapper around the
+  `summary` slot in the same shadow root (an element reference; no ID crosses a root). A host `aria-labelledby` or
+  `aria-label` moved onto the summary takes over and the `.label` reference is cleared (R-03). Measured: the summary
+  is named "Advanced settings" from summary text "Advanced <b>settings</b>" with the titled svg slotted (case G), and
+  the wrapper still hides the svg's node. The aria-hidden wrapper stays: it keeps the `image` node out of the tree.
+  The name order of FR-006 holds (host `aria-labelledby`, host `aria-label`, the `summary` slot's text), and an
+  empty summary still has no name: the reference points at an empty wrapper (Edge Cases).
 - **Focus without `delegatesFocus`** (squad round 1, PLAN-FRESH-1-001 (a), operator decision). With `delegatesFocus`,
   a pointer click on any non-focusable part of the host's flat tree, the slotted panel content included, focuses the
   shadow root's first focusable element, the summary: measured, a click on the text of a tall open panel moved focus
@@ -59,7 +71,9 @@ convention). A button with `aria-expanded` (rejected by the operator at clarify 
 **Measured.** A `details` in a shadow root with a `summary` slot and a default-slot panel: Chromium's tree has a
 `group` named by the summary text (ariaSnapshot `group: S`). Phase 1's spike asserts the summary node's role
 (`DisclosureTriangle` in the CDP tree) and its `expanded` property in both states (US1-1, US1-2); a failure goes to the
-operator.
+operator. Phase 1's spike (pinned Chromium 156.0.8078.4, `reviews/phase-1/spike.md` § 1): role, `expanded` and a
+moved host `aria-label` hold; the titled bare svg's title leaked into the name under the wrapper alone, which the
+`.label` reference above answers (cases G and H give the label text alone).
 
 ## R-02 Open state, the event and coalescing (FR-009 to FR-013; operator clarify 2; SPEC-1-06, SPEC-2-04, SPEC-2-05)
 
@@ -118,7 +132,15 @@ fire for the initial state and for property sets the native element coalesces).
 - `MovedAttributes` (`src/control.ts`) with `aria-label`, `aria-labelledby`, `aria-describedby` and `title`: the
   summary gets `aria-label` and `title` as attributes, and `ariaLabelledByElements` and `ariaDescribedByElements` from
   `resolveIds`, re-resolved on connect, as `ocelle-button` does. The mirrors and the manifest's `@attr` entries follow
-  the control conventions. The native name order (labelledby, aria-label, content) gives FR-006 with no code of ours.
+  the control conventions.
+- **The summary's name (FR-006; phase 1 operator decision (a), R-01).** The native name order (labelledby,
+  aria-label, content) is kept, but content is replaced by the summary's own `.label` wrapper, because content would
+  include a slotted svg's `<title>` (R-01). The element keeps one rule wherever the moved attributes change (upgrade,
+  a script, a morph, a restored mirror, connect): while the host gives an `aria-labelledby`, the summary's
+  `ariaLabelledByElements` is its resolved list; else while the host gives an `aria-label`, `ariaLabelledByElements`
+  is cleared (`null`) so the moved `aria-label` names the summary; else it is `[.label]`. Removing the host attribute
+  that took over restores the next one in that order, ending at `[.label]`. The summary text names the control
+  alone, with or without a slotted icon; an empty summary has an empty `.label` and so no name (Edge Cases).
 - **A host `aria-expanded` is mapped onto `open`** (operator decision, squad round 1, PLAN-CORRECTNESS-1-008 (a);
   constitution III, SPEC-2-09). `aria-expanded` is in `observedAttributes`; when it appears on the host (in the markup
   at upgrade, set by a script, or added by a morph) the element reads it and removes it from the host: `"true"` sets
@@ -409,6 +431,16 @@ A finding of this kind is recorded here and reported for a separate op, not fixe
   measured on `ocelle-button`). The slot convention allows a bare `<svg>` as a slotted icon (README § Slot convention)
   and `src/icon-slot.ts` adds no `aria-hidden`; in the disclosure probe a titled bare svg kept an `image` node and
   added its title to the control's name. `ocelle-button` (and any other icon-slot user) may have the same gap.
+- **An `aria-hidden` wrapper in a shadow root does not keep slotted text out of a control's name** (phase 1 spike,
+  T001, `reviews/phase-1/spike.md` § 1; measured in the repository's pinned Chromium 156.0.8078.4, not fixed here). A
+  slotted bare `<svg><title>Folder</title>…</svg>` under `<span aria-hidden="true"><slot name="icon"></slot></span>`
+  inside a shadow `summary` or `button` has no node of its own, but its title is still in the control's name computed
+  from content ("Folder Advanced"); `aria-hidden` on the `slot` element itself, or `role="none"` beside it, changes
+  nothing, while hidden text written in the shadow root itself, and the light-DOM equivalent, are left out. So the
+  note above holds for `ocelle-button` even if an `aria-hidden` wrapper were added to its icon slot, and any element
+  that relies on such a wrapper to keep a slotted icon out of a name (the slot convention's "Naming" rule) has the
+  gap. Naming the control from its label wrapper by element reference (`ariaLabelledByElements`) gave the label text
+  alone in the same measure.
 - **A closed disclosure as the last control of an `ocelle-dialog` or `ocelle-drawer` lets Tab leave the overlay**
   (from squad round 2, PLAN-FRESH-2-002, operator decision (b): mission 008's modules are left unchanged here).
   `src/focusable.ts` `rendered()` (lines 52-53) checks only `getClientRects().length` and `visibility`; Chromium hides

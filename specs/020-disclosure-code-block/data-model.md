@@ -8,10 +8,10 @@ The public state of the two elements and how it changes. The surface itself is i
 | Field | Source | Values | Notes |
 |---|---|---|---|
 | `open` | attribute `open` and property, reflected | `true`; `false` or `undefined` (closed) | `undefined` and `false` are one closed state; after a user close the property is `false` and the attribute absent (R-02) |
-| summary | light-DOM children with `slot="summary"` | any phrasing content | the summary control's name when no host `aria-labelledby` or `aria-label`; interactive content not supported |
-| icon | light-DOM child with `slot="icon"` | an `ocelle-icon` or bare `svg` | replaces the chevron in both states; decorative: the icon wrapper is `aria-hidden="true"`, so a titled bare `svg` adds no node and no name (R-01) |
+| summary | light-DOM children with `slot="summary"` | any phrasing content | the summary control's name when no host `aria-labelledby` or `aria-label`, through the summary's `ariaLabelledByElements = [.label]` (the wrapper around the slot); empty: no name; interactive content not supported (R-01, R-03) |
+| icon | light-DOM child with `slot="icon"` | an `ocelle-icon` or bare `svg` | replaces the chevron in both states; decorative: the icon wrapper is `aria-hidden="true"`, so a titled bare `svg` adds no node, and the summary is named from `.label`, not from content, so its `<title>` adds no name (R-01) |
 | panel | other light-DOM children (default slot) | any flow content | hidden while closed by the platform's `details`, revealable by find in page |
-| moved ARIA | host `aria-label`, `aria-labelledby`, `aria-describedby`, `title` | strings; ID lists | moved to the summary, mirrored in `data-ocelle-moved-*` (control conventions rule 4) |
+| moved ARIA | host `aria-label`, `aria-labelledby`, `aria-describedby`, `title` | strings; ID lists | moved to the summary, mirrored in `data-ocelle-moved-*` (control conventions rule 4); a host `aria-labelledby` or `aria-label` takes over the summary's name and clears the `.label` reference, which returns when both are gone (R-03) |
 | mapped ARIA | host `aria-expanded` | `"true"`, `"false"`, other | mapped onto `open` (`"true"` opens, `"false"` closes, other values change nothing) and removed from the host in every case; no mirror (R-03) |
 | reported state | internal | boolean | the last state an `ocelle-disclosure-toggle` reported; set at the first update from the initial `open` |
 

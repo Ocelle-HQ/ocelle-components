@@ -141,8 +141,11 @@ it with exactly the events of data-model.md § State transitions; the Chromium t
   CSS px (FR-014); hover background equals `--ocelle-color-hover-bg` while hovered and transparent otherwise
   (FR-014); `:state(open)` exactly while open (FR-011); focus out of a closing panel (FR-013); the moved
   `aria-labelledby`, `aria-describedby` and `title` with their mirrors, `cloneNode(true)` and a morph that removes a
-  mirror (FR-007); nested disclosures (Edge Cases); the empty summary with no name (story-less, Complexity Tracking);
-  the chevron box `--ocelle-icon-size` square (FR-005).
+  mirror (FR-007); the summary named from `.label` (FR-006, contracts/checks.md: `ariaLabelledByElements` is `[.label]`
+  with no host label; a host `aria-label` clears it and names the summary; a host `aria-labelledby` wins over both;
+  removing each restores the next, ending at `.label`); nested disclosures (Edge Cases); the empty summary with no
+  name, the `.label` reference still set (story-less, Complexity Tracking); the chevron box `--ocelle-icon-size`
+  square (FR-005).
 - [ ] T006 [P] [US1] Harness files: `packages/elements/test/disclosure.test.ts` (in process) and
   `packages/elements/test/browser/disclosure.test.ts` with `packages/elements/test/browser/fixtures/disclosure.html`
   (strict CSP, as the existing fixtures), each running every body of T004 and T005; `packages/elements/test/
@@ -180,7 +183,10 @@ it with exactly the events of data-model.md § State transitions; the Chromium t
     the panel (the host's root `activeElement` is the host and the summary is not the shadow root's active element,
     as `ocelle-list-detail.ts` reads it); in `updated`, focus the summary;
   - `MovedAttributes` for `aria-label`, `aria-labelledby`, `aria-describedby`, `title` onto the summary
-    (`ariaLabelledByElements`, `ariaDescribedByElements` from `resolveIds`, re-resolved on connect); host
+    (`ariaLabelledByElements`, `ariaDescribedByElements` from `resolveIds`, re-resolved on connect); the summary's
+    name from `.label` (R-01, R-03, phase 1 operator decision (a)): wherever the moved attributes change, the
+    summary's `ariaLabelledByElements` is the host `aria-labelledby`'s resolved list if given, else `null` if a host
+    `aria-label` is given, else `[.label]` (the wrapper around the `summary` slot, same shadow root); host
     `aria-expanded` read in `attributeChangedCallback`: `"true"` sets `open = true`, `"false"` sets `open = false`,
     any other value changes nothing; the attribute is removed from the host, no mirror;
   - `ElementInternals` state `open` exactly while open;

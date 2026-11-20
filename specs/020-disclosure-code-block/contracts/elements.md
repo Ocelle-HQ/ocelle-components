@@ -10,14 +10,14 @@ A disclosure: a summary that opens and closes a panel inline, on native `details
 | Kind | Name | Type | Default | Description |
 |---|---|---|---|---|
 | property / attribute | `open` | `boolean \| undefined` | `undefined` | Whether the panel is shown. Reflected: a user toggle, find in page and a script set the attribute alike, so server markup and htmx morphs keep it. |
-| attribute (moved) | `aria-label` | string | — | Names the summary control; moved onto it, mirrored in `data-ocelle-moved-aria-label`. |
-| attribute (moved) | `aria-labelledby` | ID list | — | Names the summary by element reference, resolved in the host's tree; mirrored. |
+| attribute (moved) | `aria-label` | string | — | Names the summary control; moved onto it, mirrored in `data-ocelle-moved-aria-label`. While present (and no host `aria-labelledby`), the summary is not named from the `summary` slot. |
+| attribute (moved) | `aria-labelledby` | ID list | — | Names the summary by element reference, resolved in the host's tree; mirrored. Wins over `aria-label` and the `summary` slot's text. |
 | attribute (moved) | `aria-describedby` | ID list | — | Describes the summary by element reference; mirrored. |
 | attribute (moved) | `title` | string | — | The summary's advisory title; mirrored. |
 | attribute (mirror) | `data-ocelle-moved-aria-label`, `-aria-labelledby`, `-aria-describedby`, `-title` | string | — | Element-owned; hosts never write them. |
 | attribute (mapped) | `aria-expanded` | `"true" \| "false"` | — | Mapped onto `open` and removed from the host: `"true"` opens, `"false"` closes, any other value changes nothing. No mirror; `open` is the persisted state. Read after `open` at upgrade. |
-| slot | `summary` | — | — | The summary's content; its text names the control. No interactive content. |
-| slot | `icon` | — | — | An icon (`ocelle-icon` or a bare `svg`) that replaces the chevron (`chevron-end` closed, `chevron-down` open) in both states; decorative, never labelled; the wrapper is `aria-hidden="true"`, so a `<title>` adds nothing to the name. |
+| slot | `summary` | — | — | The summary's content; with no host `aria-labelledby` or `aria-label`, its text alone names the control (the summary is labelled by the slot's wrapper, so a slotted icon adds nothing); empty, the control has no name. No interactive content. |
+| slot | `icon` | — | — | An icon (`ocelle-icon` or a bare `svg`) that replaces the chevron (`chevron-end` closed, `chevron-down` open) in both states; decorative, never labelled; the wrapper is `aria-hidden="true"` and the summary is named from the `summary` slot's wrapper, so a `<title>` adds nothing to the name. |
 | slot | (default) | — | — | The panel's content. |
 | event | `ocelle-disclosure-toggle` | `CustomEvent<{ open: boolean }>` | — | After each change of the open state, whatever caused it, in a later task after the attribute is reflected. Changes made before the inner `details`' native `toggle` runs are coalesced (always those of one task, sometimes those of several): at most one event per native `toggle`, with the final state; none at upgrade or when the state ends where the last event left it. Bubbles, composed, not cancelable. |
 | CSS part | `details` | — | — | The inner `details`. |
