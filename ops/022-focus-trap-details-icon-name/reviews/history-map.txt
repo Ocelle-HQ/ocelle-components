@@ -1,0 +1,3 @@
+# History fold phase-1 of claude/057-focus-trap-icon-a11y: old commit -> new commit (pre-fold head kept as refs/ocelle/prefold/phase-1/claude/057-focus-trap-icon-a11y, 8da12aad7b08760581a53acb4ac8cdb68565160a).
+d820f00493e4f7705c1d348fea42d050e79028af 65626eb7f98c4087b2116789f2a079dfcab367f3
+8da12aad7b08760581a53acb4ac8cdb68565160a 55b77a604100c78d07f5fab3c65fcf4c3dc930a7
