@@ -7,7 +7,7 @@ import { buildPackage, elements, run } from "./package-build.ts";
 // pack --dry-run --json` lists the licence of the package, Lit's notice and licence text that the browser build's
 // banner points to, the manifest and the browser build's file, and `NOTICE` with the trademark note (FR-030; phase 5,
 // T055); and since 012 (tasks.md T020) `dist/ocelle-button.js`, and (T053) `dist/ocelle-action-row.js`; since 018 (tasks.md
-// T016) `dist/ocelle-status-indicator.js`.
+// T016) `dist/ocelle-status-indicator.js` and (T027) `dist/ocelle-metric.js`.
 let packed: readonly string[] = [];
 
 beforeAll(async () => {
@@ -39,6 +39,12 @@ describe("pnpm pack of @ocelle/elements", () => {
       status: true,
       entry: "./dist/ocelle-status-indicator.js",
     });
+  });
+
+  // 018 tasks.md T027: the metric's entry point is packed, and package.json maps it.
+  it("lists dist/ocelle-metric.js, and the packed package.json maps ./ocelle-metric.js to dist/ocelle-metric.js", async () => {
+    const manifest = JSON.parse(await readFile(join(elements, "package.json"), "utf8")) as { exports?: Record<string, string> };
+    expect({ metric: packed.includes("dist/ocelle-metric.js"), entry: manifest.exports?.["./ocelle-metric.js"] }).toEqual({ metric: true, entry: "./dist/ocelle-metric.js" });
   });
 
   // 008 tasks.md T019: the dialog's entry point is packed, and package.json maps it.

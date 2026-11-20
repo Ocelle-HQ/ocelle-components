@@ -29,6 +29,7 @@ import framesText from "./fixtures/frames.css?raw";
 import { css } from "../../tokens/src/generate.ts";
 import { source } from "../../tokens/src/source.ts";
 import { advanceOf, moveBeforeOf, runningOf } from "./animations.ts";
+import { findMatchesOf } from "./find.ts";
 import delayText from "./fixtures/tooltip-delay.css?raw";
 import { layoutWait } from "./layout-wait.ts";
 import { activeInnerOf, activePath, clickElement, computedOf, copyElement, currentOf, endOrder, focusElement, morphElement, preventNextEvent, recordEvents, resetPage, sentinelId, startOrder, takeRecords } from "./page-side.ts";
@@ -745,5 +746,6 @@ export function inProcessDriver(): Driver {
       moveBeforeOf({ id, parentId });
       await settle();
     },
+    findInPage: (text) => Promise.resolve(findMatchesOf(text)),
   };
 }

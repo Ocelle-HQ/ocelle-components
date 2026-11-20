@@ -292,7 +292,7 @@ describe("generate(root) on the repository's element source", () => {
     const manifest = await generate(repo);
     const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
     expect(manifest.schemaVersion).toBe("1.0.0");
-    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-action-row.ts", "src/ocelle-brand-mark.ts", "src/ocelle-button.ts", "src/ocelle-card.ts", "src/ocelle-context-sidebar.ts", "src/ocelle-dialog.ts", "src/ocelle-drawer.ts", "src/ocelle-empty-state.ts", "src/ocelle-fact.ts", "src/ocelle-facts.ts", "src/ocelle-icon.ts", "src/ocelle-list-detail.ts", "src/ocelle-page-header.ts", "src/ocelle-personal-rail.ts", "src/ocelle-progress.ts", "src/ocelle-scroller.ts", "src/ocelle-section-header.ts", "src/ocelle-status-indicator.ts", "src/ocelle-tooltip.ts", "src/ocelle-workflow-board.ts", "src/ocelle-workflow-lane.ts"]);
+    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-action-row.ts", "src/ocelle-brand-mark.ts", "src/ocelle-button.ts", "src/ocelle-card.ts", "src/ocelle-context-sidebar.ts", "src/ocelle-dialog.ts", "src/ocelle-drawer.ts", "src/ocelle-empty-state.ts", "src/ocelle-fact.ts", "src/ocelle-facts.ts", "src/ocelle-icon.ts", "src/ocelle-list-detail.ts", "src/ocelle-metric.ts", "src/ocelle-page-header.ts", "src/ocelle-personal-rail.ts", "src/ocelle-progress.ts", "src/ocelle-scroller.ts", "src/ocelle-section-header.ts", "src/ocelle-status-indicator.ts", "src/ocelle-tooltip.ts", "src/ocelle-workflow-board.ts", "src/ocelle-workflow-lane.ts"]);
     const [icon] = modules.find((module) => module.path === "src/ocelle-icon.ts")?.declarations ?? [];
     expect(icon).toMatchObject({
       kind: "class",
@@ -844,6 +844,53 @@ describe("generate(root) on the repository's element source", () => {
       states: undefined,
       methods: [],
       ariaLabel: false,
+    });
+  });
+
+  // 018 (tasks.md T027; contracts/elements-status.md § `ocelle-metric`): `label` and `displayValue` (attribute
+  // `display-value`), reflected, and `layout` ("stack" | "row", default "stack", an attribute-backed accessor), each
+  // described; the parts label and value; no event, method, slot, CSS property or custom state, paired with the
+  // positive presence of `layout`.
+  it('declares ocelle-metric with label and displayValue (string | undefined, reflected, display-value), layout ("stack" | "row", default "stack"), the parts label and value, and no event, method, slot, CSS property or custom state, each described', async () => {
+    const manifest = await generate(repo);
+    const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [metric] = modules.find((module) => module.path === "src/ocelle-metric.ts")?.declarations ?? [];
+    const named = (list: unknown): unknown => ((list ?? []) as Record<string, unknown>[]).map(({ name, description }) => ({ name, described: typeof description === "string" && description !== "" }));
+    const described = (list: unknown): Record<string, unknown>[] =>
+      ((list ?? []) as Record<string, unknown>[]).map(({ description, ...rest }) => ({ ...rest, described: typeof description === "string" && description !== "" }));
+    const layout = '"stack" | "row"';
+    expect({ kind: metric?.kind, name: metric?.name, tagName: metric?.tagName, customElement: metric?.customElement, events: metric?.events }).toEqual({
+      kind: "class",
+      name: "OcelleMetric",
+      tagName: "ocelle-metric",
+      customElement: true,
+      events: [],
+    });
+    expect(described(metric?.members)).toEqual([
+      { kind: "field", name: "label", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "label", reflects: true, described: true },
+      { kind: "field", name: "displayValue", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "display-value", reflects: true, described: true },
+      { kind: "field", name: "layout", type: { text: layout }, default: '"stack"', described: true },
+    ]);
+    expect(described(metric?.attributes)).toEqual([
+      { name: "layout", type: { text: layout }, described: true },
+      { name: "label", fieldName: "label", type: { text: "string | undefined" }, default: "undefined", described: true },
+      { name: "display-value", fieldName: "displayValue", type: { text: "string | undefined" }, default: "undefined", described: true },
+    ]);
+    expect({
+      slots: metric?.slots,
+      parts: named(metric?.cssParts),
+      properties: metric?.cssProperties,
+      states: metric?.cssStates,
+      methods: ((metric?.members ?? []) as Record<string, unknown>[]).filter((member) => member.kind === "method"),
+    }).toEqual({
+      slots: [],
+      parts: [
+        { name: "label", described: true },
+        { name: "value", described: true },
+      ],
+      properties: [],
+      states: undefined,
+      methods: [],
     });
   });
 

@@ -20,7 +20,8 @@ import { buildPackage, elements } from "./package-build.ts";
 //   package root nor ocelle-icon.js;
 // - 012 (tasks.md T020): dist/ocelle-button.js, imported by the root and importing no other element, and the browser
 //   build defining `ocelle-button`; and (tasks.md T053) dist/ocelle-action-row.js the same way, `ocelle-action-row`;
-// - 018 (tasks.md T016): dist/ocelle-status-indicator.js the same way, `ocelle-status-indicator`.
+// - 018 (tasks.md T016): dist/ocelle-status-indicator.js the same way, `ocelle-status-indicator`; and (tasks.md T027)
+//   dist/ocelle-metric.js the same way, `ocelle-metric`.
 const dist = join(elements, "dist");
 const browserBuild = join(dist, "browser", "ocelle-elements.js");
 
@@ -362,6 +363,25 @@ describe("the module build of ocelle-status-indicator (018)", () => {
 
   it("the browser build defines ocelle-status-indicator", () => {
     expect(read(join("browser", "ocelle-elements.js")).includes('"ocelle-status-indicator"')).toBe(true);
+  });
+});
+
+// 018 (tasks.md T027): dist/ocelle-metric.js imports lit and the registration helper, and no element module nor the
+// root; the root imports it, and the browser build defines the element.
+describe("the module build of ocelle-metric (018)", () => {
+  const read = (name: string): string => (existsSync(join(dist, name)) ? readFileSync(join(dist, name), "utf8") : "");
+
+  it("dist/ocelle-metric.js imports lit and ./define.js, and no element module nor the root, and dist/index.js imports it", () => {
+    const imported = specifiers(read("ocelle-metric.js"));
+    expect({
+      lit: imported.includes("lit"),
+      own: imported.filter((specifier) => specifier.startsWith("./")),
+      rootImportsIt: specifiers(read("index.js")).includes("./ocelle-metric.js"),
+    }).toEqual({ lit: true, own: ["./define.js"], rootImportsIt: true });
+  });
+
+  it("the browser build defines ocelle-metric", () => {
+    expect(read(join("browser", "ocelle-elements.js")).includes('"ocelle-metric"')).toBe(true);
   });
 });
 

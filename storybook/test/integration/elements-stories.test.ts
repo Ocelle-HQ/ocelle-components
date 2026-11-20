@@ -1467,6 +1467,77 @@ describe("the ocelle-status-indicator stories in the built Storybook (018 US1, I
   }
 });
 
+// 018 phase 3 (I3; research.md R-12; tasks.md T029): the `ocelle-metric` stories, `Stack` (three metrics, label above
+// value), `Row` (the same three with `layout="row"`, label and value on one line) and `EmptyValue` (a metric with no
+// `display-value` and one with an empty one, stacked and in a row). Each renders its metrics in light and dark,
+// defined, each with the story's `label`, `display-value` and `layout`, its value shown as given and its label and
+// value arranged as its layout says, with base.css applied and no request outside the origin.
+
+/** What one story's metric must show: its attributes, its value's text and how its label and value sit. */
+interface Metric {
+  readonly label: string;
+  readonly displayValue: string | null;
+  readonly layout: string | null;
+  readonly value: string;
+  readonly arrangement: "stacked" | "row";
+}
+
+const metricFigures = [
+  ["Open missions", "12"],
+  ["Merged this week", "1,204"],
+  ["Median review time", "3 h 20 min"],
+] as const;
+
+const metricStories: readonly { readonly id: string; readonly metrics: readonly Metric[] }[] = [
+  { id: "elements-ocelle-metric--stack", metrics: metricFigures.map(([label, value]) => ({ label, displayValue: value, layout: null, value, arrangement: "stacked" })) },
+  { id: "elements-ocelle-metric--row", metrics: metricFigures.map(([label, value]) => ({ label, displayValue: value, layout: "row", value, arrangement: "row" })) },
+  {
+    id: "elements-ocelle-metric--empty-value",
+    metrics: [
+      { label: "Open missions", displayValue: null, layout: null, value: "", arrangement: "stacked" },
+      { label: "Open missions", displayValue: "", layout: "row", value: "", arrangement: "row" },
+    ],
+  },
+];
+
+/** What a metric story's page shows: its theme, the base stylesheet and its metrics. */
+function observeMetrics(page: Page): Promise<unknown> {
+  return page.evaluate(() => ({
+    theme: document.documentElement.dataset.theme,
+    base: {
+      linked: [...document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')].some((link) => link.href.endsWith("/base.css") && link.sheet !== null),
+      scheme: getComputedStyle(document.documentElement).colorScheme,
+    },
+    defined: customElements.get("ocelle-metric") !== undefined,
+    metrics: [...document.querySelectorAll("#storybook-root ocelle-metric")].map((metric) => {
+      const term = metric.shadowRoot?.querySelector('[part="label"]')?.getBoundingClientRect();
+      const definition = metric.shadowRoot?.querySelector('[part="value"]');
+      const box = definition?.getBoundingClientRect();
+      const stacked = term !== undefined && box !== undefined && box.top >= term.bottom - 0.5 && Math.abs(box.left - term.left) <= 0.5;
+      const row = term !== undefined && box !== undefined && box.top < term.bottom && term.top < box.bottom && term.right <= box.left + 0.5;
+      return {
+        label: metric.getAttribute("label"),
+        displayValue: metric.getAttribute("display-value"),
+        layout: metric.getAttribute("layout"),
+        value: definition?.textContent ?? "missing",
+        arrangement: stacked ? "stacked" : row ? "row" : "other",
+      };
+    }),
+  }));
+}
+
+describe("the ocelle-metric stories in the built Storybook (018 US2, I3)", { timeout: 60_000 }, () => {
+  for (const { id, metrics } of metricStories) {
+    for (const theme of ["light", "dark"] as const) {
+      it(`${id} in ${theme}: renders its metrics with the story's label, display-value and layout, the value as given and the label and value arranged by the layout, with base.css applied and no request outside the origin`, async () => {
+        const { page, outside } = await open(id, theme, "ocelle-metric");
+        expect({ ...((await observeMetrics(page)) as object), outside }).toEqual({ theme, base: { linked: true, scheme: theme }, defined: true, metrics, outside: [] });
+        await page.close();
+      });
+    }
+  }
+});
+
 /** A file of the repository, relative to storybook/, or "" when it does not exist. */
 function repositoryFile(path: string): string {
   const url = new URL(`../../${path}`, import.meta.url);

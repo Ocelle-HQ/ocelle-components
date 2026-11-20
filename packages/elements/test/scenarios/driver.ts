@@ -727,6 +727,22 @@ export interface Driver {
    * move, and waits for every element to render; rejects where the engine has no `moveBefore()`.
    */
   moveBefore(id: string, parentId: string): Promise<void>;
+  // The addition of 018 phase 3 (tasks.md T024): the browser's find in page, for the find-in-page body of
+  // scenarios/metric.ts (contracts/checks.md § US2 bodies; research.md R-05).
+  /**
+   * Runs the browser's find in page (`window.find`, case-insensitive, forwards, no wrap) for `text` from the start of
+   * the document until it finds no further match, and returns each match in order (at most 20) with the element its
+   * start lies in, read through every open shadow root (test/find.ts); clears the selection after.
+   */
+  findInPage(text: string): Promise<FindMatch[]>;
+}
+
+/** One match of find in page: the element its start lies in, the matched text and that element's border box size. */
+export interface FindMatch {
+  /** `.<class>` for an element with a class in a shadow root, else `#<id>`, else its local name. */
+  readonly holder: string;
+  readonly text: string;
+  readonly box: readonly [number, number];
 }
 
 /** How `copy` copies the live DOM. */
