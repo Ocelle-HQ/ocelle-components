@@ -618,6 +618,21 @@ export const buttonScenarios: readonly Scenario[] = [
     expected: { state: { role: "button", name: "Open project" }, images: [], folder: [], axe: [] },
   },
   {
+    name: 'op 022 (#57) scenario 7, link mode: a titled bare <svg> as the only content of an ocelle-button with href="#x" and label="Open project": the inner link is named Open project, and the subtree has no image node and no node named Folder (FR-003, phase-1 decision 1)',
+    run: async (driver) => {
+      await driver.mount('<ocelle-button id="k" href="#x" label="Open project"><svg slot="icon" viewBox="0 0 16 16"><title>Folder</title><path d="M2 2h12v12H2z"/></svg></ocelle-button>');
+      const state = await driver.axState("k", control);
+      const subtree = await driver.axSubtree("k");
+      return {
+        state: { role: state.role, name: state.name },
+        images: subtree.filter((node) => node.role === "image" || node.role === "img"),
+        folder: subtree.filter((node) => node.name.includes("Folder")),
+        axe: await severe(driver),
+      };
+    },
+    expected: { state: { role: "link", name: "Open project" }, images: [], folder: [], axe: [] },
+  },
+  {
     name: "op 022 (#57) scenario 8: an ocelle-icon in the icon slot beside the text Open project: one button node named Open project, as before the fix (FR-003, FR-006)",
     run: async (driver) => {
       await driver.mount('<ocelle-button id="b"><ocelle-icon slot="icon" name="folder"></ocelle-icon>Open project</ocelle-button>');
