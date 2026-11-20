@@ -13,3 +13,10 @@ Decided by human:jeroennouwsdev, 2026-11-19, on the questions of `recheck.md`.
 - **Q4, harness rows**: (a) phase 1 adds only rows 1, 2, 7 and 8 of contracts/checks.md § Test harness (animation
   record, `seek`, `settleLayout`, the fractional overflow measure); rows 3 to 6 are recorded as existing methods on
   `main` (`text`/`textData`, `topLayer`, `focusVisible`/`focusPath`, `click` with `position`/`clickAt`).
+
+## T010, the phase's plant run
+
+Decided by human:jeroennouwsdev, 2026-11-20. Op 016's `--affected` mode selects all 317 plants for phase 1, because
+T009's change to `vitest.config.ts` is not mapped by `affectedPlants` ("every plant, by vitest.config.ts (not
+mapped)"). The full set is not run locally: phase 1's `plants.md` records the `--list` output and this reason, and
+judging is left to CI's Plants check on the pull request. A recorded exception to the "exit 0" rule, for phase 1 only.
