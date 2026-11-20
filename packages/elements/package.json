@@ -25,6 +25,7 @@
     "./ocelle-fact.js": "./dist/ocelle-fact.js",
     "./ocelle-empty-state.js": "./dist/ocelle-empty-state.js",
     "./ocelle-progress.js": "./dist/ocelle-progress.js",
+    "./ocelle-disclosure.js": "./dist/ocelle-disclosure.js",
     "./browser.js": "./dist/browser/ocelle-elements.js",
     "./custom-elements.json": "./custom-elements.json"
   },

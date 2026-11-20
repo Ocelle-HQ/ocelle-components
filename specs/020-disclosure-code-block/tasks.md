@@ -93,7 +93,7 @@ it with exactly the events of data-model.md § State transitions; the Chromium t
 
 ### Spike (first)
 
-- [ ] T001 [US1] Spike before the scaffold, scratch files only (outside `packages/`), recorded in
+- [X] T001 [US1] Spike before the scaffold, scratch files only (outside `packages/`), recorded in
   `specs/020-disclosure-code-block/reviews/phase-1/spike.md`, per plan § Phases and research R-01, R-02, R-08:
   - a Lit 3 element with the R-01 shadow tree (no `delegatesFocus`): the summary's CDP role and `expanded` in both
     states, its name with a slotted text summary, with a host `aria-label` moved onto it, and with a slotted bare
