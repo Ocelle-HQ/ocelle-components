@@ -15,7 +15,7 @@ Add six independently importable custom elements. The shell owns layout and narr
 | Platform | Web components for Kitty Desktop's webview, Kitty Dashboard and the Ocelle console. Repository browser tests run on pinned Chromium |
 | Testing | Vitest Browser Mode, Playwright keyboard and accessibility-tree assertions, Storybook light/dark baselines, axe, CSP, manifest and mutation gates |
 | State | Per-instance layout, tier, drawer and focus state. Settle focus on tier and same-tier layout changes. Hosts own routes and destination data |
-| Resize behavior | One settled transition per effective state change. Avoid width feedback from tier-dependent content and cancel deferred work on disconnect |
+| Resize behavior | One settled transition per effective state change. Preserve pending focus across same-tier observations that leave its effective target intact. Recompute on superseding changes and cancel stale work on disconnect or deliberate surviving focus. Avoid width feedback from tier-dependent content |
 
 ## Constitution Check
 
