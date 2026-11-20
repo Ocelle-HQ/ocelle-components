@@ -1,0 +1,163 @@
+# Implementation Plan: Disclosure and Code Block (the last of #13)
+
+**Branch**: `020-disclosure-code-block` (work on `claude/013-disclosure-code-block`, cut from `main` at 4911fd0b) |
+**Date**: 2026-11-20 | **Spec**: [spec.md](spec.md)
+
+**Input**: Feature specification from `specs/020-disclosure-code-block/spec.md` (spec gate approved 2026-11-20,
+`reviews/spec/operator-gate.md`), triage record `triage/020-disclosure-code-block.md`.
+
+## Summary
+
+Two new elements in `@ocelle/elements`, the last two of #13:
+
+- **`ocelle-disclosure` (P1)**: a native `details` and `summary` in an open shadow root with `delegatesFocus`. The
+  summary is the one inner control and holds a slot-convention icon row (012 decision 33) with a `chevron-end` /
+  `chevron-down` fallback icon. `open` is reflected and is the state; the native `toggle` is turned into one
+  `ocelle-disclosure-toggle` (`{ open }`, composed, not cancelable) after the attribute is reflected, coalesced per
+  task and silent at upgrade. Host ARIA moves to the summary through `MovedAttributes` (control conventions rule 4).
+  No animation (research R-01 to R-04, R-08).
+- **`ocelle-code-block` (P2)**: a copy of the host's `textContent` in a shadow `pre` (no slot), followed by a
+  `MutationObserver`; on `color-inset` in the sans with tabular figures at `line-height-relaxed`, a block capped at
+  `measure-reading`. Wrap by default (003's `pre-wrap` and `anywhere`); `overflow="scroll"` renders 009's
+  overflow-region structure around the `pre`, used exactly as its contract states. `digest` renders a prefix and groups
+  of four as inline spans joined by `<wbr>` with a `space-1` gap, which the measures in R-07 show copy and read as the
+  unbroken digest (R-05 to R-07).
+
+Phase order (operator decision Q1, spec FR-060): phase 1 is the disclosure on the branch as cut from `main`; phase 2
+opens with an operator stop on mission 019 before its scaffold. Nothing merges `main`.
+
+## Technical Context
+
+**Language/Version**: TypeScript 5 (repository pin), ES2022 modules, run by Node 24's type stripping in gates.
+
+**Primary Dependencies**: Lit 3 (repository pin). No new dependency.
+
+**Storage**: N/A.
+
+**Testing**: Vitest browser mode with Playwright Chromium: scenario bodies in `test/scenarios/`, run in process
+(`elements` project, mutated by Stryker) and on the built browser build on strict-CSP fixture pages
+(`elements-browser`); node tests for the README and manifest; Storybook stories through #10's `visual` and `axe` gates.
+
+**Target Platform**: browsers at the engine floor (Chromium 135+, WebKit 17.4+); only Chromium measured.
+
+**Project Type**: library (custom elements).
+
+**Performance Goals**: none beyond the platform; the code block re-renders once per mutation batch.
+
+**Constraints**: strict CSP (no `style` attribute, no `<style>`); tokens only; no monospace; no clipboard I/O; no
+change to `src/overflow-region.ts`, its contract, or any element of missions 013 and 019.
+
+**Scale/Scope**: 2 elements, 2 phases, about 60 scenario and FR bodies.
+
+## Constitution Check
+
+*Gate: passes before Phase 0, re-checked after Phase 1 design: passes, with the two exceptions of Complexity
+Tracking for the operator at the tasks gate.*
+
+| Principle | How this plan meets it |
+|---|---|
+| I. Names, no I/O, small interface, manifest | **Tags**: `ocelle-disclosure`, `ocelle-code-block`. **Event**: `ocelle-disclosure-toggle` only. **I/O**: none (no clipboard; copy is the browser's). **Interfaces**: `open`; four moved attributes with mirrors; slots `summary`, `icon`, default; parts `details`, `summary`, `panel`; state `open` / `overflow`, `label`, `digest`; parts `block`, `code`; no slot. Every property `@default undefined`. Manifest lists everything ([contracts/elements.md](contracts/elements.md)). |
+| II. Tokens only, brand rules | Every value a token (R-10); no new token. **No monospace**: the shadow `pre` sets `font-sans` and `figures` itself (R-06). **Digests in groups of four**: R-07, recorded as a README convention. No ochre, no raw colour. |
+| III. Accessible by construction | **No ID reference across a root**: the summary and panel are in one `details`; host ID references resolved by element reference (R-03). **Host ARIA** moved to the summary, except `aria-expanded` (Complexity Tracking). **Keyboard**: native Enter and Space; panel content in tab order only while open; scroll block a tab stop only while it overflows (module). **Focus**: never lost when a panel closes (R-02). **Motion**: none in the disclosure; instant scroll writes in the module. **Reflow**: 320 px bodies for both. **Forced colours**: `controlStyles`, a transparent border on the block. **AX-tree tests** in both harnesses; axe on every story. |
+| IV. Strict CSP, offline | Adopted stylesheets; the module's per-instance sheet is the only other (README Styles). Fixture pages assert zero violations. No network. |
+| V. Storybook, behaviour tests | A story per variant and state, light and dark (R-09), with the story-less states of Complexity Tracking. Every event and payload has interaction tests (FR-054). Baselines in #10's pinned container under docker; no podman cross-check possible here. |
+| VI. Consumer-driven, own code | #13 and the Desktop V2 disclosure family; no kitty-mission-ui inventory for these families was supplied (R-11, plan-gate decision). Nothing copied. No duplicated control logic: the shared `control.ts` and `icon-slot.ts` are reused. |
+| VII. Semver | MINOR: two elements, two entry points, one event, one README convention. CHANGELOG for `@ocelle/elements`. |
+| VIII. Test-first, non-vacuous | A scaffold then a red commit per phase with the story tests (I3); paired "does not" bodies; platform-passable bodies carry an element-only assertion ([contracts/checks.md](contracts/checks.md)); plants for CSS-only behaviour; mutation with op 015's shards; the R-01, R-07 and R-08 measures re-run as tests before green, a failure going to the operator. |
+| Licence, supply chain | No new dependency or asset. |
+| Workflow gates | No gate added or changed. |
+
+## Decisions the operator should see at the plan gate
+
+1. **Disclosure clicks are not guarded** (R-03): unlike `ocelle-button`, the disclosure adds no host click guard, so
+   clicks on panel content reach the page. A click dispatched on the host toggles nothing; `element.click()` is
+   overridden to toggle.
+2. **Host `aria-expanded` is not moved** (R-03, SPEC-2-09): `open` is the state. Recorded as an exception to Principle
+   III's list in Complexity Tracking.
+3. **Digest layout** (R-07): inline spans with `<wbr>`, chosen by measure; a unit wider than the line breaks inside, so
+   the never-break-inside rule yields to 1.4.10 (SPEC-2-08). The spec's FR-033 wording is aligned at the first squad
+   fix.
+4. **Code block sizing** (R-06, SPEC-2-07): a block that fills its container, capped at `measure-reading`.
+5. **No inventory** (R-11): the README gets no kitty-mission-ui mapping rows for these two unless the operator supplies
+   one.
+6. **Spec-check-2 notes** SPEC-2-01 to SPEC-2-09: answered in research (R-02, R-03, R-06 to R-08, R-11) and
+   [contracts/checks.md](contracts/checks.md) (SPEC-2-06: a body per unscenarioed FR and edge case). The spec's own text
+   for SPEC-2-01, -03, -04, -05, -07, -08 and -09 is updated by the first squad fix if the squad confirms them.
+
+## Project Structure
+
+### Documentation (this feature)
+
+```text
+specs/020-disclosure-code-block/
+├── spec.md
+├── plan.md              # this file
+├── research.md          # Phase 0
+├── data-model.md        # Phase 1
+├── quickstart.md        # Phase 1
+├── contracts/
+│   ├── elements.md      # public surface, README statements, the digest convention
+│   └── checks.md        # test layout, oracles, plants, gates
+├── checklists/requirements.md
+├── reviews/             # spec checks, squad rounds, phase reviews
+├── triage.ref
+└── tasks.md             # /speckit-tasks
+```
+
+### Source Code (repository root)
+
+```text
+packages/elements/
+├── src/
+│   ├── ocelle-disclosure.ts      # phase 1 (imports ocelle-icon.ts, control.ts, icon-slot.ts, focusable.ts)
+│   ├── ocelle-code-block.ts      # phase 2 (imports overflow-region.ts)
+│   ├── index.ts, browser.ts      # exports (both phases)
+├── package.json                  # entry points (both phases)
+├── custom-elements.json          # regenerated (both phases)
+├── README.md                     # two sections; § Element conventions: Digests (phase 2)
+├── CHANGELOG.md
+└── test/
+    ├── scenarios/disclosure.ts, scenarios/code-block.ts
+    ├── disclosure.test.ts, code-block.test.ts
+    ├── entry-disclosure.test.ts, entry-code-block.test.ts
+    ├── browser/disclosure.test.ts, browser/code-block.test.ts
+    ├── browser/fixtures/disclosure.html, browser/fixtures/code-block.html
+    └── node/ (README and manifest tests, extended)
+storybook/
+├── stories/disclosure.stories.ts, stories/code-block.stories.ts
+└── baselines/<story-id>.<theme>.png
+gates/plants/                      # plants of contracts/checks.md
+```
+
+**Structure Decision**: the library's existing layout (README § Files and tests); nothing new.
+
+## Phases (user stories) for `/speckit-tasks`
+
+### Phase 1: US1 `ocelle-disclosure` (P1), on the branch as cut from `main`
+
+1. Spike (before red): R-01's summary role and `expanded` in the CDP tree; R-08's fragment reveal of a shadow
+   `details`; `::-webkit-details-marker` under `style-lint`. Recorded in `reviews/phase-1/`; a failure goes to the
+   operator.
+2. Scaffold: module, exports, empty render.
+3. Red: `test/scenarios/disclosure.ts` bodies US1-1 to US1-21 and the FR bodies; the in-process and fixture tests;
+   the entry test; the README and manifest node tests; `disclosure.stories.ts` and its story-test extension (I3).
+4. Green: the element (R-01 to R-04); README section; manifest; CHANGELOG; plants; baselines in the pinned container.
+5. Gates locally: unit tests, typecheck, lint, style-lint, csp, prefix, manifest, contrast, `plants -- --affected`,
+   mutation (shards), storybook-build, visual, axe.
+
+### Phase 2: US2 `ocelle-code-block` (P2), after the operator's decision on mission 019
+
+0. **Operator stop (FR-060)**: report whether mission 019 is on `main` and what it changed in
+   `src/overflow-region.ts`; the operator decides how to proceed. No merge of `main` without that answer.
+1. Scaffold, then red: `test/scenarios/code-block.ts` US2-1 to US2-21 and the FR bodies (with R-07's copy, AX and
+   break-position measures as tests), tests, entry test, node tests, `code-block.stories.ts` (I3).
+2. Green: the element (R-05 to R-07); README section and § Element conventions "Digests"; manifest; CHANGELOG; plants;
+   baselines.
+3. Gates locally as phase 1.
+
+## Complexity Tracking
+
+| Exception | Principle | Scope | Rationale | Sunset | Approval |
+|---|---|---|---|---|---|
+| Two supported states have no story | V | the disclosure with no name (empty summary, no host label) and the overflowing scroll block with no `label` and no host `aria-label`; plus the wrap-mode code block with a host `aria-label`, which the README advises against. Each proven by browser bodies in both harnesses. | axe fails the unnamed states by design (they are consumer errors the elements must not hide), and a story would need an `a11y-exceptions.json` entry. | When the `axe` gate can carry a known consumer error without an exception entry. | Operator, tasks gate (pending). |
+| A host `aria-expanded` is not moved to the inner control | III ("ARIA state set on a host (`aria-expanded`, …) reaches the real inner control") | `ocelle-disclosure` only; it stays on the host, unsupported, as any unlisted `aria-*`. | `open` is the state and the native summary exposes it; moving a host `aria-expanded` would let it contradict `open`. The README tells consumers to use `open`. | If a consumer needs to drive the state through `aria-expanded`, it is mapped onto `open` in a later MINOR. | Operator, tasks gate (pending). |
