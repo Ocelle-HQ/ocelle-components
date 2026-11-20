@@ -7,7 +7,9 @@ in_scope: [57]
 out_of_scope: [1, 49, 54]
 semver: patch
 spec_prompt: "Op for #57 (triage/022-focus-trap-details-icon-name.md): two local accessibility fixes, each red first in a browser body before the source changes: (1) packages/elements/src/focusable.ts rendered() also requires element.checkVisibility(), so a link inside a closed <details> is no Tab stop and Tab from the last real stop of an ocelle-dialog or ocelle-drawer wraps to its first stop; (2) a bare <svg> holding a <title> slotted into ocelle-button's icon slot has no accessibility-tree node and adds nothing to the button's name; no new element, attribute, event, slot, part or token; a Fixed entry in packages/elements/CHANGELOG.md and the README sentences that state the behaviour; lands after #49 and #54."
-status: proposed
+status: approved
+decided_by: "human:jeroennouwsdev"
+decided_at: 2026-11-20T12:06:53Z
 ---
 
 # Triage 022: focus trap counts a closed `<details>` link; button icon slot names a bare `<svg>` (#57)
