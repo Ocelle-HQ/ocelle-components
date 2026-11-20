@@ -13,7 +13,7 @@
 
 - [x] The draft contains no unresolved clarification markers. The nav-pill interpretation is explicit.
 - [x] Requirements cover all six elements, their primary interaction flows and the inherited release checks.
-- [x] Boundary cases cover threshold equality, invalid and equal settings, missing regions, target lookup and focus recovery.
+- [x] The layout table defines visible regions and drawer contents across all three tiers. Boundary cases cover default and overridden thresholds, equal and inverted bounds, missing regions, target lookup and ordered focus recovery.
 - [x] Dependencies, consumer evidence and ownership of routes and screen content are recorded.
 - [x] Success criteria identify observable checks for each tier, 320 px reflow, keyboard paths and accessibility states.
 
