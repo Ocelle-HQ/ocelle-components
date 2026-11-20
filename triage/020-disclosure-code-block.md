@@ -168,3 +168,11 @@ block-axis option); a sticky part in the code block (would need R-17's option); 
   or R-17's mask exclusion, and depends on 019 (or 009's owner) landing it first.
 - **The operator wants digest grouping decided library-wide first** (with #14): a `decision-needed` for that
   convention before this mission's clarify.
+
+## Operator decision (triage gate, 2026-11-20)
+
+- **Gate:** approved by the operator (jeroennouwsdev).
+- **Q1 (sequencing against mission 019):** a reworded (b), since the standing rule forbids merging main during a
+  run. Design both elements now; implement P1 (`ocelle-disclosure`) on main as it is. Before P2's red step the run
+  **stops and asks the operator** how to proceed against 019 (landed or not); main is not merged without the
+  operator's say (`/ocelle-land` does merges).
