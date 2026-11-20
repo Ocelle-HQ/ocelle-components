@@ -14,7 +14,7 @@ Add six independently importable custom elements. The shell owns layout and narr
 | Packages | `@ocelle/elements` public surface, `@ocelle/tokens` additions for published shell thresholds and any missing semantic styles |
 | Platform | Web components for Kitty Desktop's webview, Kitty Dashboard and the Ocelle console. Repository browser tests run on pinned Chromium |
 | Testing | Vitest Browser Mode, Playwright keyboard and accessibility-tree assertions, Storybook light/dark baselines, axe, CSP, manifest and mutation gates |
-| State | Per-instance layout, tier, drawer and focus state. Hosts own routes and destination data |
+| State | Per-instance layout, tier, drawer and focus state. Settle focus on tier and same-tier layout changes. Hosts own routes and destination data |
 | Resize behavior | One settled transition per effective state change. Avoid width feedback from tier-dependent content and cancel deferred work on disconnect |
 
 ## Constitution Check
@@ -41,5 +41,5 @@ The Phase 1 contracts preserve these constraints. Changes to shared drawer, side
 ## Delivery order
 
 1. Establish the top bar and the navigation primitives with standalone stories and native key paths. Validate the inline nav pill against the Desktop V2 group with several links, one current page and a separate top-bar action.
-2. Establish shell layout and drawer composition against real rail and sidebar fixtures. Keep stable destination identity and exercise grouped sidebar compaction, distinct navigation landmarks, minimum menu size, resize and focus cases in source browser tests before changing shared helpers.
+2. Establish shell layout and drawer composition against real rail and sidebar fixtures. Keep stable destination identity and exercise grouped sidebar compaction, distinct navigation landmarks, minimum menu size, resize, focus recovery from collapsed sidebar chrome and same-tier layout switching in source browser tests before changing shared helpers.
 3. Add the skip link and integrated shell validation, including a target in a different shadow root and a separately sized frame. Run the public surface and integration gates across all delivered units.
