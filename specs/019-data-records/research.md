@@ -224,15 +224,15 @@ mount (as a late web font widens it) overflowed it with no tab stop at all, so t
 by keyboard. T003's spike did not grow a caption, and the red body of the one-long-word case was written around it
 instead of stopping. The operator decided to fix it (`reviews/phase-1/operator-round-1-decisions.md`, (a)):
 
-- `@ocelle/styles`' caption rule (block 1) sets `min-inline-size: min-content`, so the caption is never narrower than
-  its longest word, whatever the cap: the word widens the table, as on a fresh load, and nothing it holds overflows
-  the caption.
-- The element observes `.region-track` with a second `ResizeObserver` of its own (for the cap, not for overflow: the
-  module's triggers above are unchanged). On any change of the track's size, one animation frame later and so
-  outside any delivery, it removes `--data-table-box-size`, reads `.box-size`'s used inline size at the fallback cap
-  (`getComputedStyle(…).inlineSize`, as unrounded and untransformed as the observer's entry) and writes it again: the
-  measure a fresh load makes. A multi-word caption that rewraps at the old cap changes the track's block size, so it
-  is measured again too. A frame that finds the size unchanged writes the same value, and the loop ends.
+`@ocelle/styles`' caption rule (block 1) sets `min-inline-size: min-content`, so the caption is never narrower than
+its longest word, whatever the cap: a word that grows widens the table, the box with it in a shrink-to-fit host, and
+the element's `.box-size` observer then writes the wider cap, as on a fresh load; nothing the caption holds
+overflows it. That is the whole fix. A table caption adds only its min-content (its longest word) to the table's width,
+never its max-content, so a caption whose words stay narrower than the cap wraps the same way grown or fresh. The fix
+round measured that: "Deployment approvals pending" edited to "Deployment approvals pending for review" gives a host of
+90.6 px grown and fresh, in all three hosts. A second observer that remeasured at the fallback cap after every track
+change was tried and removed, because no case needs it: every one of its mutants survived. The module's triggers above
+are unchanged, and the element gains no observer.
 
 The shared body "R-02 a caption that grows at run time (review R1-01)" grows a caption by a text edit and by
 letter-spacing raised after mount, in the three hosts, and compares each with a fresh host of the same caption (the
@@ -358,9 +358,7 @@ against the prose table's query container). The data table bounds its caption wi
   the "ResizeObserver loop" error on `window`. The squad measured that in headless Chrome on a plain block host on
   first load, whenever the caption's line count differs between the fallback cap and the measured one; the same page
   observing a `block-size: 0` sibling gave one callback, no error and the same cap. 009's observer belongs to the
-  module and is not reached into. This observer sizes the caption only, so R-05's overflow triggers are unchanged (as
-  does the track's observer of R-05's correction, which measures again at the fallback cap a frame after the track
-  resizes). On
+  module and is not reached into. This observer sizes the caption only, so R-05's overflow triggers are unchanged. On
   each callback the observer writes the measuring element's unrounded inline size (the entry's
   `contentBoxSize[0].inlineSize`, in px, not transformed), which is `.region-box`'s exact width: 009's box has no
   inline padding or border and, with no bounded block size, no vertical scrollbar. (With `sticky-header` the box

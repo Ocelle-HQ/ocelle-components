@@ -916,6 +916,65 @@ return { left: rect.left, right: rect.right, captionLeft: own.left, captionRight
       return { text: one, spacing: one };
     })(),
   },
+  {
+    name: "R-07 a table overflowing at 600 and 400 px with a caption longer than the box, its host narrowed from 600 to 400 px (the track's size unchanged): --data-table-box-size the measured .box-size and every caption line box inside the unmasked extent",
+    loop: true,
+    run: async (driver) => {
+      const table = `<table id="t"><caption id="t-cap"><span id="ct">${longCaption} ${longCaption}</span></caption><tbody><tr><td><span class="w800">wide</span></td><td>x</td></tr></tbody></table>`;
+      await page(driver, `<div id="w">${dt("dt", 'label="Work packages"', table)}</div>`);
+      await driver.size("w", 600, null);
+      await driver.settle();
+      await driver.frames(2);
+      const track = async (): Promise<number> => (await driver.box("dt", ".region-track")).width;
+      const before = await track();
+      await driver.size("w", 400, null);
+      await driver.settle();
+      await driver.frames(2);
+      const size = await driver.box("dt", ".box-size");
+      const written = await trackProperty(driver, "dt", "--data-table-box-size");
+      return { trackKept: Math.abs((await track()) - before) <= 0.5, fade: field(await region(driver, "dt"), "fade"), width: Math.round(size.width), written: Math.abs(Number.parseFloat(written) - size.width) <= 0.01, inside: await linesInside(driver, "ct", "dt") };
+    },
+    expected: { trackKept: true, fade: "end", width: 400, written: true, inside: true },
+  },
+  {
+    name: "R-07 an overflowing data table moved from a 400 px wrapper into a 320 px one (detached and attached again): --data-table-box-size the measured .box-size and every caption line box inside the unmasked extent",
+    run: async (driver) => {
+      const table = `<table id="t"><caption id="t-cap"><span id="ct">${longCaption}</span></caption><tbody><tr><td><span class="w800">wide</span></td><td>x</td></tr></tbody></table>`;
+      await page(driver, `<div id="wa" data-w="400">${dt("dt", 'label="Work packages"', table)}</div><div id="wb" data-w="320"></div>`);
+      await driver.frames(2);
+      const first = Math.round((await driver.box("dt", ".box-size")).width);
+      await driver.move("dt", "wb");
+      await driver.settle();
+      await driver.frames(2);
+      const size = await driver.box("dt", ".box-size");
+      const written = await trackProperty(driver, "dt", "--data-table-box-size");
+      return { first, width: Math.round(size.width), written: Math.abs(Number.parseFloat(written) - size.width) <= 0.01, inside: await linesInside(driver, "ct", "dt") };
+    },
+    expected: { first: 400, width: 320, written: true, inside: true },
+  },
+  {
+    name: "R-07 a box with no inline size keeps the last cap: the host hidden at run time, then shown in a wrapper narrowed to 0 px, --data-table-box-size stays the 320 px measure; the wrapper back at 320 px, the measure again",
+    loop: true,
+    run: async (driver) => {
+      await page(driver, `<div id="w" data-w="320">${dt("dt", 'label="Work packages"', usTable("t"))}</div>`, 1280);
+      await driver.frames(2);
+      const measured = await trackProperty(driver, "dt", "--data-table-box-size");
+      await driver.setAttribute("dt", "hidden", "");
+      await driver.settle();
+      await driver.frames(3);
+      const hidden = await trackProperty(driver, "dt", "--data-table-box-size");
+      await driver.size("w", 0, null);
+      await driver.setAttribute("dt", "hidden", null);
+      await driver.settle();
+      await driver.frames(3);
+      const zero = { box: Math.round((await driver.box("dt", ".box-size")).width), written: await trackProperty(driver, "dt", "--data-table-box-size") };
+      await driver.size("w", 320, null);
+      await driver.settle();
+      await driver.frames(3);
+      return { measured, hidden, zero, back: await trackProperty(driver, "dt", "--data-table-box-size") };
+    },
+    expected: { measured: "320px", hidden: "320px", zero: { box: 0, written: "320px" }, back: "320px" },
+  },
 ];
 
 // ---------------------------------------------------------------------------------------------------------------

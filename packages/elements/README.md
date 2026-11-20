@@ -936,7 +936,7 @@ The region's name is the host `aria-label` when it is not blank, else `label`, e
 
 Sizing: a wrapper that is itself the flex or grid item, around the element, needs `min-inline-size: 0` too. In a shrink-to-fit host (a dialog, an inline-block, a start-aligned flex) the data table takes its table's width and overflows only when its own inline size is bounded.
 
-The caption scrolls with the table until the overflow-region module's pinned-start option lands. The caption's longest word widens the table; in a bounded host a caption word wider than the box overflows it and the region scrolls. Otherwise the caption wraps inside the box's unmasked width. A caption that grows after load (its text edited, a style changed or a web font loaded late) is measured again as on a fresh load.
+The caption scrolls with the table until the overflow-region module's pinned-start option lands. The caption's longest word widens the table; in a bounded host a caption word wider than the box overflows it and the region scrolls. Otherwise the caption wraps inside the box's unmasked width. A caption that grows after load (its text edited, a style changed or a web font loaded late) widens the table as it would on a fresh load.
 
 The look comes from `@ocelle/styles`: link its `base.css` on the page, or adopt it in a consumer's shadow root. Inside a `data-ocelle-prose` container a consumer rule on the table needs a specificity above (0,1,0), or (0,1,0) placed after `@ocelle/styles`. Before upgrade the table is styled by `@ocelle/styles` with no scroll region. Chromium names each column header by its drawn upper-case text, so the accessible names of column headers follow the upper case, as for the eyebrow heading of `ocelle-section-header`.
 

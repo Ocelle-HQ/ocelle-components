@@ -442,7 +442,7 @@ const fragments = [
   "Base-style hook: the element writes `--data-table-box-size` (the box's measured inline size) and `--data-table-end-fade` (the end fade's depth while it shows) for `@ocelle/styles`' caption cap. Both are public surface of `@ocelle/elements` and `@ocelle/styles`, and a consumer does not set them",
   "No change the data table makes to its region leaves it in a state a fresh load would not give",
   "No change the data table makes to its region leaves it in a state a fresh load would not give, and nor does a change to its table or caption after load",
-  "A caption that grows after load (its text edited, a style changed or a web font loaded late) is measured again as on a fresh load",
+  "A caption that grows after load (its text edited, a style changed or a web font loaded late) widens the table as it would on a fresh load",
   "`sticky-header` pins the `<thead>` while the body scrolls in a block size the page bounds on the host with its own `block-size` or `max-block-size`; with no bound nothing scrolls in the block axis",
   "The caption scrolls away in the block axis. ArrowUp and ArrowDown scroll the region, and PageUp, PageDown, Home, End, Space and Shift+Space scroll it as the browser does",
   "The block end fades while rows are below, never under the header, with a line in forced colours",

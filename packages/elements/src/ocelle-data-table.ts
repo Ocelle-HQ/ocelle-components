@@ -146,22 +146,8 @@ export class OcelleDataTable extends LitElement {
     this.#measured = size;
     this.#writeBoxSize();
   });
-  // Review R1-01: the cap is measured from the box, and in a shrink-to-fit host the box is as wide as the table, which
-  // the cap itself bounds. A caption that grows later (its text edited, a style or a late web font) would stay at the
-  // old cap where a fresh load measures it at the fallback. Any change of the track's size (the table's, and so the
-  // caption's) remeasures as a fresh load does, one frame later, outside any ResizeObserver delivery.
-  readonly #track = new ResizeObserver(() => {
-    if (this.#refitFrame === 0) {
-      this.#refitFrame = requestAnimationFrame(() => {
-        this.#refitFrame = 0;
-        this.#refit();
-      });
-    }
-  });
   /** The `.box-size` inline size last measured, kept for the rewrite when `data-axis` changes. */
   #measured: number | undefined;
-  /** The pending animation frame of the remeasure at the fallback cap, or 0. */
-  #refitFrame = 0;
   /** The pending animation frame of the end fade and the box-size rewrite, or 0. */
   #frame = 0;
   /** The end-fade and `data-axis` states the last frame wrote for. */
@@ -179,7 +165,8 @@ export class OcelleDataTable extends LitElement {
     const root = this.renderRoot as ShadowRoot;
     if (!root.adoptedStyleSheets.includes(this.#sheet)) root.adoptedStyleSheets = [...root.adoptedStyleSheets, this.#sheet];
     this.#children.observe(this, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["hidden", "aria-hidden", "alt"] });
-    this.#observe();
+    const sizer = root.querySelector(".box-size");
+    if (sizer !== null) this.#size.observe(sizer);
     // Q-M2 (a), T086: the child observer is off while the element is detached, so a <table> replaced then is assigned
     // here, and the update that follows re-reads the name, the caption cap and the end fade for it.
     this.#assign();
@@ -194,11 +181,8 @@ export class OcelleDataTable extends LitElement {
     this.#children.disconnect();
     // Stryker disable next-line all: equivalent, a detached .box-size reports an inline size of 0, which the callback ignores, and connectedCallback observes it again, which delivers its size (T025)
     this.#size.disconnect();
-    this.#track.disconnect();
     cancelAnimationFrame(this.#frame);
     this.#frame = 0;
-    cancelAnimationFrame(this.#refitFrame);
-    this.#refitFrame = 0;
   }
 
   override attributeChangedCallback(name: string, old: string | null, value: string | null): void {
@@ -233,15 +217,8 @@ export class OcelleDataTable extends LitElement {
   }
 
   protected override firstUpdated(): void {
-    this.#observe();
-  }
-
-  /** Observes `.box-size` for the cap and `.region-track` for the remeasure, once they are rendered. */
-  #observe(): void {
     const sizer = this.renderRoot.querySelector(".box-size");
     if (sizer !== null) this.#size.observe(sizer);
-    const track = this.renderRoot.querySelector(".region-track");
-    if (track !== null) this.#track.observe(track);
   }
 
   /** Assigns the slot the first direct `table` child, or nothing; other children stay unassigned. */
@@ -288,20 +265,6 @@ export class OcelleDataTable extends LitElement {
     // Stryker disable next-line StringLiteral: not killed in process, where the block-axis scrollbar's room is 0 (--hide-scrollbars); covered by elements-browser (not mutated): test/browser/data-table-scrollbar.test.ts "the sticky caption at 320 px: --data-table-box-size the measured .box-size less the room (305px) with every caption line inside the unmasked extent; 320px once the bound is lifted, 305px again once it is set, each one frame after settle; no ResizeObserver loop error", which fails with this mutant (reviews/phase-1/element-plants.md § T025)
     this.#axisWritten = box?.getAttribute("data-axis") ?? null;
     // Stryker disable next-line all: not killed in process, where the block-axis scrollbar's room is 0 (--hide-scrollbars); covered by elements-browser (not mutated): test/browser/data-table-scrollbar.test.ts "the sticky caption at 320 px: --data-table-box-size the measured .box-size less the room (305px) with every caption line inside the unmasked extent; 320px once the bound is lifted, 305px again once it is set, each one frame after settle; no ResizeObserver loop error", which fails with this mutant (reviews/phase-1/element-plants.md § T025)
-    this.#writeBoxSize();
-  }
-
-  /**
-   * The remeasure (review R1-01): the cap is removed, so the caption lays out at the fallback as on a fresh load, and
-   * `.box-size`'s inline size there (its used value, as unrounded and untransformed as the observer's entry) is written
-   * again. A box with no inline size (the host not rendered) keeps the last measure.
-   */
-  #refit(): void {
-    const sizer = this.renderRoot.querySelector(".box-size");
-    if (sizer === null) return;
-    (this.#sheet.cssRules[0] as CSSStyleRule).style.removeProperty("--data-table-box-size");
-    const size = Number.parseFloat(getComputedStyle(sizer).inlineSize);
-    if (size > 0) this.#measured = size;
     this.#writeBoxSize();
   }
 

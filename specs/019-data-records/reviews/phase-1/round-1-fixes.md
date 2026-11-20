@@ -5,7 +5,7 @@ Red commit: ad17b16 (`red-commits`: `fix-1`), recorded by `red.sh 1 fix-1`, log 
 
 | ID | Resolution | Red test | Where |
 |----|------------|----------|-------|
-| R1-01 | fixed | ad17b16: "R-02 a caption that grows at run time (review R1-01): …" in `packages/elements/test/scenarios/data-table.ts`, run by both harnesses (`loop`), red in both on its assertion | `packages/styles/src/base.css` (block 1's caption: `min-inline-size: min-content`); `packages/elements/src/ocelle-data-table.ts` (`#track`, `#observe`, `#refit`); README lines of both packages with test statements; research.md R-05 "Correction", R-06 caption row, R-07; contracts/ocelle-data-table.md § Caption, contracts/styles-data-table.md caption row |
+| R1-01 | fixed | ad17b16: "R-02 a caption that grows at run time (review R1-01): …" in `packages/elements/test/scenarios/data-table.ts`, run by both harnesses (`loop`), red in both on its assertion | `packages/styles/src/base.css` (block 1's caption: `min-inline-size: min-content`); three cap bodies added to `packages/elements/test/scenarios/data-table.ts`; README lines of both packages with test statements; research.md R-05 "Correction", R-06 caption row, R-07; contracts/ocelle-data-table.md § Caption, contracts/styles-data-table.md caption row |
 | R1-02 | deferred: a note with an optional change only; the equivalence holds for every shipped host, as the review finds, and the operator asked for no change | none (note) | none |
 | R1-03 | fixed | none: a weak test, strengthened in the fix commit (see below) | tasks.md T080; the US1-26 captioned body's name, comment and `restLink.endPast` |
 | R1-04 | fixed (recorded) | none: both cases run against the code from before their fixes and fail, `round-1-r104-before-fix.log` | this record |
@@ -30,23 +30,31 @@ the letter-spacing gives an overflow and clipped text with no tab stop; none is 
 `gates/test/integration/plant-repo.test.ts:263` ("Test timed out in 5000ms"), is a load timeout in a test this round
 does not touch; it passes in this round's full run below.
 
-The fix, in two parts, both needed:
+The fix is one declaration: `min-inline-size: min-content` on block 1's caption. The caption is then never narrower
+than its longest word under any cap. A word that grows (an edit, a style, a font) widens the table, and in a
+shrink-to-fit host the box with it. The element's existing `.box-size` observer then writes the wider cap, as on a
+fresh load, and nothing overflows the caption. A table caption adds only its min-content to the table's width, so a
+caption whose words stay narrower than the cap wraps the same way grown or fresh. I measured "Deployment approvals
+pending" edited to "Deployment approvals pending for review": 90.6 px grown and fresh, in all three hosts.
+`ocelle-data-table.ts` is unchanged.
 
-- `min-inline-size: min-content` on block 1's caption. A caption is then never narrower than its longest word under
-  any cap, so a word that grows (an edit, a style, a font) widens the table as on a fresh load, and nothing overflows
-  the caption. Without it a single word growing under the cap changes no box size, so no observer could see it.
-- A second `ResizeObserver` of the element, on `.region-track`. A frame after any change of the track's size the
-  element removes `--data-table-box-size`, reads `.box-size`'s used inline size at the fallback cap and writes it
-  again, which is the measure a fresh load makes. A multi-word caption that rewraps at the old cap changes the track's
-  block size, so it is caught too (the letter-spacing case: without this part the hosts end narrower than fresh, the
-  caption on two lines). The write is in an animation frame, outside any delivery, and a frame that finds the same
-  size writes the same value, so there is no loop (the body is a `loop` body). The module's overflow triggers are
-  unchanged.
+The first form of this fix, 0707d27, also added a second `ResizeObserver` on `.region-track`, which remeasured at the
+fallback cap a frame after every track change. Mutation (`gate:mutation -- --base 8d104af`, exit 1) showed that no
+test needed it: all its mutants survived. Its presence also let the `.box-size` observer's own mutants survive. It is
+removed, and the source is back to 74a4877's. Three shared bodies (both harnesses) now pin the cap paths that only the
+`.box-size` observer serves. They pass on the source, and each was a survivor's killer in that run:
+
+- "R-07 a table overflowing at 600 and 400 px … its host narrowed from 600 to 400 px (the track's size unchanged)":
+  the cap follows the box and every caption line stays inside the unmasked extent;
+- "R-07 an overflowing data table moved from a 400 px wrapper into a 320 px one (detached and attached again)": the
+  observer is attached again on connect;
+- "R-07 a box with no inline size keeps the last cap": hidden, then shown in a 0 px wrapper, the cap stays the 320 px
+  measure, and the measure comes back at 320 px.
 
 `packages/styles/test/source.test.ts`'s exact declaration list of block 1's caption gains the declaration (the list
 follows the source). The README sentences the review names are now true and say more. Elements README: "A caption
-that grows after load (its text edited, a style changed or a web font loaded late) is measured again as on a fresh
-load." and "No change the data table makes to its region leaves it in a state a fresh load would not give, and nor
+that grows after load (its text edited, a style changed or a web font loaded late) widens the table as it would on a
+fresh load." and "No change the data table makes to its region leaves it in a state a fresh load would not give, and nor
 does a change to its table or caption after load." Styles README: "The caption is never narrower than its longest
 word, whatever the cap, so that word widens the table." Each has a test statement (T013).
 
