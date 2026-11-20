@@ -150,9 +150,10 @@ export class OcelleStatusIndicator extends LitElement {
     this.setAttribute("tone", value);
   }
 
+  /** Every observed attribute requests an update, as `ocelle-brand-mark` does; `tone`, not a Lit property, needs it. */
   override attributeChangedCallback(name: string, old: string | null, value: string | null): void {
     super.attributeChangedCallback(name, old, value);
-    if (name === "tone") this.requestUpdate();
+    this.requestUpdate();
   }
 
   /** Names the element from `label` alone: the host `aria-label` is never passed to `accessibleName` (plan decision 4). */
