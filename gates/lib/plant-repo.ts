@@ -655,6 +655,16 @@ export async function buildCommitRepo(plant: string, into: string): Promise<{ re
   return { base: String(hashes[0]), commits: hashes.slice(1) };
 }
 
+/** A tracked-tree plant file's bytes with its sandbox markers expanded (op 023; scaffold: unchanged). */
+export function expandMarkers(bytes: Buffer): Buffer {
+  return bytes;
+}
+
+/** A git repository in `into` holding the plant's `tree/`, committed (op 023; scaffold: not implemented). */
+export function buildTrackedTree(plant: string, into: string): Promise<void> {
+  return Promise.reject(new Error(`not implemented: ${plant} into ${into}`));
+}
+
 /** A git repository in `into`: the configuration set and the plant's `base/`, then a commit with its `head/`. */
 // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildMutationRepo commits the configuration set with base/, then head/ (files only in base/ deleted), node_modules linked and untracked"
 export async function buildMutationRepo(repo: string, plant: string, into: string): Promise<{ readonly base: string }> {
