@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 # Records a red commit and proves it is red. Usage: red.sh <phase> <label>
 #   label: "phase" for the phase's tests, "fix-<round>" for a review fix's tests.
-# Run right after committing the failing tests (tests only). Runs the tests at that commit and,
+# Run right after committing the failing tests (tests only). Runs the tests at that commit (the log redacted, op 023) and,
 # only when the commit is tests-only AND red, appends "<label> <sha>" to reviews/phase-N/red-commits.
 # A commit that is not red is not recorded: strengthen the tests, amend, and run again. Prints
 #   {"phase":"N","label":"...","sha":"...","tests_only":true,"red":true,"log":"..."}
 # "red" must be true: tests that pass before the implementation exist prove nothing.
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 story_require_phase "${1:-}"
+story_require_redactor
 phase=$1; label=${2:-phase}
 [[ "$label" =~ ^(phase|fix-[0-9]+)$ ]] || { echo "story: label must be 'phase' or 'fix-<round>'" >&2; exit 2; }
 root=$(story_repo_root); feature_dir=$(story_feature_dir); feature_rel=${feature_dir#"$root"/}
