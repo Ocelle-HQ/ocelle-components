@@ -1,0 +1,3 @@
+$ node gates/bin/test-lint.ts
+test-lint: 380 files checked, no finding
+exit code: 0
