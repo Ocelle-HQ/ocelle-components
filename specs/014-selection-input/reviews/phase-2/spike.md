@@ -53,7 +53,7 @@ tasks.md (T010) does not hold; the design of R-03 stands as written.
 Run with `node spike.mjs` and `OCELLE_CHROMIUM_PATH` set; it imports the repository's Playwright by absolute path.
 
 ```js
-import { chromium } from "/home/user/ocelle-components/node_modules/playwright/index.mjs";
+import { chromium } from "<repository root>/node_modules/playwright/index.mjs";
 const browser = await chromium.launch({ executablePath: process.env.OCELLE_CHROMIUM_PATH });
 const page = await browser.newPage();
 console.log("version", browser.version());

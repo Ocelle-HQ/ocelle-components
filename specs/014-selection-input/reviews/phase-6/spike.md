@@ -102,7 +102,7 @@ Playwright and axe-core by absolute path.
 ### `spike-file.mjs` (R-09), with `filefix/` holding `ocelle-elements.js`, `model-link.js`, `link.html` and `link-target.html`
 
 ```js
-import { chromium } from "/home/user/ocelle-components/node_modules/playwright/index.mjs";
+import { chromium } from "<repository root>/node_modules/playwright/index.mjs";
 import { pathToFileURL } from "node:url";
 const dir = new URL("./filefix/", pathToFileURL(process.cwd() + "/"));
 for (const args of [[], ["--allow-file-access-from-files"]]) {
@@ -172,7 +172,7 @@ customElements.define("x-link", class extends HTMLElement {
 
 ```js
 // T090 (2): the link host with a host aria-label, forms of exposure; read the unignored AX subtree of the paragraph.
-import { chromium } from "/home/user/ocelle-components/node_modules/playwright/index.mjs";
+import { chromium } from "<repository root>/node_modules/playwright/index.mjs";
 import { createServer } from "node:http";
 
 const label = "the mission log, opens in the viewer";
@@ -272,9 +272,9 @@ server.close();
 ```js
 // axe-core 4.14.0 (the gate's pinned version, default + WCAG 2.x A/AA tags, experimental and harness-document rules off)
 // on the forwarding forms of the link host with a host aria-label.
-import { chromium } from "/home/user/ocelle-components/node_modules/playwright/index.mjs";
+import { chromium } from "<repository root>/node_modules/playwright/index.mjs";
 import { readFileSync } from "node:fs";
-const axe = readFileSync("/home/user/ocelle-components/node_modules/axe-core/axe.min.js", "utf8");
+const axe = readFileSync("<repository root>/node_modules/axe-core/axe.min.js", "utf8");
 const forms = {
   forward: { hostRole: null, remove: false },
   "remove-host-label": { hostRole: null, remove: true },

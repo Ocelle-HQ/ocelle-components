@@ -1,6 +1,6 @@
 # HEAD 5fe3143's packages/elements/test/tabs.test.ts against 9418dc6's src/ocelle-tabs.ts and src/ocelle-tab.ts (review round 1, R1-03)
 # pnpm exec vitest run --project elements packages/elements/test/tabs.test.ts
- RUN  v5.0.5 /home/user/ocelle-components
+ RUN  v5.0.5 <repository root>
  ❯ |elements (chromium)| packages/elements/test/tabs.test.ts (57 tests | 1 failed) 11780ms
    ❯ ocelle-tabs, ocelle-tab and ocelle-tab-panel, in process (US2) (57)
      × FR-023: the shown panel is a stop while its content has nothing focusable (an anchor without href, a hidden button, a div at tabindex -1, a disabled button, a button no slot shows) and stops being one as each becomes focusable: href, hidden removed, tabindex 0, an anchor's own tabindex, contenteditable, disabled removed; a button slotted into a shadow host counts 587ms

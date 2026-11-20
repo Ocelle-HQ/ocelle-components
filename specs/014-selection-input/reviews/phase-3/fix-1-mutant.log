@@ -1,6 +1,6 @@
 # Review round 1, R1-01: the new FR-009 body (value attribute removed) against src/ocelle-tab.ts with the mutant the record disabled applied (line 158: if (name !== "value") forced true); the source is restored afterwards
 # pnpm exec vitest run --project elements packages/elements/test/tabs.test.ts -t "removes a tab's value"
- RUN  v5.0.5 /home/user/ocelle-components
+ RUN  v5.0.5 <repository root>
  ❯ |elements (chromium)| packages/elements/test/tabs.test.ts (58 tests | 1 failed | 57 skipped) 328ms
    ❯ ocelle-tabs, ocelle-tab and ocelle-tab-panel, in process (US2) (58)
      × FR-009: a host that removes a tab's value attribute after render leaves the attribute absent, the tab reads its index, and the tabs' value and the next change event report that index 326ms

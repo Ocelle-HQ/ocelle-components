@@ -1,7 +1,7 @@
 # Red evidence for the aria-label fix (phase 4, found by the mutation run)
 # HEAD 2ef22f28e5fbd6514e95cee6ca93820f5e4b097f (tests) on the green source of 0f13127; run 2026-11-15T14:16:55Z
 $ pnpm exec vitest run --project elements packages/elements/test/segmented-choice.test.ts -t 'host aria-label present while'
- RUN  v5.0.5 /home/user/ocelle-components
+ RUN  v5.0.5 <repository root>
  ❯ |elements (chromium)| packages/elements/test/segmented-choice.test.ts (61 tests | 1 failed | 60 skipped) 320ms
    ❯ ocelle-segmented-choice and ocelle-segment, in process (US3) (61)
      × FR-006: a host aria-label present while the label changes, then removed, leaves the toolbar named by the new label 318ms
@@ -38,7 +38,7 @@ Failure screenshot:
    Start at  14:16:56
    Duration  1.77s (tests 42%, import 31%, worker 28%)
 $ pnpm exec vitest run --project elements-browser packages/elements/test/browser/segmented-choice.test.ts -t 'host aria-label present while'
- RUN  v5.0.5 /home/user/ocelle-components
+ RUN  v5.0.5 <repository root>
  ❯ |elements-browser| packages/elements/test/browser/segmented-choice.test.ts (60 tests | 1 failed | 59 skipped) 663ms
    ❯ ocelle-segmented-choice and ocelle-segment on the strict-CSP fixture with the browser build (US3) (60)
      × FR-006: a host aria-label present while the label changes, then removed, leaves the toolbar named by the new label 412ms

@@ -100,7 +100,7 @@ and `RAW` prints every raw `nodesUpdated` entry. The tables above are from one r
 
 ```js
 import { createServer } from "node:http";
-import { chromium } from "/home/user/ocelle-components/node_modules/playwright/index.mjs";
+import { chromium } from "<repository root>/node_modules/playwright/index.mjs";
 
 // The page: a plain model of ocelle-copy-field as R-07 designs it (no Lit, no package code), and the clipboard controls.
 const page = `<!doctype html><html><head><meta charset="utf-8"><title>spike</title><script src="/spike.js"></script></head>
