@@ -223,7 +223,7 @@ Inside a `data-ocelle-prose` container an override at (0,1,0), placed after the 
 
 Before upgrade the table is styled the same, with no scroll region.
 
-Base-style hook: the caption's cap reads `--data-table-box-size` and `--data-table-end-fade`, which `ocelle-data-table` writes on its track. Both names are public surface of `@ocelle/elements` and `@ocelle/styles` (a rename is a breaking change), and a consumer does not set them. Before upgrade neither is set, and the cap is `--ocelle-measure-container`.
+Base-style hook: the caption's cap reads `--data-table-box-size` and `--data-table-end-fade`, which `ocelle-data-table` writes on its track. Both names are public surface of `@ocelle/elements` and `@ocelle/styles` (a rename is a breaking change), and a consumer does not set them. Before upgrade neither is set, and the cap is `--ocelle-measure-container`. The caption is never narrower than its longest word, whatever the cap, so that word widens the table.
 
 `sticky-header` pins the `<thead>` on a `--ocelle-color-sheet` ground, in the separated border model (`border-collapse: separate`, `border-spacing: 0`), while the page bounds the host's block size with its own `block-size` or `max-block-size`. The pinned header sits at the region's block-start edge once scrolled and keeps the focus ring's room above it at rest.
 

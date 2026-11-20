@@ -98,6 +98,7 @@ const fragments = [
   "The rule below the last row is removed from the last row of the table's last row group, in source order: write a `<tfoot>` after the `<tbody>` groups, as HTML says",
   "Before upgrade the table is styled the same, with no scroll region",
   "Base-style hook: the caption's cap reads `--data-table-box-size` and `--data-table-end-fade`, which `ocelle-data-table` writes on its track. Both names are public surface of `@ocelle/elements` and `@ocelle/styles` (a rename is a breaking change), and a consumer does not set them",
+  "The caption is never narrower than its longest word, whatever the cap, so that word widens the table",
   "Chromium names each column header by its drawn upper-case text, so the accessible names of column headers follow the upper case (\"ID\" for \"Id\")",
   "`sticky-header` pins the `<thead>` on a `--ocelle-color-sheet` ground, in the separated border model (`border-collapse: separate`, `border-spacing: 0`), while the page bounds the host's block size with its own `block-size` or `max-block-size`",
   "The pinned header sits at the region's block-start edge once scrolled and keeps the focus ring's room above it at rest",

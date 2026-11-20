@@ -211,6 +211,7 @@ const dataTableBlock1: readonly RuleEntry[] = [
       ["text-align", "start"],
       ["padding-block-end", "var(--ocelle-space-2)"],
       ["position", "static"],
+      ["min-inline-size", "min-content"],
       ["max-inline-size", "calc(var(--data-table-box-size, var(--ocelle-measure-container)) - 2 * (var(--ocelle-focus-offset) + var(--ocelle-focus-width)) - var(--data-table-end-fade, 0 * var(--ocelle-scroller-fade-size)))"],
     ],
   },

@@ -1477,7 +1477,7 @@ const stickyBodies: DataTableScenario[] = [
     expected: { rest: { blockFade: "end", layers: 4, belowHead: true }, end: null, back: "end", roomRule: { lessThanTwice: true, below: true, blockFade: null } },
   },
   {
-    name: "US1-26 with a two-line caption at 320 px (A1 (c) decided (a)): in a 100 px bound no fade at rest (less than twice the depth below the <thead>'s current edge), the fade once scrolled past the caption at or below the pinned header; in a 300 px bound the fade at rest; a row-1 link tabbed to at rest and past the caption has its ring box at or below the header's current edge and inside the box",
+    name: "US1-26 with a two-line caption at 320 px (A1 (c) decided (a)): in a 100 px bound no fade at rest (less than twice the depth below the <thead>'s current edge), the fade once scrolled past the caption at or below the pinned header; in a 300 px bound the fade at rest; a row-1 link tabbed to at rest, its ring box taller than the room below the header (asserted first), takes the contract's fallback: its block-start edge at or below the header's current edge and its block-end edge past the box; past the caption its ring box at or below the header's current edge and inside the box",
     run: async (driver) => {
       const caption = '<span id="SPAN">Work packages<br>by <a id="LINK" href="#c">owner</a></span>';
       await page(driver, `${before}${sticky("s", 'data-bound="100"', { caption: caption.replace("SPAN", "s-ct").replace("LINK", "s-cl") })}${sticky("t", 'data-bound="300"', { caption: caption.replace("SPAN", "t-ct").replace("LINK", "t-cl") })}`, 320);
@@ -1502,7 +1502,9 @@ const stickyBodies: DataTableScenario[] = [
       await driver.pressTab();
       // At rest the row-1 link's ring box (27 px) is taller than the 19.4 px between the header's current block-end edge
       // and the client block end (spike-2 § 11), so the contract's fallback applies: its block-start edge at or below the
-      // header's edge, the block-end fade off; the block-end edge cannot be inside the box there.
+      // header's edge and its block-end edge past the client block end (the plain clearance would put the end inside and
+      // the start under the header). The block-end fade is off there by the room rule (atRest), so blockFade is no
+      // evidence of the fallback's suppression; T079's bodies prove that (review R1-03).
       const restRing = await ringOf(driver, "st-a0");
       const restBox = await must(driver, "s");
       const restHead = await headEnd("s");
@@ -1510,6 +1512,7 @@ const stickyBodies: DataTableScenario[] = [
         focused: await driver.focused(),
         taller: restRing.bottom - restRing.top > restBox.y + restBox.clientHeight - restHead,
         top: restRing.top >= restHead - 0.5,
+        endPast: restRing.bottom > restBox.y + restBox.clientHeight + 0.5,
         blockFade: restBox.blockFade,
       };
       await driver.setScrollTop(boxOf("s"), capHeight + 2 * room);
@@ -1523,7 +1526,7 @@ const stickyBodies: DataTableScenario[] = [
       atRest: { lessThanTwice: true, below: true, blockFade: null },
       largeRest: { blockFade: "end", belowHead: true },
       pastCaption: { pinned: true, blockFade: "end", belowHead: true },
-      restLink: { focused: "st-a0", taller: true, top: true, blockFade: null },
+      restLink: { focused: "st-a0", taller: true, top: true, endPast: true, blockFade: null },
       pastLink: { focused: "st-a0", clear: true },
     },
   },
@@ -1654,7 +1657,6 @@ const stickyBodies: DataTableScenario[] = [
   },
 ];
 
-/** Every shared data-table body, run by both harnesses. */
 // ---------------------------------------------------------------------------------------------------------------
 // T025 (mutation): bodies for survivors of the element's mutation runs, each named for the contract behaviour it pins
 // (contracts/ocelle-data-table.md; research.md R-04, R-07; the operator's decision Q-M2 (a)).
@@ -1835,6 +1837,7 @@ host.setAttribute("data-assigned", host.shadowRoot.querySelector("slot").assigne
   },
 ];
 
+/** Every shared data-table body, run by both harnesses. */
 export const dataTableScenarios: readonly DataTableScenario[] = [...us1, ...captions, ...sizing, ...edges, ...stickyBodies, ...mutationBodies];
 
 /**
