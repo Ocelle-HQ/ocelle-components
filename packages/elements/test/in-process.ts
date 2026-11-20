@@ -727,5 +727,15 @@ export function inProcessDriver(): Driver {
       }
       return seen;
     },
+    animationStates: (id) => commands.animationStates(id),
+    seek: async (id, inner, ms) => {
+      await commands.seek(id, inner, ms);
+      await settle();
+    },
+    settleLayout: async () => {
+      await settle();
+      await commands.settleLayout();
+    },
+    overflows: (target) => commands.overflows(target),
   };
 }

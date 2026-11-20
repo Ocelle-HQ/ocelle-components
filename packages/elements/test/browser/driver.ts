@@ -18,10 +18,12 @@
 // context (`visit(…, { touch: true })`), `page.touchscreen`; reduced motion through `page.emulateMedia`; what the page
 // holds is read by the probe of scenarios/probe.ts, installed in the page through the DevTools protocol before the
 // first mount (and before any read that needs it).
+// 018 (research.md R-11): the animation states, `seek`, `settleLayout` and `overflows` through the readers of
+// commands.ts on the page's main frame, the code the in-process browser commands run.
 import { inflateSync } from "node:zlib";
 import type { Page } from "playwright";
 import { runningOf } from "../animations.ts";
-import { audit, axNodes, axeSetup, axStateOf, axSubtree, emulate, emulateMotion, movePointer, pointer, press, readActiveElement, readScrollWidth, readTextBoxes } from "../commands.ts";
+import { audit, axNodes, axeSetup, axStateOf, axSubtree, emulate, emulateMotion, movePointer, pointer, press, readActiveElement, readAnimationStates, readOverflows, readScrollWidth, readTextBoxes, seekIn, settleLayoutIn } from "../commands.ts";
 import { layoutWait } from "../layout-wait.ts";
 import { activeInnerOf, activePath, clickElement, computedOf, copyElement, currentOf, endOrder, focusElement, morphElement, preventNextEvent, recordEvents, resetPage, sentinelId, startOrder, takeRecords } from "../page-side.ts";
 import { decodePng } from "../pixels.ts";
@@ -841,5 +843,15 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
       }
       return await stop();
     },
+    animationStates: (id) => readAnimationStates(page.mainFrame(), id),
+    seek: async (id, inner, ms) => {
+      await seekIn(page.mainFrame(), id, inner, ms);
+      await settle(page);
+    },
+    settleLayout: async () => {
+      await settle(page);
+      await settleLayoutIn(page.mainFrame());
+    },
+    overflows: (target) => readOverflows(page.mainFrame(), target),
   };
 }
