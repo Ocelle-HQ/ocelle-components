@@ -16,3 +16,11 @@ name. Evidence: `reviews/phase-1/notes.md`.
    commits them itself.
 4. **Docker — start dockerd** before the next check run (`nohup dockerd > /tmp/dockerd.log 2>&1 &`, then
    `pnpm run setup:online`), so the visual integration rows run.
+
+## After the amendment (b921ab5)
+
+5. **Red record for the T007 row — log only.** The link-mode scenario 7 row is run in a clean worktree at its
+   test-only commit and the output saved as `reviews/phase-1/red-widen.log`; it is not appended to `red-commits`.
+6. **Chromium 156 — re-measure first.** `pnpm run setup:online` installed the pinned Playwright Chromium
+   156.0.8078.4; the blocker was measured on 153. The implementer re-runs scenario 6 with only `aria-hidden` on 156
+   first; if it passes there, it stops and the operator is asked before `aria-labelledby` is added.
