@@ -202,11 +202,27 @@ copy).
   `.block`: `.block` and the module's `.region-box` keep the page direction, because the module picks the fade side
   from `:host(:dir(rtl))` while `edgeState` reads the box's own `scrollLeft` and direction (`overflow-region.ts`
   185-193); an `ltr` box under an `rtl` host fades the left edge, where nothing is hidden (measured, squad round 2,
-  PLAN-FRESH-2-001). So under an `rtl` page a scroll block starts at the right and fades at the left, as
-  `ocelle-scroller` does, while each line reads left to right. US2-8 has two bodies under an `rtl` ancestor: the
-  visual order of `--force main.` in wrap and in scroll mode, and the fade side of an overflowing scroll block (the
-  box's computed direction is `rtl`, `data-fade` is `end`, the computed `mask-image` is transparent at the left edge,
-  and the track's left edge lies left of the box's, so the hidden text is on the faded side).
+  PLAN-FRESH-2-001). **Opening at the line starts** (operator decision, squad round 3, PLAN-FRESH-3-001 (a)): the
+  track is `max-content` wide (`overflow-region.ts` 130-135) and the `ltr`, left-aligned lines start at its left
+  edge, while an `rtl` box's scroll origin is its right edge. At rest (`scrollLeft` 0) the box shows only the tails
+  of the long lines and none of the short ones (measured, squad round 3: block 300 px, `scrollWidth` 704, box x 972
+  to 1272, `cd /srv/app` at 568 to 654 and `ls` at 568 to 583, both wholly outside the box). So in `updated`, in
+  scroll mode, when `box()` returns a box other than the one last opened or the shown text differs from the text it
+  was last opened for, and `getComputedStyle(box).direction` is `rtl`, the element calls `box.scrollTo({ left:
+  -(box.scrollWidth - box.clientWidth), behavior: "instant" })` and records the box and text. Measured, squad round
+  3: the write gives `scrollLeft` -404 and puts the first character at the box's left edge (972). The write is
+  instant, which is all 009's contract asks of a later element's scroll write (§ What a later element must not do);
+  the module's own `scroll` trigger then reads the new position and sets `data-fade` to `start`, which under
+  `:host(:dir(rtl))` is the gradient transparent at the right, the side where the line ends are hidden. The element
+  sets no `data-fade` itself. Under `ltr` nothing is written, the origin already being the line starts. A resize
+  that makes a fitting block overflow is not followed by a write: the platform's position stands (spec Edge Cases).
+  If the module's focus fallback suppression is active when the text changes, a write that moves the box more than
+  1 px from the module's recorded `scrollLeft` ends it, by the contract's rule; one that does not leaves it. US2-8's
+  bodies under an `rtl` ancestor: the visual order of `--force main.` in wrap and in scroll mode, and the line starts
+  of an overflowing scroll block at rest (the box's computed direction is `rtl`, the first character of every line
+  lies inside the box's rect, `data-fade` is `start`, and the computed `mask-image` is the gradient transparent at
+  the right edge), again after a text change, with an `ltr` control body that sees no write (contracts/checks.md).
+  A plant removes the write; the write's conditions are JavaScript and Stryker's to mutate.
   `.code` also has `min-block-size: 1lh` (style-lint admits `1lh` as a whole value, `gates/stylelint/token-only.ts:14`),
   so an empty `pre`, which has no line box and is 0 px high (measured, squad round 1, PLAN-CORRECTNESS-1-005), keeps
   one line (US2-19): the oracle is the block size equal to one computed line height of `.code` plus `.block`'s

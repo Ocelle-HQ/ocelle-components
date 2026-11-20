@@ -237,8 +237,9 @@ while overflowing and not, the arrow keys, the selection's copied text and the a
    with no role and no name (the module's rule), and the README tells consumers to always give a scroll block a label.
 8. **Given** `dir="rtl"` on an ancestor, **When** a code block holding `--force main.` renders, **Then** the code is
    shown left to right (the characters' visual order is `--force main.`, as copied); **When** an overflowing scroll
-   block renders under it, **Then** the block keeps the page direction, as `ocelle-scroller` does: it starts at the
-   right, the fade is at the left edge, where the hidden text is, and each line still reads left to right (FR-021).
+   block renders under it, **Then** the block keeps the page direction and opens at the line starts: the first
+   character of every line is inside the box, the fade is at the right edge, where the hidden line ends are, and each
+   line still reads left to right (FR-021; operator decision, plan squad round 3, PLAN-FRESH-3-001 (a)).
 9. **Given** `digest` and the content `sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08`,
    **When** it renders, **Then** `sha256:` is shown as written, followed by 16 groups of four characters with a gap of
    `--ocelle-space-1` between groups and no gap inside a group, and the element's light-DOM text is unchanged.
@@ -309,8 +310,13 @@ while overflowing and not, the arrow keys, the selection's copied text and the a
   copy of the host's `textContent` and slots nothing (FR-020), so a `<b>` or a `<code>` inside it adds no style. Text
   inside them is included (US2 scenario 20).
 - **Right-to-left pages.** Each line of code is shown left to right in every page direction, so bidi neutrals
-  (option dashes, punctuation, a leading `/`) stay where they are written; the block itself keeps the page direction,
-  so an overflowing scroll block starts at the right and fades at the left (US2 scenario 8).
+  (option dashes, punctuation, a leading `/`) stay where they are written; the block itself keeps the page direction.
+  Because the lines start at the left of a scroll box whose scroll origin is its right edge, an overflowing scroll
+  block at the platform's rest position would show only the tails of its long lines and none of its short ones
+  (measured, plan squad round 3, PLAN-FRESH-3-001). So the element opens an `rtl` scroll block at the line starts with
+  one instant scroll write when the box first appears and when the text changes, and the fade is at the right, where
+  the line ends are hidden (US2 scenario 8). A block that only starts to overflow after a later resize keeps the
+  scroll position the platform gives it; no write follows a resize.
 - **Policy switch with focus.** When `overflow` changes from `scroll` to wrap while focus is in the scroll block (the
   scroll box, or the frame the module's handover focused when overflow ended), focus moves to the block, which shows
   the library's focus ring, and `document.activeElement` stays the host (FR-025).
@@ -436,7 +442,12 @@ while overflowing and not, the arrow keys, the selection's copied text and the a
   rule is added or changed: 003's `pre` and `code` rules stand for un-upgraded and prose content. Each line of code
   is shown left to right in every page direction (operator decision, plan squad round 1, PLAN-FRESH-1-002 (a)), while
   the block and its scroll box keep the page direction, so the module's fade falls on the side where text is hidden
-  (operator decision, plan squad round 2, PLAN-FRESH-2-001 (a); US2 scenario 8).
+  (operator decision, plan squad round 2, PLAN-FRESH-2-001 (a); US2 scenario 8). When the scroll box computes
+  `direction: rtl`, the element MUST open it at the line starts: when the box first appears and when the shown text
+  changes, it writes `scrollLeft = -(scrollWidth - clientWidth)` with `behavior: "instant"`, so each line's first
+  character is inside the box and the module's fade (`data-fade` `start`) is at the right (operator decision, plan
+  squad round 3, PLAN-FRESH-3-001 (a)). Under `ltr` it writes nothing. The write is instant, as 009's contract
+  requires of every scroll write (FR-024).
 - **FR-022**: `overflow` (attribute and property, reflected, `@default undefined`) MUST choose the policy. Absent, or
   any value other than `scroll` (ASCII case-insensitive, trimmed), is the wrap policy; `scroll` is the scroll policy.
 - **FR-023**: The wrap policy MUST be 003's: `white-space: pre-wrap` and `overflow-wrap: anywhere`, no scroll box, no

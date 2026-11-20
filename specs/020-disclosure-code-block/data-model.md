@@ -33,7 +33,7 @@ Custom state: `:state(open)` exactly while open.
 
 | Field | Source | Values | Notes |
 |---|---|---|---|
-| text | the host's `textContent`, read at each render | string | followed by a `MutationObserver` (child list, character data, subtree); children's markup ignored; each line shown left to right in every page direction, the block in the page direction (R-06) |
+| text | the host's `textContent`, read at each render | string | followed by a `MutationObserver` (child list, character data, subtree); children's markup ignored; each line shown left to right in every page direction, the block in the page direction; under a computed `rtl` scroll box the element records the box and text it last opened at the line starts, and writes again when either differs (R-06) |
 | `overflow` | attribute and property, reflected | `scroll` (trimmed, ASCII case-insensitive) is the scroll policy; anything else or absent is wrap | a switch to wrap while focus is in the scroll structure (the box, or the frame after the module's handover) moves focus to `.block` (temporary `tabindex="-1"`, removed on `focusout`; the library's focus ring, R-06) |
 | `label` | attribute and property, not reflected | string | names the scroll box while it overflows; trimmed, blank counts as none; a non-blank host `aria-label` wins |
 | `digest` | boolean attribute and property, reflected | `true`; `false` or `undefined` | |

@@ -49,10 +49,15 @@ and, for the disclosure, `ocelle-icon`; no other).
     (PLAN-CORRECTNESS-1-010 (b));
   - US2-8's visual order: under an `rtl` ancestor, `--force main.` reads `--force main.` in visual order (the text
     boxes sorted by their left edge), in wrap and in scroll mode (PLAN-FRESH-1-002 (a));
-  - US2-8's fade side: under an `rtl` ancestor, an overflowing scroll block at rest: `.block` and `.region-box`
-    compute `direction: rtl`, `data-fade` is `end`, the box's computed `mask-image` is the gradient transparent at the
-    left edge (`to right, transparent, …`), and the track's left edge lies left of the box's (the hidden text is on
-    the faded side) (PLAN-FRESH-2-001 (a));
+  - US2-8's line starts: under an `rtl` ancestor, an overflowing scroll block at rest holding a short line, a line
+    longer than the box and a second short line (`cd /srv/app`, a long `docker compose …` command, `ls`): `.block`
+    and `.region-box` compute `direction: rtl`; for every line, the rect of its first character (a `Range` over the
+    first code point of the line's text in the shadow `pre`) lies inside the box's rect on the inline axis; the box's
+    `scrollLeft` is `-(scrollWidth - clientWidth)` within 1 px; `data-fade` is `start`; and the box's computed
+    `mask-image` is the gradient transparent at the right edge (`to left, transparent, …`). A second body changes the
+    text to new overflowing lines and asserts the same of the new lines; a third, under an `ltr` ancestor, asserts
+    `scrollLeft` 0, every first character inside the box and `data-fade` `end` (the write is `rtl` only)
+    (PLAN-FRESH-2-001 (a), PLAN-FRESH-3-001 (a));
   - US2-12 with a base64url digest (groups holding `-`) and a base64 one (`/`), swept over `pre` widths from 60 to
     300 px: every group has one rect and every line's first unit starts at the `pre`'s content-box inline start
     (PLAN-CORRECTNESS-1-004, PLAN-FRESH-1-005).
@@ -134,7 +139,8 @@ and, for the disclosure, `ocelle-icon`; no other).
 | gap moved back to `margin-inline-start` on the unit after each `wbr` | no gap at a line's start (FR-030) | US2-12 line-start assertion |
 | `.code { min-block-size: 1lh }` removed | the empty block's one line (US2-19) | US2-19 |
 | `.code { direction: ltr }` removed | code shown left to right (FR-021) | US2-8 visual order |
-| `direction: ltr` moved from `.code` to `.block` | the block keeps the page direction, fade on the hidden side (FR-021, FR-024) | US2-8 fade side |
+| `direction: ltr` moved from `.code` to `.block` | the block keeps the page direction, fade on the hidden side (FR-021, FR-024) | US2-8 line starts |
+| the element's `rtl` opening `scrollTo` removed | an `rtl` scroll block opens at the line starts, fade at the right (FR-021) | US2-8 line starts |
 | `.block:focus-visible` ring removed | the block's token ring after a switch (FR-025) | FR-025 switch bodies |
 
 Plants are run as earlier missions run them (005, 009, 011, 012, 013; 013 `reviews/phase-1/plants.md`): once per

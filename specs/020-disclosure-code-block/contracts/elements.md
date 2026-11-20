@@ -71,13 +71,16 @@ and through the overflow-region module the same focus tokens, `scroller-fade-siz
 
 Host styles: `:host { display: block; max-inline-size: var(--ocelle-measure-reading) }`, `:host([hidden]) { display:
 none }`; `.code { direction: ltr; unicode-bidi: isolate; text-align: left; min-block-size: 1lh }`, `.block` in the
-page direction; `.block:focus-visible` the library ring (`outline-style: solid`, `--ocelle-focus-width`,
+page direction; under a computed `rtl` scroll box, an instant `scrollTo` to `-(scrollWidth - clientWidth)` when the
+box first appears and when the text changes (R-06); `.block:focus-visible` the library ring (`outline-style: solid`, `--ocelle-focus-width`,
 `--ocelle-focus-offset`, `--ocelle-color-focus`; `Highlight` in forced colours) (R-06).
 
 README statements: start the text on the opening tag's line (a newline after it is shown); markup inside is not
 rendered and markup-like text stays text; each line of code is shown left to right, also in an `rtl` page, while the
-block keeps the page direction (so an `rtl` scroll block starts at the right and fades at the left, as
-`ocelle-scroller` does); a switch from `scroll` to wrap while focus is in the scroll block moves focus to the block; always give a scroll block a `label`; do not set a host `aria-label` in wrap mode; in a shrink-to-fit host
+block keeps the page direction; an `rtl` scroll block opens at the line starts (the element scrolls it there,
+instantly, when it first appears and when the text changes), so the start of every line is in view and the fade is
+at the right, where the line ends are hidden; a block that only starts to overflow after a resize keeps the
+platform's scroll position; a switch from `scroll` to wrap while focus is in the scroll block moves focus to the block; always give a scroll block a `label`; do not set a host `aria-label` in wrap mode; in a shrink-to-fit host
 give a scroll block a definite or maximum inline size; in scroll mode the `ocelle-scroller` statements on keyboard,
 focus, fades, scrollbar, motion and sizing hold (by reference); print shows what is laid out; no copy control, no
 highlighting.
