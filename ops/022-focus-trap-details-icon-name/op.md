@@ -24,12 +24,16 @@ a separate op. This op fixes both in one phase, red first:
 2. **Icon name.** `ocelle-button` renders its `icon` slot in `<span class="icon-slot">` with no `aria-hidden`. A
    bare `<svg>` that holds a `<title>`, slotted as the icon, can get an `image` node and add its title to the
    button's name. The fix (operator, Q1 A): `aria-hidden="true"` on `ocelle-button`'s icon wrapper. This is the
-   pattern `ocelle-action-row` already uses on its trailing wrapper (`ocelle-action-row.ts:664`). The fix does not
-   change the slot convention as a whole.
+   pattern `ocelle-action-row` already uses on its trailing wrapper (`ocelle-action-row.ts:664`). Phase 1 measured
+   that this alone is not enough in Chromium 153: the `image` node goes, but the slotted svg's `<title>` still adds to
+   the name computed from the content (`Folder Open`). So the fix is widened (operator, phase-1 decision 1): when
+   nothing on the host names it, the inner control is also named from its label wrapper by `aria-labelledby` inside
+   its own shadow root. The fix does not change the slot convention as a whole.
 
 The op also **measures** `ocelle-action-row`'s icon wrapper (`ocelle-action-row.ts:647`, no `aria-hidden`) and
-reports the result to the operator (Q2 A). It does not change that wrapper. The operator decides afterwards whether
-it is fixed here or in a new issue.
+reports the result to the operator (Q2 A). It does not change that wrapper. Phase 1 measured the same gap there (the
+inner control is named `Folder Open project` in the button and the link mode); the operator decided that it is a
+follow-up issue, not part of this op (phase-1 decision 2).
 
 No element, attribute, event, slot, part or token is added or changed. The behaviour moves toward what the README
 already promises, so the change is semver **patch**, with a `### Fixed` entry in `packages/elements/CHANGELOG.md`.
@@ -47,6 +51,17 @@ mission 020's research notes (`triage/022-focus-trap-details-icon-name.md` § Is
   Patch-level, with a `### Fixed` entry in `packages/elements/CHANGELOG.md`. Keep the op small. Visual baselines, if
   any were needed, are produced only in #10's pinned container under docker; none are expected. Plants run locally
   with `gate:plants -- --affected <base>`. Every commit is signed off.
+
+### Operator decisions in phase 1 (2026-11-20, `operator-decisions.md`)
+
+1. **Icon fix widened.** `ocelle-button`'s inner control is named from its label wrapper inside the shadow root
+   (`aria-labelledby`), and `aria-hidden` stays on the icon wrapper. Patch; no new public API. Covered with a text
+   label and with `label` alone, in the button and the link mode.
+2. **`ocelle-action-row` is a follow-up.** `ocelle-action-row.ts` stays unchanged; the gap is reported for a separate
+   issue.
+3. **Uncommitted green work.** The implementer's stashed work is restored and finished on top of the amended
+   artifacts.
+4. **Docker.** dockerd is started before the next check run, so the visual integration rows run.
 
 ## Acceptance
 
@@ -66,7 +81,10 @@ stated reason. Check 3 rows go in the same commit and pass on main; they pin tha
    - `<ocelle-button id="b" label="Open project">` with no default-slot text: the name is `Open project`, and there is
      no `image` node.
 
-   On main the subtree has an `image` node named `Folder`, and in the first case the name includes `Folder`. If the
+   Both cases hold in the button and the link mode (`href="#x"`). On main the subtree has an `image` node named
+   `Folder`, and in the first case the name includes `Folder`. The red commit `d820f00` holds the first case in both
+   modes and the second in the button mode; the second case in the link mode is added in a second test-only commit
+   before the source change (phase-1 decision 1). If the
    row passes on main, the icon half of the op is **none**: the record says so, and the operator is told.
 3. **Non-regression (pass on main and after; in the red commit with checks 1 and 2).** The same closed `details`
    followed by a footer button `f1`: Tab from the summary gives `f1`, because native Tab skips the hidden link between
@@ -76,21 +94,24 @@ stated reason. Check 3 rows go in the same commit and pass on main; they pin tha
    all go through `rendered()` at both call sites.
 4. **Mutation (gate).** `gate:mutation` over the changed source kills the mutant that removes the
    `checkVisibility()` condition. If Stryker generates a mutant for the template's `aria-hidden`, that mutant is
-   killed too. Any survivor is killed with a stricter test or recorded as equivalent with a true reason.
+   killed too, and so are the mutants of the label-wrapper relation in `updated()`. Any survivor is killed with a stricter test or recorded as equivalent with a true reason.
 5. **Action-row measurement (record, not a test).** A probe (not committed as a test) slots the same titled svg into
    `ocelle-action-row`'s `icon` slot. It records the row's inner control name and whether the svg has an
-   accessibility node. The result goes in `reviews/phase-1/notes.md` and in the phase report to the operator.
+   accessibility node. The result goes in `reviews/phase-1/notes.md` and in the phase report, as a follow-up issue
+   (phase-1 decision 2).
 6. **Docs (record, no test).** `packages/elements/README.md`: the dialog's **Focus** paragraph says the content of a
    closed `<details>`, apart from its summary, is not a stop. The drawer inherits this sentence (it refers to the
-   dialog's focus behaviour). The button's icon-slot bullet and § Slot convention say that an icon slotted into
-   `ocelle-button` is decorative and adds nothing to the button's name. `src/icon-slot.ts`'s comment sentence "No
+   dialog's focus behaviour). The button's icon-slot bullet, the controls' **Name order** item and § Slot convention
+   say that an icon slotted into `ocelle-button` is decorative and adds nothing to the button's name, which comes from
+   the default slot's text when nothing on the host names it; they make no such promise for `ocelle-action-row`. `src/icon-slot.ts`'s comment sentence "No
    generated content, so the control's name is its label's" is corrected to say where the guarantee lives.
    `packages/elements/CHANGELOG.md` § Unreleased gets `### Fixed` with one entry per defect.
 
 ## Constitution principles touched
 
 - **III Accessible by construction.** Both fixes restore the keyboard model and accessible name of existing
-  elements: the modal Tab cycle wraps at its real ends, and the button's name is its label.
+  elements: the modal Tab cycle wraps at its real ends, and the button's name is its label. The new
+  `aria-labelledby` relation stays inside one shadow root.
 - **VII Semantic versioning.** No surface changes. The custom-elements manifest is unchanged, so this is a patch,
   with a CHANGELOG entry.
 - **VIII Test-first, proven non-vacuous.** One test-only red commit, which `red.sh 1 phase` records. Each red row

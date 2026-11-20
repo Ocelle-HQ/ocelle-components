@@ -1,7 +1,7 @@
 # Op Specification: The focus trap skips a closed `<details>`, and a button's icon adds nothing to its name
 
 **Op**: `ops/022-focus-trap-details-icon-name` | **Issue**: #57 | **Triage**: `triage/022-focus-trap-details-icon-name.md`
-**Created**: 2026-11-20 | **Status**: started | **Operator decisions**: Q1 A, Q2 A (`op.md`)
+**Created**: 2026-11-20 | **Status**: started | **Operator decisions**: Q1 A, Q2 A (`op.md`); phase-1 decisions 1 and 2 (`operator-decisions.md`)
 
 ## Intent
 
@@ -12,7 +12,10 @@ Two documented behaviours of `@ocelle/elements` do not hold:
   When that `details` is the panel's last control, Tab from its summary leaves the dialog.
 - A slotted icon adds nothing to the control's name (`src/icon-slot.ts`; README § Slot convention). In
   `ocelle-button`, a bare `<svg>` with a `<title>` in the `icon` slot can get an `image` node and add its title to the
-  name.
+  name. Hiding the icon wrapper from the accessibility tree removes the `image` node, but in Chromium 153 the slotted
+  svg's `<title>` still adds to a name computed from the control's content (measured in phase 1,
+  `reviews/phase-1/notes.md`). So the inner control's name, when it comes from the content, comes from the label
+  alone (operator, phase-1 decision 1).
 
 This op makes both behaviours hold, with no change to the public surface.
 
@@ -43,16 +46,23 @@ them) and `packages/elements/test/scenarios/button.ts`, run by the existing brow
 5. **Given** the closed `details` followed by a footer button `f1`, **When** the user presses Tab on the summary,
    **Then** focus is on `f1`.
 6. **Given** `<ocelle-button id="b"><svg slot="icon" viewBox="0 0 16 16"><title>Folder</title><path d="…"/></svg>Open</ocelle-button>`,
-   **When** the accessibility tree is read, **Then** the inner control is a button named `Open`, and the button's
-   accessibility subtree has no `image` node and no node named `Folder`.
+   in the button mode and in the link mode (`href="#x"`), **When** the accessibility tree is read, **Then** the inner
+   control is a button (a link) named `Open`, and the host's accessibility subtree has no `image` node and no node
+   named `Folder`.
 7. **Given** the same svg in `<ocelle-button id="b" label="Open project"></ocelle-button>` with no default-slot
-   text, **When** the accessibility tree is read, **Then** the button is named `Open project` and has no `image`
-   node.
+   text, in the button mode and in the link mode, **When** the accessibility tree is read, **Then** the inner control
+   is named `Open project`, and the subtree has no `image` node and no node named `Folder`.
 8. **Given** `<ocelle-button><ocelle-icon slot="icon" name="folder"></ocelle-icon>Open project</ocelle-button>`,
    **When** the accessibility tree is read, **Then** the button is named `Open project`, as before.
 
 Scenarios 1, 2, 3, 6 and 7 fail on main. Scenarios 4, 5 and 8 pass on main and after the change, and they pin that
-the fix hides nothing else.
+the fix hides nothing else. The phase's red commit (`d820f00`) holds scenario 6 in both modes and scenario 7 in the
+button mode; scenario 7 in the link mode is added in a second test-only commit, before the source change it tests
+(phase-1 decision 1).
+
+With the icon wrapper hidden alone, Chromium 153 passes scenario 7 and fails scenario 6 on the name (`Folder Open`),
+whether `aria-hidden` is on the wrapper, on the slot or on both (phase-1 measurement). Scenario 6 therefore needs the
+name to come from the label (FR-003).
 
 ### Edge Cases
 
@@ -60,6 +70,11 @@ the fix hides nothing else.
   sites of the walk. This is correct, and the existing scroller rows stay green.
 - An element in a `content-visibility: hidden` or `display: none` subtree was already not a stop, or now is not one.
   Both are correct.
+- A host `aria-labelledby`, a host `aria-label` and a non-blank `label` keep naming the inner control, in that order,
+  over the label; the existing button rows pin this and stay green.
+- An icon-only `ocelle-button` with no `label`, no host `aria-label` and no host `aria-labelledby` has no name the
+  element guarantees. The README already says to name such a button with `label`, and axe's `button-name` rule
+  reports one that has no name. No row asserts its name.
 - WebKit 17.4 has `checkVisibility()`. If WebKit hides a closed panel without a client rect, the rows already pass
   there on main, and the red evidence comes from Chromium.
 
@@ -69,17 +84,24 @@ the fix hides nothing else.
   `checkVisibility()` is false. It keeps its two existing conditions.
 - **FR-002**: `overlay.ts` (`#tab`, `#onFocusout`) MUST NOT change. If the red rows show that it has to change, the
   op stops and reports this to the operator as a mission (triage § What would change this decision).
-- **FR-003**: `ocelle-button`'s icon wrapper (`<span class="icon-slot">`) MUST carry `aria-hidden="true"` in both
-  the button and the link mode. Nothing else in the template changes.
-- **FR-004**: `ocelle-action-row` MUST NOT change. Its icon wrapper is measured, and the result is reported to the
-  operator (Q2 A).
+- **FR-003**: In both the button and the link mode, `ocelle-button`'s icon wrapper (`<span class="icon-slot">`) MUST
+  carry `aria-hidden="true"`, and when no host `aria-labelledby`, host `aria-label` or non-blank `label` names the
+  inner control, the inner control MUST be named from its label wrapper (`<span class="label">`) by an
+  `aria-labelledby` relation inside its own shadow root, so a slotted icon adds nothing to the name. The name order
+  (host `aria-labelledby`, host `aria-label`, `label`, then the label) and every other part of the template are
+  unchanged. No attribute, property, slot, part or event is added (operator, phase-1 decision 1; patch).
+- **FR-004**: `ocelle-action-row` MUST NOT change. Its icon wrapper was measured in phase 1: the inner control is
+  named `Folder Open project` in both modes. That gap is reported to the orchestrator for a separate issue (operator,
+  phase-1 decision 2); this op does not fix it, and the README's new sentences make no promise for the row.
 - **FR-005**: The README states both behaviours (op.md Acceptance 6). The CHANGELOG § Unreleased has a
   `### Fixed` entry per defect. The custom-elements manifest is unchanged.
 - **FR-006**: No story, baseline, token, slot, part, attribute or event is added or changed.
 
 ## Success Criteria
 
-- **SC-001**: The red rows (scenarios 1, 2, 3, 6 and 7) fail on main and pass after the change. Every existing
+- **SC-001**: The red rows (scenarios 1, 2, 3, 6 and 7, including scenario 7's link-mode row) fail on main and pass
+  after the change. Every existing
   dialog, drawer and button row still passes.
 - **SC-002**: `gate:mutation` over the changed lines leaves no surviving mutant that is not recorded as equivalent.
-- **SC-003**: The action-row measurement is recorded in `reviews/phase-1/notes.md`.
+- **SC-003**: The action-row measurement is recorded in `reviews/phase-1/notes.md`, and the phase report names it
+  as a follow-up issue.
