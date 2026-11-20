@@ -32,7 +32,8 @@ surface)."
 2026-11-15). Mission 013 (`specs/013-data-display`, PR #43) built `ocelle-facts`, `ocelle-fact`, `ocelle-empty-state`
 and `ocelle-progress`. This mission builds three more of #13's elements. `ocelle-disclosure` and `ocelle-code-block`
 are mission 020's (`specs/020-disclosure-code-block`, own session), and #13 stays open until 020 lands. The
-spec-kitty-design issues #13 cites for these three (#470, #517, #533) were not read from this session. The requirements
+spec-kitty-design issues #13 cites for these three (#470, #517, #533) were not read from this session (their bodies
+were recorded in `sources/` on 2026-11-20, IQ-25 below). The requirements
 below come from #13's body (re-read on 2026-11-15: unchanged since 2026-11-02, no comments), the epic #1's gap table
 and the triage record. Planning proceeds on #13's text (operator decision SPEC-1-06 (b), below): the plan's research
 lists each point #470, #517 and #533 could change as an open question for the plan gate, where the operator answers.
@@ -142,7 +143,9 @@ role names only, constitution VI):
 - IQ-25: the operator pastes #470, #517 and #533 before phase 2's red, and the planner records them verbatim in
   `sources/`; the #470 hand-off material on `develop` is recorded as background
   (`sources/issue-470-handoff-background.md`). IQ-8 to IQ-24, and IQ-26 to IQ-28 found on `develop`, are asked before
-  phases 2 and 3.
+  phases 2 and 3. The bodies were supplied and recorded verbatim on 2026-11-20 (`sources/issue-470.md`,
+  `sources/issue-517.md`, `sources/issue-533.md`); `reviews/issue-texts-check.md` compares them with the answers in
+  force, and no requirement changes on their account until the operator answers its questions.
 
 **Operator decisions on the inventory follow-up questions** (2026-11-18, human:jeroennouwsdev; questions Q-I1 to Q-I5
 in `reviews/phase-1/inventory-fixes.md`, answers at the end of `reviews/phase-1/inventory-decisions.md`):

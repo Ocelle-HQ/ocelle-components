@@ -957,7 +957,9 @@ states (default, light mode, responsive narrow, hover, focus, sticky header) are
 **Phases 2 and 3 (T028, T054).** The timeline's and the chain's rows come from the same source, one per modifier,
 state, structure role and part, mapped by the operator's answers to IQ-8 to IQ-17 and IQ-26 to IQ-28 (phase 2) and
 IQ-18 to IQ-24 and IQ-27 (phase 3), asked before each phase's red; the issue bodies of #470, #517 and #533 are
-supplied by the operator before phase 2's red and recorded verbatim in `sources/` (IQ-25).
+supplied by the operator before phase 2's red and recorded verbatim in `sources/` (IQ-25): recorded on 2026-11-20 as
+`sources/issue-470.md`, `sources/issue-517.md` and `sources/issue-533.md`, and compared with the answers in force in
+`reviews/issue-texts-check.md`.
 
 ## R-17 A request to 009's owner: a pinned start box out of the start fade (PLAN-A11Y-SECURITY-1-002)
 

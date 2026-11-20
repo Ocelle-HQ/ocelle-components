@@ -12,7 +12,8 @@ changes in `reviews/plan/gate-answers.md`:
   `ocelle-evidence-chain.md`, `ocelle-evidence-step.md`, `styles-data-table.md`, `overflow-region-block-axis.md` (the
   option this mission adds to 009's module) and `checks.md` (bodies, oracles, element plants, stories, gates);
 - sources/: `spec-kitty-design-inventory.md` (the library's variant set at `main` 19fb6a2 and `develop` a6518cd) and
-  `issue-470-handoff-background.md`;
+  `issue-470-handoff-background.md`, and the #470, #517 and #533 bodies (`issue-470.md`, `issue-517.md`,
+  `issue-533.md`, recorded 2026-11-20);
 - quickstart.md.
 
 **Plan-gate answers in force** (2026-11-16, human:jeroennouwsdev): decision 1 (a), the data table's
