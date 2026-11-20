@@ -57,6 +57,16 @@ describe("packages/elements/CHANGELOG.md: ocelle-status-indicator is a minor cha
   });
 });
 
+// 018 (FR-007, constitution VII; tasks.md T027): the metric is a minor change, stated once under Unreleased; it adds no
+// token (011's eyebrow tokens are used as merged, FR-042), so the tokens changelog gains nothing for it.
+describe("packages/elements/CHANGELOG.md: ocelle-metric is a minor change (018)", () => {
+  const section = unreleased(read("CHANGELOG.md"));
+
+  it.each(["`ocelle-metric`, its attributes `label` and `display-value` (reflected) and `layout`, its parts `label` and `value` and its entry point `@ocelle/elements/ocelle-metric.js` are additions to the public surface: a minor change"])("states under Unreleased: %s", (statement) => {
+    expect(section).toContain(flat(statement));
+  });
+});
+
 describe("packages/tokens/CHANGELOG.md: the status indicator's two tokens are a minor change (018)", () => {
   const section = unreleased(read("../tokens/CHANGELOG.md"));
 

@@ -36,7 +36,8 @@ import { compositions } from "../scenarios/link.ts";
 // not measured for the layout elements' focus behaviour, the print note and the states that do not apply.
 // 013 phase 3 adds `ocelle-progress` (T043, T043a): its statements, its entry point, its mapping rows by role name and its
 // CHANGELOG names. 018 phase 2 adds `ocelle-status-indicator` (T016): its section, its README rules (i) to (viii), its
-// entry point and its CHANGELOG names.
+// entry point and its CHANGELOG names. 018 phase 3 adds `ocelle-metric` (T027): its section, the find-in-page limitation,
+// the `min-inline-size: 0` host rule for shrinking, its entry point and its CHANGELOG names.
 /** A file's text, relative to the package; empty while it does not exist, so each assertion reports what is missing. */
 function read(file: string): string {
   const url = new URL(`../../${file}`, import.meta.url);
@@ -567,6 +568,7 @@ const entryRows = [
   "| `@ocelle/elements/ocelle-empty-state.js` | `dist/ocelle-empty-state.js` | `ocelle-empty-state` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-progress.js` | `dist/ocelle-progress.js` | `ocelle-progress` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-status-indicator.js` | `dist/ocelle-status-indicator.js` | `ocelle-status-indicator` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-metric.js` | `dist/ocelle-metric.js` | `ocelle-metric` only; for hosts with a bundler |",
   "| `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |",
   "| `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |",
 ];
@@ -690,7 +692,7 @@ describe("packages/elements/README.md", () => {
   it("lists exactly the entry points of package.json's exports in its Entry points table (FR-002)", () => {
     const manifest = JSON.parse(read("package.json")) as { exports?: Record<string, string> };
     expect(tableRows(read("README.md"), "Entry points")).toEqual(entryRows);
-    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-scroller.js", "./ocelle-workflow-board.js", "./ocelle-workflow-lane.js", "./ocelle-list-detail.js", "./ocelle-dialog.js", "./ocelle-drawer.js", "./ocelle-tooltip.js", "./ocelle-card.js", "./ocelle-section-header.js", "./ocelle-page-header.js", "./ocelle-context-sidebar.js", "./ocelle-personal-rail.js", "./ocelle-button.js", "./ocelle-action-row.js", "./ocelle-facts.js", "./ocelle-fact.js", "./ocelle-empty-state.js", "./ocelle-progress.js", "./ocelle-status-indicator.js", "./browser.js", "./custom-elements.json"]);
+    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-scroller.js", "./ocelle-workflow-board.js", "./ocelle-workflow-lane.js", "./ocelle-list-detail.js", "./ocelle-dialog.js", "./ocelle-drawer.js", "./ocelle-tooltip.js", "./ocelle-card.js", "./ocelle-section-header.js", "./ocelle-page-header.js", "./ocelle-context-sidebar.js", "./ocelle-personal-rail.js", "./ocelle-button.js", "./ocelle-action-row.js", "./ocelle-facts.js", "./ocelle-fact.js", "./ocelle-empty-state.js", "./ocelle-progress.js", "./ocelle-status-indicator.js", "./ocelle-metric.js", "./browser.js", "./custom-elements.json"]);
   });
 
   it("lists the thirteen names of the set, whether each mirrors and the consumer need it meets, in its Icons table (US2-1, FR-018, SC-007)", () => {
@@ -776,6 +778,45 @@ describe("packages/elements/README.md: ocelle-status-indicator (018)", () => {
   });
 
   it.each(indicatorRules)("states the README rule in its section: %s", (rule) => {
+    expect(section).toContain(flat(rule));
+  });
+});
+
+/**
+ * The `ocelle-metric` section (018 FR-007, FR-020 to FR-024, FR-042; contracts/elements-status.md § `ocelle-metric`;
+ * research.md R-05; tasks.md T027): what it is, its attributes, the eyebrow and figures tokens it reads, the row and
+ * stacked layouts, the term and its definition, the empty value, the parts, no event and no tab stop, and the two
+ * consumer-facing rules the contract names: the find-in-page limitation and the `min-inline-size: 0` host rule for
+ * shrinking in a flex row, one assertion each, read in that section.
+ */
+const metricFragments = [
+  "`ocelle-metric` shows a label and its value: `<ocelle-metric label=\"Open missions\" display-value=\"12\"></ocelle-metric>`",
+  "The label is set in the eyebrow style, `--ocelle-font-size-eyebrow`, `--ocelle-font-weight-eyebrow`, `--ocelle-tracking-eyebrow` and `--ocelle-color-eyebrow`, and shown uppercase by style only, so assistive technology reads it as written",
+  "The value is shown in tabular figures (`--ocelle-figures`) in Schibsted Grotesk (`--ocelle-font-sans`). The element formats nothing: `display-value` is a pre-formatted string, shown as given, with no number formatting and no unit added",
+  "`label` and `display-value` are text, never parsed as markup",
+  "With `layout=\"row\"` the label and the value share one line, label first, `--ocelle-space-2` apart, and wrap onto two lines rather than overflow; with no `layout`, or any other value, they are stacked, the label above the value",
+  "The metric is one term and its definition: assistive technology reads the label, then the value, in both layouts",
+  "An empty or absent `display-value` adds no placeholder, and the metric keeps the height it has with a one-line value",
+  "The parts `label` (the term) and `value` (the definition) can be styled with `::part()`",
+  "`ocelle-metric` emits no event and adds no tab stop",
+];
+
+/** The two consumer-facing rules of contracts/elements-status.md § `ocelle-metric`. */
+const metricRules = [
+  // the find-in-page limitation (R-05)
+  "The browser's find in page matches a metric's label twice: the visible uppercase label and an invisible copy of the label as written, which names the term. The second match's highlight cannot be seen; this is a known limitation",
+  // the host rule for shrinking (PLAN-FRESH-2-002)
+  "In a flex row a metric is not shrunk below its longest word, so a one-word label or value stays on one line; a host that wants it to shrink further sets `min-inline-size: 0` on it, and its words then break inside it",
+];
+
+describe("packages/elements/README.md: ocelle-metric (018)", () => {
+  const section = flat(/^## `ocelle-metric`\n([\s\S]*?)(?=^## |(?![\s\S]))/m.exec(read("README.md"))?.[1] ?? "");
+
+  it.each(metricFragments)("states in its section: %s", (fragment) => {
+    expect(section).toContain(flat(fragment));
+  });
+
+  it.each(metricRules)("states the README rule in its section: %s", (rule) => {
     expect(section).toContain(flat(rule));
   });
 });
@@ -1103,6 +1144,10 @@ describe("packages/elements/CHANGELOG.md", () => {
     "`ocelle-status-indicator`",
     "`@ocelle/elements/ocelle-status-indicator.js`",
     "`tone`, `label` and `pulse` (reflected)",
+    // 018 (tasks.md T027): the metric, its entry point and its attributes
+    "`ocelle-metric`",
+    "`@ocelle/elements/ocelle-metric.js`",
+    "`label` and `display-value` (reflected) and `layout`",
     ...["chevron-start", "chevron-end", "chevron-up", "chevron-down", "arrow-start", "arrow-end", "menu", "close", "folder", "file", "search", "table", "copy"].map((name) => `\`${name}\``),
   ])("names %s under Unreleased / Added (constitution VII, FR-031, SC-008)", (surface) => {
     expect(added).toContain(surface);

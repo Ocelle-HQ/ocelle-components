@@ -23,6 +23,7 @@
 import { inflateSync } from "node:zlib";
 import type { Page } from "playwright";
 import { advanceOf, moveBeforeOf, runningOf } from "../animations.ts";
+import { findMatchesOf } from "../find.ts";
 import { audit, axNodes, axeSetup, axStateOf, axSubtree, emulate, emulateMotion, movePointer, pointer, press, readActiveElement, readAnimationStates, readOverflows, readScrollWidth, readTextBoxes, seekIn, settleLayoutIn } from "../commands.ts";
 import { layoutWait } from "../layout-wait.ts";
 import { activeInnerOf, activePath, clickElement, computedOf, copyElement, currentOf, endOrder, focusElement, morphElement, preventNextEvent, recordEvents, resetPage, sentinelId, startOrder, takeRecords } from "../page-side.ts";
@@ -861,5 +862,6 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
       await page.evaluate(moveBeforeOf, { id, parentId });
       await settle(page);
     },
+    findInPage: (text) => page.evaluate(findMatchesOf, text),
   };
 }
