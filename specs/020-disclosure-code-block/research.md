@@ -41,8 +41,10 @@ FR-010, FR-031, FR-032).
   there is no summary and `focus()` does nothing. The summary is natively focusable and in the tab order inside the
   shadow root, and `document.activeElement` is still the host by retargeting, so US1-4 and US1-19 read the same. This
   is a second departure from control conventions rule 1 (R-03); the README section says so. US1-22's body clicks
-  panel text in a scrolled, tall open panel and presses Space; it must fail red with `delegatesFocus` restored (a
-  plant, contracts/checks.md).
+  panel text in a scrolled, tall open panel, reads `scrollY` before and after the click, then presses Space; it must
+  fail red with `delegatesFocus` restored (a plant, contracts/checks.md). `scrollY` is not read after Space: with focus
+  on the body, Space pages the document wherever the page can scroll further (measured, squad round 2,
+  PLAN-FRESH-2-004: 60 px after the click, 690 px after Space, the element correct).
 - The native marker: `summary { list-style: none }` (Chromium 89+). WebKit draws its marker through
   `::-webkit-details-marker`; whether `style-lint` admits that selector is checked in phase 1. If it does not, WebKit's
   marker is recorded as an open limitation beside the Engines note (WebKit is not measured; the operator decided at
@@ -193,12 +195,19 @@ copy).
 - Wrap mode renders `<div class="block" part="block"><pre class="code" part="code">…</pre></div>`. `.block` has the
   ground (`color-inset`), `padding: var(--ocelle-space-3)`, `border-radius: var(--ocelle-radius-2)` and a
   `var(--ocelle-border-width) solid transparent` border, which forced colours paint in `CanvasText` (FR-034).
-  `.block` also has `direction: ltr; unicode-bidi: isolate` (operator decision, squad round 1, PLAN-FRESH-1-002 (a)):
-  code is shown left to right in every page direction, because under an inherited `rtl` the bidi algorithm moves
-  leading and trailing neutrals (measured: `--force main.` read `.force main--` on screen while it copies as
-  written). The scroll box inherits `ltr`, so in scroll mode the block starts at the left and fades at the right
-  under an `rtl` page too (US2-8); a body asserts the visual order of `--force main.` under an `rtl` ancestor.
-  `.code` has `min-block-size: 1lh` (style-lint admits `1lh` as a whole value, `gates/stylelint/token-only.ts:14`),
+  `.code` has `direction: ltr; unicode-bidi: isolate; text-align: left` (operator decisions, squad round 1,
+  PLAN-FRESH-1-002 (a), and squad round 2, PLAN-FRESH-2-001 (a)): each line of code is shown left to right in every
+  page direction, because under an inherited `rtl` the bidi algorithm moves leading and trailing neutrals (measured:
+  `--force main.` read `.force main--` on screen while it copies as written). The rule is on `.code` only, not on
+  `.block`: `.block` and the module's `.region-box` keep the page direction, because the module picks the fade side
+  from `:host(:dir(rtl))` while `edgeState` reads the box's own `scrollLeft` and direction (`overflow-region.ts`
+  185-193); an `ltr` box under an `rtl` host fades the left edge, where nothing is hidden (measured, squad round 2,
+  PLAN-FRESH-2-001). So under an `rtl` page a scroll block starts at the right and fades at the left, as
+  `ocelle-scroller` does, while each line reads left to right. US2-8 has two bodies under an `rtl` ancestor: the
+  visual order of `--force main.` in wrap and in scroll mode, and the fade side of an overflowing scroll block (the
+  box's computed direction is `rtl`, `data-fade` is `end`, the computed `mask-image` is transparent at the left edge,
+  and the track's left edge lies left of the box's, so the hidden text is on the faded side).
+  `.code` also has `min-block-size: 1lh` (style-lint admits `1lh` as a whole value, `gates/stylelint/token-only.ts:14`),
   so an empty `pre`, which has no line box and is 0 px high (measured, squad round 1, PLAN-CORRECTNESS-1-005), keeps
   one line (US2-19): the oracle is the block size equal to one computed line height of `.code` plus `.block`'s
   padding and border, in both modes; a plant removes the rule. `.code`
@@ -215,11 +224,21 @@ copy).
   (operator decision, squad round 1, PLAN-CORRECTNESS-1-010 (b)): the module's `#release` only takes off attributes
   and listeners, and its handover runs only when overflow ends (`overflow-region.ts` 392-402), so a focused
   `.region-box` removed by the re-render would drop focus to the body. In `willUpdate`, when the policy leaves
-  `scroll` while the `.region-box` is the shadow root's active element, the element notes it; in `updated` it gives
-  `.block` a temporary `tabindex="-1"`, focuses it, and removes the attribute on `.block`'s `focusout`. A body
-  switches `overflow` with the box focused and asserts `document.activeElement` is the host, the shadow root's active
-  element is `.block`, and after focus leaves `.block` has no `tabindex`. The module is not changed. The module's per-instance sheet is
-  adopted in both modes; in wrap mode its one rule matches nothing.
+  `scroll` while the shadow root's active element is a node inside `.block` other than `.block` itself, the element
+  notes it: the `.region-box`, or the `.region-frame` that the module's handover focuses when overflow ends with the
+  box focused (`overflow-region.ts` 433-445, US2-21), which keeps focus until its own `focusout` (squad round 2,
+  PLAN-FRESH-2-003). In `updated` it gives `.block` a temporary `tabindex="-1"`, focuses it, and removes the attribute
+  on `.block`'s `focusout`. **The block's ring** (operator decision, squad round 2, PLAN-FRESH-2-005 (a)): a scripted
+  focus after keyboard use matches `:focus-visible` and would draw the user agent's `outline: auto` (measured), so
+  `.block:focus-visible` takes the library ring, as `controlStyles` draws it and as the module's own handover draws it
+  on `.region-frame`: `outline-style: solid; outline-width: var(--ocelle-focus-width); outline-offset:
+  var(--ocelle-focus-offset)`, `outline-color: var(--ocelle-color-focus)`, and `outline-color: Highlight` inside
+  `@media (forced-colors: active)`. Two bodies switch `overflow` to wrap: one with the box focused, one after overflow
+  ended with the box focused (focus on `.region-frame`). Each asserts `document.activeElement` is the host, the shadow
+  root's active element is `.block`, `.block`'s computed outline is the token ring (style `solid`, width
+  `--ocelle-focus-width`, colour `--ocelle-color-focus`; `Highlight` under forced colours), and after focus leaves
+  `.block` has no `tabindex`. The module is not changed. The module's per-instance sheet is adopted in both modes; in
+  wrap mode its one rule matches nothing.
 - `label` passed through `setLabel(this.label)` in `updated()`; `aria-label` in `observedAttributes` with
   `requestUpdate()` on change, exactly as `ocelle-scroller` does.
 - The module's `slotchange` trigger never fires (no slot). A text change re-renders the `pre`; the track's size
@@ -308,7 +327,9 @@ fired. With the element's handler (R-02) this sets `open`, reflects it and fires
 hiding of a closed panel is the platform's (`details` content is skipped, not `display: none`), so the element adds no
 `display` rule to `.panel`: a `display: none` there would block the reveal. FR-008's observable is
 `checkVisibility()` false for the panel's content, the content absent from the tab order and from the accessibility
-tree (SPEC-2-02).
+tree (SPEC-2-02). The library's own overlay focus walk (`src/focusable.ts`) does not read `checkVisibility()`, so in
+an `ocelle-dialog` or `ocelle-drawer` a closed panel's link still counts as a stop; that case is left to a separate op
+(§ Repository-wide notes, PLAN-FRESH-2-002 (b)).
 
 ## R-09 Stories and baselines (FR-050, FR-051)
 
@@ -352,3 +373,16 @@ A finding of this kind is recorded here and reported for a separate op, not fixe
   measured on `ocelle-button`). The slot convention allows a bare `<svg>` as a slotted icon (README § Slot convention)
   and `src/icon-slot.ts` adds no `aria-hidden`; in the disclosure probe a titled bare svg kept an `image` node and
   added its title to the control's name. `ocelle-button` (and any other icon-slot user) may have the same gap.
+- **A closed disclosure as the last control of an `ocelle-dialog` or `ocelle-drawer` lets Tab leave the overlay**
+  (from squad round 2, PLAN-FRESH-2-002, operator decision (b): mission 008's modules are left unchanged here).
+  `src/focusable.ts` `rendered()` (lines 52-53) checks only `getClientRects().length` and `visibility`; Chromium hides
+  a closed `details` panel with content-visibility, so a link slotted into a closed panel keeps one client rect and
+  `visibility: visible` while `checkVisibility()` is false (measured). The walk then counts it as the overlay's last
+  stop, the summary becomes a middle stop, and `overlay.ts` `#tab` (710-744) lets a Tab from it run natively; nothing
+  in the modal takes focus and it lands on the body (measured with a `showModal()` dialog). `#onFocusout` (757-761)
+  repairs only a focus that leaves opaque content. The same holds today for a plain `details` in an overlay. The
+  likely fix is `rendered()` also requiring `element.checkVisibility()` (Chromium 105+, inside the engine floor). The
+  op writes, red first, a body in which a disclosure holding a link is the last control of an `ocelle-dialog`
+  (closed panel), Tab from its summary wraps to the dialog's first stop, and a plant that removes the check. This
+  mission adds no body for it (a known-failing body would need `skip` or an inverted assertion, which Principle VIII
+  and the test-quality lint forbid); the README's disclosure section states the limitation.

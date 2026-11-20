@@ -41,7 +41,10 @@ changes (changes before the native `toggle` are coalesced); a host `aria-expande
 prefer `open`; two departures from control conventions rule 1, both because the host holds the panel's content: no
 host click guard, and no `delegatesFocus` (`focus()` is overridden, so a click on panel content moves no focus); a
 script or morph close with focus in the panel, also inside a panel control's shadow root, moves focus to the summary;
-no interactive content in the summary; nested disclosures are told apart by `event.target`;
+no interactive content in the summary; nested disclosures are told apart by `event.target`; a known limitation: a
+closed disclosure as the last control of an `ocelle-dialog` or `ocelle-drawer` lets Tab from its summary leave the
+overlay (the overlay's focus walk counts a closed panel's controls as stops; recorded for a separate op, research.md §
+Repository-wide notes), so do not place a disclosure last in an overlay;
 clicks on the panel's content reach the page (no host guard, unlike the controls); before upgrade the summary and
 panel show as plain content; no animation.
 
@@ -51,7 +54,7 @@ A preformatted block for code, commands, logs and digests, in the library's sans
 
 | Kind | Name | Type | Default | Description |
 |---|---|---|---|---|
-| property / attribute | `overflow` | `string \| undefined` | `undefined` | `scroll` (trimmed, any ASCII case): long lines stay on one line and the block scrolls sideways, a tab stop and named group only while it overflows. Anything else or absent: lines wrap inside the block. Reflected. A switch to wrap while the scroll box has focus moves focus to the block. |
+| property / attribute | `overflow` | `string \| undefined` | `undefined` | `scroll` (trimmed, any ASCII case): long lines stay on one line and the block scrolls sideways, a tab stop and named group only while it overflows. Anything else or absent: lines wrap inside the block. Reflected. A switch to wrap while focus is in the scroll structure (the box, or the frame after the module's handover) moves focus to the block, which shows the library's focus ring. |
 | property / attribute | `label` | `string \| undefined` | `undefined` | The scroll box's name while it overflows; trimmed; blank counts as none. A non-blank host `aria-label` wins. No effect in wrap mode. Not reflected. |
 | property / attribute | `digest` | `boolean \| undefined` | `undefined` | Shows the text as a digest: a prefix up to the last colon, then groups of four code points with a gap; copied and read text stay unbroken (a whole-block selection ends with the platform's one block newline). Reflected. |
 | slot | none | | | The text is the element's light-DOM text content, read as a copy; children add no markup or style. |
@@ -63,16 +66,18 @@ A preformatted block for code, commands, logs and digests, in the library's sans
 Observed standard attribute: `aria-label` (not a property; the module reads it).
 
 Tokens read: `color-inset`, `font-sans`, `figures`, `font-size-md`, `line-height-relaxed`, `measure-reading`,
-`space-1`, `space-3`, `radius-2`, `border-width`, and through the overflow-region module `focus-offset`,
-`focus-width`, `color-focus`, `scroller-fade-size`, `color-ink` (mask only).
+`space-1`, `space-3`, `radius-2`, `border-width`, `focus-width`, `focus-offset`, `color-focus` (the `.block` ring),
+and through the overflow-region module the same focus tokens, `scroller-fade-size`, `color-ink` (mask only).
 
 Host styles: `:host { display: block; max-inline-size: var(--ocelle-measure-reading) }`, `:host([hidden]) { display:
-none }`; `.block { direction: ltr; unicode-bidi: isolate }`; `.code { min-block-size: 1lh }` (R-06).
+none }`; `.code { direction: ltr; unicode-bidi: isolate; text-align: left; min-block-size: 1lh }`, `.block` in the
+page direction; `.block:focus-visible` the library ring (`outline-style: solid`, `--ocelle-focus-width`,
+`--ocelle-focus-offset`, `--ocelle-color-focus`; `Highlight` in forced colours) (R-06).
 
 README statements: start the text on the opening tag's line (a newline after it is shown); markup inside is not
-rendered and markup-like text stays text; code is always shown left to right, also in an `rtl` page (so a scroll block
-starts at the left and fades at the right there); a switch from `scroll` to wrap while the box has focus moves focus
-to the block; always give a scroll block a `label`; do not set a host `aria-label` in wrap mode; in a shrink-to-fit host
+rendered and markup-like text stays text; each line of code is shown left to right, also in an `rtl` page, while the
+block keeps the page direction (so an `rtl` scroll block starts at the right and fades at the left, as
+`ocelle-scroller` does); a switch from `scroll` to wrap while focus is in the scroll block moves focus to the block; always give a scroll block a `label`; do not set a host `aria-label` in wrap mode; in a shrink-to-fit host
 give a scroll block a definite or maximum inline size; in scroll mode the `ocelle-scroller` statements on keyboard,
 focus, fades, scrollbar, motion and sizing hold (by reference); print shows what is laid out; no copy control, no
 highlighting.

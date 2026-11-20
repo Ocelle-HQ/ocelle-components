@@ -20,9 +20,10 @@ and, for the disclosure, `ocelle-icon`; no other).
   1:
   - the host is a block box: computed `display` `block`, its border box containing the summary and the open panel
     (FR-003, PLAN-CORRECTNESS-1-006);
-  - US1-22: a pointer click on plain text near the end of a tall, scrolled, open panel, then Space: the shadow root's
-    active element is not the summary, `scrollY` is unchanged, the disclosure is open, 0 events, followed by a summary
-    click counted as 1 (FR-003, PLAN-FRESH-1-001 (a)); red with `delegatesFocus`;
+  - US1-22: a pointer click on plain text near the end of a tall, scrolled, open panel: `scrollY` read before and
+    after the click is unchanged; then Space: the disclosure is open, the shadow root's active element is not the
+    summary, 0 events, followed by a summary click counted as 1 (FR-003, PLAN-FRESH-1-001 (a)); `scrollY` is not read
+    after Space, which pages the document when focus is on the body (PLAN-FRESH-2-004); red with `delegatesFocus`;
   - US1-17 with a bare `<svg slot="icon"><title>Folder</title>…</svg>`: the summary's name is the summary text alone
     and no `image` node exists under it (PLAN-A11Y-SECURITY-1-003);
   - US1-19 in three bodies: focus on a light-DOM link, on an `ocelle-button` in the panel, and on a nested
@@ -39,11 +40,19 @@ and, for the disclosure, `ocelle-icon`; no other).
     follow (PLAN-TESTABILITY-1-008);
   - FR-029's code points: `x:ab😀cdef` gives the prefix `x:` and the groups `ab😀c`, `def`, with no lone surrogate in
     any group's text (PLAN-TESTABILITY-1-009 (a));
-  - FR-025's switch with focus: `overflow` from `scroll` to wrap with the scroll box focused; `document.activeElement`
-    is the host, the shadow root's active element is `.block`, and after focus leaves `.block` has no `tabindex`
+  - FR-025's switch with focus, two bodies: `overflow` from `scroll` to wrap with the scroll box focused; and, as
+    US2-21, overflow ended while the box was focused (focus on `.region-frame`), then the switch to wrap
+    (PLAN-FRESH-2-003). Each asserts `document.activeElement` is the host, the shadow root's active element is
+    `.block`, `.block`'s computed `outline-style` is `solid`, its `outline-width` the computed `--ocelle-focus-width`
+    and its `outline-color` the computed `--ocelle-color-focus` (`resolveColour("Highlight")` under
+    `forcedColors("active")`, PLAN-FRESH-2-005 (a)), and after focus leaves `.block` has no `tabindex`
     (PLAN-CORRECTNESS-1-010 (b));
   - US2-8's visual order: under an `rtl` ancestor, `--force main.` reads `--force main.` in visual order (the text
     boxes sorted by their left edge), in wrap and in scroll mode (PLAN-FRESH-1-002 (a));
+  - US2-8's fade side: under an `rtl` ancestor, an overflowing scroll block at rest: `.block` and `.region-box`
+    compute `direction: rtl`, `data-fade` is `end`, the box's computed `mask-image` is the gradient transparent at the
+    left edge (`to right, transparent, …`), and the track's left edge lies left of the box's (the hidden text is on
+    the faded side) (PLAN-FRESH-2-001 (a));
   - US2-12 with a base64url digest (groups holding `-`) and a base64 one (`/`), swept over `pre` widths from 60 to
     300 px: every group has one rect and every line's first unit starts at the `pre`'s content-box inline start
     (PLAN-CORRECTNESS-1-004, PLAN-FRESH-1-005).
@@ -124,7 +133,9 @@ and, for the disclosure, `ocelle-icon`; no other).
 | `white-space: nowrap` removed from the groups | no break inside a group (FR-033) | US2-12 base64url body |
 | gap moved back to `margin-inline-start` on the unit after each `wbr` | no gap at a line's start (FR-030) | US2-12 line-start assertion |
 | `.code { min-block-size: 1lh }` removed | the empty block's one line (US2-19) | US2-19 |
-| `.block { direction: ltr }` removed | code shown left to right (FR-021) | US2-8 visual order |
+| `.code { direction: ltr }` removed | code shown left to right (FR-021) | US2-8 visual order |
+| `direction: ltr` moved from `.code` to `.block` | the block keeps the page direction, fade on the hidden side (FR-021, FR-024) | US2-8 fade side |
+| `.block:focus-visible` ring removed | the block's token ring after a switch (FR-025) | FR-025 switch bodies |
 
 Plants are run as earlier missions run them (005, 009, 011, 012, 013; 013 `reviews/phase-1/plants.md`): once per
 phase, against the green source, each source edit applied in a scratch copy, its guarding body run in process (and in

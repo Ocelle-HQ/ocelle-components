@@ -237,8 +237,8 @@ while overflowing and not, the arrow keys, the selection's copied text and the a
    with no role and no name (the module's rule), and the README tells consumers to always give a scroll block a label.
 8. **Given** `dir="rtl"` on an ancestor, **When** a code block holding `--force main.` renders, **Then** the code is
    shown left to right (the characters' visual order is `--force main.`, as copied); **When** an overflowing scroll
-   block renders under it, **Then** the block starts at the left and fades at the right, as in a left-to-right page
-   (code is always shown left to right, FR-021).
+   block renders under it, **Then** the block keeps the page direction, as `ocelle-scroller` does: it starts at the
+   right, the fade is at the left edge, where the hidden text is, and each line still reads left to right (FR-021).
 9. **Given** `digest` and the content `sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08`,
    **When** it renders, **Then** `sha256:` is shown as written, followed by 16 groups of four characters with a gap of
    `--ocelle-space-1` between groups and no gap inside a group, and the element's light-DOM text is unchanged.
@@ -308,10 +308,16 @@ while overflowing and not, the arrow keys, the selection's copied text and the a
 - **Markup inside a code block.** Child elements of a code block are not rendered as markup: the shadow root shows a
   copy of the host's `textContent` and slots nothing (FR-020), so a `<b>` or a `<code>` inside it adds no style. Text
   inside them is included (US2 scenario 20).
-- **Right-to-left pages.** Code is shown left to right in every page direction, so bidi neutrals (option dashes,
-  punctuation, a leading `/`) stay where they are written (US2 scenario 8).
-- **Policy switch with focus.** When `overflow` changes from `scroll` to wrap while the scroll box has focus, focus
-  moves to the block and `document.activeElement` stays the host (FR-025).
+- **Right-to-left pages.** Each line of code is shown left to right in every page direction, so bidi neutrals
+  (option dashes, punctuation, a leading `/`) stay where they are written; the block itself keeps the page direction,
+  so an overflowing scroll block starts at the right and fades at the left (US2 scenario 8).
+- **Policy switch with focus.** When `overflow` changes from `scroll` to wrap while focus is in the scroll block (the
+  scroll box, or the frame the module's handover focused when overflow ended), focus moves to the block, which shows
+  the library's focus ring, and `document.activeElement` stays the host (FR-025).
+- **Disclosure last in an overlay.** A closed disclosure as the last control of an `ocelle-dialog` or `ocelle-drawer`
+  lets Tab from its summary leave the overlay: mission 008's focus walk counts a closed panel's controls as stops.
+  This mission leaves 008's modules unchanged; the case is recorded for a separate op and the README states the
+  limitation (operator decision, plan squad round 2, PLAN-FRESH-2-002 (b)).
 - **Astral characters in a digest.** Groups count code points: `x:ab😀cdef` gives the prefix `x:` and the groups
   `ab😀c` and `def`, with no lone surrogate (FR-029).
 - **Tabs.** A tab character is shown at the browser's default tab size; the element sets none.
@@ -427,9 +433,10 @@ while overflowing and not, the arrow keys, the selection's copied text and the a
 - **FR-021**: The block MUST be on `--ocelle-color-inset`, in `--ocelle-font-sans` with `--ocelle-figures`, at
   `--ocelle-line-height-relaxed`, with padding and radius from existing tokens that match 003's prose `pre` rule
   (`--ocelle-space-3`, `--ocelle-radius-2`), and an inline size capped at `--ocelle-measure-reading`. No base-style
-  rule is added or changed: 003's `pre` and `code` rules stand for un-upgraded and prose content. The code is shown
-  left to right in every page direction (operator decision, plan squad round 1, PLAN-FRESH-1-002 (a); US2 scenario
-  8).
+  rule is added or changed: 003's `pre` and `code` rules stand for un-upgraded and prose content. Each line of code
+  is shown left to right in every page direction (operator decision, plan squad round 1, PLAN-FRESH-1-002 (a)), while
+  the block and its scroll box keep the page direction, so the module's fade falls on the side where text is hidden
+  (operator decision, plan squad round 2, PLAN-FRESH-2-001 (a); US2 scenario 8).
 - **FR-022**: `overflow` (attribute and property, reflected, `@default undefined`) MUST choose the policy. Absent, or
   any value other than `scroll` (ASCII case-insensitive, trimmed), is the wrap policy; `scroll` is the scroll policy.
 - **FR-023**: The wrap policy MUST be 003's: `white-space: pre-wrap` and `overflow-wrap: anywhere`, no scroll box, no
@@ -448,8 +455,12 @@ while overflowing and not, the arrow keys, the selection's copied text and the a
 - **FR-025**: In wrap mode the element MUST NOT render the overflow-region structure or create the module's effects on
   any node (no tab stop, role or name can appear). Switching `overflow` between the two values at run time MUST give
   the other policy's full behaviour, with no tab stop, role or name left behind on a node. When the switch from
-  scroll to wrap happens while the scroll box has focus, focus MUST move to the block, so `document.activeElement`
-  stays the host (operator decision, plan squad round 1, PLAN-CORRECTNESS-1-010 (b)).
+  scroll to wrap happens while focus is in the scroll structure (the scroll box, or the `.region-frame` the module's
+  handover focused, US2 scenario 21), focus MUST move to the block, so `document.activeElement` stays the host
+  (operator decision, plan squad round 1, PLAN-CORRECTNESS-1-010 (b); squad round 2, PLAN-FRESH-2-003), and the
+  focused block MUST show the library's focus ring (`--ocelle-color-focus`, `--ocelle-focus-width`,
+  `--ocelle-focus-offset`; `Highlight` in forced colours), never the user agent's (operator decision, plan squad
+  round 2, PLAN-FRESH-2-005 (a)).
 - **FR-026**: `label` (attribute and property, not reflected, `@default undefined`) MUST name the scroll box while it
   overflows, as the module's name rule says (a non-blank host `aria-label` wins; blank counts as absent). In wrap mode
   `label` has no effect, and a host `aria-label` is left on the host as written (Host ARIA). Because the host has no
