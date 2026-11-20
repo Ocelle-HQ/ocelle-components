@@ -21,7 +21,7 @@
 // `axUpdates` of the field (Chromium's `Accessibility.nodesUpdated`), with a synchronous host listener that sets the
 // same status text again inside the event.
 import { tokenColour } from "./icon.ts";
-import type { AxState, Driver, Focused, InPage, Pixels } from "./driver.ts";
+import type { AxNodeState, Driver, Focused, InPage, Pixels } from "./driver.ts";
 
 /** One body: what it checks, what it must observe, and whether the fixture harness runs it too. */
 export interface CopyFieldScenario {
@@ -191,7 +191,7 @@ const readRoles = new Set(["group", "StaticText", "button", "status", "img", "im
 async function tree(driver: Driver): Promise<Exposed[]> {
   const nodes = await driver.axStates("cf", "subtree");
   return nodes
-    .filter((node: AxState) => readRoles.has(node.role))
+    .filter((node: AxNodeState) => readRoles.has(node.role))
     .map((node) => {
       if (node.role === "button") return { role: node.role, name: node.name, disabled: node.disabled === true };
       if (node.role === "status") return { role: node.role, name: node.name, live: node.live ?? "" };

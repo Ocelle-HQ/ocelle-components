@@ -25,7 +25,7 @@
 // `--ocelle-border-width` is a run of 1; the pressed segment's block-end edge, its 3 px bar inside its box above its
 // 1 px line, is a run of 4 in `accent-strong`.
 import { tokenColour } from "./icon.ts";
-import type { AxState, Driver, Focused, InPage, Pixels, DriverTarget } from "./driver.ts";
+import type { AxNodeState, Driver, Focused, InPage, Pixels, DriverTarget } from "./driver.ts";
 
 /** One body: what it checks, what it must observe, and whether the fixture harness runs it too. */
 export interface SegmentedChoiceScenario {
@@ -137,7 +137,7 @@ interface Exposed {
 async function tree(driver: Driver, id = "sc"): Promise<Exposed[]> {
   const nodes = await driver.axStates(id, "subtree");
   return nodes
-    .filter((node: AxState) => interactiveRoles.has(node.role))
+    .filter((node: AxNodeState) => interactiveRoles.has(node.role))
     .map((node) => {
       if (node.role === "toolbar") return { role: node.role, name: node.name, orientation: node.orientation ?? "" };
       if (node.role === "button") return { role: node.role, name: node.name, pressed: node.pressed === true, disabled: node.disabled === true };

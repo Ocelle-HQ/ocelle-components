@@ -22,7 +22,7 @@
 // stand-in bodies stay; phase 4 adds US2-21's body with the real `ocelle-segmented-choice` (T062b), and phase 6 adds
 // US2-22's with the real `ocelle-link` (T093a; reviews/phase-3/notes.md).
 import { tokenColour } from "./icon.ts";
-import type { AxState, AxTarget, Driver, InPage, DriverTarget } from "./driver.ts";
+import type { AxNodeState, AxTarget, Driver, InPage, DriverTarget } from "./driver.ts";
 
 /** One body: what it checks, what it must observe, and whether the fixture harness runs it too. */
 export interface TabsScenario {
@@ -169,7 +169,7 @@ interface Exposed {
 async function tree(driver: Driver, id = "tb"): Promise<Exposed[]> {
   const nodes = await driver.axStates(id, "subtree");
   return nodes
-    .filter((node: AxState) => interactiveRoles.has(node.role))
+    .filter((node: AxNodeState) => interactiveRoles.has(node.role))
     .map((node) => (node.role === "tab" ? { role: node.role, name: node.name, selected: node.selected === true, disabled: node.disabled === true } : { role: node.role, name: node.name }));
 }
 

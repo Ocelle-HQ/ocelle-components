@@ -15,10 +15,10 @@
 // and focus methods are named apart from 008's `press`, `click`, `hover`, 011's `activeElement` and 008's
 // `viewportSize`, which have other signatures (landing operator decision 3). Every target, of either form, is found by
 // one resolver, test/page-helpers.ts `resolve`.
-import type { ActiveElement, AxNode, AxScope, AxState, AxUpdate, ForcedColors, Palette, ReducedMotion, Target as AxTarget, TextBox } from "../commands.ts";
+import type { ActiveElement, AxNode, AxScope, AxNodeState, AxUpdate, ForcedColors, Palette, ReducedMotion, Target as AxTarget, TextBox } from "../commands.ts";
 import type { Pixels } from "../pixels.ts";
 
-export type { ActiveElement, AxNode, AxScope, AxState, AxUpdate, ForcedColors, Palette, ReducedMotion, TextBox } from "../commands.ts";
+export type { ActiveElement, AxNode, AxScope, AxNodeState, AxUpdate, ForcedColors, Palette, ReducedMotion, TextBox } from "../commands.ts";
 export type { AxTarget };
 export type { Pixels } from "../pixels.ts";
 
@@ -413,7 +413,7 @@ export interface Driver {
   /** Starts recording an activation of the target (research.md R-07); the returned function waits and returns the record. */
   activationRecord(target: DriverTarget, options: ActivationOptions): Promise<() => Promise<ActivationEntry[]>>;
   /** The unignored accessibility nodes of the target with their states (test/commands.ts `axStates`). */
-  axStates(target: AxTarget, scope?: AxScope): Promise<AxState[]>;
+  axStates(target: AxTarget, scope?: AxScope): Promise<AxNodeState[]>;
   /**
    * Starts recording Chromium's accessibility tree updates of the target and its descendants
    * (`Accessibility.nodesUpdated`); the returned function waits for pending updates, stops and returns them.

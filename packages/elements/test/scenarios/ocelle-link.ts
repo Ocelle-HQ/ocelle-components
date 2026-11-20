@@ -31,7 +31,7 @@
 // and the default not prevented, and nothing about the navigation that follows (operator decision 2 during phase 6,
 // R1-01); it asserts the "no navigation in place" of a modified activation for Ctrl, Shift and the middle click.
 import { tokenColour } from "./icon.ts";
-import type { AxState, TargetClickOptions, Driver, InPage, Modifier, Pixels, DriverTarget } from "./driver.ts";
+import type { AxNodeState, TargetClickOptions, Driver, InPage, Modifier, Pixels, DriverTarget } from "./driver.ts";
 
 /**
  * What a fixture body uses to activate a link that may navigate, and to observe what the browser did beside the page:
@@ -212,7 +212,7 @@ interface Exposed {
  */
 async function tree(driver: Driver, id = "para"): Promise<Exposed[]> {
   const nodes = await driver.axStates(id, "subtree");
-  return nodes.filter((node: AxState) => !((node.role === "generic" || node.role === "group") && node.name === "")).map((node) => ({ role: node.role, name: node.name }));
+  return nodes.filter((node: AxNodeState) => !((node.role === "generic" || node.role === "group") && node.name === "")).map((node) => ({ role: node.role, name: node.name }));
 }
 
 /** The paragraph's tree: the text before, the link named `name` holding `content`, the text after. */

@@ -46,7 +46,7 @@ export type Target = string | { readonly parent: string; readonly kind: string; 
  * and each of `selected`, `pressed`, `disabled`, `orientation`, `live` and `controls` that Chromium reports for it;
  * `controls` as the controlled nodes' roles and names. `AxNode` keeps its own fields.
  */
-export interface AxState {
+export interface AxNodeState {
   readonly role: string;
   readonly name: string;
   readonly selected?: boolean;
@@ -347,9 +347,9 @@ function named(node: RawAxNode): AxNode {
   return { role: text(node.role?.value), name: text(node.name?.value) };
 }
 
-/** A node's role, name and the states of `AxState` that Chromium reports for it. */
-function withStates(node: RawAxNode, byBackend: ReadonlyMap<number, RawAxNode>): AxState {
-  const state: { -readonly [K in keyof AxState]: AxState[K] } = named(node);
+/** A node's role, name and the states of `AxNodeState` that Chromium reports for it. */
+function withStates(node: RawAxNode, byBackend: ReadonlyMap<number, RawAxNode>): AxNodeState {
+  const state: { -readonly [K in keyof AxNodeState]: AxNodeState[K] } = named(node);
   for (const property of node.properties ?? []) {
     const value = property.value.value;
     if (property.name === "selected" && typeof value === "boolean") state.selected = value;
@@ -366,11 +366,11 @@ function withStates(node: RawAxNode, byBackend: ReadonlyMap<number, RawAxNode>):
 }
 
 /**
- * The unignored accessibility nodes of `target` with their states (`AxState`), in tree order: with `"element"` its own
+ * The unignored accessibility nodes of `target` with their states (`AxNodeState`), in tree order: with `"element"` its own
  * node and its shadow subtree's (as `axNodes`), with `"subtree"` its accessibility subtree (as `axSubtree`, inline text
  * boxes left out).
  */
-export async function axStatesOf(session: CDPSession, target: Target, scope: AxScope = "element", frameId?: string): Promise<AxState[]> {
+export async function axStatesOf(session: CDPSession, target: Target, scope: AxScope = "element", frameId?: string): Promise<AxNodeState[]> {
   const { root } = (await session.send("DOM.getDocument", { depth: -1, pierce: true })) as { root: DomNode };
   const document = documentOf(root, frameId);
   const element = document === undefined ? undefined : byTarget(document, target);
@@ -384,7 +384,7 @@ export async function axStatesOf(session: CDPSession, target: Target, scope: AxS
     return nodes.filter((node) => !node.ignored && node.backendDOMNodeId !== undefined && ids.has(node.backendDOMNodeId)).map((node) => withStates(node, byBackend));
   }
   const byNodeId = new Map(nodes.map((node) => [node.nodeId, node]));
-  const found: AxState[] = [];
+  const found: AxNodeState[] = [];
   if (scope === "ancestors") {
     const parents = new Map<string, RawAxNode>();
     for (const node of nodes) for (const child of node.childIds ?? []) parents.set(child, node);
@@ -464,7 +464,7 @@ export async function recordAxUpdates(session: CDPSession, target: Target, frame
 }
 
 /** The `axStates(target, scope)` browser command (registered in vitest.config.ts), in the frame of the calling test file. */
-export async function axStates(context: BrowserCommandContext, target: Target, scope: AxScope = "element"): Promise<AxState[]> {
+export async function axStates(context: BrowserCommandContext, target: Target, scope: AxScope = "element"): Promise<AxNodeState[]> {
   const session = await context.page.context().newCDPSession(context.page);
   try {
     const frame = await context.frame();
@@ -624,7 +624,7 @@ declare module "vitest/browser" {
     /** Emulates forced colours with a system palette, or ends the emulation with `"none"`. */
     emulateForcedColors: (mode: ForcedColors, palette?: Palette) => Promise<void>;
     /** The unignored accessibility nodes of `target` with their states, of its own and shadow subtree or with `"subtree"` its accessibility subtree. */
-    axStates: (target: Target, scope?: AxScope) => Promise<AxState[]>;
+    axStates: (target: Target, scope?: AxScope) => Promise<AxNodeState[]>;
     /** Starts recording the accessibility tree updates of `target` and its descendants. */
     axUpdatesStart: (target: Target) => Promise<void>;
     /** Stops the recording and returns its updates. */

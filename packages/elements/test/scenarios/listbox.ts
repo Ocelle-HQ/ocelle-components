@@ -10,7 +10,7 @@
 // named beside the body and run once in reviews/phase-2/plants.md. The in-process harness (test/listbox.test.ts) runs
 // every body; the fixture harness (test/browser/listbox.test.ts) runs the bodies marked `fixture`.
 import { tokenColour } from "./icon.ts";
-import type { AxState, Driver, Focused, InPage, DriverTarget } from "./driver.ts";
+import type { AxNodeState, Driver, Focused, InPage, DriverTarget } from "./driver.ts";
 
 /** One body: what it checks, what it must observe, and whether the fixture harness runs it too. */
 export interface ListboxScenario {
@@ -117,7 +117,7 @@ interface Exposed {
 async function tree(driver: Driver, id = "lb"): Promise<Exposed[]> {
   const nodes = await driver.axStates(id, "subtree");
   return nodes
-    .filter((node: AxState) => interactiveRoles.has(node.role))
+    .filter((node: AxNodeState) => interactiveRoles.has(node.role))
     .map((node) => (node.role === "option" ? { role: node.role, name: node.name, selected: node.selected === true, disabled: node.disabled === true } : { role: node.role, name: node.name }));
 }
 
