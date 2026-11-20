@@ -397,3 +397,104 @@ export const driverAdditionScenarios: readonly Scenario[] = [
     expected: { during: ["ocelle-test-ping", "inner-ping"], quiet: [], other: ["ocelle-test-ping", "inner-ping"] },
   },
 ];
+
+// The driver additions of 020 phase 1 (contracts/checks.md § Driver additions; tasks.md T003): `findText` opens a closed
+// `details` whose text it finds, in the light DOM and in a shadow root with the text slotted from the light DOM, and
+// finds the same word again after the `details` is closed (a fresh fragment per call); `setProperties` sets a property
+// to each value in one task, so a plain `details` set open and closed again queues one native `toggle` where two
+// `setProperty` calls, each followed by a wait, queue two; `visible` reads `checkVisibility()`, false for the content of
+// a closed `details` and true once it is open; `reflected` names the elements an element-reflection property holds, and
+// is null for an unset one.
+
+/**
+ * Defines `ocelle-test-details` (self-contained, for `page.evaluate`): an open shadow root holding
+ * `<details><summary><span class="label"><slot name="summary"></slot></span></summary><slot></slot></details>`, the
+ * summary labelled by its `.label` span by element reference.
+ */
+export function defineDetailsHelper(): void {
+  if (customElements.get("ocelle-test-details") !== undefined) return;
+  customElements.define(
+    "ocelle-test-details",
+    class extends HTMLElement {
+      constructor() {
+        super();
+        const root = this.attachShadow({ mode: "open" });
+        root.innerHTML = '<details><summary><span class="label"><slot name="summary"></slot></span></summary><slot></slot></details>';
+        const summary = root.querySelector("summary");
+        const label = root.querySelector(".label");
+        if (summary !== null && label !== null) summary.ariaLabelledByElements = [label];
+      }
+    },
+  );
+}
+
+/** Whether the shadow `details` of the element with `id` has the `open` attribute. */
+async function shadowOpen(driver: Parameters<Scenario["run"]>[0], id: string): Promise<boolean> {
+  return (await driver.elements(id)).some((part) => part.name === "details" && "open" in part.attributes);
+}
+
+const retention = "<p>The retention period is thirty days.</p>";
+
+export const disclosureDriverScenarios: readonly Scenario[] = [
+  {
+    name: "findText: a closed light-DOM details whose panel holds the word opens, and after it is closed again the same word opens it again",
+    run: async (driver) => {
+      await driver.mount(`<details id="plain"><summary>More</summary>${retention}</details>`);
+      const before = await driver.property("plain", "open");
+      await driver.findText("retention");
+      const found = await driver.property("plain", "open");
+      await driver.setProperty("plain", "open", false);
+      const closed = await driver.property("plain", "open");
+      await driver.findText("retention");
+      return { before, found, closed, again: await driver.property("plain", "open") };
+    },
+    expected: { before: false, found: true, closed: false, again: true },
+  },
+  {
+    name: "findText: a closed details in a shadow root, the word in light-DOM text slotted into it, opens; a word on the page outside it leaves it closed",
+    run: async (driver) => {
+      await driver.mount(`<p>The archival note.</p><ocelle-test-details id="shadowed"><span slot="summary">More</span>${retention}</ocelle-test-details>`);
+      const before = await shadowOpen(driver, "shadowed");
+      await driver.findText("archival");
+      const elsewhere = await shadowOpen(driver, "shadowed");
+      await driver.findText("retention");
+      return { before, elsewhere, found: await shadowOpen(driver, "shadowed") };
+    },
+    expected: { before: false, elsewhere: false, found: true },
+  },
+  {
+    name: "setProperties: open set to true then false in one task queues one native toggle of a plain details, where two setProperty calls queue two",
+    run: async (driver) => {
+      await driver.mount(`<details id="plain"><summary>More</summary>${retention}</details>`);
+      await driver.listen(["plain"]);
+      await driver.setProperties("plain", "open", [true, false]);
+      await driver.settle();
+      const oneTask = (await driver.heard()).filter((record) => record.endsWith(": toggle"));
+      const open = await driver.property("plain", "open");
+      await driver.listen(["plain"]);
+      await driver.setProperty("plain", "open", true);
+      await driver.setProperty("plain", "open", false);
+      const twoTasks = (await driver.heard()).filter((record) => record.endsWith(": toggle"));
+      return { oneTask, open, twoTasks };
+    },
+    expected: { oneTask: ["plain: toggle"], open: false, twoTasks: ["plain: toggle", "plain: toggle"] },
+  },
+  {
+    name: "visible: the content of a closed details is not visible and the text after it is; once the details is open its content is visible",
+    run: async (driver) => {
+      await driver.mount('<details id="plain"><summary>More</summary><p id="inside">Inside</p></details><p id="outside">Outside</p>');
+      const closed = { inside: await driver.visible("inside"), outside: await driver.visible("outside") };
+      await driver.setProperty("plain", "open", true);
+      return { closed, open: await driver.visible("inside") };
+    },
+    expected: { closed: { inside: false, outside: true }, open: true },
+  },
+  {
+    name: "reflected: a shadow summary's ariaLabelledByElements names its .label span, an unset ariaDescribedByElements is null",
+    run: async (driver) => {
+      await driver.mount('<ocelle-test-details id="shadowed"><span slot="summary">More</span></ocelle-test-details>');
+      return { labelledBy: await driver.reflected("shadowed", "summary", "ariaLabelledByElements"), describedBy: await driver.reflected("shadowed", "summary", "ariaDescribedByElements") };
+    },
+    expected: { labelledBy: ["span.label"], describedBy: null },
+  },
+];

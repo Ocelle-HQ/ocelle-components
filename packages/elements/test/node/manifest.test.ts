@@ -292,7 +292,7 @@ describe("generate(root) on the repository's element source", () => {
     const manifest = await generate(repo);
     const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
     expect(manifest.schemaVersion).toBe("1.0.0");
-    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-action-row.ts", "src/ocelle-brand-mark.ts", "src/ocelle-button.ts", "src/ocelle-card.ts", "src/ocelle-context-sidebar.ts", "src/ocelle-dialog.ts", "src/ocelle-drawer.ts", "src/ocelle-empty-state.ts", "src/ocelle-fact.ts", "src/ocelle-facts.ts", "src/ocelle-icon.ts", "src/ocelle-list-detail.ts", "src/ocelle-page-header.ts", "src/ocelle-personal-rail.ts", "src/ocelle-progress.ts", "src/ocelle-scroller.ts", "src/ocelle-section-header.ts", "src/ocelle-tooltip.ts", "src/ocelle-workflow-board.ts", "src/ocelle-workflow-lane.ts"]);
+    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-action-row.ts", "src/ocelle-brand-mark.ts", "src/ocelle-button.ts", "src/ocelle-card.ts", "src/ocelle-context-sidebar.ts", "src/ocelle-dialog.ts", "src/ocelle-disclosure.ts", "src/ocelle-drawer.ts", "src/ocelle-empty-state.ts", "src/ocelle-fact.ts", "src/ocelle-facts.ts", "src/ocelle-icon.ts", "src/ocelle-list-detail.ts", "src/ocelle-page-header.ts", "src/ocelle-personal-rail.ts", "src/ocelle-progress.ts", "src/ocelle-scroller.ts", "src/ocelle-section-header.ts", "src/ocelle-tooltip.ts", "src/ocelle-workflow-board.ts", "src/ocelle-workflow-lane.ts"]);
     const [icon] = modules.find((module) => module.path === "src/ocelle-icon.ts")?.declarations ?? [];
     expect(icon).toMatchObject({
       kind: "class",
@@ -864,6 +864,57 @@ describe("generate(root) on the repository's element source", () => {
       slots: [{ name: "", described: true }],
       parts: [{ name: "label", described: true }],
       properties: [{ name: "--ocelle-facts-value-size", described: true }, { name: "--ocelle-facts-value-line-height", described: true }],
+    });
+  });
+
+  // 020 phase 1 (T007; contracts/elements.md § `ocelle-disclosure`; FR-017): every list stated, every member described;
+  // the moved attributes and their mirrors, and the mapped `aria-expanded`, declared with `@attr` before the property's
+  // attribute; `aria-expanded` is an attribute only, not a property; no CSS custom property.
+  it("declares ocelle-disclosure with open (boolean | undefined, reflected), click() and focus(), the moved aria-label, aria-labelledby, aria-describedby and title with their four mirrors and the mapped aria-expanded, the slots summary, icon and default, the event ocelle-disclosure-toggle with its detail, the parts details, summary and panel, the state open and no CSS property, each described", async () => {
+    const manifest = await generate(repo);
+    const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [disclosure] = modules.find((module) => module.path === "src/ocelle-disclosure.ts")?.declarations ?? [];
+    const named = (list: unknown): unknown => ((list ?? []) as Record<string, unknown>[]).map(({ name, description }) => ({ name, described: typeof description === "string" && description !== "" }));
+    const described = (list: unknown): Record<string, unknown>[] =>
+      ((list ?? []) as Record<string, unknown>[]).map(({ description, ...rest }) => ({ ...rest, described: typeof description === "string" && description !== "" }));
+    const disclosureMoved = ["aria-label", "aria-labelledby", "aria-describedby", "title"];
+    expect({ kind: disclosure?.kind, name: disclosure?.name, tagName: disclosure?.tagName, customElement: disclosure?.customElement }).toEqual({ kind: "class", name: "OcelleDisclosure", tagName: "ocelle-disclosure", customElement: true });
+    const members = described(disclosure?.members);
+    expect(members.map(({ kind, name }) => ({ kind, name }))).toEqual([
+      { kind: "field", name: "open" },
+      { kind: "method", name: "click" },
+      { kind: "method", name: "focus" },
+    ]);
+    expect(members[0]).toEqual({ kind: "field", name: "open", privacy: "public", type: { text: "boolean | undefined" }, default: "undefined", attribute: "open", reflects: true, described: true });
+    expect(members.map((member) => member.described)).toEqual([true, true, true]);
+    expect(described(disclosure?.attributes)).toEqual([
+      ...disclosureMoved.map((name) => ({ name, type: { text: "string" }, described: true })),
+      ...disclosureMoved.map((name) => ({ name: `data-ocelle-moved-${name}`, type: { text: "string" }, described: true })),
+      { name: "aria-expanded", type: { text: '"true" | "false"' }, described: true },
+      { name: "open", fieldName: "open", type: { text: "boolean | undefined" }, default: "undefined", described: true },
+    ]);
+    expect({
+      slots: named(disclosure?.slots),
+      parts: named(disclosure?.cssParts),
+      states: named(disclosure?.cssStates),
+      events: described(disclosure?.events),
+      properties: disclosure?.cssProperties,
+      expandedProperty: members.some((member) => member.name === "ariaExpanded" || member.attribute === "aria-expanded"),
+    }).toEqual({
+      slots: [
+        { name: "summary", described: true },
+        { name: "icon", described: true },
+        { name: "", described: true },
+      ],
+      parts: [
+        { name: "details", described: true },
+        { name: "summary", described: true },
+        { name: "panel", described: true },
+      ],
+      states: [{ name: "open", described: true }],
+      events: [{ name: "ocelle-disclosure-toggle", type: { text: "CustomEvent<{ open: boolean }>" }, described: true }],
+      properties: [],
+      expandedProperty: false,
     });
   });
 

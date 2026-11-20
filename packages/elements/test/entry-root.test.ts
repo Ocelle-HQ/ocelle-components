@@ -8,8 +8,8 @@ import * as root from "../src/index.ts";
 // `ocelle-workflow-lane`, and since 009 phase 4 (T051) `ocelle-list-detail`; since 011 `ocelle-card`,
 // `ocelle-section-header`, `ocelle-page-header` (T027), `ocelle-context-sidebar` (T034) and `ocelle-personal-rail`
 // (T042); since 012 `ocelle-button` (tasks.md T018) and `ocelle-action-row` (tasks.md T051); and since 013
-// `ocelle-facts`, `ocelle-fact`, `ocelle-empty-state` and `ocelle-progress`. This file's own iframe (Vitest browser
-// mode, isolate on) holds only what this import defines.
+// `ocelle-facts`, `ocelle-fact`, `ocelle-empty-state` and `ocelle-progress`; and since 020 (T006) `ocelle-disclosure`.
+// This file's own iframe (Vitest browser mode, isolate on) holds only what this import defines.
 describe("importing src/index.ts", () => {
   it("defines ocelle-icon, ocelle-brand-mark, ocelle-scroller, ocelle-workflow-board, ocelle-workflow-lane, ocelle-list-detail, ocelle-card, ocelle-section-header, ocelle-page-header, ocelle-context-sidebar, ocelle-personal-rail, ocelle-button and ocelle-action-row as the OcelleIcon, OcelleBrandMark, OcelleScroller, OcelleWorkflowBoard, OcelleWorkflowLane, OcelleListDetail, OcelleCard, OcelleSectionHeader, OcellePageHeader, OcelleContextSidebar, OcellePersonalRail, OcelleButton and OcelleActionRow it exports", () => {
     const exported = root as Record<string, unknown>;
@@ -92,5 +92,16 @@ describe("importing src/index.ts", () => {
       progress: customElements.get("ocelle-progress"),
       track: document.getElementById("p")?.shadowRoot?.querySelector('[part="track"]') !== null && document.getElementById("p")?.shadowRoot !== null,
     }).toEqual({ type: "function", progress: exported.OcelleProgress, track: true });
+  });
+
+  it("defines ocelle-disclosure as the OcelleDisclosure it exports, and a disclosure renders its summary (020 phase 1)", async () => {
+    const exported = root as Record<string, unknown>;
+    document.body.innerHTML = '<ocelle-disclosure id="d"><span slot="summary">Advanced settings</span><p>Panel</p></ocelle-disclosure>';
+    await (document.getElementById("d") as unknown as { updateComplete: Promise<unknown> }).updateComplete;
+    expect({
+      type: typeof exported.OcelleDisclosure,
+      disclosure: customElements.get("ocelle-disclosure"),
+      summary: document.getElementById("d")?.shadowRoot?.querySelectorAll('[part="summary"]').length,
+    }).toEqual({ type: "function", disclosure: exported.OcelleDisclosure, summary: 1 });
   });
 });

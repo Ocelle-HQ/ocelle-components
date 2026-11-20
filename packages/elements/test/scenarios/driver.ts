@@ -674,6 +674,28 @@ export interface Driver {
    * a node in its shadow root, in order (013 phase 3 review round 1, R1-01: US3-2's "no event is emitted").
    */
   dispatched(id: string, during: () => Promise<void>): Promise<string[]>;
+  // The additions of 020 phase 1 (contracts/checks.md § Driver additions; tasks.md T003), and two readers the
+  // disclosure bodies need beside them (reviews/phase-1/notes.md): the closed-panel oracle's `checkVisibility()` and the
+  // element references of an inner control.
+  /**
+   * Finds `word` in the page as the browser's find in page does (020 research.md R-08): a same-document navigation to a
+   * fresh `#ocelle-find-<n>:~:text=<word>` per call (a new fragment each time, so the same word can be found again), then
+   * waits for every element to render.
+   */
+  findText(word: string): Promise<void>;
+  /**
+   * Sets the property `name` of the element with `id` to each of `values` in order, all in one task, with no wait
+   * between the sets or after them (020 US1-7).
+   */
+  setProperties(id: string, name: string, values: readonly (string | number | boolean | null | undefined)[]): Promise<void>;
+  /** The element with `id`'s `checkVisibility()`: false for content the platform does not render (a closed panel's). */
+  visible(id: string): Promise<boolean>;
+  /**
+   * The elements an element-reflection property (`ariaLabelledByElements`, `ariaDescribedByElements`) of the element
+   * matching `inner` in the shadow root of the element with `id` holds, each as its `id` or, when it has none, its local
+   * name and classes (`span.label`), in order; null when the property is null.
+   */
+  reflected(id: string, inner: string, property: string): Promise<string[] | null>;
 }
 
 /** How `copy` copies the live DOM. */

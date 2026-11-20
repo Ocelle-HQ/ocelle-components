@@ -49,11 +49,11 @@ const excepted: readonly string[] = (["light", "dark"] as const).flatMap((theme)
 
 describe("axe gate (gates/bin/axe.ts)", () => {
   it(
-    "audits the repository's 388 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)",
+    "audits the repository's 404 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)",
     async () => {
       const at = await root("repository");
       const ran = await gate(at);
-      expect(ran).toEqual({ code: 0, stdout: ["axe: 388 story-theme runs, 0 serious or critical; 10 notes (0 incomplete, 10 excepted)"], stderr: excepted });
+      expect(ran).toEqual({ code: 0, stdout: ["axe: 404 story-theme runs, 0 serious or critical; 10 notes (0 incomplete, 10 excepted)"], stderr: excepted });
     },
     timeout,
   );

@@ -1523,3 +1523,156 @@ describe("every progressbar in the stories of the four elements is named (013 PL
     });
   }
 });
+
+// 020 phase 1 (I3; contracts/checks.md § Story tests; tasks.md T008): the `ocelle-disclosure` stories (closed, open,
+// focused, hovered, a long summary, a consumer icon, right to left, nested). Each renders its disclosures in light and
+// dark, defined, each with the story's `open`, its summary rendered and the chevron its state names (the fallback stays
+// in the shadow root beside a consumer icon), with base.css applied and no request outside the origin; the focused
+// story's one summary holds focus. Every story's summaries are named in the CDP tree. With no pointer event, Tab
+// focuses the first summary (the focused story's has focus already), Enter toggles it and Space toggles it back
+// (SC-005). On a fresh load, within 1400 ms of its first render, with and without reduced motion (`matchMedia`
+// asserted beside it), no animation runs, nor one frame after a pointer click on the first summary, beside the
+// toggled state (SC-006). The long summary at a 320 px viewport has a page scroll width of 320, beside a disclosure
+// wider than 0 (SC-002). The unnamed disclosure has no story (plan Complexity Tracking).
+
+/** One disclosure of a story: its `open`, its summary rendered, its chevron's name and whether it slots an icon. */
+interface DisclosureSeen {
+  readonly open: boolean;
+  readonly rendered: boolean;
+  readonly chevron: string | null;
+  readonly consumerIcon: boolean;
+}
+
+const closedDisclosure: DisclosureSeen = { open: false, rendered: true, chevron: "chevron-end", consumerIcon: false };
+const openDisclosure: DisclosureSeen = { open: true, rendered: true, chevron: "chevron-down", consumerIcon: false };
+
+const disclosureStories: readonly { readonly id: string; readonly disclosures: readonly DisclosureSeen[]; readonly focused?: number }[] = [
+  { id: "elements-ocelle-disclosure--closed", disclosures: [closedDisclosure] },
+  { id: "elements-ocelle-disclosure--open", disclosures: [openDisclosure] },
+  { id: "elements-ocelle-disclosure--focused", disclosures: [closedDisclosure], focused: 1 },
+  { id: "elements-ocelle-disclosure--hovered", disclosures: [closedDisclosure] },
+  { id: "elements-ocelle-disclosure--long-summary", disclosures: [openDisclosure] },
+  { id: "elements-ocelle-disclosure--consumer-icon", disclosures: [{ ...closedDisclosure, consumerIcon: true }] },
+  { id: "elements-ocelle-disclosure--right-to-left", disclosures: [closedDisclosure, openDisclosure] },
+  { id: "elements-ocelle-disclosure--nested", disclosures: [openDisclosure, openDisclosure, closedDisclosure] },
+];
+
+/** What a disclosure story's page shows: its theme, the base stylesheet, its disclosures and how many hold focus. */
+function observeDisclosures(page: Page): Promise<unknown> {
+  return page.evaluate(() => ({
+    theme: document.documentElement.dataset.theme,
+    base: {
+      linked: [...document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')].some((link) => link.href.endsWith("/base.css") && link.sheet !== null),
+      scheme: getComputedStyle(document.documentElement).colorScheme,
+    },
+    defined: customElements.get("ocelle-disclosure") !== undefined,
+    disclosures: [...document.querySelectorAll("#storybook-root ocelle-disclosure")].map((disclosure) => ({
+      open: disclosure.hasAttribute("open"),
+      rendered: disclosure.shadowRoot?.querySelectorAll('[part="summary"]').length === 1,
+      chevron: disclosure.shadowRoot?.querySelector("ocelle-icon.chevron")?.getAttribute("name") ?? null,
+      consumerIcon: disclosure.querySelector(':scope > [slot="icon"]') !== null,
+    })),
+    focused: [...document.querySelectorAll("#storybook-root ocelle-disclosure")].filter((disclosure) => disclosure.shadowRoot?.activeElement?.getAttribute("part") === "summary").length,
+  }));
+}
+
+/** The names of the disclosure summaries (`DisclosureTriangle` nodes) of a story page's accessibility tree, over CDP. */
+async function summaryNames(page: Page): Promise<string[]> {
+  const session = await page.context().newCDPSession(page);
+  try {
+    const { nodes } = (await session.send("Accessibility.getFullAXTree")) as { nodes: { ignored: boolean; role?: { value?: unknown }; name?: { value?: unknown } }[] };
+    return nodes.filter((node) => !node.ignored && node.role?.value === "DisclosureTriangle").map((node) => (typeof node.name?.value === "string" ? node.name.value : ""));
+  } finally {
+    await session.detach();
+  }
+}
+
+/** Whether the first disclosure of the story holds focus in its summary, and its `open`. */
+function firstSummary(page: Page): Promise<{ readonly focused: boolean; readonly open: boolean }> {
+  return page.evaluate(() => {
+    const first = document.querySelector("#storybook-root ocelle-disclosure");
+    return { focused: document.activeElement === first && first?.shadowRoot?.activeElement?.getAttribute("part") === "summary", open: first?.hasAttribute("open") ?? false };
+  });
+}
+
+describe("the ocelle-disclosure stories in the built Storybook (020 US1, FR-050, I3)", { timeout: 60_000 }, () => {
+  for (const { id, disclosures, focused } of disclosureStories) {
+    for (const theme of ["light", "dark"] as const) {
+      it(`${id} in ${theme}: renders its ocelle-disclosure elements with the story's open state, each summary rendered with its chevron, with base.css applied and no request outside the origin`, async () => {
+        const { page, outside } = await open(id, theme, "ocelle-disclosure");
+        expect({ ...((await observeDisclosures(page)) as object), outside }).toEqual({ theme, base: { linked: true, scheme: theme }, defined: true, disclosures, focused: focused ?? 0, outside: [] });
+        await page.close();
+      });
+    }
+
+    it(`${id}: every disclosure summary in the CDP tree has a non-empty name, one per disclosure`, async () => {
+      const { page } = await open(id, "light", "ocelle-disclosure");
+      const names = await summaryNames(page);
+      await page.close();
+      expect({ summaries: names.length, unnamed: names.filter((name) => name.trim() === "").length }).toEqual({ summaries: disclosures.length, unnamed: 0 });
+    });
+
+    it(`${id}: with no pointer event, Tab focuses the first summary, Enter toggles it and Space toggles it back (SC-005)`, async () => {
+      const page = await openWith(id, { width: 1280, reducedMotion: "reduce" }, "ocelle-disclosure");
+      if (focused === undefined) await page.keyboard.press("Tab");
+      const tabbed = await firstSummary(page);
+      await page.keyboard.press("Enter");
+      await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      const enter = await firstSummary(page);
+      await page.keyboard.press("Space");
+      await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      const space = await firstSummary(page);
+      await page.close();
+      expect({ focused: tabbed.focused, enter: enter.open !== tabbed.open, space: space.open === tabbed.open, stillFocused: space.focused }).toEqual({ focused: true, enter: true, space: true, stillFocused: true });
+    });
+
+    for (const reducedMotion of ["reduce", "no-preference"] as const) {
+      it(`${id} with prefers-reduced-motion ${reducedMotion}: within 1400 ms of its first render no animation runs, nor one frame after a pointer click on the first summary, which toggles it (SC-006)`, async () => {
+        const page = await openWith(id, { width: 1280, reducedMotion }, "ocelle-disclosure");
+        const loaded = await page.evaluate(() => ({
+          timing: performance.now() - (window as unknown as { firstRender: number }).firstRender < 1400 ? "inside the first 1400 ms" : "read too late",
+          reduce: matchMedia("(prefers-reduced-motion: reduce)").matches,
+          running: document.getAnimations().filter((animation) => animation.playState === "running").length,
+        }));
+        const before = await firstSummary(page);
+        const centre = await page.evaluate(() => {
+          const rect = document.querySelector("#storybook-root ocelle-disclosure")?.shadowRoot?.querySelector('[part="summary"]')?.getBoundingClientRect();
+          return rect === undefined ? { x: 0, y: 0 } : { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
+        });
+        await page.mouse.click(centre.x, centre.y);
+        // One frame after the click the inner `details` shows the new state (the host attribute follows the native
+        // `toggle` task, read after two more frames).
+        const clicked = await page.evaluate(
+          () =>
+            new Promise<{ readonly shown: boolean; readonly running: number }>((resolve) => {
+              requestAnimationFrame(() => {
+                resolve({
+                  shown: document.querySelector("#storybook-root ocelle-disclosure")?.shadowRoot?.querySelector("details")?.open ?? false,
+                  running: [document, ...[...document.querySelectorAll("#storybook-root ocelle-disclosure")].map((each) => each.shadowRoot)].flatMap((root) => root?.getAnimations() ?? []).filter((animation) => animation.playState === "running").length,
+                });
+              });
+            }),
+        );
+        await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+        const after = await firstSummary(page);
+        await page.close();
+        expect({ loaded, toggled: { shown: clicked.shown !== before.open, attribute: after.open !== before.open }, running: clicked.running }).toEqual({
+          loaded: { timing: "inside the first 1400 ms", reduce: reducedMotion === "reduce", running: 0 },
+          toggled: { shown: true, attribute: true },
+          running: 0,
+        });
+      });
+    }
+  }
+
+  it("elements-ocelle-disclosure--long-summary at a 320 px viewport: the page scroll width is 320, beside a disclosure wider than 0 whose summary wraps (SC-002)", async () => {
+    const page = await openWith("elements-ocelle-disclosure--long-summary", { width: 320, reducedMotion: "no-preference" }, "ocelle-disclosure");
+    const observed = await page.evaluate(() => {
+      const disclosure = document.querySelector("#storybook-root ocelle-disclosure");
+      const label = disclosure?.querySelector('[slot="summary"]');
+      return { scrollWidth: document.documentElement.scrollWidth, sized: (disclosure?.getBoundingClientRect().width ?? 0) > 0, wrapped: (label?.getClientRects().length ?? 0) > 1 };
+    });
+    await page.close();
+    expect(observed).toEqual({ scrollWidth: 320, sized: true, wrapped: true });
+  });
+});

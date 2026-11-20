@@ -243,6 +243,9 @@ function listen(ids: readonly string[]): void {
 /** The numbers `identities` gave the shadow nodes it has seen. */
 const identities = new Map<Element, number>();
 
+/** The number of `findText` calls so far: each navigates to a fragment of its own. */
+let finds = 0;
+
 export function inProcessDriver(): Driver {
   return {
     mount: async (markup, options = {}) => {
@@ -726,6 +729,26 @@ export function inProcessDriver(): Driver {
         Object.defineProperty(EventTarget.prototype, "dispatchEvent", native);
       }
       return seen;
+    },
+    findText: async (word) => {
+      finds += 1;
+      const url = location.href.replace(/#.*$/, "");
+      location.href = `#ocelle-find-${String(finds)}:~:text=${encodeURIComponent(word)}`;
+      await settle();
+      await settle();
+      // The test's frame is found by its URL (the AX commands, test/commands.ts): the fragment is taken off again,
+      // with no navigation.
+      history.replaceState(history.state, "", url);
+    },
+    setProperties: (id, name, values) => {
+      const target = element(id) as unknown as Record<string, unknown>;
+      for (const value of values) target[name] = value;
+      return Promise.resolve();
+    },
+    visible: (id) => Promise.resolve(element(id).checkVisibility()),
+    reflected: (id, inner, property) => {
+      const value = (inShadow(id, inner) as unknown as Record<string, unknown>)[property] as readonly Element[] | null | undefined;
+      return Promise.resolve(value === null || value === undefined ? null : value.map(describe));
     },
   };
 }

@@ -344,10 +344,29 @@ describe("the module build of ocelle-progress (013)", () => {
   });
 });
 
+// 020 phase 1 (T006; contracts/elements.md § Internal modules used): dist/ocelle-disclosure.js imports lit, the
+// registration helper, the control and slot-convention modules and `ocelle-icon` for its chevron, and no other element
+// module nor the root.
+describe("the module build of ocelle-disclosure (020)", () => {
+  const read = (name: string): string => (existsSync(join(dist, name)) ? readFileSync(join(dist, name), "utf8") : "");
+
+  it("dist/ocelle-disclosure.js imports lit, the registration helper, src/control and src/icon-slot, and of the element modules only ocelle-icon, not the root", () => {
+    const imported = specifiers(read("ocelle-disclosure.js"));
+    expect({
+      lit: imported.includes("lit"),
+      define: imported.includes("./define.js"),
+      control: imported.includes("./control.js"),
+      iconSlot: imported.includes("./icon-slot.js"),
+      root: imported.includes("./index.js"),
+      elements: imported.filter((specifier) => specifier.startsWith("./ocelle-")),
+    }).toEqual({ lit: true, define: true, control: true, iconSlot: true, root: false, elements: ["./ocelle-icon.js"] });
+  });
+});
+
 describe("the browser build (dist/browser/ocelle-elements.js)", () => {
   const text = (): string => (existsSync(browserBuild) ? readFileSync(browserBuild, "utf8") : "");
 
-  it("is self-contained: it defines ocelle-icon, ocelle-brand-mark, ocelle-dialog, ocelle-drawer, ocelle-tooltip, ocelle-card, ocelle-section-header, ocelle-page-header, ocelle-context-sidebar, ocelle-personal-rail, ocelle-button, ocelle-action-row, ocelle-facts, ocelle-fact, ocelle-empty-state and ocelle-progress, with no import statement and no dynamic import", () => {
+  it("is self-contained: it defines ocelle-icon, ocelle-brand-mark, ocelle-dialog, ocelle-drawer, ocelle-tooltip, ocelle-card, ocelle-section-header, ocelle-page-header, ocelle-context-sidebar, ocelle-personal-rail, ocelle-button, ocelle-action-row, ocelle-facts, ocelle-fact, ocelle-empty-state, ocelle-progress and ocelle-disclosure, with no import statement and no dynamic import", () => {
     const code = text();
     expect({
       exists: code !== "",
@@ -366,6 +385,7 @@ describe("the browser build (dist/browser/ocelle-elements.js)", () => {
       definesFacts: code.includes('"ocelle-facts"') && code.includes('"ocelle-fact"'),
       definesEmptyState: code.includes('"ocelle-empty-state"'),
       definesProgress: code.includes('"ocelle-progress"'),
+      definesDisclosure: code.includes('"ocelle-disclosure"'),
       specifiers: specifiers(code),
       dynamicImport: /\bimport\s*\(/.test(code),
     }).toEqual({
@@ -385,6 +405,7 @@ describe("the browser build (dist/browser/ocelle-elements.js)", () => {
       definesFacts: true,
       definesEmptyState: true,
       definesProgress: true,
+      definesDisclosure: true,
       specifiers: [],
       dynamicImport: false,
     });

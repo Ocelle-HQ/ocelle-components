@@ -565,6 +565,8 @@ const entryRows = [
   "| `@ocelle/elements/ocelle-fact.js` | `dist/ocelle-fact.js` | `ocelle-fact` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-empty-state.js` | `dist/ocelle-empty-state.js` | `ocelle-empty-state` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-progress.js` | `dist/ocelle-progress.js` | `ocelle-progress` only; for hosts with a bundler |",
+  // 020 phase 1 (T007, T011): the disclosure's entry point.
+  "| `@ocelle/elements/ocelle-disclosure.js` | `dist/ocelle-disclosure.js` | `ocelle-disclosure` and the `ocelle-icon` it renders; for hosts with a bundler |",
   "| `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |",
   "| `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |",
 ];
@@ -688,7 +690,7 @@ describe("packages/elements/README.md", () => {
   it("lists exactly the entry points of package.json's exports in its Entry points table (FR-002)", () => {
     const manifest = JSON.parse(read("package.json")) as { exports?: Record<string, string> };
     expect(tableRows(read("README.md"), "Entry points")).toEqual(entryRows);
-    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-scroller.js", "./ocelle-workflow-board.js", "./ocelle-workflow-lane.js", "./ocelle-list-detail.js", "./ocelle-dialog.js", "./ocelle-drawer.js", "./ocelle-tooltip.js", "./ocelle-card.js", "./ocelle-section-header.js", "./ocelle-page-header.js", "./ocelle-context-sidebar.js", "./ocelle-personal-rail.js", "./ocelle-button.js", "./ocelle-action-row.js", "./ocelle-facts.js", "./ocelle-fact.js", "./ocelle-empty-state.js", "./ocelle-progress.js", "./browser.js", "./custom-elements.json"]);
+    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-scroller.js", "./ocelle-workflow-board.js", "./ocelle-workflow-lane.js", "./ocelle-list-detail.js", "./ocelle-dialog.js", "./ocelle-drawer.js", "./ocelle-tooltip.js", "./ocelle-card.js", "./ocelle-section-header.js", "./ocelle-page-header.js", "./ocelle-context-sidebar.js", "./ocelle-personal-rail.js", "./ocelle-button.js", "./ocelle-action-row.js", "./ocelle-facts.js", "./ocelle-fact.js", "./ocelle-empty-state.js", "./ocelle-progress.js", "./ocelle-disclosure.js", "./browser.js", "./custom-elements.json"]);
   });
 
   it("lists the thirteen names of the set, whether each mirrors and the consumer need it meets, in its Icons table (US2-1, FR-018, SC-007)", () => {
@@ -937,6 +939,36 @@ describe("packages/elements/README.md: ocelle-tooltip (008)", () => {
   });
 });
 
+/**
+ * The `ocelle-disclosure` section (020 contracts/elements.md § `ocelle-disclosure`, README statements; tasks.md T007,
+ * T011): each statement by phrase, whitespace normalised.
+ */
+const disclosureFragments = [
+  "`ocelle-disclosure` is a disclosure: a summary that opens and closes a panel inline, on native `details` and `summary` semantics",
+  "The open state is the `open` attribute: render it from the server. A morph that keeps it keeps the disclosure open; a morph that drops it closes the disclosure and fires `ocelle-disclosure-toggle`",
+  "Listen to `ocelle-disclosure-toggle` (its `detail.open` is the new state), not to `toggle`: the inner `details`' native `toggle` does not leave the element",
+  "Do not count events to count changes: changes made before the inner `details`' native `toggle` runs are coalesced into one event with the final state, and none fires when the state ends where the last event left it",
+  "A host `aria-expanded` is mapped onto `open` and removed from the host: `\"true\"` opens, `\"false\"` closes, any other value changes nothing. Prefer `open`",
+  "Two departures from the control conventions' rule 1, both because the host holds the panel's content: no host click guard, so clicks on the panel's content reach the page's listeners; and no `delegatesFocus`, so a click on the panel's content moves no focus. `focus()` is overridden to focus the summary",
+  "When a script or a morph closes the disclosure while focus is in its panel, also inside the shadow root of a control in the panel, focus moves to the summary",
+  "With no host `aria-labelledby` or `aria-label`, the `summary` slot's text alone names the summary: a slotted icon adds nothing to the name. An empty summary has no name",
+  "Put no interactive content in the summary: a link or a button there is a control inside a control",
+  "Nested disclosures work independently: an inner disclosure's event bubbles through the outer one, so tell them apart by `event.target`",
+  "The browser's find in page opens a closed disclosure whose panel holds the text it finds (Chromium), as a user toggle does",
+  "A closed disclosure as the last control of an `ocelle-dialog` or `ocelle-drawer` lets Tab from its summary leave the overlay, because the overlay's focus walk counts a closed panel's controls as stops. Do not place a disclosure last in an overlay",
+  "Before the element is defined, the summary and the panel show as plain content",
+  "The disclosure does not animate: it opens and closes at once, with or without reduced motion",
+  "`ocelle-disclosure` reads the tokens `--ocelle-font-size-md`, `--ocelle-font-weight-medium`, `--ocelle-line-height-normal`, `--ocelle-color-ink`, `--ocelle-color-hover-bg`, `--ocelle-space-1`, `--ocelle-space-2`, `--ocelle-radius-2`, `--ocelle-icon-size`, `--ocelle-color-focus`, `--ocelle-focus-width` and `--ocelle-focus-offset`",
+];
+
+describe("packages/elements/README.md: ocelle-disclosure (020)", () => {
+  const readme = flat(read("README.md"));
+
+  it.each(disclosureFragments)("states: %s", (fragment) => {
+    expect(readme).toContain(flat(fragment));
+  });
+});
+
 describe("packages/elements/CHANGELOG.md", () => {
   const changelog = read("CHANGELOG.md");
   const unreleased = /^## Unreleased\n([\s\S]*?)(?=^## |(?![\s\S]))/m.exec(changelog)?.[1] ?? "";
@@ -1049,6 +1081,11 @@ describe("packages/elements/CHANGELOG.md", () => {
     "`show-label`",
     "`size=\"compact\"`",
     "`ground=\"tinted\"`",
+    // since 020 phase 1 (T007, T011)
+    "`ocelle-disclosure`",
+    "`@ocelle/elements/ocelle-disclosure.js`",
+    "`ocelle-disclosure-toggle`",
+    "`:state(open)`",
     ...["chevron-start", "chevron-end", "chevron-up", "chevron-down", "arrow-start", "arrow-end", "menu", "close", "folder", "file", "search", "table", "copy"].map((name) => `\`${name}\``),
   ])("names %s under Unreleased / Added (constitution VII, FR-031, SC-008)", (surface) => {
     expect(added).toContain(surface);

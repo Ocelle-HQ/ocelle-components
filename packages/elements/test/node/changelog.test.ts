@@ -46,3 +46,15 @@ describe("packages/elements/CHANGELOG.md: a one-line control on the slot convent
     expect(section).toContain(flat(statement));
   });
 });
+
+// 020 phase 1 (T007, T011; FR-056, constitution VII): the disclosure is an addition, a minor change, stated once under
+// Unreleased; its names are asserted one by one in `readme.test.ts`.
+describe("packages/elements/CHANGELOG.md: ocelle-disclosure is a minor change (020 FR-056)", () => {
+  const section = unreleased(read("CHANGELOG.md"));
+
+  it.each([
+    "`ocelle-disclosure`, its property `open`, its moved attributes and their mirrors, the mapped `aria-expanded`, its slots `summary` and `icon` and its default slot, its parts `details`, `summary` and `panel`, the event `ocelle-disclosure-toggle`, the state `open` and its entry point are additions to the public surface: a minor change",
+  ])("states under Unreleased: %s", (statement) => {
+    expect(section).toContain(flat(statement));
+  });
+});

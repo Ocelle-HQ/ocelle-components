@@ -130,6 +130,9 @@ async function inShadow(page: Page, id: string, inner: string, act: "append" | "
   await settle(page);
 }
 
+/** The number of `findText` calls so far, on every page: each navigates to a fragment of its own. */
+let finds = 0;
+
 /** The driver of `page`; `log` is the page's console and error record, `withBase` whether the page links base.css. */
 export function fixtureDriver(page: Page, log: readonly string[], withBase = false): Driver {
   let since = log.length;
@@ -841,5 +844,33 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
       }
       return await stop();
     },
+    findText: async (word) => {
+      finds += 1;
+      await page.evaluate((fragment) => {
+        location.href = fragment;
+      }, `#ocelle-find-${String(finds)}:~:text=${encodeURIComponent(word)}`);
+      await settle(page);
+      await settle(page);
+    },
+    setProperties: async (id, name, values) => {
+      await page.evaluate(({ id, name, values }) => {
+        const element = document.getElementById(id);
+        if (element === null) throw new Error(`no #${id} on the page`);
+        for (const value of values) (element as unknown as Record<string, unknown>)[name] = value;
+      }, { id, name, values });
+    },
+    visible: (id) =>
+      page.evaluate((id) => {
+        const element = document.getElementById(id);
+        if (element === null) throw new Error(`no #${id} on the page`);
+        return element.checkVisibility();
+      }, id),
+    reflected: (id, inner, property) =>
+      page.evaluate(({ id, inner, property }) => {
+        const target = document.getElementById(id)?.shadowRoot?.querySelector(inner);
+        if (target === null || target === undefined) throw new Error(`no ${inner} in the shadow root of #${id}`);
+        const value = (target as unknown as Record<string, unknown>)[property] as readonly Element[] | null | undefined;
+        return value === null || value === undefined ? null : value.map((each) => (each.id !== "" ? each.id : [each.localName, ...each.classList].join(".")));
+      }, { id, inner, property }),
   };
 }

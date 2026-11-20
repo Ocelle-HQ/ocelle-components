@@ -1,6 +1,6 @@
 import type { Browser, Page } from "playwright";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
-import { defineDriverHelpers, driverAdditionScenarios } from "../scenarios/driver-additions.ts";
+import { defineDetailsHelper, defineDriverHelpers, disclosureDriverScenarios, driverAdditionScenarios } from "../scenarios/driver-additions.ts";
 import { fixtureDriver } from "./driver.ts";
 import { clean, launch, serve, visit } from "./serve.ts";
 import type { Served, Visit } from "./serve.ts";
@@ -439,6 +439,19 @@ describe("the driver additions on the strict-CSP fixture (013 T003)", { timeout:
     const { browser, origin } = started();
     const page = await visit(browser, origin, "facts.html");
     await page.page.evaluate(defineDriverHelpers);
+    const observed = await run(fixtureDriver(page.page, page.log));
+    expect({ observed, recorded: await page.finish() }).toEqual({ observed: expected, recorded: clean });
+  });
+});
+
+// The driver additions of 020 phase 1 on the strict-CSP fixture (contracts/checks.md § Driver additions; tasks.md
+// T003): every body of `disclosureDriverScenarios` on its own `facts.html` page, the `ocelle-test-details` helper
+// defined through `page.evaluate`, with the page's recorders clean as every fixture test asserts.
+describe("the driver additions of 020 on the strict-CSP fixture (T003)", { timeout: 60_000 }, () => {
+  it.each(disclosureDriverScenarios)("$name", async ({ run, expected }) => {
+    const { browser, origin } = started();
+    const page = await visit(browser, origin, "facts.html");
+    await page.page.evaluate(defineDetailsHelper);
     const observed = await run(fixtureDriver(page.page, page.log));
     expect({ observed, recorded: await page.finish() }).toEqual({ observed: expected, recorded: clean });
   });
