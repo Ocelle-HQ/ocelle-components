@@ -974,7 +974,8 @@ describe("packages/elements/README.md: ocelle-disclosure (020)", () => {
 /**
  * The `ocelle-code-block` section (020 contracts/elements.md § `ocelle-code-block`, README statements; tasks.md T027,
  * T031) and the § Element conventions "Digests" paragraph (contracts/elements.md § README § Element conventions: the
- * digest rule, FR-033), verbatim: each statement by phrase, whitespace normalised.
+ * digest rule, FR-033), verbatim: each statement by phrase, whitespace normalised. Since phase 3 (T040, T042; review
+ * round 1, R1-01): the late-font caveat of § Direction and the code block's sentence in § Engines' WebKit paragraph.
  */
 const codeBlockFragments = [
   "`ocelle-code-block` is a preformatted block for code, commands, logs and digests, in the library's sans with tabular figures, never monospace",
@@ -983,6 +984,13 @@ const codeBlockFragments = [
   "Each line of code is shown left to right, also in an `rtl` page, while the block keeps the page direction",
   "An `rtl` scroll block opens at the line starts: the element scrolls it there, instantly, when it first appears and when its text changes, so the start of every line is in view and the fade is at the right, where the line ends are hidden",
   "A block that only starts to overflow after a resize keeps the platform's scroll position",
+  // since 020 phase 3 (T042; operator decision reviews/phase-2/operator-late-font.md, FR-021): the late-font caveat,
+  // asserted at phase 3 review round 1 (R1-01)
+  "That holds once the block has laid out in its font: the one write uses the widths of the first layout, and a font swap does not repeat it",
+  "On a page where the sans face (`--ocelle-font-sans`) arrives after the first layout, the lines widen after the write and their starts can end up out of view (the content stays reachable with the arrow keys), so preload the sans face for `rtl` scroll blocks",
+  // since 020 phase 3 (T040; research.md R-06 § WebKit): the code block's scroll mode is not measured in WebKit,
+  // asserted at phase 3 review round 1 (R1-01)
+  "Nor is `ocelle-code-block`'s scroll mode, on the same module: its tab stop while it overflows, its arrow keys, its focus handover when overflow ends, the focus move on a switch to wrap and the `rtl` opening write are untested in WebKit",
   "A switch from `scroll` to wrap while focus is in the scroll block moves focus to the block, which shows the library's focus ring",
   "Always give a scroll block a `label`: without one, an overflowing scroll block is a tab stop with no role and no name",
   "Do not set a host `aria-label` in wrap mode: the host has no role, so the label names nothing; use `label`",
