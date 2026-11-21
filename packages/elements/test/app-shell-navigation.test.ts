@@ -398,7 +398,10 @@ describe("ocelle-app-shell navigation", () => {
     expect(deepActive()).toBeNull();
   });
 
-  it("preserves deliberately moved focus while a navigation update settles", async () => {
+  it.each([
+    { title: "preserves deliberately moved focus", visible: true },
+    { title: "recovers after the newly focused control becomes hidden", visible: false },
+  ])("$title while a navigation update settles", async ({ visible }) => {
     const shell = await mount(rail + grouped);
     size(1150);
     const railLink = required(shell.querySelector("#rail-item")?.shadowRoot?.querySelector("a"));
@@ -410,11 +413,17 @@ describe("ocelle-app-shell navigation", () => {
     railLink.focus();
     shell.layout = "project";
     await shell.updateComplete;
+    const destination = required(item.shadowRoot?.querySelector("a"));
+    await new Promise<void>((resolve) => { requestAnimationFrame(() => { resolve(); }); });
+    expect(deepActive()).not.toBe(destination);
+
     const mainButton = required(shell.querySelector<HTMLButtonElement>("#main-content"));
     mainButton.focus();
+    if (!visible) mainButton.style.visibility = "hidden";
+    expect(deepActive()).toBe(mainButton);
     finish(true);
     await new Promise<void>((resolve) => { requestAnimationFrame(() => { resolve(); }); });
-    expect(deepActive()).toBe(mainButton);
+    expect(deepActive()).toBe(visible ? mainButton : destination);
   });
 
   it("uses chrome foreground on unselected rail links in light mode", async () => {
