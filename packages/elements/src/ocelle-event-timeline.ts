@@ -22,6 +22,7 @@
 // Importing this module defines `ocelle-event-timeline` and, as a container module, its item element
 // `ocelle-timeline-event`.
 import { LitElement, css, html, nothing } from "lit";
+import { classMap } from "lit/directives/class-map.js";
 import { ifDefined } from "lit/directives/if-defined.js";
 import { define } from "./define.ts";
 import "./ocelle-timeline-event.ts";
@@ -46,6 +47,7 @@ export class OcelleEventTimeline extends LitElement {
   static override shadowRootOptions: ShadowRootInit = { ...LitElement.shadowRootOptions, slotAssignment: "manual" };
 
   static override properties = {
+    // Stryker disable next-line ObjectLiteral: equivalent, {} gives Lit's default options, which are type String's (attribute "label", the default converter, not reflected)
     label: { type: String },
   };
 
@@ -146,12 +148,15 @@ export class OcelleEventTimeline extends LitElement {
   }
 
   override disconnectedCallback(): void {
+    // Stryker disable next-line CallExpression: equivalent, Lit's own disconnection only notifies reactive controllers, which this element has none of
     super.disconnectedCallback();
+    // Stryker disable next-line CallExpression: equivalent, a kept observer re-renders a timeline out of the document, which shows nothing, and observe() on reconnection replaces its options
     this.#mutations.disconnect();
   }
 
   override attributeChangedCallback(name: string, old: string | null, value: string | null): void {
     super.attributeChangedCallback(name, old, value);
+    // Stryker disable next-line ConditionalExpression: equivalent for the `true` variant, an update for another attribute, with no property changed, renders the same list
     if (name === "aria-label") this.requestUpdate();
   }
 
@@ -165,7 +170,7 @@ export class OcelleEventTimeline extends LitElement {
     const name = resolveName(this.getAttribute("aria-label"), this.label);
     const items = events.map((event, at) => {
       const next = events[at + 1];
-      const classes = [hasTime(event) ? "has-time" : "", next !== undefined && hasTime(next) ? "next-has-time" : ""].filter((each) => each !== "").join(" ");
+      const classes = classMap({ "has-time": hasTime(event), "next-has-time": next !== undefined && hasTime(next) });
       const connector = next === undefined ? nothing : html`<span class="connector" aria-hidden="true"></span>`;
       return html`<li role="listitem" class=${classes}><span class="marker-line" aria-hidden="true"><span class="marker"></span></span>${connector}<slot></slot></li>`;
     });

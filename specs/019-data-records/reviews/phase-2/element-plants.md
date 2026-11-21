@@ -25,3 +25,5 @@ Each plant was applied to the green source of 69a7105 (`packages/elements/src/oc
 | a blank host `aria-label` treated as decisive | `--project elements packages/elements/test/event-timeline.test.ts -t US2-10` | fails (bites) | US2-10 a blank host aria-label counts a… | `-     "Mission history", / +     "", / -     "Mission history",` |
 | `:host([hidden])` removed from the timeline | `--project elements packages/elements/test/event-timeline.test.ts -t edge \(FR-001\)` | fails (bites) | edge (FR-001): a hidden timeline has no… | `-     "th": 0, / +     "th": 48240, / -     [],` |
 | `:host([hidden])` removed from the event | `--project elements packages/elements/test/event-timeline.test.ts -t edge \(FR-001\)` | fails (bites) | edge (FR-001): a hidden timeline has no… | `-     "sh": 0, / +     "sh": 48240, / -     [],` |
+
+After green, for the mutation run (T051), the timeline writes its item classes through Lit's `classMap` instead of a joined string; plant 4 (`next-has-time` never set) was applied again to that source (`"next-has-time": false`) and still bites: `connectors, a mixed timeline` fails.

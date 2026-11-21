@@ -114,9 +114,11 @@ export class OcelleTimelineEvent extends LitElement {
   declare wrap: "anywhere" | undefined;
 
   /** Whether the event had a slotted time at its last render. */
+  // Stryker disable next-line BooleanLiteral: equivalent, render() sets it before the first change it is compared with can be seen: a record delivered before the first render only requests the update already pending
   #slotted = false;
 
   readonly #mutations = new MutationObserver(() => {
+    // Stryker disable next-line ConditionalExpression: equivalent for the `true` variant, an update with no slotted-time change renders the same time box
     if (hasSlottedTime(this) !== this.#slotted) this.requestUpdate();
   });
 
@@ -126,7 +128,9 @@ export class OcelleTimelineEvent extends LitElement {
   }
 
   override disconnectedCallback(): void {
+    // Stryker disable next-line CallExpression: equivalent, Lit's own disconnection only notifies reactive controllers, which this element has none of
     super.disconnectedCallback();
+    // Stryker disable next-line CallExpression: equivalent, a kept observer re-renders an event out of the document, which shows nothing, and observe() on reconnection replaces its options
     this.#mutations.disconnect();
   }
 
