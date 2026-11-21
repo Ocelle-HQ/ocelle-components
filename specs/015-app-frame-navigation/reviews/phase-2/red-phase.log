@@ -1,0 +1,73 @@
+Scope: all 5 workspace projects
+[WARN] The store at /workspace/work/ocelle-toolchain/data/pnpm/store/v11 is not used because packages cannot be hard linked from it into this project. Using the store at /tmp/.pnpm-store/v11 instead. Set storeDir to choose the store.
+✓ Lockfile passes supply-chain policies (verified 29m ago)
+Lockfile is up to date, resolution step is skipped
+Packages are hard linked from the content-addressable store to the virtual store.
+  Content-addressable store is at: /tmp/.pnpm-store/v11
+  Virtual store is at:             node_modules/.pnpm
+Update available! 12.16.1 → 12.21.0.
+Changelog: https://pnpm.io/v/12.21.0
+To update, run: curl -fsSL https://get.pnpm.io/install.sh | sh -
+Progress: resolved 502, reused 0, downloaded 125, added 124
+Downloading @rolldown/binding-linux-x64-gnu@1.2.15: 0.00 B/8.30 MB
+Downloading typescript@5.4.5: 0.00 B/5.82 MB
+Downloading storybook@10.6.5: 0.00 B/6.13 MB
+Packages: +502
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 502, reused 0, downloaded 502, added 502, done
+.../node_modules/rs-module-lexer postinstall$ node postinstall.js
+.../node_modules/rs-module-lexer postinstall: Done
+
+devDependencies:
++ @custom-elements-manifest/analyzer 0.11.0
++ @eslint/js 10.0.1
++ @stryker-mutator/core 10.1.1
++ @stryker-mutator/typescript-checker 10.1.1
++ @stryker-mutator/vitest-runner 10.1.1
++ @types/node 26.6.5
++ @vitest/browser-playwright 5.0.5
++ @vitest/eslint-plugin 1.6.28
++ axe-core 4.14.0
++ eslint 10.13.0
++ jiti 2.7.0
++ parse5 8.0.1
++ playwright 1.64.1
++ pngjs 7.0.0
++ postcss 8.5.31
++ postcss-lit 1.4.1
++ postcss-selector-parser 7.1.7
++ postcss-value-parser 4.2.0
++ stylelint 17.16.0
++ typescript 6.0.3
++ typescript-eslint 8.72.0
++ vite 8.3.5
++ vitest 5.0.5
+
+Done in 4.3s using pnpm v12.16.1
+$ node gates/bin/setup-offline.ts
+setup: installed offline; Chromium at /workspace/work/ocelle-toolchain/browsers/chromium-1248/chrome-linux64/chrome
+$ node gates/bin/test.ts
+gates/test/integration/axe.test.ts:51: unit-tests: axe gate (gates/bin/axe.ts) audits the repository's 448 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029): Error: Test timed out in 600000ms.
+gates/test/integration/axe.test.ts:61: unit-tests: axe gate (gates/bin/axe.ts) fails a story with an unlabelled button in both themes, one critical button-name finding each, naming its selector (US3 scenario 2): Error: Test timed out in 600000ms.
+gates/test/integration/manifest.test.ts:13: unit-tests: manifest gate in a plant tree exits 0 on pass-repository's temporary repository: AssertionError: expected { code: 1, stdout: [ …(11) ], …(1) } to deeply equal { code: +0, …(2) }
+gates/test/integration/visual.test.ts:120: unit-tests: visual gate (gates/bin/visual.ts) captures the repository's 448 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1): Error: Test timed out in 1200000ms.
+packages/elements/test/node/manifest.test.ts:427: unit-tests: generate(root) on the repository's element source declares ocelle-icon with its tag name, class, name (the union of the thirteen names) and label with types, defaults and attributes, name reflected and label not, and no slot, event, part or CSS property (US1 scenario 11, US2 scenario 1): AssertionError: expected [ 'src/ocelle-action-row.ts', …(24) ] to deeply equal [ 'src/ocelle-action-row.ts', …(22) ]
+packages/elements/test/browser/dialog.test.ts:36: unit-tests: ocelle-dialog on the strict-CSP fixture with the browser build (US1) Rapid toggle during the entry, motion o…: AssertionError: expected { observed: { entry: [], …(4) }, …(1) } to deeply equal { observed: { …(5) }, …(1) }
+gates/test/manifest.test.ts:85: unit-tests: manifest gate on a root exits 0 on the repository: the committed manifest matches the source and every member is described: AssertionError: expected { code: 1, out: [ …(11) ], err: [] } to deeply equal { code: +0, …(2) }
+gates/test/manifest.test.ts:89: unit-tests: manifest gate on a root exits 0 when the committed manifest only orders its keys differently (pass-reordered): AssertionError: expected { code: 1, out: [ …(11) ], err: [] } to deeply equal { code: +0, …(2) }
+gates/test/manifest.test.ts:94: unit-tests: manifest gate on a root reports the label attribute lost from the committed manifest as one stale finding naming ocelle-icon and the attribute (fail-lost-attribute): AssertionError: expected { code: 1, out: [ …(12) ], err: [] } to deeply equal { code: 1, out: [ …(2) ], err: [] }
+gates/test/manifest.test.ts:106: unit-tests: manifest gate on a root reports a property added in source without regenerating as stale findings for the property and its attribute (fail-stale-property): AssertionError: expected { code: 1, out: [ …(13) ], err: [] } to deeply equal { code: 1, out: [ …(3) ], err: [] }
+gates/test/manifest.test.ts:123: unit-tests: manifest gate on a root reports a difference outside every element as one whole-file stale finding: AssertionError: expected { code: 1, out: [ …(11) ], err: [] } to deeply equal { code: 1, out: [ …(2) ], err: [] }
+packages/elements/test/entry-nav-item.test.ts:4: unit-tests: registers the nav item and its tooltip dependency from the standalone module: AssertionError: expected undefined to be type of 'function'
+packages/elements/test/entry-top-bar.test.ts:4: unit-tests: registers the top bar and its brand and icon dependencies from the standalone module: AssertionError: expected undefined to be type of 'function'
+packages/elements/test/nav-item.test.ts:23: unit-tests: ocelle-nav-item keeps its icon decorative and exposes native link activation and current state: AssertionError: expected undefined to be '#projects' // Object.is equality
+packages/elements/test/nav-item.test.ts:46: unit-tests: ocelle-nav-item shows an unfocusable label when no href is supplied: AssertionError: expected undefined to be 'Projects' // Object.is equality
+packages/elements/test/nav-item.test.ts:53: unit-tests: ocelle-nav-item preserves host compact preference and the same focused link under an effective override: AssertionError: expected undefined to be true // Object.is equality
+packages/elements/test/nav-item.test.ts:78: unit-tests: ocelle-nav-item shows the visual-only compact label on hover, allows travel to it, and dismisses on Escape: AssertionError: expected undefined to be 'Projects' // Object.is equality
+packages/elements/test/nav-item.test.ts:95: unit-tests: ocelle-nav-item keeps a long translated label readable and the keyboard ring visible in forced colors and reduced motion: AssertionError: expected undefined to be 'Projects' // Object.is equality
+packages/elements/test/top-bar.test.ts:14: unit-tests: ocelle-top-bar shows a decorative chrome brand mark, product name and supplied actions: AssertionError: expected undefined to be 'Kitty Dashboard' // Object.is equality
+packages/elements/test/top-bar.test.ts:22: unit-tests: ocelle-top-bar leaves no menu button or action gap when omitted and reveals actions appended later: AssertionError: expected undefined to be true // Object.is equality
+packages/elements/test/top-bar.test.ts:35: unit-tests: ocelle-top-bar requests once per native click, Enter and Space and lets the host set expansion: AssertionError: expected undefined to be 'button' // Object.is equality
+packages/elements/test/top-bar.test.ts:58: unit-tests: ocelle-top-bar keeps a named, focused menu at the minimum target size in a 320 px frame: AssertionError: expected undefined to be 'Open navigation' // Object.is equality
+unit-tests: 22 of 8687 tests failed
+[ELIFECYCLE] Test failed. See above for more details.

@@ -10,12 +10,12 @@ See the [spec](spec.md), [plan](plan.md), [contracts](contracts/elements.md), [s
 
 Top bar and compact destination items are shared by the shell stories. Their standalone browser fixtures require no shell.
 
-- [ ] T002 [P] Write red browser tests in `packages/elements/test/top-bar.test.ts` for brand, product name, supplied actions, omitted regions, native pointer/Enter/Space menu activation, exact request payload and external expanded state, keyboard focus, and both computed target axes at 320 px with long translated text.
-- [ ] T003 [P] Write red browser tests in `packages/elements/test/nav-item.test.ts` for href activation, absent href, expanded and compact labels, decorative icon, native link/current semantics, visible focus, and a visual-only label bubble that opens on hover and keyboard focus, permits hover travel, and dismisses on Escape. Verify a long translated compact label stays legible with visible focus and no horizontal page overflow, including under forced colors and reduced motion.
-- [ ] T004 [P] Implement the top-bar contract and dark chrome with token-only styles in `packages/elements/src/ocelle-top-bar.ts`.
-- [ ] T005 [P] Implement the vertical destination and compact bubble in `packages/elements/src/ocelle-nav-item.ts`, using the existing tooltip behavior with accessible description disabled. Implement the agreed compact context precedence and preserve host-owned settings.
-- [ ] T006 Register both elements in `packages/elements/src/index.ts`, `packages/elements/src/browser.ts`, and `packages/elements/package.json`. Update `packages/elements/custom-elements.json` and cover individual imports in `packages/elements/test/entry-top-bar.test.ts` and `packages/elements/test/entry-nav-item.test.ts`.
-- [ ] T007 [P] Add variant and state stories in `storybook/stories/top-bar.stories.ts` and `storybook/stories/nav-item.stories.ts`, with pinned light/dark snapshots in `storybook/baselines/`.
+- [x] T002 [P] Write red browser tests in `packages/elements/test/top-bar.test.ts` for brand, product name, supplied actions, omitted regions, native pointer/Enter/Space menu activation, exact request payload and external expanded state, keyboard focus, and both computed target axes at 320 px with long translated text.
+- [x] T003 [P] Write red browser tests in `packages/elements/test/nav-item.test.ts` for href activation, absent href, expanded and compact labels, decorative icon, native link/current semantics, visible focus, and a visual-only label bubble that opens on hover and keyboard focus, permits hover travel, and dismisses on Escape. Verify a long translated compact label stays legible with visible focus and no horizontal page overflow, including under forced colors and reduced motion.
+- [x] T004 [P] Implement the top-bar contract and dark chrome with token-only styles in `packages/elements/src/ocelle-top-bar.ts`.
+- [x] T005 [P] Implement the vertical destination and compact bubble in `packages/elements/src/ocelle-nav-item.ts`, using the existing tooltip behavior with accessible description disabled. Implement the agreed compact context precedence and preserve host-owned settings.
+- [x] T006 Register both elements in `packages/elements/src/index.ts`, `packages/elements/src/browser.ts`, and `packages/elements/package.json`. Update `packages/elements/custom-elements.json` and cover individual imports in `packages/elements/test/entry-top-bar.test.ts` and `packages/elements/test/entry-nav-item.test.ts`.
+- [x] T007 [P] Add variant and state stories in `storybook/stories/top-bar.stories.ts` and `storybook/stories/nav-item.stories.ts`, with pinned light/dark snapshots in `storybook/baselines/`.
 
 ## Phase 3: User Story 1 — Keep the application frame usable as space changes (P1)
 
