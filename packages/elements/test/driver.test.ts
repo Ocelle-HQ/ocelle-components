@@ -186,6 +186,12 @@ describe("the in-process driver", () => {
     }).toEqual({ before: [0, 0], after: [120, 300], inner: 300, scrolls: [120] });
   });
 
+  // 019 T029 (research R-11): the item-text oracle of the timeline and chain bodies.
+  it("itemTexts(id) gives each listitem's StaticText names joined and collapsed, without hidden or aria-hidden text, a time element's text included, an empty item as \"\" and [] with no list", async () => {
+    await driver.mount('<ol id="l"><li>One <span hidden>gone</span><span aria-hidden="true">unread</span> <b>bold   and</b> <i>nested <em>inline</em></i></li><li></li><li><time datetime="2026-11-15">14:20</time> Two</li></ol><p id="after">Outside</p>');
+    expect({ texts: await driver.itemTexts("l"), none: await driver.itemTexts("after") }).toEqual({ texts: ["One bold and nested inline", "", "14:20 Two"], none: [] });
+  });
+
   // 019 T079: the block-axis readers of the overflow-region module's block-axis option, as scrollLeft and setScrollLeft.
   it("scrollTop(target) reads and setScrollTop(target, value) writes an instant scroll, on a light-DOM box with smooth scroll-behavior and on a shadow box", async () => {
     await driver.mount('<div id="box"><div id="tall"></div></div><driver-host id="h"></driver-host>');

@@ -109,6 +109,10 @@ const fragments = [
   // 019 phase 1: the numeric-cell hook (R-19, IQ-3)
   "`data-ocelle-align=\"end\"` end-aligns a cell with tabular figures, on any element; it sets no font, colour, padding or wrap",
   "Its selector has specificity (0,1,0) and comes after the data-table prose override, so it wins inside prose too",
+  // 019 phase 2: the timeline before upgrade (research R-08; contracts/ocelle-event-timeline.md § Before upgrade; tasks.md T035)
+  "Before the elements are defined, `base.css` shows each visible `ocelle-timeline-event` child of an undefined `ocelle-event-timeline` as a block, one event per line: `:where(ocelle-event-timeline:not(:defined) > ocelle-timeline-event:not([hidden]):not([aria-hidden=\"true\"])) { display: block; }`",
+  "An `aria-hidden=\"true\"` event is not shown before upgrade either, as after it: `:where(ocelle-event-timeline:not(:defined) > ocelle-timeline-event[aria-hidden=\"true\"]) { display: none; }`",
+  "An event's `time` attribute is rendered in its shadow root, so it shows only once the elements are defined; a slotted time (`slot=\"time\"`) is the page's own node and shows inline where it is written",
 ];
 
 /** The hook table of the README (FR-004): each hook's attribute, its values and its family, exactly. */
@@ -187,6 +191,11 @@ describe("packages/styles/CHANGELOG.md", () => {
   it("names the data-ocelle-wrap hook under Unreleased / Added, so each of the four hooks is named (constitution VII, FR-004)", () => {
     expect(added).toMatch(/^- `data-ocelle-wrap`/m);
     expect([...added.matchAll(/^- `(data-ocelle-[a-z]+)`/gm)].map((match) => match[1])).toEqual(["data-ocelle-density", "data-ocelle-value", "data-ocelle-prose", "data-ocelle-wrap", "data-ocelle-align"]);
+  });
+
+  // 019 phase 2 (constitution VII; research R-08; tasks.md T035, T043).
+  it("names the timeline rules before upgrade under Unreleased / Added (019 phase 2)", () => {
+    expect(added).toMatch(/^- `ocelle-event-timeline` before upgrade/m);
   });
 
   // 019 phase 1 (constitution VII; analysis I7 (a); IQ-3; tasks.md T011, T017).

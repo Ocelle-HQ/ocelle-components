@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { define } from "../src/define.ts";
 import type * as DataTableModule from "../src/ocelle-data-table.ts";
+import type * as TimelineModule from "../src/ocelle-event-timeline.ts";
+import type * as EventModule from "../src/ocelle-timeline-event.ts";
 
 // Guarded registration (005 FR-006, research.md R-02, T014): `define` defines a free tag, and for a tag already
 // defined it does nothing and throws nothing, so the first definition stays. Vitest's browser mode gives this file its
@@ -44,5 +46,29 @@ describe("define(tag, constructor)", () => {
       instance: element instanceof first.OcelleDataTable,
       box: box !== null,
     }).toEqual({ distinct: true, dataTable: true, instance: true, box: true });
+  });
+
+  // 019 phase 2 (T034): the timeline and its event, as the data table above. The timeline's copies import the event
+  // module by the same path, so they share one event class.
+  it("two copies of the timeline and the event: the first definitions win, the tags resolve to the first copies' classes, and a timeline renders its list with the event assigned", async () => {
+    const timelines = async (name: string): Promise<typeof TimelineModule> => import(/* @vite-ignore */ `../src/ocelle-event-timeline.ts?copy=${name}`) as Promise<typeof TimelineModule>;
+    const events = async (name: string): Promise<typeof EventModule> => import(/* @vite-ignore */ `../src/ocelle-timeline-event.ts?copy=${name}`) as Promise<typeof EventModule>;
+    const firstEvent = await events("first");
+    const secondEvent = await events("second");
+    const first = await timelines("first");
+    const second = await timelines("second");
+    const element = document.createElement("ocelle-event-timeline");
+    element.innerHTML = '<ocelle-timeline-event id="ev" time="14:02">Mission created</ocelle-timeline-event>';
+    document.body.append(element);
+    await (element as unknown as { updateComplete: Promise<unknown> }).updateComplete;
+    const assigned = element.shadowRoot?.querySelector<HTMLSlotElement>("ol > li > slot")?.assignedElements().map((each) => each.id) ?? [];
+    element.remove();
+    expect({
+      distinct: [first.OcelleEventTimeline !== second.OcelleEventTimeline, firstEvent.OcelleTimelineEvent !== secondEvent.OcelleTimelineEvent],
+      timeline: customElements.get("ocelle-event-timeline") === first.OcelleEventTimeline,
+      event: customElements.get("ocelle-timeline-event") === firstEvent.OcelleTimelineEvent,
+      instance: element instanceof first.OcelleEventTimeline,
+      assigned,
+    }).toEqual({ distinct: [true, true], timeline: true, event: true, instance: true, assigned: ["ev"] });
   });
 });

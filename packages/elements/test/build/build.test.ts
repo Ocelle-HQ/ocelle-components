@@ -393,3 +393,22 @@ describe("the module build's data-table module", () => {
     }).toEqual({ lit: true, own: ["./define.js", "./overflow-region.js"], outside: [] });
   });
 });
+
+// 019 phase 2 (FR-040, contracts/ocelle-event-timeline.md, contracts/ocelle-timeline-event.md; tasks.md T034): the
+// timeline's module imports its event's module, the registration helper, the overflow-region module (for
+// `resolveName`) and the internal timeline-time module, and no other element; the event's module imports no element.
+describe("the module build's timeline modules", () => {
+  const imports = (file: string): string[] => specifiers(existsSync(join(dist, file)) ? readFileSync(join(dist, file), "utf8") : "");
+  const own = (file: string): unknown => {
+    const imported = imports(file);
+    return { lit: imported.includes("lit"), own: imported.filter((specifier) => specifier.startsWith("./")), outside: imported.filter((specifier) => !specifier.startsWith("./") && specifier !== "lit" && !specifier.startsWith("lit/")) };
+  };
+
+  it("dist/ocelle-event-timeline.js imports ./ocelle-timeline-event.js and no other element module, with the registration helper, the overflow-region and the timeline-time modules", () => {
+    expect(own("ocelle-event-timeline.js")).toEqual({ lit: true, own: ["./define.js", "./ocelle-timeline-event.js", "./overflow-region.js", "./timeline-time.js"], outside: [] });
+  });
+
+  it("dist/ocelle-timeline-event.js imports no element module, only the registration helper and the timeline-time module", () => {
+    expect(own("ocelle-timeline-event.js")).toEqual({ lit: true, own: ["./define.js", "./timeline-time.js"], outside: [] });
+  });
+});

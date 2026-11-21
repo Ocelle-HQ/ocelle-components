@@ -277,7 +277,7 @@ describe("generate(root) on the repository's element source", () => {
     const manifest = await generate(repo);
     const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
     expect(manifest.schemaVersion).toBe("1.0.0");
-    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-card.ts", "src/ocelle-context-sidebar.ts", "src/ocelle-data-table.ts", "src/ocelle-dialog.ts", "src/ocelle-drawer.ts", "src/ocelle-empty-state.ts", "src/ocelle-fact.ts", "src/ocelle-facts.ts", "src/ocelle-icon.ts", "src/ocelle-list-detail.ts", "src/ocelle-page-header.ts", "src/ocelle-personal-rail.ts", "src/ocelle-progress.ts", "src/ocelle-scroller.ts", "src/ocelle-section-header.ts", "src/ocelle-tooltip.ts", "src/ocelle-workflow-board.ts", "src/ocelle-workflow-lane.ts"]);
+    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-card.ts", "src/ocelle-context-sidebar.ts", "src/ocelle-data-table.ts", "src/ocelle-dialog.ts", "src/ocelle-drawer.ts", "src/ocelle-empty-state.ts", "src/ocelle-event-timeline.ts", "src/ocelle-fact.ts", "src/ocelle-facts.ts", "src/ocelle-icon.ts", "src/ocelle-list-detail.ts", "src/ocelle-page-header.ts", "src/ocelle-personal-rail.ts", "src/ocelle-progress.ts", "src/ocelle-scroller.ts", "src/ocelle-section-header.ts", "src/ocelle-timeline-event.ts", "src/ocelle-tooltip.ts", "src/ocelle-workflow-board.ts", "src/ocelle-workflow-lane.ts"]);
     const [icon] = modules.find((module) => module.path === "src/ocelle-icon.ts")?.declarations ?? [];
     expect(icon).toMatchObject({
       kind: "class",
@@ -726,6 +726,46 @@ describe("generate(root) on the repository's element source", () => {
       slots: [{ name: "", described: true }],
       parts: [{ name: "label", described: true }],
       properties: [{ name: "--ocelle-facts-value-size", described: true }, { name: "--ocelle-facts-value-line-height", described: true }],
+    });
+  });
+
+  // 019 phase 2 (T034; contracts/ocelle-event-timeline.md, contracts/ocelle-timeline-event.md, research R-10): the two
+  // timeline modules declare only their class; the event declares the default and the time slot and the time and
+  // content parts; the internal timeline-time module is not in the manifest.
+  it("declares ocelle-timeline-event with time (string | undefined) and wrap (\"anywhere\" | undefined), reflected, the default and time slots and the time and content parts, its module declaring only its class; ocelle-event-timeline with label (string | undefined), not reflected, the default slot and the list part; timeline-time not a module", async () => {
+    const manifest = await generate(repo);
+    const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[]; exports?: Record<string, unknown>[] }[];
+    const eventModule = modules.find((module) => module.path === "src/ocelle-timeline-event.ts");
+    const timelineModule = modules.find((module) => module.path === "src/ocelle-event-timeline.ts");
+    const [event] = eventModule?.declarations ?? [];
+    const [timeline] = timelineModule?.declarations ?? [];
+    const named = (list: unknown): unknown => ((list ?? []) as Record<string, unknown>[]).map(({ name, description }) => ({ name, described: typeof description === "string" && description !== "" }));
+    const described = (list: unknown): Record<string, unknown>[] =>
+      ((list ?? []) as Record<string, unknown>[]).map(({ description, ...rest }) => ({ ...rest, described: typeof description === "string" && description !== "" }));
+    expect({
+      declarations: [eventModule?.declarations.map((each) => each.name), timelineModule?.declarations.map((each) => each.name)],
+      exported: eventModule?.exports?.map((each) => each.name),
+      internal: modules.some((module) => module.path.includes("timeline-time")),
+      event: { name: event?.name, tagName: event?.tagName, events: event?.events },
+      timeline: { name: timeline?.name, tagName: timeline?.tagName, events: timeline?.events },
+    }).toEqual({
+      declarations: [["OcelleTimelineEvent"], ["OcelleEventTimeline"]],
+      exported: ["OcelleTimelineEvent"],
+      internal: false,
+      event: { name: "OcelleTimelineEvent", tagName: "ocelle-timeline-event", events: [] },
+      timeline: { name: "OcelleEventTimeline", tagName: "ocelle-event-timeline", events: [] },
+    });
+    expect(described(event?.members)).toEqual([
+      { kind: "field", name: "time", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "time", reflects: true, described: true },
+      { kind: "field", name: "wrap", privacy: "public", type: { text: '"anywhere" | undefined' }, default: "undefined", attribute: "wrap", reflects: true, described: true },
+    ]);
+    expect(described(timeline?.members)).toEqual([{ kind: "field", name: "label", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "label", described: true }]);
+    expect({
+      event: { slots: named(event?.slots), parts: named(event?.cssParts), properties: named(event?.cssProperties) },
+      timeline: { slots: named(timeline?.slots), parts: named(timeline?.cssParts), properties: named(timeline?.cssProperties) },
+    }).toEqual({
+      event: { slots: [{ name: "", described: true }, { name: "time", described: true }], parts: [{ name: "time", described: true }, { name: "content", described: true }], properties: [] },
+      timeline: { slots: [{ name: "", described: true }], parts: [{ name: "list", described: true }], properties: [] },
     });
   });
 

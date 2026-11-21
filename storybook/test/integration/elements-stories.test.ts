@@ -1388,6 +1388,126 @@ describe("the ocelle-data-table stories in the built Storybook (019 FR-050, T014
   });
 });
 
+// 019 phase 2 (tasks.md T038; contracts/checks.md § Stories; I3; phase 2 spike Q1 (b)): the 13 timeline stories. Each is
+// in the built index and renders its timeline (or, in the standalone story, its events) in light and dark with no
+// request outside the origin; loaded at 320 × 800 the page does not scroll sideways and the element has a size (the
+// empty timeline an inline size only, as it renders nothing); every list is named, except in the empty and the
+// standalone stories, which render no list node; the standalone events have a size; and the two host `aria-label`
+// stories name the list "History" and "Mission history".
+const timelineStoryNames = [
+  "three-events",
+  "without-time",
+  "marked-up-times",
+  "long-identifier-wrap",
+  "link-in-event",
+  "one-event",
+  "hidden-event",
+  "right-to-left",
+  "width-320",
+  "empty",
+  "standalone-events",
+  "named-by-host-aria-label",
+  "blank-host-aria-label",
+];
+const timelineStories = timelineStoryNames.map((name) => `elements-ocelle-event-timeline--${name}`);
+const unlisted = ["empty", "standalone-events"];
+
+/** Opens a timeline story at `width` × 800 and waits for its elements. */
+async function openTimeline(id: string, theme: "light" | "dark", width = 1280): Promise<{ readonly page: Page; readonly outside: readonly string[] }> {
+  if (browser === undefined) throw new Error("the suite did not start");
+  const page = await browser.newPage({ viewport: { width, height: 800 }, reducedMotion: "reduce" });
+  const outside: string[] = [];
+  page.on("request", (request) => {
+    if (!request.url().startsWith(`${origin}/`)) outside.push(request.url());
+  });
+  await page.goto(`${origin}/iframe.html?id=${id}&viewMode=story&globals=theme:${theme}`, { waitUntil: "load" });
+  await page.waitForSelector("#storybook-root ocelle-event-timeline, #storybook-root ocelle-timeline-event", { state: "attached", timeout: 10_000 }).catch(() => undefined);
+  await page.evaluate(async () => {
+    await Promise.all([...document.querySelectorAll("#storybook-root ocelle-event-timeline, #storybook-root ocelle-timeline-event")].map((each) => (each as unknown as { updateComplete?: Promise<unknown> }).updateComplete ?? Promise.resolve()));
+    await document.fonts.ready;
+    for (let frame = 0; frame < 3; frame += 1) await new Promise((resolve) => requestAnimationFrame(resolve));
+  });
+  return { page, outside };
+}
+
+/** The names of the page's unignored `list` nodes. */
+async function listNames(page: Page): Promise<string[]> {
+  const session = await page.context().newCDPSession(page);
+  try {
+    const { nodes } = (await session.send("Accessibility.getFullAXTree")) as { nodes: { ignored: boolean; role?: { value?: unknown }; name?: { value?: unknown } }[] };
+    return nodes.filter((node) => !node.ignored && node.role?.value === "list").map((node) => (typeof node.name?.value === "string" ? node.name.value : ""));
+  } finally {
+    await session.detach();
+  }
+}
+
+describe("the ocelle-event-timeline stories in the built Storybook (019 FR-050, T038)", { timeout: 60_000 }, () => {
+  it("are all in the built index", () => {
+    const index = JSON.parse(readFileSync(join(built.out, "index.json"), "utf8")) as { entries?: Record<string, unknown> };
+    expect(timelineStories.filter((id) => index.entries?.[id] === undefined)).toEqual([]);
+  });
+
+  for (const name of timelineStoryNames) {
+    const id = `elements-ocelle-event-timeline--${name}`;
+    const element = name === "standalone-events" ? "ocelle-timeline-event" : "ocelle-event-timeline";
+    for (const theme of ["light", "dark"] as const) {
+      it(`${id} in ${theme}: renders its ${element} with no request outside the origin`, async () => {
+        const { page, outside } = await openTimeline(id, theme);
+        const observed = await page.evaluate((element) => ({ theme: document.documentElement.dataset.theme, defined: customElements.get(element) !== undefined, rendered: document.querySelector(`#storybook-root ${element}`)?.shadowRoot?.childElementCount !== undefined }), element);
+        await page.close();
+        expect({ observed, outside }).toEqual({ observed: { theme, defined: true, rendered: true }, outside: [] });
+      });
+    }
+
+    it(`${id} at 320 px: the page does not scroll sideways and the ${element} has a size`, async () => {
+      const { page } = await openTimeline(id, "light", 320);
+      const observed = await page.evaluate((element) => {
+        const host = document.querySelector(`#storybook-root ${element}`)?.getBoundingClientRect();
+        return { scrollWidth: document.documentElement.scrollWidth, inline: host !== undefined && host.width > 0, block: host !== undefined && host.height > 0 };
+      }, element);
+      const scrollWidth = await readScrollWidth(page.mainFrame());
+      await page.close();
+      expect({ ...observed, read: scrollWidth }).toEqual({ scrollWidth: 320, inline: true, block: name !== "empty", read: 320 });
+    });
+
+    it(`${id}: ${unlisted.includes(name) ? "renders no list node" : "every list is named, and there is one"}`, async () => {
+      const { page } = await openTimeline(id, "light");
+      const names = await listNames(page);
+      await page.close();
+      expect(unlisted.includes(name) ? { lists: names.length } : { lists: names.length, unnamed: names.filter((each) => each.trim() === "").length }).toEqual(unlisted.includes(name) ? { lists: 0 } : { lists: 1, unnamed: 0 });
+    });
+  }
+
+  it("standalone events: two ocelle-timeline-events with a size each, outside a timeline, each its time above its content", async () => {
+    const { page } = await openTimeline("elements-ocelle-event-timeline--standalone-events", "light");
+    const observed = await page.evaluate(() => {
+      const events = [...document.querySelectorAll("#storybook-root ocelle-timeline-event")];
+      return {
+        count: events.length,
+        timelines: document.querySelectorAll("#storybook-root ocelle-event-timeline").length,
+        sized: events.every((event) => event.getBoundingClientRect().width > 0 && event.getBoundingClientRect().height > 0),
+        above: events.every((event) => {
+          const time = event.shadowRoot?.querySelector('[part="time"]')?.getBoundingClientRect();
+          const content = event.shadowRoot?.querySelector('[part="content"]')?.getBoundingClientRect();
+          return time !== undefined && content !== undefined && time.bottom <= content.top + 0.5;
+        }),
+      };
+    });
+    await page.close();
+    expect(observed).toEqual({ count: 2, timelines: 0, sized: true, above: true });
+  });
+
+  it.each([
+    ["named-by-host-aria-label", "History"],
+    ["blank-host-aria-label", "Mission history"],
+  ])("%s: the list is named %s", async (name, label) => {
+    const { page } = await openTimeline(`elements-ocelle-event-timeline--${name}`, "light");
+    const names = await listNames(page);
+    await page.close();
+    expect(names).toEqual([label]);
+  });
+});
+
 /** A stories file's text, empty while it does not exist. */
 function readStories(file: string): string {
   const url = new URL(`../../stories/${file}`, import.meta.url);

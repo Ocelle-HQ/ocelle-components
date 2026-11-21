@@ -5,6 +5,8 @@
 // that paint (`color`, `background-color`, the border colours, `outline` and `outline-color`, `box-shadow`, `fill`,
 // `stroke`; never `mask-image`, whose colours are alpha only), and lists the pairs on the nine main grounds that are not
 // a `checked` row of packages/tokens/contrast/pairs.json in both themes. Phases 2 and 3 add the timeline and the chain.
+// Since phase 2 (R-13: "each decorative line uses a rule token"): a painted rule token (`color-rule`,
+// `color-rule-strong`) is a decorative line, listed among the painted tokens but held to no pair (FR-013).
 // The pairs are transcribed by hand from R-13, never read from the element source or from pairs.json.
 import postcss from "postcss";
 import type { AtRule, Rule } from "postcss";
@@ -26,7 +28,14 @@ export const mainGrounds: readonly string[] = ["color-canvas", "color-sheet", "c
  */
 export const recordsPainted: Readonly<Record<string, readonly string[]>> = {
   "ocelle-data-table": ["color-focus"],
+  // Phase 2 (R-10, R-13): the event paints its time (attribute and slotted) in ink-muted and its content in ink; the
+  // timeline paints the dot in ink-muted (structural) and the connector in rule-strong (decorative).
+  "ocelle-timeline-event": ["color-ink", "color-ink-muted"],
+  "ocelle-event-timeline": ["color-ink-muted", "color-rule-strong"],
 };
+
+/** The rule tokens, which only decorative lines paint (R-13): held to no pair. */
+export const decorativeTokens: readonly string[] = ["color-rule", "color-rule-strong"];
 
 /** The text of the first `css` tagged template of a module's text; empty when it has none. */
 export function styleTemplate(moduleText: string): string {
@@ -70,7 +79,7 @@ export function paintedTokens(sheets: readonly string[]): string[] {
 /** The painted tokens and each pair on a main ground that is not checked in a theme, as "<fg> on <bg> in <theme>". */
 export function recordsPairsCheck(sheets: readonly string[], pairs: readonly PairEntry[]): { readonly painted: string[]; readonly missing: string[] } {
   const painted = paintedTokens(sheets);
-  const missing = painted.flatMap((fg) =>
+  const missing = painted.filter((fg) => !decorativeTokens.includes(fg)).flatMap((fg) =>
     mainGrounds.flatMap((bg) => ["light", "dark"].filter((theme) => !pairs.some((pair) => pair.theme === theme && pair.fg === fg && pair.bg === bg && pair.status === "checked")).map((theme) => `${fg} on ${bg} in ${theme}`)),
   );
   return { painted, missing };

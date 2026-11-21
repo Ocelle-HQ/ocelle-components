@@ -26,7 +26,7 @@ import { runningOf } from "./animations.ts";
 import delayText from "./fixtures/tooltip-delay.css?raw";
 import { layoutWait } from "./layout-wait.ts";
 import { decodePng } from "./pixels.ts";
-import { heardTypes } from "./scenarios/driver.ts";
+import { heardTypes, itemTextsOf } from "./scenarios/driver.ts";
 import type { Box, Driver, Drawing, Paint, Part, Placement, Reading, Sheets, Target, TreeNode } from "./scenarios/driver.ts";
 import { probe } from "./scenarios/probe.ts";
 
@@ -313,6 +313,7 @@ export function inProcessDriver(): Driver {
     },
     ax: (id) => commands.axTree(id),
     axSubtree: (id) => commands.axTree(id, "subtree"),
+    itemTexts: async (id) => itemTextsOf(await commands.axTree(id, "subtree")),
     theme: async (theme) => {
       if (theme === null) document.documentElement.removeAttribute("data-theme");
       else document.documentElement.dataset.theme = theme;
