@@ -3250,6 +3250,135 @@
         {
           "attributes": [
             {
+              "description": "The native destination. An absent or unusable destination renders text.",
+              "fieldName": "href",
+              "name": "href",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "\"\"",
+              "description": "The visible and accessible destination name.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "`page` or `true` marks the link current. Other values omit the state.",
+              "fieldName": "current",
+              "name": "current",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "false",
+              "description": "Standalone preference for icon-only presentation.",
+              "fieldName": "compact",
+              "name": "compact",
+              "type": {
+                "text": "boolean"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The native link, when a destination is supplied.",
+              "name": "link"
+            },
+            {
+              "description": "The visible label, hidden while the link is compact.",
+              "name": "label"
+            },
+            {
+              "description": "The compact label bubble.",
+              "name": "bubble"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A vertical destination link. Compact mode keeps the accessible label and provides a visual label bubble.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "href",
+              "description": "The native destination. An absent or unusable destination renders text.",
+              "kind": "field",
+              "name": "href",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "label",
+              "default": "\"\"",
+              "description": "The visible and accessible destination name.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "current",
+              "description": "`page` or `true` marks the link current. Other values omit the state.",
+              "kind": "field",
+              "name": "current",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "compact",
+              "default": "false",
+              "description": "Standalone preference for icon-only presentation.",
+              "kind": "field",
+              "name": "compact",
+              "privacy": "public",
+              "type": {
+                "text": "boolean"
+              }
+            }
+          ],
+          "name": "OcelleNavItem",
+          "slots": [
+            {
+              "description": "A decorative destination icon.",
+              "name": "icon"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-nav-item"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-nav-item.ts",
+            "name": "OcelleNavItem"
+          },
+          "kind": "js",
+          "name": "OcelleNavItem"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-nav-item.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
               "default": "\"info\"",
               "description": "The tone: `info`, `success`, `warning`, `danger` or `neutral`; any other value behaves as `info` and the property\nreads `\"info\"`, while the attribute keeps the value as written. Reflected.",
               "fieldName": "tone",
@@ -4537,6 +4666,151 @@
       ],
       "kind": "javascript-module",
       "path": "src/ocelle-tooltip.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "\"\"",
+              "description": "The product name displayed beside the mark.",
+              "fieldName": "productName",
+              "name": "product-name",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "false",
+              "description": "Whether to expose the menu trigger.",
+              "fieldName": "showMenu",
+              "name": "show-menu",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "\"Open navigation\"",
+              "description": "Localized accessible name for the menu trigger.",
+              "fieldName": "menuLabel",
+              "name": "menu-label",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "false",
+              "description": "Whether the host has expanded navigation.",
+              "fieldName": "menuExpanded",
+              "name": "menu-expanded",
+              "type": {
+                "text": "boolean"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The chrome container.",
+              "name": "bar"
+            },
+            {
+              "description": "The decorative rosette and product name.",
+              "name": "brand"
+            },
+            {
+              "description": "The host actions region, hidden while empty.",
+              "name": "actions"
+            },
+            {
+              "description": "The native menu trigger.",
+              "name": "menu-button"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "The application's brand, product name, host actions and optional navigation menu trigger.",
+          "events": [
+            {
+              "description": "Requests the next menu state. Bubbles and is composed. The host applies the resulting state with `menuExpanded`.",
+              "name": "ocelle-top-bar-menu-request",
+              "type": {
+                "text": "CustomEvent<{ expanded: boolean }>"
+              }
+            }
+          ],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "product-name",
+              "default": "\"\"",
+              "description": "The product name displayed beside the mark.",
+              "kind": "field",
+              "name": "productName",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "show-menu",
+              "default": "false",
+              "description": "Whether to expose the menu trigger.",
+              "kind": "field",
+              "name": "showMenu",
+              "privacy": "public",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "attribute": "menu-label",
+              "default": "\"Open navigation\"",
+              "description": "Localized accessible name for the menu trigger.",
+              "kind": "field",
+              "name": "menuLabel",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "menu-expanded",
+              "default": "false",
+              "description": "Whether the host has expanded navigation.",
+              "kind": "field",
+              "name": "menuExpanded",
+              "privacy": "public",
+              "type": {
+                "text": "boolean"
+              }
+            }
+          ],
+          "name": "OcelleTopBar",
+          "slots": [
+            {
+              "description": "Host-owned controls, shown after the product name.",
+              "name": "actions"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-top-bar"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-top-bar.ts",
+            "name": "OcelleTopBar"
+          },
+          "kind": "js",
+          "name": "OcelleTopBar"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-top-bar.ts"
     },
     {
       "declarations": [
