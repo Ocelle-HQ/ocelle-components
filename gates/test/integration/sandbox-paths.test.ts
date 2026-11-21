@@ -123,6 +123,21 @@ describe("sandbox-paths (gates/bin/sandbox-paths.ts)", () => {
   );
 
   it(
+    "exits 2 with git's first error line when git ls-files fails on a corrupt index, not with no tracked file",
+    async () => {
+      const root = repository({ "README.md": "plain\n" });
+      writeFileSync(join(root, ".git/index"), "garbage\n");
+      const ran = await gate(root);
+      expect({ code: ran.code, stdout: ran.stdout, stderr: ran.stderr }).toEqual({
+        code: 2,
+        stdout: [],
+        stderr: ["sandbox-paths: could not run: git ls-files failed (exit 128): fatal: .git/index: index file smaller than expected"],
+      });
+    },
+    timeout,
+  );
+
+  it(
     "exits 2 naming a root that is not the top of a git work tree: a subdirectory, and a directory outside git",
     async () => {
       const root = repository({ "sub/a.md": matching });

@@ -1,5 +1,5 @@
 import { execFileSync, spawnSync } from "node:child_process";
-import { chmodSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { sandboxPathRule } from "../../lib/sandbox-paths.ts";
@@ -230,6 +230,19 @@ describe("--verify", () => {
       chmodSync(join(dir, notesPath), 0o755);
     });
     expect(verify(dir, [head])).toEqual(finding(notesPath, "mode changed"));
+  });
+
+  it("finds a symlink whose target got the redaction, as not a regular file, beside a correct redaction", () => {
+    const { dir } = based();
+    committed(dir, () => {
+      symlinkSync(`${homeDir}ocelle-components/a.ts`, join(dir, "link"));
+    });
+    const head = committed(dir, () => {
+      inPlace(dir);
+      rmSync(join(dir, "link"));
+      symlinkSync("<repo>/a.ts", join(dir, "link"));
+    });
+    expect(verify(dir, [head])).toEqual(finding("link", "not a regular file"));
   });
 
   it("exits 2 on a commit that changes no file", () => {
