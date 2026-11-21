@@ -147,6 +147,7 @@ export class OcelleEventTimeline extends LitElement {
     this.#mutations.observe(this, { childList: true, characterData: true, subtree: true, attributes: true, attributeFilter: ["hidden", "aria-hidden", "time", "slot"] });
   }
 
+  // Stryker disable next-line BlockStatement: equivalent, the body's two calls are each equivalent (below), so is leaving out both
   override disconnectedCallback(): void {
     // Stryker disable next-line CallExpression: equivalent, Lit's own disconnection only notifies reactive controllers, which this element has none of
     super.disconnectedCallback();
