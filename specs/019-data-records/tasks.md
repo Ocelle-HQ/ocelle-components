@@ -27,7 +27,7 @@ or hidden slotted time lets the `time` attribute apply (`reviews/plan/operator-g
 `reviews/analysis/fixes.md`): C1 (c), a story for a standalone `ocelle-timeline-event` (phase 2) and a standalone
 `ocelle-evidence-step` (phase 3), and one Principle V exception row in plan.md § Complexity Tracking for the states
 named by a host `aria-label` (the data table's region, the timeline, the chain; the data table's region left it by
-spike Q1 (b), below), proven by browser bodies; I7 (a),
+spike Q1 (b), and the timeline by the phase 2 spike's Q1 (b), below), proven by browser bodies; I7 (a),
 `--data-table-box-size` and `--data-table-end-fade` are a documented base-style hook between `@ocelle/elements` and
 `@ocelle/styles` (constitution VII surface), named in both READMEs and CHANGELOGs.
 
@@ -46,7 +46,7 @@ its `baseLayer` slice.
 **Phase 1 spike decisions in force** (2026-11-18, human:jeroennouwsdev; `reviews/phase-1/operator-spike-decisions.md`
 on `reviews/phase-1/spike.md`, changes in `reviews/phase-1/spike-fixes.md`): Q1 (b), two data-table stories named
 through a host `aria-label`, non-blank and blank, so phase 1 has 14 stories and 28 baselines (19 and 38 since the inventory decisions below, 20 and 40 since the re-analysis, 21 and 42 since fixes-2 Q-1 (b)) and plan.md § Complexity
-Tracking's row drops the data table (the timeline and the chain stay until T026 and T052 measure them); Q2 (a), the
+Tracking's row drops the data table (the timeline and the chain stay until T026 and T052 measure them; the timeline left it by the phase 2 spike's Q1 (b), below); Q2 (a), the
 column headers stay upper case, US1-1 compares with an outside table given the same upper case by a test-only rule
 plus one assertion that the column-header names are upper case, and both READMEs state that the accessible names of
 column headers follow the drawn upper-case text; T005 "Proceed, map later", the data-table mapping rows (FR-058) read
@@ -63,7 +63,8 @@ inventory". IQ-2, the sticky header row (`sticky-header`, FR-017), on an opt-in 
 `ocelle-scroller` and the board unchanged; 009's tests unedited and green). IQ-3, the `data-ocelle-align="end"` hook
 (FR-019, block 4). IQ-4, `striped` (FR-060). IQ-5, the row hover (FR-061), with the forced-colours row band (FR-013).
 IQ-6 (a) and IQ-7 (a), README statements. Phase 1 has 19 stories and 38 baselines; the mission 42 and 84 (20, 40,
-43 and 86 since the re-analysis; 21, 42, 44 and 88 since fixes-2 Q-1 (b), below). The
+43 and 86 since the re-analysis; 21, 42, 44 and 88 since fixes-2 Q-1 (b), below; the mission 46 and 92 since the
+phase 2 spike's Q1 (b), below). The
 follow-up questions Q-I1 to Q-I5 (inventory-fixes) are answered (2026-11-18, end of inventory-decisions.md): Q-I1 to
 Q-I3 confirm the defaults (`sheet` header ground; the light-theme hover collision accepted, README note; hover always
 on); Q-I4 adds the block-axis option's block-end fade (FR-018, US1-26 to US1-28, T079 to T082, T016, T024); Q-I5's
@@ -82,7 +83,7 @@ forced-colours `Highlight` band inside `@media (hover: hover)`, with US1-24's no
 two element plants; G1 (a), PageUp, PageDown, Home, End, Space and Shift+Space left to the browser on the block-axis
 box, with a body per key in T079 and T080. Fixes-2 Q-1 (b) (2026-11-18, end of the same file): a "sticky header,
 under the room rule" story (rows below, less than twice the fade depth under the header, no fade), so phase 1 has 21
-stories and 42 baselines and the mission 44 and 88, and the exception row covers only the scrolled-to-end state. No
+stories and 42 baselines and the mission 44 and 88 (46 and 92 since the phase 2 spike's Q1 (b), below), and the exception row covers only the scrolled-to-end state. No
 task is added, removed or renumbered.
 
 **Phase 1 spike 2 decisions in force** (2026-11-18, human:jeroennouwsdev; `reviews/phase-1/operator-spike-2-decisions.md`
@@ -136,6 +137,20 @@ face, 0.06em tracking and header padding, asserted in T037 and written in T047. 
 runs in a 200 px container, one more body in T055 (and T052 measures it). IQ-8 to IQ-17, IQ-26 and IQ-28 (a), README
 mapping statements only (R-16's phase 2 table; T037, T047), the `id` fragment-target line of IQ-15 (a) among them.
 No story, baseline or task is added, removed or renumbered.
+
+**Phase 2 spike decisions in force** (2026-11-20; `reviews/phase-2/operator-spike-decisions.md` on
+`reviews/phase-2/spike.md`, changes in `reviews/phase-2/spike-fixes.md`): Q1 (b), two timeline stories named through a
+host `aria-label`, non-blank (`aria-label="History"`, the list named "History") and blank (`aria-label="  "`, the list
+named "Mission history"), both beside `label="Mission history"`, so phase 2 has 13 stories and 26 baselines and the
+mission 46 and 92, and plan.md § Complexity Tracking's row drops the timeline (the chain stays until T052 measures it;
+US2-10's browser bodies stay); Q2 (a), the explicit `list` and `listitem` roles stay (R-08, for WebKit), and US2-1's
+axe clause names `aria-required-children` and `aria-required-parent`, which axe applies to them in place of its
+`list` and `listitem` rules, met by the `axe` gate on the timeline's stories (T048), with the same for the chain's
+US3-1 confirmed by T052; Q3 (a), the dot is drawn by `border-block-start: var(--ocelle-size-dot) solid
+var(--ocelle-color-ink-muted)` alone, its drawing side in US2-8's forced-colours half (T030, T042). The spike's
+settled facts: the dot's size within 0.5 px of the probe-resolved `--ocelle-size-dot` (7.1875 px laid out);
+`itemTexts` reading `StaticText` at any depth under each `listitem` (a slotted `<time>` adds a `time` node); the
+connector's `calc()` form needs no new `style-lint` allowance (R-10). No task is added, removed or renumbered.
 
 **Tests**: required. Constitution Principle VIII applies to every phase with behaviour.
 
@@ -194,7 +209,7 @@ Plants check still judges every plant (contracts/checks.md § Gates per phase, r
 **Baselines (FR-051, R-15)**: only `pnpm run visual:update` in #10's pinned linux/amd64 container
 (`storybook/visual/container.json`) under docker. Start the daemon as root with `nohup dockerd > /tmp/dockerd.log
 2>&1 &`; after a container restart also run `pnpm run setup:online`. The command must print `(<n> added, 0 changed,
-0 removed)` with `<n>` = 42 (phase 1, spike Q1 (b), the inventory decisions IQ-2 to IQ-5, the re-analysis C1 (b) and fixes-2 Q-1 (b)), 22 (phase 2), 24 (phase 3). There is no podman cross-check in this container.
+0 removed)` with `<n>` = 42 (phase 1, spike Q1 (b), the inventory decisions IQ-2 to IQ-5, the re-analysis C1 (b) and fixes-2 Q-1 (b)), 26 (phase 2, the phase 2 spike's Q1 (b)), 24 (phase 3). There is no podman cross-check in this container.
 Conflicting PNGs are regenerated in the container, never hand-picked. If CI's "Visual regression" captures differ,
 CI's artifact is committed (`storybook/README.md` § Baselines).
 
@@ -239,7 +254,8 @@ commit is signed off (`git commit -s`; `gate:signoff`).
 - A spike (T003, T026, T052) that finds axe-core clean (no serious or critical finding) on a host named by a
   non-blank host `aria-label`: the sunset of plan.md § Complexity Tracking's row for that state is met, and the
   operator decides whether the phase adds that state's story (and its two baselines, changing the phase's `<n>`) or
-  the row stays (analysis C1 (c)). T003's was answered on 2026-11-18 (spike Q1 (b): two stories).
+  the row stays (analysis C1 (c)). T003's was answered on 2026-11-18 (spike Q1 (b): two stories), and T026's on
+  2026-11-20 (phase 2 spike Q1 (b): two stories).
 - A spike (T003) that finds a change of the table that 009's module does not observe (FR-014, R-05): the change and
   the README's remedy go to the operator before T013's conditional statement is written.
 - The inventory (T005, T028, T054): a family missing, or a variant no element or variant covers (R-16). Phase 1's
@@ -492,8 +508,8 @@ phase and the review rounds, so each red run (command, exit, the failing asserti
 
 **Goal**: `ocelle-event-timeline` with `ocelle-timeline-event` (its named `time` slot, Q-E, Q-G) and the internal
 `src/timeline-time.ts`, the timeline's two pre-upgrade rules of block 3, covering US2-1 to US2-14, the US2 edge
-cases, FR-016 and FR-020 to FR-027, the `itemTexts` driver addition, the 11 timeline stories (the standalone event among
-them, analysis C1 (c)) and their 22 baselines.
+cases, FR-016 and FR-020 to FR-027, the `itemTexts` driver addition, the 13 timeline stories (the standalone event among
+them, analysis C1 (c), and the two host `aria-label` stories, phase 2 spike Q1 (b)) and their 26 baselines.
 
 **Independent Test**: on the strict-CSP fixture, an `ocelle-event-timeline label="Mission history"` with four events
 (one with a `<time slot="time" datetime>`, one with a 26-character identifier and `wrap="anywhere"`) exposes one list
@@ -503,7 +519,7 @@ both dots; at 320 px the page scroll width equals the viewport width; zero CSP v
 
 ### Spike (first)
 
-- [ ] T026 [US2] Spike before the scaffold, scratch files only, recorded in `specs/019-data-records/reviews/phase-2/spike.md` (research R-08 to R-11): the Chromium AX tree of a shadow `<ol role="list">` with manually assigned `<li role="listitem">`s; the item-text oracle (`StaticText` names under each `listitem`); empty `aria-hidden` marker and connector spans absent from the tree; a non-blank and a blank host `aria-label` on the timeline against 009's lane (exposed or not, axe's verdict; the sunset check of plan.md § Complexity Tracking's host `aria-label` row, a clean result being a stop-and-ask point); the `time` slot: a slotted `<time>` written after the content read first, an unrendered slot leaving an empty or `hidden` slotted node out of the tree and layout, and `::slotted(*)` setting the type over a `<b>`'s UA bold. A contradiction stops for the operator.
+- [X] T026 [US2] Spike before the scaffold, scratch files only, recorded in `specs/019-data-records/reviews/phase-2/spike.md` (research R-08 to R-11): the Chromium AX tree of a shadow `<ol role="list">` with manually assigned `<li role="listitem">`s; the item-text oracle (`StaticText` names under each `listitem`); empty `aria-hidden` marker and connector spans absent from the tree; a non-blank and a blank host `aria-label` on the timeline against 009's lane (exposed or not, axe's verdict; the sunset check of plan.md § Complexity Tracking's host `aria-label` row, a clean result being a stop-and-ask point); the `time` slot: a slotted `<time>` written after the content read first, an unrendered slot leaving an empty or `hidden` slotted node out of the tree and layout, and `::slotted(*)` setting the type over a `<b>`'s UA bold. A contradiction stops for the operator. Recorded on 2026-11-20 with three stop-and-ask points, answered the same day (§ Phase 2 spike decisions in force: Q1 (b), Q2 (a), Q3 (a)).
 
 ### Scaffold
 
@@ -520,18 +536,18 @@ both dots; at 320 px the page scroll width equals the viewport width; zero CSP v
 
 ### Tests (red, one commit, test files only)
 
-- [ ] T029 [P] [US2] Driver addition `itemTexts(list)` (research R-11): declared in `packages/elements/test/scenarios/driver.ts`, implemented in `packages/elements/test/in-process.ts` and `packages/elements/test/browser/driver.ts` (the `StaticText` names under each `listitem` of the list's AX subtree, joined with spaces, white space collapsed and trimmed), with its own test in both harnesses: a fixture list with a hidden span, an `aria-hidden` span and nested inline markup gives the expected texts, and an empty item gives `""`.
+- [ ] T029 [P] [US2] Driver addition `itemTexts(list)` (research R-11): declared in `packages/elements/test/scenarios/driver.ts`, implemented in `packages/elements/test/in-process.ts` and `packages/elements/test/browser/driver.ts` (the `StaticText` names at any depth under each `listitem` of the list's AX subtree, a slotted `<time>`'s `time` node included (phase 2 spike § 1), joined with spaces, white space collapsed and trimmed), with its own test in both harnesses: a fixture list with a hidden span, an `aria-hidden` span and nested inline markup gives the expected texts, and an empty item gives `""`.
 - [ ] T030 [US2] `packages/elements/test/scenarios/event-timeline.ts`: US2-1 to US2-10 as shared bodies with the oracles of contracts/checks.md, every "does not" paired:
-  - US2-1 (one list named "Mission history", three `listitem`s in source order, `itemTexts` each the time then the content and not empty; no marker or connector node; a DOM assertion that every marker wrapper and connector span carries `aria-hidden="true"`; axe `list` and `listitem` clean);
-  - US2-2 (each dot `--ocelle-size-dot` square, `border-radius: 50%`, centred on the time's line with `1lh`; a connector span per event but the last);
+  - US2-1 (one list named "Mission history", three `listitem`s in source order, `itemTexts` each the time then the content and not empty; no marker or connector node; a DOM assertion that every marker wrapper and connector span carries `aria-hidden="true"`; the axe clause, `aria-required-children` and `aria-required-parent`, which axe applies to the explicit roles in place of `list` and `listitem` (phase 2 spike Q2 (a)), is met by the `axe` gate on the timeline stories (T048), not by this body, since element tests run no axe);
+  - US2-2 (each dot `--ocelle-size-dot` square within 0.5 px of the probe-resolved token (it lays out at 7.1875 px, phase 2 spike § 5), `border-radius: 50%`, centred on the time's line with `1lh`; a connector span per event but the last);
   - US2-3 (the time in `--ocelle-font-sans` with `tabular-nums`, `--ocelle-color-ink-muted`, distinct from the content by more than colour; an event with no `time` has no time box and its item text is its content alone);
   - US2-4 (the identifier with `wrap="anywhere"` at 320 px wraps inside the event, page scroll width, copy unchanged);
   - US2-5 (append, remove, `hidden` after mount: the `listitem` count, connectors joining only visible events, no error);
   - US2-6 (only `ocelle-timeline-event` children shown and exposed; the item children are shown);
   - US2-7 (a link keeps its tab stop, its box inside the `<li>`'s content column after the marker column, the list named in the tree; `tabWalk` shows it is the only added stop);
-  - US2-8 (light and dark rendered colours against the probe-resolved tokens; forced colours: dot and connector a `CanvasText` border side with width above zero, text a system text colour);
+  - US2-8 (light and dark rendered colours against the probe-resolved tokens; forced colours: the dot's `border-block-start` and the connector's `border-inline-start` each `CanvasText` with width above zero (phase 2 spike Q3 (a)), text a system text colour);
   - US2-9 (`dir="rtl"`: markers and connectors on the right);
-  - US2-10 (a blank host `aria-label` counts as absent: the `label` names the list; a blank one with no `label` leaves it unnamed; a non-blank host `aria-label` "History" names it over `label`: the host `aria-label` states plan.md § Complexity Tracking excepts from a story, proven here).
+  - US2-10 (a blank host `aria-label` counts as absent: the `label` names the list; a blank one with no `label` leaves it unnamed; a non-blank host `aria-label` "History" names it over `label`: the bodies stay beside the two host `aria-label` stories of the phase 2 spike's Q1 (b), T038, T045).
 - [ ] T031 [US2] `packages/elements/test/scenarios/event-timeline.ts` (continued): the `time` bodies of research R-10 and the `time` slot bodies of Q-E and Q-G:
   - `time` set, changed and cleared by property after mount (reflected; the marker's centre follows the time's line), `time=""` and `time=" "` (no time);
   - US2-11 (a `<time slot="time" datetime>` written after the content is shown above it and read first, with the attribute time's type; a `<b slot="time">` takes the same type);
@@ -559,18 +575,18 @@ both dots; at 320 px the page scroll width equals the viewport width; zero CSP v
   - the degraded form maps to a rule in the consumer's own stylesheet (no inline style) plus the state stated in text, never by muting alone (IQ-16 (a));
   - unavailable retention maps to 013's `ocelle-empty-state` in place of the timeline, the announcement the consumer's own notice or live region (IQ-17 (a)).
   Apart from US2, in the same file: the data table's three notes from #533 (Q-T1 to Q-T3 (a); R-16's header-cells and body-cells rows; phase 1 is folded and phase 4 has no red commit): the prototype's mono cells and headers map to the sans face with tabular figures; its 0.06em header tracking maps to `--ocelle-tracking-eyebrow`; its header padding maps to the cells' padding. Each new statement fails at red against the README as folded.
-- [ ] T038 [P] [US2] `storybook/test/integration/elements-stories.test.ts`: each of the 11 timeline stories in the index, rendered in light and dark with no outside request, 320 px reflow paired with a non-zero host size, and every list named except the empty story and the standalone-event story (which render no list); the standalone-event story renders its `ocelle-timeline-event`s with a non-zero size and no `list` node.
+- [ ] T038 [P] [US2] `storybook/test/integration/elements-stories.test.ts`: each of the 13 timeline stories in the index, rendered in light and dark with no outside request, 320 px reflow paired with a non-zero host size, and every list named except the empty story and the standalone-event story (which render no list); the standalone-event story renders its `ocelle-timeline-event`s with a non-zero size and no `list` node; in the host `aria-label` story the `list` is named "History", and in the blank host `aria-label` story it is named "Mission history" (phase 2 spike Q1 (b)).
 - [ ] T039 [US2] Red commit of T029 to T038 (test files only): `test(019-data-records): phase 2 red — An event history as an ordered list`, signed off, naming the `source.test.ts` change and its reason. Run `red.sh 2 phase` (`"tests_only": true`, `"red": true`) and read the red log per body.
 
 ### Implementation (green)
 
 - [ ] T040 [US2] `packages/elements/src/timeline-time.ts` (research R-10): `hasSlottedTime(event)` = "at least one visible one has non-blank trimmed `textContent`" among the event's direct children with `slot="time"` that are neither `hidden` nor `aria-hidden="true"`; `hasTime(event)` = `hasSlottedTime(event)`, or a non-blank `time` ("Absent, empty or white space counts as no attribute time"). Both read the light DOM directly.
 - [ ] T041 [US2] `packages/elements/src/ocelle-timeline-event.ts` (contracts/ocelle-timeline-event.md): `time` and `wrap` reflected; `<span part="time">` above `<span part="content"><slot></slot></span>` (Q-C (a)), `part="time"` holding `<slot name="time">` while `hasSlottedTime` is true, else the `time` text while `hasTime` is true, else absent; `slot[name="time"]::slotted(*)` the time's type (`--ocelle-font-sans`, `--ocelle-figures`, `--ocelle-color-ink-muted`, its size and weight), `::slotted([aria-hidden="true"])` and `::slotted([hidden])` `display: none`; its own `MutationObserver` on its subtree (`childList`, `characterData`, `slot`, `hidden`, `aria-hidden`); `:host([wrap="anywhere"]) [part="content"] { overflow-wrap: anywhere }`; `:host { display: block; }` and `:host([hidden]) { display: none; }`; outside a timeline the same parts as plain text with no list role.
-- [ ] T042 [US2] `packages/elements/src/ocelle-event-timeline.ts` (contracts/ocelle-event-timeline.md, R-08 to R-10): `slotAssignment: "manual"`; `:host { display: block; }` and `:host([hidden]) { display: none; }` (FR-001); no `<ol>` with no visible event; otherwise `<ol part="list" role="list" aria-label=…>` with one `<li role="listitem">` per visible event ("Direct children with the item tag, neither `hidden` nor `aria-hidden="true"`, in source order"), each holding `<span class="marker-line" aria-hidden="true"><span class="marker"></span></span>`, the slot, and a `<span class="connector" aria-hidden="true">` except on the last `<li>`; `has-time` and `next-has-time` classes from `hasTime`; the name from 009's `resolveName(host aria-label, label)`; one `MutationObserver` on the events' subtrees (`childList`, `characterData`, `slot`, `time`, `hidden`, `aria-hidden`); dots `--ocelle-size-dot` round (`border-radius: 50%`) drawn with a border, connectors gapped by `--ocelle-space-1` from each dot, borders `CanvasText` in forced colours; tokens only.
+- [ ] T042 [US2] `packages/elements/src/ocelle-event-timeline.ts` (contracts/ocelle-event-timeline.md, R-08 to R-10): `slotAssignment: "manual"`; `:host { display: block; }` and `:host([hidden]) { display: none; }` (FR-001); no `<ol>` with no visible event; otherwise `<ol part="list" role="list" aria-label=…>` with one `<li role="listitem">` per visible event ("Direct children with the item tag, neither `hidden` nor `aria-hidden="true"`, in source order"), each holding `<span class="marker-line" aria-hidden="true"><span class="marker"></span></span>`, the slot, and a `<span class="connector" aria-hidden="true">` except on the last `<li>`; `has-time` and `next-has-time` classes from `hasTime`; the name from 009's `resolveName(host aria-label, label)`; one `MutationObserver` on the events' subtrees (`childList`, `characterData`, `slot`, `time`, `hidden`, `aria-hidden`); dots `--ocelle-size-dot` round (`border-radius: 50%`) drawn with one border side, `border-block-start: var(--ocelle-size-dot) solid var(--ocelle-color-ink-muted)`, and no other (phase 2 spike Q3 (a)), connectors gapped by `--ocelle-space-1` from each dot, borders `CanvasText` in forced colours; tokens only.
 - [ ] T043 [US2] `packages/styles/src/base.css`: block 3's two timeline rules (contracts/styles-data-table.md § Block 3), in the base layer right after 013's `ocelle-facts` rule and before the focus rule, with the base layer's header comment naming them (recheck Q5 (b)): `:where(ocelle-event-timeline:not(:defined) > ocelle-timeline-event:not([hidden]):not([aria-hidden="true"])) { display: block; }` and the `display: none` rule for `aria-hidden="true"` events before upgrade; `packages/styles/README.md` (beside § Facts before upgrade) and `CHANGELOG.md`.
 - [ ] T044 [US2] Manifest: regenerate and commit `packages/elements/custom-elements.json` with the two declarations (`time` and `wrap` on the event, its default and `time` slots and `time`/`content` parts; `label` and the `list` part on the timeline; empty event lists); `timeline-time.ts` declares nothing in it.
-- [ ] T045 [US2] `storybook/stories/event-timeline.stories.ts` (`title: "Elements/ocelle-event-timeline"`): the 11 stories of contracts/checks.md § Stories (three events; an event without a time; marked-up times; a long identifier with `wrap`; a link in an event; one event; a hidden event; right-to-left; 320 px; empty; standalone events outside a timeline, analysis C1 (c)), wrapper widths in `storybook/.storybook/stories-layout.css`, no `style` attribute, no pointer state.
-- [ ] T046 [US2] Baselines: `pnpm run visual:update` in #10's pinned container under docker (as T020); it must print `(22 added, 0 changed, 0 removed)`. Commit `storybook/baselines/elements-ocelle-event-timeline--*.{light,dark}.png`.
+- [ ] T045 [US2] `storybook/stories/event-timeline.stories.ts` (`title: "Elements/ocelle-event-timeline"`): the 13 stories of contracts/checks.md § Stories (three events; an event without a time; marked-up times; a long identifier with `wrap`; a link in an event; one event; a hidden event; right-to-left; 320 px; empty; standalone events outside a timeline, analysis C1 (c); named by a host `aria-label` (`aria-label="History"`, `label="Mission history"`); a blank host `aria-label` (`aria-label="  "`, `label="Mission history"`), phase 2 spike Q1 (b)), wrapper widths in `storybook/.storybook/stories-layout.css`, no `style` attribute, no pointer state.
+- [ ] T046 [US2] Baselines: `pnpm run visual:update` in #10's pinned container under docker (as T020); it must print `(26 added, 0 changed, 0 removed)` (13 stories, the phase 2 spike's Q1 (b)). Commit `storybook/baselines/elements-ocelle-event-timeline--*.{light,dark}.png`.
 - [ ] T047 [US2] `packages/elements/README.md`: the timeline section with every statement of T037, the Host ARIA list update and the event-history mapping rows (R-16's phase 2 table, the `id` fragment-target line of IQ-15 (a) among them); the data table's header-cells and body-cells mapping rows gain T037's three #533 notes (Q-T1 to Q-T3 (a)), no other data-table line changed; `packages/elements/CHANGELOG.md` entries for both elements, the `time` slot named as surface.
 - [ ] T048 [US2] Gates as T022, one heavy job at a time; record the Storybook gates' summary lines.
 - [ ] T049 [US2] Affected plants: `pnpm run gate:plants -- --affected $(cat specs/019-data-records/reviews/phase-2/base.sha)`, recorded in `specs/019-data-records/reviews/phase-2/plants.md` in op 016's form; exit 0; committed with the green commit.
@@ -596,7 +612,7 @@ gates pass.
 
 ### Spike (first)
 
-- [ ] T052 [US3] Spike before the scaffold, scratch files only, recorded in `specs/019-data-records/reviews/phase-3/spike.md` (research R-12): line ends at 1280, 600, 320 and 200 px (#517's column, Q-T5 (b)) and after an item change; two-digit fit for ordinal 20 inside the marker's padding box; the chip's block size under `--ocelle-size-step` (zero or small block padding, the line height named); the shared centre line with chips (every `<li>` reserving a `--ocelle-size-step` line box); `dir="rtl"`; no `ResizeObserver` loop error from the line-end observer; a full axe-core run on a chain named by a non-blank and by a blank host `aria-label` (the sunset check of plan.md § Complexity Tracking's host `aria-label` row; a clean result is a stop-and-ask point). A contradiction stops for the operator.
+- [ ] T052 [US3] Spike before the scaffold, scratch files only, recorded in `specs/019-data-records/reviews/phase-3/spike.md` (research R-12): line ends at 1280, 600, 320 and 200 px (#517's column, Q-T5 (b)) and after an item change; two-digit fit for ordinal 20 inside the marker's padding box; the chip's block size under `--ocelle-size-step` (zero or small block padding, the line height named); the shared centre line with chips (every `<li>` reserving a `--ocelle-size-step` line box); `dir="rtl"`; no `ResizeObserver` loop error from the line-end observer; a full axe-core run on a chain named by a non-blank and by a blank host `aria-label` (the sunset check of plan.md § Complexity Tracking's host `aria-label` row; a clean result is a stop-and-ask point); for US3-1, that axe applies `aria-required-children` to the chain's explicit `role="list"` and `aria-required-parent` to each `role="listitem"`, with `list` and `listitem` inapplicable, as phase 2's spike measured on the timeline (phase 2 spike Q2 (a)). A contradiction stops for the operator.
 
 ### Scaffold
 
@@ -655,7 +671,7 @@ fail for them.
 - [ ] T075 Final surface lists in `packages/elements/CHANGELOG.md` and `packages/styles/CHANGELOG.md` (FR-057, MINOR): the five elements and their entry points, the event's `time` slot, the properties `label`, `wrap`, `stickyHeader` (`sticky-header`), `striped`, `time`, `variant`, the parts `list`, `time`, `content`, `base.css`'s four blocks, the base-style hook `--data-table-box-size` / `--data-table-end-fade` in both CHANGELOGs (analysis I7 (a)) and the `data-ocelle-align` hook in `@ocelle/styles`' (IQ-3); the overflow-region module's block-axis option named in `@ocelle/elements`' as an internal change (IQ-2); no token added. Exempt (documentation).
 - [ ] T076 Review check, recorded in `specs/019-data-records/reviews/phase-4/coverage.md`: the README mapping rows together cover every modifier, state, structure role and part of R-16's inventory, the library's variant set for the three families (IQ-1 (a)), and any rc.10 variant the operator named, with no row reading "pending inventory", each naming the element and variant, the consumer's remedy, or "not this mission" with the operator's decision, with each row's `.sk-*` family name checked here (SC-001). A gap goes to the operator. Exempt.
 - [ ] T077 Record in `specs/019-data-records/reviews/phase-4/coverage.md` the state of the R-17 request to 009's owner (the pinned-start option): open, or landed and used by T016. Exempt.
-- [ ] T078 Run quickstart.md steps 1 to 6 on the whole mission, one heavy job at a time, as quickstart.md states them: step 4 as `pnpm run gate:plants -- --affected $(cat specs/019-data-records/reviews/phase-1/base.sha)` (the mission's base: phase 4 changes no source, so its own base would select nothing) recorded in `specs/019-data-records/reviews/phase-4/plants.md` in op 016's form, and step 6 as `pnpm run gate:mutation -- --base $(cat specs/019-data-records/reviews/phase-1/base.sha)`; `gate:storybook-build`, `gate:visual` and `gate:axe` pass on all 44 stories and no earlier baseline (013's and 009's among them) changes, and 009's tests pass unedited (SC-003, SC-007); summary lines in `specs/019-data-records/reviews/phase-4/quickstart.md`. Exempt.
+- [ ] T078 Run quickstart.md steps 1 to 6 on the whole mission, one heavy job at a time, as quickstart.md states them: step 4 as `pnpm run gate:plants -- --affected $(cat specs/019-data-records/reviews/phase-1/base.sha)` (the mission's base: phase 4 changes no source, so its own base would select nothing) recorded in `specs/019-data-records/reviews/phase-4/plants.md` in op 016's form, and step 6 as `pnpm run gate:mutation -- --base $(cat specs/019-data-records/reviews/phase-1/base.sha)`; `gate:storybook-build`, `gate:visual` and `gate:axe` pass on all 46 stories and no earlier baseline (013's and 009's among them) changes, and 009's tests pass unedited (SC-003, SC-007); summary lines in `specs/019-data-records/reviews/phase-4/quickstart.md`. Exempt.
 
 **Checkpoint**: the phase 4 review approves; `summary.sh` follows in `/ocelle-run` step 4.
 

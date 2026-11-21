@@ -41,7 +41,7 @@ to the first focusable cell content or to the frame (009's handover).
 | Field | Source | Type | Rule |
 |---|---|---|---|
 | `label` | property / attribute | `string \| undefined` | List name when the host `aria-label` is absent or blank (R-09). |
-| host `aria-label` | observed attribute | `string \| null` | Non-blank names the list; blank counts as absent. |
+| host `aria-label` | observed attribute | `string \| null` | Non-blank names the list; blank counts as absent. Both states have stories (phase 2 spike Q1 (b)). |
 | events | derived | `OcelleTimelineEvent[]` | Direct children with the item tag, neither `hidden` nor `aria-hidden="true"`, in source order. |
 | name | derived | `string \| undefined` | `resolveName(host aria-label, label)` from 009's module (R-09); set on the shadow `<ol>` as `aria-label`; absent when undefined. |
 | has time | derived per `<li>` | `boolean` | `hasTime(event)`: a slotted time, or a non-blank `time` (R-10); sets `has-time` on the `<li>`, which puts the marker on the time's line. |
@@ -69,7 +69,7 @@ text; the content's text alone when the event has no time. Time first wherever t
 | Field | Source | Type | Rule |
 |---|---|---|---|
 | `label` | property / attribute | `string \| undefined` | As the timeline's. |
-| host `aria-label` | observed attribute | `string \| null` | As the timeline's. |
+| host `aria-label` | observed attribute | `string \| null` | Non-blank names the list; blank counts as absent. No story sets it (plan.md § Complexity Tracking; T052 measures it). |
 | steps | derived | `OcelleEvidenceStep[]` | Direct children with the item tag, neither `hidden` nor `aria-hidden="true"`, in source order. |
 | ordinal | derived per step | `number` | 1-based position among the visible steps, chip steps counted; shown only on default steps. |
 | name | derived | `string \| undefined` | As the timeline's (`resolveName`). |

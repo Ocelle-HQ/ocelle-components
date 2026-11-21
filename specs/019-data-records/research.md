@@ -550,6 +550,15 @@ on the `<ol>` with `aria-label` from the name of R-09.
 `role="listitem"` keep the list semantics in WebKit, which drops an unstyled list's role (spec check 1, SPEC-1-11);
 Chromium is unaffected.
 
+**Which axe rules judge the lists (phase 2 spike Q2 (a), 2026-11-20).** axe-core selects `ul, ol` for its `list` rule
+and `li` for its `listitem` rule only when they carry no `role` attribute, so with the explicit roles kept above it
+applies neither (both inapplicable, `reviews/phase-2/spike.md` § 1). Its `aria-required-children` rule (the `list`
+holds only `listitem`s) and `aria-required-parent` rule (each `listitem` sits in a `list`) select them instead, and
+pass. So US2-1 and US3-1 name `aria-required-children` and `aria-required-parent`, in place of `list` and `listitem`,
+as the axe rules that judge the list's structure. Element tests run no axe: the clause is met by the `axe` gate on the
+timeline's stories (phase 2) and the chain's (phase 3; T052 confirms the same selection on the chain). The explicit
+roles stay: dropping them would bring `list` and `listitem` back but lose WebKit's list role.
+
 **Connectors as elements.** The connectors are spans, not `::before` or `::after`, so the drivers' existing `boxes`
 and `styles` readers measure them (no driver reads a pseudo-element) and the forced-colours bodies can read their
 painted colour and box (R-10, R-12). Each connector span is empty and `aria-hidden="true"`; the AX bodies assert that
@@ -589,11 +598,22 @@ the one before it). The spec's edge cases gain this case.
 manual assignment gives one clean list in Chromium. Rendering no `<ol>` when empty avoids an empty named list.
 
 **Spike (phase 2).** The Chromium tree of a timeline of three events (`list` named, three `listitem`, each holding the
-event's time and content as `StaticText`), with the FR-016 item-text oracle (R-11) and axe `list`, `listitem`,
-`aria-allowed-role` and a full run. Also, for the `time` slot (plan gate Q-E): a slotted `<time datetime>` written
-after the content gives its `StaticText` before the content's; an unrendered `time` slot leaves an empty or hidden
+event's time and content as `StaticText`), with the FR-016 item-text oracle (R-11) and axe `list`, `listitem` (found inapplicable to the explicit roles, Result
+below), `aria-allowed-role` and a full run. Also, for the `time` slot (plan gate Q-E): a slotted `<time datetime>`
+written after the content gives its `StaticText` before the content's; an unrendered `time` slot leaves an empty or hidden
 `slot="time"` child out of the tree and out of layout; and `slot[name="time"]::slotted(*)` sets the type on a `<b>`
 over its UA bold.
+
+**Result (T026, 2026-11-20, `reviews/phase-2/spike.md` §§ 1, 3, 6).** As expected: one `list` named "Mission
+history" with three `listitem`s in source order, item texts "14:02 Mission created", "14:20 Plan approved" and "14:41
+Review requested" (the `hidden` and `aria-hidden` spans' text left out, the slotted `<time>` written after the content
+read first), and no node for a marker wrapper, a marker or a connector, with or without `aria-hidden` on those spans.
+axe with the `axe` gate's selection: no violation and no incomplete result; `aria-allowed-role`, `aria-allowed-attr`,
+`aria-prohibited-attr`, `aria-required-children` and `aria-required-parent` pass; `list` and `listitem` inapplicable
+(above, Q2 (a)). The `time` slot: an empty, white-space-only, `hidden` or `aria-hidden="true"` slotted time is
+unassigned with no client rect and no `part="time"`, and the attribute applies beside a hidden one (Q-G (a)); the
+attribute time, a slotted `<time>` and a `<b slot="time">` compute the same type. A standalone event is a `generic`
+with its time's then its content's `StaticText`, and an empty timeline a bare `generic` with no `list` node.
 
 ## R-09 Naming the lists: a blank host `aria-label` counts as absent (FR-022)
 
@@ -607,9 +627,13 @@ of that export, and T001 rechecks its name and rule (R-14).
 The host's own `aria-label` attribute is the consumer's and is not removed; whether Chromium exposes it on the host's
 generic node, and whether axe reports `aria-prohibited-attr` for it, is measured in phase 2's spike against 009's lane, which renders its named role on a shadow wrapper the same way (branch). If the host
 attribute is exposed as a second name, the element follows whatever 009's lane does on `main` (R-14). No story sets a
-host `aria-label` on the timeline or the chain: those states are plan.md § Complexity Tracking's one Principle V
-exception (analysis C1 (c), 2026-11-16), proven by the browser bodies (US2-10, US3-10). The spikes (T026, T052) run
-axe on the state; a clean result meets the row's sunset and goes to the operator. For the data table it was met in
+host `aria-label` on the chain: that state is plan.md § Complexity Tracking's one Principle V exception (analysis
+C1 (c), 2026-11-16), proven by the browser bodies (US3-10). The spikes (T026, T052) run axe on the state; a clean
+result meets the row's sunset and goes to the operator. For the timeline it was met in phase 2: axe-core 4.14.0 with
+the `axe` gate's selection is clean on a timeline named by a non-blank host `aria-label` ("History"), a blank one (two
+spaces) and the empty string, and on 009's lane (`reviews/phase-2/spike.md` § 2; Chromium shows the host as a
+`generic` node of the same name beside the `list`, as on the lane, which axe does not report). The operator chose two
+stories for it, non-blank and blank (phase 2 spike Q1 (b), 2026-11-20), and T030's US2-10 body stays. For the data table it was met in
 phase 1: axe-core 4.14.0 with the `axe` gate's selection is clean on an overflowing or fitting data table named by a
 non-blank host `aria-label`, on a blank one and on 009's `ocelle-scroller` (`reviews/phase-1/spike.md` § 2; Chromium
 shows the host as a `generic` node of the same name beside the `group`, which axe does not report). The operator chose
@@ -684,9 +708,15 @@ it has none (the container reads `hasTime(event)`, the slotted time or the refle
 the `<li>`), so it is
 centred on the event's first line (the slot convention's `1lh` technique, which `style-lint` allows). The marker is a
 round dot of `--ocelle-size-dot`: `box-sizing: border-box`, inline and block size `--ocelle-size-dot`, drawn as a
-border, `border: calc(var(--ocelle-size-dot) / 2) solid var(--ocelle-color-ink-muted)`, so the mark is painted by a
-foreground property and not a background (forced colours, below), and `border-radius: 50%` (Q-D, decided: a mark
-shape, not a corner radius, constitution II). The connector is the `<li>`'s `<span class="connector"
+border on one side only, `border-block-start: var(--ocelle-size-dot) solid var(--ocelle-color-ink-muted)` with no
+other border side (phase 2 spike Q3 (a)), so the mark is painted by a foreground property and not a background
+(forced colours, below), and `border-radius: 50%` (Q-D, decided: a mark shape, not a corner radius, constitution II).
+The one block-start side of the dot's whole size fills the box: Chromium floors a border width to whole device
+pixels, so the earlier four sides of `calc(var(--ocelle-size-dot) / 2)` computed 3px each on the 7.1875 px box and
+left a 1.19 px unpainted centre at a device pixel ratio of 1 and of 2, while the one side computes 7px, a 0.19 px
+content box, and the dot paints solid at both ratios (`reviews/phase-2/spike.md` § 5). The dot is laid out at
+7.1875 px (0.45 rem to 1/64 px), so US2-2's size assertion compares its border box with the probe-resolved
+`--ocelle-size-dot` within 0.5 px, not with the exact 7.2. The connector is the `<li>`'s `<span class="connector"
 aria-hidden="true">`, absolutely positioned in the marker column with no inline size and a `border-inline-start:
 var(--ocelle-border-width) solid var(--ocelle-color-rule-strong)` (decorative). The last visible `<li>` renders no
 connector span (hidden items render no `<li>`). Rows are separated by `--ocelle-space-3`. All positions are logical
@@ -707,6 +737,17 @@ one and never crosses either dot, so no lighter line is painted over a structura
 - **Figures.** The offsets are `calc()` over tokens: the two types' sizes and `--ocelle-line-height-normal`,
   `--ocelle-size-dot`, `--ocelle-space-1` and the row gap `--ocelle-space-3`. No new `style-lint` allowance is used.
   The phase 2 spike records the exact form `style-lint` accepts, and a form it rejects goes to the operator.
+- **Result (T026, 2026-11-20, `reviews/phase-2/spike.md` § 4).** With the marker in its `1lh` wrapper, the `<li>` a
+  grid of `--ocelle-size-dot` and the item with a `--ocelle-space-3` gap, the connector absolutely positioned in the
+  marker column at `inset-block-start: calc((var(--ocelle-font-size-sm) * var(--ocelle-line-height-normal) +
+  var(--ocelle-size-dot)) / 2 + var(--ocelle-space-1))`, `inset-block-end: calc(var(--ocelle-space-1) -
+  var(--ocelle-space-3) - (var(--ocelle-font-size-sm) * var(--ocelle-line-height-normal) - var(--ocelle-size-dot)) /
+  2)`, `inset-inline-start: calc((var(--ocelle-size-dot) - var(--ocelle-border-width)) / 2)` and `inline-size: 0`,
+  with `--ocelle-font-size-xs` in place of `-sm` under `li.has-time` (the start) and `li.next-has-time` (the end), a
+  mixed timeline of five events measured a start gap of 4.016 px and an end gap of 4.000 px (`--ocelle-space-1` is
+  4 px), each dot's centre within 0.02 px of its first line's centre, and `elementFromPoint` at each dot's centre
+  returning the marker, the same at 320 px. Stylelint with `stylelint.config.ts` accepts this form and both dot border
+  forms: no new allowance.
 
 Phase 2's red commit has connector geometry bodies on a timeline of three timed events and on a mixed timeline
 (timed, untimed, timed by its `time` slot, untimed with an empty slotted time). For each connector they assert:
@@ -735,10 +776,13 @@ a mark drawn as a background would be Canvas on Canvas. Every mark is therefore 
 timeline's styles add, outside the variant block, `@media (forced-colors: active) { .marker, .connector {
 border-color: CanvasText; } }`: the dot and the connector are drawn in `CanvasText`, and the time and content text are
 forced to the system text colour. No `forced-color-adjust: none` is needed. US2-8's forced-colours half asserts, on
-the real spans, that each marker's and connector's drawing border colour is a foreground system colour (`CanvasText`,
-not the ground's `Canvas`) and that each box is not empty (the marker's border box is `--ocelle-size-dot` square; the
+the real spans, that the side that draws each mark, the marker's `border-block-start` and the connector's
+`border-inline-start`, has a foreground system colour (`CanvasText`, not the ground's `Canvas`) and a width above zero
+(phase 2 spike Q3 (a)), and that each box is not empty (the marker's border box is `--ocelle-size-dot` square; the
 connector's border box has the border width and a block size above zero). Plant: the dot drawn as a
-`background-color` with no border; US2-8 must fail.
+`background-color` with no border; US2-8 must fail. **Result (T026, `reviews/phase-2/spike.md` § 5):** under
+`forcedColors: "active"` the marker's and the connector's border colour is `CanvasText`, their backgrounds
+transparent; under `dir="rtl"` the marks are on the right.
 
 **Contrast.** `ink-muted` on the nine main grounds is a text declaration in the token source (4.5:1 or more), above
 the 3:1 FR-013 requires of the marker (branch values; the contrast gate reads them). R-13 has the two oracles that tie
@@ -752,6 +796,10 @@ what is painted to those declarations.
 and trims. It is added to both harnesses with its own test (a plain `<ol>` with two items, one holding nested inline
 markup), and every body that asserts an item text also asserts it is not empty. The browser harness uses its existing
 CDP session (013's `commands.ts` reads the AX tree for value properties).
+
+**Result (T026, 2026-11-20, `reviews/phase-2/spike.md` § 1).** The oracle gives the expected texts. A slotted
+`<time>` adds a `time` node around its `StaticText` in Chromium's tree, so the `StaticText` names are read at any
+depth under each `listitem`, not from its children only.
 
 ## R-12 The chain's look and line ends (FR-031 to FR-036)
 
@@ -908,10 +956,10 @@ lines; phase 4 uses the mission's base (phase 1's), as it changes no source (qui
 `gate:plants` locally (CI's required Plants check judges the full set).
 Baselines: `pnpm run visual:update` only in #10's pinned container under docker (start `dockerd` as root; after a
 container restart, `pnpm run setup:online`); the command must report `<n> added, 0 changed, 0 removed` with `<n>`
-twice the phase's new stories (42, 22 and 24 for phases 1 to 3, from checks.md § Stories; phase 1's 28 since spike
+twice the phase's new stories (42, 26 and 24 for phases 1 to 3, from checks.md § Stories; phase 1's 28 since spike
 Q1 (b), 38 since the inventory decisions IQ-2 to IQ-5 added five stories, 40 since the re-analysis decision C1 (b)
 added the unbounded sticky-header story, 42 since the answer to fixes-2 Q-1 (b) added the room-rule sticky-header
-story), so no existing baseline
+story; phase 2's 26 since the phase 2 spike's Q1 (b) added the two host `aria-label` timeline stories), so no existing baseline
 moves (013's baselines among them, SC-007). Conflicting PNGs are regenerated in the container, never hand-picked. Mutation follows #23 and op 015 on `main`.
 
 ## R-16 The inventory (FR-058)
@@ -1122,7 +1170,7 @@ from 009's inline fades where one applies:
   operator's decision Q-I7 (a), 2026-11-18). The re-analysis decision C1 (b) (2026-11-18) adds one story for the
   sticky header with no bound (US1-20), and the answer to fixes-2 Q-1 (b) (2026-11-18) one for the room-rule state
   (a bound leaving rows below but less than twice the fade depth under the header, no caption: no fade at rest), so
-  phase 1 has 21 stories and 42 baselines, the mission 44 and 88. The one scroll-position state left, scrolled to the
+  phase 1 has 21 stories and 42 baselines, the mission 44 and 88 (46 and 92 since the phase 2 spike's Q1 (b)). The one scroll-position state left, scrolled to the
   block end, is a Principle V exception row in plan.md § Complexity Tracking, proven by US1-26, US1-28 and T079's
   bodies.
 

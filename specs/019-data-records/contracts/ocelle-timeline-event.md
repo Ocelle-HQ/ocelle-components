@@ -75,7 +75,9 @@ inside or outside a timeline.
 ## Item text
 
 The time box comes before the content in the shadow tree, so the item text (FR-016) is the time first, a space and
-the content, wherever the consumer wrote the slotted node in source.
+the content, wherever the consumer wrote the slotted node in source. Measured in phase 2's spike: a `<time
+slot="time">` written after the content is read first, inside a `time` node of Chromium's tree
+(`reviews/phase-2/spike.md` §§ 1, 3).
 
 ## What the slot carries (Q-E)
 
@@ -87,7 +89,7 @@ needed, and asks for one time element per event.
 ## Outside a timeline
 
 The event shows its time (slotted or attribute) above its content as plain text, with no marker, connector or list
-role.
+role: in Chromium a `generic` holding the time's `StaticText` then the content's (`reviews/phase-2/spike.md` § 6).
 
 ## Before upgrade
 
