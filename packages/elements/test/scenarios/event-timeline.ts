@@ -641,5 +641,78 @@ return { time: getComputedStyle(time).direction, content: getComputedStyle(conte
   },
 ];
 
-/** Every timeline body, in the order of tasks.md T030 to T033. */
-export const eventTimelineScenarios: readonly Scenario[] = [...eventTimelineStoryScenarios, ...eventTimelineTimeScenarios, ...eventTimelineGeometryScenarios, ...eventTimelineEdgeScenarios];
+/**
+ * Run-time changes the bodies above make only at mount (tasks.md T051, the mutation run's survivors closed before it):
+ * `wrap` set by property, `aria-hidden` set and removed on a slotted time and on an event, and the host `aria-label`
+ * and `label` changed after mount.
+ */
+export const eventTimelineChangeScenarios: readonly Scenario[] = [
+  {
+    name: "change: wrap set by property reflects, and wrap=\"anywhere\" sets overflow-wrap on the content only; unset again it goes",
+    run: async (driver) => {
+      await page(driver, tl("t", 'label="Mission history"', [ev("e", 'time="14:02"', "Mission created")]));
+      const state = async (): Promise<unknown> => ({ attribute: await driver.attribute("e", "wrap"), ...((await read(driver, 'const content = part($("e"), "content"); const time = part($("e"), "time"); return content === null || time === null ? { content: "missing" } : { content: getComputedStyle(content).overflowWrap, time: getComputedStyle(time).overflowWrap };')) as object) });
+      await driver.setProperty("e", "wrap", "anywhere");
+      const set = await state();
+      await driver.setProperty("e", "wrap", undefined);
+      return { set, unset: await state() };
+    },
+    expected: { set: { attribute: "anywhere", content: "anywhere", time: "normal" }, unset: { attribute: null, content: "normal", time: "normal" } },
+  },
+  {
+    name: "change: aria-hidden set and removed on a slotted time after mount: the time box, the item text, the marker's line and the previous connector follow",
+    run: async (driver) => {
+      await page(driver, tl("t", 'label="Mission history"', [ev("e0", 'time="14:00"', "Start"), ev("e1", "", '<time id="a" slot="time">14:20</time>Masked later')]));
+      const state = async (): Promise<unknown> => ({ items: (await texts(driver, "t")).texts, ...((await read(driver, 'return { time: timeOf($("e1")), lines: lis("t").map(line), classes: classes("t"), gaps: gaps("t") };')) as object) });
+      const before = await state();
+      await driver.setAttribute("a", "aria-hidden", "true");
+      const masked = await state();
+      await driver.setAttribute("a", "aria-hidden", null);
+      return { before, masked, unmasked: await state() };
+    },
+    expected: {
+      before: { items: ["14:00 Start", "14:20 Masked later"], time: "slot[a]", lines: ["time", "time"], classes: ["has-time next-has-time", "has-time"], gaps: ["space-1"] },
+      masked: { items: ["14:00 Start", "Masked later"], time: null, lines: ["time", "content"], classes: ["has-time", ""], gaps: ["space-1"] },
+      unmasked: { items: ["14:00 Start", "14:20 Masked later"], time: "slot[a]", lines: ["time", "time"], classes: ["has-time next-has-time", "has-time"], gaps: ["space-1"] },
+    },
+  },
+  {
+    name: "change: aria-hidden=\"true\" set and removed on an event after mount: its listitem and connector go and come back",
+    run: async (driver) => {
+      await page(driver, tl("t", 'label="Mission history"', three));
+      const state = async (): Promise<unknown> => ({ items: (await texts(driver, "t")).texts, gaps: await read(driver, 'return gaps("t");') });
+      await driver.setAttribute("e2", "aria-hidden", "true");
+      const masked = await state();
+      await driver.setAttribute("e2", "aria-hidden", null);
+      return { masked, unmasked: await state() };
+    },
+    expected: { masked: { items: ["14:02 Mission created", "14:41 Review requested"], gaps: ["space-1"] }, unmasked: { items: threeTexts, gaps: ["space-1", "space-1"] } },
+  },
+  {
+    name: "change: the host aria-label set, blanked and removed and label changed after mount rename the list; an unnamed list has no aria-label (FR-022)",
+    run: async (driver) => {
+      await page(driver, tl("t", 'label="Mission history"', three));
+      const state = async (): Promise<unknown> => ({ lists: await lists(driver, "t"), attribute: await read(driver, 'const ol = shadow("t")?.querySelector("ol") ?? null; return ol === null ? "no list" : ol.getAttribute("aria-label");') });
+      await driver.setAttribute("t", "aria-label", "History");
+      const host = await state();
+      await driver.setAttribute("t", "aria-label", "  ");
+      const blank = await state();
+      await driver.setProperty("t", "label", "Audit trail");
+      const label = await state();
+      await driver.setAttribute("t", "aria-label", null);
+      const removed = await state();
+      await driver.setProperty("t", "label", undefined);
+      return { host, blank, label, removed, unnamed: await state() };
+    },
+    expected: {
+      host: { lists: ["History"], attribute: "History" },
+      blank: { lists: ["Mission history"], attribute: "Mission history" },
+      label: { lists: ["Audit trail"], attribute: "Audit trail" },
+      removed: { lists: ["Audit trail"], attribute: "Audit trail" },
+      unnamed: { lists: [""], attribute: null },
+    },
+  },
+];
+
+/** Every timeline body, in the order of tasks.md T030 to T033, then the run-time changes of T051. */
+export const eventTimelineScenarios: readonly Scenario[] = [...eventTimelineStoryScenarios, ...eventTimelineTimeScenarios, ...eventTimelineGeometryScenarios, ...eventTimelineEdgeScenarios, ...eventTimelineChangeScenarios];
