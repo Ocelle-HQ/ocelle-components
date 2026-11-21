@@ -103,6 +103,21 @@ export class MovedAttributes {
     }
   }
 
+  /** Scaffold (018 phase 5): moves and mirrors the host's listed attributes after the upgrade; not implemented yet. */
+  capture(): void {
+    // not implemented
+  }
+
+  /** Scaffold (018 phase 5): writes each held value back to the host and removes its mirror; not implemented yet. */
+  release(): void {
+    // not implemented
+  }
+
+  /** Scaffold (018 phase 5): writes each mirror back to the host unless it sets the attribute; not implemented yet. */
+  adoptMirrors(): void {
+    // not implemented
+  }
+
   /** The stored value of a moved attribute, as written, or undefined when none is held. */
   get(name: string): string | undefined {
     return this.#values.get(name);
@@ -139,7 +154,9 @@ export function resolveIds(host: Element, value: string | undefined): Element[] 
  * Registers the host guard on `host`: a `click` or `auxclick` at the host whose composed path misses the inner control
  * (`control()`, null before the first render), or any while `available()` is false, is prevented and stopped.
  */
-export function guardHost(host: HTMLElement, control: () => Element | null, available: () => boolean): void {
+// Scaffold (018 phase 5): `active` is accepted and not read yet.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function guardHost(host: HTMLElement, control: () => Element | null, available: () => boolean, active: () => boolean = () => true): void {
   const guard = (event: Event): void => {
     const inner = control();
     if (inner !== null && available() && event.composedPath().includes(inner)) return;
