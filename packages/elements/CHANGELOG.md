@@ -19,6 +19,9 @@ parts, events and entry points are additions (a minor change), and the engine fl
 `ocelle-status-indicator`, its attributes `tone`, `label` and `pulse` (reflected), its parts `dot` and `ring` and its
 entry point `@ocelle/elements/ocelle-status-indicator.js` are additions to the public surface: a minor change.
 
+`ocelle-metric`, its attributes `label` and `display-value` (reflected) and `layout`, its parts `label` and `value` and
+its entry point `@ocelle/elements/ocelle-metric.js` are additions to the public surface: a minor change.
+
 ### Added
 
 - `ocelle-icon`, an icon of the set drawn inline in `currentColor` at the `--ocelle-icon-size` token, decorative
@@ -95,6 +98,10 @@ entry point `@ocelle/elements/ocelle-status-indicator.js` are additions to the p
   (reflected); its parts `dot` and `ring`. Entry point `@ocelle/elements/ocelle-status-indicator.js` (defines
   `ocelle-status-indicator` only). It reads the new tokens `--ocelle-size-indicator` and `--ocelle-motion-pulse` of
   `@ocelle/tokens`.
+- `ocelle-metric`, a label and its value shown as one term and its definition: the label in the eyebrow style, shown
+  uppercase and read as written, the value in tabular figures, stacked or with `layout="row"` on one line; its
+  attributes `label` and `display-value` (reflected) and `layout`; its parts `label` and `value`. Entry point
+  `@ocelle/elements/ocelle-metric.js` (defines `ocelle-metric` only). It reads 011's eyebrow tokens and adds none.
 - The style lint's token-only rule, which checks these elements' styles, admits four values and nothing near them:
   the `grid-template-columns` tracks `fit-content(<percentage>)` and `minmax(0, <flex>)` (the facts columns and
   grid), `translateX(<percentage>)` in `transform` (the progress sweep) and a bare positive integer

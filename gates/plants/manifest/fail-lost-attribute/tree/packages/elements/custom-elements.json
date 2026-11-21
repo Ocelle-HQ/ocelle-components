@@ -1970,6 +1970,108 @@
         {
           "attributes": [
             {
+              "description": "How the label and the value sit: `stack`, the default, the label above the value; `row`, both on one line, label first, wrapping onto two lines when there is not room. Any other value is `stack` and stays in the attribute as written.",
+              "name": "layout",
+              "type": {
+                "text": "\"stack\" | \"row\""
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The label, shown in the eyebrow style and uppercase, and read by assistive technology as written, as the term's\nname. Text only, never parsed as markup. Reflected.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The value, a string the host has formatted: shown as given in tabular figures, as the term's definition, with no\nnumber formatting and no unit added. Text only, never parsed as markup; empty or unset shows no placeholder.\nReflected as `display-value`.",
+              "fieldName": "displayValue",
+              "name": "display-value",
+              "type": {
+                "text": "string | undefined"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The term: the label, shown uppercase in the eyebrow style and read as written.",
+              "name": "label"
+            },
+            {
+              "description": "The definition: the value, in tabular figures, shown as given.",
+              "name": "value"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A label and its value, shown as an eyebrow label above (or, in a row, before) a value in tabular figures, and exposed\nas one term and its definition.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "label",
+              "default": "undefined",
+              "description": "The label, shown in the eyebrow style and uppercase, and read by assistive technology as written, as the term's\nname. Text only, never parsed as markup. Reflected.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "display-value",
+              "default": "undefined",
+              "description": "The value, a string the host has formatted: shown as given in tabular figures, as the term's definition, with no\nnumber formatting and no unit added. Text only, never parsed as markup; empty or unset shows no placeholder.\nReflected as `display-value`.",
+              "kind": "field",
+              "name": "displayValue",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "\"stack\"",
+              "description": "How the label and the value sit: the `layout` attribute when it is `row`, else `stack`. Setting it writes the\nattribute as given.",
+              "kind": "field",
+              "name": "layout",
+              "type": {
+                "text": "\"stack\" | \"row\""
+              }
+            }
+          ],
+          "name": "OcelleMetric",
+          "slots": [],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-metric"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-metric.ts",
+            "name": "OcelleMetric"
+          },
+          "kind": "js",
+          "name": "OcelleMetric"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-metric.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
               "default": "undefined",
               "description": "The heading's size: `regular` or `compact`. Not set, or any other value, draws regular, the heading at\n`--ocelle-font-size-2xl`; `compact` draws it at `--ocelle-font-size-xl`. Reflected.",
               "fieldName": "size",
