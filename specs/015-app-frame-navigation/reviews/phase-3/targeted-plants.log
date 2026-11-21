@@ -1,0 +1,14 @@
+manifest/break-missing: as expected
+manifest/break-not-json: as expected
+manifest/fail-lost-attribute: as expected
+manifest/fail-stale-property: as expected
+manifest/fail-undescribed-attribute: as expected
+manifest/fail-undescribed-css-part: as expected
+manifest/fail-undescribed-css-property: as expected
+manifest/fail-undescribed-event: as expected
+manifest/fail-undescribed-property: as expected
+manifest/fail-undescribed-slot: as expected
+manifest/pass-reordered: as expected
+manifest/pass-repository: as expected
+storybook-build/fail-empty-index: as expected
+13/13 targeted plants behaved as expected

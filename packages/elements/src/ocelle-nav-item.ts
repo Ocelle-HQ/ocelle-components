@@ -4,10 +4,19 @@ import { define } from "./define.ts";
 import "./ocelle-tooltip.ts";
 
 const compactPresentation = new WeakMap<OcelleNavItem, boolean | undefined>();
+const chromeItems = new WeakSet<OcelleNavItem>();
 
 /** @internal The shell's temporary presentation, separate from the owner's standalone setting. */
 export function setNavItemCompact(item: OcelleNavItem, compact: boolean | undefined): void {
   compactPresentation.set(item, compact);
+  item.requestUpdate();
+}
+
+/** @internal Sets the shell rail's chrome colors without exposing a host input. */
+export function setNavItemChrome(item: OcelleNavItem, chrome: boolean): void {
+  if (chrome === chromeItems.has(item)) return;
+  if (chrome) chromeItems.add(item);
+  else chromeItems.delete(item);
   item.requestUpdate();
 }
 
@@ -97,6 +106,17 @@ export class OcelleNavItem extends LitElement {
       }
     }
 
+    @media not (forced-colors: active) {
+      [part="link"].on-chrome {
+        color: var(--ocelle-color-chrome-ink);
+      }
+
+      [part="link"].on-chrome:hover,
+      [part="link"].on-chrome[aria-current] {
+        background: var(--ocelle-color-chrome-hover);
+      }
+    }
+
     @media (forced-colors: active) {
       [part="link"][aria-current] {
         border-inline-start-color: Highlight;
@@ -138,7 +158,7 @@ export class OcelleNavItem extends LitElement {
     if (href === undefined) return html`<span class="destination">${contents}</span>`;
     return html`
       <ocelle-tooltip placement="bottom" exportparts="bubble" .text=${this.label} .disabled=${!compact}>
-        <a class=${compact ? "destination compact" : "destination"} part="link" href=${href}
+        <a class=${["destination", compact ? "compact" : "", chromeItems.has(this) ? "on-chrome" : ""].join(" ")} part="link" href=${href}
           aria-label=${this.label || nothing} aria-current=${current}>${contents}</a>
       </ocelle-tooltip>
     `;

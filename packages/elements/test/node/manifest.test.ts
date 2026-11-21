@@ -468,6 +468,7 @@ describe("generate(root) on the repository's element source", () => {
     expect(manifest.schemaVersion).toBe("1.0.0");
     expect(modules.map((module) => module.path)).toEqual([
       "src/ocelle-action-row.ts",
+      "src/ocelle-app-shell.ts",
       "src/ocelle-brand-mark.ts",
       "src/ocelle-button.ts",
       "src/ocelle-card.ts",

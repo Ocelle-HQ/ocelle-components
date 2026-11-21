@@ -11,6 +11,8 @@
 // internal base, the form controls' base class (src/form-control.ts) and the icon drawing (src/icon-svg.ts) are not
 // exported.
 export { OcelleActionRow } from "./ocelle-action-row.ts";
+export { OcelleAppShell } from "./ocelle-app-shell.ts";
+export type { AppShellTier } from "./ocelle-app-shell.ts";
 export { OcelleBrandMark } from "./ocelle-brand-mark.ts";
 export { OcelleButton } from "./ocelle-button.ts";
 export { OcelleCard } from "./ocelle-card.ts";

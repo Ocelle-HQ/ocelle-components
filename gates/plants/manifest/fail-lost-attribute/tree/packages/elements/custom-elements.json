@@ -382,6 +382,281 @@
         {
           "attributes": [
             {
+              "description": "Mission, project or personal. Mission is the default for missing or unsupported values.",
+              "fieldName": "layout",
+              "name": "layout",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "\"\"",
+              "description": "Product name passed to the top bar.",
+              "fieldName": "productName",
+              "name": "product-name",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "\"Open navigation\"",
+              "description": "Accessible name of the top bar menu.",
+              "fieldName": "menuLabel",
+              "name": "menu-label",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "\"Account\"",
+              "description": "Localized landmark name for bare rail destinations.",
+              "fieldName": "railLabel",
+              "name": "rail-label",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "\"Workspace\"",
+              "description": "Localized landmark name for bare sidebar destinations.",
+              "fieldName": "sidebarLabel",
+              "name": "sidebar-label",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Explicit lower bound in px, rem or em, or zero. Falls back to the `--ocelle-app-shell-narrow-below` token.",
+              "fieldName": "narrowBelow",
+              "name": "narrow-below",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "description": "Explicit upper bound in px, rem or em, or zero. Falls back to the `--ocelle-app-shell-collapse-below` token.",
+              "fieldName": "collapseBelow",
+              "name": "collapse-below",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "false",
+              "description": "Omits block-end content padding.",
+              "fieldName": "flushBlockEnd",
+              "name": "flush-block-end",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "false",
+              "description": "Omits inline-end content padding.",
+              "fieldName": "flushInlineEnd",
+              "name": "flush-inline-end",
+              "type": {
+                "text": "boolean"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The main content destination and its padding.",
+              "name": "main"
+            },
+            {
+              "description": "A visible rail or sidebar wrapper.",
+              "name": "navigation"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "App frame with top bar, mission rail, context or personal sidebar, and one stable content destination.",
+          "events": [
+            {
+              "description": "Dispatched after the navigation changes tier. Bubbles and is composed.",
+              "name": "ocelle-app-shell-tier-change",
+              "type": {
+                "text": "CustomEvent<{ tier: AppShellTier; previousTier: AppShellTier }>"
+              }
+            }
+          ],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "layout",
+              "description": "Mission, project or personal. Mission is the default for missing or unsupported values.",
+              "kind": "field",
+              "name": "layout",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "product-name",
+              "default": "\"\"",
+              "description": "Product name passed to the top bar.",
+              "kind": "field",
+              "name": "productName",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "menu-label",
+              "default": "\"Open navigation\"",
+              "description": "Accessible name of the top bar menu.",
+              "kind": "field",
+              "name": "menuLabel",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "rail-label",
+              "default": "\"Account\"",
+              "description": "Localized landmark name for bare rail destinations.",
+              "kind": "field",
+              "name": "railLabel",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "sidebar-label",
+              "default": "\"Workspace\"",
+              "description": "Localized landmark name for bare sidebar destinations.",
+              "kind": "field",
+              "name": "sidebarLabel",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "narrow-below",
+              "description": "Explicit lower bound in px, rem or em, or zero. Falls back to the `--ocelle-app-shell-narrow-below` token.",
+              "kind": "field",
+              "name": "narrowBelow",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "collapse-below",
+              "description": "Explicit upper bound in px, rem or em, or zero. Falls back to the `--ocelle-app-shell-collapse-below` token.",
+              "kind": "field",
+              "name": "collapseBelow",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "flush-block-end",
+              "default": "false",
+              "description": "Omits block-end content padding.",
+              "kind": "field",
+              "name": "flushBlockEnd",
+              "privacy": "public",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "attribute": "flush-inline-end",
+              "default": "false",
+              "description": "Omits inline-end content padding.",
+              "kind": "field",
+              "name": "flushInlineEnd",
+              "privacy": "public",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "description": "Current measured layout tier.",
+              "kind": "field",
+              "name": "tier",
+              "readonly": true,
+              "type": {
+                "text": "AppShellTier"
+              }
+            },
+            {
+              "description": "The stable programmatically focusable main content, available after rendering.",
+              "kind": "field",
+              "name": "contentTarget",
+              "readonly": true,
+              "type": {
+                "text": "HTMLElement | null"
+              }
+            },
+            {
+              "description": "Rereads CSS thresholds and the current logical inline size.",
+              "kind": "method",
+              "name": "remeasure",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            }
+          ],
+          "name": "OcelleAppShell",
+          "slots": [
+            {
+              "description": "Optional keyboard shortcut to the main content.",
+              "name": "skip-link"
+            },
+            {
+              "description": "The top bar's host-owned actions.",
+              "name": "actions"
+            },
+            {
+              "description": "Mission destinations.",
+              "name": "rail"
+            },
+            {
+              "description": "Context, project or personal destinations.",
+              "name": "sidebar"
+            },
+            {
+              "description": "Main content.",
+              "name": ""
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-app-shell"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-app-shell.ts",
+            "name": "OcelleAppShell"
+          },
+          "kind": "js",
+          "name": "OcelleAppShell"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-app-shell.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
               "default": "undefined",
               "description": "The ground the mark sits on: `chrome` for the dark chrome grounds (`color-chrome`, `color-chrome-hover`); absent or\nany other value for the main grounds. Reflected.",
               "fieldName": "ground",

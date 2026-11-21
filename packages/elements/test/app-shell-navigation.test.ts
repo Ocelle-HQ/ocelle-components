@@ -80,6 +80,19 @@ describe("ocelle-app-shell navigation", () => {
     expect(shown(menu(shell))).toBe(false);
   });
 
+  it("defaults invalid layout and blank labels while an empty supplied landmark remains absent", async () => {
+    const shell = await mount('<a slot="rail" href="#account">Account</a><ocelle-context-sidebar slot="sidebar" label="Empty"></ocelle-context-sidebar>', 'layout="unknown" rail-label=" "');
+    await expect.poll(landmarks).toEqual(["Account"]);
+    const sidebar = required(shell.querySelector("ocelle-context-sidebar"));
+    const link = document.createElement("a");
+    link.href = "#one";
+    link.textContent = "Project";
+    sidebar.append(link);
+    await expect.poll(landmarks).toEqual(["Account", "Empty"]);
+    sidebar.hidden = true;
+    await expect.poll(landmarks).toEqual(["Account"]);
+  });
+
   it("keeps the empty top-bar action region hidden and projects added actions", async () => {
     const shell = await mount("");
     const actions = (): HTMLElement | null | undefined => top(shell)?.shadowRoot?.querySelector<HTMLElement>('[part="actions"]');
@@ -108,6 +121,11 @@ describe("ocelle-app-shell navigation", () => {
     expect(shown(document.getElementById("direct-heading"))).toBe(false);
     expect(shown(document.getElementById("nested-heading"))).toBe(false);
     expect(link()).toBe(original);
+    const compactItem = original.getBoundingClientRect();
+    const column = required(document.getElementById("sidebar")).getBoundingClientRect();
+    expect(compactItem.width).toBeGreaterThanOrEqual(40);
+    expect(compactItem.left).toBeGreaterThanOrEqual(column.left);
+    expect(compactItem.right).toBeLessThanOrEqual(column.right);
     expect(deepActive()).toBe(original);
     expect(original.getAttribute("aria-current")).toBe("page");
     expect((await commands.axState("item", "a")).name).toBe("Übersicht");
@@ -121,6 +139,27 @@ describe("ocelle-app-shell navigation", () => {
     required(shell.parentElement).append(item);
     await expect.poll(() => label()?.hidden).toBe(true);
     expect(item.compact).toBe(true);
+  });
+
+  it("keeps the receiving shell's presentation when a destination moves between shells", async () => {
+    const sender = await mount(grouped);
+    size(850);
+    const item = required(sender.querySelector("ocelle-nav-item"));
+    const hidden = () => item.shadowRoot?.querySelector<HTMLElement>('[part="label"]')?.hidden;
+    await expect.poll(hidden).toBe(true);
+    const receiver = document.createElement("ocelle-app-shell");
+    receiver.style.inlineSize = "1150px";
+    const sidebar = document.createElement("section");
+    sidebar.slot = "sidebar";
+    receiver.append(sidebar);
+    required(sender.parentElement).append(receiver);
+    await receiver.updateComplete;
+    receiver.remeasure();
+    sidebar.append(item);
+    await expect.poll(hidden).toBe(false);
+    expect(item.compact).toBe(true);
+    item.remove();
+    await expect.poll(hidden).toBe(true);
   });
 
   it("moves focus from collapsing sidebar chrome to the first sequential destination, then main when none survives", async () => {
@@ -147,12 +186,13 @@ describe("ocelle-app-shell navigation", () => {
     const received: string[] = [];
     shell.addEventListener("ocelle-app-shell-tier-change", (event) => { received.push(event.type); });
     shell.layout = "project";
-    await expect.poll(() => deepActive()).toBe(document.getElementById("head"));
+    await expect.poll(() => deepActive()).toBe(document.getElementById("item")?.shadowRoot?.querySelector("a"));
     expect(received).toEqual([]);
     size(700);
+    await expect.poll(() => shown(menu(shell))).toBe(true);
     await expect.poll(() => deepActive()).toBe(menu(shell));
     size(1150);
-    await expect.poll(() => deepActive()).toBe(document.getElementById("head"));
+    await expect.poll(() => deepActive()).toBe(document.getElementById("item")?.shadowRoot?.querySelector("a"));
     expect(received).toHaveLength(2);
   });
 

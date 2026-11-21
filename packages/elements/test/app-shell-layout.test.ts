@@ -78,6 +78,7 @@ describe("ocelle-app-shell layout", () => {
     await tier(shell, "collapsed");
     size("320px");
     await tier(shell, "collapsed");
+    expect([shell.narrowBelow, shell.collapseBelow]).toEqual(["0", "500.5px"]);
   });
 
   it("falls through invalid and non-finite candidates, and resets inverted pairs to both defaults", async () => {
@@ -99,6 +100,7 @@ describe("ocelle-app-shell layout", () => {
     shell.collapseBelow = "500px";
     size("800px");
     await tier(shell, "collapsed");
+    expect([shell.narrowBelow, shell.collapseBelow]).toEqual(["900px", "500px"]);
   });
 
   it("coalesces same-width remeasurement and emits one composed event per effective transition", async () => {
@@ -126,6 +128,28 @@ describe("ocelle-app-shell layout", () => {
     expect(events).toEqual([event("collapsed", "expanded"), event("expanded", "narrow")]);
   });
 
+  it("reports no initial transition and waits until a hidden frame is rendered again", async () => {
+    await driver.mount('<div id="frame"></div>');
+    size("500px");
+    const shell = document.createElement("ocelle-app-shell");
+    shell.narrowBelow = "400px";
+    shell.collapseBelow = "600px";
+    const received: unknown[] = [];
+    shell.addEventListener("ocelle-app-shell-tier-change", (event) => { received.push((event as CustomEvent<unknown>).detail); });
+    expect(shell.contentTarget).toBeNull();
+    required(document.getElementById("frame")).append(shell);
+    await tier(shell, "collapsed");
+    expect(received).toEqual([]);
+    shell.hidden = true;
+    size("310px");
+    shell.remeasure();
+    await shell.updateComplete;
+    expect(shell.tier).toBe("collapsed");
+    shell.hidden = false;
+    await tier(shell, "narrow");
+    expect(received).toEqual([{ previousTier: "collapsed", tier: "narrow" }]);
+  });
+
   it("remeasures a host-em threshold after a style-only font change", async () => {
     const shell = await mount('narrow-below="20em" collapse-below="30em"');
     shell.style.fontSize = "20px";
@@ -137,6 +161,7 @@ describe("ocelle-app-shell layout", () => {
     shell.style.fontSize = "26px";
     shell.remeasure();
     await tier(shell, "narrow");
+    expect(shell.getBoundingClientRect().width).toBe(500);
   });
 
   it("keeps the same main node and constrains layout growth from intrinsic content", async () => {
