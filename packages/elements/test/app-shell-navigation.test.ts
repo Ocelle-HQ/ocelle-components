@@ -7,6 +7,7 @@ import "../src/ocelle-nav-item.ts";
 import "../src/ocelle-section-header.ts";
 import { deepActive } from "../src/focusable.ts";
 import { inProcessDriver } from "./in-process.ts";
+import { layoutWait } from "./layout-wait.ts";
 
 const driver = inProcessDriver();
 const rail = '<ocelle-personal-rail id="rail" slot="rail" label="Persönlich"><ocelle-nav-item id="rail-item" href="#home" label="Start" compact></ocelle-nav-item></ocelle-personal-rail>';
@@ -183,6 +184,7 @@ describe("ocelle-app-shell navigation", () => {
     expect(compactItem.width).toBeGreaterThanOrEqual(40);
     expect(compactItem.left).toBeGreaterThanOrEqual(column.left);
     expect(compactItem.right).toBeLessThanOrEqual(column.right);
+    expect(getComputedStyle(original).justifyContent).toBe("center");
     expect(deepActive()).toBe(original);
     expect(original.getAttribute("aria-current")).toBe("page");
     expect((await commands.axState("item", "a")).name).toBe("Übersicht");
@@ -196,6 +198,18 @@ describe("ocelle-app-shell navigation", () => {
     required(shell.parentElement).append(item);
     await expect.poll(() => label()?.hidden).toBe(true);
     expect(item.compact).toBe(true);
+  });
+
+  it("leaves the context sidebar settled when shell presentation has not changed", async () => {
+    const shell = await mount(grouped);
+    size(850);
+    await expect.poll(() => shell.tier).toBe("collapsed");
+    await layoutWait("frame");
+    const sidebar = required(shell.querySelector("ocelle-context-sidebar"));
+    const settled = sidebar.updateComplete;
+    shell.remeasure();
+    await shell.updateComplete;
+    expect(sidebar.updateComplete).toBe(settled);
   });
 
   it("compacts a directly assigned nav item and an explicit default-slot section while leaving footer items alone", async () => {

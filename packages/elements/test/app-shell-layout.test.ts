@@ -270,6 +270,8 @@ describe("ocelle-app-shell layout", () => {
     await shell.updateComplete;
     expect(shell.tier).toBe("collapsed");
     shell.remove();
+    shell.layout = "project";
+    await shell.updateComplete;
     release(true);
     await layoutWait("frame");
     expect(events).toEqual([]);
