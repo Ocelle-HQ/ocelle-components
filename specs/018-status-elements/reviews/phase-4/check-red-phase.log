@@ -1,7 +1,6 @@
 Scope: all 5 workspace projects
 ✓ Lockfile passes supply-chain policies (verified 1d ago)
 Lockfile is up to date, resolution step is skipped
-Progress: resolved 1, reused 0, downloaded 0, added 0
 Packages are hard linked from the content-addressable store to the virtual store.
   Content-addressable store is at: <home>/.local/share/pnpm/store/v11
   Virtual store is at:             node_modules/.pnpm
@@ -36,7 +35,7 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 4.3s using pnpm v12.16.1
+Done in 378ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /opt/pw-browsers/chromium-1243/chrome-linux64/chrome
 $ node gates/bin/test.ts
@@ -79,11 +78,9 @@ gates/test/integration/axe.test.ts:61: unit-tests: axe gate (gates/bin/axe.ts) f
 gates/test/integration/manifest.test.ts:13: unit-tests: manifest gate in a plant tree exits 0 on pass-repository's temporary repository: AssertionError: expected { code: 1, stdout: [ …(2) ], …(1) } to deeply equal { code: +0, …(2) }
 gates/test/integration/plant-repo.test.ts:218: unit-tests: buildRepoTree: the Storybook workspace (006 research.md R-16) copies storybook/baselines when the repository holds it: AssertionError: expected [ …(398) ] to have a length of 408 but got 398
 gates/test/integration/storybook-build.test.ts:48: unit-tests: storybook-build gate (gates/bin/storybook-build.ts) builds the repository's stories in a plant root, exits 0 with the story count, and leaves the repository's node_modules and storybook/node_modules unchanged: AssertionError: expected { code: +0, …(2) } to deeply equal { code: +0, …(2) }
-gates/test/integration/visual.test.ts:120: unit-tests: visual gate (gates/bin/visual.ts) captures the repository's 408 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1): AssertionError: expected { code: 2, stdout: [], …(1) } to deeply equal { code: +0, …(2) }
-gates/test/integration/visual.test.ts:131: unit-tests: visual gate (gates/bin/visual.ts) keeps the capture, its diff image and run 1 in baseline layout for differs and missing-baseline, and nothing for any other story-theme (FR-005, analysis G2): AssertionError: expected { code: 2, findings: [], …(1) } to deeply equal { code: 1, findings: [ …(2) ], …(1) }
+gates/test/integration/visual.test.ts:120: unit-tests: visual gate (gates/bin/visual.ts) captures the repository's 408 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1): AssertionError: expected { code: +0, …(2) } to deeply equal { code: +0, …(2) }
+gates/test/integration/visual.test.ts:131: unit-tests: visual gate (gates/bin/visual.ts) keeps the capture, its diff image and run 1 in baseline layout for differs and missing-baseline, and nothing for any other story-theme (FR-005, analysis G2): AssertionError: expected 'visual: 2 findings in 398 story-theme…' to be 'visual: 2 findings in 408 story-theme…' // Object.is equality
 gates/test/integration/visual.test.ts:244: unit-tests: baseline command (gates/bin/baselines.ts) writes nothing on an unchanged tree and says so (FR-008, analysis G1): AssertionError: expected 398 to be 408 // Object.is equality
-gates/test/integration/visual.test.ts:256: unit-tests: baseline command (gates/bin/baselines.ts) the plant mode writes a deleted baseline of a plant back with the bytes it had, and touches no other file (research.md R-11): AssertionError: expected { code: 2, stdout: [], …(1) } to deeply equal { code: +0, …(2) }
-gates/test/integration/visual.test.ts:276: unit-tests: capture (gates/visual/capture.ts in the pinned container) captures a story alone byte for byte as in a full run after other stories (freshness, FR-028), and a 2000 px story 2000 px tall (FR-012): AssertionError: expected { code: 1, …(1) } to deeply equal { code: +0, stderr: '' }
 gates/test/integration/vitest-mutation-config.test.ts:150: unit-tests: vitest.mutation.config.ts under Stryker's runner options starts source-table.test.ts first, then every other project in one group in Vitest's default order: AssertionError: expected 1 to be greater than 1
 packages/tokens/test/index.test.ts:11: unit-tests: @ocelle/tokens exports tokenNames: exactly the names of Appendix A, none of A.6: AssertionError: expected [ 'bar-block-narrow', …(135) ] to deeply equal [ 'bar-block-narrow', …(136) ]
 packages/tokens/test/index.test.ts:16: unit-tests: @ocelle/tokens exports tokens: the JSON export of the source: AssertionError: expected [ Array(136) ] to have a length of 137 but got 136
@@ -208,5 +205,5 @@ packages/elements/test/pill-tag.test.ts:28: unit-tests: ocelle-pill-tag, static,
 packages/elements/test/pill-tag.test.ts:28: unit-tests: ocelle-pill-tag, static, in process (US3) Right to left: under dir="rtl" the icon…: AssertionError: expected { observed: { …(4) }, axe: [] } to deeply equal { observed: { …(4) }, axe: [] }
 packages/elements/test/pill-tag.test.ts:28: unit-tests: ocelle-pill-tag, static, in process (US3) Edge cases: a host hidden attribute rem…: AssertionError: expected { …(2) } to deeply equal { …(2) }
 packages/elements/test/pill-tag.test.ts:28: unit-tests: ocelle-pill-tag, static, in process (US3) Static click in a link (sink): a click …: AssertionError: expected { observed: { …(2) }, axe: [] } to deeply equal { observed: { …(2) }, axe: [] }
-unit-tests: 168 of 8054 tests failed
+unit-tests: 166 of 8054 tests failed
 [ELIFECYCLE] Test failed. See above for more details.
