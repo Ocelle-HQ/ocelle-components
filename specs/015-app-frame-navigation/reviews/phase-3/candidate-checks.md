@@ -28,6 +28,8 @@ The candidate adds the responsive shell, its threshold tokens and package entry,
 - The shell treats an empty slot name as the default slot and uses a per-update identity to abandon superseded or disconnected focus work. The final layout and navigation suites passed 32/32. The related four-suite run passed 64/64. Scoped lint, TypeScript and the diff check passed.
 - Nine isolated browser fault probes failed their intended assertions. The probes covered deliberate focus, stale tier announcements, duplicate naming around a supplied landmark, hidden and non-finite measurement, border-box reporting for a padding-only resize, directly assigned items, footer presentation, and adopted stylesheet identity.
 
+- The second two-file diagnostic on `29704a8` reached 85.40% overall and 85.71% for compact-section handling. It reported 273 killed, two mutant timeouts, 46 survivors, one uncovered mutant and 137 rejected at compilation. The score falls below the repository's 100% threshold.
+
 ## Presentation ownership follow-up
 
 - New tests verify that a removed sidebar regains its authored chrome and item presentation, and that a detached rail link returns to the ordinary link color. They also verify recovery from CSS visibility changes while retaining focus containment.
@@ -41,4 +43,4 @@ The candidate adds the responsive shell, its threshold tokens and package entry,
 
 ## Canonical workflow status
 
-The workflow's `red.sh 3 phase` replay has not recorded a result yet. The full affected-plant selection is 317 plants because the package export change is unmapped. The completed focused mutation diagnostics are above. A second two-file diagnostic on `29704a8` is still running. Canonical head and final-tests-on-base checks and independent review are pending. The targeted evidence above does not replace those checks.
+The workflow's `red.sh 3 phase` replay has not recorded a result yet. The full affected-plant selection is 317 plants because the package export change is unmapped. The completed focused mutation diagnostics are above. Canonical head and final-tests-on-base checks and independent review are pending. The targeted evidence above does not replace those checks.
