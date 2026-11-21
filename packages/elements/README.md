@@ -38,6 +38,7 @@ empty or loading panel, and `ocelle-progress`, a progress bar.
 | `@ocelle/elements/ocelle-empty-state.js` | `dist/ocelle-empty-state.js` | `ocelle-empty-state` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-progress.js` | `dist/ocelle-progress.js` | `ocelle-progress` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-disclosure.js` | `dist/ocelle-disclosure.js` | `ocelle-disclosure` and the `ocelle-icon` it renders; for hosts with a bundler |
+| `@ocelle/elements/ocelle-code-block.js` | `dist/ocelle-code-block.js` | `ocelle-code-block` only; for hosts with a bundler |
 | `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |
 | `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |
 
@@ -1300,6 +1301,66 @@ element is defined, the summary and the panel show as plain content.
 `--ocelle-line-height-normal`, `--ocelle-color-ink`, `--ocelle-color-hover-bg`, `--ocelle-space-1`, `--ocelle-space-2`,
 `--ocelle-radius-2`, `--ocelle-icon-size`, `--ocelle-color-focus`, `--ocelle-focus-width` and `--ocelle-focus-offset`.
 
+## `ocelle-code-block`
+
+```html
+<ocelle-code-block>git push origin main</ocelle-code-block>
+<ocelle-code-block overflow="scroll" label="Build log">2026-11-21T09:14:03Z build 17 started</ocelle-code-block>
+<ocelle-code-block digest>sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08</ocelle-code-block>
+```
+
+`ocelle-code-block` is a preformatted block for code, commands, logs and digests, in the library's sans with tabular
+figures, never monospace. It sits on the inset ground (`--ocelle-color-inset`) at the relaxed line height, with the
+prose `pre`'s padding and radius, and is never wider than the reading measure (`--ocelle-measure-reading`).
+
+- `overflow` (attribute and property, reflected): `scroll` (trimmed, any ASCII case) keeps long lines on one line and
+  scrolls the block sideways; anything else, or none, wraps lines inside the block (`pre-wrap` and
+  `overflow-wrap: anywhere`), so a wrap block never scrolls sideways at 320 px and is never a tab stop.
+- `label` (attribute and property, not reflected): the scroll box's name while it overflows, trimmed; empty or
+  whitespace-only counts as none, and a non-blank host `aria-label` wins. No effect in wrap mode.
+- `digest` (boolean attribute and property, reflected): shows the text as a digest, by the digest rule of the element
+  conventions below.
+- Parts `block` (the inset box) and `code` (the `pre` that holds the text). No slot, no event, no CSS custom property.
+
+**Content.** The code is the element's light-DOM text content, read as a copy: start the text on the opening tag's
+line, because a newline directly after the tag is shown as an empty first line. Markup inside the element is not
+rendered: child elements add no markup or style, their text is shown, and markup-like text stays text. A change of the
+text (a swap of the content, `textContent` set by a script, a text node's data) is followed. Before the element is
+defined its text shows as an inline run.
+
+**Direction.** Each line of code is shown left to right, also in an `rtl` page, while the block keeps the page
+direction, so the fade of a scroll block is on the side where text is hidden. An `rtl` scroll block opens at the line
+starts: the element scrolls it there, instantly, when it first appears and when its text changes, so the start of
+every line is in view and the fade is at the right, where the line ends are hidden. A block that only starts to
+overflow after a resize keeps the platform's scroll position.
+
+**Scroll mode.** While it overflows, a scroll block is a tab stop and, with a name, a `group` named by its `label`;
+while its text fits it is neither. In scroll mode the `ocelle-scroller` statements on keyboard, focus, fades,
+scrollbar, motion and sizing hold for the code block (see `ocelle-scroller`): the arrow keys scroll it 40 px with no
+animation, and when it stops overflowing while focused, focus moves to the block's frame and stays in the element. A
+switch from `scroll` to wrap while focus is in the scroll block moves focus to the block, which shows the library's
+focus ring.
+
+**Naming.** Always give a scroll block a `label`: without one, an overflowing scroll block is a tab stop with no role
+and no name. Do not set a host `aria-label` in wrap mode: the host has no role, so the label names nothing; use
+`label`.
+
+**Sizing.** In a shrink-to-fit host (a default flex item, a dialog, a table cell) a scroll block takes its content's
+size and does not overflow: give it a definite or maximum inline size there.
+
+**Print.** Print shows what is laid out: a wrap block prints wrapped, and a scroll block's text off-screen is not
+printed, as for `ocelle-scroller`.
+
+**Scope.** The element has no copy control and no syntax highlighting: a copy is the browser's own, and the block reads
+and writes no clipboard. In forced colours the text is `CanvasText` and the block shows a `CanvasText` edge; a scroll
+block keeps the overflow region's edge lines.
+
+**Tokens.** `ocelle-code-block` reads the tokens `--ocelle-color-inset`, `--ocelle-font-sans`, `--ocelle-figures`,
+`--ocelle-font-size-md`, `--ocelle-line-height-relaxed`, `--ocelle-measure-reading`, `--ocelle-space-1`,
+`--ocelle-space-3`, `--ocelle-radius-2`, `--ocelle-border-width`, `--ocelle-focus-width`, `--ocelle-focus-offset` and
+`--ocelle-color-focus`, and through the overflow-region module the same focus tokens, `--ocelle-scroller-fade-size`
+and `--ocelle-color-ink` (mask only).
+
 ## Mapping from kitty-mission-ui
 
 Each `.sk-facts`, `.sk-empty-state` and `.sk-progress` modifier and state that kitty-mission-ui uses, by role, with the
@@ -1694,6 +1755,16 @@ item element. Other children are not shown. `ocelle-facts` and `ocelle-fact` are
 
 **Identifier wrap.** An element whose values can hold machine identifiers takes a `wrap` property with the one value
 `anywhere`, which sets `overflow-wrap: anywhere` on the value only, never on a label.
+
+**Digests.** An element that shows a digest (a hash, with or without an algorithm prefix) groups it the same way: the
+prefix is everything up to and including the last colon and is shown as written; the rest is split into groups of
+four code points from the start, the last group holding the remainder. Units are inline boxes separated by a
+`<wbr>`, with a `--ocelle-space-1` gap after every unit but the last, so a line never starts with a gap; no character
+is added, so a copy and the screen-reader reading give the digest as written. Groups do not wrap inside
+(`white-space: nowrap`, as `-` and `/` in base64 and base64url are break opportunities), so lines break only between
+units; a prefix that with its gap is wider than the line breaks inside (WCAG 1.4.10). Text holding whitespace is not a
+digest and is shown ungrouped. `ocelle-code-block`'s `digest` is the first use; `ocelle-facts` values are the
+consumer's text and are not grouped.
 
 **Stories.** Every element has a story per variant and per state in `storybook/stories/<element>.stories.ts`, in light
 and dark, and its stories pass the `csp` and `prefix` gates' Storybook checks.

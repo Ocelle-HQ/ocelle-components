@@ -453,6 +453,17 @@ overflowing scroll block leaves the Complexity Tracking exception for story-less
 recorded as a row of plan.md § Complexity Tracking (the gate honours an entry only with its row), with the Prose
 entries' sunset.
 
+**DigestScroll's rows (T028 stop, `reviews/phase-2/notes.md` § Stop for the operator; operator decision
+`reviews/phase-2/operator-digest-axe-decision.md`, 2026-11-21: (a) 24 per-group rows).** On the real element, twelve of
+the 14 planned rows matched exactly; the two `DigestScroll` rows (`ocelle-code-block >>> .code`, light and dark) matched
+nothing. The digest is one span per group, so the gate prints one serious `color-contrast-incomplete` node per clipped
+group, `ocelle-code-block >>> .group:nth-child(11)`, `(13)`, … `(33)` (12 odd children; the even children are the
+`<wbr>`s), in light and in dark, for `elements-ocelle-code-block--digest-scroll`. The story does not change: its two
+`.code` rows are replaced by 24 rows, one per group and theme, selector `ocelle-code-block >>> .group:nth-child(<n>)`,
+with the same reason and sunset, so the entries and plan.md's rows number 36: 12 `.code` entries for the six other
+overflowing scroll stories and 24 group entries for `DigestScroll`. If the digest, the frame or the font changes, the
+group selectors move, and the gate fails as `stale-exception` or as an unexcepted finding.
+
 ## R-10 Tokens (FR-040)
 
 **Decision.** No new token. Every value is an existing token: `color-inset`, `color-ink`, `color-hover-bg`,

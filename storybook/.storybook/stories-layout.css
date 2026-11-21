@@ -4,7 +4,7 @@
  * ocelle-drawer and ocelle-tooltip stories' blocks; since 009, the tested frames, keyed on data-frame attributes;
  * since 011, the personal-rail stories' stand-in items, keyed on their data-story root; since 013 the
  * ocelle-facts, ocelle-empty-state and ocelle-progress stories' wrappers; and since 020 the ocelle-disclosure long
- * summary's frame (below).
+ * summary's frame and the ocelle-code-block stories' frame (below).
  */
 [data-story] {
   padding: var(--ocelle-space-4);
@@ -150,6 +150,16 @@
  * the summary wraps inside the element; with the [data-story] padding it fills a 320 px viewport exactly.
  */
 [data-story="disclosure-narrow"] {
+  inline-size: 288px;
+  max-inline-size: 100%;
+}
+
+/*
+ * The ocelle-code-block stories' frame (020 research.md R-09; tasks.md T028): a 288 px block, capped at the viewport,
+ * so a long line wraps (wrap mode) or overflows the scroll box (scroll mode) inside the element; with the [data-story]
+ * padding it fills a 320 px viewport exactly.
+ */
+[data-story="code-block-narrow"] {
   inline-size: 288px;
   max-inline-size: 100%;
 }

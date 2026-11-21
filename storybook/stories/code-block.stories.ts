@@ -7,8 +7,10 @@
 // story has a `label`; no story sets a host `aria-label` on a code block (FR-026; the wrap-mode host `aria-label` has no
 // story, plan Complexity Tracking). The 288 px frame is a `data-story` rule of stories-layout.css, so the markup has no
 // style attribute. The middle and end stories set the scroll position after the element's `updateComplete`, inside
-// their render, and hold their share of the range when it changes (a font that loads late), as the scroller's do. The
-// element is imported from the package source by relative path, as the other element stories import theirs.
+// their render, and hold their share of the range when it changes (a font that loads late), as the scroller's do; the
+// right-to-left scroll story loads the sans face before it renders (a loader), so the element's own opening write at
+// its first layout is what it shows. The element is imported from the package source by relative path, as the other
+// element stories import theirs.
 import type { Meta, StoryObj } from "@storybook/html-vite";
 import "../../packages/elements/src/ocelle-code-block.ts";
 
@@ -92,8 +94,19 @@ export const DigestScroll: StoryObj = { name: "Digest scroll", render: () => blo
 
 export const RightToLeft: StoryObj = { name: "Right to left", render: () => `<div dir="rtl">${block("git push --force origin main.")}</div>` };
 
+/**
+ * Loads the face of `--ocelle-font-sans` before the story renders. An `rtl` scroll block is opened at its line starts
+ * once, at its first layout (FR-021, no write after a resize): rendered before the web font arrives, it would open at
+ * the line starts of the fallback face and keep that position when the font widens the lines.
+ */
+const sansLoaded = async (): Promise<Record<string, never>> => {
+  await document.fonts.load(`1rem ${getComputedStyle(document.documentElement).getPropertyValue("--ocelle-font-sans")}`);
+  return {};
+};
+
 export const RightToLeftScroll: StoryObj = {
   name: "Right to left scroll",
+  loaders: [sansLoaded],
   render: () => `<div dir="rtl">${block(["cd /srv/app", command, "ls"].join("\n"), ' overflow="scroll" label="Deploy commands"', true)}</div>`,
 };
 

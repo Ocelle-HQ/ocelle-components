@@ -39,10 +39,10 @@ const linked = "clipped column of the linked wide table's scroll box (`elmPartia
 const clipped = "clipped line of the code block's scroll box (`elmPartiallyObscured`)";
 
 /**
- * The 24 excepted notes, in run order (stories in index order, each in light then dark): the Prose document's ten
+ * The 46 excepted notes, in run order (stories in index order, each in light then dark): the Prose document's ten
  * (plan.md § Complexity Tracking, axe exceptions under FR-029), then since 020 phase 2 (T028; operator decision on T021a,
- * specs/020-disclosure-code-block/plan.md § Complexity Tracking) one per overflowing scroll code-block story and theme,
- * in the stories file's order.
+ * specs/020-disclosure-code-block/plan.md § Complexity Tracking) one per clipped node of each overflowing scroll code-block
+ * story and theme (36), in the stories file's order.
  */
 const excepted: readonly string[] = [
   ...(["light", "dark"] as const).flatMap((theme) =>
@@ -55,17 +55,23 @@ const excepted: readonly string[] = [
     ].map(([selector, reason]) => `note: base-styles--prose-document/${theme}: color-contrast-incomplete: serious: ${String(selector)} excepted (${String(reason)})`),
   ),
   ...["scroll-overflowing", "scroll-middle", "scroll-end", "scroll-focused", "digest-scroll", "right-to-left-scroll", "scroll-unlabelled"].flatMap((story) =>
-    (["light", "dark"] as const).map((theme) => `note: elements-ocelle-code-block--${story}/${theme}: color-contrast-incomplete: serious: ocelle-code-block >>> .code excepted (${clipped})`),
+    (["light", "dark"] as const).flatMap((theme) =>
+      // DigestScroll: one node per digest group the scroll box clips (operator decision,
+      // specs/020-disclosure-code-block/reviews/phase-2/operator-digest-axe-decision.md).
+      (story === "digest-scroll" ? Array.from({ length: 12 }, (_, index) => `.group:nth-child(${String(11 + 2 * index)})`) : [".code"]).map(
+        (selector) => `note: elements-ocelle-code-block--${story}/${theme}: color-contrast-incomplete: serious: ocelle-code-block >>> ${selector} excepted (${clipped})`,
+      ),
+    ),
   ),
 ];
 
 describe("axe gate (gates/bin/axe.ts)", () => {
   it(
-    "audits the repository's 432 story-themes and exits 0, the Prose document's ten and the overflowing code-block stories' fourteen color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)",
+    "audits the repository's 432 story-themes and exits 0, the Prose document's ten and the overflowing code-block stories' thirty-six color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)",
     async () => {
       const at = await root("repository");
       const ran = await gate(at);
-      expect(ran).toEqual({ code: 0, stdout: ["axe: 432 story-theme runs, 0 serious or critical; 24 notes (0 incomplete, 24 excepted)"], stderr: excepted });
+      expect(ran).toEqual({ code: 0, stdout: ["axe: 432 story-theme runs, 0 serious or critical; 46 notes (0 incomplete, 46 excepted)"], stderr: excepted });
     },
     timeout,
   );

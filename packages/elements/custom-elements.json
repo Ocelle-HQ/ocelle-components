@@ -1003,6 +1003,112 @@
           "attributes": [
             {
               "default": "undefined",
+              "description": "The overflow policy: `scroll` (trimmed, any ASCII case) keeps long lines on one line and scrolls the block sideways,\na tab stop and a named group only while it overflows; anything else, or none, wraps lines inside the block.\nReflected. A switch to wrap while focus is in the scroll block moves focus to the block.",
+              "fieldName": "overflow",
+              "name": "overflow",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The scroll box's name while it overflows, trimmed; empty or whitespace-only counts as none, and a non-blank host\n`aria-label` wins. No effect in wrap mode. Not reflected.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "Shows the text as a digest: a prefix up to the last colon, then groups of four code points with a gap; copied and\nread text stay unbroken (a whole-block selection ends with the platform's one block newline only when content\nfollows the block). Reflected.",
+              "fieldName": "digest",
+              "name": "digest",
+              "type": {
+                "text": "boolean | undefined"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The inset box.",
+              "name": "block"
+            },
+            {
+              "description": "The `pre` that holds the text.",
+              "name": "code"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A preformatted block for code, commands, logs and digests, in the library's sans with tabular figures. The text is\nthe element's light-DOM text content, read as a copy: child elements add no markup or style.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "overflow",
+              "default": "undefined",
+              "description": "The overflow policy: `scroll` (trimmed, any ASCII case) keeps long lines on one line and scrolls the block sideways,\na tab stop and a named group only while it overflows; anything else, or none, wraps lines inside the block.\nReflected. A switch to wrap while focus is in the scroll block moves focus to the block.",
+              "kind": "field",
+              "name": "overflow",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "label",
+              "default": "undefined",
+              "description": "The scroll box's name while it overflows, trimmed; empty or whitespace-only counts as none, and a non-blank host\n`aria-label` wins. No effect in wrap mode. Not reflected.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "digest",
+              "default": "undefined",
+              "description": "Shows the text as a digest: a prefix up to the last colon, then groups of four code points with a gap; copied and\nread text stay unbroken (a whole-block selection ends with the platform's one block newline only when content\nfollows the block). Reflected.",
+              "kind": "field",
+              "name": "digest",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean | undefined"
+              }
+            }
+          ],
+          "name": "OcelleCodeBlock",
+          "slots": [],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-code-block"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-code-block.ts",
+            "name": "OcelleCodeBlock"
+          },
+          "kind": "js",
+          "name": "OcelleCodeBlock"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-code-block.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
               "description": "The name of the navigation landmark, trimmed, used while the host has no `aria-label`; empty or whitespace-only\ncounts as none, and the landmark is then unnamed. Not reflected.",
               "fieldName": "label",
               "name": "label",

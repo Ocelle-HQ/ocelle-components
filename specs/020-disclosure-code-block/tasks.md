@@ -71,9 +71,10 @@ a repository-wide problem is recorded in research.md § Repository-wide notes an
   (the operator confirms that the state keeps the Complexity Tracking exception before T028). Raised and answered:
   `reviews/phase-2/operator-axe-decision.md` (2026-11-21), "add exceptions and keep the story".
 - **Plants**: a plant that does not bite.
-- **axe**: a new story would need a `storybook/a11y-exceptions.json` entry, other than the 14
+- **axe**: a new story would need a `storybook/a11y-exceptions.json` entry, other than the 36
   `color-contrast-incomplete` entries the operator approved for the overflowing scroll code-block stories
-  (`reviews/phase-2/operator-axe-decision.md`, 2026-11-21; plan.md § Complexity Tracking). Those are not a stop; a
+  (`reviews/phase-2/operator-axe-decision.md` and `reviews/phase-2/operator-digest-axe-decision.md`, 2026-11-21; plan.md
+  § Complexity Tracking). Those are not a stop; a
   difference from their rows (another selector, rule or node, or an overflowing story without the result) is.
 - **Baselines**: `visual:update` reports a changed or removed baseline of an existing story.
 - **Mutation**: a shard over op 015's limit.
@@ -303,11 +304,11 @@ AX text unbroken; zero CSP violations; the gates of phase 1 pass.
 
 ### Tests (red, one commit, test files only)
 
-- [ ] T023 [P] [US2] Driver additions `copyShadow(id, inner)`, `copyShadowRun(id, inner, from, to)` and
+- [X] T023 [P] [US2] Driver additions `copyShadow(id, inner)`, `copyShadowRun(id, inner, from, to)` and
   `ariaSnapshot(id, inner)` as contracts/checks.md § Driver additions specifies, in `test/scenarios/driver.ts`,
   `test/in-process.ts`, `test/browser/driver.ts`, with their own driver tests (sentinel cleared and replaced; a host's
   light text told apart from its shadow `pre`).
-- [ ] T024 [US2] `packages/elements/test/scenarios/code-block.ts`: one body per US2 scenario 1 to 21 with the oracles of
+- [X] T024 [US2] `packages/elements/test/scenarios/code-block.ts`: one body per US2 scenario 1 to 21 with the oracles of
   contracts/checks.md (no monospace on `.code` and every unit, the host not read; the cap at
   `--ocelle-measure-reading` in px; reflow; the module's tab stop, role `group`, name, arrow keys, fades and handover;
   two whole-block copy bodies, the block last on the page copying exactly the trimmed digest and a block followed by
@@ -320,7 +321,7 @@ AX text unbroken; zero CSP violations; the gates of phase 1 pass.
   where the digest is wider than the `pre`; the named base64url and base64 sweep strings at every width from 60 to
   300 px (the base64url body guards the groups' `nowrap`, the base64 body does not); and the wide-prefix body
   (`ni:sha-256:` at 60 px, the prefix breaking inside). US2-6's handover is asserted with US2-21's oracle.
-- [ ] T025 [US2] `packages/elements/test/scenarios/code-block.ts`: the FR and edge-case bodies of contracts/checks.md
+- [X] T025 [US2] `packages/elements/test/scenarios/code-block.ts`: the FR and edge-case bodies of contracts/checks.md
   for the code block: leading newline shown (FR-020); child markup adds no style and markup-like text stays text in
   wrap and digest mode (FR-020, PLAN-A11Y-SECURITY-1-005); `characterData` changes of the host's text and of a text
   node in a child `<b>` (FR-020); `overflow` parsing (`" SCROLL "` is scroll, `"auto"` and `""` are wrap) (FR-022);
@@ -330,15 +331,15 @@ AX text unbroken; zero CSP violations; the gates of phase 1 pass.
   (`x:ab😀cdef`), whitespace inside gives no groups (FR-029); the unnamed overflowing scroll block (also the
   `ScrollUnlabelled` story, T028) and the wrap-mode host `aria-label` (story-less, Complexity Tracking); a
   scroll block in a shrink-to-fit flex item (Edge Cases).
-- [ ] T026 [P] [US2] Harness files: `packages/elements/test/code-block.test.ts`, `packages/elements/test/browser/
+- [X] T026 [P] [US2] Harness files: `packages/elements/test/code-block.test.ts`, `packages/elements/test/browser/
   code-block.test.ts` with `packages/elements/test/browser/fixtures/code-block.html`, each running every body of T024
   and T025; `packages/elements/test/entry-code-block.test.ts`: importing `src/ocelle-code-block.ts` defines
   `ocelle-code-block` and no other tag.
-- [ ] T027 [P] [US2] Node tests: the `ocelle-code-block` manifest entry (`overflow`, `label`, `digest`; no slot; no event;
+- [X] T027 [P] [US2] Node tests: the `ocelle-code-block` manifest entry (`overflow`, `label`, `digest`; no slot; no event;
   parts `block`, `code`; no CSS custom property) in `test/node/manifest.test.ts`; the `ocelle-code-block` README
   section, its statements and the § Element conventions "Digests" paragraph of contracts/elements.md in
   `test/node/readme.test.ts`; the changelog entry in `test/node/changelog.test.ts`.
-- [ ] T028 [US2] `storybook/stories/code-block.stories.ts` (`title: "Elements/ocelle-code-block"`): Short,
+- [X] T028 [US2] `storybook/stories/code-block.stories.ts` (`title: "Elements/ocelle-code-block"`): Short,
   WrapLongLine (288 px frame), ScrollOverflowing, ScrollMiddle and ScrollEnd (overflowing, scrolled after render to
   half and to all of the box's range, as `ocelle-scroller`'s `OverflowingInTheMiddle` and `OverflowingAtTheEnd` do:
   fades at both ends, fade at the start only), ScrollFocused (declared focus state: the module's ring on the scroll
@@ -353,16 +354,23 @@ AX text unbroken; zero CSP violations; the gates of phase 1 pass.
   The wrap-mode host `aria-label` has no story (plan Complexity Tracking, approved at the tasks gate).
   With the stories, the axe exception entries of plan.md § Complexity Tracking (contracts/checks.md § Gates touched):
   in `storybook/a11y-exceptions.json`, one `color-contrast-incomplete` entry per overflowing scroll story
-  (ScrollOverflowing, ScrollMiddle, ScrollEnd, ScrollFocused, DigestScroll, RightToLeftScroll, ScrollUnlabelled) and
-  theme, 14 in all, selector `ocelle-code-block >>> .code`, reason "clipped line of the code block's scroll box
+  (ScrollOverflowing, ScrollMiddle, ScrollEnd, ScrollFocused, RightToLeftScroll, ScrollUnlabelled) and theme, selector
+  `ocelle-code-block >>> .code`, and for DigestScroll one per clipped group and theme, selector
+  `ocelle-code-block >>> .group:nth-child(<n>)` for n = 11, 13, … 33 (operator decision
+  `reviews/phase-2/operator-digest-axe-decision.md`, 2026-11-21), 36 in all, reason "clipped line of the code block's scroll box
   (`elmPartiallyObscured`)", the Prose entries' sunset verbatim and `plan` `specs/020-disclosure-code-block/plan.md`;
   run `gate:axe` on them and confirm each story-theme gives exactly that node (a difference goes to the operator);
-  and the counts and excepted notes of `gates/test/integration/axe.test.ts` (notes and excepted 10 to 24, the
+  and the counts and excepted notes of `gates/test/integration/axe.test.ts` (notes and excepted 10 to 46, the
   story-theme runs, the excepted list in run order).
+  Stop raised and answered (2026-11-21): the first axe run gave the planned `.code` node for six of the seven stories
+  and 12 `.group:nth-child(<n>)` nodes per theme for DigestScroll (`reviews/phase-2/notes.md` § Stop for the
+  operator); the operator chose 24 per-group rows (`reviews/phase-2/operator-digest-axe-decision.md`, applied to
+  plan.md in 0df133c). Done: 36 code-block entries; `gate:axe` on the code-block stories and the Prose document gives
+  `axe: 30 story-theme runs, 0 serious or critical; 46 notes (0 incomplete, 46 excepted)`, none stale.
 
 ### Implementation (green)
 
-- [ ] T029 [US2] `packages/elements/src/ocelle-code-block.ts` (research R-05 to R-07, data-model § `ocelle-code-block`):
+- [X] T029 [US2] `packages/elements/src/ocelle-code-block.ts` (research R-05 to R-07, data-model § `ocelle-code-block`):
   - text from `this.textContent ?? ""` at each render; a `MutationObserver` (`childList`, `characterData`,
     `subtree`) on the host from `connectedCallback` to `disconnectedCallback` calling `requestUpdate()`; no slot;
     text and units as Lit text bindings only, no whitespace inside the `pre` template;
@@ -384,19 +392,26 @@ AX text unbroken; zero CSP violations; the gates of phase 1 pass.
     `.block` ground, padding, radius and the transparent border; `.code` margin 0, `font-sans`, `figures`,
     `font-size-md`, `line-height-relaxed`, `min-block-size: 1lh`, `direction: ltr; unicode-bidi: isolate;
     text-align: left`, `pre-wrap` and `anywhere` (wrap) or `pre` (scroll); `overflowRegionStyles`; forced colours.
-- [ ] T030 [US2] Manifest: regenerate and commit `packages/elements/custom-elements.json` with the entry of
+- [X] T030 [US2] Manifest: regenerate and commit `packages/elements/custom-elements.json` with the entry of
   contracts/elements.md.
-- [ ] T031 [US2] Documentation: the `ocelle-code-block` section of `packages/elements/README.md` with every statement of
+- [X] T031 [US2] Documentation: the `ocelle-code-block` section of `packages/elements/README.md` with every statement of
   contracts/elements.md (start text on the tag's line; markup not rendered; always label a scroll block; no host
   `aria-label` in wrap mode; shrink-to-fit hosts; the `ocelle-scroller` statements by reference; `rtl` opens at the
   line starts, not after a resize; print; no copy control, no highlighting; tokens read); the § Element conventions
   "Digests" paragraph verbatim from contracts/elements.md; `packages/elements/CHANGELOG.md` entry (MINOR).
-- [ ] T032 [US2] Baselines: `pnpm run visual:update` in the pinned container under docker, `(<n> added, 0 changed, 0
+- [X] T032 [US2] Baselines: `pnpm run visual:update` in the pinned container under docker, `(<n> added, 0 changed, 0
   removed)`; commit `storybook/baselines/elements-ocelle-code-block--*.{light,dark}.png`.
-- [ ] T033 [US2] Checks as T013 for the code-block plants (recorded in `reviews/phase-2/plants.md`) and the gates,
-  `gate:axe` with no exception entry beyond T028's 14 (each reported as excepted, none stale);
+  Done: 28 added, 0 changed, 0 removed (432 baselines); no podman cross-check possible (`reviews/phase-2/notes.md`).
+- [X] T033 [US2] Checks as T013 for the code-block plants (recorded in `reviews/phase-2/plants.md`) and the gates,
+  `gate:axe` with no exception entry beyond T028's 36 (each reported as excepted, none stale);
   `git diff <phase 2 base> -- packages/elements/src/overflow-region.ts specs/009-workflow-layouts/contracts/` is
   empty (SC-007), `<phase 2 base>` being the sha T020's record names, never a fixed sha.
+  Left to CI by the operator's CI-first decision (`reviews/operator-ci-first.md`): `pnpm test` (the full unit-tests
+  gate), the full plant set (the affected selection is every plant), `gate:visual` and `gate:axe` on the full
+  Storybook, the axe and visual integration tests and `gate:mutation`. Run locally: the fast gates with `gate:signoff`,
+  the code-block plants (all bite), the affected plant run (stopped, full set), the phase's tests, `gate:axe` on the
+  code-block stories and the Prose document (46 excepted, none stale) and the scope diff (`reviews/phase-2/notes.md`
+  § Gates, `plants.md`).
 
 **Checkpoint**: `tdd-check.sh 2` reports `pass`; quickstart steps 1 to 4 pass for both elements.
 

@@ -224,12 +224,15 @@ and on hover-bg are existing rows; the plan's squad checks it), `mutation` (op 0
 
 **axe exception entries (T028; operator decision `reviews/phase-2/operator-axe-decision.md`, 2026-11-21; research
 R-09).** T028 adds to `storybook/a11y-exceptions.json` one `color-contrast-incomplete` entry per overflowing scroll
-story and theme, 14 in all: the stories `ScrollOverflowing`, `ScrollMiddle`, `ScrollEnd`, `ScrollFocused`,
-`DigestScroll`, `RightToLeftScroll` and `ScrollUnlabelled` (ids `elements-ocelle-code-block--scroll-overflowing`,
-`--scroll-middle`, `--scroll-end`, `--scroll-focused`, `--digest-scroll`, `--right-to-left-scroll`,
-`--scroll-unlabelled`), each in `light` and `dark`. Each entry has:
+story and theme, and for `DigestScroll` one per clipped digest group and theme, 36 in all: the stories
+`ScrollOverflowing`, `ScrollMiddle`, `ScrollEnd`, `ScrollFocused`, `RightToLeftScroll` and `ScrollUnlabelled` (ids
+`elements-ocelle-code-block--scroll-overflowing`, `--scroll-middle`, `--scroll-end`, `--scroll-focused`,
+`--right-to-left-scroll`, `--scroll-unlabelled`), one entry each in `light` and `dark` (12), and `DigestScroll` (id
+`elements-ocelle-code-block--digest-scroll`), whose digest is one span per group, twelve entries each in `light` and
+`dark` (24; operator decision `reviews/phase-2/operator-digest-axe-decision.md`, 2026-11-21). Each entry has:
 - `rule` `color-contrast-incomplete`;
-- `selector` `ocelle-code-block >>> .code`, the gate's printed form of axe's target (`printSelector` in
+- `selector` `ocelle-code-block >>> .code`, or for `DigestScroll` `ocelle-code-block >>> .group:nth-child(<n>)` with
+  `<n>` 11, 13, 15, … 33 (the clipped groups; the even children are the `<wbr>`s), the gate's printed form of axe's target (`printSelector` in
   `gates/lib/axe-verdict.ts`, shadow levels joined by ` >>> `), matched exactly (`matchExceptions` in
   `gates/lib/a11y-exceptions.ts`);
 - `reason` "clipped line of the code block's scroll box (`elmPartiallyObscured`)";
@@ -238,6 +241,8 @@ story and theme, 14 in all: the stories `ScrollOverflowing`, `ScrollMiddle`, `Sc
 - `plan` `specs/020-disclosure-code-block/plan.md`, whose § Complexity Tracking holds the matching row of each entry.
 
 A selector, rule or node count the gate reports that differs from those rows, or an overflowing story without the
-result (its entry would be a `stale-exception` finding), goes back to the operator. The entries change the counts of
+result (its entry would be a `stale-exception` finding), goes back to the operator. If the digest, the frame or the
+font changes, `DigestScroll`'s group selectors move, and the gate fails as `stale-exception` or as an unexcepted
+finding. The entries change the counts of
 the axe gate's integration test, `gates/test/integration/axe.test.ts` (story-theme runs, notes and excepted notes, 10
-to 24, and the list of excepted notes in run order), which T028 updates with the stories.
+to 46, that is 10 + 36, and the list of excepted notes in run order), which T028 updates with the stories.

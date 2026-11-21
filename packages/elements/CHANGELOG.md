@@ -24,6 +24,14 @@ the `open` attribute through morphs and reports each change with one event.
 `summary` and `icon` and its default slot, its parts `details`, `summary` and `panel`, the event
 `ocelle-disclosure-toggle`, the state `open` and its entry point are additions to the public surface: a minor change.
 
+**Hosts get a code block, `ocelle-code-block` (mission 020; part of #13).** Before, a host styled its own `<pre>` for
+a command, a log or a commit digest, in the user agent's monospace and with no shared wrap or scroll policy. Now the
+element shows the text in the library's sans with tabular figures on the inset ground, wraps it or scrolls it as an
+overflow region, and shows a digest in groups that copy and read unbroken.
+`ocelle-code-block`, its properties `overflow`, `label` and `digest`, its parts `block` and `code` and its entry point
+are additions to the public surface: a minor change. The README's element conventions gain the digest rule: a prefix
+to the last colon, groups of four code points with a `--ocelle-space-1` gap, copied and read text unbroken.
+
 ### Added
 
 - `ocelle-icon`, an icon of the set drawn inline in `currentColor` at the `--ocelle-icon-size` token, decorative
@@ -100,6 +108,12 @@ the `open` attribute through morphs and reports each change with one event.
   changes before the native `toggle` coalesced); host `aria-label`, `aria-labelledby`, `aria-describedby` and `title`
   moved onto the summary with their mirrors, and a host `aria-expanded` mapped onto `open`. Entry point
   `@ocelle/elements/ocelle-disclosure.js` (defines `ocelle-disclosure` and the `ocelle-icon` it renders).
+- `ocelle-code-block`, a preformatted block for code, commands, logs and digests in the sans with tabular figures on
+  the inset ground, capped at the reading measure; its properties `overflow` (reflected; `scroll` scrolls long lines
+  sideways as an overflow region, a tab stop and a named group only while it overflows, anything else wraps), `label`
+  and `digest` (reflected; a prefix to the last colon and groups of four code points with a gap, copied and read
+  unbroken), its parts `block` and `code`; no slot, the text is the light DOM's text content. Entry point
+  `@ocelle/elements/ocelle-code-block.js` (defines `ocelle-code-block` only).
 - The style lint's token-only rule, which checks these elements' styles, admits four values and nothing near them:
   the `grid-template-columns` tracks `fit-content(<percentage>)` and `minmax(0, <flex>)` (the facts columns and
   grid), `translateX(<percentage>)` in `transform` (the progress sweep) and a bare positive integer
