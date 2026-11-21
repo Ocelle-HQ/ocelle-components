@@ -240,13 +240,15 @@ AX text unbroken; zero CSP violations; the gates of phase 1 pass.
 
 ### Operator stop (first)
 
-- [ ] T020 [US2] Operator stop (FR-060, research R-12), before any phase 2 work: the orchestrator reports to the
+- [X] T020 [US2] Operator stop (FR-060, research R-12), before any phase 2 work: the orchestrator reports to the
   operator whether mission 019 is on `main` and what it changed in `packages/elements/src/overflow-region.ts` and
   shared files; the operator decides how phase 2 proceeds (for example build on the branch as it is, or have
   `/ocelle-land` integrate first). Recorded alone in `specs/020-disclosure-code-block/reviews/phase-2/
   operator-019.md`, which names phase 2's base: the full sha phase 2 builds on (the phase 1 head if the branch is
   built on as it is, the integrated commit if `/ocelle-land` integrates first). That base is the branch base of
   SC-007 and SC-008 for phases 2 and 3 (T033, T041). No task merges `main`.
+  Done: `reviews/phase-2/operator-019.md` (proceed on main without waiting for 019; phase 2's base
+  `8ebbe439b08562e3832fbe996645d4ff714f0874`).
 
 ### Spike
 
@@ -256,6 +258,8 @@ AX text unbroken; zero CSP violations; the gates of phase 1 pass.
   `margin-inline-end` gap, base64url and base64 sweeps 60 to 300 px); R-06's `rtl` opening write
   (`scrollLeft` after `scrollTo({ left: -(scrollWidth - clientWidth), behavior: "instant" })`, `data-fade` `start`).
   A failure stops for the operator.
+  Open: run and recorded in `reviews/phase-2/spike.md`; two measures fail (the whole-block copy's newline, the
+  prefix breaking inside where it fits); stopped for the operator (Q1, Q2 there).
 - [ ] T021a [US2] Axe measure of the unnamed overflowing scroll block (analysis D1, operator decision at the tasks
   gate), scratch files only, before T028, recorded in `specs/020-disclosure-code-block/reviews/phase-2/
   axe-unnamed-scroll.md`: a scratch element (outside `packages/`) rendering research R-06's scroll structure
