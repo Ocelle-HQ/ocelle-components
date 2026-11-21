@@ -210,3 +210,5 @@ pitfalls up front. Each entry names where it was found. New entries are added as
 - **Spec template additions for frontend features.** Stating the browsers and engines up front (WebKit hosts), the
   CSP of every fixture, the shrink-to-fit hosts and the shadow-DOM interaction, so the spec checks do not have to
   find them.
+- **Subpixel text in pixel tests.** CI's Chromium antialiases text in colour. A pixel sampled a few px from a glyph, under a translucent ring or overlay, can differ by one channel unit from the local grayscale render. Keep neighbouring glyphs clear of sampled bands, and run such tests once under a subpixel fontconfig.
+- **Elements composed into a container that picks focus at load.** A Lit element's first render is deferred, so a parent such as an `ocelle-dialog` open at load can look for a focus target before the child's shadow DOM exists. A child that must be focusable at that moment renders at connect (`performUpdate()` at the end of `connectedCallback`).

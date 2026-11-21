@@ -1070,6 +1070,118 @@
         {
           "attributes": [
             {
+              "default": "\"\"",
+              "description": "The text shown and requested, as written. A change after first render clears `status`. With an empty value the\nCopy control is disabled and emits nothing. Not reflected.",
+              "fieldName": "value",
+              "name": "value",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "\"\"",
+              "description": "The host's outcome text, shown as the content of the field's polite live region; blank shows nothing. The field\nclears it (the property then reads `\"\"`) when a request starts and when `value` changes after first render.\nSetting the text the region already holds changes nothing. Not reflected: a `status` attribute stays as written.",
+              "fieldName": "status",
+              "name": "status",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "\"Copy\"",
+              "description": "The Copy control's accessible name, trimmed; empty or whitespace-only gives the default. Not reflected.",
+              "fieldName": "copyLabel",
+              "name": "copy-label",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The text, on the inset well. Public surface: it stays when the Copy control becomes `ocelle-button`.",
+              "name": "value"
+            },
+            {
+              "description": "The Copy control. It guarantees its box (its position, its size and the rules a host sets on it), its accessible name and the events its activation leads to, not which element carries it (a native button today, `ocelle-button` later).",
+              "name": "copy-control"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A command or identifier with a flush Copy control that asks the host to copy it; the host reports the outcome in\n`status`, which the field shows in a polite live region.",
+          "events": [
+            {
+              "description": "The user activated the Copy control (a click, Enter or Space): `text` is `value` at the activation. Dispatched after the next rendering update, outside the activation's task, once the cleared `status` has reached the accessibility tree; not cancelable. The field never writes the clipboard: the host does, and reports the outcome in `status`.",
+              "name": "ocelle-copy-field-request",
+              "type": {
+                "text": "CustomEvent<{ text: string }>"
+              }
+            }
+          ],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "copy-label",
+              "default": "\"Copy\"",
+              "description": "The Copy control's accessible name, trimmed; empty or whitespace-only gives the default. Not reflected.",
+              "kind": "field",
+              "name": "copyLabel",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "value",
+              "default": "\"\"",
+              "description": "The text shown and requested, as written. A change after first render clears `status`. With an empty value the\nCopy control is disabled and emits nothing. Not reflected.",
+              "kind": "field",
+              "name": "value",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "status",
+              "default": "\"\"",
+              "description": "The host's outcome text, shown as the content of the field's polite live region; blank shows nothing. The field\nclears it (the property then reads `\"\"`) when a request starts and when `value` changes after first render.\nSetting the text the region already holds changes nothing. Not reflected: a `status` attribute stays as written.",
+              "kind": "field",
+              "name": "status",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "name": "OcelleCopyField",
+          "slots": [],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-copy-field"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-copy-field.ts",
+            "name": "OcelleCopyField"
+          },
+          "kind": "js",
+          "name": "OcelleCopyField"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-copy-field.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
               "default": "false",
               "description": "Whether the overlay is shown, modally in the top layer; setting it shows or closes the overlay, and the overlay\nsets it to false whenever it closes. Reflected.",
               "fieldName": "open",
@@ -2804,6 +2916,100 @@
           "attributes": [
             {
               "default": "undefined",
+              "description": "The link's target, as written: the anchor carries it while it resolves to an allowed protocol, and the event's\n`detail.href` reports it. Without it the link only emits its event. Reflected.",
+              "fieldName": "href",
+              "name": "href",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The link's accessible name instead of its text, trimmed; blank counts as none. It must contain the visible text.\nA host `aria-label` does not name the link. Not reflected.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string | undefined"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The link's anchor: the native `<a>` that is focused and activated.",
+              "name": "anchor"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A link in running text that tells the host it was activated, and navigates to an allowed `href` unless the host\ncancels.",
+          "events": [
+            {
+              "description": "The user activated the link with Enter or a primary-button click (no modifier, or Alt alone): `href` is the `href` attribute as written, not validated, or `null` without one. Cancelable: a cancelled event stops the link's own navigation. A modified activation (Ctrl, Meta or Shift held, or a middle click) emits nothing.",
+              "name": "ocelle-link-activate",
+              "type": {
+                "text": "CustomEvent<{ href: string | null }>"
+              }
+            }
+          ],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "href",
+              "default": "undefined",
+              "description": "The link's target, as written: the anchor carries it while it resolves to an allowed protocol, and the event's\n`detail.href` reports it. Without it the link only emits its event. Reflected.",
+              "kind": "field",
+              "name": "href",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "label",
+              "default": "undefined",
+              "description": "The link's accessible name instead of its text, trimmed; blank counts as none. It must contain the visible text.\nA host `aria-label` does not name the link. Not reflected.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            }
+          ],
+          "name": "OcelleLink",
+          "slots": [
+            {
+              "description": "The link's text.",
+              "name": ""
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-link"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-link.ts",
+            "name": "OcelleLink"
+          },
+          "kind": "js",
+          "name": "OcelleLink"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-link.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
               "description": "One column below this length: digits with an optional fraction and `px`, `rem` or `em`, or a unitless `0`, after\ntrimming ASCII whitespace; any other value counts as absent, and the default is `--ocelle-list-detail-collapse` as\ncomputed on the element. Not reflected.",
               "fieldName": "collapseBelow",
               "name": "collapse-below",
@@ -2944,6 +3150,106 @@
         {
           "attributes": [
             {
+              "default": "undefined",
+              "description": "The listbox's accessible name, trimmed; empty or whitespace-only counts as none, and a host `aria-label` decides\nover it. Not reflected.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "\"\"",
+              "description": "The selected option's value, `\"\"` when none. Setting it selects the first enabled option with the value; `\"\"` or a\nvalue no enabled option has clears the selection, and a non-empty such value is remembered until an option with it\nappears or is enabled. A set never emits an event; setting the current value changes nothing. Not reflected.",
+              "fieldName": "value",
+              "name": "value",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The scroll container of the options; a host limits the listbox's height with `max-block-size` on the listbox.",
+              "name": "list"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A single-select listbox of `ocelle-option` children, one tab stop, keyboard and pointer selection.",
+          "events": [
+            {
+              "description": "The user selected another option (Enter, Space or a click); `value` already reads it.",
+              "name": "ocelle-listbox-change",
+              "type": {
+                "text": "CustomEvent<{ value: string }>"
+              }
+            },
+            {
+              "description": "The user confirmed an option: Enter on the selected enabled option, or a double-click on an enabled option. Not cancelable.",
+              "name": "ocelle-listbox-activate",
+              "type": {
+                "text": "CustomEvent<{ value: string }>"
+              }
+            }
+          ],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "label",
+              "default": "undefined",
+              "description": "The listbox's accessible name, trimmed; empty or whitespace-only counts as none, and a host `aria-label` decides\nover it. Not reflected.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "value",
+              "default": "\"\"",
+              "description": "The selected option's value, `\"\"` when none. Setting it selects the first enabled option with the value; `\"\"` or a\nvalue no enabled option has clears the selection, and a non-empty such value is remembered until an option with it\nappears or is enabled. A set never emits an event; setting the current value changes nothing. Not reflected.",
+              "kind": "field",
+              "name": "value",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "name": "OcelleListbox",
+          "slots": [
+            {
+              "description": "The `ocelle-option` children.",
+              "name": ""
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-listbox"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-listbox.ts",
+            "name": "OcelleListbox"
+          },
+          "kind": "js",
+          "name": "OcelleListbox"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-listbox.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
               "default": "\"info\"",
               "description": "The tone: `info`, `success`, `warning`, `danger` or `neutral`; any other value behaves as `info` and the property\nreads `\"info\"`, while the attribute keeps the value as written. Reflected.",
               "fieldName": "tone",
@@ -3054,6 +3360,92 @@
       ],
       "kind": "javascript-module",
       "path": "src/ocelle-notice.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "false",
+              "description": "Whether the option is disabled: it cannot be selected, the keys and the tab stop skip it, and it stays focusable,\nso a focused option that becomes disabled keeps focus. Reflected.",
+              "fieldName": "disabled",
+              "name": "disabled",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "the option's index, as a string",
+              "description": "The option's value, reported by the listbox's `value` and events: the `value` attribute as written (not trimmed),\nor, when it is missing or blank, the option's index among its parent's options, as a string, which is not written\nto the attribute. Reflected.",
+              "fieldName": "value",
+              "name": "value",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "An option of an `ocelle-listbox`: its content is its label, with an optional leading icon.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "disabled",
+              "default": "false",
+              "description": "Whether the option is disabled: it cannot be selected, the keys and the tab stop skip it, and it stays focusable,\nso a focused option that becomes disabled keeps focus. Reflected.",
+              "kind": "field",
+              "name": "disabled",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "attribute": "value",
+              "default": "the option's index, as a string",
+              "description": "The option's value, reported by the listbox's `value` and events: the `value` attribute as written (not trimmed),\nor, when it is missing or blank, the option's index among its parent's options, as a string, which is not written\nto the attribute. Reflected.",
+              "kind": "field",
+              "name": "value",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "name": "OcelleOption",
+          "slots": [
+            {
+              "description": "The option's label.",
+              "name": ""
+            },
+            {
+              "description": "A leading icon, by the slot convention; it adds nothing to the option's name.",
+              "name": "icon"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-option"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-option.ts",
+            "name": "OcelleOption"
+          },
+          "kind": "js",
+          "name": "OcelleOption"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-option.ts"
     },
     {
       "declarations": [
@@ -3560,6 +3952,422 @@
       ],
       "kind": "javascript-module",
       "path": "src/ocelle-section-header.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "false",
+              "description": "Whether the segment is disabled: it cannot be pressed, the keys and the tab stop skip it, and it stays focusable,\nso a focused segment that becomes disabled keeps focus until the press moves. Reflected.",
+              "fieldName": "disabled",
+              "name": "disabled",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "the segment's index, as a string",
+              "description": "The segment's value, reported by the segmented choice's `value` and events: the `value` attribute as written (not\ntrimmed), or, when it is missing or blank, the segment's index among its parent's segments, as a string, which is\nnot written to the attribute. Reflected.",
+              "fieldName": "value",
+              "name": "value",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A segment of an `ocelle-segmented-choice`: its content is its label, with an optional leading icon.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "disabled",
+              "default": "false",
+              "description": "Whether the segment is disabled: it cannot be pressed, the keys and the tab stop skip it, and it stays focusable,\nso a focused segment that becomes disabled keeps focus until the press moves. Reflected.",
+              "kind": "field",
+              "name": "disabled",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "attribute": "value",
+              "default": "the segment's index, as a string",
+              "description": "The segment's value, reported by the segmented choice's `value` and events: the `value` attribute as written (not\ntrimmed), or, when it is missing or blank, the segment's index among its parent's segments, as a string, which is\nnot written to the attribute. Reflected.",
+              "kind": "field",
+              "name": "value",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "name": "OcelleSegment",
+          "slots": [
+            {
+              "description": "The segment's label.",
+              "name": ""
+            },
+            {
+              "description": "A leading icon, by the slot convention; it adds nothing to the segment's name.",
+              "name": "icon"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-segment"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-segment.ts",
+            "name": "OcelleSegment"
+          },
+          "kind": "js",
+          "name": "OcelleSegment"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-segment.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
+              "description": "The toolbar's accessible name, trimmed; empty or whitespace-only counts as none, and a host `aria-label` decides\nover it. Not reflected.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "false",
+              "description": "The joined variant: the segments touch with one shared line between neighbours and between rows, and only each\nrow's first and last segments have rounded outer corners, recomputed by the element when it wraps. Reflected.",
+              "fieldName": "joined",
+              "name": "joined",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "the first enabled segment's value",
+              "description": "The pressed segment's value; `\"\"` only while no segment is enabled. Setting it presses the first enabled segment\nwith the value; `\"\"` or a value no enabled segment has keeps the press, and a non-empty such value is remembered\nuntil a segment with it appears or is enabled. A set never emits an event; setting the current value changes\nnothing. Not reflected.",
+              "fieldName": "value",
+              "name": "value",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A toolbar of `ocelle-segment` toggle buttons, exactly one pressed; one tab stop, keyboard and pointer pressing, and a\njoined variant that rounds each row's ends itself.",
+          "events": [
+            {
+              "description": "The user pressed another segment (Enter, Space or a click); `value` already reads it.",
+              "name": "ocelle-segmented-choice-change",
+              "type": {
+                "text": "CustomEvent<{ value: string }>"
+              }
+            }
+          ],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "label",
+              "default": "undefined",
+              "description": "The toolbar's accessible name, trimmed; empty or whitespace-only counts as none, and a host `aria-label` decides\nover it. Not reflected.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "joined",
+              "default": "false",
+              "description": "The joined variant: the segments touch with one shared line between neighbours and between rows, and only each\nrow's first and last segments have rounded outer corners, recomputed by the element when it wraps. Reflected.",
+              "kind": "field",
+              "name": "joined",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "attribute": "value",
+              "default": "the first enabled segment's value",
+              "description": "The pressed segment's value; `\"\"` only while no segment is enabled. Setting it presses the first enabled segment\nwith the value; `\"\"` or a value no enabled segment has keeps the press, and a non-empty such value is remembered\nuntil a segment with it appears or is enabled. A set never emits an event; setting the current value changes\nnothing. Not reflected.",
+              "kind": "field",
+              "name": "value",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "name": "OcelleSegmentedChoice",
+          "slots": [
+            {
+              "description": "The `ocelle-segment` children.",
+              "name": ""
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-segmented-choice"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-segmented-choice.ts",
+            "name": "OcelleSegmentedChoice"
+          },
+          "kind": "js",
+          "name": "OcelleSegmentedChoice"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-segmented-choice.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A panel of an `ocelle-tabs`: its content is shown while the tab at the same place among the tabs is selected.",
+          "events": [],
+          "kind": "class",
+          "members": [],
+          "name": "OcelleTabPanel",
+          "slots": [
+            {
+              "description": "The panel's content.",
+              "name": ""
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-tab-panel"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-tab-panel.ts",
+            "name": "OcelleTabPanel"
+          },
+          "kind": "js",
+          "name": "OcelleTabPanel"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-tab-panel.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "false",
+              "description": "Whether the tab is disabled: it cannot be selected, the keys skip it, and it stays focusable, so a focused tab that\nbecomes disabled keeps focus until the selection moves. Reflected.",
+              "fieldName": "disabled",
+              "name": "disabled",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "the tab's index, as a string",
+              "description": "The tab's value, reported by the tabs' `value` and events: the `value` attribute as written (not trimmed), or, when\nit is missing or blank, the tab's index among its parent's tabs, as a string, which is not written to the\nattribute. Reflected.",
+              "fieldName": "value",
+              "name": "value",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A tab of an `ocelle-tabs`: its content is its label, with an optional leading icon; it pairs with the panel at the\nsame place among the tabs' panels.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "disabled",
+              "default": "false",
+              "description": "Whether the tab is disabled: it cannot be selected, the keys skip it, and it stays focusable, so a focused tab that\nbecomes disabled keeps focus until the selection moves. Reflected.",
+              "kind": "field",
+              "name": "disabled",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "attribute": "value",
+              "default": "the tab's index, as a string",
+              "description": "The tab's value, reported by the tabs' `value` and events: the `value` attribute as written (not trimmed), or, when\nit is missing or blank, the tab's index among its parent's tabs, as a string, which is not written to the\nattribute. Reflected.",
+              "kind": "field",
+              "name": "value",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "name": "OcelleTab",
+          "slots": [
+            {
+              "description": "The tab's label.",
+              "name": ""
+            },
+            {
+              "description": "A leading icon, by the slot convention; it adds nothing to the tab's name.",
+              "name": "icon"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-tab"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-tab.ts",
+            "name": "OcelleTab"
+          },
+          "kind": "js",
+          "name": "OcelleTab"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-tab.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
+              "description": "The tablist's accessible name, trimmed; empty or whitespace-only counts as none. The tabs' only name source: a host\n`aria-label` does not name the tablist. Not reflected.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "the first enabled tab's value",
+              "description": "The selected tab's value; `\"\"` only while no tab is enabled. Setting it selects the first enabled tab with the\nvalue; `\"\"` or a value no enabled tab has keeps the selection, and a non-empty such value is remembered until a tab\nwith it appears or is enabled. A set never emits an event; setting the current value changes nothing. Not\nreflected.",
+              "fieldName": "value",
+              "name": "value",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The row of the tabs, which wraps onto further rows.",
+              "name": "tablist"
+            },
+            {
+              "description": "The container of the shown panel, beside the tablist.",
+              "name": "panels"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A tablist of `ocelle-tab` children and their `ocelle-tab-panel` panels, paired by order; one tab stop, keyboard and\npointer selection, selection following focus.",
+          "events": [
+            {
+              "description": "The user selected another tab (an arrow key, Home, End, Enter, Space or a click); `value` already reads it.",
+              "name": "ocelle-tabs-change",
+              "type": {
+                "text": "CustomEvent<{ value: string }>"
+              }
+            }
+          ],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "label",
+              "default": "undefined",
+              "description": "The tablist's accessible name, trimmed; empty or whitespace-only counts as none. The tabs' only name source: a host\n`aria-label` does not name the tablist. Not reflected.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "value",
+              "default": "the first enabled tab's value",
+              "description": "The selected tab's value; `\"\"` only while no tab is enabled. Setting it selects the first enabled tab with the\nvalue; `\"\"` or a value no enabled tab has keeps the selection, and a non-empty such value is remembered until a tab\nwith it appears or is enabled. A set never emits an event; setting the current value changes nothing. Not\nreflected.",
+              "kind": "field",
+              "name": "value",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "name": "OcelleTabs",
+          "slots": [
+            {
+              "description": "The `ocelle-tab` and `ocelle-tab-panel` children, in any interleaving; they pair by order among their kind.",
+              "name": ""
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-tabs"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-tabs.ts",
+            "name": "OcelleTabs"
+          },
+          "kind": "js",
+          "name": "OcelleTabs"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-tabs.ts"
     },
     {
       "declarations": [

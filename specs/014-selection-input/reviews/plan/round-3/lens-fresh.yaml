@@ -1,0 +1,83 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 3
+lens: fresh
+# Scope: attacked the round-2 fixes (cbfe53c) in research.md R-02, R-03, R-05 to R-08, R-15, data-model.md,
+# contracts/elements.md and plan.md, plus the states nearby they did not cover.
+# Probes: Chromium for Testing 153 (/opt/pw-browsers/chromium-1243, headless, raw CDP); pages and scripts in the
+# session scratchpad, directory fresh3/ (focus.html + run.mjs, seg.html, opt.html + shot.mjs, clip.mjs).
+# Checked and not reported: label-content-name-mismatch is not tagged "experimental" in axe-core 4.14.0
+# (axe.js line 37469, tags cat.semantics / wcag21a / wcag253 ...), so it is on by default and the round-2 story
+# test for PLAN-FRESH-2-005 can fail. The tabs aria-labelledby move (PLAN-FRESH-2-002) contradicts no spec outcome.
+findings:
+  - id: PLAN-FRESH-3-001
+    severity: 3
+    title: "The task-scoped focus record still steals focus when a host re-renders on blur, in a microtask or animation frame"
+    evidence:
+      - artifact: "research.md § R-03 Focus record: \"`blurred`: on every `focusout` ... recorded unconditionally, but only for the task it happened in: the `focusout` handler posts a task (`setTimeout(0)`) that clears it\" and \"The batch treats `blurred` as 'had focus at the batch' only when the batch's own records list that child in `removedNodes` and `document.activeElement` is the body, `null` or nothing inside the parent\"; data-model.md § Selection state row `blurred` and § Transitions rows \"focused child removed\" / \"child moved\""
+      - artifact: "contracts/elements.md § Pairings: the only negative pair is \"the user clicks the page ... then in a later task the host moves that option\"; no pair covers a host mutation in the same task as the user's blur or before the clearing task"
+      - code: "Probe fresh3/focus.html + run.mjs: the R-03 algorithm as written (focusout sets `blurred`, setTimeout(0) clears it, focusin on a child clears it, childList observer refocuses a moved `blurred` child or moves focus FR-011-style for a removed one when activeElement is the body or not inside the parent). Focus on option `a`, real Tab key (CDP Input.dispatchKeyEvent) towards a button after the parent. No host listener: focus ends on the button. Host focusout listener that does `queueMicrotask(() => parent.appendChild(a))`: batch sees activeElement=BODY, blurred=a, a in removedNodes; refocuses `a`; final activeElement = a (the button never gets focus). Same listener removing `a`: focus moved to `b` inside the parent. Real mouse click on the outside button with the microtask re-render: final activeElement = a. Click on the button with the move in `requestAnimationFrame`: the frame runs before the setTimeout(0) task, batch sees activeElement=button (not inside the parent), blurred=a; refocuses `a`."
+    claim: |
+      The round-2 fix scopes the record to "the task of the blur", but a microtask checkpoint runs after every event
+      listener, before the focus change has finished: while `focusout` is being dispatched for a user Tab or click,
+      `document.activeElement` is the body and the new element has not received focus. Any host that reacts to the
+      blur by re-rendering its option list in a microtask (Lit's update cycle, Promise-based stores, a framework's
+      keyed list that reorders or replaces nodes; a filter cleared on blur) mutates the parent inside that same task,
+      and the batch, also a microtask, finds `blurred` set, the child in `removedNodes` and focus on the body. It then
+      refocuses the moved child or moves focus to the FR-011 target, and the browser's pending focus of the user's
+      target is cancelled. The user cannot Tab or click out of the listbox, tabs or segmented choice (WCAG 2.1.2 /
+      3.2.1 territory, Constitution III). The same happens for a re-render in `requestAnimationFrame`, which may run
+      before the `setTimeout(0)` that clears the record, and there "nothing inside the parent" matches a real outside
+      element. The one negative pair the round added (a move in a *later* task) passes while these fail, so the
+      design and its tests both miss the case.
+    remedies:
+      - "R-03 and data-model § Selection state: a `focusout` with a non-null `relatedTarget` (focus is going to a known element: Tab, Shift+Tab, click on a focusable) never sets `blurred`. For the rest, decide whether the removal caused the blur, not whether it happened in the same task: the `focusout` handler, which Chromium runs inside the `remove()` / `insertBefore()` call (the round-2 measurement), calls the host observer's `takeRecords()` from a microtask it queues at once, which runs before any microtask a later host listener queued; only when those records already list the child in `removedNodes` does it count as 'had focus at the batch' (process those records as the batch). Otherwise clear `blurred`. Drop the `setTimeout(0)` and the 'nothing inside the parent' clause (only the body or `null` qualifies). Spike in phase 2: record the listener and microtask order for a removal-induced blur and for a user blur followed by a host microtask move. Add to contracts § Pairings: 'Tab out while the host re-renders on blur' (a host `focusout` listener moves or removes the focused option in a microtask, and in another case in a `requestAnimationFrame`; real Tab and a real click on an outside button; `document.activeElement` is the outside element), positive pair US1-21; plants: the record scoped by task only, the 'nothing inside the parent' clause."
+  - id: PLAN-FRESH-3-002
+    severity: 3
+    title: "Raising the focused segment to z-index 2 paints its control-border line over the pressed neighbour's accent-strong line"
+    evidence:
+      - artifact: "research.md § R-06 Focus ring above the neighbours: \"`:host(:focus-visible) { position: relative; z-index: 2; }` on `ocelle-segment`\"; § R-06 Shared lines: \"The pressed segment (and a hovered one) is raised (`position: relative; z-index: 1`) so its `--ocelle-color-accent-strong` lines ... lie over its neighbours' `control-border` lines at the same width\""
+      - artifact: "spec.md US3-9 (lines 442-446): the lines that bound the pressed segment are in `accent-strong`, 'the line between `All` and `Mine` is one line ... in `accent-strong`'; FR-029 (line 838-840) the same for the pressed and a hovered segment; R-15 What the tests read, new item: the ring read is taken with 'the pressed segment as its neighbour (keyboard focus moved off the pressed segment, US3-2)', but it reads only `color-focus` pixels, not the shared line"
+      - code: "Probe fresh3/seg.html + shot.mjs (flex row, 1px borders, -1px start margins as R-06; pressed: border rgb(0,0,255), position relative, z-index 1; focused: outline 3px at 2px offset, position relative, z-index 2). Shared line between pressed and focused-after-it at x=218: rgb(136,136,136) (the focused segment's control-border), not blue. Focused-before-pressed, shared line at x=119: rgb(136,136,136). The pressed segment's line on the side of the focused neighbour is grey in both orders."
+    claim: |
+      Both the pressed segment's accent-strong lines (z-index 1) and the focus ring (now z-index 2) are drawn by
+      stacking whole hosts, so they compete: when keyboard focus sits on a neighbour of the pressed segment, which is
+      the normal state of a toolbar where arrows move focus without pressing (US3-2), the focused segment's own
+      `control-border` border box covers the shared line and the pressed segment is bounded by `control-border` on
+      that side. That breaks US3-9, FR-029 and #5 rule 1 (Constitution II brand rule) in exactly the state the
+      round-2 ring test sets up, and the same happens beside a hovered segment. The existing pairing "joined: pressed
+      lines not control-border" is not specified with a focused neighbour, so no planned test sees it; the new ring
+      read passes while the line is wrong.
+    remedies:
+      - "R-06 / R-15: keep the host at its existing stacking (pressed and hovered z-index 1, focused not raised) and draw the joined segment's focus ring on a raised pseudo-element: `:host(:focus-visible)::after` absolutely positioned at `inset: calc(-1 * (focus-offset + focus-width))`, `outline` (or border) `focus-width` `color-focus`, `pointer-events: none`, `z-index: 2`, with the host `position: relative; z-index: auto` so the pseudo-element stacks in the group's context above the raised neighbours while the host's own border does not; forced colours keep it as an outline in `Highlight`. Apply the same to `ocelle-tab`. In R-15 What the tests read and contracts § Pairings, add to 'joined: pressed lines not control-border' (and the hovered case) the state 'focused neighbour on either side', pixel run across that shared line in `accent-strong`; plant: `z-index` on the focused host."
+  - id: PLAN-FRESH-3-003
+    severity: 2
+    title: "The listbox option's ring is still cut by a hovered later option; the round-2 raise covers segments and tabs only"
+    evidence:
+      - artifact: "research.md § R-15 Techniques: 'the option's and tab's bar ... are a `:host::before` pseudo-element positioned inside the host's box (absolute ...)', so `ocelle-option` is a positioned box; § R-15 table 'option, tab: hover | `hover-bg`'; § R-06 Focus ring above the neighbours raises only `ocelle-segment` and `ocelle-tab`; the R-15 table row 'focus ring (all)' lists `hover-bg` as a ring ground only 'for a focused segment or tab'"
+      - code: "Probe fresh3/opt.html + shot.mjs: three 44px block options in a column, outline 3px at 2px offset on the first, `rgb(200,200,200)` fill on the second. With `position: relative` on the options (needed for the absolute ::before bar), pixels y=72-74 below the focused option at x=100 are the hover fill (200,200,200), no ring. Same layout with static options (x=400): y=72-74 are rgb(255,0,0), the ring."
+    claim: |
+      Positioned boxes with `z-index: auto` paint in tree order after normal-flow content, each as a unit, so the
+      next option's `hover-bg` fill paints over the focused option's outline where it extends into it. Keyboard
+      focus on an option while the pointer rests on the option below (arrowing through a list under a stationary
+      mouse) shows a ring with its block-end side missing, the same defect PLAN-FRESH-2-003 fixed for segments and
+      tabs. FR-007 asks for the ring on every interactive child; no test reads the option ring beside a hovered
+      option, so it would ship.
+    remedies:
+      - "R-06 / R-15: give `ocelle-option` the same treatment as the tab (whatever form PLAN-FRESH-3-002 settles on: a raised focused host or a raised ring pseudo-element); add `hover-bg` as a ground of the option ring in R-15's table; add to What the tests read and contracts § Pairings a four-sided `color-focus` read of a focused option with the pointer on the next option (and one on the previous), inside the US1-16 clip; plant: no raise on the focused option."
+  - id: PLAN-FRESH-3-004
+    severity: 2
+    title: "The phase-5 user-activation spike grants clipboard permission, so its clipboard write succeeds with no activation and cannot show anything"
+    evidence:
+      - artifact: "research.md § R-07 User activation: 'the phase-5 spike adds a host listener calling `navigator.clipboard.writeText` from the deferred request in Chromium (clipboard permission granted to the test context), recording `navigator.userActivation.isActive` at the dispatch and whether the write resolved'; plan.md phase 5 and round-2 decisions repeat it as the evidence for operator decision PLAN-FRESH-2-004 (a)"
+      - code: "Probe fresh3/clip.mjs (page served from 127.0.0.1, focus emulation on, no click ever made): `navigator.clipboard.writeText('x')` without a grant -> rejected NotAllowedError, isActive=false; after `Browser.grantPermissions` ['clipboardReadWrite','clipboardSanitizedWrite'] for the origin -> resolved, isActive=false, hasBeenActive=false."
+    claim: |
+      In Chromium a granted clipboard-write permission replaces the user-activation requirement: the write resolves
+      on a page the user has never touched. The planned spike grants that permission and then records "whether the
+      write resolved", so it resolves whether or not the deferred dispatch is still inside the click's activation; the
+      result cannot fail and would be recorded as support for keeping the deferred dispatch. Without a grant, the
+      write is gated, so the setup decides the result, not the timing under test. The same false reassurance would be
+      carried to the kitty-mission-ui and console owners with plan decision 1.
+    remedies:
+      - "R-07 User activation and plan phase 5: run the spike with no clipboard permission granted, and with two controls in the same page: a write with no prior click (must reject, proving the gate is on) and a write synchronously in the click handler (must resolve, proving the setup can succeed); only then record the deferred request's write, `navigator.userActivation.isActive` at dispatch, and the result. If headless Chromium cannot resolve the synchronous control without a grant, record that the spike cannot answer the question in Chromium either and send it to the owners with decision 1 as open, instead of a grant-based pass."

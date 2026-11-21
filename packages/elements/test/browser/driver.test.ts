@@ -1,7 +1,9 @@
 import type { Browser, Page } from "playwright";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 import { defineDriverHelpers, driverAdditionScenarios } from "../scenarios/driver-additions.ts";
-import type { InsertHow } from "../scenarios/driver.ts";
+import { driverCommandScenarios } from "../scenarios/driver-commands.ts";
+import { driverRecorderScenarios } from "../scenarios/driver-recorders.ts";
+import type { InPage, InsertHow } from "../scenarios/driver.ts";
 import { fixtureDriver } from "./driver.ts";
 import { clean, launch, serve, visit } from "./serve.ts";
 import type { Served, Visit } from "./serve.ts";
@@ -27,7 +29,14 @@ import type { Served, Visit } from "./serve.ts";
 // T003): every shared body of scenarios/driver-additions.ts on its own `facts.html` page, its helper elements defined
 // through `page.evaluate` (the DevTools protocol, which the page's CSP does not govern), with zero CSP violations, no
 // request outside the allowed list, no failed request and no console message, as every fixture test asserts.
+//
+// The driver commands and recorders of 014 on the strict-CSP fixture (research.md R-07, R-11, T002, T003): the bodies of
+// scenarios/driver-commands.ts and scenarios/driver-recorders.ts marked `fixture`, each on its own `driver.html` page,
+// which loads the browser build and nothing else; the clipboard observer is installed by the page's init script
+// (serve.ts), so a body that calls the clipboard on a fixture page proves it is there. Every test asserts zero CSP
+// violations, no request outside the allowed list, no failed request and no console message or uncaught error.
 const built = inject("elementsFixture");
+const scenarios = [...driverCommandScenarios, ...driverRecorderScenarios].filter((scenario) => scenario.fixture);
 const scripts = ["ocelle-elements.js", "live-regions.js", "submit"];
 let served: Served | undefined;
 let browser: Browser | undefined;
@@ -80,6 +89,20 @@ function started(): { readonly browser: Browser; readonly origin: string } {
   if (browser === undefined || served === undefined) throw new Error("the suite did not start");
   return { browser, origin: served.origin };
 }
+
+describe("the driver commands and recorders on the strict-CSP fixture (014 R-11)", { timeout: 60_000 }, () => {
+  it("runs the fixture bodies of both scenario lists", () => {
+    expect(scenarios.length).toBeGreaterThan(15);
+  });
+
+  it.each(scenarios)("$name", async ({ run, expected }) => {
+    const { browser, origin } = started();
+    const page = await visit(browser, origin, "driver.html");
+    const inPage: InPage = (fn, arg) => page.page.evaluate(fn as (arg: unknown) => never, arg);
+    const observed = await run(fixtureDriver(page.page, page.log), inPage);
+    expect({ observed, recorded: await page.finish() }).toEqual({ observed: expected, recorded: clean });
+  });
+});
 
 /** Opens a plain fixture page (009's `open`, named `openPlain` beside 010's `open` at the landing's second merge): frames.html, or icon.html with the browser build. */
 async function openPlain(page = "frames.html"): Promise<Visit> {

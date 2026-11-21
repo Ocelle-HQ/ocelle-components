@@ -1,0 +1,9 @@
+# Squad round 2: fixes 1
+
+| ID | Resolution | Where |
+|----|------------|-------|
+| PLAN-FRESH-2-001 | fixed | research.md § R-03 Focus record (measured Chromium order; task-scoped `blurred` record; decided in the batch from its `removedNodes`); data-model.md § Selection state (`focused`, new `blurred` row) and § Transitions (removed, moved, later-task rows); contracts/elements.md § Pairings ("a move does not steal focus back", US1-21 as positive pair); plan.md Constitution Check III, phase 2 |
+| PLAN-FRESH-2-002 | fixed | research.md § R-02 (`aria-labelledby` on the assigned panel only, `aria-controls` on every paired tab; axe 4.14.0 defect recorded for upstream), § R-05 Child list; data-model.md § Child entry; contracts/elements.md § ocelle-tabs and § Pairings (full rule set on tabs stories; plant: `aria-labelledby` on every panel); plan.md Constitution Check III, decision 2, phase 3, story test line |
+| PLAN-FRESH-2-003 | fixed | research.md § R-06 Focus ring above the neighbours (`:host(:focus-visible) { position: relative; z-index: 2 }` on segment and tab), § R-15 table (ring grounds `accent-low`, `hover-bg`) and What the tests read (four-sided ring read); contracts/elements.md § Pairings; plan.md Constitution Check III, phases 3 and 4 |
+| PLAN-FRESH-2-004 | decided: (a) | research.md § R-07 User activation (spike-page clipboard listener in Chromium recording `navigator.userActivation.isActive`; WebKit question with decision 1; README FR-035 paragraph), § R-06 Engine floor; contracts/elements.md § ocelle-copy-field; plan.md Constitution Check III, decision 1, round-2 decisions, phase 5 |
+| PLAN-FRESH-2-005 | fixed | research.md § R-08 Label in name and README; contracts/elements.md § ocelle-link and § Pairings (no `label-content-name-mismatch`; plant: a label without the visible text); plan.md Constitution Check III, phase 6, story test line |

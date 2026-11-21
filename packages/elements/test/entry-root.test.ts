@@ -9,7 +9,9 @@ import * as root from "../src/index.ts";
 // 011 `ocelle-card`, `ocelle-section-header`, `ocelle-page-header` (T027), `ocelle-context-sidebar` (T034) and
 // `ocelle-personal-rail` (T042); since 010 `ocelle-notice` (phase 2), `ocelle-form-input` (phase 3) and
 // `ocelle-form-select` (phase 4); since 012 `ocelle-button` (tasks.md T018) and `ocelle-action-row` (tasks.md T051);
-// and since 013 `ocelle-facts`, `ocelle-fact`, `ocelle-empty-state` and `ocelle-progress`. This file's own iframe
+// since 013 `ocelle-facts`, `ocelle-fact`, `ocelle-empty-state` and `ocelle-progress`; and since 014 (research.md R-16,
+// T017) `ocelle-listbox`, `ocelle-option`, `ocelle-tabs`, `ocelle-tab`, `ocelle-tab-panel`, `ocelle-segmented-choice`,
+// `ocelle-segment`, `ocelle-copy-field` and `ocelle-link`. This file's own iframe
 // (Vitest browser mode, isolate on) holds only what this import defines.
 describe("importing src/index.ts", () => {
   it("defines ocelle-icon, ocelle-brand-mark, ocelle-notice, ocelle-form-input and ocelle-form-select as the OcelleIcon, OcelleBrandMark, OcelleNotice, OcelleFormInput and OcelleFormSelect it exports", () => {
@@ -111,5 +113,35 @@ describe("importing src/index.ts", () => {
       progress: customElements.get("ocelle-progress"),
       track: document.getElementById("p")?.shadowRoot?.querySelector('[part="track"]') !== null && document.getElementById("p")?.shadowRoot !== null,
     }).toEqual({ type: "function", progress: exported.OcelleProgress, track: true });
+  });
+
+  it("defines ocelle-listbox and ocelle-option as the OcelleListbox and OcelleOption it exports", () => {
+    const exported = root as Record<string, unknown>;
+    expect([exported.OcelleListbox, exported.OcelleOption].map((each) => typeof each)).toEqual(["function", "function"]);
+    expect({ listbox: customElements.get("ocelle-listbox"), option: customElements.get("ocelle-option") }).toEqual({ listbox: exported.OcelleListbox, option: exported.OcelleOption });
+  });
+
+  it("defines ocelle-tabs, ocelle-tab and ocelle-tab-panel as the OcelleTabs, OcelleTab and OcelleTabPanel it exports", () => {
+    const exported = root as Record<string, unknown>;
+    expect([exported.OcelleTabs, exported.OcelleTab, exported.OcelleTabPanel].map((each) => typeof each)).toEqual(["function", "function", "function"]);
+    expect({ tabs: customElements.get("ocelle-tabs"), tab: customElements.get("ocelle-tab"), panel: customElements.get("ocelle-tab-panel") }).toEqual({ tabs: exported.OcelleTabs, tab: exported.OcelleTab, panel: exported.OcelleTabPanel });
+  });
+
+  it("defines ocelle-segmented-choice and ocelle-segment as the OcelleSegmentedChoice and OcelleSegment it exports", () => {
+    const exported = root as Record<string, unknown>;
+    expect([exported.OcelleSegmentedChoice, exported.OcelleSegment].map((each) => typeof each)).toEqual(["function", "function"]);
+    expect({ group: customElements.get("ocelle-segmented-choice"), segment: customElements.get("ocelle-segment") }).toEqual({ group: exported.OcelleSegmentedChoice, segment: exported.OcelleSegment });
+  });
+
+  it("defines ocelle-copy-field as the OcelleCopyField it exports", () => {
+    const exported = root as Record<string, unknown>;
+    expect(typeof exported.OcelleCopyField).toBe("function");
+    expect(customElements.get("ocelle-copy-field")).toEqual(exported.OcelleCopyField);
+  });
+
+  it("defines ocelle-link as the OcelleLink it exports", () => {
+    const exported = root as Record<string, unknown>;
+    expect(typeof exported.OcelleLink).toBe("function");
+    expect(customElements.get("ocelle-link")).toEqual(exported.OcelleLink);
   });
 });
