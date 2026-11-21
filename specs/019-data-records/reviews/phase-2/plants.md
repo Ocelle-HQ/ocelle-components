@@ -1,6 +1,6 @@
 # Plants of phase 2
 
-- base: 385dfe6bc917e77c57a42b8c5c05942bbc5ad09e
+- base: 5e7f6df60c22a732e4f5a383f4b0c97774261794
 - command: `OCELLE_VISUAL_ENGINE=docker pnpm run gate:plants -- --affected 385dfe6bc917e77c57a42b8c5c05942bbc5ad09e --list` in the working tree for the selection, then `OCELLE_VISUAL_ENGINE=docker pnpm run gate:plants -- --affected 385dfe6bc917e77c57a42b8c5c05942bbc5ad09e` in a scratch worktree of the green tree (`<scratch-worktree>`) whose only difference is `packages/elements/package.json` restored to the base.
 - exit: 0 (the scoped run: 21 of 315 plants judged, every plant as expected); the selection 0
 
