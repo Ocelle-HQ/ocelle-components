@@ -262,7 +262,7 @@ AX text unbroken; zero CSP violations; the gates of phase 1 pass.
   prefix breaking inside where it fits), answered in `reviews/phase-2/operator-spike-decisions.md` (Q1 (c): two
   whole-block copy bodies; Q2 (c): the prefix's threshold is its width plus `--ocelle-space-1`), applied to spec
   FR-031, FR-033, US2-10, US2-12 and SC-004, research R-06 and R-07, data-model.md and the contracts.
-- [ ] T021a [US2] Axe measure of the unnamed overflowing scroll block (analysis D1, operator decision at the tasks
+- [X] T021a [US2] Axe measure of the unnamed overflowing scroll block (analysis D1, operator decision at the tasks
   gate), scratch files only, before T028, recorded in `specs/020-disclosure-code-block/reviews/phase-2/
   axe-unnamed-scroll.md`: a scratch element (outside `packages/`) rendering research R-06's scroll structure
   (`.block > .region-frame > .region-box > .region-track > pre.code`) through the unchanged `OverflowRegion` module
@@ -277,6 +277,10 @@ AX text unbroken; zero CSP violations; the gates of phase 1 pass.
     and T028 adds no story for it.
 
   The scratch files and the scratch story are not committed.
+  Done: run and recorded in `reviews/phase-2/axe-unnamed-scroll.md`. The unnamed box is a `generic` tab stop
+  (`tabindex="0"`) with no name and has no violation. axe reports one serious result in light and dark:
+  `color-contrast` incomplete (`elmPartiallyObscured`) on `x-code-block >>> .code`. A labelled control block gets the
+  same result. This is a stop for the operator before T028.
 
 ### Scaffold
 
