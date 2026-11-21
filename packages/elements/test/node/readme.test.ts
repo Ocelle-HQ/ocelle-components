@@ -878,6 +878,64 @@ describe("packages/elements/README.md: ocelle-pill-tag (018)", () => {
 });
 
 /**
+ * The `ocelle-pill-tag` section, interactive part (018 FR-007, FR-029 to FR-032, FR-035, FR-043; contracts/elements-status.md
+ * § `ocelle-pill-tag`; research.md R-07, R-08; plan decisions 6, 7, 11 and 12; tasks.md T048): the two interactive
+ * modes, what moves to the inner control, the activate event's terms, the custom states, the looks, the target and the
+ * focus ring, and the consumer-facing rules the spec and the contract name for an interactive pill, one assertion each,
+ * read in that section.
+ */
+const interactivePillFragments = [
+  "With `interactive` the pill is a toggle or filter button, one native `<button type=\"button\">` in its shadow root: `<ocelle-pill-tag interactive status=\"info\" aria-pressed=\"true\">Mine</ocelle-pill-tag>`",
+  "With an `href` that is a link (not empty, not whitespace only, parsed as a URL and not a `javascript:` URL) the pill is one native `<a>` with that `href`, whether or not `interactive` is set: `<ocelle-pill-tag href=\"/missions?state=blocked\" status=\"warning\">Blocked</ocelle-pill-tag>`",
+  "The element itself is never focusable and has no role; the inner control is its one tab stop, and the element's `focus()` and `click()` reach it",
+  "`aria-label`, `aria-labelledby`, `aria-describedby`, `aria-controls`, `aria-current`, `aria-pressed` and `title` set on an interactive pill are moved to the inner control, each with an element-owned `data-ocelle-moved-*` mirror, as on `ocelle-button`; `aria-labelledby`, `aria-describedby` and `aria-controls` name elements by id in the element's own tree",
+  "The inner control is named by `aria-labelledby`, then `aria-label`, then `label` (trimmed; empty or whitespace only counts as none), then the pill's text",
+  "`disabled` takes an interactive pill out of the tab order, reports it disabled and stops every activation; a disabled link has no `href`",
+  "Each activation of an enabled interactive pill (a pointer click, Enter, Space in button mode, the element's `click()`) dispatches `ocelle-pill-tag-activate` from the element (`bubbles`, `composed`, `cancelable`, `detail` `{}`) before its `click` reaches any bubble-phase listener on the element or its ancestors",
+  "Calling `preventDefault()` on `ocelle-pill-tag-activate` cancels the click's default action: a link does not navigate, and a button still delivers its `click`, with `defaultPrevented` true",
+  "A link-mode click with Ctrl, Meta, Shift or Alt held delivers its `click` and no `ocelle-pill-tag-activate`, and the browser's own handling of the modifier applies; a middle click dispatches neither; a disabled or static pill dispatches no `ocelle-pill-tag-activate`",
+  "`:state(pressed)` matches a button-mode pill whose moved `aria-pressed` is `\"true\"`, which also gives the pressed look; `\"false\"`, `\"mixed\"` and any other value reach the button as written with neither",
+  "`:state(current)` matches an interactive pill whose moved `aria-current` is set to anything but `\"false\"`; it draws no mark of its own",
+  "An interactive pill has a `--ocelle-color-accent-strong` border on its status ground (a badge keeps its status-colour border); hover takes the status colour on a pill's border and the status ground as a badge's fill; pressing and the pressed state add an inset `--ocelle-bar-width` cue in the status colour; no state changes the pill's box",
+  "A disabled interactive pill is set in `--ocelle-color-disabled-ink` on `--ocelle-color-disabled-bg`, border included, whatever its status and variant",
+  "In forced colours a pressed pill fills with `Highlight` and sets its text in `HighlightText`, so it stays distinct from an unpressed one, and a disabled pill is `GrayText`",
+  "An interactive pill is at least `--ocelle-target-small` (24 px) in block size and in inline size in either density, whatever its text and its font size; in `compact` density its block padding is then at least `--ocelle-space-1`",
+  "Keyboard focus shows the token focus ring on the inner control (`--ocelle-focus-width`, `--ocelle-focus-offset`, `--ocelle-color-focus`)",
+  "The part `control` is the inner `<button>` or `<a>` of an interactive pill, which is also its `pill` part",
+];
+
+/** The consumer-facing rules of the interactive pill (contracts/elements-status.md § `ocelle-pill-tag`; FR-030 to FR-035). */
+const interactivePillRules = [
+  // name a pill with no text (Edge Cases)
+  "An interactive pill with no text (an icon only, or nothing) has no accessible name of its own: name it with `aria-label`, `aria-labelledby` or `label`; the element does not invent a name, and axe reports an unnamed one",
+  // no title on an interactive pill (plan decision 8)
+  "Do not set `title` on an interactive pill: it is moved to the inner control as the browser's own tooltip and description",
+  // aria-pressed on a link (plan decision 12)
+  "`aria-pressed` has no effect on a link: on a link-mode pill it is moved and mirrored but not applied, and gives no `:state(pressed)`; it applies again if the pill returns to button mode",
+  // mode changes (FR-035)
+  "The mode follows `interactive` and `href` whenever either changes: when a pill becomes static each moved attribute is written back to the element with the value it last had (an off value such as `aria-pressed=\"false\"` included) and its mirror removed; when it becomes interactive they are moved again; a switch between button and link mode keeps them moved",
+  "A static pill that carries `data-ocelle-moved-*` mirrors when it upgrades (copied markup) writes each back as its attribute, unless the element already sets that attribute, and removes the mirror",
+  // move focus when making a focused pill static (FR-035 (d), US4-11)
+  "If the inner control has focus when a pill switches between button and link mode, the new inner control has focus afterwards, with the focus ring only if it showed before; a pill made static while its inner control has focus loses focus as a removed element does, so move focus yourself before making a focused pill static; a pill that becomes interactive does not take focus",
+  // clear ARIA states from a pill made static (FR-035, Edge Cases)
+  "ARIA states written back to a pill made static (such as `aria-pressed`) stay on an element with no role: clear them (`removeAttribute`) once the pill is static, or before making it static",
+  // the focus-ring clearance (plan decision 11)
+  "An interactive pill keeps one focus-ring extent (`--ocelle-focus-offset` plus `--ocelle-focus-width`, 5 px) of inline margin on each side and caps its inline size at its container's less two such extents, so its ring stays inside a container that clips; a container that clips in the block direction keeps that much unclipped space above and below it",
+];
+
+describe("packages/elements/README.md: ocelle-pill-tag, interactive (018 phase 5)", () => {
+  const section = flat(/^## `ocelle-pill-tag`\n([\s\S]*?)(?=^## |(?![\s\S]))/m.exec(read("README.md"))?.[1] ?? "");
+
+  it.each(interactivePillFragments)("states in its section: %s", (fragment) => {
+    expect(section).toContain(flat(fragment));
+  });
+
+  it.each(interactivePillRules)("states the README rule in its section: %s", (rule) => {
+    expect(section).toContain(flat(rule));
+  });
+});
+
+/**
  * The `ocelle-dialog` section and the statements about it (008 tasks.md T019; contracts/elements-overlays.md; research.md
  * R-02 to R-05, R-08, R-18; data-model.md § `ocelle-dialog`): what it is, its surface, the tokens it reads, the host
  * pattern, the stated limits, where focus lands when the opener is gone, the opaque-content Tab statement and the
@@ -1208,6 +1266,8 @@ describe("packages/elements/CHANGELOG.md", () => {
     "`ocelle-pill-tag`",
     "`@ocelle/elements/ocelle-pill-tag.js`",
     "`status`, `variant` and `density`, `interactive`, `href` and `disabled` (reflected) and `label`",
+    // 018 phase 5 (tasks.md T048): the interactive pill's event and states
+    "`ocelle-pill-tag-activate`",
     ...["chevron-start", "chevron-end", "chevron-up", "chevron-down", "arrow-start", "arrow-end", "menu", "close", "folder", "file", "search", "table", "copy"].map((name) => `\`${name}\``),
   ])("names %s under Unreleased / Added (constitution VII, FR-031, SC-008)", (surface) => {
     expect(added).toContain(surface);

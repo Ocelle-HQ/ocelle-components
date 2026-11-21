@@ -181,6 +181,8 @@ export const expectedTokens: readonly ExpectedToken[] = [
   plain("size-dot", "size", "0.45rem", width(7.2)),
   // 018 (research.md R-10; data-model.md § Tokens added): the status indicator's dot, the 8 px floor of FR-011
   plain("size-indicator", "size", "0.5rem", width(8)),
+  // 018 (research.md R-07, R-10; data-model.md § Tokens added): the interactive pill tag's 24 px minimum target (FR-043)
+  plain("target-small", "size", "1.5rem", width(24)),
   plain("size-step", "size", "1.4rem", width(22.4)),
   plain("size-avatar", "size", "1.6rem", width(25.6)),
   plain("size-rail-item", "size", "2.5rem", width(40)),

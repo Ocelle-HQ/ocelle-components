@@ -1641,6 +1641,92 @@ describe("the ocelle-pill-tag stories in the built Storybook (018 US3, I3)", { t
   }
 });
 
+// 018 phase 5 (I3; research.md R-12; plan decision 9; tasks.md T049): the interactive `ocelle-pill-tag` stories, `Button`
+// (one interactive pill per status and an interactive badge), `Pressed` (a pill and a badge with aria-pressed "true",
+// beside their "false" twins), `Link` (a link-mode pill and badge), `Disabled` (a disabled button-mode pill, link-mode
+// pill and badge), `Focus` (one pill focused by a wrapper that calls its plain `focus()` once it has rendered, as 012's
+// `Focused` does), and `PillHovered`, `BadgeHovered`, `PillActive` and `BadgeActive` (one pill each, hovered or pressed
+// by 006's pointer parameter). Each renders its pills in light and dark, defined, each with the story's attributes,
+// its inner control (`button`, or `a` in link mode) with the moved `aria-pressed` on it, its `pill` and `control` part,
+// with base.css applied and no request outside the origin; the focus story's one pill holds focus in its control.
+
+/** What one interactive story's pill must show: its attributes, its text and its inner control. */
+interface InteractivePill {
+  readonly status: string | null;
+  readonly variant: string | null;
+  readonly interactive: boolean;
+  readonly href: string | null;
+  readonly disabled: boolean;
+  readonly text: string;
+  readonly tag: string;
+  readonly pressed: string | null;
+}
+
+const interactivePill = (status: string, text: string, rest: Partial<InteractivePill> = {}): InteractivePill => ({ status, variant: null, interactive: true, href: null, disabled: false, text, tag: "button", pressed: null, ...rest });
+
+const interactivePillStories: readonly { readonly id: string; readonly pills: readonly InteractivePill[]; readonly focused?: number }[] = [
+  { id: "elements-ocelle-pill-tag--button", pills: [...pillLabels.map(([status, text]) => interactivePill(status, text)), interactivePill("info", "3", { variant: "badge" })] },
+  {
+    id: "elements-ocelle-pill-tag--pressed",
+    pills: [interactivePill("info", "Mine", { pressed: "true" }), interactivePill("info", "Mine", { pressed: "false" }), interactivePill("info", "3", { variant: "badge", pressed: "true" }), interactivePill("info", "3", { variant: "badge", pressed: "false" })],
+  },
+  { id: "elements-ocelle-pill-tag--link", pills: [interactivePill("warning", "Blocked", { interactive: false, href: "#blocked", tag: "a" }), interactivePill("warning", "1", { variant: "badge", interactive: false, href: "#blocked", tag: "a" })] },
+  {
+    id: "elements-ocelle-pill-tag--disabled",
+    pills: [interactivePill("info", "Mine", { disabled: true }), interactivePill("warning", "Blocked", { interactive: false, href: "#blocked", tag: "a", disabled: true }), interactivePill("info", "3", { variant: "badge", disabled: true })],
+  },
+  { id: "elements-ocelle-pill-tag--focus", pills: [interactivePill("info", "Mine")], focused: 1 },
+  { id: "elements-ocelle-pill-tag--pill-hovered", pills: [interactivePill("info", "Mine")] },
+  { id: "elements-ocelle-pill-tag--badge-hovered", pills: [interactivePill("info", "3", { variant: "badge" })] },
+  { id: "elements-ocelle-pill-tag--pill-active", pills: [interactivePill("info", "Mine")] },
+  { id: "elements-ocelle-pill-tag--badge-active", pills: [interactivePill("info", "3", { variant: "badge" })] },
+];
+
+/** What an interactive pill story's page shows: its theme, the base stylesheet, its pills and how many hold focus. */
+function observeInteractivePills(page: Page): Promise<unknown> {
+  return page.evaluate(() => ({
+    theme: document.documentElement.dataset.theme,
+    base: {
+      linked: [...document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')].some((link) => link.href.endsWith("/base.css") && link.sheet !== null),
+      scheme: getComputedStyle(document.documentElement).colorScheme,
+    },
+    defined: customElements.get("ocelle-pill-tag") !== undefined,
+    pills: [...document.querySelectorAll("#storybook-root ocelle-pill-tag")].map((pill) => {
+      const inner = pill.shadowRoot?.querySelectorAll('[part~="control"]') ?? [];
+      return {
+        status: pill.getAttribute("status"),
+        variant: pill.getAttribute("variant"),
+        interactive: pill.hasAttribute("interactive"),
+        href: pill.getAttribute("href"),
+        disabled: pill.hasAttribute("disabled"),
+        text: pill.textContent.trim(),
+        tag: inner.length === 1 && inner[0]?.getAttribute("part") === "pill control" ? inner[0].localName : `${String(inner.length)} controls`,
+        pressed: inner[0]?.getAttribute("aria-pressed") ?? null,
+      };
+    }),
+    focused: [...document.querySelectorAll("#storybook-root ocelle-pill-tag")].filter((pill) => pill.shadowRoot?.activeElement?.classList.contains("control") === true).length,
+  }));
+}
+
+describe("the interactive ocelle-pill-tag stories in the built Storybook (018 US4, I3)", { timeout: 60_000 }, () => {
+  for (const { id, pills, focused } of interactivePillStories) {
+    for (const theme of ["light", "dark"] as const) {
+      it(`${id} in ${theme}: renders its pills with the story's status, variant, mode, disabled state and text, each with one inner control carrying the parts pill and control and the moved aria-pressed, with base.css applied and no request outside the origin`, async () => {
+        const { page, outside } = await open(id, theme, "ocelle-pill-tag");
+        expect({ ...((await observeInteractivePills(page)) as object), outside }).toEqual({
+          theme,
+          base: { linked: true, scheme: theme },
+          defined: true,
+          pills,
+          focused: focused ?? 0,
+          outside: [],
+        });
+        await page.close();
+      });
+    }
+  }
+});
+
 /** A file of the repository, relative to storybook/, or "" when it does not exist. */
 function repositoryFile(path: string): string {
   const url = new URL(`../../${path}`, import.meta.url);

@@ -898,9 +898,12 @@ describe("generate(root) on the repository's element source", () => {
   // values, default "neutral"), `variant` ("pill" | "badge", default "pill") and `density` ("default" | "compact",
   // default "default"), attribute-backed accessors; `interactive` and `disabled` (boolean, default false) and `href`,
   // reflected; `label`, an attribute and a property, not reflected (FR-025); the default and `icon` slots; the part
-  // `pill`; each described. No event, method, CSS property or custom state yet: the interactive surface (the moved
-  // attributes and their mirrors, `focus()`, `click()`, the events, the states and the `control` part) is user story 4's.
-  it('declares ocelle-pill-tag with interactive and disabled (boolean, default false) and href (string | undefined), reflected, label (string | undefined, not reflected), status, variant and density (attribute-backed, defaults "neutral", "pill", "default"), the default and icon slots and the part pill, each described', async () => {
+  // `pill`; each described. 018 phase 5 (tasks.md T048; FR-005, SC-006): the interactive surface, each described: the
+  // seven moved attributes of FR-030 in the contract's order and then their `data-ocelle-moved-*` mirrors (as 012's
+  // FR-053 declares `ocelle-button`'s), after the three attribute-backed ones; the methods `focus()` and `click()`; the
+  // events `click` (the native click) and `ocelle-pill-tag-activate` with its `detail` type; the custom states
+  // `pressed` and `current` and no other; the part `control` after `pill`. No CSS custom property.
+  it('declares ocelle-pill-tag with interactive and disabled (boolean, default false) and href (string | undefined), reflected, label (string | undefined, not reflected), status, variant and density (attribute-backed, defaults "neutral", "pill", "default"), the seven moved attributes and their mirrors, focus() and click(), the events click and ocelle-pill-tag-activate, the states pressed and current, the default and icon slots and the parts pill and control, each described', async () => {
     const manifest = await generate(repo);
     const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
     const [pill] = modules.find((module) => module.path === "src/ocelle-pill-tag.ts")?.declarations ?? [];
@@ -910,14 +913,15 @@ describe("generate(root) on the repository's element source", () => {
     const status = '"info" | "success" | "warning" | "danger" | "neutral"';
     const variant = '"pill" | "badge"';
     const density = '"default" | "compact"';
-    expect({ kind: pill?.kind, name: pill?.name, tagName: pill?.tagName, customElement: pill?.customElement, events: pill?.events }).toEqual({
+    const pillMoved = ["aria-label", "aria-labelledby", "aria-describedby", "aria-controls", "aria-current", "aria-pressed", "title"];
+    const members = (pill?.members ?? []) as Record<string, unknown>[];
+    expect({ kind: pill?.kind, name: pill?.name, tagName: pill?.tagName, customElement: pill?.customElement }).toEqual({
       kind: "class",
       name: "OcellePillTag",
       tagName: "ocelle-pill-tag",
       customElement: true,
-      events: [],
     });
-    expect(described(pill?.members)).toEqual([
+    expect(described(members.filter((member) => member.kind === "field"))).toEqual([
       { kind: "field", name: "interactive", privacy: "public", type: { text: "boolean" }, default: "false", attribute: "interactive", reflects: true, described: true },
       { kind: "field", name: "href", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "href", reflects: true, described: true },
       { kind: "field", name: "disabled", privacy: "public", type: { text: "boolean" }, default: "false", attribute: "disabled", reflects: true, described: true },
@@ -926,30 +930,46 @@ describe("generate(root) on the repository's element source", () => {
       { kind: "field", name: "variant", type: { text: variant }, default: '"pill"', described: true },
       { kind: "field", name: "density", type: { text: density }, default: '"default"', described: true },
     ]);
+    expect(members.filter((member) => member.kind === "method").map(({ kind, name, description }) => ({ kind, name, described: typeof description === "string" && description !== "" }))).toEqual([
+      { kind: "method", name: "focus", described: true },
+      { kind: "method", name: "click", described: true },
+    ]);
     expect(described(pill?.attributes)).toEqual([
       { name: "status", type: { text: status }, described: true },
       { name: "variant", type: { text: variant }, described: true },
       { name: "density", type: { text: density }, described: true },
+      ...pillMoved.map((name) => ({ name, type: { text: "string" }, described: true })),
+      ...pillMoved.map((name) => ({ name: `data-ocelle-moved-${name}`, type: { text: "string" }, described: true })),
       { name: "interactive", fieldName: "interactive", type: { text: "boolean" }, default: "false", described: true },
       { name: "href", fieldName: "href", type: { text: "string | undefined" }, default: "undefined", described: true },
       { name: "disabled", fieldName: "disabled", type: { text: "boolean" }, default: "false", described: true },
       { name: "label", fieldName: "label", type: { text: "string | undefined" }, default: "undefined", described: true },
     ]);
     expect({
+      events: described(pill?.events),
       slots: named(pill?.slots),
       parts: named(pill?.cssParts),
       properties: pill?.cssProperties,
-      states: pill?.cssStates,
-      methods: ((pill?.members ?? []) as Record<string, unknown>[]).filter((member) => member.kind === "method"),
+      states: named(pill?.cssStates),
     }).toEqual({
+      // The analyzer lists the event the source dispatches before the one only the JSDoc names (the native click).
+      events: [
+        { name: "ocelle-pill-tag-activate", type: { text: "CustomEvent<Record<string, never>>" }, described: true },
+        { name: "click", type: { text: "MouseEvent" }, described: true },
+      ],
       slots: [
         { name: "", described: true },
         { name: "icon", described: true },
       ],
-      parts: [{ name: "pill", described: true }],
+      parts: [
+        { name: "pill", described: true },
+        { name: "control", described: true },
+      ],
       properties: [],
-      states: undefined,
-      methods: [],
+      states: [
+        { name: "pressed", described: true },
+        { name: "current", described: true },
+      ],
     });
   });
 
