@@ -134,6 +134,7 @@ describe("ocelle-app-shell layout", () => {
       await tier(shell, "collapsed");
       size("1375px");
       await tier(shell, "expanded");
+      expect(shell.getBoundingClientRect().width).toBe(1375);
     } finally {
       root.style.fontSize = original;
     }
