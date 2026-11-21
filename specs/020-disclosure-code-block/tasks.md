@@ -419,7 +419,7 @@ AX text unbroken; zero CSP violations; the gates of phase 1 pass.
 
 ## Phase 3: Polish & Cross-Cutting Concerns
 
-- [ ] T040 README cross-checks in `packages/elements/README.md`: § Engines needs no floor change (record so in the
+- [X] T040 README cross-checks in `packages/elements/README.md`: § Engines needs no floor change (record so in the
   phase review, or add the feature if one is newer than the floor); the WebKit line "WebKit is not measured for the
   layout elements either" adds `ocelle-code-block`'s scroll mode (its tab stop while it overflows, arrow keys, focus
   handover, the focus move on a switch to wrap and the `rtl` opening write untested there; research R-06 § WebKit);
@@ -427,10 +427,20 @@ AX text unbroken; zero CSP violations; the gates of phase 1 pass.
   disclosure's native marker (research R-01; otherwise the marker gets no line). The spec's FR-033, US2-12, FR-007,
   FR-008 and the Consumers reference were already aligned by the analysis fixes (`reviews/analysis/fixes-1.md`);
   T040 changes no spec text.
-- [ ] T041 Full quickstart run (`specs/020-disclosure-code-block/quickstart.md` steps 1 to 4) and SC-007/SC-008 diffs
+- [X] T042 Late-font caveat (phase 2 review R1-01; operator decision `reviews/phase-2/operator-late-font.md`): in the
+  `ocelle-code-block` section of `packages/elements/README.md`, qualify "the start of every line is in view" as FR-021
+  and contracts/elements.md now state it: the `rtl` opening write puts every line's start in view once the block has
+  laid out in its font; on a page where the sans face arrives after the first layout, the line starts can end up out
+  of view, so preload the sans face (`--ocelle-font-sans`) for `rtl` scroll blocks. No element code, story or test
+  changes. The late font is listed as a known gap in the ALL PHASES DONE message (the operator's decision). The spec,
+  research R-06, contracts/elements.md and contracts/checks.md § Driver additions (R1-03, R1-04) were aligned by the
+  planner's documentation commit before phase 3; T042 changes no spec text.
+- [X] T041 Full quickstart run (`specs/020-disclosure-code-block/quickstart.md` steps 1 to 4) and SC-007/SC-008 diffs
   against the branch base T020's record names (no change to `src/overflow-region.ts`, its contract,
   `src/focusable.ts`, `src/overlay.ts`, or any file of missions 013 and 019's elements; phase 1's own range was
-  checked against 4911fd0b by T013), recorded in `specs/020-disclosure-code-block/reviews/phase-3/checks.md`.
+  checked against 4911fd0b by T013), recorded in `specs/020-disclosure-code-block/reviews/phase-3/checks.md`. Also
+  remove or fill the empty `text` code block in `reviews/phase-2/plants.md` (lines 13-14; phase 2 review R1-07), the
+  implementer's own record.
 
 ---
 

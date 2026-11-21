@@ -10,11 +10,9 @@
   cca63571794b57f2e4f1443e6d65c29d0d098d18: 317 of 317 plants selected, none judged (--list)`, as in phase 1
   (research.md § Repository-wide notes).
 
-```text
-```
-
-No finding line was printed before the stop (every line above is a `note:`); the gate's verdict on these plants is
-CI's.
+The stopped run's output (its `note: plant time:` lines) was not kept, so no output block is recorded here; the empty
+`text` block that stood here was removed in phase 3 (T041, phase 2 review R1-07). No finding line was printed before
+the stop (every line was a `note:`); the gate's verdict on these plants is CI's.
 
 ## Element plants (tasks.md T033; contracts/checks.md § Plants)
 

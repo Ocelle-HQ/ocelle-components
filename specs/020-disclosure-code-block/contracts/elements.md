@@ -78,9 +78,11 @@ box first appears and when the text changes (R-06); `.block:focus-visible` the l
 README statements: start the text on the opening tag's line (a newline after it is shown); markup inside is not
 rendered and markup-like text stays text; each line of code is shown left to right, also in an `rtl` page, while the
 block keeps the page direction; an `rtl` scroll block opens at the line starts (the element scrolls it there,
-instantly, when it first appears and when the text changes), so the start of every line is in view and the fade is
-at the right, where the line ends are hidden; a block that only starts to overflow after a resize keeps the
-platform's scroll position; a switch from `scroll` to wrap while focus is in the scroll block moves focus to the block; always give a scroll block a `label`; do not set a host `aria-label` in wrap mode; in a shrink-to-fit host
+instantly, when it first appears and when the text changes), so, once the block has laid out in its font, the start
+of every line is in view and the fade is at the right, where the line ends are hidden; a block that only starts to
+overflow after a resize keeps the platform's scroll position; on a page where the sans face arrives after the first
+layout the line starts can end up out of view, so preload the sans face for `rtl` scroll blocks (FR-021; operator
+decision, `reviews/phase-2/operator-late-font.md`); a switch from `scroll` to wrap while focus is in the scroll block moves focus to the block; always give a scroll block a `label`; do not set a host `aria-label` in wrap mode; in a shrink-to-fit host
 give a scroll block a definite or maximum inline size; in scroll mode the `ocelle-scroller` statements on keyboard,
 focus, fades, scrollbar, motion and sizing hold (by reference); print shows what is laid out; no copy control, no
 highlighting.

@@ -238,6 +238,12 @@ copy).
   `:host(:dir(rtl))` is the gradient transparent at the right, the side where the line ends are hidden. The element
   sets no `data-fade` itself. Under `ltr` nothing is written, the origin already being the line starts. A resize
   that makes a fitting block overflow is not followed by a write: the platform's position stands (spec Edge Cases).
+  Nor is a font swap: the write uses the widths of the first layout, so on a page where `--ocelle-font-sans` arrives
+  after it, the lines widen after the write and their starts can end up out of view (phase 2 review R1-01:
+  `cd /srv/app` showed only its last letter). The element does not change for it; the README tells consumers to preload
+  the sans face for `rtl` scroll blocks, and FR-021's result is qualified to match (operator decision,
+  `reviews/phase-2/operator-late-font.md`). The RightToLeftScroll story loads the vendored face before it renders,
+  so its baseline shows the write itself.
   If the module's focus fallback suppression is active when the text changes, a write that moves the box more than
   1 px from the module's recorded `scrollLeft` ends it, by the contract's rule; one that does not leaves it. US2-8's
   bodies under an `rtl` ancestor: the visual order of `--force main.` in wrap and in scroll mode, and the line starts

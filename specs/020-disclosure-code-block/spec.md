@@ -330,7 +330,10 @@ while overflowing and not, the arrow keys, the selection's copied text and the a
   (measured, plan squad round 3, PLAN-FRESH-3-001). So the element opens an `rtl` scroll block at the line starts with
   one instant scroll write when the box first appears and when the text changes, and the fade is at the right, where
   the line ends are hidden (US2 scenario 8). A block that only starts to overflow after a later resize keeps the
-  scroll position the platform gives it; no write follows a resize.
+  scroll position the platform gives it; no write follows a resize. Nor does one follow a late web font: if
+  `--ocelle-font-sans` arrives after the first layout, the lines widen after the write and their starts can end up out
+  of view, so the README tells consumers to preload the sans face for `rtl` scroll blocks (FR-021; operator decision,
+  `reviews/phase-2/operator-late-font.md`).
 - **Policy switch with focus.** When `overflow` changes from `scroll` to wrap while focus is in the scroll block (the
   scroll box, or the frame the module's handover focused when overflow ended), focus moves to the block, which shows
   the library's focus ring, and `document.activeElement` stays the host (FR-025).
@@ -466,7 +469,11 @@ while overflowing and not, the arrow keys, the selection's copied text and the a
   changes, it writes `scrollLeft = -(scrollWidth - clientWidth)` with `behavior: "instant"`, so each line's first
   character is inside the box and the module's fade (`data-fade` `start`) is at the right (operator decision, plan
   squad round 3, PLAN-FRESH-3-001 (a)). Under `ltr` it writes nothing. The write is instant, as 009's contract
-  requires of every scroll write (FR-024).
+  requires of every scroll write (FR-024). That result holds once the box has laid out in its font: the one write
+  uses the widths of the first layout, and a font swap is not a trigger. On a page where `--ocelle-font-sans` arrives
+  after the first layout, the lines widen after the write and their starts can end up out of view (the content stays
+  reachable with the arrow keys). The element does not change for it; the README tells consumers to preload the sans
+  face for `rtl` scroll blocks (operator decision, phase 2 review R1-01, `reviews/phase-2/operator-late-font.md`).
 - **FR-022**: `overflow` (attribute and property, reflected, `@default undefined`) MUST choose the policy. Absent, or
   any value other than `scroll` (ASCII case-insensitive, trimmed), is the wrap policy; `scroll` is the scroll policy.
 - **FR-023**: The wrap policy MUST be 003's: `white-space: pre-wrap` and `overflow-wrap: anywhere`, no scroll box, no
