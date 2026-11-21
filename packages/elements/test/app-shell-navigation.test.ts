@@ -201,15 +201,20 @@ describe("ocelle-app-shell navigation", () => {
   it("compacts a directly assigned nav item and an explicit default-slot section while leaving footer items alone", async () => {
     const shell = await mount('<ocelle-nav-item id="bare" slot="sidebar" href="#bare" label="Bare"></ocelle-nav-item><ocelle-context-sidebar slot="sidebar" label="Projects"><section slot=""><ocelle-nav-item id="default-item" href="#default" label="Default"></ocelle-nav-item></section><ocelle-nav-item id="footer-item" slot="footer" href="#footer" label="Footer" compact></ocelle-nav-item></ocelle-context-sidebar>');
     const getLabel = (id: string): Element | null | undefined => shell.querySelector(`#${id}`)?.shadowRoot?.querySelector('[part="label"]');
+    const section = required(shell.querySelector("section"));
     size(1150);
     await expect.poll(() => shown(getLabel("bare"))).toBe(true);
     expect(shown(getLabel("default-item"))).toBe(true);
+    expect(getComputedStyle(section).paddingInlineStart).toBe("16px");
+    expect(getComputedStyle(section).borderBlockStartWidth).toBe("0px");
     const footer = (): Element => required(getLabel("footer-item"));
     expect(footer().hasAttribute("hidden")).toBe(true);
     size(850);
     await expect.poll(() => shell.tier).toBe("collapsed");
     expect(shown(getLabel("bare"))).toBe(false);
     expect(shown(getLabel("default-item"))).toBe(false);
+    expect(getComputedStyle(section).paddingInlineStart).toBe("4px");
+    expect(getComputedStyle(section).borderBlockStartWidth).toBe("0px");
     expect(footer().hasAttribute("hidden")).toBe(true);
   });
 
