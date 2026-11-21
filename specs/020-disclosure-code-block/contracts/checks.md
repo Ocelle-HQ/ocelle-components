@@ -67,15 +67,20 @@ and, for the disclosure, `ocelle-icon`; no other).
     (PLAN-FRESH-2-001 (a), PLAN-FRESH-3-001 (a));
   - US2-12 with a base64url digest (groups holding `-`) and a base64 one (`/`), swept over `pre` widths from 60 to
     300 px: every group has one rect and every line's first unit starts at the `pre`'s content-box inline start
-    (PLAN-CORRECTNESS-1-004, PLAN-FRESH-1-005). The sweep strings (analysis A1) are the SHA-256 of `test` with the
-    prefix `sha256:` (7 code points):
+    (PLAN-CORRECTNESS-1-004, PLAN-FRESH-1-005). The base64url body is the one that guards the groups' `nowrap` (the
+    plant below): without `nowrap` its `L-qg` group splits. The base64 body does not guard it (its `/` ends the group
+    `FaO/` at a `<wbr>` and `+` is no break opportunity, so no group splits without `nowrap`; phase 2 spike,
+    research R-07) and is kept as the second alphabet's break-position reading. The sweep strings (analysis A1) are
+    the SHA-256 of `test` with the prefix `sha256:` (7 code points):
     - base64url, 43 code points after the prefix, 11 groups (`L-qg` holds `-`):
       `sha256:n4bQgYhMfWWaL-qgxVrQFaO_TxsrC4Is0V1sFbDwCgg`;
     - base64, 44 code points after the prefix, 11 groups (`FaO/` holds `/`):
       `sha256:n4bQgYhMfWWaL+qgxVrQFaO/TxsrC4Is0V1sFbDwCgg=`.
 
     At each width the body also asserts: the prefix has one rect where its inline size (its rect's width read at
-    300 px, where it fits) is at most the `pre`'s content-box inline size, and is not asserted elsewhere; the block
+    300 px, where it fits) plus the computed `--ocelle-space-1` in px (its gap, which counts toward fitting the line)
+    is at most the `pre`'s content-box inline size, and is not asserted elsewhere (phase 2 operator decision Q2 (c),
+    research R-07); the block
     holds more than one line (distinct line tops) where the digest's inline size (the units' widths at 300 px plus
     one `--ocelle-space-1` gap per adjacent pair) is wider than the content box, and one line elsewhere; and the page
     scroll width equals the viewport width;
@@ -115,11 +120,14 @@ and, for the disclosure, `ocelle-icon`; no other).
   additions) of the shadow `pre` (`part="code"`), asserted equal to `- text: <trimmed digest>`, never of the host,
   whose snapshot includes its unslotted light-DOM text (R-07, PLAN-TESTABILITY-1-001 (a)).
 - **Copy:** `copyShadow` and `copyShadowRun` (§ Driver additions), never `clipboardCopy`, which selects the unrendered
-  light DOM (PLAN-FRESH-1-004). The whole-block copy equals the trimmed digest plus one `\n`; a run of groups equals
-  its characters exactly (R-07, PLAN-TESTABILITY-1-002 (b)); fallback named in R-07.
+  light DOM (PLAN-FRESH-1-004). The whole-block copy has two bodies (phase 2 operator decision Q1 (c), R-07): with
+  the block the last content of the page, it equals the trimmed digest exactly; with a `<p>` after the block, it
+  equals the trimmed digest plus one `\n`. A run of groups equals its characters exactly (R-07,
+  PLAN-TESTABILITY-1-002 (b)); fallback named in R-07.
 - **Find in page:** `findText(word)`, a navigation to `#:~:text=` in both harnesses (R-08, § Driver additions).
-- **Break positions:** `getClientRects().length === 1` per group; the same for the prefix only where it fits the
-  line (a prefix wider than the line breaks inside, FR-033, R-07); distinct line tops where the digest is wider than
+- **Break positions:** `getClientRects().length === 1` per group; the same for the prefix only where it and its gap
+  fit the line (its inline size plus `--ocelle-space-1` at most the `pre`'s content box; a prefix that with its gap
+  is wider than the line breaks inside, FR-033, R-07); distinct line tops where the digest is wider than
   the `pre`'s content box; every line's first unit at the `pre`'s content-box inline start (R-07). US2-12's oracle is
   this one and the sweep above, not a reading of US2-12's prose.
 - **Closed panel (FR-008, US1-1, US1-3, US1-5; analysis F2):** for the panel's slotted content, `checkVisibility()`
@@ -136,8 +144,9 @@ and, for the disclosure, `ocelle-icon`; no other).
   centred on the first line box of the summary label (`lines`), with the label wrapped to more than one line.
 - **Empty block (US2-19):** the block size equals one computed `line-height` of `.code` plus `.block`'s padding and
   border, in wrap and in scroll mode (R-06).
-- **No monospace:** the computed `font-family` of the host, `.code` and every unit equals the computed
-  `--ocelle-font-sans` value.
+- **No monospace:** the computed `font-family` of `.code` and every unit equals the computed `--ocelle-font-sans`
+  value. The host is not read: it shows no text of its own and `:host` sets no font, so its computed family is the
+  page's (phase 2 spike § 4, research R-06).
 - **Motion:** no running `getAnimations()` on the element's shadow nodes after a toggle, with and without reduced
   motion; no `transition-duration` other than `0s` on the summary, panel and chevron. Each motion body toggles with a
   pointer click on the summary (so a hover transition would start), asserts the toggle's positive outcome (the new

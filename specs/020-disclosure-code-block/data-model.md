@@ -59,6 +59,6 @@ Examples: `sha256:` + 64 hex gives `sha256:` and 16 groups; `ni:sha-256:abcd1` g
 | `overflow` | `digest` | Rendering | Tab stop | Role and name |
 |---|---|---|---|---|
 | wrap | off | `pre` with the text, `pre-wrap`, `anywhere` | never | none |
-| wrap | on | `pre` with the units, wrapping only between units unless one alone is wider than the line | never | none |
+| wrap | on | `pre` with the units, wrapping only between units, the prefix inside only where it and its gap are wider than the line | never | none |
 | scroll | off | the module's frame with the `pre`, `white-space: pre` | only while overflowing | `group` named by the module's name rule, while overflowing and named |
 | scroll | on | as above with the units on one line | only while overflowing | as above |

@@ -56,7 +56,7 @@ A preformatted block for code, commands, logs and digests, in the library's sans
 |---|---|---|---|---|
 | property / attribute | `overflow` | `string \| undefined` | `undefined` | `scroll` (trimmed, any ASCII case): long lines stay on one line and the block scrolls sideways, a tab stop and named group only while it overflows. Anything else or absent: lines wrap inside the block. Reflected. A switch to wrap while focus is in the scroll structure (the box, or the frame after the module's handover) moves focus to the block, which shows the library's focus ring. |
 | property / attribute | `label` | `string \| undefined` | `undefined` | The scroll box's name while it overflows; trimmed; blank counts as none. A non-blank host `aria-label` wins. No effect in wrap mode. Not reflected. |
-| property / attribute | `digest` | `boolean \| undefined` | `undefined` | Shows the text as a digest: a prefix up to the last colon, then groups of four code points with a gap; copied and read text stay unbroken (a whole-block selection ends with the platform's one block newline). Reflected. |
+| property / attribute | `digest` | `boolean \| undefined` | `undefined` | Shows the text as a digest: a prefix up to the last colon, then groups of four code points with a gap; copied and read text stay unbroken (a whole-block selection ends with the platform's one block newline only when content follows the block). Reflected. |
 | slot | none | | | The text is the element's light-DOM text content, read as a copy; children add no markup or style. |
 | event | none | | | |
 | CSS part | `block` | — | — | The inset box. |
@@ -93,8 +93,8 @@ highlighting.
 > `<wbr>`, with a `--ocelle-space-1` gap after every unit but the last, so a line never starts with a gap; no character
 > is added, so a copy and the screen-reader reading give the digest as written. Groups do not wrap inside
 > (`white-space: nowrap`, as `-` and `/` in base64 and base64url are break opportunities), so lines break only between
-> units; a prefix wider than the line breaks inside (WCAG 1.4.10). Text holding whitespace is not a digest and is shown
-> ungrouped. `ocelle-code-block`'s `digest` is the first use;
+> units; a prefix that with its gap is wider than the line breaks inside (WCAG 1.4.10). Text holding whitespace is
+> not a digest and is shown ungrouped. `ocelle-code-block`'s `digest` is the first use;
 > `ocelle-facts` values are the consumer's text and are not grouped.
 
 ## Internal modules used, unchanged

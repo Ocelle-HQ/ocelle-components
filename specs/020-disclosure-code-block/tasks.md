@@ -252,14 +252,16 @@ AX text unbroken; zero CSP violations; the gates of phase 1 pass.
 
 ### Spike
 
-- [ ] T021 [US2] Spike, scratch files only, recorded in `specs/020-disclosure-code-block/reviews/phase-2/spike.md`:
+- [X] T021 [US2] Spike, scratch files only, recorded in `specs/020-disclosure-code-block/reviews/phase-2/spike.md`:
   R-07's measures re-run under the repository's pinned browser in both harnesses (copy by triple click and by a range
   over the units, CDP StaticText join, `ariaSnapshot` of the shadow `pre`, break positions with `nowrap` groups and the
   `margin-inline-end` gap, base64url and base64 sweeps 60 to 300 px); R-06's `rtl` opening write
   (`scrollLeft` after `scrollTo({ left: -(scrollWidth - clientWidth), behavior: "instant" })`, `data-fade` `start`).
   A failure stops for the operator.
-  Open: run and recorded in `reviews/phase-2/spike.md`; two measures fail (the whole-block copy's newline, the
-  prefix breaking inside where it fits); stopped for the operator (Q1, Q2 there).
+  Done: run and recorded in `reviews/phase-2/spike.md`; two measures failed (the whole-block copy's newline, the
+  prefix breaking inside where it fits), answered in `reviews/phase-2/operator-spike-decisions.md` (Q1 (c): two
+  whole-block copy bodies; Q2 (c): the prefix's threshold is its width plus `--ocelle-space-1`), applied to spec
+  FR-031, FR-033, US2-10, US2-12 and SC-004, research R-06 and R-07, data-model.md and the contracts.
 - [ ] T021a [US2] Axe measure of the unnamed overflowing scroll block (analysis D1, operator decision at the tasks
   gate), scratch files only, before T028, recorded in `specs/020-disclosure-code-block/reviews/phase-2/
   axe-unnamed-scroll.md`: a scratch element (outside `packages/`) rendering research R-06's scroll structure
@@ -291,15 +293,17 @@ AX text unbroken; zero CSP violations; the gates of phase 1 pass.
   `test/in-process.ts`, `test/browser/driver.ts`, with their own driver tests (sentinel cleared and replaced; a host's
   light text told apart from its shadow `pre`).
 - [ ] T024 [US2] `packages/elements/test/scenarios/code-block.ts`: one body per US2 scenario 1 to 21 with the oracles of
-  contracts/checks.md (no monospace on host, `.code` and every unit; the cap at `--ocelle-measure-reading` in px;
-  reflow; the module's tab stop, role `group`, name, arrow keys, fades and handover; whole-block copy equals the
-  trimmed digest plus one `\n` and a run of groups copies exactly; `ariaSnapshot` of the shadow `pre` equals
-  `- text: <trimmed digest>` and the CDP StaticText join equals it; break positions; empty block one line tall;
-  text changes after the mutation record, `updateComplete` and `settle()`). US2-8 as the visual-order body and the
+  contracts/checks.md (no monospace on `.code` and every unit, the host not read; the cap at
+  `--ocelle-measure-reading` in px; reflow; the module's tab stop, role `group`, name, arrow keys, fades and handover;
+  two whole-block copy bodies, the block last on the page copying exactly the trimmed digest and a block followed by
+  a `<p>` copying the trimmed digest plus one `\n`, and a run of groups copies exactly; `ariaSnapshot` of the shadow
+  `pre` equals `- text: <trimmed digest>` and the CDP StaticText join equals it; break positions; empty block one line
+  tall; text changes after the mutation record, `updateComplete` and `settle()`). US2-8 as the visual-order body and the
   three line-start bodies (`rtl` at rest, `rtl` after a text change, `ltr` control). US2-12's oracle is
   contracts/checks.md's (§ Oracles "Break positions" and the US2-12 bullets), as aligned with R-07: one rect per
-  group; one rect for the prefix only where it fits the line; more than one line only where the digest is wider than
-  the `pre`; the named base64url and base64 sweep strings at every width from 60 to 300 px; and the wide-prefix body
+  group; one rect for the prefix only where its width plus `--ocelle-space-1` fits the line; more than one line only
+  where the digest is wider than the `pre`; the named base64url and base64 sweep strings at every width from 60 to
+  300 px (the base64url body guards the groups' `nowrap`, the base64 body does not); and the wide-prefix body
   (`ni:sha-256:` at 60 px, the prefix breaking inside). US2-6's handover is asserted with US2-21's oracle.
 - [ ] T025 [US2] `packages/elements/test/scenarios/code-block.ts`: the FR and edge-case bodies of contracts/checks.md
   for the code block: leading newline shown (FR-020); child markup adds no style and markup-like text stays text in
