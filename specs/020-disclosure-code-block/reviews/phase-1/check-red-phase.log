@@ -1,5 +1,5 @@
 Scope: all 5 workspace projects
-✓ Lockfile passes supply-chain policies (verified 8h ago)
+✓ Lockfile passes supply-chain policies (verified 19h ago)
 Lockfile is up to date, resolution step is skipped
 Packages are hard linked from the content-addressable store to the virtual store.
   Content-addressable store is at: <root>/.local/share/pnpm/store/v11
@@ -35,7 +35,7 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 258ms using pnpm v12.16.1
+Done in 312ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /opt/pw-browsers/chromium-1248/chrome-linux64/chrome
 $ node gates/bin/test.ts
@@ -92,6 +92,7 @@ storybook/test/integration/elements-stories.test.ts:1668: unit-tests: the ocelle
 gates/test/integration/axe.test.ts:51: unit-tests: axe gate (gates/bin/axe.ts) audits the repository's 404 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029): AssertionError: expected { code: 1, stdout: [ …(11) ], …(1) } to deeply equal { code: +0, …(2) }
 gates/test/integration/axe.test.ts:61: unit-tests: axe gate (gates/bin/axe.ts) fails a story with an unlabelled button in both themes, one critical button-name finding each, naming its selector (US3 scenario 2): AssertionError: expected { code: 1, stdout: [ …(13) ], …(1) } to deeply equal { code: 1, stdout: [ …(3) ], …(1) }
 gates/test/integration/manifest.test.ts:13: unit-tests: manifest gate in a plant tree exits 0 on pass-repository's temporary repository: AssertionError: expected { code: 1, stdout: [ …(2) ], …(1) } to deeply equal { code: +0, …(2) }
+gates/test/integration/plant-repo.test.ts:239: unit-tests: buildRepoTree: the Storybook workspace (006 research.md R-16) appends the repository's entries after the tree's own for exceptions: "repository", and copies the plan files they name: Error: Test timed out in 5000ms.
 gates/test/integration/visual.test.ts:120: unit-tests: visual gate (gates/bin/visual.ts) captures the repository's 404 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1): AssertionError: expected { code: 1, stdout: [ …(17) ], …(1) } to deeply equal { code: +0, …(2) }
 gates/test/integration/visual.test.ts:131: unit-tests: visual gate (gates/bin/visual.ts) keeps the capture, its diff image and run 1 in baseline layout for differs and missing-baseline, and nothing for any other story-theme (FR-005, analysis G2): AssertionError: expected { code: 1, findings: [ …(18) ], …(1) } to deeply equal { code: 1, findings: [ …(2) ], …(1) }
 gates/test/integration/visual.test.ts:244: unit-tests: baseline command (gates/bin/baselines.ts) writes nothing on an unchanged tree and says so (FR-008, analysis G1): AssertionError: expected 388 to be 404 // Object.is equality
@@ -214,5 +215,5 @@ packages/elements/test/disclosure.test.ts:29: unit-tests: ocelle-disclosure's ru
 packages/elements/test/disclosure.test.ts:29: unit-tests: ocelle-disclosure's rules and edge cases, in process (FR-003 to FR-014) Edge case: a disclosure with an empty p…: AssertionError: expected { state: { open: false, …(4) }, …(1) } to deeply equal { state: { open: true, …(4) }, …(1) }
 packages/elements/test/entry-disclosure.test.ts:9: unit-tests: importing src/ocelle-disclosure.ts defines ocelle-disclosure as OcelleDisclosure and ocelle-icon, and not ocelle-button, ocelle-brand-mark or ocelle-scroller; a closed disclosure renders its summary with the chevron-end icon: AssertionError: expected { …(7) } to deeply equal { …(7) }
 packages/elements/test/entry-root.test.ts:97: unit-tests: importing src/index.ts defines ocelle-disclosure as the OcelleDisclosure it exports, and a disclosure renders its summary (020 phase 1): AssertionError: expected { type: 'function', …(2) } to deeply equal { type: 'function', …(2) }
-unit-tests: 175 of 7941 tests failed
+unit-tests: 176 of 7941 tests failed
 [ELIFECYCLE] Test failed. See above for more details.
