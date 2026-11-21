@@ -93,6 +93,19 @@ describe("ocelle-app-shell navigation", () => {
     await expect.poll(landmarks).toEqual(["Account"]);
   });
 
+  it("exposes navigation only while a generic wrapper projects content", async () => {
+    const shell = await mount('<div slot="sidebar"><div><span> </span><a hidden href="#work">Work</a></div></div>');
+    await expect.poll(landmarks).toEqual([]);
+    const link = required(shell.querySelector("a"));
+    link.hidden = false;
+    await expect.poll(landmarks).toEqual(["Workspace"]);
+    link.remove();
+    await expect.poll(landmarks).toEqual([]);
+    size(500);
+    await expect.poll(() => shell.tier).toBe("narrow");
+    expect(shown(menu(shell))).toBe(false);
+  });
+
   it("keeps the empty top-bar action region hidden and projects added actions", async () => {
     const shell = await mount("");
     const actions = (): HTMLElement | null | undefined => top(shell)?.shadowRoot?.querySelector<HTMLElement>('[part="actions"]');
@@ -160,6 +173,28 @@ describe("ocelle-app-shell navigation", () => {
     expect(item.compact).toBe(true);
     item.remove();
     await expect.poll(hidden).toBe(true);
+  });
+
+  it("does not let later sender cleanup clear the receiving shell's presentation", async () => {
+    const sender = await mount(grouped);
+    size(1150);
+    const sidebar = required(sender.querySelector("ocelle-context-sidebar"));
+    const head = required(document.getElementById("head"));
+    const item = required(sidebar.querySelector("ocelle-nav-item"));
+    item.compact = false;
+    const label = () => item.shadowRoot?.querySelector<HTMLElement>('[part="label"]');
+    await expect.poll(() => shown(label())).toBe(true);
+    const receiver = document.createElement("ocelle-app-shell");
+    receiver.style.inlineSize = "850px";
+    required(sender.parentElement).append(receiver);
+    await receiver.updateComplete;
+    receiver.remeasure();
+    receiver.append(sidebar);
+    sender.remeasure();
+    await Promise.all([receiver.updateComplete, sender.updateComplete]);
+    await Promise.all([item.updateComplete, sidebar.updateComplete]);
+    expect(shown(label())).toBe(false);
+    expect(shown(head)).toBe(false);
   });
 
   it("moves focus from collapsing sidebar chrome to the first sequential destination, then main when none survives", async () => {
