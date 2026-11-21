@@ -1,8 +1,10 @@
 # Contract: `ocelle-timeline-event`
 
 Module `packages/elements/src/ocelle-timeline-event.ts`, class `OcelleTimelineEvent`,
-`define("ocelle-timeline-event", …)`. It imports `hasTime` and `hasSlottedTime` from the internal `./timeline-time.ts`
-and exports only its class.
+`define("ocelle-timeline-event", …)`. It imports only `hasSlottedTime` from the internal `./timeline-time.ts` and
+applies `hasTime`'s rule (a slotted time, or a trimmed non-blank `time`) to its `time` property, not to the attribute:
+Lit reflects properties to attributes after `render()`, so `hasTime(this)` inside `render()` would read the old
+attribute after a property set. It exports only its class.
 
 ## Public surface (manifest)
 

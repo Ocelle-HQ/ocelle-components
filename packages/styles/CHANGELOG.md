@@ -30,6 +30,9 @@ All notable changes to `@ocelle/styles`. The package follows semantic versioning
   ones, so fact values follow the region's scale.
 - `ocelle-facts` before upgrade: each `ocelle-fact` child of an undefined `ocelle-facts` is a block, one value per line,
   at specificity (0,0,0); a hidden fact stays hidden.
+- `ocelle-event-timeline` before upgrade: each visible `ocelle-timeline-event` child of an undefined
+  `ocelle-event-timeline` is a block, one event per line, and an `aria-hidden="true"` one is not shown, at specificity
+  (0,0,0); a hidden event stays hidden.
 - The `ocelle-data-table` rules: the direct table of an `ocelle-data-table`, defined or not, at specificity (0,0,0):
   compact cells, eyebrow column headers, row headers, the row rules, the identifier wrap of `wrap="anywhere"`, the
   pinned header row of `sticky-header`, the stripes of `striped`, the row hover on a device that can hover and the

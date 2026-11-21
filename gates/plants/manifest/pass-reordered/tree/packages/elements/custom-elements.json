@@ -857,6 +857,71 @@
       ]
     },
     {
+      "path": "src/ocelle-event-timeline.ts",
+      "kind": "javascript-module",
+      "exports": [
+        {
+          "name": "OcelleEventTimeline",
+          "kind": "js",
+          "declaration": {
+            "name": "OcelleEventTimeline",
+            "module": "src/ocelle-event-timeline.ts"
+          }
+        }
+      ],
+      "declarations": [
+        {
+          "tagName": "ocelle-event-timeline",
+          "superclass": {
+            "package": "lit",
+            "name": "LitElement"
+          },
+          "slots": [
+            {
+              "name": "",
+              "description": "The events, `ocelle-timeline-event` elements, in source order. Other children, and events with `hidden` or `aria-hidden=\"true\"`, are not shown."
+            }
+          ],
+          "name": "OcelleEventTimeline",
+          "members": [
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "privacy": "public",
+              "name": "label",
+              "kind": "field",
+              "description": "Names the list when the host has no non-blank `aria-label`; not shown. Trimmed; empty or white space counts as\nabsent.",
+              "default": "undefined",
+              "attribute": "label"
+            }
+          ],
+          "kind": "class",
+          "events": [],
+          "description": "An event history: one ordered list of its `ocelle-timeline-event` children, in source order, each with a dot on a\nline that joins the events.",
+          "customElement": true,
+          "cssProperties": [],
+          "cssParts": [
+            {
+              "name": "list",
+              "description": "The ordered list."
+            }
+          ],
+          "attributes": [
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "name": "label",
+              "fieldName": "label",
+              "description": "Names the list when the host has no non-blank `aria-label`; not shown. Trimmed; empty or white space counts as\nabsent.",
+              "default": "undefined"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "path": "src/ocelle-fact.ts",
       "kind": "javascript-module",
       "exports": [
@@ -1785,6 +1850,101 @@
               "name": "variant",
               "fieldName": "variant",
               "description": "`eyebrow` draws the heading with the eyebrow style and renders neither the eyebrow nor the description slot;\n`default`, not set or any other value draws the default heading style. Reflected.",
+              "default": "undefined"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "src/ocelle-timeline-event.ts",
+      "kind": "javascript-module",
+      "exports": [
+        {
+          "name": "OcelleTimelineEvent",
+          "kind": "js",
+          "declaration": {
+            "name": "OcelleTimelineEvent",
+            "module": "src/ocelle-timeline-event.ts"
+          }
+        }
+      ],
+      "declarations": [
+        {
+          "tagName": "ocelle-timeline-event",
+          "superclass": {
+            "package": "lit",
+            "name": "LitElement"
+          },
+          "slots": [
+            {
+              "name": "",
+              "description": "The event's content."
+            },
+            {
+              "name": "time",
+              "description": "The event's time as marked-up nodes, for example a `<time datetime>`. It takes precedence over the `time` attribute while one of its nodes is visible (not `hidden` or `aria-hidden=\"true\"`) and has text that is not blank, and takes the time's type through `::slotted()`."
+            }
+          ],
+          "name": "OcelleTimelineEvent",
+          "members": [
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "time",
+              "kind": "field",
+              "description": "The event's time as the consumer formats it, shown on its own line above the content. Empty or white space counts\nas no time. Ignored while the event has a slotted time (the `time` slot). Reflected.",
+              "default": "undefined",
+              "attribute": "time"
+            },
+            {
+              "type": {
+                "text": "\"anywhere\" | undefined"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "wrap",
+              "kind": "field",
+              "description": "`anywhere` breaks long identifiers in the content anywhere; the time keeps its own line. Unset wraps between words.\nReflected.",
+              "default": "undefined",
+              "attribute": "wrap"
+            }
+          ],
+          "kind": "class",
+          "events": [],
+          "description": "One event of an event timeline: its time (the `time` attribute, or a slotted time) above its content. Outside a\ntimeline it shows the same, as plain text.",
+          "customElement": true,
+          "cssProperties": [],
+          "cssParts": [
+            {
+              "name": "time",
+              "description": "The time, on its own line above the content: the slotted time, or the `time` attribute's text. Rendered only while the event has a time."
+            },
+            {
+              "name": "content",
+              "description": "The content."
+            }
+          ],
+          "attributes": [
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "name": "time",
+              "fieldName": "time",
+              "description": "The event's time as the consumer formats it, shown on its own line above the content. Empty or white space counts\nas no time. Ignored while the event has a slotted time (the `time` slot). Reflected.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "\"anywhere\" | undefined"
+              },
+              "name": "wrap",
+              "fieldName": "wrap",
+              "description": "`anywhere` breaks long identifiers in the content anywhere; the time keeps its own line. Unset wraps between words.\nReflected.",
               "default": "undefined"
             }
           ]

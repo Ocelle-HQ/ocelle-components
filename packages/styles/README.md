@@ -113,6 +113,18 @@ selector is inside `:where()`, so its specificity is (0,0,0) and any page rule o
 keeps the user-agent `display: none`. Labels are attributes, so they appear only once the elements are defined. The
 rule stops matching when `ocelle-facts` is defined.
 
+## Event timeline before upgrade
+
+Before the elements are defined, `base.css` shows each visible `ocelle-timeline-event` child of an undefined
+`ocelle-event-timeline` as a block, one event per line:
+`:where(ocelle-event-timeline:not(:defined) > ocelle-timeline-event:not([hidden]):not([aria-hidden="true"])) { display: block; }`.
+An `aria-hidden="true"` event is not shown before upgrade either, as after it:
+`:where(ocelle-event-timeline:not(:defined) > ocelle-timeline-event[aria-hidden="true"]) { display: none; }`. Both
+selectors are inside `:where()`, (0,0,0), and an event with `hidden` keeps the user-agent `display: none`. An event's
+`time` attribute is rendered in its shadow root, so it shows only once the elements are defined; a slotted time
+(`slot="time"`) is the page's own node and shows inline where it is written. The rules stop matching when
+`ocelle-event-timeline` is defined.
+
 ## Prose
 
 For a host's Markdown renderer: it emits plain HTML, with no class, into a content container marked
