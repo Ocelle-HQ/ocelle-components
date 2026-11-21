@@ -131,6 +131,8 @@ export const expectedTokens: readonly ExpectedToken[] = [
   plain("font-size-xl", "type", "1.5rem", { property: "font-size", used: "24px" }),
   plain("font-size-2xl", "type", "1.875rem", { property: "font-size", used: "30px" }),
   plain("line-height-tight", "type", "1.15", { property: "line-height", used: 18.4 }),
+  // 018 (research.md R-06, R-10; data-model.md § Tokens added): the compact pill tag's line height
+  plain("line-height-snug", "type", "1.2", { property: "line-height", used: 19.2 }),
   plain("line-height-normal", "type", "1.45", { property: "line-height", used: 23.2 }),
   plain("line-height-relaxed", "type", "1.55", { property: "line-height", used: 24.8 }),
   // 003 (research.md R-08, data-model.md § New tokens): the compact scale's line height (User Story 2, FR-012).

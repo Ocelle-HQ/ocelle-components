@@ -6,7 +6,8 @@ import { expectedTokens, excludedNames } from "./expected.ts";
 // the host contract (load once, the theme rule, the color-scheme hand-off to #6, forced colours and the box-shadow
 // caveat, the rendered brand rules, and from phase 4 the font's CSP allowance `font-src 'self'`, FR-012), and the
 // changelog's "Unreleased" section lists every token under "Added". 012 (research.md R-08) adds the roles of the four
-// control colour tokens. 018 adds the status indicator's dot size and pulse duration.
+// control colour tokens. 018 adds the status indicator's dot size and pulse duration, and the pill tag's compact line
+// height.
 // Whitespace is normalised, so a fragment may wrap across lines.
 /** A package file's text; empty while it does not exist, so each assertion below reports what is missing. */
 function read(file: string): string {
@@ -67,6 +68,8 @@ const fragments = [
   // 018 (research.md R-03, R-04, R-10; tasks.md T015): the status indicator's two tokens
   "`--ocelle-size-indicator` (`0.5rem`) is the size of the dot of `ocelle-status-indicator`, 8 px at the default root font size",
   "`--ocelle-motion-pulse` is the duration of one iteration of the status indicator's pulse, `1600ms`; the indicator runs three iterations, 4.8 s in all, within the 5 s limit",
+  // 018 (research.md R-06, R-10; tasks.md T038): the pill tag's compact line height
+  "`--ocelle-line-height-snug` (1.2) is the line height of the compact `ocelle-pill-tag` of `@ocelle/elements`, with `--ocelle-font-size-xs`",
 ];
 
 describe("packages/tokens/README.md", () => {

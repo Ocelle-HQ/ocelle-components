@@ -115,9 +115,10 @@ describe("009's five tokens (FR-033)", () => {
     { name: "scroller-fade-size", group: "space", value: "var(--ocelle-space-7)", ref: ["space-7"] },
   ];
 
-  // 018 (tasks.md T015): 136 with the status indicator's size-indicator and motion-pulse.
-  it("pins the source at 136 tokens", () => {
-    expect([source.length, exported.tokens.length, sheet.root.size]).toEqual([136, 136, 136]);
+  // 018 (tasks.md T015): 136 with the status indicator's size-indicator and motion-pulse; (tasks.md T038) 137 with the
+  // pill tag's line-height-snug.
+  it("pins the source at 137 tokens", () => {
+    expect([source.length, exported.tokens.length, sheet.root.size]).toEqual([137, 137, 137]);
   });
 
   it("has each as a plain record with its group, value and references", () => {

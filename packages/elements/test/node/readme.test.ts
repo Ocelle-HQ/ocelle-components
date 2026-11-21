@@ -37,7 +37,9 @@ import { compositions } from "../scenarios/link.ts";
 // 013 phase 3 adds `ocelle-progress` (T043, T043a): its statements, its entry point, its mapping rows by role name and its
 // CHANGELOG names. 018 phase 2 adds `ocelle-status-indicator` (T016): its section, its README rules (i) to (viii), its
 // entry point and its CHANGELOG names. 018 phase 3 adds `ocelle-metric` (T027): its section, the find-in-page limitation,
-// the `min-inline-size: 0` host rule for shrinking, its entry point and its CHANGELOG names.
+// the `min-inline-size: 0` host rule for shrinking, its entry point and its CHANGELOG names. 018 phase 4 adds the static
+// `ocelle-pill-tag` (T038): its section, the state-pill radius reading, the static rules, clearing ARIA states from a
+// static pill, the `min-inline-size: 0` host rule, its entry point and its CHANGELOG names.
 /** A file's text, relative to the package; empty while it does not exist, so each assertion reports what is missing. */
 function read(file: string): string {
   const url = new URL(`../../${file}`, import.meta.url);
@@ -569,6 +571,7 @@ const entryRows = [
   "| `@ocelle/elements/ocelle-progress.js` | `dist/ocelle-progress.js` | `ocelle-progress` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-status-indicator.js` | `dist/ocelle-status-indicator.js` | `ocelle-status-indicator` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-metric.js` | `dist/ocelle-metric.js` | `ocelle-metric` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-pill-tag.js` | `dist/ocelle-pill-tag.js` | `ocelle-pill-tag` only; for hosts with a bundler |",
   "| `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |",
   "| `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |",
 ];
@@ -692,7 +695,7 @@ describe("packages/elements/README.md", () => {
   it("lists exactly the entry points of package.json's exports in its Entry points table (FR-002)", () => {
     const manifest = JSON.parse(read("package.json")) as { exports?: Record<string, string> };
     expect(tableRows(read("README.md"), "Entry points")).toEqual(entryRows);
-    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-scroller.js", "./ocelle-workflow-board.js", "./ocelle-workflow-lane.js", "./ocelle-list-detail.js", "./ocelle-dialog.js", "./ocelle-drawer.js", "./ocelle-tooltip.js", "./ocelle-card.js", "./ocelle-section-header.js", "./ocelle-page-header.js", "./ocelle-context-sidebar.js", "./ocelle-personal-rail.js", "./ocelle-button.js", "./ocelle-action-row.js", "./ocelle-facts.js", "./ocelle-fact.js", "./ocelle-empty-state.js", "./ocelle-progress.js", "./ocelle-status-indicator.js", "./ocelle-metric.js", "./browser.js", "./custom-elements.json"]);
+    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-scroller.js", "./ocelle-workflow-board.js", "./ocelle-workflow-lane.js", "./ocelle-list-detail.js", "./ocelle-dialog.js", "./ocelle-drawer.js", "./ocelle-tooltip.js", "./ocelle-card.js", "./ocelle-section-header.js", "./ocelle-page-header.js", "./ocelle-context-sidebar.js", "./ocelle-personal-rail.js", "./ocelle-button.js", "./ocelle-action-row.js", "./ocelle-facts.js", "./ocelle-fact.js", "./ocelle-empty-state.js", "./ocelle-progress.js", "./ocelle-status-indicator.js", "./ocelle-metric.js", "./ocelle-pill-tag.js", "./browser.js", "./custom-elements.json"]);
   });
 
   it("lists the thirteen names of the set, whether each mirrors and the consumer need it meets, in its Icons table (US2-1, FR-018, SC-007)", () => {
@@ -817,6 +820,59 @@ describe("packages/elements/README.md: ocelle-metric (018)", () => {
   });
 
   it.each(metricRules)("states the README rule in its section: %s", (rule) => {
+    expect(section).toContain(flat(rule));
+  });
+});
+
+/**
+ * The `ocelle-pill-tag` section, static part (018 FR-007, FR-025 to FR-029; contracts/elements-status.md
+ * § `ocelle-pill-tag`; research.md R-06; tasks.md T038): what it is, its attributes, the looks of the two variants and
+ * the two densities, the tokens it reads, the slots and the part, and the consumer-facing rules of the static pill the
+ * spec and the contract name, one assertion each, read in that section: the state-pill radius reading (SPEC-1-04), the
+ * static rules (not focusable, no role, plain text, wraps and never truncates, `label` and `disabled` without effect,
+ * `title` and ARIA attributes left on the host), clearing ARIA states from a static pill, the `min-inline-size: 0` host
+ * rule for shrinking in a flex row (PLAN-FRESH-2-002), the long word's cap beside a sibling (PLAN-FRESH-3-005), the
+ * stretched host and the baseline (PLAN-FRESH-3-001, -002).
+ */
+const pillFragments = [
+  "`ocelle-pill-tag` is a state pill or a count badge: `<ocelle-pill-tag status=\"warning\">Blocked</ocelle-pill-tag>`, `<ocelle-pill-tag variant=\"badge\">3</ocelle-pill-tag>`",
+  "`status` is one of `info`, `success`, `warning`, `danger` and `neutral` (the default); an absent, empty or unknown `status` shows `neutral`, the attribute keeps the value as written and the `status` property reads `\"neutral\"`",
+  "`variant=\"pill\"`, the default, fills the pill with `--ocelle-color-<status>-bg` and sets its text in `--ocelle-color-<status>`; `variant=\"badge\"` has no fill, a `--ocelle-border-width` border in `--ocelle-color-<status>` and its text in tabular figures (`--ocelle-figures`); both are set in Schibsted Grotesk (`--ocelle-font-sans`), never in a monospace family",
+  "`density=\"compact\"` sets the text in `--ocelle-font-size-xs` at `--ocelle-line-height-snug` (1.2), with a block padding of exactly `--ocelle-space-1` and an inline padding of `--ocelle-space-2`; the default density sets it in `--ocelle-font-size-sm` at `--ocelle-line-height-tight`, padded `--ocelle-space-1` and `--ocelle-space-3`",
+  "An unknown `variant` or `density` shows the default and stays in the attribute as written",
+  "The default slot holds the text; the `icon` slot takes one decorative icon before the text, one line tall, following the slot convention, so a pill has the same height with and without an icon",
+  "The part `pill` (the visual box) can be styled with `::part()`",
+  "In forced colours the pill and the badge keep a visible border",
+];
+
+/** The consumer-facing rules of the static pill (contracts/elements-status.md § `ocelle-pill-tag`; FR-027). */
+const pillRules = [
+  // the state-pill radius reading (SPEC-1-04, constitution II)
+  "Every `ocelle-pill-tag`, in either variant and in every mode, a count badge and a filter toggle included, is a state pill, so its corners take `--ocelle-radius-pill`",
+  // the static rules (FR-027)
+  "A static pill, one with neither `interactive` nor a link `href`, is not focusable, has no role of its own and exposes its text as plain text; a click on it reaches the elements around it as a click on its text would",
+  "A static pill wraps a text that does not fit onto further lines; it never truncates it",
+  "`label` and `disabled` have no effect on a static pill",
+  "`title` and ARIA attributes on a static pill stay on the element as written; the element does not move or change them",
+  // clearing ARIA states (FR-004, FR-035; Edge Cases)
+  "ARIA states and names on a static pill (`aria-pressed`, `aria-label`, `aria-labelledby` and the others) stay on an element with no role, where axe may report them: remove them (`removeAttribute`) once a pill is static, or clear them before making it static",
+  // the min-inline-size: 0 host rule (PLAN-FRESH-2-002)
+  "In a flex row a static pill is not shrunk below its longest word, so a one-word pill such as \"Blocked\" stays on one line beside a long name; a host that wants it to shrink further sets `min-inline-size: 0` on it, and its words then break inside the pill",
+  // the long word's cap (PLAN-FRESH-3-005)
+  "A static pill's longest word is capped at its container's whole inline size, beyond which it breaks inside the pill; beside a sibling in a flex row such a word can make the row overflow by the sibling's width, unless the host sets `min-inline-size: 0` on the pill",
+  // the stretched host and the baseline (PLAN-FRESH-3-001, -002)
+  "In a grid track or a flex column that stretches its items a short static pill keeps the width of its text; only its host is stretched",
+  "A one-line pill sits on the baseline of the text around it, inline in text and in a flex row aligned by baseline, with and without an icon",
+];
+
+describe("packages/elements/README.md: ocelle-pill-tag (018)", () => {
+  const section = flat(/^## `ocelle-pill-tag`\n([\s\S]*?)(?=^## |(?![\s\S]))/m.exec(read("README.md"))?.[1] ?? "");
+
+  it.each(pillFragments)("states in its section: %s", (fragment) => {
+    expect(section).toContain(flat(fragment));
+  });
+
+  it.each(pillRules)("states the README rule in its section: %s", (rule) => {
     expect(section).toContain(flat(rule));
   });
 });
@@ -1148,6 +1204,10 @@ describe("packages/elements/CHANGELOG.md", () => {
     "`ocelle-metric`",
     "`@ocelle/elements/ocelle-metric.js`",
     "`label` and `display-value` (reflected) and `layout`",
+    // 018 (tasks.md T038): the pill tag, its entry point and its attributes
+    "`ocelle-pill-tag`",
+    "`@ocelle/elements/ocelle-pill-tag.js`",
+    "`status`, `variant` and `density`, `interactive`, `href` and `disabled` (reflected) and `label`",
     ...["chevron-start", "chevron-end", "chevron-up", "chevron-down", "arrow-start", "arrow-end", "menu", "close", "folder", "file", "search", "table", "copy"].map((name) => `\`${name}\``),
   ])("names %s under Unreleased / Added (constitution VII, FR-031, SC-008)", (surface) => {
     expect(added).toContain(surface);
