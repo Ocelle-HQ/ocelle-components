@@ -397,6 +397,22 @@ describe("ocelle-app-shell navigation", () => {
     await expect.poll(() => deepActive()?.id).toBe(expected);
   });
 
+  it("preserves a native keyboard scroll stop without requiring an authored tabindex", async () => {
+    const shell = await mount(`<ocelle-context-sidebar slot="sidebar" label="Projects">
+      <button id="switch" slot="head" type="button">Switch project</button>
+      <section><div id="scroller" style="block-size: 32px; overflow: auto"><p style="block-size: 160px">Project details</p></div>
+        <a href="#work">Work</a></section></ocelle-context-sidebar>`);
+    size(1150);
+    const head = required(shell.querySelector<HTMLButtonElement>("#switch"));
+    const scroller = required(shell.querySelector<HTMLElement>("#scroller"));
+    await expect.poll(() => shown(head)).toBe(true);
+    expect(scroller.tabIndex).toBe(-1);
+    expect(scroller.scrollHeight).toBeGreaterThan(scroller.clientHeight);
+    head.focus();
+    size(850);
+    await expect.poll(() => deepActive()).toBe(scroller);
+  });
+
   it("moves focus from collapsing sidebar chrome to the first sequential destination, then main when none survives", async () => {
     const shell = await mount(grouped);
     size(1150);

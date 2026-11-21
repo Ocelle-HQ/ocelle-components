@@ -71,6 +71,11 @@ The candidate adds the responsive shell, its threshold tokens and package entry,
 - Tests-only commit `7f37f6b` reproduced the wide layout failure for a section with `slot=""`. It had 0px inline padding where an implicit default section had 16px. The sidebar now applies the same wide and compact styles to both forms. The test also verifies 4px compact inline padding and absence of an extra leading divider while leaving the named footer alone.
 - The shell layout, navigation, and standalone context-sidebar suites passed 74/74. Scoped lint, style lint, TypeScript and the diff check passed. The pinned visual comparison captured 42 shell, sidebar, and token story-theme cases twice and found no differences.
 
+## Native scroll stop focus
+
+- The 174-mutant render, presence, and destination range on `f948d1d` reached 99.14%. It killed 115 mutants, with one survivor, 58 rejected at compilation, and zero uncovered mutants or timeouts.
+- A new browser scenario verifies that shell focus recovery honors Chromium's native keyboard-scroll stop even when it has no authored tabindex. Its assertion fails when the opaque-host eligibility check is applied to all walker stops, covering the sole survivor of that range.
+
 ## Canonical workflow status
 
 The workflow's canonical `red.sh 3 phase` replay recorded tests-only `a0612f39fe3579984879f800c4f8b13fab148089` with test exit 1. Its full log reports 62 failures out of 9,698 tests, including 19 direct app-shell layout, navigation and standalone-entry failures. It also contains token and manifest assertions and unrelated font, integration timeout and form timing failures. The full affected-plant selection is 317 plants because the package export change is unmapped. The completed focused mutation diagnostics are above. Canonical head and final-tests-on-base checks and independent review are pending. The targeted evidence above does not replace those checks.
