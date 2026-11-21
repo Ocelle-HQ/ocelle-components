@@ -295,7 +295,7 @@ AX text unbroken; zero CSP violations; the gates of phase 1 pass.
 
 ### Scaffold
 
-- [ ] T022 [US2] Scaffold commit, recorded by `.specify/extensions/story/scripts/scaffold.sh 2`:
+- [X] T022 [US2] Scaffold commit, recorded by `.specify/extensions/story/scripts/scaffold.sh 2`:
   `packages/elements/src/ocelle-code-block.ts` with `define("ocelle-code-block", …)`, `@tagname ocelle-code-block`,
   the declared properties `overflow` (`string | undefined`), `label` (`string | undefined`), `digest`
   (`boolean | undefined`), each `@default undefined`, and an empty `render()`; exports in `src/index.ts`,
