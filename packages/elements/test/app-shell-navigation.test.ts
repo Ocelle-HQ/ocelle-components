@@ -117,6 +117,7 @@ describe("ocelle-app-shell navigation", () => {
     shell.append(unnamed);
     await unnamed.updateComplete;
     expect(top(unnamed)?.productName).toBe("");
+    expect([unnamed.menuLabel, unnamed.railLabel, unnamed.sidebarLabel]).toEqual(["Open navigation", "Account", "Workspace"]);
     shell.sidebarLabel = " ";
     await expect.poll(landmarks).toEqual(["Workspace"]);
     size(500);
@@ -140,6 +141,13 @@ describe("ocelle-app-shell navigation", () => {
     await expect.poll(landmarks).toEqual(["Workspace"]);
     required(shell.querySelector('[slot="sidebar"]')).setAttribute("slot", "rail");
     await expect.poll(landmarks).toEqual(["Account"]);
+  });
+
+  it("preserves a named landmark when the same slot also receives an empty wrapper", async () => {
+    const shell = await mount('<div slot="sidebar"></div><nav slot="sidebar" aria-label="Work"><a href="#work">Overview</a></nav>');
+    expect(await landmarks()).toEqual(["Work"]);
+    required(shell.querySelector("nav")).remove();
+    await expect.poll(landmarks).toEqual([]);
   });
 
   it("keeps the empty top-bar action region hidden and projects added actions", async () => {
@@ -188,6 +196,21 @@ describe("ocelle-app-shell navigation", () => {
     required(shell.parentElement).append(item);
     await expect.poll(() => label()?.hidden).toBe(true);
     expect(item.compact).toBe(true);
+  });
+
+  it("compacts a directly assigned nav item and an explicit default-slot section while leaving footer items alone", async () => {
+    const shell = await mount('<ocelle-nav-item id="bare" slot="sidebar" href="#bare" label="Bare"></ocelle-nav-item><ocelle-context-sidebar slot="sidebar" label="Projects"><section slot=""><ocelle-nav-item id="default-item" href="#default" label="Default"></ocelle-nav-item></section><ocelle-nav-item id="footer-item" slot="footer" href="#footer" label="Footer" compact></ocelle-nav-item></ocelle-context-sidebar>');
+    const getLabel = (id: string): Element | null | undefined => shell.querySelector(`#${id}`)?.shadowRoot?.querySelector('[part="label"]');
+    size(1150);
+    await expect.poll(() => shown(getLabel("bare"))).toBe(true);
+    expect(shown(getLabel("default-item"))).toBe(true);
+    const footer = (): Element => required(getLabel("footer-item"));
+    expect(footer().hasAttribute("hidden")).toBe(true);
+    size(850);
+    await expect.poll(() => shell.tier).toBe("collapsed");
+    expect(shown(getLabel("bare"))).toBe(false);
+    expect(shown(getLabel("default-item"))).toBe(false);
+    expect(footer().hasAttribute("hidden")).toBe(true);
   });
 
   it("keeps the receiving shell's presentation when a destination moves between shells", async () => {
@@ -266,7 +289,8 @@ describe("ocelle-app-shell navigation", () => {
 
     second.style.inlineSize = "1150px";
     await expect.poll(() => shown(secondHeading)).toBe(true);
-    expect(root.adoptedStyleSheets).toEqual([authored]);
+    expect(root.adoptedStyleSheets).toHaveLength(1);
+    expect(root.adoptedStyleSheets[0]).toBe(authored);
     expect(getComputedStyle(list).paddingInlineStart).toBe("40px");
   });
 
@@ -302,6 +326,25 @@ describe("ocelle-app-shell navigation", () => {
     size(1150);
     await expect.poll(() => deepActive()).toBe(document.getElementById("item")?.shadowRoot?.querySelector("a"));
     expect(received).toHaveLength(2);
+  });
+
+  it("preserves deliberately moved focus while a navigation update settles", async () => {
+    const shell = await mount(rail + grouped);
+    size(1150);
+    const railLink = required(shell.querySelector("#rail-item")?.shadowRoot?.querySelector("a"));
+    await expect.poll(() => shown(railLink)).toBe(true);
+    const item = required(shell.querySelector("ocelle-context-sidebar ocelle-nav-item"));
+    const { promise: hold, resolve: finish } = Promise.withResolvers<boolean>();
+    Object.defineProperty(item, "updateComplete", { configurable: true, get: () => hold });
+
+    railLink.focus();
+    shell.layout = "project";
+    await shell.updateComplete;
+    const mainButton = required(shell.querySelector<HTMLButtonElement>("#main-content"));
+    mainButton.focus();
+    finish(true);
+    await new Promise<void>((resolve) => { requestAnimationFrame(() => { resolve(); }); });
+    expect(deepActive()).toBe(mainButton);
   });
 
   it("uses chrome foreground on unselected rail links in light mode", async () => {

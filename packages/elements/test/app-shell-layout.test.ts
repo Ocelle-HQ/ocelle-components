@@ -141,6 +141,7 @@ describe("ocelle-app-shell layout", () => {
     await tier(shell, "collapsed");
     expect(received).toEqual([]);
     shell.hidden = true;
+    shell.style.inlineSize = "310px";
     size("310px");
     shell.remeasure();
     await shell.updateComplete;
@@ -148,6 +149,43 @@ describe("ocelle-app-shell layout", () => {
     shell.hidden = false;
     await tier(shell, "narrow");
     expect(received).toEqual([{ previousTier: "collapsed", tier: "narrow" }]);
+  });
+
+  it("reports only the latest completed tier when child rendering is still pending", async () => {
+    const shell = await mount('narrow-below="400px" collapse-below="600px"');
+    await tier(shell, "expanded");
+    const bar = required(shell.shadowRoot?.querySelector("ocelle-top-bar"));
+    const { promise: pending, resolve: release } = Promise.withResolvers<boolean>();
+    Object.defineProperty(bar, "updateComplete", { configurable: true, get: () => pending });
+    const events: unknown[] = [];
+    shell.addEventListener("ocelle-app-shell-tier-change", (event) => {
+      events.push((event as CustomEvent<unknown>).detail);
+    });
+
+    size("500px");
+    shell.remeasure();
+    await shell.updateComplete;
+    expect(shell.tier).toBe("collapsed");
+    size("350px");
+    shell.remeasure();
+    await shell.updateComplete;
+    expect(shell.tier).toBe("narrow");
+    expect(events).toEqual([]);
+    release(true);
+    await expect.poll(() => events).toEqual([{ previousTier: "expanded", tier: "narrow" }]);
+  });
+
+  it("keeps the last tier when an inline box cannot supply a finite CSS inline size", async () => {
+    const shell = await mount('narrow-below="400px" collapse-below="600px"');
+    size("500px");
+    await tier(shell, "collapsed");
+    shell.style.display = "inline";
+    shell.style.inlineSize = "auto";
+    shell.remeasure();
+    await shell.updateComplete;
+    expect(getComputedStyle(shell).inlineSize).toBe("auto");
+    expect(shell.getClientRects().length).toBeGreaterThan(0);
+    expect(shell.tier).toBe("collapsed");
   });
 
   it("remeasures a host-em threshold after a style-only font change", async () => {
@@ -186,6 +224,11 @@ describe("ocelle-app-shell layout", () => {
     shell.style.borderInline = "2px solid";
     shell.style.paddingInline = "8px";
     shell.style.inlineSize = "379px";
+    await tier(shell, "narrow");
+    shell.style.paddingInlineEnd = "9px";
+    await tier(shell, "collapsed");
+    expect(shell.getBoundingClientRect().width).toBe(400);
+    shell.style.paddingInlineEnd = "8px";
     await tier(shell, "narrow");
     shell.style.inlineSize = "380px";
     await tier(shell, "collapsed");
