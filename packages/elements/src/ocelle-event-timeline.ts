@@ -149,7 +149,7 @@ export class OcelleEventTimeline extends LitElement {
 
   // Stryker disable next-line BlockStatement: equivalent, the body's two calls are each equivalent (below), so is leaving out both
   override disconnectedCallback(): void {
-    // Stryker disable next-line CallExpression: equivalent, Lit's own disconnection only notifies reactive controllers, which this element has none of
+    // Stryker disable next-line CallExpression: equivalent, Lit's own disconnection notifies reactive controllers, which this element has none of, and calls setConnected(false) on its child part, which reaches only async directives: its classMap and ifDefined are synchronous
     super.disconnectedCallback();
     // Stryker disable next-line CallExpression: equivalent, a kept observer re-renders a timeline out of the document, which shows nothing, and observe() on reconnection replaces its options
     this.#mutations.disconnect();

@@ -501,8 +501,10 @@ the reading order and the page's scroll width.
    time), **Then** it shows its content with no empty time box and the list item's item text (FR-016) is its content
    alone (FR-023).
 4. **Given** an event whose content holds a 26-character identifier and whose `wrap="anywhere"` is set, **When** the
-   timeline is 320 px wide, **Then** the identifier wraps inside the event, the page's scroll width equals the viewport
-   width, and copying the content gives the identifier unchanged (FR-024, FR-009).
+   timeline is 320 px wide, **Then** the identifier stays inside the event's content box (it fits there on one line),
+   the page's scroll width equals the viewport width, and copying the content gives the identifier unchanged; **When**
+   the timeline's column is narrower than the identifier (200 px), **Then** the identifier wraps inside the event
+   (FR-024, FR-009).
 5. **Given** a timeline with three events, **When** a fourth `ocelle-timeline-event` is appended, one is removed, or one
    gets `hidden`, **Then** the list and its markers follow at once: the list item count matches the visible events, the
    connectors join only visible events, and nothing throws (FR-025).

@@ -28,8 +28,11 @@ Read from the source before the first run, not from a report (so run 1 is the fi
   joined string, whose filter mutants (an extra space in the class string) were equivalent.
 - **Recorded as equivalent** (a30cceb, each a `Stryker disable next-line` with its reason; listed by run 1 as records):
   the timeline's `label` options object (Lit's defaults are type String's); the `true` variant of the `aria-label`
-  update guard; both elements' `super.disconnectedCallback()` (Lit's own only notifies reactive controllers, which
-  neither has) and observer `disconnect()` (a kept observer only re-renders an element out of the document, and
+  update guard; both elements' `super.disconnectedCallback()` (Lit's own notifies reactive controllers, which neither
+  has, and `LitElement`'s also calls `this.__childPart?.setConnected(false)`, which only matters for async directives:
+  the event renders no directive, and the timeline's `classMap` and `ifDefined` are synchronous, so neither uses one;
+  reason completed after review round 1, R1-07, in the source comments too; the outputs below show the reason as it
+  stood at each run) and observer `disconnect()` (a kept observer only re-renders an element out of the document, and
   `observe()` on reconnection replaces its options); the event's initial slotted flag (set by `render()` before any
   comparison can be seen) and the `true` variant of its update guard (an update with no slotted-time change renders
   the same time box).

@@ -79,7 +79,8 @@ system text colour. No `forced-color-adjust: none`.
   `time` set (it reflects, so a property set from script is seen), and an event's slotted time added, removed,
   emptied, filled, hidden or shown all re-decide the classes (plan gate Q-E). A record from inside an event's content
   re-renders to the same classes, which changes nothing. The `has-time` and `next-has-time` classes use the internal
-  `hasTime(event)` predicate of `timeline-time.ts`, the same one the event uses for its time box (R-10).
+  `hasTime(event)` predicate of `timeline-time.ts`, whose rule the event applies to its `time` property for its time
+  box (the event's render runs before Lit reflects `time`; once it is reflected, both give the same answer) (R-10).
 - The name is `resolveName(host aria-label, label)`, set on the `<ol>` (R-09). Chromium also shows the host as a
   `generic` node of the host's name beside the `list`, as on 009's lane; axe-core 4.14.0 reports nothing on it, blank
   or not (`reviews/phase-2/spike.md` § 2), so both states have stories (phase 2 spike Q1 (b), contracts/checks.md
