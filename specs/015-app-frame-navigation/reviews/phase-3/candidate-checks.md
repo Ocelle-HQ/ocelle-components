@@ -84,6 +84,18 @@ The candidate adds the responsive shell, its threshold tokens and package entry,
 - The four shell, sidebar, and nav-item suites passed 82/82. Code lint, style lint, test lint, the manifest gate, TypeScript, and the diff check passed. Pinned Docker captured 56 shell, sidebar, nav-item, and token story-theme cases twice with no differences.
 - The updated shared presentation range on `73c0f35` reached 96.61%, with 57 killed, two surviving default-color mutants, 12 rejected at compilation, and no uncovered mutants or timeouts. A browser test now checks standalone foreground before and after a compact-only update. Both exact default-to-chrome fault probes failed that assertion.
 
+## Current mutation range audit
+
+Ranges below refer to shell source at `73c0f35`. The diagnostics use selected repository browser tests. Canonical hosted validation covers the release workflow.
+
+| Source and scope | Local evidence |
+| --- | --- |
+| App shell lines 18–24, 65–222, 410–end, constants, setup and registration | 91.89% before removing three private slot-presence initializers overwritten by the first `willUpdate`. The updated entry, export, layout, and navigation suites passed 52/52. |
+| App shell lines 25–39, 250–318, 399–409, presence, render, and destination selection | 99.14% on unchanged production ranges at `f948d1d`. The exact probe for the one survivor failed the native-scroll test in `9984bfd`. |
+| App shell lines 40–56 and 337–398, plus the compact stylesheet helper | 100% on `73c0f35`, with 105 killed and 51 rejected at compilation, zero survivors, zero uncovered, and zero timeouts. |
+| App shell lines 58–64, 223–249, 319–336, thresholds and lifecycle | 100% on the same production ranges at `71c7ef7`. |
+| Changed sidebar and nav-item presentation ranges | 100% sidebar and 96.61% combined on `73c0f35`. The follow-up two-line nav check with the new foreground test passed at 100%, with four killed and four rejected at compilation. |
+
 ## Canonical workflow status
 
 The workflow's canonical `red.sh 3 phase` replay recorded tests-only `a0612f39fe3579984879f800c4f8b13fab148089` with test exit 1. Its full log reports 62 failures out of 9,698 tests, including 19 direct app-shell layout, navigation and standalone-entry failures. It also contains token and manifest assertions and unrelated font, integration timeout and form timing failures. The full affected-plant selection is 317 plants because the package export change is unmapped. The completed focused mutation diagnostics are above. Canonical head and final-tests-on-base checks and independent review are pending. The targeted evidence above does not replace those checks.

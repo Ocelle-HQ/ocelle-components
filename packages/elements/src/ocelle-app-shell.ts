@@ -182,9 +182,10 @@ export class OcelleAppShell extends LitElement {
 
   #tier: AppShellTier = "expanded";
   #layout: Layout = "mission";
-  #rail = false;
-  #sidebar = false;
-  #actions = false;
+  // Lit runs willUpdate before the first read of slot presence in render.
+  #rail!: boolean;
+  #sidebar!: boolean;
+  #actions!: boolean;
   #settlement: symbol | undefined;
   #focusSource: Element | undefined;
   #announcedTier: AppShellTier | undefined;
