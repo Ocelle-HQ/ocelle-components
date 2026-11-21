@@ -1,0 +1,20 @@
+# fix-7 (O12-01, T025q): the CI shard 'Mutation shard (packages/elements/src/live.ts:151-180, 30)' run locally on f109b379 (the T025q test committed), this container
+start:2026-11-20T13:14:40Z
+$ node gates/bin/mutation.ts -- --base 4911fd0b971d1fa4fd0c629a0e95fe4d7a416c38 --files packages/elements/src/live.ts:151-180
+packages/elements/src/live.ts:154: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/live.ts:155: mutation: compile-error: LogicalOperator: replaced by this.baseline !== null || this.baseline.politeness === politeness
+packages/elements/src/live.ts:155: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/live.ts:155: mutation: compile-error: EqualityOperator: replaced by this.baseline === null
+packages/elements/src/live.ts:160: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/live.ts:162: mutation: compile-error: EqualityOperator: replaced by this.phase !== "releasing"
+packages/elements/src/live.ts:162: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/live.ts:163: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/live.ts:163: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/live.ts:170: mutation: compile-error: EqualityOperator: replaced by this.phase !== "holding"
+packages/elements/src/live.ts:170: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/live.ts:170: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/live.ts:171: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/live.ts:173: mutation: compile-error: StringLiteral: replaced by ""
+mutation: 39 mutants on the changed lines of 1 file, none survived; 0 timeouts, 14 compile errors, 0 zero-mutant entries; 0 equivalent records
+exit code: 0
+end:2026-11-20T13:42:38Z

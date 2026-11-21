@@ -2,8 +2,9 @@
  * Layout of the base-style stories (003 research.md R-12, PLAN-A11Y-SECURITY-1-006): layout only, no rule of
  * base.css, selectors on data-story attributes only (no class, no style attribute). Since 008, also the ocelle-dialog,
  * ocelle-drawer and ocelle-tooltip stories' blocks; since 009, the tested frames, keyed on data-frame attributes;
- * since 011, the personal-rail stories' stand-in items, keyed on their data-story root; and since 013 the
- * ocelle-facts, ocelle-empty-state and ocelle-progress stories' wrappers (below).
+ * since 011, the personal-rail stories' stand-in items, keyed on their data-story root; since 013 the
+ * ocelle-facts, ocelle-empty-state and ocelle-progress stories' wrappers; and since 014 the scrolling listbox and the
+ * wrapped tabs, segmented-choice, copy-field and link stories' sizes (below).
  */
 [data-story] {
   padding: var(--ocelle-space-4);
@@ -142,4 +143,30 @@
   inline-size: calc(var(--ocelle-space-10) * 6);
   max-inline-size: 100%;
   background-color: var(--ocelle-color-inset);
+}
+
+/* The scrolling listbox story (014 FR-050): a listbox limited to four option heights, so its list part scrolls. */
+[data-story="listbox-scrolling"] ocelle-listbox {
+  max-block-size: calc(4 * var(--ocelle-target-min));
+}
+
+/* The wrapped tabs story (014 FR-050, FR-022): a row narrower than the tabs, so they wrap onto a second row. */
+[data-story="tabs-wrapped"] ocelle-tabs {
+  inline-size: 320px;
+}
+
+/* The joined wrapped segmented-choice story (014 FR-050, FR-029): a group narrower than its four segments, so Done
+ * wraps alone onto a second row. */
+[data-story="segmented-choice-wrapped"] ocelle-segmented-choice {
+  inline-size: 220px;
+}
+
+/* The wrapped copy-field story (014 FR-050, FR-032): a field 320 px wide, so its long command wraps onto several lines. */
+[data-story="copy-field-wrapped"] ocelle-copy-field {
+  inline-size: 320px;
+}
+
+/* The wrapped link story (014 FR-050, FR-048): a sentence 240 px wide, so its long link wraps onto three lines (with two, axe-core 4.14.0 reports a serious color-contrast incomplete, reviews/phase-6/notes.md). */
+[data-story="link-wrapped"] p {
+  inline-size: 240px;
 }
