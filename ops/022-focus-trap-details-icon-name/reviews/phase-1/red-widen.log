@@ -1,0 +1,336 @@
+# red-widen: commit f5b0bdf4f1950f5a46d6bcbaa39d3dc1f89dabd1, clean worktree, Chromium 156.0.8078.4
+# command: npx vitest run --project elements --project elements-browser packages/elements/test/button.test.ts packages/elements/test/browser/button.test.ts
+
+ RUN  v5.0.5 <clean worktree at f5b0bdf>
+
+ ❯ |elements (chromium)| packages/elements/test/button.test.ts (120 tests | 3 failed) 94201ms
+   ❯ ocelle-button, in process (US1) (57)
+     × op 022 (#57) scenario 6: a titled bare … 218ms
+     × op 022 (#57) scenario 7: a titled bare … 179ms
+     × op 022 (#57) scenario 7, link mode: a t… 182ms
+ ❯ |elements-browser| packages/elements/test/browser/button.test.ts (107 tests | 3 failed) 143861ms
+   ❯ ocelle-button on the strict-CSP fixture with the browser build (US1) (57)
+     × op 022 (#57) scenario 6: a titled bare … 340ms
+     × op 022 (#57) scenario 7: a titled bare … 296ms
+     × op 022 (#57) scenario 7, link mode: a t… 267ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 6 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |elements-browser| packages/elements/test/browser/button.test.ts > ocelle-button on the strict-CSP fixture with the browser build (US1) > op 022 (#57) scenario 6: a titled bare …
+AssertionError: expected { observed: { …(3) }, …(1) } to deeply equal { observed: { …(3) }, …(1) }
+
+- Expected
++ Received
+
+@@ -1,21 +1,49 @@
+  {
+    "observed": {
+      "axe": [],
+      "button": {
+-       "folder": [],
+-       "images": [],
++       "folder": [
++         {
++           "name": "Folder Open",
++           "role": "button",
++         },
++         {
++           "name": "Folder",
++           "role": "image",
++         },
++       ],
++       "images": [
++         {
++           "name": "Folder",
++           "role": "image",
++         },
++       ],
+        "state": {
+-         "name": "Open",
++         "name": "Folder Open",
+          "role": "button",
+        },
+      },
+      "link": {
+-       "folder": [],
+-       "images": [],
++       "folder": [
++         {
++           "name": "Folder Open",
++           "role": "link",
++         },
++         {
++           "name": "Folder",
++           "role": "image",
++         },
++       ],
++       "images": [
++         {
++           "name": "Folder",
++           "role": "image",
++         },
++       ],
+        "state": {
+-         "name": "Open",
++         "name": "Folder Open",
+          "role": "link",
+        },
+      },
+    },
+    "recorded": {
+
+ ❯ packages/elements/test/browser/button.test.ts:40:57
+     38|     const page = await visit(browser, origin, "button.html", ["ocelle-…
+     39|     const observed = await run(fixtureDriver(page.page, page.log));
+     40|     expect({ observed, recorded: await page.finish() }).toEqual({ obse…
+       |                                                         ^
+     41|   });
+     42| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/6]⎯
+
+ FAIL  |elements-browser| packages/elements/test/browser/button.test.ts > ocelle-button on the strict-CSP fixture with the browser build (US1) > op 022 (#57) scenario 7: a titled bare …
+AssertionError: expected { observed: { …(4) }, …(1) } to deeply equal { observed: { …(4) }, …(1) }
+
+- Expected
++ Received
+
+@@ -1,10 +1,20 @@
+  {
+    "observed": {
+      "axe": [],
+-     "folder": [],
+-     "images": [],
++     "folder": [
++       {
++         "name": "Folder",
++         "role": "image",
++       },
++     ],
++     "images": [
++       {
++         "name": "Folder",
++         "role": "image",
++       },
++     ],
+      "state": {
+        "name": "Open project",
+        "role": "button",
+      },
+    },
+
+ ❯ packages/elements/test/browser/button.test.ts:40:57
+     38|     const page = await visit(browser, origin, "button.html", ["ocelle-…
+     39|     const observed = await run(fixtureDriver(page.page, page.log));
+     40|     expect({ observed, recorded: await page.finish() }).toEqual({ obse…
+       |                                                         ^
+     41|   });
+     42| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/6]⎯
+
+ FAIL  |elements-browser| packages/elements/test/browser/button.test.ts > ocelle-button on the strict-CSP fixture with the browser build (US1) > op 022 (#57) scenario 7, link mode: a t…
+AssertionError: expected { observed: { …(4) }, …(1) } to deeply equal { observed: { …(4) }, …(1) }
+
+- Expected
++ Received
+
+@@ -1,10 +1,20 @@
+  {
+    "observed": {
+      "axe": [],
+-     "folder": [],
+-     "images": [],
++     "folder": [
++       {
++         "name": "Folder",
++         "role": "image",
++       },
++     ],
++     "images": [
++       {
++         "name": "Folder",
++         "role": "image",
++       },
++     ],
+      "state": {
+        "name": "Open project",
+        "role": "link",
+      },
+    },
+
+ ❯ packages/elements/test/browser/button.test.ts:40:57
+     38|     const page = await visit(browser, origin, "button.html", ["ocelle-…
+     39|     const observed = await run(fixtureDriver(page.page, page.log));
+     40|     expect({ observed, recorded: await page.finish() }).toEqual({ obse…
+       |                                                         ^
+     41|   });
+     42| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/6]⎯
+
+ FAIL  |elements (chromium)| packages/elements/test/button.test.ts > ocelle-button, in process (US1) > op 022 (#57) scenario 6: a titled bare …
+AssertionError: expected { …(3) } to deeply equal { …(3) }
+
+Failure screenshot:
+  - .vitest/attachments/failure-screenshots/button.test.ts/ocelle-button--in-process--US1----op-022---57--scenario-6--a-titled-bare--.png
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  {[22m
+[2m    "axe": [],[22m
+[2m    "button": {[22m
+[32m-     "folder": [],[39m
+[32m-     "images": [],[39m
+[31m+     "folder": [[39m
+[31m+       {[39m
+[31m+         "name": "Folder Open",[39m
+[31m+         "role": "button",[39m
+[31m+       },[39m
+[31m+       {[39m
+[31m+         "name": "Folder",[39m
+[31m+         "role": "image",[39m
+[31m+       },[39m
+[31m+     ],[39m
+[31m+     "images": [[39m
+[31m+       {[39m
+[31m+         "name": "Folder",[39m
+[31m+         "role": "image",[39m
+[31m+       },[39m
+[31m+     ],[39m
+[2m      "state": {[22m
+[32m-       "name": "Open",[39m
+[31m+       "name": "Folder Open",[39m
+[2m        "role": "button",[22m
+[2m      },[22m
+[2m    },[22m
+[2m    "link": {[22m
+[32m-     "folder": [],[39m
+[32m-     "images": [],[39m
+[31m+     "folder": [[39m
+[31m+       {[39m
+[31m+         "name": "Folder Open",[39m
+[31m+         "role": "link",[39m
+[31m+       },[39m
+[31m+       {[39m
+[31m+         "name": "Folder",[39m
+[31m+         "role": "image",[39m
+[31m+       },[39m
+[31m+     ],[39m
+[31m+     "images": [[39m
+[31m+       {[39m
+[31m+         "name": "Folder",[39m
+[31m+         "role": "image",[39m
+[31m+       },[39m
+[31m+     ],[39m
+[2m      "state": {[22m
+[32m-       "name": "Open",[39m
+[31m+       "name": "Folder Open",[39m
+[2m        "role": "link",[22m
+[2m      },[22m
+[2m    },[22m
+[2m  }[22m
+
+ ❯ packages/elements/test/button.test.ts:24:31
+     22| describe("ocelle-button, in process (US1)", { timeout: 60_000 }, () =>…
+     23|   it.each(buttonScenarios)("$name", async ({ run, expected }) => {
+     24|     expect(await run(driver)).toEqual(expected);
+       |                               ^
+     25|   });
+     26| });
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=8d7544f7:5237:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/6]⎯
+
+ FAIL  |elements (chromium)| packages/elements/test/button.test.ts > ocelle-button, in process (US1) > op 022 (#57) scenario 7: a titled bare …
+AssertionError: expected { …(4) } to deeply equal { …(4) }
+
+Failure screenshot:
+  - .vitest/attachments/failure-screenshots/button.test.ts/ocelle-button--in-process--US1----op-022---57--scenario-7--a-titled-bare--.png
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  {[22m
+[2m    "axe": [],[22m
+[32m-   "folder": [],[39m
+[32m-   "images": [],[39m
+[31m+   "folder": [[39m
+[31m+     {[39m
+[31m+       "name": "Folder",[39m
+[31m+       "role": "image",[39m
+[31m+     },[39m
+[31m+   ],[39m
+[31m+   "images": [[39m
+[31m+     {[39m
+[31m+       "name": "Folder",[39m
+[31m+       "role": "image",[39m
+[31m+     },[39m
+[31m+   ],[39m
+[2m    "state": {[22m
+[2m      "name": "Open project",[22m
+[2m      "role": "button",[22m
+[2m    },[22m
+[2m  }[22m
+
+ ❯ packages/elements/test/button.test.ts:24:31
+     22| describe("ocelle-button, in process (US1)", { timeout: 60_000 }, () =>…
+     23|   it.each(buttonScenarios)("$name", async ({ run, expected }) => {
+     24|     expect(await run(driver)).toEqual(expected);
+       |                               ^
+     25|   });
+     26| });
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=8d7544f7:5237:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/6]⎯
+
+ FAIL  |elements (chromium)| packages/elements/test/button.test.ts > ocelle-button, in process (US1) > op 022 (#57) scenario 7, link mode: a t…
+AssertionError: expected { state: { role: 'link', …(1) }, …(3) } to deeply equal { state: { role: 'link', …(1) }, …(3) }
+
+Failure screenshot:
+  - .vitest/attachments/failure-screenshots/button.test.ts/ocelle-button--in-process--US1----op-022---57--scenario-7--link-mode--a-t-.png
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  {[22m
+[2m    "axe": [],[22m
+[32m-   "folder": [],[39m
+[32m-   "images": [],[39m
+[31m+   "folder": [[39m
+[31m+     {[39m
+[31m+       "name": "Folder",[39m
+[31m+       "role": "image",[39m
+[31m+     },[39m
+[31m+   ],[39m
+[31m+   "images": [[39m
+[31m+     {[39m
+[31m+       "name": "Folder",[39m
+[31m+       "role": "image",[39m
+[31m+     },[39m
+[31m+   ],[39m
+[2m    "state": {[22m
+[2m      "name": "Open project",[22m
+[2m      "role": "link",[22m
+[2m    },[22m
+[2m  }[22m
+
+ ❯ packages/elements/test/button.test.ts:24:31
+     22| describe("ocelle-button, in process (US1)", { timeout: 60_000 }, () =>…
+     23|   it.each(buttonScenarios)("$name", async ({ run, expected }) => {
+     24|     expect(await run(driver)).toEqual(expected);
+       |                               ^
+     25|   });
+     26| });
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=8d7544f7:5237:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/6]⎯
+
+
+ Test Files  2 failed (2)
+      Tests  6 failed | 221 passed (227)
+   Start at  13:47:38
+   Duration  147.47s (tests 99%)
+
+# exit: 1
