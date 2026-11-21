@@ -14,6 +14,7 @@ setup:online`).
    gate: each is applied to the green source in a scratch copy, its guarding body run, the file restored, and the
    result recorded in `reviews/phase-N/plants.md`.
 4. **Stories.** `pnpm run gate:storybook-build && pnpm run gate:axe`; baselines with `pnpm run visual:update` in the
-   pinned container, then `pnpm run gate:visual`. Expected: no serious or critical axe finding, no exception entry.
+   pinned container, then `pnpm run gate:visual`. Expected: no serious or critical axe finding; no exception entry other than the 14 `color-contrast-incomplete`
+   entries of the overflowing scroll code-block stories (plan.md § Complexity Tracking), each reported as excepted.
 5. **By hand (optional).** In Storybook, open Disclosure / Closed, tab to it, press Enter and Space; open Code block /
    ScrollOverflowing, tab to it, press ArrowRight; select Code block / Digest and paste: the digest as written.

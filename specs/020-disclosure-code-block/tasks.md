@@ -12,7 +12,10 @@ plan-squad rounds (`reviews/plan/round-1..3/`, fork decisions in each `refute.md
 - the tasks-gate analysis (`analysis-report.md`, head 33751a9) and the operator's decision "approve + fix all"
   (`reviews/analysis/operator-decisions.md`, 2026-11-20), resolved in these artifacts by
   `reviews/analysis/fixes-1.md`. The decision also approves plan.md's Complexity Tracking exception (the story-less
-  states T008 and T028 leave out), the unnamed overflowing scroll block subject to T021a.
+  states T008 and T028 leave out), the unnamed overflowing scroll block subject to T021a. The operator's T021a
+  decision (`reviews/phase-2/operator-axe-decision.md`, 2026-11-21), "add exceptions and keep the story", gives that
+  state the `ScrollUnlabelled` story and approves the `color-contrast-incomplete` exception entries of plan.md
+  § Complexity Tracking for the overflowing scroll stories.
 
 **Tests**: required. Constitution Principle VIII applies to every phase.
 
@@ -65,9 +68,13 @@ a repository-wide problem is recorded in research.md § Repository-wide notes an
 - **T021 (phase 2 spike)**: R-07's copy, AX-text or break-position measure fails under the repository's pinned
   browser (FR-031, FR-032; the operator decides).
 - **T021a (phase 2 axe measure)**: axe reports a serious or critical finding on the unnamed overflowing scroll block
-  (the operator confirms that the state keeps the Complexity Tracking exception before T028).
+  (the operator confirms that the state keeps the Complexity Tracking exception before T028). Raised and answered:
+  `reviews/phase-2/operator-axe-decision.md` (2026-11-21), "add exceptions and keep the story".
 - **Plants**: a plant that does not bite.
-- **axe**: a new story would need a `storybook/a11y-exceptions.json` entry.
+- **axe**: a new story would need a `storybook/a11y-exceptions.json` entry, other than the 14
+  `color-contrast-incomplete` entries the operator approved for the overflowing scroll code-block stories
+  (`reviews/phase-2/operator-axe-decision.md`, 2026-11-21; plan.md § Complexity Tracking). Those are not a stop; a
+  difference from their rows (another selector, rule or node, or an overflowing story without the result) is.
 - **Baselines**: `visual:update` reports a changed or removed baseline of an existing story.
 - **Mutation**: a shard over op 015's limit.
 
@@ -240,23 +247,29 @@ AX text unbroken; zero CSP violations; the gates of phase 1 pass.
 
 ### Operator stop (first)
 
-- [ ] T020 [US2] Operator stop (FR-060, research R-12), before any phase 2 work: the orchestrator reports to the
+- [X] T020 [US2] Operator stop (FR-060, research R-12), before any phase 2 work: the orchestrator reports to the
   operator whether mission 019 is on `main` and what it changed in `packages/elements/src/overflow-region.ts` and
   shared files; the operator decides how phase 2 proceeds (for example build on the branch as it is, or have
   `/ocelle-land` integrate first). Recorded alone in `specs/020-disclosure-code-block/reviews/phase-2/
   operator-019.md`, which names phase 2's base: the full sha phase 2 builds on (the phase 1 head if the branch is
   built on as it is, the integrated commit if `/ocelle-land` integrates first). That base is the branch base of
   SC-007 and SC-008 for phases 2 and 3 (T033, T041). No task merges `main`.
+  Done: `reviews/phase-2/operator-019.md` (proceed on main without waiting for 019; phase 2's base
+  `8ebbe439b08562e3832fbe996645d4ff714f0874`).
 
 ### Spike
 
-- [ ] T021 [US2] Spike, scratch files only, recorded in `specs/020-disclosure-code-block/reviews/phase-2/spike.md`:
+- [X] T021 [US2] Spike, scratch files only, recorded in `specs/020-disclosure-code-block/reviews/phase-2/spike.md`:
   R-07's measures re-run under the repository's pinned browser in both harnesses (copy by triple click and by a range
   over the units, CDP StaticText join, `ariaSnapshot` of the shadow `pre`, break positions with `nowrap` groups and the
   `margin-inline-end` gap, base64url and base64 sweeps 60 to 300 px); R-06's `rtl` opening write
   (`scrollLeft` after `scrollTo({ left: -(scrollWidth - clientWidth), behavior: "instant" })`, `data-fade` `start`).
   A failure stops for the operator.
-- [ ] T021a [US2] Axe measure of the unnamed overflowing scroll block (analysis D1, operator decision at the tasks
+  Done: run and recorded in `reviews/phase-2/spike.md`; two measures failed (the whole-block copy's newline, the
+  prefix breaking inside where it fits), answered in `reviews/phase-2/operator-spike-decisions.md` (Q1 (c): two
+  whole-block copy bodies; Q2 (c): the prefix's threshold is its width plus `--ocelle-space-1`), applied to spec
+  FR-031, FR-033, US2-10, US2-12 and SC-004, research R-06 and R-07, data-model.md and the contracts.
+- [X] T021a [US2] Axe measure of the unnamed overflowing scroll block (analysis D1, operator decision at the tasks
   gate), scratch files only, before T028, recorded in `specs/020-disclosure-code-block/reviews/phase-2/
   axe-unnamed-scroll.md`: a scratch element (outside `packages/`) rendering research R-06's scroll structure
   (`.block > .region-frame > .region-box > .region-track > pre.code`) through the unchanged `OverflowRegion` module
@@ -271,6 +284,14 @@ AX text unbroken; zero CSP violations; the gates of phase 1 pass.
     and T028 adds no story for it.
 
   The scratch files and the scratch story are not committed.
+  Done: run and recorded in `reviews/phase-2/axe-unnamed-scroll.md`. The unnamed box is a `generic` tab stop
+  (`tabindex="0"`) with no name and has no violation. axe reports one serious result in light and dark:
+  `color-contrast` incomplete (`elmPartiallyObscured`) on `x-code-block >>> .code`. A labelled control block gets the
+  same result. This is a stop for the operator before T028.
+  Decision: `reviews/phase-2/operator-axe-decision.md` (2026-11-21), "add exceptions and keep the story". It replaces
+  the "axe reports one" branch above: T028 adds the `ScrollUnlabelled` story and its story test and the exception
+  entries of plan.md § Complexity Tracking; the state has left the Complexity Tracking row; research R-09, spec
+  FR-050 and FR-051 record the result.
 
 ### Scaffold
 
@@ -287,15 +308,17 @@ AX text unbroken; zero CSP violations; the gates of phase 1 pass.
   `test/in-process.ts`, `test/browser/driver.ts`, with their own driver tests (sentinel cleared and replaced; a host's
   light text told apart from its shadow `pre`).
 - [ ] T024 [US2] `packages/elements/test/scenarios/code-block.ts`: one body per US2 scenario 1 to 21 with the oracles of
-  contracts/checks.md (no monospace on host, `.code` and every unit; the cap at `--ocelle-measure-reading` in px;
-  reflow; the module's tab stop, role `group`, name, arrow keys, fades and handover; whole-block copy equals the
-  trimmed digest plus one `\n` and a run of groups copies exactly; `ariaSnapshot` of the shadow `pre` equals
-  `- text: <trimmed digest>` and the CDP StaticText join equals it; break positions; empty block one line tall;
-  text changes after the mutation record, `updateComplete` and `settle()`). US2-8 as the visual-order body and the
+  contracts/checks.md (no monospace on `.code` and every unit, the host not read; the cap at
+  `--ocelle-measure-reading` in px; reflow; the module's tab stop, role `group`, name, arrow keys, fades and handover;
+  two whole-block copy bodies, the block last on the page copying exactly the trimmed digest and a block followed by
+  a `<p>` copying the trimmed digest plus one `\n`, and a run of groups copies exactly; `ariaSnapshot` of the shadow
+  `pre` equals `- text: <trimmed digest>` and the CDP StaticText join equals it; break positions; empty block one line
+  tall; text changes after the mutation record, `updateComplete` and `settle()`). US2-8 as the visual-order body and the
   three line-start bodies (`rtl` at rest, `rtl` after a text change, `ltr` control). US2-12's oracle is
   contracts/checks.md's (§ Oracles "Break positions" and the US2-12 bullets), as aligned with R-07: one rect per
-  group; one rect for the prefix only where it fits the line; more than one line only where the digest is wider than
-  the `pre`; the named base64url and base64 sweep strings at every width from 60 to 300 px; and the wide-prefix body
+  group; one rect for the prefix only where its width plus `--ocelle-space-1` fits the line; more than one line only
+  where the digest is wider than the `pre`; the named base64url and base64 sweep strings at every width from 60 to
+  300 px (the base64url body guards the groups' `nowrap`, the base64 body does not); and the wide-prefix body
   (`ni:sha-256:` at 60 px, the prefix breaking inside). US2-6's handover is asserted with US2-21's oracle.
 - [ ] T025 [US2] `packages/elements/test/scenarios/code-block.ts`: the FR and edge-case bodies of contracts/checks.md
   for the code block: leading newline shown (FR-020); child markup adds no style and markup-like text stays text in
@@ -304,8 +327,8 @@ AX text unbroken; zero CSP violations; the gates of phase 1 pass.
   the run-time switch both ways leaving no tab stop, role or name, and the two focus-on-switch bodies with the `.block`
   ring (FR-025); a non-blank host `aria-label` over `label` in scroll mode and a blank one counting as absent
   (FR-026); prefix only, several colons (`ni:sha-256:`), no colon, remainder groups, astral code points
-  (`x:ab😀cdef`), whitespace inside gives no groups (FR-029); the unnamed overflowing scroll block (story-less
-  unless T021a adds `ScrollUnlabelled`) and the wrap-mode host `aria-label` (story-less, Complexity Tracking); a
+  (`x:ab😀cdef`), whitespace inside gives no groups (FR-029); the unnamed overflowing scroll block (also the
+  `ScrollUnlabelled` story, T028) and the wrap-mode host `aria-label` (story-less, Complexity Tracking); a
   scroll block in a shrink-to-fit flex item (Edge Cases).
 - [ ] T026 [P] [US2] Harness files: `packages/elements/test/code-block.test.ts`, `packages/elements/test/browser/
   code-block.test.ts` with `packages/elements/test/browser/fixtures/code-block.html`, each running every body of T024
@@ -320,15 +343,22 @@ AX text unbroken; zero CSP violations; the gates of phase 1 pass.
   half and to all of the box's range, as `ocelle-scroller`'s `OverflowingInTheMiddle` and `OverflowingAtTheEnd` do:
   fades at both ends, fade at the start only), ScrollFocused (declared focus state: the module's ring on the scroll
   box), ScrollFitting, Digest, DigestWrapping (288 px frame), DigestScroll, RightToLeft (wrap) and
-  RightToLeftScroll, Empty (research R-09), and ScrollUnlabelled (overflowing, no `label`, no host `aria-label`) only
-  if T021a found no serious or critical axe finding; with `data-story` frame rules in
+  RightToLeftScroll, Empty (research R-09), and ScrollUnlabelled (overflowing, no `label`, no host `aria-label`;
+  operator's T021a decision, `reviews/phase-2/operator-axe-decision.md`); with `data-story` frame rules in
   `storybook/.storybook/stories-layout.css`, no `style` attribute, every other scroll story with a `label`; and the
   story-test extension for the new stories with the checks of contracts/checks.md § Story tests: page scroll width
   320 at a 320 px viewport for every wrap-mode story (SC-002); for every overflowing scroll story, Tab reaches the
   scroll box and the arrow keys scroll it end to end with no pointer (SC-005); no running animation in every story
-  under reduced motion and without it (SC-006); `ScrollUnlabelled`, if added, a tab stop with no role and no name.
-  The wrap-mode host `aria-label` (and the unnamed scroll block if T021a kept its exception) has no story (plan
-  Complexity Tracking, approved at the tasks gate).
+  under reduced motion and without it (SC-006); `ScrollUnlabelled` a tab stop with no role and no name.
+  The wrap-mode host `aria-label` has no story (plan Complexity Tracking, approved at the tasks gate).
+  With the stories, the axe exception entries of plan.md § Complexity Tracking (contracts/checks.md § Gates touched):
+  in `storybook/a11y-exceptions.json`, one `color-contrast-incomplete` entry per overflowing scroll story
+  (ScrollOverflowing, ScrollMiddle, ScrollEnd, ScrollFocused, DigestScroll, RightToLeftScroll, ScrollUnlabelled) and
+  theme, 14 in all, selector `ocelle-code-block >>> .code`, reason "clipped line of the code block's scroll box
+  (`elmPartiallyObscured`)", the Prose entries' sunset verbatim and `plan` `specs/020-disclosure-code-block/plan.md`;
+  run `gate:axe` on them and confirm each story-theme gives exactly that node (a difference goes to the operator);
+  and the counts and excepted notes of `gates/test/integration/axe.test.ts` (notes and excepted 10 to 24, the
+  story-theme runs, the excepted list in run order).
 
 ### Implementation (green)
 
@@ -363,7 +393,8 @@ AX text unbroken; zero CSP violations; the gates of phase 1 pass.
   "Digests" paragraph verbatim from contracts/elements.md; `packages/elements/CHANGELOG.md` entry (MINOR).
 - [ ] T032 [US2] Baselines: `pnpm run visual:update` in the pinned container under docker, `(<n> added, 0 changed, 0
   removed)`; commit `storybook/baselines/elements-ocelle-code-block--*.{light,dark}.png`.
-- [ ] T033 [US2] Checks as T013 for the code-block plants (recorded in `reviews/phase-2/plants.md`) and the gates;
+- [ ] T033 [US2] Checks as T013 for the code-block plants (recorded in `reviews/phase-2/plants.md`) and the gates,
+  `gate:axe` with no exception entry beyond T028's 14 (each reported as excepted, none stale);
   `git diff <phase 2 base> -- packages/elements/src/overflow-region.ts specs/009-workflow-layouts/contracts/` is
   empty (SC-007), `<phase 2 base>` being the sha T020's record names, never a fixed sha.
 
@@ -392,7 +423,8 @@ AX text unbroken; zero CSP violations; the gates of phase 1 pass.
 
 - Phase 1 → Phase 2 → Phase 3. Phase 2 starts only after T020's operator decision.
 - T021a before T028: its result (and, if axe fails, the operator's answer) decides T028's story list and the planner's
-  documentation commit of the result.
+  documentation commit of the result. Done: the operator's answer (`reviews/phase-2/operator-axe-decision.md`) adds
+  `ScrollUnlabelled` and the exception entries to T028.
 - Within a phase: spike → scaffold → red (T003/T023, T006/T026, T007/T027 in parallel; scenario files and stories
   after the driver additions) → green (element, then manifest, docs, baselines, checks).
 - Phase 2 needs phase 1 only for shared driver files (no element dependency).

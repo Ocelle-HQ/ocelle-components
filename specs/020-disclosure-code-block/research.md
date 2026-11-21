@@ -252,7 +252,13 @@ copy).
   has `margin: 0`, `font-family: var(--ocelle-font-sans)`, `font-variant-numeric: var(--ocelle-figures)`,
   `font-size: var(--ocelle-font-size-md)` (the body size, as 003's prose `pre` inherits it), `line-height: var(--ocelle-line-height-relaxed)`, `white-space: pre-wrap`,
   `overflow-wrap: anywhere`. The `pre` sets its own font family: `base.css`'s rule does not reach a shadow root and the
-  user agent gives `pre` monospace.
+  user agent gives `pre` monospace. `:host` sets no font: the host shows no text of its own (the shadow root has no
+  slot, so its light-DOM text is not rendered, R-05), and every shown character is in `.code`, so the host's computed
+  `font-family` is the page's (measured, phase 2 spike, `reviews/phase-2/spike.md` § 4: `"Times New Roman"` on a page
+  with no body font, while the `pre` and every unit computed `--ocelle-font-sans`). The no-monospace oracle
+  (contracts/checks.md) therefore reads `.code` and every unit, not the host; giving `:host` the font would style a
+  box that holds no shown text and is not what plan § Constitution check II states ("the shadow `pre` sets
+  `font-sans` and `figures` itself").
 - Scroll mode (`overflow` trimmed and lower-cased equals `scroll`) renders the module's structure inside `.block`:
   `.region-frame > .region-box[data-fade] > .region-track > pre.code` with the ring and the two edges, as the contract
   shows, `white-space: pre` on `.code`. The controller is created once in the constructor with `box: () =>
@@ -309,9 +315,11 @@ with `.digest > span:not(:last-child) { margin-inline-end: var(--ocelle-space-1)
 the gap after it (the test asserts the gap per adjacent pair). The gap is on the unit before each break, not after
 it: a `margin-inline-start` on the unit after each `wbr` starts every continuation line `space-1` in (measured at
 150 px, squad round 1, PLAN-FRESH-1-005), while a trailing margin is invisible at a line's end, so every line starts
-at the `pre`'s content edge and the copied text is unchanged. US2-12 asserts that every line's first unit starts at
-the content-box inline start. `.digest > .group { white-space: nowrap }` keeps a group whole; the prefix has no
-`nowrap`, so a prefix wider than the line still breaks inside (WCAG 1.4.10). The wrap mode keeps
+at the `pre`'s content edge and the copied text is unchanged. The trailing margin is invisible in the paint but
+counts toward fitting the line (phase 2 spike, below): the prefix's gap decides where the prefix breaks. US2-12
+asserts that every line's first unit starts at the content-box inline start. `.digest > .group { white-space: nowrap }`
+keeps a group whole; the prefix has no `nowrap`, so a prefix that with its gap is wider than the line still breaks
+inside (WCAG 1.4.10). The wrap mode keeps
 `white-space: pre-wrap; overflow-wrap: anywhere` on the `pre`; the scroll mode `white-space: pre`.
 
 - **Break positions.** `<wbr>` is the intended break opportunity between groups. Hex has none of its own, but `-`
@@ -323,7 +331,23 @@ the content-box inline start. `.digest > .group { white-space: nowrap }` keeps a
   swept over those widths; a plant removes the `nowrap`. FR-033's rule is: breaks fall between units; a unit wider
   than the line breaks anywhere inside, as FR-023. The README digest rule says the same, and FR-033 and US2-12 were
   aligned with it by the analysis fixes (C1): the prefix's one-rect assertion holds only where the prefix fits the
-  line. The sweep strings are named in contracts/checks.md (A1).
+  line (with its gap, as restated below). The sweep strings are named in contracts/checks.md (A1).
+- **The prefix's fit includes its gap** (phase 2 spike, T021, `reviews/phase-2/spike.md` § 3; operator decision Q2
+  (c), `reviews/phase-2/operator-spike-decisions.md`). Under the pinned Chromium 156.0.8078.4, in both harnesses, the
+  prefix's `margin-inline-end` counts toward fitting the line: wherever the `pre`'s content box is at least the
+  prefix's width but less than the prefix plus `--ocelle-space-1`, `overflow-wrap: anywhere` breaks inside the prefix
+  before its `:` (4 of 241 widths in every sweep: 66 to 69 px in the fixture, prefix 66 px; 63 to 66 px in process,
+  prefix 62.31 px; with the prefix's margin set to 0 the prefix never split where it fit). The structure is
+  unchanged; the oracle is restated. The measure is the prefix's inline size (its rect's width read at 300 px, where
+  it is one rect) plus the computed `--ocelle-space-1` in px: the prefix has one rect wherever that sum is at most the
+  `pre`'s content-box inline size, and is not asserted elsewhere. With that threshold the sweep had 0 failures in
+  both harnesses. FR-033 and US2-12 read "inside the prefix only where the prefix and its gap are wider than the
+  line". The wide-prefix body (`ni:sha-256:` at 60 px, 2 rects; one rect at 300 px) held as stated.
+- **Which sweep guards the groups' `nowrap`** (phase 2 spike, § 3). Only the base64url string does: with the groups'
+  `nowrap` dropped its `L-qg` group split at 60 (fixture) and 70 (in process) of 241 widths. The base64 string cannot
+  tell `nowrap` from its absence: its `/` ends the group `FaO/`, where the `<wbr>` already is, and its `+` (`L+qg`)
+  is no break opportunity, so without `nowrap` no group split (0 of 241). The base64 body stays as a break-position
+  reading of a second alphabet; the `nowrap` plant is guarded by the base64url body (contracts/checks.md § Plants).
 - **Copy.** The `wbr` and the margins add no character.
 - **Accessibility text.** Adjacent inline spans are one text run. Playwright's `ariaSnapshot` of the host also
   includes the host's unrendered, unslotted light-DOM text (measured, squad round 1, PLAN-TESTABILITY-1-001: a host
@@ -355,7 +379,15 @@ on an `https://` origin (`about:blank` has no `navigator.clipboard`). Measured o
 the shadow `pre`, then Ctrl+C, copies the trimmed digest followed by one `\n` (the platform ends a whole-block
 selection with a block newline, which is not an element character); a selection over a run of group spans inside the
 `pre` (`setBaseAndExtent` over its children) copies exactly their characters. US2-10 asserts both (operator decision
-(b)): the whole-block copy equals the trimmed digest plus one `\n`, and the run copy equals the run exactly. If the
+(b)): the whole-block copy equals the trimmed digest plus one `\n`, and the run copy equals the run exactly.
+Re-measured under the pinned Chromium 156.0.8078.4 in both harnesses (phase 2 spike, T021, `reviews/phase-2/spike.md`
+§ 1): the platform's newline is added only when the document has content after the block (a following `<p>`, `<div>`
+or bare text node); with the block the last content of the page (alone, or with content before it only) the copy is
+the trimmed digest with no `\n`, in wrap and scroll mode. The characters before it are the trimmed digest in every
+case, and the run copy holds exactly. So US2-10 has two whole-block bodies (operator decision Q1 (c),
+`reviews/phase-2/operator-spike-decisions.md`): the block last on the page, copying exactly the trimmed digest; and a
+block followed by a `<p>`, copying the trimmed digest plus one `\n`. Neither harness refused the clipboard
+permission, so the fallback below is not used. If the
 repository's pinned browser or harness refuses the permission, the nearest driver is `document.execCommand("copy")`
 with a `copy` listener reading `getData` of the default action, recorded as a gap (FR-052).
 
@@ -389,7 +421,8 @@ state, the module's ring on the scroll box), RightToLeftScroll. Light and dark b
 pinned container under docker (`nohup dockerd`; after a container restart `pnpm run setup:online`); no podman
 cross-check is possible in this environment, which each phase's review notes. Story-less, test-only: the unnamed
 disclosure (axe fails it by design); a code block with a host `aria-label` in wrap mode (advised against,
-SPEC-1-14). These are the Complexity Tracking row, approved at the tasks gate.
+SPEC-1-14). These are the Complexity Tracking row, approved at the tasks gate. Added by the operator's T021a decision:
+ScrollUnlabelled (an overflowing scroll block with no `label` and no host `aria-label`; see below).
 
 **The unnamed overflowing scroll block** (analysis D1, operator decision at the tasks gate). The claim that axe fails
 it is unproven: `ocelle-scroller`'s `Unlabelled` story (`storybook/stories/scroller.stories.ts`) renders the same
@@ -398,7 +431,27 @@ box has no role. T021a measures it before T028: a scratch element rendering R-06
 module, overflowing, with no `label` and no host `aria-label`, run through the `axe` gate's runner and rule set in
 light and dark. If axe reports no serious or critical finding, T028 adds a `ScrollUnlabelled` story and the state
 leaves the Complexity Tracking row. If it reports one, the run stops for the operator, the measured rule (id, impact,
-target) is recorded here, and the state keeps the exception. Result: pending T021a.
+target) is recorded here, and the state keeps the exception.
+
+**Result (T021a, `reviews/phase-2/axe-unnamed-scroll.md`, 2026-11-21).** Measured with axe-core 4.14.0 and the
+FR-016 rule set, through the `axe` gate's own per-story audit, in the repository's pinned Chromium 156
+(156.0.8078.4), light and dark, on a scratch stand-in of the scroll structure with a labelled control block beside it:
+- The unnamed overflowing scroll box is AX `generic`, has no name, no `role`, `aria-label` or `aria-labelledby`, and
+  has `tabindex="0"` (it overflows, 938 > 262 px). No rule fires on the unnamed tab stop: no violation in either
+  theme, no `scrollable-region-focusable`, `aria-*`, `focus-order` or name rule.
+- On every overflowing scroll block, labelled or not, in light and dark, axe reports one `color-contrast` incomplete
+  result of serious impact, target `.code` inside the element (printed by the gate as `<tag> >>> .code`), message
+  key `elmPartiallyObscured`. It is caused by the line clipped in the scroll box, not by the missing name: the
+  labelled control block gets the identical result. The gate blocks it (serious incomplete) unless an exception
+  entry matches it, as it does for the Prose document's wide-table scroll box (spec 006 plan.md § Complexity
+  Tracking).
+
+**Operator decision (`reviews/phase-2/operator-axe-decision.md`, 2026-11-21): add exceptions and keep the story.**
+T028 adds `ScrollUnlabelled` (overflowing, no `label`, no host `aria-label`) and its story test, so the unnamed
+overflowing scroll block leaves the Complexity Tracking exception for story-less states. T028 also adds one
+`color-contrast-incomplete` entry per overflowing scroll story and theme to `storybook/a11y-exceptions.json`, each
+recorded as a row of plan.md § Complexity Tracking (the gate honours an entry only with its row), with the Prose
+entries' sunset.
 
 ## R-10 Tokens (FR-040)
 

@@ -74,6 +74,9 @@ class uses was supplied for this mission; the plan's research records whether on
   resolved in the design artifacts before phase 1 (`reviews/analysis/fixes-1.md`). The Principle V exception for
   story-less states is approved, subject to a measure: the unnamed overflowing scroll block keeps its exception only
   if axe fails it; if axe passes, it gets a story (FR-050).
+- Phase 2 axe measure (2026-11-21, `reviews/phase-2/operator-axe-decision.md`), "add exceptions and keep the
+  story": axe reports nothing on the unnamed scroll block's tab stop, so it gets a story; the serious incomplete
+  contrast result on every overflowing scroll block's clipped line gets exception entries (FR-050, FR-051).
 
 ## Scope
 
@@ -250,10 +253,11 @@ while overflowing and not, the arrow keys, the selection's copied text and the a
    **When** it renders, **Then** `sha256:` is shown as written, followed by 16 groups of four characters with a gap of
    `--ocelle-space-1` between groups and no gap inside a group, and the element's light-DOM text is unchanged.
 10. **Given** that digest block, **When** the user selects the whole block (a triple click) and copies it (the
-    browser's own copy), **Then** the copied plain text is exactly the trimmed content (leading and trailing whitespace
-    removed, FR-029) followed by the one newline the platform adds at the end of a whole-block selection, with no
-    space, tab or newline added between groups; **When** a run of groups inside the block is selected and copied,
-    **Then** the copied text is exactly those groups' characters.
+    browser's own copy), **Then** the copied plain text is the trimmed content (leading and trailing whitespace
+    removed, FR-029) with no space, tab or newline added between groups: with the block the last content of the page,
+    exactly the trimmed content; with content after the block, the trimmed content followed by the one newline the
+    platform adds at the end of a whole-block selection (two bodies; phase 2 operator decision, Q1 (c)); **When** a run
+    of groups inside the block is selected and copied, **Then** the copied text is exactly those groups' characters.
 11. **Given** that digest block, **When** Chromium's full accessibility tree is read through CDP
     `Accessibility.getFullAXTree`, **Then** the concatenation, in tree order, of the `name` values of the StaticText
     nodes that descend from the block's node equals the trimmed digest exactly (no space or other character between
@@ -262,9 +266,10 @@ while overflowing and not, the arrow keys, the selection's copied text and the a
     unslotted light-DOM text and is not used). The number of StaticText nodes is not asserted.
 12. **Given** a digest block in wrap mode at 288 px, **When** the digest does not fit on one line, **Then** every line
     break falls between two units: between the prefix and the first group, or between two groups; never inside a
-    group, and inside the prefix only where the prefix alone is wider than the line (FR-033, WCAG 1.4.10). Measured
-    from line boxes: each group has exactly one rect in `getClientRects()`, the prefix has exactly one rect wherever
-    its own inline size fits the `pre`'s content box, the block holds more than one line wherever the digest's
+    group, and inside the prefix only where the prefix and its gap are wider than the line (FR-033, WCAG 1.4.10;
+    phase 2 operator decision, Q2 (c)). Measured from line boxes: each group has exactly one rect in
+    `getClientRects()`, the prefix has exactly one rect wherever its own inline size plus `--ocelle-space-1` fits the
+    `pre`'s content box, the block holds more than one line wherever the digest's
     inline size is wider than that content box, and every line's first unit starts at the `pre`'s content-box inline
     start (no gap at a line's start). The page's scroll width equals the viewport width. The same holds for a digest
     whose groups hold `-` or `/` (base64url or base64), at every `pre` width from 60 to 300 px; the sweep strings are
@@ -506,9 +511,12 @@ while overflowing and not, the arrow keys, the selection's copied text and the a
   prefix and the first group and between groups, no gap within a group, and no gap at the start of a line. No space,
   tab, newline or other character is added to the shown text: the gap is layout only.
 - **FR-031**: A selection of any run of groups, copied with the browser's own copy, MUST give exactly those
-  characters, and a selection of the whole block MUST give the characters of the trimmed text (FR-029) followed by the
-  one newline the platform adds at the end of a whole-block selection, which is not an element character; nothing is
-  added between groups (measured in Chromium; operator decision, plan squad round 1, PLAN-TESTABILITY-1-002 (b)).
+  characters, and a selection of the whole block MUST give the characters of the trimmed text (FR-029): exactly them
+  when the block is the last content of the page, and them followed by the one newline the platform adds at the end
+  of a whole-block selection when content follows the block, which is not an element character; nothing is added
+  between groups (measured in Chromium; operator decision, plan squad round 1, PLAN-TESTABILITY-1-002 (b); the
+  platform adds the newline only when content follows the block, measured under the pinned Chromium 156, phase 2
+  operator decision, Q1 (c)).
   The element reads and writes no clipboard.
 - **FR-032**: The Chromium accessibility tree MUST expose the digest as one unbroken string, equal to the trimmed
   text. The measure is US2 scenario 11's: in CDP `Accessibility.getFullAXTree`, the `name` values of the StaticText
@@ -520,12 +528,14 @@ while overflowing and not, the arrow keys, the selection's copied text and the a
   with no second copy of it and nothing added), and the plan records the measure.
 - **FR-033**: In wrap mode, a line break in a digest MUST fall only between two units (the prefix and the first
   group, or two groups) and never inside a group. A unit wider than the line breaks inside, as FR-023 wraps any text,
-  which keeps WCAG 1.4.10: in practice only a prefix wider than the line, in a very narrow block, since four code
-  points never exceed a line (research R-07; measured as US2 scenario 12 says). In the scroll mode it stays on one
+  which keeps WCAG 1.4.10: in practice only the prefix, in a very narrow block, since four code points never exceed a
+  line. The prefix breaks inside only where the prefix and its gap (`--ocelle-space-1`) are wider than the line,
+  because its trailing gap counts toward fitting the line (research R-07; phase 2 operator decision, Q2 (c);
+  measured as US2 scenario 12 says). In the scroll mode it stays on one
   line. The README MUST record, in § Element conventions, the library's digest rule for later elements (#14's copy
   field among them): the prefix up to the last colon, groups of four code points from the start, a `--ocelle-space-1`
-  gap with no added characters, copied and read text unbroken, breaks only between units, a prefix wider than the
-  line breaking inside.
+  gap with no added characters, copied and read text unbroken, breaks only between units, a prefix that with its
+  gap is wider than the line breaking inside.
 
 **Look and surface**
 
@@ -547,16 +557,21 @@ while overflowing and not, the arrow keys, the selection's copied text and the a
   rendered in light and dark, following #10's contributor note: for the disclosure at least closed, open, focused,
   hovered, a long wrapping summary, a consumer icon and right-to-left; for the code block at least short, wrap with a
   long line, scroll overflowing, scroll overflowing in the middle and at the end, a focused scroll block, scroll
-  fitting, digest, digest wrapping at 288 px and right-to-left. The unnamed disclosure (Edge Cases) has no story,
-  because axe fails it by design; browser tests prove it. The unnamed overflowing scroll block (US2 scenario 7) has
-  no story only if a measure before its phase's stories shows that axe fails it (`ocelle-scroller`'s unlabelled story,
-  on the same module, passes axe); if axe passes, it gets a story. The plan records the story-less states as an
-  exception to constitution V with scope, rationale and a sunset, approved by the operator at the tasks gate.
+  fitting, digest, digest wrapping at 288 px and right-to-left, and an overflowing scroll block with no label. The
+  unnamed disclosure (Edge Cases) has no story, because axe fails it by design; browser tests prove it. The unnamed
+  overflowing scroll block (US2 scenario 7) has a story: the measure before phase 2's stories (T021a, research R-09)
+  found that axe reports nothing on its unnamed tab stop. It found one serious incomplete contrast result on every
+  overflowing scroll block, named or not, caused by the clipped line; the operator approved exception entries for it
+  (FR-051). The plan records the remaining story-less states as an exception to constitution V with scope, rationale
+  and a sunset, approved by the operator at the tasks gate.
 - **FR-051**: Visual baselines and the `axe` run follow #10 on `main`. Each phase that adds stories MUST commit their
   light and dark baselines, produced in #10's pinned container by its baseline command under docker, and its stories
   MUST pass #10's `storybook-build`, `visual` and `axe` gates, `axe` with no serious or critical finding and no
-  `storybook/a11y-exceptions.json` entry unless the operator approves one. The run records that no podman cross-check
-  was possible.
+  `storybook/a11y-exceptions.json` entry unless the operator approves one. The operator approved one kind
+  (`reviews/phase-2/operator-axe-decision.md`, 2026-11-21): the serious `color-contrast` incomplete result
+  (`elmPartiallyObscured`) on the clipped line of each overflowing scroll code-block story, per theme, with the
+  sunset of the existing Prose document entries; the plan lists the entries. The run records that no podman
+  cross-check was possible.
 - **FR-052**: Browser tests MUST cover every acceptance scenario, written once in `test/scenarios/` and run on the
   element source in process and on the built browser build on strict-CSP fixture pages (README § Files and tests).
   Find in page (US1 scenario 10) and copy (US2 scenario 10) are driven through the browser where Playwright allows it;
@@ -603,11 +618,11 @@ while overflowing and not, the arrow keys, the selection's copied text and the a
 - **SC-002**: At 320 px CSS width, every code-block story in wrap mode and the long-summary disclosure story have a
   page scroll width equal to the viewport width.
 - **SC-003**: Every story of the two elements reports no serious or critical axe finding through #10's `axe` gate, in
-  light and dark, with no new `a11y-exceptions.json` entry.
-- **SC-004**: A copy of a digest block's whole text gives exactly the trimmed characters followed by the platform's
-  one block-end newline (0 characters added by the element), a copy of a run of groups gives exactly its characters,
-  and the concatenated StaticText names under the block in CDP `Accessibility.getFullAXTree` are the trimmed digest
-  (US2 scenario 11's measure).
+  light and dark, with no new `a11y-exceptions.json` entry other than the operator-approved entries of FR-051.
+- **SC-004**: A copy of a digest block's whole text gives exactly the trimmed characters, followed by the platform's
+  one block-end newline only when content follows the block (0 characters added by the element), a copy of a run of
+  groups gives exactly its characters, and the concatenated StaticText names under the block in CDP
+  `Accessibility.getFullAXTree` are the trimmed digest (US2 scenario 11's measure).
 - **SC-005**: A keyboard-only user can open, close and pass through a disclosure, and scroll an overflowing scroll
   block end to end, with no pointer, in every story that has them.
 - **SC-006**: Under reduced motion and without it, no story of the two elements has a running animation or transition.
