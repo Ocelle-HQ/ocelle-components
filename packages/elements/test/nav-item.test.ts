@@ -93,6 +93,20 @@ describe("ocelle-nav-item", () => {
     expect(label?.hidden).toBe(false);
   });
 
+  it("keeps the standalone foreground when only compact presentation changes", async () => {
+    const item = await mount('href="#projects"');
+    const link = required(item.shadowRoot?.querySelector("a"));
+    const foreground = "rgb(12, 34, 56)";
+    item.style.setProperty("--ocelle-color-link", foreground);
+    item.style.setProperty("--ocelle-color-chrome-ink", "rgb(250, 251, 252)");
+    expect(getComputedStyle(link).color).toBe(foreground);
+
+    setNavItemCompact(item, true);
+    await item.updateComplete;
+    expect(getComputedStyle(link).justifyContent).toBe("center");
+    expect(getComputedStyle(link).color).toBe(foreground);
+  });
+
   it("shows the visual-only compact label on hover, allows travel to it, and dismisses on Escape", async () => {
     const item = await mount('href="#projects" compact');
     const link = item.shadowRoot?.querySelector("a");

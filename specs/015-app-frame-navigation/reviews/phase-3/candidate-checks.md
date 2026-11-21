@@ -81,7 +81,8 @@ The candidate adds the responsive shell, its threshold tokens and package entry,
 - The ownership and settlement range on `9984bfd` reached 97.25% with 106 killed, three survivors, 51 rejected at compilation, and no uncovered mutants or timeouts. Two survivors removed WeakMap cleanup. The third allowed settlement after a reactive update on a disconnected shell.
 - The shared sidebar and nav-item range on `2fcb81f` reached 91.30% with 63 killed, six survivors, six rejected at compilation, and no uncovered mutants or timeouts. Its survivors covered redundant render scheduling and class construction.
 - Tests in `3a26f51` passed on unchanged source. Three isolated fault probes failed the added assertions for disconnected reactive updates, unnecessary same-tier sidebar renders, and missing compact centering. Owner tokens now allow moved sections and items to outlive the shell without retaining it, and nav items apply their compact and chrome state together in one update.
-- The four shell, sidebar, and nav-item suites passed 82/82. The test-lint and manifest gates, TypeScript, and the diff check passed.
+- The four shell, sidebar, and nav-item suites passed 82/82. Code lint, style lint, test lint, the manifest gate, TypeScript, and the diff check passed. Pinned Docker captured 56 shell, sidebar, nav-item, and token story-theme cases twice with no differences.
+- The updated shared presentation range on `73c0f35` reached 96.61%, with 57 killed, two surviving default-color mutants, 12 rejected at compilation, and no uncovered mutants or timeouts. A browser test now checks standalone foreground before and after a compact-only update. Both exact default-to-chrome fault probes failed that assertion.
 
 ## Canonical workflow status
 
