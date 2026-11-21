@@ -48,3 +48,10 @@ name. Evidence: `reviews/phase-1/notes.md`.
     commits are pushed so CI runs the full suite on them; review round 3 starts on CI's results and
     `reviews/phase-1/red-fix-2.log` (from `red.sh 1 fix-2`). `tdd-check.sh 1` is retried detached before the final
     landing fold and must pass before hand-off.
+11. **Round 3 R3-01 — retry the red/green check detached, then accept.** `tdd-check.sh 1` is retried detached once
+    more on the current head. If it passes, its outputs are committed and a review round 4 only re-checks the records.
+    If it is killed again, phase 1 is accepted with `accept.sh 1`, with CI's green full suite plus `red-commits` and
+    `red-fix-2.log` as the evidence.
+12. **Round 3 R3-02 — plants from the merge base.** For a phase with `main` merged in, plants are recorded from the
+    merge base (here 1b8b0b2), not from `base.sha`: from `base.sha` the range includes main's own merged change and
+    selects every plant. `plants.md` stays as recorded; CI's plants shards cover the full set.
