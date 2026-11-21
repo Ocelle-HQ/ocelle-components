@@ -6,7 +6,8 @@
 ## Summary
 
 Two small source fixes, each proven red first by browser scenario rows: `rendered()` in `focusable.ts` also
-requires `checkVisibility()`; `ocelle-button`'s icon wrapper gets `aria-hidden="true"`, and its inner control, when
+requires `checkVisibility()` (and, after the operator round from the landing review, `reviews/phase-1/round-2.md`,
+drops its implied `getClientRects()` test and also gates the walk's opaque candidates, O2-01 and O2-04); `ocelle-button`'s icon wrapper gets `aria-hidden="true"`, and its inner control, when
 an icon is slotted and nothing on the host names it, is named from its label wrapper by `aria-labelledby` inside its
 shadow root (widened by the operator's phase-1 decision 1 and narrowed to slotted icons by decision 7,
 `operator-decisions.md`). Then README sentences, a CHANGELOG `### Fixed` entry
@@ -35,7 +36,9 @@ reported as a follow-up issue and not changed (phase-1 decision 2).
 | `packages/elements/test/scenarios/dialog.ts` | Red: a new row group `detailsRows`, built with `cycleRows` (spec.md scenarios 1, 2, 4 and 5), returned from the builder with the other groups and added to the dialog's own row list. |
 | `packages/elements/test/scenarios/drawer.ts` | Red: `...built.detailsRows` in `inheritedRows` (scenario 3). |
 | `packages/elements/test/scenarios/button.ts` | Red: rows for scenarios 6, 7 and 8 in `buttonScenarios`, each ending with axe on its page, as the file's other rows do (red commit `d820f00`: scenario 6 in both modes, scenario 7 in the button mode). Second test-only commit (`f5b0bdf`): scenario 7 in the link mode (`<ocelle-button id="k" href="#x" label="Open project">` with the svg and no text), in a new row beside scenario 7's, with the same assertions; the rows of `d820f00` are not changed. Third test-only commit (phase-1 decision 7): new rows for scenarios 9 and 10, in both modes; no existing row is changed. |
-| `packages/elements/src/focusable.ts` | Green: `rendered()` becomes `getClientRects().length > 0 && getComputedStyle(element).visibility === "visible" && element.checkVisibility()`. Its JSDoc says that the content of a closed `details` and of a `content-visibility: hidden` subtree is not rendered (op 022). |
+| `packages/elements/src/focusable.ts` | Green: `rendered()` becomes `getClientRects().length > 0 && getComputedStyle(element).visibility === "visible" && element.checkVisibility()`. Its JSDoc says that the content of a closed `details` and of a `content-visibility: hidden` subtree is not rendered (op 022). Round 2 (O2-01, O2-04): `rendered()` becomes `getComputedStyle(element).visibility === "visible" && element.checkVisibility()`, with the Stryker disable comment of the dropped test removed; the opaque branch of `walk()` counts an opaque host only when it is rendered, by the check of *Approach*, *Opaque content*. The JSDoc of `rendered()` and of the branch say so. |
+| `packages/elements/test/scenarios/dialog.ts` (round 2) | Red (`red.sh 1 fix-2`): rows for spec.md scenarios 11 and 12 in `detailsRows`, so the drawer inherits them; a pin row for a rendered `display: contents` opaque host (see *Test approach*, *Round 2*). |
+| `packages/elements/README.md` (round 2) | O2-02: the **Name order** item's "slotted icons never contribute to `ocelle-button`'s name" is scoped to a button named by its label (the default slot's text), `label` or the host. The `readme.test.ts` pin (`… and otherwise the element's content; slotted icons never contribute`) stays contiguous and unchanged; the condition goes after it. |
 | `packages/elements/src/ocelle-button.ts` | Green: `<span class="icon-slot" aria-hidden="true" ?hidden=${busy}>` in `content` (`:504`), the one template both modes share, and a `@slotchange` listener on its `<slot name="icon">` that reads whether the slot has assigned content into a private field and requests an update, as `#readLabel` does for the default slot. In `updated()`, the inner control's `ariaLabelledByElements` is the resolved host references when there are any, otherwise the label wrapper (`.label`) when the icon slot has assigned content and `#name()` gives no name, otherwise `null` (see *Approach*, *Icon name*). The header comment's name order (`:8`) and `#name()`'s JSDoc say that the content step is the label wrapper when an icon is slotted. |
 | `packages/elements/src/icon-slot.ts` | The header comment's "No generated content, so the control's name is its label's" is corrected: the convention adds no generated content, but a slotted icon can still add to a name computed from the control's content; a control keeps its icon out of its name itself, as `ocelle-button` does (icon wrapper `aria-hidden="true"`, inner control named from its label wrapper). Comment only, no style change. |
 | `packages/elements/README.md` | One sentence each (two in the icon-slot bullet, the second the known limitation of *Approach*, *Icon name*) in: the dialog's **Focus** paragraph (`:207-216`), after "elements that are not rendered are skipped": the content of a closed `<details>`, apart from its summary, is not rendered; the `ocelle-button` icon-slot bullet (`:786-790`): a slotted icon is decorative and adds nothing to the button's name, which comes from the default slot's text when nothing on the host names it, so name an icon-only button with `label`; the controls' **Name order** item (`:1031-1036`): for `ocelle-button`, "the element's content" is its default slot's text, and "slotted icons never contribute" is stated for `ocelle-button` only; § Slot convention **Naming** (`:1348-1350`): the convention adds no generated content, and `ocelle-button` keeps a slotted icon out of its name, without a promise for the other controls (Q1 A, phase-1 decision 2). |
@@ -53,9 +56,33 @@ baseline, token, `custom-elements.json` and every gate.
 Both calls get the new condition. `checkVisibility()` with no options returns false for an element that has no box,
 or that is in a `content-visibility: hidden` subtree that is not relevant to the user. That is the case for the panel
 of a closed `details` in Chromium. The existing `visibility` check stays, because `checkVisibility()` without
-`visibilityProperty: true` ignores `visibility`. The two existing conditions stay first, so the cheap
-`getClientRects()` test still runs first. `overlay.ts` is not touched: once the walk is right, `#tab` wraps at the
+`visibilityProperty: true` ignores `visibility`. Phase 1 first kept the `getClientRects()` test in front as a cheap short-circuit. Round 2 (O2-04) drops it: `getClientRects().length > 0` is implied by `checkVisibility()` (false for an element with no box,
+the only element whose client rects are empty, CSSOM), and its equivalent-mutant record also disabled the line's
+non-equivalent mutants. It is dropped, at the cost of one style read per element with no box; `rendered()` is the
+`visibility` test and `checkVisibility()`. `overlay.ts` is not touched: once the walk is right, `#tab` wraps at the
 real ends (triage § Related work).
+
+### Opaque content (round 2, O2-01)
+
+`walk()` pushes an opaque host (`isOpaque`: a custom element whose `shadowRoot` reads null) as a candidate with no
+rendering check. Inside a closed `details` it is then the cycle's last candidate, `overlay.ts` treats it as opaque
+content and lets Tab run natively, the engine skips the hidden content and focus lands on the page body: the defect
+of #57 (landing review L1-01, measured with a closed-shadow host and with `<x-probe><a href="#x">L</a></x-probe>`).
+The opaque branch therefore requires the host to be rendered before it pushes the candidate. `overlay.ts` stays
+unchanged (FR-002).
+
+`checkVisibility()` on the host alone is wrong for a `display: contents` host: it has no box but is legitimate, and
+its content renders. So the check is:
+
+- a host whose computed `display` is not `contents`: `rendered(host)`;
+- a host whose computed `display` is `contents`: its own computed `visibility` is `visible`, and the box-dependent part
+  (`checkVisibility()`) is read where its content is rendered, for example on the nearest flat-tree ancestor that has
+  a box. The implementer measures, in Chromium, that the chosen reading is false for such a host inside a closed
+  `details` and true for one in an open `details` and in an ordinary body; if no reading gives both, stop (see *Stop
+  conditions*).
+
+Opaque content that is not a host (`<iframe>`, media with `controls`) already goes through `rendered()` as a stop, so
+it is unchanged. The scroller branch keeps `!isOpaque(html)`.
 
 ### Icon name
 
@@ -171,6 +198,21 @@ All rows go in one test-only commit (`test(op-022): phase 1 red`, signed off). R
   driver command is needed. Run the button suite at that commit in a clean worktree and save the output as
   `reviews/phase-1/red-slot.log`: scenario 9's rows fail on the `image` node (and the `Folder` node), the missing
   behaviour; scenario 10's rows pass. Do not rerun `red.sh 1 phase`.
+- **Round 2** (O2-01; operator round, `reviews/phase-1/round-2.md`): the rows of spec.md scenarios 11 and 12 go in
+  `detailsRows` (dialog; the drawer inherits them through `inheritedRows`): the closed `details` holding
+  `<ocelle-test-closed id="xc">` and holding `<x-probe><a href="#x">L</a></x-probe>`, Tab from the summary (expected
+  `dlg[button] b1 s dlg[button] b1`; the landing review measured `body dlg[button] b1 s body`), and the same with the
+  `details` open, Tab from the summary entering the opaque content. Add a pin row with a rendered `display: contents`
+  opaque host (in an ordinary body or an open `details`) that keeps it a candidate; it passes on main, and it kills
+  the mutant that drops the `display: contents` case. They go in one test-only commit
+  (`test(op-022): phase 1 review round 2 red`, signed off), run with `red.sh 1 fix-2`, which must report
+  `"recorded": true`; the closed-`details` Tab rows fail on the focus path (`body` in it), not on setup. If either
+  opaque case already passes on main, record the measurement and tell the operator.
+- **Round 2 mutation** (O2-04): with the `getClientRects()` test and its Stryker disable comment gone, `gate:mutation`
+  on the changed lines leaves no survivor and no new equivalent record in `rendered()` or the opaque branch. The
+  mutants that replace the opaque rendering check with `true` are killed by scenario 11's rows; with `false`, by the
+  existing opaque rows (`opaqueRows`, `opaquePairRows`, `opaqueMoreRows`) and scenario 12; the `display: contents`
+  case by the pin row. The `notes.md` equivalent-mutant record for the dropped line is marked superseded.
 - In WebKit, rows 1 and 2 may already pass on main (see spec.md § Edge Cases). The run is red because of Chromium.
   That is enough for `red.sh`, which checks the run's exit code, and the log must show the Chromium failure.
 
@@ -207,12 +249,12 @@ operator's say.
 |---|---|
 | I Framework-free elements | Pass. No new name, event, slot or part. The manifest is unchanged. |
 | II Tokens only | Pass. No style change. |
-| III Accessible by construction | Pass, and this is the point of the op. The modal Tab cycle wraps at its real ends, and the button's name is its label. The new `aria-labelledby` relation joins two nodes of one shadow root by element reflection, so no ID reference crosses a shadow root, and it is set only when an icon is slotted, so no existing row or story gains an axe result. axe runs on every new button row. The icon and one-character label case is a recorded known limitation (axe `incomplete`, no story has it; decision 7). |
+| III Accessible by construction | Pass, and this is the point of the op. The modal Tab cycle wraps at its real ends, also when a closed `details` holds opaque content (round 2), and the button's name is its label. The new `aria-labelledby` relation joins two nodes of one shadow root by element reflection, so no ID reference crosses a shadow root, and it is set only when an icon is slotted, so no existing row or story gains an axe result. axe runs on every new button row. The icon and one-character label case is a recorded known limitation (axe `incomplete`, no story has it; decision 7). |
 | IV Strict CSP | Pass. One attribute and one listener in a template, one call in a function and one element-reflection assignment. No inline style or script. |
 | V Storybook and tests | Pass. No visual change, so no story or baseline changes. Behaviour is proven by browser rows for every keyboard path the op touches. |
 | VI Consumer needs | Pass. #57 comes from mission 020's consumer work, and the fixes restore documented behaviour. |
 | VII Semver | Patch. No surface change. The CHANGELOG gets `### Fixed`. |
-| VIII Test-first | Pass. One test-only red commit, recorded by `red.sh`, and two later test-only commits before the source they test (`f5b0bdf`; scenarios 9 and 10), each run logged in a clean worktree. Each red row fails on main for the missing behaviour. Mutation testing covers the changed lines. |
+| VIII Test-first | Pass. One test-only red commit, recorded by `red.sh`, and two later test-only commits before the source they test (`f5b0bdf`; scenarios 9 and 10, `3f86a0c`), each run logged in a clean worktree. Both were folded into `55b77a6` and live only on `archive/claude/057-focus-trap-icon-a11y-prefold-phase-1` (O2-05). Round 2's opaque rows get their own test-only red commit, recorded by `red.sh 1 fix-2`. Each red row fails on main for the missing behaviour. Mutation testing covers the changed lines. |
 
 No Complexity Tracking entry.
 
@@ -226,4 +268,8 @@ No Complexity Tracking entry.
   Then do not loosen a row: record the measurement in `notes.md` and tell the operator.
 - A story or an existing row turns out to have an icon beside a one-character label, so the known limitation shows
   on it. Then do not loosen it: record it and tell the operator.
+- Round 2: no reading of the rendering check keeps a rendered `display: contents` opaque host a candidate while
+  dropping one inside a closed `details`, or an existing opaque, iframe or media row turns red. Then do not loosen a
+  row and do not narrow the README or the CHANGELOG: record the measurement in `notes.md` and tell the operator
+  (landing review L1-01 option (b) is the operator's to choose).
 - #49 or #54 already fix either defect when the op rebases. Then that half is **none** or a fold, citing the commit.
