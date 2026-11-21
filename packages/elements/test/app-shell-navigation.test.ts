@@ -288,6 +288,43 @@ describe("ocelle-app-shell navigation", () => {
     await expect.poll(() => getComputedStyle(link()).color).toBe(authoredForeground);
   });
 
+  it("retains compact section styles when a receiving shell updates before the sending shell", async () => {
+    const sender = await mount('<section slot="sidebar"><h2>Project</h2><a href="#work">Work</a></section>');
+    size(850);
+    const section = required(sender.querySelector("section"));
+    const heading = required(section.querySelector("h2"));
+    await expect.poll(() => shown(heading)).toBe(false);
+    const receiver = document.createElement("ocelle-app-shell");
+    receiver.style.inlineSize = "850px";
+    required(sender.parentElement).append(receiver);
+    await receiver.updateComplete;
+
+    receiver.remeasure();
+    receiver.append(section);
+    sender.remeasure();
+    await Promise.all([receiver.updateComplete, sender.updateComplete]);
+    expect(shown(heading)).toBe(false);
+
+    receiver.style.inlineSize = "1150px";
+    await expect.poll(() => shown(heading)).toBe(true);
+  });
+
+  it("leaves personal sidebar items in their authored presentation at the collapsed tier", async () => {
+    const shell = await mount(grouped, 'layout="personal"');
+    size(850);
+    const item = required(shell.querySelector("ocelle-nav-item"));
+    const label = (): Element => required(item.shadowRoot?.querySelector('[part="label"]'));
+    await expect.poll(() => shell.tier).toBe("collapsed");
+    expect(item.compact).toBe(true);
+    expect(label().hasAttribute("hidden")).toBe(true);
+    shell.layout = "project";
+    size(1150);
+    await expect.poll(() => shown(label())).toBe(true);
+    shell.layout = "personal";
+    await expect.poll(() => shown(label())).toBe(false);
+    expect(item.compact).toBe(true);
+  });
+
   it("shares compact styles in one root until the last collapsed shell leaves", async () => {
     await driver.mount('<div id="frame"></div>');
     const root = required(document.getElementById("frame")).attachShadow({ mode: "open" });
@@ -304,8 +341,19 @@ describe("ocelle-app-shell navigation", () => {
     const second = shell("two");
     const firstHeading = required(first.querySelector("h2"));
     const secondHeading = required(second.querySelector("h2"));
-    root.append(first, second);
-    await expect.poll(() => [shown(firstHeading), shown(secondHeading)]).toEqual([false, false]);
+    root.append(first);
+    await expect.poll(() => shown(firstHeading)).toBe(false);
+    const compact = required(root.adoptedStyleSheets[1]);
+    const later = new CSSStyleSheet();
+    root.adoptedStyleSheets = [authored, compact, later];
+    first.remeasure();
+    await first.updateComplete;
+    expect(root.adoptedStyleSheets[1]).toBe(compact);
+    expect(root.adoptedStyleSheets[2]).toBe(later);
+
+    root.adoptedStyleSheets = [authored, compact];
+    root.append(second);
+    await expect.poll(() => shown(secondHeading)).toBe(false);
     expect(root.adoptedStyleSheets).toHaveLength(2);
     expect(root.adoptedStyleSheets[0]).toBe(authored);
     const list = required(second.querySelector("ul"));
@@ -357,6 +405,16 @@ describe("ocelle-app-shell navigation", () => {
     head.focus();
     size(850);
     await expect.poll(() => deepActive()).toBe(shell.contentTarget);
+  });
+
+  it("recovers within a nested shell whose host is in outer sidebar chrome", async () => {
+    await driver.mount(`<ocelle-context-sidebar label="Outer sidebar"><ocelle-app-shell slot="head" style="inline-size: 1150px">${grouped}</ocelle-app-shell></ocelle-context-sidebar>`);
+    const shell = required(document.querySelector("ocelle-app-shell"));
+    const head = required(shell.querySelector<HTMLButtonElement>("#head"));
+    await expect.poll(() => shown(head)).toBe(true);
+    head.focus();
+    shell.style.inlineSize = "850px";
+    await expect.poll(() => deepActive()).toBe(shell.querySelector("ocelle-nav-item")?.shadowRoot?.querySelector("a"));
   });
 
   it("recovers focus when a same-width layout swap removes the rail and when narrow removes navigation", async () => {
