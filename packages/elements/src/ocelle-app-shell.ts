@@ -19,7 +19,7 @@ const landmark = "nav:not([role]), [role=navigation], ocelle-context-sidebar:not
 const contentWrappers = "nav, [role=navigation], ocelle-context-sidebar, ocelle-personal-rail, div, span, p, ul, ol, li, section, article, aside";
 const presentationOwners = new WeakMap<OcelleNavItem | OcelleContextSidebar, OcelleAppShell>();
 
-function assignedRegion(host: HTMLElement, name: Region): Element[] {
+function assignedRegion(host: HTMLElement, name: Region | "actions"): Element[] {
   return [...host.children].filter((child) => child.getAttribute("slot") === name);
 }
 
@@ -28,7 +28,7 @@ function navItems(elements: readonly Element[]): OcelleNavItem[] {
 }
 
 function hasContent(node: Node): boolean {
-  if (node.nodeType === Node.TEXT_NODE) return (node.textContent ?? "").trim() !== "";
+  if (node instanceof Text) return node.data.trim() !== "";
   if (!(node instanceof Element) || node.matches("[hidden], template, script")) return false;
   if (!node.matches(contentWrappers)) return true;
   return [...node.childNodes].some(hasContent);
@@ -222,7 +222,7 @@ export class OcelleAppShell extends LitElement {
     this.#resize.observe(this, { box: "border-box" });
     this.#children.observe(this, {
       attributes: true,
-      attributeFilter: ["slot", "hidden", "role", "aria-label"],
+      attributeFilter: ["slot", "hidden", "role"],
       childList: true,
       characterData: true,
       subtree: true,
@@ -246,8 +246,9 @@ export class OcelleAppShell extends LitElement {
 
   protected override willUpdate(): void {
     const source = deepActive();
-    const previousNavigation = this.#regions().some((region) => source !== null && composedWithin(source, region));
-    const previousMenu = source !== null && source === this.#menu();
+    if (source !== null && (source === this.#menu() || this.#regions().some((region) => composedWithin(source, region)))) {
+      this.#focusSource = source;
+    }
     const rail = assignedRegion(this, "rail");
     const sidebar = assignedRegion(this, "sidebar");
 
@@ -255,27 +256,27 @@ export class OcelleAppShell extends LitElement {
     this.#layout = this.layout === "project" || this.layout === "personal" ? this.layout : "mission";
     this.#rail = this.#layout === "mission" && rail.some(hasContent);
     this.#sidebar = sidebar.some(hasContent);
-    this.#actions = [...this.children].some((child) => child.getAttribute("slot") === "actions" && hasContent(child));
-    if (source !== null && (previousNavigation || previousMenu)) this.#focusSource = source;
+    this.#actions = assignedRegion(this, "actions").some(hasContent);
 
     const managed = this.#layout === "personal" ? [] : sidebar;
-    this.#setPresentation(this.#rail ? rail : [], managed, this.#tier === "collapsed");
+    this.#setPresentation(this.#rail ? rail : [], managed, this.#sidebarCompact);
+  }
+
+  get #sidebarCompact(): boolean {
+    return this.#layout !== "personal" && this.#tier === "collapsed";
   }
 
   protected override render(): unknown {
     const navigationAvailable = this.#rail || this.#sidebar;
-    const compact = this.#layout !== "personal" && this.#tier === "collapsed";
-    const actions = html`<slot name="actions" slot="actions"></slot>`;
     return html`
       <slot name="skip-link"></slot>
       <ocelle-top-bar .productName=${this.productName} .menuLabel=${this.menuLabel}
         .showMenu=${this.#tier === "narrow" && navigationAvailable}>
-        ${this.#actions ? actions : nothing}
+        ${this.#actions ? html`<slot name="actions" slot="actions"></slot>` : nothing}
       </ocelle-top-bar>
-      ${this.#actions ? nothing : html`<div hidden>${actions}</div>`}
       <div class="frame">
         ${this.#region("rail", this.#rail, false, this.railLabel)}
-        ${this.#region("sidebar", this.#sidebar, compact, this.sidebarLabel)}
+        ${this.#region("sidebar", this.#sidebar, this.#sidebarCompact, this.sidebarLabel)}
         <main part="main" tabindex="-1"
           class=${[this.flushBlockEnd ? "flush-block-end" : "", this.flushInlineEnd ? "flush-inline-end" : ""].join(" ")}>
           <slot></slot>
@@ -386,7 +387,7 @@ export class OcelleAppShell extends LitElement {
     this.#focusSource = undefined;
     if (source !== undefined && !visible(source)) {
       const active = deepActive();
-      if (active === source || active === null || active === this.ownerDocument.body || !visible(active)) {
+      if (active === source || active === null || !visible(active)) {
         const destination = tier === "narrow" ? this.#menu() : this.#firstDestination();
         (destination ?? this.contentTarget)?.focus();
       }

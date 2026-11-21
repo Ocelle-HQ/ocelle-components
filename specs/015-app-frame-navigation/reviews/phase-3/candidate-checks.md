@@ -15,6 +15,12 @@ The candidate adds the responsive shell, its threshold tokens and package entry,
 - The two regressions in tests-only commit `9b23eca` failed against the original candidate in Chromium. A generic wrapper around hidden and whitespace-only descendants exposed a Workspace landmark. During a receiver-first transfer between shells, the sender then cleared compact presentation on the moved destination.
 - The follow-up scopes presentation cleanup to its current shell owner and traverses generic wrappers when checking for content. Both regressions passed, as did all 55 cases in the app shell navigation, app shell layout, nav item and context sidebar suites. TypeScript and `git diff --check` passed.
 
+## Mutation follow-up
+
+- The initial focused diagnostic on `acd5ef4` reported a 59.82% score across the shell and compact-section sources. It killed 201 mutants, with 114 survivors and 21 uncovered mutants. The TypeScript checker rejected 142 additional mutants at compilation.
+- Tests now check that two collapsed shells in the same shadow root share one stylesheet, that removing one restores its detached section and keeps the other compact, and that releasing the last shell preserves authored stylesheets. They also cover content-box thresholds, collapsed column sizes, localized shell defaults, and live changes to nested roles, slot names and text.
+- The shell uses one compact predicate for behavior and sizing. It observes the light DOM inputs it reads, and it renders the forwarded actions slot when it has content. The four related source suites passed 59/59. The revised focused diagnostic compiled and passed the 29-test coverage run; its mutant executions are in progress.
+
 ## Canonical workflow status
 
 The workflow's `red.sh 3 phase` replay has not recorded a result yet. The full affected-plant selection is 317 plants because the package export change is unmapped. The local focused mutation diagnostic is in progress. Canonical head and final-tests-on-base checks and independent review are pending. The targeted evidence above does not replace those checks.
