@@ -1,6 +1,6 @@
-import { spawnSync } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { execFileSync, spawnSync } from "node:child_process";
+import { chmodSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { sandboxPathRule } from "../../lib/sandbox-paths.ts";
 import { homeDir, rootDir } from "../sandbox-paths-table.ts";
@@ -80,5 +80,184 @@ describe("redact-sandbox-paths.sh", () => {
   it("holds no line that matches the rule in its own source", () => {
     const source = readFileSync(script, "utf8");
     expect({ matching: matching(source), redacts: source.includes("<pnpm store>") && source.includes("<repo>") && source.includes("<home>/") }).toEqual({ matching: [], redacts: true });
+  });
+});
+
+// --verify (op 023, FR-011; plan.md *Verify mode*, *Test approach* 8, acceptance check 11): a commit, or a range, passes
+// only when each changed file is a modified regular file whose new content is exactly the script's redaction of its
+// old content. Each case runs in a temporary git repository with an RFC 2606 identity, and asserts that no output line
+// matches the rule and that the run left the work tree, the index and the tracked files as they were.
+const identity = ["-c", "user.name=Verify Example", "-c", "user.email=verify@example.com", "-c", "commit.gpgsign=false"];
+const logPath = "logs/check-head.log";
+const jsonPath = "data/mutation.json";
+const notesPath = "notes.txt";
+const logLines = [`store ${rootDir}.local/share/pnpm/store/v10/files/00/abc`, ` RUN  v5.0.5 ${homeDir}ocelle-components`, `(${rootDir}.cache/ms-playwright)`, "plain line"];
+const redactedLog = ["store <pnpm store>/files/00/abc", " RUN  v5.0.5 <repo>", "(<home>/.cache/ms-playwright)", "plain line"];
+const summary = "redact-sandbox-paths: verify: 2 files changed, each only by the redaction";
+
+function git(dir: string, args: readonly string[]): string {
+  return execFileSync("git", [...identity, ...args], { cwd: dir, env: baseEnv(), encoding: "utf8" });
+}
+
+function put(dir: string, path: string, content: string): void {
+  mkdirSync(dirname(join(dir, path)), { recursive: true });
+  writeFileSync(join(dir, path), content);
+}
+
+/** A repository whose root commit holds a log and a JSON file with sandbox paths, and a plain file. */
+function based(): { dir: string; base: string } {
+  const dir = tempDir("verify");
+  git(dir, ["init", "-q", "-b", "main"]);
+  put(dir, logPath, `${logLines.join("\n")}\n`);
+  put(dir, jsonPath, `${JSON.stringify({ projectRoot: `${homeDir}ocelle-components`, files: [`file://${homeDir}ocelle-components/a.ts`] }, null, 2)}\n`);
+  put(dir, notesPath, "nothing to redact\n");
+  git(dir, ["add", "-A"]);
+  git(dir, ["commit", "-q", "-m", "base"]);
+  return { dir, base: git(dir, ["rev-parse", "HEAD"]).trim() };
+}
+
+/** Applies the change to the work tree, commits everything and returns the new commit. */
+function committed(dir: string, change: () => void): string {
+  change();
+  git(dir, ["add", "-A"]);
+  git(dir, ["commit", "-q", "--allow-empty", "-m", "change"]);
+  return git(dir, ["rev-parse", "HEAD"]).trim();
+}
+
+/** Runs the script's own redaction over the log and the JSON file, as the one-time run and the landing step do. */
+function inPlace(dir: string): void {
+  const ran = redact(["--in-place", join(dir, logPath), join(dir, jsonPath)]);
+  if (ran.code !== 0) throw new Error(`--in-place failed: ${ran.stderr}`);
+}
+
+function nonEmpty(text: string): string[] {
+  return text.split("\n").filter((line) => line.length > 0);
+}
+
+/** Runs `--verify` with the arguments in the repository, and the facts every case asserts. */
+function verify(dir: string, args: readonly string[]): unknown {
+  const files = git(dir, ["ls-files", "-s"]);
+  const ran = spawnSync(script, ["--verify", ...args], { cwd: dir, env: baseEnv(), encoding: "utf8" });
+  const [stdout, stderr] = [nonEmpty(ran.stdout), nonEmpty(ran.stderr)];
+  return {
+    exit: ran.status,
+    stdout,
+    stderr,
+    matching: [...stdout, ...stderr].filter((line) => rule.test(line)),
+    status: git(dir, ["status", "--porcelain"]),
+    filesUnchanged: git(dir, ["ls-files", "-s"]) === files,
+  };
+}
+
+function outcome(exit: number, stdout: readonly string[], stderr: readonly string[]): unknown {
+  return { exit, stdout, stderr, matching: [], status: "", filesUnchanged: true };
+}
+
+function finding(path: string, reason: string): unknown {
+  return outcome(1, [`redact-sandbox-paths: verify: ${path}: ${reason}`], []);
+}
+
+function cause(text: string): unknown {
+  return outcome(2, [], [`redact-sandbox-paths: verify: ${text}`]);
+}
+
+describe("--verify", () => {
+  it("passes a commit made by --in-place, given as one revision, with the summary", () => {
+    const { dir } = based();
+    const redacted = committed(dir, () => {
+      inPlace(dir);
+    });
+    expect(verify(dir, [redacted])).toEqual(outcome(0, [summary], []));
+  });
+
+  it("passes the same commit given as the range <from>..<to>", () => {
+    const { dir, base } = based();
+    const redacted = committed(dir, () => {
+      inPlace(dir);
+    });
+    expect(verify(dir, [`${base}..${redacted}`])).toEqual(outcome(0, [summary], []));
+  });
+
+  it("finds the log when the store path got the wrong placeholder", () => {
+    const { dir } = based();
+    const head = committed(dir, () => {
+      inPlace(dir);
+      put(dir, logPath, `${["store <repo>/files/00/abc", ...redactedLog.slice(1)].join("\n")}\n`);
+    });
+    expect(verify(dir, [head])).toEqual(finding(logPath, "not the redaction of its old content"));
+  });
+
+  it("finds the log when another word of it changed beside the redaction", () => {
+    const { dir } = based();
+    const head = committed(dir, () => {
+      inPlace(dir);
+      put(dir, logPath, `${[...redactedLog.slice(0, 3), "plain lane"].join("\n")}\n`);
+    });
+    expect(verify(dir, [head])).toEqual(finding(logPath, "not the redaction of its old content"));
+  });
+
+  it("finds the log when only one of its matching lines was redacted", () => {
+    const { dir } = based();
+    const head = committed(dir, () => {
+      inPlace(dir);
+      put(dir, logPath, `${[redactedLog[0], ...logLines.slice(1)].join("\n")}\n`);
+    });
+    expect(verify(dir, [head])).toEqual(finding(logPath, "not the redaction of its old content"));
+  });
+
+  it("finds a file added beside a correct redaction", () => {
+    const { dir } = based();
+    const head = committed(dir, () => {
+      inPlace(dir);
+      put(dir, "added.txt", "new\n");
+    });
+    expect(verify(dir, [head])).toEqual(finding("added.txt", "added"));
+  });
+
+  it("finds a file deleted beside a correct redaction", () => {
+    const { dir } = based();
+    const head = committed(dir, () => {
+      inPlace(dir);
+      rmSync(join(dir, notesPath));
+    });
+    expect(verify(dir, [head])).toEqual(finding(notesPath, "deleted"));
+  });
+
+  it("finds a mode change beside a correct redaction", () => {
+    const { dir } = based();
+    const head = committed(dir, () => {
+      inPlace(dir);
+      chmodSync(join(dir, notesPath), 0o755);
+    });
+    expect(verify(dir, [head])).toEqual(finding(notesPath, "mode changed"));
+  });
+
+  it("exits 2 on a commit that changes no file", () => {
+    const { dir } = based();
+    const empty = committed(dir, () => undefined);
+    expect(verify(dir, [empty])).toEqual(cause(`no change in ${empty}^1..${empty}`));
+  });
+
+  it("exits 2 on a revision that does not resolve to a commit", () => {
+    const { dir } = based();
+    expect(verify(dir, ["no-such-revision"])).toEqual(cause("no-such-revision is not a commit"));
+  });
+
+  it("exits 2 on the root commit, which has no parent", () => {
+    const { dir, base } = based();
+    expect(verify(dir, [base])).toEqual(cause(`${base} has no parent`));
+  });
+
+  it("exits 2 on --verify alone", () => {
+    const { dir } = based();
+    expect(verify(dir, [])).toEqual(cause("takes exactly one argument, <rev> or <from>..<to>"));
+  });
+
+  it("exits 2 on --verify with two arguments", () => {
+    const { dir, base } = based();
+    const redacted = committed(dir, () => {
+      inPlace(dir);
+    });
+    expect(verify(dir, [base, redacted])).toEqual(cause("takes exactly one argument, <rev> or <from>..<to>"));
   });
 });
