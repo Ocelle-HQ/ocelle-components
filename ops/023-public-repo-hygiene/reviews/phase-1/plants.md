@@ -12,6 +12,10 @@ since this host has docker and no podman (exit 2, 46 visual plants not run), so 
 plant from a scratch worktree did not get as far as its capture (`visual: could not run: Node.js v26.13.0`, a setup
 difference of the worktree), so it is not a verdict on the plant. CI's Plants check judges every plant.
 
+Operator decision (review round 1, R1-01 and R1-02; `triage/decisions/023-review-round-1.md`): the recorded
+`exit: 1` above stands and is not rerun here. CI's Plants check covers the one plant that failed on the network
+image pull, `visual/fail-pointer-target-below-fold` (exit 2; 323 of 324 plants as expected).
+
 ```text
 $ node gates/bin/plants.ts -- --affected ac12998241af8a86f9a88c043654457e41b14b53
 note: affected: every plant, by gates/bin/plants.ts (shared gate source)
