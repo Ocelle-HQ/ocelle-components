@@ -498,3 +498,99 @@ export const disclosureDriverScenarios: readonly Scenario[] = [
     expected: { labelledBy: ["span.label"], describedBy: null },
   },
 ];
+
+// The driver additions of 020 phase 2 (contracts/checks.md § Driver additions; tasks.md T023): `copyShadow`,
+// `copyShadowRun` and `ariaSnapshot`, and the two readers `clientRects` and `characters`, on the `ocelle-test-code`
+// helper below, which stands in for a code block: an open shadow root holding a `pre` of units as R-07 renders them,
+// and light-DOM text of its own that no slot shows.
+
+/**
+ * Defines `ocelle-test-code` (self-contained, for `page.evaluate`): an open shadow root holding
+ * `<pre part="code"><span>…</span><wbr><span>…</span>…</pre>`, one span per space-separated word of its `data-units`
+ * attribute at construction (`sha256: 9f86 d081` when it has none), or the text of its `data-text` attribute alone, with
+ * no slot, so the host's own light-DOM text is not rendered.
+ */
+export function defineCodeHelper(): void {
+  if (customElements.get("ocelle-test-code") !== undefined) return;
+  customElements.define(
+    "ocelle-test-code",
+    class extends HTMLElement {
+      connectedCallback(): void {
+        if (this.shadowRoot !== null) return;
+        const pre = document.createElement("pre");
+        pre.setAttribute("part", "code");
+        const text = this.getAttribute("data-text");
+        if (text !== null) pre.textContent = text;
+        else (this.getAttribute("data-units") ?? "sha256: 9f86 d081").split(" ").forEach((unit, index) => {
+          if (index > 0) pre.append(document.createElement("wbr"));
+          const span = document.createElement("span");
+          span.textContent = unit;
+          pre.append(span);
+        });
+        this.attachShadow({ mode: "open" }).append(pre);
+      }
+    },
+  );
+}
+
+export const codeBlockDriverScenarios: readonly Scenario[] = [
+  {
+    name: "copyShadow: a triple-click copy of a shadow pre gives its text, with the platform's one newline when content follows it; a second copy replaces the first, and neither is the sentinel",
+    run: async (driver) => {
+      await driver.mount('<ocelle-test-code id="one">LIGHTTEXT</ocelle-test-code><ocelle-test-code id="two" data-units="sha512: abcd ef">OTHER</ocelle-test-code><p>After.</p>');
+      const one = await driver.copyShadow("one", "pre");
+      const two = await driver.copyShadow("two", "pre");
+      return { one, two };
+    },
+    expected: { one: "sha256:9f86d081\n", two: "sha512:abcdef\n" },
+  },
+  {
+    name: "copyShadow: the block last on the page copies its text with no newline",
+    run: async (driver) => {
+      await driver.mount('<p>Before.</p><ocelle-test-code id="last">LIGHTTEXT</ocelle-test-code>');
+      return await driver.copyShadow("last", "pre");
+    },
+    expected: "sha256:9f86d081",
+  },
+  {
+    name: "copyShadowRun: a run of two spans of a shadow pre copies exactly their characters, and a run from the first span to the last copies the whole text with no newline",
+    run: async (driver) => {
+      await driver.mount('<ocelle-test-code id="run" data-units="sha256: 9f86 d081 884c">LIGHTTEXT</ocelle-test-code><p>After.</p>');
+      return { groups: await driver.copyShadowRun("run", "pre", 2, 4), whole: await driver.copyShadowRun("run", "pre", 0, 6) };
+    },
+    expected: { groups: "9f86d081", whole: "sha256:9f86d081884c" },
+  },
+  {
+    name: "ariaSnapshot: the shadow pre reads its units as one text run, where the host, read from a shadow root around it, also reads its unrendered light-DOM text",
+    run: async (driver) => {
+      await driver.mount('<ocelle-test-code id="code">LIGHTTEXT</ocelle-test-code><div id="around"></div>');
+      await driver.shadow("around", '<ocelle-test-code id="inner-code">LIGHTTEXT</ocelle-test-code>');
+      return { pre: await driver.ariaSnapshot("code", "pre"), host: await driver.ariaSnapshot("around", "ocelle-test-code") };
+    },
+    expected: { pre: "- text: sha256:9f86d081", host: "- text: LIGHTTEXT sha256:9f86d081" },
+  },
+  {
+    name: "clientRects: each span of a one-line shadow pre has one rect, in tree order from left to right, and an element that is not there gives no list",
+    run: async (driver) => {
+      await driver.mount('<ocelle-test-code id="rects">LIGHTTEXT</ocelle-test-code>');
+      const rects = await driver.clientRects("rects", "span");
+      const lefts = rects.map((each) => each[0]?.x ?? 0);
+      return { counts: rects.map((each) => each.length), ordered: lefts.every((x, index) => index === 0 || x > (lefts[index - 1] ?? 0)), none: await driver.clientRects("rects", "b") };
+    },
+    expected: { counts: [1, 1, 1], ordered: true, none: [] },
+  },
+  {
+    name: "characters: each code point of a shadow pre's text with its box; a line's first character is below the first line at the same left edge, and an astral code point is one entry",
+    run: async (driver) => {
+      await driver.mount('<ocelle-test-code id="chars" data-text="ab&#10;c😀">LIGHTTEXT</ocelle-test-code>');
+      const chars = await driver.characters("chars", "pre");
+      const [a, b, , c] = chars;
+      return {
+        texts: chars.map((each) => each.text),
+        firstLine: a !== undefined && b !== undefined && b.x > a.x && b.y === a.y,
+        secondLine: a !== undefined && c !== undefined && c.y > a.y && Math.abs(c.x - a.x) < 0.5,
+      };
+    },
+    expected: { texts: ["a", "b", "\n", "c", "😀"], firstLine: true, secondLine: true },
+  },
+];

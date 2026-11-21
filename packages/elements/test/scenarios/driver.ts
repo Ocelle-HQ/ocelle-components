@@ -696,6 +696,47 @@ export interface Driver {
    * name and classes (`span.label`), in order; null when the property is null.
    */
   reflected(id: string, inner: string, property: string): Promise<string[] | null>;
+  // The additions of 020 phase 2 (contracts/checks.md § Driver additions; tasks.md T023), and two readers the code-block
+  // bodies need beside them (reviews/phase-2/notes.md): the client rects of shadow elements and the boxes of the
+  // characters of a shadow element's text (the break-position, visual-order and line-start oracles).
+  /**
+   * A user's copy of a whole shadow block (020 research.md R-07): puts a sentinel on the clipboard (a user copy of a
+   * scratch field holding it), triple-clicks the first element matching `inner` in the shadow root of the element with
+   * `id` (2 px in from its top-left corner, so a clipped box is clicked where it shows), presses the platform's copy
+   * shortcut and returns the `text/plain` on the clipboard, read from the `clipboardData` of a user paste into a scratch
+   * field (the sentinel when the copy put nothing there).
+   */
+  copyShadow(id: string, inner: string): Promise<string>;
+  /**
+   * A user's copy of a run of a shadow element's children: puts the sentinel on the clipboard as `copyShadow` does,
+   * selects from before the element child `from` to after the element child `to` (both counted from 0 over the element
+   * children, comments and text left out) of the first element matching `inner` in the shadow root of the element with
+   * `id` (`setBaseAndExtent`), copies and returns the clipboard's `text/plain`.
+   */
+  copyShadowRun(id: string, inner: string, from: number, to: number): Promise<string>;
+  /**
+   * Playwright's aria snapshot of the first element matching `inner` in the shadow root of the element with `id`: on the
+   * fixture `locator.ariaSnapshot()`, in process the same generator as Vitest's browser mode vendors it
+   * (`utils.aria`), so no browser command is added.
+   */
+  ariaSnapshot(id: string, inner: string): Promise<string>;
+  /** The client rects (`getClientRects()`) of every element matching `inner` in the shadow root of the element with `id`, in tree order. */
+  clientRects(id: string, inner: string): Promise<Bounds[][]>;
+  /**
+   * Each code point of the text under the first element matching `inner` in the shadow root of the element with `id`,
+   * in tree order, with the border box of a range over it (zero for a line break): the characters' visual order and
+   * the place of each line's first character.
+   */
+  characters(id: string, inner: string): Promise<CharacterBox[]>;
+}
+
+/** One code point of a shadow element's text and the box of a range over it (`characters`). */
+export interface CharacterBox {
+  readonly text: string;
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
 }
 
 /** How `copy` copies the live DOM. */

@@ -1676,3 +1676,172 @@ describe("the ocelle-disclosure stories in the built Storybook (020 US1, FR-050,
     expect(observed).toEqual({ scrollWidth: 320, sized: true, wrapped: true });
   });
 });
+
+// 020 phase 2 (I3; contracts/checks.md § Story tests; tasks.md T028): the `ocelle-code-block` stories (short, a long
+// line wrapping, scroll overflowing at its start, in the middle and at its end, a focused scroll block, scroll fitting,
+// digest, digest wrapping, digest scroll, right to left in wrap and in scroll mode, empty, scroll unlabelled). Each
+// renders its code block in light and dark, defined, with the story's policy, digest mode and label, its `pre` in the
+// sans, with base.css applied and no request outside the origin; the focused story's scroll box holds focus. At a
+// 320 px viewport every wrap-mode story has a page scroll width of 320, beside a block wider than 0 (SC-002). In every
+// overflowing scroll story, with no pointer event, Tab reaches the scroll box (the focused story's box has focus
+// already) and the arrow keys, each pressed until the position stops changing, scroll it from one end of its range to
+// the other (SC-005). The unlabelled story's box is a tab stop with no role beyond `generic` and an empty name in the
+// CDP tree (research.md R-09, T021a). On a fresh load, within 1400 ms of its first render, with and without reduced
+// motion (`matchMedia` asserted beside it), no animation runs in any story (SC-006).
+
+/** One code block of a story: its policy, digest mode, label, the scroll box it renders and whether that overflows. */
+interface CodeBlockSeen {
+  readonly overflow: string | null;
+  readonly digest: boolean;
+  readonly label: string | null;
+  readonly scrollBox: boolean;
+  readonly overflowing: boolean;
+  readonly sans: boolean;
+}
+
+const wrapBlock: CodeBlockSeen = { overflow: null, digest: false, label: null, scrollBox: false, overflowing: false, sans: true };
+const scrollBlock = (label: string | null): CodeBlockSeen => ({ overflow: "scroll", digest: false, label, scrollBox: true, overflowing: true, sans: true });
+
+const codeBlockStories: readonly { readonly id: string; readonly block: CodeBlockSeen; readonly wrap?: true; readonly keyboard?: true; readonly focused?: true }[] = [
+  { id: "elements-ocelle-code-block--short", block: wrapBlock, wrap: true },
+  { id: "elements-ocelle-code-block--wrap-long-line", block: wrapBlock, wrap: true },
+  { id: "elements-ocelle-code-block--scroll-overflowing", block: scrollBlock("Deploy command"), keyboard: true },
+  { id: "elements-ocelle-code-block--scroll-middle", block: scrollBlock("Deploy command"), keyboard: true },
+  { id: "elements-ocelle-code-block--scroll-end", block: scrollBlock("Deploy command"), keyboard: true },
+  { id: "elements-ocelle-code-block--scroll-focused", block: scrollBlock("Deploy command"), keyboard: true, focused: true },
+  { id: "elements-ocelle-code-block--scroll-fitting", block: { ...scrollBlock("Build command"), overflowing: false } },
+  { id: "elements-ocelle-code-block--digest", block: { ...wrapBlock, digest: true }, wrap: true },
+  { id: "elements-ocelle-code-block--digest-wrapping", block: { ...wrapBlock, digest: true }, wrap: true },
+  { id: "elements-ocelle-code-block--digest-scroll", block: { ...scrollBlock("Commit digest"), digest: true }, keyboard: true },
+  { id: "elements-ocelle-code-block--right-to-left", block: wrapBlock, wrap: true },
+  { id: "elements-ocelle-code-block--right-to-left-scroll", block: scrollBlock("Deploy commands"), keyboard: true },
+  { id: "elements-ocelle-code-block--empty", block: wrapBlock, wrap: true },
+  { id: "elements-ocelle-code-block--scroll-unlabelled", block: scrollBlock(null), keyboard: true },
+];
+
+/** What a code-block story's page shows: its theme, the base stylesheet, its code blocks and whether a scroll box holds focus. */
+function observeCodeBlocks(page: Page): Promise<unknown> {
+  return page.evaluate(() => ({
+    theme: document.documentElement.dataset.theme,
+    base: {
+      linked: [...document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')].some((link) => link.href.endsWith("/base.css") && link.sheet !== null),
+      scheme: getComputedStyle(document.documentElement).colorScheme,
+    },
+    defined: customElements.get("ocelle-code-block") !== undefined,
+    blocks: [...document.querySelectorAll("#storybook-root ocelle-code-block")].map((block) => {
+      const box = block.shadowRoot?.querySelector(".region-box");
+      const code = block.shadowRoot?.querySelector('[part="code"]');
+      return {
+        overflow: block.getAttribute("overflow"),
+        digest: block.hasAttribute("digest"),
+        label: block.getAttribute("label"),
+        scrollBox: box !== null && box !== undefined,
+        overflowing: box !== null && box !== undefined && box.scrollWidth - box.clientWidth > 1,
+        sans: code !== null && code !== undefined && getComputedStyle(code).fontFamily.startsWith('"Schibsted Grotesk"'),
+      };
+    }),
+    focused: [...document.querySelectorAll("#storybook-root ocelle-code-block")].some((block) => document.activeElement === block && block.shadowRoot?.activeElement?.classList.contains("region-box") === true),
+  }));
+}
+
+/** The scroll box of the story's first code block: whether it has focus, its `scrollLeft` and its scroll range. */
+function scrollBoxState(page: Page): Promise<{ readonly focused: boolean; readonly scrollLeft: number; readonly range: number }> {
+  return page.evaluate(() => {
+    const block = document.querySelector("#storybook-root ocelle-code-block");
+    const box = block?.shadowRoot?.querySelector(".region-box");
+    return {
+      focused: document.activeElement === block && block?.shadowRoot?.activeElement === box,
+      scrollLeft: box?.scrollLeft ?? 0,
+      range: box === null || box === undefined ? 0 : box.scrollWidth - box.clientWidth,
+    };
+  });
+}
+
+/** Presses `key` until the scroll box's position stops changing (at most 80 presses); returns the last position. */
+async function pressToEnd(page: Page, key: "ArrowRight" | "ArrowLeft"): Promise<number> {
+  let last = (await scrollBoxState(page)).scrollLeft;
+  for (let press = 0; press < 80; press += 1) {
+    await page.keyboard.press(key);
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    const now = (await scrollBoxState(page)).scrollLeft;
+    if (now === last) break;
+    last = now;
+  }
+  return last;
+}
+
+/** The role and name of the unignored focusable nodes of a story page's accessibility tree that are not the root, over CDP. */
+async function focusableNodes(page: Page): Promise<{ readonly role: string; readonly name: string }[]> {
+  const session = await page.context().newCDPSession(page);
+  try {
+    const { nodes } = (await session.send("Accessibility.getFullAXTree")) as { nodes: { ignored: boolean; role?: { value?: unknown }; name?: { value?: unknown }; properties?: { name: string; value: { value?: unknown } }[] }[] };
+    return nodes
+      .filter((node) => !node.ignored && node.role?.value !== "RootWebArea" && node.properties?.some((property) => property.name === "focusable" && property.value.value === true) === true)
+      .map((node) => ({ role: typeof node.role?.value === "string" ? node.role.value : "", name: typeof node.name?.value === "string" ? node.name.value : "" }));
+  } finally {
+    await session.detach();
+  }
+}
+
+describe("the ocelle-code-block stories in the built Storybook (020 US2, FR-050, I3)", { timeout: 60_000 }, () => {
+  for (const { id, block, wrap, keyboard, focused } of codeBlockStories) {
+    for (const theme of ["light", "dark"] as const) {
+      it(`${id} in ${theme}: renders its ocelle-code-block with the story's policy, digest mode and label, its pre in the sans, with base.css applied and no request outside the origin`, async () => {
+        const { page, outside } = await open(id, theme, "ocelle-code-block");
+        expect({ ...((await observeCodeBlocks(page)) as object), outside }).toEqual({ theme, base: { linked: true, scheme: theme }, defined: true, blocks: [block], focused: focused === true, outside: [] });
+        await page.close();
+      });
+    }
+
+    if (wrap === true) {
+      it(`${id} at a 320 px viewport: the page scroll width is 320, beside a code block wider than 0 (SC-002)`, async () => {
+        const page = await openWith(id, { width: 320, reducedMotion: "no-preference" }, "ocelle-code-block");
+        const observed = await page.evaluate(() => ({
+          scrollWidth: document.documentElement.scrollWidth,
+          sized: [...document.querySelectorAll("#storybook-root ocelle-code-block")].some((block) => block.getBoundingClientRect().width > 0 && (block.shadowRoot?.querySelector('[part="block"]')?.getBoundingClientRect().width ?? 0) > 0),
+        }));
+        await page.close();
+        expect(observed).toEqual({ scrollWidth: 320, sized: true });
+      });
+    }
+
+    if (keyboard === true) {
+      it(`${id}: with no pointer event, Tab reaches the scroll box and the arrow keys scroll it from one end of its range to the other (SC-005)`, async () => {
+        const page = await openWith(id, { width: 1280, reducedMotion: "reduce" }, "ocelle-code-block");
+        if (focused !== true) await page.keyboard.press("Tab");
+        const tabbed = await scrollBoxState(page);
+        const right = await pressToEnd(page, "ArrowRight");
+        const left = await pressToEnd(page, "ArrowLeft");
+        const after = await scrollBoxState(page);
+        await page.close();
+        expect({ focused: tabbed.focused, overflowing: tabbed.range > 1, endToEnd: Math.abs(right - left - tabbed.range) <= 1, oneEndAtZero: Math.min(Math.abs(right), Math.abs(left)) <= 1, stillFocused: after.focused }).toEqual({ focused: true, overflowing: true, endToEnd: true, oneEndAtZero: true, stillFocused: true });
+      });
+    }
+
+    for (const reducedMotion of ["reduce", "no-preference"] as const) {
+      it(`${id} with prefers-reduced-motion ${reducedMotion}: within 1400 ms of its first render no animation runs, beside its code block rendered (SC-006)`, async () => {
+        const page = await openWith(id, { width: 1280, reducedMotion }, "ocelle-code-block");
+        const observed = await page.evaluate(() => ({
+          timing: performance.now() - (window as unknown as { firstRender: number }).firstRender < 1400 ? "inside the first 1400 ms" : "read too late",
+          reduce: matchMedia("(prefers-reduced-motion: reduce)").matches,
+          running: [document, ...[...document.querySelectorAll("#storybook-root ocelle-code-block")].map((each) => each.shadowRoot)].flatMap((root) => root?.getAnimations() ?? []).filter((animation) => animation.playState === "running").length,
+          rendered: [...document.querySelectorAll("#storybook-root ocelle-code-block")].every((block) => block.shadowRoot?.querySelector('[part="code"]') !== null && block.shadowRoot?.querySelector('[part="code"]') !== undefined),
+        }));
+        await page.close();
+        expect(observed).toEqual({ timing: "inside the first 1400 ms", reduce: reducedMotion === "reduce", running: 0, rendered: true });
+      });
+    }
+  }
+
+  it("elements-ocelle-code-block--scroll-unlabelled: the overflowing scroll box is a tab stop (tabindex 0, Tab reaches it) whose CDP node, read at rest, has no role beyond generic and an empty name", async () => {
+    const page = await openWith("elements-ocelle-code-block--scroll-unlabelled", { width: 1280, reducedMotion: "reduce" }, "ocelle-code-block");
+    const tabindex = await page.evaluate(() => document.querySelector("#storybook-root ocelle-code-block")?.shadowRoot?.querySelector(".region-box")?.getAttribute("tabindex") ?? null);
+    // Read at rest, as T021a read it: once focused, Chromium names the generic tab stop from its content
+    // (reviews/phase-2/notes.md).
+    const nodes = await focusableNodes(page);
+    await page.keyboard.press("Tab");
+    const tabbed = await scrollBoxState(page);
+    await page.close();
+    expect({ tabindex, focused: tabbed.focused, nodes }).toEqual({ tabindex: "0", focused: true, nodes: [{ role: "generic", name: "" }] });
+  });
+});

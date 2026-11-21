@@ -58,3 +58,16 @@ describe("packages/elements/CHANGELOG.md: ocelle-disclosure is a minor change (0
     expect(section).toContain(flat(statement));
   });
 });
+
+// 020 phase 2 (T027, T031; FR-056, constitution VII): the code block is an addition, a minor change, stated once under
+// Unreleased; its names are asserted one by one in `readme.test.ts`.
+describe("packages/elements/CHANGELOG.md: ocelle-code-block is a minor change (020 FR-056)", () => {
+  const section = unreleased(read("CHANGELOG.md"));
+
+  it.each([
+    "`ocelle-code-block`, its properties `overflow`, `label` and `digest`, its parts `block` and `code` and its entry point are additions to the public surface: a minor change",
+    "The README's element conventions gain the digest rule: a prefix to the last colon, groups of four code points with a `--ocelle-space-1` gap, copied and read text unbroken",
+  ])("states under Unreleased: %s", (statement) => {
+    expect(section).toContain(flat(statement));
+  });
+});
