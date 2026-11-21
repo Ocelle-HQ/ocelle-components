@@ -180,6 +180,23 @@ describe("ocelle-app-shell layout", () => {
     expect(shell.contentTarget).toBe(main);
   });
 
+  it("measures the border box when the consumer switches to content-box sizing", async () => {
+    const shell = await mount('narrow-below="400px" collapse-below="600px" flush-block-end flush-inline-end');
+    shell.style.boxSizing = "content-box";
+    shell.style.borderInline = "2px solid";
+    shell.style.paddingInline = "8px";
+    shell.style.inlineSize = "379px";
+    await tier(shell, "narrow");
+    shell.style.inlineSize = "380px";
+    await tier(shell, "collapsed");
+    shell.style.inlineSize = "580px";
+    await tier(shell, "expanded");
+    expect(shell.getBoundingClientRect().width).toBe(600);
+    const main = required(shell.contentTarget);
+    expect(getComputedStyle(main).paddingBlockEnd).toBe("0px");
+    expect(getComputedStyle(main).paddingInlineEnd).toBe("0px");
+  });
+
   it.each(["ltr", "rtl"])("opts each logical end out independently in %s", async (direction) => {
     const shell = await mount(`dir="${direction}"`);
     await tier(shell, "expanded");

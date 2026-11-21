@@ -52,12 +52,15 @@ describe("ocelle-app-shell navigation", () => {
     size(1150);
     await expect.poll(landmarks).toEqual(wide);
     expect(shown(document.getElementById("rail"))).toBe(railVisible);
+    const sidebarWidth = (): number | undefined => shell.shadowRoot?.querySelector(".sidebar")?.getBoundingClientRect().width;
+    expect(sidebarWidth()).toBe(320);
     expect(shown(menu(shell))).toBe(false);
     size(850);
     await expect.poll(() => shell.tier).toBe("collapsed");
     expect(await landmarks()).toEqual(wide);
     expect(shown(document.getElementById("head"))).toBe(!compact);
     expect(shown(document.getElementById("foot"))).toBe(!compact);
+    expect(sidebarWidth()).toBe(compact ? 52 : 320);
     expect(shown(document.getElementById("rail"))).toBe(railVisible);
     size(700);
     await expect.poll(() => menu(shell)?.getAttribute("aria-label")).toBe("Navigation öffnen");
@@ -104,6 +107,39 @@ describe("ocelle-app-shell navigation", () => {
     size(500);
     await expect.poll(() => shell.tier).toBe("narrow");
     expect(shown(menu(shell))).toBe(false);
+  });
+
+  it("uses the default product and menu settings and applies localized shell attributes", async () => {
+    const shell = await mount('<div slot="sidebar"><a href="#work">Work</a></div>', 'sidebar-label="Projekte"');
+    expect(top(shell)?.productName).toBe("Kitty");
+    expect(await landmarks()).toEqual(["Projekte"]);
+    const unnamed = document.createElement("ocelle-app-shell");
+    shell.append(unnamed);
+    await unnamed.updateComplete;
+    expect(top(unnamed)?.productName).toBe("");
+    shell.sidebarLabel = " ";
+    await expect.poll(landmarks).toEqual(["Workspace"]);
+    size(500);
+    await expect.poll(() => menu(shell)?.getAttribute("aria-label")).toBe("Open navigation");
+  });
+
+  it("reevaluates nested landmarks and visible text when light DOM changes", async () => {
+    const shell = await mount('<div slot="sidebar"><div hidden><nav aria-label="Hidden"><a href="#hidden">Hidden</a></nav></div><div id="nested" role="navigation" aria-label="Nested"><a href="#work">Work</a></div></div>');
+    expect(await landmarks()).toEqual(["Nested"]);
+    const nested = required(shell.querySelector("#nested"));
+    nested.removeAttribute("role");
+    await expect.poll(landmarks).toEqual(["Workspace"]);
+    const text = document.createTextNode("Categories");
+    nested.replaceChildren(text);
+    await expect.poll(landmarks).toEqual(["Workspace"]);
+    const emptied = (): boolean | undefined => shell.shadowRoot?.querySelector(".sidebar")?.hasAttribute("hidden");
+    await expect.poll(emptied).toBe(false);
+    text.data = " ";
+    await expect.poll(landmarks).toEqual([]);
+    text.data = "Categories";
+    await expect.poll(landmarks).toEqual(["Workspace"]);
+    required(shell.querySelector('[slot="sidebar"]')).setAttribute("slot", "rail");
+    await expect.poll(landmarks).toEqual(["Account"]);
   });
 
   it("keeps the empty top-bar action region hidden and projects added actions", async () => {
@@ -195,6 +231,43 @@ describe("ocelle-app-shell navigation", () => {
     await Promise.all([item.updateComplete, sidebar.updateComplete]);
     expect(shown(label())).toBe(false);
     expect(shown(head)).toBe(false);
+  });
+
+  it("shares compact styles in one root until the last collapsed shell leaves", async () => {
+    await driver.mount('<div id="frame"></div>');
+    const root = required(document.getElementById("frame")).attachShadow({ mode: "open" });
+    const authored = new CSSStyleSheet();
+    authored.replaceSync("h2 { color: rgb(1, 2, 3); }");
+    root.adoptedStyleSheets = [authored];
+    const shell = (suffix: string): HTMLElementTagNameMap["ocelle-app-shell"] => {
+      const host = document.createElement("ocelle-app-shell");
+      host.style.inlineSize = "850px";
+      host.innerHTML = `<section slot="sidebar"><h2 id="heading-${suffix}">Projects</h2><ul><li><a href="#${suffix}">Work</a></li></ul></section>`;
+      return host;
+    };
+    const first = shell("one");
+    const second = shell("two");
+    const firstHeading = required(first.querySelector("h2"));
+    const secondHeading = required(second.querySelector("h2"));
+    root.append(first, second);
+    await expect.poll(() => [shown(firstHeading), shown(secondHeading)]).toEqual([false, false]);
+    expect(root.adoptedStyleSheets).toHaveLength(2);
+    expect(root.adoptedStyleSheets[0]).toBe(authored);
+    const list = required(second.querySelector("ul"));
+    expect(getComputedStyle(list).paddingInlineStart).toBe("0px");
+
+    first.remove();
+    expect(root.adoptedStyleSheets).toHaveLength(2);
+    expect(shown(secondHeading)).toBe(false);
+    const removed = required(first.querySelector("section"));
+    root.append(removed);
+    expect(shown(firstHeading)).toBe(true);
+    expect(getComputedStyle(firstHeading).color).toBe("rgb(1, 2, 3)");
+
+    second.style.inlineSize = "1150px";
+    await expect.poll(() => shown(secondHeading)).toBe(true);
+    expect(root.adoptedStyleSheets).toEqual([authored]);
+    expect(getComputedStyle(list).paddingInlineStart).toBe("40px");
   });
 
   it("moves focus from collapsing sidebar chrome to the first sequential destination, then main when none survives", async () => {
