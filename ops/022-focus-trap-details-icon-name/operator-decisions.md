@@ -40,3 +40,11 @@ name. Evidence: `reviews/phase-1/notes.md`.
    --affected <base>` and the browser/visual tests the phase changes run; multi-hour full local plants and visual
    runs are skipped and CI's required checks decide the rest before merge. New logs redact local sandbox paths to a
    placeholder. Applied from mid-T013/T014.
+
+## Landing (PR #64)
+
+10. **Red/green check before review round 3 — push, CI and review now.** The detached `tdd-check.sh 1` (four full
+    suites, about 5 hours) was killed twice by container restarts (about 20:50Z and 22:22Z, 2026-11-21). The fix-2
+    commits are pushed so CI runs the full suite on them; review round 3 starts on CI's results and
+    `reviews/phase-1/red-fix-2.log` (from `red.sh 1 fix-2`). `tdd-check.sh 1` is retried detached before the final
+    landing fold and must pass before hand-off.
