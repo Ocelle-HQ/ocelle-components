@@ -39,6 +39,7 @@ empty or loading panel, and `ocelle-progress`, a progress bar.
 | `@ocelle/elements/ocelle-progress.js` | `dist/ocelle-progress.js` | `ocelle-progress` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-status-indicator.js` | `dist/ocelle-status-indicator.js` | `ocelle-status-indicator` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-metric.js` | `dist/ocelle-metric.js` | `ocelle-metric` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-pill-tag.js` | `dist/ocelle-pill-tag.js` | `ocelle-pill-tag` only; for hosts with a bundler |
 | `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |
 | `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |
 
@@ -1311,6 +1312,61 @@ limitation. In forced colours the label and the value are drawn in the system te
 one line; a host that wants it to shrink further sets `min-inline-size: 0` on it, and its words then break inside it.
 
 **Parts.** The parts `label` (the term) and `value` (the definition) can be styled with `::part()`.
+
+## `ocelle-pill-tag`
+
+```html
+<ocelle-pill-tag status="warning">Blocked</ocelle-pill-tag>
+<ocelle-pill-tag variant="badge" density="compact">3</ocelle-pill-tag>
+```
+
+`ocelle-pill-tag` is a state pill or a count badge: `<ocelle-pill-tag status="warning">Blocked</ocelle-pill-tag>`,
+`<ocelle-pill-tag variant="badge">3</ocelle-pill-tag>`. `status` is one of `info`, `success`, `warning`, `danger` and
+`neutral` (the default); an absent, empty or unknown `status` shows `neutral`, the attribute keeps the value as written
+and the `status` property reads `"neutral"`. The vocabulary and its colour pairs are those of the notice's tone; the
+default is the pill's own.
+
+**Looks.** `variant="pill"`, the default, fills the pill with `--ocelle-color-<status>-bg` and sets its text in
+`--ocelle-color-<status>`; `variant="badge"` has no fill, a `--ocelle-border-width` border in `--ocelle-color-<status>`
+and its text in tabular figures (`--ocelle-figures`); both are set in Schibsted Grotesk (`--ocelle-font-sans`), never in
+a monospace family. Every `ocelle-pill-tag`, in either variant and in every mode, a count badge and a filter toggle
+included, is a state pill, so its corners take `--ocelle-radius-pill`. In forced colours the pill and the badge keep a
+visible border. The status colours are checked for contrast on the main grounds; a badge placed on a state ground
+(inside a notice, say) is outside that check.
+
+**Densities.** `density="compact"` sets the text in `--ocelle-font-size-xs` at `--ocelle-line-height-snug` (1.2), with a
+block padding of exactly `--ocelle-space-1` and an inline padding of `--ocelle-space-2`; the default density sets it in
+`--ocelle-font-size-sm` at `--ocelle-line-height-tight`, padded `--ocelle-space-1` and `--ocelle-space-3`. An unknown
+`variant` or `density` shows the default and stays in the attribute as written.
+
+**Content.** The default slot holds the text; the `icon` slot takes one decorative icon before the text, one line tall,
+following the slot convention, so a pill has the same height with and without an icon. A pill with no text renders an
+empty pill. The part `pill` (the visual box) can be styled with `::part()`.
+
+**A static pill.** A static pill, one with neither `interactive` nor a link `href`, is not focusable, has no role of its
+own and exposes its text as plain text; a click on it reaches the elements around it as a click on its text would (an
+enclosing link follows, a focusable ancestor takes focus). A static pill wraps a text that does not fit onto further
+lines; it never truncates it. `label` and `disabled` have no effect on a static pill. `title` and ARIA attributes on a
+static pill stay on the element as written; the element does not move or change them, and `title` keeps the browser's
+own tooltip. ARIA states and names on a static pill (`aria-pressed`, `aria-label`, `aria-labelledby` and the others)
+stay on an element with no role, where axe may report them: remove them (`removeAttribute`) once a pill is static, or
+clear them before making it static. An `href` that is empty, whitespace only, does not parse as a URL or is a
+`javascript:` URL is no link: the pill stays static. The interactive pill, with `interactive` or a link `href`, is
+described with its interactive modes.
+
+**Layout.** In a flex row a static pill is not shrunk below its longest word, so a one-word pill such as "Blocked" stays
+on one line beside a long name; a host that wants it to shrink further sets `min-inline-size: 0` on it, and its words
+then break inside the pill. A static pill's longest word is capped at its container's whole inline size, beyond which
+it breaks inside the pill; beside a sibling in a flex row such a word can make the row overflow by the sibling's
+width, unless the host sets `min-inline-size: 0` on the pill. In a grid track or a flex column that stretches its items
+a short static pill keeps the width of its text; only its host is stretched. A one-line pill sits on the baseline of
+the text around it, inline in text and in a flex row aligned by baseline, with and without an icon; a pill that wraps
+fills its line, its first line on that line's baseline.
+
+`ocelle-pill-tag` reads the tokens `--ocelle-color-<status>` and `--ocelle-color-<status>-bg` of the five statuses,
+`--ocelle-border-width`, `--ocelle-radius-pill`, `--ocelle-font-sans`, `--ocelle-figures`, `--ocelle-font-size-sm`,
+`--ocelle-font-size-xs`, `--ocelle-line-height-tight`, `--ocelle-line-height-snug`, `--ocelle-space-1`,
+`--ocelle-space-2` and `--ocelle-space-3`. A static pill emits no event of its own.
 
 ## Mapping from kitty-mission-ui
 

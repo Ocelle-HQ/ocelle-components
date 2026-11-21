@@ -23,6 +23,9 @@ literal `ms` value. The seven tokens are additions to the token names: a minor c
 `--ocelle-size-indicator` and `--ocelle-motion-pulse`, the two tokens of `ocelle-status-indicator` of
 `@ocelle/elements`, are additions to the token names: a minor change.
 
+`--ocelle-line-height-snug`, the compact line height of `ocelle-pill-tag` of `@ocelle/elements`, is an addition to the
+token names: a minor change.
+
 ### Added
 
 - `fonts/`: Schibsted Grotesk, the variable `wght` WOFF2 with its SIL Open Font License 1.1 (`OFL.txt`), declared
@@ -49,7 +52,8 @@ literal `ms` value. The seven tokens are additions to the token names: a minor c
   - type: `--ocelle-font-sans`, `--ocelle-font-display`, `--ocelle-figures`, `--ocelle-font-size-xs`,
     `--ocelle-font-size-sm`, `--ocelle-font-size-md`, `--ocelle-font-size-fact`, `--ocelle-font-size-subhead` (the
     prose `h2` of `@ocelle/styles`, 003), `--ocelle-font-size-lg`, `--ocelle-font-size-xl`, `--ocelle-font-size-2xl`,
-    `--ocelle-line-height-tight`, `--ocelle-line-height-normal`, `--ocelle-line-height-relaxed`,
+    `--ocelle-line-height-tight`, `--ocelle-line-height-snug` (the compact `ocelle-pill-tag` of `@ocelle/elements`,
+    018), `--ocelle-line-height-normal`, `--ocelle-line-height-relaxed`,
     `--ocelle-line-height-compact` (the compact scale of `@ocelle/styles`, 003), `--ocelle-line-height-prose` (the
     prose running text of `@ocelle/styles`, 003), `--ocelle-font-weight-regular`, `--ocelle-font-weight-medium`, `--ocelle-font-weight-strong`,
     `--ocelle-font-weight-display`, `--ocelle-tracking-display`, and the eyebrow tokens of `@ocelle/elements`' section

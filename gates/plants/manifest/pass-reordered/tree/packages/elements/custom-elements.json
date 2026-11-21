@@ -2237,6 +2237,186 @@
       ]
     },
     {
+      "path": "src/ocelle-pill-tag.ts",
+      "kind": "javascript-module",
+      "exports": [
+        {
+          "name": "OcellePillTag",
+          "kind": "js",
+          "declaration": {
+            "name": "OcellePillTag",
+            "module": "src/ocelle-pill-tag.ts"
+          }
+        }
+      ],
+      "declarations": [
+        {
+          "tagName": "ocelle-pill-tag",
+          "superclass": {
+            "package": "lit",
+            "name": "LitElement"
+          },
+          "slots": [
+            {
+              "name": "",
+              "description": "The text. A static pill wraps a text that does not fit onto further lines; it never truncates."
+            },
+            {
+              "name": "icon",
+              "description": "One decorative icon before the text (the slot convention), one line tall."
+            }
+          ],
+          "name": "OcellePillTag",
+          "members": [
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "interactive",
+              "kind": "field",
+              "description": "Button mode (user story 4): with it, or with a link-mode `href`, the pill is interactive; without either it is\nstatic, inert content with no role of its own. Reflected.",
+              "default": "false",
+              "attribute": "interactive"
+            },
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "href",
+              "kind": "field",
+              "description": "The link's URL: a non-empty `href` that parses as a URL and is not a `javascript:` URL puts the pill in link mode\n(user story 4); any other value leaves it static, or in button mode with `interactive`. Reflected.",
+              "default": "undefined",
+              "attribute": "href"
+            },
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "disabled",
+              "kind": "field",
+              "description": "Disabled, for an interactive pill (user story 4); no effect while the pill is static. Reflected.",
+              "default": "false",
+              "attribute": "disabled"
+            },
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "privacy": "public",
+              "name": "label",
+              "kind": "field",
+              "description": "The accessible name of an interactive pill's inner control (user story 4), trimmed; empty or whitespace-only counts\nas none. It changes no visible text and has no effect while the pill is static. Not reflected.",
+              "default": "undefined",
+              "attribute": "label"
+            },
+            {
+              "type": {
+                "text": "\"info\" | \"success\" | \"warning\" | \"danger\" | \"neutral\""
+              },
+              "name": "status",
+              "kind": "field",
+              "description": "The status the pill shows: the `status` attribute when it is one of `info`, `success`, `warning`, `danger` and\n`neutral`, else `neutral`. Setting it writes the attribute as given.",
+              "default": "\"neutral\""
+            },
+            {
+              "type": {
+                "text": "\"pill\" | \"badge\""
+              },
+              "name": "variant",
+              "kind": "field",
+              "description": "The look: the `variant` attribute when it is `badge`, else `pill`. Setting it writes the attribute as given.",
+              "default": "\"pill\""
+            },
+            {
+              "type": {
+                "text": "\"default\" | \"compact\""
+              },
+              "name": "density",
+              "kind": "field",
+              "description": "The spacing: the `density` attribute when it is `compact`, else `default`. Setting it writes the attribute as given.",
+              "default": "\"default\""
+            }
+          ],
+          "kind": "class",
+          "events": [],
+          "description": "A state pill or a count badge: its text, with an optional leading icon, on its status's colours with the pill radius.",
+          "customElement": true,
+          "cssProperties": [],
+          "cssParts": [
+            {
+              "name": "pill",
+              "description": "The visual box: the padding, the colours, the border and the radius."
+            }
+          ],
+          "attributes": [
+            {
+              "type": {
+                "text": "\"info\" | \"success\" | \"warning\" | \"danger\" | \"neutral\""
+              },
+              "name": "status",
+              "description": "The status the pill shows, in its colours: `info`, `success`, `warning`, `danger` or `neutral`. Absent, empty or any other value shows `neutral` and stays in the attribute as written."
+            },
+            {
+              "type": {
+                "text": "\"pill\" | \"badge\""
+              },
+              "name": "variant",
+              "description": "`pill`, the default, filled with the status ground; `badge`, outlined in the status colour with no fill, its text in tabular figures. Any other value is `pill` and stays in the attribute as written."
+            },
+            {
+              "type": {
+                "text": "\"default\" | \"compact\""
+              },
+              "name": "density",
+              "description": "`default` or `compact` (the extra-small text, line height `--ocelle-line-height-snug`, padding `--ocelle-space-1` / `--ocelle-space-2`). Any other value is `default` and stays in the attribute as written."
+            },
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "name": "interactive",
+              "fieldName": "interactive",
+              "description": "Button mode (user story 4): with it, or with a link-mode `href`, the pill is interactive; without either it is\nstatic, inert content with no role of its own. Reflected.",
+              "default": "false"
+            },
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "name": "href",
+              "fieldName": "href",
+              "description": "The link's URL: a non-empty `href` that parses as a URL and is not a `javascript:` URL puts the pill in link mode\n(user story 4); any other value leaves it static, or in button mode with `interactive`. Reflected.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "name": "disabled",
+              "fieldName": "disabled",
+              "description": "Disabled, for an interactive pill (user story 4); no effect while the pill is static. Reflected.",
+              "default": "false"
+            },
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "name": "label",
+              "fieldName": "label",
+              "description": "The accessible name of an interactive pill's inner control (user story 4), trimmed; empty or whitespace-only counts\nas none. It changes no visible text and has no effect while the pill is static. Not reflected.",
+              "default": "undefined"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "path": "src/ocelle-progress.ts",
       "kind": "javascript-module",
       "exports": [
