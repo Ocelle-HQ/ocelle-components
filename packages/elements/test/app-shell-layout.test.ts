@@ -1,7 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { type AppShellTier } from "../src/ocelle-app-shell.ts";
 import "../src/ocelle-app-shell.ts";
 import { inProcessDriver } from "./in-process.ts";
+import { layoutWait } from "./layout-wait.ts";
 
 const driver = inProcessDriver();
 
@@ -211,6 +212,71 @@ describe("ocelle-app-shell layout", () => {
     expect(shell.tier).toBe("collapsed");
     expect(shell.contentTarget).toBe(stableMain);
     await expect.poll(() => events).toEqual([{ previousTier: "expanded", tier: "collapsed" }]);
+  });
+
+  it("releases its observers and Lit controllers on disconnect", async () => {
+    const shell = await mount();
+    const frame = required(shell.parentElement);
+    const lifecycle: string[] = [];
+    shell.addController({
+      hostConnected: () => { lifecycle.push("connect"); },
+      hostDisconnected: () => { lifecycle.push("disconnect"); },
+    });
+    const measure = vi.spyOn(shell, "remeasure");
+    size("850px");
+    await tier(shell, "collapsed");
+    await layoutWait("frame");
+    expect(measure).toHaveBeenCalled();
+
+    const item = document.createElement("ocelle-nav-item");
+    item.href = "#project";
+    item.label = "Project";
+    item.slot = "sidebar";
+    frame.append(item);
+    await item.updateComplete;
+    const label = (): Element => required(item.shadowRoot?.querySelector('[part="label"]'));
+    expect(label().hasAttribute("hidden")).toBe(false);
+
+    shell.remove();
+    expect(lifecycle).toEqual(["connect", "disconnect"]);
+    measure.mockClear();
+    shell.append(item);
+    await layoutWait("frame");
+    expect(measure).not.toHaveBeenCalled();
+    expect(label().hasAttribute("hidden")).toBe(false);
+
+    frame.append(shell);
+    await shell.updateComplete;
+    await expect.poll(() => label().hasAttribute("hidden")).toBe(true);
+    expect(lifecycle).toEqual(["connect", "disconnect", "connect"]);
+  });
+
+  it("cancels a pending tier announcement when disconnected", async () => {
+    const shell = await mount('narrow-below="400px" collapse-below="600px"');
+    size("800px");
+    await tier(shell, "expanded");
+    const frame = required(shell.parentElement);
+    const bar = required(shell.shadowRoot?.querySelector("ocelle-top-bar"));
+    const { promise: pending, resolve: release } = Promise.withResolvers<boolean>();
+    Object.defineProperty(bar, "updateComplete", { configurable: true, get: () => pending });
+    const events: unknown[] = [];
+    shell.addEventListener("ocelle-app-shell-tier-change", (event) => {
+      events.push((event as CustomEvent<unknown>).detail);
+    });
+
+    size("500px");
+    shell.remeasure();
+    await shell.updateComplete;
+    expect(shell.tier).toBe("collapsed");
+    shell.remove();
+    release(true);
+    await layoutWait("frame");
+    expect(events).toEqual([]);
+
+    size("300px");
+    frame.append(shell);
+    await tier(shell, "narrow");
+    await expect.poll(() => events).toEqual([{ previousTier: "expanded", tier: "narrow" }]);
   });
 
   it("reports only the latest completed tier when child rendering is still pending", async () => {

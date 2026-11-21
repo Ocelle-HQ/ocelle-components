@@ -58,6 +58,10 @@ The candidate adds the responsive shell, its threshold tokens and package entry,
 - The tests in `219f40a` cover overflow when a finite parsed coefficient is multiplied by its font size, per-bound inherited token fallback, root-scaled defaults, and tier settlement after reconnect. Six isolated source faults failed their intended Chromium assertions, including removing reconnect measurement or scheduling remeasurement on a detached shell.
 - Published fallback values now convert directly from the computed root font size. Final shell navigation and layout tests passed 46/46. Scoped lint, TypeScript and the diff check passed.
 
+## Observer and disconnect evidence
+
+- The final shell browser suites passed 48/48. Four isolated faults failed separate Chromium assertions. They left the resize observer running, left the subtree observer running, skipped Lit controller disconnection, or emitted a pending tier transition after disconnect. The native observer assertions use the repository's layout-settlement helper. Scoped lint, TypeScript and the diff check passed.
+
 ## Canonical workflow status
 
 The workflow's canonical `red.sh 3 phase` replay recorded tests-only `a0612f39fe3579984879f800c4f8b13fab148089` with test exit 1. Its full log reports 62 failures out of 9,698 tests, including 19 direct app-shell layout, navigation and standalone-entry failures. It also contains token and manifest assertions and unrelated font, integration timeout and form timing failures. The full affected-plant selection is 317 plants because the package export change is unmapped. The completed focused mutation diagnostics are above. Canonical head and final-tests-on-base checks and independent review are pending. The targeted evidence above does not replace those checks.
