@@ -69,7 +69,7 @@ The candidate adds the responsive shell, its threshold tokens and package entry,
 ## Explicit default-slot section styling
 
 - Tests-only commit `7f37f6b` reproduced the wide layout failure for a section with `slot=""`. It had 0px inline padding where an implicit default section had 16px. The sidebar now applies the same wide and compact styles to both forms. The test also verifies 4px compact inline padding and absence of an extra leading divider while leaving the named footer alone.
-- The shell layout, navigation, and standalone context-sidebar suites passed 74/74. Scoped lint, style lint, TypeScript and the diff check passed.
+- The shell layout, navigation, and standalone context-sidebar suites passed 74/74. Scoped lint, style lint, TypeScript and the diff check passed. The pinned visual comparison captured 42 shell, sidebar, and token story-theme cases twice and found no differences.
 
 ## Canonical workflow status
 
