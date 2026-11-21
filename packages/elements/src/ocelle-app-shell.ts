@@ -16,7 +16,8 @@ type Region = "rail" | "sidebar";
 const narrowToken = "--ocelle-app-shell-narrow-below";
 const collapseToken = "--ocelle-app-shell-collapse-below";
 const landmark = "nav:not([role]), [role=navigation], ocelle-context-sidebar:not([role]), ocelle-personal-rail:not([role])";
-const emptyContainers = "nav, [role=navigation], ocelle-context-sidebar, ocelle-personal-rail, ul, ol, section";
+const contentWrappers = "nav, [role=navigation], ocelle-context-sidebar, ocelle-personal-rail, div, span, p, ul, ol, li, section, article, aside";
+const presentationOwners = new WeakMap<OcelleNavItem | OcelleContextSidebar, OcelleAppShell>();
 
 function assignedRegion(host: HTMLElement, name: Region): Element[] {
   return [...host.children].filter((child) => child.getAttribute("slot") === name);
@@ -29,7 +30,7 @@ function navItems(elements: readonly Element[]): OcelleNavItem[] {
 function hasContent(node: Node): boolean {
   if (node.nodeType === Node.TEXT_NODE) return (node.textContent ?? "").trim() !== "";
   if (!(node instanceof Element) || node.matches("[hidden], template, script")) return false;
-  if (!node.matches(emptyContainers)) return true;
+  if (!node.matches(contentWrappers)) return true;
   return [...node.childNodes].some(hasContent);
 }
 
@@ -339,12 +340,16 @@ export class OcelleAppShell extends LitElement {
     const items = new Set([...railItems, ...sidebarItems]);
     for (const item of this.#managedItems) {
       if (!items.has(item)) {
-        setNavItemCompact(item, undefined);
-        setNavItemChrome(item, false);
+        if (presentationOwners.get(item) === this) {
+          presentationOwners.delete(item);
+          setNavItemCompact(item, undefined);
+          setNavItemChrome(item, false);
+        }
         this.#managedItems.delete(item);
       }
     }
     for (const item of items) {
+      presentationOwners.set(item, this);
       setNavItemCompact(item, sidebarItems.has(item) ? compact : undefined);
       setNavItemChrome(item, railItems.has(item));
       this.#managedItems.add(item);
@@ -352,11 +357,15 @@ export class OcelleAppShell extends LitElement {
 
     for (const sidebar of this.#managedSidebars) {
       if (!sidebars.includes(sidebar)) {
-        setContextSidebarCompact(sidebar, false);
+        if (presentationOwners.get(sidebar) === this) {
+          presentationOwners.delete(sidebar);
+          setContextSidebarCompact(sidebar, false);
+        }
         this.#managedSidebars.delete(sidebar);
       }
     }
     for (const sidebar of sidebars) {
+      presentationOwners.set(sidebar, this);
       setContextSidebarCompact(sidebar, compact);
       this.#managedSidebars.add(sidebar);
     }
