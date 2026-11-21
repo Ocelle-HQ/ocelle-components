@@ -23,24 +23,21 @@ const users = new WeakMap<StyleRoot, number>();
 const owners = new WeakMap<Element, CompactSections>();
 
 export class CompactSections {
-  readonly #sections = new Set<Element>();
+  #sections = new Set<Element>();
   #root: StyleRoot | undefined;
 
   update(host: HTMLElement, sections: readonly Element[]): void {
     const next = new Set(sections);
     for (const section of this.#sections) {
-      if (next.has(section)) continue;
-      if (owners.get(section) === this) {
-        section.removeAttribute(marker);
-        owners.delete(section);
-      }
-      this.#sections.delete(section);
+      if (next.has(section) || owners.get(section) !== this) continue;
+      section.removeAttribute(marker);
+      owners.delete(section);
     }
     for (const section of next) {
       owners.set(section, this);
-      section.setAttribute(marker, "");
-      this.#sections.add(section);
+      section.toggleAttribute(marker, true);
     }
+    this.#sections = next;
 
     const root = host.getRootNode();
     const nextRoot = next.size > 0 && (root instanceof Document || root instanceof ShadowRoot) ? root : undefined;

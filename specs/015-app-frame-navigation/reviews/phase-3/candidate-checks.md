@@ -46,6 +46,11 @@ The candidate adds the responsive shell, its threshold tokens and package entry,
 - The tests-only commit `e710a67` reproduced one failure and three passes on `e67f646`. A rendered custom destination with `tabindex="0"` was bypassed during focus recovery. The fixed fallback includes an explicitly tabbable visible host and skips opaque placeholders without a sequential stop, with a negative tabindex, or hidden.
 - The layout and navigation suites passed 41/41 after the change.
 
+## Compact stylesheet and nested focus follow-up
+
+- The tests in `33a4697` passed on the previous candidate and detected four isolated faults. The test assertions failed if a sending shell cleared a received section's compact styles, a same-tier update reordered an authored stylesheet, the shell overrode personal item presentation, or focus recovery crossed the shell boundary and treated its inner destinations as outer sidebar chrome.
+- Compact-section bookkeeping now replaces its tracked set after each update and changes marker presence without rewriting the attribute value. The shell frame owns the sidebar width state, and main padding classes use Lit's class map. The shell layout and navigation suites passed 44/44. Scoped lint, TypeScript and the diff check passed.
+
 ## Canonical workflow status
 
 The workflow's canonical `red.sh 3 phase` replay recorded tests-only `a0612f39fe3579984879f800c4f8b13fab148089` with test exit 1. Its full log reports 62 failures out of 9,698 tests, including 19 direct app-shell layout, navigation and standalone-entry failures. It also contains token and manifest assertions and unrelated font, integration timeout and form timing failures. The full affected-plant selection is 317 plants because the package export change is unmapped. The completed focused mutation diagnostics are above. Canonical head and final-tests-on-base checks and independent review are pending. The targeted evidence above does not replace those checks.

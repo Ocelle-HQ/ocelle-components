@@ -1,4 +1,5 @@
 import { LitElement, css, html, nothing } from "lit";
+import { classMap } from "lit/directives/class-map.js";
 import { define } from "./define.ts";
 import { deepActive, walk } from "./focusable.ts";
 import { accessibleName } from "./naming.ts";
@@ -116,7 +117,7 @@ export class OcelleAppShell extends LitElement {
       inline-size: var(--ocelle-shell-sidebar-width);
     }
 
-    .sidebar.compact {
+    .frame[data-compact-sidebar] .sidebar {
       inline-size: var(--ocelle-shell-rail-width);
     }
 
@@ -274,11 +275,11 @@ export class OcelleAppShell extends LitElement {
         .showMenu=${this.#tier === "narrow" && navigationAvailable}>
         ${this.#actions ? html`<slot name="actions" slot="actions"></slot>` : nothing}
       </ocelle-top-bar>
-      <div class="frame">
-        ${this.#region("rail", this.#rail, false, this.railLabel)}
-        ${this.#region("sidebar", this.#sidebar, this.#sidebarCompact, this.sidebarLabel)}
+      <div class="frame" ?data-compact-sidebar=${this.#sidebarCompact}>
+        ${this.#region("rail", this.#rail, this.railLabel)}
+        ${this.#region("sidebar", this.#sidebar, this.sidebarLabel)}
         <main part="main" tabindex="-1"
-          class=${[this.flushBlockEnd ? "flush-block-end" : "", this.flushInlineEnd ? "flush-inline-end" : ""].join(" ")}>
+          class=${classMap({ "flush-block-end": this.flushBlockEnd, "flush-inline-end": this.flushInlineEnd })}>
           <slot></slot>
         </main>
       </div>
@@ -297,14 +298,14 @@ export class OcelleAppShell extends LitElement {
     return this.renderRoot.querySelector("ocelle-top-bar")?.shadowRoot?.querySelector("button");
   }
 
-  #region(name: Region, populated: boolean, compact: boolean, label: string): unknown {
+  #region(name: Region, populated: boolean, label: string): unknown {
     const supplied = assignedRegion(this, name).some((element) => hasContent(element) && (
       element.matches(landmark) || [...element.querySelectorAll(landmark)].some((node) =>
         hasContent(node) && node.closest("[hidden]") === null)
     ));
     const bare = populated && !supplied;
     return html`
-      <div part="navigation" class=${compact ? `${name} compact` : name}
+      <div part="navigation" class=${name}
         ?hidden=${!populated || this.#tier === "narrow"}
         role=${bare ? "navigation" : nothing}
         aria-label=${bare ? accessibleName(label, null) ?? (name === "rail" ? "Account" : "Workspace") : nothing}>
