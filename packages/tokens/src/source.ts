@@ -97,6 +97,7 @@ export const records = tokenRecords([
     name: "color-accent-strong",
     group: "colour",
     value: { light: "#8F5E0F", dark: "#E0A23A" },
+    // on the main grounds also the selected bars of the listbox, tabs and segmented choice (014 research.md R-17)
     contrast: { kind: "non-text", grounds: [...main, ...stateGrounds, ...chrome] },
   },
   // focus ring

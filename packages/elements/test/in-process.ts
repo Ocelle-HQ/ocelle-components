@@ -36,9 +36,10 @@ import { runningOf } from "./animations.ts";
 import delayText from "./fixtures/tooltip-delay.css?raw";
 import { layoutWait } from "./layout-wait.ts";
 import { activeInnerOf, activePath, clickElement, computedOf, copyElement, currentOf, endOrder, focusElement, morphElement, preventNextEvent, recordEvents, resetPage, sentinelId, startOrder, takeRecords } from "./page-side.ts";
+import { installPageHelpers, pageHelpers } from "./page-helpers.ts";
 import { decodePng } from "./pixels.ts";
 import { heardTypes } from "./scenarios/driver.ts";
-import type { Box, Drawing, ElementTarget, Entries, Heard, InProcessDriver, InsertHow, NavigationRecord, Operation, Paint, Part, Placement, Reading, Sheets, TreeNode, Validity } from "./scenarios/driver.ts";
+import type { Box, DriverTarget, Drawing, ElementTarget, Entries, Heard, InProcessDriver, InsertHow, NavigationRecord, Operation, Paint, Part, Placement, Reading, Sheets, TreeNode, Validity } from "./scenarios/driver.ts";
 import { probe } from "./scenarios/probe.ts";
 
 /**
@@ -104,6 +105,29 @@ function element(id: string): HTMLElement {
   if (found === null) throw new Error(`no #${id} on the page`);
   return found;
 }
+
+/**
+ * The element a `DriverTarget` names, of any form (the element with the id, the first match of `inner` in its shadow
+ * root, or the index-th child of a tag of a parent), through test/page-helpers.ts `resolve`, which the fixture driver
+ * uses too: 014's methods resolve with it, main's methods with `resolve` below (the second merge of main).
+ */
+function resolveNode(target: DriverTarget): HTMLElement {
+  installPageHelpers();
+  return pageHelpers().resolve(target);
+}
+
+/** The `userEvent.keyboard` text for `key` pressed with `modifiers` held, then released in reverse order. */
+function keyboardText(key: string, modifiers: readonly string[]): string {
+  const token = key.length === 1 ? key.replace(/^[{[]$/, (char) => char + char) : `{${key}}`;
+  return `${modifiers.map((modifier) => `{${modifier}>}`).join("")}${token}${[...modifiers].reverse().map((modifier) => `{/${modifier}}`).join("")}`;
+}
+
+/** Two animation frames, then a task. */
+async function framesAndTask(): Promise<void> {
+  await new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)));
+  await new Promise((done) => setTimeout(done, 0));
+}
+
 
 const nextFrame = (): Promise<unknown> => new Promise((resolve) => requestAnimationFrame(resolve));
 
@@ -478,6 +502,8 @@ export function inProcessDriver(): InProcessDriver {
   let keyed = false;
   const driver: InProcessDriver = {
     mount: async (markup, options = {}) => {
+      installPageHelpers();
+      pageHelpers().reset();
       useTestTiming();
       restoreReadyState();
       for (const stop of listeners.splice(0)) stop();
@@ -515,12 +541,12 @@ export function inProcessDriver(): InProcessDriver {
       document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet(rules)];
       await settle();
     },
-    box: (id, inner) => {
-      const host = element(id);
-      const target = inner === undefined ? host : host.shadowRoot?.querySelector(inner);
-      if (target === null || target === undefined) return Promise.resolve(absent);
-      const rect = target.getBoundingClientRect();
-      return Promise.resolve({ x: rect.x, y: rect.y, width: rect.width, height: rect.height, display: getComputedStyle(target).display });
+    box: (target, inner) => {
+      const host = resolveNode(target);
+      const measured = inner === undefined ? host : host.shadowRoot?.querySelector(inner);
+      if (measured === null || measured === undefined) return Promise.resolve(absent);
+      const rect = measured.getBoundingClientRect();
+      return Promise.resolve({ x: rect.x, y: rect.y, width: rect.width, height: rect.height, display: getComputedStyle(measured).display });
     },
     lines: (id) => Promise.resolve([...element(id).getClientRects()].map((rect) => ({ x: rect.x, y: rect.y, width: rect.width, height: rect.height }))),
     drawing: (id) => {
@@ -576,6 +602,7 @@ export function inProcessDriver(): InProcessDriver {
     },
     computed: (id, property, inner) => Promise.resolve(computedOf({ id, property, inner })),
     computedOf: (target, property) => Promise.resolve(getComputedStyle(resolve(target)).getPropertyValue(property)),
+      computedNode: (target, property) => Promise.resolve(getComputedStyle(resolveNode(target)).getPropertyValue(property)),
     resolveColour: (value) => {
       const colourProbe = document.createElement("span");
       probe().ignore(colourProbe);
@@ -930,6 +957,80 @@ export function inProcessDriver(): InProcessDriver {
     focusTarget: async (target) => {
       resolve(target).focus();
       await settle();
+    },
+    focusNode: async (target) => {
+      resolveNode(target).focus();
+      await settle();
+    },
+    pressKeys: async (key, modifiers = []) => {
+      await userEvent.keyboard(keyboardText(key, modifiers));
+      await settle();
+    },
+    clickTarget: async (target, options = {}) => {
+      await userEvent.click(resolveNode(target), { button: options.button ?? "left", modifiers: [...(options.modifiers ?? [])], clickCount: options.count ?? 1, force: options.force ?? false });
+      await settle();
+    },
+    hoverTarget: async (target) => {
+      await userEvent.hover(resolveNode(target));
+      await settle();
+    },
+    focusedElement: () => {
+      installPageHelpers();
+      return Promise.resolve(pageHelpers().focused());
+    },
+    mutate: async (target, steps) => {
+      resolveNode(target);
+      pageHelpers().mutate(target, steps);
+      await settle();
+    },
+    resize: (target, inlineSize) => {
+      resolveNode(target).style.setProperty("inline-size", `${String(inlineSize)}px`);
+      return Promise.resolve();
+    },
+    afterResizeDelivery: (target) => {
+      const observed = resolveNode(target);
+      return new Promise((done) => {
+        const observer = new ResizeObserver(() => {
+          observer.disconnect();
+          done();
+        });
+        observer.observe(observed);
+      });
+    },
+    computedPart: (target, which, property) => {
+      const host = resolveNode(target);
+      const at = which.indexOf("::");
+      const name = at === -1 ? which : which.slice(0, at);
+      const pseudo = at === -1 ? null : which.slice(at);
+      const part = name === "" ? host : host.shadowRoot?.querySelector(`[part~="${name}"]`);
+      if (part === null || part === undefined) throw new Error(`no part ${name} in the shadow root`);
+      return Promise.resolve(getComputedStyle(part, pseudo).getPropertyValue(property));
+    },
+    scrollOffset: () => Promise.resolve({ x: window.scrollX, y: window.scrollY }),
+    setViewportSize: async (width, height) => {
+      await page.viewport(width, height);
+      await settle();
+    },
+    keydownRecord: () => {
+      installPageHelpers();
+      return Promise.resolve([...pageHelpers().keydowns]);
+    },
+    clipboardCalls: () => {
+      installPageHelpers();
+      return Promise.resolve([...pageHelpers().clipboard]);
+    },
+    activationRecord: (target, options) => {
+      resolveNode(target);
+      pageHelpers().activation(target, options);
+      return Promise.resolve(async () => {
+        await framesAndTask();
+        return [...pageHelpers().activations];
+      });
+    },
+    axStates: (target, scope) => commands.axStates(target, scope),
+    axUpdates: async (target) => {
+      await commands.axUpdatesStart(target);
+      return () => commands.axUpdatesStop();
     },
     scrollLeft: (target) => Promise.resolve(resolve(target).scrollLeft),
     setScrollLeft: async (target, value) => {

@@ -1,6 +1,38 @@
 # Spec Kit Flows Diary
 
 ## 2026-11-20
+* **Finding**: mission 014 (#14, PR #54) ran 7 phases, all approved and folded. The landing merged `main` twice: ac2f991 (008, 009, 011, 013 and ops) and e47888d (010, 012, #52 and #53). It added two test-first folds as operator rounds:
+  - phase 7 round 2: the composed dialog + listbox story;
+  - phase 6 round 3: US5-7 under subpixel text.
+
+  Landing round 1 had two blocking findings, L1-01 and L1-02, with one cause. Landing round 2 approved. CI was green on the final merged head, all jobs, in [run 44797053961](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/44797053961).
+* **Finding**: the composed dialog + listbox story found a real defect. `ocelle-dialog` open at page load picked its initial focus before `ocelle-listbox` had rendered its shadow list and slot, so focus fell back to the close control. The implementer stopped instead of changing the expectation, and the operator chose a listbox-side fix (phase 7 decision 2): `performUpdate()` at connect. Keep it: a composed story is worth a stop-and-ask brief, because it tests the seam between two missions' elements.
+* **Finding**: the planner wrote the operator's fix into `tasks.md` and `research.md` as a cause ("writes the tab stop at connect") before the implementer had measured it. The measured cause was different (the shadow list rendered late), and the correction cost notes R3-02 and R4-01 plus one planner pass. Candidate: when an operator decision names a fix before the cause is measured, the planner marks the cause as the first diagnosis and lets the fix record state the measured one.
+* **Finding**: US5-7, a forced-colours pixel test, failed in CI on every run since the first merge and passed locally. It also blocked all 80 mutation shards ("Stryker wrote no report"). The cause was the environment:
+  - CI's Chromium draws text with subpixel (LCD) antialiasing;
+  - the local `/opt/pw-browsers` headless-shell wrapper adds `--disable-lcd-text`, and the local fontconfig is grayscale;
+  - a coloured glyph fringe reached a sample under the 80%-opaque Highlight ring.
+
+  It was reproduced in the Playwright Docker image, including at the pre-merge head. Phase 6 round 3 spaced the test link and added a permanent subpixel test (`link-subpixel.test.ts` with a committed `fonts.conf`). Candidate (repository): pixel tests that sample near text run once under subpixel text locally, or the local launch matches CI's text rendering.
+* **Finding**: Recurred (first: 2026-11-13). No CI ran on the branch before the first merge of `main`, so the US5-7 failure surfaced only at landing and could not be dated until the Docker reproduction. Candidate: `/ocelle-run` pushes and reads CI at least once per phase.
+* **Finding**: two landing-fold tasks named a round-scoped plant base (`--affected <red>^`). The review procedure requires `base.sha`, and after a merge of `main` that base selects every plant. This gave two blocking findings (phase 7 R3-01, phase 6 R4-01), closed by operator decisions; CI's full Plants run later stood in (landing decision 5). Candidate: after a merge of `main`, the landing names CI's full Plants run as the plants evidence for every phase, and fold tasks say so.
+* **Finding**: test-driver name collisions across parallel missions cost twelve renames over two merges:
+  - first merge: `press`, `click`, `hover`, `activeElement`, `viewportSize`;
+  - second merge: `Target`, `ClickOptions`, `focus`, `computed`, `AxState`, `AxScope` values, and `scenarios/link.ts` itself.
+
+  Landing decision 3 (rename 014's side, leave `main` untouched) held for both. Candidate (repository): missions that extend the shared `Driver` prefix their additions, or triage lists the `Driver` methods each parallel mission adds.
+* **Finding**: Recurred (first: 2026-11-12). `tdd-check.sh`'s base and scaffold sub-checks exited 2 ("no test file found") after the merges and still counted as red (phase 6 R4-02, phase 7 R3-03). Follow-up candidate, seen in five missions: treat exit 2 as `unavailable`.
+* **Finding**: Recurred (first: 2026-11-16). `gate:signoff` over the pre-merge range flagged `main`'s six squash commits; `origin/main..HEAD` was clean (121 commits after the second merge). Follow-up candidate, seen in four missions.
+* **Finding**: Recurred (first: 2026-11-13). Container and worker restarts:
+  - killed two detached full plants runs, at 280 of 314 plants and in an earlier run;
+  - stopped dockerd;
+  - once left a stale `/var/run/docker.pid`, which blocked dockerd until it was removed.
+
+  The weekly API rate limit stopped the first merge agent until it reset. The operator's later choice to have CI carry the heavy gates (landing decision 5) removed the 4–5 h local plants run altogether. Keep it: on a public repository, CI's full Plants, Visual, Unit and Mutation runs are the heavy-gate evidence.
+* **Finding**: Recurred (first: 2026-11-12). The rule 8 grep flagged the pnpm store path, and now also the checkout path, in 34 committed phase logs. The landing redacted them (749a41d). Follow-up candidate, seen in eight missions: `red.sh` and `tdd-check.sh` redact both when they write the log.
+* **Finding**: the orchestrator misreported CI as "29 of 30 jobs" from the first page of a job list. The run had 129 jobs, and 82 had failed, the mutation shards included. Landing round 1 caught it. Candidate: read every page of the job list (or the run's conclusion) before reporting CI.
+* **Finding**: Recurred (first: 2026-11-09). Landing findings folded as operator rounds worked again: phase 7 round 2 and phase 6 round 3, then planner task, red `fix-N`, fix, and review. Follow-up candidate, seen in ten missions: name the route in `/ocelle-land` step 2.5.
+* **Finding**: Recurred (first: 2026-11-09). The Stop hook asked about a dozen times to commit or push while agents held uncommitted work or a merge was in progress. Follow-up candidate, seen in eleven missions.
 * **Finding**: mission 010 (#9, PR #49) ran 5 phases, all approved and folded. Phase 2 took 11 rounds (six fix rounds, three of them operator rounds on CI limits after merges of `main`). The fresh landing review found one real gap, L1-01: a form reset before `ocelle-form-select`'s first render lost the default option, fixed test-first in phase 4 fix-2. L1-02 was a commit with no sign-off, fixed by the operator-approved re-sign. Landing round 2 approved. CI green on [run 44727062211](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/44727062211), 158 of 158 jobs.
 * **Finding**: the orchestrator blamed `fileParallelism: false` on the `elements` project for the slow element mutation shards after the second merge of `main`, and operator round 7 split the timing files into a serial project. The measurement showed the opposite: `@stryker-mutator/vitest-runner` 10.1.1 forces `maxWorkers: 1`, so test files run one at a time under Stryker anyway, and the split made the cancelled shard slower (2748 s to 3515 s). Round 8 reverted it and raised the limit instead (phase 2 rounds 7 and 8, `reviews/phase-2/mutation.md`). Candidate: before an operator round changes a test configuration for mutation speed, measure one shard under Stryker first and put the figure in the question.
 * **Finding**: the slowest element mutation shard took 3060 s on the merged head (run 44727062211), over the old 45-minute limit and under the 75-minute limit of operator round 8. Element shard time grows with the number of element test files (120 after the second merge), because every mutant run and the dry run take them one at a time. Candidate (repository): fold this figure into op 017 (#42, element shards by mutant count) before the limit is reached again.

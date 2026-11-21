@@ -7,6 +7,8 @@ import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 import type { Browser, Page } from "playwright";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
+import { axeContext, ruleMeta, ruleOptions } from "../../../gates/lib/axe-rules.ts";
+import type { AxeRule } from "../../../gates/lib/axe-rules.ts";
 import { readScrollWidth, readTextBoxes } from "../../../packages/elements/test/commands.ts";
 
 // The element stories in the built Storybook (005 US1 scenario 13, FR-019; research.md R-14; analysis G4 and L14;
@@ -1757,5 +1759,442 @@ describe("every progressbar in the stories of the four elements is named (013 PL
       await page.close();
       expect({ unnamed: names.filter((name) => name.trim() === "").length, present: holdsBar ? names.length > 0 : "not required" }).toEqual({ unnamed: 0, present: holdsBar ? true : "not required" });
     });
+  }
+});
+
+/** axe-core's script, injected into a story page as the axe gate injects it (gates/bin/axe.ts). */
+const axeScript = readFileSync(fileURLToPath(new URL("../../../node_modules/axe-core/axe.js", import.meta.url)), "utf8");
+
+/**
+ * Runs axe-core on a story page with the axe gate's rule set and context (gates/lib/axe-rules.ts: the default rules and
+ * the WCAG 2.x A and AA rules, less the experimental and the harness-document rules; Storybook's harness nodes
+ * excluded), and returns each violation's rule id and impact.
+ */
+async function axeViolations(page: Page): Promise<{ readonly id: string; readonly impact: string | null }[]> {
+  await page.addScriptTag({ content: axeScript });
+  const rules = await page.evaluate(() => (window as unknown as { axe: { _audit: { rules: AxeRule[] } } }).axe._audit.rules.map((rule) => ({ id: rule.id, tags: [...rule.tags], enabled: rule.enabled, ...(rule.selector === undefined ? {} : { selector: rule.selector }) })));
+  const options = { rules: ruleOptions(ruleMeta(rules)), context: axeContext() };
+  return page.evaluate(async ({ rules, context }) => {
+    const axe = (window as unknown as { axe: { run: (context: unknown, options: unknown) => Promise<{ violations: { id: string; impact?: string | null }[] }> } }).axe;
+    const results = await axe.run(context, { rules, resultTypes: ["violations"] });
+    return results.violations.map((violation) => ({ id: violation.id, impact: violation.impact ?? null }));
+  }, options);
+}
+
+/** What a listbox story's page shows: its theme, whether both elements are defined, its listboxes and their options. */
+function observeListboxes(page: Page): Promise<unknown> {
+  return page.evaluate(() => {
+    let active: Element | null = document.activeElement;
+    while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement;
+    return {
+      theme: document.documentElement.dataset.theme,
+      defined: [customElements.get("ocelle-listbox") !== undefined, customElements.get("ocelle-option") !== undefined],
+      listboxes: [...document.querySelectorAll("#storybook-root ocelle-listbox")].map((listbox) => {
+        const list = listbox.shadowRoot?.querySelector('[part="list"]');
+        return {
+          value: (listbox as unknown as { value?: unknown }).value,
+          scrolls: list === null || list === undefined ? null : list.scrollHeight > list.clientHeight,
+          options: [...listbox.querySelectorAll("ocelle-option")].map((option) => ({
+            text: option.textContent.trim(),
+            selected: option.getAttribute("aria-selected"),
+            disabled: option.getAttribute("aria-disabled") === "true",
+            focused: option === active,
+          })),
+        };
+      }),
+    };
+  });
+}
+
+/** The options of a five-folder story: `selected` the selected one, `disabled` the disabled one, `focused` the focused one. */
+function folderOptions(selected: string | null, disabled = "", focused = ""): unknown[] {
+  return ["alpha", "beta", "gamma", "delta", "epsilon"].map((text) => ({ text, selected: text === selected ? "true" : "false", disabled: text === disabled, focused: text === focused }));
+}
+
+const tenFolders = ["alpha", "beta", "gamma", "delta", "epsilon", "zeta", "eta", "theta", "iota", "kappa"];
+
+// The listbox stories (014 FR-050, FR-051; research.md R-01, R-12; T019): each story renders its options with the
+// states the listbox writes, in light and dark, and axe with the axe gate's rule set reports no `aria-allowed-attr`
+// violation (the internals kept where axe-core reads them; plant: the internals in a private field) and no serious or
+// critical violation. The scrolling listbox scrolls; the focused story's option has focus after its `play`.
+const listboxStories = [
+  { id: "elements-ocelle-listbox--no-selection", listboxes: [{ value: "", scrolls: false, options: folderOptions(null) }] },
+  { id: "elements-ocelle-listbox--selected", listboxes: [{ value: "gamma", scrolls: false, options: folderOptions("gamma") }] },
+  { id: "elements-ocelle-listbox--disabled-option", listboxes: [{ value: "gamma", scrolls: false, options: folderOptions("gamma", "beta") }] },
+  { id: "elements-ocelle-listbox--focused-option", listboxes: [{ value: "gamma", scrolls: false, options: folderOptions("gamma", "", "delta") }] },
+  { id: "elements-ocelle-listbox--hovered-option", listboxes: [{ value: "gamma", scrolls: false, options: folderOptions("gamma") }] },
+  {
+    id: "elements-ocelle-listbox--scrolling-listbox",
+    listboxes: [{ value: "delta", scrolls: true, options: tenFolders.map((text) => ({ text, selected: text === "delta" ? "true" : "false", disabled: false, focused: false })) }],
+  },
+  {
+    id: "elements-ocelle-listbox--option-with-icon",
+    listboxes: [
+      {
+        value: "projects",
+        scrolls: false,
+        options: [
+          { text: "Projects", selected: "true", disabled: false, focused: false },
+          { text: "Notes", selected: "false", disabled: false, focused: false },
+        ],
+      },
+    ],
+  },
+] as const;
+
+describe("the ocelle-listbox stories in the built Storybook (014 FR-050, FR-051)", { timeout: 60_000 }, () => {
+  for (const { id, listboxes } of listboxStories) {
+    for (const theme of ["light", "dark"] as const) {
+      it(`${id} in ${theme}: renders its options with the states the listbox writes, and axe reports no aria-allowed-attr and no serious or critical violation`, async () => {
+        const { page, outside } = await open(id, theme, "ocelle-option");
+        const observed = await observeListboxes(page);
+        const violations = await axeViolations(page);
+        expect({
+          observed,
+          allowedAttr: violations.filter((violation) => violation.id === "aria-allowed-attr"),
+          serious: violations.filter((violation) => violation.impact === "serious" || violation.impact === "critical"),
+          outside,
+        }).toEqual({ observed: { theme, defined: [true, true], listboxes }, allowedAttr: [], serious: [], outside: [] });
+        await page.close();
+      });
+    }
+  }
+});
+
+// The composed ocelle-dialog + ocelle-listbox story (014 FR-054; research.md R-12 "Amendment: the composed story";
+// reviews/phase-7/round-2.md O2-01; T114), as 008's composed tooltip story ("Inside an open dialog") is: an open, modal
+// `ocelle-dialog` labelled "Open project" whose body holds the five-folder `ocelle-listbox` with `gamma` selected. On
+// open the dialog moves focus to the first focusable element of its body (008 FR-007), which is the listbox's single
+// tab stop, the selected option (US1 roving tabindex), so `gamma` is focused. The listbox lies inside that dialog and
+// the centre of the `gamma` option hits that option (inside the modal, not behind it). Axe with the axe gate's full
+// rule set reports no violation and no serious or critical incomplete, with no new exception (R-12).
+describe("the composed ocelle-dialog + ocelle-listbox story in the built Storybook (014 FR-054, O2-01)", { timeout: 60_000 }, () => {
+  const id = "elements-ocelle-listbox--inside-an-open-dialog";
+  for (const theme of ["light", "dark"] as const) {
+    it(`${id} in ${theme}: renders an open, modal ocelle-dialog "Open project" holding the five-folder listbox with gamma selected and focused, the gamma option on top at its centre, and axe's full rule set reports no violation and no serious or critical incomplete`, async () => {
+      const { page, outside } = await open(id, theme, "ocelle-option");
+      await page.evaluate(async () => {
+        await Promise.all([...document.querySelectorAll("#storybook-root ocelle-dialog, #storybook-root ocelle-listbox")].map((each) => (each as unknown as { updateComplete?: Promise<unknown> }).updateComplete ?? Promise.resolve()));
+        await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      });
+      const dialogs = await observeDialogs(page);
+      const listboxes = await observeListboxes(page);
+      const placed = await page.evaluate(() => {
+        const dialog = document.querySelector("#storybook-root ocelle-dialog");
+        const listbox = document.querySelector("#storybook-root ocelle-listbox");
+        const option = listbox?.querySelector('ocelle-option[value="gamma"]') ?? null;
+        const box = option?.getBoundingClientRect();
+        return {
+          inDialog: dialog !== null && listbox !== null && listbox.closest("ocelle-dialog") === dialog,
+          onTop: box === undefined ? false : document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2) === option,
+        };
+      });
+      const results = await axeResults(page);
+      expect({
+        dialogs,
+        listboxes,
+        placed,
+        violations: results.violations,
+        incomplete: results.incomplete.filter((each) => each.impact === "serious" || each.impact === "critical"),
+        outside,
+      }).toEqual({
+        dialogs: { theme, base: { linked: true, scheme: theme }, defined: true, dialogs: [shownDialog("Open project")] },
+        listboxes: { theme, defined: [true, true], listboxes: [{ value: "gamma", scrolls: false, options: folderOptions("gamma", "", "gamma") }] },
+        placed: { inDialog: true, onTop: true },
+        violations: [],
+        incomplete: [],
+        outside: [],
+      });
+      await page.close();
+    });
+  }
+});
+
+/**
+ * Runs axe-core on a story page with the axe gate's full rule set and context, as `axeViolations` does, and returns each
+ * violation's and each incomplete result's rule id and impact (014 FR-051, research.md R-02: the gate counts a serious or
+ * critical incomplete as a finding).
+ */
+async function axeResults(page: Page): Promise<{ readonly violations: { readonly id: string; readonly impact: string | null }[]; readonly incomplete: { readonly id: string; readonly impact: string | null }[] }> {
+  await page.addScriptTag({ content: axeScript });
+  const rules = await page.evaluate(() => (window as unknown as { axe: { _audit: { rules: AxeRule[] } } }).axe._audit.rules.map((rule) => ({ id: rule.id, tags: [...rule.tags], enabled: rule.enabled, ...(rule.selector === undefined ? {} : { selector: rule.selector }) })));
+  const options = { rules: ruleOptions(ruleMeta(rules)), context: axeContext() };
+  return page.evaluate(async ({ rules, context }) => {
+    interface Result {
+      id: string;
+      impact?: string | null;
+    }
+    const axe = (window as unknown as { axe: { run: (context: unknown, options: unknown) => Promise<{ violations: Result[]; incomplete: Result[] }> } }).axe;
+    const results = await axe.run(context, { rules, resultTypes: ["violations", "incomplete"] });
+    const project = (each: Result): { id: string; impact: string | null } => ({ id: each.id, impact: each.impact ?? null });
+    return { violations: results.violations.map(project), incomplete: results.incomplete.map(project) };
+  }, options);
+}
+
+/** What a tabs story's page shows: its theme, whether the three elements are defined, its tabs and their panels. */
+function observeTabs(page: Page): Promise<unknown> {
+  return page.evaluate(() => {
+    let active: Element | null = document.activeElement;
+    while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement;
+    return {
+      theme: document.documentElement.dataset.theme,
+      defined: ["ocelle-tabs", "ocelle-tab", "ocelle-tab-panel"].map((tag) => customElements.get(tag) !== undefined),
+      tabs: [...document.querySelectorAll("#storybook-root ocelle-tabs")].map((tabs) => {
+        const children = [...tabs.children];
+        return {
+          value: (tabs as unknown as { value?: unknown }).value,
+          rows: new Set(children.filter((child) => child.localName === "ocelle-tab").map((child) => Math.round(child.getBoundingClientRect().y))).size,
+          tabs: children
+            .filter((child) => child.localName === "ocelle-tab")
+            .map((child) => ({ text: child.textContent.trim(), selected: child.getAttribute("aria-selected"), disabled: child.getAttribute("aria-disabled") === "true", focused: child === active })),
+          panels: children.filter((child) => child.localName === "ocelle-tab-panel").map((child) => ({ shown: child.getClientRects().length > 0, focused: child === active })),
+        };
+      }),
+    };
+  });
+}
+
+/** The tabs of `names`: `selected` the selected one, `disabled` the disabled one, `focused` the focused one. */
+function viewTabs(names: readonly string[], selected: string, disabled = "", focused = ""): unknown[] {
+  return names.map((text) => ({ text, selected: text === selected ? "true" : "false", disabled: text === disabled, focused: text === focused }));
+}
+
+/** The panels of `count` tabs: the `shown`-th shown, the `focused`-th focused. */
+function viewPanels(count: number, shown: number, focused = -1): unknown[] {
+  return Array.from({ length: count }, (_, index) => ({ shown: index === shown, focused: index === focused }));
+}
+
+const missionViews = ["Spec", "Plan", "Tasks"];
+const wrappedViews = ["Specification", "Planning", "Research", "Contracts", "Quickstart", "Tasks"];
+
+// The tabs stories (014 FR-050, FR-051; research.md R-01, R-02, R-12; T045): each story renders its tabs with the
+// states the tabs write and only the selected tab's panel shown, in light and dark, and axe with the axe gate's full
+// rule set reports no violation and no serious or critical incomplete (plant: `aria-labelledby` on every panel, which
+// makes axe-core 4.14.0's color-contrast throw on the tabs whose panel is unassigned, reviews/phase-3/spike.md). The
+// wrapped story's tabs lie on more than one row; the focus stories' targets have focus after their `play`.
+const tabsStories = [
+  { id: "elements-ocelle-tabs--first-selected", tabs: [{ value: "spec", rows: 1, tabs: viewTabs(missionViews, "Spec"), panels: viewPanels(3, 0) }] },
+  { id: "elements-ocelle-tabs--another-selected", tabs: [{ value: "plan", rows: 1, tabs: viewTabs(missionViews, "Plan"), panels: viewPanels(3, 1) }] },
+  { id: "elements-ocelle-tabs--disabled-tab", tabs: [{ value: "spec", rows: 1, tabs: viewTabs(missionViews, "Spec", "Plan"), panels: viewPanels(3, 0) }] },
+  { id: "elements-ocelle-tabs--wrapped-rows", tabs: [{ value: "research", rows: 2, tabs: viewTabs(wrappedViews, "Research"), panels: viewPanels(6, 2) }] },
+  { id: "elements-ocelle-tabs--focused-tab", tabs: [{ value: "spec", rows: 1, tabs: viewTabs(missionViews, "Spec", "", "Plan"), panels: viewPanels(3, 0) }] },
+  { id: "elements-ocelle-tabs--hovered-tab", tabs: [{ value: "spec", rows: 1, tabs: viewTabs(missionViews, "Spec"), panels: viewPanels(3, 0) }] },
+  { id: "elements-ocelle-tabs--focused-tab-panel", tabs: [{ value: "plan", rows: 1, tabs: viewTabs(missionViews, "Plan"), panels: viewPanels(3, 1, 1) }] },
+  { id: "elements-ocelle-tabs--tab-with-icon", tabs: [{ value: "files", rows: 1, tabs: viewTabs(["Files", "Search"], "Files"), panels: viewPanels(2, 0) }] },
+] as const;
+
+describe("the ocelle-tabs stories in the built Storybook (014 FR-050, FR-051)", { timeout: 60_000 }, () => {
+  for (const { id, tabs } of tabsStories) {
+    for (const theme of ["light", "dark"] as const) {
+      it(`${id} in ${theme}: renders its tabs with the states the tabs write and the selected panel shown, and axe's full rule set reports no violation and no serious or critical incomplete`, async () => {
+        const { page, outside } = await open(id, theme, "ocelle-tab");
+        const observed = await observeTabs(page);
+        const results = await axeResults(page);
+        expect({
+          observed,
+          violations: results.violations,
+          incomplete: results.incomplete.filter((each) => each.impact === "serious" || each.impact === "critical"),
+          outside,
+        }).toEqual({ observed: { theme, defined: [true, true, true], tabs }, violations: [], incomplete: [], outside: [] });
+        await page.close();
+      });
+    }
+  }
+});
+
+/** What a segmented-choice story's page shows: its theme, whether both elements are defined, its groups and their segments. */
+function observeSegments(page: Page): Promise<unknown> {
+  return page.evaluate(() => {
+    let active: Element | null = document.activeElement;
+    while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement;
+    return {
+      theme: document.documentElement.dataset.theme,
+      defined: ["ocelle-segmented-choice", "ocelle-segment"].map((tag) => customElements.get(tag) !== undefined),
+      groups: [...document.querySelectorAll("#storybook-root ocelle-segmented-choice")].map((group) => {
+        const segments = [...group.children].filter((child) => child.localName === "ocelle-segment");
+        return {
+          value: (group as unknown as { value?: unknown }).value,
+          joined: group.hasAttribute("joined"),
+          rows: new Set(segments.map((child) => Math.round(child.getBoundingClientRect().y))).size,
+          segments: segments.map((child) => ({ text: child.textContent.trim(), pressed: child.getAttribute("aria-pressed"), disabled: child.getAttribute("aria-disabled") === "true", focused: child === active })),
+        };
+      }),
+    };
+  });
+}
+
+/** The segments of `names`: `pressed` the pressed one, `disabled` the disabled one, `focused` the focused one. */
+function laneSegments(names: readonly string[], pressed: string, disabled = "", focused = ""): unknown[] {
+  return names.map((text) => ({ text, pressed: text === pressed ? "true" : "false", disabled: text === disabled, focused: text === focused }));
+}
+
+const laneNames = ["All", "Mine", "Blocked", "Done"];
+
+// The segmented-choice stories (014 FR-050, FR-051; research.md R-01, R-06, R-12; T064): each story renders its group
+// with the states the group writes, in light and dark, and axe with the axe gate's full rule set reports no violation and
+// no serious or critical incomplete (no new entry in a11y-exceptions.json, FR-051). The joined stories carry `joined`;
+// the wrapped story's segments lie on two rows, the others on one; the focused story's target has focus after its
+// `play`.
+const segmentedStories = [
+  { id: "elements-ocelle-segmented-choice--default", groups: [{ value: "all", joined: false, rows: 1, segments: laneSegments(laneNames, "All") }] },
+  { id: "elements-ocelle-segmented-choice--joined-one-row", groups: [{ value: "all", joined: true, rows: 1, segments: laneSegments(laneNames, "All") }] },
+  { id: "elements-ocelle-segmented-choice--joined-wrapped", groups: [{ value: "mine", joined: true, rows: 2, segments: laneSegments(laneNames, "Mine") }] },
+  { id: "elements-ocelle-segmented-choice--pressed", groups: [{ value: "blocked", joined: false, rows: 1, segments: laneSegments(laneNames, "Blocked") }] },
+  { id: "elements-ocelle-segmented-choice--disabled-segment", groups: [{ value: "all", joined: false, rows: 1, segments: laneSegments(laneNames, "All", "Mine") }] },
+  { id: "elements-ocelle-segmented-choice--focused-segment", groups: [{ value: "all", joined: false, rows: 1, segments: laneSegments(laneNames, "All", "", "Mine") }] },
+  { id: "elements-ocelle-segmented-choice--hovered-segment", groups: [{ value: "all", joined: false, rows: 1, segments: laneSegments(laneNames, "All") }] },
+  { id: "elements-ocelle-segmented-choice--hovered-joined-segment", groups: [{ value: "all", joined: true, rows: 1, segments: laneSegments(laneNames, "All") }] },
+  { id: "elements-ocelle-segmented-choice--segment-with-icon", groups: [{ value: "files", joined: false, rows: 1, segments: laneSegments(["Files", "Table"], "Files") }] },
+] as const;
+
+describe("the ocelle-segmented-choice stories in the built Storybook (014 FR-050, FR-051)", { timeout: 60_000 }, () => {
+  for (const { id, groups } of segmentedStories) {
+    for (const theme of ["light", "dark"] as const) {
+      it(`${id} in ${theme}: renders its segments with the states the group writes, and axe's full rule set reports no violation and no serious or critical incomplete`, async () => {
+        const { page, outside } = await open(id, theme, "ocelle-segment");
+        const observed = await observeSegments(page);
+        const results = await axeResults(page);
+        expect({
+          observed,
+          violations: results.violations,
+          incomplete: results.incomplete.filter((each) => each.impact === "serious" || each.impact === "critical"),
+          outside,
+        }).toEqual({ observed: { theme, defined: [true, true], groups }, violations: [], incomplete: [], outside: [] });
+        await page.close();
+      });
+    }
+  }
+});
+
+/** What a copy-field story's page shows: its theme, whether the field and the icon are defined, and each field's state. */
+function observeCopyFields(page: Page): Promise<unknown> {
+  return page.evaluate(() => {
+    let active: Element | null = document.activeElement;
+    while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement;
+    return {
+      theme: document.documentElement.dataset.theme,
+      defined: ["ocelle-copy-field", "ocelle-icon"].map((tag) => customElements.get(tag) !== undefined),
+      fields: [...document.querySelectorAll("#storybook-root ocelle-copy-field")].map((field) => {
+        const root = field.shadowRoot;
+        const text = root?.querySelector<HTMLElement>('[part~="value"]');
+        const control = root?.querySelector<HTMLButtonElement>('[part~="copy-control"]');
+        const lineHeight = text === null || text === undefined ? 0 : Number.parseFloat(getComputedStyle(text).lineHeight);
+        const height = text === null || text === undefined ? 0 : text.getBoundingClientRect().height - Number.parseFloat(getComputedStyle(text).paddingTop) - Number.parseFloat(getComputedStyle(text).paddingBottom);
+        return {
+          value: (field as unknown as { value?: unknown }).value,
+          status: root?.querySelector('[role="status"]')?.textContent ?? null,
+          wrapped: lineHeight > 0 && Math.round(height / lineHeight) > 1,
+          disabled: control?.disabled ?? null,
+          name: control?.getAttribute("aria-label") ?? null,
+          focused: control !== null && control !== undefined && control === active,
+          icon: control?.querySelector("ocelle-icon")?.getAttribute("name") ?? null,
+        };
+      }),
+    };
+  });
+}
+
+const manifestCommand = "pnpm --filter @ocelle/elements run manifest";
+const implementCommand = "spec-kitty agent workflow implement --mission 014-selection-input --phase 5 --base main --worktree .worktrees/014-selection-input-phase-5 --no-push";
+
+/** A field as `observeCopyFields` reads it. */
+function copyField(value: string, options: { readonly status?: string; readonly wrapped?: boolean; readonly name?: string; readonly focused?: boolean } = {}): unknown {
+  return { value, status: options.status ?? "", wrapped: options.wrapped === true, disabled: value === "", name: options.name ?? "Copy", focused: options.focused === true, icon: "copy" };
+}
+
+// The copy-field stories (014 FR-050, FR-051; research.md R-07, R-12; T079): each story renders its field with the
+// state it states, in light and dark, and axe with the axe gate's full rule set reports no violation and no serious or
+// critical incomplete (no new entry in a11y-exceptions.json, FR-051). The wrapped story's long command lies on more
+// than one line at the story's 320 px, the others on one; the status story shows its status in the live region;
+// the empty story's control is disabled; the focused story's control has focus after its `play`.
+const copyFieldStories = [
+  { id: "elements-ocelle-copy-field--short", fields: [copyField(manifestCommand)] },
+  { id: "elements-ocelle-copy-field--wrapped-long-command", fields: [copyField(implementCommand, { wrapped: true })] },
+  { id: "elements-ocelle-copy-field--with-status", fields: [copyField(manifestCommand, { status: "Copied to clipboard" })] },
+  { id: "elements-ocelle-copy-field--empty-disabled", fields: [copyField("")] },
+  { id: "elements-ocelle-copy-field--focused-copy-control", fields: [copyField(manifestCommand, { name: "Copy command", focused: true })] },
+] as const;
+
+describe("the ocelle-copy-field stories in the built Storybook (014 FR-050, FR-051)", { timeout: 60_000 }, () => {
+  for (const { id, fields } of copyFieldStories) {
+    for (const theme of ["light", "dark"] as const) {
+      it(`${id} in ${theme}: renders its field with the state it states, and axe's full rule set reports no violation and no serious or critical incomplete`, async () => {
+        const { page, outside } = await open(id, theme, "ocelle-copy-field");
+        const observed = await observeCopyFields(page);
+        const results = await axeResults(page);
+        expect({
+          observed,
+          violations: results.violations,
+          incomplete: results.incomplete.filter((each) => each.impact === "serious" || each.impact === "critical"),
+          outside,
+        }).toEqual({ observed: { theme, defined: [true, true], fields }, violations: [], incomplete: [], outside: [] });
+        await page.close();
+      });
+    }
+  }
+});
+
+/** What a link story's page shows: its theme, whether the link is defined, and each link's state. */
+function observeLinks(page: Page): Promise<unknown> {
+  return page.evaluate(() => {
+    let active: Element | null = document.activeElement;
+    while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement;
+    return {
+      theme: document.documentElement.dataset.theme,
+      defined: customElements.get("ocelle-link") !== undefined,
+      links: [...document.querySelectorAll("#storybook-root ocelle-link")].map((link) => {
+        const anchor = link.shadowRoot?.querySelector<HTMLElement>('[part~="anchor"]');
+        return {
+          inParagraph: link.parentElement?.localName === "p",
+          href: anchor?.getAttribute("href") ?? null,
+          label: anchor?.getAttribute("aria-label") ?? null,
+          lines: new Set([...link.getClientRects()].filter((rect) => rect.width > 0).map((rect) => Math.round(rect.top))).size,
+          underline: anchor === null || anchor === undefined ? null : getComputedStyle(anchor).textDecorationLine,
+          focused: anchor !== null && anchor !== undefined && anchor === active,
+        };
+      }),
+    };
+  });
+}
+
+/** A link as `observeLinks` reads it. */
+function storyLink(options: { readonly href?: string | null; readonly label?: string; readonly lines?: number; readonly focused?: boolean } = {}): unknown {
+  return { inParagraph: true, href: options.href === undefined ? "#mission-log" : options.href, label: options.label ?? null, lines: options.lines ?? 1, underline: "underline", focused: options.focused === true };
+}
+
+// The link stories (014 FR-050, FR-051; research.md R-08, R-10, R-12; T095): each story renders its link inside a
+// paragraph with the state it states, underlined, in light and dark, and axe with the axe gate's full rule set reports
+// no violation and no serious or critical incomplete (no new entry in a11y-exceptions.json, FR-051). That rule set
+// holds `label-content-name-mismatch` (WCAG 2.5.3, impact serious): the `label` story's label contains the visible
+// text, so the rule finds nothing (plant: a story label without the visible text, R-08 "Label in name"). The wrapped
+// story's link lies on three lines at the story's width, the others on one (on two lines, the union box of the anchor,
+// whose text is slotted, has its centre between the lines, and axe-core 4.14.0 reports a serious color-contrast
+// incomplete, bgOverlap; reviews/phase-6/notes.md); the focused story's link has focus
+// after its `play`; the label story's link has no href and its anchor carries the label.
+const linkStories = [
+  { id: "elements-ocelle-link--in-a-paragraph", links: [storyLink()] },
+  { id: "elements-ocelle-link--wrapped-across-lines", links: [storyLink({ lines: 3 })] },
+  { id: "elements-ocelle-link--focused", links: [storyLink({ focused: true })] },
+  { id: "elements-ocelle-link--hovered", links: [storyLink()] },
+  { id: "elements-ocelle-link--with-label", links: [storyLink({ href: null, label: "the mission log, opens in the viewer" })] },
+] as const;
+
+describe("the ocelle-link stories in the built Storybook (014 FR-050, FR-051)", { timeout: 60_000 }, () => {
+  for (const { id, links } of linkStories) {
+    for (const theme of ["light", "dark"] as const) {
+      it(`${id} in ${theme}: renders its link in a paragraph with the state it states, and axe's full rule set reports no violation (no label-content-name-mismatch included) and no serious or critical incomplete`, async () => {
+        const { page, outside } = await open(id, theme, "ocelle-link");
+        const observed = await observeLinks(page);
+        const results = await axeResults(page);
+        expect({
+          observed,
+          violations: results.violations,
+          mismatch: results.violations.filter((each) => each.id === "label-content-name-mismatch"),
+          incomplete: results.incomplete.filter((each) => each.impact === "serious" || each.impact === "critical"),
+          outside,
+        }).toEqual({ observed: { theme, defined: true, links }, violations: [], mismatch: [], incomplete: [], outside: [] });
+        await page.close();
+      });
+    }
   }
 });

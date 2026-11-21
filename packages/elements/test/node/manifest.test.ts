@@ -420,6 +420,44 @@ describe("serialise(manifest)", () => {
 const unionOfTheSet =
   '"chevron-start" | "chevron-end" | "chevron-up" | "chevron-down" | "arrow-start" | "arrow-end" | "menu" | "close" | "folder" | "file" | "search" | "table" | "copy" | undefined';
 
+type Described = Record<string, unknown>;
+
+/** Whether an entry has a non-empty description. */
+const hasDescription = (entry: Described): boolean => typeof entry.description === "string" && entry.description !== "";
+
+/** Entries sorted by name. */
+const byName = <T extends Described>(entries: readonly T[]): T[] => [...entries].sort((a, b) => String(a.name).localeCompare(String(b.name)));
+
+/**
+ * The element declaration of one module of the repository's manifest, projected to what contracts/elements.md states:
+ * each public member's type, attribute, whether it reflects and its default, each attribute's field, each event's
+ * detail type, the slot, part and CSS property names, and whether each has a description; lists sorted by name.
+ */
+async function declared(path: string): Promise<unknown> {
+  const manifest = await generate(repo);
+  const modules = manifest.modules as { path: string; declarations: Described[] }[];
+  const [element] = modules.find((module) => module.path === path)?.declarations ?? [];
+  if (element === undefined) return undefined;
+  const list = (key: string): Described[] => byName((element[key] ?? []) as Described[]);
+  return {
+    name: element.name,
+    tagName: element.tagName,
+    members: list("members").map((member) => ({
+      name: member.name,
+      type: (member.type as { text?: unknown } | undefined)?.text,
+      attribute: member.attribute,
+      reflects: member.reflects === true,
+      default: member.default,
+      described: hasDescription(member),
+    })),
+    attributes: list("attributes").map((attribute) => ({ name: attribute.name, fieldName: attribute.fieldName, described: hasDescription(attribute) })),
+    events: list("events").map((event) => ({ name: event.name, type: (event.type as { text?: unknown } | undefined)?.text, described: hasDescription(event) })),
+    slots: list("slots").map((slot) => ({ name: slot.name, described: hasDescription(slot) })),
+    cssParts: list("cssParts").map((part) => ({ name: part.name, described: hasDescription(part) })),
+    cssProperties: list("cssProperties").map((property) => property.name),
+  };
+}
+
 /** The attributes `ocelle-button` moves onto its inner control, in the order it declares them (012 FR-009). */
 const moved = ["aria-expanded", "aria-controls", "aria-current", "aria-haspopup", "aria-pressed", "aria-label", "aria-labelledby", "aria-describedby", "title"];
 
@@ -434,6 +472,7 @@ describe("generate(root) on the repository's element source", () => {
       "src/ocelle-button.ts",
       "src/ocelle-card.ts",
       "src/ocelle-context-sidebar.ts",
+      "src/ocelle-copy-field.ts",
       "src/ocelle-dialog.ts",
       "src/ocelle-drawer.ts",
       "src/ocelle-empty-state.ts",
@@ -442,14 +481,22 @@ describe("generate(root) on the repository's element source", () => {
       "src/ocelle-form-input.ts",
       "src/ocelle-form-select.ts",
       "src/ocelle-icon.ts",
+      "src/ocelle-link.ts",
       "src/ocelle-list-detail.ts",
+      "src/ocelle-listbox.ts",
       "src/ocelle-nav-item.ts",
       "src/ocelle-notice.ts",
+      "src/ocelle-option.ts",
       "src/ocelle-page-header.ts",
       "src/ocelle-personal-rail.ts",
       "src/ocelle-progress.ts",
       "src/ocelle-scroller.ts",
       "src/ocelle-section-header.ts",
+      "src/ocelle-segment.ts",
+      "src/ocelle-segmented-choice.ts",
+      "src/ocelle-tab-panel.ts",
+      "src/ocelle-tab.ts",
+      "src/ocelle-tabs.ts",
       "src/ocelle-tooltip.ts",
       "src/ocelle-top-bar.ts",
       "src/ocelle-workflow-board.ts",
@@ -504,6 +551,173 @@ describe("generate(root) on the repository's element source", () => {
       { name: "tone", fieldName: "tone", type: { text: '"mono" | undefined' }, default: "undefined", described: true },
       { name: "label", fieldName: "label", type: { text: "string | undefined" }, default: "undefined", described: true },
     ]);
+  });
+
+  it("declares ocelle-listbox per contracts/elements.md: value (string, not reflected, default empty) and label, the change and activate events with their { value } detail, the default slot and the list part (014 FR-055)", async () => {
+    const listbox = await declared("src/ocelle-listbox.ts");
+    expect(listbox).toEqual({
+      name: "OcelleListbox",
+      tagName: "ocelle-listbox",
+      members: [
+        { name: "label", type: "string | undefined", attribute: "label", reflects: false, default: "undefined", described: true },
+        { name: "value", type: "string", attribute: "value", reflects: false, default: '""', described: true },
+      ],
+      attributes: [
+        { name: "label", fieldName: "label", described: true },
+        { name: "value", fieldName: "value", described: true },
+      ],
+      events: [
+        { name: "ocelle-listbox-activate", type: "CustomEvent<{ value: string }>", described: true },
+        { name: "ocelle-listbox-change", type: "CustomEvent<{ value: string }>", described: true },
+      ],
+      slots: [{ name: "", described: true }],
+      cssParts: [{ name: "list", described: true }],
+      cssProperties: [],
+    });
+  });
+
+  it("declares ocelle-option per contracts/elements.md: value (string, reflected) and disabled (boolean, reflected, default false), the default and icon slots, no event, part or CSS property (014 FR-055)", async () => {
+    const option = await declared("src/ocelle-option.ts");
+    expect(option).toEqual({
+      name: "OcelleOption",
+      tagName: "ocelle-option",
+      members: [
+        { name: "disabled", type: "boolean", attribute: "disabled", reflects: true, default: "false", described: true },
+        { name: "value", type: "string", attribute: "value", reflects: true, default: expect.any(String) as unknown, described: true },
+      ],
+      attributes: [
+        { name: "disabled", fieldName: "disabled", described: true },
+        { name: "value", fieldName: "value", described: true },
+      ],
+      events: [],
+      slots: [
+        { name: "", described: true },
+        { name: "icon", described: true },
+      ],
+      cssParts: [],
+      cssProperties: [],
+    });
+  });
+
+  it("declares ocelle-tabs per contracts/elements.md: value (string, not reflected) and label, the change event with its { value } detail, the default slot and the tablist and panels parts (014 FR-055, phase 3)", async () => {
+    const tabs = await declared("src/ocelle-tabs.ts");
+    expect(tabs).toEqual({
+      name: "OcelleTabs",
+      tagName: "ocelle-tabs",
+      members: [
+        { name: "label", type: "string | undefined", attribute: "label", reflects: false, default: "undefined", described: true },
+        { name: "value", type: "string", attribute: "value", reflects: false, default: expect.any(String) as unknown, described: true },
+      ],
+      attributes: [
+        { name: "label", fieldName: "label", described: true },
+        { name: "value", fieldName: "value", described: true },
+      ],
+      events: [{ name: "ocelle-tabs-change", type: "CustomEvent<{ value: string }>", described: true }],
+      slots: [{ name: "", described: true }],
+      cssParts: [
+        { name: "panels", described: true },
+        { name: "tablist", described: true },
+      ],
+      cssProperties: [],
+    });
+  });
+
+  it("declares ocelle-tab per contracts/elements.md: value (string, reflected) and disabled (boolean, reflected, default false), the default and icon slots, no event, part or CSS property (014 FR-055, phase 3)", async () => {
+    const tab = await declared("src/ocelle-tab.ts");
+    expect(tab).toEqual({
+      name: "OcelleTab",
+      tagName: "ocelle-tab",
+      members: [
+        { name: "disabled", type: "boolean", attribute: "disabled", reflects: true, default: "false", described: true },
+        { name: "value", type: "string", attribute: "value", reflects: true, default: expect.any(String) as unknown, described: true },
+      ],
+      attributes: [
+        { name: "disabled", fieldName: "disabled", described: true },
+        { name: "value", fieldName: "value", described: true },
+      ],
+      events: [],
+      slots: [
+        { name: "", described: true },
+        { name: "icon", described: true },
+      ],
+      cssParts: [],
+      cssProperties: [],
+    });
+  });
+
+  it("declares ocelle-tab-panel per contracts/elements.md: no property, attribute, event, part or CSS property, and the default slot (014 FR-055, phase 3)", async () => {
+    const panel = await declared("src/ocelle-tab-panel.ts");
+    expect(panel).toEqual({ name: "OcelleTabPanel", tagName: "ocelle-tab-panel", members: [], attributes: [], events: [], slots: [{ name: "", described: true }], cssParts: [], cssProperties: [] });
+  });
+
+  it("declares ocelle-segmented-choice per contracts/elements.md: value (string, not reflected), label and joined (boolean, reflected, default false), the change event with its { value } detail, the default slot and no part (014 FR-055, phase 4)", async () => {
+    const group = await declared("src/ocelle-segmented-choice.ts");
+    expect(group).toEqual({
+      name: "OcelleSegmentedChoice",
+      tagName: "ocelle-segmented-choice",
+      members: [
+        { name: "joined", type: "boolean", attribute: "joined", reflects: true, default: "false", described: true },
+        { name: "label", type: "string | undefined", attribute: "label", reflects: false, default: "undefined", described: true },
+        { name: "value", type: "string", attribute: "value", reflects: false, default: expect.any(String) as unknown, described: true },
+      ],
+      attributes: [
+        { name: "joined", fieldName: "joined", described: true },
+        { name: "label", fieldName: "label", described: true },
+        { name: "value", fieldName: "value", described: true },
+      ],
+      events: [{ name: "ocelle-segmented-choice-change", type: "CustomEvent<{ value: string }>", described: true }],
+      slots: [{ name: "", described: true }],
+      cssParts: [],
+      cssProperties: [],
+    });
+  });
+
+  it("declares ocelle-segment per contracts/elements.md: value (string, reflected) and disabled (boolean, reflected, default false), the default and icon slots, no event, part or CSS property, and no row state as surface (014 FR-055, phase 4)", async () => {
+    const segment = await declared("src/ocelle-segment.ts");
+    expect(segment).toEqual({
+      name: "OcelleSegment",
+      tagName: "ocelle-segment",
+      members: [
+        { name: "disabled", type: "boolean", attribute: "disabled", reflects: true, default: "false", described: true },
+        { name: "value", type: "string", attribute: "value", reflects: true, default: expect.any(String) as unknown, described: true },
+      ],
+      attributes: [
+        { name: "disabled", fieldName: "disabled", described: true },
+        { name: "value", fieldName: "value", described: true },
+      ],
+      events: [],
+      slots: [
+        { name: "", described: true },
+        { name: "icon", described: true },
+      ],
+      cssParts: [],
+      cssProperties: [],
+    });
+  });
+
+  it("declares ocelle-copy-field per contracts/elements.md: value and status (strings, not reflected, default empty) and copyLabel (attribute copy-label, not reflected, default Copy), the request event with its { text } detail, no slot, the value and copy-control parts and no CSS property (014 FR-055, phase 5)", async () => {
+    const field = await declared("src/ocelle-copy-field.ts");
+    expect(field).toEqual({
+      name: "OcelleCopyField",
+      tagName: "ocelle-copy-field",
+      members: [
+        { name: "copyLabel", type: "string", attribute: "copy-label", reflects: false, default: '"Copy"', described: true },
+        { name: "status", type: "string", attribute: "status", reflects: false, default: '""', described: true },
+        { name: "value", type: "string", attribute: "value", reflects: false, default: '""', described: true },
+      ],
+      attributes: [
+        { name: "copy-label", fieldName: "copyLabel", described: true },
+        { name: "status", fieldName: "status", described: true },
+        { name: "value", fieldName: "value", described: true },
+      ],
+      events: [{ name: "ocelle-copy-field-request", type: "CustomEvent<{ text: string }>", described: true }],
+      slots: [],
+      cssParts: [
+        { name: "copy-control", described: true },
+        { name: "value", described: true },
+      ],
+      cssProperties: [],
+    });
   });
 
   it('declares ocelle-notice with its tag name, class, tone, size and announce with the types and defaults of contracts/elements.md, all reflected, the slots heading and default, the parts heading and body, no event and no CSS property, and neither role nor hidden as an attribute (specs/010-feedback-forms FR-034; analysis I2)', async () => {
@@ -691,6 +905,26 @@ describe("generate(root) on the repository's element source", () => {
       events: [{ name: "ocelle-form-select-change", type: "CustomEvent<{ value: string }>", described: true }],
       parts: ["label", "control", "description", "error"].map((name) => ({ name, described: true })),
       slots: [],
+      cssProperties: [],
+    });
+  });
+
+  it("declares ocelle-link per contracts/elements.md: href (string, reflected, default undefined) and label (string, not reflected, default undefined), the cancelable activate event with its { href } detail, the default slot, the anchor part and no CSS property (014 FR-055, phase 6)", async () => {
+    const link = await declared("src/ocelle-link.ts");
+    expect(link).toEqual({
+      name: "OcelleLink",
+      tagName: "ocelle-link",
+      members: [
+        { name: "href", type: "string | undefined", attribute: "href", reflects: true, default: "undefined", described: true },
+        { name: "label", type: "string | undefined", attribute: "label", reflects: false, default: "undefined", described: true },
+      ],
+      attributes: [
+        { name: "href", fieldName: "href", described: true },
+        { name: "label", fieldName: "label", described: true },
+      ],
+      events: [{ name: "ocelle-link-activate", type: "CustomEvent<{ href: string | null }>", described: true }],
+      slots: [{ name: "", described: true }],
+      cssParts: [{ name: "anchor", described: true }],
       cssProperties: [],
     });
   });

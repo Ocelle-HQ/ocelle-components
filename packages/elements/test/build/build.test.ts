@@ -4,6 +4,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { brandPairs, fr026Foregrounds, styleTemplate } from "../node/brand-pairs-check.ts";
 import type { PairEntry } from "../node/brand-pairs-check.ts";
 import { expectedPainted, progressPairsCheck, styleTemplate as progressTemplate } from "../node/progress-pairs-check.ts";
+import { copyFieldRows, linkRows, listboxRows, optionRows, segmentRows, segmentedChoiceRows, selectionPairs, tabPanelRows, tabRows, tabsRows } from "../node/selection-pairs-check.ts";
 import { buildPackage, elements } from "./package-build.ts";
 
 // The two builds as the package ships them (005 FR-001, FR-002, FR-004, FR-016, FR-029, FR-033; US1 scenario 17's
@@ -20,6 +21,21 @@ import { buildPackage, elements } from "./package-build.ts";
 //   package root nor ocelle-icon.js;
 // - 012 (tasks.md T020): dist/ocelle-button.js, imported by the root and importing no other element, and the browser
 //   build defining `ocelle-button`; and (tasks.md T053) dist/ocelle-action-row.js the same way, `ocelle-action-row`.
+// - since 014 phase 2 (research.md R-16, R-17; T017, T018): dist/ocelle-listbox.js imports ./ocelle-option.js (a parent's
+//   entry defines its children) and dist/ocelle-option.js imports no other element; the selection pairs check of
+//   test/node/selection-pairs-check.ts on the `css` templates of the built option and listbox finds R-15's tokens and
+//   every pair checked; the browser build defines ocelle-listbox and ocelle-option.
+// - since 014 phase 3 (T044, T045): dist/ocelle-tabs.js imports ./ocelle-tab.js and ./ocelle-tab-panel.js, and the tab
+//   and the panel import no other element; the selection pairs check on the built tab, panel and tabs finds R-15's
+//   tokens and every pair checked; the browser build defines the three.
+// - since 014 phase 4 (T063, T064): dist/ocelle-segmented-choice.js imports ./ocelle-segment.js, and the segment imports
+//   no other element; the selection pairs check on the built segment and segmented choice finds R-15's tokens and every
+//   pair checked; the browser build defines both.
+// - since 014 phase 5 (T078, T079): dist/ocelle-copy-field.js imports ./ocelle-icon.js and no other element; the
+//   selection pairs check on the built copy field finds R-15's tokens and every pair checked; the browser build
+//   defines it.
+// - since 014 phase 6 (T094, T095): dist/ocelle-link.js imports the internal ./link-target.js and no element; the
+//   selection pairs check on the built link finds R-15's tokens and every pair checked; the browser build defines it.
 const dist = join(elements, "dist");
 const browserBuild = join(dist, "browser", "ocelle-elements.js");
 
@@ -169,6 +185,125 @@ describe("the module build (dist/*.js)", () => {
       root: imported.includes("./index.js"),
       elements: imported.filter((specifier) => specifier.startsWith("./ocelle-")),
     }).toEqual({ lit: true, define: true, root: false, elements: [] });
+  });
+});
+
+describe("the module build of the listbox (dist/ocelle-listbox.js, dist/ocelle-option.js)", () => {
+  const read = (name: string): string => (existsSync(join(dist, name)) ? readFileSync(join(dist, name), "utf8") : "");
+
+  it("dist/ocelle-listbox.js imports lit, the registration helper and ./ocelle-option.js, and not the package root; dist/ocelle-option.js imports no other element", () => {
+    const listbox = specifiers(read("ocelle-listbox.js"));
+    const option = specifiers(read("ocelle-option.js"));
+    expect({
+      lit: listbox.includes("lit"),
+      define: listbox.includes("./define.js"),
+      root: listbox.includes("./index.js"),
+      elements: listbox.filter((specifier) => specifier.startsWith("./ocelle-")),
+      optionElements: option.filter((specifier) => specifier.startsWith("./ocelle-")),
+      optionDefine: option.includes("./define.js"),
+    }).toEqual({ lit: true, define: true, root: false, elements: ["./ocelle-option.js"], optionElements: [], optionDefine: true });
+  });
+
+  it("the css templates of the built option and listbox paint R-15's tokens, each R-15 pair a checked row of pairs.json (the stylesheets as shipped)", () => {
+    const pairs = JSON.parse(readFileSync(join(elements, "..", "tokens", "contrast", "pairs.json"), "utf8")) as PairEntry[];
+    expect({
+      option: selectionPairs(styleTemplate(read("ocelle-option.js")), optionRows.pairs, pairs),
+      listbox: selectionPairs(styleTemplate(read("ocelle-listbox.js")), listboxRows.pairs, pairs),
+      listboxSheet: styleTemplate(read("ocelle-listbox.js")) !== "",
+    }).toEqual({ option: { painted: optionRows.painted, missing: [] }, listbox: { painted: listboxRows.painted, missing: [] }, listboxSheet: true });
+  });
+});
+
+describe("the module build of the tabs (dist/ocelle-tabs.js, dist/ocelle-tab.js, dist/ocelle-tab-panel.js)", () => {
+  const read = (name: string): string => (existsSync(join(dist, name)) ? readFileSync(join(dist, name), "utf8") : "");
+
+  it("dist/ocelle-tabs.js imports lit, the registration helper, ./ocelle-tab.js and ./ocelle-tab-panel.js, and not the package root; the tab and the panel import no other element", () => {
+    const tabs = specifiers(read("ocelle-tabs.js"));
+    expect({
+      lit: tabs.includes("lit"),
+      define: tabs.includes("./define.js"),
+      root: tabs.includes("./index.js"),
+      elements: tabs.filter((specifier) => specifier.startsWith("./ocelle-")).sort(),
+      tabElements: specifiers(read("ocelle-tab.js")).filter((specifier) => specifier.startsWith("./ocelle-")),
+      panelElements: specifiers(read("ocelle-tab-panel.js")).filter((specifier) => specifier.startsWith("./ocelle-")),
+      childDefine: [specifiers(read("ocelle-tab.js")).includes("./define.js"), specifiers(read("ocelle-tab-panel.js")).includes("./define.js")],
+    }).toEqual({ lit: true, define: true, root: false, elements: ["./ocelle-tab-panel.js", "./ocelle-tab.js"], tabElements: [], panelElements: [], childDefine: [true, true] });
+  });
+
+  it("the css templates of the built tab, panel and tabs paint R-15's tokens, each R-15 pair a checked row of pairs.json (the stylesheets as shipped)", () => {
+    const pairs = JSON.parse(readFileSync(join(elements, "..", "tokens", "contrast", "pairs.json"), "utf8")) as PairEntry[];
+    expect({
+      tab: selectionPairs(styleTemplate(read("ocelle-tab.js")), tabRows.pairs, pairs),
+      panel: selectionPairs(styleTemplate(read("ocelle-tab-panel.js")), tabPanelRows.pairs, pairs),
+      tabs: selectionPairs(styleTemplate(read("ocelle-tabs.js")), tabsRows.pairs, pairs),
+      sheets: ["ocelle-tab.js", "ocelle-tab-panel.js", "ocelle-tabs.js"].map((name) => styleTemplate(read(name)) !== ""),
+    }).toEqual({ tab: { painted: tabRows.painted, missing: [] }, panel: { painted: tabPanelRows.painted, missing: [] }, tabs: { painted: tabsRows.painted, missing: [] }, sheets: [true, true, true] });
+  });
+});
+
+describe("the module build of the segmented choice (dist/ocelle-segmented-choice.js, dist/ocelle-segment.js)", () => {
+  const read = (name: string): string => (existsSync(join(dist, name)) ? readFileSync(join(dist, name), "utf8") : "");
+
+  it("dist/ocelle-segmented-choice.js imports lit, the registration helper and ./ocelle-segment.js, and not the package root; the segment imports no other element", () => {
+    const group = specifiers(read("ocelle-segmented-choice.js"));
+    expect({
+      lit: group.includes("lit"),
+      define: group.includes("./define.js"),
+      root: group.includes("./index.js"),
+      elements: group.filter((specifier) => specifier.startsWith("./ocelle-")).sort(),
+      segmentElements: specifiers(read("ocelle-segment.js")).filter((specifier) => specifier.startsWith("./ocelle-")),
+      childDefine: specifiers(read("ocelle-segment.js")).includes("./define.js"),
+    }).toEqual({ lit: true, define: true, root: false, elements: ["./ocelle-segment.js"], segmentElements: [], childDefine: true });
+  });
+
+  it("the css templates of the built segment and segmented choice paint R-15's tokens, each R-15 pair a checked row of pairs.json (the stylesheets as shipped)", () => {
+    const pairs = JSON.parse(readFileSync(join(elements, "..", "tokens", "contrast", "pairs.json"), "utf8")) as PairEntry[];
+    expect({
+      segment: selectionPairs(styleTemplate(read("ocelle-segment.js")), segmentRows.pairs, pairs),
+      group: selectionPairs(styleTemplate(read("ocelle-segmented-choice.js")), segmentedChoiceRows.pairs, pairs),
+      sheets: ["ocelle-segment.js", "ocelle-segmented-choice.js"].map((name) => styleTemplate(read(name)) !== ""),
+    }).toEqual({ segment: { painted: segmentRows.painted, missing: [] }, group: { painted: segmentedChoiceRows.painted, missing: [] }, sheets: [true, true] });
+  });
+});
+
+describe("the module build of the copy field (dist/ocelle-copy-field.js)", () => {
+  const read = (name: string): string => (existsSync(join(dist, name)) ? readFileSync(join(dist, name), "utf8") : "");
+
+  it("dist/ocelle-copy-field.js imports lit, the registration helper and ./ocelle-icon.js, and not the package root or another element", () => {
+    const field = specifiers(read("ocelle-copy-field.js"));
+    expect({
+      lit: field.includes("lit"),
+      define: field.includes("./define.js"),
+      root: field.includes("./index.js"),
+      elements: field.filter((specifier) => specifier.startsWith("./ocelle-")).sort(),
+    }).toEqual({ lit: true, define: true, root: false, elements: ["./ocelle-icon.js"] });
+  });
+
+  it("the css template of the built copy field paints R-15's tokens, each R-15 pair a checked row of pairs.json (the stylesheet as shipped)", () => {
+    const pairs = JSON.parse(readFileSync(join(elements, "..", "tokens", "contrast", "pairs.json"), "utf8")) as PairEntry[];
+    const sheet = styleTemplate(read("ocelle-copy-field.js"));
+    expect({ sheet: sheet !== "", field: selectionPairs(sheet, copyFieldRows.pairs, pairs) }).toEqual({ sheet: true, field: { painted: copyFieldRows.painted, missing: [] } });
+  });
+});
+
+describe("the module build of the link (dist/ocelle-link.js)", () => {
+  const read = (name: string): string => (existsSync(join(dist, name)) ? readFileSync(join(dist, name), "utf8") : "");
+
+  it("dist/ocelle-link.js imports lit, the registration helper and the internal ./link-target.js, and not the package root or any element", () => {
+    const link = specifiers(read("ocelle-link.js"));
+    expect({
+      lit: link.includes("lit"),
+      define: link.includes("./define.js"),
+      target: link.includes("./link-target.js"),
+      root: link.includes("./index.js"),
+      elements: link.filter((specifier) => specifier.startsWith("./ocelle-")),
+    }).toEqual({ lit: true, define: true, target: true, root: false, elements: [] });
+  });
+
+  it("the css template of the built link paints R-15's tokens, each R-15 pair a checked row of pairs.json (the stylesheet as shipped)", () => {
+    const pairs = JSON.parse(readFileSync(join(elements, "..", "tokens", "contrast", "pairs.json"), "utf8")) as PairEntry[];
+    const sheet = styleTemplate(read("ocelle-link.js"));
+    expect({ sheet: sheet !== "", link: selectionPairs(sheet, linkRows.pairs, pairs) }).toEqual({ sheet: true, link: { painted: linkRows.painted, missing: [] } });
   });
 });
 
@@ -347,7 +482,7 @@ describe("the module build of ocelle-progress (013)", () => {
 describe("the browser build (dist/browser/ocelle-elements.js)", () => {
   const text = (): string => (existsSync(browserBuild) ? readFileSync(browserBuild, "utf8") : "");
 
-  it("is self-contained: it defines ocelle-icon, ocelle-brand-mark, ocelle-dialog, ocelle-drawer, ocelle-tooltip, ocelle-card, ocelle-section-header, ocelle-page-header, ocelle-context-sidebar, ocelle-personal-rail, ocelle-button, ocelle-action-row, ocelle-facts, ocelle-fact, ocelle-empty-state and ocelle-progress, with no import statement and no dynamic import", () => {
+  it("is self-contained: it defines ocelle-icon, ocelle-brand-mark, ocelle-dialog, ocelle-drawer, ocelle-tooltip, ocelle-card, ocelle-section-header, ocelle-page-header, ocelle-context-sidebar, ocelle-personal-rail, ocelle-button, ocelle-action-row, ocelle-facts, ocelle-fact, ocelle-empty-state, ocelle-progress, ocelle-listbox, ocelle-option, ocelle-tabs, ocelle-tab, ocelle-tab-panel, ocelle-segmented-choice, ocelle-segment, ocelle-copy-field and ocelle-link, with no import statement and no dynamic import", () => {
     const code = text();
     expect({
       exists: code !== "",
@@ -366,6 +501,11 @@ describe("the browser build (dist/browser/ocelle-elements.js)", () => {
       definesFacts: code.includes('"ocelle-facts"') && code.includes('"ocelle-fact"'),
       definesEmptyState: code.includes('"ocelle-empty-state"'),
       definesProgress: code.includes('"ocelle-progress"'),
+      definesListbox: code.includes('"ocelle-listbox"') && code.includes('"ocelle-option"'),
+      definesTabs: code.includes('"ocelle-tabs"') && code.includes('"ocelle-tab"') && code.includes('"ocelle-tab-panel"'),
+      definesSegmentedChoice: code.includes('"ocelle-segmented-choice"') && code.includes('"ocelle-segment"'),
+      definesCopyField: code.includes('"ocelle-copy-field"'),
+      definesLink: code.includes('"ocelle-link"'),
       specifiers: specifiers(code),
       dynamicImport: /\bimport\s*\(/.test(code),
     }).toEqual({
@@ -385,6 +525,11 @@ describe("the browser build (dist/browser/ocelle-elements.js)", () => {
       definesFacts: true,
       definesEmptyState: true,
       definesProgress: true,
+      definesListbox: true,
+      definesTabs: true,
+      definesSegmentedChoice: true,
+      definesCopyField: true,
+      definesLink: true,
       specifiers: [],
       dynamicImport: false,
     });
