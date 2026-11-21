@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import "../src/ocelle-metric.ts";
+import "../src/ocelle-pill-tag.ts";
 import "../src/ocelle-status-indicator.ts";
 import { inProcessDriver } from "./in-process.ts";
 import { consumerScenarios } from "./scenarios/consumers.ts";

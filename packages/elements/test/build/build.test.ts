@@ -21,7 +21,8 @@ import { buildPackage, elements } from "./package-build.ts";
 // - 012 (tasks.md T020): dist/ocelle-button.js, imported by the root and importing no other element, and the browser
 //   build defining `ocelle-button`; and (tasks.md T053) dist/ocelle-action-row.js the same way, `ocelle-action-row`;
 // - 018 (tasks.md T016): dist/ocelle-status-indicator.js the same way, `ocelle-status-indicator`; and (tasks.md T027)
-//   dist/ocelle-metric.js the same way, `ocelle-metric`.
+//   dist/ocelle-metric.js the same way, `ocelle-metric`; and (tasks.md T038) dist/ocelle-pill-tag.js the same way,
+//   `ocelle-pill-tag`.
 const dist = join(elements, "dist");
 const browserBuild = join(dist, "browser", "ocelle-elements.js");
 
@@ -382,6 +383,26 @@ describe("the module build of ocelle-metric (018)", () => {
 
   it("the browser build defines ocelle-metric", () => {
     expect(read(join("browser", "ocelle-elements.js")).includes('"ocelle-metric"')).toBe(true);
+  });
+});
+
+// 018 (tasks.md T038): dist/ocelle-pill-tag.js imports lit, the internal control conventions (for `linkHref`), the
+// registration helper, the slot convention and the status vocabulary, and no element module nor the root; the root
+// imports it, and the browser build defines the element.
+describe("the module build of ocelle-pill-tag (018)", () => {
+  const read = (name: string): string => (existsSync(join(dist, name)) ? readFileSync(join(dist, name), "utf8") : "");
+
+  it("dist/ocelle-pill-tag.js imports lit, ./control.js, ./define.js, ./icon-slot.js and ./status.js, and no element module nor the root, and dist/index.js imports it", () => {
+    const imported = specifiers(read("ocelle-pill-tag.js"));
+    expect({
+      lit: imported.includes("lit"),
+      own: imported.filter((specifier) => specifier.startsWith("./")),
+      rootImportsIt: specifiers(read("index.js")).includes("./ocelle-pill-tag.js"),
+    }).toEqual({ lit: true, own: ["./control.js", "./define.js", "./icon-slot.js", "./status.js"], rootImportsIt: true });
+  });
+
+  it("the browser build defines ocelle-pill-tag", () => {
+    expect(read(join("browser", "ocelle-elements.js")).includes('"ocelle-pill-tag"')).toBe(true);
   });
 });
 

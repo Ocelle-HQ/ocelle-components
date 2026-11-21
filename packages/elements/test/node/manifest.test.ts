@@ -292,7 +292,7 @@ describe("generate(root) on the repository's element source", () => {
     const manifest = await generate(repo);
     const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
     expect(manifest.schemaVersion).toBe("1.0.0");
-    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-action-row.ts", "src/ocelle-brand-mark.ts", "src/ocelle-button.ts", "src/ocelle-card.ts", "src/ocelle-context-sidebar.ts", "src/ocelle-dialog.ts", "src/ocelle-drawer.ts", "src/ocelle-empty-state.ts", "src/ocelle-fact.ts", "src/ocelle-facts.ts", "src/ocelle-icon.ts", "src/ocelle-list-detail.ts", "src/ocelle-metric.ts", "src/ocelle-page-header.ts", "src/ocelle-personal-rail.ts", "src/ocelle-progress.ts", "src/ocelle-scroller.ts", "src/ocelle-section-header.ts", "src/ocelle-status-indicator.ts", "src/ocelle-tooltip.ts", "src/ocelle-workflow-board.ts", "src/ocelle-workflow-lane.ts"]);
+    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-action-row.ts", "src/ocelle-brand-mark.ts", "src/ocelle-button.ts", "src/ocelle-card.ts", "src/ocelle-context-sidebar.ts", "src/ocelle-dialog.ts", "src/ocelle-drawer.ts", "src/ocelle-empty-state.ts", "src/ocelle-fact.ts", "src/ocelle-facts.ts", "src/ocelle-icon.ts", "src/ocelle-list-detail.ts", "src/ocelle-metric.ts", "src/ocelle-page-header.ts", "src/ocelle-personal-rail.ts", "src/ocelle-pill-tag.ts", "src/ocelle-progress.ts", "src/ocelle-scroller.ts", "src/ocelle-section-header.ts", "src/ocelle-status-indicator.ts", "src/ocelle-tooltip.ts", "src/ocelle-workflow-board.ts", "src/ocelle-workflow-lane.ts"]);
     const [icon] = modules.find((module) => module.path === "src/ocelle-icon.ts")?.declarations ?? [];
     expect(icon).toMatchObject({
       kind: "class",
@@ -888,6 +888,65 @@ describe("generate(root) on the repository's element source", () => {
         { name: "label", described: true },
         { name: "value", described: true },
       ],
+      properties: [],
+      states: undefined,
+      methods: [],
+    });
+  });
+
+  // 018 (tasks.md T038; contracts/elements-status.md § `ocelle-pill-tag`): the static members, `status` (the five
+  // values, default "neutral"), `variant` ("pill" | "badge", default "pill") and `density` ("default" | "compact",
+  // default "default"), attribute-backed accessors; `interactive` and `disabled` (boolean, default false) and `href`,
+  // reflected; `label`, an attribute and a property, not reflected (FR-025); the default and `icon` slots; the part
+  // `pill`; each described. No event, method, CSS property or custom state yet: the interactive surface (the moved
+  // attributes and their mirrors, `focus()`, `click()`, the events, the states and the `control` part) is user story 4's.
+  it('declares ocelle-pill-tag with interactive and disabled (boolean, default false) and href (string | undefined), reflected, label (string | undefined, not reflected), status, variant and density (attribute-backed, defaults "neutral", "pill", "default"), the default and icon slots and the part pill, each described', async () => {
+    const manifest = await generate(repo);
+    const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [pill] = modules.find((module) => module.path === "src/ocelle-pill-tag.ts")?.declarations ?? [];
+    const named = (list: unknown): unknown => ((list ?? []) as Record<string, unknown>[]).map(({ name, description }) => ({ name, described: typeof description === "string" && description !== "" }));
+    const described = (list: unknown): Record<string, unknown>[] =>
+      ((list ?? []) as Record<string, unknown>[]).map(({ description, ...rest }) => ({ ...rest, described: typeof description === "string" && description !== "" }));
+    const status = '"info" | "success" | "warning" | "danger" | "neutral"';
+    const variant = '"pill" | "badge"';
+    const density = '"default" | "compact"';
+    expect({ kind: pill?.kind, name: pill?.name, tagName: pill?.tagName, customElement: pill?.customElement, events: pill?.events }).toEqual({
+      kind: "class",
+      name: "OcellePillTag",
+      tagName: "ocelle-pill-tag",
+      customElement: true,
+      events: [],
+    });
+    expect(described(pill?.members)).toEqual([
+      { kind: "field", name: "interactive", privacy: "public", type: { text: "boolean" }, default: "false", attribute: "interactive", reflects: true, described: true },
+      { kind: "field", name: "href", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "href", reflects: true, described: true },
+      { kind: "field", name: "disabled", privacy: "public", type: { text: "boolean" }, default: "false", attribute: "disabled", reflects: true, described: true },
+      { kind: "field", name: "label", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "label", described: true },
+      { kind: "field", name: "status", type: { text: status }, default: '"neutral"', described: true },
+      { kind: "field", name: "variant", type: { text: variant }, default: '"pill"', described: true },
+      { kind: "field", name: "density", type: { text: density }, default: '"default"', described: true },
+    ]);
+    expect(described(pill?.attributes)).toEqual([
+      { name: "status", type: { text: status }, described: true },
+      { name: "variant", type: { text: variant }, described: true },
+      { name: "density", type: { text: density }, described: true },
+      { name: "interactive", fieldName: "interactive", type: { text: "boolean" }, default: "false", described: true },
+      { name: "href", fieldName: "href", type: { text: "string | undefined" }, default: "undefined", described: true },
+      { name: "disabled", fieldName: "disabled", type: { text: "boolean" }, default: "false", described: true },
+      { name: "label", fieldName: "label", type: { text: "string | undefined" }, default: "undefined", described: true },
+    ]);
+    expect({
+      slots: named(pill?.slots),
+      parts: named(pill?.cssParts),
+      properties: pill?.cssProperties,
+      states: pill?.cssStates,
+      methods: ((pill?.members ?? []) as Record<string, unknown>[]).filter((member) => member.kind === "method"),
+    }).toEqual({
+      slots: [
+        { name: "", described: true },
+        { name: "icon", described: true },
+      ],
+      parts: [{ name: "pill", described: true }],
       properties: [],
       states: undefined,
       methods: [],

@@ -67,10 +67,28 @@ describe("packages/elements/CHANGELOG.md: ocelle-metric is a minor change (018)"
   });
 });
 
+// 018 (FR-007, constitution VII; tasks.md T038): the static pill tag is a minor change, stated once under Unreleased in
+// the elements changelog, and its token `--ocelle-line-height-snug` once in the tokens changelog.
+describe("packages/elements/CHANGELOG.md: ocelle-pill-tag is a minor change (018)", () => {
+  const section = unreleased(read("CHANGELOG.md"));
+
+  it.each(["`ocelle-pill-tag`, its attributes `status`, `variant` and `density`, `interactive`, `href` and `disabled` (reflected) and `label`, its default and `icon` slots, its part `pill` and its entry point `@ocelle/elements/ocelle-pill-tag.js` are additions to the public surface: a minor change"])("states under Unreleased: %s", (statement) => {
+    expect(section).toContain(flat(statement));
+  });
+});
+
 describe("packages/tokens/CHANGELOG.md: the status indicator's two tokens are a minor change (018)", () => {
   const section = unreleased(read("../tokens/CHANGELOG.md"));
 
   it.each(["`--ocelle-size-indicator` and `--ocelle-motion-pulse`, the two tokens of `ocelle-status-indicator` of `@ocelle/elements`, are additions to the token names: a minor change"])("states under Unreleased: %s", (statement) => {
+    expect(section).toContain(flat(statement));
+  });
+});
+
+describe("packages/tokens/CHANGELOG.md: the pill tag's line height is a minor change (018)", () => {
+  const section = unreleased(read("../tokens/CHANGELOG.md"));
+
+  it.each(["`--ocelle-line-height-snug`, the compact line height of `ocelle-pill-tag` of `@ocelle/elements`, is an addition to the token names: a minor change"])("states under Unreleased: %s", (statement) => {
     expect(section).toContain(flat(statement));
   });
 });

@@ -16,7 +16,7 @@ describe("manifest gate in a plant tree", () => {
       const into = tempDir("manifest-plant");
       await buildRepoTree(repo, join(repo, "gates/plants/manifest/pass-repository"), into);
       const ran = await runGate("gates/bin/manifest.ts", ["--root", into], { cwd: tempDir("cwd"), env: baseEnv() });
-      expect(ran).toEqual({ code: 0, stdout: ["manifest: 22 elements checked, no finding"], stderr: [] });
+      expect(ran).toEqual({ code: 0, stdout: ["manifest: 23 elements checked, no finding"], stderr: [] });
     },
     120_000,
   );
