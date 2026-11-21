@@ -34,6 +34,10 @@ which would break the red/green evidence SHAs), classify every red check, a fres
 every base, scaffold and red commit and its parent, folds the rest, remaps the evidence SHAs and verifies the trees; signs every commit it rebuilds when `commit.gpgsign` is on and refuses an unsigned result or a range that holds main's commits;
 `/ocelle-run` runs it after each approved phase, with the label `phase-N`, and pushes the pre-fold head as
 `archive/<branch>-prefold-phase-N`),
+after the history fold and the last merge of `main` the sanctioned redaction of the merged tree (step 2.9, op 023,
+operator decision 2026-11-20: `bin/redact-sandbox-paths.sh --in-place` on the files `pnpm run gate:sandbox-paths`
+finds, one `chore(landing)` commit of those files alone, proved by `bin/redact-sandbox-paths.sh --verify HEAD` and the
+gate's exit 0; it is skipped when the merged tree has no redaction script or the gate already passes),
 deliverable hygiene, then hand-off. The operator merges.
 
 **Agent profiles:** `triage-tara`, `analyst-anouk` (spec check, analysis), `planner-pim` (spec and squad fixes, op

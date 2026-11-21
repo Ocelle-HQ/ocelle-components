@@ -49,7 +49,9 @@ $ARGUMENTS
 8. **Personal data stays out**: no `/home/<user>` or `/root/` paths, personal email addresses, tokens or private
    keys in any commit, comment or PR body (FR-034). Check every staged diff:
    `git diff --cached | grep -nE '/home/[a-z]|/root/|PRIVATE KEY|[A-Za-z0-9._%+-]+@(gmail|outlook|hotmail|icloud)\.'`
-   must print nothing.
+   must print nothing. For the commit of step 2.9, read the check over its added lines only
+   (`git show HEAD --format= -U0 | grep '^+'` piped into the same `grep -nE`): its removed lines are the sandbox
+   paths the step takes out.
 9. **Operator decisions are records.** On a mission or op PR, an operator decision that changes the work is
    recorded as an operator round, `reviews/phase-N/round-M.md` with `reviewer: human:<login> (operator round,
    recorded by the orchestrator)`, the answer quoted verbatim, `verdict: changes_requested`. The planner turns it
@@ -114,6 +116,8 @@ surface, gate or contract change, as opposed to a mechanical chore: a pin bump, 
      fault. A cancelled shard is investigated, never re-run blindly (research.md R-08, operator decision R4-01 of
      mission 001): compare the shard's time with earlier runs of the same files, and if it is the code, it is a
      PR defect. Re-run a true flake once, with the operator's yes, and record both runs.
+
+   A `Sandbox paths` red on a mission or op branch from before op 023 is fixed by step 9, not by a fold.
 4. **Targeted local checks only.** CI runs everything. Locally run the gates for the surfaces the PR changed
    (`pnpm run gate:typecheck`, `gate:lint`, `gate:style-lint`, `gate:test-lint`, `gate:unit-tests` on changed
    tests, `gate:mutation -- --base <merge-base> --files <changed source>`, `gate:plants` when a gate or plant
@@ -187,6 +191,27 @@ surface, gate or contract change, as opposed to a mechanical chore: a pin bump, 
       (`git push --force-with-lease=<branch>:<old-head-sha> origin <branch>`), and whether to keep the pre-fold history
       on the remote as `archive/<branch>-prefold` (recommended: the review files name the old SHAs, and after a
       force-push GitHub stops keeping them). Never push without that answer.
+9. **Redact the merged tree** (mission and op PRs; operator decision 2026-11-20,
+   `triage/decisions/023-landing-redaction.md`; op 023 FR-012). Run it after step 8 and after the real
+   `git merge --signoff origin/main` that follows it, before the final push.
+   1. Skip the step when the merged tree has no `tooling/speckit/bin/redact-sandbox-paths.sh` (`main` from before
+      op 023), or when `pnpm run gate:sandbox-paths` exits 0.
+   2. Redact the files the gate finds, with the command of the one-time redaction:
+      `git grep -lIzE '(^|[^A-Za-z0-9._~-])/(root|home/user)/[A-Za-z0-9._-]' -- . <one ':(exclude,literal)<path>'
+      per allowed file of gates/lib/sandbox-paths.ts> | xargs -0 tooling/speckit/bin/redact-sandbox-paths.sh
+      --in-place`.
+   3. Commit only those files: `chore(landing): redact sandbox paths in the merged tree`, signed off. The body cites
+      `triage/decisions/023-landing-redaction.md`.
+   4. Prove it: `tooling/speckit/bin/redact-sandbox-paths.sh --verify HEAD` and `pnpm run gate:sandbox-paths` must
+      both exit 0. If either fails, stop: do not push and do not hand-edit a file. Tell the operator which files
+      failed. A file whose name holds a sandbox path is such a case.
+   5. Rule 8 for this commit is read over the added lines only (rule 8). The removed lines are the paths the step
+      takes out.
+   6. The commit does not count as editing a review, verdict or check file (operator decision 2026-11-20), and no
+      review round follows it. `verdict.sh` and `tdd-check.sh` results stand: the step changes no test file and no
+      SHA record (`base.sha`, `scaffold.sha` and `red-commits` hold only hex SHAs and labels). If `main` is merged
+      again later, the step runs again as a new commit. The history fold never sees the commit, because the fold
+      runs before the last merge of `main` and refuses merge commits.
 
 ## 3. Deliverable hygiene
 
