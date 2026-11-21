@@ -9,7 +9,8 @@ horizontal strip that is a tab stop only while it overflows, `ocelle-workflow-bo
 modal dialog, `ocelle-drawer`, a modal side drawer, `ocelle-tooltip`, a tooltip that shows a short text beside its
 trigger, the layout elements `ocelle-section-header`, `ocelle-card`, `ocelle-page-header`, `ocelle-context-sidebar`
 and `ocelle-personal-rail`, `ocelle-facts` with its item `ocelle-fact`, a label and value sheet, `ocelle-empty-state`,
-an empty or loading panel, and `ocelle-progress`, a progress bar.
+an empty or loading panel, and `ocelle-progress`, a progress bar. Since 019 it also has `ocelle-data-table`, a native
+table in a scroll region, and `ocelle-event-timeline`, an event history, with its item `ocelle-timeline-event`.
 
 ## Entry points
 
@@ -35,6 +36,8 @@ an empty or loading panel, and `ocelle-progress`, a progress bar.
 | `@ocelle/elements/ocelle-empty-state.js` | `dist/ocelle-empty-state.js` | `ocelle-empty-state` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-progress.js` | `dist/ocelle-progress.js` | `ocelle-progress` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-data-table.js` | `dist/ocelle-data-table.js` | `ocelle-data-table` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-event-timeline.js` | `dist/ocelle-event-timeline.js` | `ocelle-event-timeline` and its item `ocelle-timeline-event`; for hosts with a bundler |
+| `@ocelle/elements/ocelle-timeline-event.js` | `dist/ocelle-timeline-event.js` | `ocelle-timeline-event` only; for hosts with a bundler |
 | `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |
 | `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |
 
@@ -948,12 +951,28 @@ Base-style hook: the element writes `--data-table-box-size` (the box's measured 
 
 Printed, content past the box is clipped; a consumer who prints sets a print rule of its own. No change the data table makes to its region leaves it in a state a fresh load would not give, and nor does a change to its table or caption after load.
 
+## `ocelle-event-timeline`
+
+`ocelle-event-timeline` shows an event history as one ordered list of its `ocelle-timeline-event` children, in source order: `<ocelle-event-timeline label="Mission history"><ocelle-timeline-event time="14:02">Mission created</ocelle-timeline-event></ocelle-event-timeline>`. Each event is one list item: a dot on a line that joins the events, its time above its content, and its content. The dots and the line are drawn and hidden from assistive technology; a screen reader hears the list's name, then each item's time and content.
+
+The list is named by a non-blank host `aria-label`, trimmed, else by `label`; a blank host `aria-label` counts as absent. With neither the list is unnamed. `ocelle-event-timeline` names its list with the overflow-region module's `resolveName`, as `ocelle-workflow-lane` does, and uses nothing else of that module. Only `ocelle-timeline-event` children are shown and exposed; an event with `hidden` or `aria-hidden="true"` is neither, and no line joins it. With no visible event the timeline renders no list. The element neither sorts nor formats times: events show in source order with the time as written.
+
+The `time` attribute is the event's time as plain text. For a machine-readable time, write it in the `time` slot instead: `<time slot="time" datetime="2026-11-15T14:41">14:41</time>`. The `time` slot takes precedence over the `time` attribute while one of its nodes is visible (neither `hidden` nor `aria-hidden="true"`) and has text that is not blank; an empty, blank or hidden slotted time counts as none, and a `time` attribute then applies. A slotted time keeps the consumer's `datetime`, `title`, `lang`, `dir` or htmx target, which the attribute cannot carry. Write one time element per event. A slotted time takes the attribute time's type through `::slotted()`, wherever it is written in the event; a consumer rule on the slotted node beats that type. An event's item text is its time, a space and its content: the time is read first even when the slotted time is written after the content.
+
+`wrap="anywhere"` on an event breaks a long identifier in its content anywhere; the time keeps its own line. Outside a timeline an event shows its time above its content as plain text, with no dot, line or list role. Before upgrade: `@ocelle/styles`' `base.css` shows each visible event on its own line; an event's `time` attribute shows only once the elements are defined, and a slotted time shows inline where it is written.
+
+The timeline has no live region, landmark, heading or tab stop; a link in an event keeps its own tab stop. Announce new events with the consumer's own live region. In forced colours the dots and the line are drawn in `CanvasText` and the text in the system text colour.
+
+**Parts.** `ocelle-event-timeline` exposes the list as `::part(list)`; `ocelle-timeline-event` its time and content as `::part(time)` and `::part(content)`.
+
+**Tokens.** The timeline reads `--ocelle-size-dot`, `--ocelle-space-1`, `--ocelle-space-3`, `--ocelle-font-size-xs`, `--ocelle-font-size-sm`, `--ocelle-line-height-normal`, `--ocelle-border-width`, `--ocelle-color-ink-muted` and `--ocelle-color-rule-strong`; the event reads `--ocelle-font-sans`, `--ocelle-font-size-xs`, `--ocelle-font-size-sm`, `--ocelle-font-weight-medium`, `--ocelle-font-weight-regular`, `--ocelle-figures`, `--ocelle-line-height-normal`, `--ocelle-color-ink-muted` and `--ocelle-color-ink`.
+
 ## Mapping from kitty-mission-ui
 
 Each `.sk-facts`, `.sk-empty-state` and `.sk-progress` modifier and state that kitty-mission-ui uses, and each
-modifier, state and structure role of the design library's `.sk-data-table` (which has no part), by role, with the
-element and variant that replaces it, or the consumer's own remedy. No data-table row of the mapping reads "pending
-inventory".
+modifier, state and structure role of the design library's `.sk-data-table` and `.sk-event-timeline` (which have no
+part), by role, with the element and variant that replaces it, or the consumer's own remedy. No data-table row of the
+mapping reads "pending inventory".
 
 | Class family | Role | Element and variant |
 |---|---|---|
@@ -1013,8 +1032,8 @@ inventory".
 | `.sk-data-table` | data table scroller | `ocelle-data-table`'s region: a named `group` tab stop only while the table overflows, with the overflow-region focus ring; give an overflowing table a `label` that differs from its caption |
 | `.sk-data-table` | data table class | the consumer's own `<table>` inside `ocelle-data-table`, with no class |
 | `.sk-data-table` | data table caption | the table's `<caption>`, styled by `@ocelle/styles` |
-| `.sk-data-table` | data table header cells | the eyebrow column headers of `@ocelle/styles`; for sentence case, the consumer's own rule on the header cells, which wins over the (0,0,0) rules |
-| `.sk-data-table` | data table body cells | the compact body cells of `@ocelle/styles` |
+| `.sk-data-table` | data table header cells | the eyebrow column headers of `@ocelle/styles`; for sentence case, the consumer's own rule on the header cells, which wins over the (0,0,0) rules. The prototype's mono headers map to the sans face with tabular figures, its 0.06em tracking to `--ocelle-tracking-eyebrow`, and its larger header padding to the cells' padding, so each header's text starts on its column's text line |
+| `.sk-data-table` | data table body cells | the compact body cells of `@ocelle/styles`. The prototype's mono cells map to the sans face with tabular figures |
 | `.sk-data-table` | data table numeric cell | `data-ocelle-align="end"` on the column's cells, `@ocelle/styles`' hook |
 | `.sk-data-table` | data table sticky header | `ocelle-data-table sticky-header`, with the page's block bound on the host (`block-size` or `max-block-size`) |
 | `.sk-data-table` | data table zebra rows | `ocelle-data-table striped` |
@@ -1022,6 +1041,25 @@ inventory".
 | `.sk-data-table` | data table forced colours | built in: system colours for text and rules, and the row band for the stripe and the hover |
 | `.sk-data-table` | data table overflowing | built in: the region's tab stop, role and name while the table overflows |
 | `.sk-data-table` | data table tone | none: the data table carries no tone |
+| `.sk-event-timeline` | event timeline class | `ocelle-event-timeline`: an ordered list of its `ocelle-timeline-event` children in source order, named by `label` or a non-blank host `aria-label`; the measure cap maps to the container: for a cap, `max-inline-size` on the host |
+| `.sk-event-timeline` | event timeline item | each `ocelle-timeline-event`: one list item with a drawn dot and a gapped line to the next visible event; long identifiers break with `wrap="anywhere"` |
+| `.sk-event-timeline` | event timeline summary | the consumer's markup in the event's content, for example a `<strong>` title and text |
+| `.sk-event-timeline` | event timeline metadata time | the event's `time` attribute or `time` slot, on its own line above the content; the time after the title maps to that order, and the item text stays time first |
+| `.sk-event-timeline` | event timeline metadata actor and facts | the consumer's markup in the event's content; a later issue covers a metadata slot |
+| `.sk-event-timeline` | event timeline content | the consumer's markup in the event's content |
+| `.sk-event-timeline` | event timeline marker | the consumer's text in the event's content, the verification worded in text; a later issue covers a trust slot |
+| `.sk-event-timeline` | event timeline leading marker | the default dot; a later issue covers a marker slot |
+| `.sk-event-timeline` | event timeline compact | the default timeline, already at the compact type sizes; for more density, the consumer's rules on `::part(time)` and `::part(content)`; a later issue covers a density property |
+| `.sk-event-timeline` | event timeline narrow | the container: the timeline follows its column's width; for a cap, `max-inline-size` on the host |
+| `.sk-event-timeline` | event timeline one event | built in: a list of one item, with no line |
+| `.sk-event-timeline` | event timeline two events | built in: the events in source order, the supporting content the consumer's markup in the content |
+| `.sk-event-timeline` | event timeline twenty events | built in: the events in the supplied order; the element neither sorts nor formats times |
+| `.sk-event-timeline` | event timeline long transition | built in: content wraps between words inside the event; `wrap="anywhere"` for identifiers |
+| `.sk-event-timeline` | event timeline linked | a link in the event's content keeps its own tab stop; an `id` on `ocelle-timeline-event` is the consumer's fragment target |
+| `.sk-event-timeline` | event timeline degraded | a rule in the consumer's own stylesheet (no inline style), with the degraded state stated in text beside the timeline, never by muting alone |
+| `.sk-event-timeline` | event timeline unavailable retention | 013's `ocelle-empty-state` in place of the timeline; an announcement is the consumer's own notice or live region |
+| `.sk-event-timeline` | event timeline forced colours | built in: the dot and the line in `CanvasText`, the text in the system text colour |
+| `.sk-event-timeline` | event timeline light mode | built in: the light and dark themes |
 
 ## Slot convention
 
@@ -1231,7 +1269,7 @@ gap, padding or divider with nothing in it. Forward a slot only when it has cont
 
 A host `aria-label` names the element as `label` does. For `ocelle-icon` and `ocelle-brand-mark`, when present it
 decides alone: a blank host `aria-label` leaves the element unlabelled even with a `label`. For `ocelle-scroller`,
-`ocelle-workflow-board`, `ocelle-workflow-lane` and `ocelle-data-table` a blank host `aria-label` counts as absent, so `label` still names
+`ocelle-workflow-board`, `ocelle-workflow-lane`, `ocelle-data-table` and `ocelle-event-timeline` a blank host `aria-label` counts as absent, so `label` still names
 the element: Chromium names a host from a present `aria-label` and does not fall back from a blank one, so these
 elements put their role and name on a node in their shadow root, named by the host's non-blank `aria-label`, trimmed,
 or else by `label`. `ocelle-list-detail` takes no name: a host `aria-label` is not used. When both are set, the host

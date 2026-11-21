@@ -135,3 +135,10 @@ internal change with no effect on `ocelle-scroller` or `ocelle-workflow-board`.
   overflows, with `label`, `wrap`, `sticky-header` (reflected) and `striped` (reflected); its entry point
   `@ocelle/elements/ocelle-data-table.js`; and the base-style hook `--data-table-box-size` and `--data-table-end-fade`,
   which it writes for `@ocelle/styles`' caption cap.
+- `ocelle-event-timeline`, an event history as one ordered list of its `ocelle-timeline-event` children in source
+  order, each with a dot on a line that joins the events, named by `label` or a non-blank host `aria-label`, with its
+  part `list`; and `ocelle-timeline-event`, one event, its time above its content, with `time` (reflected) and `wrap`
+  (reflected), its default slot and the `time` slot (a marked-up time, for example a `<time datetime>`, which takes
+  precedence over the `time` attribute while it has visible text), and its parts `time` and `content`. Entry points
+  `@ocelle/elements/ocelle-event-timeline.js` (defines `ocelle-event-timeline` and its item `ocelle-timeline-event`)
+  and `@ocelle/elements/ocelle-timeline-event.js` (defines `ocelle-timeline-event` only).

@@ -177,3 +177,18 @@
 [data-story="data-table-room-rule"] > ocelle-data-table {
   max-block-size: calc(var(--ocelle-space-10) + var(--ocelle-space-3));
 }
+
+/*
+ * The ocelle-event-timeline stories' wrappers (019 contracts/checks.md § Stories): a reading-width block and a 320 px
+ * block (the long-identifier, right-to-left and 320 px stories). Each is capped at the viewport, so no story scrolls
+ * sideways.
+ */
+[data-story="event-timeline"] {
+  inline-size: calc(var(--ocelle-space-10) * 9);
+  max-inline-size: 100%;
+}
+
+[data-story="event-timeline-narrow"] {
+  inline-size: calc(var(--ocelle-space-10) * 5);
+  max-inline-size: 100%;
+}

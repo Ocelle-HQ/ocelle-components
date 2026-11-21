@@ -132,16 +132,16 @@ async function texts(driver: Driver, id: string): Promise<{ readonly texts: stri
 /** US2-1 to US2-10 (tasks.md T030). */
 export const eventTimelineStoryScenarios: readonly Scenario[] = [
   {
-    name: "US2-1 one list named by label, three listitems in source order, item text time then content, no marker or connector node, every marker wrapper and connector aria-hidden (FR-016, FR-020, FR-022)",
+    name: "US2-1 one list named by label, three listitems in source order, item text time then content, no marker or connector node, every marker wrapper and connector aria-hidden, the explicit list and listitem roles kept for WebKit (FR-016, FR-020, FR-022; R-08)",
     run: async (driver) => {
       await page(driver, tl("t", 'label="Mission history"', three));
       return {
         tree: await tree(driver, "t"),
         items: await texts(driver, "t"),
-        hidden: await read(driver, 'const r = shadow("t"); const spans = [...(r?.querySelectorAll(".marker-line, .connector") ?? [])]; return { markerLines: r?.querySelectorAll(".marker-line").length ?? 0, connectors: r?.querySelectorAll(".connector").length ?? 0, all: spans.length > 0 && spans.every((span) => span.getAttribute("aria-hidden") === "true") };'),
+        hidden: await read(driver, 'const r = shadow("t"); const spans = [...(r?.querySelectorAll(".marker-line, .connector") ?? [])]; return { markerLines: r?.querySelectorAll(".marker-line").length ?? 0, connectors: r?.querySelectorAll(".connector").length ?? 0, all: spans.length > 0 && spans.every((span) => span.getAttribute("aria-hidden") === "true"), roles: [r?.querySelector("ol")?.getAttribute("role") ?? null, ...lis("t").map((li) => li.getAttribute("role"))] };'),
       };
     },
-    expected: { tree: ["generic", "list Mission history", "listitem", "generic", "listitem", "generic", "listitem", "generic"], items: { texts: threeTexts, filled: true }, hidden: { markerLines: 3, connectors: 2, all: true } },
+    expected: { tree: ["generic", "list Mission history", "listitem", "generic", "listitem", "generic", "listitem", "generic"], items: { texts: threeTexts, filled: true }, hidden: { markerLines: 3, connectors: 2, all: true, roles: ["list", "listitem", "listitem", "listitem"] } },
   },
   {
     name: "US2-2 each dot is --ocelle-size-dot square within 0.5 px and round, centred on its time's line; a connector after each event but the last (FR-021)",
