@@ -28,3 +28,8 @@ How should phase 2 proceed?
 **Proceed on main.** Build phase 2 on the overflow-region module as it is on main, inline axis only, with no main
 merge. Record the shared-file conflicts and 019's additive module change as known gaps for /ocelle-land, which
 resolves them for whichever mission lands second.
+
+## Phase 2 base
+
+The branch is built on as it is, so phase 2 builds on the phase 1 head: `8ebbe439b08562e3832fbe996645d4ff714f0874`. That is the branch base of SC-007
+and SC-008 for phases 2 and 3 (T033, T041). No task merges `main`.
