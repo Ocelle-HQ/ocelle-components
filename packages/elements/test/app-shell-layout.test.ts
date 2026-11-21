@@ -103,6 +103,41 @@ describe("ocelle-app-shell layout", () => {
     expect([shell.narrowBelow, shell.collapseBelow]).toEqual(["900px", "500px"]);
   });
 
+  it("falls from overflowed font-relative bounds through inherited tokens and root-scaled defaults", async () => {
+    const shell = await mount();
+    const frame = required(shell.parentElement);
+    const root = document.documentElement;
+    const original = root.style.fontSize;
+    root.style.fontSize = "20px";
+    try {
+      const overflow = `${"9".repeat(307)}em`;
+      shell.style.fontSize = "24px";
+      shell.narrowBelow = overflow;
+      shell.collapseBelow = "-1px";
+      frame.style.setProperty("--ocelle-app-shell-narrow-below", "820px");
+      frame.style.setProperty("--ocelle-app-shell-collapse-below", "1000px");
+      size("850px");
+      await tier(shell, "collapsed");
+
+      frame.style.setProperty("--ocelle-app-shell-narrow-below", overflow);
+      shell.remeasure();
+      await tier(shell, "narrow");
+
+      size("900px");
+      await tier(shell, "collapsed");
+      size("1000px");
+      await tier(shell, "expanded");
+
+      frame.style.setProperty("--ocelle-app-shell-collapse-below", "inherit");
+      shell.remeasure();
+      await tier(shell, "collapsed");
+      size("1375px");
+      await tier(shell, "expanded");
+    } finally {
+      root.style.fontSize = original;
+    }
+  });
+
   it("coalesces same-width remeasurement and emits one composed event per effective transition", async () => {
     const events: unknown[] = [];
     await driver.mount('<div id="frame"><ocelle-app-shell id="shell" narrow-below="400px" collapse-below="600px">Content</ocelle-app-shell></div>');
@@ -149,6 +184,33 @@ describe("ocelle-app-shell layout", () => {
     shell.hidden = false;
     await tier(shell, "narrow");
     expect(received).toEqual([{ previousTier: "collapsed", tier: "narrow" }]);
+  });
+
+  it("remeasures on the first render after reconnecting into a changed frame", async () => {
+    const shell = await mount('narrow-below="400px" collapse-below="600px"');
+    size("800px");
+    await tier(shell, "expanded");
+    const frame = required(shell.parentElement);
+    const stableMain = shell.contentTarget;
+    const events: unknown[] = [];
+    shell.addEventListener("ocelle-app-shell-tier-change", (event) => {
+      events.push((event as CustomEvent<unknown>).detail);
+    });
+
+    shell.remove();
+    size("500px");
+    const settled = shell.updateComplete;
+    shell.remeasure();
+    expect(shell.updateComplete).toBe(settled);
+    await shell.updateComplete;
+    expect(shell.tier).toBe("expanded");
+    expect(events).toHaveLength(0);
+
+    frame.append(shell);
+    await shell.updateComplete;
+    expect(shell.tier).toBe("collapsed");
+    expect(shell.contentTarget).toBe(stableMain);
+    await expect.poll(() => events).toEqual([{ previousTier: "expanded", tier: "collapsed" }]);
   });
 
   it("reports only the latest completed tier when child rendering is still pending", async () => {
