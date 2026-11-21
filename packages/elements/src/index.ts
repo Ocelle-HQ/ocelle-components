@@ -3,8 +3,9 @@
 // `ocelle-workflow-board`, `ocelle-workflow-lane` and `ocelle-list-detail`, since 011 `ocelle-card`,
 // `ocelle-section-header`, `ocelle-page-header`, `ocelle-context-sidebar` and `ocelle-personal-rail`, since 008
 // `ocelle-dialog`, `ocelle-drawer` and `ocelle-tooltip`, and since 013 `ocelle-facts`, `ocelle-fact`,
-// `ocelle-empty-state` and `ocelle-progress`, and since 019 `ocelle-data-table`, and exports their classes. The
-// overflow-region, lane-count, tier and list-detail measurement modules and the overlays' internal base are not exported.
+// `ocelle-empty-state` and `ocelle-progress`, and since 019 `ocelle-data-table`, `ocelle-event-timeline` and
+// `ocelle-timeline-event`, and exports their classes. The overflow-region, lane-count, tier, list-detail measurement and
+// timeline-time modules and the overlays' internal base are not exported.
 export { OcelleBrandMark } from "./ocelle-brand-mark.ts";
 export { OcelleCard } from "./ocelle-card.ts";
 export { OcelleContextSidebar } from "./ocelle-context-sidebar.ts";
@@ -12,6 +13,7 @@ export { OcelleDataTable } from "./ocelle-data-table.ts";
 export { OcelleDialog } from "./ocelle-dialog.ts";
 export { OcelleDrawer } from "./ocelle-drawer.ts";
 export { OcelleEmptyState } from "./ocelle-empty-state.ts";
+export { OcelleEventTimeline } from "./ocelle-event-timeline.ts";
 export { OcelleFact } from "./ocelle-fact.ts";
 export { OcelleFacts } from "./ocelle-facts.ts";
 export { OcelleIcon } from "./ocelle-icon.ts";
@@ -22,6 +24,7 @@ export { OcellePersonalRail } from "./ocelle-personal-rail.ts";
 export { OcelleProgress } from "./ocelle-progress.ts";
 export { OcelleScroller } from "./ocelle-scroller.ts";
 export { OcelleSectionHeader } from "./ocelle-section-header.ts";
+export { OcelleTimelineEvent } from "./ocelle-timeline-event.ts";
 export { OcelleTooltip } from "./ocelle-tooltip.ts";
 export { OcelleWorkflowBoard } from "./ocelle-workflow-board.ts";
 export { OcelleWorkflowLane } from "./ocelle-workflow-lane.ts";
