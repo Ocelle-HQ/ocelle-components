@@ -4,7 +4,7 @@ import { define } from "./define.ts";
 import { deepActive, walk } from "./focusable.ts";
 import { accessibleName } from "./naming.ts";
 import { OcelleContextSidebar, setContextSidebarCompact } from "./ocelle-context-sidebar.ts";
-import { OcelleNavItem, setNavItemChrome, setNavItemCompact } from "./ocelle-nav-item.ts";
+import { OcelleNavItem, setNavItemPresentation } from "./ocelle-nav-item.ts";
 import { CompactSections } from "./shell-compact-sections.ts";
 import { below, parseLength, resolveLength } from "./tiers.ts";
 import "./ocelle-top-bar.ts";
@@ -19,7 +19,8 @@ const narrowToken = "--ocelle-app-shell-narrow-below";
 const collapseToken = "--ocelle-app-shell-collapse-below";
 const landmark = "nav:not([role]), [role=navigation], ocelle-context-sidebar:not([role]), ocelle-personal-rail:not([role])";
 const contentWrappers = "nav, [role=navigation], ocelle-context-sidebar, ocelle-personal-rail, div, span, p, ul, ol, li, section, article, aside";
-const presentationOwners = new WeakMap<PresentationElement, OcelleAppShell>();
+// Tokens let the most recent owner be identified without retaining the shell.
+const presentationOwners = new WeakMap<PresentationElement, symbol>();
 
 function assignedRegion(host: HTMLElement, name: Region | "actions"): Element[] {
   return [...host.children].filter((child) => child.getAttribute("slot") === name);
@@ -187,6 +188,7 @@ export class OcelleAppShell extends LitElement {
   #settlement: symbol | undefined;
   #focusSource: Element | undefined;
   #announcedTier: AppShellTier | undefined;
+  readonly #presentationOwner = Symbol();
   #managedPresentation = new Set<PresentationElement>();
   readonly #compactSections = new CompactSections();
 
@@ -343,24 +345,21 @@ export class OcelleAppShell extends LitElement {
     const items = new Set([...railItems, ...sidebarItems]);
     const presentation = new Set([...items, ...sidebars]);
     for (const element of this.#managedPresentation) {
-      if (presentation.has(element) || presentationOwners.get(element) !== this) continue;
-      presentationOwners.delete(element);
+      if (presentation.has(element) || presentationOwners.get(element) !== this.#presentationOwner) continue;
       if (element instanceof OcelleContextSidebar) {
         setContextSidebarCompact(element, false);
       } else {
-        setNavItemCompact(element, undefined);
-        setNavItemChrome(element, false);
+        setNavItemPresentation(element, undefined, false);
       }
     }
     this.#managedPresentation = presentation;
 
     for (const item of items) {
-      presentationOwners.set(item, this);
-      setNavItemCompact(item, sidebarItems.has(item) ? compact : undefined);
-      setNavItemChrome(item, railItems.has(item));
+      presentationOwners.set(item, this.#presentationOwner);
+      setNavItemPresentation(item, sidebarItems.has(item) ? compact : undefined, railItems.has(item));
     }
     for (const sidebar of sidebars) {
-      presentationOwners.set(sidebar, this);
+      presentationOwners.set(sidebar, this.#presentationOwner);
       setContextSidebarCompact(sidebar, compact);
     }
 

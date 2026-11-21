@@ -76,6 +76,13 @@ The candidate adds the responsive shell, its threshold tokens and package entry,
 - The 174-mutant render, presence, and destination range on `f948d1d` reached 99.14%. It killed 115 mutants, with one survivor, 58 rejected at compilation, and zero uncovered mutants or timeouts.
 - A new browser scenario verifies that shell focus recovery honors Chromium's native keyboard-scroll stop even when it has no authored tabindex. Its assertion fails when the opaque-host eligibility check is applied to all walker stops, covering the sole survivor of that range.
 
+## Shared presentation and settlement follow-up
+
+- The ownership and settlement range on `9984bfd` reached 97.25% with 106 killed, three survivors, 51 rejected at compilation, and no uncovered mutants or timeouts. Two survivors removed WeakMap cleanup. The third allowed settlement after a reactive update on a disconnected shell.
+- The shared sidebar and nav-item range on `2fcb81f` reached 91.30% with 63 killed, six survivors, six rejected at compilation, and no uncovered mutants or timeouts. Its survivors covered redundant render scheduling and class construction.
+- Tests in `3a26f51` passed on unchanged source. Three isolated fault probes failed the added assertions for disconnected reactive updates, unnecessary same-tier sidebar renders, and missing compact centering. Owner tokens now allow moved sections and items to outlive the shell without retaining it, and nav items apply their compact and chrome state together in one update.
+- The four shell, sidebar, and nav-item suites passed 82/82. The test-lint and manifest gates, TypeScript, and the diff check passed.
+
 ## Canonical workflow status
 
 The workflow's canonical `red.sh 3 phase` replay recorded tests-only `a0612f39fe3579984879f800c4f8b13fab148089` with test exit 1. Its full log reports 62 failures out of 9,698 tests, including 19 direct app-shell layout, navigation and standalone-entry failures. It also contains token and manifest assertions and unrelated font, integration timeout and form timing failures. The full affected-plant selection is 317 plants because the package export change is unmapped. The completed focused mutation diagnostics are above. Canonical head and final-tests-on-base checks and independent review are pending. The targeted evidence above does not replace those checks.

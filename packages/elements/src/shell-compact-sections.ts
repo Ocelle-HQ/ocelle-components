@@ -20,21 +20,21 @@ const compactSections = css`
 
 type StyleRoot = Document | ShadowRoot;
 const users = new WeakMap<StyleRoot, number>();
-const owners = new WeakMap<Element, CompactSections>();
+const owners = new WeakMap<Element, symbol>();
 
 export class CompactSections {
+  readonly #owner = Symbol();
   #sections = new Set<Element>();
   #root: StyleRoot | undefined;
 
   update(host: HTMLElement, sections: readonly Element[]): void {
     const next = new Set(sections);
     for (const section of this.#sections) {
-      if (next.has(section) || owners.get(section) !== this) continue;
+      if (next.has(section) || owners.get(section) !== this.#owner) continue;
       section.removeAttribute(marker);
-      owners.delete(section);
     }
     for (const section of next) {
-      owners.set(section, this);
+      owners.set(section, this.#owner);
       section.toggleAttribute(marker, true);
     }
     this.#sections = next;

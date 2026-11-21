@@ -1,23 +1,25 @@
 import { LitElement, css, html, nothing } from "lit";
+import { classMap } from "lit/directives/class-map.js";
 import { linkHref } from "./control.ts";
 import { define } from "./define.ts";
 import "./ocelle-tooltip.ts";
 
-const compactPresentation = new WeakMap<OcelleNavItem, boolean | undefined>();
-const chromeItems = new WeakSet<OcelleNavItem>();
+interface NavItemPresentation {
+  readonly compact: boolean | undefined;
+  readonly chrome: boolean;
+}
 
-/** @internal The shell's temporary presentation, separate from the owner's standalone setting. */
-export function setNavItemCompact(item: OcelleNavItem, compact: boolean | undefined): void {
-  compactPresentation.set(item, compact);
+const shellPresentation = new WeakMap<OcelleNavItem, NavItemPresentation>();
+
+/** @internal Sets the shell's temporary compact and chrome presentation together. */
+export function setNavItemPresentation(item: OcelleNavItem, compact: boolean | undefined, chrome: boolean): void {
+  shellPresentation.set(item, { compact, chrome });
   item.requestUpdate();
 }
 
-/** @internal Sets the shell rail's chrome colors without exposing a host input. */
-export function setNavItemChrome(item: OcelleNavItem, chrome: boolean): void {
-  if (chrome === chromeItems.has(item)) return;
-  if (chrome) chromeItems.add(item);
-  else chromeItems.delete(item);
-  item.requestUpdate();
+/** @internal Sets the shell's temporary compact presentation independently. */
+export function setNavItemCompact(item: OcelleNavItem, compact: boolean | undefined): void {
+  setNavItemPresentation(item, compact, shellPresentation.get(item)?.chrome ?? false);
 }
 
 /**
@@ -149,7 +151,8 @@ export class OcelleNavItem extends LitElement {
 
   protected override render(): unknown {
     const href = linkHref(this.href, this.baseURI);
-    const compact = href !== undefined && (compactPresentation.get(this) ?? this.compact);
+    const presentation = shellPresentation.get(this);
+    const compact = href !== undefined && (presentation?.compact ?? this.compact);
     const current = this.current === "page" || this.current === "true" ? this.current : nothing;
     const contents = html`
       <span class="icon" aria-hidden="true"><slot name="icon"></slot></span>
@@ -158,7 +161,7 @@ export class OcelleNavItem extends LitElement {
     if (href === undefined) return html`<span class="destination">${contents}</span>`;
     return html`
       <ocelle-tooltip placement="bottom" exportparts="bubble" .text=${this.label} .disabled=${!compact}>
-        <a class=${["destination", compact ? "compact" : "", chromeItems.has(this) ? "on-chrome" : ""].join(" ")} part="link" href=${href}
+        <a class=${classMap({ destination: true, compact, "on-chrome": presentation?.chrome ?? false })} part="link" href=${href}
           aria-label=${this.label || nothing} aria-current=${current}>${contents}</a>
       </ocelle-tooltip>
     `;
