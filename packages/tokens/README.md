@@ -90,6 +90,9 @@ Two tokens exist for `ocelle-status-indicator` of `@ocelle/elements` (mission 01
 `--ocelle-motion-pulse` is the duration of one iteration of the status indicator's pulse, `1600ms`; the indicator runs
 three iterations, 4.8 s in all, within the 5 s limit. The count is fixed in the element, not a token.
 
+One token exists for `ocelle-pill-tag` of `@ocelle/elements` (mission 018). `--ocelle-line-height-snug` (1.2) is the
+line height of the compact `ocelle-pill-tag` of `@ocelle/elements`, with `--ocelle-font-size-xs`.
+
 Two tokens serve the action row of `@ocelle/elements` (`ocelle-action-row`, mission 012).
 `--ocelle-focus-offset-inset` is the negative offset that draws a focus ring inside a box:
 `calc(-1 * (var(--ocelle-focus-offset) + var(--ocelle-focus-width)))`, -5 px, so a scroll container's edge or the next

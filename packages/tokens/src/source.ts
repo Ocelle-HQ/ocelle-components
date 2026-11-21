@@ -169,6 +169,7 @@ export const records = tokenRecords([
   { name: "font-size-xl", group: "type", value: "1.5rem" },
   { name: "font-size-2xl", group: "type", value: "1.875rem" },
   { name: "line-height-tight", group: "type", value: "1.15" },
+  { name: "line-height-snug", group: "type", value: "1.2" }, // the compact pill tag's line height (018 research.md R-06, R-10)
   { name: "line-height-normal", group: "type", value: "1.45" },
   { name: "line-height-relaxed", group: "type", value: "1.55" },
   { name: "line-height-compact", group: "type", value: "1.5" },

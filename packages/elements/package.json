@@ -27,6 +27,7 @@
     "./ocelle-progress.js": "./dist/ocelle-progress.js",
     "./ocelle-status-indicator.js": "./dist/ocelle-status-indicator.js",
     "./ocelle-metric.js": "./dist/ocelle-metric.js",
+    "./ocelle-pill-tag.js": "./dist/ocelle-pill-tag.js",
     "./browser.js": "./dist/browser/ocelle-elements.js",
     "./custom-elements.json": "./custom-elements.json"
   },

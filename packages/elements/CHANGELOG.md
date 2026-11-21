@@ -22,6 +22,10 @@ entry point `@ocelle/elements/ocelle-status-indicator.js` are additions to the p
 `ocelle-metric`, its attributes `label` and `display-value` (reflected) and `layout`, its parts `label` and `value` and
 its entry point `@ocelle/elements/ocelle-metric.js` are additions to the public surface: a minor change.
 
+`ocelle-pill-tag`, its attributes `status`, `variant` and `density`, `interactive`, `href` and `disabled` (reflected)
+and `label`, its default and `icon` slots, its part `pill` and its entry point `@ocelle/elements/ocelle-pill-tag.js`
+are additions to the public surface: a minor change.
+
 ### Added
 
 - `ocelle-icon`, an icon of the set drawn inline in `currentColor` at the `--ocelle-icon-size` token, decorative
@@ -102,6 +106,13 @@ its entry point `@ocelle/elements/ocelle-metric.js` are additions to the public 
   uppercase and read as written, the value in tabular figures, stacked or with `layout="row"` on one line; its
   attributes `label` and `display-value` (reflected) and `layout`; its parts `label` and `value`. Entry point
   `@ocelle/elements/ocelle-metric.js` (defines `ocelle-metric` only). It reads 011's eyebrow tokens and adds none.
+- `ocelle-pill-tag`, a state pill or a count badge with the pill radius: its text, with an optional leading icon, on
+  its status's ground in the status colour, or outlined in it with `variant="badge"` and tabular figures; the compact
+  density; a static pill is inert content that wraps a long text and is never shrunk below its longest word in a flex
+  row. Its attributes `status`, `variant` and `density`, `interactive`, `href` and `disabled` (reflected) and `label`
+  (the interactive modes are to come); its default and `icon` slots; its part `pill`. Entry point
+  `@ocelle/elements/ocelle-pill-tag.js` (defines `ocelle-pill-tag` only). It reads the new token
+  `--ocelle-line-height-snug` of `@ocelle/tokens`.
 - The style lint's token-only rule, which checks these elements' styles, admits four values and nothing near them:
   the `grid-template-columns` tracks `fit-content(<percentage>)` and `minmax(0, <flex>)` (the facts columns and
   grid), `translateX(<percentage>)` in `transform` (the progress sweep) and a bare positive integer

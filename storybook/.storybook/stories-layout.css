@@ -3,7 +3,8 @@
  * base.css, selectors on data-story attributes only (no class, no style attribute). Since 008, also the ocelle-dialog,
  * ocelle-drawer and ocelle-tooltip stories' blocks; since 009, the tested frames, keyed on data-frame attributes;
  * since 011, the personal-rail stories' stand-in items, keyed on their data-story root; and since 013 the
- * ocelle-facts, ocelle-empty-state and ocelle-progress stories' wrappers (below).
+ * ocelle-facts, ocelle-empty-state and ocelle-progress stories' wrappers, and since 018 the ocelle-pill-tag LongTextWraps
+ * story's narrow block (below).
  */
 [data-story] {
   padding: var(--ocelle-space-4);
@@ -142,4 +143,13 @@
   inline-size: calc(var(--ocelle-space-10) * 6);
   max-inline-size: 100%;
   background-color: var(--ocelle-color-inset);
+}
+
+/*
+ * The ocelle-pill-tag LongTextWraps story's narrow block (018 research.md R-12): 160 px, so each long pill in it wraps
+ * onto further lines inside the pill.
+ */
+[data-story="pill-narrow"] {
+  inline-size: calc(var(--ocelle-space-10) * 2.5);
+  max-inline-size: 100%;
 }

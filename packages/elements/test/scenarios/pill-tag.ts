@@ -693,6 +693,81 @@ export const pillScenarios: readonly Scenario[] = [
     },
   },
   {
+    name: "Mode read (FR-025, FR-035; data-model.md § mode): a pill with interactive, with a link-mode href or with both does not render the static shadow root, beside static twins with no href, an empty one and a javascript: URL; removing interactive makes the first static again (mutation finding at phase 4; what an interactive pill renders is user story 4's)",
+    run: async (driver) => {
+      await mount(
+        driver,
+        '<ocelle-pill-tag id="button" interactive>Mine</ocelle-pill-tag><ocelle-pill-tag id="link" href="/missions?state=blocked">Blocked</ocelle-pill-tag><ocelle-pill-tag id="absolute" href="https://example.com/missions">Blocked</ocelle-pill-tag><ocelle-pill-tag id="both" interactive href="javascript:void 0">Mine</ocelle-pill-tag>' +
+          '<ocelle-pill-tag id="none">Draft</ocelle-pill-tag><ocelle-pill-tag id="empty" href="">Draft</ocelle-pill-tag><ocelle-pill-tag id="script" href="javascript:void 0">Draft</ocelle-pill-tag>',
+      );
+      const isStatic = async (id: string): Promise<boolean> => JSON.stringify(await rendered(driver, id)) === JSON.stringify(staticRoot);
+      const found: Record<string, boolean> = {};
+      for (const id of ["button", "link", "absolute", "both", "none", "empty", "script"]) found[id] = await isStatic(id);
+      await driver.setAttribute("button", "interactive", null);
+      return { found, madeStatic: await isStatic("button") };
+    },
+    expected: { found: { button: false, link: false, absolute: false, both: false, none: true, empty: true, script: true }, madeStatic: true },
+  },
+  {
+    name: "Reflection (FR-025): interactive and disabled default to false and href is unset, with no attribute written; set as properties, interactive, href and disabled reflect, and the attributes read back as properties (mutation finding at phase 4)",
+    run: async (driver) => {
+      await mount(driver, '<ocelle-pill-tag id="p" status="warning">Blocked</ocelle-pill-tag><ocelle-pill-tag id="a" interactive disabled href="javascript:void 0">Blocked</ocelle-pill-tag>');
+      const attributesOf = async (id: string): Promise<unknown> => ({ interactive: await driver.attribute(id, "interactive"), href: await driver.attribute(id, "href"), disabled: await driver.attribute(id, "disabled") });
+      const propertiesOf = async (id: string): Promise<unknown> => ({ interactive: await driver.property(id, "interactive"), href: await driver.property(id, "href"), disabled: await driver.property(id, "disabled") });
+      const defaults = { attributes: await attributesOf("p"), properties: await propertiesOf("p") };
+      const fromAttributes = await propertiesOf("a");
+      await driver.setProperty("p", "disabled", true);
+      await driver.setProperty("p", "href", "javascript:void 0");
+      const setStatic = { attributes: await attributesOf("p"), rendered: await rendered(driver, "p") };
+      await driver.setProperty("p", "interactive", true);
+      const setInteractive = await driver.attribute("p", "interactive");
+      await driver.setProperty("p", "interactive", false);
+      await driver.setProperty("p", "disabled", false);
+      return { defaults, fromAttributes, setStatic, setInteractive, cleared: await attributesOf("p") };
+    },
+    expected: {
+      defaults: { attributes: { interactive: null, href: null, disabled: null }, properties: { interactive: false, href: undefined, disabled: false } },
+      fromAttributes: { interactive: true, href: "javascript:void 0", disabled: true },
+      setStatic: { attributes: { interactive: null, href: "javascript:void 0", disabled: "" }, rendered: staticRoot },
+      setInteractive: "",
+      cleared: { interactive: null, href: "javascript:void 0", disabled: null },
+    },
+  },
+  {
+    name: "Attribute changes (FR-025): status, variant and density, each changed alone after the first render, change the look at once: the ground to the new status's, the badge's transparent ground, the compact inline padding (mutation finding at phase 4)",
+    run: async (driver) => {
+      await mount(driver, '<ocelle-pill-tag id="s">Draft</ocelle-pill-tag><ocelle-pill-tag id="v">Draft</ocelle-pill-tag><ocelle-pill-tag id="d">Draft</ocelle-pill-tag>');
+      await driver.setAttribute("s", "status", "danger");
+      await driver.setAttribute("v", "variant", "badge");
+      await driver.setAttribute("d", "density", "compact");
+      return {
+        status: (await driver.styles("s", pillPart, ["background-color"]))[0],
+        variant: (await driver.styles("v", pillPart, ["background-color"]))[0],
+        density: (await driver.styles("d", pillPart, ["padding-left"]))[0],
+      };
+    },
+    expected: { status: { "background-color": tokenColour("color-danger-bg", "light") }, variant: { "background-color": "rgba(0, 0, 0, 0)" }, density: { "padding-left": px(space2) } },
+  },
+  {
+    name: "Edge cases: the text read follows a forwarded slot and ignores empty nodes: a pill whose default slot holds a slot forwarding text has a labelled pill's height and one forwarding only whitespace an empty pill's, beside direct twins; a pill holding two empty elements around whitespace is empty (its row bare) (FR-026; mutation finding at phase 4)",
+    run: async (driver) => {
+      await mount(driver, '<div id="fwd">Blocked</div><div id="fwd-empty"> </div><ocelle-pill-tag id="direct">Blocked</ocelle-pill-tag><ocelle-pill-tag id="direct-empty"></ocelle-pill-tag><ocelle-pill-tag id="two"><span></span> <span></span></ocelle-pill-tag>');
+      await driver.shadow("fwd", "<ocelle-pill-tag><slot></slot></ocelle-pill-tag>");
+      await driver.shadow("fwd-empty", "<ocelle-pill-tag><slot></slot></ocelle-pill-tag>");
+      await driver.settle();
+      const height = async (id: string, inner?: string): Promise<number> => (await driver.box(id, inner)).height;
+      const labelled = await height("direct");
+      const empty = await height("direct-empty");
+      return {
+        differ: Math.abs(labelled - empty) > 1,
+        forwarded: Math.abs((await height("fwd", "ocelle-pill-tag")) - labelled) <= 0.02,
+        forwardedEmpty: Math.abs((await height("fwd-empty", "ocelle-pill-tag")) - empty) <= 0.02,
+        two: (await driver.elements("two")).find((part) => part.attributes.class?.startsWith("icon-row") === true)?.attributes.class,
+      };
+    },
+    expected: { differ: true, forwarded: true, forwardedEmpty: true, two: "icon-row bare" },
+  },
+  {
     name: "Edge cases: an empty pill and a whitespace-only one render their box without error, their row bare and nothing but the host in the tree; text that arrives later, as a text node's data, as a nested element's text or as a new child, drops bare (FR-026; Edge Cases)",
     run: async (driver) => {
       await mount(driver, '<ocelle-pill-tag id="e"></ocelle-pill-tag><ocelle-pill-tag id="w"> </ocelle-pill-tag><ocelle-pill-tag id="n"><span id="nested"></span></ocelle-pill-tag><ocelle-pill-tag id="c"></ocelle-pill-tag>');
