@@ -16,7 +16,7 @@ import { runningOf } from "../animations.ts";
 import { axNodes, axSubtree, emulate, emulateMotion, movePointer, readActiveElement, readScrollWidth, readTextBoxes } from "../commands.ts";
 import { layoutWait } from "../layout-wait.ts";
 import { decodePng } from "../pixels.ts";
-import { heardTypes } from "../scenarios/driver.ts";
+import { heardTypes, itemTextsOf } from "../scenarios/driver.ts";
 import type { Bounds, Box, Driver, Drawing, Paint, Part, Placement, Sheets, Target, TreeNode } from "../scenarios/driver.ts";
 import { installProbe } from "../scenarios/probe.ts";
 import type { Probe } from "../scenarios/probe.ts";
@@ -298,6 +298,14 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
       const session = await page.context().newCDPSession(page);
       try {
         return await axSubtree(session, id);
+      } finally {
+        await session.detach();
+      }
+    },
+    itemTexts: async (id) => {
+      const session = await page.context().newCDPSession(page);
+      try {
+        return itemTextsOf(await axSubtree(session, id));
       } finally {
         await session.detach();
       }

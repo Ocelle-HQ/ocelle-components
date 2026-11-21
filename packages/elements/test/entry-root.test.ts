@@ -8,7 +8,8 @@ import * as root from "../src/index.ts";
 // `ocelle-workflow-lane`, and since 009 phase 4 (T051) `ocelle-list-detail`; since 011 `ocelle-card`,
 // `ocelle-section-header`, `ocelle-page-header` (T027), `ocelle-context-sidebar` (T034) and `ocelle-personal-rail`
 // (T042); and since 013 `ocelle-facts`, `ocelle-fact`, `ocelle-empty-state` and `ocelle-progress`. This file's own
-// iframe (Vitest browser mode, isolate on) holds only what this import defines. Since 019 (T010) also `ocelle-data-table`.
+// iframe (Vitest browser mode, isolate on) holds only what this import defines. Since 019 (T010) also `ocelle-data-table`,
+// and since 019 phase 2 (T034) `ocelle-event-timeline` and `ocelle-timeline-event`.
 describe("importing src/index.ts", () => {
   it("defines ocelle-icon, ocelle-brand-mark, ocelle-scroller, ocelle-workflow-board, ocelle-workflow-lane, ocelle-list-detail, ocelle-card, ocelle-section-header, ocelle-page-header, ocelle-context-sidebar and ocelle-personal-rail as the OcelleIcon, OcelleBrandMark, OcelleScroller, OcelleWorkflowBoard, OcelleWorkflowLane, OcelleListDetail, OcelleCard, OcelleSectionHeader, OcellePageHeader, OcelleContextSidebar and OcellePersonalRail it exports", () => {
     const exported = root as Record<string, unknown>;
@@ -85,6 +86,18 @@ describe("importing src/index.ts", () => {
       progress: customElements.get("ocelle-progress"),
       track: document.getElementById("p")?.shadowRoot?.querySelector('[part="track"]') !== null && document.getElementById("p")?.shadowRoot !== null,
     }).toEqual({ type: "function", progress: exported.OcelleProgress, track: true });
+  });
+
+  it("defines ocelle-event-timeline and ocelle-timeline-event as the OcelleEventTimeline and OcelleTimelineEvent it exports, and a timeline renders its event in a listitem (019 phase 2)", async () => {
+    const exported = root as Record<string, unknown>;
+    document.body.innerHTML = '<ocelle-event-timeline id="t"><ocelle-timeline-event id="ev" time="14:02">Mission created</ocelle-timeline-event></ocelle-event-timeline>';
+    await (document.getElementById("t") as unknown as { updateComplete: Promise<unknown> }).updateComplete;
+    expect({
+      types: [typeof exported.OcelleEventTimeline, typeof exported.OcelleTimelineEvent],
+      timeline: customElements.get("ocelle-event-timeline"),
+      event: customElements.get("ocelle-timeline-event"),
+      assigned: document.getElementById("t")?.shadowRoot?.querySelector<HTMLSlotElement>("li > slot")?.assignedElements().map((each) => each.id),
+    }).toEqual({ types: ["function", "function"], timeline: exported.OcelleEventTimeline, event: exported.OcelleTimelineEvent, assigned: ["ev"] });
   });
 
   it("defines ocelle-data-table as the OcelleDataTable it exports, and a data table renders its region with the table assigned (019)", async () => {

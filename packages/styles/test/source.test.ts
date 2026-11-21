@@ -48,6 +48,10 @@ const baseLayer: readonly RuleEntry[] = [
   { media: [], selectors: [":where(code, pre, kbd, samp)"], declarations: [["font-family", "var(--ocelle-font-sans)"], ["font-variant-numeric", "var(--ocelle-figures)"]] },
   // 013 (research.md R-01, R-07): ocelle-facts before upgrade, each fact not hidden a block, (0,0,0).
   { media: [], selectors: [":where(ocelle-facts:not(:defined) > ocelle-fact:not([hidden]))"], declarations: [["display", "block"]] },
+  // 019 phase 2 (research R-08, recheck Q5 (b); contracts/styles-data-table.md § Block 3): the timeline before upgrade,
+  // each visible event a block and an aria-hidden one not shown, (0,0,0), right after the facts rule.
+  { media: [], selectors: [':where(ocelle-event-timeline:not(:defined) > ocelle-timeline-event:not([hidden]):not([aria-hidden="true"]))'], declarations: [["display", "block"]] },
+  { media: [], selectors: [':where(ocelle-event-timeline:not(:defined) > ocelle-timeline-event[aria-hidden="true"])'], declarations: [["display", "none"]] },
   focus,
   forcedFocus,
 ];
@@ -426,6 +430,11 @@ function reports(check: (sheet: ReturnType<typeof parse>) => string[], plants: r
 describe("src/base.css as shipped (buildPlan(text)[0].content)", () => {
   it("opens with the base layer of data-model § Rule table, in its order, with exactly its declarations (R-03)", () => {
     expect(rules(root).slice(0, baseLayer.length)).toEqual(baseLayer);
+  });
+
+  // 019 phase 2 (research R-08, recheck Q5 (b)): the base layer's header comment names the timeline's rules beside the facts.
+  it("names ocelle-event-timeline before upgrade in the base layer's header comment, after ocelle-facts and before the focus ring (019 R-08)", () => {
+    expect(/^\/\* Base layer: .*ocelle-facts before upgrade, ocelle-event-timeline before upgrade, the focus ring/m.test(text)).toBe(true);
   });
 
   it("follows the base layer with the compact scale of data-model § Rule table, in its order, with exactly its declarations (R-03, R-04)", () => {
