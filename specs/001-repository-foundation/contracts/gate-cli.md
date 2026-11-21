@@ -12,13 +12,18 @@ Every gate entry catches any exception at the top and exits 2, so Node's own exi
 reads as "found defects".
 
 Plant mode: for every gate but pins, the plant job builds a temporary repository from the plant (contracts/plants.md:
-`repo-tree`, `commit-repo`, `mutation-repo`) with the repository's configuration copied in unchanged and runs the
+`repo-tree`, `commit-repo`, `mutation-repo`; since op 023 also `tracked-tree`, which copies no configuration) with the
+repository's configuration copied in unchanged and runs the
 gate in normal mode with `--root <tmp>` (plus `--range` or `--base`), so the gate's own file collection is exercised
 (operator decisions, plan squad rounds 1 to 3). Every gate but the plant job takes `--root <dir>`: it sets the
 repository root and the working directory of the tool and changes nothing else (research.md R-09); for
 `unit-tests` (`gates/bin/test.ts`) it is also the test seam of research.md R-03. Only pins has a separate plant mode,
 `pnpm run gate:pins -- --plant <dir>`, which checks the plant's mini-workspace with the same rules and exit codes.
 A gate MUST NOT read `gates/plants/` or `gates/test/fixtures/` outside plant mode.
+Exception (op 023, #60, `ops/023-public-repo-hygiene/` FR-002, 2026-11-20): `sandbox-paths` scans every tracked file of
+its root in normal mode, `gates/plants/` and `gates/test/fixtures/` included, because no tracked file but its four
+allowed files may hold a sandbox path. Its plants use the form `tracked-tree` (contracts/plants.md): a git checkout of
+the plant's `tree/` alone, with no configuration copied in.
 
 | id | Check (CI) | Command (normal) | Checks |
 |---|---|---|---|
@@ -33,6 +38,7 @@ A gate MUST NOT read `gates/plants/` or `gates/test/fixtures/` outside plant mod
 | `config-copies` | Story config copies | `gates/bin/config-copies.ts` | the two copies of FR-006 |
 | `pins` | Install and pins | `gates/bin/pins.ts` | manifests, lockfile, version pins, `pnpm-workspace.yaml` settings |
 | `signoff` | Sign-off | `gates/bin/signoff.ts --range <base>..<head>` | commits in the pull request |
+| `sandbox-paths` | Sandbox paths | `gates/bin/sandbox-paths.ts` (runs `git grep -E -I -z -n` over the tracked files; since op 023) | every tracked file but the four allowed files of `gates/lib/sandbox-paths.ts` |
 | `plants` | Plants | `gates/bin/plants.ts` | `gates/plants/` only, and the registry check |
 
 ## Findings versus breakage (tool-backed and Stryker-backed gates)

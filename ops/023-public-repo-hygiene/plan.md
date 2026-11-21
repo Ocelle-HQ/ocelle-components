@@ -3,18 +3,21 @@
 **Op**: `ops/023-public-repo-hygiene` | **Date**: 2026-11-20 | **Spec**: `spec.md` | **Record**: `op.md`
 **Input**: triage `triage/023-public-repo-hygiene.md` (#60), with its rule stated exactly; the operator answers of
 `triage/decisions/023-q1-q3-security-scope.md` (Q1 (a), Q2 (a), Q3 (a)); the operator constraints of 2026-11-20
-(the story's tests in the red commit, a test-first gate with a plant, no history rewrite, CI first, sign-off).
+(the story's tests in the red commit, a test-first gate with a plant, no history rewrite, CI first, sign-off); the
+operator decision on redaction at landing, `triage/decisions/023-landing-redaction.md` (2026-11-20).
 
 ## Summary
 
-The op has four parts in one phase:
+The op has five parts in one phase:
 
 - a new CI gate `sandbox-paths` (a pure rule module, a CLI that runs `git grep`, plants, and the registry, CI and
   docs entries);
 - a new plant form `tracked-tree`, so the gate's plants are git checkouts that hold sandbox paths only at run time;
 - a shared redaction script, which `red.sh` and `tdd-check.sh` use through `common.sh` when they write, and which
   redacts the tracked files once, in a commit of its own;
-- `SECURITY.md` for the public repository, with the spec 001 amendments.
+- `SECURITY.md` for the public repository, with the spec 001 amendments;
+- a verify mode of the redaction script, and the sanctioned landing step that uses it (added after the operator
+  decision of 2026-11-20; tasks T026 to T030).
 
 ## Technical Context
 
@@ -57,10 +60,16 @@ The op has four parts in one phase:
 | `specs/001-repository-foundation/contracts/gate-cli.md` | The `sandbox-paths` row. After "A gate MUST NOT read `gates/plants/` or `gates/test/fixtures/` outside plant mode", the exception: `sandbox-paths` scans every tracked file, those directories included (op 023). The plant-mode paragraph names `tracked-tree`. |
 | `specs/001-repository-foundation/contracts/plants.md` | The `tracked-tree` form paragraph (the markers, no configuration set, an empty tree gives no tracked file) and the `sandbox-paths` row of the gate table. |
 | `gates/README.md` | The `sandbox-paths` row in "The gates", with its plants. "Required checks on `main`" changes from eighteen to nineteen, with `Sandbox paths` as item 18, before `Plants`. |
+| `tooling/speckit/bin/redact-sandbox-paths.sh` (verify mode) | `--verify <rev>` and `--verify <from>..<to>`, as in *Verify mode*. The usage line and the header comment name the mode. The stdin and `--in-place` modes do not change. |
+| `.claude/skills/ocelle-land/SKILL.md` | The sanctioned step of *Landing redaction*: a new step 2.9, one sentence in step 2.3 for the `Sandbox paths` red, and one sentence in rule 8. Written by `implementer-ivan` (the planner's scope is `specs/*` and `ops/*` only). |
+| `.claude/skills/ocelle-run/SKILL.md` | Rule 6, "Never edit a review, verdict or check file a profile wrote", gains the exception: the sanctioned landing redaction of `/ocelle-land` (op 023) is not such an edit. Written by `implementer-ivan`. |
+| `tooling/speckit/README.md` | The **Landing** paragraph names the step, after the history fold and the last merge of `main`. |
+| `gates/README.md` | The `sandbox-paths` row's fix names the landing step for branches in flight, and `--verify` as its proof. |
 | `ops/023-public-repo-hygiene/reviews/phase-1/**` | Evidence. Any line that matches the rule is redacted before it is committed (see *Own evidence*). |
 | about 411 files under `specs/*/`, `ops/*/` and `knowledge/speckit-flows/log.md` | The one-time redaction (FR-008), in a commit of its own. |
 
-Unchanged, and the review checks this: `.claude/skills/**` (landing rule 8 stays), `tooling/speckit/bin/guard-commit.sh`,
+Unchanged, and the review checks this: `.claude/skills/**` except the two files above (landing rule 8 stays, and it
+gains only the sentence of *Landing redaction*), `tooling/speckit/bin/guard-commit.sh`,
 the constitution, the four allowed files, every element, token, story and baseline, and git history.
 
 ## Approach
@@ -121,6 +130,64 @@ script like every other tracked file.
 The one-time run: `git grep -lIzE '<rule>' -- . <the exclude pathspecs of the gate> | xargs -0
 tooling/speckit/bin/redact-sandbox-paths.sh --in-place`, then `pnpm run gate:sandbox-paths` (exit 0), then a
 JSON parse of every changed `.json` file. That commit holds only these files.
+
+### Verify mode
+
+This mode is the check of the decision of 2026-11-20. `redact-sandbox-paths.sh --verify <arg>` takes exactly one
+argument. With `<from>..<to>`, both sides must resolve to commits (`git rev-parse --verify --quiet <x>^{commit}`).
+Otherwise `<arg>` is one revision, checked against its first parent `<arg>^1`. A side that does not resolve exits 2
+with `redact-sandbox-paths: verify: <x> is not a commit`, and a revision with no parent exits 2 with `<x> has no
+parent`. The mode then reads `git diff --raw --no-renames -z <from> <to>`. With no entry, it exits 2 with `no change
+in <from>..<to>`. For each entry:
+
+- status `A` is the finding `added`, and status `D` is `deleted`;
+- a status `M` (or `T`) entry with different modes is `mode changed`, and one whose mode is not `100644` or `100755`
+  (a symlink or a submodule) is `not a regular file`;
+- otherwise, the mode runs `git cat-file blob <from>:<path>` through the script's own `sed` program (the same
+  `program` variable, so the redaction and the check cannot drift apart). It compares the result byte for byte with
+  `git cat-file blob <to>:<path>` (`cmp -s`). A difference is `not the redaction of its old content`.
+
+Each finding is one line on stdout, `redact-sandbox-paths: verify: <path>: <reason>`, and the mode exits 1 if there is
+any. Otherwise it prints `redact-sandbox-paths: verify: <n> files changed, each only by the redaction` and exits 0.
+A `git` failure exits 2 with git's first error line. The mode prints no line of a file, so its output holds no
+sandbox path. It writes nothing: no file, no index and no temporary file inside the repository (process
+substitution or a pipe only). The comparison is of whole files, so it is stricter than "only matched prefixes
+changed". A partial redaction fails, and so does a substitution with the wrong placeholder. Both would mean the
+commit was not made by the script. The source keeps the rule's constraint: no line of it matches FR-001.
+
+### Landing redaction
+
+The text the docs task (T029) adds to `/ocelle-land`. It is step 2.9, "Redact the merged tree", after step 2.8 and
+after the real `git merge --signoff origin/main` that follows it, before the final push:
+
+1. Skip the step when the merged tree has no `tooling/speckit/bin/redact-sandbox-paths.sh` (main from before op
+   023), or when `pnpm run gate:sandbox-paths` exits 0.
+2. Run the redaction on the files the gate finds, which is the command of *Redaction script*:
+   `git grep -lIzE '(^|[^A-Za-z0-9._~-])/(root|home/user)/[A-Za-z0-9._-]' -- . <one ':(exclude,literal)<path>' per
+   allowed file of gates/lib/sandbox-paths.ts> | xargs -0 tooling/speckit/bin/redact-sandbox-paths.sh --in-place`.
+3. Commit only those files: `chore(landing): redact sandbox paths in the merged tree`, signed off. The body cites
+   `triage/decisions/023-landing-redaction.md`.
+4. Prove it: `tooling/speckit/bin/redact-sandbox-paths.sh --verify HEAD` and `pnpm run gate:sandbox-paths` must both
+   exit 0. If either fails, stop. Do not push and do not hand-edit a file. Tell the operator which files failed. A
+   file whose name holds a sandbox path is such a case.
+5. Rule 8 for this commit is read over the added lines only: `git show HEAD --format= -U0 | grep '^+'` piped into
+   rule 8's `grep -nE`. The removed lines are the paths that the step takes out.
+6. The commit does not count as editing a review, verdict or check file (operator decision 2026-11-20). No review
+   round follows it. `verdict.sh` and `tdd-check.sh` results stand: the step changes no test file and no SHA record
+   (`base.sha`, `scaffold.sha` and `red-commits` hold only hex SHAs and labels). If `main` is merged again later,
+   the step runs again as a new commit. The history fold never sees the commit, because the fold runs before the
+   last merge of `main` and refuses merge commits.
+
+Step 2.3 gains one sentence: a `Sandbox paths` red on a branch from before op 023 is fixed by step 2.9, not by a
+fold. Rule 8 gains one sentence: for the step 2.9 commit, the check reads the added lines. The step uses the
+existing script and gate, so no new required check and no ruleset change follow.
+
+**Run-summary lines** (T030 redrafts the second line of T025):
+
+- add `Sandbox paths` to the ruleset on `main` (nineteen names), after this op is merged;
+- do not redact the in-flight branches (missions 018, 019 and 020, op 022 or #57, and #54) on their own branches.
+  `/ocelle-land` redacts each merged tree with the sanctioned step (step 2.9) and proves it with `--verify HEAD`.
+  Until then, their `Sandbox paths` check is red.
 
 ### Story scripts
 
@@ -208,6 +275,24 @@ Tests (each assertion one `toEqual` on an object of observable facts, as op 021 
    vulnerability reporting, and has no `@MOES-Media`, "Until then", "Once the repository is public" or "1.0.0".
    The 3 and 10 working days test stays. Red: the current `SECURITY.md` holds `@MOES-Media`.
 
+8. `gates/test/integration/redact-sandbox-paths.test.ts`, extended with a `describe("--verify")` (acceptance check
+   11). Each case uses a temporary git repository with an RFC 2606 identity and `commit.gpgsign=false`. Its base
+   commit holds a log with a store path, a repository-root path and another matching path, a JSON file with a
+   repository-root path, and a plain file, all built at run time. The redacted commit is made by running the script
+   with `--in-place` and committing. For each case, one `toEqual` covers `{exit, stdout lines, stderr line}`.
+   - Pass: `--verify <redacted>` and `--verify <base>..<redacted>` exit 0 with the summary `2 files changed, each
+     only by the redaction`.
+   - Fail (exit 1, exactly one finding with the file and the reason): the store path replaced by `<repo>`, one other
+     word changed in a redacted file, only one of the log's matching lines redacted, a file added, a file deleted,
+     and a mode change (`chmod +x`) beside a correct redaction.
+   - Exit 2, each with its cause: an empty commit (`no change in …`), a revision that does not resolve, the root
+     commit (`has no parent`), `--verify` alone, and `--verify` with two arguments.
+   - No stdout or stderr line of any case matches the rule. `git status --porcelain` is empty after each run, and
+     `git ls-files` is unchanged.
+
+   Red: the current script answers `--verify` with its usage and exit 2. So the pass and fail cases fail on their
+   exit code, and the exit 2 cases fail on their cause text.
+
 The tests build every sandbox path at run time (`"/" + "root/"`, `"/" + "home/user/"`), so no test file needs an
 allowed entry. The CODEOWNERS test (FR-035) is unchanged.
 
@@ -216,7 +301,7 @@ allowed entry. The CODEOWNERS test (FR-035) is unchanged.
 | Principle | Status |
 |---|---|
 | I to VII | Not touched: no element, token, story, baseline, manifest or package surface change. Semver `none`. |
-| VIII Test-first | One test-only red commit with every test of the story, after a scaffold if needed. Each test fails on behaviour against the scaffold. No existing assertion is weakened: the count tests and the FR-032 test change to the new requirement, through the spec amendment. |
+| VIII Test-first | The verify mode, added after the decision of 2026-11-20, has its own test-only red commit (T027) before its implementation (T028). The landing step is documentation (T029), and its check is the verify mode. One test-only red commit with every test of the story, after a scaffold if needed. Each test fails on behaviour against the scaffold. No existing assertion is weakened: the count tests and the FR-032 test change to the new requirement, through the spec amendment. |
 | VIII Gates are proven | The new gate has three fail plants, three pass plants and one breaking plant, judged in CI by the plant job. Its CLI is also tested directly. |
 | VIII Mutation | The new and changed TypeScript gate source is mutated in CI's Mutation testing check. Survivors are killed or recorded with a reason. |
 | Supply chain | The CI job pins its actions, keeps `contents: read` and checks out with `persist-credentials: false`. No secret is used. No dependency is added. |
@@ -227,8 +312,13 @@ No Complexity Tracking entry.
 
 ## Risks
 
-- **In-flight branches** (missions 018, 019 and 020, op 022 or #57, and #54) fail `Sandbox paths` until they run the
-  redaction once. The run summary says so, and names the one-time command above.
+- **In-flight branches** (missions 018, 019 and 020, op 022 or #57, and #54) fail `Sandbox paths` until they land.
+  `/ocelle-land` redacts each one with the sanctioned step and proves it with `--verify` (decision of 2026-11-20).
+  The run summary says so.
+- **Red label for T027.** `red.sh` takes `phase` or `fix-<k>`, and keeps one line per label in `red-commits`.
+  `phase` already names the phase's first red commit (`25ecc2d`), and phase 1 has no review round yet. So the
+  orchestrator chooses the label before T027 runs. `phase` must not be used, because it would drop the recorded red
+  commit.
 - **Required check**: the gate blocks merges only after the operator adds `Sandbox paths` to the ruleset on `main`.
 - **Size**: about 411 files in the redaction commit. It is a commit of its own, so review can read it with
   `git diff --word-diff`.

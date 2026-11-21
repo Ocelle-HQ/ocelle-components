@@ -15,7 +15,7 @@ index 51726de..b95d36a 100644
    { name: "font-size-xs", group: "type", value: "0.75rem" },
 # pnpm exec vitest run --config vitest.mutation.config.ts --project tokens-source-table --project tokens
 
- RUN  v5.0.5 /home/user/ocelle-components
+ RUN  v5.0.5 <repo>
 
  ❯ |tokens-source-table| packages/tokens/test/source-table.test.ts (8 tests | 2 failed) 32ms
    ❯ the stylesheet from the real source (6)

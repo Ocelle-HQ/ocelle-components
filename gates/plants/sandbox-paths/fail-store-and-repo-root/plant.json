@@ -1,0 +1,16 @@
+{
+  "expect": "fail",
+  "why": "A committed test log with pnpm's store path on line 2 and the checkout root on line 5 (op 023, FR-001, FR-002): one finding per line, neither echoing it.",
+  "findings": [
+    {
+      "location": "specs/999-example/reviews/phase-1/check-head.log:2",
+      "rule": "sandbox-path",
+      "message": "holds a sandbox path; redact it with tooling/speckit/bin/redact-sandbox-paths.sh --in-place"
+    },
+    {
+      "location": "specs/999-example/reviews/phase-1/check-head.log:5",
+      "rule": "sandbox-path",
+      "message": "holds a sandbox path; redact it with tooling/speckit/bin/redact-sandbox-paths.sh --in-place"
+    }
+  ]
+}

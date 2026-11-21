@@ -62,7 +62,7 @@
 # line 134:     if (this.region.getAttribute("aria-live") === "") this.shown();
 # npx vitest run --project elements packages/elements/test/notice-rules.test.ts
 
- RUN  v5.0.5 /home/user/ocelle-components
+ RUN  v5.0.5 <repo>
 
  ❯ |elements (chromium)| packages/elements/test/notice-rules.test.ts (50 tests | 1 failed) 207ms
    ❯ the wait from the empty state's start (R-02 step 2; phase 2 stop 2, decision (a)) (3)

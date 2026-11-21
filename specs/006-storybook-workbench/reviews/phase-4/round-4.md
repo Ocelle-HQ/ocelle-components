@@ -57,7 +57,7 @@ No findings.
   cause); 21: 90 s; 22: 92 s; 23: 92 s; 24: 90 s; 25: 89 s; 26: 92 s; 27: 92 s; 28: 30 s. None comes near the
   570 s cap. Every existing axe plant with exceptions names `specs/plant/plan.md`, a feature plan, so the new rule
   breaks none of them.
-- Leak check of the staged diff: it matches pnpm's store path, `/root/.local/share/pnpm/store/v11`, printed by
+- Leak check of the staged diff: it matches pnpm's store path, `<pnpm store>`, printed by
   `pnpm install` in `check-red-fix-2.log`. The context lines of the other logs match too. This is the tool's
   generic store path, not private data, and it is already committed in many review logs, including
   `red-fix-2.log` (`d9bf6d9`). It is not a finding against the phase.
