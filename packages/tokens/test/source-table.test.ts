@@ -116,9 +116,9 @@ describe("009's five tokens (FR-033)", () => {
   ];
 
   // 018 (tasks.md T015): 136 with the status indicator's size-indicator and motion-pulse; (tasks.md T038) 137 with the
-  // pill tag's line-height-snug.
-  it("pins the source at 137 tokens", () => {
-    expect([source.length, exported.tokens.length, sheet.root.size]).toEqual([137, 137, 137]);
+  // pill tag's line-height-snug; (tasks.md T048) 138 with the interactive pill tag's target-small.
+  it("pins the source at 138 tokens", () => {
+    expect([source.length, exported.tokens.length, sheet.root.size]).toEqual([138, 138, 138]);
   });
 
   it("has each as a plain record with its group, value and references", () => {

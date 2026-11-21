@@ -77,6 +77,26 @@ describe("packages/elements/CHANGELOG.md: ocelle-pill-tag is a minor change (018
   });
 });
 
+// 018 phase 5 (FR-007, constitution VII; tasks.md T048): the interactive pill is a minor change, stated once under
+// Unreleased in the elements changelog, and its token `--ocelle-target-small` once in the tokens changelog.
+describe("packages/elements/CHANGELOG.md: the interactive ocelle-pill-tag is a minor change (018 phase 5)", () => {
+  const section = unreleased(read("CHANGELOG.md"));
+
+  it.each([
+    "The interactive `ocelle-pill-tag`, in button mode with `interactive` and in link mode with an `href`, its moved attributes `aria-label`, `aria-labelledby`, `aria-describedby`, `aria-controls`, `aria-current`, `aria-pressed` and `title` with their `data-ocelle-moved-*` mirrors, its methods `focus()` and `click()`, its event `ocelle-pill-tag-activate`, its custom states `pressed` and `current` and its part `control` are additions to the public surface: a minor change",
+  ])("states under Unreleased: %s", (statement) => {
+    expect(section).toContain(flat(statement));
+  });
+});
+
+describe("packages/tokens/CHANGELOG.md: the interactive pill tag's target is a minor change (018 phase 5)", () => {
+  const section = unreleased(read("../tokens/CHANGELOG.md"));
+
+  it.each(["`--ocelle-target-small`, the 24 px minimum target of an interactive `ocelle-pill-tag` of `@ocelle/elements`, is an addition to the token names: a minor change"])("states under Unreleased: %s", (statement) => {
+    expect(section).toContain(flat(statement));
+  });
+});
+
 describe("packages/tokens/CHANGELOG.md: the status indicator's two tokens are a minor change (018)", () => {
   const section = unreleased(read("../tokens/CHANGELOG.md"));
 
