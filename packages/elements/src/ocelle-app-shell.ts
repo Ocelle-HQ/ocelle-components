@@ -12,12 +12,13 @@ export type AppShellTier = "expanded" | "collapsed" | "narrow";
 
 type Layout = "mission" | "project" | "personal";
 type Region = "rail" | "sidebar";
+type PresentationElement = OcelleNavItem | OcelleContextSidebar;
 
 const narrowToken = "--ocelle-app-shell-narrow-below";
 const collapseToken = "--ocelle-app-shell-collapse-below";
 const landmark = "nav:not([role]), [role=navigation], ocelle-context-sidebar:not([role]), ocelle-personal-rail:not([role])";
 const contentWrappers = "nav, [role=navigation], ocelle-context-sidebar, ocelle-personal-rail, div, span, p, ul, ol, li, section, article, aside";
-const presentationOwners = new WeakMap<OcelleNavItem | OcelleContextSidebar, OcelleAppShell>();
+const presentationOwners = new WeakMap<PresentationElement, OcelleAppShell>();
 
 function assignedRegion(host: HTMLElement, name: Region | "actions"): Element[] {
   return [...host.children].filter((child) => child.getAttribute("slot") === name);
@@ -185,8 +186,7 @@ export class OcelleAppShell extends LitElement {
   #settlement: symbol | undefined;
   #focusSource: Element | undefined;
   #announcedTier: AppShellTier | undefined;
-  readonly #managedItems = new Set<OcelleNavItem>();
-  readonly #managedSidebars = new Set<OcelleContextSidebar>();
+  #managedPresentation = new Set<PresentationElement>();
   readonly #compactSections = new CompactSections();
 
   readonly #resize = new ResizeObserver(() => {
@@ -339,36 +339,27 @@ export class OcelleAppShell extends LitElement {
     const railItems = new Set(navItems(rail));
     const sidebarItems = new Set(navItems(sections));
     const items = new Set([...railItems, ...sidebarItems]);
-    for (const item of this.#managedItems) {
-      if (!items.has(item)) {
-        if (presentationOwners.get(item) === this) {
-          presentationOwners.delete(item);
-          setNavItemCompact(item, undefined);
-          setNavItemChrome(item, false);
-        }
-        this.#managedItems.delete(item);
+    const presentation = new Set([...items, ...sidebars]);
+    for (const element of this.#managedPresentation) {
+      if (presentation.has(element) || presentationOwners.get(element) !== this) continue;
+      presentationOwners.delete(element);
+      if (element instanceof OcelleContextSidebar) {
+        setContextSidebarCompact(element, false);
+      } else {
+        setNavItemCompact(element, undefined);
+        setNavItemChrome(element, false);
       }
     }
+    this.#managedPresentation = presentation;
+
     for (const item of items) {
       presentationOwners.set(item, this);
       setNavItemCompact(item, sidebarItems.has(item) ? compact : undefined);
       setNavItemChrome(item, railItems.has(item));
-      this.#managedItems.add(item);
-    }
-
-    for (const sidebar of this.#managedSidebars) {
-      if (!sidebars.includes(sidebar)) {
-        if (presentationOwners.get(sidebar) === this) {
-          presentationOwners.delete(sidebar);
-          setContextSidebarCompact(sidebar, false);
-        }
-        this.#managedSidebars.delete(sidebar);
-      }
     }
     for (const sidebar of sidebars) {
       presentationOwners.set(sidebar, this);
       setContextSidebarCompact(sidebar, compact);
-      this.#managedSidebars.add(sidebar);
     }
 
     this.#compactSections.update(this, compact ? sections : []);
@@ -381,8 +372,7 @@ export class OcelleAppShell extends LitElement {
     const tier = this.#tier;
     await Promise.all([
       this.renderRoot.querySelector("ocelle-top-bar")?.updateComplete,
-      ...[...this.#managedItems].map((item) => item.updateComplete),
-      ...[...this.#managedSidebars].map((sidebar) => sidebar.updateComplete),
+      ...[...this.#managedPresentation].map((element) => element.updateComplete),
     ]);
     if (settlement !== this.#settlement) return;
     const source = this.#focusSource;

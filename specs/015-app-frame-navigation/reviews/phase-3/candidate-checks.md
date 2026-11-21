@@ -28,6 +28,12 @@ The candidate adds the responsive shell, its threshold tokens and package entry,
 - The shell treats an empty slot name as the default slot and uses a per-update identity to abandon superseded or disconnected focus work. The final layout and navigation suites passed 32/32. The related four-suite run passed 64/64. Scoped lint, TypeScript and the diff check passed.
 - Nine isolated browser fault probes failed their intended assertions. The probes covered deliberate focus, stale tier announcements, duplicate naming around a supplied landmark, hidden and non-finite measurement, border-box reporting for a padding-only resize, directly assigned items, footer presentation, and adopted stylesheet identity.
 
+## Presentation ownership follow-up
+
+- New tests verify that a removed sidebar regains its authored chrome and item presentation, and that a detached rail link returns to the ordinary link color. They also verify recovery from CSS visibility changes while retaining focus containment.
+- In five isolated Chromium fault probes on `29704a8`, the new assertions failed when the shell left sidebar or rail presentation behind, ignored visibility, or captured focus outside navigation.
+- The shell now uses one ownership set and release path for both sidebar hosts and nav items. Navigation tests passed 23/23, and scoped lint, TypeScript and the diff check passed.
+
 ## Canonical workflow status
 
 The workflow's `red.sh 3 phase` replay has not recorded a result yet. The full affected-plant selection is 317 plants because the package export change is unmapped. The local focused mutation diagnostics have completed, with results above. Canonical head and final-tests-on-base checks and independent review are pending. The targeted evidence above does not replace those checks.
