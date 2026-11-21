@@ -64,6 +64,13 @@ The candidate adds the responsive shell, its threshold tokens and package entry,
 
 - The 60-mutant threshold and lifecycle range on `952ddfd` reported 90.24%, with 35 killed, two mutant timeouts, four survivors and 19 rejected at compilation. Three survivors correspond to the observer and Lit controller cleanup assertions above. The remaining survivor flipped a redundant compact argument during cleanup of empty inputs. The update derives the compact state at the point of use and removes the argument. The shell suites passed 48/48 with the change.
 
+- The updated 59-mutant threshold and lifecycle range on `71c7ef7` passed at 100%, with 39 killed, one mutant timeout, no survivors or uncovered mutants, and 19 rejected at compilation.
+
+## Explicit default-slot section styling
+
+- Tests-only commit `7f37f6b` reproduced the wide layout failure for a section with `slot=""`. It had 0px inline padding where an implicit default section had 16px. The sidebar now applies the same wide and compact styles to both forms. The test also verifies 4px compact inline padding and absence of an extra leading divider while leaving the named footer alone.
+- The shell layout, navigation, and standalone context-sidebar suites passed 74/74. Scoped lint, style lint, TypeScript and the diff check passed.
+
 ## Canonical workflow status
 
 The workflow's canonical `red.sh 3 phase` replay recorded tests-only `a0612f39fe3579984879f800c4f8b13fab148089` with test exit 1. Its full log reports 62 failures out of 9,698 tests, including 19 direct app-shell layout, navigation and standalone-entry failures. It also contains token and manifest assertions and unrelated font, integration timeout and form timing failures. The full affected-plant selection is 317 plants because the package export change is unmapped. The completed focused mutation diagnostics are above. Canonical head and final-tests-on-base checks and independent review are pending. The targeted evidence above does not replace those checks.

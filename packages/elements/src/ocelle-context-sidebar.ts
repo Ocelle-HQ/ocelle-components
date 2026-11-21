@@ -102,7 +102,7 @@ export class OcelleContextSidebar extends LitElement {
       display: none;
     }
 
-    ::slotted(:not([slot]):not([hidden]):not(template, script)) {
+    ::slotted(:is(:not([slot]), [slot=""]):not([hidden]):not(template, script)) {
       display: block !important;
       padding: var(--ocelle-space-4) !important;
       margin-block: 0;
@@ -110,7 +110,7 @@ export class OcelleContextSidebar extends LitElement {
       border-block-start: var(--ocelle-border-width) solid var(--ocelle-color-rule) !important;
     }
 
-    ::slotted(:nth-child(1 of :not([slot]):not([hidden]):not(template, script))) {
+    ::slotted(:nth-child(1 of :is(:not([slot]), [slot=""]):not([hidden]):not(template, script))) {
       border-block-start: none !important;
     }
 
@@ -134,13 +134,13 @@ export class OcelleContextSidebar extends LitElement {
       border: 0;
     }
 
-    .compact ::slotted(:not([slot]):not([hidden]):not(template, script)) {
+    .compact ::slotted(:is(:not([slot]), [slot=""]):not([hidden]):not(template, script)) {
       padding: var(--ocelle-space-1) !important;
       margin-inline: 0 !important;
       border: 0 !important;
     }
 
-    .compact ::slotted(:not([slot]):not([hidden]):is(h1, h2, h3, h4, h5, h6, [role="heading"], ocelle-section-header)) {
+    .compact ::slotted(:is(:not([slot]), [slot=""]):not([hidden]):is(h1, h2, h3, h4, h5, h6, [role="heading"], ocelle-section-header)) {
       display: none !important;
     }
 
