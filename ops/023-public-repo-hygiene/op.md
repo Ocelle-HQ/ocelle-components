@@ -29,7 +29,11 @@ This op:
    script, in both identical copies of the story scripts;
 4. updates **`SECURITY.md` and spec 001 FR-032** for the public repository: GitHub private vulnerability reporting
    is the only channel, and `@MOES-Media` is removed (operator Q1 (a); private vulnerability reporting is switched
-   on, Q3 (a)).
+   on, Q3 (a));
+5. gives the redaction script a **verify mode** and records the **sanctioned landing step**: `/ocelle-land` runs the
+   redaction script on the merged tree as a commit of its own, and the verify mode proves that the commit only
+   replaces matched prefixes with the three placeholders (operator decision of 2026-11-20,
+   `triage/decisions/023-landing-redaction.md`).
 
 Git history is not rewritten. No element, attribute, event, slot, part, token or package changes (semver `none`).
 
@@ -52,6 +56,14 @@ Operator answers and constraints (2026-11-20, `triage/decisions/023-q1-q3-securi
 - Q3 (a): private vulnerability reporting is switched on.
 - The story's tests go in the phase's red commit. The gate check is test-first, with a plant. No history rewrite.
   CI comes first: locally only the fast gates and `gate:plants -- --affected <base>` run. Every commit is signed off.
+
+Operator decision on redaction at landing (2026-11-20, `triage/decisions/023-landing-redaction.md`): branches in
+flight (missions 018, 019 and 020, op 022 or #57, and #54) carry sandbox paths in records written by reviewers, which
+the run rules forbid a mission to edit. The choice is **a sanctioned redaction step**: `/ocelle-land` runs
+`tooling/speckit/bin/redact-sandbox-paths.sh` on the merged tree as a commit of its own. A check proves that the
+commit's diff only replaces matched prefixes with `<pnpm store>`, `<repo>` and `<home>/`. That commit does not count
+as editing a review, verdict or check file. Not chosen: exempting `reviews/` from the gate, or redacting each mission
+branch before landing.
 
 ### Choices the plan makes
 
@@ -77,14 +89,23 @@ These are within the triage's scope, and the operator can overrule them at the p
   `red.sh` and `tdd-check.sh` write, so redacting there covers all of them. `tdd-check.sh` also passes its JSON
   record through the script. All three files change identically in `.specify/extensions/story/scripts/` and
   `tooling/speckit/extensions/story/scripts/`.
+- **The check of the decision is the script's verify mode**, `redact-sandbox-paths.sh --verify <commit>` or
+  `--verify <from>..<to>`. It passes only when every changed file is a modified regular file whose new content is
+  exactly the script's redaction of its old content. That is stricter than "only matched prefixes changed": a
+  partial redaction, a wrong placeholder, an added, deleted or renamed file and a mode change all fail. A range with
+  no change is a setup error (exit 2), because proving nothing would be vacuous. The mode reads git objects only and
+  writes no file. See plan.md *Verify mode*.
+- **The landing step sits after the last merge of `main`** (after the history fold of `/ocelle-land` step 2.8), so
+  the fold never folds it, and it redacts what `main` brought in too. Landing rule 8 still holds. For this one commit
+  it is read over the added lines, because the removed lines are the old paths. See plan.md *Landing redaction*.
 - **FR-032 and the other spec 001 text** (US4 scenario 3, SC-006) get a dated amendment. The original text stays.
   The governance test changes red first. The amendment and `SECURITY.md` follow in the implementation, because a
   red commit holds only test files.
 
 ## Acceptance
 
-Each check is a test that fails before the change, except check 9 (a gate run, red before the redaction) and check
-10 (records). Sandbox paths in tests are built at run time (for example `"/" + "root/"`).
+Each check is a test that fails before the change, except check 9 (a gate run, red before the redaction) and checks
+10 and 12 (records). Sandbox paths in tests are built at run time (for example `"/" + "root/"`).
 
 1. **The rule** (`gates/test/sandbox-paths.test.ts`, in process). One `toEqual` over a table of lines and whether
    each matches. A store path, a repository-root path, `file://` followed by a repository-root path, a `/root/` +
@@ -130,8 +151,23 @@ Each check is a test that fails before the change, except check 9 (a gate run, r
 10. **Records (no test).** Spec 001 carries the dated amendments of FR-020, FR-032, US4 scenario 3 and SC-006.
     `contracts/ci-checks.md`, `contracts/gate-cli.md`, `contracts/plants.md` and `gates/README.md` describe the gate
     and the form. The run summary tells the operator two things. First, add `Sandbox paths` to the ruleset on `main`
-    (nineteen names). Second, the in-flight branches (missions 018, 019 and 020, op 022 or #57, and #54) need one
-    redaction pass before they land.
+    (nineteen names). Second, the in-flight branches (missions 018, 019 and 020, op 022 or #57, and #54) are not
+    redacted on their own branches: `/ocelle-land` redacts each one's merged tree with the sanctioned step (check
+    12), and until then their `Sandbox paths` check is red (decision of 2026-11-20).
+11. **The verify mode** (`gates/test/integration/redact-sandbox-paths.test.ts`, extended; temporary git
+    repositories, sandbox paths built at run time). A commit made by `--in-place` over files with a store path, a
+    repository-root path, another matching path and a JSON file passes `--verify <commit>` and `--verify
+    <from>..<to>`: exit 0, with the summary that names the number of files. Each of these exits 1 with one finding
+    for its file: a substitution with a wrong placeholder, one word changed beside the redaction, a partial
+    redaction, an added file, a deleted file and a mode change. A range with no change, a revision that does not
+    resolve, a root commit and `--verify` with no argument or two exit 2, each with its cause. No output line
+    matches the rule, and `git status --porcelain` is empty after every run.
+12. **The landing step is recorded (no test).** The landing flow describes the sanctioned step. It runs after the
+    last merge of `main` and makes one `chore(landing)` commit with the script's `--in-place` output only. Then
+    `--verify HEAD` and `pnpm run gate:sandbox-paths` both exit 0, and rule 8 is read over the added lines. The step
+    says that the commit does not count as editing a review, verdict or check file. The files are
+    `.claude/skills/ocelle-land/SKILL.md`, the "never edit" rule of `.claude/skills/ocelle-run/SKILL.md`,
+    `tooling/speckit/README.md` and `gates/README.md`.
 
 ## Constitution principles touched
 
@@ -145,4 +181,7 @@ Each check is a test that fails before the change, except check 9 (a gate run, r
 - **Not changed, for the operator.** The constitution still says "The repository is internal until then and goes
   public with 1.0.0" (Technology, Licence and Supply Chain). That is no longer true. This op does not amend the
   constitution, which has its own amendment procedure (Governance).
+- **Development Workflow.** The landing step changes records that profiles wrote, so it is sanctioned by the
+  operator's decision and not by an agent. It changes only what the verify mode proves to be a redaction, and it
+  rewrites no history.
 - **I to VII.** Not touched: no element, token, story, baseline, manifest or package changes.
