@@ -326,6 +326,24 @@ describe("ocelle-app-shell navigation", () => {
     expect(getComputedStyle(list).paddingInlineStart).toBe("40px");
   });
 
+  it.each([
+    { state: "without a tab stop", attributes: "", expected: "destination" },
+    { state: "with a tab stop", attributes: 'tabindex="0"', expected: "custom-destination" },
+    { state: "with a negative tabindex", attributes: 'tabindex="-1"', expected: "destination" },
+    { state: "with a hidden tab stop", attributes: 'tabindex="0" hidden', expected: "destination" },
+  ])("recovers to $expected when a sidebar starts with an opaque element $state", async ({ attributes, expected }) => {
+    const shell = await mount(`<ocelle-context-sidebar slot="sidebar" label="Projects">
+      <button id="switch" slot="head" type="button">Switch project</button>
+      <section><custom-destination id="custom-destination" ${attributes}>Custom destination</custom-destination>
+        <a id="destination" href="#work">Work</a></section></ocelle-context-sidebar>`);
+    size(1150);
+    const head = required(shell.querySelector<HTMLButtonElement>("#switch"));
+    await expect.poll(() => shown(head)).toBe(true);
+    head.focus();
+    size(850);
+    await expect.poll(() => deepActive()?.id).toBe(expected);
+  });
+
   it("moves focus from collapsing sidebar chrome to the first sequential destination, then main when none survives", async () => {
     const shell = await mount(grouped);
     size(1150);
