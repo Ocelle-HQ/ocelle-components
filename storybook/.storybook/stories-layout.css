@@ -2,8 +2,9 @@
  * Layout of the base-style stories (003 research.md R-12, PLAN-A11Y-SECURITY-1-006): layout only, no rule of
  * base.css, selectors on data-story attributes only (no class, no style attribute). Since 008, also the ocelle-dialog,
  * ocelle-drawer and ocelle-tooltip stories' blocks; since 009, the tested frames, keyed on data-frame attributes;
- * since 011, the personal-rail stories' stand-in items, keyed on their data-story root; and since 013 the
- * ocelle-facts, ocelle-empty-state and ocelle-progress stories' wrappers (below).
+ * since 011, the personal-rail stories' stand-in items, keyed on their data-story root; since 013 the
+ * ocelle-facts, ocelle-empty-state and ocelle-progress stories' wrappers; and since 020 the ocelle-disclosure long
+ * summary's frame (below).
  */
 [data-story] {
   padding: var(--ocelle-space-4);
@@ -142,4 +143,13 @@
   inline-size: calc(var(--ocelle-space-10) * 6);
   max-inline-size: 100%;
   background-color: var(--ocelle-color-inset);
+}
+
+/*
+ * The ocelle-disclosure Long summary story's frame (020 research.md R-09): a 288 px block, capped at the viewport, so
+ * the summary wraps inside the element; with the [data-story] padding it fills a 320 px viewport exactly.
+ */
+[data-story="disclosure-narrow"] {
+  inline-size: 288px;
+  max-inline-size: 100%;
 }

@@ -37,6 +37,7 @@ empty or loading panel, and `ocelle-progress`, a progress bar.
 | `@ocelle/elements/ocelle-fact.js` | `dist/ocelle-fact.js` | `ocelle-fact` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-empty-state.js` | `dist/ocelle-empty-state.js` | `ocelle-empty-state` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-progress.js` | `dist/ocelle-progress.js` | `ocelle-progress` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-disclosure.js` | `dist/ocelle-disclosure.js` | `ocelle-disclosure` and the `ocelle-icon` it renders; for hosts with a bundler |
 | `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |
 | `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |
 
@@ -1235,6 +1236,69 @@ system-colour outline and the fill is `Highlight`.
 `--ocelle-color-inset`, `--ocelle-color-control-border`, `--ocelle-color-ink`, `--ocelle-color-ink-muted`,
 `--ocelle-font-size-sm`, `--ocelle-figures`, `--ocelle-space-1`, `--ocelle-space-2`, `--ocelle-radius-1`,
 `--ocelle-border-width`, `--ocelle-measure-cell`, `--ocelle-motion-base` and `--ocelle-easing-standard`.
+
+## `ocelle-disclosure`
+
+```html
+<ocelle-disclosure>
+  <span slot="summary">Advanced settings</span>
+  <p>Artifacts are kept for thirty days after a mission ends.</p>
+</ocelle-disclosure>
+<ocelle-disclosure open>
+  <ocelle-icon slot="icon" name="folder"></ocelle-icon>
+  <span slot="summary">Mission artifacts</span>
+  <p>…</p>
+</ocelle-disclosure>
+```
+
+`ocelle-disclosure` is a disclosure: a summary that opens and closes a panel inline, on native `details` and `summary`
+semantics. The summary is the one control: Tab reaches it, Enter, Space and a click toggle it, and assistive technology
+reads it with its expanded state. The panel is laid out directly below the summary, in the element's own box, and
+pushes the content after it down. The chevron points to the inline end while closed (`chevron-end`, mirrored under
+`dir="rtl"`) and down while open (`chevron-down`); an icon slotted into `icon` replaces it in both states.
+
+**State.** The open state is the `open` attribute: render it from the server. A morph that keeps it keeps the
+disclosure open; a morph that drops it closes the disclosure and fires `ocelle-disclosure-toggle`. A user toggle, find
+in page and a script set the attribute alike. The browser's find in page opens a closed disclosure whose panel holds
+the text it finds (Chromium), as a user toggle does. The element exposes `:state(open)` while open, so a page can style
+an open disclosure without a selector on the attribute.
+
+**Event.** Listen to `ocelle-disclosure-toggle` (its `detail.open` is the new state), not to `toggle`: the inner
+`details`' native `toggle` does not leave the element. The event is dispatched after the change, in a later task, once
+the attribute is reflected; it bubbles, is composed and cannot be cancelled. Do not count events to count changes:
+changes made before the inner `details`' native `toggle` runs are coalesced into one event with the final state, and
+none fires when the state ends where the last event left it. The initial state at upgrade fires no event. Nested
+disclosures work independently: an inner disclosure's event bubbles through the outer one, so tell them apart by
+`event.target`.
+
+**Host ARIA.** The host's `aria-label`, `aria-labelledby`, `aria-describedby` and `title` are moved onto the summary,
+as the control conventions' rule 4 says (with their `data-ocelle-moved-*` mirrors). A host `aria-expanded` is mapped
+onto `open` and removed from the host: `"true"` opens, `"false"` closes, any other value changes nothing. Prefer
+`open`. At upgrade the mapped attribute is read after `open`, so `<ocelle-disclosure open aria-expanded="false">`
+upgrades closed. With no host `aria-labelledby` or `aria-label`, the `summary` slot's text alone names the summary: a
+slotted icon adds nothing to the name. An empty summary has no name, which is the host's mistake: give every
+disclosure a summary. Put no interactive content in the summary: a link or a button there is a control inside a
+control.
+
+**Focus and clicks.** Two departures from the control conventions' rule 1, both because the host holds the panel's
+content: no host click guard, so clicks on the panel's content reach the page's listeners; and no `delegatesFocus`, so
+a click on the panel's content moves no focus. `focus()` is overridden to focus the summary, and `click()` clicks it,
+so it toggles once; a `click` dispatched on the host itself toggles nothing. When a script or a morph closes the
+disclosure while focus is in its panel, also inside the shadow root of a control in the panel, focus moves to the
+summary.
+
+**Known limitation.** A closed disclosure as the last control of an `ocelle-dialog` or `ocelle-drawer` lets Tab from
+its summary leave the overlay, because the overlay's focus walk counts a closed panel's controls as stops. Do not place
+a disclosure last in an overlay.
+
+**Look.** The summary takes the library's focus ring, a hover ground and a pointer cursor, and is at least 24 × 24 CSS
+px. In forced colours the summary is `CanvasText` on `Canvas`, the chevron follows it and the focus ring is
+`Highlight`. The disclosure does not animate: it opens and closes at once, with or without reduced motion. Before the
+element is defined, the summary and the panel show as plain content.
+
+**Tokens.** `ocelle-disclosure` reads the tokens `--ocelle-font-size-md`, `--ocelle-font-weight-medium`,
+`--ocelle-line-height-normal`, `--ocelle-color-ink`, `--ocelle-color-hover-bg`, `--ocelle-space-1`, `--ocelle-space-2`,
+`--ocelle-radius-2`, `--ocelle-icon-size`, `--ocelle-color-focus`, `--ocelle-focus-width` and `--ocelle-focus-offset`.
 
 ## Mapping from kitty-mission-ui
 

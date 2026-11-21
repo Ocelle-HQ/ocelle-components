@@ -845,6 +845,100 @@ export const disclosureRuleScenarios: readonly Scenario[] = [
       control: [{ target: "ocelle-disclosure#d", open: false }],
     },
   },
+  // Bodies added after the phase's first mutation run (reviews/phase-1/notes.md § Mutation), each pinning a behaviour
+  // of the data model that no body above observed.
+  {
+    name: "FR-013: an update that does not close the disclosure (a host aria-label set) leaves focus on the panel's link, beside the summary's new name",
+    run: async (driver) => {
+      await driver.mount(page(disclosure("d", { attributes: " open" })));
+      await driver.focus("d-link");
+      await driver.setAttribute("d", "aria-label", "Show options");
+      return { active: await driver.deepActive(), name: await nameOf(driver, "d"), open: (await driver.property("d", "open")) === true };
+    },
+    expected: { active: "d-link", name: "Show options", open: true },
+  },
+  {
+    name: "FR-013: a script close with focus outside the disclosure leaves focus where it is, beside the close and its one event",
+    run: async (driver) => {
+      await driver.mount(page(disclosure("d", { attributes: " open" })));
+      await driver.events("d", [toggle]);
+      await driver.focus("before");
+      await driver.setProperty("d", "open", false);
+      return { state: await state(driver, "d"), events: await opens(driver), active: await driver.deepActive() };
+    },
+    expected: { state: closedState, events: [false], active: "before" },
+  },
+  {
+    name: "US1-9: disclosures upgrading open and closed take no focus; focus() then focuses a summary",
+    run: async (driver) => {
+      await driver.mount(page(`${disclosure("d")}${disclosure("o", { attributes: " open" })}`));
+      const upgraded = await driver.deepActive();
+      await driver.focus("o");
+      return { upgraded, focused: await driver.deepActive() };
+    },
+    expected: { upgraded: "body", focused: onSummary("o") },
+  },
+  {
+    name: "US1-23: <ocelle-disclosure aria-expanded=\"false\" open>, the mapped attribute first in the markup, still upgrades closed with no event; a click then counts exactly 1",
+    run: async (driver) => {
+      await driver.listen(["d"]);
+      await driver.mount(page(disclosure("d", { attributes: ' aria-expanded="false" open' })));
+      await driver.settle();
+      const heard = (await driver.heard()).filter((record) => record.endsWith(`: ${toggle}`));
+      const upgraded = { state: await state(driver, "d"), heard, host: await driver.attribute("d", "aria-expanded") };
+      await driver.events("d", [toggle]);
+      await clickSummary(driver, "d");
+      return { upgraded, control: await opens(driver) };
+    },
+    expected: { upgraded: { state: closedState, heard: [], host: null }, control: [true] },
+  },
+  {
+    name: "US1-23: a host aria-expanded of another value on an open disclosure keeps it open with no event and is removed; a click then counts exactly 1",
+    run: async (driver) => {
+      await driver.mount(page(disclosure("d", { attributes: " open" })));
+      await driver.events("d", [toggle]);
+      await driver.setAttribute("d", "aria-expanded", "mixed");
+      const other = { state: await state(driver, "d"), events: await opens(driver), host: await driver.attribute("d", "aria-expanded") };
+      await clickSummary(driver, "d");
+      return { other, control: await opens(driver) };
+    },
+    expected: { other: { state: openState, events: [], host: null }, control: [false] },
+  },
+  {
+    name: "US1-23: the aria-expanded read at upgrade is applied once: a disclosure it upgraded open, closed by a click and then moved, stays closed with no further event",
+    run: async (driver) => {
+      await driver.mount(`<div id="box"></div>${page(disclosure("d", { attributes: ' aria-expanded="true"' }))}`);
+      await driver.events("d", [toggle]);
+      const upgraded = (await driver.property("d", "open")) === true;
+      await clickSummary(driver, "d");
+      const clicked = await opens(driver);
+      await driver.move("d", "box");
+      return { upgraded, clicked, moved: { state: await state(driver, "d"), events: await opens(driver) } };
+    },
+    expected: { upgraded: true, clicked: [false], moved: { state: closedState, events: [] } },
+  },
+  {
+    name: "FR-007: a host aria-describedby set after the upgrade describes the summary by element reference",
+    run: async (driver) => {
+      await driver.mount(`<p id="hint">Opens the retention options.</p>${page(disclosure("d"))}`);
+      await driver.setAttribute("d", "aria-describedby", "hint");
+      const ax = await attempt(() => driver.axState("d", summary));
+      return { description: ax === "absent" ? ax : ax.description, references: await references(driver, "d", "ariaDescribedByElements"), mirror: await driver.attribute("d", "data-ocelle-moved-aria-describedby") };
+    },
+    expected: { description: "Opens the retention options.", references: ["hint"], mirror: "hint" },
+  },
+  {
+    name: "FR-007: a host aria-labelledby whose element is not in the page names nothing (the summary text names the summary); once the element is added, connecting the disclosure again resolves it",
+    run: async (driver) => {
+      await driver.mount(`<div id="box"></div>${page(disclosure("d", { attributes: ' aria-labelledby="lab"' }))}`);
+      const before = await nameOf(driver, "d");
+      await driver.append("box", '<span id="lab">Retention options</span>');
+      const added = await nameOf(driver, "d");
+      await driver.move("d", "box");
+      return { before, added, moved: { name: await nameOf(driver, "d"), references: await references(driver, "d", "ariaLabelledByElements") } };
+    },
+    expected: { before: "Advanced settings", added: "Advanced settings", moved: { name: "Retention options", references: ["lab"] } },
+  },
   {
     name: "Edge case: a disclosure with an empty panel opens on a summary click and still fires its event",
     run: async (driver) => {

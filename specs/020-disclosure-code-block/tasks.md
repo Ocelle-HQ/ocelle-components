@@ -108,7 +108,7 @@ it with exactly the events of data-model.md § State transitions; the Chromium t
 
 ### Scaffold
 
-- [ ] T002 [US1] Scaffold commit (no behaviour; constitution VIII exemption stated in the phase review), recorded by
+- [X] T002 [US1] Scaffold commit (no behaviour; constitution VIII exemption stated in the phase review), recorded by
   `.specify/extensions/story/scripts/scaffold.sh 1`:
   - `packages/elements/src/ocelle-disclosure.ts` with `define("ocelle-disclosure", …)`, `@tagname ocelle-disclosure`,
     the declared property `open` (`boolean | undefined`, `@default undefined`) and an empty `render()`;
@@ -118,12 +118,12 @@ it with exactly the events of data-model.md § State transitions; the Chromium t
 
 ### Tests (red, one commit, test files only)
 
-- [ ] T003 [P] [US1] Driver additions `findText(word)` and `setProperties(id, name, values)` as contracts/checks.md §
+- [X] T003 [P] [US1] Driver additions `findText(word)` and `setProperties(id, name, values)` as contracts/checks.md §
   Driver additions specifies: declared in `packages/elements/test/scenarios/driver.ts`, implemented in
   `packages/elements/test/in-process.ts` and `packages/elements/test/browser/driver.ts`, with their own tests in
   `packages/elements/test/driver.test.ts` and `packages/elements/test/browser/driver.test.ts` (a plain `details`
   opened by `findText`; native `toggle` counted for `setProperties(…, [true, false])`).
-- [ ] T004 [US1] `packages/elements/test/scenarios/disclosure.ts`: one body per US1 scenario 1 to 23 (US1-7 as
+- [X] T004 [US1] `packages/elements/test/scenarios/disclosure.ts`: one body per US1 scenario 1 to 23 (US1-7 as
   US1-7a, -7b, -7c; US1-19 as three bodies: light-DOM link, `ocelle-button`, nested summary), with the oracles of
   contracts/checks.md § Oracles (AX tree, find in page, forced colours `CanvasText` on `Canvas` and `Highlight` ring,
   RTL mirror by painted extent, first-line icon by the slot measure, motion read one frame after a pointer toggle,
@@ -134,7 +134,7 @@ it with exactly the events of data-model.md § State transitions; the Chromium t
   contracts/checks.md § Oracles "Closed panel" oracle: `checkVisibility()` false for the panel's content, the content
   absent from the tab order and from the CDP tree; never `getClientRects().length === 0`, which Chromium's
   content-visibility skip does not give (R-08).
-- [ ] T005 [US1] `packages/elements/test/scenarios/disclosure.ts`: the FR and edge-case bodies of contracts/checks.md
+- [X] T005 [US1] `packages/elements/test/scenarios/disclosure.ts`: the FR and edge-case bodies of contracts/checks.md
   for the disclosure: host `display: block` containing summary and open panel (FR-003); marker not shown (FR-003); a
   panel click does not toggle and reaches a `document` listener (FR-004); `element.click()` toggles once and a
   `dispatchEvent(new MouseEvent("click"))` on the host toggles nothing (FR-004); summary border box at least 24 × 24
@@ -146,18 +146,18 @@ it with exactly the events of data-model.md § State transitions; the Chromium t
   removing each restores the next, ending at `.label`); nested disclosures (Edge Cases); the empty summary with no
   name, the `.label` reference still set (story-less, Complexity Tracking); the chevron box `--ocelle-icon-size`
   square (FR-005).
-- [ ] T006 [P] [US1] Harness files: `packages/elements/test/disclosure.test.ts` (in process) and
+- [X] T006 [P] [US1] Harness files: `packages/elements/test/disclosure.test.ts` (in process) and
   `packages/elements/test/browser/disclosure.test.ts` with `packages/elements/test/browser/fixtures/disclosure.html`
   (strict CSP, as the existing fixtures), each running every body of T004 and T005; `packages/elements/test/
   entry-disclosure.test.ts`: importing `src/ocelle-disclosure.ts` defines `ocelle-disclosure` and `ocelle-icon` and no
   other tag.
-- [ ] T007 [P] [US1] Node tests: `packages/elements/test/node/manifest.test.ts` asserts the `ocelle-disclosure` entry
+- [X] T007 [P] [US1] Node tests: `packages/elements/test/node/manifest.test.ts` asserts the `ocelle-disclosure` entry
   of contracts/elements.md (`open`; the moved attributes `aria-label`, `aria-labelledby`, `aria-describedby`, `title`
   and their four mirrors; slots `summary`, `icon`, default; event `ocelle-disclosure-toggle`; parts `details`,
   `summary`, `panel`; no CSS custom property; `aria-expanded` not listed as a property); `packages/elements/test/node/
   readme.test.ts` asserts the `ocelle-disclosure` section and each README statement of contracts/elements.md (by
   phrase); `packages/elements/test/node/changelog.test.ts` asserts the entry.
-- [ ] T008 [US1] `storybook/stories/disclosure.stories.ts` (`title: "Elements/ocelle-disclosure"`): Closed, Open,
+- [X] T008 [US1] `storybook/stories/disclosure.stories.ts` (`title: "Elements/ocelle-disclosure"`): Closed, Open,
   Focused (declared focus state), Hovered (declared hover state), LongSummary (288 px frame through a `data-story`
   rule in `storybook/.storybook/stories-layout.css`), ConsumerIcon, RightToLeft, Nested (research R-09); no `style`
   attribute; and the story-test extension under `storybook/test/` that #10's index rules apply to every new story,
@@ -169,7 +169,7 @@ it with exactly the events of data-model.md § State transitions; the Chromium t
 
 ### Implementation (green)
 
-- [ ] T009 [US1] `packages/elements/src/ocelle-disclosure.ts` (research R-01 to R-04, data-model § `ocelle-disclosure`):
+- [X] T009 [US1] `packages/elements/src/ocelle-disclosure.ts` (research R-01 to R-04, data-model § `ocelle-disclosure`):
   - open shadow root **without** `delegatesFocus`; `focus(options)` overridden to focus the summary; `click()`
     overridden to click the summary; no `guardHost`;
   - the R-01 template: `<details part="details">`, `<summary class="control" part="summary">` holding the `.icon-row`
@@ -194,19 +194,19 @@ it with exactly the events of data-model.md § State transitions; the Chromium t
     chevron box rule; `summary { list-style: none }` (and `::-webkit-details-marker` per T001); the R-04 tokens; hover
     inside `@media not (forced-colors: active)`; forced colours `summary.control { color: CanvasText;
     background-color: Canvas }`; no `transition` or `animation`.
-- [ ] T010 [US1] Manifest: `pnpm --filter @ocelle/elements run manifest`; commit
+- [X] T010 [US1] Manifest: `pnpm --filter @ocelle/elements run manifest`; commit
   `packages/elements/custom-elements.json` with the entry of contracts/elements.md, every list stated and every member
   described.
-- [ ] T011 [US1] Documentation: the `ocelle-disclosure` section of `packages/elements/README.md` with every README
+- [X] T011 [US1] Documentation: the `ocelle-disclosure` section of `packages/elements/README.md` with every README
   statement of contracts/elements.md (the open state is the attribute; listen to `ocelle-disclosure-toggle`; host
   `aria-expanded` maps onto `open` and is removed; no interactive summary content; nested disclosures by
   `event.target`; panel clicks reach the page, no host guard, no `delegatesFocus`; do not place a disclosure last in
   an `ocelle-dialog` or `ocelle-drawer` (research § Repository-wide notes); before upgrade; no animation; tokens read);
   `packages/elements/CHANGELOG.md` entry (MINOR) for `ocelle-disclosure`.
-- [ ] T012 [US1] Baselines: `pnpm run visual:update` in the pinned container under docker; it must print `(<n> added,
+- [X] T012 [US1] Baselines: `pnpm run visual:update` in the pinned container under docker; it must print `(<n> added,
   0 changed, 0 removed)` with `<n>` twice the new stories; commit `storybook/baselines/elements-ocelle-disclosure--*.
   {light,dark}.png`. If CI's captures differ, regenerate, never hand-pick.
-- [ ] T013 [US1] Checks, one heavy job at a time:
+- [X] T013 [US1] Checks, one heavy job at a time:
   1. run each disclosure plant of contracts/checks.md § Plants once and record the results in
      `specs/020-disclosure-code-block/reviews/phase-1/plants.md`;
   2. `pnpm run gate:unit-tests`, `gate:typecheck`, `gate:lint`, `gate:test-lint`, `gate:style-lint`, `gate:csp`,
@@ -218,6 +218,10 @@ it with exactly the events of data-model.md § State transitions; the Chromium t
      019's element sources, stories and tests are empty (SC-007, SC-008 for phase 1, against its base 4911fd0b);
   4. record the Storybook gates' summary lines, the `visual:update` line and that no podman cross-check was possible
      in the phase review.
+  Left to CI by the operator's CI-first decision (`reviews/operator-ci-first.md`): the full plant set (the affected
+  selection is every plant), `gate:storybook-build`, `gate:visual` and `gate:axe` on the full Storybook, and
+  `gate:mutation`. Run locally: the disclosure plants (step 1), the fast gates and the full unit tests (step 2), the
+  scope diff (step 3, `notes.md` § Gates) and the records of step 4 (`notes.md`).
 
 **Checkpoint**: `tdd-check.sh 1` reports `pass`; quickstart steps 1 to 4 pass for the disclosure.
 

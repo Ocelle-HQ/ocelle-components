@@ -16,6 +16,14 @@ move host ARIA onto that control and dispatch a cancelable activate event; the e
 parts, events and entry points are additions (a minor change), and the engine floor rises to Chromium 135 and WebKit
 17.4.
 
+**Hosts get a disclosure, `ocelle-disclosure` (mission 020; part of #13).** Before, a host styled its own `<details>`
+for an inspector's advanced settings or a raw payload, with no shared chevron, focus ring or event, and a server swap
+could lose the state. Now the element renders a native `details` and `summary` in the Ocelle look, keeps its state in
+the `open` attribute through morphs and reports each change with one event.
+`ocelle-disclosure`, its property `open`, its moved attributes and their mirrors, the mapped `aria-expanded`, its slots
+`summary` and `icon` and its default slot, its parts `details`, `summary` and `panel`, the event
+`ocelle-disclosure-toggle`, the state `open` and its entry point are additions to the public surface: a minor change.
+
 ### Added
 
 - `ocelle-icon`, an icon of the set drawn inline in `currentColor` at the `--ocelle-icon-size` token, decorative
@@ -85,6 +93,13 @@ parts, events and entry points are additions (a minor change), and the engine fl
   value text at its inline end), `size` (reflected, `size="compact"`) and `ground` (reflected, `ground="tinted"` for
   tinted grounds); its parts `track`, `fill`, `label` and `value-text`. Entry point
   `@ocelle/elements/ocelle-progress.js` (defines `ocelle-progress` only).
+- `ocelle-disclosure`, a disclosure on a native `details` and `summary`: a summary that opens and closes a panel
+  inline, with the `chevron-end` icon while closed and `chevron-down` while open, or a consumer icon in the `icon` slot;
+  its property `open` (reflected), its `summary`, `icon` and default slots, its parts `details`, `summary` and
+  `panel`, the custom state `:state(open)` and the event `ocelle-disclosure-toggle` (`detail.open`, after each change,
+  changes before the native `toggle` coalesced); host `aria-label`, `aria-labelledby`, `aria-describedby` and `title`
+  moved onto the summary with their mirrors, and a host `aria-expanded` mapped onto `open`. Entry point
+  `@ocelle/elements/ocelle-disclosure.js` (defines `ocelle-disclosure` and the `ocelle-icon` it renders).
 - The style lint's token-only rule, which checks these elements' styles, admits four values and nothing near them:
   the `grid-template-columns` tracks `fit-content(<percentage>)` and `minmax(0, <flex>)` (the facts columns and
   grid), `translateX(<percentage>)` in `transform` (the progress sweep) and a bare positive integer

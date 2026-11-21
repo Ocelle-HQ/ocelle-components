@@ -454,3 +454,9 @@ A finding of this kind is recorded here and reported for a separate op, not fixe
   (closed panel), Tab from its summary wraps to the dialog's first stop, and a plant that removes the check. This
   mission adds no body for it (a known-failing body would need `skip` or an inverted assertion, which Principle VIII
   and the test-quality lint forbid); the README's disclosure section states the limitation.
+- **`gate:plants -- --affected` does not map `packages/elements/package.json`** (phase 1, T013; measured, not fixed
+  here). An element phase that adds an entry point changes the package's `exports`, and op 016's selection
+  (`gates/lib/plant-runner.ts` `pathPlants`) classes that path as "not mapped", so the local run selects every plant
+  (`note: affected: every plant, by packages/elements/package.json (not mapped)`), about 250 plants and some hours
+  here, where the element source and manifest beside it select only the repository-content and manifest plants. A
+  separate op could class `packages/<name>/package.json` with the repository content it describes.
