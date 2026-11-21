@@ -256,6 +256,38 @@ describe("ocelle-app-shell navigation", () => {
     expect(shown(head)).toBe(false);
   });
 
+  it("restores sidebar chrome and a destination's authored presentation when they leave the shell", async () => {
+    const shell = await mount(grouped);
+    size(850);
+    const sidebar = required(shell.querySelector("ocelle-context-sidebar"));
+    const item = required(sidebar.querySelector("ocelle-nav-item"));
+    const head = required(sidebar.querySelector('[slot="head"]'));
+    item.compact = false;
+    const label = () => item.shadowRoot?.querySelector('[part="label"]');
+    await expect.poll(() => shell.tier).toBe("collapsed");
+    expect(shown(label())).toBe(false);
+    expect(shown(head)).toBe(false);
+
+    required(shell.parentElement).append(sidebar);
+    await expect.poll(() => shown(label())).toBe(true);
+    expect(shown(head)).toBe(true);
+    expect(item.compact).toBe(false);
+  });
+
+  it("restores a rail link's ordinary foreground when it leaves shell chrome", async () => {
+    const shell = await mount(rail);
+    const item = required(shell.querySelector("ocelle-nav-item"));
+    const railHost = required(shell.querySelector("ocelle-personal-rail"));
+    const link = () => required(item.shadowRoot?.querySelector("a"));
+    const frame = required(shell.parentElement);
+    const authoredForeground = "rgb(12, 34, 56)";
+    frame.style.setProperty("--ocelle-color-link", authoredForeground);
+    await expect.poll(() => getComputedStyle(link()).color).toBe(getComputedStyle(railHost).color);
+    expect(getComputedStyle(link()).color).not.toBe(authoredForeground);
+    frame.append(item);
+    await expect.poll(() => getComputedStyle(link()).color).toBe(authoredForeground);
+  });
+
   it("shares compact styles in one root until the last collapsed shell leaves", async () => {
     await driver.mount('<div id="frame"></div>');
     const root = required(document.getElementById("frame")).attachShadow({ mode: "open" });
@@ -326,6 +358,44 @@ describe("ocelle-app-shell navigation", () => {
     size(1150);
     await expect.poll(() => deepActive()).toBe(document.getElementById("item")?.shadowRoot?.querySelector("a"));
     expect(received).toHaveLength(2);
+  });
+
+  it("recovers focus when a navigation destination becomes invisible but still occupies space", async () => {
+    const shell = await mount(rail + grouped);
+    size(1150);
+    const railLink = required(shell.querySelector("#rail-item")?.shadowRoot?.querySelector("a"));
+    await expect.poll(() => shown(railLink)).toBe(true);
+    const topBar = required(top(shell));
+    const { promise: hold, resolve: finish } = Promise.withResolvers<boolean>();
+    Object.defineProperty(topBar, "updateComplete", { configurable: true, get: () => hold });
+
+    railLink.focus();
+    shell.remeasure();
+    await shell.updateComplete;
+    railLink.style.visibility = "hidden";
+    expect(shown(railLink)).toBe(true);
+    finish(true);
+    const destination = required(shell.querySelector("#item")?.shadowRoot?.querySelector("a"));
+    await expect.poll(() => deepActive()).toBe(destination);
+  });
+
+  it("does not recover unrelated focus inside the shell when it was outside navigation", async () => {
+    const shell = await mount(rail + grouped);
+    size(1150);
+    await expect.poll(() => shell.tier).toBe("expanded");
+    const button = required(shell.querySelector<HTMLButtonElement>("#main-content"));
+    const topBar = required(top(shell));
+    const { promise: hold, resolve: finish } = Promise.withResolvers<boolean>();
+    Object.defineProperty(topBar, "updateComplete", { configurable: true, get: () => hold });
+
+    button.focus();
+    expect(deepActive()).toBe(button);
+    shell.remeasure();
+    await shell.updateComplete;
+    button.style.visibility = "hidden";
+    finish(true);
+    await new Promise<void>((resolve) => { requestAnimationFrame(() => { resolve(); }); });
+    expect(deepActive()).toBeNull();
   });
 
   it("preserves deliberately moved focus while a navigation update settles", async () => {
