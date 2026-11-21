@@ -34,6 +34,11 @@ The candidate adds the responsive shell, its threshold tokens and package entry,
 - In five isolated Chromium fault probes on `29704a8`, the new assertions failed when the shell left sidebar or rail presentation behind, ignored visibility, or captured focus outside navigation.
 - The shell now uses one ownership set and release path for both sidebar hosts and nav items. Navigation tests passed 23/23, and scoped lint, TypeScript and the diff check passed.
 
+## Pending focus follow-up
+
+- A range-limited Stryker run on `ea87591` reached 94.44% for the ownership and focus blocks. It killed 68 mutants, with four survivors and 33 rejected at compilation. It reported no uncovered mutants or mutant timeouts. The broader related browser suites passed 68/68 on that commit.
+- Two isolated Chromium probes failed the intended assertions when focus recovery skipped a managed child's pending update or ignored a newly focused control that had already become hidden. The shell uses the same visibility condition for the current active control regardless of its identity. The final layout and navigation suites passed 37/37.
+
 ## Canonical workflow status
 
-The workflow's `red.sh 3 phase` replay has not recorded a result yet. The full affected-plant selection is 317 plants because the package export change is unmapped. The local focused mutation diagnostics have completed, with results above. Canonical head and final-tests-on-base checks and independent review are pending. The targeted evidence above does not replace those checks.
+The workflow's `red.sh 3 phase` replay has not recorded a result yet. The full affected-plant selection is 317 plants because the package export change is unmapped. The completed focused mutation diagnostics are above. A second two-file diagnostic on `29704a8` is still running. Canonical head and final-tests-on-base checks and independent review are pending. The targeted evidence above does not replace those checks.

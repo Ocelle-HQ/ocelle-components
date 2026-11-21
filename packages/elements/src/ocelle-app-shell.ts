@@ -379,7 +379,7 @@ export class OcelleAppShell extends LitElement {
     this.#focusSource = undefined;
     if (source !== undefined && !visible(source)) {
       const active = deepActive();
-      if (active === source || active === null || !visible(active)) {
+      if (active === null || !visible(active)) {
         const destination = tier === "narrow" ? this.#menu() : this.#firstDestination();
         (destination ?? this.contentTarget)?.focus();
       }
