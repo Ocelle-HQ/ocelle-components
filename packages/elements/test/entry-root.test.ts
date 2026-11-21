@@ -8,7 +8,8 @@ import * as root from "../src/index.ts";
 // `ocelle-workflow-lane`, and since 009 phase 4 (T051) `ocelle-list-detail`; since 011 `ocelle-card`,
 // `ocelle-section-header`, `ocelle-page-header` (T027), `ocelle-context-sidebar` (T034) and `ocelle-personal-rail`
 // (T042); since 012 `ocelle-button` (tasks.md T018) and `ocelle-action-row` (tasks.md T051); and since 013
-// `ocelle-facts`, `ocelle-fact`, `ocelle-empty-state` and `ocelle-progress`; and since 020 (T006) `ocelle-disclosure`.
+// `ocelle-facts`, `ocelle-fact`, `ocelle-empty-state` and `ocelle-progress`; and since 020 (T006) `ocelle-disclosure` and
+// (T026) `ocelle-code-block`.
 // This file's own iframe (Vitest browser mode, isolate on) holds only what this import defines.
 describe("importing src/index.ts", () => {
   it("defines ocelle-icon, ocelle-brand-mark, ocelle-scroller, ocelle-workflow-board, ocelle-workflow-lane, ocelle-list-detail, ocelle-card, ocelle-section-header, ocelle-page-header, ocelle-context-sidebar, ocelle-personal-rail, ocelle-button and ocelle-action-row as the OcelleIcon, OcelleBrandMark, OcelleScroller, OcelleWorkflowBoard, OcelleWorkflowLane, OcelleListDetail, OcelleCard, OcelleSectionHeader, OcellePageHeader, OcelleContextSidebar, OcellePersonalRail, OcelleButton and OcelleActionRow it exports", () => {
@@ -103,5 +104,16 @@ describe("importing src/index.ts", () => {
       disclosure: customElements.get("ocelle-disclosure"),
       summary: document.getElementById("d")?.shadowRoot?.querySelectorAll('[part="summary"]').length,
     }).toEqual({ type: "function", disclosure: exported.OcelleDisclosure, summary: 1 });
+  });
+
+  it("defines ocelle-code-block as the OcelleCodeBlock it exports, and a code block renders its text in its code part (020 phase 2)", async () => {
+    const exported = root as Record<string, unknown>;
+    document.body.innerHTML = '<ocelle-code-block id="c">git push origin main</ocelle-code-block>';
+    await (document.getElementById("c") as unknown as { updateComplete: Promise<unknown> }).updateComplete;
+    expect({
+      type: typeof exported.OcelleCodeBlock,
+      codeBlock: customElements.get("ocelle-code-block"),
+      text: document.getElementById("c")?.shadowRoot?.querySelector('[part="code"]')?.textContent ?? null,
+    }).toEqual({ type: "function", codeBlock: exported.OcelleCodeBlock, text: "git push origin main" });
   });
 });

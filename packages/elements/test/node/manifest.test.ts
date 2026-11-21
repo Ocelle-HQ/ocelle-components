@@ -292,7 +292,7 @@ describe("generate(root) on the repository's element source", () => {
     const manifest = await generate(repo);
     const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
     expect(manifest.schemaVersion).toBe("1.0.0");
-    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-action-row.ts", "src/ocelle-brand-mark.ts", "src/ocelle-button.ts", "src/ocelle-card.ts", "src/ocelle-context-sidebar.ts", "src/ocelle-dialog.ts", "src/ocelle-disclosure.ts", "src/ocelle-drawer.ts", "src/ocelle-empty-state.ts", "src/ocelle-fact.ts", "src/ocelle-facts.ts", "src/ocelle-icon.ts", "src/ocelle-list-detail.ts", "src/ocelle-page-header.ts", "src/ocelle-personal-rail.ts", "src/ocelle-progress.ts", "src/ocelle-scroller.ts", "src/ocelle-section-header.ts", "src/ocelle-tooltip.ts", "src/ocelle-workflow-board.ts", "src/ocelle-workflow-lane.ts"]);
+    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-action-row.ts", "src/ocelle-brand-mark.ts", "src/ocelle-button.ts", "src/ocelle-card.ts", "src/ocelle-code-block.ts", "src/ocelle-context-sidebar.ts", "src/ocelle-dialog.ts", "src/ocelle-disclosure.ts", "src/ocelle-drawer.ts", "src/ocelle-empty-state.ts", "src/ocelle-fact.ts", "src/ocelle-facts.ts", "src/ocelle-icon.ts", "src/ocelle-list-detail.ts", "src/ocelle-page-header.ts", "src/ocelle-personal-rail.ts", "src/ocelle-progress.ts", "src/ocelle-scroller.ts", "src/ocelle-section-header.ts", "src/ocelle-tooltip.ts", "src/ocelle-workflow-board.ts", "src/ocelle-workflow-lane.ts"]);
     const [icon] = modules.find((module) => module.path === "src/ocelle-icon.ts")?.declarations ?? [];
     expect(icon).toMatchObject({
       kind: "class",
@@ -915,6 +915,40 @@ describe("generate(root) on the repository's element source", () => {
       events: [{ name: "ocelle-disclosure-toggle", type: { text: "CustomEvent<{ open: boolean }>" }, described: true }],
       properties: [],
       expandedProperty: false,
+    });
+  });
+
+  // 020 phase 2 (T027; contracts/elements.md § `ocelle-code-block`; FR-035): every list stated, every member described;
+  // `overflow` and `digest` reflected, `label` not; no slot (the description says the text is the light DOM's text
+  // content), no event, the parts `block` and `code`, no CSS custom property; `aria-label` is observed, not a property.
+  it("declares ocelle-code-block with overflow (string | undefined, reflected), label (string | undefined, not reflected) and digest (boolean | undefined, reflected), each described with the default undefined, no slot, no event, the parts block and code, and no CSS property", async () => {
+    const manifest = await generate(repo);
+    const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [codeBlock] = modules.find((module) => module.path === "src/ocelle-code-block.ts")?.declarations ?? [];
+    const named = (list: unknown): unknown => ((list ?? []) as Record<string, unknown>[]).map(({ name, description }) => ({ name, described: typeof description === "string" && description !== "" }));
+    const described = (list: unknown): Record<string, unknown>[] =>
+      ((list ?? []) as Record<string, unknown>[]).map(({ description, ...rest }) => ({ ...rest, described: typeof description === "string" && description !== "" }));
+    expect({ kind: codeBlock?.kind, name: codeBlock?.name, tagName: codeBlock?.tagName, customElement: codeBlock?.customElement }).toEqual({ kind: "class", name: "OcelleCodeBlock", tagName: "ocelle-code-block", customElement: true });
+    expect(typeof codeBlock?.description === "string" && codeBlock.description.includes("light-DOM text content")).toBe(true);
+    expect(described(codeBlock?.members)).toEqual([
+      { kind: "field", name: "overflow", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "overflow", reflects: true, described: true },
+      { kind: "field", name: "label", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "label", described: true },
+      { kind: "field", name: "digest", privacy: "public", type: { text: "boolean | undefined" }, default: "undefined", attribute: "digest", reflects: true, described: true },
+    ]);
+    expect(described(codeBlock?.attributes)).toEqual([
+      { name: "overflow", fieldName: "overflow", type: { text: "string | undefined" }, default: "undefined", described: true },
+      { name: "label", fieldName: "label", type: { text: "string | undefined" }, default: "undefined", described: true },
+      { name: "digest", fieldName: "digest", type: { text: "boolean | undefined" }, default: "undefined", described: true },
+    ]);
+    expect({ slots: codeBlock?.slots, events: codeBlock?.events, parts: named(codeBlock?.cssParts), properties: codeBlock?.cssProperties, states: codeBlock?.cssStates ?? [] }).toEqual({
+      slots: [],
+      events: [],
+      parts: [
+        { name: "block", described: true },
+        { name: "code", described: true },
+      ],
+      properties: [],
+      states: [],
     });
   });
 

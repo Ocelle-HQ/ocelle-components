@@ -36,24 +36,36 @@ function gate(at: string, extra: Record<string, string> = {}): Promise<Ran> {
 const wide = "clipped column of the wide table's scroll box (`elmPartiallyObscured`)";
 const linked = "clipped column of the linked wide table's scroll box (`elmPartiallyObscured`)";
 
-/** The ten excepted notes of the Prose document (plan.md § Complexity Tracking, axe exceptions under FR-029), in run order. */
-const excepted: readonly string[] = (["light", "dark"] as const).flatMap((theme) =>
-  [
-    ["table:nth-child(12) > thead > tr > th:nth-child(12)", wide],
-    ["table:nth-child(12) > tbody > tr:nth-child(1) > td:nth-child(12)", wide],
-    ["tr:nth-child(2) > td:nth-child(12)", wide],
-    ["table:nth-child(14) > thead > tr > th:nth-child(12)", linked],
-    ["table:nth-child(14) > tbody > tr > td:nth-child(12)", linked],
-  ].map(([selector, reason]) => `note: base-styles--prose-document/${theme}: color-contrast-incomplete: serious: ${String(selector)} excepted (${String(reason)})`),
-);
+const clipped = "clipped line of the code block's scroll box (`elmPartiallyObscured`)";
+
+/**
+ * The 24 excepted notes, in run order (stories in index order, each in light then dark): the Prose document's ten
+ * (plan.md § Complexity Tracking, axe exceptions under FR-029), then since 020 phase 2 (T028; operator decision on T021a,
+ * specs/020-disclosure-code-block/plan.md § Complexity Tracking) one per overflowing scroll code-block story and theme,
+ * in the stories file's order.
+ */
+const excepted: readonly string[] = [
+  ...(["light", "dark"] as const).flatMap((theme) =>
+    [
+      ["table:nth-child(12) > thead > tr > th:nth-child(12)", wide],
+      ["table:nth-child(12) > tbody > tr:nth-child(1) > td:nth-child(12)", wide],
+      ["tr:nth-child(2) > td:nth-child(12)", wide],
+      ["table:nth-child(14) > thead > tr > th:nth-child(12)", linked],
+      ["table:nth-child(14) > tbody > tr > td:nth-child(12)", linked],
+    ].map(([selector, reason]) => `note: base-styles--prose-document/${theme}: color-contrast-incomplete: serious: ${String(selector)} excepted (${String(reason)})`),
+  ),
+  ...["scroll-overflowing", "scroll-middle", "scroll-end", "scroll-focused", "digest-scroll", "right-to-left-scroll", "scroll-unlabelled"].flatMap((story) =>
+    (["light", "dark"] as const).map((theme) => `note: elements-ocelle-code-block--${story}/${theme}: color-contrast-incomplete: serious: ocelle-code-block >>> .code excepted (${clipped})`),
+  ),
+];
 
 describe("axe gate (gates/bin/axe.ts)", () => {
   it(
-    "audits the repository's 404 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)",
+    "audits the repository's 432 story-themes and exits 0, the Prose document's ten and the overflowing code-block stories' fourteen color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)",
     async () => {
       const at = await root("repository");
       const ran = await gate(at);
-      expect(ran).toEqual({ code: 0, stdout: ["axe: 404 story-theme runs, 0 serious or critical; 10 notes (0 incomplete, 10 excepted)"], stderr: excepted });
+      expect(ran).toEqual({ code: 0, stdout: ["axe: 432 story-theme runs, 0 serious or critical; 24 notes (0 incomplete, 24 excepted)"], stderr: excepted });
     },
     timeout,
   );
@@ -65,7 +77,7 @@ describe("axe gate (gates/bin/axe.ts)", () => {
       const ran = await gate(at);
       expect(ran).toEqual({
         code: 1,
-        stdout: ["unlabelled--button/light: axe: button-name: critical: #plant-unlabelled", "unlabelled--button/dark: axe: button-name: critical: #plant-unlabelled", "axe: 2 findings in 406 story-theme runs"],
+        stdout: ["unlabelled--button/light: axe: button-name: critical: #plant-unlabelled", "unlabelled--button/dark: axe: button-name: critical: #plant-unlabelled", "axe: 2 findings in 434 story-theme runs"],
         stderr: excepted,
       });
     },

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import "../src/ocelle-icon.ts";
 import { inProcessDriver } from "./in-process.ts";
-import { defineDetailsHelper, defineDriverHelpers, disclosureDriverScenarios, driverAdditionScenarios } from "./scenarios/driver-additions.ts";
+import { codeBlockDriverScenarios, defineCodeHelper, defineDetailsHelper, defineDriverHelpers, disclosureDriverScenarios, driverAdditionScenarios } from "./scenarios/driver-additions.ts";
 
 // The driver's own methods, in process, each proven against a plain page (009 research.md R-17; T005, T010).
 // `viewport()` resizes the test's iframe from the elements project's 1280 × 800 (vitest.config.ts, since 008). Since
@@ -16,6 +16,7 @@ import { defineDetailsHelper, defineDriverHelpers, disclosureDriverScenarios, dr
 const driver = inProcessDriver();
 defineDriverHelpers();
 defineDetailsHelper();
+defineCodeHelper();
 
 afterEach(async () => {
   await driver.reducedMotion("no-preference").catch(() => undefined);
@@ -306,6 +307,15 @@ describe("the driver additions, in process (013 T003)", () => {
 // defined above. The same bodies run on the strict-CSP fixture in test/browser/driver.test.ts.
 describe("the driver additions of 020, in process (T003)", () => {
   it.each(disclosureDriverScenarios)("$name", async ({ run, expected }) => {
+    expect(await run(driver)).toEqual(expected);
+  });
+});
+
+// The driver additions of 020 phase 2 in process (contracts/checks.md § Driver additions; tasks.md T023): `copyShadow`,
+// `copyShadowRun`, `ariaSnapshot` and the two readers `clientRects` and `characters`, on the `ocelle-test-code` helper
+// defined above. The same bodies run on the strict-CSP fixture in test/browser/driver.test.ts.
+describe("the driver additions of 020 phase 2, in process (T023)", () => {
+  it.each(codeBlockDriverScenarios)("$name", async ({ run, expected }) => {
     expect(await run(driver)).toEqual(expected);
   });
 });

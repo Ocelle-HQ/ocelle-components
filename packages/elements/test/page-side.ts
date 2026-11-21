@@ -7,7 +7,7 @@
 //
 // Nodes are described as the driver's `EventRecord` says: `window`, `document`, `#shadow-root`, or an element's local
 // name with `#<id>` when it has one.
-import type { Current, EventRecord } from "./scenarios/driver.ts";
+import type { Bounds, CharacterBox, Current, EventRecord } from "./scenarios/driver.ts";
 
 /** The recorder's state on the page's `window`. */
 interface RecorderState {
@@ -212,4 +212,68 @@ export function morphElement({ id, markup }: { readonly id: string; readonly mar
     const attribute = element.attributes[at];
     if (attribute !== undefined && !incoming.hasAttribute(attribute.name)) element.removeAttribute(attribute.name);
   }
+}
+
+// 020 phase 2 (contracts/checks.md § Driver additions; tasks.md T023): the shadow copy's selections and the readers of
+// the break-position, visual-order and line-start oracles.
+
+/** The value the copy methods put on the clipboard before each copy, so a copy that put nothing there is seen. */
+export const copySentinel = "ocelle-copy-sentinel";
+
+/** Adds a scratch field holding the sentinel, focused with its text selected, for a user copy that puts it on the clipboard. */
+export function selectSentinel(sentinel: string): void {
+  const field = document.createElement("textarea");
+  field.id = "ocelle-driver-sentinel";
+  field.value = sentinel;
+  document.body.append(field);
+  field.focus();
+  field.select();
+}
+
+/** Removes the sentinel's scratch field and empties the selection. */
+export function dropSentinel(): void {
+  document.getElementById("ocelle-driver-sentinel")?.remove();
+  getSelection()?.removeAllRanges();
+}
+
+/**
+ * Selects from before the element child `from` to after the element child `to` of the first element matching `inner` in
+ * the shadow root of the element `id` (`setBaseAndExtent` over its child nodes).
+ */
+export function selectShadowRun({ id, inner, from, to }: { readonly id: string; readonly inner: string; readonly from: number; readonly to: number }): void {
+  const target = document.getElementById(id)?.shadowRoot?.querySelector(inner);
+  if (target === null || target === undefined) throw new Error(`no ${inner} in the shadow root of #${id}`);
+  const first = target.children[from];
+  const last = target.children[to];
+  if (first === undefined || last === undefined) throw new Error(`no element children ${String(from)} to ${String(to)} in ${inner} of #${id}`);
+  const nodes = [...target.childNodes];
+  getSelection()?.setBaseAndExtent(target, nodes.indexOf(first), target, nodes.indexOf(last) + 1);
+}
+
+/** The client rects of every element matching `inner` in the shadow root of the element `id`, in tree order. */
+export function shadowClientRects({ id, inner }: { readonly id: string; readonly inner: string }): Bounds[][] {
+  const root = document.getElementById(id)?.shadowRoot;
+  if (root === null || root === undefined) throw new Error(`no shadow root on #${id}`);
+  return [...root.querySelectorAll(inner)].map((each) => [...each.getClientRects()].map((rect) => ({ x: rect.x, y: rect.y, width: rect.width, height: rect.height })));
+}
+
+/** Each code point of the text under the first element matching `inner` in the shadow root of the element `id`, with the box of a range over it. */
+export function characterBoxes({ id, inner }: { readonly id: string; readonly inner: string }): CharacterBox[] {
+  const target = document.getElementById(id)?.shadowRoot?.querySelector(inner);
+  if (target === null || target === undefined) throw new Error(`no ${inner} in the shadow root of #${id}`);
+  const walker = document.createTreeWalker(target, NodeFilter.SHOW_TEXT);
+  const found: CharacterBox[] = [];
+  for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
+    const data = (node as Text).data;
+    let offset = 0;
+    for (const text of data) {
+      const range = document.createRange();
+      range.setStart(node, offset);
+      range.setEnd(node, offset + text.length);
+      const rect = range.getBoundingClientRect();
+      found.push({ text, x: rect.x, y: rect.y, width: rect.width, height: rect.height });
+      offset += text.length;
+    }
+  }
+  return found;
 }
