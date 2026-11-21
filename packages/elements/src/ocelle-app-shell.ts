@@ -237,7 +237,7 @@ export class OcelleAppShell extends LitElement {
     this.#children.disconnect();
     this.#settlement = undefined;
     this.#focusSource = undefined;
-    this.#setPresentation([], [], false);
+    this.#setPresentation([], []);
   }
 
   /** Rereads CSS thresholds and the current logical inline size. */
@@ -260,7 +260,7 @@ export class OcelleAppShell extends LitElement {
     this.#actions = assignedRegion(this, "actions").some(hasContent);
 
     const managed = this.#layout === "personal" ? [] : sidebar;
-    this.#setPresentation(this.#rail ? rail : [], managed, this.#sidebarCompact);
+    this.#setPresentation(this.#rail ? rail : [], managed);
   }
 
   get #sidebarCompact(): boolean {
@@ -332,7 +332,8 @@ export class OcelleAppShell extends LitElement {
     return below(measured, collapse) ? "collapsed" : "expanded";
   }
 
-  #setPresentation(rail: readonly Element[], assigned: readonly Element[], compact: boolean): void {
+  #setPresentation(rail: readonly Element[], assigned: readonly Element[]): void {
+    const compact = this.#sidebarCompact;
     const sidebars = assigned.filter((element) => element instanceof OcelleContextSidebar);
     const sections = assigned.flatMap((element) => element instanceof OcelleContextSidebar
       ? [...element.children].filter((child) => !child.getAttribute("slot"))
