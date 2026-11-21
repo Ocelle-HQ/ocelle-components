@@ -41,6 +41,11 @@ The candidate adds the responsive shell, its threshold tokens and package entry,
 - A range-limited Stryker run on `ea87591` reached 94.44% for the ownership and focus blocks. It killed 68 mutants, with four survivors and 33 rejected at compilation. It reported no uncovered mutants or mutant timeouts. The broader related browser suites passed 68/68 on that commit.
 - Two isolated Chromium probes failed the intended assertions when focus recovery skipped a managed child's pending update or ignored a newly focused control that had already become hidden. The shell uses the same visibility condition for the current active control regardless of its identity. The final layout and navigation suites passed 37/37.
 
+## Opaque destination focus
+
+- The tests-only commit `e710a67` reproduced one failure and three passes on `e67f646`. A rendered custom destination with `tabindex="0"` was bypassed during focus recovery. The fixed fallback includes an explicitly tabbable visible host and skips opaque placeholders without a sequential stop, with a negative tabindex, or hidden.
+- The layout and navigation suites passed 41/41 after the change.
+
 ## Canonical workflow status
 
 The workflow's canonical `red.sh 3 phase` replay recorded tests-only `a0612f39fe3579984879f800c4f8b13fab148089` with test exit 1. Its full log reports 62 failures out of 9,698 tests, including 19 direct app-shell layout, navigation and standalone-entry failures. It also contains token and manifest assertions and unrelated font, integration timeout and form timing failures. The full affected-plant selection is 317 plants because the package export change is unmapped. The completed focused mutation diagnostics are above. Canonical head and final-tests-on-base checks and independent review are pending. The targeted evidence above does not replace those checks.

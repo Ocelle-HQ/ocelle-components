@@ -397,7 +397,7 @@ export class OcelleAppShell extends LitElement {
 
   #firstDestination(): HTMLElement | undefined {
     return this.#regions().flatMap((region) => walk(region).order).find(({ element, kind }) => {
-      if (kind !== "stop") return false;
+      if (kind === "opaque" && (element.tabIndex < 0 || !visible(element))) return false;
       for (let node: Element | null = element; node !== null && node !== this; node = composedParent(node)) {
         if (node.matches("ocelle-context-sidebar > [slot=head], ocelle-context-sidebar > [slot=footer]")) return false;
       }
