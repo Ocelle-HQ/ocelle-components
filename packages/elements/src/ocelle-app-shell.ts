@@ -323,8 +323,8 @@ export class OcelleAppShell extends LitElement {
     const measured = style.boxSizing === "border-box" ? inline : inline + edges.reduce((sum, edge) => sum + Number.parseFloat(edge), 0);
     const rootFont = Number.parseFloat(getComputedStyle(this.ownerDocument.documentElement).fontSize);
     const hostFont = Number.parseFloat(style.fontSize);
-    const defaultNarrow = resolveLength({ value: 45, unit: "rem" }, rootFont, hostFont);
-    const defaultCollapse = resolveLength({ value: 68.75, unit: "rem" }, rootFont, hostFont);
+    const defaultNarrow = 45 * rootFont;
+    const defaultCollapse = 68.75 * rootFont;
     let narrow = length(this.narrowBelow, rootFont, hostFont) ?? length(style.getPropertyValue(narrowToken), rootFont, hostFont) ?? defaultNarrow;
     let collapse = length(this.collapseBelow, rootFont, hostFont) ?? length(style.getPropertyValue(collapseToken), rootFont, hostFont) ?? defaultCollapse;
     if (narrow > collapse) [narrow, collapse] = [defaultNarrow, defaultCollapse];

@@ -51,6 +51,13 @@ The candidate adds the responsive shell, its threshold tokens and package entry,
 - The tests in `33a4697` passed on the previous candidate and detected four isolated faults. The test assertions failed if a sending shell cleared a received section's compact styles, a same-tier update reordered an authored stylesheet, the shell overrode personal item presentation, or focus recovery crossed the shell boundary and treated its inner destinations as outer sidebar chrome.
 - Compact-section bookkeeping now replaces its tracked set after each update and changes marker presence without rewriting the attribute value. The shell frame owns the sidebar width state, and main padding classes use Lit's class map. The shell layout and navigation suites passed 44/44. Scoped lint, TypeScript and the diff check passed.
 
+- A pinned Docker visual comparison of the 20 shell and token story-theme cases captured twice found no differences. The focused compact-section diagnostic on `b3efd12` reached 97.44%, with 38 killed mutants, one survivor, and 20 rejected at compilation. It reported zero uncovered mutants or timeouts. The survivor removes WeakMap cleanup.
+
+## Threshold and reconnect follow-up
+
+- The tests in `219f40a` cover overflow when a finite parsed coefficient is multiplied by its font size, per-bound inherited token fallback, root-scaled defaults, and tier settlement after reconnect. Six isolated source faults failed their intended Chromium assertions, including removing reconnect measurement or scheduling remeasurement on a detached shell.
+- Published fallback values now convert directly from the computed root font size. Final shell navigation and layout tests passed 46/46. Scoped lint, TypeScript and the diff check passed.
+
 ## Canonical workflow status
 
 The workflow's canonical `red.sh 3 phase` replay recorded tests-only `a0612f39fe3579984879f800c4f8b13fab148089` with test exit 1. Its full log reports 62 failures out of 9,698 tests, including 19 direct app-shell layout, navigation and standalone-entry failures. It also contains token and manifest assertions and unrelated font, integration timeout and form timing failures. The full affected-plant selection is 317 plants because the package export change is unmapped. The completed focused mutation diagnostics are above. Canonical head and final-tests-on-base checks and independent review are pending. The targeted evidence above does not replace those checks.
