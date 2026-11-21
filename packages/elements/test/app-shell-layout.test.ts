@@ -47,6 +47,22 @@ describe("ocelle-app-shell layout", () => {
     expect(window.innerWidth).toBe(before);
   });
 
+  it("goes directly from narrow to expanded when both explicit thresholds are equal", async () => {
+    const shell = await mount('narrow-below="500px" collapse-below="500px"');
+    size("499px");
+    await tier(shell, "narrow");
+    await layoutWait("frame");
+
+    const transitions: unknown[] = [];
+    shell.addEventListener("ocelle-app-shell-tier-change", (event) => {
+      transitions.push((event as CustomEvent<unknown>).detail);
+    });
+    size("500px");
+    await tier(shell, "expanded");
+    await layoutWait("frame");
+    expect(transitions).toEqual([{ previousTier: "narrow", tier: "expanded" }]);
+  });
+
   it("treats the vertical writing-mode inline axis as the measured axis", async () => {
     const shell = await mount('narrow-below="400px" collapse-below="600px"');
     shell.style.writingMode = "vertical-rl";
