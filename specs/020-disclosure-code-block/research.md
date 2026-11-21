@@ -421,7 +421,8 @@ state, the module's ring on the scroll box), RightToLeftScroll. Light and dark b
 pinned container under docker (`nohup dockerd`; after a container restart `pnpm run setup:online`); no podman
 cross-check is possible in this environment, which each phase's review notes. Story-less, test-only: the unnamed
 disclosure (axe fails it by design); a code block with a host `aria-label` in wrap mode (advised against,
-SPEC-1-14). These are the Complexity Tracking row, approved at the tasks gate.
+SPEC-1-14). These are the Complexity Tracking row, approved at the tasks gate. Added by the operator's T021a decision:
+ScrollUnlabelled (an overflowing scroll block with no `label` and no host `aria-label`; see below).
 
 **The unnamed overflowing scroll block** (analysis D1, operator decision at the tasks gate). The claim that axe fails
 it is unproven: `ocelle-scroller`'s `Unlabelled` story (`storybook/stories/scroller.stories.ts`) renders the same
@@ -430,7 +431,27 @@ box has no role. T021a measures it before T028: a scratch element rendering R-06
 module, overflowing, with no `label` and no host `aria-label`, run through the `axe` gate's runner and rule set in
 light and dark. If axe reports no serious or critical finding, T028 adds a `ScrollUnlabelled` story and the state
 leaves the Complexity Tracking row. If it reports one, the run stops for the operator, the measured rule (id, impact,
-target) is recorded here, and the state keeps the exception. Result: pending T021a.
+target) is recorded here, and the state keeps the exception.
+
+**Result (T021a, `reviews/phase-2/axe-unnamed-scroll.md`, 2026-11-21).** Measured with axe-core 4.14.0 and the
+FR-016 rule set, through the `axe` gate's own per-story audit, in the repository's pinned Chromium 156
+(156.0.8078.4), light and dark, on a scratch stand-in of the scroll structure with a labelled control block beside it:
+- The unnamed overflowing scroll box is AX `generic`, has no name, no `role`, `aria-label` or `aria-labelledby`, and
+  has `tabindex="0"` (it overflows, 938 > 262 px). No rule fires on the unnamed tab stop: no violation in either
+  theme, no `scrollable-region-focusable`, `aria-*`, `focus-order` or name rule.
+- On every overflowing scroll block, labelled or not, in light and dark, axe reports one `color-contrast` incomplete
+  result of serious impact, target `.code` inside the element (printed by the gate as `<tag> >>> .code`), message
+  key `elmPartiallyObscured`. It is caused by the line clipped in the scroll box, not by the missing name: the
+  labelled control block gets the identical result. The gate blocks it (serious incomplete) unless an exception
+  entry matches it, as it does for the Prose document's wide-table scroll box (spec 006 plan.md § Complexity
+  Tracking).
+
+**Operator decision (`reviews/phase-2/operator-axe-decision.md`, 2026-11-21): add exceptions and keep the story.**
+T028 adds `ScrollUnlabelled` (overflowing, no `label`, no host `aria-label`) and its story test, so the unnamed
+overflowing scroll block leaves the Complexity Tracking exception for story-less states. T028 also adds one
+`color-contrast-incomplete` entry per overflowing scroll story and theme to `storybook/a11y-exceptions.json`, each
+recorded as a row of plan.md § Complexity Tracking (the gate honours an entry only with its row), with the Prose
+entries' sunset.
 
 ## R-10 Tokens (FR-040)
 

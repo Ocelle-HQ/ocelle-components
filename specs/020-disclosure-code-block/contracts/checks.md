@@ -165,7 +165,8 @@ dark where the check reads the look:
 | defined and rendered, no request outside the origin | every story | as the existing extensions |
 | named summary | every disclosure story | the summary's CDP node has a non-empty name |
 | reflow (SC-002) | `LongSummary`; every wrap-mode code-block story (`Short`, `WrapLongLine`, `Digest`, `DigestWrapping`, `RightToLeft`, `Empty`) | at a 320 px viewport, `document.documentElement.scrollWidth` is 320, beside the element's box wider than 0 |
-| keyboard (SC-005) | every disclosure story; every overflowing scroll story (`ScrollOverflowing`, `ScrollMiddle`, `ScrollEnd`, `ScrollFocused`, `DigestScroll`, `RightToLeftScroll`, and `ScrollUnlabelled` if T021a adds it) | with no pointer event: Tab focuses the (first) summary, Enter toggles it (host `open` flips), Space toggles it back; Tab focuses the scroll box, and the arrow key towards the hidden end, pressed until the position stops changing, brings `abs(scrollLeft)` to `scrollWidth - clientWidth` within 1 px, and the opposite key brings it back to its start |
+| keyboard (SC-005) | every disclosure story; every overflowing scroll story (`ScrollOverflowing`, `ScrollMiddle`, `ScrollEnd`, `ScrollFocused`, `DigestScroll`, `RightToLeftScroll`, `ScrollUnlabelled`) | with no pointer event: Tab focuses the (first) summary, Enter toggles it (host `open` flips), Space toggles it back; Tab focuses the scroll box, and the arrow key towards the hidden end, pressed until the position stops changing, brings `abs(scrollLeft)` to `scrollWidth - clientWidth` within 1 px, and the opposite key brings it back to its start |
+| unnamed scroll box | `ScrollUnlabelled` | the scroll box is a tab stop (`tabindex="0"`, Tab reaches it) whose CDP node has no role beyond `generic` and an empty name (research R-09, T021a) |
 | no animation (SC-006) | every story | on a fresh load, within 1400 ms of the first render, under `prefers-reduced-motion: reduce` and under `no-preference` (`matchMedia` asserted in the same body), `document.getAnimations()` has no running animation; for each disclosure story, also one frame after a pointer click on the summary, paired with the toggled state |
 
 ## Plants (CSS-only behaviour Stryker does not mutate)
@@ -220,3 +221,23 @@ phase that first uses it, before that phase's element bodies:
 `manifest` (two entries), `csp` (two fixture pages), `prefix`, `style-lint`, `contrast` (no new pair: ink on inset
 and on hover-bg are existing rows; the plan's squad checks it), `mutation` (op 015's shards), `storybook-build`,
 `visual` (baselines), `axe`. No gate code changes.
+
+**axe exception entries (T028; operator decision `reviews/phase-2/operator-axe-decision.md`, 2026-11-21; research
+R-09).** T028 adds to `storybook/a11y-exceptions.json` one `color-contrast-incomplete` entry per overflowing scroll
+story and theme, 14 in all: the stories `ScrollOverflowing`, `ScrollMiddle`, `ScrollEnd`, `ScrollFocused`,
+`DigestScroll`, `RightToLeftScroll` and `ScrollUnlabelled` (ids `elements-ocelle-code-block--scroll-overflowing`,
+`--scroll-middle`, `--scroll-end`, `--scroll-focused`, `--digest-scroll`, `--right-to-left-scroll`,
+`--scroll-unlabelled`), each in `light` and `dark`. Each entry has:
+- `rule` `color-contrast-incomplete`;
+- `selector` `ocelle-code-block >>> .code`, the gate's printed form of axe's target (`printSelector` in
+  `gates/lib/axe-verdict.ts`, shadow levels joined by ` >>> `), matched exactly (`matchExceptions` in
+  `gates/lib/a11y-exceptions.ts`);
+- `reason` "clipped line of the code block's scroll box (`elmPartiallyObscured`)";
+- `sunset` the Prose document entries' sunset, verbatim: "the op that fixes the color-contrast incomplete results of
+  base.css's prose table scroll box (003 surface), to be opened by the operator";
+- `plan` `specs/020-disclosure-code-block/plan.md`, whose § Complexity Tracking holds the matching row of each entry.
+
+A selector, rule or node count the gate reports that differs from those rows, or an overflowing story without the
+result (its entry would be a `stale-exception` finding), goes back to the operator. The entries change the counts of
+the axe gate's integration test, `gates/test/integration/axe.test.ts` (story-theme runs, notes and excepted notes, 10
+to 24, and the list of excepted notes in run order), which T028 updates with the stories.

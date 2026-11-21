@@ -74,6 +74,9 @@ class uses was supplied for this mission; the plan's research records whether on
   resolved in the design artifacts before phase 1 (`reviews/analysis/fixes-1.md`). The Principle V exception for
   story-less states is approved, subject to a measure: the unnamed overflowing scroll block keeps its exception only
   if axe fails it; if axe passes, it gets a story (FR-050).
+- Phase 2 axe measure (2026-11-21, `reviews/phase-2/operator-axe-decision.md`), "add exceptions and keep the
+  story": axe reports nothing on the unnamed scroll block's tab stop, so it gets a story; the serious incomplete
+  contrast result on every overflowing scroll block's clipped line gets exception entries (FR-050, FR-051).
 
 ## Scope
 
@@ -554,16 +557,21 @@ while overflowing and not, the arrow keys, the selection's copied text and the a
   rendered in light and dark, following #10's contributor note: for the disclosure at least closed, open, focused,
   hovered, a long wrapping summary, a consumer icon and right-to-left; for the code block at least short, wrap with a
   long line, scroll overflowing, scroll overflowing in the middle and at the end, a focused scroll block, scroll
-  fitting, digest, digest wrapping at 288 px and right-to-left. The unnamed disclosure (Edge Cases) has no story,
-  because axe fails it by design; browser tests prove it. The unnamed overflowing scroll block (US2 scenario 7) has
-  no story only if a measure before its phase's stories shows that axe fails it (`ocelle-scroller`'s unlabelled story,
-  on the same module, passes axe); if axe passes, it gets a story. The plan records the story-less states as an
-  exception to constitution V with scope, rationale and a sunset, approved by the operator at the tasks gate.
+  fitting, digest, digest wrapping at 288 px and right-to-left, and an overflowing scroll block with no label. The
+  unnamed disclosure (Edge Cases) has no story, because axe fails it by design; browser tests prove it. The unnamed
+  overflowing scroll block (US2 scenario 7) has a story: the measure before phase 2's stories (T021a, research R-09)
+  found that axe reports nothing on its unnamed tab stop. It found one serious incomplete contrast result on every
+  overflowing scroll block, named or not, caused by the clipped line; the operator approved exception entries for it
+  (FR-051). The plan records the remaining story-less states as an exception to constitution V with scope, rationale
+  and a sunset, approved by the operator at the tasks gate.
 - **FR-051**: Visual baselines and the `axe` run follow #10 on `main`. Each phase that adds stories MUST commit their
   light and dark baselines, produced in #10's pinned container by its baseline command under docker, and its stories
   MUST pass #10's `storybook-build`, `visual` and `axe` gates, `axe` with no serious or critical finding and no
-  `storybook/a11y-exceptions.json` entry unless the operator approves one. The run records that no podman cross-check
-  was possible.
+  `storybook/a11y-exceptions.json` entry unless the operator approves one. The operator approved one kind
+  (`reviews/phase-2/operator-axe-decision.md`, 2026-11-21): the serious `color-contrast` incomplete result
+  (`elmPartiallyObscured`) on the clipped line of each overflowing scroll code-block story, per theme, with the
+  sunset of the existing Prose document entries; the plan lists the entries. The run records that no podman
+  cross-check was possible.
 - **FR-052**: Browser tests MUST cover every acceptance scenario, written once in `test/scenarios/` and run on the
   element source in process and on the built browser build on strict-CSP fixture pages (README § Files and tests).
   Find in page (US1 scenario 10) and copy (US2 scenario 10) are driven through the browser where Playwright allows it;
@@ -610,7 +618,7 @@ while overflowing and not, the arrow keys, the selection's copied text and the a
 - **SC-002**: At 320 px CSS width, every code-block story in wrap mode and the long-summary disclosure story have a
   page scroll width equal to the viewport width.
 - **SC-003**: Every story of the two elements reports no serious or critical axe finding through #10's `axe` gate, in
-  light and dark, with no new `a11y-exceptions.json` entry.
+  light and dark, with no new `a11y-exceptions.json` entry other than the operator-approved entries of FR-051.
 - **SC-004**: A copy of a digest block's whole text gives exactly the trimmed characters, followed by the platform's
   one block-end newline only when content follows the block (0 characters added by the element), a copy of a run of
   groups gives exactly its characters, and the concatenated StaticText names under the block in CDP
