@@ -90,11 +90,12 @@ Ranges below refer to shell source at `73c0f35`. The diagnostics use selected re
 
 | Source and scope | Local evidence |
 | --- | --- |
-| App shell lines 18–24, 65–222, 410–end, constants, setup and registration | 91.89% before removing three private slot-presence initializers overwritten by the first `willUpdate`. The updated entry, export, layout, and navigation suites passed 52/52. |
-| App shell lines 25–39, 250–318, 399–409, presence, render, and destination selection | 99.14% on unchanged production ranges at `f948d1d`. The exact probe for the one survivor failed the native-scroll test in `9984bfd`. |
+| App shell lines 18–24, 65–222, 410–end, constants, setup and registration | 100% on `806f2b4`, with 34 killed and six rejected at compilation. Entry, export, layout, and navigation suites passed 52/52. The earlier 91.89% left three slot-presence initializers that the first `willUpdate` overwrote. |
+| App shell lines 25–39, 250–318, 399–409, presence, render, and destination selection | 99.14% on unchanged production ranges at `f948d1d`. The exact destination tail with the added native-scroll test passed at 100%, with 19 killed and ten rejected at compilation. |
 | App shell lines 40–56 and 337–398, plus the compact stylesheet helper | 100% on `73c0f35`, with 105 killed and 51 rejected at compilation, zero survivors, zero uncovered, and zero timeouts. |
 | App shell lines 58–64, 223–249, 319–336, thresholds and lifecycle | 100% on the same production ranges at `71c7ef7`. |
 | Changed sidebar and nav-item presentation ranges | 100% sidebar and 96.61% combined on `73c0f35`. The follow-up two-line nav check with the new foreground test passed at 100%, with four killed and four rejected at compilation. |
+| Shell threshold token declarations in `packages/tokens/src/source.ts`, lines 230–231 | 100% with the token project, with four killed and four rejected at compilation. |
 
 ## Canonical workflow status
 
