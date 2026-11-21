@@ -1,0 +1,43 @@
+00:41:15 (230250) INFO ProjectReader Found 2 of 4565 file(s) to be mutated.
+00:41:16 (230250) INFO Instrumenter Instrumented 2 source file(s) with 67 mutant(s)
+00:41:16 (230250) INFO ConcurrencyTokenProvider Creating 1 checker process(es) and 1 test runner process(es).
+00:41:32 (230250) INFO DryRunExecutor Starting initial test run (vitest test runner with "perTest" coverage analysis). This may take a while.
+00:41:35 (230250) INFO DryRunExecutor Initial test run succeeded. Ran 14 tests in 2 seconds (net 1180.2000000001863 ms, overhead 1489.7999999998137 ms).
+00:41:35 (230250) WARN MutantTestPlanner Detected 15 static mutants (22% of total) that are estimated to take 44% of the time running the tests!
+  You might want to enable "ignoreStatic" to ignore these static mutants for your next run.
+  For more information about static mutants visit: https://stryker-mutator.io/docs/mutation-testing-elements/static-mutants
+  (disable "warnings.slow" to ignore this warning)
+
+All tests
+  entry-nav-item.test.ts
+    ✘ registers the nav item and its tooltip dependency from the standalone module [line 4] (covered 0)
+  entry-top-bar.test.ts
+    ✘ registers the top bar and its brand and icon dependencies from the standalone module [line 4] (covered 0)
+  exports.test.ts
+    ✓ @ocelle/elements root exports > exports exactly the public element classes in code-point order [line 17] (killed 2)
+  nav-item.test.ts
+    ✓ ocelle-nav-item > keeps its icon decorative and exposes native link activation and current state [line 28] (killed 17)
+    ✓ ocelle-nav-item > shows an unfocusable label when no href is supplied [line 52] (killed 6)
+    ✓ ocelle-nav-item > starts expanded with an empty label when the host supplies neither [line 61] (killed 2)
+    ✓ ocelle-nav-item > preserves host compact preference and the same focused link under an effective override [line 71] (killed 6)
+    ✓ ocelle-nav-item > shows the visual-only compact label on hover, allows travel to it, and dismisses on Escape [line 96] (killed 2)
+    ~ ocelle-nav-item > keeps a long translated label readable and the keyboard ring visible in forced colors and reduced motion [line 113] (covered 28)
+  top-bar.test.ts
+    ✓ ocelle-top-bar > shows a decorative chrome brand mark, product name and supplied actions [line 19] (killed 4)
+    ✓ ocelle-top-bar > leaves no menu button or action gap when omitted and reveals actions appended later [line 27] (killed 2)
+    ✓ ocelle-top-bar > requests once per native click, Enter and Space and lets the host set expansion [line 40] (killed 16)
+    ✓ ocelle-top-bar > reads initial menu expansion from markup and keeps an accessible fallback name [line 63] (killed 5)
+    ✓ ocelle-top-bar > keeps a named, focused menu at the minimum target size in a 320 px frame [line 76] (killed 1)
+
+Ran 2.75 tests per mutant on average.
+--------------------|------------------|----------|-----------|------------|----------|----------|
+                    | % Mutation score |          |           |            |          |          |
+File                |  total | covered | # killed | # timeout | # survived | # no cov | # errors |
+--------------------|--------|---------|----------|-----------|------------|----------|----------|
+All files           | 100.00 |  100.00 |       63 |         0 |          0 |        0 |        4 |
+ ocelle-nav-item.ts | 100.00 |  100.00 |       34 |         0 |          0 |        0 |        3 |
+ ocelle-top-bar.ts  | 100.00 |  100.00 |       29 |         0 |          0 |        0 |        1 |
+--------------------|--------|---------|----------|-----------|------------|----------|----------|
+00:47:50 (230250) INFO MutationTestReportHelper Final mutation score of 100.00 is greater than or equal to break threshold 100
+00:47:50 (230250) INFO JsonReporter Your report can be found at: file:///workspace/work/ocelle-phase2-mutation/reports/mutation/phase-2-diagnostic-recheck.json
+00:47:50 (230250) INFO MutationTestExecutor Done in 6 minutes and 35 seconds.

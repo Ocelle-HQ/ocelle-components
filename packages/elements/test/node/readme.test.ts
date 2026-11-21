@@ -669,6 +669,8 @@ const entryRows = [
   "| `@ocelle/elements/ocelle-fact.js` | `dist/ocelle-fact.js` | `ocelle-fact` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-empty-state.js` | `dist/ocelle-empty-state.js` | `ocelle-empty-state` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-progress.js` | `dist/ocelle-progress.js` | `ocelle-progress` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-nav-item.js` | `dist/ocelle-nav-item.js` | `ocelle-nav-item` and its compact label tooltip; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-top-bar.js` | `dist/ocelle-top-bar.js` | `ocelle-top-bar`, its brand mark and its menu icon; for hosts with a bundler |",
   "| `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |",
   "| `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |",
 ];
@@ -817,6 +819,8 @@ describe("packages/elements/README.md", () => {
       "./ocelle-fact.js",
       "./ocelle-empty-state.js",
       "./ocelle-progress.js",
+      "./ocelle-nav-item.js",
+      "./ocelle-top-bar.js",
       "./browser.js",
       "./custom-elements.json",
     ]);

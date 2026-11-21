@@ -443,6 +443,7 @@ describe("generate(root) on the repository's element source", () => {
       "src/ocelle-form-select.ts",
       "src/ocelle-icon.ts",
       "src/ocelle-list-detail.ts",
+      "src/ocelle-nav-item.ts",
       "src/ocelle-notice.ts",
       "src/ocelle-page-header.ts",
       "src/ocelle-personal-rail.ts",
@@ -450,6 +451,7 @@ describe("generate(root) on the repository's element source", () => {
       "src/ocelle-scroller.ts",
       "src/ocelle-section-header.ts",
       "src/ocelle-tooltip.ts",
+      "src/ocelle-top-bar.ts",
       "src/ocelle-workflow-board.ts",
       "src/ocelle-workflow-lane.ts",
     ]);
