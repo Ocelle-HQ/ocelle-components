@@ -182,7 +182,7 @@ export class OcelleAppShell extends LitElement {
   #rail = false;
   #sidebar = false;
   #actions = false;
-  #settlement = 0;
+  #settlement: symbol | undefined;
   #focusSource: Element | undefined;
   #announcedTier: AppShellTier | undefined;
   readonly #managedItems = new Set<OcelleNavItem>();
@@ -234,7 +234,7 @@ export class OcelleAppShell extends LitElement {
     super.disconnectedCallback();
     this.#resize.disconnect();
     this.#children.disconnect();
-    this.#settlement += 1;
+    this.#settlement = undefined;
     this.#focusSource = undefined;
     this.#setPresentation([], [], false);
   }
@@ -334,7 +334,7 @@ export class OcelleAppShell extends LitElement {
   #setPresentation(rail: readonly Element[], assigned: readonly Element[], compact: boolean): void {
     const sidebars = assigned.filter((element) => element instanceof OcelleContextSidebar);
     const sections = assigned.flatMap((element) => element instanceof OcelleContextSidebar
-      ? [...element.children].filter((child) => !child.hasAttribute("slot"))
+      ? [...element.children].filter((child) => !child.getAttribute("slot"))
       : [element]);
     const railItems = new Set(navItems(rail));
     const sidebarItems = new Set(navItems(sections));
@@ -375,14 +375,16 @@ export class OcelleAppShell extends LitElement {
   }
 
   async #settle(): Promise<void> {
-    const settlement = ++this.#settlement;
+    if (!this.isConnected) return;
+    const settlement = Symbol();
+    this.#settlement = settlement;
     const tier = this.#tier;
     await Promise.all([
       this.renderRoot.querySelector("ocelle-top-bar")?.updateComplete,
       ...[...this.#managedItems].map((item) => item.updateComplete),
       ...[...this.#managedSidebars].map((sidebar) => sidebar.updateComplete),
     ]);
-    if (!this.isConnected || settlement !== this.#settlement) return;
+    if (settlement !== this.#settlement) return;
     const source = this.#focusSource;
     this.#focusSource = undefined;
     if (source !== undefined && !visible(source)) {

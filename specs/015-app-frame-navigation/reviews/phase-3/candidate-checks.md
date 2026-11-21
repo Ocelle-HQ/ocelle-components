@@ -22,6 +22,12 @@ The candidate adds the responsive shell, its threshold tokens and package entry,
 - The shell uses one compact predicate for behavior and sizing. It observes the light DOM inputs it reads, and it renders the forwarded actions slot when it has content. The four related source suites passed 59/59. The revised focused diagnostic compiled and passed the 29-test coverage run. Four separate browser fault probes demonstrated that the stylesheet test detects premature release, retention of the compact sheet, removal of unrelated sheets, and skipped disconnect cleanup.
 - On `8cb3f4d`, the revised focused diagnostic reached 78.77% overall and 83.33% for compact-section handling. It reported 254 killed mutants, two mutant timeouts, 66 survivors, three uncovered mutants, and 136 rejected at compilation. The diagnostic still falls below the repository's 100% threshold.
 
+## Second mutation follow-up
+
+- Tests-only commit `7f4fec8` failed one focused Chromium assertion on the previous candidate. The label stayed visible in collapsed mode when its containing section explicitly selected the default slot with `slot=""`. The remaining 31 cases passed.
+- The shell treats an empty slot name as the default slot and uses a per-update identity to abandon superseded or disconnected focus work. The final layout and navigation suites passed 32/32. The related four-suite run passed 64/64. Scoped lint, TypeScript and the diff check passed.
+- Nine isolated browser fault probes failed their intended assertions. The probes covered deliberate focus, stale tier announcements, duplicate naming around a supplied landmark, hidden and non-finite measurement, border-box reporting for a padding-only resize, directly assigned items, footer presentation, and adopted stylesheet identity.
+
 ## Canonical workflow status
 
 The workflow's `red.sh 3 phase` replay has not recorded a result yet. The full affected-plant selection is 317 plants because the package export change is unmapped. The local focused mutation diagnostics have completed, with results above. Canonical head and final-tests-on-base checks and independent review are pending. The targeted evidence above does not replace those checks.
