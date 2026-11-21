@@ -1312,7 +1312,9 @@ after it) follows these rules.
    `ocelle-brand-mark` keep their host `aria-label` rule (Host ARIA), so the two families differ.
 5. **Name order.** The inner control's name is, in this order: the host's `aria-labelledby`, the host's `aria-label`,
    the element's `label` (trimmed; empty or whitespace-only counts as none), and otherwise the element's content;
-   slotted icons never contribute to `ocelle-button`'s name, where the content is its default slot's text. When a
+   slotted icons never contribute to the name of an `ocelle-button` that is named by its label (the default slot's
+   text, which is its content), its `label` or the host. An icon-only `ocelle-button` with none of these is still named
+   from its content, icon included: name it with `label`. When a
    control's content is visible, its `label` contains the visible text, ideally at its start, so a user who speaks a control's
    visible name reaches it (label in name); so does a host `aria-label`. A control with no text, no `label` and no icon has no accessible name: a host mistake that axe
    reports; the element adds no fallback text.

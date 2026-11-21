@@ -102,7 +102,7 @@ the phase continued with the widened fix.
 
 ## Widened red, T007 (operator decision 5)
 
-Test-only commit `f5b0bdf` (`test/scenarios/button.ts` only): scenario 7 in the link mode. Run in a clean worktree at
+Test-only commit `f5b0bdf` (`test/scenarios/button.ts` only; folded, see *Round 2*, *Folded red-log commits*): scenario 7 in the link mode. Run in a clean worktree at
 `f5b0bdf` (no source change on top), Chromium 156.0.8078.4, saved as `red-widen.log`: `Tests 6 failed | 221 passed
 (227)`, exit 1. The new row fails in process and on the fixture on the missing behaviour: name already
 `Open project`, role `link`, but `images` and `folder` hold `{ role: "image", name: "Folder" }`. The other four
@@ -167,7 +167,7 @@ record it for one-character content, set the relation only when an icon is slott
 
 ## Slot red, T008 (decisions 7 and 8)
 
-Test-only commit `3f86a0c` (`test/scenarios/button.ts` only): scenarios 9 and 10, each one row holding the button and
+Test-only commit `3f86a0c` (`test/scenarios/button.ts` only; folded, see *Round 2*, *Folded red-log commits*): scenarios 9 and 10, each one row holding the button and
 the link mode. Run in a clean worktree at `3f86a0c` (`git worktree add --detach`, `pnpm install --offline`, no source
 change on top), Chromium 156.0.8078.4, saved as `red-slot.log`: `Tests 8 failed | 223 passed (231)`, exit 1.
 
@@ -205,7 +205,8 @@ pin is changed and no promise is made for `ocelle-action-row`. readme and change
 
 First run: exit 1, 5 survivors on changed lines (42 mutants; 2 compile errors; `icon-slot.ts` zero mutants):
 
-- `focusable.ts:58` `element.getClientRects().length > 0` replaced by `>= 0`, and by `true`. Equivalent since this
+- **Superseded by O2-04 (round 2, see *Round 2* below): the line, its test and this equivalent record are gone.**
+  `focusable.ts:58` `element.getClientRects().length > 0` replaced by `>= 0`, and by `true`. Equivalent since this
   op: CSSOM gives empty client rects only for an element with no associated box, and `checkVisibility()` returns false
   for every such element, so the first test only spares the style read. FR-001 keeps the condition, so it is recorded:
   the test is moved to its own line (`const boxed = ...`, still evaluated first) under a next-line record
@@ -265,3 +266,100 @@ Not run locally, by the CI-first decision (CI's required checks decide them befo
 - the five visual plants above (they need docker and podman; no podman cross-check is possible here), and the full
   visual gate. The visual integration file passed once under docker alone (`Tests 11 passed (11)`, above).
 - no WebKit run in this environment.
+
+## Round 2 (operator round from the landing review, `round-2.md`, label `fix-2`)
+
+### Folded red-log commits (O2-05)
+
+`red-widen.log` names `f5b0bdf` and `red-slot.log` names `3f86a0c`. The phase fold squashed both test-only commits
+into `55b77a6`; `reviews/history-map.txt` maps only `d820f00` (to `65626eb`) and `8da12aa` (to `55b77a6`). Both
+commits live only on the branch `archive/claude/057-focus-trap-icon-a11y-prefold-phase-1`, not on this branch.
+
+### Opaque host rendering check: the measurement (O2-01, plan.md *Opaque content*)
+
+Probe (temporary `packages/elements/test/probe-022c.test.ts`, in process, never committed, deleted after the run),
+Chromium 156.0.8078.4, a closed-shadow host `h` in the listed context, reading `h.checkVisibility()`, the parent
+element's `checkVisibility()`, and the parent's `content-visibility` and its `::details-content`'s:
+
+| Context of `h` | `h` display | `h.checkVisibility()` | parent | parent `checkVisibility()` | parent `content-visibility` | parent `::details-content` |
+|---|---|---|---|---|---|---|
+| body | inline | true | body | true | visible | visible |
+| body | contents | false | body | true | visible | visible |
+| closed `details` | inline | false | details | true | visible | hidden |
+| closed `details` | contents | false | details | true | visible | hidden |
+| open `details` | contents | false | details | true | visible | visible |
+| `<x-probe>` around a link, closed `details` | inline | false | details | true | visible | hidden |
+| `content-visibility: hidden` div | contents | false | div | true | hidden | visible |
+| a div in a closed `details` | contents | false | div | false | visible | visible |
+
+`assignedSlot` reads null for a direct child of `details` (the user-agent root is closed). So:
+
+- `checkVisibility()` on a `display: contents` host is false everywhere (no box): the host alone cannot be read.
+- The plan's example reading, `checkVisibility()` on the nearest flat-tree ancestor with a box, is not enough: for a
+  host that is a direct child of a closed `details` (or of a `content-visibility: hidden` element) that ancestor is the
+  skipping root itself, which passes `checkVisibility()`.
+- The chosen reading (`hostRendered()` and `shows()` in `focusable.ts`): a host whose display is not `contents` is
+  read as `rendered()` (`visibility` and `checkVisibility()`); a `display: contents` host needs a `visibility` of
+  `visible` and that its flat-tree parent shows its content: a `display: contents` parent defers to its own parent;
+  any other parent passes `checkVisibility()`, does not have `content-visibility: hidden`, and its
+  `::details-content` does not read `content-visibility: hidden`. It is false for such a host inside a closed
+  `details` (direct child, and inside a div there) and in a `content-visibility: hidden` div, and true in an open
+  `details` and in an ordinary dialog body (through the body slot, itself `display: contents`). The stop condition
+  of plan.md does not fire.
+- WebKit was not run here. If WebKit does not support `::details-content`, the pseudo-element reads the element's own
+  `content-visibility` there (or an empty value), so a `display: contents` host that is a direct child of a closed
+  `details` would stay a candidate in WebKit; WebKit hides the closed panel without a box, so the case is open there.
+
+### Red run (`red.sh 1 fix-2`, red commit `60ee031`, `red-fix-2.log`)
+
+`{"phase":"1","label":"fix-2","sha":"60ee031…","tests_only":true,"red":true,"recorded":true,"exit_code":1}`;
+`unit-tests: 33 of 9801 tests failed`. 28 are this round's rows: the Tab rows (never the Shift+Tab rows) of seven
+cycles, in each of the four suites (dialog and drawer, in process and on the strict-CSP fixture):
+
+- spec.md scenario 11 (a) and (b): a closed `details` holding `ocelle-test-closed`, and holding `<x-probe>` around a
+  link, Tab from the summary: expected `dlg[button] b1 s dlg[button] b1`, got `body dlg[button] b1 s body` (measured
+  in process before the commit, as the landing review measured).
+- § Edge Cases: a `display: contents` host in a closed `details` (direct child, and inside a div), in a
+  `content-visibility: hidden` div, a `hidden` host and a `visibility: hidden` host, each last: the Tab path holds
+  `body` (for the last three, from the close control: expected `b1 dlg[button] b1 dlg[button]`, got
+  `b1 body dlg[button] b1`).
+
+The other five are the docker-bound `gates/test/integration/visual.test.ts` rows (no docker daemon in this run), as
+in the phase's red run; not this op's. Passing on main, as pins: the Shift+Tab rows of those cycles, scenario 12 in
+both forms (open `details`), and the two rendered `display: contents` hosts (dialog body, open `details`). The log's
+one local path (the pnpm store) is redacted to a placeholder.
+
+### Green (working tree), Chromium 156.0.8078.4
+
+A first green, which read the host's own style first, passed every in-process row but failed the fixture row of the
+`content-visibility: hidden` div (both directions, dialog and drawer) on its console field alone:
+`console.verbose: Rendering was performed in a subtree hidden by content-visibility.` (the style read of a host in an
+author-skipped subtree). `hostRendered()` now reads the flat-tree parent (`shows()`) first and the host's style only
+when the parent shows its content; that row then logs nothing.
+
+`npx vitest run --project elements --project elements-browser` over `dialog` and `drawer` (both suites each):
+`Test Files 4 passed (4)`, `Tests 1680 passed (1680)`. Every existing dialog and drawer row (opaque, iframe, media,
+sentinel, scroller and radio rows included) is unchanged and green; no row was loosened.
+
+### Mutation (O2-04, SC-002)
+
+`pnpm run gate:mutation -- --base 1b8b0b2 --files packages/elements/src/focusable.ts` (the merge base with
+`origin/main`): exit 0, `48 mutants on the changed lines of 1 file, none survived; 1 timeout, 8 compile errors, 0
+zero-mutant entries; 0 equivalent records`. The timeout (counted as detected by the gate) is `hostRendered()`'s
+`style.display === "contents"` replaced by `!==`. The compile errors (the type checker rejects them) are the emptied
+bodies of `hostRendered()` and `shows()`, the two `??`-to-`&&` mutants of `flatParent()`, the opaque branch's
+`if (hostRendered(html))` replaced by `false`, and the object and string mutants of its candidate literals; the same
+`if` replaced by `true` is killed (scenario 11's rows). No mutant in `rendered()`, `hostRendered()`,
+`shows()`, `flatParent()` or the opaque branch is disabled or recorded as equivalent. The kernel killed one process
+for lack of memory while the run overlapped `red.sh`'s full suite in its worktree; the gate still exited 0.
+
+### Other checks (CI-first, operator decision 9)
+
+Each exit 0, no finding: `gate:typecheck`, `gate:lint`, `gate:style-lint`, `gate:test-lint`, `gate:config-copies`,
+`gate:csp`, `gate:prefix`, `gate:manifest`. README and CHANGELOG pins (`readme.test.ts`, `changelog.test.ts`,
+`elements-node`): `Tests 977 passed (977)`. Plants: `pnpm run gate:plants -- --affected 1b8b0b2 --skip-container` (the merge base, since main is merged in):
+exit 0, `16 of 317 plants judged, every plant as expected; ... partial run: 5 visual plants not run` (`plants.md`).
+No podman here, so no podman cross-check was possible; the five visual plants are left to CI. Not run locally: the
+full `pnpm test` beyond `red.sh`'s run, the full visual gate, WebKit. Button suites (in process and on the fixture; this round changes
+no button source or row): `Test Files 2 passed (2)`, `Tests 234 passed (234)`.
+

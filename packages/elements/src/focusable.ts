@@ -3,13 +3,14 @@
 // point.
 //
 // - A **stop** is an element the engine reaches by sequential navigation: focusable with a `tabindex` of 0 or more,
-//   rendered (a layout box and a computed `visibility` of `visible`), not `disabled` and not inside an `inert` or
-//   `hidden` subtree. A radio group (same `name`, same form owner or tree) is one stop: its checked radio, else its
-//   first. An `<iframe>` with a layout box and a media element with `controls` are stops. A rendered element without a
-//   `tabindex` whose overflow on an axis is `auto` or `scroll`, that overflows on that axis and holds no stop, is a
-//   stop, as the engine's keyboard-focusable scrollers are (Chromium 130 and later).
+//   rendered (a computed `visibility` of `visible` and `checkVisibility()` true), not `disabled` and not inside an
+//   `inert` or `hidden` subtree. A radio group (same `name`, same form owner or tree) is one stop: its checked radio,
+//   else its first. An `<iframe>` with a layout box and a media element with `controls` are stops. A rendered element
+//   without a `tabindex` whose overflow on an axis is `auto` or `scroll`, that overflows on that axis and holds no
+//   stop, is a stop, as the engine's keyboard-focusable scrollers are (Chromium 130 and later).
 // - An **opaque** container is a custom element whose `shadowRoot` reads null (a closed root, or none): the walk cannot
-//   see into it, records it in its tree position and walks its light children as usual.
+//   see into it, records it in its tree position when it is rendered (a `display: contents` host by its content) and
+//   walks its light children as usual.
 // - `flat` is flat-tree order. `order` is the engine's sequential navigation order: the overlay's root, each slot and
 //   each open shadow root is a focus navigation scope; within a scope the elements with a positive `tabindex` come
 //   first in ascending order (ties in tree order), then the rest in tree order, and a nested scope's order is
@@ -49,16 +50,43 @@ function isMedia(element: Element): boolean {
 }
 
 /**
- * Whether `element` has a layout box, is visible and is rendered: `checkVisibility()` is false in a subtree the engine
- * skips, such as the content of a closed `<details>` apart from its summary (which Chromium hides with
- * `content-visibility`, keeping its client rects and its `visibility`) and a `content-visibility: hidden` subtree
- * (op 022, #57).
+ * Whether `element` is visible and rendered: `checkVisibility()` is false for an element with no layout box (the only
+ * element whose client rects are empty, CSSOM) and in a subtree the engine skips, such as the content of a closed
+ * `<details>` apart from its summary (which Chromium hides with `content-visibility`, keeping its client rects and its
+ * `visibility`) and a `content-visibility: hidden` subtree (op 022, #57).
  */
 function rendered(element: Element): boolean {
-  const boxed =
-    // Stryker disable next-line EqualityOperator,ConditionalExpression: equivalent since op 022 for `>= 0` and `true`, checkVisibility() below is false for an element with no box, the only element whose client rects are empty (CSSOM), so this test only spares the style read; `<= 0` and `false` would make no element rendered, which every Tab cycle row shows
-    element.getClientRects().length > 0;
-  return boxed && getComputedStyle(element).visibility === "visible" && element.checkVisibility();
+  return getComputedStyle(element).visibility === "visible" && element.checkVisibility();
+}
+
+/**
+ * Whether the opaque host `element` is rendered (op 022 round 2, O2-01): its flat-tree parent shows its content
+ * (`shows()`), and it is rendered as `rendered()` says, except that a host with `display: contents` has no box of its
+ * own, so its `checkVisibility()` is false, yet its content renders where its parent's does. The parent is read first,
+ * so no style of a host in a skipped subtree is computed (Chromium logs each such read on the console).
+ */
+function hostRendered(element: Element): boolean {
+  if (!shows(flatParent(element))) return false;
+  const style = getComputedStyle(element);
+  return style.visibility === "visible" && (element.checkVisibility() || style.display === "contents");
+}
+
+/**
+ * Whether the content of `element` (its children in the flat tree) is rendered: that of a `display: contents` element
+ * is its flat-tree parent's; otherwise the element is rendered and does not skip its content, by its own
+ * `content-visibility` or by the `::details-content` of a closed `<details>` (Chromium 156: the parent of a direct
+ * child of a closed `details`, the `details` itself, passes `checkVisibility()`; only its `::details-content` reads
+ * `content-visibility: hidden`).
+ */
+function shows(element: Element): boolean {
+  const style = getComputedStyle(element);
+  if (style.display === "contents") return shows(flatParent(element));
+  return element.checkVisibility() && style.contentVisibility !== "hidden" && getComputedStyle(element, "::details-content").contentVisibility !== "hidden";
+}
+
+/** The parent of `element` in the flat tree: its assigned slot, else its parent element, else its shadow root's host. */
+function flatParent(element: Element): Element {
+  return element.assignedSlot ?? element.parentElement ?? (element.parentNode as ShadowRoot).host;
 }
 
 /**
@@ -114,10 +142,15 @@ export function walk(root: Element): Walk {
     const at = flat.length;
     const mark = scope.length;
     if (html !== undefined && isOpaque(html)) {
-      // A host without a `tabindex` reads -1, which orders as 0 does: with the rest, in tree order.
-      const candidate: Candidate = { element: html, kind: "opaque" };
-      flat.push(candidate);
-      scope.push({ tabIndex: html.tabIndex, candidate });
+      // A host counts only when it is rendered (op 022 round 2, O2-01): one in a subtree the engine skips, such as a
+      // closed `<details>`, would otherwise end the cycle, and Tab past it would leave the overlay. Its light children
+      // are walked either way. A host without a `tabindex` reads -1, which orders as 0 does: with the rest, in tree
+      // order.
+      if (hostRendered(html)) {
+        const candidate: Candidate = { element: html, kind: "opaque" };
+        flat.push(candidate);
+        scope.push({ tabIndex: html.tabIndex, candidate });
+      }
     } else if (html !== undefined && sequential(html) && rendered(html)) {
       if (html instanceof HTMLInputElement && html.type === "radio" && html.name !== "") {
         const group = radios.filter((each) => sameGroup(html, each));
