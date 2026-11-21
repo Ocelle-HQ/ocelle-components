@@ -37,6 +37,9 @@
     "./ocelle-segment.js": "./dist/ocelle-segment.js",
     "./ocelle-copy-field.js": "./dist/ocelle-copy-field.js",
     "./ocelle-link.js": "./dist/ocelle-link.js",
+    "./ocelle-nav-item.js": "./dist/ocelle-nav-item.js",
+    "./ocelle-top-bar.js": "./dist/ocelle-top-bar.js",
+    "./ocelle-app-shell.js": "./dist/ocelle-app-shell.js",
     "./browser.js": "./dist/browser/ocelle-elements.js",
     "./custom-elements.json": "./custom-elements.json"
   },

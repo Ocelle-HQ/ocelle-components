@@ -227,6 +227,8 @@ export const records = tokenRecords([
   { name: "shell-main-max", group: "shell", value: "48rem" },
   { name: "shell-collapse-inspector", group: "shell", value: "75rem" },
   { name: "shell-collapse-sidebar", group: "shell", value: "45rem" },
+  { name: "app-shell-narrow-below", group: "shell", value: "45rem" },
+  { name: "app-shell-collapse-below", group: "shell", value: "68.75rem" },
   { name: "shell-height", group: "shell", value: "100dvh" },
   { name: "footer-h", group: "shell", value: "4.5rem" },
   { name: "measure-sheet", group: "shell", value: "var(--ocelle-shell-main-max)", ref: ["shell-main-max"] },

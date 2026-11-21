@@ -1,0 +1,8 @@
+
+ RUN  v5.0.5 /workspace/work/ocelle-phase2-green
+
+
+ Test Files  5 passed (5)
+      Tests  14 passed (14)
+   Start at  00:40:57
+   Duration  2.39s (worker 86%, tests 13%, import 1%)

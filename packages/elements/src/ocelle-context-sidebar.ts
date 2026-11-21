@@ -30,6 +30,16 @@ import { define } from "./define.ts";
 import { accessibleName, internalsKey } from "./naming.ts";
 import { SlotState } from "./slot-state.ts";
 
+const compactSidebars = new WeakSet<OcelleContextSidebar>();
+
+/** @internal Applies shell-owned presentation without changing any standalone inputs. */
+export function setContextSidebarCompact(sidebar: OcelleContextSidebar, compact: boolean): void {
+  if (compact === compactSidebars.has(sidebar)) return;
+  if (compact) compactSidebars.add(sidebar);
+  else compactSidebars.delete(sidebar);
+  sidebar.requestUpdate();
+}
+
 /**
  * A context sidebar: a navigation landmark holding a head, sections and a footer, ruled off from each other.
  *
@@ -114,6 +124,26 @@ export class OcelleContextSidebar extends LitElement {
       margin-block-end: 0;
     }
 
+    .compact .head,
+    .compact .footer {
+      display: none;
+    }
+
+    .compact .sections {
+      padding-inline: 0;
+      border: 0;
+    }
+
+    .compact ::slotted(:not([slot]):not([hidden]):not(template, script)) {
+      padding: var(--ocelle-space-1) !important;
+      margin-inline: 0 !important;
+      border: 0 !important;
+    }
+
+    .compact ::slotted(:not([slot]):not([hidden]):is(h1, h2, h3, h4, h5, h6, [role="heading"], ocelle-section-header)) {
+      display: none !important;
+    }
+
     @media not (forced-colors: active) {
       :host {
         background-color: var(--ocelle-color-rail);
@@ -156,7 +186,7 @@ export class OcelleContextSidebar extends LitElement {
     const footer = !this.#slots.empty("footer");
     // A divider lies between two adjacent filled parts: the sections wrapper carries the one after the head and the one
     // before the footer; with no sections, the head carries the one before the footer.
-    return html`<div class="layout">
+    return html`<div class=${classMap({ layout: true, compact: compactSidebars.has(this) })}>
       <div class=${classMap({ head: true, empty: !head, divided: !sections && footer })}><slot name="head"></slot></div>
       <div class=${classMap({ sections: true, empty: !sections, "after-head": head, "before-footer": footer })}><slot></slot></div>
       <div class=${classMap({ footer: true, empty: !footer })}><slot name="footer"></slot></div>
