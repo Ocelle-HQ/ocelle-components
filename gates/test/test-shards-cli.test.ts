@@ -203,7 +203,12 @@ describe("shard CLI decisions", () => {
   it("fails closed when a tool rejects without supplying an Error", async () => {
     const { tools, errors, messages } = fixture();
     const io = { out: (line: string) => messages.push(line), err: (line: string) => errors.push(line) };
-    expect(await runTestShards(["plan", planPath, "2"], { ...tools, withTests: () => Promise.reject() }, io)).toBe(1);
+    const withTests = () => {
+      const worker = Promise.withResolvers<never>();
+      worker.reject();
+      return worker.promise;
+    };
+    expect(await runTestShards(["plan", planPath, "2"], { ...tools, withTests }, io)).toBe(1);
     expect(errors).toEqual(["Unit tests: undefined"]);
     expect(messages).toEqual([]);
   });
