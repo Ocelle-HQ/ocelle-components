@@ -7,7 +7,9 @@ in_scope: [74]
 out_of_scope: [9, 59, 72, 73, 75, 76]
 semver: minor
 spec_prompt: "Mission for #74 (triage/026-form-textarea.md): add ocelle-form-textarea for entering and correcting a multiline reviewer answer, following the existing form-control conventions. Specify value and default, before-first-render submission, reset and native required, disabled and read-only semantics, label, help and errors across the shadow boundary, input and change events, keyboard editing in a dialog, and retained text after a host-rendered failure. Include the public export and manifest, browser and Storybook evidence, light and dark baselines, forced colours, strict CSP, documentation and a minor changelog entry."
-status: proposed
+status: approved
+decided_by: "human:MOES-Media"
+decided_at: 2026-11-22T16:43:06Z
 ---
 
 # Triage 026: Multiline form textarea (#74)
