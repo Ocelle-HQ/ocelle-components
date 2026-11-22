@@ -5,7 +5,8 @@
 //   role="list">` with a `<li role="listitem">` per event holding the decorative marker (`.marker-line`, aria-hidden,
 //   around the `.marker` dot), a decorative `.connector` span (aria-hidden; none on the last item) and a slot the
 //   event is assigned to after each render. With no visible event nothing is rendered. The explicit roles keep the
-//   list semantics in WebKit, which drops an unstyled list's role.
+//   list semantics in WebKit, which drops an unstyled list's role. Each connection renders again, so a change made
+//   while the timeline was detached, which no observer saw, is shown (FR-025).
 // - Name (R-09): `resolveName(host aria-label, label)` of the overflow-region module, on the `<ol>`; a blank host
 //   `aria-label` counts as absent.
 // - Classes (R-10): `has-time` on an item whose event has a time and `next-has-time` on one whose next visible event
@@ -145,13 +146,15 @@ export class OcelleEventTimeline extends LitElement {
   override connectedCallback(): void {
     super.connectedCallback();
     this.#mutations.observe(this, { childList: true, characterData: true, subtree: true, attributes: true, attributeFilter: ["hidden", "aria-hidden", "time", "slot"] });
+    // The observer saw nothing while the timeline was detached, so a connection renders again (phase 3 review R1-11).
+    this.requestUpdate();
   }
 
   // Stryker disable next-line BlockStatement: equivalent, the body's two calls are each equivalent (below), so is leaving out both
   override disconnectedCallback(): void {
     // Stryker disable next-line CallExpression: equivalent, Lit's own disconnection notifies reactive controllers, which this element has none of, and calls setConnected(false) on its child part, which reaches only async directives: its classMap and ifDefined are synchronous
     super.disconnectedCallback();
-    // Stryker disable next-line CallExpression: equivalent, a kept observer re-renders a timeline out of the document, which shows nothing, and observe() on reconnection replaces its options
+    // Stryker disable next-line CallExpression: equivalent, a kept observer only adds renders while the timeline is detached, from the same children as the render connectedCallback requests on reconnection, which decides what is shown; observe() on reconnection replaces its options
     this.#mutations.disconnect();
   }
 

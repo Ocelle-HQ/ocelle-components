@@ -833,7 +833,10 @@ depth under each `listitem`, not from its children only.
   next one's and sets `data-line-end` on each `<li>` whose next item starts a new line, and on the last; the rule
   `li[data-line-end] > .connector { display: none; }` hides that connector. The connector is absolutely positioned in
   padding that exists either way, so toggling it changes no size and the observer should not loop; the write happens
-  in the observer callback. The result depends only on the current layout, so it is the same whatever the history. The
+  in the observer callback. The element compares the offsets exactly: under `align-items: flex-start` the items of one
+  flex line share their block start, so equality decides. The 0.5 px tolerance of phase 3's bodies is the tests'
+  oracle for a line end (a next item more than 0.5 px lower), not a tolerance of the element (phase 3 review R1-06).
+  The result depends only on the current layout, so it is the same whatever the history. The
   phase 3 spike measured it at 1280, 600, 320 and 200 px (#517's column, Q-T5 (b)), after a step's text changes, a step added and hidden, a late web
   font and `dir="rtl"`, against a fresh load (the Result, below).
 - **No observer loop, tested (PLAN-TESTABILITY-1-007).** "Should not loop" is proven by 013's in-process test, in

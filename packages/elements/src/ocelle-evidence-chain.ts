@@ -5,13 +5,14 @@
 //   role="list">` with a `<li role="listitem">` per step holding, for a default step, the decorative marker (`.marker`,
 //   aria-hidden, the step's ordinal inside), a decorative `.connector` span (aria-hidden) and a slot the step is
 //   assigned to after each render. A chip step's `<li>` has class `chip` and no marker. With no visible step nothing is
-//   rendered. The explicit roles keep the list semantics in WebKit, which drops an unstyled list's role.
+//   rendered. The explicit roles keep the list semantics in WebKit, which drops an unstyled list's role. Each
+//   connection renders again, so a change made while the chain was detached, which no observer saw, is shown (FR-025).
 // - Name (R-09): `resolveName(host aria-label, label)` of the overflow-region module, on the `<ol>`; a blank host
 //   `aria-label` counts as absent.
 // - Ordinals (SPEC-3-02): a default step's 1-based position among the visible steps, chip steps counted.
-// - Line ends (R-12): from one `ResizeObserver` on the `<ol>` and every `<li>`, observed after each render (which
-//   delivers once), each `<li>` whose next `<li>` starts lower, and the last, gets `data-line-end`, which hides its
-//   connector. The connector lies in the `<li>`'s trailing padding, which exists either way, so the write changes no
+// - Line ends (R-12): from one `ResizeObserver` on the `<ol>` and every `<li>`, observed after each render and kept
+//   across a disconnection, each `<li>` whose next `<li>` starts lower, and the last, gets `data-line-end`, which hides
+//   its connector. The connector lies in the `<li>`'s trailing padding, which exists either way, so the write changes no
 //   size and the observer does not loop.
 // - Look (R-12; spike § 2): a wrapping flex row, `--ocelle-space-3` between lines; each `<li>` reserves a
 //   `--ocelle-size-step` line box, the marker a round `--ocelle-size-step` box ringed by `--ocelle-ring-step` in
@@ -188,14 +189,18 @@ export class OcelleEvidenceChain extends LitElement {
   override connectedCallback(): void {
     super.connectedCallback();
     this.#mutations.observe(this, { childList: true, subtree: true, attributes: true, attributeFilter: ["hidden", "aria-hidden", "variant"] });
+    // The mutation observer saw nothing while the chain was detached, so a connection renders again (review R1-01).
+    this.requestUpdate();
   }
 
+  // The size observer is kept across a disconnection (review R1-03): it observes only the chain's own shadow nodes,
+  // which leave the document with it, so a chain moved to another parent goes on deciding its line ends.
+  // Stryker disable next-line BlockStatement: equivalent, the body's two calls are each equivalent (below), so is leaving out both
   override disconnectedCallback(): void {
     // Stryker disable next-line CallExpression: equivalent, Lit's own disconnection notifies reactive controllers, which this element has none of, and calls setConnected(false) on its child part, which reaches only async directives: its ifDefined is synchronous
     super.disconnectedCallback();
-    // Stryker disable next-line CallExpression: equivalent, a kept observer re-renders a chain out of the document, which shows nothing, and observe() on reconnection replaces its options
+    // Stryker disable next-line CallExpression: equivalent, a kept observer only adds renders while the chain is detached, from the same children as the render connectedCallback requests on reconnection, which decides what is shown; observe() on reconnection replaces its options
     this.#mutations.disconnect();
-    this.#sizes.disconnect();
   }
 
   override attributeChangedCallback(name: string, old: string | null, value: string | null): void {
@@ -235,8 +240,10 @@ export class OcelleEvidenceChain extends LitElement {
     this.#steps().forEach((step, at) => {
       slots[at]?.assign(step);
     });
-    // Observing a target, anew or again, delivers its size once after the next layout, so the line ends are decided
-    // after every render, in the observer's callback, and again whenever the list or an item changes size.
+    // Observing a new target delivers its size after the next layout; observing one already observed delivers nothing
+    // again. The line ends depend only on the `<li>`s' sizes, their number and the `<ol>`'s size, and the observer
+    // sees each of these change: an added `<li>` is a new target, a removed one reports 0 x 0, and a size change is
+    // delivered. So the line ends are decided in the observer's callback whenever a render or a resize can move them.
     const list = this.renderRoot.querySelector("ol");
     if (list !== null) {
       this.#sizes.observe(list);
