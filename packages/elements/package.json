@@ -26,6 +26,8 @@
     "./ocelle-data-table.js": "./dist/ocelle-data-table.js",
     "./ocelle-event-timeline.js": "./dist/ocelle-event-timeline.js",
     "./ocelle-timeline-event.js": "./dist/ocelle-timeline-event.js",
+    "./ocelle-evidence-chain.js": "./dist/ocelle-evidence-chain.js",
+    "./ocelle-evidence-step.js": "./dist/ocelle-evidence-step.js",
     "./browser.js": "./dist/browser/ocelle-elements.js",
     "./custom-elements.json": "./custom-elements.json"
   },
