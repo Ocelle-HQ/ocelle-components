@@ -63,6 +63,20 @@ describe("ocelle-form-textarea", () => {
     }
   });
 
+  it("stops submitting the answer when its form name is removed", () => {
+    const { field, form } = fixture();
+    const nativeForm = document.createElement("form");
+    const native = document.createElement("textarea");
+    native.name = "answer";
+    native.value = "first\nsecond\nthird";
+    nativeForm.append(native);
+    field.removeAttribute("name");
+    native.removeAttribute("name");
+    expect([field.name, field.hasAttribute("name"), [...new FormData(form).entries()]]).toEqual([
+      native.name, native.hasAttribute("name"), [...new FormData(nativeForm).entries()],
+    ]);
+  });
+
   it("leaves a scheduled label update asynchronous during validation after the first render", async () => {
     const { field, form } = fixture();
     field.required = true;
