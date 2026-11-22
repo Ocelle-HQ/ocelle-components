@@ -80,8 +80,7 @@ export class OcelleFormTextarea extends FormControl {
       this.setAttribute("name", this.name);
     }
     if (property === "required" || property === "disabled" || property === "readOnly") {
-      const attribute = property === "readOnly" ? "readonly" : property;
-      this.toggleAttribute(attribute, this[property]);
+      this.toggleAttribute(property, this[property]);
       this.syncValidity();
     }
   }
@@ -96,7 +95,11 @@ export class OcelleFormTextarea extends FormControl {
 
   override attributeChangedCallback(name: string, old: string | null, value: string | null): void {
     super.attributeChangedCallback(name, old, value);
-    if (name === "value") this.defaultChanged();
+    switch (name) {
+      case "value":
+        this.defaultChanged();
+        break;
+    }
   }
 
   /** @internal A disabled fieldset immediately changes constraint participation. */
