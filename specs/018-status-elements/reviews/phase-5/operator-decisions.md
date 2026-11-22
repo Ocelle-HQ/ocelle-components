@@ -14,3 +14,20 @@ in each axis, proven by the edge-midpoint clicks, and drop the corner clause fro
 Decision: **(a).** The pill radius stays; the target is the control's box, at least `--ocelle-target-small` in each
 axis, proven by the edge-midpoint clicks. The corner clause is dropped from contracts/checks.md § US4-7. No source
 change; T046 closes on that reading.
+
+## Round 1 notes R1-02, R1-03, R1-04
+
+Question (review round 1): R1-02, this phase's `gate:plants --affected` selects 116 of 317 plants (not every plant), so
+operator-plants.md's `--list` route does not apply, yet only `--list` was run; R1-03, the `Stryker disable` at
+`ocelle-pill-tag.ts:498` also suppresses the killed `false` mutant; R1-04, the items deferred to phase 6 are only in
+notes.md.
+
+Decisions:
+
+- **R1-02: run the 116 in fix-1.** `gate:plants -- --affected <phase-5 base>` is run (docker, in the background with a
+  long timeout) and its result recorded in plants.md. operator-plants.md stands as written: `--list` only when every
+  plant is selected through unmapped paths; a narrower selection is run.
+- **R1-03: narrow the disable** so only the equivalent `true` mutant is suppressed.
+- **R1-04: carry the deferred items in tasks.md** (T056, T059): the tooltip half of § US4-10 and its plant "the
+  refocus in `updated()` (not queued)", the `min-inline-size: 0` chain and the disabled text's `overflow-wrap:
+  anywhere`.
