@@ -1,5 +1,5 @@
 Scope: all 5 workspace projects
-✓ Lockfile passes supply-chain policies (verified 1d ago)
+✓ Lockfile passes supply-chain policies (verified 2d ago)
 Lockfile is up to date, resolution step is skipped
 Packages are hard linked from the content-addressable store to the virtual store.
   Content-addressable store is at: <pnpm store>
@@ -8,6 +8,9 @@ Packages: +502
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 Progress: resolved 502, reused 502, downloaded 0, added 502, done
 .../node_modules/rs-module-lexer postinstall$ node postinstall.js
+Update available! 12.16.1 → 12.21.0.
+Changelog: https://pnpm.io/v/12.21.0
+To update, run: curl -fsSL https://get.pnpm.io/install.sh | sh -
 .../node_modules/rs-module-lexer postinstall: Done
 
 devDependencies:
@@ -35,13 +38,13 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 264ms using pnpm v12.16.1
+Done in 214ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /opt/pw-browsers/chromium-1248/chrome-linux64/chrome
 $ node gates/bin/test.ts
-gates/test/integration/plant-repo.test.ts:532: unit-tests: buildTrackedTree (op 023) commits the expanded tree as Plant Base, without plant.json, configuration or node_modules, leaving a clean work tree: Error: not implemented: /tmp/ocelle-tracked-plant-rFSPiV into /tmp/ocelle-tracked-tree-WO0s67
-gates/test/integration/plant-repo.test.ts:560: unit-tests: buildTrackedTree (op 023) gives a git repository with no tracked file for an empty tree/: Error: not implemented: /tmp/ocelle-tracked-plant-42abxa into /tmp/ocelle-tracked-tree-tnP7TN
-gates/test/integration/plant-repo.test.ts:560: unit-tests: buildTrackedTree (op 023) gives a git repository with no tracked file for no tree/: Error: not implemented: /tmp/ocelle-tracked-plant-xDV0da into /tmp/ocelle-tracked-tree-vDxNms
+gates/test/integration/plant-repo.test.ts:532: unit-tests: buildTrackedTree (op 023) commits the expanded tree as Plant Base, without plant.json, configuration or node_modules, leaving a clean work tree: Error: not implemented: /tmp/ocelle-tracked-plant-JlvePd into /tmp/ocelle-tracked-tree-aLKP1v
+gates/test/integration/plant-repo.test.ts:560: unit-tests: buildTrackedTree (op 023) gives a git repository with no tracked file for an empty tree/: Error: not implemented: /tmp/ocelle-tracked-plant-zqDDIm into /tmp/ocelle-tracked-tree-8trsCh
+gates/test/integration/plant-repo.test.ts:560: unit-tests: buildTrackedTree (op 023) gives a git repository with no tracked file for no tree/: Error: not implemented: /tmp/ocelle-tracked-plant-il0LZ8 into /tmp/ocelle-tracked-tree-xLkoSx
 gates/test/integration/plants-robustness.test.ts:178: unit-tests: contrast and brand-rules plants under neighbouring changes has the two gates' plants and the registry's: AssertionError: expected { others: 15, plants: 39 } to deeply equal { others: 16, plants: 39 }
 gates/test/integration/plants.test.ts:90: unit-tests: plant job (gates/bin/plants.ts) plants --root <tmp> runs each plant form through its gate and judges it: AssertionError: expected { code: 1, stdout: [ …(48) ], …(1) } to deeply equal { code: 1, stdout: [ …(51) ], …(1) }
 gates/test/integration/plants.test.ts:171: unit-tests: plant job (gates/bin/plants.ts) --affected HEAD judges only the plant whose plant.json changed since HEAD, and names HEAD in its summary: AssertionError: expected { code: 1, stdout: [ …(48) ], …(1) } to deeply equal { code: 1, stdout: [ …(51) ], …(1) }
