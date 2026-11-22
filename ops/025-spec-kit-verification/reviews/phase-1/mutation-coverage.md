@@ -34,3 +34,10 @@ A strict local Stryker run of `gates/lib/test-evidence.ts:172-200` on `54366017`
 21 compile errors and one survivor. The survivor changed the guard against a nominally passed test that carried
 errors. The added regression case passes on the implementation and fails when that exact guard is replaced by
 `false`. A fresh strict run is needed to confirm the full changed-line scope.
+
+## Representative phase assertion shard
+
+A strict local run on `bda3db6c` checked 88 mutants in `test-evidence.ts:250-279`. It reported 36 compile errors and
+three survivors. Follow-up cases now exercise disjoint changed hunks, the missing helper source at line one, and
+the complete diagnostic for an unrelated failing case. These changes preserve the test-only requirement and
+assertion identity. Rerun the span to confirm all three findings.

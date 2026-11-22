@@ -5,6 +5,8 @@ import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { runTool } from "../lib/spawn.ts";
+import { exactStoryCases, plannedStoryResults, selectStoryTests } from "../lib/story-selection.ts";
+import type { StoryMode } from "../lib/story-selection.ts";
 import { assertionKey, classifyStoryEvidence, decodeCachedEvidence, storyEvidenceKey } from "../lib/test-evidence.ts";
 import type { Assertion, StoryEvidence } from "../lib/test-evidence.ts";
 import { testFile, testRun, withVitest } from "../lib/vitest-run.ts";
@@ -17,7 +19,7 @@ interface Selection {
 }
 
 interface Check {
-  readonly mode: "red" | "base" | "scaffold" | "fix" | "head";
+  readonly mode: StoryMode;
   readonly revision: string;
   readonly overlay?: string | undefined;
   readonly expected: readonly Assertion[];
@@ -46,6 +48,7 @@ const environment: NodeJS.ProcessEnv = { ...process.env, CI: "true" };
 const trackedRunner = [
   "gates/bin/story-evidence.ts",
   "gates/lib/test-evidence.ts",
+  "gates/lib/story-selection.ts",
   "gates/lib/vitest-run.ts",
   "gates/lib/spawn.ts",
   ".specify/extensions/story/story-config.yml",
@@ -87,43 +90,22 @@ function invalid(problem: string): StoryEvidence {
   return { status: "invalid", assertions: [], problem };
 }
 
-const testName = /\.(?:test|spec)\.[cm]?[jt]sx?$/;
-
 async function worker(inputPath: string, outputPath: string): Promise<void> {
   const input = readJson(inputPath) as WorkerInput;
   const result = await withVitest(root, async (context) => {
     const specs = await context.globTestSpecifications();
-    const inventory = specs.map((spec) => testFile(root, spec));
-    const available = new Set(inventory.map(({ file }) => file));
-    const changedTests = input.changed.filter((file) => available.has(file));
-    const absent = input.changed.find((file) => testName.test(file) && !available.has(file) && !file.startsWith("gates/plants/"));
-    if (absent !== undefined) return { evidence: invalid(`changed test was not discovered: ${absent}`), selected: [] };
-    if (changedTests.length === 0) return { evidence: invalid("the phase changed no runnable test file"), selected: [] };
-    const changedSupport = input.changed.length > changedTests.length || input.deleted.length > 0;
-    const extra = input.extra.filter((file) => available.has(file));
-    if (input.mode === "head" && extra.length !== input.extra.length) {
-      return { evidence: invalid("test-scope.txt names an absent test file"), selected: [] };
-    }
-    const chosen = new Set([...changedTests, ...extra]);
-    const proof = input.mode === "base" || input.mode === "scaffold" || input.mode === "fix";
-    if (proof && input.expected.length === 0) return { evidence: invalid("no independently proven red assertions are available for replay"), selected: [] };
-    const expectedNames = (project: string, file: string): string[] =>
-      input.expected.filter((assertion) => assertion.file === file && assertion.project === project).map((assertion) => assertion.test);
-    const selectedSpecs = specs.filter((spec) => {
-      const { project, file } = testFile(root, spec);
-      if (!proof) return changedSupport && extra.length === 0 || chosen.has(file);
-      const names = expectedNames(project, file);
-      if (names.length === 0) return false;
-      spec.testNamePattern = new RegExp(`^(?:${names.map((name) => name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})$`);
-      return true;
+    const inventory = specs.map((spec) => ({ ...testFile(root, spec), spec }));
+    const plan = selectStoryTests(inventory, input);
+    if ("problem" in plan) return { evidence: invalid(plan.problem), selected: [] };
+    const selectedSpecs = plan.files.map(({ test, cases }) => {
+      if (cases !== undefined) test.spec.testNamePattern = exactStoryCases(cases);
+      return test.spec;
     });
     const selected = selectedSpecs.map((spec) => testFile(root, spec));
     const run = await context.runTestSpecifications(selectedSpecs);
     const reported = testRun(root, run.testModules, run.unhandledErrors, true);
-    const tested = proof ? { ...reported, files: reported.files.map((file) => ({
-      ...file,
-      tests: file.tests.filter((test) => expectedNames(file.project, file.file).includes(test.name)),
-    })) } : reported;
+    const tested = plannedStoryResults(reported, plan.files);
+    const { changedTests } = plan;
     const knownHelpers = [
       ...input.expected.flatMap((assertion) => assertion.helper?.file ?? []),
       ...tested.files.flatMap((file) => file.tests.flatMap((test) => test.errors.flatMap(({ helperFile }) => helperFile ?? []))),

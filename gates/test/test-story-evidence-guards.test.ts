@@ -56,6 +56,13 @@ describe("phase proof inventory", () => {
     expect(classifyStoryEvidence(proof([module], { expected: [{ ...site, ...other }] }))).toEqual(invalid("expected assertion test or source missing or ambiguous in the replay"));
   });
 
+  it("identifies the unrelated failed suite and case in a wider run", () => {
+    const outside = { ...other, file: "packages/elements/test/other.test.ts" };
+    const sibling = { ...module, ...outside, state: "failed", tests: [failed] } satisfies TestFileResult;
+    expect(classifyStoryEvidence(proof([module, sibling], { selected: [file, outside] })))
+      .toEqual(invalid(`unrelated failure in ${outside.file}: ${name}`));
+  });
+
   it("keeps the successful proof when a separate configured case has the same title", () => {
     const report = [module, { ...module, ...other }];
     expect(classifyStoryEvidence(proof(report, { selected: [file, other], expected: [site] }))).toEqual({ status: "green", assertions: [] });
@@ -82,13 +89,18 @@ describe("changed source proof", () => {
     const helper = { helperFile: "test/scenarios/shared.ts", helperLine: 2 };
     const row = { ...failed, errors: [{ ...failure, ...helper }] };
     expect(classifyStoryEvidence(proof([{ ...module, state: "failed", tests: [row] }]))).toEqual(invalid("unlocated helper assertion in test/scenarios/shared.ts:2"));
+    const firstLine = { ...row, errors: [{ ...failure, ...helper, helperLine: 1 }] };
+    expect(classifyStoryEvidence(proof([{ ...module, state: "failed", tests: [firstLine] }])))
+      .toEqual(invalid("unlocated helper assertion in test/scenarios/shared.ts:1"));
   });
 
   it("distinguishes repeated assertion text, including at either edge of a changed hunk", () => {
     const duplicate = { [file.file]: ["it", line, `  ${line}  `, "});"] };
     const duplicateCase = { ...module, state: "failed", tests: [failed] } satisfies TestFileResult;
-    expect(classifyStoryEvidence(proof([duplicateCase], { sources: duplicate })))
-      .toEqual({ status: "red", assertions: [{ ...site, source: { ...site.source, occurrence: 2 } }] });
+    expect(classifyStoryEvidence(proof([duplicateCase], {
+      sources: duplicate,
+      changedLines: { [file.file]: [{ start: 1, end: 1 }, { start: 3, end: 3 }] },
+    }))).toEqual({ status: "red", assertions: [{ ...site, source: { ...site.source, occurrence: 2 } }] });
     expect(classifyStoryEvidence(proof([duplicateCase], { sources: duplicate, expected: [site] }))).toEqual(invalid("expected assertion failures did not match replayed failures"));
     const earlier = { ...duplicateCase, tests: [{ ...failed, errors: [{ ...failure, line: 2 }] }] };
     expect(classifyStoryEvidence(proof([earlier], { sources: duplicate })))

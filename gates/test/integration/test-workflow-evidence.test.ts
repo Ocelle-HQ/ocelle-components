@@ -9,6 +9,7 @@ const repository = resolve(import.meta.dirname, "../../..");
 const storyFiles = [
   "gates/bin/story-evidence.ts",
   "gates/lib/test-evidence.ts",
+  "gates/lib/story-selection.ts",
   "gates/lib/vitest-run.ts",
   "gates/lib/spawn.ts",
   ".specify/extensions/story/story-config.yml",
