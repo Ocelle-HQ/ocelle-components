@@ -1,0 +1,12 @@
+# Squad round 1 verify 1
+
+| ID | Status | Reason |
+|----|--------|--------|
+| PLAN-A11Y-SECURITY-1-001 | resolved | FR-004 requires cues that survive forced colours. Research specifies a token-width dashed boundary for read-only, preserves its focus ring and the thicker invalid mark, and excludes effective disabled state from the dashed treatment. Plan step 5 exercises the same field across the four states. |
+| PLAN-A11Y-SECURITY-1-002 | resolved | FR-006 and SC-002 require a polite new-error announcement without moving focus or changing the value. Plan step 5 checks the announcement while Submit stays focused, then checks removal of the error from the accessible description. Research identifies the existing announcement probe. |
+| PLAN-CORRECTNESS-1-001 | resolved | Research specifies immediate reflection and validity updates for constraints, value, default, reset, restore and fieldset state, with a localized native required message and an inner control anchor once rendered. Plan step 2 compares real early submit, immediate correction and reset with a native textarea, including read-only and disabled participation. |
+| PLAN-CORRECTNESS-1-002 | resolved | FR-002 and the data model establish LF normalization at default, property and restoration boundaries, and reset uses the normalized default. SC-001 and plan step 4 distinguish exact LF FormData from native-equivalent CRLF on the URL-encoded wire. |
+| PLAN-CORRECTNESS-1-003 | resolved | FR-007 and plan step 5 include disabled along with editable, invalid and read-only. SC-003 requires pinned light and dark baseline coverage for the specified states instead of a count. |
+| PLAN-FRESH-1-002 | resolved | The contract and research require immediate name reflection, including before render, and preserve absent defaults during construction. Scenario 1 and plan step 2 exercise a script-created field configured through name and value properties. |
+| PLAN-TESTABILITY-1-001 | resolved | SC-001 and plan step 4 require actual same-task requestSubmit and FormData capture inside the listener, checking that the inner control has not rendered. Both browser projects use the synchronous in-page operation, and a break check defers synchronization deliberately to demonstrate sensitivity. |
+| PLAN-TESTABILITY-1-003 | resolved | Plan step 1 requires a named assertion of the native editing control before locator operations, even with the inert scaffold. It explicitly rejects locator timeouts, import failures and setup failures as evidence and retains the exact focused red output. |
