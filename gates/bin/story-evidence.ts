@@ -4,6 +4,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, renameS
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, isAbsolute, join, resolve } from "node:path";
+import type { Vitest } from "vitest/node";
 import { runTool } from "../lib/spawn.ts";
 import type { ToolRun } from "../lib/spawn.ts";
 import { browserIdentity, checkKey as phaseCacheKey } from "../lib/story-cache.ts";
@@ -44,6 +45,10 @@ interface CheckResult {
   readonly selected: readonly { project: string; file: string }[];
 }
 
+type WorkerContext = Pick<Vitest, "globTestSpecifications" | "runTestSpecifications">;
+type WorkerResult = Pick<CheckResult, "evidence" | "selected">;
+type WorkerRunner = (root: string, operation: (context: WorkerContext) => Promise<WorkerResult>, includeTaskLocation: boolean) => Promise<WorkerResult>;
+
 export interface PhaseRequest {
   readonly mode: "red" | "check";
   readonly feature: string;
@@ -82,9 +87,28 @@ export interface CheckTools {
   readonly worker: (cwd: string, input: string, output: string) => Promise<ToolRun>;
 }
 
+export interface StoryCommandTools extends Pick<PhaseTools, "root" | "git" | "emit"> {
+  readonly phase: (request: PhaseRequest) => Promise<void>;
+  readonly worker: (input: string, output: string) => Promise<void>;
+  readonly failure: (message: string) => void;
+}
+
+export function storyEnvironment(inherited: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+  return { ...inherited, CI: "true" };
+}
+
 const root = process.cwd();
 const path = import.meta.filename;
-const environment: NodeJS.ProcessEnv = { ...process.env, CI: "true" };
+const environment = storyEnvironment(process.env);
+
+export const storyFiles = {
+  exists: existsSync,
+  read: (filename: string) => readFileSync(filename, "utf8"),
+  write: (filename: string, text: string): void => { writeFileSync(filename, text); },
+  tempDir: () => mkdtempSync(join(tmpdir(), "ocelle-story-")),
+  mkdir: (directory: string): void => { mkdirSync(directory, { recursive: true }); },
+  remove: (target: string, recursive = false): void => { rmSync(target, { force: true, recursive }); },
+};
 
 function git(args: readonly string[], cwd = root): string {
   // Stryker disable next-line all: process boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "runs real clean-worktree red, base and green checks and refuses malformed cache reuse"
@@ -119,9 +143,9 @@ function invalid(problem: string): StoryEvidence {
   return { status: "invalid", assertions: [], problem };
 }
 
-async function worker(inputPath: string, outputPath: string): Promise<void> {
+export async function replayStoryWorker(root: string, inputPath: string, outputPath: string, runVitest: WorkerRunner): Promise<void> {
   const input = readJson(inputPath) as WorkerInput;
-  const result = await withVitest(root, async (context) => {
+  const result = await runVitest(root, async (context) => {
     const specs = await context.globTestSpecifications();
     const inventory = specs.map((spec) => ({ ...testFile(root, spec), spec }));
     const plan = selectStoryTests(inventory, input);
@@ -141,14 +165,14 @@ async function worker(inputPath: string, outputPath: string): Promise<void> {
     ];
     const sources = [...new Set([...changedTests, ...knownHelpers])].flatMap((file) => {
       const path = resolve(root, file);
-      return path.startsWith(`${root}/`) && existsSync(path) ? [[file, readFileSync(path, "utf8").split(/\r?\n/)] as const] : [];
+      return path.startsWith(`${root}/`) && storyFiles.exists(path) ? [[file, storyFiles.read(path).split(/\r?\n/)] as const] : [];
     });
     const evidence = classifyStoryEvidence({
       run: tested,
       selected,
       changedTests,
       expected: input.expected,
-      allowMissingModule: input.mode === "base" && input.missingModules.length > 0,
+      allowMissingModule: input.mode === "base",
       missingModules: input.missingModules,
       changedLines: input.changedLines,
       sources: Object.fromEntries(sources),
@@ -156,7 +180,6 @@ async function worker(inputPath: string, outputPath: string): Promise<void> {
     return { evidence, selected };
   }, true);
   writeJson(outputPath, result);
-  process.exitCode = 0; // A red assertion is represented in the result, not as a crashed worker.
 }
 
 function scope(dir: string, tools: PhaseTools): string[] {
@@ -333,9 +356,9 @@ function records(dir: string, tools: PhaseTools): { name: string; sha: string }[
   });
 }
 
-function emit(value: object, filename?: string): void {
+export function emitStoryReport(value: object, filename: string | undefined, print: (message: string) => void): void {
   if (filename !== undefined) writeJson(filename, value);
-  console.log(JSON.stringify(value));
+  print(JSON.stringify(value));
 }
 
 export async function checkPhase(request: PhaseRequest, tools: PhaseTools): Promise<void> {
@@ -431,31 +454,14 @@ export async function checkPhase(request: PhaseRequest, tools: PhaseTools): Prom
   }, out);
 }
 
-if (import.meta.main) {
-  const checkTools: CheckTools = {
-    root, pid: process.pid, now: Date.now, key: checkKey, git, exists: existsSync, readJson, writeJson, rename: renameSync,
-    tempDir: () => mkdtempSync(join(tmpdir(), "ocelle-story-")),
-    writeLog: (filename, log) => { writeFileSync(filename, log); },
-    mkdir: (directory) => { mkdirSync(directory, { recursive: true }); },
-    remove: (target, recursive = false) => { rmSync(target, { force: true, recursive }); },
-    // Stryker disable next-line all: process boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "runs real clean-worktree red, base and green checks and refuses malformed cache reuse"
-    setup: (command, cwd) => runTool("bash", ["-c", command], cwd, environment),
-    // Stryker disable next-line all: process boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "runs real clean-worktree red, base and green checks and refuses malformed cache reuse"
-    worker: (cwd, input, output) => runTool(process.execPath, [path, "worker", input, output], cwd, environment),
-  };
-  const [mode, arg, phase, setup, patterns, label] = process.argv.slice(2);
+export async function runStoryCommand(args: readonly string[], tools: StoryCommandTools): Promise<void> {
+  const [mode, arg, phase, setup, patterns, label] = args;
+  const { root, git, emit } = tools;
   try {
     if (mode === "worker" && arg !== undefined && phase !== undefined) {
-      await worker(arg, phase);
+      await tools.worker(arg, phase);
     } else if ((mode === "red" || mode === "check") && arg !== undefined && phase !== undefined && setup !== undefined && patterns !== undefined) {
-      await checkPhase({ mode, feature: arg, phase, setup, patterns: patterns.split(/\s+/).filter(Boolean), label }, {
-        root, git, emit,
-        runCheck: (check, command) => runCheck(check, command, checkTools),
-        exists: existsSync,
-        read: (filename) => readFileSync(filename, "utf8"),
-        write: (filename, content) => { writeFileSync(filename, content); },
-        mkdir: (directory) => { mkdirSync(directory, { recursive: true }); },
-      });
+      await tools.phase({ mode, feature: arg, phase, setup, patterns: patterns.split(/\s+/).filter(Boolean), label });
     } else {
       throw new Error("invalid focused story evidence arguments");
     }
@@ -466,8 +472,33 @@ if (import.meta.main) {
     } else if (mode === "red") {
       emit({ phase, status: "fail", red: false, recorded: false, problem: message });
     } else {
-      console.error(message);
-      process.exitCode = 2;
+      tools.failure(message);
     }
   }
+}
+
+if (import.meta.main) {
+  const checkTools: CheckTools = {
+    ...storyFiles, root, pid: process.pid, now: Date.now, key: checkKey, git, readJson, writeJson, rename: renameSync, writeLog: storyFiles.write,
+    // Stryker disable next-line all: process boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "runs real clean-worktree red, base and green checks and refuses malformed cache reuse"
+    setup: (command, cwd) => runTool("bash", ["-c", command], cwd, environment),
+    // Stryker disable next-line all: process boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "runs real clean-worktree red, base and green checks and refuses malformed cache reuse"
+    worker: (cwd, input, output) => runTool(process.execPath, [path, "worker", input, output], cwd, environment),
+  };
+  const emit: PhaseTools["emit"] = (value, filename) => { emitStoryReport(value, filename, console.log); };
+  const [, , ...args] = process.argv;
+  await runStoryCommand(args, {
+    root, git, emit,
+    phase: (request) => checkPhase(request, {
+      ...storyFiles, root, git, emit, runCheck: (check, command) => runCheck(check, command, checkTools),
+    }),
+    worker: async (input, output) => {
+      await replayStoryWorker(root, input, output, withVitest);
+      process.exitCode = 0; // A red assertion is represented in the result, not as a crashed worker.
+    },
+    failure: (message) => {
+      console.error(message);
+      process.exitCode = 2;
+    },
+  });
 }
