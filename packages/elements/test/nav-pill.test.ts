@@ -37,8 +37,10 @@ describe("ocelle-nav-pill", () => {
   it("follows native pointer and keyboard links while top-bar actions stay separate", async () => {
     await driver.mount('<ocelle-top-bar><button id="cta" slot="actions">Create project</button></ocelle-top-bar><ocelle-nav-pill id="pill"></ocelle-nav-pill>');
     const pill = required(document.querySelector("ocelle-nav-pill"));
-    pill.items = [{ label: "Plan", href: "#plan" }, { label: "Work", href: "#work" }];
+    pill.items = [{ label: "Unavailable", href: " " }, { label: "Plan", href: "#plan" }, { label: "Work", href: "#work" }];
     await pill.updateComplete;
+    expect(pill.shadowRoot?.querySelector("nav")?.getAttribute("aria-label")).toBe("Navigation");
+    expect(pill.shadowRoot?.querySelectorAll("a")).toHaveLength(2);
     required(document.getElementById("cta")).focus();
     await commands.press("Tab");
     expect(deepActive()?.getAttribute("href")).toBe("#plan");

@@ -31,6 +31,12 @@ describe("ocelle-breadcrumbs", () => {
     expect(tree.filter((node) => node.role === "navigation").map((node) => node.name)).toEqual(["Pfad"]);
     expect(tree.filter((node) => node.role === "listitem")).toHaveLength(3);
     expect(tree.map((node) => node.name)).not.toContain("/");
+    crumbs.label = " ";
+    await crumbs.updateComplete;
+    expect(crumbs.shadowRoot?.querySelector("nav")?.getAttribute("aria-label")).toBe("Breadcrumb");
+    crumbs.items = [];
+    await crumbs.updateComplete;
+    expect(crumbs.shadowRoot?.querySelector("nav")).toBeNull();
   });
 
   it.each(["ltr", "rtl"])("aligns at logical inline start and keeps wrapped links usable in %s", async (dir) => {
