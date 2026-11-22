@@ -235,3 +235,42 @@ it.each([
     rmSync(root, { force: true, recursive: true });
   }
 }, 80_000);
+
+it("rejects empty green evidence from a worker that exited successfully", () => {
+  const root = fixture();
+  try {
+    for (const file of storyFiles) {
+      mkdirSync(dirname(join(root, file)), { recursive: true });
+      copyFileSync(join(repository, file), join(root, file));
+    }
+    const runner = "gates/bin/story-evidence.ts";
+    const source = readFileSync(join(root, runner), "utf8");
+    const emptyHead = source.replace("  writeJson(outputPath, result);",
+      '  writeJson(outputPath, input.mode === "head" ? { evidence: { status: "green", assertions: [] }, selected: [] } : result);');
+    expect(emptyHead).not.toBe(source);
+    write(root, runner, emptyHead);
+    const feature = "specs/003-empty-report";
+    const reviews = `${feature}/reviews/phase-1`;
+    write(root, "answer.ts", 'export const answer = "old";\n');
+    write(root, `${reviews}/base.sha`, `${commit(root, "base")}\n`);
+    write(root, "test/answer.test.ts", [
+      'import { expect, it } from "vitest";',
+      'import { answer } from "../answer.ts";',
+      'it("keeps the corrected answer", () => {',
+      '  expect(answer).toBe("corrected");',
+      '});',
+    ].join("\n"));
+    write(root, `${reviews}/red-commits`, `phase ${commit(root, "red")}\n`);
+    write(root, "answer.ts", 'export const answer = "corrected";\n');
+    commit(root, "green");
+    const result = node(root, join(root, runner), "check", feature, "1",
+      `ln -s "${join(repository, "node_modules")}" node_modules`, ":(glob)**/*.test.ts");
+    expect({ status: result.status, stderr: result.stderr }).toMatchObject({ status: 0 });
+    expect(JSON.parse(result.stdout) as PhaseResult).toMatchObject({
+      status: "fail", problems: ["final tests on HEAD: focused Vitest worker returned incomplete evidence"],
+      focused: { head: { evidence: { status: "invalid" } } },
+    });
+  } finally {
+    rmSync(root, { force: true, recursive: true });
+  }
+}, 80_000);
