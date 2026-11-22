@@ -21,6 +21,15 @@ afterEach(async () => {
 });
 
 describe("ocelle-disclosure, in process (US1)", { timeout: 60_000 }, () => {
+  it.each(["focus", "click"] as const)("%s() leaves a fresh detached disclosure closed before its first render (T015)", (method) => {
+    const disclosure = document.createElement("ocelle-disclosure");
+    expect([disclosure.isConnected, disclosure.shadowRoot]).toEqual([false, null]);
+    expect(() => {
+      disclosure[method]();
+    }).not.toThrow();
+    expect([disclosure.open === true, disclosure.hasAttribute("open")]).toEqual([false, false]);
+  });
+
   it.each(disclosureScenarios)("$name", async ({ run, expected }) => {
     expect(await run(driver)).toEqual(expected);
   });
