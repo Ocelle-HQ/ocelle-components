@@ -1,6 +1,7 @@
 // Shared discovery and execution for the sharded gate and the isolated Spec Kit checks.
 import { createRequire } from "node:module";
 import { join, relative } from "node:path";
+import { fileURLToPath } from "node:url";
 import type { TestCase, TestModule, TestSpecification, Vitest } from "vitest/node";
 import type { Failure, TestFile, TestRun } from "./test-evidence.ts";
 
@@ -31,8 +32,10 @@ function sourceFrames(module: TestModule, error: TestError): Frame[] {
   // Node stacks use an absolute source path or a file URL, depending on the worker's evaluator.
   const stack = typeof error.stack === "string" ? error.stack : "";
   return stack.split("\n").slice(1).flatMap((frame) => {
-    const parts = /(?:\(|at )(?:file:\/\/)?(\/[^\n]+):(\d+):\d+\)?$/.exec(frame.trim());
-    return parts?.[1] === undefined ? [] : [{ file: decodeURI(parts[1]), line: Number(parts[2]) }];
+    const parts = /(?:\(|at )((?:file:\/\/)?\/[^\n]+):(\d+):\d+\)?$/.exec(frame.trim());
+    if (parts?.[1] === undefined) return [];
+    const file = parts[1].startsWith("file:") ? fileURLToPath(parts[1]) : parts[1];
+    return [{ file, line: Number(parts[2]) }];
   });
 }
 
@@ -76,14 +79,20 @@ export function testRun(root: string, modules: readonly TestModule[], errors: re
   };
 }
 
+// Stryker disable next-line all: process boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "executes a complete configured inventory and compares it with the full Vitest run"
 export async function withVitest<T>(root: string, operation: (context: Vitest) => Promise<T>, includeTaskLocation = false): Promise<T> {
   // Resolve the runner from the tested checkout, even when this script was launched from another revision.
+  // Stryker disable next-line all: process boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "executes a complete configured inventory and compares it with the full Vitest run"
   const require = createRequire(join(root, "package.json"));
+  // Stryker disable next-line all: process boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "executes a complete configured inventory and compares it with the full Vitest run"
   const runner = await import(require.resolve("vitest/node")) as typeof import("vitest/node");
+  // Stryker disable next-line all: process boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "runs real clean-worktree red, base and green checks and refuses malformed cache reuse"
   const context = await runner.createVitest({ root, run: true, watch: false, reporters: [], includeTaskLocation });
+  // Stryker disable next-line all: process boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "executes a complete configured inventory and compares it with the full Vitest run"
   try {
     return await operation(context);
   } finally {
+    // Stryker disable next-line all: process boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "executes a complete configured inventory and compares it with the full Vitest run"
     await context.close();
   }
 }

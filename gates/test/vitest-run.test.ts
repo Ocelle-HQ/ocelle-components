@@ -11,7 +11,10 @@ const nodeProject = { name: "gates" };
 const browserProject = { name: "elements (chromium)" };
 
 type ReportedCase = Pick<TestCase, "fullName" | "location" | "result" | "diagnostic">;
-type ReportedProject = { name: string; browser?: Pick<ProjectBrowser, "parseErrorStacktrace"> };
+interface ReportedProject {
+  name: string;
+  browser?: Pick<ProjectBrowser, "parseErrorStacktrace">;
+}
 type DiagnosticError = NonNullable<TestResult["errors"]>[number];
 
 function diagnostic(duration: number): TestDiagnostic {
@@ -46,7 +49,7 @@ function moduleReport(options: {
 }
 
 function failing(fullName: string, stack?: string, line?: number, duration?: number): ReportedCase {
-  const error = { name: "AssertionError", message: "Expected submitted answer", stack };
+  const error = { name: "AssertionError", message: "Expected submitted answer", ...(stack === undefined ? {} : { stack }) };
   return reportedCase(fullName, { state: "failed", errors: [error] }, line, duration);
 }
 
@@ -65,6 +68,7 @@ describe("Vitest report conversion", () => {
     const tests = [
       fail,
       reportedCase("submission > finishes", { state: "passed", errors: undefined }, 15, 3),
+      reportedCase("submission > throws", { state: "failed", errors: [{ name: "TypeError", message: "invalid receiver" }] }),
       reportedCase("submission > has not run", { state: "pending", errors: undefined }),
       reportedCase("submission > was skipped", { state: "skipped", errors: undefined, note: undefined }),
     ];
@@ -88,6 +92,7 @@ describe("Vitest report conversion", () => {
           tests: [
             { name: "submission > records LF", state: "failed", errors: [{ name: "AssertionError", message: "Expected submitted answer" }] },
             { name: "submission > finishes", state: "passed", errors: [] },
+            { name: "submission > throws", state: "failed", errors: [{ name: "TypeError", message: "invalid receiver" }] },
             { name: "submission > has not run", state: "pending", errors: [] },
             { name: "submission > was skipped", state: "skipped", errors: [] },
           ],
@@ -103,10 +108,11 @@ describe("Vitest report conversion", () => {
         `AssertionError: message mentioning a stack frame (${filename}:11:1)`,
         `    at internal (${root}/node_modules/vitest/index.js:9:4)`,
         "    at external (/work/vitest/runner.ts:9:4)",
-        `    at assertAnswer (${helper}:27:3)`,
+        `    at assertAnswer (${helper}:16:3)`,
         `    at later (${filename}:20:1)`,
         "    at ignored",
-        `    at ${filename}:13:2   `,
+        `    at ${filename}:12:7 with trailing metadata`,
+        `    at ${filename}:13:23   `,
       ].join("\n"), 10),
       failing("submission > starts next", [
         "AssertionError: message",
@@ -117,7 +123,7 @@ describe("Vitest report conversion", () => {
     expect(outcome).toEqual([
       { name: "submission > fails", state: "failed", startLine: 10,
         errors: [{ name: "AssertionError", message: "Expected submitted answer", line: 13,
-          helperFile: "gates/test/scenarios/decision.ts", helperLine: 27 }] },
+          helperFile: "gates/test/scenarios/decision.ts", helperLine: 16 }] },
       { name: "submission > starts next", state: "failed", startLine: 20,
         errors: [{ name: "AssertionError", message: "Expected submitted answer" }] },
     ]);
