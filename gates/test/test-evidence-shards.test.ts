@@ -146,6 +146,7 @@ describe("unit test shard reports", () => {
     { label: "a file error", fields: { errors: [error] }, state: "passed" },
     { label: "a file with no tests", fields: { tests: [] }, state: "passed" },
     { label: "a failed test in an otherwise passed file", fields: { tests: [passed, { ...passed, state: "failed", errors: [error] }] }, state: "failed" },
+    { label: "a nominally passed test with a reported error", fields: { tests: [passed, { ...passed, errors: [error] }] }, state: "passed" },
     { label: "a pending test in an otherwise passed file", fields: { tests: [passed, { ...passed, state: "pending" }] }, state: "pending" },
   ])("rejects $label during verification", ({ fields, state }) => {
     const reports = [firstShard, { ...secondShard, files: [{ ...betaResult, ...fields }] }];

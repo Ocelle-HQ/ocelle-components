@@ -3,7 +3,7 @@ import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { expect, it } from "vitest";
-import type { Assertion, ShardResult, UnitTestPlan } from "../../lib/test-evidence.ts";
+import type { Assertion } from "../../lib/test-evidence.ts";
 
 const repository = resolve(import.meta.dirname, "../../..");
 const storyFiles = [
@@ -27,8 +27,8 @@ function write(root: string, file: string, text: string): void {
   writeFileSync(path, text);
 }
 
-function json<T>(path: string): T {
-  return JSON.parse(readFileSync(path, "utf8")) as T;
+function json(path: string): unknown {
+  return JSON.parse(readFileSync(path, "utf8")) as unknown;
 }
 
 function fixture(): string {
@@ -65,8 +65,8 @@ it("executes a complete configured inventory and compares it with the full Vites
     const plan = join(output, "plan.json");
     const reports = join(output, "reports");
     const planned = node(root, command, "plan", plan, "2");
-    expect(planned.status, planned.stderr).toBe(0);
-    expect(json<UnitTestPlan>(plan)).toMatchObject({
+    expect({ status: planned.status, stderr: planned.stderr }).toMatchObject({ status: 0 });
+    expect(json(plan)).toMatchObject({
       revision,
       inventory: [{ project: "fixture", file: "test/first.test.ts" }, { project: "fixture", file: "test/second.test.ts" }],
     });
@@ -75,8 +75,8 @@ it("executes a complete configured inventory and compares it with the full Vites
     const second = join(reports, "1", "result.json");
     mkdirSync(dirname(first), { recursive: true });
     const firstJob = node(root, command, "run", plan, "0", first);
-    expect(firstJob.status, firstJob.stderr).toBe(0);
-    expect(json<ShardResult>(first)).toMatchObject({ revision, index: 0, files: [{ project: "fixture", state: "passed" }] });
+    expect({ status: firstJob.status, stderr: firstJob.stderr }).toMatchObject({ status: 0 });
+    expect(json(first)).toMatchObject({ revision, index: 0, files: [{ project: "fixture", state: "passed" }] });
 
     const missing = node(root, command, "verify", plan, reports);
     expect(missing.status).toBe(1);
@@ -84,16 +84,16 @@ it("executes a complete configured inventory and compares it with the full Vites
 
     mkdirSync(dirname(second), { recursive: true });
     const secondJob = node(root, command, "run", plan, "1", second);
-    expect(secondJob.status, secondJob.stderr).toBe(0);
+    expect({ status: secondJob.status, stderr: secondJob.stderr }).toMatchObject({ status: 0 });
     const full = join(output, "full-result.json");
     const vitest = join(repository, "node_modules/vitest/vitest.mjs");
     const reporter = join(repository, "gates/reporters/unit-test-inventory.ts");
     const stock = spawnSync(process.execPath, [vitest, "run", `--reporter=${reporter}`], {
       cwd: root, encoding: "utf8", env: { ...process.env, OCELLE_TEST_REPORT: full }, timeout: 60_000,
     });
-    expect(stock.status, stock.stderr).toBe(0);
+    expect({ status: stock.status, stderr: stock.stderr }).toMatchObject({ status: 0 });
     const complete = node(root, command, "verify", plan, reports, full);
-    expect(complete.status, complete.stderr).toBe(0);
+    expect({ status: complete.status, stderr: complete.stderr }).toMatchObject({ status: 0 });
     expect(complete.stdout).toContain("Full and sharded project/file/test results match.");
     expect(complete.stdout).toContain("2 tests passed in 2 files across 2 shards");
   } finally {
@@ -141,38 +141,40 @@ it("runs real clean-worktree red, base and green checks and refuses malformed ca
     const runner = join(root, "gates/bin/story-evidence.ts");
     const data = [feature, "1", `ln -s "${join(repository, "node_modules")}" node_modules`, ":(glob)**/*.test.ts"];
     const red = node(root, runner, "red", ...data, "phase");
-    expect(red.status, red.stderr).toBe(0);
+    expect({ status: red.status, stderr: red.stderr }).toMatchObject({ status: 0 });
     const result = JSON.parse(red.stdout) as RedResult;
     expect(result).toMatchObject({
       recorded: true,
       evidence: {
         status: "red",
         assertions: [
-          { file: "test/answer.test.ts", test: "keeps the corrected answer", source: { line: 5 }, diagnostic: expect.stringContaining("corrected") },
+          { file: "test/answer.test.ts", test: "keeps the corrected answer", source: { line: 5 } },
           { file: "test/answer.test.ts", test: "runs an existing shared scenario for the corrected answer", source: { line: 8 },
-            helper: { file: "test/scenario.ts", line: 3 }, diagnostic: expect.stringContaining("corrected") },
+            helper: { file: "test/scenario.ts", line: 3 } },
         ],
       },
     });
+    expect(result.evidence.assertions[0]?.diagnostic).toContain("corrected");
+    expect(result.evidence.assertions[1]?.diagnostic).toContain("corrected");
     write(root, "answer.ts", 'export const answer = "corrected";\n');
     commit(root, "green");
     const check = () => node(root, runner, "check", ...data);
     const first = check();
-    expect(first.status, first.stderr).toBe(0);
+    expect({ status: first.status, stderr: first.stderr }).toMatchObject({ status: 0 });
     const measured = JSON.parse(first.stdout) as PhaseResult;
     expect(measured).toMatchObject({ status: "pass", problems: [], focused: { base: { resumed: false }, head: { resumed: false } } });
     const resumed = check();
-    expect(resumed.status, resumed.stderr).toBe(0);
+    expect({ status: resumed.status, stderr: resumed.stderr }).toMatchObject({ status: 0 });
     const repeated = JSON.parse(resumed.stdout) as PhaseResult;
     expect(repeated).toMatchObject({ status: "pass", focused: { base: { resumed: true }, head: { resumed: true } } });
 
     const firstLine = readFileSync(join(root, reviews, "check-head.log"), "utf8").split("\n")[1] ?? "";
     const key = (JSON.parse(firstLine) as { input: string }).input;
     const record = join(root, "reports/story-evidence", `${key}.json`);
-    const cached = json<Record<string, unknown>>(record);
+    const cached = json(record) as Record<string, unknown>;
     writeFileSync(record, JSON.stringify({ ...cached, selected: [null], log: "" }));
     const checked = check();
-    expect(checked.status, checked.stderr).toBe(0);
+    expect({ status: checked.status, stderr: checked.stderr }).toMatchObject({ status: 0 });
     expect(JSON.parse(checked.stdout) as PhaseResult).toMatchObject({ status: "pass", focused: { base: { resumed: true }, head: { resumed: false } } });
   } finally {
     rmSync(root, { force: true, recursive: true });

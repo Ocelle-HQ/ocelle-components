@@ -127,7 +127,7 @@ async function worker(inputPath: string, outputPath: string): Promise<void> {
     ];
     const sources = [...new Set([...changedTests, ...knownHelpers])].flatMap((file) => {
       const path = resolve(root, file);
-      return path.startsWith(`${root}/`) && existsSync(path) ? [[file, readFileSync(path, "utf8").split(/\r?\n/)]] : [];
+      return path.startsWith(`${root}/`) && existsSync(path) ? [[file, readFileSync(path, "utf8").split(/\r?\n/)] as const] : [];
     });
     const evidence = classifyStoryEvidence({
       run: tested,
@@ -178,7 +178,8 @@ function browserIdentity(): object | null {
     const require = createRequire(join(root, "package.json"));
     const playwright = require("playwright") as typeof import("playwright");
     const override = process.env.OCELLE_CHROMIUM_PATH;
-    const chromium = realpathSync(override ? override : playwright.chromium.executablePath());
+    const bundled = playwright.chromium.executablePath();
+    const chromium = realpathSync(override === "" ? bundled : override ?? bundled);
     const version = execFileSync(chromium, ["--version"], { encoding: "utf8" }).trim();
     const stat = statSync(chromium);
     if (process.env.OCELLE_CHROMIUM_PATH) return { chromium, version, size: stat.size, modified: stat.mtimeMs };
