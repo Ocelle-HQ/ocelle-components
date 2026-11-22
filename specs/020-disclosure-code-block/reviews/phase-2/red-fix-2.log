@@ -1,9 +1,9 @@
 Scope: all 5 workspace projects
-[WARN] The store at <pnpm-store> is not used because packages cannot be hard linked from it into this project. Using the store at /tmp/.pnpm-store/v11 instead. Set storeDir to choose the store.
+[WARN] The store at <pnpm-store> is not used because packages cannot be hard linked from it into this project. Using the store at <temporary-pnpm-store> instead. Set storeDir to choose the store.
 ✓ Lockfile passes supply-chain policies (verified 2h ago)
 Lockfile is up to date, resolution step is skipped
 Packages are hard linked from the content-addressable store to the virtual store.
-  Content-addressable store is at: /tmp/.pnpm-store/v11
+  Content-addressable store is at: <temporary-pnpm-store>
   Virtual store is at:             node_modules/.pnpm
 Packages: +502
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

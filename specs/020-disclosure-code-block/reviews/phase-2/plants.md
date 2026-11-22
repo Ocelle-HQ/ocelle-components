@@ -37,3 +37,10 @@ and the restore checked byte for byte. Scratch runner in the session scratchpad;
 
 The first run of the last plant used the pattern `FR-025.*focus`, which selected no test (44 skipped); it was run
 again with `FR-025`, recorded above.
+
+## Operator round 2
+
+`pnpm run gate:plants -- --affected cca63571794b57f2e4f1443e6d65c29d0d098d18 --list` exited 0 and selected
+317 of 317 plants. The gate selected every plant because `packages/elements/custom-elements-manifest.config.mjs`
+is unmapped. Required CI judges the full selection under the operator's CI-first decision. The focused source
+mutations exercised for this round are recorded in [round-2-fixes.md](round-2-fixes.md).
