@@ -14,3 +14,10 @@
 - The color-ink plant produced eight additional light differences and matching dark captures. All 13 targeted manifest and Storybook plants produced their expected outcomes.
 - Code lint, test lint, style lint, TypeScript, the element build, the manifest gate and the built-output CSP gate passed.
 - Full hosted checks and independent review remain pending.
+
+## Focus and mutation follow-up
+
+- The initial scoped diagnostic instrumented 65 mutations across the two new elements. It killed 51, rejected 11 at compilation, and reported two survivors and one uncovered branch for a 94.44% score. All three remaining mutations changed public label defaults or the nav pill's blank-label fallback.
+- The added assertions pass for both constructor defaults and the nav pill's blank-label fallback. Each exact source fault failed its intended assertion in an isolated worktree.
+- At 320 px with forced colors active, the long-label nav pill keeps the same focused link after wrapping, has a visible focus ring and avoids page overflow. Disabling the outline failed the new assertion.
+- The combined drawer scenario retains focus on the other control after the first Escape and restores the external opener after the second Escape. The final scoped replay on the scaffold still shows six intended failures and 12 passes. The green browser and touch suite passed 19/19, the build and pack suites passed 5/5, and test lint passed.

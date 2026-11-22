@@ -1,4 +1,4 @@
-Pinned scoped scaffold replay with the final browser tests.
+Pinned scoped scaffold replay with the final browser tests overlaid on the tests-only checkpoint.
  FAIL  |elements (chromium)| packages/elements/test/breadcrumbs.test.ts > ocelle-breadcrumbs > exposes an ordered named trail and a text current page even with its own URL
  FAIL  |elements (chromium)| packages/elements/test/breadcrumbs.test.ts > ocelle-breadcrumbs > aligns at logical inline start and keeps wrapped links usable in ltr
  FAIL  |elements (chromium)| packages/elements/test/breadcrumbs.test.ts > ocelle-breadcrumbs > aligns at logical inline start and keeps wrapped links usable in rtl
@@ -7,4 +7,4 @@ Pinned scoped scaffold replay with the final browser tests.
  FAIL  |elements (chromium)| packages/elements/test/nav-pill.test.ts > ocelle-nav-pill > wraps long labels within its frame and keeps the same focused link
  Test Files  2 failed | 4 passed (6)
       Tests  6 failed | 12 passed (18)
-   Duration  5.48s (worker 78%, tests 20%, import 2%)
+   Duration  5.27s (worker 79%, tests 19%, import 2%)

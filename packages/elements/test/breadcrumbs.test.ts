@@ -37,6 +37,7 @@ describe("ocelle-breadcrumbs", () => {
     crumbs.items = [];
     await crumbs.updateComplete;
     expect(crumbs.shadowRoot?.querySelector("nav")).toBeNull();
+    expect(document.createElement("ocelle-breadcrumbs").label).toBe("Breadcrumb");
   });
 
   it.each(["ltr", "rtl"])("aligns at logical inline start and keeps wrapped links usable in %s", async (dir) => {

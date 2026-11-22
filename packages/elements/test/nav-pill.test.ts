@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { commands } from "vitest/browser";
 import "../src/ocelle-nav-pill.ts";
 import "../src/ocelle-top-bar.ts";
@@ -13,6 +13,10 @@ function required<T>(value: T | null | undefined): T {
 }
 
 describe("ocelle-nav-pill", () => {
+  afterEach(async () => {
+    await commands.emulateForcedColors("none");
+  });
+
   it("exposes a named ordered list, marking only the first current page", async () => {
     await driver.mount('<ocelle-nav-pill id="pill" label="Projektansichten" items="[]"></ocelle-nav-pill>');
     const pill = required(document.querySelector("ocelle-nav-pill"));
@@ -37,6 +41,8 @@ describe("ocelle-nav-pill", () => {
   it("follows native pointer and keyboard links while top-bar actions stay separate", async () => {
     await driver.mount('<ocelle-top-bar><button id="cta" slot="actions">Create project</button></ocelle-top-bar><ocelle-nav-pill id="pill"></ocelle-nav-pill>');
     const pill = required(document.querySelector("ocelle-nav-pill"));
+    expect(pill.label).toBe("Navigation");
+    pill.label = " ";
     pill.items = [{ label: "Unavailable", href: " " }, { label: "Plan", href: "#plan" }, { label: "Work", href: "#work" }];
     await pill.updateComplete;
     expect(pill.shadowRoot?.querySelector("nav")?.getAttribute("aria-label")).toBe("Navigation");
@@ -60,10 +66,16 @@ describe("ocelle-nav-pill", () => {
     pill.items = [{ label: "Projektverwaltungsübersicht".repeat(4), href: "#one" }, { label: "Arbeitsbereiche und Einstellungen", href: "#two" }];
     await pill.updateComplete;
     const first = required(pill.shadowRoot?.querySelector("a"));
-    first.focus();
+    await driver.viewport(320, 400);
+    await commands.emulateForcedColors("active");
+    await commands.press("Tab");
     frame.style.inlineSize = "240px";
     expect(deepActive()).toBe(first);
     expect(frame.scrollWidth).toBe(frame.clientWidth);
+    expect(document.documentElement.scrollWidth).toBe(document.documentElement.clientWidth);
+    const outline = getComputedStyle(first);
+    expect(outline.outlineStyle).toBe("solid");
+    expect(parseFloat(outline.outlineWidth)).toBeGreaterThan(0);
     const second = required(pill.shadowRoot?.querySelector('a[href="#two"]'));
     expect(second.getBoundingClientRect().top).toBeGreaterThan(first.getBoundingClientRect().top);
   });

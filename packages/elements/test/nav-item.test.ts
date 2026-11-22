@@ -148,28 +148,38 @@ describe("ocelle-nav-item", () => {
 });
 
 describe("compact bubble Escape ownership in drawers", () => {
+  afterEach(async () => {
+    await commands.emulateReducedMotion("no-preference");
+  });
+
   async function mountDrawers() {
     await commands.emulateReducedMotion("reduce");
-    await driver.mount('<ocelle-drawer id="overlay" open label="Navigation"><button id="elsewhere">Another control</button><ocelle-nav-item id="nested-nav" compact label="Projects" href="#projects"></ocelle-nav-item></ocelle-drawer><ocelle-drawer id="newer" label="Tools"><button>New control</button></ocelle-drawer>');
+    await driver.mount('<button id="opener">Open navigation</button><ocelle-drawer id="overlay" label="Navigation"><button id="elsewhere">Another control</button><ocelle-nav-item id="nested-nav" compact label="Projects" href="#projects"></ocelle-nav-item></ocelle-drawer><ocelle-drawer id="newer" label="Tools"><button>New control</button></ocelle-drawer>');
     const item = required(document.querySelector("ocelle-nav-item"));
     const drawer = required(document.querySelector<HTMLElementTagNameMap["ocelle-drawer"]>("#overlay"));
     const newer = required(document.querySelector<HTMLElementTagNameMap["ocelle-drawer"]>("#newer"));
     const panel = () => drawer.shadowRoot?.querySelector("dialog");
     item.style.setProperty("--ocelle-tooltip-delay", "0ms");
+    const opener = required(document.getElementById("opener"));
+    const elsewhere = required(document.getElementById("elsewhere"));
+    opener.focus();
+    drawer.open = true;
     await expect.poll(() => panel()?.open).toBe(true);
-    required(document.getElementById("elsewhere")).focus();
-    return { item, panel, newer };
+    elsewhere.focus();
+    return { item, panel, newer, opener, elsewhere };
   }
 
   it("dismisses a hover-only bubble before its drawer while another control has focus", async () => {
-    const { item, panel } = await mountDrawers();
+    const { item, panel, opener, elsewhere } = await mountDrawers();
     await commands.hover("nested-nav", "a");
     await expect.poll(() => bubble(item)?.matches(":popover-open")).toBe(true);
     await commands.press("Escape");
     await expect.poll(() => bubble(item)?.matches(":popover-open")).toBe(false);
     expect(panel()?.open).toBe(true);
+    expect(document.activeElement).toBe(elsewhere);
     await commands.press("Escape");
     await expect.poll(() => panel()?.open).toBe(false);
+    await expect.poll(() => document.activeElement).toBe(opener);
   });
 
   it("gives a newer modal priority over a bubble in the earlier drawer", async () => {
