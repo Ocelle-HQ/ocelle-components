@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { planTestShards, validTestPlan, verifyTestShards } from "../lib/test-evidence.ts";
+import { estimateTestSeconds, planTestShards, validTestPlan, verifyTestShards } from "../lib/test-evidence.ts";
 
 const revision = "a".repeat(40);
 const alpha = { project: "gates", file: "gates/test/alpha.test.ts" };
@@ -98,6 +98,27 @@ describe("unit test shard plans", () => {
     const node = { project: "elements-node", file: "packages/elements/test/node/manifest.test.ts" };
     const plan = planTestShards(revision, [alpha, stories, integration, browser, node, build], 2);
     expect(plan.shards).toEqual([[build, browser], [stories, integration, node, alpha]]);
+  });
+
+  it.each(measuredFiles)("uses rollout timing for $project/$file", ({ project, file, seconds }) => {
+    expect(estimateTestSeconds({ project, file })).toBe(seconds);
+  });
+
+  it.each([
+    { project: "elements-build", seconds: 15 },
+    { project: "storybook-integration", seconds: 15 },
+    { project: "elements-browser", seconds: 10 },
+    { project: "elements (chromium)", seconds: 10 },
+    { project: "gates-integration", seconds: 5 },
+    { project: "tokens-browser", seconds: 5 },
+    { project: "elements-node", seconds: 1 },
+    { project: "gates", seconds: 1 },
+  ])("retains the default estimate for new files in $project", ({ project, seconds }) => {
+    expect(estimateTestSeconds({ project, file: "test/new.test.ts" })).toBe(seconds);
+  });
+
+  it("distinguishes a measured project and file pair from the same file in another project", () => {
+    expect(estimateTestSeconds({ project: "elements (chromium)", file: "packages/elements/test/browser/drawer.test.ts" })).toBe(10);
   });
 
   it("isolates the long visual integration test without losing inventory", () => {

@@ -112,8 +112,23 @@ function sameInventory(expected: readonly TestFile[], actual: readonly TestFile[
   return JSON.stringify(fileKeys(expected)) === JSON.stringify(fileKeys(actual));
 }
 
-function weight(file: TestFile): number {
-  // A starting estimate for projects with browser navigation or a build. The matrix records actual file timing.
+// Unit tests rollout run 45046420891 exposed a small group taking over two minutes per file.
+// These whole-second estimates use its six shard reports. Other and newly discovered files use project estimates.
+const measuredSeconds = new Map([
+  [fileKey({ project: "gates-integration", file: "gates/test/integration/visual.test.ts" }), 2095],
+  [fileKey({ project: "gates-integration", file: "gates/test/integration/axe.test.ts" }), 530],
+  [fileKey({ project: "elements-browser", file: "packages/elements/test/browser/drawer.test.ts" }), 349],
+  [fileKey({ project: "elements (chromium)", file: "packages/elements/test/drawer.test.ts" }), 332],
+  [fileKey({ project: "elements-browser", file: "packages/elements/test/browser/dialog.test.ts" }), 309],
+  [fileKey({ project: "elements (chromium)", file: "packages/elements/test/dialog.test.ts" }), 293],
+  [fileKey({ project: "elements-browser", file: "packages/elements/test/browser/notice.test.ts" }), 193],
+  [fileKey({ project: "storybook-integration", file: "storybook/test/integration/elements-stories.test.ts" }), 192],
+  [fileKey({ project: "elements-browser", file: "packages/elements/test/browser/button.test.ts" }), 155],
+]);
+
+export function estimateTestSeconds(file: TestFile): number {
+  const measured = measuredSeconds.get(fileKey(file));
+  if (measured !== undefined) return measured;
   if (file.project === "elements-build" || file.project === "storybook-integration") return 15;
   if (file.project.startsWith("elements") && file.project !== "elements-node") return 10;
   if (file.project.endsWith("-browser") || file.project.endsWith("-integration")) return 5;
@@ -128,11 +143,11 @@ export function planTestShards(revision: string, inventory: readonly TestFile[],
   }
 
   const bins = Array.from({ length: count }, () => ({ files: [] as TestFile[], weight: 0 }));
-  const ranked = [...sorted].sort((left, right) => weight(right) - weight(left));
+  const ranked = [...sorted].sort((left, right) => estimateTestSeconds(right) - estimateTestSeconds(left));
   for (const entry of ranked) {
     const smallest = bins.reduce((left, right) => right.weight < left.weight ? right : left);
     smallest.files.push(entry);
-    smallest.weight += weight(entry);
+    smallest.weight += estimateTestSeconds(entry);
   }
   return { revision, inventory: sorted, shards: bins.map((bin) => bin.files) };
 }
