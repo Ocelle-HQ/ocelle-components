@@ -1,0 +1,2 @@
+$ node gates/bin/lint.ts
+lint: 355 files checked, no finding

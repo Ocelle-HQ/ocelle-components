@@ -1,0 +1,14 @@
+$ node gates/bin/mutation.ts -- --base b594b7e98bb5480aad9cc8dcf0bd3f7f378f920f --files gates/bin/contrast.ts,packages/elements/scripts/manifest.ts,packages/elements/src/define.ts,packages/elements/src/form-control.ts:1-30
+gates/bin/contrast.ts:116: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/token-gates.test.ts "contrast --root <repo> checks 174 pairs in light and 182 in dark, 163 required per theme"
+packages/elements/scripts/manifest.ts:125: mutation: record: ArrayDeclaration: equivalent, a missing directory then lists one name, "Stryker was here", which is neither an ocelle-*.ts module nor an internal base, so nothing is read and the generator rejects as with none (T025)
+packages/elements/scripts/manifest.ts:49: mutation: compile-error: ArrayDeclaration: replaced by []
+packages/elements/scripts/manifest.ts:51: mutation: compile-error: ArrayDeclaration: replaced by []
+packages/elements/scripts/manifest.ts:129: mutation: compile-error: ArrayDeclaration: replaced by []
+packages/elements/src/form-control.ts:20: mutation: compile-error: ArrayDeclaration: replaced by []
+packages/elements/src/form-control.ts:23: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/form-control.ts:26: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/form-control.ts:27: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/form-control.ts:28: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/form-control.ts:28: mutation: compile-error: ConditionalExpression: replaced by false
+gates/bin/contrast.ts: mutation: zero-mutants: no mutant on the changed lines
+mutation: 51 mutants on the changed lines of 4 files, none survived; 0 timeouts, 9 compile errors, 1 zero-mutant entry; 2 equivalent records

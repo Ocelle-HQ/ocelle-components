@@ -1,0 +1,104 @@
+# fix-7 (O12-01, T025q): hand-applied mutant at packages/elements/src/live.ts:162 (ConditionalExpression -> false), R-08
+# HEAD 0ff98cee3741ed8aafda2af2009ee962d9739d14, 2026-11-20T13:13:54Z
+# vitest's RUN banner shows the checkout path; it is written here as <repo>. ANSI colour codes are stripped.
+
+## The mutant's diff
+$ git diff -- packages/elements/src/live.ts
+diff --git a/packages/elements/src/live.ts b/packages/elements/src/live.ts
+index 81ae3032..511839ca 100644
+--- a/packages/elements/src/live.ts
++++ b/packages/elements/src/live.ts
+@@ -159,7 +159,7 @@ export class Announcer {
+   trigger(reset: boolean): void {
+     if (reset) this.forget();
+     this.waitNext = true;
+-    if (this.phase === "releasing") return;
++    if (false) return;
+     if (this.phase === "holding") this.releaseHeld();
+     else this.wait();
+   }
+
+## The new test with the mutant applied
+$ pnpm exec vitest run --project elements packages/elements/test/announcer.test.ts -t "keeps the pending release when a second trigger"
+
+ RUN  v5.0.5 <repo>
+
+ ❯ |elements (chromium)| packages/elements/test/announcer.test.ts (20 tests | 1 failed | 19 skipped) 212ms
+   ❯ the hold (5)
+     × keeps the pending release when a second trigger comes while the copy waits for its minimum hold, so the copy is emptied at W from its write and the wait runs W from the empty state 209ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |elements (chromium)| packages/elements/test/announcer.test.ts > the hold > keeps the pending release when a second trigger comes while the copy waits for its minimum hold, so the copy is emptied at W from its write and the wait runs W from the empty state
+AssertionError: expected { atSecondTrigger: 'A', …(4) } to deeply equal { atSecondTrigger: 'A', …(4) }
+
+Failure screenshot:
+  - .vitest/attachments/failure-screenshots/announcer.test.ts/the-hold---keeps-the-pending-release-when-a-second-trigger-comes-while-the-copy-waits-for-its-minimum-hold--so-the-copy-is-emptied-at-W-from-its-write-and-the-wait-runs-W-from-the-empty-state.png
+
+- Expected
++ Received
+
+  {
+-   "atMinimum": "",
++   "atMinimum": "A",
+    "atSecondTrigger": "A",
+    "beforeMinimum": "A",
+-   "beforeWait": "",
++   "beforeWait": "B",
+    "written": "B",
+  }
+
+ ❯ packages/elements/test/announcer.test.ts:195:97
+    193|     const beforeWait = copy(announcer);
+    194|     vi.advanceTimersByTime(1);
+    195|     expect({ atSecondTrigger, beforeMinimum, atMinimum, beforeWait, wr…
+       |                                                                                                 ^
+    196|       atSecondTrigger: "A",
+    197|       beforeMinimum: "A",
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=cecb84d6:4120:35
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=cecb84d6:5237:26
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=cecb84d6:5725:20
+ ❯ runWithCancel node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=cecb84d6:5720:10
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=cecb84d6:5709:20
+ ❯ runWithTimeout node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=cecb84d6:5673:10
+ ❯ node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-L7wAMApE.js?v=cecb84d6:6245:64
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 19 skipped (20)
+   Start at  13:13:56
+   Duration  2.31s (worker 48%, tests 48%, import 3%)
+
+exit code: 1
+
+## live.ts restored by path
+$ git checkout -- packages/elements/src/live.ts && git diff --stat HEAD -- packages/elements/src/
+(empty: no source change)
+
+## The new test on the current source
+$ pnpm exec vitest run --project elements packages/elements/test/announcer.test.ts -t "keeps the pending release when a second trigger"
+
+ RUN  v5.0.5 <repo>
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed | 19 skipped (20)
+   Start at  13:14:08
+   Duration  1.06s (worker 91%, import 7%, tests 3%)
+
+exit code: 0
+
+## The whole file on the current source
+$ pnpm exec vitest run --project elements packages/elements/test/announcer.test.ts
+
+ RUN  v5.0.5 <repo>
+
+
+ Test Files  1 passed (1)
+      Tests  20 passed (20)
+   Start at  13:14:11
+   Duration  1.03s (worker 87%, tests 8%, import 5%)
+
+exit code: 0

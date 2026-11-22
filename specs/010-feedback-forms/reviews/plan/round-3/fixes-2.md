@@ -1,0 +1,7 @@
+# Squad round 3: fixes 2
+
+Applies the unresolved row of `verify-1.md`.
+
+| ID | Resolution | Where |
+|----|------------|-------|
+| PLAN-FRESH-3-002 | fixed | data-model.md: field *alert baseline pending* now records its trigger (none / `insertion or reveal` / `role change` / `became live`); the `tone` row and both ordinary light-DOM-mutation rows, and both ordinary live-role-change rows, carry "alert baseline pending is none", with separate pending rows for `tone` and light-DOM mutation (none), so each event matches one row; three pending rows for a role change away from `alert` that keeps the notice live (insertion or reveal: baseline none, announce with the new politeness; role change: compare text and politeness with the pre-change baseline; became live: baseline := current, none), since Chromium has not serialised the `alert` role and fires no alert event; *Alert path* sets the baseline to none at once for an insertion or a reveal and states the precedence. research.md R-02 § The platform alert event names `tone` and the role change back. spec.md FR-008 *Live host role at runtime*, FR-009 *Platform alert event*, US1-15 (same-task `tone` change count 0; inserted or revealed as `alert` and changed to `status` in one task, count 1 polite). plan.md Constitution Check III, decision 10, phase 2 cells and README item. contracts/testing.md plants "alert pending tone" and "alert pending role". contracts/elements.md, quickstart.md |

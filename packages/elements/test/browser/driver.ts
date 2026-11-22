@@ -21,18 +21,24 @@
 import { inflateSync } from "node:zlib";
 import type { Page } from "playwright";
 import { runningOf } from "../animations.ts";
-import { audit, axNodes, axeSetup, axStateOf, axSubtree, emulate, emulateMotion, movePointer, pointer, press, readActiveElement, readScrollWidth, readTextBoxes } from "../commands.ts";
+import { audit, axDetails, axNodes, axeSetup, axStateOf, axStatesOf, axSubtree, emulate, emulateMotion, movePointer, pointer, press, readActiveElement, readScrollWidth, readTextBoxes, recordAxUpdates } from "../commands.ts";
 import { layoutWait } from "../layout-wait.ts";
+import { fixtureCapture } from "../live.ts";
+import type { Snapshot } from "../live-reading.ts";
 import { activeInnerOf, activePath, characterBoxes, clickElement, computedOf, copyElement, copySentinel, currentOf, dropSentinel, endOrder, focusElement, morphElement, preventNextEvent, recordEvents, resetPage, selectSentinel, selectShadowRun, sentinelId, shadowClientRects, startOrder, takeRecords } from "../page-side.ts";
 import { decodePng } from "../pixels.ts";
 import { heardTypes } from "../scenarios/driver.ts";
-import type { Bounds, Box, Driver, Drawing, ElementTarget, Paint, Part, Placement, Sheets, TreeNode } from "../scenarios/driver.ts";
+import type { Bounds, Box, Drawing, ElementTarget, Entries, FixtureDriver, Heard, InsertHow, Paint, Part, Placement, Sheets, TreeNode, Validity } from "../scenarios/driver.ts";
 import { installProbe } from "../scenarios/probe.ts";
 import type { Probe } from "../scenarios/probe.ts";
 import { policy } from "./serve.ts";
+import type { Served } from "./serve.ts";
 
 /** The most Tab presses `tabOrder` makes before it stops. */
 const maxSteps = 64;
+
+/** The page's helpers (test/page-helpers.ts), which the fixture's init script installed; inside `page.evaluate` only. */
+type Helpers = import("../page-helpers.ts").PageHelpers;
 
 /**
  * Waits in the page for two animation frames, then until every `ocelle-*` element has rendered and the fonts the page
@@ -56,6 +62,54 @@ function settle(page: Page): Promise<void> {
     }
     await new Promise((resolve) => requestAnimationFrame(resolve));
   });
+}
+
+/**
+ * Waits in the page until every `ocelle-*` element has rendered and the fonts have loaded, then for a frame: the wait
+ * of the form and announcement steps of specs/010-feedback-forms (`insert`, `batch`, `type`, `pressOn`, ...), as it was
+ * before 009's two-frame `settle`, so they return one rendering update after their change (the landing's second merge
+ * of main).
+ */
+function updated(page: Page): Promise<void> {
+  return page.evaluate(async () => {
+    const elements = [...document.querySelectorAll("*")].filter((each) => each.localName.startsWith("ocelle-"));
+    await Promise.all(elements.map((each) => (each as unknown as { updateComplete?: Promise<unknown> }).updateComplete ?? Promise.resolve()));
+    await document.fonts.ready;
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+  });
+}
+
+/** The page's time now. */
+const now = (page: Page): Promise<number> => page.evaluate(() => performance.now());
+
+/** Inserts `markup` into the element with `containerId` in the page, as `insert` says for `how`. */
+function insertIn(page: Page, containerId: string, markup: string, how: InsertHow): Promise<void> {
+  return page.evaluate(({ containerId, markup, how }) => {
+    const container = document.getElementById(containerId);
+    if (container === null) throw new Error(`no #${containerId} on the page`);
+    if (how === "innerHTML") container.innerHTML = markup;
+    else if (how === "template") {
+      const template = document.createElement("template");
+      template.innerHTML = markup;
+      container.append(template.content.cloneNode(true));
+    } else if (how === "domparser") {
+      const parsed = new DOMParser().parseFromString(`<!doctype html><body>${markup}`, "text/html");
+      container.append(...[...parsed.body.childNodes].map((node) => document.adoptNode(node)));
+    } else {
+      const parsed = document.createElement("template");
+      parsed.innerHTML = markup;
+      const copy = (node: Node): Node => {
+        if (node instanceof Element) {
+          const made = document.createElement(node.localName);
+          for (const attribute of node.attributes) made.setAttribute(attribute.name, attribute.value);
+          for (const child of node.childNodes) made.append(copy(child));
+          return made;
+        }
+        return document.createTextNode(node.textContent ?? "");
+      };
+      container.append(...[...parsed.content.childNodes].map(copy));
+    }
+  }, { containerId, markup, how });
 }
 
 type ProbeMethod = { [K in keyof Probe]: Probe[K] extends (...args: never[]) => unknown ? K : never }[keyof Probe];
@@ -100,9 +154,7 @@ function deepActive(): string {
 /** The viewport rectangle of a target's border box. */
 function rectOf(page: Page, target: ElementTarget): Promise<{ readonly x: number; readonly y: number; readonly width: number; readonly height: number }> {
   return page.evaluate(({ target }) => {
-    const host = document.getElementById(typeof target === "string" ? target : target.id);
-    const element = typeof target === "string" ? host : host?.shadowRoot?.querySelector(target.inner);
-    if (element === null || element === undefined) throw new Error(`no target ${JSON.stringify(target)} on the page`);
+    const element = (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.resolve(target);
     const rect = element.getBoundingClientRect();
     return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
   }, { target });
@@ -161,16 +213,30 @@ async function pastedText(page: Page): Promise<string> {
   });
 }
 
-/** The driver of `page`; `log` is the page's console and error record, `withBase` whether the page links base.css. */
-export function fixtureDriver(page: Page, log: readonly string[], withBase = false): Driver {
+/**
+ * The driver of `page`; `log` is the page's console and error record, `withBase` whether the page links base.css,
+ * `served` the fixture server (its submission recorder answers `submit`).
+ */
+export function fixtureDriver(page: Page, log: readonly string[], withBase = false, served?: Served): FixtureDriver {
   let since = log.length;
-  return {
+  let lastEnd = 0;
+  let last: readonly Snapshot[] = [];
+  let keyed = false;
+  let seen = served?.submissions().length ?? 0;
+  const capture = fixtureCapture(page);
+  const driver: FixtureDriver = {
     mount: async (markup, options = {}) => {
       if ((options.base === true) !== withBase) throw new Error(`mount ${options.base === true ? "with" : "without"} base.css on a page ${withBase ? "with" : "without"} it`);
       since = log.length;
+      keyed = false;
+      seen = served?.submissions().length ?? 0;
       await page.evaluate(resetPage);
       await page.evaluate(installProbe);
       await page.evaluate((html) => {
+        (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.reset();
+        const holder = globalThis as unknown as { ocelleFormListening?: (() => void)[]; ocelleFormHeard?: unknown[] };
+        for (const stop of (holder.ocelleFormListening ?? []).splice(0)) stop();
+        holder.ocelleFormHeard = [];
         const recorded = window as unknown as { ocelleLastKey?: KeyboardEvent | undefined; ocelleKeys?: boolean };
         if (recorded.ocelleKeys !== true) {
           recorded.ocelleKeys = true;
@@ -208,16 +274,6 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
       }, { id, name, value });
       await settle(page);
     },
-    call: async (id, name) => {
-      await page.evaluate(({ id, name }) => {
-        const element = document.getElementById(id);
-        if (element === null) throw new Error(`no #${id} on the page`);
-        const method = (element as unknown as Record<string, unknown>)[name];
-        if (typeof method !== "function") throw new Error(`#${id} has no method ${name}`);
-        (method as () => unknown).call(element);
-      }, { id, name });
-      await settle(page);
-    },
     attribute: (id, name) => page.evaluate(({ id, name }) => document.getElementById(id)?.getAttribute(name) ?? null, { id, name }),
     style: async (id, property, value) => {
       await page.evaluate(({ id, property, value }) => {
@@ -241,15 +297,14 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
         if (element === null) throw new Error(`no #${id} on the page`);
         return [...element.getClientRects()].map((rect) => ({ x: rect.x, y: rect.y, width: rect.width, height: rect.height }));
       }, id),
-    box: (id, inner) =>
-      page.evaluate(({ id, inner }): Box => {
-        const host = document.getElementById(id);
-        if (host === null) throw new Error(`no #${id} on the page`);
-        const target = inner === undefined ? host : host.shadowRoot?.querySelector(inner);
-        if (target === null || target === undefined) return { x: 0, y: 0, width: 0, height: 0, display: "absent" };
-        const rect = target.getBoundingClientRect();
-        return { x: rect.x, y: rect.y, width: rect.width, height: rect.height, display: getComputedStyle(target).display };
-      }, { id, inner }),
+    box: (target, inner) =>
+      page.evaluate(({ target, inner }): Box => {
+        const host = (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.resolve(target);
+        const measured = inner === undefined ? host : host.shadowRoot?.querySelector(inner);
+        if (measured === null || measured === undefined) return { x: 0, y: 0, width: 0, height: 0, display: "absent" };
+        const rect = measured.getBoundingClientRect();
+        return { x: rect.x, y: rect.y, width: rect.width, height: rect.height, display: getComputedStyle(measured).display };
+      }, { target, inner }),
     drawing: (id) =>
       page.evaluate((id): Drawing => {
         const host = document.getElementById(id);
@@ -320,6 +375,8 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
         if (element === null || element === undefined) throw new Error(`no target ${JSON.stringify(target)} on the page`);
         return getComputedStyle(element).getPropertyValue(property);
       }, { target, property }),
+    computedNode: (target, property) =>
+      page.evaluate(({ target, property }) => getComputedStyle((window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.resolve(target)).getPropertyValue(property), { target, property }),
     resolveColour: (value) =>
       page.evaluate((value) => {
         const probe = document.createElement("span");
@@ -369,6 +426,427 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
         };
       }, selector),
     messages: () => Promise.resolve(log.slice(since)),
+    focusNode: async (target) => {
+      await page.evaluate((target) => {
+        (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.resolve(target).focus();
+      }, target);
+      await settle(page);
+    },
+    pressKeys: async (key, modifiers = []) => {
+      await page.keyboard.press([...modifiers, key].join("+"));
+      await settle(page);
+    },
+    clickTarget: async (target, options = {}) => {
+      const handle = await page.evaluateHandle((target) => (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.resolve(target), target);
+      try {
+        await handle.click({ button: options.button ?? "left", modifiers: [...(options.modifiers ?? [])], clickCount: options.count ?? 1, force: options.force ?? false });
+      } finally {
+        await handle.dispose();
+      }
+      await settle(page);
+    },
+    hoverTarget: async (target) => {
+      const handle = await page.evaluateHandle((target) => (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.resolve(target), target);
+      try {
+        await handle.hover();
+      } finally {
+        await handle.dispose();
+      }
+      await settle(page);
+    },
+    focusedElement: () => page.evaluate(() => (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.focused()),
+    mutate: async (target, steps) => {
+      await page.evaluate(({ target, steps }) => {
+        (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.mutate(target, steps);
+      }, { target, steps });
+      await settle(page);
+    },
+    resize: async (target, inlineSize) => {
+      await page.evaluate(({ target, inlineSize }) => {
+        (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.resolve(target).style.setProperty("inline-size", `${String(inlineSize)}px`);
+      }, { target, inlineSize });
+    },
+    afterResizeDelivery: (target) =>
+      page.evaluate((target) => {
+        const observed = (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.resolve(target);
+        return new Promise<void>((done) => {
+          const observer = new ResizeObserver(() => {
+            observer.disconnect();
+            done();
+          });
+          observer.observe(observed);
+        });
+      }, target),
+    computedPart: (target, which, property) =>
+      page.evaluate(({ target, which, property }) => {
+        const host = (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.resolve(target);
+        const at = which.indexOf("::");
+        const name = at === -1 ? which : which.slice(0, at);
+        const pseudo = at === -1 ? null : which.slice(at);
+        const part = name === "" ? host : host.shadowRoot?.querySelector(`[part~="${name}"]`);
+        if (part === null || part === undefined) throw new Error(`no part ${name} in the shadow root`);
+        return getComputedStyle(part, pseudo).getPropertyValue(property);
+      }, { target, which, property }),
+    scrollOffset: () => page.evaluate(() => ({ x: window.scrollX, y: window.scrollY })),
+    setViewportSize: async (width, height) => {
+      await page.setViewportSize({ width, height });
+      await settle(page);
+    },
+    keydownRecord: () => page.evaluate(() => [...(window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.keydowns]),
+    clipboardCalls: () => page.evaluate(() => [...(window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.clipboard]),
+    activationRecord: async (target, options) => {
+      await page.evaluate(({ target, options }) => {
+        (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.activation(target, options);
+      }, { target, options });
+      return () =>
+        page.evaluate(async () => {
+          await new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)));
+          await new Promise((done) => setTimeout(done, 0));
+          return [...(window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.activations];
+        });
+    },
+    axStates: async (target, scope) => {
+      const session = await page.context().newCDPSession(page);
+      try {
+        return await axStatesOf(session, target, scope);
+      } finally {
+        await session.detach();
+      }
+    },
+    liveCapture: {
+      start: (containerId) => capture.start(containerId),
+      startDocument: (url) => capture.startDocument(new URL(url, page.url()).href),
+      stop: async (options) => {
+        last = await capture.stop(options);
+        return [...last];
+      },
+    },
+    insert: async (containerId, markup, how) => {
+      await insertIn(page, containerId, markup, how);
+      await updated(page);
+    },
+    laterTask: async () => {
+      await page.evaluate(async () => {
+        await new Promise<void>((resolve) => {
+          const channel = new MessageChannel();
+          channel.port1.onmessage = () => {
+            channel.port1.close();
+            resolve();
+          };
+          channel.port2.postMessage(0);
+        });
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+      });
+    },
+    insertInteractive: async (containerId, markup) => {
+      // The page's module script inserts the markup from its DOMContentLoaded listener (fixtures/interactive.js).
+      await page.addInitScript((insertion) => {
+        (globalThis as unknown as { ocelleInteractive: unknown }).ocelleInteractive = insertion;
+      }, { container: containerId, markup });
+      await driver.liveCapture.startDocument("interactive.html");
+      return page.evaluate(() => {
+        const inserted = (globalThis as unknown as { ocelleInserted?: { at: number } }).ocelleInserted;
+        if (inserted === undefined) throw new Error("interactive.html inserted nothing");
+        return inserted.at;
+      });
+    },
+    after: (ms) =>
+      page.evaluate(async ({ from, ms }) => {
+        while (performance.now() < from + ms) await new Promise((resolve) => setTimeout(resolve, from + ms - performance.now()));
+        return performance.now() - from;
+      }, { from: lastEnd, ms }),
+    W: { loaded: 300, loading: 700 },
+    H: 5000,
+    hostRole: (id) => Promise.resolve(last.at(-1)?.hosts.find((host) => host.host === id)?.role ?? "none"),
+    // The phase 2 steps (specs/010-feedback-forms T011).
+    batch: async (operations) => {
+      await page.evaluate((operations) => {
+        const holder = globalThis as unknown as { ocelleRemoved?: Map<string, Element> };
+        const removed = (holder.ocelleRemoved ??= new Map<string, Element>());
+        const byId = (id: string): Element => {
+          const found = document.getElementById(id) ?? removed.get(id);
+          if (found === undefined) throw new Error(`no #${id} on the page`);
+          return found;
+        };
+        for (const operation of operations) {
+          if (operation.op === "insert") byId(operation.container).insertAdjacentHTML("beforeend", operation.markup);
+          else if (operation.op === "text") byId(operation.id).textContent = operation.text;
+          else if (operation.op === "data") {
+            const first = byId(operation.id).firstChild;
+            if (!(first instanceof Text)) throw new Error(`data: #${operation.id} has no text node first`);
+            first.data = operation.data;
+          } else if (operation.op === "attribute") {
+            if (operation.value === null) byId(operation.id).removeAttribute(operation.name);
+            else byId(operation.id).setAttribute(operation.name, operation.value);
+          } else if (operation.op === "property") (byId(operation.id) as unknown as Record<string, unknown>)[operation.name] = operation.value;
+          else if (operation.op === "move") byId(operation.to).append(byId(operation.id));
+          else if (operation.op === "remove") {
+            const target = byId(operation.id);
+            removed.set(operation.id, target);
+            target.remove();
+          } else if (operation.op === "reset") (byId(operation.id) as HTMLFormElement).reset();
+          else (byId(operation.id) as HTMLElement).focus();
+        }
+      }, operations);
+      await updated(page);
+    },
+    property: (id, name) =>
+      page.evaluate(({ id, name }) => {
+        const element = document.getElementById(id);
+        if (element === null) throw new Error(`no #${id} on the page`);
+        const value = (element as unknown as Record<string, unknown>)[name];
+        return typeof value === "string" || typeof value === "number" || typeof value === "boolean" || value === undefined ? value : null;
+      }, { id, name }),
+    computedIn: (id, inner, property) =>
+      page.evaluate(({ id, inner, property }) => {
+        const host = document.getElementById(id);
+        if (host === null) throw new Error(`no #${id} on the page`);
+        const target = host.shadowRoot?.querySelector(inner);
+        return target === null || target === undefined ? "" : getComputedStyle(target).getPropertyValue(property);
+      }, { id, inner, property }),
+    contentBox: (id, inner) =>
+      page.evaluate(({ id, inner }): Bounds => {
+        const host = document.getElementById(id);
+        if (host === null) throw new Error(`no #${id} on the page`);
+        const target = host.shadowRoot?.querySelector(inner);
+        if (target === null || target === undefined) return { x: 0, y: 0, width: 0, height: 0 };
+        const rect = target.getBoundingClientRect();
+        const style = getComputedStyle(target);
+        const px = (name: string): number => Number.parseFloat(style.getPropertyValue(name));
+        const left = px("border-left-width") + px("padding-left");
+        const top = px("border-top-width") + px("padding-top");
+        return {
+          x: rect.x + left,
+          y: rect.y + top,
+          width: rect.width - left - px("padding-right") - px("border-right-width"),
+          height: rect.height - top - px("padding-bottom") - px("border-bottom-width"),
+        };
+      }, { id, inner }),
+    firstLoad: async (containerId, markup, tag) => {
+      // The page's parser-blocking script writes the markup into its container while the document is loading
+      // (fixtures/first-load.js, first-load.html, whose container is #c).
+      if (containerId !== "c") throw new Error(`firstLoad: the first-load pages' container is #c, not #${containerId}`);
+      await page.addInitScript((given) => {
+        (globalThis as unknown as { ocelleFirstLoad: unknown }).ocelleFirstLoad = given;
+      }, { markup: markup.replaceAll("ocelle-first-load", tag) });
+      await driver.liveCapture.startDocument(page.url());
+      await updated(page);
+    },
+    defineSecond: async (tag) => {
+      // A second copy's guarded registration, as src/define.ts makes it: a defined tag is left as it is.
+      await page.evaluate((tag) => {
+        if (customElements.get(tag) === undefined) customElements.define(tag, class extends HTMLElement {});
+      }, tag);
+    },
+    formData: (formId) =>
+      page.evaluate((formId) => {
+        const form = document.getElementById(formId);
+        if (!(form instanceof HTMLFormElement)) throw new Error(`#${formId} is not a form`);
+        return [...new FormData(form)].map(([name, value]) => [name, typeof value === "string" ? value : value.name] as [string, string]);
+      }, formId),
+    submit: async (formId) => {
+      if (served === undefined) throw new Error("submit: the driver has no fixture server");
+      if (!keyed) {
+        await page.evaluate((formId) => {
+          const form = document.getElementById(formId);
+          if (!(form instanceof HTMLFormElement)) throw new Error(`#${formId} is not a form`);
+          const submitter = form.querySelector<HTMLElement>("button:not([type]), button[type=submit], input[type=submit]");
+          if (submitter === null) form.requestSubmit();
+          else submitter.click();
+        }, formId);
+      }
+      keyed = false;
+      const deadline = Date.now() + 1000;
+      while (served.submissions().length <= seen && Date.now() < deadline) await new Promise((resolve) => setTimeout(resolve, 20));
+      const body = served.submissions()[seen];
+      seen = served.submissions().length;
+      return body === undefined ? null : ([...new URLSearchParams(body)] as Entries);
+    },
+    reset: async (formId) => {
+      await page.evaluate((formId) => {
+        const form = document.getElementById(formId);
+        if (!(form instanceof HTMLFormElement)) throw new Error(`#${formId} is not a form`);
+        form.reset();
+      }, formId);
+      await updated(page);
+    },
+    type: async (id, text) => {
+      await page.evaluate((id) => document.getElementById(id)?.focus(), id);
+      await page.keyboard.type(text);
+      await updated(page);
+    },
+    pressOn: async (id, key) => {
+      await page.evaluate((id) => document.getElementById(id)?.focus(), id);
+      keyed = true;
+      await page.keyboard.press(key);
+      await updated(page);
+    },
+    blur: async () => {
+      await page.evaluate(() => {
+        let active = document.activeElement;
+        while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement;
+        (active as HTMLElement | null)?.blur();
+      });
+      await updated(page);
+    },
+    clickPoint: async (id, at) => {
+      const box = await page.evaluate((id) => {
+        const element = document.getElementById(id);
+        if (element === null) throw new Error(`no #${id} on the page`);
+        const rect = element.getBoundingClientRect();
+        return { x: rect.x, y: rect.y };
+      }, id);
+      await page.mouse.click(box.x + at.x, box.y + at.y);
+      await updated(page);
+    },
+    focusChain: () =>
+      page.evaluate(() => {
+        const path: string[] = [];
+        let active: Element | null = document.activeElement;
+        while (active !== null && active !== document.body) {
+          path.push(active.id === "" ? active.localName : `${active.localName}#${active.id}`);
+          active = active.shadowRoot?.activeElement ?? null;
+        }
+        return path;
+      }),
+    // The phase 3 steps (specs/010-feedback-forms T031 to T033).
+    axDetails: async (id) => {
+      const session = await page.context().newCDPSession(page);
+      try {
+        return await axDetails(session, id);
+      } finally {
+        await session.detach();
+      }
+    },
+    axUpdates: async (target) => {
+      const session = await page.context().newCDPSession(page);
+      const stop = await recordAxUpdates(session, target);
+      return async () => {
+        try {
+          return await stop();
+        } finally {
+          await session.detach();
+        }
+      };
+    },
+    listenFor: async (ids, types) => {
+      await page.evaluate(({ ids, types }) => {
+        const holder = globalThis as unknown as { ocelleFormListening?: (() => void)[]; ocelleFormHeard?: unknown[] };
+        const listening = (holder.ocelleFormListening ??= []);
+        const heard = (holder.ocelleFormHeard ??= []);
+        const plain = (value: unknown): unknown => (typeof value === "string" || typeof value === "number" || typeof value === "boolean" ? value : null);
+        const nameOf = (target: EventTarget | null): string => (target instanceof Element ? (target.id === "" ? target.localName : target.id) : "");
+        for (const id of ids) {
+          const target = document.getElementById(id);
+          if (target === null) throw new Error(`no #${id} on the page`);
+          for (const type of types) {
+            const listener = (event: Event): void => {
+              const detail = (event as CustomEvent<unknown>).detail;
+              heard.push({
+                type: event.type,
+                at: id,
+                target: nameOf(event.target),
+                value: plain((target as unknown as Record<string, unknown>).value),
+                detail: detail === undefined || detail === null ? null : structuredClone(detail),
+                bubbles: event.bubbles,
+                composed: event.composed,
+              });
+            };
+            target.addEventListener(type, listener);
+            listening.push(() => {
+              target.removeEventListener(type, listener);
+            });
+          }
+        }
+      }, { ids, types });
+    },
+    heardEvents: () =>
+      page.evaluate(() => {
+        const holder = globalThis as unknown as { ocelleFormHeard?: unknown[] };
+        return (holder.ocelleFormHeard ?? []).splice(0) as Heard[];
+      }),
+    validity: (id) =>
+      page.evaluate((id): Validity => {
+        const element = document.getElementById(id);
+        if (element === null) throw new Error(`no #${id} on the page`);
+        const control = element as unknown as { validity?: ValidityState; validationMessage?: string; willValidate?: boolean };
+        // An element without a validity (one not upgraded, say) reads as no flag set, no message and not validated.
+        const validity = control.validity ?? ({ valid: false, valueMissing: false, typeMismatch: false, patternMismatch: false, tooLong: false, tooShort: false, rangeUnderflow: false, rangeOverflow: false, stepMismatch: false, badInput: false, customError: false });
+        return {
+          valid: validity.valid,
+          valueMissing: validity.valueMissing,
+          typeMismatch: validity.typeMismatch,
+          patternMismatch: validity.patternMismatch,
+          tooLong: validity.tooLong,
+          tooShort: validity.tooShort,
+          rangeUnderflow: validity.rangeUnderflow,
+          rangeOverflow: validity.rangeOverflow,
+          stepMismatch: validity.stepMismatch,
+          badInput: validity.badInput,
+          customError: validity.customError,
+          message: control.validationMessage ?? "",
+          willValidate: control.willValidate ?? false,
+        };
+      }, id),
+    ids: (id, name) =>
+      page.evaluate(({ id, name }) => {
+        const element = document.getElementById(id);
+        if (element === null) throw new Error(`no #${id} on the page`);
+        const value = (element as unknown as Record<string, unknown>)[name];
+        if (value === null || value === undefined) return [];
+        if (value instanceof Element) return [value.id];
+        return [...(value as Iterable<Element>)].map((each) => each.id);
+      }, { id, name }),
+    typeOf: (id, name) =>
+      page.evaluate(({ id, name }) => {
+        const element = document.getElementById(id);
+        if (element === null) throw new Error(`no #${id} on the page`);
+        return typeof (element as unknown as Record<string, unknown>)[name];
+      }, { id, name }),
+    has: (id, name) =>
+      page.evaluate(({ id, name }) => {
+        const element = document.getElementById(id);
+        if (element === null) throw new Error(`no #${id} on the page`);
+        return name in element;
+      }, { id, name }),
+    call: async (id, method, ...args) => {
+      const result = await page.evaluate(({ id, method, args }) => {
+        const element = document.getElementById(id);
+        if (element === null) throw new Error(`no #${id} on the page`);
+        const callee = (element as unknown as Record<string, unknown>)[method];
+        if (typeof callee !== "function") throw new Error(`call: #${id} has no method ${method}`);
+        const value: unknown = Reflect.apply(callee, element, args);
+        return typeof value === "string" || typeof value === "number" || typeof value === "boolean" ? value : null;
+      }, { id, method, args });
+      await settle(page);
+      return result;
+    },
+    propertyIn: (id, inner, name) =>
+      page.evaluate(({ id, inner, name }) => {
+        const target = document.getElementById(id)?.shadowRoot?.querySelector(inner);
+        if (target === null || target === undefined) return null;
+        const value = (target as unknown as Record<string, unknown>)[name];
+        return typeof value === "string" || typeof value === "number" || typeof value === "boolean" ? value : null;
+      }, { id, inner, name }),
+    pseudoIn: (id, inner, pseudo, property) =>
+      page.evaluate(({ id, inner, pseudo, property }) => {
+        const target = document.getElementById(id)?.shadowRoot?.querySelector(inner);
+        return target === null || target === undefined ? "" : getComputedStyle(target, pseudo).getPropertyValue(property);
+      }, { id, inner, pseudo, property }),
+    navigateAwayAndBack: async () => {
+      const record = (): void => {
+        addEventListener("pageshow", (event) => {
+          (globalThis as unknown as { ocellePageshow: boolean }).ocellePageshow = event.persisted;
+        });
+      };
+      await page.addInitScript(record);
+      await page.evaluate(record);
+      await page.goto("about:blank");
+      await page.goBack({ waitUntil: "load" });
+      // The page shown again is a new document: a key step taken on the one left has no submission to take.
+      keyed = false;
+      return page.evaluate(() => (globalThis as unknown as { ocellePageshow?: boolean }).ocellePageshow === true);
+    },
     focus: (id) => page.evaluate(focusElement, id),
     press: (key, modifiers) => press(page, key, modifiers),
     click: async (id, options) => {
@@ -516,16 +994,12 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
       await settle(page);
     },
     scrollLeft: (target) => page.evaluate(({ target }) => {
-      const host = document.getElementById(typeof target === "string" ? target : target.id);
-      const element = typeof target === "string" ? host : host?.shadowRoot?.querySelector(target.inner);
-      if (element === null || element === undefined) throw new Error(`no target ${JSON.stringify(target)} on the page`);
+      const element = (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.resolve(target);
       return element.scrollLeft;
     }, { target }),
     setScrollLeft: async (target, value) => {
       await page.evaluate(({ target, value }) => {
-        const host = document.getElementById(typeof target === "string" ? target : target.id);
-        const element = typeof target === "string" ? host : host?.shadowRoot?.querySelector(target.inner);
-        if (element === null || element === undefined) throw new Error(`no target ${JSON.stringify(target)} on the page`);
+        const element = (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.resolve(target);
         element.scrollTo({ left: value, behavior: "instant" });
       }, { target, value });
       await settle(page);
@@ -533,13 +1007,8 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
     lastKeyPrevented: () => page.evaluate(() => (window as unknown as { ocelleLastKey?: KeyboardEvent }).ocelleLastKey?.defaultPrevented ?? false),
     frameRecord: async (target, read) => {
       const handle = await page.evaluate(({ target, read }) => {
-        const host = document.getElementById(typeof target === "string" ? target : target.id);
-        const subject = typeof target === "string" ? host : host?.shadowRoot?.querySelector(target.inner);
-        if (subject === null || subject === undefined) throw new Error(`no target ${JSON.stringify(target)} on the page`);
-        const of = read.of;
-        const ofHost = of === undefined ? null : document.getElementById(typeof of === "string" ? of : of.id);
-        const source = of === undefined ? subject : typeof of === "string" ? ofHost : ofHost?.shadowRoot?.querySelector(of.inner);
-        if (source === null || source === undefined) throw new Error(`no reading target ${JSON.stringify(of)} on the page`);
+        const subject = (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.resolve(target);
+        const source = read.of === undefined ? subject : (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.resolve(read.of);
         const take = (): string => {
           if ("property" in read) return String((source as unknown as Record<string, unknown>)[read.property]);
           if ("computed" in read) return getComputedStyle(source).getPropertyValue(read.computed);
@@ -824,12 +1293,6 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
       }, { id, changes });
       await settle(page);
     },
-    property: (id, name) =>
-      page.evaluate(({ id, name }) => {
-        const element = document.getElementById(id);
-        if (element === null) throw new Error(`no #${id} on the page`);
-        return (element as unknown as Record<string, unknown>)[name];
-      }, { id, name }),
     textOf: (id, inner) => page.evaluate(({ id, inner }) => document.getElementById(id)?.shadowRoot?.querySelector(inner)?.textContent ?? null, { id, inner }),
     rendered: (id) =>
       page.evaluate((id) => {
@@ -916,4 +1379,22 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
     clientRects: (id, inner) => page.evaluate(shadowClientRects, { id, inner }),
     characters: (id, inner) => page.evaluate(characterBoxes, { id, inner }),
   };
+  // Every step ends at its own page time, from which `after` measures.
+  const step = <T extends (...args: never[]) => Promise<unknown>>(run: T): T =>
+    (async (...args: Parameters<T>) => {
+      try {
+        return await run(...args);
+      } finally {
+        lastEnd = await now(page).catch(() => lastEnd);
+      }
+    }) as T;
+  for (const [name, run] of Object.entries(driver)) {
+    if (typeof run === "function") (driver as unknown as Record<string, unknown>)[name] = step(run as (...args: never[]) => Promise<unknown>);
+  }
+  const live = driver.liveCapture as unknown as Record<string, (...args: never[]) => Promise<unknown>>;
+  for (const name of ["start", "startDocument", "stop"]) {
+    const run = live[name];
+    if (run !== undefined) live[name] = step(run);
+  }
+  return driver;
 }

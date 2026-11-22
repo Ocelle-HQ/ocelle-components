@@ -62,8 +62,8 @@ jobs:
       - uses: ./.github/actions/setup
       - run: pnpm run gate:test-lint
   # Mutation testing (research.md R-08): the plan job prints the shards of the changed lines as JSON, one shard job
-  # runs per entry (at most 45 minutes for a shard with packages/elements/src/ entries, 10 minutes for any other,
-  # FR-013 and op 015), and the verdict job is the check the ruleset requires.
+  # runs per entry (at most 75 minutes for a shard with packages/elements/src/ entries, 10 minutes for any other,
+  # FR-013, op 015 and 010 operator rounds 6 and 8), and the verdict job is the check the ruleset requires.
   mutation-plan:
     name: Mutation plan
     runs-on: ubuntu-24.04
@@ -87,7 +87,7 @@ jobs:
     needs: mutation-plan
     if: needs.mutation-plan.outputs.shards != '[]'
     runs-on: ubuntu-24.04
-    timeout-minutes: ${{ contains(matrix.shard.files, 'packages/elements/src/') && 45 || 10 }}
+    timeout-minutes: ${{ contains(matrix.shard.files, 'packages/elements/src/') && 75 || 10 }}
     strategy:
       fail-fast: false
       matrix:

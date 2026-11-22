@@ -90,6 +90,114 @@
     "plan": "specs/006-storybook-workbench/plan.md"
   },
   {
+    "story": "elements-ocelle-listbox--scrolling-listbox",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-option[value=\"epsilon\"] >>> .label",
+    "reason": "option clipped by the list part's `overflow: auto` scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that removes the clipped options' color-contrast incomplete results of the scrolling listbox story (an axe-core release that treats text clipped by an overflow: auto scroller as hidden, or a change of the story), to be opened by the operator",
+    "plan": "specs/014-selection-input/plan.md"
+  },
+  {
+    "story": "elements-ocelle-listbox--scrolling-listbox",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-option[value=\"zeta\"] >>> .label",
+    "reason": "option clipped by the list part's `overflow: auto` scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that removes the clipped options' color-contrast incomplete results of the scrolling listbox story (an axe-core release that treats text clipped by an overflow: auto scroller as hidden, or a change of the story), to be opened by the operator",
+    "plan": "specs/014-selection-input/plan.md"
+  },
+  {
+    "story": "elements-ocelle-listbox--scrolling-listbox",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-option[value=\"eta\"] >>> .label",
+    "reason": "option clipped by the list part's `overflow: auto` scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that removes the clipped options' color-contrast incomplete results of the scrolling listbox story (an axe-core release that treats text clipped by an overflow: auto scroller as hidden, or a change of the story), to be opened by the operator",
+    "plan": "specs/014-selection-input/plan.md"
+  },
+  {
+    "story": "elements-ocelle-listbox--scrolling-listbox",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-option[value=\"theta\"] >>> .label",
+    "reason": "option clipped by the list part's `overflow: auto` scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that removes the clipped options' color-contrast incomplete results of the scrolling listbox story (an axe-core release that treats text clipped by an overflow: auto scroller as hidden, or a change of the story), to be opened by the operator",
+    "plan": "specs/014-selection-input/plan.md"
+  },
+  {
+    "story": "elements-ocelle-listbox--scrolling-listbox",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-option[value=\"iota\"] >>> .label",
+    "reason": "option clipped by the list part's `overflow: auto` scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that removes the clipped options' color-contrast incomplete results of the scrolling listbox story (an axe-core release that treats text clipped by an overflow: auto scroller as hidden, or a change of the story), to be opened by the operator",
+    "plan": "specs/014-selection-input/plan.md"
+  },
+  {
+    "story": "elements-ocelle-listbox--scrolling-listbox",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-option[value=\"kappa\"] >>> .label",
+    "reason": "option clipped by the list part's `overflow: auto` scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that removes the clipped options' color-contrast incomplete results of the scrolling listbox story (an axe-core release that treats text clipped by an overflow: auto scroller as hidden, or a change of the story), to be opened by the operator",
+    "plan": "specs/014-selection-input/plan.md"
+  },
+  {
+    "story": "elements-ocelle-listbox--scrolling-listbox",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-option[value=\"epsilon\"] >>> .label",
+    "reason": "option clipped by the list part's `overflow: auto` scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that removes the clipped options' color-contrast incomplete results of the scrolling listbox story (an axe-core release that treats text clipped by an overflow: auto scroller as hidden, or a change of the story), to be opened by the operator",
+    "plan": "specs/014-selection-input/plan.md"
+  },
+  {
+    "story": "elements-ocelle-listbox--scrolling-listbox",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-option[value=\"zeta\"] >>> .label",
+    "reason": "option clipped by the list part's `overflow: auto` scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that removes the clipped options' color-contrast incomplete results of the scrolling listbox story (an axe-core release that treats text clipped by an overflow: auto scroller as hidden, or a change of the story), to be opened by the operator",
+    "plan": "specs/014-selection-input/plan.md"
+  },
+  {
+    "story": "elements-ocelle-listbox--scrolling-listbox",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-option[value=\"eta\"] >>> .label",
+    "reason": "option clipped by the list part's `overflow: auto` scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that removes the clipped options' color-contrast incomplete results of the scrolling listbox story (an axe-core release that treats text clipped by an overflow: auto scroller as hidden, or a change of the story), to be opened by the operator",
+    "plan": "specs/014-selection-input/plan.md"
+  },
+  {
+    "story": "elements-ocelle-listbox--scrolling-listbox",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-option[value=\"theta\"] >>> .label",
+    "reason": "option clipped by the list part's `overflow: auto` scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that removes the clipped options' color-contrast incomplete results of the scrolling listbox story (an axe-core release that treats text clipped by an overflow: auto scroller as hidden, or a change of the story), to be opened by the operator",
+    "plan": "specs/014-selection-input/plan.md"
+  },
+  {
+    "story": "elements-ocelle-listbox--scrolling-listbox",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-option[value=\"iota\"] >>> .label",
+    "reason": "option clipped by the list part's `overflow: auto` scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that removes the clipped options' color-contrast incomplete results of the scrolling listbox story (an axe-core release that treats text clipped by an overflow: auto scroller as hidden, or a change of the story), to be opened by the operator",
+    "plan": "specs/014-selection-input/plan.md"
+  },
+  {
+    "story": "elements-ocelle-listbox--scrolling-listbox",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-option[value=\"kappa\"] >>> .label",
+    "reason": "option clipped by the list part's `overflow: auto` scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that removes the clipped options' color-contrast incomplete results of the scrolling listbox story (an axe-core release that treats text clipped by an overflow: auto scroller as hidden, or a change of the story), to be opened by the operator",
+    "plan": "specs/014-selection-input/plan.md"
+  },
+  {
     "story": "elements-ocelle-code-block--scroll-overflowing",
     "theme": "light",
     "rule": "color-contrast-incomplete",

@@ -1,15 +1,18 @@
 // The custom-elements manifest generator (005 FR-007, research.md R-06; reviews/phase-2/spike.md § 2): the analyzer
 // (@custom-elements-manifest/analyzer 0.11.0, a root devDependency) runs in process through its `create` API with its
-// Lit plugin over packages/elements/src/ocelle-*.ts and the overlays' internal base src/overlay.ts (008 research.md
-// R-01), as its CLI does with custom-elements-manifest.config.mjs, and the output is normalised: the internal base's
-// module is removed, so the manifest publishes the element modules only, while the members an element inherits from the
-// base stay listed on it with `inheritedFrom`; every element declaration states its slots, events, CSS parts and CSS
-// custom properties, empty when it has none (FR-007); `IconName` in a type is expanded to the union of the icon names,
-// read from the `IconName` type of src/icons.ts (US1-11); modules are ordered by path, by code point; members and
-// attributes that are not public are dropped, and so is the observed `aria-label` attribute, a standard attribute and
-// not a member (FR-034), unless the element declares it with a description (012 research.md R-15: the controls'
-// moved attributes); every object's keys are sorted, so the file is stable. `node scripts/manifest.ts` (the
-// package's `manifest` script) writes custom-elements.json; the manifest gate (gates/bin/manifest.ts) generates the
+// Lit plugin over packages/elements/src/ocelle-*.ts and the named internal bases, the form controls' src/form-control.ts
+// (specs/010-feedback-forms FR-034, O3-01) and, where present, the overlays' src/overlay.ts (008 research.md R-01), as
+// its CLI does with custom-elements-manifest.config.mjs, and the output is normalised: the internal bases' modules are
+// removed, so the manifest publishes the element modules only, while the members an element inherits from a base stay
+// listed on it with `inheritedFrom` and its superclass names the base, as the analyzer writes them (no fold); a base in
+// any other file of src/ is not read; every element declaration states its slots, events, CSS parts and CSS custom
+// properties, empty when it has none (FR-007); `IconName` in a type is expanded to the union of the icon names, read
+// from the `IconName` type of src/icons.ts (US1-11); modules are ordered by path, by code point; members and attributes
+// that are not public are dropped, and so are the observed `aria-label`, `role`, `hidden`, `form`, `aria-invalid`,
+// `aria-required`, `aria-disabled` and `aria-description` attributes, standard attributes and not members (FR-034;
+// specs/010-feedback-forms FR-034), unless the element declares one with a description (012 research.md R-15: the
+// controls' moved attributes); every object's keys are sorted, so the file is stable. `node scripts/manifest.ts`
+// (the package's `manifest` script) writes custom-elements.json; the manifest gate (gates/bin/manifest.ts) generates the
 // same into memory and compares.
 import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -39,13 +42,14 @@ type Json = Record<string, unknown>;
 const sourceDir = "packages/elements/src";
 const element = /^ocelle-[\w-]+\.ts$/;
 /**
- * The overlays' internal base (008 research.md R-01, operator decision "analyse, then drop it", 2026-11-14): read with
- * the element modules, so the members an element inherits from it are listed on the element with `inheritedFrom`,
- * then removed from the published manifest, which holds no internal module.
+ * The internal bases (008 research.md R-01, operator decision "analyse, then drop it", 2026-11-14; specs/010-feedback-forms
+ * operator round 3, "Main's rule + FormControl", 2026-11-17): read with the element modules, so the members an element
+ * inherits from one are listed on the element with `inheritedFrom`, then removed from the published manifest, which
+ * holds no internal module.
  */
-const internalBase = "overlay.ts";
+const internalBases = ["form-control.ts", "overlay.ts"];
 /** Attributes every element may observe that are standard attributes, not its members (FR-034). */
-const standardAttributes = new Set(["aria-label"]);
+const standardAttributes = new Set(["aria-label", "role", "hidden", "form", "aria-invalid", "aria-required", "aria-disabled", "aria-description"]);
 const memberLists = ["slots", "events", "cssParts", "cssProperties"] as const;
 const iconsFile = "icons.ts";
 const manifestFile = "packages/elements/custom-elements.json";
@@ -127,14 +131,14 @@ export function iconNames(text: string): string[] {
 
 export function generate(root: string): Promise<Manifest> {
   const dir = join(root, sourceDir);
-  // Stryker disable next-line ArrayDeclaration: equivalent, a missing directory then lists one name, "Stryker was here", which is neither an ocelle-*.ts module nor overlay.ts, so nothing is read and the generator rejects as with none (T025)
+  // Stryker disable next-line ArrayDeclaration: equivalent, a missing directory then lists one name, "Stryker was here", which is neither an ocelle-*.ts module nor an internal base, so nothing is read and the generator rejects as with none (T025)
   const names = existsSync(dir) ? readdirSync(dir) : [];
   const files = names.filter((name) => element.test(name));
   if (files.length === 0) return Promise.reject(new Error(`no element module ${sourceDir}/ocelle-*.ts under ${root}`));
-  const read = [...files, ...names.filter((name) => name === internalBase)];
+  const read = [...files, ...names.filter((name) => internalBases.includes(name))];
   const modules = read.map((name) => ts.createSourceFile(`src/${name}`, readFileSync(join(dir, name), "utf8"), ts.ScriptTarget.ES2015, true));
   const analysed = create({ modules, plugins: litPlugin() });
-  const raw = { ...analysed, modules: list(analysed.modules).filter((module) => module.path !== `src/${internalBase}`) };
+  const raw = { ...analysed, modules: list(analysed.modules).filter((module) => !internalBases.some((name) => module.path === `src/${name}`)) };
   const icons = join(dir, iconsFile);
   return Promise.resolve(normalise(raw, existsSync(icons) ? iconNames(readFileSync(icons, "utf8")) : []));
 }

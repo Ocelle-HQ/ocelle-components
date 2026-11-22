@@ -50,13 +50,17 @@ function convention(title: string, rule: string): string {
 
 const fragments = [
   // module and registration (FR-002, R-02)
-  // 013 phase 1 (T010, PLAN-CORRECTNESS-1-012 (a)): the container exception to "no other"
-  "Each element lives in its own module, `src/<tag>.ts`, which ends with one `define(\"<tag>\", <Class>)` call: importing the module defines that element and no other, except that a container module also imports its item element, and importing the package root defines every element",
+  // amended by 014 (research.md R-16): a parent's module also defines the children it owns; this covers 013's
+  // container exception (a container module imports its item element) and 008's rendered icon (merge of main)
+  "Each element lives in its own module, `src/<tag>.ts`, which ends with one `define(\"<tag>\", <Class>)` call: importing the module defines that element and the elements it renders or owns as children, and importing the package root defines every element",
   "`define` (`src/define.ts`, internal) defines a tag only while it is free: a second definition of the same tag does nothing and throws nothing.",
   // static properties and the JSDoc tags (R-01, R-02, R-06)
   "Elements declare their reactive properties with `static override properties = { … }` and `declare` fields, not decorators",
-  "Every element class carries the JSDoc tag `@tagname <tag>`, and every public property a description and `@default undefined`: the manifest takes the tag name and the defaults from them",
+  // restated for the notice's defaults (specs/010-feedback-forms FR-001; analysis I10, I15)
+  "Every element class carries the JSDoc tag `@tagname <tag>`, every public property a description, and every public property that can be set a `@default` tag with the value the property reads before anything sets it, `@default undefined` for an optional one: the manifest takes the tag name and the defaults from them",
   "An element that observes a standard attribute such as `aria-label` adds it to `observedAttributes` without declaring a property, so the manifest does not list it",
+  // the element's own attribute without a property (specs/010-feedback-forms FR-021, FR-034; analysis U6; T034a)
+  "An attribute that is the element's own and has no property of its own, such as `ocelle-form-input`'s `value` (its default value), is declared in the manifest with the class's JSDoc tag `@attribute`, with its type, default and description",
   // styles (FR-003, R-03, R-04, R-09)
   // since 009 (T019, FR-030): the shared sheets and at most one per-instance sheet of measured figures, replacing "one
   // shared stylesheet"
@@ -92,7 +96,8 @@ const fragments = [
   // ocelle-icon's token (FR-007, FR-011, US1-11)
   "`ocelle-icon` reads the token `--ocelle-icon-size`: overriding it on an ancestor resizes every icon in that subtree",
   // engines (FR-008, R-05)
-  // 012 phase 3 (tasks.md T033; research.md R-04): the floor rises to Chromium 135 and WebKit 17.4
+  // 012 phase 3 (tasks.md T033; research.md R-04): the floor rises to Chromium 135 and WebKit 17.4 (014 phase 4 had
+  // raised it to Chromium 125 and WebKit 17.4 for custom states, the line below; the second merge of main)
   "Engine floor: Chromium 135+ and WebKit 17.4+, with no `window.ShadyCSS` polyfill on the page",
   "ARIA element reflection (`ariaControlsElements`, `ariaLabelledByElements`, `ariaDescribedByElements`): Chromium 135, WebKit 16.4 (the controls' ID references)",
   "Custom states (`ElementInternals.states` and `:state()`): Chromium 125, WebKit 17.4 (`ocelle-button`'s moved states)",
@@ -109,16 +114,27 @@ const fragments = [
   "`mask-image`, and `mask-size`, `mask-position`, `mask-origin`, `mask-clip`, `mask-repeat` and `mask-composite`, unprefixed: Chromium 120, WebKit 15.4",
   // forwarded slots, for shell authors (011 FR-036, the spec's Empty slot; research.md R-03 § Forwarded slots; phase 1 review R2-01, landing L1-04)
   "A shell that forwards a slot of its own into an element of this package, such as `<slot name=\"footer\" slot=\"footer\"></slot>` in its shadow root, assigns that `<slot>` element to the element's slot. The element counts it as content even when nothing is assigned to the forwarded slot, so the part takes its wrapper, gap, padding or divider with nothing in it. Forward a slot only when it has content, or remove the forwarding `<slot>` when it has none.",
-  // host ARIA (FR-034, PLAN-A11Y-SECURITY-1-002 (a), 1-003 (a))
-  // since 009 (T019, PLAN-CORRECTNESS-1-005 (a)): the rule scoped per element, replacing the package-wide sentence
+  // host ARIA (FR-034, PLAN-A11Y-SECURITY-1-002 (a), 1-003 (a)), scoped per element: since 009 (T019,
+  // PLAN-CORRECTNESS-1-005 (a)) the first sentence split, for 005's two elements, from the package-wide one, which both
+  // missions replaced (the landing's second merge keeps 009's wording, which states 010's icon and brand-mark rule too),
+  // and the notice's and form controls' rules beside 005's (specs/010-feedback-forms FR-001, FR-009, FR-022; analysis
+  // I10, I14, U10, U11, A5; T034a)
   "A host `aria-label` names the element as `label` does. For `ocelle-icon` and `ocelle-brand-mark`, when present it decides alone: a blank host `aria-label` leaves the element unlabelled even with a `label`",
+  "On a form control a host `aria-label` that is not blank names the control alone; a blank one, empty or whitespace only, is skipped, and the labels and `label` name the control",
   "For `ocelle-scroller`, `ocelle-workflow-board` and `ocelle-workflow-lane` a blank host `aria-label` counts as absent, so `label` still names the element: Chromium names a host from a present `aria-label` and does not fall back from a blank one, so these elements put their role and name on a node in their shadow root, named by the host's non-blank `aria-label`, trimmed, or else by `label`",
   "`ocelle-list-detail` takes no name: a host `aria-label` is not used",
-  "When both are set, the host `aria-label` is the name; removing it falls back to `label`",
-  "Chromium uses a host `aria-label` as written, surrounding spaces included, so pass it trimmed; the element never rewrites it",
-  "A host `aria-hidden=\"true\"` hides the element, labelled or not",
-  "A host `hidden` attribute removes the element: no box and no node, labelled or not",
-  "A host `role` or `aria-hidden=\"false\"` is not supported: name the element with `label` or `aria-label` instead",
+  "On `ocelle-icon` and `ocelle-brand-mark`, when both are set, the host `aria-label` is the name; removing it falls back to `label`",
+  "On `ocelle-icon` and `ocelle-brand-mark`, Chromium uses a host `aria-label` as written, surrounding spaces included, so pass it trimmed; the element never rewrites it",
+  "On a form control the control's name is a host `aria-label` with whitespace collapsed and trimmed, while the host's node keeps it as written, surrounding spaces included, so pass it trimmed with single spaces",
+  "On `ocelle-icon` and `ocelle-brand-mark`, a host `aria-hidden=\"true\"` hides the element, labelled or not",
+  "On `ocelle-icon` and `ocelle-brand-mark`, a host `hidden` attribute removes the element: no box and no node, labelled or not",
+  "On `ocelle-notice` a host `aria-hidden=\"true\"` is not supported: hide the notice with a host `hidden` attribute, which gives it no box and announces nothing while it is set",
+  "On a form control a host `aria-hidden=\"true\"` is not supported, since the control stays focusable: hide the control with a host `hidden` attribute instead",
+  "On `ocelle-icon` and `ocelle-brand-mark`, a host `role` or `aria-hidden=\"false\"` is not supported: name the element with `label` or `aria-label` instead",
+  "On a form control a host `role` or `aria-hidden=\"false\"` is not supported: name the control with `label`, a `<label>` or `aria-label` instead",
+  "`ocelle-notice` takes a host `role` as its section says: `alert` and `status` make it announce, a role that gives its node no live politeness leaves it as without a role, and `log`, other live roles and a host `aria-live`, `aria-atomic`, `aria-relevant` or `aria-hidden=\"false\"` are not supported",
+  // the base rules for the remaining elements, as 009 kept them package-wide (the landing's second merge)
+  "On the other elements, a host `aria-hidden=\"true\"` hides the element, a host `hidden` attribute removes it, and a host `role` or `aria-hidden=\"false\"` is not supported",
   // the icon set (FR-017, FR-018, FR-029, US2 scenarios 1 and 5)
   "`name` (attribute and property, reflected): the icon's name, exactly as listed in Icons",
   "Every drawing is the project's own, on a 24-unit grid with one stroke width, round caps and joins, painted only in `currentColor`",
@@ -167,6 +183,93 @@ const fragments = [
   // the mark's licence and the trademark note (FR-029, FR-030, US4 scenario 10)
   "The mark is the project's own drawing of the Ocelle rosette, redrawn from the geometry of Ocelle's app icon, under Apache-2.0",
   "\"Ocelle\" and the rosette mark are trademarks of their owner. The Apache-2.0 licence grants no right to use them (section 6 of the licence); they may be used only to refer to Ocelle",
+  // ocelle-notice (specs/010-feedback-forms FR-004 to FR-011, FR-035; research.md R-02, R-03; T016b)
+  "`ocelle-notice` shows a message about a state or result in a box whose look follows its tone, with an optional heading, in the regular or the compact size",
+  "`tone` (attribute and property, reflected): `info` (the default), `success`, `warning`, `danger` or `neutral`; any other value behaves as `info` and the property reads `\"info\"`, while the attribute keeps the value as written",
+  // the tone is in the host's text (FR-034, the spec's assumption; phase 2 operator round 4, O4-02; T025c)
+  "The bar and the ground differ from one tone to another only by colour, and not at all in forced colours, so the host's text must state the tone, as \"Run failed\" or \"Saved.\" does: the look of the box alone does not tell a warning from a success",
+  "`size` (attribute and property, reflected): `regular` (the default) or `compact`; any other value behaves as `regular` and the property reads `\"regular\"`, while the attribute keeps the value as written",
+  "`announce` (boolean attribute and property, reflected): the notice announces its text once, politely for `info`, `success` and `neutral` and assertively for `warning` and `danger`",
+  "Slots: `heading` (optional; only elements are assigned to it) and the default slot, the body. CSS parts: `heading` and `body`. The notice has no event and no CSS custom property of its own",
+  "`ocelle-notice` reads the tokens `--ocelle-color-<tone>`, `--ocelle-color-<tone>-bg`, `--ocelle-color-ink`, `--ocelle-radius-row`, `--ocelle-bar-width`, `--ocelle-border-width`, `--ocelle-space-1` to `--ocelle-space-4`, `--ocelle-font-size-subhead`, `--ocelle-font-size-sm`, `--ocelle-font-weight-strong`, `--ocelle-line-height-tight` and `--ocelle-line-height-compact`",
+  "The heading is absent when no element is assigned to the `heading` slot or the text content of its elements is empty or whitespace only: it then draws no box and leaves no gap",
+  "The rule reads text content only, so a heading whose only content is an `ocelle-icon` or an `img` is absent, and a heading whose only text is inside an `aria-hidden=\"true\"` element is drawn but adds nothing to the announced text",
+  "The announced text is the heading text, then the body text, joined by one space: the text nodes, the `label` of an `ocelle-icon` and the `alt` of an `img`, skipping elements with `hidden` or `aria-hidden=\"true\"` and `script`, `style` and `template` elements",
+  "For other slotted content (an element with `role=\"img\"` and an `aria-label`, an `svg`, CSS-generated content, content hidden by a host rule without `hidden`) the announced text is not specified",
+  "\"Announced\" in this library's tests means a change of a live region's text in Chromium's accessibility tree, read from the states that Chromium can hand to assistive technology; no screen reader runs in the tests",
+  "The notice announces through a separate live region in its shadow root, visually hidden and atomic, that never holds the visible content: a copy of the text is written into it `W` after the last trigger",
+  "`W` is twice Chromium's accessibility serialisation delay, 150 ms once `document.readyState` is `\"complete\"` and 350 ms before (`AXObjectCacheImpl::GetDeferredEventsDelay()` in `ax_object_cache_impl.cc`), so 300 ms after load and 700 ms before",
+  // the wait from the empty state's start (phase 2 stop 2, decision (a); research R-02 step 2; T025a)
+  "The wait also ends no earlier than `W` of the load state in which the region last became empty, counted from then, so a change right after a first load is written no earlier than the pre-load `W` after the notice was first rendered",
+  "Changes closer together than `W`, in one task or in different tasks, merge: only the final text is announced, once, and a text that is back to the last announced text when the wait ends announces nothing",
+  "A text that keeps changing more often than every `W` is not announced until it stops changing",
+  "A copy is held for `H`, 5000 ms, or until the next announcement but at least `W`, and then removed",
+  "`H` is a chosen figure, not measured: the tests cannot see when a screen reader fetches the text",
+  "For up to `H` a browse-mode user may meet the text twice, in the notice and in the copy",
+  "For a host `role=\"alert\"`, the insertion, the reveal and a change of the role to `alert` write no copy: Chromium's alert event for the host's node reads the notice (`ui/accessibility/ax_event_generator.cc`, lines 394, 416-417 and 1081-1082)",
+  "The alert event is Chromium's behaviour and is not measured; WebKit is not measured, and its live regions in shadow roots are an open limitation",
+  "Text or a `tone` set in the same task as that insertion, reveal or role change is part of the alert reading and is not announced again",
+  "A change made in a later task but before Chromium's next serialisation is read twice, by the alert event and by the copy, so set the text before, or in the same task as, the insertion, reveal or role change",
+  "A notice inserted or revealed as `role=\"alert\"` and changed to `role=\"status\"` in the same task announces its text politely once, as a `status` notice would, since no alert event fires",
+  "Only the host's own `hidden` attribute hides and reveals the notice: removing it announces the current text once, as an insertion does, and changes while hidden are not announced",
+  "A notice shown by a hidden ancestor (a container with `hidden`, a closed `<details>`, a `display: none` panel) is not announced by its live region; a `role=\"alert\"` notice shown that way is read by Chromium's alert event all the same",
+  "A host `role=\"alert\"` announces assertively and `role=\"status\"` politely whatever the tone, with or without `announce`; with a role that gives the host's node no live politeness, such as `note`, `region` or `none`, the notice behaves as with no role",
+  "A notice that is part of the page as first loaded is not announced: one connected while `document.readyState` is `\"loading\"`, or upgraded by the registration of the definition",
+  "A notice inserted after the build has loaded is announced, however it is inserted (`innerHTML`, a `<template>`, a `DOMParser` document, an htmx swap or `document.createElement`)",
+  "Load the build before any swap or script inserts announcing notices: a notice upgraded by the registration does not announce",
+  "Setting `announce`, or a host `role` of `alert` or `status`, on an existing notice announces nothing: its current text is the baseline for the next change",
+  "Moving a notice within the page in one task, or a re-render, announces nothing",
+  // the form-control convention (specs/010-feedback-forms FR-020 to FR-028, FR-035, SC-006; research.md R-05, R-06, R-10; T034a)
+  "`ocelle-form-input` and later form-like elements are form-associated custom elements: the native control, its visible label, its description and its error live in one open shadow root, so every ID reference among them stays inside it",
+  "The host takes part in its form through `ElementInternals`: it submits its value under `name` (nothing without `name` or while disabled), joins the form a `form` attribute names, follows a disabled `<fieldset>`, restores its default value on a form reset and its state on history restore, and is associated with an external `<label for>`",
+  "Shared attributes and properties: `name`, `label`, `description`, `error`, `required` and `disabled` (all reflected), and the `value` property",
+  "The host exposes `form`, `labels`, `validity`, `validationMessage`, `willValidate`, `checkValidity()` and `reportValidity()` as a native control does; `focus()` on the host focuses the inner control, and the host is not a tab stop of its own",
+  "The inner control's accessible name is a host `aria-label` that is not blank, alone; otherwise the text of each external `<label>` in `labels` order, then the `label` text, each with whitespace collapsed and trimmed, joined by one space; with none of them the control has no name, and one is required",
+  "The `description` is the control's accessible description, followed by a host `aria-description` and the error",
+  "The host's validity flags and message are the inner control's native constraint validation, and `reportValidity()` focuses the inner control and makes the browser show its message",
+  "The native `input` event of the inner control reaches the host with `value` already updated; each committed change dispatches `ocelle-form-input-change`, a `CustomEvent` with `detail: { value }`, `bubbles` and `composed`; a change by script, by reset or by restore dispatches none",
+  "The host is `display: block` and the control fills its inline size; the element sets no width of its own, so in a filter bar the page sets the element's width or places it as a flex or grid item",
+  "A non-empty `error` is shown under the control in `--ocelle-color-danger`, with the control's boundary in `--ocelle-color-danger` at `--ocelle-bar-width`, makes the control invalid for assistive technology, is added after the description to its accessible description, and is announced politely once each time it changes to a new text",
+  "The error does not block submission or change the form's validity: the host clears it",
+  "An `error` in the page as first loaded is not announced and does not move focus: it is read with the control's description when the user reaches it, so put an error summary or a notice at the top of the page and focus it",
+  "A control inserted after the build has loaded with an `error` announces it politely once, each control its own",
+  "Setting `error` to empty resets the baseline, so the same text set again is announced again; a change of whitespace only is no change; changes closer together than `W` merge",
+  "Only the host's own `hidden` attribute counts as a reveal for a form control: removing it announces the current error once; a control shown through a hidden ancestor announces nothing",
+  "Load the build before any swap or script inserts form controls with `error`: a control upgraded by the registration does not announce",
+  "A host `aria-invalid`, `aria-required` or `aria-disabled` reaches the inner control only with the value `\"true\"`, combined with the element's own `error`, `required` and `disabled`; write only `\"true\"` or nothing: any other value is not supported. Prefer the element's own attributes",
+  "When a visible label is drawn (`label` or an external `<label>`), a host `aria-label` must contain the visible label text; any other combination is not supported",
+  "A host `aria-label` and `aria-description` also stay on the host's node, so Chromium exposes the host as a generic with the same name and description beside the control",
+  "A host `aria-labelledby` and a host `aria-describedby` are not supported: they would reference across the shadow root; use `label`, `aria-label` or `description` instead",
+  "The `form` attribute joins the form it names, as on a native control; it is a standard attribute and the manifest does not list it",
+  "In a form with no submit button that holds a native text input and a form control, Enter in the native input submits, since the browser does not count the custom element as a field that blocks implicit submission; Enter in the form control does not",
+  "For htmx, trigger on `hx-trigger=\"ocelle-form-input-change\"` (or `input`): the native `change` event does not leave the shadow root, and htmx's default trigger for an unknown element is `click`",
+  "Before the definition has loaded, a form control is not in its form's data and is not validated; to hide undefined elements, add a rule such as `ocelle-form-input:not(:defined) { visibility: hidden; }` to the page's own stylesheet",
+  "The form controls are for the main grounds; a control on a state ground, `--ocelle-color-accent-low`, an inset or a hover ground is not supported",
+  "Not measured: restore by autofill, where the browser draws the validation message, the `email` keyboard hint and the masking of `password`",
+  "WebKit is not measured for form controls: its form association and `ElementInternals` are an open limitation",
+  // ocelle-form-input (specs/010-feedback-forms FR-021, FR-029, FR-030, FR-035; T034a)
+  "`ocelle-form-input` is a labelled text field with an optional description and a host-set error, that takes part in its form like a native input",
+  "`type` (attribute and property, reflected): `text` (the default), `email`, `url`, `tel`, `search`, `password` or `number`; any other value behaves as `text` and the property reads `\"text\"`, while the attribute keeps the value as written",
+  "`placeholder`, `autocomplete`, `inputmode` (`inputMode`), `pattern`, `min`, `max` and `step` (strings), `minlength` (`minLength`) and `maxlength` (`maxLength`) (numbers) and `readonly` (`readOnly`, boolean), attributes and reflected properties, pass to the inner field unchanged; an absent one reads `undefined` (`readOnly` reads `false`)",
+  "The input's `value` attribute is its default value, restored on reset; the `value` property is the current value. Changing the attribute changes the current value only while the user has not edited it and no script has set `value` since the last reset",
+  "Pressing Enter in the field dispatches `ocelle-form-input-change` if the value changed, then submits the form as a native input does",
+  "Event: `ocelle-form-input-change`, `detail: { value }`. CSS parts: `label`, `control`, `description` and `error`. Slots: none. No CSS custom property of its own",
+  "`ocelle-form-input` reads the tokens `--ocelle-color-sheet`, `--ocelle-color-control-border`, `--ocelle-color-ink`, `--ocelle-color-ink-muted`, `--ocelle-color-danger`, `--ocelle-color-focus`, `--ocelle-color-disabled-bg`, `--ocelle-color-disabled-ink`, `--ocelle-border-width`, `--ocelle-bar-width`, `--ocelle-radius-2`, `--ocelle-target-min`, `--ocelle-focus-width`, `--ocelle-focus-offset`, `--ocelle-font-size-sm`, `--ocelle-font-weight-strong`, `--ocelle-line-height-normal`, `--ocelle-space-1`, `--ocelle-space-2` and `--ocelle-space-3`",
+  // ocelle-form-select (specs/010-feedback-forms FR-021, FR-026, FR-031, FR-032, FR-035, Edge Cases; T052a)
+  "`ocelle-form-select` is a labelled native select for closed choices, with an optional description and a host-set error, that takes part in its form like a native select. It follows the form-control convention above",
+  "Attributes and reflected properties: `name`, `label`, `description`, `error`, `required` and `disabled`. Properties: `value`, `form`, `labels`, `validity`, `validationMessage` and `willValidate`. Methods: `checkValidity()`, `reportValidity()` and `focus()`",
+  "Its choices are its light-DOM `<option>` and `<optgroup>` children, written as for a native `<select>`: the native select inside mirrors their order, labels, values, `selected` (the default selection, restored on reset) and `disabled`, and follows every later change to them. The light-DOM children are not rendered and not exposed",
+  "One choice only: there is no `multiple` and no `size`",
+  "A host `value` attribute is ignored: the default selection is the last option marked `selected`, or the first enabled option without one. The `value` property is the current choice; setting it to a value no option has selects nothing and reads `\"\"`, as on a native select. There is no `defaultValue` property",
+  "When the chosen option is removed, the choice falls back to the first enabled option, as on a native select, with no event",
+  "The native select's own keys are unchanged: ArrowDown and ArrowUp change the choice, and typing a letter selects the next option whose label starts with it. Each change the user makes dispatches `ocelle-form-select-change`",
+  "The open-list indicator is the `chevron-down` icon of the set, drawn in `currentColor` at `--ocelle-icon-size` at the inline end of the select, decorative and visible in forced colours; it takes no pointer events, so a click on it reaches the select",
+  "Event: `ocelle-form-select-change`, `detail: { value }`. CSS parts: `label`, `control`, `description` and `error`. Slots: none. No CSS custom property of its own",
+  "`ocelle-form-select` reads the tokens `--ocelle-color-sheet`, `--ocelle-color-control-border`, `--ocelle-color-ink`, `--ocelle-color-ink-muted`, `--ocelle-color-danger`, `--ocelle-color-focus`, `--ocelle-color-disabled-bg`, `--ocelle-color-disabled-ink`, `--ocelle-border-width`, `--ocelle-bar-width`, `--ocelle-radius-2`, `--ocelle-target-min`, `--ocelle-focus-width`, `--ocelle-focus-offset`, `--ocelle-font-size-sm`, `--ocelle-font-weight-strong`, `--ocelle-line-height-normal`, `--ocelle-space-1`, `--ocelle-space-2`, `--ocelle-space-3` and `--ocelle-icon-size`, the last for its indicator",
+  "For htmx, trigger on `hx-trigger=\"ocelle-form-select-change\"` (or `input`)",
+  "Not measured for `ocelle-form-select`: that Alt+Down or Space opens the list, and how the browser draws the open list",
+  "Before the definition has loaded, a select's `<option>` children may show as text",
+  "Importing `@ocelle/elements/ocelle-form-select.js` defines `ocelle-form-select` only: the select draws its indicator itself and does not define `ocelle-icon`",
   // the overflow-region module, under the element conventions (009 FR-011, FR-034; contracts/overflow-region.md; T019)
   "The overflow-region module (`src/overflow-region.ts`, internal) gives an element a scroll box that is a tab stop and a named group, or region, only while it overflows: `ocelle-scroller` uses it, and so does any later element with a scroll region",
   "Inputs: the host element (`new OverflowRegion(host, { box, role, step })`), `box`, a function that returns the scroll box in the host's shadow root, `role`, `\"group\"` by default or `\"region\"`, `step`, 40 px by default, and the label through `setLabel(label)`; the host lists `aria-label` in `observedAttributes` and re-renders on its change",
@@ -538,6 +641,98 @@ const fragments = [
   "The label is text only: there is no slot for a rich label",
   "The element has no slot: text inside it (a \"7/12\" fallback) shows only before the element is defined, and after that it is neither shown nor exposed; the bar keeps its own name and value",
   "`ocelle-progress` emits no event and adds no tab stop",
+  // ocelle-listbox and ocelle-option (014 US1, FR-006, FR-009 to FR-018, FR-014a, FR-056; research.md R-01, R-03 to R-05, R-15, R-18)
+  "`ocelle-listbox` is a single-select listbox of `ocelle-option` children: the host writes the options as its children, in the page's own markup, and reads the selected value from the listbox",
+  "`value` (attribute and property, not reflected): the selected option's value, `\"\"` when none. Setting it to a value an enabled option has selects the first such option; setting it to `\"\"` or to a value no enabled option has clears the selection. A host set never emits an event, and setting the current value changes nothing",
+  "A non-empty `value` that no enabled option has is remembered until an option with that value appears or is enabled, which is then selected, with no event; the next user selection or host set forgets it",
+  "`label` (attribute and property, not reflected): the listbox's accessible name, trimmed; a host `aria-label` decides over it. Without either the listbox is unnamed: a host must name it",
+  "`ocelle-listbox-change` with `detail` `{ value }`: the user selected another option with Enter, Space or a click; `value` already reads the new value when it is dispatched",
+  "`ocelle-listbox-activate` with `detail` `{ value }`: the user confirmed an option, with Enter on the selected option or a double-click on an enabled option (whose first click selects it, so its change event comes first); not cancelable. A host confirms the choice by listening to it, for example to open a folder",
+  "Both events bubble and are composed",
+  "Keys, on an option: ArrowDown and ArrowUp move focus to the next and previous enabled option without wrapping, Home and End to the first and last; selection does not follow focus. Enter and Space select the focused option. The listbox handles no other key: Escape, Tab, ArrowLeft, ArrowRight and letters (there is no typeahead) reach the page unhandled",
+  "The listbox is one tab stop: the selected option when it is enabled, else the option that last had focus, else the first enabled option. Disabled options are skipped by the keys and the tab stop but stay focusable, so a focused option that becomes disabled keeps focus",
+  "`ocelle-option`: `value` (attribute and property, reflected) and `disabled` (boolean, reflected). An option with no `value`, or a blank one, has its index among the listbox's options as its value, as a string; the default is not written to the attribute",
+  "Options added, removed or reordered after render are followed; when the focused option is removed, focus moves to the next enabled option after it, else the nearest one before it; when the selected option is removed, `value` becomes `\"\"` with no event. A moved option keeps its selection and its focus",
+  "The listbox writes `aria-selected`, `aria-disabled` and `tabindex` on its options; a host's own values of these on an option are overwritten. Keep option values unique: a host set selects the first option with the value",
+  "An `ocelle-option` is only meaningful inside an `ocelle-listbox`: outside one it has no role and no tab stop",
+  "The scroll container is the part `list`: a host that limits the listbox's height sets `max-block-size` on `ocelle-listbox`, and the focused option is scrolled into view with its focus ring inside the list",
+  "The selected option shows a bar of `--ocelle-bar-width` in `--ocelle-color-accent-strong` on its inline-start edge, and `Highlight` in forced colours; the listbox is for the main grounds",
+  "`ocelle-listbox` and `ocelle-option` read the tokens `--ocelle-color-ink`, `--ocelle-color-hover-bg`, `--ocelle-color-accent-strong`, `--ocelle-color-disabled-ink`, `--ocelle-color-focus`, `--ocelle-focus-width`, `--ocelle-focus-offset`, `--ocelle-bar-width`, `--ocelle-target-min`, `--ocelle-space-2`, `--ocelle-space-3` and `--ocelle-icon-size`",
+  "An option's `icon` slot takes a leading icon by the slot convention; the icon adds nothing to the option's name",
+  "A listbox has no `disabled` of its own; disable every option to disable it. A listbox whose every option is disabled, or with no option, has no tab stop",
+  // ocelle-tabs, ocelle-tab and ocelle-tab-panel (014 US2, FR-006's tabs exception, FR-009 to FR-011a, FR-019 to FR-025, FR-056; research.md R-01 to R-05, R-15)
+  "`ocelle-tabs` is a tablist of `ocelle-tab` children with their `ocelle-tab-panel` panels: the host writes the tabs and the panels as its children, in the page's own markup, and the tabs pair with the panels by order (the first tab with the first panel, and so on); tabs or panels without a partner are not rendered",
+  "The tabs write the association themselves: an `id` on each tab and panel that has none (a child's own `id` is kept and used), `aria-controls` on every paired tab and `aria-labelledby` on the shown panel. A host writes no `id`, `aria-*` or `slot` on the children",
+  "`value` (attribute and property, not reflected): the selected tab's value. Exactly one tab is selected whenever a tab is enabled: on first render the tab whose value `value` names, else the first enabled tab. Setting `value` to a value an enabled tab has selects the first such tab; setting it to `\"\"` or to a value no enabled tab has keeps the selection. A host set never emits an event, and setting the current value changes nothing",
+  "A non-empty `value` that no enabled tab has is remembered until a tab with that value appears or is enabled, which is then selected, with no event; the next user selection or host set forgets it",
+  "`label` (attribute and property, not reflected): the tablist's accessible name, trimmed. Name the tabs with `label`: a host `aria-label` on `ocelle-tabs` does not name the tablist (the element does not forward it, and it would name the host as a second node around the tablist)",
+  "`ocelle-tabs-change` with `detail` `{ value }`: the user selected another tab with an arrow key, Home, End, Enter, Space or a click; `value` already reads the new value when it is dispatched. It bubbles and is composed",
+  "Keys, on a tab: ArrowRight and ArrowLeft move focus and selection to the next and previous enabled tab in visual order (swapped under right-to-left), wrapping at the ends; Home and End to the first and last enabled tab. Enter and Space select a focused tab that is not selected. The tabs handle no other key: ArrowUp, ArrowDown, Escape and letters reach the page unhandled, and keys pressed inside a panel are the panel content's",
+  "Only the selected tab is in the tab order. Tab from it moves into the selected panel: to the panel's first focusable element, or to the panel itself, which then shows the focus ring, when the panel holds nothing focusable (focusables inside shadow roots count, and the panel's content is followed after render)",
+  "When the selected tab is removed or disabled, the next enabled tab after it is selected, else the nearest one before it, with no event; focus moves with the selection when the tab had focus. With every tab disabled, or none, no tab is selected, no panel is shown and `value` reads `\"\"`",
+  "`ocelle-tab`: `value` (attribute and property, reflected) and `disabled` (boolean, reflected). A tab with no `value`, or a blank one, has its index among the tabs as its value, as a string; the default is not written to the attribute",
+  "The tabs write `aria-selected`, `aria-disabled` and `tabindex` on their tabs and `tabindex` on the shown panel; a host's own values of these are overwritten. Keep tab values unique: a host set selects the first tab with the value",
+  "An `ocelle-tab` or `ocelle-tab-panel` is only meaningful inside an `ocelle-tabs`: outside one it has no role and no tab stop",
+  "The tab row is the part `tablist`, and the shown panel sits in the part `panels`, beside the tablist; when the tabs are wider than the row they wrap onto further rows, and the row never scrolls sideways",
+  "The selected tab shows a bar of `--ocelle-bar-width` in `--ocelle-color-accent-strong` on its block-end edge, and `Highlight` in forced colours; the tabs are for the main grounds",
+  "`ocelle-tabs`, `ocelle-tab` and `ocelle-tab-panel` read the tokens `--ocelle-color-ink`, `--ocelle-color-hover-bg`, `--ocelle-color-accent-strong`, `--ocelle-color-disabled-ink`, `--ocelle-color-focus`, `--ocelle-focus-width`, `--ocelle-focus-offset`, `--ocelle-bar-width`, `--ocelle-target-min`, `--ocelle-space-2`, `--ocelle-space-3` and `--ocelle-icon-size`",
+  "A tab's `icon` slot takes a leading icon by the slot convention; the icon adds nothing to the tab's name or its panel's",
+  "The tabs have no `disabled` of their own; disable every tab to disable them",
+  // ocelle-segmented-choice and ocelle-segment (014 US3, FR-006, FR-009 to FR-011a, FR-026 to FR-030, FR-056; research.md R-01, R-03 to R-06, R-15)
+  "`ocelle-segmented-choice` is a toolbar of `ocelle-segment` toggle buttons, exactly one of them pressed: the host writes the segments as its children, in the page's own markup, and the group is one tab stop with arrow keys between the segments",
+  "`value` (attribute and property, not reflected): the pressed segment's value. Exactly one segment is pressed whenever a segment is enabled: on first render the segment whose value `value` names, else the first enabled segment. Setting `value` to a value an enabled segment has presses the first such segment; setting it to `\"\"` or to a value no enabled segment has keeps the press. A host set never emits an event, and setting the current value changes nothing",
+  "A non-empty `value` that no enabled segment has is remembered until a segment with that value appears or is enabled, which is then pressed, with no event; the next user press or host set forgets it",
+  "`label` (attribute and property, not reflected): the toolbar's accessible name, trimmed; a host `aria-label` names it too and, when present, decides alone",
+  "`joined` (boolean, reflected): the joined variant. The segments touch, one shared line of `--ocelle-border-width` lies between neighbours and between rows, and only each row's first segment has rounded start corners and each row's last segment rounded end corners. The group recomputes the rounding itself when it wraps or unwraps: no host script, observer or `style` attribute is needed",
+  "`ocelle-segmented-choice-change` with `detail` `{ value }`: the user pressed another segment with Enter, Space or a click; `value` already reads the new value when it is dispatched. It bubbles and is composed",
+  "Keys, on a segment: ArrowRight and ArrowDown move focus to the next enabled segment, ArrowLeft and ArrowUp to the previous one (ArrowLeft and ArrowRight swapped under right-to-left), wrapping at the ends; Home and End to the first and last enabled segment. The arrows move focus only. Enter and Space press the focused segment. The group handles no other key: Escape and letters reach the page unhandled, and Tab leaves the group",
+  "Only the pressed segment is in the tab order. A pressed segment cannot be un-pressed by the user",
+  "When the pressed segment is removed or disabled, the next enabled segment after it is pressed, else the nearest one before it, with no event; focus moves with the press when the segment had focus. With every segment disabled, or none, no segment is pressed and `value` reads `\"\"`",
+  "`ocelle-segment`: `value` (attribute and property, reflected) and `disabled` (boolean, reflected). A segment with no `value`, or a blank one, has its index among the segments as its value, as a string; the default is not written to the attribute",
+  "The segmented choice writes `aria-pressed`, `aria-disabled` and `tabindex` on its segments; a host's own values of these are overwritten. Keep segment values unique: a host set presses the first segment with the value",
+  "An `ocelle-segment` is only meaningful inside an `ocelle-segmented-choice`: outside one it has no role and no tab stop",
+  "In the default variant the segments stand `--ocelle-space-2` apart, each with a border of `--ocelle-border-width` in `--ocelle-color-control-border` and the radius `--ocelle-radius-2`; the pressed segment is filled `--ocelle-color-accent-low` with a border of `--ocelle-bar-width` in `--ocelle-color-accent-strong`",
+  "In the joined variant the lines around the pressed segment, and around a hovered one, are `--ocelle-color-accent-strong` at the same width, and the pressed segment is filled `--ocelle-color-accent-low` with a bar of `--ocelle-bar-width` in `--ocelle-color-accent-strong` along its block-end edge inside its box; in forced colours the bar and the default pressed border are `Highlight` and every line is `ButtonBorder`; the segmented choice is for the main grounds",
+  "`ocelle-segmented-choice` and `ocelle-segment` read the tokens `--ocelle-color-ink`, `--ocelle-color-hover-bg`, `--ocelle-color-accent-low`, `--ocelle-color-accent-strong`, `--ocelle-color-control-border`, `--ocelle-color-disabled-ink`, `--ocelle-color-focus`, `--ocelle-focus-width`, `--ocelle-focus-offset`, `--ocelle-border-width`, `--ocelle-bar-width`, `--ocelle-radius-2`, `--ocelle-target-min`, `--ocelle-space-2`, `--ocelle-space-3` and `--ocelle-icon-size`",
+  "Each segment's box is at least `--ocelle-target-min` high",
+  "A segment's `icon` slot takes a leading icon by the slot convention; the icon adds nothing to the segment's name",
+  "The segmented choice has no `disabled` of its own; disable every segment to disable it",
+  // ocelle-copy-field (014 US4, FR-031 to FR-044, FR-056; research.md R-07, R-15, R-16)
+  "`ocelle-copy-field` shows a command or identifier the user may copy, with a Copy control flush at its inline end. It never writes or reads the clipboard: activating the Copy control emits `ocelle-copy-field-request`, the host writes the clipboard (through a desktop bridge or the page's clipboard API) and reports the outcome in its own words by setting `status`",
+  "`value` (attribute and property, not reflected): the text shown and requested, as written. It wraps at any point when it does not fit, never scrolls sideways, keeps its whitespace runs, is drawn in the sans with tabular figures on `--ocelle-color-inset` and stays selectable. With an empty or missing `value` the Copy control is disabled and emits nothing",
+  "The text is plain text; a host that shows a digest in groups of four formats `value` itself",
+  "`copy-label` (attribute and property `copyLabel`, not reflected): the Copy control's accessible name, trimmed; without it, or blank, the control is named \"Copy\"",
+  "`status` (attribute and property, not reflected): the host's outcome text, shown as the content of the field's one polite live region (`role=\"status\"`) after the Copy control. The region is present and empty from first render; a blank `status` shows nothing. Setting the text the region already holds changes nothing. The field draws no colour or icon of its own for success or failure: the words are the host's",
+  "The field clears `status` (the property reads `\"\"` and the region is emptied) when a new request starts and when `value` changes after first render; it changes `status` in no other way and emits nothing on its own. A `status` attribute the host wrote stays as written and is read again only when it changes",
+  "`ocelle-copy-field-request` with `detail` `{ text }`: the user activated the Copy control with a click, Enter or Space; `text` is `value` at the activation. It bubbles and is composed, and is not cancelable",
+  "The request is not dispatched in the activation's task: the field clears `status` at once, then dispatches the request after the next rendering update, once the emptied live region has reached the accessibility tree, so a screen reader hears the host's new text even when it is the same as before. Each activation emits one request; a field removed from the page before the dispatch emits none",
+  "A host that writes the clipboard from the page (`navigator.clipboard.writeText(event.detail.text)`) receives the request outside the click's task, a frame later, and must check its engines' user-activation rules for clipboard writes: Chromium still counts the click's activation then, and WebKit is not measured. A host that writes the clipboard through a desktop bridge is not affected",
+  "Name the field with a host `aria-label`: it is exposed as a group holding the text and the Copy control, unnamed without one. A host `aria-label` names the group, not the control",
+  "Keys: the Copy control is one tab stop, and Enter and Space activate it, as on any button. The field handles no other key: Escape and letters reach the page unhandled",
+  "CSS parts: `value` (the text) and `copy-control` (the Copy control). `copy-control` guarantees its box (its position, its size and the rules a host sets on it), its accessible name and the events its activation leads to, not which element carries it: a native `<button>` today. Rules a host writes against `:disabled`, `:focus-visible` or the inner border of the native button are outside that surface",
+  "The Copy control will become `ocelle-button` (#7) in a later change once that element has merged. The `value` and `copy-control` parts, the control's accessible name and its events stay, so the swap is a PATCH under the surface stated here",
+  "The field's outer border is `--ocelle-border-width` in `--ocelle-color-control-border` with the radius `--ocelle-radius-2`. The Copy control sits flush at the field's inline end, inside that border, filled `--ocelle-color-sheet`, with one line of `--ocelle-border-width` in `--ocelle-color-accent-strong` between it and the text: no gap and no double line. The control is at least `--ocelle-target-min` in both dimensions and shows the token focus ring when focused by keyboard. In forced colours the boundaries are `ButtonBorder`, the icon is `ButtonText` and the ring `Highlight`. The copy field is for the main grounds",
+  "Importing `ocelle-copy-field` defines `ocelle-icon` too, for its copy icon",
+  "`ocelle-copy-field` reads the tokens `--ocelle-font-sans`, `--ocelle-figures`, `--ocelle-color-ink`, `--ocelle-color-inset`, `--ocelle-color-sheet`, `--ocelle-color-control-border`, `--ocelle-color-accent-strong`, `--ocelle-color-disabled-ink`, `--ocelle-color-focus`, `--ocelle-focus-width`, `--ocelle-focus-offset`, `--ocelle-border-width`, `--ocelle-radius-2`, `--ocelle-target-min`, `--ocelle-space-1`, `--ocelle-space-2`, `--ocelle-space-3` and `--ocelle-icon-size`",
+  // ocelle-link (014 US5, FR-045 to FR-049, FR-056; research.md R-08, R-15, R-16)
+  "`ocelle-link` is a link inside running text: it is drawn inline in `--ocelle-color-link` with an underline, in `--ocelle-color-link-hover` under the pointer, and shows the token focus ring around each line it wraps onto. It always tells the host it was activated, with `ocelle-link-activate`; without `href` it never navigates, and with `href` it navigates unless the host cancels the event",
+  "`href` (attribute and property, reflected): the link's target, as written. Without it the link is still a link in the tab order and only emits its event",
+  "`label` (attribute and property, not reflected): the link's accessible name instead of its text, trimmed; blank counts as none. Name the link with `label`: a host `aria-label` on `ocelle-link` does not name the link (the element does not forward it, and it would name the host as a second node around the link)",
+  "A `label` must contain the link's visible text, best starting with it (text \"the mission log\", label \"the mission log, opens in the viewer\"): a name without the visible text fails WCAG 2.5.3, Label in Name, and the `axe` gate's `label-content-name-mismatch`",
+  "`ocelle-link-activate` with `detail` `{ href }`: the user activated the link with Enter or a primary-button click; `href` is the `href` attribute as written, or `null` without one. It bubbles, is composed and is cancelable: a host that routes the activation itself calls `preventDefault()`",
+  "`detail.href` is the attribute as written and is not validated: it may be a `javascript:` or `data:` URL. The element refuses those, and any scheme other than `http:`, `https:` and the document's own, only for its own navigation",
+  "With `href`, after the event and unless a listener cancelled it, the link resolves `href` against the document's base URL at that moment and navigates to it only when the resolved protocol is `http:`, `https:` or the document's own protocol. The check is on the resolved URL, so spaces before the scheme or a tab inside it do not bypass it. An empty `href` is an `href`, and a fragment navigates within the document",
+  "A host that navigates itself from the event applies the same check: resolve `detail.href` against `document.baseURI` and navigate only when the resolved protocol is `http:`, `https:` or the document's own",
+  "A host that needs another scheme (an app's own scheme on a page served over `http:`, say) handles the event: it cancels it and navigates or acts itself",
+  "Only plain activations emit: Enter, or a primary-button click, with no modifier or with Alt alone. A user's modified activation (Ctrl, Meta or Shift held on a click or on Enter, or a middle-button click) emits nothing, and the element leaves its default to the browser: a new tab or window for Ctrl, Shift and the middle click, and the platform's convention for Meta (on macOS Meta is Cmd, which opens a new tab; Chromium on Linux follows the link in place)",
+  // axe-core 4.14.0 on a link wrapped onto exactly two lines (operator decision 4 during phase 6)
+  "axe-core 4.14.0 reports a serious `color-contrast` incomplete (`bgOverlap`) on a link whose text wraps onto exactly two lines: the link's text is slotted, so axe measures the union box of that text, whose centre lies on the surrounding paragraph, and cannot find the background. It is not a contrast failure: the link's colours are checked pairs of the tokens, and on one line or on three lines axe reports nothing",
+  "A modified activation of a link without `href` does nothing: it emits no event and the page does not navigate",
+  "The link has no `target`, `download` or `rel`. A host that wants to open a new window itself handles the event: it cancels it and opens the window",
+  "Keys: the link is one tab stop. Enter activates it; Space does not, and scrolls the page as on any link. It handles no other key",
+  "The link's focusable anchor is in its shadow root (`delegatesFocus`); a parent that counts its focusable content, such as a tab panel, counts the link",
+  "CSS part: `anchor`, the link's anchor. In forced colours the link is `LinkText`, underlined, and its focus ring `Highlight`. The link is for the main grounds",
+  "`ocelle-link` reads the tokens `--ocelle-color-link`, `--ocelle-color-link-hover`, `--ocelle-color-focus`, `--ocelle-focus-width` and `--ocelle-focus-offset`",
   // two copies on a page (FR-006, Edge Cases)
   "Two copies of the package on one page, two versions or the browser build beside a bundle of the module build, cannot both define an element: the first definition wins and the second import throws nothing",
 ];
@@ -547,6 +742,9 @@ const entryRows = [
   "| `@ocelle/elements` | `dist/index.js` | every element; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-icon.js` | `dist/ocelle-icon.js` | `ocelle-icon` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-brand-mark.js` | `dist/ocelle-brand-mark.js` | `ocelle-brand-mark` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-notice.js` | `dist/ocelle-notice.js` | `ocelle-notice` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-form-input.js` | `dist/ocelle-form-input.js` | `ocelle-form-input` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-form-select.js` | `dist/ocelle-form-select.js` | `ocelle-form-select` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-scroller.js` | `dist/ocelle-scroller.js` | `ocelle-scroller` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-workflow-board.js` | `dist/ocelle-workflow-board.js` | `ocelle-workflow-board` only, not the lane; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-workflow-lane.js` | `dist/ocelle-workflow-lane.js` | `ocelle-workflow-lane` only; for hosts with a bundler |",
@@ -565,6 +763,15 @@ const entryRows = [
   "| `@ocelle/elements/ocelle-fact.js` | `dist/ocelle-fact.js` | `ocelle-fact` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-empty-state.js` | `dist/ocelle-empty-state.js` | `ocelle-empty-state` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-progress.js` | `dist/ocelle-progress.js` | `ocelle-progress` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-listbox.js` | `dist/ocelle-listbox.js` | `ocelle-listbox` and `ocelle-option`; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-option.js` | `dist/ocelle-option.js` | `ocelle-option` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-tabs.js` | `dist/ocelle-tabs.js` | `ocelle-tabs`, `ocelle-tab` and `ocelle-tab-panel`; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-tab.js` | `dist/ocelle-tab.js` | `ocelle-tab` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-tab-panel.js` | `dist/ocelle-tab-panel.js` | `ocelle-tab-panel` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-segmented-choice.js` | `dist/ocelle-segmented-choice.js` | `ocelle-segmented-choice` and `ocelle-segment`; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-segment.js` | `dist/ocelle-segment.js` | `ocelle-segment` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-copy-field.js` | `dist/ocelle-copy-field.js` | `ocelle-copy-field` and `ocelle-icon`; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-link.js` | `dist/ocelle-link.js` | `ocelle-link` only; for hosts with a bundler |",
   // 020 phase 1 (T007, T011): the disclosure's entry point.
   "| `@ocelle/elements/ocelle-disclosure.js` | `dist/ocelle-disclosure.js` | `ocelle-disclosure` and the `ocelle-icon` it renders; for hosts with a bundler |",
   // 020 phase 2 (T027, T031): the code block's entry point.
@@ -692,7 +899,45 @@ describe("packages/elements/README.md", () => {
   it("lists exactly the entry points of package.json's exports in its Entry points table (FR-002)", () => {
     const manifest = JSON.parse(read("package.json")) as { exports?: Record<string, string> };
     expect(tableRows(read("README.md"), "Entry points")).toEqual(entryRows);
-    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-scroller.js", "./ocelle-workflow-board.js", "./ocelle-workflow-lane.js", "./ocelle-list-detail.js", "./ocelle-dialog.js", "./ocelle-drawer.js", "./ocelle-tooltip.js", "./ocelle-card.js", "./ocelle-section-header.js", "./ocelle-page-header.js", "./ocelle-context-sidebar.js", "./ocelle-personal-rail.js", "./ocelle-button.js", "./ocelle-action-row.js", "./ocelle-facts.js", "./ocelle-fact.js", "./ocelle-empty-state.js", "./ocelle-progress.js", "./ocelle-disclosure.js", "./ocelle-code-block.js", "./browser.js", "./custom-elements.json"]);
+    expect(Object.keys(manifest.exports ?? {})).toEqual([
+      ".",
+      "./ocelle-icon.js",
+      "./ocelle-brand-mark.js",
+      "./ocelle-notice.js",
+      "./ocelle-form-input.js",
+      "./ocelle-form-select.js",
+      "./ocelle-scroller.js",
+      "./ocelle-workflow-board.js",
+      "./ocelle-workflow-lane.js",
+      "./ocelle-list-detail.js",
+      "./ocelle-dialog.js",
+      "./ocelle-drawer.js",
+      "./ocelle-tooltip.js",
+      "./ocelle-card.js",
+      "./ocelle-section-header.js",
+      "./ocelle-page-header.js",
+      "./ocelle-context-sidebar.js",
+      "./ocelle-personal-rail.js",
+      "./ocelle-button.js",
+      "./ocelle-action-row.js",
+      "./ocelle-facts.js",
+      "./ocelle-fact.js",
+      "./ocelle-empty-state.js",
+      "./ocelle-progress.js",
+      "./ocelle-listbox.js",
+      "./ocelle-option.js",
+      "./ocelle-tabs.js",
+      "./ocelle-tab.js",
+      "./ocelle-tab-panel.js",
+      "./ocelle-segmented-choice.js",
+      "./ocelle-segment.js",
+      "./ocelle-copy-field.js",
+      "./ocelle-link.js",
+      "./ocelle-disclosure.js",
+      "./ocelle-code-block.js",
+      "./browser.js",
+      "./custom-elements.json",
+    ]);
   });
 
   it("lists the thirteen names of the set, whether each mirrors and the consumer need it meets, in its Icons table (US2-1, FR-018, SC-007)", () => {
@@ -1033,6 +1278,24 @@ describe("packages/elements/CHANGELOG.md", () => {
     "`@ocelle/elements/ocelle-brand-mark.js`",
     "`ground` and `tone` (reflected) and `label`",
     "the slot convention for icons in controls",
+    // ocelle-notice (specs/010-feedback-forms FR-036; T016b)
+    "`ocelle-notice`",
+    "`@ocelle/elements/ocelle-notice.js`",
+    "`tone`, `size` and `announce` (reflected)",
+    "the slots `heading` and the default slot (the body), the CSS parts `heading` and `body`, and no event",
+    // ocelle-form-input (specs/010-feedback-forms FR-036; T034a)
+    "`ocelle-form-input`",
+    "`@ocelle/elements/ocelle-form-input.js`",
+    "its attributes and reflected properties `name`, `label`, `description`, `error`, `required`, `disabled`, `type`, `placeholder`, `autocomplete`, `inputmode`, `pattern`, `min`, `max`, `step`, `minlength`, `maxlength` and `readonly`",
+    "the `value` attribute (its default value), the properties `value`, `form`, `labels`, `validity`, `validationMessage` and `willValidate` and the methods `checkValidity()`, `reportValidity()` and `focus()`",
+    "the event `ocelle-form-input-change` with `detail: { value }`, no slot, and the CSS parts `label`, `control`, `description` and `error`",
+    "the form-control convention",
+    // ocelle-form-select (specs/010-feedback-forms FR-036; T052a)
+    "`ocelle-form-select`",
+    "`@ocelle/elements/ocelle-form-select.js`",
+    "its options from its light-DOM `<option>` and `<optgroup>` children",
+    "its attributes and reflected properties `name`, `label`, `description`, `error`, `required` and `disabled`; the properties `value`, `form`, `labels`, `validity`, `validationMessage` and `willValidate` and the methods `checkValidity()`, `reportValidity()` and `focus()`",
+    "the event `ocelle-form-select-change` with `detail: { value }`, no slot, and the CSS parts `label`, `control`, `description` and `error`",
     // since 009 (T029, FR-035)
     "`ocelle-scroller`",
     "`@ocelle/elements/ocelle-scroller.js`",
@@ -1128,6 +1391,38 @@ describe("packages/elements/CHANGELOG.md", () => {
     "`show-label`",
     "`size=\"compact\"`",
     "`ground=\"tinted\"`",
+    // 014 phase 2 (FR-058, research.md R-16, R-18)
+    "`ocelle-listbox`",
+    "`ocelle-option`",
+    "`ocelle-listbox-change`",
+    "`ocelle-listbox-activate`",
+    "`@ocelle/elements/ocelle-listbox.js`",
+    "`@ocelle/elements/ocelle-option.js`",
+    // 014 phase 3 (FR-058, research.md R-16)
+    "`ocelle-tabs`",
+    "`ocelle-tab`",
+    "`ocelle-tab-panel`",
+    "`ocelle-tabs-change`",
+    "`@ocelle/elements/ocelle-tabs.js`",
+    "`@ocelle/elements/ocelle-tab.js`",
+    "`@ocelle/elements/ocelle-tab-panel.js`",
+    // 014 phase 4 (FR-058, research.md R-16)
+    "`ocelle-segmented-choice`",
+    "`ocelle-segment`",
+    "`ocelle-segmented-choice-change`",
+    "`joined`",
+    "`@ocelle/elements/ocelle-segmented-choice.js`",
+    "`@ocelle/elements/ocelle-segment.js`",
+    // 014 phase 5 (FR-058, research.md R-16)
+    "`ocelle-copy-field`",
+    "`ocelle-copy-field-request`",
+    "`copy-label`",
+    "`copy-control`",
+    "`@ocelle/elements/ocelle-copy-field.js`",
+    // 014 phase 6 (FR-058, research.md R-16)
+    "`ocelle-link`",
+    "`ocelle-link-activate`",
+    "`@ocelle/elements/ocelle-link.js`",
     // since 020 phase 1 (T007, T011)
     "`ocelle-disclosure`",
     "`@ocelle/elements/ocelle-disclosure.js`",
@@ -1141,6 +1436,145 @@ describe("packages/elements/CHANGELOG.md", () => {
     ...["chevron-start", "chevron-end", "chevron-up", "chevron-down", "arrow-start", "arrow-end", "menu", "close", "folder", "file", "search", "table", "copy"].map((name) => `\`${name}\``),
   ])("names %s under Unreleased / Added (constitution VII, FR-031, SC-008)", (surface) => {
     expect(added).toContain(surface);
+  });
+
+  // 014 phase 4 (plan decision 1) raised the floor to Chromium 125 for custom states; 012 raised it again to Chromium
+  // 135, so since the second merge of main the entry names what the segment needs within the merged floor.
+  it("records that ocelle-segment's custom states need Chromium 125 and WebKit 17.4, within the Chromium 135 floor, under Unreleased (014 phase 4, plan decision 1)", () => {
+    expect(flat(unreleased)).toContain("`ocelle-segment` uses custom states (`:state()`), which need Chromium 125 and WebKit 17.4: within the engine floor of Chromium 135 and WebKit 17.4 that `ocelle-button` sets (below)");
+  });
+});
+
+/** The nine elements and six events this feature adds (014 contracts/elements.md; plan.md VII: a MINOR change). */
+const selectionElements = ["ocelle-listbox", "ocelle-option", "ocelle-tabs", "ocelle-tab", "ocelle-tab-panel", "ocelle-segmented-choice", "ocelle-segment", "ocelle-copy-field", "ocelle-link"];
+/** The elements 008 to 013 added on main before 014 merged it (landing operator decisions 1 and 4). */
+const mainElements = ["ocelle-notice", "ocelle-form-input", "ocelle-form-select", "ocelle-button", "ocelle-action-row", "ocelle-scroller", "ocelle-workflow-board", "ocelle-workflow-lane", "ocelle-list-detail", "ocelle-dialog", "ocelle-drawer", "ocelle-tooltip", "ocelle-section-header", "ocelle-card", "ocelle-page-header", "ocelle-context-sidebar", "ocelle-personal-rail", "ocelle-facts", "ocelle-fact", "ocelle-empty-state", "ocelle-progress"];
+const selectionEvents = ["ocelle-listbox-change", "ocelle-listbox-activate", "ocelle-tabs-change", "ocelle-segmented-choice-change", "ocelle-copy-field-request", "ocelle-link-activate"];
+
+/**
+ * 014 phase 7 (T110, plan.md step 7, analysis G3): the README overview, the text before its first `##` section, names
+ * every element with the nine of this feature, the engine floor raised to Chromium 125 / WebKit 17.4 at the phase 4
+ * stop (reviews/phase-4/decision-1.md) and the module rule of research R-16. The entry-point table's new specifiers are
+ * checked exactly by "lists exactly the entry points of package.json's exports" above.
+ */
+describe("packages/elements/README.md overview (014 T110)", () => {
+  const overview = flat(/^# @ocelle\/elements\n([\s\S]*?)(?=^## )/m.exec(read("README.md"))?.[1] ?? "");
+
+  // The merges of main (landing operator decisions 1 and 4) bring 008's, 009's, 010's, 011's, 012's and 013's
+  // twenty-one elements beside the icon, the mark and the nine of this feature: thirty-two in all.
+  it("counts and names the thirty-two elements, the nine of this feature with the icon, the mark and the twenty-one of 008 to 013", () => {
+    expect(overview).toContain("thirty-two elements");
+    for (const tag of ["ocelle-icon", "ocelle-brand-mark", ...mainElements, ...selectionElements]) expect(overview).toContain(`\`${tag}\``);
+  });
+
+  // The second merge of main (landing operator decision 4): 012 raised the floor to Chromium 135 after 014's 125.
+  it("states the engine floor, Chromium 135 and WebKit 17.4", () => {
+    expect(overview).toContain("The elements need Chromium 135 or WebKit 17.4 and later (see Engines)");
+  });
+
+  it("states that a parent element's entry point also defines its children", () => {
+    expect(overview).toContain("A parent element's entry point also defines the elements it owns as children");
+  });
+
+  it("points to the examples of each use", () => {
+    expect(overview).toContain("Examples shows each selection and input element built into a screen");
+  });
+});
+
+/**
+ * 014 SC-009 (T110, research R-14, analysis G3): the README has one example per use kitty-mission-ui builds from these
+ * elements, each a `###` section of `## Examples` with one `html` code block, written from the elements' public surface
+ * only: the entry point, the attributes, properties and events of the contract. The host writes no ARIA of its own (no
+ * `aria-*` attribute or property, no `role`, `tabindex` or `id`), no `ResizeObserver` and no clipboard call. One
+ * `aria-label` is allowed, on `ocelle-copy-field` alone: it is that element's documented name (it has no `label`
+ * property; README "Name the field with a host `aria-label`", contracts/elements.md), not ARIA wiring.
+ */
+const examples = [
+  {
+    heading: "The Open project folder picker",
+    uses: ["import \"@ocelle/elements/ocelle-listbox.js\"", "<ocelle-listbox label=", "<ocelle-option value=", "<ocelle-icon slot=\"icon\" name=\"folder\">", "ocelle-listbox-change", "ocelle-listbox-activate", "event.detail.value", ".value", "Open project"],
+  },
+  {
+    heading: "Tabbed screens",
+    uses: ["import \"@ocelle/elements/ocelle-tabs.js\"", "<ocelle-tabs label=", "<ocelle-tab value=", "<ocelle-tab-panel>", "ocelle-tabs-change", "event.detail.value"],
+  },
+  {
+    heading: "Segmented choices",
+    uses: ["import \"@ocelle/elements/ocelle-segmented-choice.js\"", "<ocelle-segmented-choice label=", " joined", "<ocelle-segment value=", "ocelle-segmented-choice-change", "event.detail.value"],
+  },
+  {
+    heading: "In-text links",
+    uses: ["import \"@ocelle/elements/ocelle-link.js\"", "<ocelle-link href=", "<ocelle-link label=", "ocelle-link-activate", "event.detail.href", "event.preventDefault()"],
+  },
+  {
+    heading: "Copy fields",
+    uses: ["import \"@ocelle/elements/ocelle-copy-field.js\"", "<ocelle-copy-field aria-label=", " value=", "ocelle-copy-field-request", "event.detail.text", ".status ="],
+  },
+];
+
+/** The `###` subsections of the README's `## Examples`, by heading, each with the text of its `html` code blocks. */
+function exampleBlocks(text: string): Map<string, string> {
+  const section = /^## Examples\n([\s\S]*?)(?=^## |(?![\s\S]))/m.exec(text)?.[1] ?? "";
+  const blocks = new Map<string, string>();
+  for (const part of section.split(/^### /m).slice(1)) {
+    const heading = part.slice(0, part.indexOf("\n")).trim();
+    const code = [...part.matchAll(/^```html\n([\s\S]*?)^```$/gm)].map((match) => match[1] ?? "").join("\n");
+    blocks.set(heading, code);
+  }
+  return blocks;
+}
+
+describe("packages/elements/README.md examples, one per consumer use (014 SC-009, T110)", () => {
+  const blocks = exampleBlocks(read("README.md"));
+
+  it("has exactly the five examples, in order", () => {
+    expect([...blocks.keys()]).toEqual(examples.map((example) => example.heading));
+  });
+
+  describe.each(examples)("$heading", ({ heading, uses }) => {
+    const code = blocks.get(heading) ?? "";
+
+    it("has an html example", () => {
+      expect(code.trim()).not.toBe("");
+    });
+
+    it.each(uses)("uses %s", (use) => {
+      expect(code).toContain(use);
+    });
+
+    it("writes no ARIA of the host's own (no aria-* attribute or property but the copy field's name, no role, tabindex or id)", () => {
+      expect(code).toMatch(/<ocelle-[a-z-]+[\s>]/);
+      const aria = [...code.matchAll(/<([a-z-]+)[^>]*?\saria-[a-z]+=|\baria[A-Z]\w*|["'`]aria-[a-z]+["'`]/g)].map((match) => match[0]);
+      expect(aria.filter((found) => !/^<ocelle-copy-field\s[^>]*?aria-label=$/.test(found))).toEqual([]);
+      expect(code).not.toMatch(/\s(?:role|tabindex|id)=/);
+      expect(code).not.toMatch(/setAttribute\(\s*["'`](?:role|tabindex|id)["'`]|\.(?:role|tabIndex|id)\s*=/);
+    });
+
+    it("uses no ResizeObserver and no clipboard call", () => {
+      expect(code).toMatch(/<ocelle-[a-z-]+[\s>]/);
+      expect(code).not.toMatch(/ResizeObserver|navigator\.clipboard|execCommand|ClipboardItem|clipboardData/);
+    });
+  });
+});
+
+/**
+ * 014 phase 7 (T111, plan.md VII): the Unreleased lead names this feature's MINOR change, the nine elements, the six
+ * events and the custom states' Chromium 125 / WebKit 17.4 within the merged floor (reviews/phase-4/decision-1.md).
+ */
+describe("packages/elements/CHANGELOG.md MINOR entry (014 T111)", () => {
+  const unreleased = /^## Unreleased\n([\s\S]*?)(?=^## |(?![\s\S]))/m.exec(read("CHANGELOG.md"))?.[1] ?? "";
+  const lead = flat(unreleased.slice(0, Math.max(unreleased.indexOf("### "), 0)));
+
+  it("states that the selection and input elements are a MINOR change", () => {
+    expect(lead).toContain("Selection and input elements, a MINOR change");
+  });
+
+  it.each([...selectionElements, ...selectionEvents])("names `%s`", (name) => {
+    expect(lead).toContain(`\`${name}\``);
+  });
+
+  it("names the custom states' Chromium 125 and WebKit 17.4 within the release's Chromium 135 and WebKit 17.4 floor", () => {
+    expect(lead).toContain("which need Chromium 125 and WebKit 17.4, within the release's engine floor of Chromium 135 and WebKit 17.4");
   });
 });
 

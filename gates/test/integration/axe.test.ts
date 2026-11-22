@@ -36,7 +36,7 @@ function gate(at: string, extra: Record<string, string> = {}): Promise<Ran> {
 const wide = "clipped column of the wide table's scroll box (`elmPartiallyObscured`)";
 const linked = "clipped column of the linked wide table's scroll box (`elmPartiallyObscured`)";
 
-const clipped = "clipped line of the code block's scroll box (`elmPartiallyObscured`)";
+const clippedLine = "clipped line of the code block's scroll box (`elmPartiallyObscured`)";
 
 /**
  * The 46 excepted notes, in run order (stories in index order, each in light then dark): the Prose document's ten
@@ -59,19 +59,31 @@ const excepted: readonly string[] = [
       // DigestScroll: one node per digest group the scroll box clips (operator decision,
       // specs/020-disclosure-code-block/reviews/phase-2/operator-digest-axe-decision.md).
       (story === "digest-scroll" ? Array.from({ length: 12 }, (_, index) => `.group:nth-child(${String(11 + 2 * index)})`) : [".code"]).map(
-        (selector) => `note: elements-ocelle-code-block--${story}/${theme}: color-contrast-incomplete: serious: ocelle-code-block >>> ${selector} excepted (${clipped})`,
+        (selector) => `note: elements-ocelle-code-block--${story}/${theme}: color-contrast-incomplete: serious: ocelle-code-block >>> ${selector} excepted (${clippedLine})`,
       ),
     ),
   ),
 ];
 
+/**
+ * The twelve excepted notes of the scrolling listbox story (014 plan.md § Complexity Tracking, FR-051, operator decision
+ * 2026-11-14 option (a)): the options the list part's `overflow: auto` box clips, in run order, after the Prose
+ * document's and the code-block stories' (`excepted`).
+ */
+const clipped = "option clipped by the list part's `overflow: auto` scroll box (`elmPartiallyObscured`)";
+const listboxExcepted: readonly string[] = (["light", "dark"] as const).flatMap((theme) =>
+  ["epsilon", "zeta", "eta", "theta", "iota", "kappa"].map(
+    (value) => `note: elements-ocelle-listbox--scrolling-listbox/${theme}: color-contrast-incomplete: serious: ocelle-option[value="${value}"] >>> .label excepted (${clipped})`,
+  ),
+);
+
 describe("axe gate (gates/bin/axe.ts)", () => {
   it(
-    "audits the repository's 432 story-themes and exits 0, the Prose document's ten and the overflowing code-block stories' thirty-six color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)",
+    "audits the repository's 562 story-themes and exits 0, the Prose document's ten, the overflowing code-block stories' thirty-six and the scrolling listbox story's twelve color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029; 014 FR-051)",
     async () => {
       const at = await root("repository");
       const ran = await gate(at);
-      expect(ran).toEqual({ code: 0, stdout: ["axe: 432 story-theme runs, 0 serious or critical; 46 notes (0 incomplete, 46 excepted)"], stderr: excepted });
+      expect(ran).toEqual({ code: 0, stdout: ["axe: 562 story-theme runs, 0 serious or critical; 58 notes (0 incomplete, 58 excepted)"], stderr: [...excepted, ...listboxExcepted] });
     },
     timeout,
   );
@@ -83,8 +95,8 @@ describe("axe gate (gates/bin/axe.ts)", () => {
       const ran = await gate(at);
       expect(ran).toEqual({
         code: 1,
-        stdout: ["unlabelled--button/light: axe: button-name: critical: #plant-unlabelled", "unlabelled--button/dark: axe: button-name: critical: #plant-unlabelled", "axe: 2 findings in 434 story-theme runs"],
-        stderr: excepted,
+        stdout: ["unlabelled--button/light: axe: button-name: critical: #plant-unlabelled", "unlabelled--button/dark: axe: button-name: critical: #plant-unlabelled", "axe: 2 findings in 564 story-theme runs"],
+        stderr: [...excepted, ...listboxExcepted],
       });
     },
     timeout,

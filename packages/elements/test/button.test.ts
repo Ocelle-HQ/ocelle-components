@@ -2,16 +2,18 @@ import { afterEach, describe, expect, it } from "vitest";
 import { commands } from "vitest/browser";
 import "../src/ocelle-button.ts";
 import "../src/ocelle-icon.ts";
+import "./fixtures/shadow-controls.ts";
 import { inProcessDriver } from "./in-process.ts";
 import { busyScenarios, busySinkScenarios } from "./scenarios/busy.ts";
-import { buttonScenarios } from "./scenarios/button.ts";
+import { buttonScenarios, forwardedIconScenarios } from "./scenarios/button.ts";
 import { linkScenarios, linkSinkScenarios } from "./scenarios/link.ts";
 
 // User Story 1's browser scenarios for `ocelle-button` in button mode, in process on the element source (012
 // research.md R-11; tasks.md T018): the shared bodies of scenarios/button.ts on the in-process driver, light and dark,
 // forced colours and right to left as each body sets them, with axe on each body's page; the same bodies run on the
 // built browser build on the strict-CSP fixture in test/browser/button.test.ts. `ocelle-icon` is imported for the
-// bodies that slot one. Forced colours and reduced motion are reset after each test (in-process tests share one page).
+// bodies that slot one, and the test-only controls for op 022's forwarded icon slot. Forced colours and reduced motion
+// are reset after each test (in-process tests share one page).
 const driver = inProcessDriver();
 
 afterEach(async () => {
@@ -21,6 +23,13 @@ afterEach(async () => {
 
 describe("ocelle-button, in process (US1)", { timeout: 60_000 }, () => {
   it.each(buttonScenarios)("$name", async ({ run, expected }) => {
+    expect(await run(driver)).toEqual(expected);
+  });
+});
+
+// Op 022 (#57): the pin with a forwarded icon slot, in process only (scenarios/button.ts `forwardedIconScenarios`).
+describe("ocelle-button with an icon slot forwarded from another shadow root, in process (op 022)", { timeout: 60_000 }, () => {
+  it.each(forwardedIconScenarios)("$name", async ({ run, expected }) => {
     expect(await run(driver)).toEqual(expected);
   });
 });
