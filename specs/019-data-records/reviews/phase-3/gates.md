@@ -33,8 +33,8 @@ baselines: wrote 28 files (28 added, 0 changed, 0 removed), 513240 bytes in tota
 
 | Run | Result |
 |---|---|
-| `vitest run --project elements` on `evidence-chain.test.ts`, the two chain entry tests, `entry-root`, `define` and `exports` | 39 passed |
-| `vitest run --project elements-browser packages/elements/test/browser/evidence-chain.test.ts` | 23 passed |
+| `vitest run --project elements` on `evidence-chain.test.ts`, the two chain entry tests, `entry-root`, `define` and `exports` | 39 passed (41 with the two bodies added for the mutation run, `mutation.md`) |
+| `vitest run --project elements-browser packages/elements/test/browser/evidence-chain.test.ts` | 23 passed (25 with the two bodies added for the mutation run) |
 | `vitest run --project elements-node packages/elements/test/node` | 749 passed |
 | `vitest run --project elements-build packages/elements/test/build/build.test.ts` | 28 passed |
 | `vitest run --project styles --project styles-browser packages/styles` | 216 passed |

@@ -32,3 +32,9 @@ US3-3 fail (3 bodies), and the no-loop body fails at its layout wait.
 
 The plants ran before the step's `part="content"` became a block (`gates.md`, `plants.md`); that change touches no
 planted line, and `:host([hidden])` of the step, the one step plant, is unchanged.
+
+After mutation run 1 (`mutation.md`) the chain no longer disconnects its size observer on disconnection and no longer
+calls `#lineEnds()` from `updated()` (observing delivers once after each render), and its `<li>` class is written
+through `ifDefined`. All seventeen plants were applied again to that final source with the same guards (the
+in-process file now has 26 bodies): every plant still bites (the same bodies fail; plant 2 fails 3 bodies, plant 15
+2, every other 1).

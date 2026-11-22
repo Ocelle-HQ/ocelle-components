@@ -690,7 +690,7 @@ gates pass.
 - [X] T071 [US3] Gates as T022; record the Storybook gates' summary lines.
 - [X] T072 [US3] Affected plants: `pnpm run gate:plants -- --affected $(cat specs/019-data-records/reviews/phase-3/base.sha)`, recorded in `specs/019-data-records/reviews/phase-3/plants.md` in op 016's form; exit 0; committed with the green commit.
 - [X] T073 [US3] Element plants after green, recorded in `specs/019-data-records/reviews/phase-3/element-plants.md`: the step marker's `aria-hidden` removed; `data-line-end` never set; the ordinal counting only default steps; the chip radius `radius-pill`; the chip block padding `space-1`; the chip `<li>` without the reserved line box; the chip's box rule moved inside the variant block; a connector drawn as a `background-color`; the ring in `rule` and the chip outline in `control-border`; the line-end callback also toggling `padding-inline-end`; `pill` written into the chain's styles; `role="list"` removed; a blank host `aria-label` treated as decisive; the pre-upgrade `aria-hidden` rule removed; `:host([hidden])` removed from the chain and from the step. A plant that does not bite stops the phase.
-- [ ] T074 [US3] Mutation: `pnpm run gate:mutation -- --base $(cat specs/019-data-records/reviews/phase-3/base.sha)`; record the result in the phase review.
+- [X] T074 [US3] Mutation: `pnpm run gate:mutation -- --base $(cat specs/019-data-records/reviews/phase-3/base.sha)`; record the result in the phase review.
 
 **Checkpoint**: `tdd-check.sh 3` reports `pass`; quickstart steps 1 to 3 pass for the chain.
 

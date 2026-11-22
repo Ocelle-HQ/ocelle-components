@@ -489,5 +489,39 @@ export const evidenceChainChangeScenarios: readonly Scenario[] = [
   },
 ];
 
-/** Every chain body, in the order of tasks.md T055 and T056, then the run-time changes. */
-export const evidenceChainScenarios: readonly Scenario[] = [...evidenceChainStoryScenarios, ...evidenceChainGeometryScenarios, ...evidenceChainEdgeScenarios, ...evidenceChainChangeScenarios];
+/**
+ * The run-time changes added for the mutation run (tasks.md T074): a step's `aria-hidden` set and removed after mount
+ * (the observer's attribute filter), and a chain moved to another parent and then narrowed (the size observer kept
+ * across a disconnection).
+ */
+export const evidenceChainMutationScenarios: readonly Scenario[] = [
+  {
+    name: "aria-hidden set and removed on a step after mount: the step leaves the list and the ordinals, then comes back (FR-025)",
+    run: async (driver) => {
+      await page(driver, ch("c", 'label="Evidence"', six("s", false)));
+      const state = async (): Promise<unknown> => ({ ordinals: await read(driver, 'return ordinals("c");'), items: (await texts(driver, "c")).texts });
+      await driver.setAttribute("s2", "aria-hidden", "true");
+      const masked = await state();
+      await driver.setAttribute("s2", "aria-hidden", null);
+      return { masked, shown: await state() };
+    },
+    expected: {
+      masked: { ordinals: ["1", "2", "3", "4", "5"], items: ["Spec", "Tasks", "Red commit", "Green commit", "Review"] },
+      shown: { ordinals: ["1", "2", "3", "4", "5", "6"], items: names },
+    },
+  },
+  {
+    name: "a chain moved to another parent and then narrowed to 200 px wraps with each line's ends marked, as before the move (R-12)",
+    run: async (driver) => {
+      await page(driver, `<div id="a">${ch("c", 'label="Evidence"', six("s", true))}</div><div id="b"></div>`);
+      const wide = await read(driver, 'return { lines: tops("c"), ends: ends("c") };');
+      await driver.move("c", "b");
+      await driver.setAttribute("b", "data-w", "200");
+      return { wide, narrow: await read(driver, 'return { lines: tops("c") > 1, ends: ends("c"), inside: inside("c") };') };
+    },
+    expected: { wide: { lines: 1, ends: ["ok", "ok", "ok", "ok", "ok", "ok"] }, narrow: { lines: true, ends: ["ok", "ok", "ok", "ok", "ok", "ok"], inside: true } },
+  },
+];
+
+/** Every chain body, in the order of tasks.md T055 and T056, then the run-time changes and those of T074. */
+export const evidenceChainScenarios: readonly Scenario[] = [...evidenceChainStoryScenarios, ...evidenceChainGeometryScenarios, ...evidenceChainEdgeScenarios, ...evidenceChainChangeScenarios, ...evidenceChainMutationScenarios];

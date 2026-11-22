@@ -9,9 +9,10 @@
 // - Name (R-09): `resolveName(host aria-label, label)` of the overflow-region module, on the `<ol>`; a blank host
 //   `aria-label` counts as absent.
 // - Ordinals (SPEC-3-02): a default step's 1-based position among the visible steps, chip steps counted.
-// - Line ends (R-12): after each render and from one `ResizeObserver` on the `<ol>` and every `<li>`, each `<li>` whose
-//   next `<li>` starts lower, and the last, gets `data-line-end`, which hides its connector. The connector lies in the
-//   `<li>`'s trailing padding, which exists either way, so the write changes no size and the observer does not loop.
+// - Line ends (R-12): from one `ResizeObserver` on the `<ol>` and every `<li>`, observed after each render (which
+//   delivers once) and kept across a disconnection, each `<li>` whose next `<li>` starts lower, and the last, gets
+//   `data-line-end`, which hides its connector. The connector lies in the `<li>`'s trailing padding, which exists
+//   either way, so the write changes no size and the observer does not loop.
 // - Look (R-12; spike § 2): a wrapping flex row, `--ocelle-space-3` between lines; each `<li>` reserves a
 //   `--ocelle-size-step` line box, the marker a round `--ocelle-size-step` box ringed by `--ocelle-ring-step` in
 //   `--ocelle-color-ink-muted`, the ordinal in `xs` medium tabular figures; a default step's first line centred on the
@@ -45,6 +46,7 @@ export class OcelleEvidenceChain extends LitElement {
   static override shadowRootOptions: ShadowRootInit = { ...LitElement.shadowRootOptions, slotAssignment: "manual" };
 
   static override properties = {
+    // Stryker disable next-line ObjectLiteral: equivalent, {} gives Lit's default options, which are type String's (attribute "label", the default converter, not reflected)
     label: { type: String },
   };
 
@@ -188,14 +190,19 @@ export class OcelleEvidenceChain extends LitElement {
     this.#mutations.observe(this, { childList: true, subtree: true, attributes: true, attributeFilter: ["hidden", "aria-hidden", "variant"] });
   }
 
+  // The size observer is kept across a disconnection: it observes only the chain's own shadow nodes, which leave the
+  // document with it, and a chain moved to another parent keeps deciding its line ends with no new render.
+  // Stryker disable next-line BlockStatement: equivalent, the body's two calls are each equivalent (below), so is leaving out both
   override disconnectedCallback(): void {
+    // Stryker disable next-line CallExpression: equivalent, Lit's own disconnection notifies reactive controllers, which this element has none of, and calls setConnected(false) on its child part, which reaches only async directives: its ifDefined is synchronous
     super.disconnectedCallback();
+    // Stryker disable next-line CallExpression: equivalent, a kept observer re-renders a chain out of the document, which shows nothing, and observe() on reconnection replaces its options
     this.#mutations.disconnect();
-    this.#sizes.disconnect();
   }
 
   override attributeChangedCallback(name: string, old: string | null, value: string | null): void {
     super.attributeChangedCallback(name, old, value);
+    // Stryker disable next-line ConditionalExpression: equivalent for the `true` variant, an update for another attribute, with no property changed, renders the same list
     if (name === "aria-label") this.requestUpdate();
   }
 
@@ -220,7 +227,7 @@ export class OcelleEvidenceChain extends LitElement {
     const items = steps.map((step, at) => {
       const chip = step.getAttribute("variant") === "chip";
       const marker = chip ? nothing : html`<span class="marker" aria-hidden="true">${at + 1}</span>`;
-      return html`<li role="listitem" class=${chip ? "chip" : ""}>${marker}<span class="connector" aria-hidden="true"></span><slot></slot></li>`;
+      return html`<li role="listitem" class=${ifDefined(chip ? "chip" : undefined)}>${marker}<span class="connector" aria-hidden="true"></span><slot></slot></li>`;
     });
     return html`<ol part="list" role="list" aria-label=${ifDefined(name)}>${items}</ol>`;
   }
@@ -230,13 +237,13 @@ export class OcelleEvidenceChain extends LitElement {
     this.#steps().forEach((step, at) => {
       slots[at]?.assign(step);
     });
-    this.#sizes.disconnect();
+    // Observing a target, anew or again, delivers its size once after the next layout, so the line ends are decided
+    // after every render, in the observer's callback, and again whenever the list or an item changes size.
     const list = this.renderRoot.querySelector("ol");
     if (list !== null) {
       this.#sizes.observe(list);
       for (const item of list.children) this.#sizes.observe(item);
     }
-    this.#lineEnds();
   }
 }
 
