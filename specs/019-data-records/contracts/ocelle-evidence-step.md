@@ -23,7 +23,7 @@ Module `packages/elements/src/ocelle-evidence-step.ts`, class `OcelleEvidenceSte
 | Element | Styles |
 |---|---|
 | `:host` | `display: inline-block`; `:host([hidden]) { display: none }` |
-| `[part="content"]` | `overflow-wrap: anywhere` under `:host([wrap="anywhere"])` |
+| `[part="content"]` | `display: block`, a block inside the inline-block host, so the content's lines leave no gap between their line boxes that axe's colour-contrast check reads as an overlap (`bgOverlap`; an inline span of two lines did, on the long-step story; phase 3 review R1-05). `overflow-wrap: anywhere` under `:host([wrap="anywhere"])` |
 
 The step's type, colour and chip box come from its container (`::slotted()`), with the chip's box rule outside the
 container's variant block so the outline stays in forced colours (`CanvasText`;
