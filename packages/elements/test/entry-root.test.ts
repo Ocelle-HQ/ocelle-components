@@ -9,7 +9,8 @@ import * as root from "../src/index.ts";
 // `ocelle-section-header`, `ocelle-page-header` (T027), `ocelle-context-sidebar` (T034) and `ocelle-personal-rail`
 // (T042); and since 013 `ocelle-facts`, `ocelle-fact`, `ocelle-empty-state` and `ocelle-progress`. This file's own
 // iframe (Vitest browser mode, isolate on) holds only what this import defines. Since 019 (T010) also `ocelle-data-table`,
-// and since 019 phase 2 (T034) `ocelle-event-timeline` and `ocelle-timeline-event`.
+// since 019 phase 2 (T034) `ocelle-event-timeline` and `ocelle-timeline-event`, and since 019 phase 3 (T057)
+// `ocelle-evidence-chain` and `ocelle-evidence-step`.
 describe("importing src/index.ts", () => {
   it("defines ocelle-icon, ocelle-brand-mark, ocelle-scroller, ocelle-workflow-board, ocelle-workflow-lane, ocelle-list-detail, ocelle-card, ocelle-section-header, ocelle-page-header, ocelle-context-sidebar and ocelle-personal-rail as the OcelleIcon, OcelleBrandMark, OcelleScroller, OcelleWorkflowBoard, OcelleWorkflowLane, OcelleListDetail, OcelleCard, OcelleSectionHeader, OcellePageHeader, OcelleContextSidebar and OcellePersonalRail it exports", () => {
     const exported = root as Record<string, unknown>;
@@ -98,6 +99,18 @@ describe("importing src/index.ts", () => {
       event: customElements.get("ocelle-timeline-event"),
       assigned: document.getElementById("t")?.shadowRoot?.querySelector<HTMLSlotElement>("li > slot")?.assignedElements().map((each) => each.id),
     }).toEqual({ types: ["function", "function"], timeline: exported.OcelleEventTimeline, event: exported.OcelleTimelineEvent, assigned: ["ev"] });
+  });
+
+  it("defines ocelle-evidence-chain and ocelle-evidence-step as the OcelleEvidenceChain and OcelleEvidenceStep it exports, and a chain renders its step in a listitem (019 phase 3)", async () => {
+    const exported = root as Record<string, unknown>;
+    document.body.innerHTML = '<ocelle-evidence-chain id="c"><ocelle-evidence-step id="st">Spec</ocelle-evidence-step></ocelle-evidence-chain>';
+    await (document.getElementById("c") as unknown as { updateComplete: Promise<unknown> }).updateComplete;
+    expect({
+      types: [typeof exported.OcelleEvidenceChain, typeof exported.OcelleEvidenceStep],
+      chain: customElements.get("ocelle-evidence-chain"),
+      step: customElements.get("ocelle-evidence-step"),
+      assigned: document.getElementById("c")?.shadowRoot?.querySelector<HTMLSlotElement>("li > slot")?.assignedElements().map((each) => each.id),
+    }).toEqual({ types: ["function", "function"], chain: exported.OcelleEvidenceChain, step: exported.OcelleEvidenceStep, assigned: ["st"] });
   });
 
   it("defines ocelle-data-table as the OcelleDataTable it exports, and a data table renders its region with the table assigned (019)", async () => {

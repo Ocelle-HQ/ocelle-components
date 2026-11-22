@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { define } from "../src/define.ts";
 import type * as DataTableModule from "../src/ocelle-data-table.ts";
 import type * as TimelineModule from "../src/ocelle-event-timeline.ts";
+import type * as ChainModule from "../src/ocelle-evidence-chain.ts";
+import type * as StepModule from "../src/ocelle-evidence-step.ts";
 import type * as EventModule from "../src/ocelle-timeline-event.ts";
 
 // Guarded registration (005 FR-006, research.md R-02, T014): `define` defines a free tag, and for a tag already
@@ -70,5 +72,27 @@ describe("define(tag, constructor)", () => {
       instance: element instanceof first.OcelleEventTimeline,
       assigned,
     }).toEqual({ distinct: [true, true], timeline: true, event: true, instance: true, assigned: ["ev"] });
+  });
+  // 019 phase 3 (T057): the chain and its step, as the timeline above.
+  it("two copies of the chain and the step: the first definitions win, the tags resolve to the first copies' classes, and a chain renders its list with the step assigned", async () => {
+    const chains = async (name: string): Promise<typeof ChainModule> => import(/* @vite-ignore */ `../src/ocelle-evidence-chain.ts?copy=${name}`) as Promise<typeof ChainModule>;
+    const steps = async (name: string): Promise<typeof StepModule> => import(/* @vite-ignore */ `../src/ocelle-evidence-step.ts?copy=${name}`) as Promise<typeof StepModule>;
+    const firstStep = await steps("first");
+    const secondStep = await steps("second");
+    const first = await chains("first");
+    const second = await chains("second");
+    const element = document.createElement("ocelle-evidence-chain");
+    element.innerHTML = '<ocelle-evidence-step id="es">Spec</ocelle-evidence-step>';
+    document.body.append(element);
+    await (element as unknown as { updateComplete: Promise<unknown> }).updateComplete;
+    const assigned = element.shadowRoot?.querySelector<HTMLSlotElement>("ol > li > slot")?.assignedElements().map((each) => each.id) ?? [];
+    element.remove();
+    expect({
+      distinct: [first.OcelleEvidenceChain !== second.OcelleEvidenceChain, firstStep.OcelleEvidenceStep !== secondStep.OcelleEvidenceStep],
+      chain: customElements.get("ocelle-evidence-chain") === first.OcelleEvidenceChain,
+      step: customElements.get("ocelle-evidence-step") === firstStep.OcelleEvidenceStep,
+      instance: element instanceof first.OcelleEvidenceChain,
+      assigned,
+    }).toEqual({ distinct: [true, true], chain: true, step: true, instance: true, assigned: ["es"] });
   });
 });

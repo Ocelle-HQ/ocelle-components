@@ -6,13 +6,13 @@ import { describe, expect, it } from "vitest";
 // (T051) `OcelleListDetail`, since 011 `OcelleCard`, `OcelleContextSidebar` (011 T035a), `OcellePageHeader` (011
 // T028a), `OcellePersonalRail` (011 T043a) and `OcelleSectionHeader`, since 008 `OcelleDialog` (008 T017),
 // `OcelleDrawer` (008 T032) and `OcelleTooltip` (008 T043), since 013 (T006) `OcelleFact` and `OcelleFacts`, since 013
-// phase 2 (T025) `OcelleEmptyState`, since 013 phase 3 (T040) `OcelleProgress`, since 019 (T010) `OcelleDataTable`, and since 019 phase 2 (T034) `OcelleEventTimeline` and `OcelleTimelineEvent`, in the module namespace's sorted
+// phase 2 (T025) `OcelleEmptyState`, since 013 phase 3 (T040) `OcelleProgress`, since 019 (T010) `OcelleDataTable`, since 019 phase 2 (T034) `OcelleEventTimeline` and `OcelleTimelineEvent`, and since 019 phase 3 (T057) `OcelleEvidenceChain` and `OcelleEvidenceStep`, in the module namespace's sorted
 // order, and nothing else at run time (the `IconName` type is erased; the overflow-region, lane-count, tier and
 // list-detail measurement modules and the overlays' internal base are internal and not exported).
 describe("@ocelle/elements root exports", () => {
-  it("exports OcelleBrandMark, OcelleCard, OcelleContextSidebar, OcelleDataTable, OcelleDialog, OcelleDrawer, OcelleEmptyState, OcelleEventTimeline, OcelleFact, OcelleFacts, OcelleIcon, OcelleListDetail, OcellePageHeader, OcellePersonalRail, OcelleProgress, OcelleScroller, OcelleSectionHeader, OcelleTimelineEvent, OcelleTooltip, OcelleWorkflowBoard and OcelleWorkflowLane and nothing else", async () => {
+  it("exports OcelleBrandMark, OcelleCard, OcelleContextSidebar, OcelleDataTable, OcelleDialog, OcelleDrawer, OcelleEmptyState, OcelleEventTimeline, OcelleEvidenceChain, OcelleEvidenceStep, OcelleFact, OcelleFacts, OcelleIcon, OcelleListDetail, OcellePageHeader, OcellePersonalRail, OcelleProgress, OcelleScroller, OcelleSectionHeader, OcelleTimelineEvent, OcelleTooltip, OcelleWorkflowBoard and OcelleWorkflowLane and nothing else", async () => {
     const module: Record<string, unknown> = await import("../src/index.ts");
-    const names = ["OcelleBrandMark", "OcelleCard", "OcelleContextSidebar", "OcelleDataTable", "OcelleDialog", "OcelleDrawer", "OcelleEmptyState", "OcelleEventTimeline", "OcelleFact", "OcelleFacts", "OcelleIcon", "OcelleListDetail", "OcellePageHeader", "OcellePersonalRail", "OcelleProgress", "OcelleScroller", "OcelleSectionHeader", "OcelleTimelineEvent", "OcelleTooltip", "OcelleWorkflowBoard", "OcelleWorkflowLane"];
+    const names = ["OcelleBrandMark", "OcelleCard", "OcelleContextSidebar", "OcelleDataTable", "OcelleDialog", "OcelleDrawer", "OcelleEmptyState", "OcelleEventTimeline", "OcelleEvidenceChain", "OcelleEvidenceStep", "OcelleFact", "OcelleFacts", "OcelleIcon", "OcelleListDetail", "OcellePageHeader", "OcellePersonalRail", "OcelleProgress", "OcelleScroller", "OcelleSectionHeader", "OcelleTimelineEvent", "OcelleTooltip", "OcelleWorkflowBoard", "OcelleWorkflowLane"];
     expect(Object.keys(module)).toEqual(names);
     expect(names.map((name) => typeof module[name])).toEqual(names.map(() => "function"));
   });

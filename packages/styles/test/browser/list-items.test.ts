@@ -12,7 +12,10 @@ import { violations } from "./serve.ts";
 //   the aria-hidden event are not shown (no client rect, display none), so the next visible event starts directly
 //   below the one before it; the slotted time's text is shown before the content's; an event outside a timeline stays
 //   inline. Once the elements are defined the rules no longer match.
-// The phase 3 chain bodies join this file.
+// Since 019 phase 3 (T059) the file also holds an `ocelle-evidence-chain` of five steps (the second `hidden`, the third
+// `aria-hidden="true"`, the fourth a chip), undefined, beside a step outside a chain: before upgrade each visible step
+// is a block below the previous visible one, the hidden and the aria-hidden step are not shown, and a step outside a
+// chain stays inline; once defined the rules no longer match.
 const { open } = suite();
 
 /** Each event's display, client rect count and block start and end, and the slotted time against its content. */
@@ -55,6 +58,46 @@ describe("ocelle-timeline-event children of an undefined ocelle-event-timeline b
     await close(page);
     expect({ before, defined, reported }).toEqual({
       before: { displays: ["block", "block", "block"], below: [true, true], directly: true, hidden: ["none", 0], masked: ["none", 0], timeFirst: true, loose: "inline" },
+      defined: ["inline", "inline"],
+      reported: [],
+    });
+  });
+});
+
+/** Each step's display, client rect count and block start and end. */
+function steps(page: Page): Promise<unknown> {
+  return page.evaluate(() => {
+    const read = (id: string): { display: string; rects: number; top: number; bottom: number } => {
+      const element = document.getElementById(id);
+      if (element === null) throw new Error(`no #${id}`);
+      const rect = element.getBoundingClientRect();
+      return { display: getComputedStyle(element).display, rects: element.getClientRects().length, top: rect.top, bottom: rect.bottom };
+    };
+    const [first, second, third] = [read("c-first"), read("c-second"), read("c-third")];
+    return {
+      displays: [first.display, second.display, third.display],
+      below: [second.top >= first.bottom - 0.5, third.top >= second.bottom - 0.5],
+      directly: Math.abs(second.top - first.bottom) <= 0.5,
+      hidden: [read("c-hidden").display, read("c-hidden").rects],
+      masked: [read("c-masked").display, read("c-masked").rects],
+      loose: read("c-loose").display,
+    };
+  });
+}
+
+describe("ocelle-evidence-step children of an undefined ocelle-evidence-chain before upgrade (019 R-08)", { timeout: 60_000 }, () => {
+  it.each(themes)("in %s: each visible step is a block below the previous one, a hidden and an aria-hidden step are not shown; a step outside a chain and every step once defined are inline", async (theme) => {
+    const page = await open("list-items.html", { colorScheme: theme });
+    const before = await steps(page);
+    await page.evaluate(() => {
+      customElements.define("ocelle-evidence-chain", class extends HTMLElement {});
+      customElements.define("ocelle-evidence-step", class extends HTMLElement {});
+    });
+    const defined = await page.evaluate(() => [getComputedStyle(document.querySelector("#c-first") ?? document.body).display, getComputedStyle(document.querySelector("#c-masked") ?? document.body).display]);
+    const reported = await violations(page);
+    await close(page);
+    expect({ before, defined, reported }).toEqual({
+      before: { displays: ["block", "block", "block"], below: [true, true], directly: true, hidden: ["none", 0], masked: ["none", 0], loose: "inline" },
       defined: ["inline", "inline"],
       reported: [],
     });

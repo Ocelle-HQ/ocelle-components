@@ -277,7 +277,7 @@ describe("generate(root) on the repository's element source", () => {
     const manifest = await generate(repo);
     const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
     expect(manifest.schemaVersion).toBe("1.0.0");
-    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-card.ts", "src/ocelle-context-sidebar.ts", "src/ocelle-data-table.ts", "src/ocelle-dialog.ts", "src/ocelle-drawer.ts", "src/ocelle-empty-state.ts", "src/ocelle-event-timeline.ts", "src/ocelle-fact.ts", "src/ocelle-facts.ts", "src/ocelle-icon.ts", "src/ocelle-list-detail.ts", "src/ocelle-page-header.ts", "src/ocelle-personal-rail.ts", "src/ocelle-progress.ts", "src/ocelle-scroller.ts", "src/ocelle-section-header.ts", "src/ocelle-timeline-event.ts", "src/ocelle-tooltip.ts", "src/ocelle-workflow-board.ts", "src/ocelle-workflow-lane.ts"]);
+    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-card.ts", "src/ocelle-context-sidebar.ts", "src/ocelle-data-table.ts", "src/ocelle-dialog.ts", "src/ocelle-drawer.ts", "src/ocelle-empty-state.ts", "src/ocelle-event-timeline.ts", "src/ocelle-evidence-chain.ts", "src/ocelle-evidence-step.ts", "src/ocelle-fact.ts", "src/ocelle-facts.ts", "src/ocelle-icon.ts", "src/ocelle-list-detail.ts", "src/ocelle-page-header.ts", "src/ocelle-personal-rail.ts", "src/ocelle-progress.ts", "src/ocelle-scroller.ts", "src/ocelle-section-header.ts", "src/ocelle-timeline-event.ts", "src/ocelle-tooltip.ts", "src/ocelle-workflow-board.ts", "src/ocelle-workflow-lane.ts"]);
     const [icon] = modules.find((module) => module.path === "src/ocelle-icon.ts")?.declarations ?? [];
     expect(icon).toMatchObject({
       kind: "class",
@@ -766,6 +766,42 @@ describe("generate(root) on the repository's element source", () => {
     }).toEqual({
       event: { slots: [{ name: "", described: true }, { name: "time", described: true }], parts: [{ name: "time", described: true }, { name: "content", described: true }], properties: [] },
       timeline: { slots: [{ name: "", described: true }], parts: [{ name: "list", described: true }], properties: [] },
+    });
+  });
+
+  // 019 phase 3 (T057, T067; contracts/ocelle-evidence-chain.md, contracts/ocelle-evidence-step.md): the two chain
+  // modules declare only their class; the step declares variant and wrap, reflected, the default slot and the content
+  // part; the chain declares label, not reflected, the default slot and the list part; neither has an event.
+  it("declares ocelle-evidence-step with variant (\"chip\" | undefined) and wrap (\"anywhere\" | undefined), reflected, the default slot and the content part; ocelle-evidence-chain with label (string | undefined), not reflected, the default slot and the list part; each module declaring only its class, with no event", async () => {
+    const manifest = await generate(repo);
+    const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const stepModule = modules.find((module) => module.path === "src/ocelle-evidence-step.ts");
+    const chainModule = modules.find((module) => module.path === "src/ocelle-evidence-chain.ts");
+    const [step] = stepModule?.declarations ?? [];
+    const [chain] = chainModule?.declarations ?? [];
+    const named = (list: unknown): unknown => ((list ?? []) as Record<string, unknown>[]).map(({ name, description }) => ({ name, described: typeof description === "string" && description !== "" }));
+    const described = (list: unknown): Record<string, unknown>[] =>
+      ((list ?? []) as Record<string, unknown>[]).map(({ description, ...rest }) => ({ ...rest, described: typeof description === "string" && description !== "" }));
+    expect({
+      declarations: [stepModule?.declarations.map((each) => each.name), chainModule?.declarations.map((each) => each.name)],
+      step: { name: step?.name, tagName: step?.tagName, events: step?.events },
+      chain: { name: chain?.name, tagName: chain?.tagName, events: chain?.events },
+    }).toEqual({
+      declarations: [["OcelleEvidenceStep"], ["OcelleEvidenceChain"]],
+      step: { name: "OcelleEvidenceStep", tagName: "ocelle-evidence-step", events: [] },
+      chain: { name: "OcelleEvidenceChain", tagName: "ocelle-evidence-chain", events: [] },
+    });
+    expect(described(step?.members)).toEqual([
+      { kind: "field", name: "variant", privacy: "public", type: { text: '"chip" | undefined' }, default: "undefined", attribute: "variant", reflects: true, described: true },
+      { kind: "field", name: "wrap", privacy: "public", type: { text: '"anywhere" | undefined' }, default: "undefined", attribute: "wrap", reflects: true, described: true },
+    ]);
+    expect(described(chain?.members)).toEqual([{ kind: "field", name: "label", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "label", described: true }]);
+    expect({
+      step: { slots: named(step?.slots), parts: named(step?.cssParts), properties: named(step?.cssProperties) },
+      chain: { slots: named(chain?.slots), parts: named(chain?.cssParts), properties: named(chain?.cssProperties) },
+    }).toEqual({
+      step: { slots: [{ name: "", described: true }], parts: [{ name: "content", described: true }], properties: [] },
+      chain: { slots: [{ name: "", described: true }], parts: [{ name: "list", described: true }], properties: [] },
     });
   });
 

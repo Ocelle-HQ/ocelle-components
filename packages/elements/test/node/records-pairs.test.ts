@@ -42,4 +42,22 @@ describe("the records elements' colour pairs (FR-013, R-13)", () => {
       decorative: ["color-rule-strong"],
     });
   });
+
+  // 019 phase 3 (T060; R-12, R-13): the chain and its step.
+  it("ocelle-evidence-chain: its template paints the step and chip text in color-ink and the ring, ordinal and chip outline in color-ink-muted, checked on every main ground in both themes, and the connector in the decorative color-rule-strong; a removed row is reported; ocelle-evidence-step paints no colour of its own", () => {
+    const sheets = templateSheets(read("../../src/ocelle-evidence-chain.ts"), region);
+    const stepSheets = templateSheets(read("../../src/ocelle-evidence-step.ts"), region);
+    const withoutMuted = pairs.filter((entry) => !(entry.theme === "light" && entry.fg === "color-ink-muted" && entry.bg === "color-inset"));
+    expect({
+      checked: recordsPairsCheck(sheets, pairs),
+      removed: recordsPairsCheck(sheets, withoutMuted).missing,
+      decorative: paintedTokens(sheets).filter((token) => decorativeTokens.includes(token)),
+      step: { sheets: stepSheets.length, painted: paintedTokens(stepSheets) },
+    }).toEqual({
+      checked: { painted: recordsPainted["ocelle-evidence-chain"], missing: [] },
+      removed: ["color-ink-muted on color-inset in light"],
+      decorative: ["color-rule-strong"],
+      step: { sheets: 1, painted: recordsPainted["ocelle-evidence-step"] },
+    });
+  });
 });

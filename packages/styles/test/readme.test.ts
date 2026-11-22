@@ -113,6 +113,9 @@ const fragments = [
   "Before the elements are defined, `base.css` shows each visible `ocelle-timeline-event` child of an undefined `ocelle-event-timeline` as a block, one event per line: `:where(ocelle-event-timeline:not(:defined) > ocelle-timeline-event:not([hidden]):not([aria-hidden=\"true\"])) { display: block; }`",
   "An `aria-hidden=\"true\"` event is not shown before upgrade either, as after it: `:where(ocelle-event-timeline:not(:defined) > ocelle-timeline-event[aria-hidden=\"true\"]) { display: none; }`",
   "An event's `time` attribute is rendered in its shadow root, so it shows only once the elements are defined; a slotted time (`slot=\"time\"`) is the page's own node and shows inline where it is written",
+  // 019 phase 3: the chain before upgrade (research R-08; contracts/ocelle-evidence-chain.md § Before upgrade; tasks.md T059)
+  "Before the elements are defined, `base.css` shows each visible `ocelle-evidence-step` child of an undefined `ocelle-evidence-chain` as a block, one step per line, with no marker or ordinal: `:where(ocelle-evidence-chain:not(:defined) > ocelle-evidence-step:not([hidden]):not([aria-hidden=\"true\"])) { display: block; }`",
+  "An `aria-hidden=\"true\"` step is not shown before upgrade either, as after it: `:where(ocelle-evidence-chain:not(:defined) > ocelle-evidence-step[aria-hidden=\"true\"]) { display: none; }`",
 ];
 
 /** The hook table of the README (FR-004): each hook's attribute, its values and its family, exactly. */
@@ -196,6 +199,11 @@ describe("packages/styles/CHANGELOG.md", () => {
   // 019 phase 2 (constitution VII; research R-08; tasks.md T035, T043).
   it("names the timeline rules before upgrade under Unreleased / Added (019 phase 2)", () => {
     expect(added).toMatch(/^- `ocelle-event-timeline` before upgrade/m);
+  });
+
+  // 019 phase 3 (constitution VII; research R-08; tasks.md T059, T066).
+  it("names the chain rules before upgrade under Unreleased / Added (019 phase 3)", () => {
+    expect(added).toMatch(/^- `ocelle-evidence-chain` before upgrade/m);
   });
 
   // 019 phase 1 (constitution VII; analysis I7 (a); IQ-3; tasks.md T011, T017).

@@ -1508,6 +1508,114 @@ describe("the ocelle-event-timeline stories in the built Storybook (019 FR-050, 
   });
 });
 
+// 019 phase 3 (tasks.md T061; contracts/checks.md § Stories; I3; phase 3 spike Q1 (b)): the 14 chain stories. Each is
+// in the built index and renders its chain (or, in the standalone story, its steps) in light and dark with no request
+// outside the origin; loaded at 320 × 800 the page does not scroll sideways and the element has a size (the empty
+// chain an inline size only, as it renders nothing); every list is named, except in the unnamed story, whose one list
+// has no name, and the empty and standalone stories, which render no list node; the standalone steps have a size; and
+// the two host `aria-label` stories name the list "Proof" and "Evidence".
+const chainStoryNames = [
+  "six-steps",
+  "wrapped-320",
+  "mixed-chips",
+  "all-chips",
+  "twenty-steps",
+  "long-step",
+  "wrap-anywhere",
+  "hidden-step",
+  "right-to-left",
+  "unnamed",
+  "empty",
+  "standalone-steps",
+  "named-by-host-aria-label",
+  "blank-host-aria-label",
+];
+const chainStories = chainStoryNames.map((name) => `elements-ocelle-evidence-chain--${name}`);
+const chainUnlisted = ["empty", "standalone-steps"];
+
+/** Opens a chain story at `width` × 800 and waits for its elements. */
+async function openChain(id: string, theme: "light" | "dark", width = 1280): Promise<{ readonly page: Page; readonly outside: readonly string[] }> {
+  if (browser === undefined) throw new Error("the suite did not start");
+  const page = await browser.newPage({ viewport: { width, height: 800 }, reducedMotion: "reduce" });
+  const outside: string[] = [];
+  page.on("request", (request) => {
+    if (!request.url().startsWith(`${origin}/`)) outside.push(request.url());
+  });
+  await page.goto(`${origin}/iframe.html?id=${id}&viewMode=story&globals=theme:${theme}`, { waitUntil: "load" });
+  await page.waitForSelector("#storybook-root ocelle-evidence-chain, #storybook-root ocelle-evidence-step", { state: "attached", timeout: 10_000 }).catch(() => undefined);
+  await page.evaluate(async () => {
+    await Promise.all([...document.querySelectorAll("#storybook-root ocelle-evidence-chain, #storybook-root ocelle-evidence-step")].map((each) => (each as unknown as { updateComplete?: Promise<unknown> }).updateComplete ?? Promise.resolve()));
+    await document.fonts.ready;
+    for (let frame = 0; frame < 3; frame += 1) await new Promise((resolve) => requestAnimationFrame(resolve));
+  });
+  return { page, outside };
+}
+
+describe("the ocelle-evidence-chain stories in the built Storybook (019 FR-050, T061)", { timeout: 60_000 }, () => {
+  it("are all in the built index", () => {
+    const index = JSON.parse(readFileSync(join(built.out, "index.json"), "utf8")) as { entries?: Record<string, unknown> };
+    expect(chainStories.filter((id) => index.entries?.[id] === undefined)).toEqual([]);
+  });
+
+  for (const name of chainStoryNames) {
+    const id = `elements-ocelle-evidence-chain--${name}`;
+    const element = name === "standalone-steps" ? "ocelle-evidence-step" : "ocelle-evidence-chain";
+    for (const theme of ["light", "dark"] as const) {
+      it(`${id} in ${theme}: renders its ${element} with no request outside the origin`, async () => {
+        const { page, outside } = await openChain(id, theme);
+        const observed = await page.evaluate((element) => ({ theme: document.documentElement.dataset.theme, defined: customElements.get(element) !== undefined, rendered: document.querySelector(`#storybook-root ${element}`)?.shadowRoot?.childElementCount !== undefined }), element);
+        await page.close();
+        expect({ observed, outside }).toEqual({ observed: { theme, defined: true, rendered: true }, outside: [] });
+      });
+    }
+
+    it(`${id} at 320 px: the page does not scroll sideways and the ${element} has a size`, async () => {
+      const { page } = await openChain(id, "light", 320);
+      const observed = await page.evaluate((element) => {
+        const host = document.querySelector(`#storybook-root ${element}`)?.getBoundingClientRect();
+        return { scrollWidth: document.documentElement.scrollWidth, inline: host !== undefined && host.width > 0, block: host !== undefined && host.height > 0 };
+      }, element);
+      const scrollWidth = await readScrollWidth(page.mainFrame());
+      await page.close();
+      expect({ ...observed, read: scrollWidth }).toEqual({ scrollWidth: 320, inline: true, block: name !== "empty", read: 320 });
+    });
+
+    it(`${id}: ${chainUnlisted.includes(name) ? "renders no list node" : name === "unnamed" ? "has one list, unnamed" : "every list is named, and there is one"}`, async () => {
+      const { page } = await openChain(id, "light");
+      const names = await listNames(page);
+      await page.close();
+      expect(chainUnlisted.includes(name) ? { lists: names.length } : { lists: names.length, unnamed: names.filter((each) => each.trim() === "").length }).toEqual(chainUnlisted.includes(name) ? { lists: 0 } : { lists: 1, unnamed: name === "unnamed" ? 1 : 0 });
+    });
+  }
+
+  it("standalone steps: a default and a chip ocelle-evidence-step with a size each, outside a chain, each its content part with no list node", async () => {
+    const { page } = await openChain("elements-ocelle-evidence-chain--standalone-steps", "light");
+    const observed = await page.evaluate(() => {
+      const steps = [...document.querySelectorAll("#storybook-root ocelle-evidence-step")];
+      return {
+        count: steps.length,
+        chips: steps.filter((step) => step.getAttribute("variant") === "chip").length,
+        chains: document.querySelectorAll("#storybook-root ocelle-evidence-chain").length,
+        sized: steps.every((step) => step.getBoundingClientRect().width > 0 && step.getBoundingClientRect().height > 0),
+        content: steps.every((step) => step.shadowRoot?.querySelector('[part="content"]') !== null && step.shadowRoot !== null),
+      };
+    });
+    const names = await listNames(page);
+    await page.close();
+    expect({ ...observed, lists: names.length }).toEqual({ count: 2, chips: 1, chains: 0, sized: true, content: true, lists: 0 });
+  });
+
+  it.each([
+    ["named-by-host-aria-label", "Proof"],
+    ["blank-host-aria-label", "Evidence"],
+  ])("%s: the list is named %s", async (name, label) => {
+    const { page } = await openChain(`elements-ocelle-evidence-chain--${name}`, "light");
+    const names = await listNames(page);
+    await page.close();
+    expect(names).toEqual([label]);
+  });
+});
+
 /** A stories file's text, empty while it does not exist. */
 function readStories(file: string): string {
   const url = new URL(`../../stories/${file}`, import.meta.url);
