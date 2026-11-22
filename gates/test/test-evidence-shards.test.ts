@@ -11,6 +11,17 @@ const alphaResult = { ...alpha, state: "passed", errors: [], durationMs: 0, test
 const betaResult = { ...beta, state: "passed", errors: [], durationMs: 1, tests: [passed] };
 const firstShard = { revision, index: 0, errors: [], files: [alphaResult] };
 const secondShard = { revision, index: 1, errors: [], files: [betaResult] };
+const measuredFiles = [
+  { project: "gates-integration", file: "gates/test/integration/visual.test.ts", seconds: 2095 },
+  { project: "gates-integration", file: "gates/test/integration/axe.test.ts", seconds: 530 },
+  { project: "elements-browser", file: "packages/elements/test/browser/drawer.test.ts", seconds: 349 },
+  { project: "elements (chromium)", file: "packages/elements/test/drawer.test.ts", seconds: 332 },
+  { project: "elements-browser", file: "packages/elements/test/browser/dialog.test.ts", seconds: 309 },
+  { project: "elements (chromium)", file: "packages/elements/test/dialog.test.ts", seconds: 293 },
+  { project: "elements-browser", file: "packages/elements/test/browser/notice.test.ts", seconds: 193 },
+  { project: "storybook-integration", file: "storybook/test/integration/elements-stories.test.ts", seconds: 192 },
+  { project: "elements-browser", file: "packages/elements/test/browser/button.test.ts", seconds: 155 },
+];
 
 describe("unit test shard plans", () => {
   it.each([
@@ -87,6 +98,18 @@ describe("unit test shard plans", () => {
     const node = { project: "elements-node", file: "packages/elements/test/node/manifest.test.ts" };
     const plan = planTestShards(revision, [alpha, stories, integration, browser, node, build], 2);
     expect(plan.shards).toEqual([[build, browser], [stories, integration, node, alpha]]);
+  });
+
+  it("isolates the long visual integration test without losing inventory", () => {
+    const measured = measuredFiles.map(({ project, file }) => ({ project, file }));
+    const visual = { project: "gates-integration", file: "gates/test/integration/visual.test.ts" };
+    const inventory = [...measured, alpha, beta];
+    const planned = planTestShards(revision, inventory, 6);
+
+    expect(planned.shards.find((shard) => shard.some(({ file }) => file === visual.file))).toEqual([visual]);
+    expect(planned.shards.flat()).toEqual(expect.arrayContaining(inventory));
+    expect(planned.shards.flat()).toHaveLength(inventory.length);
+    expect(planTestShards(revision, [...inventory].reverse(), 6)).toEqual(planned);
   });
 });
 
