@@ -13,3 +13,8 @@
 - The color-ink plant probe found six additional light differences and six matching dark captures. The manifest mirrors preserve their original plant verdicts, and all 13 targeted manifest and Storybook plants produced the expected results.
 - Code lint, test lint, style lint, TypeScript, and the 35-element manifest gate passed. The standalone element build passed, and the built-output CSP gate reported no findings across 62 files.
 - Full hosted checks and independent review remain pending.
+
+## Transition follow-up
+
+- After the rail correction, the exact visual recheck had zero changes and the repeated 32-case axe audit was clean.
+- Two browser cases preserve the same custom nav link and its full presentation through a genuine drawer exit, and preserve deliberate focus set by a close completion listener. Isolated faults compacting the drawer during exit or replacing the listener's focus failed those assertions. Test lint passed.

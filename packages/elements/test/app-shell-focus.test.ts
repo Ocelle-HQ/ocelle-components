@@ -25,6 +25,58 @@ describe("app shell drawer focus", () => {
     await expect.poll(() => deepActive() === menu(shell) && menu(shell) !== null).toBe(true);
   });
 
+  it("keeps the same custom destination and restores its full label inside the drawer", async () => {
+    const shell = await mount("project", '<ocelle-context-sidebar slot="sidebar" label="Projekte"><strong id="head" slot="head">Current project</strong><section><ocelle-nav-item id="item" compact href="#work" label="Work"></ocelle-nav-item></section><a id="foot" slot="footer" href="#settings">Settings</a></ocelle-context-sidebar>', 850);
+    const item = required(shell.querySelector("ocelle-nav-item"));
+    const destination = required(item.shadowRoot?.querySelector("a"));
+    const label = required(item.shadowRoot?.querySelector('[part="label"]'));
+    const head = required(document.getElementById("head"));
+    const footer = required(document.getElementById("foot"));
+    await expect.poll(() => label.hasAttribute("hidden")).toBe(true);
+    expect(head.getClientRects()).toHaveLength(0);
+    expect(footer.getClientRects()).toHaveLength(0);
+    destination.focus();
+    resize(700);
+    await expect.poll(() => deepActive() === menu(shell) && menu(shell) != null).toBe(true);
+    await open(shell);
+    await focused(destination);
+    expect(label.hasAttribute("hidden")).toBe(false);
+    expect(head.getClientRects().length).toBeGreaterThan(0);
+    expect(footer.getClientRects().length).toBeGreaterThan(0);
+    expect(item.compact).toBe(true);
+
+    const dialog = required(panel(shell));
+    for (const animation of dialog.getAnimations()) animation.finish();
+    shell.style.setProperty("--ocelle-motion-base", "10s");
+    resize(850);
+    await expect.poll(() => shell.tier).toBe("collapsed");
+    const exit = required(dialog.getAnimations()[0]);
+    exit.pause();
+    expect(dialog.open).toBe(true);
+    expect(label.hasAttribute("hidden")).toBe(false);
+    exit.finish();
+    await expect.poll(() => dialog.open).toBe(false);
+    await expect.poll(() => label.hasAttribute("hidden")).toBe(true);
+    expect(item.shadowRoot?.querySelector("a")).toBe(destination);
+    await focused(destination);
+  });
+
+  it("does not replace focus deliberately set by a close completion listener", async () => {
+    const shell = await mount("project", sidebar);
+    const content = required(document.querySelector<HTMLButtonElement>("#content"));
+    await open(shell);
+    let completions = 0;
+    shell.addEventListener("ocelle-drawer-close", () => {
+      completions++;
+      content.focus();
+    }, { once: true });
+    resize(850);
+    await expect.poll(() => panel(shell)?.open).toBe(false);
+    await shell.updateComplete;
+    expect(completions).toBe(1);
+    await focused(content);
+  });
+
   it("moves from close to the first available destination after leaving narrow", async () => {
     const shell = await mount("project", sidebar);
     await open(shell);
