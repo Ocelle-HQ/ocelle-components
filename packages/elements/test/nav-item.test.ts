@@ -148,7 +148,7 @@ describe("ocelle-nav-item", () => {
 });
 
 describe("compact bubble Escape ownership in drawers", () => {
-  it.each([false, true])("honors overlay ownership with a newer modal: %s", async (newerModal) => {
+  async function mountDrawers() {
     await commands.emulateReducedMotion("reduce");
     await driver.mount('<ocelle-drawer id="overlay" open label="Navigation"><button id="elsewhere">Another control</button><ocelle-nav-item id="nested-nav" compact label="Projects" href="#projects"></ocelle-nav-item></ocelle-drawer><ocelle-drawer id="newer" label="Tools"><button>New control</button></ocelle-drawer>');
     const item = required(document.querySelector("ocelle-nav-item"));
@@ -158,24 +158,29 @@ describe("compact bubble Escape ownership in drawers", () => {
     item.style.setProperty("--ocelle-tooltip-delay", "0ms");
     await expect.poll(() => panel()?.open).toBe(true);
     required(document.getElementById("elsewhere")).focus();
-    if (newerModal) {
-      newer.open = true;
-      await expect.poll(() => newer.shadowRoot?.querySelector("dialog")?.open).toBe(true);
-      // Programmatic hover presents a bubble outside the topmost overlay without moving keyboard focus.
-      required(item.shadowRoot?.querySelector("a")).dispatchEvent(new PointerEvent("pointerover", { bubbles: true, composed: true, pointerType: "mouse" }));
-    } else {
-      await commands.hover("nested-nav", "a");
-    }
+    return { item, panel, newer };
+  }
+
+  it("dismisses a hover-only bubble before its drawer while another control has focus", async () => {
+    const { item, panel } = await mountDrawers();
+    await commands.hover("nested-nav", "a");
     await expect.poll(() => bubble(item)?.matches(":popover-open")).toBe(true);
     await commands.press("Escape");
-    if (newerModal) {
-      await expect.poll(() => newer.shadowRoot?.querySelector("dialog")?.open).toBe(false);
-      expect(panel()?.open).toBe(true);
-    } else {
-      await expect.poll(() => bubble(item)?.matches(":popover-open")).toBe(false);
-      expect(panel()?.open).toBe(true);
-      await commands.press("Escape");
-      await expect.poll(() => panel()?.open).toBe(false);
-    }
+    await expect.poll(() => bubble(item)?.matches(":popover-open")).toBe(false);
+    expect(panel()?.open).toBe(true);
+    await commands.press("Escape");
+    await expect.poll(() => panel()?.open).toBe(false);
+  });
+
+  it("gives a newer modal priority over a bubble in the earlier drawer", async () => {
+    const { item, panel, newer } = await mountDrawers();
+    newer.open = true;
+    await expect.poll(() => newer.shadowRoot?.querySelector("dialog")?.open).toBe(true);
+    // Programmatic hover presents a bubble outside the topmost overlay without moving keyboard focus.
+    required(item.shadowRoot?.querySelector("a")).dispatchEvent(new PointerEvent("pointerover", { bubbles: true, composed: true, pointerType: "mouse" }));
+    await expect.poll(() => bubble(item)?.matches(":popover-open")).toBe(true);
+    await commands.press("Escape");
+    await expect.poll(() => newer.shadowRoot?.querySelector("dialog")?.open).toBe(false);
+    expect(panel()?.open).toBe(true);
   });
 });
