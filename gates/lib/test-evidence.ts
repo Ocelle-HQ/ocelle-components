@@ -135,7 +135,7 @@ function filesShape(value: unknown): value is TestFile[] {
 
 export function validTestPlan(value: unknown, revision: string): value is UnitTestPlan {
   return object(value) && revisionPattern.test(revision) && value.revision === revision
-    && filesShape(value.inventory) &&
+    && filesShape(value.inventory)
     && new Set(fileKeys(value.inventory)).size === value.inventory.length
     && Array.isArray(value.shards) && value.shards.length > 0
     && value.shards.every((shard): shard is TestFile[] => filesShape(shard) && shard.length > 0)
