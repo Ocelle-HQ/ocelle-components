@@ -177,7 +177,8 @@ function browserIdentity(): object | null {
   try {
     const require = createRequire(join(root, "package.json"));
     const playwright = require("playwright") as typeof import("playwright");
-    const chromium = realpathSync(process.env.OCELLE_CHROMIUM_PATH || playwright.chromium.executablePath());
+    const override = process.env.OCELLE_CHROMIUM_PATH;
+    const chromium = realpathSync(override ? override : playwright.chromium.executablePath());
     const version = execFileSync(chromium, ["--version"], { encoding: "utf8" }).trim();
     const stat = statSync(chromium);
     if (process.env.OCELLE_CHROMIUM_PATH) return { chromium, version, size: stat.size, modified: stat.mtimeMs };

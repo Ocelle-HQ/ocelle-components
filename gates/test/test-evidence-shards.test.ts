@@ -31,18 +31,18 @@ describe("unit test shard plans", () => {
     ["a 64-character nonhex revision", "g".repeat(64)],
   ])("rejects %s before planning or verifying", (_, sha) => {
     expect(() => planTestShards(sha, [alpha, beta], 2))
-      .toThrowError(new Error("invalid revision, shard count, or test inventory"));
+      .toThrow(new Error("invalid revision, shard count, or test inventory"));
     expect(validTestPlan({ ...manifest, revision: sha }, sha)).toBe(false);
   });
 
   it.each([0, -1, 1.5, 3])("rejects an invalid shard count of %s", (count) => {
     expect(() => planTestShards(revision, [alpha, beta], count))
-      .toThrowError(new Error("invalid revision, shard count, or test inventory"));
+      .toThrow(new Error("invalid revision, shard count, or test inventory"));
   });
 
   it("rejects duplicate planned test identities", () => {
     expect(() => planTestShards(revision, [alpha, alpha], 2))
-      .toThrowError(new Error("invalid revision, shard count, or test inventory"));
+      .toThrow(new Error("invalid revision, shard count, or test inventory"));
   });
 
   it.each([
@@ -76,7 +76,7 @@ describe("unit test shard plans", () => {
   ])("rejects $label before reading any results", ({ plan }) => {
     expect(validTestPlan(plan, revision)).toBe(false);
     expect(() => verifyTestShards(plan, undefined, revision))
-      .toThrowError(new Error("invalid plan inventory or revision"));
+      .toThrow(new Error("invalid plan inventory or revision"));
   });
 
   it("balances build, browser and node tests using their expected cost", () => {
@@ -106,7 +106,7 @@ describe("unit test shard reports", () => {
     { label: "non-array shard files", reports: [firstShard, { ...secondShard, files: null }] },
     { label: "malformed shard error list", reports: [firstShard, { ...secondShard, errors: [error, { name: 1, message: error.message }] }] },
   ])("rejects a $label as malformed", ({ reports }) => {
-    expect(() => verifyTestShards(manifest, reports, revision)).toThrowError(new Error("malformed shard results"));
+    expect(() => verifyTestShards(manifest, reports, revision)).toThrow(new Error("malformed shard results"));
   });
 
   it.each([
@@ -127,17 +127,17 @@ describe("unit test shard reports", () => {
     { label: "non-object test error", badFile: { ...betaResult, tests: [passed, { ...passed, errors: [error, null] }] } },
   ])("rejects a $label as malformed even beside otherwise valid records", ({ badFile }) => {
     const reports = [firstShard, { ...secondShard, files: [betaResult, badFile] }];
-    expect(() => verifyTestShards(manifest, reports, revision)).toThrowError(new Error("malformed shard results"));
+    expect(() => verifyTestShards(manifest, reports, revision)).toThrow(new Error("malformed shard results"));
   });
 
   it.each([-1, 2])("rejects out-of-range shard index %s", (index) => {
     expect(() => verifyTestShards(manifest, [firstShard, { ...secondShard, index }], revision))
-      .toThrowError(new Error(`unknown shard index ${String(index)}`));
+      .toThrow(new Error(`unknown shard index ${String(index)}`));
   });
 
   it("rejects a runner error even when every file and test reports passed", () => {
     expect(() => verifyTestShards(manifest, [firstShard, { ...secondShard, errors: [error] }], revision))
-      .toThrowError(new Error("shard 1 reported errors"));
+      .toThrow(new Error("shard 1 reported errors"));
   });
 
   it.each([
@@ -150,6 +150,6 @@ describe("unit test shard reports", () => {
   ])("rejects $label during verification", ({ fields, state }) => {
     const reports = [firstShard, { ...secondShard, files: [{ ...betaResult, ...fields }] }];
     expect(() => verifyTestShards(manifest, reports, revision))
-      .toThrowError(new Error(`${beta.file} (${beta.project}) reported ${state}, errors, or no tests`));
+      .toThrow(new Error(`${beta.file} (${beta.project}) reported ${state}, errors, or no tests`));
   });
 });
