@@ -41,36 +41,6 @@ describe("shell composition with data-driven navigation", () => {
     await expect.poll(navigationNames).toEqual([]);
   });
 
-  it("updates the narrow drawer affordance when items change without a light DOM mutation", async () => {
-    await driver.mount('<ocelle-app-shell id="shell" layout="project" narrow-below="10000px" collapse-below="11000px"><ocelle-nav-pill slot="sidebar" label="Project sections"></ocelle-nav-pill></ocelle-app-shell>');
-    const shell = required(document.querySelector("ocelle-app-shell"));
-    const pill = required(document.querySelector("ocelle-nav-pill"));
-    const top = () => shell.shadowRoot?.querySelector("ocelle-top-bar");
-    const hasMenu = () => top()?.showMenu;
-    await expect.poll(() => shell.tier).toBe("narrow");
-    pill.items = [{ label: "Overview", href: "#overview" }];
-    await pill.updateComplete;
-    await expect.poll(hasMenu).toBe(true);
-    required(top()?.shadowRoot?.querySelector("button")).focus();
-    await commands.press("Enter");
-    await expect.poll(deepActive).toBe(pill.shadowRoot?.querySelector("a"));
-    pill.items = [];
-    await pill.updateComplete;
-    await expect.poll(hasMenu).toBe(false);
-    await expect.poll(deepActive).toBe(shell.contentTarget);
-    pill.items = [{ label: "Tasks", href: "#tasks" }];
-    await pill.updateComplete;
-    await expect.poll(hasMenu).toBe(true);
-    required(top()?.shadowRoot?.querySelector("button")).focus();
-    await commands.press("Enter");
-    const panel = required(shell.shadowRoot?.querySelector("ocelle-drawer")?.shadowRoot?.querySelector("dialog"));
-    await expect.poll(() => panel.open).toBe(true);
-    panel.id = "pill-drawer";
-    await expect.poll(() => navigationNames("pill-drawer")).toEqual(["Project sections"]);
-    await commands.press("Escape");
-    await expect.poll(() => panel.open).toBe(false);
-  });
-
   it("preserves the localized breadcrumb landmark supplied through a nested wrapper", async () => {
     await driver.mount('<ocelle-app-shell id="shell" layout="project"><section slot="sidebar"><ocelle-breadcrumbs label="Project trail"></ocelle-breadcrumbs></section></ocelle-app-shell>');
     const breadcrumbs = required(document.querySelector("ocelle-breadcrumbs"));
@@ -109,4 +79,34 @@ describe("shell composition with data-driven navigation", () => {
 it("gives the standalone top-bar menu its fallback name when menu-label is whitespace", async () => {
   await driver.mount('<ocelle-top-bar id="top" show-menu menu-label="   "></ocelle-top-bar>');
   expect((await commands.axState("top", "button")).name).toBe("Open navigation");
+});
+
+it("updates the narrow drawer affordance when items change without a light DOM mutation", async () => {
+  await driver.mount('<ocelle-app-shell id="shell" layout="project" narrow-below="10000px" collapse-below="11000px"><ocelle-nav-pill slot="sidebar" label="Project sections"></ocelle-nav-pill></ocelle-app-shell>');
+  const shell = required(document.querySelector("ocelle-app-shell"));
+  const pill = required(document.querySelector("ocelle-nav-pill"));
+  const top = () => shell.shadowRoot?.querySelector("ocelle-top-bar");
+  const hasMenu = () => top()?.showMenu;
+  await expect.poll(() => shell.tier).toBe("narrow");
+  pill.items = [{ label: "Overview", href: "#overview" }];
+  await pill.updateComplete;
+  await expect.poll(hasMenu).toBe(true);
+  required(top()?.shadowRoot?.querySelector("button")).focus();
+  await commands.press("Enter");
+  await expect.poll(deepActive).toBe(pill.shadowRoot?.querySelector("a"));
+  pill.items = [];
+  await pill.updateComplete;
+  await expect.poll(hasMenu).toBe(false);
+  await expect.poll(deepActive).toBe(shell.contentTarget);
+  pill.items = [{ label: "Tasks", href: "#tasks" }];
+  await pill.updateComplete;
+  await expect.poll(hasMenu).toBe(true);
+  required(top()?.shadowRoot?.querySelector("button")).focus();
+  await commands.press("Enter");
+  const panel = required(shell.shadowRoot?.querySelector("ocelle-drawer")?.shadowRoot?.querySelector("dialog"));
+  await expect.poll(() => panel.open).toBe(true);
+  panel.id = "pill-drawer";
+  await expect.poll(() => navigationNames("pill-drawer")).toEqual(["Project sections"]);
+  await commands.press("Escape");
+  await expect.poll(() => panel.open).toBe(false);
 });
