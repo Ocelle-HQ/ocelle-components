@@ -303,8 +303,8 @@ export abstract class FormControl extends LitElement {
     super.focus(options);
   }
 
-  /** The native control (the subclass renders it as `part="control"`): an `<input>` or a `<select>`. */
-  protected abstract control(): HTMLInputElement | HTMLSelectElement;
+  /** The native control (the subclass renders it as `part="control"`): an `<input>`, `<select>` or `<textarea>`. */
+  protected abstract control(): HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
 
   /** The control's default value, restored on reset (not `defaultValue`, which the element does not expose). */
   protected abstract initialValue(): string;
