@@ -58,6 +58,9 @@ describe("shell composition with data-driven navigation", () => {
     pill.items = [{ label: "Tasks", href: "#tasks" }];
     await pill.updateComplete;
     await expect.poll(hasMenu).toBe(true);
+    required(top()?.shadowRoot?.querySelector("button")).focus();
+    await commands.press("Enter");
+    await expect.poll(navigationNames).toEqual(["Project sections"]);
   });
 
   it("preserves the localized breadcrumb landmark supplied through a nested wrapper", async () => {
@@ -77,13 +80,18 @@ describe("shell composition with data-driven navigation", () => {
     const host = document.createElement("div");
     host.slot = "sidebar";
     const root = host.attachShadow({ mode: "open" });
-    root.innerHTML = '<style>nav { display: block; }</style><nav aria-label="Project tools"><slot></slot></nav>';
-    host.innerHTML = '<a href="#tools">Tools</a>';
+    root.innerHTML = '<style>nav { display: block; }</style><nav aria-label="Project tools"><slot name="tools"></slot></nav>';
+    host.innerHTML = '<a slot="tools" href="#tools">Tools</a>';
     shell.append(host);
     await expect.poll(navigationNames).toEqual(["Project tools"]);
     host.hidden = true;
     await expect.poll(navigationNames).toEqual([]);
     host.hidden = false;
+    await expect.poll(navigationNames).toEqual(["Project tools"]);
+    const slot = required(root.querySelector("slot"));
+    slot.name = "elsewhere";
+    await expect.poll(navigationNames).toEqual([]);
+    slot.name = "tools";
     await expect.poll(navigationNames).toEqual(["Project tools"]);
     root.querySelector("nav")?.remove();
     await expect.poll(navigationNames).toEqual([]);
