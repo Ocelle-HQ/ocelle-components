@@ -311,6 +311,8 @@ describe("phase verdict", () => {
     for (const red of [initial, fix]) {
       expect(calls).toContainEqual(["diff", "--no-renames", "--name-only", "-z", "--diff-filter=ACDMRTUXB",
         `${red}^`, red, "--", ":(exclude,glob)**/*.test.ts", `:(exclude)${feature}`]);
+      expect(calls).toContainEqual(["diff", "--no-renames", "--name-only", "-z", "--diff-filter=AMT",
+        `${red}^`, red, "--", ...patterns]);
     }
   });
 
