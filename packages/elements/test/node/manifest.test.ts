@@ -468,7 +468,9 @@ describe("generate(root) on the repository's element source", () => {
     expect(manifest.schemaVersion).toBe("1.0.0");
     expect(modules.map((module) => module.path)).toEqual([
       "src/ocelle-action-row.ts",
+      "src/ocelle-app-shell.ts",
       "src/ocelle-brand-mark.ts",
+      "src/ocelle-breadcrumbs.ts",
       "src/ocelle-button.ts",
       "src/ocelle-card.ts",
       "src/ocelle-code-block.ts",
@@ -486,6 +488,8 @@ describe("generate(root) on the repository's element source", () => {
       "src/ocelle-link.ts",
       "src/ocelle-list-detail.ts",
       "src/ocelle-listbox.ts",
+      "src/ocelle-nav-item.ts",
+      "src/ocelle-nav-pill.ts",
       "src/ocelle-notice.ts",
       "src/ocelle-option.ts",
       "src/ocelle-page-header.ts",
@@ -495,10 +499,12 @@ describe("generate(root) on the repository's element source", () => {
       "src/ocelle-section-header.ts",
       "src/ocelle-segment.ts",
       "src/ocelle-segmented-choice.ts",
+      "src/ocelle-skip-link.ts",
       "src/ocelle-tab-panel.ts",
       "src/ocelle-tab.ts",
       "src/ocelle-tabs.ts",
       "src/ocelle-tooltip.ts",
+      "src/ocelle-top-bar.ts",
       "src/ocelle-workflow-board.ts",
       "src/ocelle-workflow-lane.ts",
     ]);

@@ -172,6 +172,44 @@
   inline-size: 240px;
 }
 
+[data-story="top-bar-narrow"] {
+  inline-size: 320px;
+  max-inline-size: 100%;
+}
+
+[data-story="compact-nav"] {
+  inline-size: var(--ocelle-size-rail-item);
+  min-block-size: calc(2 * var(--ocelle-size-rail-item));
+  --ocelle-tooltip-delay: 0ms;
+}
+
+[data-story="app-shell-collapsed"] {
+  inline-size: 52rem;
+  max-inline-size: 100%;
+}
+
+[data-story="app-shell-detail"] {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, var(--ocelle-shell-inspector-width));
+}
+
+[data-story="app-shell-detail"] aside {
+  padding: var(--ocelle-gutter);
+  background: var(--ocelle-color-rail);
+}
+
+[data-story="app-shell-narrow"] {
+  inline-size: min(20rem, 100%);
+}
+
+[data-story="inline-navigation-narrow"] {
+  inline-size: min(20rem, 100%);
+}
+
+[data-story="skip-link-content"] {
+  padding-block-start: var(--ocelle-space-10);
+}
+
 /*
  * The ocelle-disclosure Long summary story's frame (020 research.md R-09): a 288 px block, capped at the viewport, so
  * the summary wraps inside the element; with the [data-story] padding it fills a 320 px viewport exactly.

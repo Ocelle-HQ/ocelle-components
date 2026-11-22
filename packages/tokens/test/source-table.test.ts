@@ -113,8 +113,8 @@ describe("009's five tokens (FR-033)", () => {
     { name: "scroller-fade-size", group: "space", value: "var(--ocelle-space-7)", ref: ["space-7"] },
   ];
 
-  it("pins the source at 134 tokens", () => {
-    expect([source.length, exported.tokens.length, sheet.root.size]).toEqual([134, 134, 134]);
+  it("pins the source at 136 tokens", () => {
+    expect([source.length, exported.tokens.length, sheet.root.size]).toEqual([136, 136, 136]);
   });
 
   it("has each as a plain record with its group, value and references", () => {

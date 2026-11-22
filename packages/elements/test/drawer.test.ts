@@ -28,3 +28,16 @@ describe("ocelle-drawer, in process (US2)", { timeout: 30_000 }, () => {
     });
   }
 });
+
+it("preserves standalone autofocus and restores its opener after a motionless close", async () => {
+  await commands.emulateReducedMotion("reduce");
+  await driver.mount('<button id="standalone-opener">Open</button><ocelle-drawer><a href="#first">First</a><button id="standalone-autofocus" autofocus>Preferred</button></ocelle-drawer>');
+  const opener = document.querySelector<HTMLButtonElement>("#standalone-opener");
+  const drawer = document.querySelector("ocelle-drawer");
+  if (opener === null || drawer === null) throw new Error("Expected standalone overlay fixture");
+  opener.focus();
+  drawer.open = true;
+  await expect.poll(() => document.activeElement?.id).toBe("standalone-autofocus");
+  await commands.press("Escape");
+  await expect.poll(() => document.activeElement).toBe(opener);
+});

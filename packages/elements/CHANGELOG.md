@@ -5,6 +5,10 @@ entry points and the browser build's file path (constitution VII).
 
 ## Unreleased
 
+**Responsive app frames and keyboard navigation are a MINOR addition (mission 015, #12).** Applications can share
+one shell across mission, project and personal screens. The shell measures its own width, presents the same
+destinations in a narrow drawer and supports a keyboard shortcut to the main content.
+
 **Selection and input elements, a MINOR change: nine elements, `ocelle-listbox`, `ocelle-option`, `ocelle-tabs`,
 `ocelle-tab`, `ocelle-tab-panel`, `ocelle-segmented-choice`, `ocelle-segment`, `ocelle-copy-field` and `ocelle-link`,
 and six events, `ocelle-listbox-change`, `ocelle-listbox-activate`, `ocelle-tabs-change`,
@@ -48,6 +52,16 @@ are additions to the public surface: a minor change. The README's element conven
 to the last colon, groups of four code points with a `--ocelle-space-1` gap, copied and read text unbroken.
 
 ### Added
+
+- `ocelle-app-shell` with named rail and sidebar regions, an adaptive top bar and navigation drawer, independent
+  main padding controls, the `tier` and `contentTarget` properties, `remeasure()` and the
+  `ocelle-app-shell-tier-change` event.
+- `ocelle-top-bar` for product branding, application actions and the `ocelle-top-bar-menu-request` event.
+- `ocelle-nav-item` for native destination links with current and compact modes, and `ocelle-nav-pill` for a
+  wrapping inline list of destinations.
+- `ocelle-breadcrumbs` for an ordered trail with a text current page, and `ocelle-skip-link` for focusing
+  main content by reference or selector.
+- Standalone entry points for all six elements and their registrations in the package root and browser build.
 
 - `ocelle-icon`, an icon of the set drawn inline in `currentColor` at the `--ocelle-icon-size` token, decorative
   unless a `label` or a host `aria-label` names it; its properties `name` (reflected) and `label`.
