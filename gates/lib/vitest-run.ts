@@ -32,7 +32,7 @@ function sourceFrames(module: TestModule, error: TestError): Frame[] {
   // Node stacks use an absolute source path or a file URL, depending on the worker's evaluator.
   const stack = typeof error.stack === "string" ? error.stack : "";
   return stack.split("\n").slice(1).flatMap((frame) => {
-    const parts = /(?:\(|at )((?:file:\/\/)?\/[^\n]+):(\d+):\d+\)?$/.exec(frame.trim());
+    const parts = /(?:\(|at (?:async )?)((?:file:\/\/)?\/[^\n]+):(\d+):\d+\)?$/.exec(frame.trim());
     if (parts?.[1] === undefined) return [];
     const file = parts[1].startsWith("file:") ? fileURLToPath(parts[1]) : parts[1];
     return [{ file, line: Number(parts[2]) }];
