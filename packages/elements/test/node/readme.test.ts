@@ -460,10 +460,10 @@ const fragments = [
   "The rail changes orientation only when `orientation` changes: it has no viewport or container query of its own, and changing it keeps focus, the document and tab order and the landmark.",
   "this one sets it from a viewport media query whose bound is exclusive, `matchMedia(\"(width < Npx)\")` (never `max-width: N`, which also matches at N), vertical while the viewport is at least 720 px wide and horizontal below:",
   'const narrow = matchMedia("(width < 720px)");',
-  "For #12: `orientation` and `label` are the whole interface a shell or a personal drawer uses to drive the rail.",
-  "The rail sizes no item: items are sized by themselves, at `--ocelle-size-rail-item` (40 px)",
-  // stricter at the phase 5 review R2-01 (landing L1-05; FR-027): the old statement up to its full stop, and that no release ships ocelle-nav-item yet
-  "A plain `<a>` does not: give `<a>` items `color: inherit` and a target of at least 24 px, or use `ocelle-nav-item` elements once they are released; no release of this package ships `ocelle-nav-item` yet.",
+  "Set the rail's `orientation` to `horizontal` or `vertical` when an application changes its layout.",
+  "The rail leaves destination sizing to its items.",
+  "In a standalone rail, give plain links `color: inherit` and a target of at least 24 px.",
+  "Inside an `ocelle-app-shell` rail region, the shell applies chrome colors to `ocelle-nav-item`, which uses `--ocelle-size-rail-item` (40 px).",
   "`ocelle-personal-rail` reads the tokens `--ocelle-color-chrome`, `--ocelle-color-chrome-ink`, `--ocelle-color-chrome-muted`, `--ocelle-border-width`, `--ocelle-shell-rail-width`, `--ocelle-space-1` and `--ocelle-space-2`.",
   "An empty slot of the rail takes no space: no gap and no divider, so a rail without bottom items has no divider, and one with only bottom items has them at its block end (vertical) or inline end (horizontal). A slot is empty when no element is assigned to it and every text assigned to it is whitespace; an assigned element counts as content even when it is `hidden`, so remove an element from the slot rather than hide it.",
   "A vertical rail fills its container's block size when its content is shorter, with the free space between the divider and the bottom group, and grows with its content when it is taller, the bottom group following the primary items; scrolling is the container's. This holds in a block, flex-row or grid container alike, because the host is `align-self: start`. A page rule on the host's `align-self` wins, so a page that sets it to `stretch` in a flex row or grid of definite block size keeps the rail at the container's size.",
@@ -772,6 +772,12 @@ const entryRows = [
   "| `@ocelle/elements/ocelle-segment.js` | `dist/ocelle-segment.js` | `ocelle-segment` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-copy-field.js` | `dist/ocelle-copy-field.js` | `ocelle-copy-field` and `ocelle-icon`; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-link.js` | `dist/ocelle-link.js` | `ocelle-link` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-nav-item.js` | `dist/ocelle-nav-item.js` | `ocelle-nav-item` and its compact label tooltip; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-top-bar.js` | `dist/ocelle-top-bar.js` | `ocelle-top-bar`, its brand mark and its menu icon; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-app-shell.js` | `dist/ocelle-app-shell.js` | `ocelle-app-shell` and its frame dependencies; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-nav-pill.js` | `dist/ocelle-nav-pill.js` | `ocelle-nav-pill` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-breadcrumbs.js` | `dist/ocelle-breadcrumbs.js` | `ocelle-breadcrumbs` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-skip-link.js` | `dist/ocelle-skip-link.js` | `ocelle-skip-link` only; for hosts with a bundler |",
   "| `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |",
   "| `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |",
 ];
@@ -929,6 +935,12 @@ describe("packages/elements/README.md", () => {
       "./ocelle-segment.js",
       "./ocelle-copy-field.js",
       "./ocelle-link.js",
+      "./ocelle-nav-item.js",
+      "./ocelle-top-bar.js",
+      "./ocelle-app-shell.js",
+      "./ocelle-nav-pill.js",
+      "./ocelle-breadcrumbs.js",
+      "./ocelle-skip-link.js",
       "./browser.js",
       "./custom-elements.json",
     ]);
@@ -939,7 +951,7 @@ describe("packages/elements/README.md", () => {
   });
 
   it("keeps the rail's item-size sentence and the next one on one line of the README as written, with no line break between them (phase 5 review R2-01, landing L1-05)", () => {
-    expect(read("README.md")).toContain("`ocelle-nav-item` is expected to have. The rail sets only the gap");
+    expect(read("README.md")).toContain("The rail leaves destination sizing to its items. It provides the gap");
   });
 
   // Plan decision 28 (SC-006; tasks.md T033): the `ocelle-button` section gives the markup of #12's breadcrumb item,
@@ -1358,6 +1370,7 @@ describe("packages/elements/CHANGELOG.md", () => {
 const selectionElements = ["ocelle-listbox", "ocelle-option", "ocelle-tabs", "ocelle-tab", "ocelle-tab-panel", "ocelle-segmented-choice", "ocelle-segment", "ocelle-copy-field", "ocelle-link"];
 /** The elements 008 to 013 added on main before 014 merged it (landing operator decisions 1 and 4). */
 const mainElements = ["ocelle-notice", "ocelle-form-input", "ocelle-form-select", "ocelle-button", "ocelle-action-row", "ocelle-scroller", "ocelle-workflow-board", "ocelle-workflow-lane", "ocelle-list-detail", "ocelle-dialog", "ocelle-drawer", "ocelle-tooltip", "ocelle-section-header", "ocelle-card", "ocelle-page-header", "ocelle-context-sidebar", "ocelle-personal-rail", "ocelle-facts", "ocelle-fact", "ocelle-empty-state", "ocelle-progress"];
+const frameElements = ["ocelle-app-shell", "ocelle-top-bar", "ocelle-nav-item", "ocelle-nav-pill", "ocelle-breadcrumbs", "ocelle-skip-link"];
 const selectionEvents = ["ocelle-listbox-change", "ocelle-listbox-activate", "ocelle-tabs-change", "ocelle-segmented-choice-change", "ocelle-copy-field-request", "ocelle-link-activate"];
 
 /**
@@ -1369,11 +1382,10 @@ const selectionEvents = ["ocelle-listbox-change", "ocelle-listbox-activate", "oc
 describe("packages/elements/README.md overview (014 T110)", () => {
   const overview = flat(/^# @ocelle\/elements\n([\s\S]*?)(?=^## )/m.exec(read("README.md"))?.[1] ?? "");
 
-  // The merges of main (landing operator decisions 1 and 4) bring 008's, 009's, 010's, 011's, 012's and 013's
-  // twenty-one elements beside the icon, the mark and the nine of this feature: thirty-two in all.
-  it("counts and names the thirty-two elements, the nine of this feature with the icon, the mark and the twenty-one of 008 to 013", () => {
-    expect(overview).toContain("thirty-two elements");
-    for (const tag of ["ocelle-icon", "ocelle-brand-mark", ...mainElements, ...selectionElements]) expect(overview).toContain(`\`${tag}\``);
+  // Include the six app-frame controls alongside the previous package inventory.
+  it("counts and names all thirty-eight released elements", () => {
+    expect(overview).toContain("thirty-eight elements");
+    for (const tag of ["ocelle-icon", "ocelle-brand-mark", ...mainElements, ...selectionElements, ...frameElements]) expect(overview).toContain(`\`${tag}\``);
   });
 
   // The second merge of main (landing operator decision 4): 012 raised the floor to Chromium 135 after 014's 125.
@@ -1387,6 +1399,18 @@ describe("packages/elements/README.md overview (014 T110)", () => {
 
   it("points to the examples of each use", () => {
     expect(overview).toContain("Examples shows each selection and input element built into a screen");
+  });
+});
+
+describe("the app-frame integration documentation", () => {
+  const frame = read("README.md").split("## App frame and navigation")[1]?.split("## Examples")[0] ?? "";
+
+  it("shows the named shell regions, CSS breakpoints, and cross-root skip target", () => {
+    expect(frame).toContain('sidebar-label="Project sections"');
+    expect(frame).toContain('<ocelle-personal-rail slot="rail" label="Workspace destinations">');
+    expect(frame).toContain("await shell.updateComplete;\nskip.target = shell.contentTarget;");
+    expect(frame).toContain("--ocelle-app-shell-narrow-below: 42rem;");
+    expect(frame).toContain("--ocelle-app-shell-collapse-below: 65rem;");
   });
 });
 

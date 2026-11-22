@@ -11,7 +11,11 @@
 // internal base, the form controls' base class (src/form-control.ts) and the icon drawing (src/icon-svg.ts) are not
 // exported.
 export { OcelleActionRow } from "./ocelle-action-row.ts";
+export { OcelleAppShell } from "./ocelle-app-shell.ts";
+export type { AppShellTier } from "./ocelle-app-shell.ts";
 export { OcelleBrandMark } from "./ocelle-brand-mark.ts";
+export { OcelleBreadcrumbs } from "./ocelle-breadcrumbs.ts";
+export type { BreadcrumbItem } from "./ocelle-breadcrumbs.ts";
 export { OcelleButton } from "./ocelle-button.ts";
 export { OcelleCard } from "./ocelle-card.ts";
 export { OcelleContextSidebar } from "./ocelle-context-sidebar.ts";
@@ -29,6 +33,9 @@ export type { IconName } from "./ocelle-icon.ts";
 export { OcelleLink } from "./ocelle-link.ts";
 export { OcelleListDetail } from "./ocelle-list-detail.ts";
 export { OcelleListbox } from "./ocelle-listbox.ts";
+export { OcelleNavItem } from "./ocelle-nav-item.ts";
+export { OcelleNavPill } from "./ocelle-nav-pill.ts";
+export type { NavPillItem } from "./ocelle-nav-pill.ts";
 export { OcelleNotice } from "./ocelle-notice.ts";
 export type { NoticeSize, NoticeTone } from "./ocelle-notice.ts";
 export { OcelleOption } from "./ocelle-option.ts";
@@ -39,9 +46,11 @@ export { OcelleScroller } from "./ocelle-scroller.ts";
 export { OcelleSectionHeader } from "./ocelle-section-header.ts";
 export { OcelleSegment } from "./ocelle-segment.ts";
 export { OcelleSegmentedChoice } from "./ocelle-segmented-choice.ts";
+export { OcelleSkipLink } from "./ocelle-skip-link.ts";
 export { OcelleTab } from "./ocelle-tab.ts";
 export { OcelleTabPanel } from "./ocelle-tab-panel.ts";
 export { OcelleTabs } from "./ocelle-tabs.ts";
+export { OcelleTopBar } from "./ocelle-top-bar.ts";
 export { OcelleTooltip } from "./ocelle-tooltip.ts";
 export { OcelleWorkflowBoard } from "./ocelle-workflow-board.ts";
 export { OcelleWorkflowLane } from "./ocelle-workflow-lane.ts";

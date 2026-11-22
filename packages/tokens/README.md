@@ -52,6 +52,26 @@ group, `--ocelle-measure-reading` (`68ch`) holds prose paragraphs, list items an
 the inline size of the nearest query container: a prose table is one, so it caps the table's caption at the table's
 visible width. Without a query container, `100cqi` falls back to the small viewport's inline size.
 
+### App shell thresholds
+
+`--ocelle-app-shell-narrow-below` defaults to `45rem` and `--ocelle-app-shell-collapse-below` defaults to
+`68.75rem`. At a 16 px root font size these are 720 px and 1100 px. The shell compares its border-box inline size
+against these bounds to choose narrow, collapsed or expanded. Equality selects the wider tier. Equal bounds skip
+the collapsed tier.
+
+Set the tokens on the shell in an external stylesheet when a particular frame needs different thresholds.
+
+```css
+ocelle-app-shell[data-layout-profile="compact"] {
+  --ocelle-app-shell-narrow-below: 42rem;
+  --ocelle-app-shell-collapse-below: 65rem;
+}
+```
+
+Each bound resolves separately. A valid `narrow-below` or `collapse-below` setting wins, followed by a valid token
+override and then its published default. When the resolved narrow bound exceeds the collapse bound, both use their
+defaults. Call the shell's `remeasure()` if only the threshold styles changed and the shell kept the same size.
+
 ### Tokens for the overlays
 
 `--ocelle-drawer-inline` is the inline size of `ocelle-drawer`, the sidebar width `--ocelle-shell-sidebar-width`

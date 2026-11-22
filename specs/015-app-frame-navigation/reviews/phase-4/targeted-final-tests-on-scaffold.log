@@ -1,0 +1,27 @@
+FAIL  |elements (chromium)| packages/elements/test/app-shell-drawer.test.ts > app shell drawer > opens mission navigation with pointer and preserves one localized landmark per region
+FAIL  |elements (chromium)| packages/elements/test/app-shell-drawer.test.ts > app shell drawer > opens project navigation with Enter and preserves one localized landmark per region
+FAIL  |elements (chromium)| packages/elements/test/app-shell-drawer.test.ts > app shell drawer > opens personal navigation with Space and preserves one localized landmark per region
+FAIL  |elements (chromium)| packages/elements/test/app-shell-drawer.test.ts > app shell drawer > keeps a bare rail link readable against chrome beside content and in the drawer
+FAIL  |elements (chromium)| packages/elements/test/app-shell-drawer.test.ts > app shell drawer > focuses the first supplied destination in sequential before flat order
+FAIL  |elements (chromium)| packages/elements/test/app-shell-drawer.test.ts > app shell drawer > focuses the first supplied destination in sequential before autofocus
+FAIL  |elements (chromium)| packages/elements/test/app-shell-drawer.test.ts > app shell drawer > wraps forward and reverse and returns focus to the menu on Escape
+FAIL  |elements (chromium)| packages/elements/test/app-shell-drawer.test.ts > app shell drawer > restores the menu after dismissal by close
+FAIL  |elements (chromium)| packages/elements/test/app-shell-drawer.test.ts > app shell drawer > restores the menu after dismissal by backdrop
+FAIL  |elements (chromium)| packages/elements/test/app-shell-drawer.test.ts > app shell drawer > reflects the accepted close request while navigation stays projected during the exit
+FAIL  |elements (chromium)| packages/elements/test/app-shell-drawer.test.ts > app shell drawer > keeps the shell drawer open when a nested drawer completes its own close
+FAIL  |elements (chromium)| packages/elements/test/app-shell-drawer.test.ts > app shell drawer > honors cancellation of its own close request
+FAIL  |elements (chromium)| packages/elements/test/app-shell-focus.test.ts > app shell drawer focus > retains a destination on same-tier narrow resize and restores its identity after widening
+FAIL  |elements (chromium)| packages/elements/test/app-shell-focus.test.ts > app shell drawer focus > moves from close to the first available destination after leaving narrow
+FAIL  |elements (chromium)| packages/elements/test/app-shell-focus.test.ts > app shell drawer focus > falls back to the next destination or main when a drawer destination is removed
+FAIL  |elements (chromium)| packages/elements/test/app-shell-focus.test.ts > app shell drawer focus > moves from a removed rail to the sidebar inside an open drawer on a same-width layout change
+FAIL  |elements (chromium)| packages/elements/test/app-shell-focus.test.ts > app shell drawer focus > falls back to the first surviving destination after a layout and tier change together
+FAIL  |elements (chromium)| packages/elements/test/app-shell-focus.test.ts > app shell drawer focus > uses the close control when the open drawer still has a region but no sequential destination
+FAIL  |elements (chromium)| packages/elements/test/app-shell-focus.test.ts > app shell drawer focus > keeps the former drawer destination through a second real resize during exit
+FAIL  |elements (chromium)| packages/elements/test/app-shell-reflow.test.ts > app shell narrow reflow > fits and operates by keyboard at 320px in mission layout
+FAIL  |elements (chromium)| packages/elements/test/app-shell-reflow.test.ts > app shell narrow reflow > fits and operates by keyboard at 320px in project layout
+FAIL  |elements (chromium)| packages/elements/test/app-shell-reflow.test.ts > app shell narrow reflow > fits and operates by keyboard at 320px in personal layout
+FAIL  |elements (chromium)| packages/elements/test/entry-app-shell.test.ts > registers the shell, top bar, and drawer from the standalone module
+Test Files  4 failed | 1 passed (5)
+Tests  23 failed | 2 passed | 410 skipped (435)
+Start at  02:10:05
+Duration  27.59s (worker 78%, tests 22%)
