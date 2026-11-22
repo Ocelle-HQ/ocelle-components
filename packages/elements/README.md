@@ -1,7 +1,7 @@
 # @ocelle/elements
 
 The Ocelle web components: standards-based custom elements (Lit 3) that work in any page, a server-rendered page
-under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has thirty-two elements:
+under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has thirty-eight elements:
 `ocelle-icon`, with a set of thirteen icons, `ocelle-brand-mark`, the Ocelle rosette, `ocelle-notice`, a message box
 that can announce itself, `ocelle-form-input`, a labelled text field that takes part in its form,
 `ocelle-form-select`, a labelled native select for closed choices that takes part in its form, `ocelle-scroller`, a
@@ -14,7 +14,8 @@ and `ocelle-personal-rail`, two controls that follow the control conventions bel
 `ocelle-action-row`, `ocelle-facts` with its item `ocelle-fact`, a label and value sheet, `ocelle-empty-state`, an
 empty or loading panel, `ocelle-progress`, a progress bar, `ocelle-listbox` with its `ocelle-option` children,
 `ocelle-tabs` with its `ocelle-tab` and `ocelle-tab-panel` children, `ocelle-segmented-choice` with its
-`ocelle-segment` children, `ocelle-copy-field` and `ocelle-link`.
+`ocelle-segment` children, `ocelle-copy-field`, `ocelle-link`, and the app-frame elements `ocelle-app-shell`,
+`ocelle-top-bar`, `ocelle-nav-item`, `ocelle-nav-pill`, `ocelle-breadcrumbs` and `ocelle-skip-link`.
 
 The elements need Chromium 135 or WebKit 17.4 and later (see Engines). Each element has its own entry point. A parent
 element's entry point also defines the elements it owns as children, and the copy field's defines `ocelle-icon`.
@@ -984,16 +985,12 @@ orient();
 narrow.addEventListener("change", orient);
 ```
 
-For #12: `orientation` and `label` are the whole interface a shell or a personal drawer uses to drive the rail. A
-shell that wants the rail horizontal inside its drawer and vertical in its column sets `orientation` from its own
-tier, with an exclusive bound in its own query; the rail does not care where the value comes from. It emits no event.
-The container-tier convention (Element conventions) describes the tiers of an element that chooses its own.
+Set the rail's `orientation` to `horizontal` or `vertical` when an application changes its layout.
+The rail exposes a navigation landmark named with `label` and emits no event.
 
-The rail sizes no item: items are sized by themselves, at `--ocelle-size-rail-item` (40 px), the size #12's
-`ocelle-nav-item` is expected to have. The rail sets only the gap, the items' centring and the chrome ink as its
-colour, which an item takes when it inherits colour. A plain `<a>` does not: give `<a>` items `color: inherit` and a
-target of at least 24 px, or use `ocelle-nav-item` elements once they are released; no release of this package ships
-`ocelle-nav-item` yet.
+The rail leaves destination sizing to its items. It provides the gap, centers items and sets the chrome ink.
+Give plain links `color: inherit` and a target of at least 24 px, or use `ocelle-nav-item`, which uses
+`--ocelle-size-rail-item` (40 px).
 
 `ocelle-personal-rail` reads the tokens `--ocelle-color-chrome`, `--ocelle-color-chrome-ink`,
 `--ocelle-color-chrome-muted`, `--ocelle-border-width`, `--ocelle-shell-rail-width`, `--ocelle-space-1` and
@@ -1859,6 +1856,103 @@ tokens, and on one line or on three lines axe reports nothing.
 
 `ocelle-link` reads the tokens `--ocelle-color-link`, `--ocelle-color-link-hover`, `--ocelle-color-focus`,
 `--ocelle-focus-width` and `--ocelle-focus-offset`.
+
+## App frame and navigation
+
+Use `ocelle-app-shell` with `layout="mission"` for an optional rail and a sidebar, `layout="project"` for a project
+sidebar or `layout="personal"` for personal destinations. Supply primary content in its default slot, a skip
+control in `skip-link`, and application actions in `actions`. The shell owns its top bar and narrow navigation.
+The `main` part marks its content region, and `navigation` marks each rendered navigation wrapper. Set
+`flush-block-end` and `flush-inline-end` independently to remove the corresponding main padding.
+
+### Named regions and keyboard navigation
+
+A region with its own navigation landmark, such as a labelled `ocelle-personal-rail` or `ocelle-context-sidebar`,
+keeps that landmark and its name. The shell names bare navigation lists with `rail-label` or `sidebar-label`.
+Give the regions distinct names. Empty regions expose no landmark.
+
+```html
+<ocelle-app-shell id="project-shell" layout="mission" product-name="Projects"
+  sidebar-label="Project sections" menu-label="Show navigation"
+  drawer-label="Project navigation" close-label="Close navigation">
+  <ocelle-skip-link id="project-skip" slot="skip-link">Skip to project content</ocelle-skip-link>
+  <ocelle-personal-rail slot="rail" label="Workspace destinations">
+    <ocelle-nav-item href="/inbox" label="Inbox">
+      <ocelle-icon slot="icon" name="folder"></ocelle-icon>
+    </ocelle-nav-item>
+  </ocelle-personal-rail>
+  <ocelle-nav-item slot="sidebar" href="/projects/plan" label="Plan" current="page">
+    <ocelle-icon slot="icon" name="folder"></ocelle-icon>
+  </ocelle-nav-item>
+  <button slot="actions" type="button">Create project</button>
+  <h1>Project plan</h1>
+  <button type="button">Review plan</button>
+</ocelle-app-shell>
+<script type="module" src="/project-frame.js"></script>
+```
+
+Wire the skip control to the shell's internal main from the external module after registering the elements.
+This bundled example imports the package root. A page using the browser build loads that module before wiring
+the reference. `contentTarget` is available after the shell renders.
+
+```js
+import "@ocelle/elements";
+
+const shell = document.querySelector("#project-shell");
+const skip = document.querySelector("#project-skip");
+await shell.updateComplete;
+skip.target = shell.contentTarget;
+```
+
+At narrow widths, the shell presents the same destinations in a modal drawer with the supplied dialog and close
+labels. Opening moves focus to the first sequential destination when there is one. Escape closes the drawer and
+restores focus to the menu control. If a compact label bubble owns the first Escape, the next Escape closes the
+drawer. When no destinations are present, the shell omits the menu control.
+
+### Frame thresholds
+
+The shell measures its own border-box inline size. The default narrow and collapse thresholds are 45rem and
+68.75rem. Sizes below the narrow threshold select `narrow`; sizes from there up to the collapse threshold select
+`collapsed`; sizes at or above the collapse threshold select `expanded`. Equal thresholds skip the collapsed tier.
+
+Set `narrow-below` and `collapse-below` or use the corresponding camel-case properties. Bounds accept nonnegative
+`px`, `rem` or `em` values, including unitless `0`. Set threshold tokens in an external CSS file when the surrounding
+layout owns the breakpoints.
+
+```css
+#project-shell {
+  --ocelle-app-shell-narrow-below: 42rem;
+  --ocelle-app-shell-collapse-below: 65rem;
+}
+```
+
+Each threshold resolves independently in this order: a valid explicit setting, a valid token override, then the
+published default. If the resulting narrow threshold exceeds the collapse threshold, the shell uses both
+defaults. Call `shell.remeasure()` after changing only the threshold styles without resizing the shell.
+Read `shell.tier` for the current tier. After a transition, the bubbling, composed
+`ocelle-app-shell-tier-change` event supplies `{ tier, previousTier }` after navigation settles.
+
+### Navigation controls
+
+- `ocelle-top-bar` shows a rosette and `product-name`, plus controls in `actions`. With `show-menu`, its
+  native button uses `menu-label` and reports `menu-expanded`. In standalone use, set `menuExpanded` from
+  the bubbling, composed `ocelle-top-bar-menu-request` event's `detail.expanded` when handling the request.
+  The shell handles this request from its own top bar.
+- `ocelle-nav-item` takes `href`, `label`, `current` and `compact`, with a decorative `icon` slot.
+  `current="page"` or `current="true"` marks the native link as current. Compact mode keeps the link's accessible
+  name and shows its label on hover or keyboard focus. The shell controls compact presentation for its
+  mission and project sidebar items and restores their full labels in the drawer.
+- `ocelle-nav-pill` takes a localized `label` and a readonly `items` property of `{ label, href, current? }`.
+  Its native links wrap in input order, and the first destination with `current: true` marks the current page.
+  Set actions separately in the top bar's `actions` slot.
+- `ocelle-breadcrumbs` takes a localized `label` and a readonly `items` property of `{ label, href? }`.
+  It links ancestors with URLs and presents the last item as current text. Place it alongside the page title at
+  the logical inline start. An empty pill or breadcrumb trail exposes no navigation landmark.
+- `ocelle-skip-link` uses a native button that becomes visible on keyboard focus. Its default slot supplies a
+  localized label, with “Skip to main content” as the fallback. Set its property-only `target` for direct focus
+  or use `target-selector` for the first match in the same document or shadow root. A direct reference takes
+  precedence even when it cannot receive focus. An unsuccessful activation leaves focus on the skip control,
+  where Tab can continue normally.
 
 ## Examples
 
