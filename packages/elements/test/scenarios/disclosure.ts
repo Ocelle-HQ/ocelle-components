@@ -376,6 +376,18 @@ export const disclosureScenarios: readonly Scenario[] = [
     expected: { forward: "d-link", back: onSummary("d"), linkBelow: true, closed: "after" },
   },
   {
+    name: "Tab wraps from a closed disclosure last in a dialog to its close button (T014)",
+    run: async (driver) => {
+      await driver.mount(page(`<ocelle-dialog id="dialog" open label="Retention settings"><button type="button">Reset</button>${disclosure("d")}</ocelle-dialog>`));
+      await driver.focus("d");
+      const before = await driver.deepActive();
+      await driver.press("Tab");
+      await driver.settle();
+      return { before, after: await driver.deepActive() };
+    },
+    expected: { before: onSummary("d"), after: "dialog >> button" },
+  },
+  {
     name: "US1-6: open = true opens as a click does with one event; open = true again changes nothing and fires none; a summary click then closes with one",
     run: async (driver) => {
       await driver.mount(page(disclosure("d")));

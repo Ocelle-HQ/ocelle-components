@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { commands } from "vitest/browser";
 import "../src/ocelle-button.ts";
+import "../src/ocelle-dialog.ts";
 import "../src/ocelle-disclosure.ts";
 import { inProcessDriver } from "./in-process.ts";
 import { disclosureRuleScenarios, disclosureScenarios } from "./scenarios/disclosure.ts";
