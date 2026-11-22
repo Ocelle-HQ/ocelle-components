@@ -508,6 +508,7 @@ if (import.meta.main) {
     phase: (request) => checkPhase(request, {
       ...storyFiles, root, git, emit, runCheck: (check, command) => runCheck(check, command, checkTools),
     }),
+    // Stryker disable next-line BlockStatement: subprocess entry, checked by gates/test/integration/test-workflow-evidence.test.ts "runs real clean-worktree red, base and green checks and refuses malformed cache reuse"
     worker: async (input, output) => {
       await replayStoryWorker(root, input, output, withVitest);
       process.exitCode = 0; // A red assertion is represented in the result, not as a crashed worker.
