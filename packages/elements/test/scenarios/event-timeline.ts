@@ -714,5 +714,54 @@ export const eventTimelineChangeScenarios: readonly Scenario[] = [
   },
 ];
 
-/** Every timeline body, in the order of tasks.md T030 to T033, then the run-time changes of T051. */
-export const eventTimelineScenarios: readonly Scenario[] = [...eventTimelineStoryScenarios, ...eventTimelineTimeScenarios, ...eventTimelineGeometryScenarios, ...eventTimelineEdgeScenarios, ...eventTimelineChangeScenarios];
+/**
+ * A timeline changed while it is detached (phase 3 review round 1, R1-11; FR-025): what the timeline shows once it is
+ * attached again, as phase 1's Q-M2 (a) asked of the data table. The changes are made in one task between `remove()`
+ * and `append()`, so the timeline's own observer sees none of them.
+ */
+export const eventTimelineReattachScenarios: readonly Scenario[] = [
+  {
+    name: "re-attach (R1-11, FR-025): an event appended while the timeline is detached is shown once it is attached again, four listitems in source order, the new event's box and a connector joining it; then an event hidden while detached leaves the list and the connectors",
+    run: async (driver) => {
+      await page(driver, `<div id="a">${tl("t", 'label="Mission history"', three)}</div>`);
+      const detached = async (change: string): Promise<void> => {
+        await driver.module(`const host = document.getElementById("t");
+const parent = host.parentNode;
+host.remove();
+${change}
+parent.append(host);`);
+        await driver.settle();
+      };
+      const state = async (): Promise<unknown> => ({
+        items: (await texts(driver, "t")).texts,
+        ...((await read(driver, 'return { order: lis("t").map((li) => eventOf(li)?.id ?? null), classes: classes("t"), gaps: gaps("t"), boxes: { e2: rects("e2"), e4: rects("e4") } };')) as object),
+      });
+      await detached(`const template = document.createElement("template");
+template.innerHTML = ${JSON.stringify(ev("e4", 'time="14:50"', "Merged"))};
+host.append(template.content);`);
+      const appended = await state();
+      await detached('host.querySelector("#e2").hidden = true;');
+      return { appended, hidden: await state(), messages: await driver.messages() };
+    },
+    expected: {
+      appended: {
+        items: [...threeTexts, "14:50 Merged"],
+        order: ["e1", "e2", "e3", "e4"],
+        classes: ["has-time next-has-time", "has-time next-has-time", "has-time next-has-time", "has-time"],
+        gaps: ["space-1", "space-1", "space-1"],
+        boxes: { e2: 1, e4: 1 },
+      },
+      hidden: {
+        items: ["14:02 Mission created", "14:41 Review requested", "14:50 Merged"],
+        order: ["e1", "e3", "e4"],
+        classes: ["has-time next-has-time", "has-time next-has-time", "has-time"],
+        gaps: ["space-1", "space-1"],
+        boxes: { e2: 0, e4: 1 },
+      },
+      messages: [],
+    },
+  },
+];
+
+/** Every timeline body, in the order of tasks.md T030 to T033, then the run-time changes of T051 and the re-attach of phase 3's review round 1. */
+export const eventTimelineScenarios: readonly Scenario[] = [...eventTimelineStoryScenarios, ...eventTimelineTimeScenarios, ...eventTimelineGeometryScenarios, ...eventTimelineEdgeScenarios, ...eventTimelineChangeScenarios, ...eventTimelineReattachScenarios];
