@@ -556,7 +556,9 @@ applies neither (both inapplicable, `reviews/phase-2/spike.md` § 1). Its `aria-
 holds only `listitem`s) and `aria-required-parent` rule (each `listitem` sits in a `list`) select them instead, and
 pass. So US2-1 and US3-1 name `aria-required-children` and `aria-required-parent`, in place of `list` and `listitem`,
 as the axe rules that judge the list's structure. Element tests run no axe: the clause is met by the `axe` gate on the
-timeline's stories (phase 2) and the chain's (phase 3; T052 confirms the same selection on the chain). The explicit
+timeline's stories (phase 2) and the chain's (phase 3; T052 confirmed the same selection on the chain,
+`reviews/phase-3/spike.md` § 5: `list` and `listitem` inapplicable, `aria-required-children` passing on the `list` and
+`aria-required-parent` on each of the six `listitem`s). The explicit
 roles stay: dropping them would bring `list` and `listitem` back but lose WebKit's list role.
 
 **Connectors as elements.** The connectors are spans, not `::before` or `::after`, so the drivers' existing `boxes`
@@ -626,10 +628,17 @@ of that export, and T001 rechecks its name and rule (R-14).
 
 The host's own `aria-label` attribute is the consumer's and is not removed; whether Chromium exposes it on the host's
 generic node, and whether axe reports `aria-prohibited-attr` for it, is measured in phase 2's spike against 009's lane, which renders its named role on a shadow wrapper the same way (branch). If the host
-attribute is exposed as a second name, the element follows whatever 009's lane does on `main` (R-14). No story sets a
-host `aria-label` on the chain: that state is plan.md § Complexity Tracking's one Principle V exception (analysis
-C1 (c), 2026-11-16), proven by the browser bodies (US3-10). The spikes (T026, T052) run axe on the state; a clean
-result meets the row's sunset and goes to the operator. For the timeline it was met in phase 2: axe-core 4.14.0 with
+attribute is exposed as a second name, the element follows whatever 009's lane does on `main` (R-14). The states named by
+a host `aria-label` were plan.md § Complexity Tracking's one Principle V exception (analysis C1 (c), 2026-11-16),
+proven by the browser bodies, until each element's spike (T003, T026, T052) found axe clean on them and the operator
+chose their stories; the chain was the row's last element, so the row is dropped (phase 3 spike Q1 (b), 2026-11-22).
+For the chain it was met in phase 3: axe-core 4.14.0 with the `axe` gate's selection is clean on a chain named by a
+non-blank host `aria-label` ("Proof" beside `label="Evidence"`, `aria-prohibited-attr` passing on two nodes), a blank
+one (two spaces) and the empty string (`reviews/phase-3/spike.md` § 6; Chromium shows the host as a `generic` node of
+the same name beside the `list`, as on the timeline, which axe does not report, and a blank one leaves the host
+unnamed and the list named "Evidence"). The operator chose two stories for it, non-blank (`aria-label="Proof"`) and
+blank (`aria-label="  "`), each beside `label="Evidence"` (phase 3 spike Q1 (b)), and T055's US3-10 bodies stay. For
+the timeline it was met in phase 2: axe-core 4.14.0 with
 the `axe` gate's selection is clean on a timeline named by a non-blank host `aria-label` ("History"), a blank one (two
 spaces) and the empty string, and on 009's lane (`reviews/phase-2/spike.md` § 2; Chromium shows the host as a
 `generic` node of the same name beside the `list`, as on the lane, which axe does not report). The operator chose two
@@ -812,7 +821,8 @@ depth under each `listitem`, not from its children only.
   (decorative), from `--ocelle-space-1` after the step to `--ocelle-space-1` before the padding's end.
 - **One centre line (PLAN-FRESH-1-005, operator decision (a)).** Every `<li>` reserves a `--ocelle-size-step` line
   box: `min-block-size: var(--ocelle-size-step)`. A default step's marker fills it. A chip `<li>` (class `chip`) sets
-  `align-items: center`, so a one-line chip (20.4 px) is centred in that box, 1 px from each edge. Every connector is
+  `align-items: center`, so a one-line chip (19.39 px as Chromium draws its ring, below) is centred in that box, about
+  1.5 px from each edge. Every connector is
   placed at `inset-block-start: calc(var(--ocelle-size-step) / 2 - var(--ocelle-border-width) / 2)` from its `<li>`'s
   block start, so all connectors on a row share the default marker's centre line, chips or not. A chip that wraps onto
   more lines is taller than the box and starts at its top; its connector stays on the same centre line. Phase 3's red
@@ -824,8 +834,8 @@ depth under each `listitem`, not from its children only.
   `li[data-line-end] > .connector { display: none; }` hides that connector. The connector is absolutely positioned in
   padding that exists either way, so toggling it changes no size and the observer should not loop; the write happens
   in the observer callback. The result depends only on the current layout, so it is the same whatever the history. The
-  phase 3 spike measures it at 1280, 600, 320 and 200 px (#517's column, Q-T5 (b)), after a step's text changes, a step added and hidden, a late web
-  font and `dir="rtl"`, against a fresh load.
+  phase 3 spike measured it at 1280, 600, 320 and 200 px (#517's column, Q-T5 (b)), after a step's text changes, a step added and hidden, a late web
+  font and `dir="rtl"`, against a fresh load (the Result, below).
 - **No observer loop, tested (PLAN-TESTABILITY-1-007).** "Should not loop" is proven by 013's in-process test, in
   `packages/elements/test/evidence-chain.test.ts`: around a run of changes (the host resized 1280 → 320 → 1280 px, a
   step added, then hidden), each read after the layout wait of checks.md, the test records every `window` `error` event
@@ -840,13 +850,26 @@ depth under each `listitem`, not from its children only.
   FR-031; Q-D, decided), with the ordinal centred in `--ocelle-font-size-xs`, `--ocelle-font-weight-medium`,
   `--ocelle-color-ink-muted`, `--ocelle-figures`, line height `--ocelle-line-height-tight` (1.15). The ordinal is text
   inside the `aria-hidden` marker. The step content is `--ocelle-font-size-sm`, `--ocelle-color-ink`,
-  `--ocelle-line-height-normal`, set on the slotted item through `::slotted(ocelle-evidence-step)`, and is
-  vertically centred with the marker on its first line (the `1lh` wrapper again).
+  `--ocelle-line-height-normal`, set on the slotted item through `::slotted(ocelle-evidence-step)`. Its first line is
+  centred on the marker by `margin-block-start: calc((var(--ocelle-size-step) - 1lh) / 2)` on
+  `::slotted(ocelle-evidence-step:not([variant="chip"]))`, where `1lh` is the step's own line (14 px × 1.45 = 20.3 px),
+  so the margin is about 1.05 px. The timeline's `1lh` wrapper does not fit here: it centres a mark shorter than the
+  line on that line, but the marker (22.4 px) is taller than the content's line, so the content is moved instead. The
+  margin adds no shadow node; it uses only a token and `1lh` in `calc()`, which plan.md § Technical Context
+  (Constraints) allows (`reviews/phase-3/spike.md` § 2: each default step's first-line centre within 0.002 px of the
+  marker's).
 - **Ordinals.** Each default step's ordinal is its 1-based position among the visible steps, chip steps counted (spec
   check 3, SPEC-3-02: the numbers shown can skip, for example 1, 2, 4 with a chip third). The red commit's US3-6 body
   asserts exactly that, with a case where a chip step is hidden and shown again.
-- **Two-digit fit (SPEC-3-03).** The marker's inner box is 22.4 − 2 × 1.5 = 19.4 px; "20" at 12 px tabular is about
-  14 px wide and 13.8 px tall (12 px × 1.15). The check: for ordinal 20 in a twenty-step chain, the ordinal's
+- **The ring as drawn (phase 3 spike Q2 (a), 2026-11-22).** Chromium floors a border width to whole device pixels, as
+  phase 2 measured for the dot (R-10): `--ocelle-ring-step` (1.5 px) computes to `1px` as a border at a device pixel
+  ratio of 1 and of 2, so the ring is drawn 1 px wide (`reviews/phase-3/spike.md` § 2). The figures below use that
+  width. The red bodies compare the ring's and the chip outline's border width with the probe's `--ocelle-ring-step`
+  read as a border width (the probe's `border-top-width` set to the token, 1 px), never as a padding (1.5 px), so a
+  body sees the same floor as the element; and they assert the chip's block size below `--ocelle-size-step`, never an
+  exact figure.
+- **Two-digit fit (SPEC-3-03).** The marker lays out at 22.39 px (22.390625), so its inner box is 22.39 − 2 × 1 =
+  20.39 px; "20" at 12 px tabular is about 14 px wide and 13.8 px tall (12 px × 1.15). The check: for ordinal 20 in a twenty-step chain, the ordinal's
   rendered box lies inside the marker's inner (padding) box, with `scrollWidth <= clientWidth` on the marker.
 - **Chip step (FR-035).** The container styles a chip through `::slotted(ocelle-evidence-step[variant="chip"])` and
   renders no marker in its `<li>`: `--ocelle-font-size-xs` (one step below the default's `sm`),
@@ -855,7 +878,8 @@ depth under each `listitem`, not from its children only.
   box (border width and style, radius, padding, type) is one rule outside the `@media not (forced-colors: active)`
   block, because the outline is structural (FR-013: the chip's only boundary); only its colours sit in the variant
   block. The sum:
-  12 px × 1.45 = 17.4 px line + 2 × 1.5 px border = 20.4 px, below `--ocelle-size-step`'s 22.4 px (US3-4). No fill
+  12 px × 1.45 = 17.4 px line + 2 × 1 px border (the ring as drawn, above) = 19.39 px (19.390625 laid out), below
+  `--ocelle-size-step`'s 22.4 px (US3-4). No fill
   (Q-A). Nothing of `ocelle-pill-tag` is imported or read; a node test greps the chain's source and styles for
   `pill`.
 - `variant` and `wrap` on the step reflect to attributes, so the container's `::slotted()` selectors and the
@@ -868,6 +892,23 @@ depth under each `listitem`, not from its children only.
   foreground system colour (`CanvasText`, not `Canvas`) with a border width above zero, that the ordinal's colour is a
   system text colour, and that each box is not empty. Plants: the chip's box rule moved inside the variant block (the
   chip loses its outline in forced colours), and a connector drawn as a `background-color`; US3-8 must fail for each.
+- **Result (T052, 2026-11-22, `reviews/phase-3/spike.md` §§ 1 to 4).** On stand-ins written to this decision, at
+  1280, 600, 320 and 200 px, resized and fresh, after a step's text changed, a step added and hidden, every step's
+  font size raised (a late web font's stand-in) and under `dir="rtl"`, the line ends equal a fresh load of the same
+  state, no connector is shown past a line end, every box lies inside the chain, and no `error` event or
+  `console.error` call occurs; the line pitch at 320 px is 34.4 px (`--ocelle-size-step` 22.4 + `--ocelle-space-3`
+  12), and the six steps take three lines at 320 px and four in a 200 px container. With the callback also writing
+  `padding-inline-end: 0` on a line-end `<li>` (the no-loop test's plant), Chromium dispatches "ResizeObserver loop
+  completed with undelivered notifications." three times, so the no-loop test can fail. A width change of the steps
+  alone, with no attribute or child change, re-decides the line ends through the `<li>` observer. Geometry, the same at
+  a device pixel ratio of 1 and of 2: the marker 22.390625 px square with a `1px` border; ordinal 20's text box (15.56
+  × 15.00 px, measured with a `Range`, taller than the 13.8 px line height) inside the marker's 20.39 px padding box,
+  `scrollWidth`/`clientWidth` 20/20; twenty steps take two lines at 1280 px; the chip 19.390625 px tall, border `1px`,
+  radius 4 px, padding 0 / 8 px, its content 12 px against the default's 14 px; each connector's centre −0.008 px and
+  each chip's 0.000 px from the marker centre, each `<li>` 22.390625 px tall. Lengths compare with the probe-resolved
+  token within 0.5 px. Forced colours: the marker, connector and chip borders `CanvasText` at `1px`, backgrounds
+  transparent, the ordinal and step text the system text colour. Outside a chain, a step and a chip step are
+  `inline-block` with no border or padding; an empty chain is a bare `generic`, a hidden one has no node.
 
 Outside a chain a step's own shadow root shows its content as plain text, with no marker, ordinal or chip box (the
 chip box is the container's styling).
@@ -956,10 +997,11 @@ lines; phase 4 uses the mission's base (phase 1's), as it changes no source (qui
 `gate:plants` locally (CI's required Plants check judges the full set).
 Baselines: `pnpm run visual:update` only in #10's pinned container under docker (start `dockerd` as root; after a
 container restart, `pnpm run setup:online`); the command must report `<n> added, 0 changed, 0 removed` with `<n>`
-twice the phase's new stories (42, 26 and 24 for phases 1 to 3, from checks.md § Stories; phase 1's 28 since spike
+twice the phase's new stories (42, 26 and 28 for phases 1 to 3, from checks.md § Stories; phase 1's 28 since spike
 Q1 (b), 38 since the inventory decisions IQ-2 to IQ-5 added five stories, 40 since the re-analysis decision C1 (b)
 added the unbounded sticky-header story, 42 since the answer to fixes-2 Q-1 (b) added the room-rule sticky-header
-story; phase 2's 26 since the phase 2 spike's Q1 (b) added the two host `aria-label` timeline stories), so no existing baseline
+story; phase 2's 26 since the phase 2 spike's Q1 (b) added the two host `aria-label` timeline stories; phase 3's 28
+since the phase 3 spike's Q1 (b) added the two host `aria-label` chain stories), so no existing baseline
 moves (013's baselines among them, SC-007). Conflicting PNGs are regenerated in the container, never hand-picked. Mutation follows #23 and op 015 on `main`.
 
 ## R-16 The inventory (FR-058)
@@ -1080,7 +1122,7 @@ The approved example's four toned, valued stages with annotations map by the sta
 and the tone rows. IQ-27 (a) changes no row: phase 3 builds the chain for #13 and the Ocelle console, and the metric
 and pill-tag families of which each library stage is built are not this mission's (013's `ocelle-facts` and #7's pill
 tag serve them). No attribute, slot, part, story or baseline is added for any row: phase 3 keeps 12 stories and 24
-baselines.
+baselines (14 and 28 since the phase 3 spike's Q1 (b), which adds the two host `aria-label` chain stories).
 
 ## R-17 A request to 009's owner: a pinned start box out of the start fade (PLAN-A11Y-SECURITY-1-002)
 
@@ -1201,7 +1243,7 @@ from 009's inline fades where one applies:
   operator's decision Q-I7 (a), 2026-11-18). The re-analysis decision C1 (b) (2026-11-18) adds one story for the
   sticky header with no bound (US1-20), and the answer to fixes-2 Q-1 (b) (2026-11-18) one for the room-rule state
   (a bound leaving rows below but less than twice the fade depth under the header, no caption: no fade at rest), so
-  phase 1 has 21 stories and 42 baselines, the mission 44 and 88 (46 and 92 since the phase 2 spike's Q1 (b)). The one scroll-position state left, scrolled to the
+  phase 1 has 21 stories and 42 baselines, the mission 44 and 88 (46 and 92 since the phase 2 spike's Q1 (b), 48 and 96 since the phase 3 spike's Q1 (b)). The one scroll-position state left, scrolled to the
   block end, is a Principle V exception row in plan.md § Complexity Tracking, proven by US1-26, US1-28 and T079's
   bodies.
 

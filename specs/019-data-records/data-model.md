@@ -69,7 +69,7 @@ text; the content's text alone when the event has no time. Time first wherever t
 | Field | Source | Type | Rule |
 |---|---|---|---|
 | `label` | property / attribute | `string \| undefined` | As the timeline's. |
-| host `aria-label` | observed attribute | `string \| null` | Non-blank names the list; blank counts as absent. No story sets it (plan.md § Complexity Tracking; T052 measures it). |
+| host `aria-label` | observed attribute | `string \| null` | Non-blank names the list; blank counts as absent. Two stories set it, non-blank and blank, each beside `label="Evidence"` (phase 3 spike Q1 (b); contracts/checks.md § Stories). |
 | steps | derived | `OcelleEvidenceStep[]` | Direct children with the item tag, neither `hidden` nor `aria-hidden="true"`, in source order. |
 | ordinal | derived per step | `number` | 1-based position among the visible steps, chip steps counted; shown only on default steps. |
 | name | derived | `string \| undefined` | As the timeline's (`resolveName`). |
