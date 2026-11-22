@@ -241,7 +241,7 @@ it with exactly the events of data-model.md § State transitions; the Chromium t
   in the round fix record that Op 022 already supplied the green production change. Run the focused README and
   browser cases and record their results.
 
-- [ ] T015 [US1] Phase 1 landing, operator round 5. Commit the focused regression first: separately invoke
+- [X] T015 [US1] Phase 1 landing, operator round 5. Commit the focused regression first: separately invoke
   `focus()` and `click()` on a newly created, disconnected `ocelle-disclosure` before its first render.
   Assert that both return without throwing and that the disclosure stays closed. Record the failure on the existing
   uninitialized render-root lookup, then make that lookup tolerate the missing root. Preserve the existing rendered

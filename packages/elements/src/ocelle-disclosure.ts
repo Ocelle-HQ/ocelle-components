@@ -227,7 +227,7 @@ export class OcelleDisclosure extends LitElement {
 
   /** The summary, once rendered. */
   #summary(): HTMLElement | null {
-    return this.renderRoot.querySelector<HTMLElement>("summary");
+    return (this.renderRoot as ParentNode | undefined)?.querySelector<HTMLElement>("summary") ?? null;
   }
 
   /** Clicks the summary, so it toggles once. */
