@@ -63,7 +63,20 @@ describe("parseGrep", () => {
 
   it("throws on a record that is not path, line and text, or whose line is not a line number", () => {
     const problem = "unexpected git grep output: a record without a path and a line number";
-    const thrown = ["logs/a.log:2:text\n", "a.log\u00002x\u0000t\n", "a.log\u0000x2\u0000t\n", "a.log\u00000\u0000t\n", "a.log\u00002\n"].map((stdout) => {
+    const malformed = [
+      "logs/a.log:2:text\n",
+      "a.log\u00002x\u0000t\n",
+      "a.log\u0000x2\u0000t\n",
+      "a.log\u00000\u0000t\n",
+      "a.log\u00002\n",
+      // No NUL, and the record starts with a digit: it is not a path and a line number either.
+      "5abc\n",
+      // An empty path: a record without a path.
+      "\u00002\u0000t\n",
+      // A malformed record after a record whose path is a number: the parse throws, and never goes back to an earlier offset.
+      "12\u00003\u0000t\nbad",
+    ];
+    const thrown = malformed.map((stdout) => {
       try {
         parseGrep(stdout);
         return "no error";
@@ -71,7 +84,11 @@ describe("parseGrep", () => {
         return error instanceof Error ? error.message : String(error);
       }
     });
-    expect(thrown).toEqual([problem, problem, problem, problem, problem]);
+    expect(thrown).toEqual(malformed.map(() => problem));
+  });
+
+  it("reads a record whose path is one character", () => {
+    expect(parseGrep("a\u00002\u0000t\nb\u000017\u0000u\n")).toEqual([finding("a", 2), finding("b", 17)]);
   });
 
   it("reads a last record without its newline", () => {
