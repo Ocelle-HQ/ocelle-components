@@ -24,7 +24,8 @@ it("resizes the built shell, dismisses its real drawer, and transfers skip focus
     await page.keyboard.press("Enter");
     const drawer = page.getByRole("dialog", { name: "Projects navigation" });
     await drawer.waitFor({ state: "visible" });
-    expect(await drawer.getByRole("link", { name: "Project plan" }).isVisible()).toBe(true);
+    expect(await page.getByRole("link", { name: "Project plan" }).isVisible()).toBe(true);
+    await expect.poll(focused).toBe("plan");
     await page.keyboard.press("Escape");
     await drawer.waitFor({ state: "hidden" });
     await expect.poll(focused).toBe("menu-button");
