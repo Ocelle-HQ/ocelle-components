@@ -39,8 +39,7 @@ function sourceFrames(module: TestModule, error: TestError): Frame[] {
   });
 }
 
-function assertionSite(root: string, module: TestModule, error: TestError, start?: number, end?: number): Pick<Failure, "line" | "helperFile" | "helperLine"> {
-  if (start === undefined) return {};
+function assertionSite(root: string, module: TestModule, error: TestError, start: number, end: number | undefined): Pick<Failure, "line" | "helperFile" | "helperLine"> {
   const frames = sourceFrames(module, error);
   const caller = frames.find((frame) =>
     frame.file === module.moduleId && frame.line >= start && (end === undefined || frame.line < end));
@@ -55,6 +54,7 @@ export function testRun(root: string, modules: readonly TestModule[], errors: re
     errors: errors.map((error) => failure(root, error)),
     files: modules.map((module) => {
       const tests = [...module.children.allTests()];
+      const locations = includeSites ? tests.flatMap((test) => test.location === undefined ? [] : [test.location.line]) : [];
       return {
         project: module.project.name,
         file: relative(root, module.moduleId),
@@ -63,14 +63,14 @@ export function testRun(root: string, modules: readonly TestModule[], errors: re
         durationMs: tests.reduce((sum, test) => sum + (test.diagnostic()?.duration ?? 0), 0),
         tests: tests.map((test) => {
           const result = test.result();
-          const start = test.location?.line;
-          const end = tests.find((each) => start !== undefined && each.location !== undefined && each.location.line > start)?.location?.line;
+          const start = includeSites ? test.location?.line : undefined;
+          const end = start === undefined ? undefined : locations.find((line) => line > start);
           return {
             name: test.fullName,
             state: result.state,
-            ...(includeSites && test.location !== undefined ? { startLine: test.location.line } : {}),
+            ...(start === undefined ? {} : { startLine: start }),
             errors: (result.errors ?? []).map((error) => ({
-              ...failure(root, error), ...(includeSites ? assertionSite(root, module, error, start, end) : {}),
+              ...failure(root, error), ...(start === undefined ? {} : assertionSite(root, module, error, start, end)),
             })),
           };
         }),
@@ -89,11 +89,5 @@ export async function withVitest<T>(root: string, operation: (context: Vitest) =
   // Stryker disable next-line all: process boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "runs real clean-worktree red, base and green checks and refuses malformed cache reuse"
   const context = await runner.createVitest({ root, run: true, watch: false, reporters: [], includeTaskLocation });
   // Stryker disable next-line all: process boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "executes a complete configured inventory and compares it with the full Vitest run"
-  try {
-    return await operation(context);
-    // Stryker disable next-line BlockStatement: process boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "executes a complete configured inventory and compares it with the full Vitest run"
-  } finally {
-    // Stryker disable next-line all: process boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "executes a complete configured inventory and compares it with the full Vitest run"
-    await context.close();
-  }
+  return Promise.resolve().then(() => operation(context)).finally(() => context.close());
 }
