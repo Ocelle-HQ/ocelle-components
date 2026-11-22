@@ -1,5 +1,5 @@
 Scope: all 5 workspace projects
-✓ Lockfile passes supply-chain policies (verified 23h ago)
+✓ Lockfile passes supply-chain policies (verified 1d ago)
 Lockfile is up to date, resolution step is skipped
 Packages are hard linked from the content-addressable store to the virtual store.
   Content-addressable store is at: <pnpm store>
@@ -35,13 +35,13 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 188ms using pnpm v12.16.1
+Done in 210ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /opt/pw-browsers/chromium-1248/chrome-linux64/chrome
 $ node gates/bin/test.ts
-gates/test/integration/plant-repo.test.ts:532: unit-tests: buildTrackedTree (op 023) commits the expanded tree as Plant Base, without plant.json, configuration or node_modules, leaving a clean work tree: Error: not implemented: /tmp/ocelle-tracked-plant-6KKDpT into /tmp/ocelle-tracked-tree-HpJPMB
-gates/test/integration/plant-repo.test.ts:560: unit-tests: buildTrackedTree (op 023) gives a git repository with no tracked file for an empty tree/: Error: not implemented: /tmp/ocelle-tracked-plant-aFC6a4 into /tmp/ocelle-tracked-tree-w7vVXl
-gates/test/integration/plant-repo.test.ts:560: unit-tests: buildTrackedTree (op 023) gives a git repository with no tracked file for no tree/: Error: not implemented: /tmp/ocelle-tracked-plant-4M2pXb into /tmp/ocelle-tracked-tree-Gw5bDv
+gates/test/integration/plant-repo.test.ts:532: unit-tests: buildTrackedTree (op 023) commits the expanded tree as Plant Base, without plant.json, configuration or node_modules, leaving a clean work tree: Error: not implemented: /tmp/ocelle-tracked-plant-p5YccT into /tmp/ocelle-tracked-tree-1TeNEf
+gates/test/integration/plant-repo.test.ts:560: unit-tests: buildTrackedTree (op 023) gives a git repository with no tracked file for an empty tree/: Error: not implemented: /tmp/ocelle-tracked-plant-ynjwKv into /tmp/ocelle-tracked-tree-kxBuKf
+gates/test/integration/plant-repo.test.ts:560: unit-tests: buildTrackedTree (op 023) gives a git repository with no tracked file for no tree/: Error: not implemented: /tmp/ocelle-tracked-plant-UktlHD into /tmp/ocelle-tracked-tree-GnnMOK
 gates/test/integration/plants-robustness.test.ts:178: unit-tests: contrast and brand-rules plants under neighbouring changes has the two gates' plants and the registry's: AssertionError: expected { others: 15, plants: 39 } to deeply equal { others: 16, plants: 39 }
 gates/test/integration/plants.test.ts:90: unit-tests: plant job (gates/bin/plants.ts) plants --root <tmp> runs each plant form through its gate and judges it: AssertionError: expected { code: 1, stdout: [ …(48) ], …(1) } to deeply equal { code: 1, stdout: [ …(51) ], …(1) }
 gates/test/integration/plants.test.ts:171: unit-tests: plant job (gates/bin/plants.ts) --affected HEAD judges only the plant whose plant.json changed since HEAD, and names HEAD in its summary: AssertionError: expected { code: 1, stdout: [ …(48) ], …(1) } to deeply equal { code: 1, stdout: [ …(51) ], …(1) }
@@ -58,19 +58,21 @@ gates/test/integration/redact-sandbox-paths.test.ts:199: unit-tests: --verify fi
 gates/test/integration/redact-sandbox-paths.test.ts:208: unit-tests: --verify finds a file added beside a correct redaction: AssertionError: expected { exit: +0, stdout: [], …(4) } to deeply equal { exit: 1, …(5) }
 gates/test/integration/redact-sandbox-paths.test.ts:217: unit-tests: --verify finds a file deleted beside a correct redaction: AssertionError: expected { exit: +0, stdout: [], …(4) } to deeply equal { exit: 1, …(5) }
 gates/test/integration/redact-sandbox-paths.test.ts:226: unit-tests: --verify finds a mode change beside a correct redaction: AssertionError: expected { exit: +0, stdout: [], …(4) } to deeply equal { exit: 1, …(5) }
-gates/test/integration/redact-sandbox-paths.test.ts:235: unit-tests: --verify exits 2 on a commit that changes no file: AssertionError: expected { exit: +0, stdout: [], …(4) } to deeply equal { exit: 2, stdout: [], …(4) }
-gates/test/integration/redact-sandbox-paths.test.ts:241: unit-tests: --verify exits 2 on a revision that does not resolve to a commit: AssertionError: expected { exit: +0, stdout: [], …(4) } to deeply equal { exit: 2, stdout: [], …(4) }
-gates/test/integration/redact-sandbox-paths.test.ts:246: unit-tests: --verify exits 2 on the root commit, which has no parent: AssertionError: expected { exit: +0, stdout: [], …(4) } to deeply equal { exit: 2, stdout: [], …(4) }
-gates/test/integration/redact-sandbox-paths.test.ts:251: unit-tests: --verify exits 2 on --verify alone: AssertionError: expected { exit: +0, stdout: [], …(4) } to deeply equal { exit: 2, stdout: [], …(4) }
-gates/test/integration/redact-sandbox-paths.test.ts:256: unit-tests: --verify exits 2 on --verify with two arguments: AssertionError: expected { exit: +0, stdout: [], …(4) } to deeply equal { exit: 2, stdout: [], …(4) }
+gates/test/integration/redact-sandbox-paths.test.ts:235: unit-tests: --verify finds a symlink whose target got the redaction, as not a regular file, beside a correct redaction: AssertionError: expected { exit: +0, stdout: [], …(4) } to deeply equal { exit: 1, …(5) }
+gates/test/integration/redact-sandbox-paths.test.ts:248: unit-tests: --verify exits 2 on a commit that changes no file: AssertionError: expected { exit: +0, stdout: [], …(4) } to deeply equal { exit: 2, stdout: [], …(4) }
+gates/test/integration/redact-sandbox-paths.test.ts:254: unit-tests: --verify exits 2 on a revision that does not resolve to a commit: AssertionError: expected { exit: +0, stdout: [], …(4) } to deeply equal { exit: 2, stdout: [], …(4) }
+gates/test/integration/redact-sandbox-paths.test.ts:259: unit-tests: --verify exits 2 on the root commit, which has no parent: AssertionError: expected { exit: +0, stdout: [], …(4) } to deeply equal { exit: 2, stdout: [], …(4) }
+gates/test/integration/redact-sandbox-paths.test.ts:264: unit-tests: --verify exits 2 on --verify alone: AssertionError: expected { exit: +0, stdout: [], …(4) } to deeply equal { exit: 2, stdout: [], …(4) }
+gates/test/integration/redact-sandbox-paths.test.ts:269: unit-tests: --verify exits 2 on --verify with two arguments: AssertionError: expected { exit: +0, stdout: [], …(4) } to deeply equal { exit: 2, stdout: [], …(4) }
 gates/test/integration/sandbox-paths.test.ts:51: unit-tests: sandbox-paths (gates/bin/sandbox-paths.ts) exits 1 with exactly the two findings of a tracked file with a store path on line 2 and a checkout path on line 5, echoing neither line: AssertionError: expected { code: 2, stdout: [], …(1) } to deeply equal { code: 1, stdout: [ …(3) ], …(1) }
 gates/test/integration/sandbox-paths.test.ts:66: unit-tests: sandbox-paths (gates/bin/sandbox-paths.ts) exits 0 when the matching lines are only in the four allowed files: AssertionError: expected { code: 2, stdout: [], …(1) } to deeply equal { code: +0, …(2) }
 gates/test/integration/sandbox-paths.test.ts:76: unit-tests: sandbox-paths (gates/bin/sandbox-paths.ts) exits 0 when the matching lines are only in an untracked file and a git-ignored file: AssertionError: expected { code: 2, stdout: [], …(1) } to deeply equal { code: +0, …(2) }
 gates/test/integration/sandbox-paths.test.ts:86: unit-tests: sandbox-paths (gates/bin/sandbox-paths.ts) exits 0 when the matching lines are only in a binary file (a NUL byte): AssertionError: expected { code: 2, stdout: [], …(1) } to deeply equal { code: +0, …(2) }
 gates/test/integration/sandbox-paths.test.ts:96: unit-tests: sandbox-paths (gates/bin/sandbox-paths.ts) exits 0 on the near misses of the rule table, and 1 naming each matching line of the whole table: AssertionError: expected { Object (clean, whole) } to deeply equal { clean: { code: +0, …(1) }, …(1) }
 gates/test/integration/sandbox-paths.test.ts:111: unit-tests: sandbox-paths (gates/bin/sandbox-paths.ts) exits 2 with the cause no tracked file in a repository that tracks nothing: AssertionError: expected { code: 2, stdout: [], …(1) } to deeply equal { code: 2, stdout: [], …(1) }
-gates/test/integration/sandbox-paths.test.ts:125: unit-tests: sandbox-paths (gates/bin/sandbox-paths.ts) exits 2 naming a root that is not the top of a git work tree: a subdirectory, and a directory outside git: AssertionError: expected [ { code: 2, stdout: [], …(1) }, …(1) ] to deeply equal [ { code: 2, stdout: [], …(1) }, …(1) ]
-gates/test/integration/sandbox-paths.test.ts:144: unit-tests: the rule under git grep -E gives the answers of the rule table, so the gate's regular expression and git's agree: AssertionError: expected [ [ …(2) ], [ …(2) ], [ …(2) ], …(16) ] to deeply equal [ [ …(2) ], [ …(2) ], [ …(2) ], …(16) ]
+gates/test/integration/sandbox-paths.test.ts:125: unit-tests: sandbox-paths (gates/bin/sandbox-paths.ts) exits 2 with git's first error line when git ls-files fails on a corrupt index, not with no tracked file: AssertionError: expected { code: 2, stdout: [], …(1) } to deeply equal { code: 2, stdout: [], …(1) }
+gates/test/integration/sandbox-paths.test.ts:140: unit-tests: sandbox-paths (gates/bin/sandbox-paths.ts) exits 2 naming a root that is not the top of a git work tree: a subdirectory, and a directory outside git: AssertionError: expected [ { code: 2, stdout: [], …(1) }, …(1) ] to deeply equal [ { code: 2, stdout: [], …(1) }, …(1) ]
+gates/test/integration/sandbox-paths.test.ts:159: unit-tests: the rule under git grep -E gives the answers of the rule table, so the gate's regular expression and git's agree: AssertionError: expected [ [ …(2) ], [ …(2) ], [ …(2) ], …(16) ] to deeply equal [ [ …(2) ], [ …(2) ], [ …(2) ], …(16) ]
 gates/test/integration/story-redaction.test.ts:70: unit-tests: the story scripts of .specify/extensions/story red.sh writes red-phase.log with <pnpm store> and <repo>, and no line that matches the rule: AssertionError: expected { code: +0, recorded: true, …(2) } to deeply equal { code: +0, recorded: true, …(2) }
 gates/test/integration/story-redaction.test.ts:86: unit-tests: the story scripts of .specify/extensions/story tdd-check.sh writes every check log with the placeholders and no line that matches the rule: AssertionError: expected { code: +0, logs: [ { …(3) }, …(2) ] } to deeply equal { code: +0, logs: [ { …(3) }, …(2) ] }
 gates/test/integration/story-redaction.test.ts:109: unit-tests: the story scripts of .specify/extensions/story tdd-check.sh writes tdd-check.json and prints it with <home>/ for a red-commits label that holds a sandbox path: AssertionError: expected { code: +0, record: { …(3) }, …(1) } to deeply equal { code: +0, record: { …(3) }, …(1) }
@@ -166,5 +168,5 @@ gates/test/sandbox-paths.test.ts:85: unit-tests: verdict maps git grep exit 1 (n
 gates/test/sandbox-paths.test.ts:92: unit-tests: verdict maps git grep exit 0 (matches) to exit 1 with one finding per line: AssertionError: expected [ Array(2) ] to deeply equal [ Array(2) ]
 gates/test/sandbox-paths.test.ts:99: unit-tests: verdict maps any other git grep exit to exit 2 with git's first error line: AssertionError: expected [ { exit: 2, …(1) }, …(4) ] to deeply equal [ { exit: 2, …(1) }, …(4) ]
 gates/test/sandbox-paths.test.ts:115: unit-tests: verdict maps zero tracked files to exit 2 no tracked file, whatever git grep did: AssertionError: expected [ Array(2) ] to deeply equal [ Array(2) ]
-unit-tests: 127 of 8726 tests failed
+unit-tests: 129 of 8728 tests failed
 [ELIFECYCLE] Test failed. See above for more details.

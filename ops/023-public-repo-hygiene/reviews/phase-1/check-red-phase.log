@@ -1,5 +1,5 @@
 Scope: all 5 workspace projects
-✓ Lockfile passes supply-chain policies (verified 20h ago)
+✓ Lockfile passes supply-chain policies (verified 1d ago)
 Lockfile is up to date, resolution step is skipped
 Packages are hard linked from the content-addressable store to the virtual store.
   Content-addressable store is at: <pnpm store>
@@ -35,13 +35,13 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 345ms using pnpm v12.16.1
+Done in 377ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /opt/pw-browsers/chromium-1248/chrome-linux64/chrome
 $ node gates/bin/test.ts
-gates/test/integration/plant-repo.test.ts:532: unit-tests: buildTrackedTree (op 023) commits the expanded tree as Plant Base, without plant.json, configuration or node_modules, leaving a clean work tree: Error: not implemented: /tmp/ocelle-tracked-plant-8Ws8QV into /tmp/ocelle-tracked-tree-ArjqG1
-gates/test/integration/plant-repo.test.ts:560: unit-tests: buildTrackedTree (op 023) gives a git repository with no tracked file for an empty tree/: Error: not implemented: /tmp/ocelle-tracked-plant-ZTnnew into /tmp/ocelle-tracked-tree-j6YZqr
-gates/test/integration/plant-repo.test.ts:560: unit-tests: buildTrackedTree (op 023) gives a git repository with no tracked file for no tree/: Error: not implemented: /tmp/ocelle-tracked-plant-ndadGT into /tmp/ocelle-tracked-tree-52AGD4
+gates/test/integration/plant-repo.test.ts:532: unit-tests: buildTrackedTree (op 023) commits the expanded tree as Plant Base, without plant.json, configuration or node_modules, leaving a clean work tree: Error: not implemented: /tmp/ocelle-tracked-plant-QlWjm0 into /tmp/ocelle-tracked-tree-2D6lFa
+gates/test/integration/plant-repo.test.ts:560: unit-tests: buildTrackedTree (op 023) gives a git repository with no tracked file for an empty tree/: Error: not implemented: /tmp/ocelle-tracked-plant-yZFrhn into /tmp/ocelle-tracked-tree-xsCj7B
+gates/test/integration/plant-repo.test.ts:560: unit-tests: buildTrackedTree (op 023) gives a git repository with no tracked file for no tree/: Error: not implemented: /tmp/ocelle-tracked-plant-xCutOD into /tmp/ocelle-tracked-tree-Cg94zi
 gates/test/integration/redact-sandbox-paths.test.ts:45: unit-tests: redact-sandbox-paths.sh redacts stdin to stdout in rule order, keeps every other byte and the lines, and leaves no line that matches the rule: AssertionError: expected { ended: { code: +0, …(2) }, …(3) } to deeply equal { ended: { code: +0, …(2) }, …(3) }
 gates/test/integration/redact-sandbox-paths.test.ts:55: unit-tests: redact-sandbox-paths.sh rewrites each file given to --in-place, a JSON file still parsing, and prints nothing: AssertionError: expected { ran: { code: +0, …(2) }, …(3) } to deeply equal { ran: { code: +0, …(2) }, …(3) }
 gates/test/integration/redact-sandbox-paths.test.ts:72: unit-tests: redact-sandbox-paths.sh exits 2 with its usage on an unknown argument and on --in-place without a file: AssertionError: expected { unknown: { code: +0, …(2) }, …(1) } to deeply equal { unknown: { code: 2, …(2) }, …(1) }
