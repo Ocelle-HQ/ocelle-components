@@ -67,6 +67,10 @@ export class OcelleFormTextarea extends FormControl {
   constructor() {
     super();
     this.readOnly = false;
+    this.addEventListener("invalid", () => {
+      // Interactive validation may need the focus anchor in the connection task, before Lit renders.
+      if (!this.hasUpdated) this.performUpdate();
+    });
   }
 
   /** @internal Synchronizes form-critical reflection before scheduling the Lit update. */
