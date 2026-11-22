@@ -146,10 +146,29 @@ Per round, under `reviews/plan/round-R/`:
 | Mutation testing (`mutation_command`) | tests that run the code but would not notice it changing |
 | Gate plants in CI | a gate that passes everything |
 
+## Focused phase verification and complete CI
+
+The repository's story runner uses Vitest's configured project/file inventory. It runs the phase's changed test files
+at each red commit, overlaid on the base and any scaffold, and at the phase head. Red evidence identifies the failing
+assertion. A missing implementation module is accepted on a pre-scaffold base only when the scaffold supplies that
+module and the assertions fail on the scaffold. Setup, collection, non-assertion, unrelated and incomplete failures
+block review.
+
+When a phase changes shared test helpers or fixtures, list every additional runnable consumer, one repository-relative
+path per line, in `reviews/phase-N/test-scope.txt`. The reviewer checks the list against the shared changes. A shared
+change without a list triggers the full suite for that sub-check. Completed, matching sub-checks can resume from the
+local `reports/story-evidence/` directory. The check logs say which project and files ran, which inputs were tested, and
+whether evidence was reused. Remove that local directory for a fresh execution.
+
+The required GitHub `Unit tests` check verifies the complete discovered inventory across isolated runners, with timing-sensitive
+projects retaining their Vitest settings. The local `pnpm test` command still runs the complete suite. To compare both paths
+on a same-repository PR, include `<!-- verify-unit-test-parity -->` in its description before opening or pushing to the PR.
+That run requires the normal full gate to pass too and compares project, file, test identity and outcome with the shards.
+
 ## Configuration
 
 `.specify/extensions/story/story-config.yml` (source copy in `extensions/story/`): `test_command`,
-`setup_command`, `test_pathspec`, `mutation_command`. Until `test_command` is set the check reports
+`focused_runner`, `setup_command`, `test_pathspec`, `mutation_command`. Until `test_command` is set the check reports
 `unavailable`, which the review treats as blocking for any phase with behaviour, so the first feature
 must set up the test runner and fill these in.
 

@@ -13,6 +13,11 @@ source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 story_require_phase "${1:-}"
 phase=$1
 root=$(story_repo_root); feature_dir=$(story_feature_dir); feature_rel=${feature_dir#"$root"/}
+focused=$(story_config focused_runner)
+if [[ -n "$focused" ]]; then
+  cd "$root"
+  exec node "$root/$focused" check "$feature_rel" "$phase" "$(story_config setup_command)" "$(story_config test_pathspec)"
+fi
 dir="$feature_dir/reviews/phase-$phase"; mkdir -p "$dir"
 out="$dir/tdd-check.json"
 emit() { printf '%s\n' "$1" | tee "$out"; exit 0; }
