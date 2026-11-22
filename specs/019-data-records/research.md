@@ -1047,9 +1047,40 @@ narrow exemplar by the narrow row. The library's timeline has no part (styles on
 are declared not applicable there. IQ-28 (a) changes no row: kitty-mission-ui replaces the families as #13 and the
 spec state, and the README mapping is its replacement path.
 
-**Phase 3: the chip's row (Q-T4 (a), operator, 2026-11-20).** Among the chain's rows (T054), the row for the
-library's compact step, which #517 asks to be pill-shaped, maps the pill-shaped chip to `variant="chip"` with
-`--ocelle-radius-2`, never the pill radius (constitution II, FR-035); T062 asserts it and T070 writes it.
+**Phase 3: the evidence chain's rows** (operator, 2026-11-22, `reviews/phase-3-inventory-decisions.md`: IQ-18 to
+IQ-24 and IQ-27, each (a); and Q-T4 (a), 2026-11-20, `reviews/issue-texts-check.md` § Operator decisions; T062
+asserts each statement by role name, with no `sk-` string; T070 writes them). The library's chain is an element whose
+roles are its one property and the fields of each stage, its behaviour states and its stories, and its four parts
+(`sources/spec-kitty-design-inventory.md` § 3):
+
+| Library role (kind) | Mapped to |
+|---|---|
+| the stages (property) | `ocelle-evidence-chain` with one `ocelle-evidence-step` child per stage, in source order (Q3 (a), FR-030); the chain takes no property, and a consumer changes the children in place of assigning a new array, which the chain observes (FR-025; IQ-18 (a)) |
+| a stage's id (property field) | an `id` the consumer sets on the step, if it needs one; the element reads and writes no `id` (IQ-18 (a)) |
+| a stage's label, display value and annotation (property fields) | the consumer's markup in the step's content; the annotation is the consumer's own text or markup, and the step draws no pill tag of its own (FR-035); a later issue covers a valued stage (IQ-19 (a)) |
+| a stage's tone (property field) | none: the state worded in the step's text, with no state colour on any mark (FR-013, Assumptions); a later issue covers a tone (IQ-20 (a)) |
+| the compact step (stage rendering, behaviour) | the default step: a round `--ocelle-size-step` marker ringed by `--ocelle-ring-step`, showing the step's ordinal, before the step's content (FR-031, FR-033); ordinals are this library's addition. #517's pill-shaped chip maps to `variant="chip"` with `--ocelle-radius-2`, never the pill radius (constitution II, FR-035; Q-T4 (a)) |
+| the list (part `list`) | the chain's `list` part, its shadow ordered list, named by `label` or a non-blank host `aria-label` (FR-032; IQ-24 (a)) |
+| the stage (part `stage`) | the `ocelle-evidence-step` host, a light-DOM element the consumer styles directly, and its `content` part (IQ-24 (a)) |
+| the connector (part `connector`) | none: the connector is decorative and hidden from assistive technology, not a styling hook (FR-032; IQ-24 (a)) |
+| the connector's arrow (wide and narrow layout) | the plain connector line, with no arrowhead; the ordered list and the ordinals convey direction; a later issue covers an arrowhead (IQ-22 (a)) |
+| the empty-state (part `empty-state`) | none (IQ-24 (a), IQ-23 (a)) |
+| the empty state (behaviour state; the Empty story) | 013's `ocelle-empty-state`, placed by the consumer in place of the chain; an empty chain renders nothing (FR-025), and the element writes no text of its own (IQ-23 (a)) |
+| invalid input (behaviour state; the InvalidInput story) | none: with slotted steps there is no invalid whole input; children other than steps are neither shown nor exposed (FR-030; IQ-23 (a)) |
+| the wide layout (behaviour state; the Default story) | built in: the steps in one row while they fit, with a connector between consecutive steps on the row (FR-034, US3-2) |
+| the narrow layout (behaviour state; the Narrow story) | the wrapping chain, which follows its container, not the viewport: the steps wrap onto further lines, with connectors only within a line; no stacked layout (FR-034; IQ-21 (a)) |
+| forced colours (behaviour state) | built in: markers, connectors and chip outlines as `CanvasText` borders, the text in a system text colour (FR-013) |
+| light mode (state; the LightMode story) | built in: the light and dark themes (FR-013) |
+| two stages, six stages (states; the TwoStages and SixStages stories) | built in: one list item per visible step in source order, ordinals 1 to N, a connector between steps on a line (FR-030, FR-033, FR-034) |
+| long content (state; the LongContent story) | built in: content wraps between words inside the step; `wrap="anywhere"` for identifiers (FR-024, US3-5) |
+| no static form (behaviour) | none needed: the chain is markup, and before upgrade `@ocelle/styles` shows the visible steps one per line (contracts/ocelle-evidence-chain.md § Before upgrade) |
+| composition, the chain in a card in a grid (behaviour; the ApprovedExample story) | the consumer's layout: the chain follows its container wherever the consumer places it (FR-034) |
+
+The approved example's four toned, valued stages with annotations map by the stages, the label, value and annotation,
+and the tone rows. IQ-27 (a) changes no row: phase 3 builds the chain for #13 and the Ocelle console, and the metric
+and pill-tag families of which each library stage is built are not this mission's (013's `ocelle-facts` and #7's pill
+tag serve them). No attribute, slot, part, story or baseline is added for any row: phase 3 keeps 12 stories and 24
+baselines.
 
 ## R-17 A request to 009's owner: a pinned start box out of the start fade (PLAN-A11Y-SECURITY-1-002)
 
