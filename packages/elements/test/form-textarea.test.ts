@@ -129,6 +129,21 @@ describe("ocelle-form-textarea", () => {
     expect([form.checkValidity(), field.willValidate, new FormData(form).get("answer")]).toEqual([false, true, ""]);
   });
 
+  it("projects host ARIA constraints onto the editor without changing native form participation", async () => {
+    const { field, form } = fixture();
+    const control = await editor(field);
+    assert.instanceOf(control, HTMLTextAreaElement, "the editing control is a native shadow textarea");
+    field.setAttribute("aria-required", "true");
+    field.setAttribute("aria-disabled", "true");
+    await field.updateComplete;
+    expect([control.getAttribute("aria-required"), control.getAttribute("aria-disabled")]).toEqual(["true", "true"]);
+    expect([control.required, control.disabled, new FormData(form).get("answer")]).toEqual([false, false, "first\nsecond\nthird"]);
+    field.removeAttribute("aria-required");
+    field.removeAttribute("aria-disabled");
+    await field.updateComplete;
+    expect([control.getAttribute("aria-required"), control.getAttribute("aria-disabled")]).toEqual([null, null]);
+  });
+
   it("inserts a newline and pasted paragraphs inside a dialog and commits once with the current form value", async () => {
     scope.innerHTML = `<ocelle-dialog open label="Decision"><form><ocelle-form-textarea id="field" name="answer" label="Decision"></ocelle-form-textarea>
       <button id="save" type="submit">Submit</button></form></ocelle-dialog>`;
