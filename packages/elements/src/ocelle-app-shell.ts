@@ -106,20 +106,6 @@ function length(value: string | undefined, rootFont: number, hostFont: number): 
  * Dispatched after the navigation changes tier. Bubbles and is composed.
  */
 export class OcelleAppShell extends LitElement {
-  static override properties = {
-    layout: {},
-    productName: { attribute: "product-name" },
-    menuLabel: { attribute: "menu-label" },
-    drawerLabel: { attribute: "drawer-label" },
-    closeLabel: { attribute: "close-label" },
-    railLabel: { attribute: "rail-label" },
-    sidebarLabel: { attribute: "sidebar-label" },
-    narrowBelow: { attribute: "narrow-below" },
-    collapseBelow: { attribute: "collapse-below" },
-    flushBlockEnd: { type: Boolean, attribute: "flush-block-end" },
-    flushInlineEnd: { type: Boolean, attribute: "flush-inline-end" },
-  };
-
   static override styles = css`
     :host {
       display: block;
@@ -215,6 +201,20 @@ export class OcelleAppShell extends LitElement {
   declare railLabel: string;
   /** Localized landmark name for bare sidebar destinations. */
   declare sidebarLabel: string;
+  static override properties = {
+    layout: {},
+    productName: { attribute: "product-name" },
+    menuLabel: { attribute: "menu-label" },
+    drawerLabel: { attribute: "drawer-label" },
+    closeLabel: { attribute: "close-label" },
+    railLabel: { attribute: "rail-label" },
+    sidebarLabel: { attribute: "sidebar-label" },
+    narrowBelow: { attribute: "narrow-below" },
+    collapseBelow: { attribute: "collapse-below" },
+    flushBlockEnd: { type: Boolean, attribute: "flush-block-end" },
+    flushInlineEnd: { type: Boolean, attribute: "flush-inline-end" },
+  };
+
   /** Explicit lower bound in px, rem or em, or zero. Falls back to the `--ocelle-app-shell-narrow-below` token. */
   declare narrowBelow: string | undefined;
   /** Explicit upper bound in px, rem or em, or zero. Falls back to the `--ocelle-app-shell-collapse-below` token. */
