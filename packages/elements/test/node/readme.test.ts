@@ -745,6 +745,7 @@ const entryRows = [
   "| `@ocelle/elements/ocelle-notice.js` | `dist/ocelle-notice.js` | `ocelle-notice` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-form-input.js` | `dist/ocelle-form-input.js` | `ocelle-form-input` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-form-select.js` | `dist/ocelle-form-select.js` | `ocelle-form-select` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-form-textarea.js` | `dist/ocelle-form-textarea.js` | `ocelle-form-textarea` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-scroller.js` | `dist/ocelle-scroller.js` | `ocelle-scroller` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-workflow-board.js` | `dist/ocelle-workflow-board.js` | `ocelle-workflow-board` only, not the lane; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-workflow-lane.js` | `dist/ocelle-workflow-lane.js` | `ocelle-workflow-lane` only; for hosts with a bundler |",
@@ -902,6 +903,7 @@ describe("packages/elements/README.md", () => {
       "./ocelle-notice.js",
       "./ocelle-form-input.js",
       "./ocelle-form-select.js",
+      "./ocelle-form-textarea.js",
       "./ocelle-scroller.js",
       "./ocelle-workflow-board.js",
       "./ocelle-workflow-lane.js",
@@ -1370,10 +1372,10 @@ describe("packages/elements/README.md overview (014 T110)", () => {
   const overview = flat(/^# @ocelle\/elements\n([\s\S]*?)(?=^## )/m.exec(read("README.md"))?.[1] ?? "");
 
   // The merges of main (landing operator decisions 1 and 4) bring 008's, 009's, 010's, 011's, 012's and 013's
-  // twenty-one elements beside the icon, the mark and the nine of this feature: thirty-two in all.
-  it("counts and names the thirty-two elements, the nine of this feature with the icon, the mark and the twenty-one of 008 to 013", () => {
-    expect(overview).toContain("thirty-two elements");
-    for (const tag of ["ocelle-icon", "ocelle-brand-mark", ...mainElements, ...selectionElements]) expect(overview).toContain(`\`${tag}\``);
+  // twenty-one elements beside the icon, the mark and the nine of this feature, plus the multiline textarea.
+  it("counts and names the thirty-three elements, including the textarea", () => {
+    expect(overview).toContain("thirty-three elements");
+    for (const tag of ["ocelle-icon", "ocelle-brand-mark", ...mainElements, ...selectionElements, "ocelle-form-textarea"]) expect(overview).toContain(`\`${tag}\``);
   });
 
   // The second merge of main (landing operator decision 4): 012 raised the floor to Chromium 135 after 014's 125.
