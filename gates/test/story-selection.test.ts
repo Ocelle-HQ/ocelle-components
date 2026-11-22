@@ -101,3 +101,81 @@ describe("exact proof scope", () => {
     });
   });
 });
+
+describe("CI-only collateral scope", () => {
+  const visual = { project: "gates-integration", file: "gates/test/integration/visual.test.ts" };
+  const axe = { project: "gates-integration", file: "gates/test/integration/axe.test.ts" };
+  const build = { project: "gates-integration", file: "gates/test/integration/storybook-build.test.ts" };
+  const withCollateral = [...inventory, visual, axe, build];
+  const proof = { ...browser, test: "accepts a paragraph via Tab" };
+
+  it("leaves the phase proof and extra consumers local while deferring named changed maintenance suites", () => {
+    const result = selectStoryTests(withCollateral, scope({
+      ...{ ciOnly: [visual.file, axe.file] },
+      changed: [...changed, visual.file, axe.file, support], extra: [related.file], expected: [proof],
+    }));
+    expect(result).toEqual({ ...baseSelection, files: [...baseSelection.files, { test: related }] });
+  });
+
+  it("retains the existing unscoped support fallback while excluding only the declared collateral", () => {
+    const result = selectStoryTests(withCollateral, scope({
+      ...{ ciOnly: [visual.file] }, changed: [...changed, visual.file, support],
+    }));
+    expect(result).toEqual({ changedTests: changed, files: [...fullSelection.files, { test: axe }, { test: build }] });
+  });
+
+  it("allows red capture to observe the declared collateral and collect any failure", () => {
+    const result = selectStoryTests(withCollateral, scope({
+      ...{ ciOnly: [visual.file] }, mode: "red", changed: [...changed, visual.file],
+    }));
+    expect(result).toEqual({ changedTests: [...changed, visual.file], files: [...baseSelection.files, { test: visual }] });
+  });
+
+  it("rejects a collateral file that also appears in extra local scope", () => {
+    const result = selectStoryTests(withCollateral, scope({
+      ...{ ciOnly: [visual.file] }, changed: [...changed, visual.file], extra: [visual.file],
+    }));
+    expect(result).toEqual({ problem: "conflicting local and ci-only scope: " + visual.file });
+  });
+
+  it("rejects a collateral file that was never changed by the phase", () => {
+    const result = selectStoryTests(withCollateral, scope({ ...{ ciOnly: [visual.file] } }));
+    expect(result).toEqual({ problem: "ci-only scope requires a changed test: " + visual.file });
+  });
+
+  it("rejects a declared test that does not discover its exact registered CI project", () => {
+    const result = selectStoryTests([...inventory, { ...visual, project: "different-gate" }], scope({
+      ...{ ciOnly: [visual.file] }, changed: [...changed, visual.file],
+    }));
+    expect(result).toEqual({ problem: "ci-only test was not discovered in its registered project: " + visual.file });
+  });
+
+  it("rejects an unexpected project that also discovers the declared collateral path", () => {
+    const result = selectStoryTests([...withCollateral, { ...visual, project: "different-gate" }], scope({
+      ...{ ciOnly: [visual.file] }, changed: [...changed, visual.file],
+    }));
+    expect(result).toEqual({ problem: "ci-only test was not discovered in its registered project: " + visual.file });
+  });
+
+  it.each([build.file, browser.file, "gates/test/integration/missing.test.ts"])("does not defer build, browser proof or unknown files (%s)", (file) => {
+    const result = selectStoryTests(withCollateral, scope({ ...{ ciOnly: [file] }, changed: [browser.file, file] }));
+    expect(result).toEqual({ problem: "test is ineligible for ci-only scope: " + file });
+  });
+
+  it.each([
+    { ...visual, test: "retains a non-vacuous visual assertion" },
+    { ...proof, helper: { file: visual.file, line: 20, text: "expect(rendered).toBeVisible();", occurrence: 1 } },
+  ])("rejects deferring a recorded assertion or its helper ($test)", (assertion) => {
+    const result = selectStoryTests(withCollateral, scope({
+      ...{ ciOnly: [visual.file] }, changed: [...changed, visual.file], expected: [assertion],
+    }));
+    expect(result).toEqual({ problem: "ci-only scope cannot defer a recorded red assertion or helper: " + visual.file });
+  });
+
+  it("requires a changed runnable local proof even with an explicitly added unchanged consumer", () => {
+    const result = selectStoryTests(withCollateral, scope({
+      ...{ ciOnly: [visual.file] }, changed: [visual.file], extra: [related.file],
+    }));
+    expect(result).toEqual({ problem: "ci-only scope leaves no changed runnable local test" });
+  });
+});

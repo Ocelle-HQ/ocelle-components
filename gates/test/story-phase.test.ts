@@ -403,3 +403,33 @@ describe("phase verdict", () => {
     expect(output?.problems).toContain("final tests on base: no failing assertion");
   });
 });
+
+describe("phase CI collateral declarations", () => {
+  const visual = "gates/test/integration/visual.test.ts";
+
+  it("reports the deferred CI project and path alongside the focused head", async () => {
+    const { tools, files, checks, outputs } = fixture();
+    files.set(join(dir, "test-scope.txt"), "ci-only " + visual + "\n");
+    await checkPhase(request, {
+      ...tools,
+      git: (args) => {
+        const output = tools.git(args);
+        return args.includes("--diff-filter=AMT") && args.includes(anchor) ? output + visual + "\0" : output;
+      },
+    });
+    expect(checks.at(-1)?.check).toMatchObject({ mode: "head", selection: { ciOnly: [visual], extra: [] } });
+    expect(checks.filter(({ check }) => check.mode !== "head").map(({ check }) => check.selection)).not.toContainEqual(
+      expect.objectContaining({ ciOnly: [visual] }),
+    );
+    expect(outputs).toMatchObject([{ filename: verdict, output: {
+      status: "pass", head, deferred_ci: [{ project: "gates-integration", file: visual }],
+    } }]);
+  });
+
+  it.each(["ci-only", "ci-only /tmp/outside.test.ts", "ci-only test/../other.test.ts"])("rejects a malformed CI-only declaration (%s)", async (line) => {
+    const { tools, files, checks } = fixture();
+    files.set(join(dir, "test-scope.txt"), line + "\n");
+    await expect(checkPhase(request, tools)).rejects.toThrow("test-scope.txt must contain repository-relative test paths");
+    expect(checks).toEqual([]);
+  });
+});
