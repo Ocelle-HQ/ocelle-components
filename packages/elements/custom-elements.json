@@ -408,6 +408,24 @@
               }
             },
             {
+              "default": "\"Navigation\"",
+              "description": "Localized name of the navigation drawer.",
+              "fieldName": "drawerLabel",
+              "name": "drawer-label",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "\"Close navigation\"",
+              "description": "Localized name of the drawer close control.",
+              "fieldName": "closeLabel",
+              "name": "close-label",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
               "default": "\"Account\"",
               "description": "Localized landmark name for bare rail destinations.",
               "fieldName": "railLabel",
@@ -511,6 +529,28 @@
               "description": "Accessible name of the top bar menu.",
               "kind": "field",
               "name": "menuLabel",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "drawer-label",
+              "default": "\"Navigation\"",
+              "description": "Localized name of the navigation drawer.",
+              "kind": "field",
+              "name": "drawerLabel",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "attribute": "close-label",
+              "default": "\"Close navigation\"",
+              "description": "Localized name of the drawer close control.",
+              "kind": "field",
+              "name": "closeLabel",
               "privacy": "public",
               "type": {
                 "text": "string"

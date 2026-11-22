@@ -101,6 +101,23 @@ describe("app shell drawer", () => {
     await focused(menu(shell));
   });
 
+  it("keeps the shell drawer open when a nested drawer completes its own close", async () => {
+    const shell = await mount("project", sidebar);
+    const child = document.createElement("ocelle-drawer");
+    child.slot = "sidebar";
+    child.label = "Filter";
+    child.innerHTML = '<button id="nested-choice" autofocus>Choose</button>';
+    shell.append(child);
+    await open(shell);
+    child.open = true;
+    await focused(document.getElementById("nested-choice"));
+    await commands.press("Escape");
+    await expect.poll(() => child.shadowRoot?.querySelector("dialog")?.open).toBe(false);
+    expect(panel(shell)?.matches(":modal")).toBe(true);
+    expect(menu(shell)?.getAttribute("aria-expanded")).toBe("true");
+    await focused(document.getElementById("work"));
+  });
+
   it("honors cancellation of its own close request", async () => {
     const shell = await mount("project", sidebar);
     await open(shell);

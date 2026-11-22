@@ -44,3 +44,28 @@ export const OmittedRegions: StoryObj = { render: () => frame("", "") };
 export const FlushBlockEnd: StoryObj = { render: () => frame('layout="project" flush-block-end', sidebar, inspector) };
 export const FlushInlineEnd: StoryObj = { render: () => frame('layout="project" flush-inline-end', sidebar, inspector) };
 export const FlushBothEnds: StoryObj = { render: () => frame('layout="project" flush-block-end flush-inline-end', sidebar, inspector) };
+
+const narrow = (layout: string, navigation: string): string =>
+  `<div data-story="app-shell-narrow">${frame(`layout="${layout}"`, action + navigation)}</div>`;
+
+const openNavigation: NonNullable<StoryObj["play"]> = async ({ canvasElement }) => {
+  const shell = canvasElement.querySelector("ocelle-app-shell");
+  await shell?.updateComplete;
+  const bar = shell?.shadowRoot?.querySelector("ocelle-top-bar");
+  await bar?.updateComplete;
+  const menu = bar?.shadowRoot?.querySelector("button");
+  if (shell == null || menu == null) throw new Error("Expected a narrow app shell and menu");
+  menu.focus();
+  menu.click();
+  await shell.updateComplete;
+  const drawer = shell.shadowRoot?.querySelector("ocelle-drawer");
+  await drawer?.updateComplete;
+  if (drawer?.open !== true) throw new Error("Expected the app shell navigation drawer to open");
+};
+
+export const MissionNarrow: StoryObj = { render: () => narrow("mission", rail + sidebar) };
+export const MissionDrawerOpen: StoryObj = { render: () => narrow("mission", rail + sidebar), play: openNavigation };
+export const ProjectNarrow: StoryObj = { render: () => narrow("project", sidebar) };
+export const ProjectDrawerOpen: StoryObj = { render: () => narrow("project", sidebar), play: openNavigation };
+export const PersonalNarrow: StoryObj = { render: () => narrow("personal", personal) };
+export const PersonalDrawerOpen: StoryObj = { render: () => narrow("personal", personal), play: openNavigation };

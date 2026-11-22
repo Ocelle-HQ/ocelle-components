@@ -196,3 +196,7 @@
   padding: var(--ocelle-gutter);
   background: var(--ocelle-color-rail);
 }
+
+[data-story="app-shell-narrow"] {
+  inline-size: min(20rem, 100%);
+}

@@ -4,7 +4,9 @@ import { define } from "./define.ts";
 import { deepActive, walk } from "./focusable.ts";
 import { accessibleName } from "./naming.ts";
 import { OcelleContextSidebar, setContextSidebarCompact } from "./ocelle-context-sidebar.ts";
+import { OcelleDrawer } from "./ocelle-drawer.ts";
 import { OcelleNavItem, setNavItemPresentation } from "./ocelle-nav-item.ts";
+import { setOverlayInitialFocus } from "./overlay.ts";
 import { CompactSections } from "./shell-compact-sections.ts";
 import { below, parseLength, resolveLength } from "./tiers.ts";
 import "./ocelle-top-bar.ts";
@@ -12,6 +14,7 @@ import "./ocelle-top-bar.ts";
 export type AppShellTier = "expanded" | "collapsed" | "narrow";
 
 type Layout = "mission" | "project" | "personal";
+type DrawerState = "closed" | "open" | "closing";
 type Region = "rail" | "sidebar";
 type PresentationElement = OcelleNavItem | OcelleContextSidebar;
 
@@ -124,6 +127,12 @@ export class OcelleAppShell extends LitElement {
       inline-size: var(--ocelle-shell-rail-width);
     }
 
+    .drawer-navigation [part="navigation"] {
+      inline-size: auto;
+      min-inline-size: 0;
+      overflow-wrap: anywhere;
+    }
+
     [part="main"] {
       grid-area: main;
       box-sizing: border-box;
@@ -153,8 +162,11 @@ export class OcelleAppShell extends LitElement {
 
     @media not (forced-colors: active) {
       .rail {
+        color-scheme: dark;
         background: var(--ocelle-color-chrome);
         color: var(--ocelle-color-chrome-ink);
+        --ocelle-color-link: var(--ocelle-color-chrome-ink);
+        --ocelle-color-link-hover: var(--ocelle-color-chrome-ink);
       }
 
       .sidebar {
@@ -195,6 +207,9 @@ export class OcelleAppShell extends LitElement {
   #settlement: symbol | undefined;
   #focusSource: Element | undefined;
   #announcedTier: AppShellTier | undefined;
+  #drawerState: DrawerState = "closed";
+  #drawerFocus: Element | undefined;
+  #restoreDrawerFocus = false;
   readonly #presentationOwner = Symbol();
   #managedPresentation = new Set<PresentationElement>();
   readonly #compactSections = new CompactSections();
@@ -248,6 +263,9 @@ export class OcelleAppShell extends LitElement {
     this.#children.disconnect();
     this.#settlement = undefined;
     this.#focusSource = undefined;
+    this.#drawerFocus = undefined;
+    this.#drawerState = "closed";
+    this.#restoreDrawerFocus = false;
     this.#setPresentation([], []);
   }
 
@@ -258,7 +276,8 @@ export class OcelleAppShell extends LitElement {
 
   protected override willUpdate(): void {
     const source = deepActive();
-    if (source !== null && (source === this.#menu() || this.#regions().some((region) => composedWithin(source, region)))) {
+    if (!this.#drawerProjected && source !== null
+      && (source === this.#menu() || this.#regions().some((region) => composedWithin(source, region)))) {
       this.#focusSource = source;
     }
     const rail = assignedRegion(this, "rail");
@@ -269,32 +288,105 @@ export class OcelleAppShell extends LitElement {
     this.#rail = this.#layout === "mission" && rail.some(hasContent);
     this.#sidebar = sidebar.some(hasContent);
     this.#actions = assignedRegion(this, "actions").some(hasContent);
+    if (this.#drawerOpen && (this.#tier !== "narrow" || !this.#hasNavigation)) this.#drawerState = "closing";
 
     const managed = this.#layout === "personal" ? [] : sidebar;
     this.#setPresentation(this.#rail ? rail : [], managed);
   }
 
   get #sidebarCompact(): boolean {
-    return this.#layout !== "personal" && this.#tier === "collapsed";
+    return !this.#drawerProjected && this.#layout !== "personal" && this.#tier === "collapsed";
+  }
+
+  get #drawerOpen(): boolean {
+    return this.#drawerState === "open";
+  }
+
+  get #drawerProjected(): boolean {
+    return this.#drawerState !== "closed";
+  }
+
+  get #hasNavigation(): boolean {
+    return this.#rail || this.#sidebar;
   }
 
   protected override render(): unknown {
-    const navigationAvailable = this.#rail || this.#sidebar;
     return html`
       <slot name="skip-link"></slot>
       <ocelle-top-bar .productName=${this.productName} .menuLabel=${this.menuLabel}
-        .showMenu=${this.#tier === "narrow" && navigationAvailable}>
+        .showMenu=${this.#tier === "narrow" && this.#hasNavigation} .menuExpanded=${this.#drawerOpen}
+        @ocelle-top-bar-menu-request=${this.#openDrawer}>
         ${this.#actions ? html`<slot name="actions" slot="actions"></slot>` : nothing}
       </ocelle-top-bar>
       <div class="frame" ?data-compact-sidebar=${this.#sidebarCompact}>
-        ${this.#region("rail", this.#rail, this.railLabel)}
-        ${this.#region("sidebar", this.#sidebar, this.sidebarLabel)}
+        ${this.#drawerProjected ? nothing : this.#navigation(false)}
         <main part="main" tabindex="-1"
           class=${classMap({ "flush-block-end": this.flushBlockEnd, "flush-inline-end": this.flushInlineEnd })}>
           <slot></slot>
         </main>
       </div>
+      <ocelle-drawer .open=${this.#drawerOpen}
+        .label=${accessibleName(this.drawerLabel, null) ?? "Navigation"}
+        .closeLabel=${accessibleName(this.closeLabel, null) ?? "Close navigation"}
+        @focusin=${this.#recordDrawerFocus}
+        @ocelle-drawer-close-request=${this.#syncDrawerClose}
+        @ocelle-drawer-close=${this.#drawerClosed}>
+        ${this.#drawerProjected ? html`<div class="drawer-navigation">${this.#navigation(true)}</div>` : nothing}
+      </ocelle-drawer>
     `;
+  }
+
+  #navigation(inDrawer: boolean): unknown {
+    return html`
+      ${this.#region("rail", this.#rail, this.railLabel, inDrawer)}
+      ${this.#region("sidebar", this.#sidebar, this.sidebarLabel, inDrawer)}
+    `;
+  }
+
+  protected override firstUpdated(): void {
+    const drawer = this.renderRoot.querySelector("ocelle-drawer");
+    if (drawer !== null) setOverlayInitialFocus(drawer, () => this.#destinations()[0]);
+  }
+
+  readonly #openDrawer = (event: CustomEvent<{ expanded: boolean }>): void => {
+    if (event.composedPath()[0] !== event.currentTarget) return;
+    event.stopPropagation();
+    if (!event.detail.expanded || this.#drawerProjected || this.#tier !== "narrow" || !this.#hasNavigation) return;
+    this.#drawerFocus = undefined;
+    this.#drawerState = "open";
+    this.requestUpdate();
+  };
+
+  readonly #recordDrawerFocus = (event: FocusEvent): void => {
+    const target = event.composedPath()[0];
+    if (this.#drawerOpen && target instanceof Element) this.#drawerFocus = target;
+  };
+
+  readonly #syncDrawerClose = (event: Event): void => {
+    const drawer = event.currentTarget;
+    if (!(drawer instanceof OcelleDrawer) || event.composedPath()[0] !== drawer) return;
+    queueMicrotask(() => {
+      if (!this.#drawerProjected || drawer.open) return;
+      this.#drawerState = "closing";
+      this.requestUpdate();
+    });
+  };
+
+  readonly #drawerClosed = (event: Event): void => {
+    const drawer = event.currentTarget;
+    if (!(drawer instanceof OcelleDrawer) || event.composedPath()[0] !== drawer || !this.#drawerProjected) return;
+    const active = deepActive();
+    this.#restoreDrawerFocus = active === null || active === this.#menu() || composedWithin(active, drawer);
+    this.#drawerState = "closed";
+    this.requestUpdate();
+  };
+
+  #drawerPanel(): HTMLDialogElement | null | undefined {
+    return this.renderRoot.querySelector("ocelle-drawer")?.shadowRoot?.querySelector("dialog");
+  }
+
+  #drawerCloseButton(): HTMLButtonElement | null | undefined {
+    return this.#drawerPanel()?.querySelector<HTMLButtonElement>('[part="close-button"]');
   }
 
   protected override updated(): void {
@@ -309,7 +401,7 @@ export class OcelleAppShell extends LitElement {
     return this.renderRoot.querySelector("ocelle-top-bar")?.shadowRoot?.querySelector("button");
   }
 
-  #region(name: Region, populated: boolean, label: string): unknown {
+  #region(name: Region, populated: boolean, label: string, inDrawer: boolean): unknown {
     const supplied = assignedRegion(this, name).some((element) => hasContent(element) && (
       element.matches(landmark) || [...element.querySelectorAll(landmark)].some((node) =>
         hasContent(node) && node.closest("[hidden]") === null)
@@ -317,7 +409,7 @@ export class OcelleAppShell extends LitElement {
     const bare = populated && !supplied;
     return html`
       <div part="navigation" class=${name}
-        ?hidden=${!populated || this.#tier === "narrow"}
+        ?hidden=${!populated || (!inDrawer && this.#tier === "narrow")}
         role=${bare ? "navigation" : nothing}
         aria-label=${bare ? accessibleName(label, null) ?? (name === "rail" ? "Account" : "Workspace") : nothing}>
         <slot name=${name}></slot>
@@ -385,12 +477,27 @@ export class OcelleAppShell extends LitElement {
       ...[...this.#managedPresentation].map((element) => element.updateComplete),
     ]);
     if (settlement !== this.#settlement) return;
-    const source = this.#focusSource;
-    this.#focusSource = undefined;
-    if (source !== undefined && !visible(source)) {
-      const active = deepActive();
-      if (active === null || !visible(active)) {
-        const destination = tier === "narrow" ? this.#menu() : this.#firstDestination();
+    const active = deepActive();
+    if (this.#drawerProjected) {
+      if (!this.#drawerOpen) return;
+      if (this.#drawerFocus !== undefined && !visible(this.#drawerFocus)
+        && (active === null || active === this.#drawerPanel() || !visible(active))) {
+        (this.#destinations()[0] ?? this.#drawerCloseButton())?.focus();
+      }
+    } else {
+      const source = this.#focusSource;
+      const fromDrawer = this.#drawerFocus;
+      const restore = this.#restoreDrawerFocus;
+      this.#focusSource = undefined;
+      this.#drawerFocus = undefined;
+      this.#restoreDrawerFocus = false;
+      if (restore && (active === null || active === this.#menu() || !visible(active))) {
+        const destinations = this.#destinations();
+        const original = destinations.find((element) => element === fromDrawer);
+        const target = tier === "narrow" ? this.#menu() : original ?? destinations[0];
+        (target ?? this.contentTarget)?.focus();
+      } else if (source !== undefined && !visible(source) && (active === null || !visible(active))) {
+        const destination = tier === "narrow" ? this.#menu() : this.#destinations()[0];
         (destination ?? this.contentTarget)?.focus();
       }
     }
@@ -405,14 +512,14 @@ export class OcelleAppShell extends LitElement {
     }
   }
 
-  #firstDestination(): HTMLElement | undefined {
-    return this.#regions().flatMap((region) => walk(region).order).find(({ element, kind }) => {
+  #destinations(): HTMLElement[] {
+    return this.#regions().flatMap((region) => walk(region).order).filter(({ element, kind }) => {
       if (kind === "opaque" && (element.tabIndex < 0 || !visible(element))) return false;
       for (let node: Element | null = element; node !== null && node !== this; node = composedParent(node)) {
         if (node.matches("ocelle-context-sidebar > [slot=head], ocelle-context-sidebar > [slot=footer]")) return false;
       }
       return true;
-    })?.element;
+    }).map(({ element }) => element);
   }
 }
 
