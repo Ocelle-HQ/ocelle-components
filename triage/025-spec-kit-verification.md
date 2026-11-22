@@ -7,7 +7,9 @@ in_scope: []
 out_of_scope: [42, 61, 68, 74]
 semver: none
 spec_prompt: "Op requested by the operator (triage/025-spec-kit-verification.md): reduce repeated phase verification with focused, assertion-classified, resumable red, base, scaffold and head checks, and parallelize the complete Vitest suite behind the existing Unit tests check. Prove equivalent test inventory and fail closed on incomplete evidence. Preserve independent review and all merge gates."
-status: proposed
+status: approved
+decided_by: "human:MOES-Media"
+decided_at: 2026-11-22T16:43:06Z
 ---
 
 # Triage 025: Spec Kit verification and Unit tests CI
