@@ -68,3 +68,7 @@ The original source's remaining changed-line findings reduce to these equivalenc
 - Changed-file source lint and test lint passed. The typecheck, manifest (40 elements), style lint, config copies, CSP gate, prefix and range signoff passed.
 - The scope comparison from the phase base is empty for `packages/elements/src/overflow-region.ts` and `specs/009-workflow-layouts/contracts/`.
 - The affected Plants selection is 317 of 317. Full Plants, mutation, unit, visual and axe remain required on the integrated GitHub head under the [operator's CI-first decision](../operator-ci-first.md).
+
+### Integrated red and green
+
+The integration cherry-pick remapped 089db909 to 2fd51b29. On 2fd51b29, the focused command independently reproduced both FR-020 reconnect assertion failures with exit 1. On 97136088, all 206 tests across the two code-block and two disclosure browser files passed. The historical phase JSON still records the original folded phase.
