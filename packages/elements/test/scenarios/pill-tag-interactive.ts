@@ -1006,6 +1006,42 @@ export const pillInteractiveScenarios: readonly Scenario[] = [
     },
   },
   {
+    name: 'US4-10, focus before the first render (review round 1, R1-01): a switch between button and link mode, in either direction, on a pill whose inner control has not rendered yet does not take focus: a connected static pill given interactive and href in one task, or href, interactive and no href; a pill made by document.createElement with interactive, appended and given href in the same task, or made with interactive and href, appended and its href removed; focus stays on the button it was on and the pill renders the new control (FR-035 (d); WCAG 3.2.1)',
+    run: async (driver) => {
+      await mount(driver, '<button id="before" type="button">Before</button> <ocelle-pill-tag id="s1" status="info">Mine</ocelle-pill-tag> <ocelle-pill-tag id="s2" status="info">Mine</ocelle-pill-tag> <span id="holder"></span>');
+      const read = async (id: string): Promise<unknown> => ({ path: await driver.focusPath(), inner: await driver.activeInner(id), controls: await controls(driver, id) });
+      await driver.focus("before");
+      await driver.changeAttributes("s1", [
+        ["interactive", ""],
+        ["href", "#mine"],
+      ]);
+      await driver.settle();
+      const staticToLink = await read("s1");
+      await driver.focus("before");
+      await driver.changeAttributes("s2", [
+        ["href", "#mine"],
+        ["interactive", ""],
+        ["href", null],
+      ]);
+      await driver.settle();
+      const staticToButton = await read("s2");
+      await driver.focus("before");
+      // One module for both (the fixture serves it at one URL, which a second import would not run again); each pill
+      // is made, appended and switched in that one task.
+      await driver.module('const make = (id, href) => { const pill = document.createElement("ocelle-pill-tag"); pill.id = id; pill.setAttribute("interactive", ""); if (href) pill.setAttribute("href", "#mine"); pill.textContent = "Mine"; document.getElementById("holder").append(pill); return pill; }; make("n1", false).setAttribute("href", "#mine"); make("n2", true).removeAttribute("href");');
+      await driver.settle();
+      const createdToLink = await read("n1");
+      const createdToButton = await read("n2");
+      return { staticToLink, staticToButton, createdToLink, createdToButton };
+    },
+    expected: {
+      staticToLink: { path: "before", inner: null, controls: [{ tag: "a" }] },
+      staticToButton: { path: "before", inner: null, controls: [{ tag: "button" }] },
+      createdToLink: { path: "before", inner: null, controls: [{ tag: "a" }] },
+      createdToButton: { path: "before", inner: null, controls: [{ tag: "button" }] },
+    },
+  },
+  {
     name: "US4-11: an interactive pill whose inner control has focus, made static, loses focus as a removed element does (focus on the body, nothing focused in its shadow root), and the pill does not move it, while a twin switched from button to link mode keeps it (FR-035 (d))",
     run: async (driver) => {
       await mount(driver, '<button id="before" type="button">Before</button> <ocelle-pill-tag id="p" interactive status="info">Mine</ocelle-pill-tag> <ocelle-pill-tag id="t" interactive status="info">Mine</ocelle-pill-tag>');
