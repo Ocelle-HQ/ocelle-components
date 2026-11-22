@@ -100,6 +100,7 @@ const inheritedOnly = (rows: readonly DialogScenario[]): DialogScenario[] => row
 const inheritedRows: readonly DialogScenario[] = [
   ...built.initialRows,
   ...built.tabCycleRows,
+  ...built.detailsRows,
   ...built.nonStopRows,
   ...built.bodyStartRows,
   ...built.scrollerRows,

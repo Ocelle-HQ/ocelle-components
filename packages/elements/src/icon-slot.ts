@@ -16,8 +16,10 @@
 //   line; a `bare` row keeps the icon wrapper's baseline, and its icon sits where a native `<button>` with an svg puts
 //   it (012 plan decision 33, reviews/phase-2/round-5.md O3-01, reviews/phase-2/round-6.md O6-01).
 // - Each wrapper is exactly one line box tall (`1lh`) with the icon centred in it, so the icon is centred on the
-//   label's first line at any type size and leading, wrapped or not (PLAN-CORRECTNESS-1-004 (a)). No generated
-//   content, so the control's name is its label's.
+//   label's first line at any type size and leading, wrapped or not (PLAN-CORRECTNESS-1-004 (a)). The convention
+//   adds no generated content, but a slotted icon can still add to a name computed from the control's content (a bare
+//   `<svg>`'s `<title>`), so a control keeps its icon out of its name itself, as `ocelle-button` does: its icon wrapper
+//   is `aria-hidden="true"` and, with an icon slotted, its inner control is named from its label wrapper (op 022, #57).
 // - An element slotted into the `icon` or `trailing` slot is `--ocelle-icon-size` square, never shrinks and takes the
 //   control's colour; the size rules are scoped to those two slots, so an element in a control's other slots (its
 //   label, a row's description or tags) keeps its own box (012 research.md R-10, PLAN-A11Y-SECURITY-1-002).
