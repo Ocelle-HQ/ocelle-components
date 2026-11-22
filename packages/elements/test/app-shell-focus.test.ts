@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { deepActive } from "../src/focusable.ts";
 import { close, focused, menu, mount, open, panel, rail, required, resize, sidebar } from "./app-shell-drawer-fixture.ts";
 
 describe("app shell drawer focus", () => {
@@ -21,7 +22,7 @@ describe("app shell drawer focus", () => {
     await expect.poll(() => shell.tier).toBe("collapsed");
     await focused(destination);
     resize(690);
-    await focused(menu(shell));
+    await expect.poll(() => deepActive() === menu(shell) && menu(shell) !== null).toBe(true);
   });
 
   it("moves from close to the first available destination after leaving narrow", async () => {
@@ -56,6 +57,16 @@ describe("app shell drawer focus", () => {
     await focused(document.getElementById("work"));
   });
 
+  it("falls back to the first surviving destination after a layout and tier change together", async () => {
+    const shell = await mount("mission", rail + sidebar);
+    await open(shell);
+    await focused(document.getElementById("account"));
+    shell.layout = "project";
+    resize(850);
+    await expect.poll(() => panel(shell)?.open).toBe(false);
+    await focused(document.getElementById("work"));
+  });
+
   it("uses the close control when the open drawer still has a region but no sequential destination", async () => {
     const shell = await mount("mission", rail + '<div slot="sidebar">Overview</div>');
     await open(shell);
@@ -80,12 +91,14 @@ describe("app shell drawer focus", () => {
     const exit = required(dialog.getAnimations()[0]);
     exit.pause();
     expect(dialog.open).toBe(true);
+    destination.blur();
+    expect(deepActive()).not.toBe(destination);
 
-    const { promise, resolve } = Promise.withResolvers<void>();
+    const { promise, resolve } = Promise.withResolvers<boolean>();
     const observer = new ResizeObserver(([entry]) => {
       if (entry?.borderBoxSize[0]?.inlineSize === 900) {
         order.push("resize");
-        resolve();
+        resolve(true);
       }
     });
     try {

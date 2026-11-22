@@ -1,6 +1,11 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { commands } from "vitest/browser";
-import { click, close, driver, focused, menu, mount, open, panel, rail, required, sidebar } from "./app-shell-drawer-fixture.ts";
+import { contrastRatio } from "../../../gates/lib/wcag.ts";
+import { click, close, driver, focused, menu, mount, open, panel, rail, required, resize, sidebar } from "./app-shell-drawer-fixture.ts";
+
+beforeEach(async () => {
+  await commands.emulateReducedMotion("reduce");
+});
 
 afterEach(async () => {
   await commands.emulateReducedMotion("no-preference");
@@ -20,9 +25,25 @@ describe("app shell drawer", () => {
     await focused(document.getElementById(first));
     expect(menu(shell)?.getAttribute("aria-expanded")).toBe("true");
     expect(close(shell).getAttribute("aria-label")).toBe("Bereiche schließen");
-    const tree = await commands.axTree("shell", "subtree");
+    required(panel(shell)).id = "drawer-panel";
+    const tree = await commands.axTree("drawer-panel", "subtree");
     expect(tree.find((node) => node.role === "dialog")?.name).toBe("Bereiche");
     expect(tree.filter((node) => node.role === "navigation").map((node) => node.name)).toEqual(names);
+  });
+
+  it("keeps a bare rail link readable against chrome beside content and in the drawer", async () => {
+    const shell = await mount("mission", rail + sidebar, 1150);
+    const link = required(document.getElementById("account"));
+    const rgb = (color: string): string => `#${required(/^rgb\((\d+), (\d+), (\d+)\)$/.exec(color))
+      .slice(1).map((channel) => Number(channel).toString(16).padStart(2, "0")).join("")}`;
+    const ratio = (): number => {
+      const region = required(shell.shadowRoot?.querySelector(".rail"));
+      return contrastRatio(rgb(getComputedStyle(link).color), rgb(getComputedStyle(region).backgroundColor));
+    };
+    expect(ratio()).toBeGreaterThanOrEqual(4.5);
+    resize(700);
+    await open(shell);
+    expect(ratio()).toBeGreaterThanOrEqual(4.5);
   });
 
   it.each([
@@ -63,6 +84,21 @@ describe("app shell drawer", () => {
     await expect.poll(() => panel(shell)?.open).toBe(false);
     await focused(menu(shell));
     expect(completions).toBe(1);
+  });
+
+  it("reflects the accepted close request while navigation stays projected during the exit", async () => {
+    const shell = await mount("project", sidebar);
+    await open(shell);
+    const dialog = required(panel(shell));
+    await commands.emulateReducedMotion("no-preference");
+    shell.style.setProperty("--ocelle-motion-base", "10s");
+    await commands.press("Escape");
+    await expect.poll(() => menu(shell)?.getAttribute("aria-expanded")).toBe("false");
+    expect(dialog.open).toBe(true);
+    expect(required(document.getElementById("work")).getClientRects().length).toBeGreaterThan(0);
+    required(dialog.getAnimations()[0]).finish();
+    await expect.poll(() => dialog.open).toBe(false);
+    await focused(menu(shell));
   });
 
   it("honors cancellation of its own close request", async () => {
