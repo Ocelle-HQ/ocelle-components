@@ -52,6 +52,10 @@ const baseLayer: readonly RuleEntry[] = [
   // each visible event a block and an aria-hidden one not shown, (0,0,0), right after the facts rule.
   { media: [], selectors: [':where(ocelle-event-timeline:not(:defined) > ocelle-timeline-event:not([hidden]):not([aria-hidden="true"]))'], declarations: [["display", "block"]] },
   { media: [], selectors: [':where(ocelle-event-timeline:not(:defined) > ocelle-timeline-event[aria-hidden="true"])'], declarations: [["display", "none"]] },
+  // 019 phase 3 (research R-08, recheck Q5 (b); contracts/styles-data-table.md § Block 3): the chain before upgrade,
+  // each visible step a block and an aria-hidden one not shown, (0,0,0), right after the timeline's rules.
+  { media: [], selectors: [':where(ocelle-evidence-chain:not(:defined) > ocelle-evidence-step:not([hidden]):not([aria-hidden="true"]))'], declarations: [["display", "block"]] },
+  { media: [], selectors: [':where(ocelle-evidence-chain:not(:defined) > ocelle-evidence-step[aria-hidden="true"])'], declarations: [["display", "none"]] },
   focus,
   forcedFocus,
 ];
@@ -433,8 +437,15 @@ describe("src/base.css as shipped (buildPlan(text)[0].content)", () => {
   });
 
   // 019 phase 2 (research R-08, recheck Q5 (b)): the base layer's header comment names the timeline's rules beside the facts.
-  it("names ocelle-event-timeline before upgrade in the base layer's header comment, after ocelle-facts and before the focus ring (019 R-08)", () => {
-    expect(/^\/\* Base layer: .*ocelle-facts before upgrade, ocelle-event-timeline before upgrade, the focus ring/m.test(text)).toBe(true);
+  // Since 019 phase 3 the chain's rules follow it in the comment, so this body ends at the timeline's name; the next
+  // body pins the chain's name and the focus ring after it.
+  it("names ocelle-event-timeline before upgrade in the base layer's header comment, right after ocelle-facts (019 R-08)", () => {
+    expect(/^\/\* Base layer: .*ocelle-facts before upgrade, ocelle-event-timeline before upgrade, /m.test(text)).toBe(true);
+  });
+
+  // 019 phase 3 (research R-08, recheck Q5 (b)): the header comment names the chain's rules after the timeline's.
+  it("names ocelle-evidence-chain before upgrade in the base layer's header comment, after ocelle-event-timeline and before the focus ring (019 R-08)", () => {
+    expect(/^\/\* Base layer: .*ocelle-event-timeline before upgrade, ocelle-evidence-chain before upgrade, the focus ring/m.test(text)).toBe(true);
   });
 
   it("follows the base layer with the compact scale of data-model § Rule table, in its order, with exactly its declarations (R-03, R-04)", () => {

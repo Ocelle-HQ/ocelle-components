@@ -32,6 +32,10 @@ export const recordsPainted: Readonly<Record<string, readonly string[]>> = {
   // timeline paints the dot in ink-muted (structural) and the connector in rule-strong (decorative).
   "ocelle-timeline-event": ["color-ink", "color-ink-muted"],
   "ocelle-event-timeline": ["color-ink-muted", "color-rule-strong"],
+  // Phase 3 (R-12, R-13): the chain paints the step and chip text in ink, the ring, the ordinal and the chip outline in
+  // ink-muted (structural) and the connector in rule-strong (decorative); the step paints nothing of its own.
+  "ocelle-evidence-chain": ["color-ink", "color-ink-muted", "color-rule-strong"],
+  "ocelle-evidence-step": [],
 };
 
 /** The rule tokens, which only decorative lines paint (R-13): held to no pair. */

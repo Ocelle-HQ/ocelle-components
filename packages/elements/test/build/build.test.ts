@@ -412,3 +412,22 @@ describe("the module build's timeline modules", () => {
     expect(own("ocelle-timeline-event.js")).toEqual({ lit: true, own: ["./define.js", "./timeline-time.js"], outside: [] });
   });
 });
+
+// 019 phase 3 (FR-040, contracts/ocelle-evidence-chain.md, contracts/ocelle-evidence-step.md; tasks.md T057): the
+// chain's module imports its step's module, the registration helper and the overflow-region module (for
+// `resolveName`), and no other element; the step's module imports no element.
+describe("the module build's evidence-chain modules", () => {
+  const imports = (file: string): string[] => specifiers(existsSync(join(dist, file)) ? readFileSync(join(dist, file), "utf8") : "");
+  const own = (file: string): unknown => {
+    const imported = imports(file);
+    return { lit: imported.includes("lit"), own: imported.filter((specifier) => specifier.startsWith("./")), outside: imported.filter((specifier) => !specifier.startsWith("./") && specifier !== "lit" && !specifier.startsWith("lit/")) };
+  };
+
+  it("dist/ocelle-evidence-chain.js imports ./ocelle-evidence-step.js and no other element module, with the registration helper and the overflow-region module", () => {
+    expect(own("ocelle-evidence-chain.js")).toEqual({ lit: true, own: ["./define.js", "./ocelle-evidence-step.js", "./overflow-region.js"], outside: [] });
+  });
+
+  it("dist/ocelle-evidence-step.js imports no element module, only the registration helper", () => {
+    expect(own("ocelle-evidence-step.js")).toEqual({ lit: true, own: ["./define.js"], outside: [] });
+  });
+});

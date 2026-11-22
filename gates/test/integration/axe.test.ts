@@ -76,12 +76,12 @@ const excepted: readonly string[] = [...prose, ...dataTable];
 
 describe("axe gate (gates/bin/axe.ts)", () => {
   it(
-    "audits the repository's 354 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes and the data table's 74 recorded nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)",
+    "audits the repository's 382 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes and the data table's 74 recorded nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)",
     async () => {
       const at = await root("repository");
       const ran = await gate(at);
       expect(dataTable).toHaveLength(74);
-      expect(ran).toEqual({ code: 0, stdout: ["axe: 354 story-theme runs, 0 serious or critical; 84 notes (0 incomplete, 84 excepted)"], stderr: excepted });
+      expect(ran).toEqual({ code: 0, stdout: ["axe: 382 story-theme runs, 0 serious or critical; 84 notes (0 incomplete, 84 excepted)"], stderr: excepted });
     },
     timeout,
   );
@@ -93,7 +93,7 @@ describe("axe gate (gates/bin/axe.ts)", () => {
       const ran = await gate(at);
       expect(ran).toEqual({
         code: 1,
-        stdout: ["unlabelled--button/light: axe: button-name: critical: #plant-unlabelled", "unlabelled--button/dark: axe: button-name: critical: #plant-unlabelled", "axe: 2 findings in 356 story-theme runs"],
+        stdout: ["unlabelled--button/light: axe: button-name: critical: #plant-unlabelled", "unlabelled--button/dark: axe: button-name: critical: #plant-unlabelled", "axe: 2 findings in 384 story-theme runs"],
         stderr: excepted,
       });
     },

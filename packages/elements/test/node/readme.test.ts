@@ -105,7 +105,7 @@ const fragments = [
   // host ARIA (FR-034, PLAN-A11Y-SECURITY-1-002 (a), 1-003 (a))
   // since 009 (T019, PLAN-CORRECTNESS-1-005 (a)): the rule scoped per element, replacing the package-wide sentence
   "A host `aria-label` names the element as `label` does. For `ocelle-icon` and `ocelle-brand-mark`, when present it decides alone: a blank host `aria-label` leaves the element unlabelled even with a `label`",
-  "For `ocelle-scroller`, `ocelle-workflow-board`, `ocelle-workflow-lane`, `ocelle-data-table` and `ocelle-event-timeline` a blank host `aria-label` counts as absent, so `label` still names the element: Chromium names a host from a present `aria-label` and does not fall back from a blank one, so these elements put their role and name on a node in their shadow root, named by the host's non-blank `aria-label`, trimmed, or else by `label`",
+  "For `ocelle-scroller`, `ocelle-workflow-board`, `ocelle-workflow-lane`, `ocelle-data-table`, `ocelle-event-timeline` and `ocelle-evidence-chain` a blank host `aria-label` counts as absent, so `label` still names the element: Chromium names a host from a present `aria-label` and does not fall back from a blank one, so these elements put their role and name on a node in their shadow root, named by the host's non-blank `aria-label`, trimmed, or else by `label`",
   "`ocelle-list-detail` takes no name: a host `aria-label` is not used",
   "When both are set, the host `aria-label` is the name; removing it falls back to `label`",
   "Chromium uses a host `aria-label` as written, surrounding spaces included, so pass it trimmed; the element never rewrites it",
@@ -470,6 +470,21 @@ const fragments = [
   "Before upgrade: `@ocelle/styles`' `base.css` shows each visible event on its own line; an event's `time` attribute shows only once the elements are defined, and a slotted time shows inline where it is written",
   "The timeline has no live region, landmark, heading or tab stop; a link in an event keeps its own tab stop. Announce new events with the consumer's own live region",
   "In forced colours the dots and the line are drawn in `CanvasText` and the text in the system text colour",
+  // ocelle-evidence-chain and ocelle-evidence-step (019 FR-030 to FR-036, FR-058; contracts/ocelle-evidence-chain.md,
+  // contracts/ocelle-evidence-step.md; research.md R-08, R-09, R-12, R-16; tasks.md T062): usage, ordinals, chips,
+  // wrapping, before upgrade and host ARIA (the Host ARIA sentence above names the chain)
+  "`ocelle-evidence-chain` shows an evidence chain as one ordered list of its `ocelle-evidence-step` children, in source order: `<ocelle-evidence-chain label=\"Evidence\"><ocelle-evidence-step>Spec</ocelle-evidence-step><ocelle-evidence-step variant=\"chip\">3 checks</ocelle-evidence-step></ocelle-evidence-chain>`",
+  "Each default step shows a round marker with its ordinal before its content. The markers, ordinals and connectors are drawn and hidden from assistive technology: a screen reader hears the list's name, then each step's content, and the list's order conveys the position",
+  "A default step's ordinal is its position among the visible steps, chip steps counted, so the numbers shown skip a chip",
+  "`variant=\"chip\"` draws a step as a compact chip: an outline with the `--ocelle-radius-2` corner and no fill, no marker and no ordinal, its text one size smaller than a default step's; any other value acts as unset. The chip is the chain's own and draws nothing of the pill tag",
+  "The steps sit in rows from the inline start and wrap onto further lines when the chain is too narrow for them; a connector joins consecutive steps on one line, never across lines or past the chain's edges. The chain follows its container's width, not the viewport's",
+  "Long content wraps between words inside the step; `wrap=\"anywhere\"` on a step breaks a long identifier anywhere",
+  "`ocelle-evidence-chain` names its list with the overflow-region module's `resolveName`, as `ocelle-event-timeline` does, and uses nothing else of that module",
+  "Only `ocelle-evidence-step` children are shown and exposed; a step with `hidden` or `aria-hidden=\"true\"` is neither and takes no ordinal. With no visible step the chain renders no list: place 013's `ocelle-empty-state` in its place",
+  "Outside a chain a step shows its content as plain text, with no marker, ordinal, connector or chip box",
+  "Before upgrade: `@ocelle/styles`' `base.css` shows each visible step on its own line, with no marker or ordinal",
+  "The chain has no live region, landmark, heading or tab stop; a link in a step keeps its own tab stop",
+  "In forced colours the markers, connectors and chip outlines are drawn in `CanvasText` and the text in the system text colour",
   // two copies on a page (FR-006, Edge Cases)
   "Two copies of the package on one page, two versions or the browser build beside a bundle of the module build, cannot both define an element: the first definition wins and the second import throws nothing",
 ];
@@ -498,6 +513,8 @@ const entryRows = [
   "| `@ocelle/elements/ocelle-data-table.js` | `dist/ocelle-data-table.js` | `ocelle-data-table` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-event-timeline.js` | `dist/ocelle-event-timeline.js` | `ocelle-event-timeline` and its item `ocelle-timeline-event`; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-timeline-event.js` | `dist/ocelle-timeline-event.js` | `ocelle-timeline-event` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-evidence-chain.js` | `dist/ocelle-evidence-chain.js` | `ocelle-evidence-chain` and its item `ocelle-evidence-step`; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-evidence-step.js` | `dist/ocelle-evidence-step.js` | `ocelle-evidence-step` only; for hosts with a bundler |",
   "| `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |",
   "| `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |",
 ];
@@ -651,6 +668,36 @@ const eventTimelineMapping: readonly (readonly [string, string])[] = [
   ["event timeline light mode", "built in: the light and dark themes"],
 ];
 
+/**
+ * The evidence chain's rows of the README's kitty-mission-ui mapping (019 FR-058, research.md R-16's phase 3 table,
+ * inventory decisions IQ-18 to IQ-24 and IQ-27, each (a); Q-T4 (a)): one row per role of the library's chain, its
+ * property and the fields of each stage, its behaviour states and stories, and its parts, each role name with the
+ * element, attribute or part, or the consumer's remedy, exactly. Keyed by role name; no class-family name appears in
+ * this test (013's operator decision I1). IQ-27 (a) is carried by the rows as a whole.
+ */
+const evidenceChainMapping: readonly (readonly [string, string])[] = [
+  ["evidence chain stages", "`ocelle-evidence-chain` with one `ocelle-evidence-step` child per stage, in source order; the chain takes no property, and the consumer changes the children in place of assigning a new array, which the chain observes"],
+  ["evidence chain stage id", "an `id` the consumer sets on the step, if it needs one; the element neither reads nor writes an `id`"],
+  ["evidence chain stage label, value and annotation", "the consumer's markup in the step's content; the step draws no pill tag of its own; a later issue covers a valued stage"],
+  ["evidence chain stage tone", "none: the state worded in the step's text, with no state colour on any mark; a later issue covers a tone"],
+  ["evidence chain compact step", "the default step: a round `--ocelle-size-step` marker ringed by `--ocelle-ring-step`, showing the step's ordinal, before its content. #517's pill-shaped chip maps to `variant=\"chip\"` with `--ocelle-radius-2`, never the pill radius"],
+  ["evidence chain list part", "the chain's `list` part, its shadow ordered list, named by `label` or a non-blank host `aria-label`"],
+  ["evidence chain stage part", "the `ocelle-evidence-step` host, a light-DOM element the consumer styles directly, and its `content` part"],
+  ["evidence chain connector part", "none: the connector is decorative and hidden from assistive technology, not a styling hook"],
+  ["evidence chain connector arrow", "the plain connector line, with no arrowhead; the ordered list and the ordinals convey the direction; a later issue covers an arrowhead"],
+  ["evidence chain empty-state part", "none"],
+  ["evidence chain empty state", "013's `ocelle-empty-state`, placed by the consumer in place of the chain; an empty chain renders nothing and writes no text of its own"],
+  ["evidence chain invalid input", "none: with slotted steps there is no invalid whole input; children other than steps are neither shown nor exposed"],
+  ["evidence chain wide layout", "built in: the steps in one row while they fit, with a connector between consecutive steps on the row"],
+  ["evidence chain narrow layout", "the wrapping chain, which follows its container, not the viewport: the steps wrap onto further lines, with connectors only within a line; no stacked layout"],
+  ["evidence chain forced colours", "built in: markers, connectors and chip outlines as `CanvasText` borders, the text in the system text colour"],
+  ["evidence chain light mode", "built in: the light and dark themes"],
+  ["evidence chain two and six stages", "built in: one list item per visible step in source order, ordinals 1 to N, a connector between steps on a line"],
+  ["evidence chain long content", "built in: content wraps between words inside the step; `wrap=\"anywhere\"` for identifiers"],
+  ["evidence chain static form", "none needed: the chain is markup, and before upgrade `@ocelle/styles` shows the visible steps one per line"],
+  ["evidence chain composition", "the consumer's layout: the chain follows its container wherever the consumer places it"],
+];
+
 /** The table rows of one `##` section of the README, as written, without the header and the separator rows. */
 function tableRows(text: string, heading: string): string[] {
   const section = new RegExp(`^## ${heading}\\n([\\s\\S]*?)(?=^## |(?![\\s\\S]))`, "m").exec(text)?.[1] ?? "";
@@ -670,7 +717,7 @@ describe("packages/elements/README.md", () => {
   it("lists exactly the entry points of package.json's exports in its Entry points table (FR-002)", () => {
     const manifest = JSON.parse(read("package.json")) as { exports?: Record<string, string> };
     expect(tableRows(read("README.md"), "Entry points")).toEqual(entryRows);
-    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-scroller.js", "./ocelle-workflow-board.js", "./ocelle-workflow-lane.js", "./ocelle-list-detail.js", "./ocelle-dialog.js", "./ocelle-drawer.js", "./ocelle-tooltip.js", "./ocelle-card.js", "./ocelle-section-header.js", "./ocelle-page-header.js", "./ocelle-context-sidebar.js", "./ocelle-personal-rail.js", "./ocelle-facts.js", "./ocelle-fact.js", "./ocelle-empty-state.js", "./ocelle-progress.js", "./ocelle-data-table.js", "./ocelle-event-timeline.js", "./ocelle-timeline-event.js", "./browser.js", "./custom-elements.json"]);
+    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-scroller.js", "./ocelle-workflow-board.js", "./ocelle-workflow-lane.js", "./ocelle-list-detail.js", "./ocelle-dialog.js", "./ocelle-drawer.js", "./ocelle-tooltip.js", "./ocelle-card.js", "./ocelle-section-header.js", "./ocelle-page-header.js", "./ocelle-context-sidebar.js", "./ocelle-personal-rail.js", "./ocelle-facts.js", "./ocelle-fact.js", "./ocelle-empty-state.js", "./ocelle-progress.js", "./ocelle-data-table.js", "./ocelle-event-timeline.js", "./ocelle-timeline-event.js", "./ocelle-evidence-chain.js", "./ocelle-evidence-step.js", "./browser.js", "./custom-elements.json"]);
   });
 
   it("lists the thirteen names of the set, whether each mirrors and the consumer need it meets, in its Icons table (US2-1, FR-018, SC-007)", () => {
@@ -714,6 +761,21 @@ describe("packages/elements/README.md", () => {
   it("maps every event-timeline role, in R-16's order (019 FR-058)", () => {
     const rows = tableRows(read("README.md"), "Mapping from kitty-mission-ui").map((line) => line.slice(2, -2).split(" | ")).filter((cells) => (cells[1] ?? "").startsWith("event timeline "));
     expect(rows.map((cells) => cells[1])).toEqual(eventTimelineMapping.map(([role]) => role));
+  });
+
+  it.each(evidenceChainMapping)("maps the role %s to its element, attribute or part, or the consumer's remedy, in the kitty-mission-ui mapping (019 FR-058, R-16)", (role, covered) => {
+    const row = tableRows(read("README.md"), "Mapping from kitty-mission-ui").map((line) => line.slice(2, -2).split(" | ")).find((cells) => cells[1] === role);
+    expect(row?.[2]).toBe(covered);
+  });
+
+  it("maps every evidence-chain role, in R-16's order (019 FR-058)", () => {
+    const rows = tableRows(read("README.md"), "Mapping from kitty-mission-ui").map((line) => line.slice(2, -2).split(" | ")).filter((cells) => (cells[1] ?? "").startsWith("evidence chain "));
+    expect(rows.map((cells) => cells[1])).toEqual(evidenceChainMapping.map(([role]) => role));
+  });
+
+  it("names the chain in its intro and has an `ocelle-evidence-chain` section (019 phase 3)", () => {
+    const text = read("README.md");
+    expect({ intro: flat(text.split(/^## /m)[0] ?? "").includes("`ocelle-evidence-chain`, an evidence chain"), section: /^## `ocelle-evidence-chain`$/m.test(text) }).toEqual({ intro: true, section: true });
   });
 
   it("names the timeline in its intro and has an `ocelle-event-timeline` section (019)", () => {
@@ -1033,6 +1095,12 @@ describe("packages/elements/CHANGELOG.md", () => {
     "`@ocelle/elements/ocelle-timeline-event.js`",
     "the `time` slot",
     "`time` (reflected) and `wrap` (reflected)",
+    // 019 phase 3 (T070; constitution VII): the chain, its step and their entry points
+    "`ocelle-evidence-chain`",
+    "`ocelle-evidence-step`",
+    "`@ocelle/elements/ocelle-evidence-chain.js`",
+    "`@ocelle/elements/ocelle-evidence-step.js`",
+    "`variant` (reflected) and `wrap` (reflected)",
     ...["chevron-start", "chevron-end", "chevron-up", "chevron-down", "arrow-start", "arrow-end", "menu", "close", "folder", "file", "search", "table", "copy"].map((name) => `\`${name}\``),
   ])("names %s under Unreleased / Added (constitution VII, FR-031, SC-008)", (surface) => {
     expect(added).toContain(surface);
