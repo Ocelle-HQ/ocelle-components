@@ -47,7 +47,10 @@ otherwise beat the user-agent `[hidden]` rule). A hidden chain has no box and no
 ## Behaviour
 
 - **Assignment.** Visible steps are assigned to slots in source order, as for the timeline.
-- **Name.** `resolveName(host aria-label, label)`, set on the `<ol>` (R-09).
+- **Name.** `resolveName(host aria-label, label)`, set on the `<ol>` (R-09). Chromium also shows the host as a
+  `generic` node of the host's name beside the `list`, as on the timeline; axe-core 4.14.0 reports nothing on it, blank
+  or not (`reviews/phase-3/spike.md` § 6), so both states have stories (phase 3 spike Q1 (b), contracts/checks.md
+  § Stories).
 - **Re-render.** A `MutationObserver` watches the child list and each step's `hidden`, `aria-hidden` and `variant`.
 - **Ordinals.** A default step shows its 1-based position among the visible steps, chip steps counted.
 - **Line ends (R-12).** These are measured after each render and from a `ResizeObserver` on the `<ol>` and every
@@ -59,15 +62,23 @@ otherwise beat the user-agent `[hidden]` rule). A hidden chain has no box and no
   from its `<li>`'s block start, so all connectors on a row share the default marker's centre line.
 - **Marks.** `.marker`: `--ocelle-size-step` square, `box-sizing: border-box`, a `--ocelle-ring-step` solid border in
   `ink-muted`, no fill, `border-radius: 50%` (round, FR-031; Q-D); the ordinal in `xs`, medium, `ink-muted`,
-  `figures`, line height `--ocelle-line-height-tight`. `.connector`: no block size, `border-block-start:
+  `figures`, line height `--ocelle-line-height-tight`. Chromium floors the ring's 1.5 px to a `1px` border at device
+  pixel ratios 1 and 2, so the marker (22.39 px laid out) has a 20.39 px inner box, inside which ordinal 20 fits
+  (R-12; `reviews/phase-3/spike.md` § 2). `.connector`: no block size, `border-block-start:
   var(--ocelle-border-width) solid var(--ocelle-color-rule-strong)` (decorative).
 - **Chip.** `::slotted(ocelle-evidence-step[variant="chip"])` draws the box: `xs`, `line-height-normal`,
   `padding-block: 0`, `padding-inline: space-2`, a `ring-step` border in `ink-muted` and `radius-2`, with no fill
-  (Q-A). It is 20.4 px tall. The box rule (border width and style, radius, padding, type) sits outside the
+  (Q-A). It is 19.39 px tall: the 17.4 px line plus two `ring-step` borders as Chromium draws them, 1 px each (R-12,
+  phase 3 spike Q2 (a)). Tests compare the ring's and the chip outline's border width with `--ocelle-ring-step` read
+  as a border width (the probe's `border-top-width`, 1 px), and assert the chip's block size below `--ocelle-size-step`,
+  never an exact figure. The box rule (border width and style, radius, padding, type) sits outside the
   `@media not (forced-colors: active)` block, because the outline is structural; only its colours sit inside. Nothing
   of `ocelle-pill-tag` is used.
 - **Default content.** `::slotted(ocelle-evidence-step:not([variant="chip"]))` sets `sm`, `ink` and
-  `line-height-normal`.
+  `line-height-normal`, and centres the step's first line on the marker with `margin-block-start:
+  calc((var(--ocelle-size-step) - 1lh) / 2)` (`1lh` the step's own 20.3 px line). There is no `1lh` wrapper, the
+  timeline's way of centring its dot: the marker (22.4 px) is taller than the line, so the content moves instead, and
+  no shadow node is added (R-12).
 - **Not added.** No tab stop, live region, landmark or heading.
 
 ## Forced colours (PLAN-A11Y-SECURITY-1-001)

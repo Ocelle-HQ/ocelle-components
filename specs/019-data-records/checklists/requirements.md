@@ -84,7 +84,7 @@
   a `[NEEDS CLARIFICATION]` marker); A2 (a) puts the row hover under `(hover: hover)` (FR-061, US1-24); G1 (a) states
   the browser's block-axis keys in FR-018 and US1-18. Every item above still holds.
 - Fixes-2 Q-1 (answered 2026-11-18, end of `reviews/analysis/operator-decisions.md`): (b) adds a room-rule
-  sticky-header story to FR-050 (21 data-table stories, 44 in all; 46 since the phase 2 spike), and the plan's block-axis exception row covers
+  sticky-header story to FR-050 (21 data-table stories, 44 in all; 46 since the phase 2 spike, 48 since the phase 3 spike), and the plan's block-axis exception row covers
   only the scrolled-to-end state. No requirement changes otherwise. Every item above still holds.
 - Phase 1 spike 2 (decided 2026-11-18, `reviews/phase-1/operator-spike-2-decisions.md`; changes in
   `reviews/phase-1/spike-2-fixes.md`): Q-1 (a) settles A1's pending choice as the `<thead>`'s current block-end edge
@@ -104,7 +104,13 @@
   caption-link edge case). No story or count changes; no `[NEEDS CLARIFICATION]` marker. Every item above still holds.
 - Phase 2 spike (decided 2026-11-20, `reviews/phase-2/spike.md`, decisions in
   `reviews/phase-2/operator-spike-decisions.md`, changes in `reviews/phase-2/spike-fixes.md`): Q1 (b) adds two
-  timeline stories named through a host `aria-label`, non-blank and blank (FR-050; 13 timeline stories, 46 in all; the
-  exception keeps the chain only); Q2 (a) names axe's `aria-required-children` and `aria-required-parent` in US2-1 and
+  timeline stories named through a host `aria-label`, non-blank and blank (FR-050; 13 timeline stories, 46 in all, 48 since the phase 3 spike; the
+  exception keeps the chain only, until the phase 3 spike); Q2 (a) names axe's `aria-required-children` and `aria-required-parent` in US2-1 and
   US3-1, the rules axe applies to the explicit list roles; Q3 (a) changes how the dot is drawn, a plan matter, so no
+  requirement changes. No `[NEEDS CLARIFICATION]` marker. Every item above still holds.
+- Phase 3 spike (decided 2026-11-22, `reviews/phase-3/spike.md`, decisions in
+  `reviews/phase-3/operator-spike-decisions.md`, changes in `reviews/phase-3/spike-fixes.md`): Q1 (b) adds two chain
+  stories named through a host `aria-label`, non-blank and blank (FR-050; 14 chain stories, 48 in all), and the
+  exception for the states named by a host `aria-label` is closed, its last element gone; Q2 (a) corrects two of the
+  plan's figures for the ring and the chip, a plan matter, with every bound of US3-4 and FR-033 holding, so no
   requirement changes. No `[NEEDS CLARIFICATION]` marker. Every item above still holds.

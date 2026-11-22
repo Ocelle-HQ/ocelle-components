@@ -90,6 +90,9 @@ checks: [contracts/checks.md](contracts/checks.md).
      a solid disc, with no lighter centre (phase 2 spike Q3 (a)).
    - **Chain, wrapped.** The steps wrap at 320 px with no connector at a line's end, and the ordinals read 1 to 6 on
      the visible default steps.
+   - **Chain, host `aria-label`.** In the two host `aria-label` stories the list is announced as "Proof"
+     (non-blank) and as "Evidence" (blank, named by `label`) (phase 3 spike Q1 (b)). Each default step's first line sits
+     level with its marker's centre (phase 3 spike § 2).
    - **Standalone items.** The standalone-event and standalone-step stories show their items as plain text with no
      marker, connector or ordinal, and the screen reader reads no list.
 6. **Mutation.** Run `pnpm run gate:mutation -- --base $(cat specs/019-data-records/reviews/phase-1/base.sha)`, the

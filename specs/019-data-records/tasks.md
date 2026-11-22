@@ -27,7 +27,8 @@ or hidden slotted time lets the `time` attribute apply (`reviews/plan/operator-g
 `reviews/analysis/fixes.md`): C1 (c), a story for a standalone `ocelle-timeline-event` (phase 2) and a standalone
 `ocelle-evidence-step` (phase 3), and one Principle V exception row in plan.md § Complexity Tracking for the states
 named by a host `aria-label` (the data table's region, the timeline, the chain; the data table's region left it by
-spike Q1 (b), and the timeline by the phase 2 spike's Q1 (b), below), proven by browser bodies; I7 (a),
+spike Q1 (b), the timeline by the phase 2 spike's Q1 (b), and the chain, its last element, by the phase 3 spike's
+Q1 (b), below, which dropped the row), proven by browser bodies; I7 (a),
 `--data-table-box-size` and `--data-table-end-fade` are a documented base-style hook between `@ocelle/elements` and
 `@ocelle/styles` (constitution VII surface), named in both READMEs and CHANGELOGs.
 
@@ -46,7 +47,7 @@ its `baseLayer` slice.
 **Phase 1 spike decisions in force** (2026-11-18, human:jeroennouwsdev; `reviews/phase-1/operator-spike-decisions.md`
 on `reviews/phase-1/spike.md`, changes in `reviews/phase-1/spike-fixes.md`): Q1 (b), two data-table stories named
 through a host `aria-label`, non-blank and blank, so phase 1 has 14 stories and 28 baselines (19 and 38 since the inventory decisions below, 20 and 40 since the re-analysis, 21 and 42 since fixes-2 Q-1 (b)) and plan.md § Complexity
-Tracking's row drops the data table (the timeline and the chain stay until T026 and T052 measure them; the timeline left it by the phase 2 spike's Q1 (b), below); Q2 (a), the
+Tracking's row drops the data table (the timeline and the chain stay until T026 and T052 measure them; the timeline left it by the phase 2 spike's Q1 (b), and the chain by the phase 3 spike's Q1 (b), below); Q2 (a), the
 column headers stay upper case, US1-1 compares with an outside table given the same upper case by a test-only rule
 plus one assertion that the column-header names are upper case, and both READMEs state that the accessible names of
 column headers follow the drawn upper-case text; T005 "Proceed, map later", the data-table mapping rows (FR-058) read
@@ -64,7 +65,7 @@ inventory". IQ-2, the sticky header row (`sticky-header`, FR-017), on an opt-in 
 (FR-019, block 4). IQ-4, `striped` (FR-060). IQ-5, the row hover (FR-061), with the forced-colours row band (FR-013).
 IQ-6 (a) and IQ-7 (a), README statements. Phase 1 has 19 stories and 38 baselines; the mission 42 and 84 (20, 40,
 43 and 86 since the re-analysis; 21, 42, 44 and 88 since fixes-2 Q-1 (b), below; the mission 46 and 92 since the
-phase 2 spike's Q1 (b), below). The
+phase 2 spike's Q1 (b), 48 and 96 since the phase 3 spike's Q1 (b), below). The
 follow-up questions Q-I1 to Q-I5 (inventory-fixes) are answered (2026-11-18, end of inventory-decisions.md): Q-I1 to
 Q-I3 confirm the defaults (`sheet` header ground; the light-theme hover collision accepted, README note; hover always
 on); Q-I4 adds the block-axis option's block-end fade (FR-018, US1-26 to US1-28, T079 to T082, T016, T024); Q-I5's
@@ -83,7 +84,7 @@ forced-colours `Highlight` band inside `@media (hover: hover)`, with US1-24's no
 two element plants; G1 (a), PageUp, PageDown, Home, End, Space and Shift+Space left to the browser on the block-axis
 box, with a body per key in T079 and T080. Fixes-2 Q-1 (b) (2026-11-18, end of the same file): a "sticky header,
 under the room rule" story (rows below, less than twice the fade depth under the header, no fade), so phase 1 has 21
-stories and 42 baselines and the mission 44 and 88 (46 and 92 since the phase 2 spike's Q1 (b), below), and the exception row covers only the scrolled-to-end state. No
+stories and 42 baselines and the mission 44 and 88 (46 and 92 since the phase 2 spike's Q1 (b), 48 and 96 since the phase 3 spike's Q1 (b), below), and the exception row covers only the scrolled-to-end state. No
 task is added, removed or renumbered.
 
 **Phase 1 spike 2 decisions in force** (2026-11-18, human:jeroennouwsdev; `reviews/phase-1/operator-spike-2-decisions.md`
@@ -141,15 +142,16 @@ No story, baseline or task is added, removed or renumbered.
 **Phase 3 inventory decisions in force** (2026-11-22; `reviews/phase-3-inventory-decisions.md`, changes in
 `reviews/decisions-applied-phase-3.md`): IQ-18 to IQ-24 and IQ-27 (a), README mapping statements only (R-16's phase 3
 table; T062 asserts them, T070 writes them), with Q-T4 (a)'s chip row among them. The chain adds no property,
-attribute, slot, part or story; phase 3 keeps 12 stories and 24 baselines, and no task is added, removed or
-renumbered.
+attribute, slot, part or story; phase 3 keeps 12 stories and 24 baselines (14 and 28 since the phase 3 spike's Q1 (b),
+below), and no task is added, removed or renumbered.
 
 **Phase 2 spike decisions in force** (2026-11-20; `reviews/phase-2/operator-spike-decisions.md` on
 `reviews/phase-2/spike.md`, changes in `reviews/phase-2/spike-fixes.md`): Q1 (b), two timeline stories named through a
 host `aria-label`, non-blank (`aria-label="History"`, the list named "History") and blank (`aria-label="  "`, the list
 named "Mission history"), both beside `label="Mission history"`, so phase 2 has 13 stories and 26 baselines and the
-mission 46 and 92, and plan.md § Complexity Tracking's row drops the timeline (the chain stays until T052 measures it;
-US2-10's browser bodies stay); Q2 (a), the explicit `list` and `listitem` roles stay (R-08, for WebKit), and US2-1's
+mission 46 and 92 (48 and 96 since the phase 3 spike's Q1 (b), below), and plan.md § Complexity Tracking's row drops
+the timeline (the chain stayed until T052 measured it and left by the phase 3 spike's Q1 (b), below; US2-10's browser
+bodies stay); Q2 (a), the explicit `list` and `listitem` roles stay (R-08, for WebKit), and US2-1's
 axe clause names `aria-required-children` and `aria-required-parent`, which axe applies to them in place of its
 `list` and `listitem` rules, met by the `axe` gate on the timeline's stories (T048), with the same for the chain's
 US3-1 confirmed by T052; Q3 (a), the dot is drawn by `border-block-start: var(--ocelle-size-dot) solid
@@ -157,6 +159,22 @@ var(--ocelle-color-ink-muted)` alone, its drawing side in US2-8's forced-colours
 settled facts: the dot's size within 0.5 px of the probe-resolved `--ocelle-size-dot` (7.1875 px laid out);
 `itemTexts` reading `StaticText` at any depth under each `listitem` (a slotted `<time>` adds a `time` node); the
 connector's `calc()` form needs no new `style-lint` allowance (R-10). No task is added, removed or renumbered.
+
+**Phase 3 spike decisions in force** (2026-11-22; `reviews/phase-3/operator-spike-decisions.md` on
+`reviews/phase-3/spike.md`, changes in `reviews/phase-3/spike-fixes.md`): Q1 (b), two chain stories named through a
+host `aria-label`, non-blank (`aria-label="Proof"`, the list named "Proof") and blank (`aria-label="  "`, the list
+named "Evidence"), both beside `label="Evidence"`, so phase 3 has 14 stories and 28 baselines (`visual:update` prints
+`(28 added, 0 changed, 0 removed)`) and the mission 48 and 96; the chain was the last element of plan.md § Complexity
+Tracking's host `aria-label` row, so the row is dropped; US3-10's browser bodies stay (T055, T061, T068, T069); Q2
+(a), Chromium draws `--ocelle-ring-step` (1.5 px) as a 1 px border at device pixel ratios 1 and 2, so the chip is
+19.39 px tall and the marker's inner box 20.39 px (R-12, contracts/ocelle-evidence-chain.md), and the red bodies
+compare border widths with the probe's `--ocelle-ring-step` read as a border width and assert the chip's block size
+below `--ocelle-size-step`, never an exact figure (T055, T056). The spike's design detail: a default step's first line
+is centred on the marker by `margin-block-start: calc((var(--ocelle-size-step) - 1lh) / 2)` on the slotted default
+step, not by a `1lh` wrapper (the 22.4 px marker is taller than the line), and adds no shadow node (T065). The
+spike's settled facts: lengths within 0.5 px of the probe-resolved token (the marker lays out at 22.390625 px); the
+line pitch at 320 px is 34.4 px; `itemTexts` reads `StaticText` at any depth (each `listitem` holds the step host's
+`generic` node); the ordinal's text box is measured with a `Range`. No task is added, removed or renumbered.
 
 **Tests**: required. Constitution Principle VIII applies to every phase with behaviour.
 
@@ -260,8 +278,9 @@ commit is signed off (`git commit -s`; `gate:signoff`).
 - A spike (T003, T026, T052) that finds axe-core clean (no serious or critical finding) on a host named by a
   non-blank host `aria-label`: the sunset of plan.md § Complexity Tracking's row for that state is met, and the
   operator decides whether the phase adds that state's story (and its two baselines, changing the phase's `<n>`) or
-  the row stays (analysis C1 (c)). T003's was answered on 2026-11-18 (spike Q1 (b): two stories), and T026's on
-  2026-11-20 (phase 2 spike Q1 (b): two stories).
+  the row stays (analysis C1 (c)). T003's was answered on 2026-11-18 (spike Q1 (b): two stories), T026's on
+  2026-11-20 (phase 2 spike Q1 (b): two stories), and T052's on 2026-11-22 (phase 3 spike Q1 (b): two stories; the
+  chain was the row's last element, so the row is dropped).
 - A spike (T003) that finds a change of the table that 009's module does not observe (FR-014, R-05): the change and
   the README's remedy go to the operator before T013's conditional statement is written.
 - The inventory (T005, T028, T054): a family missing, or a variant no element or variant covers (R-16). Phase 1's
@@ -606,8 +625,8 @@ both dots; at 320 px the page scroll width equals the viewport width; zero CSP v
 ## Phase 3: User Story 3 - An evidence chain that wraps (Priority: P3)
 
 **Goal**: `ocelle-evidence-chain` with `ocelle-evidence-step` (`variant="chip"`), the chain's two pre-upgrade rules of
-block 3, covering US3-1 to US3-10, the US3 edge cases, FR-030 to FR-036, the 12 chain stories (the standalone step
-among them, analysis C1 (c)) and their 24 baselines.
+block 3, covering US3-1 to US3-10, the US3 edge cases, FR-030 to FR-036, the 14 chain stories (the standalone step
+among them, analysis C1 (c), and the two host `aria-label` stories, phase 3 spike Q1 (b)) and their 28 baselines.
 
 **Independent Test**: on the strict-CSP fixture, an `ocelle-evidence-chain label="Evidence"` with six steps, two of
 them chips, exposes one list named "Evidence" with six items whose texts are the contents only; at 1280 px the steps
@@ -618,7 +637,7 @@ gates pass.
 
 ### Spike (first)
 
-- [ ] T052 [US3] Spike before the scaffold, scratch files only, recorded in `specs/019-data-records/reviews/phase-3/spike.md` (research R-12): line ends at 1280, 600, 320 and 200 px (#517's column, Q-T5 (b)) and after an item change; two-digit fit for ordinal 20 inside the marker's padding box; the chip's block size under `--ocelle-size-step` (zero or small block padding, the line height named); the shared centre line with chips (every `<li>` reserving a `--ocelle-size-step` line box); `dir="rtl"`; no `ResizeObserver` loop error from the line-end observer; a full axe-core run on a chain named by a non-blank and by a blank host `aria-label` (the sunset check of plan.md § Complexity Tracking's host `aria-label` row; a clean result is a stop-and-ask point); for US3-1, that axe applies `aria-required-children` to the chain's explicit `role="list"` and `aria-required-parent` to each `role="listitem"`, with `list` and `listitem` inapplicable, as phase 2's spike measured on the timeline (phase 2 spike Q2 (a)). A contradiction stops for the operator.
+- [X] T052 [US3] Spike before the scaffold, scratch files only, recorded in `specs/019-data-records/reviews/phase-3/spike.md` (research R-12): line ends at 1280, 600, 320 and 200 px (#517's column, Q-T5 (b)) and after an item change; two-digit fit for ordinal 20 inside the marker's padding box; the chip's block size under `--ocelle-size-step` (zero or small block padding, the line height named); the shared centre line with chips (every `<li>` reserving a `--ocelle-size-step` line box); `dir="rtl"`; no `ResizeObserver` loop error from the line-end observer; a full axe-core run on a chain named by a non-blank and by a blank host `aria-label` (the sunset check of plan.md § Complexity Tracking's host `aria-label` row; a clean result is a stop-and-ask point); for US3-1, that axe applies `aria-required-children` to the chain's explicit `role="list"` and `aria-required-parent` to each `role="listitem"`, with `list` and `listitem` inapplicable, as phase 2's spike measured on the timeline (phase 2 spike Q2 (a)). A contradiction stops for the operator. Done on 2026-11-22 (base cd1d73c): every line-end, geometry, tree, forced-colours and right-to-left expectation held, and axe judges the chain's explicit roles by `aria-required-children` and `aria-required-parent`; one stop-and-ask point (Q1, the sunset check clean) and one question on two figures (Q2), answered on 2026-11-22 (`specs/019-data-records/reviews/phase-3/operator-spike-decisions.md`: Q1 (b), the two host `aria-label` stories and the row dropped; Q2 (a), the ring drawn 1 px and the chip and inner-box figures corrected) and applied in the documentation commit recorded in `specs/019-data-records/reviews/phase-3/spike-fixes.md`.
 
 ### Scaffold
 
@@ -632,21 +651,21 @@ gates pass.
 
 - [ ] T055 [US3] `packages/elements/test/scenarios/evidence-chain.ts`: US3-1 to US3-10 as shared bodies, every "does not" paired:
   - US3-1 (one list named "Evidence", six `listitem`s, `itemTexts` the contents only and not empty, no ordinal or connector text; markers and connectors `aria-hidden="true"` in the DOM);
-  - US3-2 (one row at 1280 px; each default step's marker `--ocelle-size-step` square, round, ringed by `--ocelle-ring-step`, showing 1 to 6 in `--ocelle-font-sans` with `tabular-nums`; a connector between consecutive steps on the row);
+  - US3-2 (one row at 1280 px; each default step's marker `--ocelle-size-step` square, round, ringed by `--ocelle-ring-step` (its border width compared with the probe's `--ocelle-ring-step` read as a border width, the probe's `border-top-width`, 1 px as Chromium draws it, never as a padding, phase 3 spike Q2 (a)), showing 1 to 6 in `--ocelle-font-sans` with `tabular-nums`; a connector between consecutive steps on the row);
   - US3-3 (at 320 px the steps wrap, lines fill from the inline start, no step cut or overlapping, no connector past the chain's inline edges or across lines, `data-line-end` on each line's last step, page scroll width); and one more body, the same chain and assertions in a 200 px container, #517's narrow column (Q-T5 (b)), with every step's box inside the chain's; no story or baseline added;
-  - US3-4 (a chip: no marker or ordinal, `--ocelle-radius-2` outline from `--ocelle-ring-step`, no fill (Q-A (a)), block size less than `--ocelle-size-step`, font size one step below the default step's on xs < sm < md < lg < xl < 2xl, never `--ocelle-radius-pill`; list semantics and order unchanged);
+  - US3-4 (a chip: no marker or ordinal, `--ocelle-radius-2` outline from `--ocelle-ring-step` (its border width compared with `--ocelle-ring-step` read as a border width, as in US3-2), no fill (Q-A (a)), block size less than `--ocelle-size-step` (the bound only, never an exact figure: 19.39 px laid out, phase 3 spike Q2 (a)), font size one step below the default step's on xs < sm < md < lg < xl < 2xl, never `--ocelle-radius-pill`; list semantics and order unchanged);
   - US3-5 (a long step wraps between words inside the step, its box inside the chain; with `wrap="anywhere"` an identifier breaks inside it);
   - US3-6 (a step added, removed or `hidden`, and a chip hidden and shown again: ordinals are positions 1 to N among the visible steps, chip steps counted, SPEC-3-02; the `listitem` count matches);
   - US3-7 (other children neither shown nor exposed; the step children are shown);
-  - US3-8 (rendered colours against the probe-resolved tokens; forced colours: ring, connectors and chip outline each a `CanvasText` border side with width above zero, text a system text colour);
+  - US3-8 (rendered colours against the probe-resolved tokens; forced colours: ring, connectors and chip outline each a `CanvasText` border side with width above zero (the ring's and the chip outline's equal to `--ocelle-ring-step` read as a border width), text a system text colour);
   - US3-9 (`dir="rtl"`: the first step at the right, lines filling towards the left);
-  - US3-10 (a blank host `aria-label` counts as absent: the `label` names the list; a blank one with no `label` leaves it unnamed; a non-blank host `aria-label` "Proof" names it over `label`: the host `aria-label` states plan.md § Complexity Tracking excepts from a story, proven here).
-- [ ] T056 [US3] `packages/elements/test/scenarios/evidence-chain.ts` (continued): the ordinal-fit body for twenty steps (each ordinal's box inside its marker's padding box, SPEC-3-03); the mixed-chips geometry body (each connector's centre on the row's marker centre within 0.5 px); the chain edge-case bodies (a step outside the chain shows `part="content"` with no list role, marker or chip box; an empty chain renders no `<ol>`; a link in a step keeps its tab stop, its box inside its `<li>` after the marker (FR-011); `lang` and `dir`; no live region, landmark or heading in the chain's AX subtree (FR-026), paired with its named `list` being there; a hidden host (FR-001): a chain with `hidden` has no box and no `list` node, and a standalone step with `hidden` has no box and no `StaticText`, each paired with a sibling without `hidden` rendering its `<ol>` or its `part="content"`; the 640 px case; unset properties write no attribute).
+  - US3-10 (a blank host `aria-label` counts as absent: the `label` names the list; a blank one with no `label` leaves it unnamed; a non-blank host `aria-label` "Proof" names it over `label`: the bodies stay beside the two host `aria-label` stories of the phase 3 spike's Q1 (b), T061, T068).
+- [ ] T056 [US3] `packages/elements/test/scenarios/evidence-chain.ts` (continued): the ordinal-fit body for twenty steps (each ordinal's text box, measured with a `Range` over the marker's contents, inside its marker's padding box, 20.39 px as Chromium draws the 1 px ring, SPEC-3-03; phase 3 spike Q2 (a)); the mixed-chips geometry body (each connector's centre on the row's marker centre within 0.5 px); the chain edge-case bodies (a step outside the chain shows `part="content"` with no list role, marker or chip box; an empty chain renders no `<ol>`; a link in a step keeps its tab stop, its box inside its `<li>` after the marker (FR-011); `lang` and `dir`; no live region, landmark or heading in the chain's AX subtree (FR-026), paired with its named `list` being there; a hidden host (FR-001): a chain with `hidden` has no box and no `list` node, and a standalone step with `hidden` has no box and no `StaticText`, each paired with a sibling without `hidden` rendering its `<ol>` or its `part="content"`; the 640 px case; unset properties write no attribute).
 - [ ] T057 [P] [US3] Harness, entry and node files for the chain: `packages/elements/test/evidence-chain.test.ts` (in process, with the no-`ResizeObserver`-loop test around 1280 → 600 → 320 px and item changes, and its synthetic self-check) and `packages/elements/test/browser/evidence-chain.test.ts` (fixture) over T055 and T056; `packages/elements/test/entry-evidence-chain.test.ts` and `entry-evidence-step.test.ts`; `entry-root.test.ts` extended; the chain's entries in `define.test.ts`; `build/build.test.ts`: `dist/ocelle-evidence-chain.js` imports `./ocelle-evidence-step.js` only, and the step imports no element module.
 - [ ] T058 [P] [US3] `packages/elements/test/node/chain-no-pill.test.ts`: the chain's and the step's source and styles contain no `pill` (no `ocelle-pill-tag`, no `--ocelle-radius-pill`, no pill part or hook), paired with a positive read that the files exist and hold their `@tagname`.
 - [ ] T059 [P] [US3] `@ocelle/styles`: the chain's pre-upgrade bodies in `packages/styles/test/browser/list-items.test.ts` (T035's file) (one visible step per line; a `hidden` and an `aria-hidden="true"` step not shown); the change to `packages/styles/test/source.test.ts`: the chain's two pre-upgrade rules in the `baseLayer` slice right after the timeline's and before the focus rule, the last-rule assertion unchanged (research R-06, recheck Q5 (b)); `packages/styles/test/readme.test.ts` statements.
 - [ ] T060 [P] [US3] `packages/elements/test/node/records-pairs.test.ts`: the chain and step part (ring, ordinal, connector, chip outline, content colours).
-- [ ] T061 [P] [US3] `storybook/test/integration/elements-stories.test.ts`: each of the 12 chain stories in the index in light and dark, 320 px reflow paired with a non-zero host size, every list named except the unnamed, empty and standalone-step stories; the standalone-step story renders its `ocelle-evidence-step`s with a non-zero size and no `list` node.
+- [ ] T061 [P] [US3] `storybook/test/integration/elements-stories.test.ts`: each of the 14 chain stories in the index in light and dark, 320 px reflow paired with a non-zero host size, every list named except the unnamed, empty and standalone-step stories; the standalone-step story renders its `ocelle-evidence-step`s with a non-zero size and no `list` node; in the host `aria-label` story the `list` is named "Proof", and in the blank host `aria-label` story it is named "Evidence" (phase 3 spike Q1 (b)).
 - [ ] T062 [P] [US3] `packages/elements/test/node/readme.test.ts`: statements for the chain section (usage, ordinals, chips, wrapping, "Before upgrade", Host ARIA) and the evidence-chain mapping rows of R-16 (T054), one per role of the library's chain (its property and the fields of each stage, its behaviour states and stories, and its parts; R-16's phase 3 table), keyed by role name, no `sk-` string. Among them, each answer's statement (`reviews/phase-3-inventory-decisions.md`, `reviews/issue-texts-check.md` § Operator decisions):
   - the stages map to one `ocelle-evidence-step` per stage, in source order, and a stage's `id` to an `id` the consumer sets on the step, which the element neither reads nor writes (IQ-18 (a));
   - a stage's label, value and annotation map to the consumer's markup in the step's content, and a later issue covers a valued stage (IQ-19 (a));
@@ -662,11 +681,11 @@ gates pass.
 ### Implementation (green)
 
 - [ ] T064 [US3] `packages/elements/src/ocelle-evidence-step.ts` (contracts/ocelle-evidence-step.md): `variant` and `wrap` reflected; `<span part="content"><slot></slot></span>`; `:host([wrap="anywhere"]) [part="content"] { overflow-wrap: anywhere }`; `:host { display: inline-block; }` and `:host([hidden]) { display: none; }`; outside a chain plain text with no marker, ordinal, connector or chip box.
-- [ ] T065 [US3] `packages/elements/src/ocelle-evidence-chain.ts` (contracts/ocelle-evidence-chain.md, research R-12): `slotAssignment: "manual"`; `:host { display: block; }` and `:host([hidden]) { display: none; }` (FR-001); no `<ol>` with no visible step; otherwise `<ol part="list" role="list" aria-label=…>`, a wrapping flex row, with one `<li role="listitem">` per visible step ("Direct children with the item tag, neither `hidden` nor `aria-hidden="true"`, in source order"), each reserving a `--ocelle-size-step` line box; a default step's `<span class="marker" aria-hidden="true">` (round, `border-radius: 50%`, `--ocelle-size-step`, ring `--ocelle-ring-step`, the ordinal "1-based position among the visible steps, chip steps counted; shown only on default steps"); a chip step drawn by the container through `::slotted([variant="chip"])` with `--ocelle-radius-2`, outline only, compact padding, the box rule outside the variant block; a `<span class="connector" aria-hidden="true">` in each step's trailing padding, hidden by `data-line-end` ("True when the next visible step starts a new line, or for the last step") measured by one `ResizeObserver` on the list and its items, which never toggles padding; the name from `resolveName`; `CanvasText` borders in forced colours; tokens only.
+- [ ] T065 [US3] `packages/elements/src/ocelle-evidence-chain.ts` (contracts/ocelle-evidence-chain.md, research R-12): `slotAssignment: "manual"`; `:host { display: block; }` and `:host([hidden]) { display: none; }` (FR-001); no `<ol>` with no visible step; otherwise `<ol part="list" role="list" aria-label=…>`, a wrapping flex row, with one `<li role="listitem">` per visible step ("Direct children with the item tag, neither `hidden` nor `aria-hidden="true"`, in source order"), each reserving a `--ocelle-size-step` line box; a default step's `<span class="marker" aria-hidden="true">` (round, `border-radius: 50%`, `--ocelle-size-step`, ring `--ocelle-ring-step`, the ordinal "1-based position among the visible steps, chip steps counted; shown only on default steps"); a chip step drawn by the container through `::slotted([variant="chip"])` with `--ocelle-radius-2`, outline only, compact padding, the box rule outside the variant block; a default step's first line centred on the marker by `margin-block-start: calc((var(--ocelle-size-step) - 1lh) / 2)` on `::slotted(ocelle-evidence-step:not([variant="chip"]))`, no `1lh` wrapper and no added shadow node (research R-12, phase 3 spike); a `<span class="connector" aria-hidden="true">` in each step's trailing padding, hidden by `data-line-end` ("True when the next visible step starts a new line, or for the last step") measured by one `ResizeObserver` on the list and its items, which never toggles padding; the name from `resolveName`; `CanvasText` borders in forced colours; tokens only.
 - [ ] T066 [US3] `packages/styles/src/base.css`: block 3's two chain rules (contracts/styles-data-table.md § Block 3), in the base layer right after the timeline's and before the focus rule, with the header comment naming them (recheck Q5 (b)); `packages/styles/README.md` (beside the timeline's before-upgrade lines) and `CHANGELOG.md`.
 - [ ] T067 [US3] Manifest: regenerate and commit `packages/elements/custom-elements.json` with the two declarations (`variant`, `wrap`, the default slot and `content` part on the step; `label` and the `list` part on the chain; empty event lists).
-- [ ] T068 [US3] `storybook/stories/evidence-chain.stories.ts` (`title: "Elements/ocelle-evidence-chain"`): the 12 stories of contracts/checks.md § Stories (six steps in one row; wrapped at 320 px; mixed chips; all chips; twenty steps; a long step; `wrap`; a hidden step; right-to-left; unnamed; empty; standalone steps outside a chain, analysis C1 (c)), wrapper widths in `storybook/.storybook/stories-layout.css`.
-- [ ] T069 [US3] Baselines: `pnpm run visual:update` in #10's pinned container under docker (as T020); it must print `(24 added, 0 changed, 0 removed)`. Commit `storybook/baselines/elements-ocelle-evidence-chain--*.{light,dark}.png`.
+- [ ] T068 [US3] `storybook/stories/evidence-chain.stories.ts` (`title: "Elements/ocelle-evidence-chain"`): the 14 stories of contracts/checks.md § Stories (six steps in one row; wrapped at 320 px; mixed chips; all chips; twenty steps; a long step; `wrap`; a hidden step; right-to-left; unnamed; empty; standalone steps outside a chain, analysis C1 (c); named by a host `aria-label` (`aria-label="Proof"`, `label="Evidence"`); a blank host `aria-label` (`aria-label="  "`, `label="Evidence"`), phase 3 spike Q1 (b)), wrapper widths in `storybook/.storybook/stories-layout.css`.
+- [ ] T069 [US3] Baselines: `pnpm run visual:update` in #10's pinned container under docker (as T020); it must print `(28 added, 0 changed, 0 removed)` (14 stories, the phase 3 spike's Q1 (b)). Commit `storybook/baselines/elements-ocelle-evidence-chain--*.{light,dark}.png`.
 - [ ] T070 [US3] `packages/elements/README.md`: the chain section with every statement of T062 and the evidence-chain mapping rows (R-16's phase 3 table), each answer's statement among them: the stages and a stage's `id` (IQ-18 (a)); the label, value and annotation (IQ-19 (a)); the tone (IQ-20 (a)); the stacked layout (IQ-21 (a)); the arrow (IQ-22 (a)); the empty and invalid-input states (IQ-23 (a)); the four parts (IQ-24 (a)); and the pill-shaped chip mapped to `variant="chip"` with `--ocelle-radius-2` (Q-T4 (a)); `packages/elements/CHANGELOG.md` entries for both elements.
 - [ ] T071 [US3] Gates as T022; record the Storybook gates' summary lines.
 - [ ] T072 [US3] Affected plants: `pnpm run gate:plants -- --affected $(cat specs/019-data-records/reviews/phase-3/base.sha)`, recorded in `specs/019-data-records/reviews/phase-3/plants.md` in op 016's form; exit 0; committed with the green commit.
@@ -686,7 +705,7 @@ fail for them.
 - [ ] T075 Final surface lists in `packages/elements/CHANGELOG.md` and `packages/styles/CHANGELOG.md` (FR-057, MINOR): the five elements and their entry points, the event's `time` slot, the properties `label`, `wrap`, `stickyHeader` (`sticky-header`), `striped`, `time`, `variant`, the parts `list`, `time`, `content`, `base.css`'s four blocks, the base-style hook `--data-table-box-size` / `--data-table-end-fade` in both CHANGELOGs (analysis I7 (a)) and the `data-ocelle-align` hook in `@ocelle/styles`' (IQ-3); the overflow-region module's block-axis option named in `@ocelle/elements`' as an internal change (IQ-2); no token added. Exempt (documentation).
 - [ ] T076 Review check, recorded in `specs/019-data-records/reviews/phase-4/coverage.md`: the README mapping rows together cover every modifier, state, structure role and part of R-16's inventory, the library's variant set for the three families (IQ-1 (a)), and any rc.10 variant the operator named, with no row reading "pending inventory", each naming the element and variant, the consumer's remedy, or "not this mission" with the operator's decision, with each row's `.sk-*` family name checked here (SC-001). A gap goes to the operator. Exempt.
 - [ ] T077 Record in `specs/019-data-records/reviews/phase-4/coverage.md` the state of the R-17 request to 009's owner (the pinned-start option): open, or landed and used by T016. Exempt.
-- [ ] T078 Run quickstart.md steps 1 to 6 on the whole mission, one heavy job at a time, as quickstart.md states them: step 4 as `pnpm run gate:plants -- --affected $(cat specs/019-data-records/reviews/phase-1/base.sha)` (the mission's base: phase 4 changes no source, so its own base would select nothing) recorded in `specs/019-data-records/reviews/phase-4/plants.md` in op 016's form, and step 6 as `pnpm run gate:mutation -- --base $(cat specs/019-data-records/reviews/phase-1/base.sha)`; `gate:storybook-build`, `gate:visual` and `gate:axe` pass on all 46 stories and no earlier baseline (013's and 009's among them) changes, and 009's tests pass unedited (SC-003, SC-007); summary lines in `specs/019-data-records/reviews/phase-4/quickstart.md`. Exempt.
+- [ ] T078 Run quickstart.md steps 1 to 6 on the whole mission, one heavy job at a time, as quickstart.md states them: step 4 as `pnpm run gate:plants -- --affected $(cat specs/019-data-records/reviews/phase-1/base.sha)` (the mission's base: phase 4 changes no source, so its own base would select nothing) recorded in `specs/019-data-records/reviews/phase-4/plants.md` in op 016's form, and step 6 as `pnpm run gate:mutation -- --base $(cat specs/019-data-records/reviews/phase-1/base.sha)`; `gate:storybook-build`, `gate:visual` and `gate:axe` pass on all 48 stories and no earlier baseline (013's and 009's among them) changes, and 009's tests pass unedited (SC-003, SC-007); summary lines in `specs/019-data-records/reviews/phase-4/quickstart.md`. Exempt.
 
 **Checkpoint**: the phase 4 review approves; `summary.sh` follows in `/ocelle-run` step 4.
 
