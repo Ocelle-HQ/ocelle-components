@@ -87,6 +87,26 @@ describe("app shell drawer focus", () => {
     await focused(content);
   });
 
+  it("cancels drawer focus recovery when the shell disconnects during exit", async () => {
+    const shell = await mount("project", sidebar);
+    await open(shell);
+    const dialog = required(panel(shell));
+    for (const animation of dialog.getAnimations()) animation.finish();
+    shell.style.setProperty("--ocelle-motion-base", "10s");
+    resize(850);
+    await expect.poll(() => shell.tier).toBe("collapsed");
+    await expect.poll(() => dialog.getAnimations().length).toBe(1);
+    required(dialog.getAnimations()[0]).pause();
+
+    const frame = required(shell.parentElement);
+    shell.remove();
+    expect(dialog.open).toBe(false);
+    frame.append(shell);
+    await layoutWait("frame");
+    expect(panel(shell)?.open).toBe(false);
+    expect(deepActive()).toBeNull();
+  });
+
   it("does not refocus a visible destination blurred before a same-tier resize", async () => {
     const shell = await mount("project", sidebar);
     await open(shell);

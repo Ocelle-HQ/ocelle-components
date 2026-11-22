@@ -30,3 +30,5 @@
 - The current handler follow-up on `9040a6b` passed at 100% for its 25 mutants, with 23 killed and two rejected at compilation. The previous 166-mutant settlement range had reached 93.33%, with 98 killed, seven survivors, and 61 rejected at compilation.
 - The tests in `2f87c1e` found that a menu click while content retained focus let dismissal restore content instead of the trigger. The shell now focuses the trigger before opening. Further assertions cover a trigger replaced during exit, an intentional blur before a same-tier update, and surviving focus in a newer modal. Four isolated faults failed the corresponding assertions. Recovery uses the actual focused element visibility at settlement.
 - The five shell suites passed 84/84. Test lint, TypeScript and the diff check passed.
+
+- The scoped opening and exit-focus follow-up on `490cfcf` passed at 100%, with 31 killed and 12 rejected at compilation. New assertions verify the public constructor defaults and that detaching during exit cancels pending focus before reconnect. Three exact faults for the two constructor labels and disconnect flag failed the new browser assertions. Test lint passed.

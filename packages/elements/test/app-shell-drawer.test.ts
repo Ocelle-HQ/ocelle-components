@@ -31,7 +31,10 @@ describe("app shell drawer", () => {
     expect(tree.filter((node) => node.role === "navigation").map((node) => node.name)).toEqual(names);
   });
 
-  it("uses usable drawer and close names when configured labels are blank", async () => {
+  it("uses usable drawer and close names by default and when configured labels are blank", async () => {
+    const defaults = document.createElement("ocelle-app-shell");
+    expect(defaults.drawerLabel).toBe("Navigation");
+    expect(defaults.closeLabel).toBe("Close navigation");
     const shell = await mount("personal", sidebar);
     shell.drawerLabel = " ";
     shell.closeLabel = " ";
