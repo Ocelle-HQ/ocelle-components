@@ -59,6 +59,19 @@ describe("app shell drawer", () => {
     expect(requests).toEqual([nested]);
   });
 
+  it("ignores a former menu trigger after the shell has widened", async () => {
+    const shell = await mount("project", sidebar);
+    const stale = required(menu(shell));
+    const destination = required(document.getElementById("work"));
+    resize(850);
+    await expect.poll(() => shell.tier).toBe("collapsed");
+    await expect.poll(() => menu(shell)).toBeNull();
+    stale.click();
+    await shell.updateComplete;
+    expect(panel(shell)?.open).toBe(false);
+    expect(destination.getClientRects().length).toBeGreaterThan(0);
+  });
+
   it("keeps a bare rail link readable against chrome beside content and in the drawer", async () => {
     const shell = await mount("mission", rail + sidebar, 1150);
     const link = required(document.getElementById("account"));
