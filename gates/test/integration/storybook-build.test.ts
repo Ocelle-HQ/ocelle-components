@@ -52,7 +52,7 @@ describe("storybook-build gate (gates/bin/storybook-build.ts)", () => {
       const root = tempDir("storybook-build");
       await buildRepoTree(repo, empty, root);
       const ran = await gate(root);
-      expect({ code: ran.code, stdout: ran.stdout, stderr: ran.stderr }).toEqual({ code: 0, stdout: ["storybook-build: built 259 stories"], stderr: [] });
+      expect({ code: ran.code, stdout: ran.stdout, stderr: ran.stderr }).toEqual({ code: 0, stdout: ["storybook-build: built 263 stories"], stderr: [] });
       expect(before.root.length).toBeGreaterThan(1000);
       expect(before.storybook.length).toBeGreaterThan(3);
       const after = { root: listing(join(repo, "node_modules")), storybook: listing(join(repo, "storybook/node_modules")) };
