@@ -33,8 +33,9 @@ The input names the phase: `phase=<N>` or a bare number. If it names none, stop 
      existing aggregate assertion, such as an exact Storybook story or baseline count. Any new behavior
      assertion, weakened assertion, recorded red assertion or helper, build proof, or browser interaction proof
      in that list is a blocking finding. Check that the focused head selection still covers the phase proofs.
-   - Before approving, verify that the required `Unit tests` check passed on the exact candidate identified by
-     the verdict's head. Locate each deferred project/file in that run's `unit-test-plan` and passing shard
+   - Before approving, confirm the candidate contains the changes under review, including `test-scope.txt`.
+     Verify that the required `Unit tests` check passed on the exact candidate identified by the verdict's head.
+     Locate each deferred project/file in that run's `unit-test-plan` and passing shard
      artifact. If the run used a synthetic PR merge, confirm that it contains the same PR head and that the
      artifact names the tested merge revision. Also verify the required Visual regression or Accessibility
      check for each corresponding deferred suite on that candidate. Record the run link, candidate and
