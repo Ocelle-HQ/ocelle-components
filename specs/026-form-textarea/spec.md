@@ -1,6 +1,6 @@
 # Feature Specification for a multiline form textarea
 
-**Feature Branch**: `codex/074-form-textarea`  
+**Feature Branch**: `codex/074-textarea-pilot`  
 **Created**: 2026-11-22  
 **Status**: Draft  
 **Input**: GitHub #74 and [approved triage](../../triage/026-form-textarea.md).
