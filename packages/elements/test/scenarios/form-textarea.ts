@@ -70,3 +70,32 @@ export function submitInConnectionTask({ native, setup }: { native: boolean; set
     form.remove();
   }
 }
+
+export function focusInvalidInConnectionTask(native: boolean): {
+  renderedBefore: boolean;
+  submits: number;
+  focused: boolean;
+  editorFocused: boolean;
+} {
+  const form = document.createElement("form");
+  const field = document.createElement(native ? "textarea" : "ocelle-form-textarea");
+  field.setAttribute("name", "answer");
+  field.setAttribute("label", "Decision");
+  field.setAttribute("required", "");
+  form.append(field);
+  let submits = 0;
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    submits += 1;
+  });
+  document.body.append(form);
+  try {
+    const renderedBefore = field.shadowRoot?.querySelector("textarea") != null;
+    form.requestSubmit();
+    const focused = document.activeElement === field;
+    const editorFocused = native ? focused : field.shadowRoot?.activeElement?.localName === "textarea";
+    return { renderedBefore, submits, focused, editorFocused };
+  } finally {
+    form.remove();
+  }
+}

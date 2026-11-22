@@ -1,6 +1,6 @@
 import type { Browser } from "playwright";
 import { afterAll, beforeAll, expect, inject, it } from "vitest";
-import { submitInConnectionTask } from "../scenarios/form-textarea.ts";
+import { focusInvalidInConnectionTask, submitInConnectionTask } from "../scenarios/form-textarea.ts";
 import { clean, launch, serve, visit } from "./serve.ts";
 import type { Served } from "./serve.ts";
 
@@ -78,5 +78,14 @@ it("wraps and edits answers in a narrow built dialog without submitting on Enter
   });
   expect(value).toBe(`${"Write the decision and the conditions for publishing it. ".repeat(3)}\nConfirm the rollout window.`);
   expect(submitted).toBeNull();
+  expect(recorded).toEqual(clean);
+});
+
+it("focuses the native editor for an immediate invalid submission under strict CSP", async () => {
+  const { page, finish } = await visit(browser, served.origin, "form-textarea.html");
+  const expected = await page.evaluate(focusInvalidInConnectionTask, true);
+  const actual = await page.evaluate(focusInvalidInConnectionTask, false);
+  const recorded = await finish();
+  expect(actual).toEqual(expected);
   expect(recorded).toEqual(clean);
 });

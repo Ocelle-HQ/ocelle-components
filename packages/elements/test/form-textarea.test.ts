@@ -4,7 +4,7 @@ import "../src/ocelle-dialog.ts";
 import "../src/index.ts";
 import { inProcessDriver } from "./in-process.ts";
 import { announced, only, polite } from "./scenarios/notice.ts";
-import { submitInConnectionTask } from "./scenarios/form-textarea.ts";
+import { focusInvalidInConnectionTask, submitInConnectionTask } from "./scenarios/form-textarea.ts";
 import type { Setup, TextareaHost } from "./scenarios/form-textarea.ts";
 
 const scope = document.createElement("div");
@@ -43,6 +43,10 @@ describe("ocelle-form-textarea", () => {
   it.each(setups)("matches native submission before render with %s initialization", (setup) => {
     const native = submitInConnectionTask({ native: true, setup });
     expect(submitInConnectionTask({ native: false, setup })).toEqual(native);
+  });
+
+  it("focuses an empty required answer when the host submits before the first render", () => {
+    expect(focusInvalidInConnectionTask(false)).toEqual(focusInvalidInConnectionTask(true));
   });
 
   it("keeps dirty values, defaults, reset and restored values in step without user events", async () => {
@@ -128,8 +132,10 @@ describe("ocelle-form-textarea", () => {
     await userEvent.tab();
     const before = control.value;
     expect(document.activeElement).toBe(submit);
+    const submitted: (FormDataEntryValue | null)[] = [];
     form.addEventListener("submit", (event) => {
       event.preventDefault();
+      submitted.push(new FormData(form).get("answer"));
     });
     form.requestSubmit();
     field.error = "Save failed";
@@ -141,6 +147,13 @@ describe("ocelle-form-textarea", () => {
     field.error = "";
     await field.updateComplete;
     expect((await commands.axState("field", "textarea")).description).toBe("Explain the rationale");
+    control.focus();
+    control.setSelectionRange(control.value.length, control.value.length);
+    await userEvent.keyboard(" revised");
+    await userEvent.tab();
+    expect(document.activeElement).toBe(submit);
+    form.requestSubmit();
+    expect(submitted).toEqual([before, `${before} revised`]);
   });
 
   it("announces the asynchronous host error once without moving submit focus", async () => {
