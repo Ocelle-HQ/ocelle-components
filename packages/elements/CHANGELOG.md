@@ -279,3 +279,14 @@ additions (a minor change).
   the text's baseline); nothing inside the control moves. A control with no label puts the class `bare` on its row,
   which the rule skips, so an icon-only control stays where it was, its icon where a native `<button>` with an svg
   puts it.
+
+### Fixed
+
+- `ocelle-dialog` and `ocelle-drawer`: a link or other focusable element inside a closed `<details>` is no longer
+  counted as a Tab stop, so Tab from the summary of a closed `<details>` at the end of the panel wraps to the panel's
+  first stop instead of leaving the dialog (op 022, #57).
+- `ocelle-button`: an icon in the `icon` slot is hidden from the accessibility tree, and a button with a slotted icon
+  that is not named by `aria-labelledby`, `aria-label` or `label` is named by its default slot's text alone, so a
+  bare `<svg>` with a `<title>` no longer adds its title to the button's name, in the button and the link mode. Name
+  an icon-only button with `label`. Known limitation: with a slotted icon and a one-character text label, axe reports
+  `label-content-name-mismatch` as needing review; the button's name is correct (op 022, #57).

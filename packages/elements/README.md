@@ -492,7 +492,8 @@ dialog.addEventListener("ocelle-dialog-close", (e) => { /* e.detail.reason */ })
 **Focus.** On open, focus moves to the first slotted element marked `autofocus` in the body, else to the body's first
 focusable element, else to the close control. While the dialog is open, Tab and Shift+Tab move only among its
 focusable elements (the close control, the body's content and the footer's) and wrap at the ends; elements that are
-not rendered are skipped and a radio group is one stop. Between the cycle's ends Tab moves as the engine does, so
+not rendered are skipped and a radio group is one stop. The content of a closed `<details>`, apart from its summary, is
+not rendered, so it is no stop. Between the cycle's ends Tab moves as the engine does, so
 content with a closed shadow root, an iframe or media controls keeps its inner focusable parts reachable by Tab and
 Shift+Tab in both directions: Shift+Tab from the close control onto such content at the dialog's end enters it from
 its end, with or without `delegatesFocus`. Leaving a slotted iframe past the cycle's end with Tab can cost one extra
@@ -1067,9 +1068,12 @@ root; a keyboard user and a screen-reader user meet a normal button or a normal 
   its description, or its name when nothing else names it.
 - The default slot is the label; the `icon` slot holds one icon before it (the slot convention). With no label in
   the default slot (no non-whitespace text in what it holds), the icon takes no gap and is centred in the button; a
-  `flush` button still starts it at its inline start. Name such an icon-only button with `label`. The button follows
-  text written into or removed from its own content; a label forwarded through another component's shadow-root
-  `<slot>` is read when that slot's assignment changes, not when the forwarded text changes.
+  `flush` button still starts it at its inline start. Name such an icon-only button with `label`. A slotted icon is
+  decorative and adds nothing to the button's name, which comes from the default slot's text when nothing on the host
+  names it, in the button and the link mode. Known limitation: with a slotted icon and a one-character text label,
+  axe reports `label-content-name-mismatch` as needing review (incomplete); the button's name is correct. The button
+  follows text written into or removed from its own content; a label forwarded through another component's
+  shadow-root `<slot>` is read when that slot's assignment changes, not when the forwarded text changes.
 
 On a container whose surface changes (a list or table row that takes `color-hover-bg` on hover, or `color-accent-low`
 when selected), set `ground` for the changed surface statically (`hover-bg` or `accent-low`):
@@ -1312,9 +1316,11 @@ after it) follows these rules.
    `ocelle-brand-mark` keep their host `aria-label` rule (Host ARIA), so the two families differ.
 5. **Name order.** The inner control's name is, in this order: the host's `aria-labelledby`, the host's `aria-label`,
    the element's `label` (trimmed; empty or whitespace-only counts as none), and otherwise the element's content;
-   slotted icons never contribute. When a control's content is visible, its `label` contains the visible text, ideally
-   at its start, so a user who speaks a control's visible name reaches it (label in name); so does a host
-   `aria-label`. A control with no text, no `label` and no icon has no accessible name: a host mistake that axe
+   slotted icons never contribute to the name of an `ocelle-button` that is named by its label (the default slot's
+   text, which is its content), its `label` or the host. An icon-only `ocelle-button` with none of these is still named
+   from its content, icon included: name it with `label`. When a
+   control's content is visible, its `label` contains the visible text, ideally at its start, so a user who speaks a control's
+   visible name reaches it (label in name); so does a host `aria-label`. A control with no text, no `label` and no icon has no accessible name: a host mistake that axe
    reports; the element adds no fallback text.
 6. **Current.** On `ocelle-button`, `aria-current` is passed through to the inner control with any value and draws no
    visual mark; a host that wants a visible mark styles `:state(current)` or uses a row, whose `current` property draws
@@ -2192,7 +2198,8 @@ A host then slots its icons with no size of its own (here into `ocelle-button`, 
   icon itself has no effect.
 - **Naming.** An icon-only control names its own inner control (for example with `aria-label` on its inner
   `<button>`), never its icon: a slotted icon stays decorative and is never given a `label`. The convention adds no
-  generated content, so a control named by its visible label keeps exactly that name.
+  generated content, so a control named by its visible label keeps exactly that name when the control keeps a
+  slotted icon out of it, as `ocelle-button` does.
 - **Lint.** The `style-lint` gate allows the unit `lh` only as `1lh`, alone or once as an operand of `+` or `-` beside
   an `--ocelle-*` token inside `calc()`; a factor on a parenthesised `calc()` group that holds `1lh`, such as
   `calc((var(--ocelle-space-1) + 1lh) * 2)`, passes the gate and is checked in review.
