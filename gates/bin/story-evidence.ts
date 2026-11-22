@@ -1,6 +1,7 @@
 // Focused red/green evidence for the repository's installed and source Spec Kit story extension.
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { runTool } from "../lib/spawn.ts";
@@ -12,6 +13,7 @@ interface Selection {
   readonly changed: readonly string[];
   readonly deleted: readonly string[];
   readonly extra: readonly string[];
+  readonly changedLines: Readonly<Record<string, readonly { start: number; end: number }[]>>;
 }
 
 interface Check {
@@ -41,7 +43,16 @@ interface CheckResult {
 const root = process.cwd();
 const path = import.meta.filename;
 const environment: NodeJS.ProcessEnv = { ...process.env, CI: "true" };
-const trackedRunner = ["gates/bin/story-evidence.ts", "gates/lib/test-evidence.ts", "gates/lib/vitest-run.ts"];
+const trackedRunner = [
+  "gates/bin/story-evidence.ts",
+  "gates/lib/test-evidence.ts",
+  "gates/lib/vitest-run.ts",
+  "gates/lib/spawn.ts",
+  ".specify/extensions/story/story-config.yml",
+  ".specify/extensions/story/scripts/common.sh",
+  ".specify/extensions/story/scripts/red.sh",
+  ".specify/extensions/story/scripts/tdd-check.sh",
+];
 
 function git(args: readonly string[], cwd = root): string {
   return execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
@@ -95,15 +106,17 @@ async function worker(inputPath: string, outputPath: string): Promise<void> {
     const selected = selectedSpecs.map((spec) => testFile(root, spec));
     const run = await context.runTestSpecifications(selectedSpecs);
     const evidence = classifyStoryEvidence({
-      run: testRun(root, run.testModules, run.unhandledErrors),
+      run: testRun(root, run.testModules, run.unhandledErrors, true),
       selected,
       changedTests,
       expected: input.expected,
       allowMissingModule: input.mode === "base" && input.missingModules.length > 0,
       missingModules: input.missingModules,
+      changedLines: input.changedLines,
+      sources: Object.fromEntries(changedTests.map((file) => [file, readFileSync(join(root, file), "utf8").split(/\r?\n/)])),
     });
     return { evidence, selected };
-  });
+  }, true);
   writeJson(outputPath, result);
   process.exitCode = 0; // A red assertion is represented in the result, not as a crashed worker.
 }
@@ -119,20 +132,49 @@ function scope(dir: string): string[] {
 }
 
 function selection(from: string, to: string, patterns: readonly string[], dir: string): Selection {
-  return { changed: trackedDiff(from, to, "AMT", patterns), deleted: trackedDiff(from, to, "D", patterns), extra: scope(dir) };
+  const changed = trackedDiff(from, to, "AMT", patterns);
+  const changedLines = Object.fromEntries(changed.map((file) => {
+    const diff = git(["diff", "--no-renames", "--no-color", "--no-ext-diff", "--unified=0", from, to, "--", file]);
+    const ranges = [...diff.matchAll(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@/gm)].flatMap((match) => {
+      const start = Number(match[1]);
+      const count = Number(match[2] ?? 1);
+      return count > 0 ? [{ start, end: start + count - 1 }] : [];
+    });
+    return [file, ranges];
+  }));
+  return { changed, changedLines, deleted: trackedDiff(from, to, "D", patterns), extra: scope(dir) };
 }
 
 function safeLog(value: string, tested: string): string {
   return value.replaceAll(tested, "<worktree>").replaceAll(root, "<repository>");
 }
 
-function checkKey(check: Check, setup: string): string {
+async function browserIdentity(): Promise<object | null> {
+  try {
+    const require = createRequire(join(root, "package.json"));
+    const playwright = await import(require.resolve("playwright")) as typeof import("playwright");
+    const chromium = realpathSync(process.env.OCELLE_CHROMIUM_PATH || playwright.chromium.executablePath());
+    const version = execFileSync(chromium, ["--version"], { encoding: "utf8" }).trim();
+    const stat = statSync(chromium);
+    if (process.env.OCELLE_CHROMIUM_PATH) return { chromium, version, size: stat.size, modified: stat.mtimeMs };
+    const linuxShell = playwright.chromium.executablePath().replace(
+      /chromium-(\d+)\/chrome-linux64\/chrome$/,
+      "chromium_headless_shell-$1/chrome-headless-shell-linux64/chrome-headless-shell",
+    );
+    if (linuxShell === chromium || !existsSync(linuxShell)) return null;
+    const shell = statSync(linuxShell);
+    return { chromium, version, size: stat.size, modified: stat.mtimeMs, shell: linuxShell, shellSize: shell.size, shellModified: shell.mtimeMs };
+  } catch {
+    return null; // A runnable checkout can still verify with per-worktree setup. It cannot reuse unpinned evidence.
+  }
+}
+
+async function checkKey(check: Check, setup: string): Promise<{ key: string; reusable: boolean }> {
   const overlay = check.overlay === undefined ? [] : check.selection.changed.map((file) => [file, git(["rev-parse", `${check.overlay ?? ""}:${file}`]).trim()]);
-  const runtime = ["OCELLE_CHROMIUM_PATH", "PLAYWRIGHT_BROWSERS_PATH", "TZ", "LANG"].map((name) => [name, process.env[name] ?? ""]);
-  const browser = process.env.OCELLE_CHROMIUM_PATH;
-  const chromium = browser === undefined ? null : execFileSync(browser, ["--version"], { encoding: "utf8" }).trim();
+  const runtime = ["OCELLE_CHROMIUM_PATH", "PLAYWRIGHT_BROWSERS_PATH", "NODE_OPTIONS", "TZ", "LANG", "LC_ALL"].map((name) => [name, process.env[name] ?? ""]);
+  const chromium = await browserIdentity();
   const pnpm = execFileSync("pnpm", ["--version"], { encoding: "utf8" }).trim();
-  return storyEvidenceKey({
+  const key = storyEvidenceKey({
     mode: check.mode,
     testedTree: git(["rev-parse", `${check.revision}^{tree}`]).trim(),
     overlay,
@@ -147,6 +189,7 @@ function checkKey(check: Check, setup: string): string {
     runtime,
     runner: trackedRunner.map((file) => readFileSync(join(root, file), "utf8")),
   });
+  return { key, reusable: chromium !== null };
 }
 
 function canReuse(mode: Check["mode"], evidence: StoryEvidence): boolean {
@@ -156,10 +199,10 @@ function canReuse(mode: Check["mode"], evidence: StoryEvidence): boolean {
 
 async function runCheck(check: Check, setup: string): Promise<CheckResult> {
   const started = Date.now();
-  const input = checkKey(check, setup);
+  const { key: input, reusable } = await checkKey(check, setup);
   const cache = join(root, "reports/story-evidence", `${input}.json`);
   try {
-    const record = readJson(cache) as { key?: unknown; evidence?: unknown; log?: unknown; selected?: unknown };
+    const record = (reusable ? readJson(cache) : null) as { key?: unknown; evidence?: unknown; log?: unknown; selected?: unknown };
     const evidence = decodeCachedEvidence(record, input);
     if (evidence !== undefined && canReuse(check.mode, evidence) && typeof record.log === "string" && Array.isArray(record.selected)) {
       const selected = record.selected as CheckResult["selected"];
@@ -214,7 +257,7 @@ async function runCheck(check: Check, setup: string): Promise<CheckResult> {
   evidence = JSON.parse(safeLog(JSON.stringify(evidence), tested)) as StoryEvidence;
   log = `${JSON.stringify({ mode: check.mode, revision: check.revision, overlay: check.overlay, input, selected, evidence, seconds })}\n${safeLog(log, tested)}`;
   writeFileSync(check.log, log);
-  if (canReuse(check.mode, evidence)) {
+  if (reusable && canReuse(check.mode, evidence)) {
     mkdirSync(dirname(cache), { recursive: true });
     const pending = `${cache}.${String(process.pid)}.tmp`;
     writeJson(pending, { key: input, evidence, log, selected });

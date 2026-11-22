@@ -81,11 +81,16 @@ describe("phase evidence", () => {
   it("reuses matching completed work and rejects stale or malformed records", () => {
     const original = storyEvidenceKey({ revision, mode: "red", tool: "26.13.0", selected: [input] });
     const changed = storyEvidenceKey({ revision, mode: "red", tool: "26.13.1", selected: [input] });
-    const evidence = { status: "red", assertions: [assertion] };
+    const evidence = { status: "red", assertions: [{ ...assertion,
+      source: { text: "expect(submitted.value).toEqual(answer);", occurrence: 1, line: 3 },
+      diagnostic: assertionError.message,
+    }] };
+    const header = { input: original, mode: "red", selected: [input], evidence, seconds: 1, revision };
+    const record = { key: original, evidence, selected: [input], log: `${JSON.stringify(header)}\n` };
     expect(changed).not.toBe(original);
-    expect(decodeCachedEvidence({ key: original, evidence }, original)).toEqual(evidence);
-    expect(decodeCachedEvidence({ key: original, evidence }, changed)).toBeUndefined();
-    expect(decodeCachedEvidence({ key: original, evidence: { status: "red", assertions: [] } }, original)).toBeUndefined();
+    expect(decodeCachedEvidence(record, original)).toEqual(evidence);
+    expect(decodeCachedEvidence(record, changed)).toBeUndefined();
+    expect(decodeCachedEvidence({ ...record, evidence: { status: "red", assertions: [] } }, original)).toBeUndefined();
   });
 });
 
@@ -173,7 +178,7 @@ describe("assertion-site evidence", () => {
 
   it("does not reuse cache records with missing, malformed, or mismatched diagnostic evidence", () => {
     const key = storyEvidenceKey({ sources: inputs.sources });
-    const evidence = { status: "red", assertions: [intended] };
+    const evidence = { status: "red", assertions: [{ ...intended, diagnostic: assertionError.message }] };
     const header = { input: key, mode: "red", selected: [input], evidence, seconds: 1, revision };
     const log = `${JSON.stringify(header)}\n`;
     const complete = { key, evidence, selected: [input], log };

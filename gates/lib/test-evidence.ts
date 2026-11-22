@@ -9,12 +9,14 @@ export interface TestFile {
 export interface Failure {
   readonly name: string;
   readonly message: string;
+  readonly line?: number;
 }
 
 export interface TestCaseResult {
   readonly name: string;
   readonly state: "passed" | "failed" | "skipped" | "pending";
   readonly errors: readonly Failure[];
+  readonly startLine?: number;
 }
 
 export interface TestFileResult extends TestFile {
@@ -40,10 +42,18 @@ export interface ShardResult extends TestRun {
   readonly index: number;
 }
 
+export interface AssertionSource {
+  readonly text: string;
+  readonly occurrence: number;
+  readonly line: number;
+}
+
 export interface Assertion {
   readonly project: string;
   readonly file: string;
   readonly test: string;
+  readonly source?: AssertionSource;
+  readonly diagnostic?: string;
 }
 
 export interface StoryEvidence {
@@ -59,6 +69,8 @@ export interface StoryEvidenceInput {
   readonly expected?: readonly Assertion[];
   readonly allowMissingModule?: boolean;
   readonly missingModules?: readonly string[];
+  readonly sources?: Readonly<Record<string, readonly string[]>>;
+  readonly changedLines?: Readonly<Record<string, readonly { start: number; end: number }[]>>;
 }
 
 const revisionPattern = /^(?:[a-f0-9]{40}|[a-f0-9]{64})$/;
@@ -81,7 +93,7 @@ function fileKey(value: TestFile): string {
 }
 
 function assertionKey(value: Assertion): string {
-  return JSON.stringify([value.project, value.file, value.test]);
+  return JSON.stringify([value.project, value.file, value.test, value.source?.text, value.source?.occurrence]);
 }
 
 function fileKeys(files: readonly TestFile[]): string[] {
@@ -196,6 +208,61 @@ function knownMissingModule(entry: TestFileResult, missing: readonly string[]): 
   });
 }
 
+function assertionSource(lines: readonly string[], start: number, line: number): AssertionSource | undefined {
+  const text = lines[line - 1]?.trim();
+  if (!text || start > line || start < 1) return undefined;
+  const occurrence = lines.slice(start - 1, line).filter((candidate) => candidate.trim() === text).length;
+  return { text, occurrence, line };
+}
+
+function sourceExists(test: TestCaseResult, entry: TestFileResult, expectation: Assertion, lines: readonly string[]): boolean {
+  if (expectation.source === undefined) return true;
+  if (test.startLine === undefined) return false;
+  const after = entry.tests.flatMap(({ startLine }) => startLine !== undefined && startLine > (test.startLine ?? 0) ? [startLine] : []);
+  const text = expectation.source.text;
+  return lines.slice(test.startLine - 1, Math.min(lines.length + 1, ...after) - 1)
+    .filter((line) => line.trim() === text).length >= expectation.source.occurrence;
+}
+
+function fileAssertions(
+  entry: TestFileResult,
+  input: StoryEvidenceInput,
+  testIdentities: Map<string, number>,
+): StoryEvidence {
+  const assertions: Assertion[] = [];
+  const changed = input.changedTests.includes(entry.file);
+  const lines = input.sources?.[entry.file] ?? [];
+  const allowedLines = input.changedLines?.[entry.file] ?? [];
+  for (const test of entry.tests) {
+    if (test.state === "pending" || test.state === "skipped") return invalid(`${entry.file}: ${test.state} test ${test.name}`);
+    const assertion = { file: entry.file, project: entry.project, test: test.name };
+    const identity = assertionKey(assertion);
+    testIdentities.set(identity, (testIdentities.get(identity) ?? 0) + 1);
+    if (test.state !== "failed") continue;
+    if (!changed) return invalid(`unrelated failure in ${entry.file}: ${test.name}`);
+    if (test.errors.length === 0 || test.errors.some(({ name }) => name !== "AssertionError")) {
+      return invalid(`non-assertion error in ${entry.file}: ${test.name}`);
+    }
+    if (input.changedLines === undefined) {
+      assertions.push(assertion);
+      continue;
+    }
+    for (const { line, message } of test.errors) {
+      if (line === undefined || test.startLine === undefined) {
+        return invalid(`unlocated assertion in ${entry.file}: ${test.name}: ${message}`);
+      }
+      if (!allowedLines.some(({ start, end }) => line >= start && line <= end)) {
+        return invalid(`unchanged assertion in ${entry.file}:${String(line)}: ${test.name}: ${message}`);
+      }
+      const source = assertionSource(lines, test.startLine, line);
+      if (source === undefined) return invalid(`unlocated source in ${entry.file}:${String(line)}: ${test.name}`);
+      assertions.push({ ...assertion, source, diagnostic: message });
+    }
+  }
+  if (entry.state === "failed" && assertions.length === 0) return invalid(`file error in ${entry.file} without a failing assertion`);
+  return { status: assertions.length > 0 ? "red" : "green", assertions };
+}
+
 export function classifyStoryEvidence(input: StoryEvidenceInput): StoryEvidence {
   const { run, selected, changedTests, expected, allowMissingModule, missingModules } = input;
   if (run.errors.length > 0) return invalid(`run error: ${run.errors[0]?.message ?? ""}`);
@@ -203,12 +270,11 @@ export function classifyStoryEvidence(input: StoryEvidenceInput): StoryEvidence 
 
   const assertions: Assertion[] = [];
   const testIdentities = new Map<string, number>();
-  let moduleMissing = false;
+  const absent = new Set<string>();
   for (const entry of run.files) {
-    const changed = changedTests.includes(entry.file);
     if (entry.errors.length > 0) {
-      if (allowMissingModule === true && changed && knownMissingModule(entry, missingModules ?? [])) {
-        moduleMissing = true;
+      if (allowMissingModule === true && changedTests.includes(entry.file) && knownMissingModule(entry, missingModules ?? [])) {
+        absent.add(fileKey(entry));
         continue;
       }
       return invalid(`file error in ${entry.file}: ${entry.errors[0]?.message ?? ""}`);
@@ -216,54 +282,72 @@ export function classifyStoryEvidence(input: StoryEvidenceInput): StoryEvidence 
     if (entry.tests.length === 0 || entry.state === "pending" || entry.state === "queued" || entry.state === "skipped") {
       return invalid(`no completed tests in ${entry.file}`);
     }
-    for (const test of entry.tests) {
-      if (test.state === "pending" || test.state === "skipped") return invalid(`${entry.file}: ${test.state} test ${test.name}`);
-      const assertion = { file: entry.file, project: entry.project, test: test.name };
-      const identity = assertionKey(assertion);
-      testIdentities.set(identity, (testIdentities.get(identity) ?? 0) + 1);
-      if (test.state !== "failed") continue;
-      if (!changed) return invalid(`unrelated failure in ${entry.file}: ${test.name}`);
-      if (test.errors.length === 0 || test.errors.some(({ name }) => name !== "AssertionError")) {
-        return invalid(`non-assertion error in ${entry.file}: ${test.name}`);
-      }
-      assertions.push(assertion);
-    }
-    if (entry.state === "failed" && !entry.tests.some((test) => test.state === "failed")) {
-      return invalid(`file error in ${entry.file} without a failing assertion`);
-    }
+    const result = fileAssertions(entry, input, testIdentities);
+    if (result.status === "invalid") return result;
+    assertions.push(...result.assertions);
   }
-  const actual = new Set(assertions.map(assertionKey));
-  if (assertions.some((assertion) => testIdentities.get(assertionKey(assertion)) !== 1)) {
+  if (assertions.some(({ project, file, test }) => testIdentities.get(assertionKey({ project, file, test })) !== 1)) {
     return invalid("failing assertion has an ambiguous test name in its file");
   }
-  const verification = expected?.map(assertionKey) ?? [];
-  if (verification.length > 0) {
-    if (moduleMissing) return { status: "missing-module", assertions };
-    if (verification.some((assertion) => testIdentities.get(assertion) !== 1)) return invalid("expected assertion test missing or ambiguous in the replay");
-    if (assertions.length > 0 && (verification.some((assertion) => !actual.has(assertion))
-      || assertions.some((assertion) => !verification.includes(assertionKey(assertion))))) {
-      return invalid("expected assertion failures did not match replayed failures");
+  const unique = new Map(assertions.map((assertion) => [assertionKey(assertion), assertion]));
+  const actual = [...unique.values()];
+  const verification = (expected ?? []).filter((assertion) => !absent.has(fileKey(assertion)));
+  for (const assertion of verification) {
+    const entry = run.files.find((file) => fileKey(file) === fileKey(assertion));
+    const tests = entry?.tests.filter((test) => test.name === assertion.test);
+    const test = tests?.[0];
+    if (entry === undefined || tests?.length !== 1 || test === undefined
+      || !sourceExists(test, entry, assertion, input.sources?.[assertion.file] ?? [])) {
+      return invalid("expected assertion test or source missing or ambiguous in the replay");
     }
   }
-  if (moduleMissing) return { status: "missing-module", assertions };
-  return { status: assertions.length > 0 ? "red" : "green", assertions };
+  const expectedKeys = new Set(verification.map(assertionKey));
+  if ((expected?.length ?? 0) > 0 && actual.length > 0
+    && (actual.length !== expectedKeys.size || actual.some((assertion) => !expectedKeys.has(assertionKey(assertion))))) {
+    return invalid("expected assertion failures did not match replayed failures");
+  }
+  if (absent.size > 0) return { status: "missing-module", assertions: actual };
+  return { status: actual.length > 0 ? "red" : "green", assertions: actual };
 }
 
 export function storyEvidenceKey(input: object): string {
   return createHash("sha256").update(JSON.stringify(input)).digest("hex");
 }
 
+function sourceShape(value: unknown): value is AssertionSource {
+  return object(value) && nonempty(value.text) && typeof value.occurrence === "number" && Number.isInteger(value.occurrence) && value.occurrence >= 1
+    && typeof value.line === "number" && Number.isInteger(value.line) && value.line >= 1;
+}
+
 function assertionShape(value: unknown): value is Assertion {
-  return object(value) && fileShape(value) && nonempty(value.test);
+  return object(value) && fileShape(value) && nonempty(value.test) && sourceShape(value.source)
+    && nonempty(value.diagnostic);
 }
 
 export function decodeCachedEvidence(record: unknown, key: string): StoryEvidence | undefined {
-  if (!object(record) || record.key !== key || !object(record.evidence)) return undefined;
+  if (!object(record) || record.key !== key || !object(record.evidence) || !filesShape(record.selected)
+    || record.selected.length === 0 || new Set(fileKeys(record.selected)).size !== record.selected.length
+    || !nonempty(record.log)) return undefined;
   const { status, assertions } = record.evidence;
   if (!Array.isArray(assertions) || !assertions.every(assertionShape)) return undefined;
-  if (new Set(assertions.map(assertionKey)).size !== assertions.length) return undefined;
-  if (status === "green" && assertions.length === 0) return { status, assertions };
-  if (status === "red" && assertions.length > 0) return { status, assertions };
-  if (status === "missing-module") return { status, assertions };
+  const selected = new Set(fileKeys(record.selected));
+  if (new Set(assertions.map(assertionKey)).size !== assertions.length || assertions.some((assertion) => !selected.has(fileKey(assertion)))) {
+    return undefined;
+  }
+  let header: unknown;
+  try {
+    header = JSON.parse(record.log.split("\n", 1)[0] ?? "");
+  } catch {
+    return undefined;
+  }
+  if (!object(header) || header.input !== key || !nonempty(header.revision) || !revisionPattern.test(header.revision)
+    || typeof header.seconds !== "number" || !Number.isFinite(header.seconds) || header.seconds < 0
+    || !filesShape(header.selected) || !sameInventory(record.selected, header.selected)
+    || JSON.stringify(record.evidence) !== JSON.stringify(header.evidence)) return undefined;
+  if (status === "green" && assertions.length === 0 && header.mode === "head") return { status, assertions };
+  if (status === "red" && assertions.length > 0 && (header.mode === "red" || header.mode === "base" || header.mode === "scaffold")) {
+    return { status, assertions };
+  }
+  if (status === "missing-module" && header.mode === "base") return { status, assertions };
   return undefined;
 }
