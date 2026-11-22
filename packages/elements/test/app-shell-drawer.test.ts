@@ -165,6 +165,43 @@ describe("app shell drawer", () => {
     await focused(document.getElementById("work"));
   });
 
+  it("returns focus to the trigger when its click arrives with focus elsewhere", async () => {
+    const shell = await mount("project", sidebar);
+    const trigger = required(menu(shell));
+    required(document.querySelector<HTMLButtonElement>("#content")).focus();
+    trigger.click();
+    await expect.poll(() => panel(shell)?.matches(":modal")).toBe(true);
+    await commands.press("Escape");
+    await expect.poll(() => panel(shell)?.open).toBe(false);
+    await focused(trigger);
+  });
+
+  it("returns focus to a replacement trigger when navigation returns during exit", async () => {
+    const shell = await mount("project", sidebar);
+    const original = required(menu(shell));
+    await open(shell);
+    const dialog = required(panel(shell));
+    await commands.emulateReducedMotion("no-preference");
+    shell.style.setProperty("--ocelle-motion-base", "10s");
+    shell.querySelectorAll('[slot="sidebar"]').forEach((destination) => { destination.remove(); });
+    await expect.poll(() => menu(shell)).toBeNull();
+    await expect.poll(() => dialog.getAnimations().length).toBe(1);
+    const exit = required(dialog.getAnimations()[0]);
+    exit.pause();
+
+    const replacement = document.createElement("a");
+    replacement.href = "#replaced";
+    replacement.slot = "sidebar";
+    replacement.textContent = "New workspace";
+    shell.append(replacement);
+    await expect.poll(() => menu(shell)?.isConnected).toBe(true);
+    const trigger = required(menu(shell));
+    expect(trigger).not.toBe(original);
+    exit.finish();
+    await expect.poll(() => dialog.open).toBe(false);
+    await focused(trigger);
+  });
+
   it("honors cancellation of its own close request", async () => {
     const shell = await mount("project", sidebar);
     await open(shell);

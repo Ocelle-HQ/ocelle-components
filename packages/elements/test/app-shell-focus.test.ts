@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { deepActive } from "../src/focusable.ts";
+import { layoutWait } from "./layout-wait.ts";
 import { close, focused, menu, mount, open, panel, rail, required, resize, sidebar } from "./app-shell-drawer-fixture.ts";
 
 describe("app shell drawer focus", () => {
@@ -84,6 +85,38 @@ describe("app shell drawer focus", () => {
     await shell.updateComplete;
     expect(completions).toBe(1);
     await focused(content);
+  });
+
+  it("does not refocus a visible destination blurred before a same-tier resize", async () => {
+    const shell = await mount("project", sidebar);
+    await open(shell);
+    const destination = required(document.querySelector<HTMLAnchorElement>("#work"));
+    destination.blur();
+    const active = deepActive();
+    expect(active).not.toBe(destination);
+    resize(680);
+    await layoutWait("frame");
+    expect(deepActive()).toBe(active);
+    expect(panel(shell)?.open).toBe(true);
+  });
+
+  it("keeps deliberate focus in a newer modal when the old drawer loses a region", async () => {
+    const shell = await mount("mission", rail + sidebar);
+    await open(shell);
+    const newer = document.createElement("ocelle-drawer");
+    newer.label = "Tools";
+    newer.innerHTML = '<button id="tool" autofocus>Tool</button>';
+    required(shell.parentElement).append(newer);
+    newer.open = true;
+    const tool = required(document.getElementById("tool"));
+    await focused(tool);
+    const work = required(document.querySelector<HTMLAnchorElement>("#work"));
+    const fallback = vi.spyOn(work, "focus");
+    shell.layout = "project";
+    await layoutWait("frame");
+    expect(fallback).not.toHaveBeenCalled();
+    expect(deepActive()).toBe(tool);
+    expect(panel(shell)?.open).toBe(true);
   });
 
   it("moves from close to the first available destination after leaving narrow", async () => {
