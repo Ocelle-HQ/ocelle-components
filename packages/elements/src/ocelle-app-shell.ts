@@ -375,8 +375,7 @@ export class OcelleAppShell extends LitElement {
   readonly #drawerClosed = (event: Event): void => {
     const drawer = event.currentTarget;
     if (!(drawer instanceof OcelleDrawer) || event.composedPath()[0] !== drawer || !this.#drawerProjected) return;
-    const active = deepActive();
-    this.#restoreDrawerFocus = active === null || composedWithin(active, drawer);
+    this.#restoreDrawerFocus = true;
     this.#drawerState = "closed";
     this.requestUpdate();
   };
