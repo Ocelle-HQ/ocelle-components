@@ -434,7 +434,10 @@ AX text unbroken; zero CSP violations; the gates of phase 1 pass.
   of view, so preload the sans face (`--ocelle-font-sans`) for `rtl` scroll blocks. No element code, story or test
   changes. The late font is listed as a known gap in the ALL PHASES DONE message (the operator's decision). The spec,
   research R-06, contracts/elements.md and contracts/checks.md § Driver additions (R1-03, R1-04) were aligned by the
-  planner's documentation commit before phase 3; T042 changes no spec text.
+  planner's documentation commit before phase 3; T042 changes no spec text. Review note (phase 3 review round 1,
+  R1-01): Principle VIII overrides "no test changes" here. The review required `readme.test.ts` fragments for this
+  caveat (with the "That holds once the block has laid out in its font" qualifier) and for T040's WebKit sentence;
+  they were added test-first in the fix round (`reviews/phase-3/round-1-fixes.md`).
 - [X] T041 Full quickstart run (`specs/020-disclosure-code-block/quickstart.md` steps 1 to 4) and SC-007/SC-008 diffs
   against the branch base T020's record names (no change to `src/overflow-region.ts`, its contract,
   `src/focusable.ts`, `src/overlay.ts`, or any file of missions 013 and 019's elements; phase 1's own range was

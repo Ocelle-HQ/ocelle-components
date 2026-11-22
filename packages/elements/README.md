@@ -1331,8 +1331,11 @@ defined its text shows as an inline run.
 **Direction.** Each line of code is shown left to right, also in an `rtl` page, while the block keeps the page
 direction, so the fade of a scroll block is on the side where text is hidden. An `rtl` scroll block opens at the line
 starts: the element scrolls it there, instantly, when it first appears and when its text changes, so the start of
-every line is in view and the fade is at the right, where the line ends are hidden. A block that only starts to
-overflow after a resize keeps the platform's scroll position.
+every line is in view and the fade is at the right, where the line ends are hidden. That holds once the block has laid
+out in its font: the one write uses the widths of the first layout, and a font swap does not repeat it. On a page where
+the sans face (`--ocelle-font-sans`) arrives after the first layout, the lines widen after the write and their starts
+can end up out of view (the content stays reachable with the arrow keys), so preload the sans face for `rtl` scroll
+blocks. A block that only starts to overflow after a resize keeps the platform's scroll position.
 
 **Scroll mode.** While it overflows, a scroll block is a tab stop and, with a name, a `group` named by its `label`;
 while its text fits it is neither. In scroll mode the `ocelle-scroller` statements on keyboard, focus, fades,
@@ -1689,7 +1692,9 @@ Only Chromium is measured. WebKit (Kitty Desktop on macOS and Linux) is not: its
 mirroring are an open limitation.
 WebKit is not measured for the layout elements either: the tab stop of `ocelle-scroller` and `ocelle-workflow-board`
 while they overflow, their arrow keys, their focus handover when overflow ends and `ocelle-list-detail`'s focus moves
-are untested there.
+are untested there. Nor is `ocelle-code-block`'s scroll mode, on the same module: its tab stop while it overflows, its
+arrow keys, its focus handover when overflow ends, the focus move on a switch to wrap and the `rtl` opening write are
+untested in WebKit.
 
 ## Layout elements: screens, print and states
 

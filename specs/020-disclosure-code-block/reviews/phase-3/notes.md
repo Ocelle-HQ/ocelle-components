@@ -3,6 +3,11 @@
 Implementer's notes on phase 3 (Polish & Cross-Cutting Concerns: T040, T042, T041, in that order). The checks are in
 `checks.md`, the affected plant run in `plants.md`, the reason for no red commit in `tdd-exempt.md`.
 
+**Superseded (review round 1, R1-01).** The exemption below did not hold: the README fragments of `readme.test.ts`
+could fail for this phase. The fix round added them test-first, recorded the red commit as `fix-1` in `red-commits`
+and removed `tdd-exempt.md`, so `tdd-check.sh` runs its full check for the phase (`round-1-fixes.md`). The section
+below is the phase's original reasoning, kept as written.
+
 ## No test-first commit
 
 The phase changes documentation and records only (`tdd-exempt.md`). A red commit would have to change
