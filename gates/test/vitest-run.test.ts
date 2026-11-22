@@ -172,4 +172,17 @@ describe("Vitest report conversion", () => {
       { name: "AssertionError", message: "Expected submitted answer", line: 13 },
     ]);
   });
+
+  it("keeps the anonymous async test caller of a shared assertion", () => {
+    const tests = [failing("submission > waits for proof", [
+      "AssertionError: answer",
+      `    at assertAnswer (${pathToFileURL(helper).href}:16:3)`,
+      "    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)",
+      `    at async ${pathToFileURL(filename).href}:13:4`,
+    ].join("\n"), 10)];
+    expect(testRun(root, [moduleReport({ tests })], [], true).files[0]?.tests[0]?.errors).toEqual([
+      { name: "AssertionError", message: "Expected submitted answer", line: 13,
+        helperFile: "gates/test/scenarios/decision.ts", helperLine: 16 },
+    ]);
+  });
 });
