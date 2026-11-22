@@ -36,7 +36,7 @@ suites this phase does not touch (`browser/dialog.test.ts`, `browser/drawer.test
 going green, all test files (listed under Departures). The red commit was amended, as the flow allows, and `red.sh`
 run again.
 
-## Open operator question (stop-and-ask, contracts/checks.md § US4-7)
+## Operator question, resolved (contracts/checks.md § US4-7)
 
 **Q-P5-1. The corner clicks of § US4-7 contradict the pill radius.** contracts/checks.md § US4-7 asks that "on a
 one-character compact badge a click at each corner inset 1 px delivers one `click` and one `ocelle-pill-tag-activate`".
@@ -47,7 +47,7 @@ host): of the clicks at (1, 1), (23, 1), (1, 23) and (23, 23) none reached the b
 midpoints inset 1 px did. Every pill takes `--ocelle-radius-pill` (SPEC-1-04, constitution II; phase 4 R1-01: a wrapped
 pill keeps the pill radius), so the clause cannot pass as written. The red commit leaves it out; the body that is there
 pins the 24 × 24 px control box and one click and one activate event at each edge's midpoint inset 1 px, and none 1 px
-outside. T046 stays open on this clause only. Options:
+outside. Options:
 
 - **(a)** Keep the pill radius; read US4-7's "the area that takes a pointer click is at least 24 px by 24 px" as the
   control's box being at least `--ocelle-target-small` in each axis, proven by clicks at each edge's midpoint inset 1 px
@@ -59,9 +59,14 @@ outside. T046 stays open on this clause only. Options:
 - **(c)** Draw the interactive pill's corners with a radius small enough for the corners inset 1 px to hit the control
   (a departure from SPEC-1-04's every-variant-and-mode reading of constitution II).
 
+**Resolved: the operator decided (a)** (`operator-decisions.md`). The pill radius stays; the target is the control's
+box, at least `--ocelle-target-small` in each axis, proven by the edge-midpoint clicks the red commit already has.
+contracts/checks.md § US4-7 is amended to say so and the corner clause is dropped; no source or test change. T046 is
+ticked on that reading.
+
 ## Departures from the plan, and points for the review
 
-- **The corner clicks of § US4-7 are not in the tests** (Q-P5-1 above); T046 stays open on that clause.
+- **The corner clicks of § US4-7 are not in the tests**, as operator decision Q-P5-1 (a) settles (above): the clause is dropped from contracts/checks.md; T046 is ticked.
 - **The tooltip half of § US4-10 is phase 6's.** Phase 5 does not wrap the control in `ocelle-tooltip` (tasks T059
   does, with the `./ocelle-tooltip.js` import), so the body pins focus and ring after the switch, not the shown tooltip.
   The refocus is queued in a microtask as R-08 and the phase-1 spike require; its plant "the refocus in `updated()`
