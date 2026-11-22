@@ -163,7 +163,7 @@ export class OcelleFormTextarea extends FormControl {
   }
 }
 
-define("ocelle-form-textarea", OcelleFormTextarea);
+define("ocelle-form-textarea" satisfies `ocelle-${string}`, OcelleFormTextarea);
 
 declare global {
   interface HTMLElementTagNameMap {
