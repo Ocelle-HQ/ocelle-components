@@ -247,3 +247,15 @@ describe("ci.yml csp and prefix jobs (006 FR-020, FR-022)", () => {
     expect(steps("prefix")).toEqual(["      - run: pnpm -r build && pnpm run gate:prefix"]);
   });
 });
+
+describe("ci.yml full Unit tests gate", () => {
+  it("requires both discovered inventory and successful shards for the existing check", () => {
+    const verdict = job("unit-tests").join("\n");
+    expect(verdict).toContain("name: Unit tests");
+    expect(verdict).toContain("needs: [unit-tests-plan, unit-tests-shard]");
+    expect(verdict).toContain("if: always()");
+    expect(verdict).toContain('test "$PLAN" = success');
+    expect(verdict).toContain('test "$SHARDS" = success');
+    expect(verdict).toContain("gates/bin/test-shards.ts verify");
+  });
+});
