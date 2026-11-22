@@ -46,7 +46,8 @@ function navigationContent(nodes: Iterable<Node>, roots: Set<ShadowRoot>): Navig
   let result: NavigationContent = "empty";
   for (const node of nodes) {
     const next = navigationNode(node, roots);
-    if (next === "supplied" || (next === "bare" && result === "empty")) result = next;
+    if (next === "supplied") result = next;
+    else if (next === "bare" && result === "empty") result = "bare";
   }
   return result;
 }
@@ -60,9 +61,9 @@ function navigationNode(node: Node, roots: Set<ShadowRoot>): NavigationContent {
   if (node instanceof HTMLSlotElement) return navigationContent(node.assignedNodes({ flatten: true }), roots);
 
   const children = navigationContent((root ?? node).childNodes, roots);
-  if (children !== "empty" && node.matches(landmark)) return "supplied";
-  if (root !== null || node.matches(contentWrappers)) return children;
-  return children === "supplied" ? children : "bare";
+  if (node.matches(landmark)) return children === "empty" ? "empty" : "supplied";
+  if (children === "supplied" || root !== null || node.matches(contentWrappers)) return children;
+  return "bare";
 }
 
 /** A composed parent follows assignment first, then an ordinary parent or the host of an open shadow root. */
@@ -247,15 +248,12 @@ export class OcelleAppShell extends LitElement {
     this.requestUpdate();
   });
 
-  #navigationRoots = new Set<ShadowRoot>();
   readonly #navigationChildren = new MutationObserver(() => {
     this.requestUpdate();
   });
 
   #observeNavigation(roots: Set<ShadowRoot>): void {
-    if (this.#navigationRoots.size === roots.size && [...roots].every((root) => this.#navigationRoots.has(root))) return;
     this.#navigationChildren.disconnect();
-    this.#navigationRoots = roots;
     for (const root of roots) {
       this.#navigationChildren.observe(root, {
         attributes: true,
@@ -307,7 +305,6 @@ export class OcelleAppShell extends LitElement {
     this.#resize.disconnect();
     this.#children.disconnect();
     this.#navigationChildren.disconnect();
-    this.#navigationRoots.clear();
     this.#settlement = undefined;
     this.#focusSource = undefined;
     this.#drawerFocus = undefined;
