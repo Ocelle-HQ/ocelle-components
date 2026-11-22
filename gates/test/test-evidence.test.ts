@@ -191,3 +191,28 @@ describe("assertion-site evidence", () => {
       .toBeUndefined();
   });
 });
+
+it("records a shared scenario assertion only through the changed caller and replays the same helper site", () => {
+  const helperFile = "packages/elements/test/scenarios/multiline.ts";
+  const changedCall = "await checkSubmission(form);";
+  const intended = "expect(actual.value).toBe(answer);";
+  const otherSite = "expect(form).toBeDefined();";
+  const shared = (helperLine: number) => ({
+    ...file(input, [], "failed"),
+    tests: [{
+      name: assertion.test, state: "failed" as const, startLine: 1,
+      errors: [{ ...assertionError, line: 2, helperFile, helperLine }],
+    }],
+  });
+  const inputs = {
+    changedLines: { [input.file]: [{ start: 2, end: 2 }] },
+    sources: { [input.file]: ["test('keeps the submitted paragraphs', async () => {", changedCall, "});"], [helperFile]: [otherSite, intended] },
+  };
+  const evidence = { ...assertion, source: { text: changedCall, occurrence: 1, line: 2 },
+    helper: { file: helperFile, text: intended, occurrence: 1, line: 2 },
+    diagnostic: assertionError.message,
+  };
+  expect(classifyStoryEvidence({ ...story([shared(2)]), ...inputs })).toMatchObject({ status: "red", assertions: [evidence] });
+  expect(classifyStoryEvidence({ ...story([shared(1)]), ...inputs, expected: [evidence] }))
+    .toMatchObject({ status: "invalid", problem: /expected assertion/i });
+});
