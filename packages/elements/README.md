@@ -989,7 +989,8 @@ Set the rail's `orientation` to `horizontal` or `vertical` when an application c
 The rail exposes a navigation landmark named with `label` and emits no event.
 
 The rail leaves destination sizing to its items. It provides the gap, centers items and sets the chrome ink.
-Give plain links `color: inherit` and a target of at least 24 px, or use `ocelle-nav-item`, which uses
+In a standalone rail, give plain links `color: inherit` and a target of at least 24 px. Inside an
+`ocelle-app-shell` rail region, the shell applies chrome colors to `ocelle-nav-item`, which uses
 `--ocelle-size-rail-item` (40 px).
 
 `ocelle-personal-rail` reads the tokens `--ocelle-color-chrome`, `--ocelle-color-chrome-ink`,
