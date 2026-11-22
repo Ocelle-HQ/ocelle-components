@@ -8,7 +8,7 @@ import type { Vitest } from "vitest/node";
 import { runTool } from "../lib/spawn.ts";
 import type { ToolRun } from "../lib/spawn.ts";
 import { browserIdentity, checkKey as phaseCacheKey } from "../lib/story-cache.ts";
-import { exactStoryCases, plannedStoryResults, selectStoryTests } from "../lib/story-selection.ts";
+import { collateralTestIdentity, exactStoryCases, plannedStoryResults, selectStoryTests } from "../lib/story-selection.ts";
 import type { StoryMode } from "../lib/story-selection.ts";
 import { assertionKey, classifyStoryEvidence, decodeCachedEvidence, decodeWorkerResult } from "../lib/test-evidence.ts";
 import type { Assertion, StoryEvidence } from "../lib/test-evidence.ts";
@@ -18,6 +18,7 @@ interface Selection {
   readonly changed: readonly string[];
   readonly deleted: readonly string[];
   readonly extra: readonly string[];
+  readonly ciOnly?: readonly string[];
   readonly changedLines: Readonly<Record<string, readonly { start: number; end: number }[]>>;
 }
 
@@ -182,17 +183,24 @@ export async function replayStoryWorker(root: string, inputPath: string, outputP
   writeJson(outputPath, result);
 }
 
-function scope(dir: string, tools: PhaseTools): string[] {
+function scope(dir: string, tools: PhaseTools): { extra: readonly string[]; ciOnly: readonly string[] } {
   const filename = join(dir, "test-scope.txt");
-  if (!tools.exists(filename)) return [];
+  if (!tools.exists(filename)) return { extra: [], ciOnly: [] };
   const paths = tools.read(filename).split(/\r?\n/).map((line) => line.trim()).filter((line) => line !== "" && !line.startsWith("#"));
-  if (paths.some((entry) => isAbsolute(entry) || entry.startsWith("-") || entry.split("/").includes(".."))) {
+  const extra = new Set<string>();
+  const ciOnly = new Set<string>();
+  const entries = paths.map((line) => {
+    const directive = /^ci-only(?:\s|$)/.test(line);
+    return { target: directive ? ciOnly : extra, path: directive ? line.slice("ci-only".length).trim() : line };
+  });
+  if (entries.some(({ path }) => path === "" || isAbsolute(path) || path.startsWith("-") || path.split("/").includes(".."))) {
     throw new Error("test-scope.txt must contain repository-relative test paths");
   }
-  return [...new Set(paths)];
+  for (const { target, path } of entries) target.add(path);
+  return { extra: [...extra], ciOnly: [...ciOnly] };
 }
 
-function selection(from: string, to: string, patterns: readonly string[], dir: string, tools: PhaseTools): Selection {
+function selection(from: string, to: string, patterns: readonly string[], extra: readonly string[], tools: PhaseTools): Selection {
   const changed = trackedDiff(tools.git, from, to, "AMT", patterns);
   const changedLines = Object.fromEntries(changed.map((file) => {
     const diff = tools.git(["diff", "--no-renames", "--no-color", "--no-ext-diff", "--unified=0", from, to, "--", file]);
@@ -203,7 +211,7 @@ function selection(from: string, to: string, patterns: readonly string[], dir: s
     });
     return [file, ranges];
   }));
-  return { changed, changedLines, deleted: trackedDiff(tools.git, from, to, "D", patterns), extra: scope(dir, tools) };
+  return { changed, changedLines, deleted: trackedDiff(tools.git, from, to, "D", patterns), extra };
 }
 
 function safeLog(value: string, tested: string, root: string): string {
@@ -368,12 +376,13 @@ export async function checkPhase(request: PhaseRequest, tools: PhaseTools): Prom
   if (!/^\d+$/.test(phase) || !resolve(dir).startsWith(`${root}/`)) throw new Error("invalid phase path");
   tools.mkdir(dir);
   const current = head(git);
+  const { extra, ciOnly } = scope(dir, tools);
   if (mode === "red") {
     if (label === undefined || !/^(?:phase|fix-\d+)$/.test(label)) throw new Error("invalid red label");
     const old = `${current}^`;
     const tests = testsOnly(git, old, current, patterns, feature);
     const log = join(dir, `red-${label}.log`);
-    const result = await runCheck({ mode, revision: current, selection: selection(old, current, patterns, dir, tools), expected: [], missingModules: [], log }, setup);
+    const result = await runCheck({ mode, revision: current, selection: selection(old, current, patterns, extra, tools), expected: [], missingModules: [], log }, setup);
     const code = expectedStatus(result);
     const recorded = tests && code === 1;
     if (recorded) {
@@ -394,6 +403,7 @@ export async function checkPhase(request: PhaseRequest, tools: PhaseTools): Prom
   const redRecords = records(dir, tools);
   const exemption = join(dir, "tdd-exempt.md");
   if (tools.exists(exemption) && redRecords.length === 0) {
+    if (ciOnly.length > 0) throw new Error("ci-only scope requires recorded local proof");
     emit({ phase, status: "exempt", reason_file: exemption, head: current }, out);
     return;
   }
@@ -413,7 +423,7 @@ export async function checkPhase(request: PhaseRequest, tools: PhaseTools): Prom
       problems.push(`red commit ${name} is outside HEAD or changes non-test files`);
       continue;
     }
-    const result = await runCheck({ mode: "red", revision: red, selection: selection(`${red}^`, red, patterns, dir, tools),
+    const result = await runCheck({ mode: "red", revision: red, selection: selection(`${red}^`, red, patterns, extra, tools),
       expected: [], missingModules: [], log: join(dir, `check-red-${name}.log`) }, setup);
     const code = expectedStatus(result);
     if (code !== 1) problems.push(`red commit ${name}: ${result.evidence.problem ?? "no failing assertion"}`);
@@ -424,11 +434,13 @@ export async function checkPhase(request: PhaseRequest, tools: PhaseTools): Prom
     reds.push({ label: name, sha: red, exit_code: code, ...result });
   }
 
-  const finalSelection = selection(base, current, patterns, dir, tools);
+  const finalSelection = selection(base, current, patterns, extra, tools);
+  const headSelection = ciOnly.length === 0 ? finalSelection : { ...finalSelection, ciOnly };
   const expected = [...discovered.values()];
   const missingModules = scaffold === undefined ? [] : trackedDiff(git, base, scaffold, "A");
   const settled = async (kind: Check["mode"], tested: string, name: string, assertions: readonly Assertion[]): Promise<CheckResult> => runCheck({
-    mode: kind, revision: tested, overlay: kind === "head" ? undefined : current, selection: finalSelection, expected: assertions,
+    mode: kind, revision: tested, overlay: kind === "head" ? undefined : current,
+    selection: kind === "head" ? headSelection : finalSelection, expected: assertions,
     missingModules, log: join(dir, name),
   }, setup);
   const initialAssertions = phaseAssertions.length > 0 ? phaseAssertions : expected;
@@ -449,6 +461,7 @@ export async function checkPhase(request: PhaseRequest, tools: PhaseTools): Prom
   if (headExit !== 0) problems.push(`final tests on HEAD: ${atHead.evidence.problem ?? "tests failed"}`);
   emit({
     phase, status: problems.length === 0 ? "pass" : "fail", base, head: current, red_commits: reds,
+    ...(ciOnly.length === 0 ? {} : { deferred_ci: ciOnly.map(collateralTestIdentity) }),
     final_tests_on_base_exit: baseExit, final_tests_on_scaffold_exit: scaffoldExit, head_exit: headExit, problems,
     focused: { base: onBase, scaffold: onScaffold, head: atHead, fixes },
   }, out);

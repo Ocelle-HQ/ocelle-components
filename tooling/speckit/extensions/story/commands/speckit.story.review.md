@@ -29,6 +29,16 @@ The input names the phase: `phase=<N>` or a bare number. If it names none, stop 
    - `unavailable`: blocking unless this phase sets up the test runner or has no behaviour.
    - `exempt`: read `tdd-exempt.md`; if any test could have failed for this phase, the exemption is a blocking
      finding.
+   - If the verdict lists `deferred_ci`, check every project/file in it. The diff must show maintenance of an
+     existing aggregate assertion, such as an exact Storybook story or baseline count. Any new behavior
+     assertion, weakened assertion, recorded red assertion or helper, build proof, or browser interaction proof
+     in that list is a blocking finding. Check that the focused head selection still covers the phase proofs.
+   - Before approving, verify that the required `Unit tests` check passed on the exact candidate identified by
+     the verdict's head. Locate each deferred project/file in that run's `unit-test-plan` and passing shard
+     artifact. If the run used a synthetic PR merge, confirm that it contains the same PR head and that the
+     artifact names the tested merge revision. Also verify the required Visual regression or Accessibility
+     check for each corresponding deferred suite on that candidate. Record the run link, candidate and
+     project/file evidence under `Checks run`. Missing, pending, failed, skipped or stale proof blocks approval.
 4. **Test quality (Principle VIII).** Read every test added or changed since base, and the red logs:
    - each test failed in the red step for the right reason (missing behaviour, not a setup error);
    - no test was weakened, skipped, deleted or loosened after its red commit
@@ -51,8 +61,10 @@ The input names the phase: `phase=<N>` or a bare number. If it names none, stop 
      and the brand rules, accessibility including the shadow-root ID rule and keyboard models, strict CSP and no
      network requests, stories and baselines per state).
    - **Plan:** the structure and decisions of `plan.md` are followed.
-   - **Checks:** run the project's checks that exist (typecheck, lint, unit, interaction, visual, axe, CSP). A
-     failing check is a blocking finding.
+   - **Checks:** run the project's checks that exist (typecheck, lint, unit, interaction, visual, axe, CSP).
+     For a phase with `deferred_ci` entries, the verified same-candidate CI from step 3 supplies the full unit
+     suite result and the corresponding `Visual regression` or `Accessibility` results. Run the other checks
+     as usual. A failing check is a blocking finding.
    - **Plants:** if `plants_command` is set in `.specify/extensions/story/story-config.yml`, read
      `FEATURE_DIR/reviews/phase-<N>/plants.md` and check that its base equals `base.sha`. Then run
      `<plants_command> -- --affected <base.sha> --list`, which judges no plant, and compare its `note: affected:`
