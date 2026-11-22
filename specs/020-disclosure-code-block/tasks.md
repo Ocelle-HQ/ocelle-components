@@ -231,7 +231,7 @@ it with exactly the events of data-model.md § State transitions; the Chromium t
   `gate:mutation`. Run locally: the disclosure plants (step 1), the fast gates and the full unit tests (step 2), the
   scope diff (step 3, `notes.md` § Gates) and the records of step 4 (`notes.md`).
 
-- [ ] T014 [US1] Phase 1 landing, operator round 4. Op 022 (#64) fixed the focus trap on the integrated branch.
+- [X] T014 [US1] Phase 1 landing, operator round 4. Op 022 (#64) fixed the focus trap on the integrated branch.
   Remove the obsolete closed-disclosure limitation from the `ocelle-disclosure` README section and remove only its
   fragment from `packages/elements/test/node/readme.test.ts`. Keep Op 022's existing native `details` cases for
   dialog and drawer. This mission's research § Repository-wide notes calls for the distinct composition where an

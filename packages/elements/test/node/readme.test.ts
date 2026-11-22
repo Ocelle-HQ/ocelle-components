@@ -1214,7 +1214,6 @@ const disclosureFragments = [
   "Put no interactive content in the summary: a link or a button there is a control inside a control",
   "Nested disclosures work independently: an inner disclosure's event bubbles through the outer one, so tell them apart by `event.target`",
   "The browser's find in page opens a closed disclosure whose panel holds the text it finds (Chromium), as a user toggle does",
-  "A closed disclosure as the last control of an `ocelle-dialog` or `ocelle-drawer` lets Tab from its summary leave the overlay, because the overlay's focus walk counts a closed panel's controls as stops. Do not place a disclosure last in an overlay",
   "Before the element is defined, the summary and the panel show as plain content",
   "The disclosure does not animate: it opens and closes at once, with or without reduced motion",
   "`ocelle-disclosure` reads the tokens `--ocelle-font-size-md`, `--ocelle-font-weight-medium`, `--ocelle-line-height-normal`, `--ocelle-color-ink`, `--ocelle-color-hover-bg`, `--ocelle-space-1`, `--ocelle-space-2`, `--ocelle-radius-2`, `--ocelle-icon-size`, `--ocelle-color-focus`, `--ocelle-focus-width` and `--ocelle-focus-offset`",

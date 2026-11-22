@@ -2013,10 +2013,6 @@ so it toggles once; a `click` dispatched on the host itself toggles nothing. Whe
 disclosure while focus is in its panel, also inside the shadow root of a control in the panel, focus moves to the
 summary.
 
-**Known limitation.** A closed disclosure as the last control of an `ocelle-dialog` or `ocelle-drawer` lets Tab from
-its summary leave the overlay, because the overlay's focus walk counts a closed panel's controls as stops. Do not place
-a disclosure last in an overlay.
-
 **Look.** The summary takes the library's focus ring, a hover ground and a pointer cursor, and is at least 24 × 24 CSS
 px. In forced colours the summary is `CanvasText` on `Canvas`, the chevron follows it and the focus ring is
 `Highlight`. The disclosure does not animate: it opens and closes at once, with or without reduced motion. Before the
