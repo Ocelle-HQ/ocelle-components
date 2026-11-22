@@ -35,6 +35,9 @@ describe("shell composition with data-driven navigation", () => {
     expect(await navigationNames()).toContain("Project sections");
     pill.items = [];
     await pill.updateComplete;
+    const shell = required(document.querySelector("ocelle-app-shell"));
+    const sidebar = required(shell.shadowRoot?.querySelector<HTMLElement>(".sidebar"));
+    await expect.poll(() => sidebar.hidden).toBe(true);
     await expect.poll(navigationNames).toEqual([]);
   });
 
@@ -64,6 +67,8 @@ describe("shell composition with data-driven navigation", () => {
     await expect.poll(() => panel.open).toBe(true);
     panel.id = "pill-drawer";
     await expect.poll(() => navigationNames("pill-drawer")).toEqual(["Project sections"]);
+    await commands.press("Escape");
+    await expect.poll(() => panel.open).toBe(false);
   });
 
   it("preserves the localized breadcrumb landmark supplied through a nested wrapper", async () => {
