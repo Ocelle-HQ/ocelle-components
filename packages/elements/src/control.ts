@@ -10,6 +10,10 @@
 //   the element-owned host attribute `data-ocelle-moved-<attribute>`, read back at the first connection (upgrade) for an
 //   attribute the host did not set, and written back when it is removed or changed while a value is held (a morphing
 //   swap removes it); the element's own writes, which equal the stored value, are ignored, so there is no loop.
+//   Mission 018 (research.md R-08; plan decision 10) adds three methods for an element whose inner control comes and
+//   goes after its upgrade (`ocelle-pill-tag`'s modes), and changes none of the above: `capture()` moves the host's
+//   attributes when the control appears, `release()` writes the held values back when it goes, `adoptMirrors()` gives
+//   copied mirrors back to an element that has no control at its upgrade.
 // - `resolveIds`: ID references resolved by id in the host's own tree (its document or the shadow root it is in), in
 //   order, ids not found skipped, for element reflection on the inner control (FR-005, research.md R-04).
 // - `controlState`: disabled versus unavailable (FR-003; data-model.md § Shared: the control). Disabled wins; a control
@@ -22,7 +26,8 @@
 //   added after upgrade), and stops (`preventDefault()` and `stopImmediatePropagation()`) every such event whose
 //   composed path does not pass through the inner control, in every state, and every such event while the control is
 //   not available. A click outside the inner control therefore never activates the element; a synthetic click
-//   dispatched on the host is such a click.
+//   dispatched on the host is such a click. Mission 018 adds an optional `active` predicate, true by default: while it
+//   is false the guard does nothing, so an element with no inner control (a static pill) swallows no click.
 // - `controlStyles`: the token focus ring on the inner control's `:focus-visible`, drawn with the `outline` longhands
 //   outside the control (mission 005 finding: the shorthand with `var()` fails in Chromium), a link's underline
 //   removed (both modes look the same, FR-002), and the forced-colours table of research.md R-12: `ButtonText` text and
@@ -103,19 +108,51 @@ export class MovedAttributes {
     }
   }
 
-  /** Scaffold (018 phase 5): moves and mirrors the host's listed attributes after the upgrade; not implemented yet. */
+  /**
+   * After the upgrade, moves and mirrors each listed attribute the host sets, as `handle()` does at upgrade, then reads
+   * back the mirror of each name still not held, as `connected()` does (018 FR-035 (b)): an element whose inner control
+   * appears after its upgrade (`ocelle-pill-tag` made interactive) calls it then. It may be called any number of times.
+   */
   capture(): void {
-    // not implemented
+    // `handle()` ignores a listed attribute the host does not set (a null value).
+    for (const name of this.#names) this.handle(name, this.#host.getAttribute(name));
+    for (const name of this.#names) {
+      const mirror = this.#host.getAttribute(mirrorOf(name));
+      if (mirror !== null && !this.#values.has(name)) {
+        this.#values.set(name, mirror);
+        this.#changed(name);
+      }
+    }
   }
 
-  /** Scaffold (018 phase 5): writes each held value back to the host and removes its mirror; not implemented yet. */
+  /**
+   * Gives every held value back to the host (018 FR-035 (a)): each is written as its attribute with the value last set
+   * (an off value such as `"false"` included; a cleared one is not held, so it is not written), its mirror removed and
+   * the value forgotten, synchronously. The element must not hand the writes back to `handle()`: it calls this when its
+   * inner control goes away (`ocelle-pill-tag` made static), and ignores the listed attributes from then on.
+   */
   release(): void {
-    // not implemented
+    const held = [...this.#values];
+    this.#values.clear();
+    for (const [name, value] of held) {
+      this.#host.setAttribute(name, value);
+      this.#host.removeAttribute(mirrorOf(name));
+      this.#changed(name);
+    }
   }
 
-  /** Scaffold (018 phase 5): writes each mirror back to the host unless it sets the attribute; not implemented yet. */
+  /**
+   * For an element with no inner control at its upgrade (a static `ocelle-pill-tag` from copied markup; 018 FR-035
+   * (e)): writes each mirror back as its attribute unless the host sets that attribute, whose value then wins, and removes
+   * every mirror. Nothing is held.
+   */
   adoptMirrors(): void {
-    // not implemented
+    for (const name of this.#names) {
+      const mirror = this.#host.getAttribute(mirrorOf(name));
+      if (mirror === null) continue;
+      if (!this.#host.hasAttribute(name)) this.#host.setAttribute(name, mirror);
+      this.#host.removeAttribute(mirrorOf(name));
+    }
   }
 
   /** The stored value of a moved attribute, as written, or undefined when none is held. */
@@ -152,12 +189,13 @@ export function resolveIds(host: Element, value: string | undefined): Element[] 
 
 /**
  * Registers the host guard on `host`: a `click` or `auxclick` at the host whose composed path misses the inner control
- * (`control()`, null before the first render), or any while `available()` is false, is prevented and stopped.
+ * (`control()`, null before the first render), or any while `available()` is false, is prevented and stopped. While
+ * `active()` is false (018: a static `ocelle-pill-tag`, which has no inner control) the guard lets every event through
+ * untouched; without it the guard is always active, as 012's elements call it.
  */
-// Scaffold (018 phase 5): `active` is accepted and not read yet.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function guardHost(host: HTMLElement, control: () => Element | null, available: () => boolean, active: () => boolean = () => true): void {
   const guard = (event: Event): void => {
+    if (!active()) return;
     const inner = control();
     if (inner !== null && available() && event.composedPath().includes(inner)) return;
     event.preventDefault();

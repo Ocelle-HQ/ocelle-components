@@ -26,6 +26,9 @@ literal `ms` value. The seven tokens are additions to the token names: a minor c
 `--ocelle-line-height-snug`, the compact line height of `ocelle-pill-tag` of `@ocelle/elements`, is an addition to the
 token names: a minor change.
 
+`--ocelle-target-small`, the 24 px minimum target of an interactive `ocelle-pill-tag` of `@ocelle/elements`, is an
+addition to the token names: a minor change.
+
 ### Added
 
 - `fonts/`: Schibsted Grotesk, the variable `wght` WOFF2 with its SIL Open Font License 1.1 (`OFL.txt`), declared
@@ -71,7 +74,8 @@ token names: a minor change.
   - size: `--ocelle-target-min`, `--ocelle-icon-size`, `--ocelle-size-dot`, `--ocelle-size-step`,
     `--ocelle-size-avatar`, `--ocelle-size-rail-item`, `--ocelle-size-visually-hidden`, `--ocelle-tooltip-max-inline`
     (the maximum inline size of the `ocelle-tooltip` bubble; mission 008), `--ocelle-size-indicator` (the dot of
-    `ocelle-status-indicator`, `0.5rem`; 018)
+    `ocelle-status-indicator`, `0.5rem`; 018), `--ocelle-target-small` (the minimum target of an interactive
+    `ocelle-pill-tag`, `1.5rem`; 018)
   - shell: `--ocelle-shell-topbar-height`, `--ocelle-shell-rail-width`, `--ocelle-shell-sidebar-width`,
     `--ocelle-shell-inspector-width`, `--ocelle-shell-main-max`, `--ocelle-shell-collapse-inspector`,
     `--ocelle-shell-collapse-sidebar`, `--ocelle-shell-height`, `--ocelle-footer-h`, `--ocelle-measure-sheet`,
