@@ -3,7 +3,8 @@
 // monospace. The code is the host's light-DOM `textContent`, read at each render and shown as a copy in the shadow
 // `pre` (part `code`) inside the inset box (part `block`); the shadow root has no slot, so child markup adds no element
 // or style, and a `MutationObserver` on the host (child list, character data, subtree) re-renders on every text change
-// (R-05). The text and every digest unit are Lit text bindings, so markup-like text stays text.
+// (R-05). Reconnection refreshes the copy after the observer has been disconnected. The text and every digest unit
+// are Lit text bindings, so markup-like text stays text.
 //
 // Two policies (R-06): wrap (the default) is 003's `pre-wrap` and `overflow-wrap: anywhere`, with no scroll box, tab
 // stop or role; `overflow="scroll"` (trimmed, any ASCII case) renders the overflow-region module's structure inside the
@@ -21,7 +22,7 @@
 // `margin-inline-end`, the groups `nowrap`; no character is added, so a copy and the reading give the digest as
 // written. Importing this module defines `ocelle-code-block` and no other element.
 import { LitElement, css, html } from "lit";
-import type { PropertyValues, TemplateResult } from "lit";
+import type { TemplateResult } from "lit";
 import { ifDefined } from "lit/directives/if-defined.js";
 import { define } from "./define.ts";
 import { OverflowRegion, overflowRegionStyles } from "./overflow-region.ts";
@@ -49,6 +50,7 @@ function digestUnits(text: string): { readonly prefix: string; readonly groups: 
 export class OcelleCodeBlock extends LitElement {
   static override properties = {
     overflow: { type: String, reflect: true },
+    // Stryker disable next-line ObjectLiteral: equivalent, an empty Lit declaration defaults to a String attribute with reflection off
     label: { type: String },
     digest: { type: Boolean, reflect: true },
   };
@@ -167,14 +169,15 @@ export class OcelleCodeBlock extends LitElement {
   });
 
   /** The scroll box and the text the `rtl` opening write last ran for. */
-  #opened: { box: Element | null; text: string } = { box: null, text: "" };
+  #opened: { box: Element; text: string } | undefined;
 
   /** Whether the update in progress leaves the scroll policy with focus in the scroll structure. */
-  #rescue = false;
+  #rescue: boolean | undefined;
 
   override connectedCallback(): void {
     super.connectedCallback();
     this.#observer.observe(this, { childList: true, characterData: true, subtree: true });
+    this.requestUpdate();
   }
 
   override disconnectedCallback(): void {
@@ -189,7 +192,7 @@ export class OcelleCodeBlock extends LitElement {
 
   /** Whether the scroll policy is in force. */
   get #scrolls(): boolean {
-    return (this.overflow ?? "").trim().toLowerCase() === "scroll";
+    return this.overflow?.trim().toLowerCase() === "scroll";
   }
 
   protected override willUpdate(): void {
@@ -214,17 +217,16 @@ export class OcelleCodeBlock extends LitElement {
     return html`<div class="block" part="block"><div class="region-frame"><div class="region-box" data-fade=${ifDefined(this.#region.fadeAttribute)}><div class="region-track">${content}</div></div><div class="region-ring" aria-hidden="true"></div><div class="region-edge start" aria-hidden="true"></div><div class="region-edge end" aria-hidden="true"></div></div></div>`;
   }
 
-  protected override updated(changed: PropertyValues): void {
-    super.updated(changed);
+  protected override updated(): void {
     this.#region.setLabel(this.label);
     const box = this.renderRoot.querySelector<HTMLElement>(".region-box");
     const text = this.textContent;
-    if (box !== null && (box !== this.#opened.box || text !== this.#opened.text)) {
+    if (box !== null && (box !== this.#opened?.box || text !== this.#opened.text)) {
       this.#opened = { box, text };
+      // Stryker disable next-line ArithmeticOperator: equivalent for addition, a position beyond the negative scroll range is clamped to the same left endpoint
       if (getComputedStyle(box).direction === "rtl") box.scrollTo({ left: -(box.scrollWidth - box.clientWidth), behavior: "instant" });
     }
     if (this.#rescue) {
-      this.#rescue = false;
       const target = this.renderRoot.querySelector<HTMLElement>(".block");
       if (target !== null) {
         target.tabIndex = -1;
@@ -233,6 +235,7 @@ export class OcelleCodeBlock extends LitElement {
           () => {
             target.removeAttribute("tabindex");
           },
+          // Stryker disable next-line ObjectLiteral,BooleanLiteral: equivalent, after focus leaves no component action can focus the retained wrap block or add tabindex again; another rescue creates a new block
           { once: true },
         );
         target.focus();

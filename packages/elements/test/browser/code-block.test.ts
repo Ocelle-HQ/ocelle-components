@@ -33,6 +33,12 @@ describe("ocelle-code-block on the strict-CSP fixture with the browser build (US
   it.each([...codeBlockScenarios, ...codeBlockRuleScenarios])("$name", async ({ run, expected }) => {
     const { browser, origin } = started();
     const page = await visit(browser, origin, "code-block.html");
+    // FR-021 opens the RTL scroll box once on first layout. Start that layout with the vendored face already loaded.
+    const loadedFaces = await page.page.evaluate(async () => {
+      const sans = getComputedStyle(document.documentElement).getPropertyValue("--ocelle-font-sans");
+      return (await document.fonts.load(`1rem ${sans}`)).length;
+    });
+    expect(loadedFaces).toBeGreaterThan(0);
     const observed = await run(fixtureDriver(page.page, page.log));
     expect({ observed, recorded: await page.finish() }).toEqual({ observed: expected, recorded: clean });
   });
