@@ -138,6 +138,12 @@ runs in a 200 px container, one more body in T055 (and T052 measures it). IQ-8 t
 mapping statements only (R-16's phase 2 table; T037, T047), the `id` fragment-target line of IQ-15 (a) among them.
 No story, baseline or task is added, removed or renumbered.
 
+**Phase 3 inventory decisions in force** (2026-11-22; `reviews/phase-3-inventory-decisions.md`, changes in
+`reviews/decisions-applied-phase-3.md`): IQ-18 to IQ-24 and IQ-27 (a), README mapping statements only (R-16's phase 3
+table; T062 asserts them, T070 writes them), with Q-T4 (a)'s chip row among them. The chain adds no property,
+attribute, slot, part or story; phase 3 keeps 12 stories and 24 baselines, and no task is added, removed or
+renumbered.
+
 **Phase 2 spike decisions in force** (2026-11-20; `reviews/phase-2/operator-spike-decisions.md` on
 `reviews/phase-2/spike.md`, changes in `reviews/phase-2/spike-fixes.md`): Q1 (b), two timeline stories named through a
 host `aria-label`, non-blank (`aria-label="History"`, the list named "History") and blank (`aria-label="  "`, the list
@@ -620,7 +626,7 @@ gates pass.
 
 ### Inventory (operator step, before the red tasks)
 
-- [ ] T054 [US3] Operator step, before the red tasks: the inventory itself is recorded (IQ-1 (a): the library's evidence-chain variant set, `specs/019-data-records/sources/spec-kitty-design-inventory.md` § 3; one README row per modifier, state, structure role and part, which for the chain are its property, its behaviour states and its parts, no counts). The operator answers IQ-18 to IQ-24 and IQ-27 (`specs/019-data-records/reviews/phase-1/inventory-questions.md`); the planner applies the answers to the design artifacts and writes the chain's rows in research R-16, in a documentation commit of its own. A gap goes to the operator; T062's mapping statements wait for it.
+- [X] T054 [US3] Operator step, before the red tasks: the inventory itself is recorded (IQ-1 (a): the library's evidence-chain variant set, `specs/019-data-records/sources/spec-kitty-design-inventory.md` § 3; one README row per modifier, state, structure role and part, which for the chain are its property, its behaviour states and its parts, no counts). The operator answers IQ-18 to IQ-24 and IQ-27 (`specs/019-data-records/reviews/phase-1/inventory-questions.md`); the planner applies the answers to the design artifacts and writes the chain's rows in research R-16, in a documentation commit of its own. A gap goes to the operator; T062's mapping statements wait for it. Answered on 2026-11-22 (`specs/019-data-records/reviews/phase-3-inventory-decisions.md`: IQ-18 to IQ-24 and IQ-27, each (a); with Q-T4 (a) and Q-T5 (b) every inventory question is answered); the inventory is § 3 of `sources/spec-kitty-design-inventory.md`, and the answers are applied and the chain's rows written in R-16's phase 3 table in the documentation commit recorded in `specs/019-data-records/reviews/decisions-applied-phase-3.md`.
 
 ### Tests (red, one commit, test files only)
 
@@ -641,7 +647,16 @@ gates pass.
 - [ ] T059 [P] [US3] `@ocelle/styles`: the chain's pre-upgrade bodies in `packages/styles/test/browser/list-items.test.ts` (T035's file) (one visible step per line; a `hidden` and an `aria-hidden="true"` step not shown); the change to `packages/styles/test/source.test.ts`: the chain's two pre-upgrade rules in the `baseLayer` slice right after the timeline's and before the focus rule, the last-rule assertion unchanged (research R-06, recheck Q5 (b)); `packages/styles/test/readme.test.ts` statements.
 - [ ] T060 [P] [US3] `packages/elements/test/node/records-pairs.test.ts`: the chain and step part (ring, ordinal, connector, chip outline, content colours).
 - [ ] T061 [P] [US3] `storybook/test/integration/elements-stories.test.ts`: each of the 12 chain stories in the index in light and dark, 320 px reflow paired with a non-zero host size, every list named except the unnamed, empty and standalone-step stories; the standalone-step story renders its `ocelle-evidence-step`s with a non-zero size and no `list` node.
-- [ ] T062 [P] [US3] `packages/elements/test/node/readme.test.ts`: statements for the chain section (usage, ordinals, chips, wrapping, "Before upgrade", Host ARIA) and the evidence-chain mapping rows of R-16 (T054), one per role of the library's chain (its property, behaviour states and parts), keyed by role name, no `sk-` string; among them the compact step's row maps #517's pill-shaped chip to `variant="chip"` with `--ocelle-radius-2`, never the pill radius (Q-T4 (a)).
+- [ ] T062 [P] [US3] `packages/elements/test/node/readme.test.ts`: statements for the chain section (usage, ordinals, chips, wrapping, "Before upgrade", Host ARIA) and the evidence-chain mapping rows of R-16 (T054), one per role of the library's chain (its property and the fields of each stage, its behaviour states and stories, and its parts; R-16's phase 3 table), keyed by role name, no `sk-` string. Among them, each answer's statement (`reviews/phase-3-inventory-decisions.md`, `reviews/issue-texts-check.md` § Operator decisions):
+  - the stages map to one `ocelle-evidence-step` per stage, in source order, and a stage's `id` to an `id` the consumer sets on the step, which the element neither reads nor writes (IQ-18 (a));
+  - a stage's label, value and annotation map to the consumer's markup in the step's content, and a later issue covers a valued stage (IQ-19 (a));
+  - a stage's tone maps to the state worded in the step's text, and to a later issue (IQ-20 (a));
+  - the stacked narrow layout maps to the wrapping chain, which follows its container, not the viewport (IQ-21 (a));
+  - the connector's arrow maps to the plain connector, and a later issue covers an arrowhead (IQ-22 (a));
+  - the empty state maps to 013's `ocelle-empty-state`, placed by the consumer, and the invalid-input state has no counterpart (IQ-23 (a));
+  - the `list` part maps to the chain's `list` part, the `stage` part to the `ocelle-evidence-step` host and its `content` part, and the `connector` and `empty-state` parts to none (IQ-24 (a));
+  - the compact step's row maps #517's pill-shaped chip to `variant="chip"` with `--ocelle-radius-2`, never the pill radius (Q-T4 (a)).
+  IQ-27 (a) is carried by the rows as a whole (the library's chain mapped role by role) and adds no statement of its own. The README as folded has no chain section, so each new statement fails at red against it.
 - [ ] T063 [US3] Red commit of T055 to T062 (test files only): `test(019-data-records): phase 3 red — An evidence chain that wraps`, signed off, naming the `source.test.ts` change and its reason. Run `red.sh 3 phase` and read the red log per body.
 
 ### Implementation (green)
@@ -652,7 +667,7 @@ gates pass.
 - [ ] T067 [US3] Manifest: regenerate and commit `packages/elements/custom-elements.json` with the two declarations (`variant`, `wrap`, the default slot and `content` part on the step; `label` and the `list` part on the chain; empty event lists).
 - [ ] T068 [US3] `storybook/stories/evidence-chain.stories.ts` (`title: "Elements/ocelle-evidence-chain"`): the 12 stories of contracts/checks.md § Stories (six steps in one row; wrapped at 320 px; mixed chips; all chips; twenty steps; a long step; `wrap`; a hidden step; right-to-left; unnamed; empty; standalone steps outside a chain, analysis C1 (c)), wrapper widths in `storybook/.storybook/stories-layout.css`.
 - [ ] T069 [US3] Baselines: `pnpm run visual:update` in #10's pinned container under docker (as T020); it must print `(24 added, 0 changed, 0 removed)`. Commit `storybook/baselines/elements-ocelle-evidence-chain--*.{light,dark}.png`.
-- [ ] T070 [US3] `packages/elements/README.md`: the chain section with the statements of T062 and the evidence-chain mapping rows (the pill-shaped chip mapped to `variant="chip"` with `--ocelle-radius-2`, Q-T4 (a)); `packages/elements/CHANGELOG.md` entries for both elements.
+- [ ] T070 [US3] `packages/elements/README.md`: the chain section with every statement of T062 and the evidence-chain mapping rows (R-16's phase 3 table), each answer's statement among them: the stages and a stage's `id` (IQ-18 (a)); the label, value and annotation (IQ-19 (a)); the tone (IQ-20 (a)); the stacked layout (IQ-21 (a)); the arrow (IQ-22 (a)); the empty and invalid-input states (IQ-23 (a)); the four parts (IQ-24 (a)); and the pill-shaped chip mapped to `variant="chip"` with `--ocelle-radius-2` (Q-T4 (a)); `packages/elements/CHANGELOG.md` entries for both elements.
 - [ ] T071 [US3] Gates as T022; record the Storybook gates' summary lines.
 - [ ] T072 [US3] Affected plants: `pnpm run gate:plants -- --affected $(cat specs/019-data-records/reviews/phase-3/base.sha)`, recorded in `specs/019-data-records/reviews/phase-3/plants.md` in op 016's form; exit 0; committed with the green commit.
 - [ ] T073 [US3] Element plants after green, recorded in `specs/019-data-records/reviews/phase-3/element-plants.md`: the step marker's `aria-hidden` removed; `data-line-end` never set; the ordinal counting only default steps; the chip radius `radius-pill`; the chip block padding `space-1`; the chip `<li>` without the reserved line box; the chip's box rule moved inside the variant block; a connector drawn as a `background-color`; the ring in `rule` and the chip outline in `control-border`; the line-end callback also toggling `padding-inline-end`; `pill` written into the chain's styles; `role="list"` removed; a blank host `aria-label` treated as decisive; the pre-upgrade `aria-hidden` rule removed; `:host([hidden])` removed from the chain and from the step. A plant that does not bite stops the phase.

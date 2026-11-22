@@ -118,6 +118,10 @@ history and evidence chain.
   and US3-1 name. Q3 (a): the dot is drawn by one border side of its whole size, `border-block-start:
   var(--ocelle-size-dot) solid var(--ocelle-color-ink-muted)`, so it has no unpainted centre. See § Decisions on the
   phase 2 spike.
+- **Decided on the phase 3 inventory (2026-11-22).** IQ-18 to IQ-24 and IQ-27 (a): the chain is built as specified
+  for #13 and the Ocelle console, and every answer is a README mapping statement (R-16's phase 3 table; T062, T070),
+  with Q-T4 (a)'s chip row among them. Story, baseline and task counts are unchanged. See § Decisions on the phase 3
+  inventory.
 
 009, 013 and op 016 are on `main`, and `main` (b594b7e) is merged into this branch (8ee3351, operator decision of
 2026-11-17, `reviews/main-merge.md`). The first task rechecked the plan against it (R-14, `reviews/recheck.md`):
@@ -535,6 +539,22 @@ probe-resolved `--ocelle-size-dot` within 0.5 px; the connector's gaps measured 
 `itemTexts` reads `StaticText` at any depth under each `listitem` (R-11); the connector's `calc()` form needs no new
 `style-lint` allowance (R-10). No task is added, removed or renumbered.
 
+## Decisions on the phase 3 inventory
+
+Answered by the operator on 2026-11-22 (`reviews/phase-3-inventory-decisions.md`), with Q-T4 (a) and Q-T5 (b) of
+2026-11-20 already in force; the changes are listed in `reviews/decisions-applied-phase-3.md`.
+
+1. **IQ-27, the chain is not a Desktop V2 family. Decided: (a).** Phase 3 builds the chain as specified, for #13 and
+   the Ocelle console; the README maps the library's chain role by role. The metric and pill-tag families are not
+   this mission's. No row changes on its account.
+2. **IQ-18 to IQ-24. Decided: (a) each.** No property, attribute, slot, part or story is added to the chain or the
+   step; Q3 (a), FR-025 and FR-034 stand. Every answer is a README mapping statement, listed in R-16's phase 3 table
+   and in the two chain contracts' § README mapping, asserted in T062 and written in T070, beside Q-T4 (a)'s chip row.
+   IQ-18 (a) maps a stage's `id` to an `id` the consumer sets on the step, which the element neither reads nor
+   writes. Later issues cover a valued stage (IQ-19), a tone (IQ-20) and an arrowhead (IQ-22).
+
+Story, baseline and task counts are unchanged (phase 3 12 stories and 24 baselines; the mission 46 and 92).
+
 ## Project Structure
 
 ### Documentation (this feature)
@@ -847,8 +867,9 @@ Every phase with stories also does the following:
        rules in the `baseLayer` slice right after the timeline's, before the focus rule; the last-rule assertion
        unchanged; named with its reason in the commit message.
      - The chain's entries in the define-twice body and in `test/node/records-pairs.test.ts`.
-     - The no-pill node test, README statements ("Before upgrade" among them), mapping rows (the pill-shaped chip
-       mapped to `variant="chip"` with `--ocelle-radius-2`, Q-T4 (a)) and the story-test extension.
+     - The no-pill node test, README statements ("Before upgrade" among them), mapping rows (R-16's phase 3 table,
+       IQ-18 to IQ-24 (a), with the pill-shaped chip mapped to `variant="chip"` with `--ocelle-radius-2`, Q-T4 (a),
+       § Decisions on the phase 3 inventory) and the story-test extension.
    - **Green.** `ocelle-evidence-step.ts` and `ocelle-evidence-chain.ts`, the two pre-upgrade rules in `base.css`'s
      base layer after the timeline's,
      exports, the manifest, the 12 stories with baselines (the standalone step among them), the README section and the CHANGELOGs. Then the chain's element

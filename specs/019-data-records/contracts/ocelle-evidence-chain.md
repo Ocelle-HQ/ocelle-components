@@ -88,3 +88,23 @@ upgrade (R-08, PLAN-FRESH-2-005). The README's "Before upgrade" line says so.
 
 `list` > `listitem` × N. Each item's text is the step's content only. No marker, ordinal or connector appears in the
 tree; each marker and connector span carries `aria-hidden="true"`.
+
+## README mapping (FR-058, research R-16)
+
+The README's evidence-chain mapping rows are research R-16's phase 3 table (operator, 2026-11-22,
+`reviews/phase-3-inventory-decisions.md`; Q-T4 (a), 2026-11-20), asserted by role name in phase 3's red (T062) and
+written in its green (T070). The rows this element carries:
+
+- The library's `stages` property maps to this element's `ocelle-evidence-step` children, one per stage, in source
+  order (Q3 (a)); the chain takes no property (IQ-18 (a)).
+- The `list` part maps to this element's `list` part (IQ-24 (a)). The `connector` part maps to none: the connector is
+  decorative and hidden, not a styling hook (IQ-24 (a)).
+- The connector's arrow maps to the plain connector, and a later issue covers an arrowhead (IQ-22 (a)).
+- The narrow, stacked layout maps to the wrapping chain, which follows its container, not the viewport (FR-034,
+  IQ-21 (a)); the wide layout, two and six stages, forced colours and light mode are built in.
+- The empty state maps to 013's `ocelle-empty-state`, placed by the consumer in place of the chain; an empty chain
+  renders nothing (FR-025). The `empty-state` part and the invalid-input state have no counterpart (IQ-23 (a),
+  IQ-24 (a)).
+- The approved example's card and grid map to the consumer's layout; the chain follows its container.
+
+No property, attribute, slot, part or story is added for any of them. IQ-27 (a) changes no row.

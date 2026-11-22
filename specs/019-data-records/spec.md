@@ -259,6 +259,21 @@ decisions in `reviews/phase-1/operator-spike-2-decisions.md`, changes listed in 
 - Q3, the dot's painted shape: (a). The dot is painted whole, with no unpainted centre, and is still drawn in the
   system text colour in forced colours (FR-021, US2-8); no requirement changes, and the plan names how it is drawn.
 
+**Operator decisions on the phase 3 inventory** (2026-11-22; questions in `reviews/phase-1/inventory-questions.md`
+§ Evidence chain and § Added after the `develop` re-inventory, decisions in `reviews/phase-3-inventory-decisions.md`,
+changes listed in `reviews/decisions-applied-phase-3.md`):
+
+- IQ-27, the chain is not a Desktop V2 family: (a). Phase 3 builds the chain as specified, for #13 and the Ocelle
+  console; the README maps the library's chain role by role.
+- IQ-18 to IQ-24: (a). The chain and the step add no property, attribute, slot, part or story; Q3 (a), FR-025 and
+  FR-034 stand. The README maps the library's `stages` to one `ocelle-evidence-step` per stage and a stage's `id` to
+  an `id` the consumer sets on the step, a stage's label, value and annotation to the consumer's markup in the step's
+  content, its tone to the state worded in the step's text, the stacked narrow layout to the wrapping chain, the
+  arrow to the plain connector, the empty state to 013's `ocelle-empty-state` placed by the consumer (the invalid
+  input has no counterpart), the `list` part to `list`, the `stage` part to the step host and its `content` part, and
+  the `connector` and `empty-state` parts to none (FR-058). Later issues cover a valued stage, a tone and an
+  arrowhead. Phase 3 keeps 12 stories and 24 baselines.
+
 ## Scope
 
 **In scope:** five new custom elements in `@ocelle/elements`: `ocelle-data-table`, `ocelle-event-timeline` with its
@@ -1097,8 +1112,9 @@ the chip variant.
   (IQ-6 (a)), and, added in phase 2, #533's mono cells and headers, 0.06em header tracking and header padding mapped
   to the sans face with tabular figures, `--ocelle-tracking-eyebrow` and the cells' padding (Q-T1 to Q-T3 (a)). The
   timeline's rows are research R-16's phase 2 table (IQ-8 to IQ-17 and IQ-26 (a)), among them an `id` on
-  `ocelle-timeline-event` as the consumer's fragment target (IQ-15 (a)). The chain's rows include the pill-shaped chip
-  mapped to `variant="chip"` with `--ocelle-radius-2` (Q-T4 (a)). The mapping names roles only and copies no code (constitution VI). Readme tests assert the rows by role
+  `ocelle-timeline-event` as the consumer's fragment target (IQ-15 (a)). The chain's rows are research R-16's phase 3 table (IQ-18 to IQ-24 and IQ-27 (a)), among them the pill-shaped
+  chip mapped to `variant="chip"` with `--ocelle-radius-2` (Q-T4 (a)) and a stage's `id` mapped to an `id` the
+  consumer sets on the step (IQ-18 (a)). The mapping names roles only and copies no code (constitution VI). Readme tests assert the rows by role
   names, with no `sk-` string in test code (013's operator decision I1). A variant no element covers goes to the
   operator. No row reads "pending inventory" (spike decision on T005 superseded by IQ-1 (a)).
 - **FR-059**: Each phase's gate runs MUST use op 016's affected-plants mode once op 016 is on `main` (operator, via the
