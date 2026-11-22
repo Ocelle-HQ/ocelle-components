@@ -110,7 +110,7 @@ async function worker(inputPath: string, outputPath: string): Promise<void> {
       if (!proof) return changedSupport && extra.length === 0 || chosen.has(file);
       const names = expectedNames(project, file);
       if (names.length === 0) return false;
-      spec.testNamePattern = new RegExp(`^(?:${names.map((name) => RegExp.escape(name)).join("|")})$`);
+      spec.testNamePattern = new RegExp(`^(?:${names.map((name) => name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})$`);
       return true;
     });
     const selected = selectedSpecs.map((spec) => testFile(root, spec));
