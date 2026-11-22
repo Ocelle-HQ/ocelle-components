@@ -62,13 +62,34 @@ describe("ocelle-skip-link", () => {
     expect(deepActive()?.id).toBe("primary");
   });
 
+  it("re-resolves the selector at activation and follows the first remaining match", async () => {
+    await driver.mount('<ocelle-skip-link target="#new"></ocelle-skip-link><main id="old" class="candidate" tabindex="-1"></main><main id="new" class="candidate" tabindex="-1"></main>');
+    const skip = required(document.querySelector("ocelle-skip-link"));
+    expect(skip.target).toBeNull();
+    expect(skip.targetSelector).toBe("");
+    skip.targetSelector = ".candidate";
+    const button = control(skip);
+    button.focus();
+    document.getElementById("old")?.remove();
+    await commands.press("Enter");
+    expect(deepActive()?.id).toBe("new");
+  });
+
+  it("does not pass over the first matching destination when it cannot be focused", async () => {
+    await driver.mount('<ocelle-skip-link target-selector=".candidate"></ocelle-skip-link><main class="candidate" hidden tabindex="-1"></main><main class="candidate" tabindex="-1"></main>');
+    const button = control(required(document.querySelector("ocelle-skip-link")));
+    button.focus();
+    await commands.press("Enter");
+    expect(deepActive()).toBe(button);
+  });
+
   it.each([
     ["malformed selector", "[", "", false],
     ["missing match", "#missing", "", false],
     ["hidden target", "#target", '<main id="target" hidden tabindex="-1"></main>', false],
     ["not focusable", "#target", '<main id="target"></main>', false],
     ["disconnected reference with a valid selector", "#target", '<main id="target" tabindex="-1"></main>', true],
-    ["non-HTML match", "#target", '<svg id="target"></svg>', false],
+    ["non-HTML match", "#target", '<svg id="target" tabindex="-1"></svg>', false],
   ] as const)("retains focus with a %s and then continues on Tab", async (_case, selector, target, detached) => {
     await driver.mount(`<ocelle-skip-link></ocelle-skip-link><button id="next">Navigation</button>${target}`);
     const skip = required(document.querySelector("ocelle-skip-link"));
