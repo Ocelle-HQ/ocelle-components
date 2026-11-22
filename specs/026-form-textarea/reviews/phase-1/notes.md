@@ -26,3 +26,7 @@ Eight manifest plant fixture trees now include the exact generated textarea modu
 ## Hosted-only collateral inventory checks
 
 The axe and visual integration tests were changed only to update counts for the four newly documented story states. They rerun the full generated Storybook and all theme captures. A redundant local replay ran 56m03s and failed with a timeout in the axe integration test. The hosted Accessibility and Visual regression jobs passed on the same product change. The phase scope defers these two exact collateral files to CI, while the recorded implementation and fix assertions still replay locally. Approval requires the complete sharded Unit tests inventory and both required hosted checks for the candidate.
+
+The final local merge candidate combining pilot f737c389 and workflow afa69148 passed all six focused sub-checks in 1m40.446s. An identical rerun passed in 2.524s with all six reused. The report identified exactly the two collateral integration files. Required CI covers their full job and test inventory.
+
+A narrow, instrumented Chromium diagnostic executed the real component test files and killed all 118 textarea source mutations. It used a temporary three-file Vitest configuration and omitted the separate Stryker TypeScript checker. The required repository mutation job retains its normal configuration and determines merge readiness.
