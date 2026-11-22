@@ -125,6 +125,12 @@ it("tracks fallback and reassigned slot children across nested open roots", asyn
   await expect.poll(() => navigationNames("shell")).toEqual(["Assigned tools"]);
   assigned.slot = "";
   await expect.poll(() => navigationNames("shell")).toEqual(["Fallback tools"]);
+  required(nested.querySelector("slot")).replaceChildren();
+  await expect.poll(() => required(shell.shadowRoot?.querySelector<HTMLElement>(".sidebar")).hidden).toBe(true);
+  assigned.slot = "tools";
+  await expect.poll(() => navigationNames("shell")).toEqual(["Assigned tools"]);
+  assigned.slot = "";
+  await expect.poll(() => required(shell.shadowRoot?.querySelector<HTMLElement>(".sidebar")).hidden).toBe(true);
 });
 
 it("stops observing a replaced or disconnected open navigation root", async () => {
