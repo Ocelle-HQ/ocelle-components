@@ -85,7 +85,7 @@ function nonempty(value: unknown): value is string {
 
 function fileShape(value: unknown): value is TestFile {
   return object(value) && nonempty(value.project) && nonempty(value.file)
-    && !value.file.startsWith("/") && !value.file.startsWith("../") && posix.normalize(value.file) === value.file;
+    && !value.file.startsWith("/") && value.file !== "." && value.file !== ".." && !value.file.startsWith("../") && posix.normalize(value.file) === value.file;
 }
 
 function fileKey(value: TestFile): string {
@@ -135,7 +135,7 @@ function filesShape(value: unknown): value is TestFile[] {
 
 export function validTestPlan(value: unknown, revision: string): value is UnitTestPlan {
   return object(value) && revisionPattern.test(revision) && value.revision === revision
-    && filesShape(value.inventory) && value.inventory.length > 0
+    && filesShape(value.inventory) && 
     && new Set(fileKeys(value.inventory)).size === value.inventory.length
     && Array.isArray(value.shards) && value.shards.length > 0
     && value.shards.every((shard): shard is TestFile[] => filesShape(shard) && shard.length > 0)
@@ -183,7 +183,7 @@ export function verifyTestShards(plan: unknown, results: unknown, revision: stri
     if (!sameInventory(expected, result.files)) throw new Error(`shard ${String(result.index)} inventory differs from the plan`);
     if (result.errors.length > 0) throw new Error(`shard ${String(result.index)} reported errors`);
     for (const entry of result.files) {
-      const incomplete = entry.tests.find((test) => test.state !== "passed");
+      const incomplete = entry.tests.find((test) => test.state !== "passed" || test.errors.length > 0);
       if (entry.state !== "passed" || entry.errors.length > 0 || entry.tests.length === 0 || incomplete !== undefined) {
         const state = incomplete?.state ?? entry.state;
         throw new Error(`${entry.file} (${entry.project}) reported ${state}, errors, or no tests`);
@@ -345,7 +345,7 @@ export function decodeCachedEvidence(record: unknown, key: string): StoryEvidenc
     || !filesShape(header.selected) || !sameInventory(record.selected, header.selected)
     || JSON.stringify(record.evidence) !== JSON.stringify(header.evidence)) return undefined;
   if (status === "green" && assertions.length === 0 && header.mode === "head") return { status, assertions };
-  if (status === "red" && assertions.length > 0 && (header.mode === "red" || header.mode === "base" || header.mode === "scaffold")) {
+  if (status === "red" && assertions.length > 0 && (header.mode === "red" || header.mode === "base" || header.mode === "scaffold" || header.mode === "fix")) {
     return { status, assertions };
   }
   if (status === "missing-module" && header.mode === "base") return { status, assertions };

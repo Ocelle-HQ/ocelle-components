@@ -17,7 +17,7 @@ interface Selection {
 }
 
 interface Check {
-  readonly mode: "red" | "base" | "scaffold" | "head";
+  readonly mode: "red" | "base" | "scaffold" | "fix" | "head";
   readonly revision: string;
   readonly overlay?: string | undefined;
   readonly expected: readonly Assertion[];
@@ -102,11 +102,26 @@ async function worker(inputPath: string, outputPath: string): Promise<void> {
       return { evidence: invalid("test-scope.txt names an absent test file"), selected: [] };
     }
     const chosen = new Set([...changedTests, ...extra]);
-    const selectedSpecs = changedSupport && extra.length === 0 ? specs : specs.filter((spec) => chosen.has(testFile(root, spec).file));
+    const proof = input.mode === "base" || input.mode === "scaffold" || input.mode === "fix";
+    const expectedNames = (project: string, file: string): string[] =>
+      input.expected.filter((assertion) => assertion.file === file && assertion.project === project).map((assertion) => assertion.test);
+    const selectedSpecs = specs.filter((spec) => {
+      const { project, file } = testFile(root, spec);
+      if (!proof) return changedSupport && extra.length === 0 || chosen.has(file);
+      const names = expectedNames(project, file);
+      if (names.length === 0) return false;
+      spec.testNamePattern = new RegExp(`^(?:${names.map((name) => RegExp.escape(name)).join("|")})$`);
+      return true;
+    });
     const selected = selectedSpecs.map((spec) => testFile(root, spec));
     const run = await context.runTestSpecifications(selectedSpecs);
+    const reported = testRun(root, run.testModules, run.unhandledErrors, true);
+    const tested = proof ? { ...reported, files: reported.files.map((file) => ({
+      ...file,
+      tests: file.tests.filter((test) => expectedNames(file.project, file.file).includes(test.name)),
+    })) } : reported;
     const evidence = classifyStoryEvidence({
-      run: testRun(root, run.testModules, run.unhandledErrors, true),
+      run: tested,
       selected,
       changedTests,
       expected: input.expected,
@@ -339,6 +354,8 @@ async function checkPhase(mode: string, feature: string, phase: string, setup: s
   if (scaffold !== undefined && (!ancestor(base, scaffold) || !ancestor(scaffold, current))) problems.push("scaffold is not between base and HEAD");
   if (redRecords.length === 0) problems.push("no red commit recorded (red.sh) and no tdd-exempt.md");
   const reds = [];
+  const fixProofs: { label: string; base: string; expected: readonly Assertion[] }[] = [];
+  let phaseAssertions: readonly Assertion[] = [];
   const discovered = new Map<string, Assertion>();
   for (const [name, sha] of redRecords) {
     if (name === undefined || !/^(?:phase|fix-\d+)$/.test(name) || sha === undefined) throw new Error("invalid red-commits entry");
@@ -351,20 +368,30 @@ async function checkPhase(mode: string, feature: string, phase: string, setup: s
       expected: [], missingModules: [], log: join(dir, `check-red-${name}.log`) }, setup);
     const code = expectedStatus(result);
     if (code !== 1) problems.push(`red commit ${name}: ${result.evidence.problem ?? "no failing assertion"}`);
-    for (const assertion of result.evidence.assertions) discovered.set(JSON.stringify(assertion), assertion);
+    const assertions = result.evidence.assertions;
+    if (name === "phase") phaseAssertions = assertions;
+    else fixProofs.push({ label: name, base: git(["rev-parse", `${red}^`]).trim(), expected: assertions });
+    for (const assertion of assertions) discovered.set(JSON.stringify([assertion.project, assertion.file, assertion.test, assertion.source?.text, assertion.source?.occurrence]), assertion);
     reds.push({ label: name, sha: red, exit_code: code, ...result });
   }
 
   const finalSelection = selection(base, current, patterns, dir);
   const expected = [...discovered.values()];
   const missingModules = scaffold === undefined ? [] : trackedDiff(base, scaffold, "A");
-  const settled = async (kind: Check["mode"], tested: string, name: string): Promise<CheckResult> => runCheck({
-    mode: kind, revision: tested, overlay: kind === "head" ? undefined : current, selection: finalSelection, expected,
+  const settled = async (kind: Check["mode"], tested: string, name: string, assertions: readonly Assertion[]): Promise<CheckResult> => runCheck({
+    mode: kind, revision: tested, overlay: kind === "head" ? undefined : current, selection: finalSelection, expected: assertions,
     missingModules, log: join(dir, name),
   }, setup);
-  const onBase = await settled("base", base, "check-final-tests-on-base.log");
-  const onScaffold = scaffold === undefined ? undefined : await settled("scaffold", scaffold, "check-final-tests-on-scaffold.log");
-  const atHead = await settled("head", current, "check-head.log");
+  const initialAssertions = phaseAssertions.length > 0 ? phaseAssertions : expected;
+  const onBase = await settled("base", base, "check-final-tests-on-base.log", initialAssertions);
+  const onScaffold = scaffold === undefined ? undefined : await settled("scaffold", scaffold, "check-final-tests-on-scaffold.log", initialAssertions);
+  const fixes = [];
+  for (const proof of fixProofs) {
+    const result = await settled("fix", proof.base, `check-final-tests-on-${proof.label}-base.log`, proof.expected);
+    if (expectedStatus(result) !== 1) problems.push(`final tests on ${proof.label} base: ${result.evidence.problem ?? "no failing assertion"}`);
+    fixes.push({ label: proof.label, base: proof.base, ...result });
+  }
+  const atHead = await settled("head", current, "check-head.log", expected);
   const baseExit = expectedStatus(onBase);
   const scaffoldExit = onScaffold === undefined ? null : expectedStatus(onScaffold);
   const headExit = expectedStatus(atHead);
@@ -374,7 +401,7 @@ async function checkPhase(mode: string, feature: string, phase: string, setup: s
   emit({
     phase, status: problems.length === 0 ? "pass" : "fail", base, head: current, red_commits: reds,
     final_tests_on_base_exit: baseExit, final_tests_on_scaffold_exit: scaffoldExit, head_exit: headExit, problems,
-    focused: { base: onBase, scaffold: onScaffold, head: atHead },
+    focused: { base: onBase, scaffold: onScaffold, head: atHead, fixes },
   }, out);
 }
 
