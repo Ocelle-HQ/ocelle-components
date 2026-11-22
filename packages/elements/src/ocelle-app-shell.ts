@@ -81,6 +81,8 @@ export class OcelleAppShell extends LitElement {
     layout: {},
     productName: { attribute: "product-name" },
     menuLabel: { attribute: "menu-label" },
+    drawerLabel: { attribute: "drawer-label" },
+    closeLabel: { attribute: "close-label" },
     railLabel: { attribute: "rail-label" },
     sidebarLabel: { attribute: "sidebar-label" },
     narrowBelow: { attribute: "narrow-below" },
@@ -167,6 +169,10 @@ export class OcelleAppShell extends LitElement {
   declare productName: string;
   /** Accessible name of the top bar menu. */
   declare menuLabel: string;
+  /** Localized name of the navigation drawer. */
+  declare drawerLabel: string;
+  /** Localized name of the drawer close control. */
+  declare closeLabel: string;
   /** Localized landmark name for bare rail destinations. */
   declare railLabel: string;
   /** Localized landmark name for bare sidebar destinations. */
@@ -205,6 +211,8 @@ export class OcelleAppShell extends LitElement {
     super();
     this.productName = "";
     this.menuLabel = "Open navigation";
+    this.drawerLabel = "Navigation";
+    this.closeLabel = "Close navigation";
     this.railLabel = "Account";
     this.sidebarLabel = "Workspace";
     this.flushBlockEnd = false;
