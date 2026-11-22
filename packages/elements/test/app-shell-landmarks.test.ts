@@ -13,8 +13,8 @@ function required<T>(node: T | null | undefined): T {
   return node;
 }
 
-async function navigationNames(): Promise<string[]> {
-  return (await commands.axTree("shell", "subtree"))
+async function navigationNames(id = "shell"): Promise<string[]> {
+  return (await commands.axTree(id, "subtree"))
     .filter(({ role }) => role === "navigation").map(({ name }) => name);
 }
 
@@ -60,7 +60,10 @@ describe("shell composition with data-driven navigation", () => {
     await expect.poll(hasMenu).toBe(true);
     required(top()?.shadowRoot?.querySelector("button")).focus();
     await commands.press("Enter");
-    await expect.poll(navigationNames).toEqual(["Project sections"]);
+    const panel = required(shell.shadowRoot?.querySelector("ocelle-drawer")?.shadowRoot?.querySelector("dialog"));
+    await expect.poll(() => panel.open).toBe(true);
+    panel.id = "pill-drawer";
+    await expect.poll(() => navigationNames("pill-drawer")).toEqual(["Project sections"]);
   });
 
   it("preserves the localized breadcrumb landmark supplied through a nested wrapper", async () => {
