@@ -15,8 +15,8 @@ afterEach(async () => {
   await commands.emulateForcedColors("none");
 });
 
-function element<T extends Element>(root: ParentNode, selector: string): T {
-  const found = root.querySelector<T>(selector);
+function element<Tag extends keyof HTMLElementTagNameMap>(root: ParentNode, selector: Tag): HTMLElementTagNameMap[Tag] {
+  const found = root.querySelector(selector);
   if (found === null) throw new Error(`missing fixture element: ${selector}`);
   return found;
 }
@@ -26,9 +26,9 @@ function fixture(readOnly = false): { field: TextareaHost; form: HTMLFormElement
     description="Explain the rationale" value="first&#13;&#10;second&#13;third" ${readOnly ? "readonly" : ""}></ocelle-form-textarea>
     <button type="submit">Submit</button></form>`;
   return {
-    field: element<TextareaHost>(scope, "#field"),
-    form: element<HTMLFormElement>(scope, "form"),
-    submit: element<HTMLButtonElement>(scope, "button"),
+    field: element(scope, "ocelle-form-textarea"),
+    form: element(scope, "form"),
+    submit: element(scope, "button"),
   };
 }
 
@@ -36,7 +36,7 @@ async function editor(field: TextareaHost): Promise<HTMLTextAreaElement> {
   await field.updateComplete;
   const control = field.shadowRoot?.getElementById("control");
   assert.instanceOf(control, HTMLTextAreaElement, "the editing control is a native shadow textarea");
-  return control as HTMLTextAreaElement;
+  return control;
 }
 
 const setups: readonly Setup[] = ["markup", "properties", "required", "readonly", "disabled", "fieldset"];
@@ -85,9 +85,9 @@ describe("ocelle-form-textarea", () => {
   it("inserts a newline and pasted paragraphs inside a dialog and commits once with the current form value", async () => {
     scope.innerHTML = `<ocelle-dialog open label="Decision"><form><ocelle-form-textarea id="field" name="answer" label="Decision"></ocelle-form-textarea>
       <button id="save" type="submit">Submit</button></form></ocelle-dialog>`;
-    const field = element<TextareaHost>(scope, "#field");
+    const field = element(scope, "ocelle-form-textarea");
     const control = await editor(field);
-    const form = element<HTMLFormElement>(scope, "form");
+    const form = element(scope, "form");
     const submits: [string, FormDataEntryValue][][] = [];
     form.addEventListener("submit", (event) => {
       event.preventDefault();
@@ -144,10 +144,10 @@ describe("ocelle-form-textarea", () => {
   it("announces the asynchronous host error once without moving submit focus", async () => {
     const driver = inProcessDriver();
     await driver.mount('<main id="decision"><form><ocelle-form-textarea id="field" name="answer" label="Decision" value="first"></ocelle-form-textarea><button>Submit</button></form></main>');
-    const field = element<TextareaHost>(document, "#field");
+    const field = element(document, "ocelle-form-textarea");
     await editor(field);
-    const form = element<HTMLFormElement>(document, "form");
-    const submit = element<HTMLButtonElement>(form, "button");
+    const form = element(document, "form");
+    const submit = element(form, "button");
     form.addEventListener("submit", (event) => {
       event.preventDefault();
     });
