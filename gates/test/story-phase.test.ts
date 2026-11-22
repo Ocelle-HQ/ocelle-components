@@ -407,6 +407,16 @@ describe("phase verdict", () => {
 describe("phase CI collateral declarations", () => {
   const visual = "gates/test/integration/visual.test.ts";
 
+  it("cannot exempt a phase that declares a changed runnable CI-only test", async () => {
+    const { tools, files, checks, outputs } = fixture();
+    files.delete(join(dir, "red-commits"));
+    files.set(join(dir, "tdd-exempt.md"), "documentation only");
+    files.set(join(dir, "test-scope.txt"), "ci-only " + visual + "\n");
+    await expect(checkPhase(request, tools)).rejects.toThrow("ci-only scope requires recorded local proof");
+    expect(checks).toEqual([]);
+    expect(outputs).toEqual([]);
+  });
+
   it("reports the deferred CI project and path alongside the focused head", async () => {
     const { tools, files, checks, outputs } = fixture();
     files.set(join(dir, "test-scope.txt"), "ci-only " + visual + "\n");
