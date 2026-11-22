@@ -522,7 +522,8 @@ export class OcellePillTag extends LitElement {
     if (previous === next) return;
     if (previous === "static") this.#moved.capture();
     else if (next === "static") this.#moved.release();
-    else this.#refocus = this.shadowRoot?.activeElement === this.#control();
+    // Only a rendered inner control that holds focus is refocused: before the first render there is none (R1-01).
+    else this.#refocus = this.#control()?.matches(":focus") === true;
   }
 
   /** Resolves the moved ID references in the host's own tree (012 research.md R-04). */
@@ -530,9 +531,12 @@ export class OcellePillTag extends LitElement {
     for (const [name] of references) this.#resolved[name] = resolveIds(this, this.#moved.get(name));
   }
 
-  /** The inner `<button>` or `<a>`, once rendered; null while the pill is static. */
+  /**
+   * The inner `<button>` or `<a>`, once rendered; null while the pill is static, and before its first connection, when
+   * Lit has not attached the shadow root yet (review round 1, R1-01: a mode switch on a pill not yet appended).
+   */
   #control(): HTMLElement | null {
-    return this.renderRoot.querySelector<HTMLElement>(".control");
+    return this.shadowRoot?.querySelector<HTMLElement>(".control") ?? null;
   }
 
   /** Reads whether the default slot holds text, as `ocelle-button` reads its label. */
