@@ -62,8 +62,8 @@ Top bar and compact destination items are shared by the shell stories. Their sta
 
 ## Phase 7: Polish and cross-cutting verification
 
-- [ ] T031 Rerun the Phase 6 built-shell probe and account for every gate in the Quality Gates section of `.specify/memory/constitution.md` and its command in `package.json` across the complete branch. Record a branch-wide result or the controlling pull-request check for each gate. Record evidence in `specs/015-app-frame-navigation/reviews/phase-7/` and use the pinned workflow for any remaining light/dark baselines in `storybook/baselines/`.
-- [ ] T032 Update `packages/elements/README.md`, `packages/elements/CHANGELOG.md`, `packages/tokens/README.md`, and `packages/tokens/CHANGELOG.md` with new public surfaces and integration examples for named regions, threshold overrides, narrow drawer, and cross-root skip targeting.
+- [x] T031 Rerun the Phase 6 built-shell probe and account for every gate in the Quality Gates section of `.specify/memory/constitution.md` and its command in `package.json` across the complete branch. Record a branch-wide result or the controlling pull-request check for each gate. Record evidence in `specs/015-app-frame-navigation/reviews/phase-7/` and use the pinned workflow for any remaining light/dark baselines in `storybook/baselines/`.
+- [x] T032 Update `packages/elements/README.md`, `packages/elements/CHANGELOG.md`, `packages/tokens/README.md`, and `packages/tokens/CHANGELOG.md` with new public surfaces and integration examples for named regions, threshold overrides, narrow drawer, and cross-root skip targeting.
 
 ## Dependencies and parallel work
 
