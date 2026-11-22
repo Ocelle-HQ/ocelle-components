@@ -26,3 +26,7 @@
 - Close request synchronization now uses the drawer's actual `open` value, and completed focus recovery leaves any already focused visible control alone. The selected shell and overlay suites passed 108/108. Separate diagnostics of the current handler and settlement ranges are running with both the Phase 3 and Phase 4 shell suites.
 
 - The 100-mutant handler range on `346bd76` reached 96.77%, with 60 killed, two survivors, 38 rejected at compilation, and zero uncovered or timeouts. The new wide-state regression passed and rejected an exact fault that accepted a former menu trigger and stranded projected navigation. Completion now schedules one focus decision after projection, where the current active element is checked. The five shell suites passed 80/80 after this change.
+
+- The current handler follow-up on `9040a6b` passed at 100% for its 25 mutants, with 23 killed and two rejected at compilation. The previous 166-mutant settlement range had reached 93.33%, with 98 killed, seven survivors, and 61 rejected at compilation.
+- The tests in `2f87c1e` found that a menu click while content retained focus let dismissal restore content instead of the trigger. The shell now focuses the trigger before opening. Further assertions cover a trigger replaced during exit, an intentional blur before a same-tier update, and surviving focus in a newer modal. Four isolated faults failed the corresponding assertions. Recovery uses the actual focused element visibility at settlement.
+- The five shell suites passed 84/84. Test lint, TypeScript and the diff check passed.

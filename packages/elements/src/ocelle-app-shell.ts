@@ -352,6 +352,7 @@ export class OcelleAppShell extends LitElement {
     if (event.composedPath()[0] !== event.currentTarget) return;
     event.stopPropagation();
     if (!event.detail.expanded || this.#drawerProjected || this.#tier !== "narrow" || !this.#hasNavigation) return;
+    this.#menu()?.focus();
     this.#drawerFocus = undefined;
     this.#drawerState = "open";
     this.requestUpdate();
@@ -380,12 +381,8 @@ export class OcelleAppShell extends LitElement {
     this.requestUpdate();
   };
 
-  #drawerPanel(): HTMLDialogElement | null | undefined {
-    return this.renderRoot.querySelector("ocelle-drawer")?.shadowRoot?.querySelector("dialog");
-  }
-
   #drawerCloseButton(): HTMLButtonElement | null | undefined {
-    return this.#drawerPanel()?.querySelector<HTMLButtonElement>('[part="close-button"]');
+    return this.renderRoot.querySelector("ocelle-drawer")?.shadowRoot?.querySelector<HTMLButtonElement>('[part="close-button"]');
   }
 
   protected override updated(): void {
@@ -480,7 +477,7 @@ export class OcelleAppShell extends LitElement {
     if (this.#drawerProjected) {
       if (!this.#drawerOpen) return;
       if (this.#drawerFocus !== undefined && !visible(this.#drawerFocus)
-        && (active === null || active === this.#drawerPanel() || !visible(active))) {
+        && (active === null || !visible(active))) {
         (this.#destinations()[0] ?? this.#drawerCloseButton())?.focus();
       }
     } else {
