@@ -33,6 +33,10 @@ additions (a minor change).
 
 ### Added
 
+- Added `ocelle-form-textarea`, a multiline form field with native validation and editing, synchronous form
+  participation, and accessible help and error text. Import `@ocelle/elements/ocelle-form-textarea.js` to register
+  the element individually. This is a MINOR addition to the public surface.
+
 - `ocelle-icon`, an icon of the set drawn inline in `currentColor` at the `--ocelle-icon-size` token, decorative
   unless a `label` or a host `aria-label` names it; its properties `name` (reflected) and `label`.
 - The icon set, thirteen names: `chevron-start`, `chevron-end`, `chevron-up`, `chevron-down`, `arrow-start`,

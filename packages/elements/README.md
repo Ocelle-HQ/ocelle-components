@@ -1,10 +1,10 @@
 # @ocelle/elements
 
 The Ocelle web components: standards-based custom elements (Lit 3) that work in any page, a server-rendered page
-under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has thirty-two elements:
+under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has thirty-three elements:
 `ocelle-icon`, with a set of thirteen icons, `ocelle-brand-mark`, the Ocelle rosette, `ocelle-notice`, a message box
 that can announce itself, `ocelle-form-input`, a labelled text field that takes part in its form,
-`ocelle-form-select`, a labelled native select for closed choices that takes part in its form, `ocelle-scroller`, a
+`ocelle-form-select`, a labelled native select for closed choices, `ocelle-form-textarea`, a labelled multiline field, `ocelle-scroller`, a
 horizontal strip that is a tab stop only while it overflows, `ocelle-workflow-board` with its
 `ocelle-workflow-lane`s, a row of lanes that scrolls inside itself when it is narrower than they are,
 `ocelle-list-detail`, a list beside its detail that collapses to one column by the space it has, `ocelle-dialog`, a
@@ -437,6 +437,31 @@ error are drawn as for `ocelle-form-input`; the select leaves room for the indic
 Before the definition has loaded, a select's `<option>` children may show as text, as the browser draws an unknown
 element's content; the rule above for undefined elements hides them. Not measured for `ocelle-form-select`: that
 Alt+Down or Space opens the list, and how the browser draws the open list.
+## `ocelle-form-textarea`
+
+```html
+<form action="/decisions" method="post">
+  <ocelle-form-textarea name="answer" label="Decision"
+    description="Explain the rationale" value="Approve.&#10;&#10;Confirm the deployment window." required
+  ></ocelle-form-textarea>
+  <button>Save</button>
+</form>
+```
+
+The `value` attribute sets the default for reset and the `value` property holds the current answer. Like a native
+textarea, the control uses LF in its value and in script-visible FormData. It participates before the first render once
+it is connected to the form. An empty editable `required` field blocks submission. A `readonly` field can be focused,
+selected and submitted. A `disabled` field is omitted from submission and cannot receive keyboard focus. A disabled
+fieldset also disables the control.
+
+Typing or pasting updates the current and submitted value before the native bubbling, composed `input` event reaches
+the host. Committing a changed answer by leaving the field emits the bubbling, composed
+`ocelle-form-textarea-change` event with `detail: { value }`. Enter inserts a newline. Script writes, reset and browser
+restoration do not emit user events. The host owns saving and can set or clear `error` without losing the edited value.
+The error is associated with the textarea and new errors are announced politely.
+
+CSS parts are `label`, `control`, `description` and `error`. There are no slots or component-specific tokens.
+
 ## `ocelle-dialog`
 
 ```html
