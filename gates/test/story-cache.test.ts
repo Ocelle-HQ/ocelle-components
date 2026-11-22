@@ -41,6 +41,19 @@ describe("browser cache identity", () => {
     expect(browserIdentity(undefined, probe({ bundledChromium: () => "/browser-cache/Chromium.app/Chromium" }))).toBeNull();
   });
 
+  it("does not inspect binaries for an executable whose name extends the supported Chromium path", () => {
+    const inspected: string[] = [];
+    const unrecognized = probe({
+      bundledChromium: () => `${bundled}-wrapper`,
+      file: (path) => {
+        inspected.push(path);
+        return { ...browser, path, regular: true };
+      },
+    });
+    expect(browserIdentity(undefined, unrecognized)).toBeNull();
+    expect(inspected).toEqual([]);
+  });
+
   it("refuses identity when the resolved headless path is an alias for full Chromium", () => {
     const alias = probe({ file: () => ({ ...browser, regular: true }) });
     expect(browserIdentity(undefined, alias)).toBeNull();
@@ -152,6 +165,12 @@ describe("phase cache key", () => {
     const outcome = checkKey(noOverlay, setup, noLookup);
     expect(outcome.reusable).toBe(true);
     expect(outcome.key).not.toBe(initial().key);
+  });
+
+  it("distinguishes no overlay from an overlay with no changed test blobs", () => {
+    const noBlobs = { ...phase, selection: { ...selection, changed: [] } };
+    const withoutOverlay = { ...noBlobs, overlay: undefined };
+    expect(checkKey(withoutOverlay, setup, runtime).key).not.toBe(checkKey(noBlobs, setup, runtime).key);
   });
 
   it.each([

@@ -79,6 +79,30 @@ describe("shard CLI decisions", () => {
     expect(writes).toEqual([]);
   });
 
+  it("rejects a missing operation before asking for a revision or reading a plan", async () => {
+    const { tools, errors, messages, writes } = fixture();
+    const requests: string[] = [];
+    const args: string[] = [];
+    args[1] = planPath;
+    args[2] = "2";
+    const configuredTools: ShardTools = {
+      ...tools,
+      revision: () => {
+        requests.push("revision");
+        return tools.revision();
+      },
+      read: (path) => {
+        requests.push(path);
+        return tools.read(path);
+      },
+    };
+    const io = { out: (line: string) => messages.push(line), err: (line: string) => errors.push(line) };
+    expect(await runTestShards(args, configuredTools, io)).toBe(1);
+    expect(errors).toEqual(["Unit tests: usage: test-shards plan <plan> <count> | run <plan> <index> <report> | verify <plan> <reports> [full-report]"]);
+    expect(requests).toEqual([]);
+    expect(writes).toEqual([]);
+  });
+
   it("plans the complete inventory and prints all matrix indices", async () => {
     const { run, data, messages, writes, executions } = fixture();
     expect(await run("plan", "planned.json", "2")).toBe(0);
