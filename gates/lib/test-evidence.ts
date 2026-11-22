@@ -184,7 +184,7 @@ function fileResultShape(value: unknown): value is TestFileResult {
 }
 
 function shardShape(value: unknown): value is ShardResult {
-  return object(value) && nonempty(value.revision) && typeof value.index === "number" && Number.isInteger(value.index)
+  return object(value) && nonempty(value.revision) && Number.isInteger(value.index)
     && failuresShape(value.errors) && Array.isArray(value.files) && value.files.every(fileResultShape);
 }
 
@@ -238,15 +238,20 @@ function assertionSource(lines: readonly string[], start: number, line: number):
   return { text, occurrence, line };
 }
 
-function sourceExists(test: TestCaseResult, entry: TestFileResult, expectation: Assertion, lines: readonly string[]): boolean {
-  if (expectation.source === undefined) return true;
+function sourceExists(test: TestCaseResult, entry: TestFileResult, expectation: Assertion, sources: StoryEvidenceInput["sources"]): boolean {
+  const { source, helper } = expectation;
+  if (helper !== undefined) {
+    const lines = sources?.[helper.file];
+    if (lines === undefined || lines.filter((line) => line.trim() === helper.text).length < helper.occurrence) return false;
+  }
+  if (source === undefined) return true;
+  const lines = sources?.[entry.file];
   const start = test.startLine;
-  if (start === undefined) return false;
+  if (start === undefined || lines === undefined) return false;
   const end = entry.tests.reduce((next, { startLine }) => startLine !== undefined && startLine > start ? Math.min(next, startLine) : next,
     lines.length + 1);
-  const text = expectation.source.text;
   return lines.slice(start - 1, end - 1)
-    .filter((line) => line.trim() === text).length >= expectation.source.occurrence;
+    .filter((line) => line.trim() === source.text).length >= source.occurrence;
 }
 
 function fileAssertions(
@@ -257,7 +262,7 @@ function fileAssertions(
   const assertions: Assertion[] = [];
   const problem = (message: string) => ({ assertions: [], problem: message });
   const changed = input.changedTests.includes(entry.file);
-  const lines = input.sources?.[entry.file] ?? [];
+  const lines = input.sources?.[entry.file];
   const allowedLines = input.changedLines?.[entry.file] ?? [];
   for (const test of entry.tests) {
     if (test.state === "pending" || test.state === "skipped") return problem(`${entry.file}: ${test.state} test ${test.name}`);
@@ -280,7 +285,7 @@ function fileAssertions(
       if (!allowedLines.some(({ start, end }) => line >= start && line <= end)) {
         return problem(`unchanged assertion in ${entry.file}:${String(line)}: ${test.name}: ${message}`);
       }
-      const source = assertionSource(lines, test.startLine, line);
+      const source = lines === undefined ? undefined : assertionSource(lines, test.startLine, line);
       if (source === undefined) return problem(`unlocated source in ${entry.file}:${String(line)}: ${test.name}`);
       let helper: Assertion["helper"];
       if (helperFile !== undefined && helperLine !== undefined) {
@@ -307,7 +312,7 @@ export function classifyStoryEvidence(input: StoryEvidenceInput): StoryEvidence 
   for (const entry of run.files) {
     const [fileError] = entry.errors;
     if (fileError !== undefined) {
-      if (allowMissingModule === true && changedTests.includes(entry.file) && knownMissingModule(entry, missingModules ?? [])) {
+      if (allowMissingModule === true && missingModules !== undefined && changedTests.includes(entry.file) && knownMissingModule(entry, missingModules)) {
         absent.add(fileKey(entry));
         continue;
       }
@@ -326,15 +331,12 @@ export function classifyStoryEvidence(input: StoryEvidenceInput): StoryEvidence 
   const unique = new Map(assertions.map((assertion) => [assertionKey(assertion), assertion]));
   const actual = [...unique.values()];
   const verification = (expected ?? []).filter((assertion) => !absent.has(fileKey(assertion)));
+  const mismatch = "expected assertion test or source missing or ambiguous in the replay";
   for (const assertion of verification) {
     const entry = run.files.find((file) => fileKey(file) === fileKey(assertion));
-    const [test, duplicate] = entry?.tests.filter((test) => test.name === assertion.test) ?? [];
-    if (entry === undefined || test === undefined || duplicate !== undefined
-      || !sourceExists(test, entry, assertion, input.sources?.[assertion.file] ?? [])
-      || (assertion.helper !== undefined && (input.sources?.[assertion.helper.file] ?? [])
-        .filter((line) => line.trim() === assertion.helper?.text).length < assertion.helper.occurrence)) {
-      return invalid("expected assertion test or source missing or ambiguous in the replay");
-    }
+    if (entry === undefined) return invalid(mismatch);
+    const [test, duplicate] = entry.tests.filter((test) => test.name === assertion.test);
+    if (test === undefined || duplicate !== undefined || !sourceExists(test, entry, assertion, input.sources)) return invalid(mismatch);
   }
   const expectedKeys = new Set(verification.map(assertionKey));
   if ((expected?.length ?? 0) > 0 && actual.length > 0
@@ -380,14 +382,16 @@ export function decodeWorkerResult(record: unknown): { evidence: StoryEvidence; 
 }
 
 export function decodeCachedEvidence(record: unknown, key: string): StoryEvidence | undefined {
-  if (!object(record) || record.key !== key || !nonempty(record.log)) return undefined;
+  if (!object(record) || record.key !== key || typeof record.log !== "string") return undefined;
   const decoded = decodeWorkerResult(record);
   if (decoded === undefined) return undefined;
   const { evidence, selected } = decoded;
   const { status } = evidence;
   let header: unknown;
   try {
-    header = JSON.parse(record.log.split("\n", 1)[0] ?? "");
+    const end = record.log.indexOf("\n");
+    header = JSON.parse(end === -1 ? record.log : record.log.slice(0, end));
+  // Stryker disable next-line BlockStatement: equivalent, a parse failure leaves header undefined and fails the object check below.
   } catch {
     return undefined;
   }
