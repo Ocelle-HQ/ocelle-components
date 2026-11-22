@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { commands } from "vitest/browser";
 import { setNavItemCompact } from "../src/ocelle-nav-item.ts";
+import "../src/ocelle-drawer.ts";
 import { inProcessDriver } from "./in-process.ts";
 
 const driver = inProcessDriver();
@@ -143,5 +144,38 @@ describe("ocelle-nav-item", () => {
     expect(shown.textContent).toBe(item.label);
     expect(shown.getBoundingClientRect().right).toBeLessThanOrEqual(document.documentElement.clientWidth);
     expect(document.documentElement.scrollWidth).toBe(document.documentElement.clientWidth);
+  });
+});
+
+describe("compact bubble Escape ownership in drawers", () => {
+  it.each([false, true])("honors overlay ownership with a newer modal: %s", async (newerModal) => {
+    await commands.emulateReducedMotion("reduce");
+    await driver.mount('<ocelle-drawer id="overlay" open label="Navigation"><button id="elsewhere">Another control</button><ocelle-nav-item id="nested-nav" compact label="Projects" href="#projects"></ocelle-nav-item></ocelle-drawer><ocelle-drawer id="newer" label="Tools"><button>New control</button></ocelle-drawer>');
+    const item = required(document.querySelector("ocelle-nav-item"));
+    const drawer = required(document.querySelector<HTMLElementTagNameMap["ocelle-drawer"]>("#overlay"));
+    const newer = required(document.querySelector<HTMLElementTagNameMap["ocelle-drawer"]>("#newer"));
+    const panel = () => drawer.shadowRoot?.querySelector("dialog");
+    item.style.setProperty("--ocelle-tooltip-delay", "0ms");
+    await expect.poll(() => panel()?.open).toBe(true);
+    required(document.getElementById("elsewhere")).focus();
+    if (newerModal) {
+      newer.open = true;
+      await expect.poll(() => newer.shadowRoot?.querySelector("dialog")?.open).toBe(true);
+      // Programmatic hover presents a bubble outside the topmost overlay without moving keyboard focus.
+      required(item.shadowRoot?.querySelector("a")).dispatchEvent(new PointerEvent("pointerenter", { pointerType: "mouse" }));
+    } else {
+      await commands.hover("nested-nav", "a");
+    }
+    await expect.poll(() => bubble(item)?.matches(":popover-open")).toBe(true);
+    await commands.press("Escape");
+    if (newerModal) {
+      await expect.poll(() => newer.shadowRoot?.querySelector("dialog")?.open).toBe(false);
+      expect(panel()?.open).toBe(true);
+    } else {
+      await expect.poll(() => bubble(item)?.matches(":popover-open")).toBe(false);
+      expect(panel()?.open).toBe(true);
+      await commands.press("Escape");
+      await expect.poll(() => panel()?.open).toBe(false);
+    }
   });
 });
