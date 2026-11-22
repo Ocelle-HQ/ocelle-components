@@ -30,8 +30,8 @@ function sourceFrames(module: TestModule, error: TestError): Frame[] {
   if (browser !== undefined) return browser.parseErrorStacktrace(error);
 
   // Node stacks use an absolute source path or a file URL, depending on the worker's evaluator.
-  const stack = typeof error.stack === "string" ? error.stack : "";
-  return stack.split("\n").slice(1).flatMap((frame) => {
+  if (typeof error.stack !== "string") return [];
+  return error.stack.split("\n").slice(1).flatMap((frame) => {
     const parts = /(?:\(|at (?:async )?)((?:file:\/\/)?\/[^\n]+):(\d+):\d+\)?$/.exec(frame.trim());
     if (parts?.[1] === undefined) return [];
     const file = parts[1].startsWith("file:") ? fileURLToPath(parts[1]) : parts[1];
@@ -91,6 +91,7 @@ export async function withVitest<T>(root: string, operation: (context: Vitest) =
   // Stryker disable next-line all: process boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "executes a complete configured inventory and compares it with the full Vitest run"
   try {
     return await operation(context);
+    // Stryker disable next-line BlockStatement: process boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "executes a complete configured inventory and compares it with the full Vitest run"
   } finally {
     // Stryker disable next-line all: process boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "executes a complete configured inventory and compares it with the full Vitest run"
     await context.close();

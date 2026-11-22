@@ -154,6 +154,21 @@ describe("Vitest report conversion", () => {
     ]);
   });
 
+  it("omits a helper site for mapped frames outside the tested checkout", () => {
+    const moduleId = "/work/fixture.test.ts";
+    const project: ReportedProject = {
+      ...browserProject,
+      browser: { parseErrorStacktrace: () => [
+        { file: "/work/shared/fixture.ts", method: "helper", line: 5, column: 1 },
+        { file: moduleId, method: "example", line: 14, column: 3 },
+      ] },
+    };
+    const tests = [failing("submission > maps the browser fixture", "AssertionError: bundle.js:235:2", 10)];
+    expect(testRun(root, [moduleReport({ filename: moduleId, project, tests })], [], true).files[0]?.tests[0]?.errors).toEqual([
+      { name: "AssertionError", message: "Expected submitted answer", line: 14 },
+    ]);
+  });
+
   it("retains assertion locations in raw Node paths containing a percent sign", () => {
     const moduleId = join(root, "gates/test/rate-100%.test.ts");
     const tests = [failing("submission > reports percentages", `AssertionError: rate\n    at ${moduleId}:13:2`, 10)];
