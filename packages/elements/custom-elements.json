@@ -2829,6 +2829,37 @@
     {
       "declarations": [
         {
+          "attributes": [],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "",
+          "events": [],
+          "kind": "class",
+          "members": [],
+          "name": "OcelleFormTextarea",
+          "slots": [],
+          "superclass": {
+            "name": "HTMLElement"
+          }
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-form-textarea.ts",
+            "name": "OcelleFormTextarea"
+          },
+          "kind": "js",
+          "name": "OcelleFormTextarea"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-form-textarea.ts"
+    },
+    {
+      "declarations": [
+        {
           "attributes": [
             {
               "default": "undefined",
