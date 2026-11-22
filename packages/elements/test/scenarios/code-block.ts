@@ -304,6 +304,59 @@ const sweepClean = (unitList: readonly string[]): unknown => ({ units: unitList,
 const rtlLines = ["cd /srv/app", command, "ls"].join("\n");
 const rtlLinesChanged = ["git status", "pnpm exec vitest run --project elements --project elements-browser code-block --reporter verbose", "pwd"].join("\n");
 
+/** Runs in an actual document in both browser projects, with the same node held across disconnection. */
+export async function codeBlockLifecycle(): Promise<unknown> {
+  const frame = document.createElement("div");
+  frame.style.inlineSize = "180px";
+  const block = document.createElement("ocelle-code-block");
+  block.overflow = "scroll";
+  block.label = "Deploy";
+  block.textContent = "before ".repeat(30);
+  frame.append(block);
+  document.body.append(frame);
+  const nextFrame = () => new Promise<void>((resolve) => {
+    requestAnimationFrame(() => { resolve(); });
+  });
+  const settle = async (): Promise<void> => {
+    await block.updateComplete;
+    await nextFrame();
+    await nextFrame();
+    await block.updateComplete;
+  };
+  const read = () => {
+    const box = block.shadowRoot?.querySelector(".region-box");
+    return {
+      shown: block.shadowRoot?.querySelector(".code")?.textContent,
+      tabindex: box?.getAttribute("tabindex"),
+      role: box?.getAttribute("role"),
+      name: box?.getAttribute("aria-label"),
+    };
+  };
+  try {
+    await settle();
+    const before = read();
+    block.remove();
+    block.textContent = "after";
+    await settle();
+    const detached = read();
+    frame.append(block);
+    await settle();
+    const reopened = read();
+    block.textContent = "connected ".repeat(30);
+    await settle();
+    return { before, detached, reopened, connectedEdit: read() };
+  } finally {
+    frame.remove();
+  }
+}
+
+export const codeBlockLifecycleExpected = {
+  before: { shown: "before ".repeat(30), tabindex: "0", role: "group", name: "Deploy" },
+  detached: { shown: "before ".repeat(30), tabindex: "0", role: "group", name: "Deploy" },
+  reopened: { shown: "after", tabindex: null, role: null, name: null },
+  connectedEdit: { shown: "connected ".repeat(30), tabindex: "0", role: "group", name: "Deploy" },
+};
+
 /** What the line-start oracle reads of an overflowing scroll block: directions, line starts, position, fade and mask. */
 async function lineStartReading(driver: Driver, id: string): Promise<unknown> {
   const box = await driver.box(id, regionBox);
@@ -750,6 +803,72 @@ export const codeBlockRuleScenarios: readonly Scenario[] = [
       return { upper: await policy("upper"), auto: await policy("auto"), empty: await policy("empty") };
     }),
     expected: { upper: { scrollBox: true, whiteSpace: "pre", stops: 3 }, auto: { scrollBox: false, whiteSpace: "pre-wrap", stops: 0 }, empty: { scrollBox: false, whiteSpace: "pre-wrap", stops: 0 } },
+  },
+  {
+    name: "FR-022 and FR-028: changes to overflow and digest properties reflect, while the label property only renames the box",
+    run: guarded(async (driver) => {
+      await page(driver, `<div data-test="narrow">${codeBlock("cb", digest, 'label="Build"')}</div>`);
+      await driver.setProperty("cb", "overflow", " SCROLL ");
+      await driver.setProperty("cb", "digest", true);
+      await driver.setProperty("cb", "label", "Release");
+      const enabled = {
+        overflow: await driver.attribute("cb", "overflow"),
+        digest: await driver.attribute("cb", "digest"),
+        label: await driver.attribute("cb", "label"),
+        name: (await boxAttributes(driver, "cb"))["aria-label"],
+        units: (await unitTexts(driver, "cb")).length,
+      };
+      await driver.setProperty("cb", "overflow", "wrap");
+      await driver.setProperty("cb", "digest", false);
+      return {
+        enabled,
+        disabled: {
+          overflow: await driver.attribute("cb", "overflow"),
+          digest: await driver.attribute("cb", "digest"),
+          scrollBox: await hasScrollBox(driver, "cb"),
+          units: (await unitTexts(driver, "cb")).length,
+        },
+      };
+    }),
+    expected: {
+      enabled: { overflow: " SCROLL ", digest: "", label: "Build", name: "Release", units: 17 },
+      disabled: { overflow: "wrap", digest: null, scrollBox: false, units: 0 },
+    },
+  },
+  {
+    name: "FR-021 and FR-025: RTL reopening follows the new box; relabelling keeps the user's scroll position and focus",
+    run: guarded(async (driver) => {
+      await page(driver, between(`<div dir="rtl" data-test="frame">${codeBlock("cb", rtlLines, 'overflow="scroll" label="Commands"')}</div>`));
+      await driver.focus("before");
+      await driver.chord("Tab");
+      await driver.setScrollLeft(boxOf("cb"), -10);
+      await driver.setProperty("cb", "label", "Release commands");
+      const relabelled = {
+        offset: await driver.scrollLeft(boxOf("cb")),
+        focused: await driver.deepActive(),
+        tabindex: await blockTabindex(driver, "cb"),
+        name: (await boxAttributes(driver, "cb"))["aria-label"],
+      };
+      await driver.focus("after");
+      await driver.setProperty("cb", "overflow", "wrap");
+      await driver.setProperty("cb", "overflow", "scroll");
+      return { relabelled, reopened: await lineStartReading(driver, "cb") };
+    }),
+    expected: {
+      relabelled: { offset: -10, focused: "cb >> div.region-box", tabindex: null, name: "Release commands" },
+      reopened: { directions: { block: "rtl", box: "rtl", code: "ltr" }, overflowing: true, lines: 3, startsInside: [true, true, true], position: "-(scrollWidth - clientWidth)", fade: "start", maskTransparentAtRight: true },
+    },
+  },
+  {
+    name: "FR-021 LTR text edits retain a nonzero user scroll offset when the new line still overflows",
+    run: guarded(async (driver) => {
+      await page(driver, `<div dir="ltr" data-test="frame">${codeBlock("cb", rtlLines, 'overflow="scroll" label="Commands"')}</div>`);
+      await driver.setScrollLeft(boxOf("cb"), 40);
+      const before = await driver.scrollLeft(boxOf("cb"));
+      await driver.setProperty("cb", "textContent", rtlLinesChanged);
+      return { before, after: await driver.scrollLeft(boxOf("cb")), text: await driver.textOf("cb", code) };
+    }),
+    expected: { before: 40, after: 40, text: rtlLinesChanged },
   },
   {
     name: "FR-025: switching overflow at run time gives the other policy in full each way and leaves no tab stop, role or name behind: wrap, scroll, wrap, scroll",

@@ -1,6 +1,6 @@
 import type { Browser } from "playwright";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
-import { codeBlockRuleScenarios, codeBlockScenarios } from "../scenarios/code-block.ts";
+import { codeBlockLifecycle, codeBlockLifecycleExpected, codeBlockRuleScenarios, codeBlockScenarios } from "../scenarios/code-block.ts";
 import { fixtureDriver } from "./driver.ts";
 import { clean, launch, serve, visit } from "./serve.ts";
 import type { Served } from "./serve.ts";
@@ -35,5 +35,12 @@ describe("ocelle-code-block on the strict-CSP fixture with the browser build (US
     const page = await visit(browser, origin, "code-block.html");
     const observed = await run(fixtureDriver(page.page, page.log));
     expect({ observed, recorded: await page.finish() }).toEqual({ observed: expected, recorded: clean });
+  });
+
+  it("FR-020 reconnect: refreshes the detached edit and resumes observing connected edits under the strict CSP", async () => {
+    const { browser, origin } = started();
+    const page = await visit(browser, origin, "code-block.html");
+    const observed = await page.page.evaluate(codeBlockLifecycle);
+    expect({ observed, recorded: await page.finish() }).toEqual({ observed: codeBlockLifecycleExpected, recorded: clean });
   });
 });

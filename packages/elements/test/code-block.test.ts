@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { commands } from "vitest/browser";
 import "../src/ocelle-code-block.ts";
 import { inProcessDriver } from "./in-process.ts";
-import { codeBlockRuleScenarios, codeBlockScenarios } from "./scenarios/code-block.ts";
+import { codeBlockLifecycle, codeBlockLifecycleExpected, codeBlockRuleScenarios, codeBlockScenarios } from "./scenarios/code-block.ts";
 
 // User Story 2's browser scenarios for `ocelle-code-block`, in process on the element source (020 contracts/checks.md
 // § Scenario bodies; tasks.md T026): every shared body of scenarios/code-block.ts, the US2 scenarios and the FR and
@@ -26,5 +26,10 @@ describe("ocelle-code-block, in process (US2)", { timeout: 60_000 }, () => {
 describe("ocelle-code-block's rules and edge cases, in process (FR-020 to FR-029)", { timeout: 60_000 }, () => {
   it.each(codeBlockRuleScenarios)("$name", async ({ run, expected }) => {
     expect(await run(driver)).toEqual(expected);
+  });
+
+  it("FR-020 reconnect: refreshes the detached edit and resumes observing connected edits", async () => {
+    await driver.mount("");
+    expect(await codeBlockLifecycle()).toEqual(codeBlockLifecycleExpected);
   });
 });
