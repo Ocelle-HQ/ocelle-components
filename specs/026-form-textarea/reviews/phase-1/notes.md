@@ -22,3 +22,7 @@ Eight manifest plant fixture trees now include the exact generated textarea modu
 - The standalone browser run for the review fix passed 17 tests in 6.38 s. It covers initial invalid focus, a clean built strict-CSP fixture, and resubmission after a host-rendered failure.
 - Eight existing manifest plants passed after refreshing their fixture manifests without changing their expected outcomes.
 - Required CI, mutation and independent phase acceptance remain in progress on the draft.
+
+## Hosted-only collateral inventory checks
+
+The axe and visual integration tests were changed only to update counts for the four newly documented story states. They rerun the full generated Storybook and all theme captures. A redundant local replay ran 56m03s and failed with a timeout in the axe integration test. The hosted Accessibility and Visual regression jobs passed on the same product change. The phase scope defers these two exact collateral files to CI, while the recorded implementation and fix assertions still replay locally. Approval requires the complete sharded Unit tests inventory and both required hosted checks for the candidate.
