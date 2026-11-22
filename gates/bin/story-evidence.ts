@@ -161,9 +161,9 @@ export async function replayStoryWorker(root: string, inputPath: string, outputP
     const tested = plannedStoryResults(reported, plan.files);
     const { changedTests } = plan;
     const knownHelpers = [
-      ...input.expected.flatMap((assertion) => assertion.helper?.file ?? []),
-      ...tested.files.flatMap((file) => file.tests.flatMap((test) => test.errors.flatMap(({ helperFile }) => helperFile ?? []))),
-    ];
+      ...input.expected.map((assertion) => assertion.helper?.file),
+      ...tested.files.flatMap((file) => file.tests.flatMap((test) => test.errors.map(({ helperFile }) => helperFile))),
+    ].filter((file) => file !== undefined);
     const sources = [...new Set([...changedTests, ...knownHelpers])].flatMap((file) => {
       const path = resolve(root, file);
       return path.startsWith(`${root}/`) && storyFiles.exists(path) ? [[file, storyFiles.read(path).split(/\r?\n/)] as const] : [];
@@ -264,11 +264,12 @@ export async function runCheck(check: Check, setup: string, tools: CheckTools): 
   const { key: input, reusable } = tools.key(check, setup);
   const cache = join(root, "reports/story-evidence", `${input}.json`);
   try {
-    const record = (reusable ? readJson(cache) : null) as { key?: unknown; evidence?: unknown; log?: unknown; selected?: unknown };
+    const record = reusable ? readJson(cache) : null;
     const evidence = decodeCachedEvidence(record, input);
-    if (evidence !== undefined && canReuse(check.mode, evidence) && typeof record.log === "string" && Array.isArray(record.selected)) {
-      const selected = record.selected as CheckResult["selected"];
-      tools.writeLog(check.log, `Reused completed evidence ${input}\n${record.log}`);
+    if (evidence !== undefined && canReuse(check.mode, evidence)) {
+      // The decoder validates both fields before returning evidence.
+      const { log, selected } = record as Pick<CheckResult, "selected"> & { log: string };
+      tools.writeLog(check.log, `Reused completed evidence ${input}\n${log}`);
       return { evidence, input, seconds: (tools.now() - started) / 1000, resumed: true, selected };
     }
   } catch {
@@ -474,7 +475,7 @@ export async function runStoryCommand(args: readonly string[], tools: StoryComma
     if (mode === "worker" && arg !== undefined && phase !== undefined) {
       await tools.worker(arg, phase);
     } else if ((mode === "red" || mode === "check") && arg !== undefined && phase !== undefined && setup !== undefined && patterns !== undefined) {
-      await tools.phase({ mode, feature: arg, phase, setup, patterns: patterns.split(/\s+/).filter(Boolean), label });
+      await tools.phase({ mode, feature: arg, phase, setup, patterns: patterns.match(/\S+/g) ?? [], label });
     } else {
       throw new Error("invalid focused story evidence arguments");
     }
@@ -490,6 +491,7 @@ export async function runStoryCommand(args: readonly string[], tools: StoryComma
   }
 }
 
+// Stryker disable next-line ConditionalExpression: process boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "prints invalid red labels and sends invalid worker commands to stderr with exit 2"
 if (import.meta.main) {
   const checkTools: CheckTools = {
     ...storyFiles, root, pid: process.pid, now: Date.now, key: checkKey, git, readJson, writeJson, rename: renameSync, writeLog: storyFiles.write,
@@ -498,6 +500,7 @@ if (import.meta.main) {
     // Stryker disable next-line all: process boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "runs real clean-worktree red, base and green checks and refuses malformed cache reuse"
     worker: (cwd, input, output) => runTool(process.execPath, [path, "worker", input, output], cwd, environment),
   };
+  // Stryker disable next-line BlockStatement,CallExpression: process stdout boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "prints invalid red labels and sends invalid worker commands to stderr with exit 2"
   const emit: PhaseTools["emit"] = (value, filename) => { emitStoryReport(value, filename, console.log); };
   const [, , ...args] = process.argv;
   await runStoryCommand(args, {
@@ -509,7 +512,9 @@ if (import.meta.main) {
       await replayStoryWorker(root, input, output, withVitest);
       process.exitCode = 0; // A red assertion is represented in the result, not as a crashed worker.
     },
+    // Stryker disable next-line BlockStatement: process exit boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "prints invalid red labels and sends invalid worker commands to stderr with exit 2"
     failure: (message) => {
+      // Stryker disable next-line CallExpression: process stderr boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "prints invalid red labels and sends invalid worker commands to stderr with exit 2"
       console.error(message);
       process.exitCode = 2;
     },

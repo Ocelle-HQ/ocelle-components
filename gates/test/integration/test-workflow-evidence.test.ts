@@ -340,3 +340,23 @@ it("keeps a changed collateral integration test in CI inventory and runs only th
     rmSync(root, { force: true, recursive: true });
   }
 }, 80_000);
+
+it("prints invalid red labels and sends invalid worker commands to stderr with exit 2", () => {
+  const root = fixture();
+  try {
+    commit(root, "fixture");
+    const script = join(repository, "gates/bin/story-evidence.ts");
+    const captured = node(root, script, "red", "specs/005-cli", "7", "true", ":(glob)**/*.test.ts", "invalid");
+    expect(captured.status).toBe(0);
+    expect(captured.stderr).toBe("");
+    expect(JSON.parse(captured.stdout) as unknown).toEqual({
+      phase: "7", status: "fail", red: false, recorded: false, problem: "invalid red label",
+    });
+    const bad = node(root, script, "worker", "missing-selection.json");
+    expect(bad.status).toBe(2);
+    expect(bad.stderr).toBe("invalid focused story evidence arguments\n");
+    expect(bad.stdout).toBe("");
+  } finally {
+    rmSync(root, { force: true, recursive: true });
+  }
+});

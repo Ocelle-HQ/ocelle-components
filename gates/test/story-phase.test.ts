@@ -443,3 +443,23 @@ describe("phase CI collateral declarations", () => {
     expect(checks).toEqual([]);
   });
 });
+
+describe("Story file syntax boundaries", () => {
+  it("does not interpret ci-only as a directive inside a local scope path", async () => {
+    const { tools, files, checks, outputs } = fixture();
+    const localPath = "test/ci-only support.test.ts";
+    files.set(join(dir, "test-scope.txt"), localPath + "\n");
+    await checkPhase(request, tools);
+    expect(checks.at(-1)?.check.selection.extra).toEqual([localPath]);
+    expect(outputs[0]?.output).not.toHaveProperty("deferred_ci");
+  });
+
+  it("rewrites prior red records with trailing whitespace-only lines", async () => {
+    const { tools, files, outputs } = fixture();
+    const history = join(dir, "red-commits");
+    files.set(history, "phase " + initial + "\n \t\n\t");
+    await checkPhase({ ...request, mode: "red", label: "fix-1" }, tools);
+    expect(files.get(history)).toBe("phase " + initial + "\nfix-1 " + head + "\n");
+    expect(outputs).toMatchObject([{ output: { recorded: true } }]);
+  });
+});

@@ -314,3 +314,37 @@ describe("failed subprocesses or worker evidence", () => {
     expect(records.has(cache)).toBe(false);
   });
 });
+
+describe("replay cache outcome matrix", () => {
+  const invalid: StoryEvidence = { status: "invalid", assertions: [], problem: "unrelated collection failure" };
+  const statuses = [green, red, missing, invalid];
+  const eligible: Record<Check["mode"], readonly StoryEvidence["status"][]> = {
+    head: ["green"],
+    red: ["red"],
+    base: ["red", "missing-module"],
+    scaffold: ["red"],
+    fix: ["red"],
+  };
+  const cases = (Object.keys(eligible) as Check["mode"][]).flatMap((mode) =>
+    statuses.map((evidence) => ({ mode, evidence, status: evidence.status, cacheable: eligible[mode].includes(evidence.status) })));
+
+  it.each(cases)("publishes completed $mode evidence with status $status only when reusable", async ({ mode, evidence, cacheable }) => {
+    const { tools, records, events } = fixture({ workerReport: { evidence, selected } });
+    const replay = await runCheck({ ...check, mode }, setup, tools);
+    expect(replay).toMatchObject({ evidence, resumed: false });
+    expect(records.has(cache)).toBe(cacheable);
+    expect(events.some(({ operation }) => operation === "rename")).toBe(cacheable);
+  });
+
+  it.each([
+    { mode: "base", saved: cacheRecord(green, "head") },
+    { mode: "fix", saved: cacheRecord(green, "head") },
+    { mode: "red", saved: cacheRecord(missing, "base") },
+    { mode: "scaffold", saved: cacheRecord(missing, "base") },
+  ] as const)("runs the worker if a completed cache contains an inadmissible $mode outcome", async ({ mode, saved }) => {
+    const { tools, records, events } = fixture({ workerReport: { evidence: red, selected } });
+    records.set(cache, saved);
+    expect(await runCheck({ ...check, mode }, setup, tools)).toMatchObject({ evidence: red, resumed: false });
+    expect(events).toContainEqual({ operation: "worker", args: [tested, inputFile, outputFile] });
+  });
+});

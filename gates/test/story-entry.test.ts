@@ -292,3 +292,27 @@ describe("Isolated story worker", () => {
     });
   });
 });
+
+it("accepts whitespace-only pathspec input without inserting a placeholder", async () => {
+  const tools = commandTools();
+  await runStoryCommand(["check", feature, phase, setup, " \t  \r\n "], tools);
+  expect(tools.phase).toHaveBeenCalledExactlyOnceWith({ mode: "check", feature, phase, setup, patterns: [], label: undefined });
+});
+
+it("replays a direct assertion when neither the expected nor reported evidence names a helper", async () => {
+  await workingTree(async (root) => {
+    const directSource = { ...source, text: "expect(value).toBe(answer);" };
+    storyFiles.write(join(root, file), 'it("receives [the answer]+", () => {\n  expect(value).toBe(answer);\n});\n');
+    const directAssertion = { file, project: project.name, test, source: directSource, diagnostic: failureMessage };
+    const failure = {
+      name: "AssertionError", message: failureMessage,
+      stack: "AssertionError: " + failureMessage + "\n    at test (" + join(root, file) + ":2:1)",
+    };
+    const modules = [report(root, { state: "failed", errors: [failure] })];
+    const { input, output, runner } = workerFixture(root, { mode: "fix", expected: [directAssertion] }, modules);
+    await replayStoryWorker(root, input, output, runner);
+    expect(JSON.parse(storyFiles.read(output)) as unknown).toEqual({
+      evidence: { status: "red", assertions: [directAssertion] }, selected,
+    });
+  });
+});
