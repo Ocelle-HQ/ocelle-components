@@ -25,35 +25,35 @@ function proof(files: readonly TestFileResult[], overrides: Partial<StoryEvidenc
   };
 }
 
-function expectInvalid(input: StoryEvidenceInput, problem: string): void {
-  expect(classifyStoryEvidence(input)).toEqual({ status: "invalid", assertions: [], problem });
+function invalid(problem: string) {
+  return { status: "invalid", assertions: [], problem };
 }
 
 describe("phase proof inventory", () => {
   it("rejects an empty selection even when no unexpected result exists", () => {
-    expectInvalid(proof([], { selected: [] }), "test result inventory differs from the selection");
+    expect(classifyStoryEvidence(proof([], { selected: [] }))).toEqual(invalid("test result inventory differs from the selection"));
   });
 
   it("requires the selected file and project together", () => {
-    expectInvalid(proof([{ ...module, ...other }]), "test result inventory differs from the selection");
+    expect(classifyStoryEvidence(proof([{ ...module, ...other }]))).toEqual(invalid("test result inventory differs from the selection"));
   });
 
   it.each(["pending", "queued", "skipped"] as const)("rejects a %s file despite its reported test", (state) => {
-    expectInvalid(proof([{ ...module, state }]), `no completed tests in ${file.file}`);
+    expect(classifyStoryEvidence(proof([{ ...module, state }]))).toEqual(invalid(`no completed tests in ${file.file}`));
   });
 
   it("rejects an empty passed file and a failed file with a passed case", () => {
-    expectInvalid(proof([{ ...module, tests: [] }]), `no completed tests in ${file.file}`);
-    expectInvalid(proof([{ ...module, state: "failed" }]), `file error in ${file.file} without a failing assertion`);
+    expect(classifyStoryEvidence(proof([{ ...module, tests: [] }]))).toEqual(invalid(`no completed tests in ${file.file}`));
+    expect(classifyStoryEvidence(proof([{ ...module, state: "failed" }]))).toEqual(invalid(`file error in ${file.file} without a failing assertion`));
   });
 
   it.each(["pending", "skipped"] as const)("rejects a %s case even when its file reports passed", (state) => {
-    expectInvalid(proof([{ ...module, tests: [{ ...test, state }] }]), `${file.file}: ${state} test ${name}`);
+    expect(classifyStoryEvidence(proof([{ ...module, tests: [{ ...test, state }] }]))).toEqual(invalid(`${file.file}: ${state} test ${name}`));
   });
 
   it("rejects an ambiguous failed case and a cached expectation whose file did not run", () => {
-    expectInvalid(proof([{ ...module, state: "failed", tests: [test, failed] }]), "failing assertion has an ambiguous test name in its file");
-    expectInvalid(proof([module], { expected: [{ ...site, ...other }] }), "expected assertion test or source missing or ambiguous in the replay");
+    expect(classifyStoryEvidence(proof([{ ...module, state: "failed", tests: [test, failed] }]))).toEqual(invalid("failing assertion has an ambiguous test name in its file"));
+    expect(classifyStoryEvidence(proof([module], { expected: [{ ...site, ...other }] }))).toEqual(invalid("expected assertion test or source missing or ambiguous in the replay"));
   });
 
   it("keeps the successful proof when a separate configured case has the same title", () => {
@@ -73,15 +73,15 @@ describe("changed source proof", () => {
     { label: "no assertion error", row: { ...failed, errors: [] }, problem: `non-assertion error in ${file.file}: ${name}` },
     { label: "mixed assertion and setup errors", row: { ...failed, errors: [failure, { name: "TypeError", message }] }, problem: `non-assertion error in ${file.file}: ${name}` },
   ] satisfies readonly { label: string; row: TestCaseResult; problem: string }[])("rejects $label", ({ row, problem }) => {
-    expectInvalid(proof([{ ...module, state: "failed", tests: [row] }]), problem);
+    expect(classifyStoryEvidence(proof([{ ...module, state: "failed", tests: [row] }]))).toEqual(invalid(problem));
   });
 
   it("rejects an untracked blank source line and a missing helper location", () => {
     const blank = { [file.file]: ["it", "helper();", "  "] };
-    expectInvalid(proof([{ ...module, state: "failed", tests: [failed] }], { sources: blank }), sourceProblem);
+    expect(classifyStoryEvidence(proof([{ ...module, state: "failed", tests: [failed] }], { sources: blank }))).toEqual(invalid(sourceProblem));
     const helper = { helperFile: "test/scenarios/shared.ts", helperLine: 2 };
     const row = { ...failed, errors: [{ ...failure, ...helper }] };
-    expectInvalid(proof([{ ...module, state: "failed", tests: [row] }]), "unlocated helper assertion in test/scenarios/shared.ts:2");
+    expect(classifyStoryEvidence(proof([{ ...module, state: "failed", tests: [row] }]))).toEqual(invalid("unlocated helper assertion in test/scenarios/shared.ts:2"));
   });
 
   it("distinguishes repeated assertion text, including at either edge of a changed hunk", () => {
@@ -89,18 +89,16 @@ describe("changed source proof", () => {
     const duplicateCase = { ...module, state: "failed", tests: [failed] } satisfies TestFileResult;
     expect(classifyStoryEvidence(proof([duplicateCase], { sources: duplicate })))
       .toEqual({ status: "red", assertions: [{ ...site, source: { ...site.source, occurrence: 2 } }] });
-    expectInvalid(proof([duplicateCase], { sources: duplicate, expected: [site] }), "expected assertion failures did not match replayed failures");
+    expect(classifyStoryEvidence(proof([duplicateCase], { sources: duplicate, expected: [site] }))).toEqual(invalid("expected assertion failures did not match replayed failures"));
     const earlier = { ...duplicateCase, tests: [{ ...failed, errors: [{ ...failure, line: 2 }] }] };
     expect(classifyStoryEvidence(proof([earlier], { sources: duplicate })))
       .toEqual({ status: "red", assertions: [{ ...site, source: { ...site.source, line: 2 } }] });
-    expectInvalid(proof([duplicateCase], { changedLines: { [file.file]: [{ start: 2, end: 2 }] } }),
-      `unchanged assertion in ${file.file}:3: ${name}: ${message}`);
+    expect(classifyStoryEvidence(proof([duplicateCase], { changedLines: { [file.file]: [{ start: 2, end: 2 }] } }))).toEqual(invalid(`unchanged assertion in ${file.file}:3: ${name}: ${message}`));
   });
 
   it("does not accept a green proof whose expected assertion exists only in a later case", () => {
     const later = { name: "later scenario", state: "passed", errors: [], startLine: 3 } satisfies TestCaseResult;
-    expectInvalid(proof([{ ...module, tests: [test, later] }], { expected: [site] }),
-      "expected assertion test or source missing or ambiguous in the replay");
+    expect(classifyStoryEvidence(proof([{ ...module, tests: [test, later] }], { expected: [site] }))).toEqual(invalid("expected assertion test or source missing or ambiguous in the replay"));
   });
 });
 
@@ -113,13 +111,13 @@ describe("scaffold missing-module proof", () => {
 
   it("recognizes a repository-relative missing scaffold module only with an empty affected module", () => {
     expect(classifyStoryEvidence(proof([absent], allowed))).toEqual({ status: "missing-module", assertions: [] });
-    expectInvalid(proof([{ ...absent, tests: [test] }], allowed), `file error in ${file.file}: ${collection}`);
-    expectInvalid(proof([absent], { ...allowed, changedTests: [] }), `file error in ${file.file}: ${collection}`);
+    expect(classifyStoryEvidence(proof([{ ...absent, tests: [test] }], allowed))).toEqual(invalid(`file error in ${file.file}: ${collection}`));
+    expect(classifyStoryEvidence(proof([absent], { ...allowed, changedTests: [] }))).toEqual(invalid(`file error in ${file.file}: ${collection}`));
   });
 
   it("rejects other collection errors even alongside an approved missing module", () => {
     const failures: Failure[] = [error, { name: "SyntaxError", message: "cannot parse control" }];
-    expectInvalid(proof([{ ...absent, errors: failures }], allowed), `file error in ${file.file}: ${collection}`);
+    expect(classifyStoryEvidence(proof([{ ...absent, errors: failures }], allowed))).toEqual(invalid(`file error in ${file.file}: ${collection}`));
   });
 });
 

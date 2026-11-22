@@ -55,6 +55,7 @@ const trackedRunner = [
 ];
 
 function git(args: readonly string[], cwd = root): string {
+  // Stryker disable next-line all: process boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "runs real clean-worktree red, base and green checks and refuses malformed cache reuse"
   return execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
 }
 
@@ -73,10 +74,12 @@ function head(): string {
 }
 
 function readJson(filename: string): unknown {
+  // Stryker disable next-line all: process boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "runs real clean-worktree red, base and green checks and refuses malformed cache reuse"
   return JSON.parse(readFileSync(filename, "utf8")) as unknown;
 }
 
 function writeJson(filename: string, value: object): void {
+  // Stryker disable next-line all: process boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "runs real clean-worktree red, base and green checks and refuses malformed cache reuse"
   writeFileSync(filename, `${JSON.stringify(value)}\n`);
 }
 
@@ -250,6 +253,7 @@ async function runCheck(check: Check, setup: string): Promise<CheckResult> {
       if (check.selection.changed.length > 0) git(["restore", `--source=${check.overlay}`, "--worktree", "--", ...check.selection.changed], tested);
       for (const deleted of check.selection.deleted) rmSync(join(tested, deleted), { force: true });
     }
+    // Stryker disable next-line all: process boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "runs real clean-worktree red, base and green checks and refuses malformed cache reuse"
     const setupRun = await runTool("bash", ["-c", setup], tested, environment);
     if (setupRun.exitCode !== 0) {
       evidence = invalid("worktree setup failed");
@@ -258,6 +262,7 @@ async function runCheck(check: Check, setup: string): Promise<CheckResult> {
       const pending = join(temporary, "selection.json");
       const report = join(temporary, "result.json");
       writeJson(pending, { ...check.selection, mode: check.mode, expected: check.expected, missingModules: check.missingModules });
+      // Stryker disable next-line all: process boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "runs real clean-worktree red, base and green checks and refuses malformed cache reuse"
       const ran = await runTool(process.execPath, [path, "worker", pending, report], tested, environment);
       log = ran.stdout + ran.stderr;
       if (ran.exitCode !== 0 || !existsSync(report)) {

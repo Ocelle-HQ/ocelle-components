@@ -86,9 +86,13 @@ function nonempty(value: unknown): value is string {
   return typeof value === "string" && value.length > 0;
 }
 
+function relativeFile(value: unknown): value is string {
+  return nonempty(value) && !value.startsWith("/") && value !== "." && value !== ".."
+    && !value.startsWith("../") && posix.normalize(value) === value;
+}
+
 function fileShape(value: unknown): value is TestFile {
-  return object(value) && nonempty(value.project) && nonempty(value.file)
-    && !value.file.startsWith("/") && value.file !== "." && value.file !== ".." && !value.file.startsWith("../") && posix.normalize(value.file) === value.file;
+  return object(value) && nonempty(value.project) && relativeFile(value.file);
 }
 
 function fileKey(value: TestFile): string {
@@ -204,7 +208,7 @@ function invalid(problem: string): StoryEvidence {
 
 function knownMissingModule(entry: TestFileResult, missing: readonly string[]): boolean {
   // A collection failure is admissible on the pre-scaffold base only for a module added by that scaffold.
-  return entry.errors.length > 0 && entry.tests.length === 0 && entry.errors.every(({ message }) => {
+  return entry.tests.length === 0 && entry.errors.every(({ message }) => {
     const path = /(?:Cannot find module|Failed to load url) ['"]?([^\s'"]+)/i.exec(message)?.[1];
     if (path === undefined) return false;
     const normalized = path.startsWith(".") ? posix.join(posix.dirname(entry.file), path) : path;
@@ -221,10 +225,12 @@ function assertionSource(lines: readonly string[], start: number, line: number):
 
 function sourceExists(test: TestCaseResult, entry: TestFileResult, expectation: Assertion, lines: readonly string[]): boolean {
   if (expectation.source === undefined) return true;
-  if (test.startLine === undefined) return false;
-  const after = entry.tests.flatMap(({ startLine }) => startLine !== undefined && startLine > (test.startLine ?? 0) ? [startLine] : []);
+  const start = test.startLine;
+  if (start === undefined) return false;
+  const end = entry.tests.reduce((next, { startLine }) => startLine !== undefined && startLine > start ? Math.min(next, startLine) : next,
+    lines.length + 1);
   const text = expectation.source.text;
-  return lines.slice(test.startLine - 1, Math.min(lines.length + 1, ...after) - 1)
+  return lines.slice(start - 1, end - 1)
     .filter((line) => line.trim() === text).length >= expectation.source.occurrence;
 }
 
@@ -232,20 +238,21 @@ function fileAssertions(
   entry: TestFileResult,
   input: StoryEvidenceInput,
   testIdentities: Map<string, number>,
-): StoryEvidence {
+): { assertions: readonly Assertion[]; problem?: string } {
   const assertions: Assertion[] = [];
+  const problem = (message: string) => ({ assertions: [], problem: message });
   const changed = input.changedTests.includes(entry.file);
   const lines = input.sources?.[entry.file] ?? [];
   const allowedLines = input.changedLines?.[entry.file] ?? [];
   for (const test of entry.tests) {
-    if (test.state === "pending" || test.state === "skipped") return invalid(`${entry.file}: ${test.state} test ${test.name}`);
+    if (test.state === "pending" || test.state === "skipped") return problem(`${entry.file}: ${test.state} test ${test.name}`);
     const assertion = { file: entry.file, project: entry.project, test: test.name };
     const identity = assertionKey(assertion);
     testIdentities.set(identity, (testIdentities.get(identity) ?? 0) + 1);
     if (test.state !== "failed") continue;
-    if (!changed) return invalid(`unrelated failure in ${entry.file}: ${test.name}`);
+    if (!changed) return problem(`unrelated failure in ${entry.file}: ${test.name}`);
     if (test.errors.length === 0 || test.errors.some(({ name }) => name !== "AssertionError")) {
-      return invalid(`non-assertion error in ${entry.file}: ${test.name}`);
+      return problem(`non-assertion error in ${entry.file}: ${test.name}`);
     }
     if (input.changedLines === undefined) {
       assertions.push(assertion);
@@ -253,47 +260,49 @@ function fileAssertions(
     }
     for (const { line, message, helperFile, helperLine } of test.errors) {
       if (line === undefined || test.startLine === undefined) {
-        return invalid(`unlocated assertion in ${entry.file}: ${test.name}: ${message}`);
+        return problem(`unlocated assertion in ${entry.file}: ${test.name}: ${message}`);
       }
       if (!allowedLines.some(({ start, end }) => line >= start && line <= end)) {
-        return invalid(`unchanged assertion in ${entry.file}:${String(line)}: ${test.name}: ${message}`);
+        return problem(`unchanged assertion in ${entry.file}:${String(line)}: ${test.name}: ${message}`);
       }
       const source = assertionSource(lines, test.startLine, line);
-      if (source === undefined) return invalid(`unlocated source in ${entry.file}:${String(line)}: ${test.name}`);
+      if (source === undefined) return problem(`unlocated source in ${entry.file}:${String(line)}: ${test.name}`);
       let helper: Assertion["helper"];
       if (helperFile !== undefined && helperLine !== undefined) {
         const helperSource = assertionSource(input.sources?.[helperFile] ?? [], 1, helperLine);
-        if (helperSource === undefined) return invalid(`unlocated helper assertion in ${helperFile}:${String(helperLine)}`);
+        if (helperSource === undefined) return problem(`unlocated helper assertion in ${helperFile}:${String(helperLine)}`);
         helper = { file: helperFile, ...helperSource };
       }
       assertions.push({ ...assertion, source, ...(helper === undefined ? {} : { helper }), diagnostic: message });
     }
   }
-  if (entry.state === "failed" && assertions.length === 0) return invalid(`file error in ${entry.file} without a failing assertion`);
-  return { status: assertions.length > 0 ? "red" : "green", assertions };
+  if (entry.state === "failed" && assertions.length === 0) return problem(`file error in ${entry.file} without a failing assertion`);
+  return { assertions };
 }
 
 export function classifyStoryEvidence(input: StoryEvidenceInput): StoryEvidence {
   const { run, selected, changedTests, expected, allowMissingModule, missingModules } = input;
-  if (run.errors.length > 0) return invalid(`run error: ${run.errors[0]?.message ?? ""}`);
+  const [runError] = run.errors;
+  if (runError !== undefined) return invalid(`run error: ${runError.message}`);
   if (selected.length === 0 || !sameInventory(selected, run.files)) return invalid("test result inventory differs from the selection");
 
   const assertions: Assertion[] = [];
   const testIdentities = new Map<string, number>();
   const absent = new Set<string>();
   for (const entry of run.files) {
-    if (entry.errors.length > 0) {
+    const [fileError] = entry.errors;
+    if (fileError !== undefined) {
       if (allowMissingModule === true && changedTests.includes(entry.file) && knownMissingModule(entry, missingModules ?? [])) {
         absent.add(fileKey(entry));
         continue;
       }
-      return invalid(`file error in ${entry.file}: ${entry.errors[0]?.message ?? ""}`);
+      return invalid(`file error in ${entry.file}: ${fileError.message}`);
     }
     if (entry.tests.length === 0 || entry.state === "pending" || entry.state === "queued" || entry.state === "skipped") {
       return invalid(`no completed tests in ${entry.file}`);
     }
     const result = fileAssertions(entry, input, testIdentities);
-    if (result.status === "invalid") return result;
+    if (result.problem !== undefined) return invalid(result.problem);
     assertions.push(...result.assertions);
   }
   if (assertions.some(({ project, file, test }) => testIdentities.get(assertionKey({ project, file, test })) !== 1)) {
@@ -304,9 +313,8 @@ export function classifyStoryEvidence(input: StoryEvidenceInput): StoryEvidence 
   const verification = (expected ?? []).filter((assertion) => !absent.has(fileKey(assertion)));
   for (const assertion of verification) {
     const entry = run.files.find((file) => fileKey(file) === fileKey(assertion));
-    const tests = entry?.tests.filter((test) => test.name === assertion.test);
-    const test = tests?.[0];
-    if (entry === undefined || tests?.length !== 1 || test === undefined
+    const [test, duplicate] = entry?.tests.filter((test) => test.name === assertion.test) ?? [];
+    if (entry === undefined || test === undefined || duplicate !== undefined
       || !sourceExists(test, entry, assertion, input.sources?.[assertion.file] ?? [])
       || (assertion.helper !== undefined && (input.sources?.[assertion.helper.file] ?? [])
         .filter((line) => line.trim() === assertion.helper?.text).length < assertion.helper.occurrence)) {
@@ -333,7 +341,7 @@ function sourceShape(value: unknown): value is AssertionSource {
 
 function assertionShape(value: unknown): value is Assertion {
   return object(value) && fileShape(value) && nonempty(value.test) && sourceShape(value.source)
-    && (value.helper === undefined || (object(value.helper) && sourceShape(value.helper) && nonempty(value.helper.file)))
+    && (value.helper === undefined || (object(value.helper) && sourceShape(value.helper) && relativeFile(value.helper.file)))
     && nonempty(value.diagnostic);
 }
 
@@ -353,7 +361,7 @@ export function decodeCachedEvidence(record: unknown, key: string): StoryEvidenc
   } catch {
     return undefined;
   }
-  if (!object(header) || header.input !== key || !nonempty(header.revision) || !revisionPattern.test(header.revision)
+  if (!object(header) || header.input !== key || typeof header.revision !== "string" || !revisionPattern.test(header.revision)
     || typeof header.seconds !== "number" || !Number.isFinite(header.seconds) || header.seconds < 0
     || !filesShape(header.selected) || !sameInventory(record.selected, header.selected)
     || JSON.stringify(record.evidence) !== JSON.stringify(header.evidence)) return undefined;
