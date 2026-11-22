@@ -35,7 +35,7 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 416ms using pnpm v12.16.1
+Done in 413ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /opt/pw-browsers/chromium-1248/chrome-linux64/chrome
 $ node gates/bin/test.ts
@@ -100,7 +100,6 @@ storybook/test/integration/elements-stories.test.ts:1481: unit-tests: the ocelle
 storybook/test/integration/elements-stories.test.ts:1503: unit-tests: the ocelle-event-timeline stories in the built Storybook (019 FR-050, T038) named-by-host-aria-label: the list is named History: AssertionError: expected [ '' ] to deeply equal [ 'History' ]
 storybook/test/integration/elements-stories.test.ts:1503: unit-tests: the ocelle-event-timeline stories in the built Storybook (019 FR-050, T038) blank-host-aria-label: the list is named Mission history: AssertionError: expected [ '' ] to deeply equal [ 'Mission history' ]
 gates/test/integration/manifest.test.ts:13: unit-tests: manifest gate in a plant tree exits 0 on pass-repository's temporary repository: AssertionError: expected { code: 1, stdout: [ …(3) ], …(1) } to deeply equal { code: +0, …(2) }
-gates/test/integration/plant-repo.test.ts:263: unit-tests: buildRepoTree: the Storybook workspace (006 research.md R-16) fails to build a root whose repository's exception entries name a plan file the repository does not hold: Error: Test timed out in 5000ms.
 packages/elements/test/node/readme.test.ts:666: unit-tests: packages/elements/README.md states: For `ocelle-scroller`, `ocelle-workflow-board`, `ocelle-workflow-lane`, `ocelle-data-table` and `ocelle-event-timeline` a blank host `aria-label` counts as absent, so `label` still names the element: Chromium names a host from a present `aria-label` and does not fall back from a blank one, so these elements put their role and name on a node in their shadow root, named by the host's non-blank `aria-label`, trimmed, or else by `label`: AssertionError: expected '# @ocelle/elements The Ocelle web com…' to contain 'For `ocelle-scroller`, `ocelle-workfl…'
 packages/elements/test/node/readme.test.ts:666: unit-tests: packages/elements/README.md states: `ocelle-event-timeline` shows an event history as one ordered list of its `ocelle-timeline-event` children, in source order: `<ocelle-event-timeline label="Mission history"><ocelle-timeline-event time="14:02">Mission created</ocelle-timeline-event></ocelle-event-timeline>`: AssertionError: expected '# @ocelle/elements The Ocelle web com…' to contain '`ocelle-event-timeline` shows an even…'
 packages/elements/test/node/readme.test.ts:666: unit-tests: packages/elements/README.md states: Each event is one list item: a dot on a line that joins the events, its time above its content, and its content. The dots and the line are drawn and hidden from assistive technology; a screen reader hears the list's name, then each item's time and content: AssertionError: expected '# @ocelle/elements The Ocelle web com…' to contain 'Each event is one list item: a dot on…'
@@ -229,5 +228,5 @@ packages/styles/test/source.test.ts:440: unit-tests: src/base.css as shipped (bu
 packages/styles/test/source.test.ts:444: unit-tests: src/base.css as shipped (buildPlan(text)[0].content) follows the compact scale with the prose rules of data-model § Rule table, in its order, with exactly their declarations (R-03, R-06): AssertionError: expected [ { media: [], …(2) }, …(20) ] to deeply equal [ { media: [], …(2) }, …(20) ]
 packages/styles/test/source.test.ts:451: unit-tests: src/base.css as shipped (buildPlan(text)[0].content) ends with the identifier-wrap rule right after the prose rules, then the data-table block 1, block 2 and block 4, in that order, with exactly their declarations (R-03; 019 R-06, R-19): AssertionError: expected [ { media: [], …(2) }, …(22) ] to deeply equal [ { media: [], …(2) }, …(24) ]
 packages/styles/test/source.test.ts:511: unit-tests: src/base.css as shipped (buildPlan(text)[0].content) US1-8: holds every base-layer selector, and no selector has a class or exceeds its specificity bound: AssertionError: expected [ …(2) ] to deeply equal []
-unit-tests: 190 of 7596 tests failed
+unit-tests: 189 of 7596 tests failed
 [ELIFECYCLE] Test failed. See above for more details.
