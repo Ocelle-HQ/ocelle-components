@@ -155,6 +155,12 @@ pitfalls up front. Each entry names where it was found. New entries are added as
 
 # Testing pitfalls
 
+- **015 phases 2 and 6** — For a browser timing failure, replay the same file on the pristine base and check the
+  full hosted suite before changing a timing assertion. When adding an element, check the exact manifest, Storybook
+  index, pinned light and dark baselines, and injected accessibility fixture together. Keep a tests-only checkpoint
+  with isolated red and green evidence for the changed behavior.
+  [Mission verification](../../../specs/015-app-frame-navigation/verification.md)
+
 - "Does not" assertions pass against an empty file, so they cannot go red alone. Pair each with the positive
   assertion it guards, and prove it with a planted defect. (003 SPEC-1-03, TESTABILITY-1-001)
 - A plant must be measured, not assumed: several planned plants did not make their guard fail in Chromium
