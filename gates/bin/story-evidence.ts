@@ -42,6 +42,26 @@ interface CheckResult {
   readonly selected: readonly { project: string; file: string }[];
 }
 
+export interface PhaseRequest {
+  readonly mode: "red" | "check";
+  readonly feature: string;
+  readonly phase: string;
+  readonly setup: string;
+  readonly patterns: readonly string[];
+  readonly label?: string | undefined;
+}
+
+export interface PhaseTools {
+  readonly root: string;
+  readonly git: (args: readonly string[]) => string;
+  readonly exists: (filename: string) => boolean;
+  readonly read: (filename: string) => string;
+  readonly write: (filename: string, content: string) => void;
+  readonly mkdir: (directory: string) => void;
+  readonly runCheck: (check: Check, setup: string) => Promise<CheckResult>;
+  readonly emit: (value: object, filename?: string) => void;
+}
+
 const root = process.cwd();
 const path = import.meta.filename;
 const environment: NodeJS.ProcessEnv = { ...process.env, CI: "true" };
@@ -62,17 +82,17 @@ function git(args: readonly string[], cwd = root): string {
   return execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
 }
 
-function trackedDiff(from: string, to: string, filter: string, patterns: readonly string[] = []): string[] {
+function trackedDiff(git: PhaseTools["git"], from: string, to: string, filter: string, patterns: readonly string[] = []): string[] {
   return git(["diff", "--no-renames", "--name-only", "-z", `--diff-filter=${filter}`, from, to, "--", ...patterns])
     .split("\0").filter(Boolean);
 }
 
-function revision(value: string): string {
+function revision(git: PhaseTools["git"], value: string): string {
   if (!/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(value)) throw new Error("expected a full commit SHA");
   return git(["rev-parse", "--verify", `${value}^{commit}`]).trim();
 }
 
-function head(): string {
+function head(git: PhaseTools["git"]): string {
   return git(["rev-parse", "HEAD"]).trim();
 }
 
@@ -130,20 +150,20 @@ async function worker(inputPath: string, outputPath: string): Promise<void> {
   process.exitCode = 0; // A red assertion is represented in the result, not as a crashed worker.
 }
 
-function scope(dir: string): string[] {
+function scope(dir: string, tools: PhaseTools): string[] {
   const filename = join(dir, "test-scope.txt");
-  if (!existsSync(filename)) return [];
-  const paths = readFileSync(filename, "utf8").split(/\r?\n/).map((line) => line.trim()).filter((line) => line !== "" && !line.startsWith("#"));
+  if (!tools.exists(filename)) return [];
+  const paths = tools.read(filename).split(/\r?\n/).map((line) => line.trim()).filter((line) => line !== "" && !line.startsWith("#"));
   if (paths.some((entry) => isAbsolute(entry) || entry.startsWith("-") || entry.split("/").includes(".."))) {
     throw new Error("test-scope.txt must contain repository-relative test paths");
   }
   return [...new Set(paths)];
 }
 
-function selection(from: string, to: string, patterns: readonly string[], dir: string): Selection {
-  const changed = trackedDiff(from, to, "AMT", patterns);
+function selection(from: string, to: string, patterns: readonly string[], dir: string, tools: PhaseTools): Selection {
+  const changed = trackedDiff(tools.git, from, to, "AMT", patterns);
   const changedLines = Object.fromEntries(changed.map((file) => {
-    const diff = git(["diff", "--no-renames", "--no-color", "--no-ext-diff", "--unified=0", from, to, "--", file]);
+    const diff = tools.git(["diff", "--no-renames", "--no-color", "--no-ext-diff", "--unified=0", from, to, "--", file]);
     const ranges = [...diff.matchAll(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@/gm)].flatMap((match) => {
       const start = Number(match[1]);
       const count = Number(match[2] ?? 1);
@@ -151,7 +171,7 @@ function selection(from: string, to: string, patterns: readonly string[], dir: s
     });
     return [file, ranges];
   }));
-  return { changed, changedLines, deleted: trackedDiff(from, to, "D", patterns), extra: scope(dir) };
+  return { changed, changedLines, deleted: trackedDiff(tools.git, from, to, "D", patterns), extra: scope(dir, tools) };
 }
 
 function safeLog(value: string, tested: string): string {
@@ -286,12 +306,12 @@ function expectedStatus(result: CheckResult): number {
   return 2;
 }
 
-function testsOnly(from: string, to: string, patterns: readonly string[], feature: string): boolean {
-  return trackedDiff(from, to, "ACDMRTUXB", [...patterns.map((item) => item.replace(/^:\(glob\)/, ":(exclude,glob)")),
+function testsOnly(git: PhaseTools["git"], from: string, to: string, patterns: readonly string[], feature: string): boolean {
+  return trackedDiff(git, from, to, "ACDMRTUXB", [...patterns.map((item) => item.replace(/^:\(glob\)/, ":(exclude,glob)")),
     `:(exclude)${feature}`]).length === 0;
 }
 
-function ancestor(older: string, newer: string): boolean {
+function ancestor(git: PhaseTools["git"], older: string, newer: string): boolean {
   try {
     git(["merge-base", "--is-ancestor", older, newer]);
     return true;
@@ -300,10 +320,18 @@ function ancestor(older: string, newer: string): boolean {
   }
 }
 
-function records(dir: string): string[][] {
+function records(dir: string, tools: PhaseTools): { name: string; sha: string }[] {
   const file = join(dir, "red-commits");
-  if (!existsSync(file)) return [];
-  return readFileSync(file, "utf8").trim().split("\n").filter(Boolean).map((line) => line.trim().split(/\s+/));
+  if (!tools.exists(file)) return [];
+  const seen = new Set<string>();
+  return tools.read(file).trim().split("\n").filter(Boolean).map((line) => {
+    const [name, sha, surplus] = line.trim().split(/\s+/);
+    if (name === undefined || !/^(?:phase|fix-\d+)$/.test(name) || sha === undefined || surplus !== undefined || seen.has(name)) {
+      throw new Error("invalid red-commits entry");
+    }
+    seen.add(name);
+    return { name, sha };
+  });
 }
 
 function emit(value: object, filename?: string): void {
@@ -311,22 +339,24 @@ function emit(value: object, filename?: string): void {
   console.log(JSON.stringify(value));
 }
 
-async function checkPhase(mode: string, feature: string, phase: string, setup: string, patterns: string[], label?: string): Promise<void> {
+export async function checkPhase(request: PhaseRequest, tools: PhaseTools): Promise<void> {
+  const { mode, feature, phase, setup, patterns, label } = request;
+  const { root, git, emit, runCheck } = tools;
   const dir = join(root, feature, "reviews", `phase-${phase}`);
   if (!/^\d+$/.test(phase) || !resolve(dir).startsWith(`${root}/`)) throw new Error("invalid phase path");
-  mkdirSync(dir, { recursive: true });
-  const current = head();
+  tools.mkdir(dir);
+  const current = head(git);
   if (mode === "red") {
     if (label === undefined || !/^(?:phase|fix-\d+)$/.test(label)) throw new Error("invalid red label");
     const old = `${current}^`;
-    const tests = testsOnly(old, current, patterns, feature);
+    const tests = testsOnly(git, old, current, patterns, feature);
     const log = join(dir, `red-${label}.log`);
-    const result = await runCheck({ mode, revision: current, selection: selection(old, current, patterns, dir), expected: [], missingModules: [], log }, setup);
+    const result = await runCheck({ mode, revision: current, selection: selection(old, current, patterns, dir, tools), expected: [], missingModules: [], log }, setup);
     const code = expectedStatus(result);
     const recorded = tests && code === 1;
     if (recorded) {
-      const lines = records(dir).filter(([existing]) => existing !== label).map((fields) => fields.join(" "));
-      writeFileSync(join(dir, "red-commits"), `${[...lines, `${label} ${current}`].join("\n")}\n`);
+      const lines = records(dir, tools).filter(({ name }) => name !== label).map(({ name, sha }) => `${name} ${sha}`);
+      tools.write(join(dir, "red-commits"), `${[...lines, `${label} ${current}`].join("\n")}\n`);
     }
     emit({ phase, label, sha: current, tests_only: tests, red: code === 1, recorded, exit_code: code, log, ...result });
     return;
@@ -334,35 +364,34 @@ async function checkPhase(mode: string, feature: string, phase: string, setup: s
 
   const out = join(dir, "tdd-check.json");
   const baseFile = join(dir, "base.sha");
-  if (!existsSync(baseFile)) {
+  if (!tools.exists(baseFile)) {
     emit({ phase, status: "fail", problems: ["no base.sha: the phase was not started by the story workflow"] }, out);
     return;
   }
-  const base = revision(readFileSync(baseFile, "utf8").trim());
-  const redRecords = records(dir);
+  const base = revision(git, tools.read(baseFile).trim());
+  const redRecords = records(dir, tools);
   const exemption = join(dir, "tdd-exempt.md");
-  if (existsSync(exemption) && redRecords.length === 0) {
+  if (tools.exists(exemption) && redRecords.length === 0) {
     emit({ phase, status: "exempt", reason_file: exemption, head: current }, out);
     return;
   }
   const scaffoldFile = join(dir, "scaffold.sha");
-  const scaffold = existsSync(scaffoldFile) ? revision(readFileSync(scaffoldFile, "utf8").trim()) : undefined;
+  const scaffold = tools.exists(scaffoldFile) ? revision(git, tools.read(scaffoldFile).trim()) : undefined;
   const problems: string[] = [];
-  if (!ancestor(base, current)) problems.push("base is not in the history of HEAD");
-  if (scaffold !== undefined && (!ancestor(base, scaffold) || !ancestor(scaffold, current))) problems.push("scaffold is not between base and HEAD");
+  if (!ancestor(git, base, current)) problems.push("base is not in the history of HEAD");
+  if (scaffold !== undefined && (!ancestor(git, base, scaffold) || !ancestor(git, scaffold, current))) problems.push("scaffold is not between base and HEAD");
   if (redRecords.length === 0) problems.push("no red commit recorded (red.sh) and no tdd-exempt.md");
   const reds = [];
   const fixProofs: { label: string; base: string; expected: readonly Assertion[] }[] = [];
   let phaseAssertions: readonly Assertion[] = [];
   const discovered = new Map<string, Assertion>();
-  for (const [name, sha] of redRecords) {
-    if (name === undefined || !/^(?:phase|fix-\d+)$/.test(name) || sha === undefined) throw new Error("invalid red-commits entry");
-    const red = revision(sha);
-    if (!ancestor(red, current) || !testsOnly(`${red}^`, red, patterns, feature)) {
+  for (const { name, sha } of redRecords) {
+    const red = revision(git, sha);
+    if (!ancestor(git, red, current) || !testsOnly(git, `${red}^`, red, patterns, feature)) {
       problems.push(`red commit ${name} is outside HEAD or changes non-test files`);
       continue;
     }
-    const result = await runCheck({ mode: "red", revision: red, selection: selection(`${red}^`, red, patterns, dir),
+    const result = await runCheck({ mode: "red", revision: red, selection: selection(`${red}^`, red, patterns, dir, tools),
       expected: [], missingModules: [], log: join(dir, `check-red-${name}.log`) }, setup);
     const code = expectedStatus(result);
     if (code !== 1) problems.push(`red commit ${name}: ${result.evidence.problem ?? "no failing assertion"}`);
@@ -373,9 +402,9 @@ async function checkPhase(mode: string, feature: string, phase: string, setup: s
     reds.push({ label: name, sha: red, exit_code: code, ...result });
   }
 
-  const finalSelection = selection(base, current, patterns, dir);
+  const finalSelection = selection(base, current, patterns, dir, tools);
   const expected = [...discovered.values()];
-  const missingModules = scaffold === undefined ? [] : trackedDiff(base, scaffold, "A");
+  const missingModules = scaffold === undefined ? [] : trackedDiff(git, base, scaffold, "A");
   const settled = async (kind: Check["mode"], tested: string, name: string, assertions: readonly Assertion[]): Promise<CheckResult> => runCheck({
     mode: kind, revision: tested, overlay: kind === "head" ? undefined : current, selection: finalSelection, expected: assertions,
     missingModules, log: join(dir, name),
@@ -403,23 +432,31 @@ async function checkPhase(mode: string, feature: string, phase: string, setup: s
   }, out);
 }
 
-const [mode, arg, phase, setup, patterns, label] = process.argv.slice(2);
-try {
-  if (mode === "worker" && arg !== undefined && phase !== undefined) {
-    await worker(arg, phase);
-  } else if ((mode === "red" || mode === "check") && arg !== undefined && phase !== undefined && setup !== undefined && patterns !== undefined) {
-    await checkPhase(mode, arg, phase, setup, patterns.split(/\s+/).filter(Boolean), label);
-  } else {
-    throw new Error("invalid focused story evidence arguments");
-  }
-} catch (error) {
-  const message = error instanceof Error ? error.message : String(error);
-  if (mode === "check" && arg !== undefined && phase !== undefined) {
-    emit({ phase, status: "fail", head: head(), problems: [message] }, join(root, arg, "reviews", `phase-${phase}`, "tdd-check.json"));
-  } else if (mode === "red") {
-    emit({ phase, status: "fail", red: false, recorded: false, problem: message });
-  } else {
-    console.error(message);
-    process.exitCode = 2;
+if (import.meta.main) {
+  const [mode, arg, phase, setup, patterns, label] = process.argv.slice(2);
+  try {
+    if (mode === "worker" && arg !== undefined && phase !== undefined) {
+      await worker(arg, phase);
+    } else if ((mode === "red" || mode === "check") && arg !== undefined && phase !== undefined && setup !== undefined && patterns !== undefined) {
+      await checkPhase({ mode, feature: arg, phase, setup, patterns: patterns.split(/\s+/).filter(Boolean), label }, {
+        root, git, emit, runCheck,
+        exists: existsSync,
+        read: (filename) => readFileSync(filename, "utf8"),
+        write: (filename, content) => { writeFileSync(filename, content); },
+        mkdir: (directory) => { mkdirSync(directory, { recursive: true }); },
+      });
+    } else {
+      throw new Error("invalid focused story evidence arguments");
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (mode === "check" && arg !== undefined && phase !== undefined) {
+      emit({ phase, status: "fail", head: head(git), problems: [message] }, join(root, arg, "reviews", `phase-${phase}`, "tdd-check.json"));
+    } else if (mode === "red") {
+      emit({ phase, status: "fail", red: false, recorded: false, problem: message });
+    } else {
+      console.error(message);
+      process.exitCode = 2;
+    }
   }
 }
