@@ -19,10 +19,12 @@
 //   `Navigation`, which test/browser/pill-tag-interactive.test.ts implements for `pill-tag.html`).
 // There is no conditional expect.
 //
-// Not here, and why (reviews/phase-5/notes.md): the corner clicks of contracts/checks.md § US4-7 (a click at each
-// corner inset 1 px of a one-character compact badge), which Chromium's hit test of the pill radius sends past the
-// control (an open operator question); the tooltip half of § US4-10 and every truncation assertion, which are user
-// story 5's (phase 6 wraps the control in `ocelle-tooltip`).
+// Not here, and why (reviews/phase-5/notes.md): corner clicks on the target (a click at each corner inset 1 px of a
+// one-character compact badge), which Chromium's hit test of the pill radius sends past the control; by operator
+// decision Q-P5-1 (a) (reviews/phase-5/operator-decisions.md) the target is the control's box, at least
+// `--ocelle-target-small` in each axis, proven by the edge-midpoint clicks, and contracts/checks.md § US4-7 no longer
+// asks for corner clicks; the tooltip half of § US4-10 and every truncation assertion, which are user story 5's
+// (phase 6 wraps the control in `ocelle-tooltip`).
 //
 // Every "does not" outcome shares its body with the positive outcome it guards, and its plant is named in the body's
 // name (contracts/checks.md § US4 bodies), run once and recorded in reviews/phase-5/notes.md.

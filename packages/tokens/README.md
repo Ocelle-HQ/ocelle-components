@@ -90,8 +90,11 @@ Two tokens exist for `ocelle-status-indicator` of `@ocelle/elements` (mission 01
 `--ocelle-motion-pulse` is the duration of one iteration of the status indicator's pulse, `1600ms`; the indicator runs
 three iterations, 4.8 s in all, within the 5 s limit. The count is fixed in the element, not a token.
 
-One token exists for `ocelle-pill-tag` of `@ocelle/elements` (mission 018). `--ocelle-line-height-snug` (1.2) is the
+Two tokens exist for `ocelle-pill-tag` of `@ocelle/elements` (mission 018). `--ocelle-line-height-snug` (1.2) is the
 line height of the compact `ocelle-pill-tag` of `@ocelle/elements`, with `--ocelle-font-size-xs`.
+`--ocelle-target-small` (`1.5rem`) is the minimum block size and inline size of an interactive `ocelle-pill-tag` of
+`@ocelle/elements`, 24 px at the default root font size, the minimum target size for a pointer; it is not a primary
+action, so `--ocelle-target-min` does not apply to it.
 
 Two tokens serve the action row of `@ocelle/elements` (`ocelle-action-row`, mission 012).
 `--ocelle-focus-offset-inset` is the negative offset that draws a focus ring inside a box:

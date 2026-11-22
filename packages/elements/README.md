@@ -1318,6 +1318,8 @@ one line; a host that wants it to shrink further sets `min-inline-size: 0` on it
 ```html
 <ocelle-pill-tag status="warning">Blocked</ocelle-pill-tag>
 <ocelle-pill-tag variant="badge" density="compact">3</ocelle-pill-tag>
+<ocelle-pill-tag interactive status="info" aria-pressed="true">Mine</ocelle-pill-tag>
+<ocelle-pill-tag href="/missions?state=blocked" status="warning">Blocked</ocelle-pill-tag>
 ```
 
 `ocelle-pill-tag` is a state pill or a count badge: `<ocelle-pill-tag status="warning">Blocked</ocelle-pill-tag>`,
@@ -1352,7 +1354,7 @@ own tooltip. ARIA states and names on a static pill (`aria-pressed`, `aria-label
 stay on an element with no role, where axe may report them: remove them (`removeAttribute`) once a pill is static, or
 clear them before making it static. An `href` that is empty, whitespace only, does not parse as a URL or is a
 `javascript:` URL is no link: the pill stays static. The interactive pill, with `interactive` or a link `href`, is
-described with its interactive modes.
+described below.
 
 **Layout.** In a flex row a static pill is not shrunk below its longest word, so a one-word pill such as "Blocked" stays
 on one line beside a long name; a host that wants it to shrink further sets `min-inline-size: 0` on it, and its words
@@ -1367,6 +1369,67 @@ fills its line, its first line on that line's baseline.
 `--ocelle-border-width`, `--ocelle-radius-pill`, `--ocelle-font-sans`, `--ocelle-figures`, `--ocelle-font-size-sm`,
 `--ocelle-font-size-xs`, `--ocelle-line-height-tight`, `--ocelle-line-height-snug`, `--ocelle-space-1`,
 `--ocelle-space-2` and `--ocelle-space-3`. A static pill emits no event of its own.
+
+**An interactive pill.** With `interactive` the pill is a toggle or filter button, one native `<button type="button">`
+in its shadow root: `<ocelle-pill-tag interactive status="info" aria-pressed="true">Mine</ocelle-pill-tag>`. With an
+`href` that is a link (not empty, not whitespace only, parsed as a URL and not a `javascript:` URL) the pill is one
+native `<a>` with that `href`, whether or not `interactive` is set: `<ocelle-pill-tag href="/missions?state=blocked"
+status="warning">Blocked</ocelle-pill-tag>`. The element itself is never focusable and has no role; the inner control is
+its one tab stop, and the element's `focus()` and `click()` reach it. The part `control` is the inner `<button>` or `<a>`
+of an interactive pill, which is also its `pill` part. The control conventions it follows are those of `ocelle-button`
+(see Control conventions).
+
+**Passthrough and names.** `aria-label`, `aria-labelledby`, `aria-describedby`, `aria-controls`, `aria-current`,
+`aria-pressed` and `title` set on an interactive pill are moved to the inner control, each with an element-owned
+`data-ocelle-moved-*` mirror, as on `ocelle-button`; `aria-labelledby`, `aria-describedby` and `aria-controls` name
+elements by id in the element's own tree. The inner control is named by `aria-labelledby`, then `aria-label`, then
+`label` (trimmed; empty or whitespace only counts as none), then the pill's text. An interactive pill with no text (an
+icon only, or nothing) has no accessible name of its own: name it with `aria-label`, `aria-labelledby` or `label`; the
+element does not invent a name, and axe reports an unnamed one. Do not set `title` on an interactive pill: it is moved
+to the inner control as the browser's own tooltip and description.
+
+**Activation.** Each activation of an enabled interactive pill (a pointer click, Enter, Space in button mode, the
+element's `click()`) dispatches `ocelle-pill-tag-activate` from the element (`bubbles`, `composed`, `cancelable`,
+`detail` `{}`) before its `click` reaches any bubble-phase listener on the element or its ancestors. Calling
+`preventDefault()` on `ocelle-pill-tag-activate` cancels the click's default action: a link does not navigate, and a
+button still delivers its `click`, with `defaultPrevented` true. A link-mode click with Ctrl, Meta, Shift or Alt held
+delivers its `click` and no `ocelle-pill-tag-activate`, and the browser's own handling of the modifier applies; a middle
+click dispatches neither; a disabled or static pill dispatches no `ocelle-pill-tag-activate`. `disabled` takes an
+interactive pill out of the tab order, reports it disabled and stops every activation; a disabled link has no `href`.
+
+**States.** `:state(pressed)` matches a button-mode pill whose moved `aria-pressed` is `"true"`, which also gives the
+pressed look; `"false"`, `"mixed"` and any other value reach the button as written with neither. `aria-pressed` has no
+effect on a link: on a link-mode pill it is moved and mirrored but not applied, and gives no `:state(pressed)`; it
+applies again if the pill returns to button mode. `:state(current)` matches an interactive pill whose moved
+`aria-current` is set to anything but `"false"`; it draws no mark of its own.
+
+**Interactive looks.** An interactive pill has a `--ocelle-color-accent-strong` border on its status ground (a badge
+keeps its status-colour border); hover takes the status colour on a pill's border and the status ground as a badge's
+fill; pressing and the pressed state add an inset `--ocelle-bar-width` cue in the status colour; no state changes the
+pill's box. A disabled interactive pill is set in `--ocelle-color-disabled-ink` on `--ocelle-color-disabled-bg`, border
+included, whatever its status and variant. In forced colours a pressed pill fills with `Highlight` and sets its text in
+`HighlightText`, so it stays distinct from an unpressed one, and a disabled pill is `GrayText`. Keyboard focus shows the
+token focus ring on the inner control (`--ocelle-focus-width`, `--ocelle-focus-offset`, `--ocelle-color-focus`). An
+interactive pill is at least `--ocelle-target-small` (24 px) in block size and in inline size in either density,
+whatever its text and its font size; in `compact` density its block padding is then at least `--ocelle-space-1`. An
+interactive pill keeps one focus-ring extent (`--ocelle-focus-offset` plus `--ocelle-focus-width`, 5 px) of inline margin
+on each side and caps its inline size at its container's less two such extents, so its ring stays inside a container
+that clips; a container that clips in the block direction keeps that much unclipped space above and below it.
+
+**Changing the mode.** The mode follows `interactive` and `href` whenever either changes: when a pill becomes static
+each moved attribute is written back to the element with the value it last had (an off value such as
+`aria-pressed="false"` included) and its mirror removed; when it becomes interactive they are moved again; a switch
+between button and link mode keeps them moved. A static pill that carries `data-ocelle-moved-*` mirrors when it upgrades
+(copied markup) writes each back as its attribute, unless the element already sets that attribute, and removes the
+mirror. If the inner control has focus when a pill switches between button and link mode, the new inner control has
+focus afterwards, with the focus ring only if it showed before; a pill made static while its inner control has focus
+loses focus as a removed element does, so move focus yourself before making a focused pill static; a pill that becomes
+interactive does not take focus. ARIA states written back to a pill made static (such as `aria-pressed`) stay on an
+element with no role: clear them (`removeAttribute`) once the pill is static, or before making it static.
+
+An interactive pill also reads `--ocelle-color-accent-strong`, `--ocelle-color-disabled-ink`,
+`--ocelle-color-disabled-bg`, `--ocelle-color-focus`, `--ocelle-focus-width`, `--ocelle-focus-offset`,
+`--ocelle-bar-width` and `--ocelle-target-small`.
 
 ## Mapping from kitty-mission-ui
 

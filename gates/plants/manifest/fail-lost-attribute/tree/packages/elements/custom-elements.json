@@ -2251,8 +2251,106 @@
               }
             },
             {
+              "description": "On an interactive pill, moved onto the inner control (the host keeps no copy): its accessible name, over `label` and the text; an empty or whitespace-only value clears it. On a static pill it stays on the host.",
+              "name": "aria-label",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "On an interactive pill, moved onto the inner control: the ids, space-separated, of the elements that name it, resolved in the host's own tree, over `aria-label`; an empty value clears it.",
+              "name": "aria-labelledby",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "On an interactive pill, moved onto the inner control: the ids, space-separated, of the elements that describe it, resolved in the host's own tree; an empty value clears it.",
+              "name": "aria-describedby",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "On an interactive pill, moved onto the inner control: the ids, space-separated, of the elements it controls, resolved in the host's own tree; an empty value clears it.",
+              "name": "aria-controls",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "On an interactive pill, moved onto the inner control with any value; `\"false\"` or an empty value applies none. It draws no mark.",
+              "name": "aria-current",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "On an interactive pill, moved and held; applied to the inner button as written in button mode only (a link cannot be pressed): `\"true\"` reports pressed and gives the pressed look, `\"false\"` not pressed, `\"mixed\"` mixed; an empty value clears it.",
+              "name": "aria-pressed",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "On an interactive pill, moved onto the inner control: the browser's own tooltip and description (the README advises against it). On a static pill it stays on the host.",
+              "name": "title",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `aria-label`, so copies of the live DOM keep it; hosts do not write or remove it, and a pill made static gives it back as `aria-label`.",
+              "name": "data-ocelle-moved-aria-label",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `aria-labelledby`; hosts do not write or remove it.",
+              "name": "data-ocelle-moved-aria-labelledby",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `aria-describedby`; hosts do not write or remove it.",
+              "name": "data-ocelle-moved-aria-describedby",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `aria-controls`; hosts do not write or remove it.",
+              "name": "data-ocelle-moved-aria-controls",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `aria-current`; hosts do not write or remove it.",
+              "name": "data-ocelle-moved-aria-current",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `aria-pressed`, kept in link mode too; hosts do not write or remove it.",
+              "name": "data-ocelle-moved-aria-pressed",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "description": "Element-owned mirror of the moved `title`; hosts do not write or remove it.",
+              "name": "data-ocelle-moved-title",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
               "default": "false",
-              "description": "Button mode (user story 4): with it, or with a link-mode `href`, the pill is interactive; without either it is\nstatic, inert content with no role of its own. Reflected.",
+              "description": "Button mode: with it, or with a link-mode `href`, the pill is interactive; without either it is static, inert\ncontent with no role of its own. Reflected.",
               "fieldName": "interactive",
               "name": "interactive",
               "type": {
@@ -2261,7 +2359,7 @@
             },
             {
               "default": "undefined",
-              "description": "The link's URL: a non-empty `href` that parses as a URL and is not a `javascript:` URL puts the pill in link mode\n(user story 4); any other value leaves it static, or in button mode with `interactive`. Reflected.",
+              "description": "The link's URL: a non-empty `href` that parses as a URL and is not a `javascript:` URL puts the pill in link mode\n(an inner `<a>` with the `href` as written); any other value leaves it static, or in button mode with\n`interactive`. Reflected.",
               "fieldName": "href",
               "name": "href",
               "type": {
@@ -2270,7 +2368,7 @@
             },
             {
               "default": "false",
-              "description": "Disabled, for an interactive pill (user story 4); no effect while the pill is static. Reflected.",
+              "description": "Disabled, for an interactive pill: out of the tab order, reported disabled and not activated (no `click`, no\n`ocelle-pill-tag-activate`), a link without its `href`, in the disabled look; no effect while the pill is static.\nReflected.",
               "fieldName": "disabled",
               "name": "disabled",
               "type": {
@@ -2279,7 +2377,7 @@
             },
             {
               "default": "undefined",
-              "description": "The accessible name of an interactive pill's inner control (user story 4), trimmed; empty or whitespace-only counts\nas none. It changes no visible text and has no effect while the pill is static. Not reflected.",
+              "description": "The accessible name of an interactive pill's inner control, trimmed; empty or whitespace-only counts as none, and the\nname is then the text. It changes no visible text and has no effect while the pill is static. Not reflected.",
               "fieldName": "label",
               "name": "label",
               "type": {
@@ -2289,20 +2387,49 @@
           ],
           "cssParts": [
             {
-              "description": "The visual box: the padding, the colours, the border and the radius.",
+              "description": "The visual box: the padding, the colours, the border and the radius; on an interactive pill, the inner control itself.",
               "name": "pill"
+            },
+            {
+              "description": "The inner `<button>`, or the inner `<a>` in link mode, of an interactive pill.",
+              "name": "control"
             }
           ],
           "cssProperties": [],
+          "cssStates": [
+            {
+              "description": "While the pill is in button mode and its moved `aria-pressed` is `\"true\"`; never in link mode.",
+              "name": "pressed"
+            },
+            {
+              "description": "While the pill is interactive and its moved `aria-current` is set to any value other than `\"false\"`.",
+              "name": "current"
+            }
+          ],
           "customElement": true,
-          "description": "A state pill or a count badge: its text, with an optional leading icon, on its status's colours with the pill radius.",
-          "events": [],
+          "description": "A state pill or a count badge: its text, with an optional leading icon, on its status's colours with the pill radius;\nwith `interactive` a toggle or filter button, with a link `href` a link.",
+          "events": [
+            {
+              "description": "Dispatched from the element on each activation of an enabled interactive pill that delivers a `click` (a pointer click, Enter, Space in button mode, `click()`), before the `click` reaches any bubble-phase listener on the element or its ancestors; bubbles, composed and cancelable, `detail` `{}`. Calling `preventDefault()` on it cancels the click's default action (in link mode the navigation; in button mode the `click` is still delivered). Not dispatched for a link-mode click with Ctrl, Meta, Shift or Alt held, nor for a middle click, nor by a disabled or static pill.",
+              "name": "ocelle-pill-tag-activate",
+              "type": {
+                "text": "CustomEvent<Record<string, never>>"
+              }
+            },
+            {
+              "description": "The native click of an interactive pill's inner control, retargeted to the element, once per activation; a disabled pill delivers none.",
+              "name": "click",
+              "type": {
+                "text": "MouseEvent"
+              }
+            }
+          ],
           "kind": "class",
           "members": [
             {
               "attribute": "interactive",
               "default": "false",
-              "description": "Button mode (user story 4): with it, or with a link-mode `href`, the pill is interactive; without either it is\nstatic, inert content with no role of its own. Reflected.",
+              "description": "Button mode: with it, or with a link-mode `href`, the pill is interactive; without either it is static, inert\ncontent with no role of its own. Reflected.",
               "kind": "field",
               "name": "interactive",
               "privacy": "public",
@@ -2314,7 +2441,7 @@
             {
               "attribute": "href",
               "default": "undefined",
-              "description": "The link's URL: a non-empty `href` that parses as a URL and is not a `javascript:` URL puts the pill in link mode\n(user story 4); any other value leaves it static, or in button mode with `interactive`. Reflected.",
+              "description": "The link's URL: a non-empty `href` that parses as a URL and is not a `javascript:` URL puts the pill in link mode\n(an inner `<a>` with the `href` as written); any other value leaves it static, or in button mode with\n`interactive`. Reflected.",
               "kind": "field",
               "name": "href",
               "privacy": "public",
@@ -2326,7 +2453,7 @@
             {
               "attribute": "disabled",
               "default": "false",
-              "description": "Disabled, for an interactive pill (user story 4); no effect while the pill is static. Reflected.",
+              "description": "Disabled, for an interactive pill: out of the tab order, reported disabled and not activated (no `click`, no\n`ocelle-pill-tag-activate`), a link without its `href`, in the disabled look; no effect while the pill is static.\nReflected.",
               "kind": "field",
               "name": "disabled",
               "privacy": "public",
@@ -2338,7 +2465,7 @@
             {
               "attribute": "label",
               "default": "undefined",
-              "description": "The accessible name of an interactive pill's inner control (user story 4), trimmed; empty or whitespace-only counts\nas none. It changes no visible text and has no effect while the pill is static. Not reflected.",
+              "description": "The accessible name of an interactive pill's inner control, trimmed; empty or whitespace-only counts as none, and the\nname is then the text. It changes no visible text and has no effect while the pill is static. Not reflected.",
               "kind": "field",
               "name": "label",
               "privacy": "public",
@@ -2371,6 +2498,35 @@
               "name": "density",
               "type": {
                 "text": "\"default\" | \"compact\""
+              }
+            },
+            {
+              "description": "Focuses the inner control of an interactive pill; a static pill, which has none, takes no focus.",
+              "kind": "method",
+              "name": "focus",
+              "parameters": [
+                {
+                  "name": "options",
+                  "optional": true,
+                  "type": {
+                    "text": "FocusOptions"
+                  }
+                }
+              ],
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "description": "Clicks the inner control of an interactive pill, so the click passes through it and is guarded like any other (a\ndisabled pill ignores it); on a static pill, the element's own native click.",
+              "kind": "method",
+              "name": "click",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
               }
             }
           ],

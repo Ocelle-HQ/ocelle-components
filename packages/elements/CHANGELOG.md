@@ -26,6 +26,12 @@ its entry point `@ocelle/elements/ocelle-metric.js` are additions to the public 
 and `label`, its default and `icon` slots, its part `pill` and its entry point `@ocelle/elements/ocelle-pill-tag.js`
 are additions to the public surface: a minor change.
 
+The interactive `ocelle-pill-tag`, in button mode with `interactive` and in link mode with an `href`, its moved
+attributes `aria-label`, `aria-labelledby`, `aria-describedby`, `aria-controls`, `aria-current`, `aria-pressed` and
+`title` with their `data-ocelle-moved-*` mirrors, its methods `focus()` and `click()`, its event
+`ocelle-pill-tag-activate`, its custom states `pressed` and `current` and its part `control` are additions to the public
+surface: a minor change.
+
 ### Added
 
 - `ocelle-icon`, an icon of the set drawn inline in `currentColor` at the `--ocelle-icon-size` token, decorative
@@ -110,9 +116,15 @@ are additions to the public surface: a minor change.
   its status's ground in the status colour, or outlined in it with `variant="badge"` and tabular figures; the compact
   density; a static pill is inert content that wraps a long text and is never shrunk below its longest word in a flex
   row. Its attributes `status`, `variant` and `density`, `interactive`, `href` and `disabled` (reflected) and `label`
-  (the interactive modes are to come); its default and `icon` slots; its part `pill`. Entry point
-  `@ocelle/elements/ocelle-pill-tag.js` (defines `ocelle-pill-tag` only). It reads the new token
-  `--ocelle-line-height-snug` of `@ocelle/tokens`.
+  (with `interactive`, a toggle or filter button; with a link `href`, a link); its default and `icon` slots; its parts
+  `pill` and `control`. The interactive pill follows the control conventions of `ocelle-button`: one native inner
+  `<button type="button">` or `<a>`, the moved attributes `aria-label`, `aria-labelledby`, `aria-describedby`,
+  `aria-controls`, `aria-current`, `aria-pressed` (applied on the button only) and `title` with their
+  `data-ocelle-moved-*` mirrors, given back to the element when it becomes static; its methods `focus()` and `click()`;
+  its event `ocelle-pill-tag-activate` (`detail` `{}`) before each activation's `click`; its custom states `pressed`
+  and `current`; the token focus ring; a 24 px minimum target. Entry point `@ocelle/elements/ocelle-pill-tag.js`
+  (defines `ocelle-pill-tag` only). It reads the new tokens `--ocelle-line-height-snug` and `--ocelle-target-small` of
+  `@ocelle/tokens`.
 - The style lint's token-only rule, which checks these elements' styles, admits four values and nothing near them:
   the `grid-template-columns` tracks `fit-content(<percentage>)` and `minmax(0, <flex>)` (the facts columns and
   grid), `translateX(<percentage>)` in `transform` (the progress sweep) and a bare positive integer
