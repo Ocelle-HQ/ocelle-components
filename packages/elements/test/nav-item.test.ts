@@ -162,7 +162,7 @@ describe("compact bubble Escape ownership in drawers", () => {
       newer.open = true;
       await expect.poll(() => newer.shadowRoot?.querySelector("dialog")?.open).toBe(true);
       // Programmatic hover presents a bubble outside the topmost overlay without moving keyboard focus.
-      required(item.shadowRoot?.querySelector("a")).dispatchEvent(new PointerEvent("pointerenter", { pointerType: "mouse" }));
+      required(item.shadowRoot?.querySelector("a")).dispatchEvent(new PointerEvent("pointerover", { bubbles: true, composed: true, pointerType: "mouse" }));
     } else {
       await commands.hover("nested-nav", "a");
     }
