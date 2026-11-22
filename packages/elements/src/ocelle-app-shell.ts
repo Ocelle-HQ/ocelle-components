@@ -364,9 +364,9 @@ export class OcelleAppShell extends LitElement {
 
   readonly #syncDrawerClose = (event: Event): void => {
     const drawer = event.currentTarget;
-    if (!(drawer instanceof OcelleDrawer) || event.composedPath()[0] !== drawer) return;
+    if (!(drawer instanceof OcelleDrawer)) return;
     queueMicrotask(() => {
-      if (!this.#drawerProjected || drawer.open) return;
+      if (!this.#drawerOpen || drawer.open) return;
       this.#drawerState = "closing";
       this.requestUpdate();
     });
@@ -376,7 +376,7 @@ export class OcelleAppShell extends LitElement {
     const drawer = event.currentTarget;
     if (!(drawer instanceof OcelleDrawer) || event.composedPath()[0] !== drawer || !this.#drawerProjected) return;
     const active = deepActive();
-    this.#restoreDrawerFocus = active === null || active === this.#menu() || composedWithin(active, drawer);
+    this.#restoreDrawerFocus = active === null || composedWithin(active, drawer);
     this.#drawerState = "closed";
     this.requestUpdate();
   };
@@ -491,7 +491,7 @@ export class OcelleAppShell extends LitElement {
       this.#focusSource = undefined;
       this.#drawerFocus = undefined;
       this.#restoreDrawerFocus = false;
-      if (restore && (active === null || active === this.#menu() || !visible(active))) {
+      if (restore && (active === null || !visible(active))) {
         const destinations = this.#destinations();
         const original = destinations.find((element) => element === fromDrawer);
         const target = tier === "narrow" ? this.#menu() : original ?? destinations[0];

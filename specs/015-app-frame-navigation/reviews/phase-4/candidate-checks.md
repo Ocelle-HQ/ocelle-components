@@ -18,3 +18,9 @@
 
 - After the rail correction, the exact visual recheck had zero changes and the repeated 32-case axe audit was clean.
 - Two browser cases preserve the same custom nav link and its full presentation through a genuine drawer exit, and preserve deliberate focus set by a close completion listener. Isolated faults compacting the drawer during exit or replacing the listener's focus failed those assertions. Test lint passed.
+
+## Drawer lifecycle mutation follow-up
+
+- The initial local diagnostic instrumented 289 mutations. It reported 121 killed, 54 survivors, two uncovered, and 112 rejected at compilation, for 68.36% in its selected scope. The shared overlay focus hook reached 100%. The test selection omitted the Phase 3 layout and navigation suites; the surviving scope included inherited rendering and event branches.
+- The browser tests in `ce5f136` verify label fallbacks, the origin of menu requests, repeated requests during real exit, no unsolicited focus, the preserved pre-exit destination, and tier event order. Seven isolated source faults failed those assertions. The repeat-resize test moves focus to the close control during the paused exit and observes `resize`, `close`, then the settled tier event.
+- Close request synchronization now uses the drawer's actual `open` value, and completed focus recovery leaves any already focused visible control alone. The selected shell and overlay suites passed 108/108. Separate diagnostics of the current handler and settlement ranges are running with both the Phase 3 and Phase 4 shell suites.
