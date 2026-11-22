@@ -10,6 +10,8 @@ export interface Failure {
   readonly name: string;
   readonly message: string;
   readonly line?: number;
+  readonly helperFile?: string;
+  readonly helperLine?: number;
 }
 
 export interface TestCaseResult {
@@ -53,6 +55,7 @@ export interface Assertion {
   readonly file: string;
   readonly test: string;
   readonly source?: AssertionSource;
+  readonly helper?: AssertionSource & { readonly file: string };
   readonly diagnostic?: string;
 }
 
@@ -92,8 +95,9 @@ function fileKey(value: TestFile): string {
   return JSON.stringify([value.project, value.file]);
 }
 
-function assertionKey(value: Assertion): string {
-  return JSON.stringify([value.project, value.file, value.test, value.source?.text, value.source?.occurrence]);
+export function assertionKey(value: Assertion): string {
+  const { project, file, test, source, helper } = value;
+  return JSON.stringify([project, file, test, source?.text, source?.occurrence, helper?.file, helper?.text, helper?.occurrence]);
 }
 
 function fileKeys(files: readonly TestFile[]): string[] {
@@ -247,7 +251,7 @@ function fileAssertions(
       assertions.push(assertion);
       continue;
     }
-    for (const { line, message } of test.errors) {
+    for (const { line, message, helperFile, helperLine } of test.errors) {
       if (line === undefined || test.startLine === undefined) {
         return invalid(`unlocated assertion in ${entry.file}: ${test.name}: ${message}`);
       }
@@ -256,7 +260,13 @@ function fileAssertions(
       }
       const source = assertionSource(lines, test.startLine, line);
       if (source === undefined) return invalid(`unlocated source in ${entry.file}:${String(line)}: ${test.name}`);
-      assertions.push({ ...assertion, source, diagnostic: message });
+      let helper: Assertion["helper"];
+      if (helperFile !== undefined && helperLine !== undefined) {
+        const helperSource = assertionSource(input.sources?.[helperFile] ?? [], 1, helperLine);
+        if (helperSource === undefined) return invalid(`unlocated helper assertion in ${helperFile}:${String(helperLine)}`);
+        helper = { file: helperFile, ...helperSource };
+      }
+      assertions.push({ ...assertion, source, ...(helper === undefined ? {} : { helper }), diagnostic: message });
     }
   }
   if (entry.state === "failed" && assertions.length === 0) return invalid(`file error in ${entry.file} without a failing assertion`);
@@ -297,7 +307,9 @@ export function classifyStoryEvidence(input: StoryEvidenceInput): StoryEvidence 
     const tests = entry?.tests.filter((test) => test.name === assertion.test);
     const test = tests?.[0];
     if (entry === undefined || tests?.length !== 1 || test === undefined
-      || !sourceExists(test, entry, assertion, input.sources?.[assertion.file] ?? [])) {
+      || !sourceExists(test, entry, assertion, input.sources?.[assertion.file] ?? [])
+      || (assertion.helper !== undefined && (input.sources?.[assertion.helper.file] ?? [])
+        .filter((line) => line.trim() === assertion.helper?.text).length < assertion.helper.occurrence)) {
       return invalid("expected assertion test or source missing or ambiguous in the replay");
     }
   }
@@ -321,6 +333,7 @@ function sourceShape(value: unknown): value is AssertionSource {
 
 function assertionShape(value: unknown): value is Assertion {
   return object(value) && fileShape(value) && nonempty(value.test) && sourceShape(value.source)
+    && (value.helper === undefined || (object(value.helper) && sourceShape(value.helper) && nonempty(value.helper.file)))
     && nonempty(value.diagnostic);
 }
 

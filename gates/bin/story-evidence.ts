@@ -5,7 +5,7 @@ import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { runTool } from "../lib/spawn.ts";
-import { classifyStoryEvidence, decodeCachedEvidence, storyEvidenceKey } from "../lib/test-evidence.ts";
+import { assertionKey, classifyStoryEvidence, decodeCachedEvidence, storyEvidenceKey } from "../lib/test-evidence.ts";
 import type { Assertion, StoryEvidence } from "../lib/test-evidence.ts";
 import { testFile, testRun, withVitest } from "../lib/vitest-run.ts";
 
@@ -103,6 +103,7 @@ async function worker(inputPath: string, outputPath: string): Promise<void> {
     }
     const chosen = new Set([...changedTests, ...extra]);
     const proof = input.mode === "base" || input.mode === "scaffold" || input.mode === "fix";
+    if (proof && input.expected.length === 0) return { evidence: invalid("no independently proven red assertions are available for replay"), selected: [] };
     const expectedNames = (project: string, file: string): string[] =>
       input.expected.filter((assertion) => assertion.file === file && assertion.project === project).map((assertion) => assertion.test);
     const selectedSpecs = specs.filter((spec) => {
@@ -120,6 +121,14 @@ async function worker(inputPath: string, outputPath: string): Promise<void> {
       ...file,
       tests: file.tests.filter((test) => expectedNames(file.project, file.file).includes(test.name)),
     })) } : reported;
+    const knownHelpers = [
+      ...input.expected.flatMap((assertion) => assertion.helper?.file ?? []),
+      ...tested.files.flatMap((file) => file.tests.flatMap((test) => test.errors.flatMap(({ helperFile }) => helperFile ?? []))),
+    ];
+    const sources = [...new Set([...changedTests, ...knownHelpers])].flatMap((file) => {
+      const path = resolve(root, file);
+      return path.startsWith(`${root}/`) && existsSync(path) ? [[file, readFileSync(path, "utf8").split(/\r?\n/)]] : [];
+    });
     const evidence = classifyStoryEvidence({
       run: tested,
       selected,
@@ -128,7 +137,7 @@ async function worker(inputPath: string, outputPath: string): Promise<void> {
       allowMissingModule: input.mode === "base" && input.missingModules.length > 0,
       missingModules: input.missingModules,
       changedLines: input.changedLines,
-      sources: Object.fromEntries(changedTests.map((file) => [file, readFileSync(join(root, file), "utf8").split(/\r?\n/)])),
+      sources: Object.fromEntries(sources),
     });
     return { evidence, selected };
   }, true);
@@ -164,10 +173,10 @@ function safeLog(value: string, tested: string): string {
   return value.replaceAll(tested, "<worktree>").replaceAll(root, "<repository>");
 }
 
-async function browserIdentity(): Promise<object | null> {
+function browserIdentity(): object | null {
   try {
     const require = createRequire(join(root, "package.json"));
-    const playwright = await import(require.resolve("playwright")) as typeof import("playwright");
+    const playwright = require("playwright") as typeof import("playwright");
     const chromium = realpathSync(process.env.OCELLE_CHROMIUM_PATH || playwright.chromium.executablePath());
     const version = execFileSync(chromium, ["--version"], { encoding: "utf8" }).trim();
     const stat = statSync(chromium);
@@ -184,10 +193,10 @@ async function browserIdentity(): Promise<object | null> {
   }
 }
 
-async function checkKey(check: Check, setup: string): Promise<{ key: string; reusable: boolean }> {
+function checkKey(check: Check, setup: string): { key: string; reusable: boolean } {
   const overlay = check.overlay === undefined ? [] : check.selection.changed.map((file) => [file, git(["rev-parse", `${check.overlay ?? ""}:${file}`]).trim()]);
   const runtime = ["OCELLE_CHROMIUM_PATH", "PLAYWRIGHT_BROWSERS_PATH", "NODE_OPTIONS", "TZ", "LANG", "LC_ALL"].map((name) => [name, process.env[name] ?? ""]);
-  const chromium = await browserIdentity();
+  const chromium = browserIdentity();
   const pnpm = execFileSync("pnpm", ["--version"], { encoding: "utf8" }).trim();
   const key = storyEvidenceKey({
     mode: check.mode,
@@ -214,7 +223,7 @@ function canReuse(mode: Check["mode"], evidence: StoryEvidence): boolean {
 
 async function runCheck(check: Check, setup: string): Promise<CheckResult> {
   const started = Date.now();
-  const { key: input, reusable } = await checkKey(check, setup);
+  const { key: input, reusable } = checkKey(check, setup);
   const cache = join(root, "reports/story-evidence", `${input}.json`);
   try {
     const record = (reusable ? readJson(cache) : null) as { key?: unknown; evidence?: unknown; log?: unknown; selected?: unknown };
@@ -371,7 +380,7 @@ async function checkPhase(mode: string, feature: string, phase: string, setup: s
     const assertions = result.evidence.assertions;
     if (name === "phase") phaseAssertions = assertions;
     else fixProofs.push({ label: name, base: git(["rev-parse", `${red}^`]).trim(), expected: assertions });
-    for (const assertion of assertions) discovered.set(JSON.stringify([assertion.project, assertion.file, assertion.test, assertion.source?.text, assertion.source?.occurrence]), assertion);
+    for (const assertion of assertions) discovered.set(assertionKey(assertion), assertion);
     reds.push({ label: name, sha: red, exit_code: code, ...result });
   }
 

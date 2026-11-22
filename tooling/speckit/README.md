@@ -149,8 +149,10 @@ Per round, under `reviews/plan/round-R/`:
 ## Focused phase verification and complete CI
 
 The repository's story runner uses Vitest's configured project/file inventory. It runs the phase's changed test files
-at each red commit, overlaid on the base and any scaffold, and at the phase head. Red evidence identifies the failing
-assertion. A missing implementation module is accepted on a pre-scaffold base only when the scaffold supplies that
+at each red commit and the phase head. For the final proof, it runs the related cases with the final test files overlaid
+on the phase base, any scaffold, or the parent of a red review-fix commit. Red evidence records the changed assertion site
+and its diagnostic. A shared assertion can provide red evidence when the stack maps it to a changed caller in the selected
+test. The caller and helper assertion must both match on replay. A missing implementation module is accepted on a pre-scaffold base only when the scaffold supplies that
 module and the assertions fail on the scaffold. Setup, collection, non-assertion, unrelated and incomplete failures
 block review.
 

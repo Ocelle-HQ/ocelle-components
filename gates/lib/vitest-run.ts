@@ -19,19 +19,32 @@ function failure(root: string, error: unknown): Failure {
 
 type TestError = NonNullable<ReturnType<TestCase["result"]>["errors"]>[number];
 
-function assertionLine(module: TestModule, error: TestError): number | undefined {
+interface Frame {
+  readonly file: string;
+  readonly line: number;
+}
+
+function sourceFrames(module: TestModule, error: TestError): Frame[] {
   const browser = module.project.browser;
-  if (browser !== undefined) {
-    return browser.parseErrorStacktrace(error).find((frame) => frame.file === module.moduleId)?.line;
-  }
-  // Node stacks may give the same source path as either a path or file URL.
+  if (browser !== undefined) return browser.parseErrorStacktrace(error);
+
+  // Node stacks use an absolute source path or a file URL, depending on the worker's evaluator.
   const stack = typeof error.stack === "string" ? error.stack : "";
-  for (const frame of stack.split("\n").slice(1)) {
-    const suffix = frame.trim().match(/:(\d+):\d+\)?$/u);
-    if (suffix?.index === undefined) continue;
-    if (frame.trim().slice(0, suffix.index).endsWith(module.moduleId)) return Number(suffix[1]);
-  }
-  return undefined;
+  return stack.split("\n").slice(1).flatMap((frame) => {
+    const parts = /(?:\(|at )(?:file:\/\/)?(\/[^\n]+):(\d+):\d+\)?$/.exec(frame.trim());
+    return parts?.[1] === undefined ? [] : [{ file: decodeURI(parts[1]), line: Number(parts[2]) }];
+  });
+}
+
+function assertionSite(root: string, module: TestModule, error: TestError, start?: number, end?: number): Pick<Failure, "line" | "helperFile" | "helperLine"> {
+  if (start === undefined) return {};
+  const frames = sourceFrames(module, error);
+  const caller = frames.find((frame) =>
+    frame.file === module.moduleId && frame.line >= start && (end === undefined || frame.line < end));
+  if (caller === undefined) return {};
+  const assertion = frames.find((frame) => frame.file.startsWith(`${root}/`) && !frame.file.includes("/node_modules/"));
+  if (assertion === undefined || assertion === caller) return { line: caller.line };
+  return { line: caller.line, helperFile: relative(root, assertion.file), helperLine: assertion.line };
 }
 
 export function testRun(root: string, modules: readonly TestModule[], errors: readonly unknown[], includeSites = false): TestRun {
@@ -47,14 +60,15 @@ export function testRun(root: string, modules: readonly TestModule[], errors: re
         durationMs: tests.reduce((sum, test) => sum + (test.diagnostic()?.duration ?? 0), 0),
         tests: tests.map((test) => {
           const result = test.result();
+          const start = test.location?.line;
+          const end = tests.find((each) => start !== undefined && each.location !== undefined && each.location.line > start)?.location?.line;
           return {
             name: test.fullName,
             state: result.state,
             ...(includeSites && test.location !== undefined ? { startLine: test.location.line } : {}),
-            errors: (result.errors ?? []).map((error) => {
-              const line = includeSites ? assertionLine(module, error) : undefined;
-              return { ...failure(root, error), ...(line === undefined ? {} : { line }) };
-            }),
+            errors: (result.errors ?? []).map((error) => ({
+              ...failure(root, error), ...(includeSites ? assertionSite(root, module, error, start, end) : {}),
+            })),
           };
         }),
       };
