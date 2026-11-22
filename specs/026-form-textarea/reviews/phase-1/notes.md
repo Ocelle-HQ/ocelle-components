@@ -34,3 +34,5 @@ A narrow, instrumented Chromium diagnostic executed the real component test file
 ### Hosted pilot verdict
 
 Run 45056194793 passed Unit tests, Plants, Visual regression, Accessibility and all five textarea-only mutation shards. Seven mutation shards failed on inherited verification tooling findings. Op 025 checkpoint 0b4d8699 adds focused coverage for those cases and passed 303 targeted tests and typecheck. The next pilot run will test the corrected workflow against the textarea.
+
+The follow-up run 45062695001 exposed an empty worker callback mutation in the same workflow tooling. The real CLI integration test rejected that exact change because the worker produced no report and the replay could not record red evidence. Op 025 recorded the subprocess-only coverage and the exact strict mutation shard passed locally. This commit triggers CI against the updated workflow base.
