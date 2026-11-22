@@ -8,3 +8,9 @@ Active pickup was 2026-11-22T16:56:07Z. The scaffold registers the inert public 
 - Affected-plants discovery selected all 317 cases because the package export changed. The full Plants check runs in required CI. The changed-source mutation plan has six shards. A local list is not a plant verdict.
 
 The stricter red, base, scaffold and HEAD proof records are collected separately. CI records the final merge checks and timing.
+
+## Strict replay and manifest fixtures
+
+The strict replay on 7c38b592 passed both recorded reds, the pre-phase base, the scaffold, the review fix's base and the green head in 84.938 seconds. The repeated run also passed, but the older Op build did not recognize the installed CommonJS Playwright package for cache identity, so it replayed each stage. Repeat timing with the current Op build is still pending.
+
+Eight manifest plant fixture trees now include the exact generated textarea module. The focused run of those eight plants passed. The fixtures retain their original intentional differences and expected results.
