@@ -1,5 +1,6 @@
 import { LitElement, css, html, nothing } from "lit";
 import { define } from "./define.ts";
+import { accessibleName } from "./naming.ts";
 import { SlotState } from "./slot-state.ts";
 import "./ocelle-brand-mark.ts";
 import "./ocelle-icon.ts";
@@ -147,7 +148,7 @@ export class OcelleTopBar extends LitElement {
     return html`
       <div part="bar">
         ${this.showMenu ? html`
-          <button part="menu-button" type="button" aria-label=${this.menuLabel || "Open navigation"}
+          <button part="menu-button" type="button" aria-label=${accessibleName(this.menuLabel, null) ?? "Open navigation"}
             aria-expanded=${String(this.menuExpanded)} @click=${this.#requestMenu}>
             <ocelle-icon name="menu"></ocelle-icon>
           </button>

@@ -40,6 +40,31 @@ function hasContent(node: Node): boolean {
   return [...node.childNodes].some(hasContent);
 }
 
+type NavigationContent = "empty" | "bare" | "supplied";
+
+function navigationContent(nodes: Iterable<Node>, roots: Set<ShadowRoot>): NavigationContent {
+  let result: NavigationContent = "empty";
+  for (const node of nodes) {
+    const next = navigationNode(node, roots);
+    if (next === "supplied" || (next === "bare" && result === "empty")) result = next;
+  }
+  return result;
+}
+
+function navigationNode(node: Node, roots: Set<ShadowRoot>): NavigationContent {
+  if (node instanceof Text) return node.data.trim() === "" ? "empty" : "bare";
+  if (!(node instanceof Element) || node.matches("[hidden], template, script, style")) return "empty";
+
+  const root = node.shadowRoot;
+  if (root !== null) roots.add(root);
+  if (node instanceof HTMLSlotElement) return navigationContent(node.assignedNodes({ flatten: true }), roots);
+
+  const children = navigationContent((root ?? node).childNodes, roots);
+  if (children !== "empty" && node.matches(landmark)) return "supplied";
+  if (root !== null || node.matches(contentWrappers)) return children;
+  return children === "supplied" ? children : "bare";
+}
+
 /** A composed parent follows assignment first, then an ordinary parent or the host of an open shadow root. */
 function composedParent(node: Element): Element | null {
   const root = node.getRootNode();
@@ -201,8 +226,8 @@ export class OcelleAppShell extends LitElement {
   #tier: AppShellTier = "expanded";
   #layout: Layout = "mission";
   // Lit runs willUpdate before the first read of slot presence in render.
-  #rail!: boolean;
-  #sidebar!: boolean;
+  #rail!: NavigationContent;
+  #sidebar!: NavigationContent;
   #actions!: boolean;
   #settlement: symbol | undefined;
   #focusSource: Element | undefined;
@@ -221,6 +246,26 @@ export class OcelleAppShell extends LitElement {
   readonly #children = new MutationObserver(() => {
     this.requestUpdate();
   });
+
+  #navigationRoots = new Set<ShadowRoot>();
+  readonly #navigationChildren = new MutationObserver(() => {
+    this.requestUpdate();
+  });
+
+  #observeNavigation(roots: Set<ShadowRoot>): void {
+    if (this.#navigationRoots.size === roots.size && [...roots].every((root) => this.#navigationRoots.has(root))) return;
+    this.#navigationChildren.disconnect();
+    this.#navigationRoots = roots;
+    for (const root of roots) {
+      this.#navigationChildren.observe(root, {
+        attributes: true,
+        attributeFilter: ["slot", "name", "hidden", "role"],
+        childList: true,
+        characterData: true,
+        subtree: true,
+      });
+    }
+  }
 
   constructor() {
     super();
@@ -261,6 +306,8 @@ export class OcelleAppShell extends LitElement {
     super.disconnectedCallback();
     this.#resize.disconnect();
     this.#children.disconnect();
+    this.#navigationChildren.disconnect();
+    this.#navigationRoots.clear();
     this.#settlement = undefined;
     this.#focusSource = undefined;
     this.#drawerFocus = undefined;
@@ -285,13 +332,15 @@ export class OcelleAppShell extends LitElement {
 
     this.#tier = this.#measureTier();
     this.#layout = this.layout === "project" || this.layout === "personal" ? this.layout : "mission";
-    this.#rail = this.#layout === "mission" && rail.some(hasContent);
-    this.#sidebar = sidebar.some(hasContent);
+    const roots = new Set<ShadowRoot>();
+    this.#rail = this.#layout === "mission" ? navigationContent(rail, roots) : "empty";
+    this.#sidebar = navigationContent(sidebar, roots);
+    this.#observeNavigation(roots);
     this.#actions = assignedRegion(this, "actions").some(hasContent);
     if (this.#drawerOpen && (this.#tier !== "narrow" || !this.#hasNavigation)) this.#drawerState = "closing";
 
     const managed = this.#layout === "personal" ? [] : sidebar;
-    this.#setPresentation(this.#rail ? rail : [], managed);
+    this.#setPresentation(this.#rail === "empty" ? [] : rail, managed);
   }
 
   get #sidebarCompact(): boolean {
@@ -307,7 +356,7 @@ export class OcelleAppShell extends LitElement {
   }
 
   get #hasNavigation(): boolean {
-    return this.#rail || this.#sidebar;
+    return this.#rail !== "empty" || this.#sidebar !== "empty";
   }
 
   protected override render(): unknown {
@@ -397,15 +446,11 @@ export class OcelleAppShell extends LitElement {
     return this.renderRoot.querySelector("ocelle-top-bar")?.shadowRoot?.querySelector("button");
   }
 
-  #region(name: Region, populated: boolean, label: string, inDrawer: boolean): unknown {
-    const supplied = assignedRegion(this, name).some((element) => hasContent(element) && (
-      element.matches(landmark) || [...element.querySelectorAll(landmark)].some((node) =>
-        hasContent(node) && node.closest("[hidden]") === null)
-    ));
-    const bare = populated && !supplied;
+  #region(name: Region, content: NavigationContent, label: string, inDrawer: boolean): unknown {
+    const bare = content === "bare";
     return html`
       <div part="navigation" class=${name}
-        ?hidden=${!populated || (!inDrawer && this.#tier === "narrow")}
+        ?hidden=${content === "empty" || (!inDrawer && this.#tier === "narrow")}
         role=${bare ? "navigation" : nothing}
         aria-label=${bare ? accessibleName(label, null) ?? (name === "rail" ? "Account" : "Workspace") : nothing}>
         <slot name=${name}></slot>
