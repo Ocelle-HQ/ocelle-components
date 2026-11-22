@@ -91,7 +91,7 @@ const environmentNames = ["OCELLE_CHROMIUM_PATH", "PLAYWRIGHT_BROWSERS_PATH", "N
 
 export function checkKey(check: StoryCacheCheck, setup: string, runtime: StoryCacheRuntime): { key: string; reusable: boolean } {
   const overlayRevision = check.overlay;
-  const overlay = overlayRevision === undefined ? [] : check.selection.changed.map((file) => [file, runtime.blob(overlayRevision, file)]);
+  const overlay = overlayRevision === undefined ? null : check.selection.changed.map((file) => [file, runtime.blob(overlayRevision, file)]);
   const key = storyEvidenceKey({
     mode: check.mode,
     // Tree identity includes the committed lockfile, project setup and Vitest configuration without binding history traversal to a SHA.
