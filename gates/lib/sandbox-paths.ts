@@ -41,8 +41,9 @@ function records(stdout: string): { readonly path: string; readonly line: number
     const pathEnd = stdout.indexOf("\0", at);
     const lineEnd = pathEnd === -1 ? -1 : stdout.indexOf("\0", pathEnd + 1);
     const number = stdout.slice(pathEnd + 1, lineEnd);
-    if (lineEnd === -1 || !/^[1-9]\d*$/.test(number)) throw new Error("unexpected git grep output: a record without a path and a line number");
+    if (pathEnd === at || lineEnd === -1 || !/^[1-9]\d*$/.test(number)) throw new Error("unexpected git grep output: a record without a path and a line number");
     found.push({ path: stdout.slice(at, pathEnd), line: Number(number) });
+    // Stryker disable next-line ArithmeticOperator: equivalent, lineEnd - 1 finds the same newline: stdout[lineEnd - 1] is the last digit of the line number and stdout[lineEnd] its NUL, so neither is the newline (review round 2, R2-02)
     const end = stdout.indexOf("\n", lineEnd + 1);
     at = end === -1 ? stdout.length : end + 1;
   }

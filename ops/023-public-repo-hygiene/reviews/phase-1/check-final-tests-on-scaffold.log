@@ -35,13 +35,13 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 210ms using pnpm v12.16.1
+Done in 264ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /opt/pw-browsers/chromium-1248/chrome-linux64/chrome
 $ node gates/bin/test.ts
-gates/test/integration/plant-repo.test.ts:532: unit-tests: buildTrackedTree (op 023) commits the expanded tree as Plant Base, without plant.json, configuration or node_modules, leaving a clean work tree: Error: not implemented: /tmp/ocelle-tracked-plant-p5YccT into /tmp/ocelle-tracked-tree-1TeNEf
-gates/test/integration/plant-repo.test.ts:560: unit-tests: buildTrackedTree (op 023) gives a git repository with no tracked file for an empty tree/: Error: not implemented: /tmp/ocelle-tracked-plant-ynjwKv into /tmp/ocelle-tracked-tree-kxBuKf
-gates/test/integration/plant-repo.test.ts:560: unit-tests: buildTrackedTree (op 023) gives a git repository with no tracked file for no tree/: Error: not implemented: /tmp/ocelle-tracked-plant-UktlHD into /tmp/ocelle-tracked-tree-GnnMOK
+gates/test/integration/plant-repo.test.ts:532: unit-tests: buildTrackedTree (op 023) commits the expanded tree as Plant Base, without plant.json, configuration or node_modules, leaving a clean work tree: Error: not implemented: /tmp/ocelle-tracked-plant-rFSPiV into /tmp/ocelle-tracked-tree-WO0s67
+gates/test/integration/plant-repo.test.ts:560: unit-tests: buildTrackedTree (op 023) gives a git repository with no tracked file for an empty tree/: Error: not implemented: /tmp/ocelle-tracked-plant-42abxa into /tmp/ocelle-tracked-tree-tnP7TN
+gates/test/integration/plant-repo.test.ts:560: unit-tests: buildTrackedTree (op 023) gives a git repository with no tracked file for no tree/: Error: not implemented: /tmp/ocelle-tracked-plant-xDV0da into /tmp/ocelle-tracked-tree-vDxNms
 gates/test/integration/plants-robustness.test.ts:178: unit-tests: contrast and brand-rules plants under neighbouring changes has the two gates' plants and the registry's: AssertionError: expected { others: 15, plants: 39 } to deeply equal { others: 16, plants: 39 }
 gates/test/integration/plants.test.ts:90: unit-tests: plant job (gates/bin/plants.ts) plants --root <tmp> runs each plant form through its gate and judges it: AssertionError: expected { code: 1, stdout: [ …(48) ], …(1) } to deeply equal { code: 1, stdout: [ …(51) ], …(1) }
 gates/test/integration/plants.test.ts:171: unit-tests: plant job (gates/bin/plants.ts) --affected HEAD judges only the plant whose plant.json changed since HEAD, and names HEAD in its summary: AssertionError: expected { code: 1, stdout: [ …(48) ], …(1) } to deeply equal { code: 1, stdout: [ …(51) ], …(1) }
@@ -162,11 +162,12 @@ gates/test/sandbox-paths.test.ts:22: unit-tests: sandboxPathRule (FR-001) is the
 gates/test/sandbox-paths.test.ts:35: unit-tests: allowedFiles (FR-003) is the four allowed files, sorted: AssertionError: expected [] to deeply equal [ …(4) ]
 gates/test/sandbox-paths.test.ts:41: unit-tests: grepArgs searches with the rule, skips binary files, and excludes each allowed file as a literal path: AssertionError: expected { repository: [], other: [] } to deeply equal { repository: [ …(13) ], …(1) }
 gates/test/sandbox-paths.test.ts:50: unit-tests: parseGrep reads -z records into one finding per line, for paths with a colon and a space, and echoes no matched text: AssertionError: expected { findings: [], echoes: [], empty: [] } to deeply equal { …(3) }
-gates/test/sandbox-paths.test.ts:64: unit-tests: parseGrep throws on a record that is not path, line and text, or whose line is not a line number: AssertionError: expected [ 'no error', 'no error', …(3) ] to deeply equal [ …(5) ]
-gates/test/sandbox-paths.test.ts:77: unit-tests: parseGrep reads a last record without its newline: AssertionError: expected [] to deeply equal [ { location: { …(2) }, …(3) } ]
-gates/test/sandbox-paths.test.ts:85: unit-tests: verdict maps git grep exit 1 (no match) to exit 0 with the summary: AssertionError: expected [ Array(2) ] to deeply equal [ { exit: +0, …(1) }, …(1) ]
-gates/test/sandbox-paths.test.ts:92: unit-tests: verdict maps git grep exit 0 (matches) to exit 1 with one finding per line: AssertionError: expected [ Array(2) ] to deeply equal [ Array(2) ]
-gates/test/sandbox-paths.test.ts:99: unit-tests: verdict maps any other git grep exit to exit 2 with git's first error line: AssertionError: expected [ { exit: 2, …(1) }, …(4) ] to deeply equal [ { exit: 2, …(1) }, …(4) ]
-gates/test/sandbox-paths.test.ts:115: unit-tests: verdict maps zero tracked files to exit 2 no tracked file, whatever git grep did: AssertionError: expected [ Array(2) ] to deeply equal [ Array(2) ]
-unit-tests: 129 of 8728 tests failed
+gates/test/sandbox-paths.test.ts:64: unit-tests: parseGrep throws on a record that is not path, line and text, or whose line is not a line number: AssertionError: expected [ 'no error', 'no error', …(6) ] to deeply equal [ …(8) ]
+gates/test/sandbox-paths.test.ts:90: unit-tests: parseGrep reads a record whose path is one character: AssertionError: expected [] to deeply equal [ { location: { …(2) }, …(3) }, …(1) ]
+gates/test/sandbox-paths.test.ts:94: unit-tests: parseGrep reads a last record without its newline: AssertionError: expected [] to deeply equal [ { location: { …(2) }, …(3) } ]
+gates/test/sandbox-paths.test.ts:102: unit-tests: verdict maps git grep exit 1 (no match) to exit 0 with the summary: AssertionError: expected [ Array(2) ] to deeply equal [ { exit: +0, …(1) }, …(1) ]
+gates/test/sandbox-paths.test.ts:109: unit-tests: verdict maps git grep exit 0 (matches) to exit 1 with one finding per line: AssertionError: expected [ Array(2) ] to deeply equal [ Array(2) ]
+gates/test/sandbox-paths.test.ts:116: unit-tests: verdict maps any other git grep exit to exit 2 with git's first error line: AssertionError: expected [ { exit: 2, …(1) }, …(4) ] to deeply equal [ { exit: 2, …(1) }, …(4) ]
+gates/test/sandbox-paths.test.ts:132: unit-tests: verdict maps zero tracked files to exit 2 no tracked file, whatever git grep did: AssertionError: expected [ Array(2) ] to deeply equal [ Array(2) ]
+unit-tests: 130 of 8729 tests failed
 [ELIFECYCLE] Test failed. See above for more details.
