@@ -489,5 +489,24 @@ export const evidenceChainChangeScenarios: readonly Scenario[] = [
   },
 ];
 
-/** Every chain body, in the order of tasks.md T055 and T056, then the run-time changes. */
-export const evidenceChainScenarios: readonly Scenario[] = [...evidenceChainStoryScenarios, ...evidenceChainGeometryScenarios, ...evidenceChainEdgeScenarios, ...evidenceChainChangeScenarios];
+/** The run-time change added for the mutation run (tasks.md T074): a step's `aria-hidden` set and removed after mount (the observer's attribute filter). */
+export const evidenceChainMutationScenarios: readonly Scenario[] = [
+  {
+    name: "aria-hidden set and removed on a step after mount: the step leaves the list and the ordinals, then comes back (FR-025)",
+    run: async (driver) => {
+      await page(driver, ch("c", 'label="Evidence"', six("s", false)));
+      const state = async (): Promise<unknown> => ({ ordinals: await read(driver, 'return ordinals("c");'), items: (await texts(driver, "c")).texts });
+      await driver.setAttribute("s2", "aria-hidden", "true");
+      const masked = await state();
+      await driver.setAttribute("s2", "aria-hidden", null);
+      return { masked, shown: await state() };
+    },
+    expected: {
+      masked: { ordinals: ["1", "2", "3", "4", "5"], items: ["Spec", "Tasks", "Red commit", "Green commit", "Review"] },
+      shown: { ordinals: ["1", "2", "3", "4", "5", "6"], items: names },
+    },
+  },
+];
+
+/** Every chain body, in the order of tasks.md T055 and T056, then the run-time changes and those of T074. */
+export const evidenceChainScenarios: readonly Scenario[] = [...evidenceChainStoryScenarios, ...evidenceChainGeometryScenarios, ...evidenceChainEdgeScenarios, ...evidenceChainChangeScenarios, ...evidenceChainMutationScenarios];

@@ -925,6 +925,158 @@
           "attributes": [
             {
               "default": "undefined",
+              "description": "Names the list when the host has no non-blank `aria-label`; not shown. Trimmed; empty or white space counts as\nabsent.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string | undefined"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The ordered list.",
+              "name": "list"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "An evidence chain: one ordered list of its `ocelle-evidence-step` children, in source order, each default step with\na numbered marker, joined by connectors on each line and wrapping onto further lines in a narrow container.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "label",
+              "default": "undefined",
+              "description": "Names the list when the host has no non-blank `aria-label`; not shown. Trimmed; empty or white space counts as\nabsent.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            }
+          ],
+          "name": "OcelleEvidenceChain",
+          "slots": [
+            {
+              "description": "The steps, `ocelle-evidence-step` elements, in source order. Other children, and steps with `hidden` or `aria-hidden=\"true\"`, are not shown.",
+              "name": ""
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-evidence-chain"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-evidence-chain.ts",
+            "name": "OcelleEvidenceChain"
+          },
+          "kind": "js",
+          "name": "OcelleEvidenceChain"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-evidence-chain.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
+              "description": "`chip` draws the step compact inside a chain, with no marker or ordinal; any other value acts as unset. Reflected.",
+              "fieldName": "variant",
+              "name": "variant",
+              "type": {
+                "text": "\"chip\" | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "`anywhere` breaks long identifiers in the content anywhere; unset wraps between words. Reflected.",
+              "fieldName": "wrap",
+              "name": "wrap",
+              "type": {
+                "text": "\"anywhere\" | undefined"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The content.",
+              "name": "content"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "One step of an evidence chain: its content, drawn by the chain with a numbered marker or, with `variant=\"chip\"`, as\na compact chip. Outside a chain it shows its content as plain text.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "variant",
+              "default": "undefined",
+              "description": "`chip` draws the step compact inside a chain, with no marker or ordinal; any other value acts as unset. Reflected.",
+              "kind": "field",
+              "name": "variant",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"chip\" | undefined"
+              }
+            },
+            {
+              "attribute": "wrap",
+              "default": "undefined",
+              "description": "`anywhere` breaks long identifiers in the content anywhere; unset wraps between words. Reflected.",
+              "kind": "field",
+              "name": "wrap",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"anywhere\" | undefined"
+              }
+            }
+          ],
+          "name": "OcelleEvidenceStep",
+          "slots": [
+            {
+              "description": "The step's content.",
+              "name": ""
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-evidence-step"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-evidence-step.ts",
+            "name": "OcelleEvidenceStep"
+          },
+          "kind": "js",
+          "name": "OcelleEvidenceStep"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-evidence-step.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
               "description": "The label (term) of this pair. Unset or empty gives an empty term. Reflected.",
               "fieldName": "label",
               "name": "label",

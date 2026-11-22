@@ -125,6 +125,17 @@ selectors are inside `:where()`, (0,0,0), and an event with `hidden` keeps the u
 (`slot="time"`) is the page's own node and shows inline where it is written. The rules stop matching when
 `ocelle-event-timeline` is defined.
 
+## Evidence chain before upgrade
+
+Before the elements are defined, `base.css` shows each visible `ocelle-evidence-step` child of an undefined
+`ocelle-evidence-chain` as a block, one step per line, with no marker or ordinal:
+`:where(ocelle-evidence-chain:not(:defined) > ocelle-evidence-step:not([hidden]):not([aria-hidden="true"])) { display: block; }`.
+An `aria-hidden="true"` step is not shown before upgrade either, as after it:
+`:where(ocelle-evidence-chain:not(:defined) > ocelle-evidence-step[aria-hidden="true"]) { display: none; }`. Both
+selectors are inside `:where()`, (0,0,0), and a step with `hidden` keeps the user-agent `display: none`. The markers,
+ordinals, connectors and chip outlines are drawn in the chain's shadow root, so they show only once the elements are
+defined. The rules stop matching when `ocelle-evidence-chain` is defined.
+
 ## Prose
 
 For a host's Markdown renderer: it emits plain HTML, with no class, into a content container marked

@@ -10,7 +10,8 @@ modal dialog, `ocelle-drawer`, a modal side drawer, `ocelle-tooltip`, a tooltip 
 trigger, the layout elements `ocelle-section-header`, `ocelle-card`, `ocelle-page-header`, `ocelle-context-sidebar`
 and `ocelle-personal-rail`, `ocelle-facts` with its item `ocelle-fact`, a label and value sheet, `ocelle-empty-state`,
 an empty or loading panel, and `ocelle-progress`, a progress bar. Since 019 it also has `ocelle-data-table`, a native
-table in a scroll region, and `ocelle-event-timeline`, an event history, with its item `ocelle-timeline-event`.
+table in a scroll region, `ocelle-event-timeline`, an event history, with its item `ocelle-timeline-event`, and
+`ocelle-evidence-chain`, an evidence chain, with its item `ocelle-evidence-step`.
 
 ## Entry points
 
@@ -38,6 +39,8 @@ table in a scroll region, and `ocelle-event-timeline`, an event history, with it
 | `@ocelle/elements/ocelle-data-table.js` | `dist/ocelle-data-table.js` | `ocelle-data-table` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-event-timeline.js` | `dist/ocelle-event-timeline.js` | `ocelle-event-timeline` and its item `ocelle-timeline-event`; for hosts with a bundler |
 | `@ocelle/elements/ocelle-timeline-event.js` | `dist/ocelle-timeline-event.js` | `ocelle-timeline-event` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-evidence-chain.js` | `dist/ocelle-evidence-chain.js` | `ocelle-evidence-chain` and its item `ocelle-evidence-step`; for hosts with a bundler |
+| `@ocelle/elements/ocelle-evidence-step.js` | `dist/ocelle-evidence-step.js` | `ocelle-evidence-step` only; for hosts with a bundler |
 | `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |
 | `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |
 
@@ -967,11 +970,50 @@ The timeline has no live region, landmark, heading or tab stop; a link in an eve
 
 **Tokens.** The timeline reads `--ocelle-size-dot`, `--ocelle-space-1`, `--ocelle-space-3`, `--ocelle-font-size-xs`, `--ocelle-font-size-sm`, `--ocelle-line-height-normal`, `--ocelle-border-width`, `--ocelle-color-ink-muted` and `--ocelle-color-rule-strong`; the event reads `--ocelle-font-sans`, `--ocelle-font-size-xs`, `--ocelle-font-size-sm`, `--ocelle-font-weight-medium`, `--ocelle-font-weight-regular`, `--ocelle-figures`, `--ocelle-line-height-normal`, `--ocelle-color-ink-muted` and `--ocelle-color-ink`.
 
+## `ocelle-evidence-chain`
+
+`ocelle-evidence-chain` shows an evidence chain as one ordered list of its `ocelle-evidence-step` children, in source
+order: `<ocelle-evidence-chain label="Evidence"><ocelle-evidence-step>Spec</ocelle-evidence-step><ocelle-evidence-step variant="chip">3 checks</ocelle-evidence-step></ocelle-evidence-chain>`.
+Each default step shows a round marker with its ordinal before its content. The markers, ordinals and connectors are
+drawn and hidden from assistive technology: a screen reader hears the list's name, then each step's content, and the
+list's order conveys the position. A default step's ordinal is its position among the visible steps, chip steps
+counted, so the numbers shown skip a chip.
+
+`variant="chip"` draws a step as a compact chip: an outline with the `--ocelle-radius-2` corner and no fill, no marker
+and no ordinal, its text one size smaller than a default step's; any other value acts as unset. The chip is the
+chain's own and draws nothing of the pill tag.
+
+The steps sit in rows from the inline start and wrap onto further lines when the chain is too narrow for them; a
+connector joins consecutive steps on one line, never across lines or past the chain's edges. The chain follows its
+container's width, not the viewport's. Long content wraps between words inside the step; `wrap="anywhere"` on a step
+breaks a long identifier anywhere.
+
+The list is named by a non-blank host `aria-label`, trimmed, else by `label`; a blank host `aria-label` counts as
+absent. With neither the list is unnamed. `ocelle-evidence-chain` names its list with the overflow-region module's
+`resolveName`, as `ocelle-event-timeline` does, and uses nothing else of that module. Only `ocelle-evidence-step`
+children are shown and exposed; a step with `hidden` or `aria-hidden="true"` is neither and takes no ordinal. With no
+visible step the chain renders no list: place 013's `ocelle-empty-state` in its place.
+
+Outside a chain a step shows its content as plain text, with no marker, ordinal, connector or chip box. Before upgrade:
+`@ocelle/styles`' `base.css` shows each visible step on its own line, with no marker or ordinal.
+
+The chain has no live region, landmark, heading or tab stop; a link in a step keeps its own tab stop. In forced
+colours the markers, connectors and chip outlines are drawn in `CanvasText` and the text in the system text colour.
+
+**Parts.** `ocelle-evidence-chain` exposes the list as `::part(list)`; `ocelle-evidence-step` its content as
+`::part(content)`.
+
+**Tokens.** The chain reads `--ocelle-size-step`, `--ocelle-ring-step`, `--ocelle-radius-2`, `--ocelle-space-1`,
+`--ocelle-space-2`, `--ocelle-space-3`, `--ocelle-space-5`, `--ocelle-border-width`, `--ocelle-font-sans`,
+`--ocelle-font-size-xs`, `--ocelle-font-size-sm`, `--ocelle-font-weight-medium`, `--ocelle-figures`,
+`--ocelle-line-height-tight`, `--ocelle-line-height-normal`, `--ocelle-color-ink`, `--ocelle-color-ink-muted` and
+`--ocelle-color-rule-strong`; the step reads none.
+
 ## Mapping from kitty-mission-ui
 
 Each `.sk-facts`, `.sk-empty-state` and `.sk-progress` modifier and state that kitty-mission-ui uses, and each
 modifier, state and structure role of the design library's `.sk-data-table` and `.sk-event-timeline` (which have no
-part), by role, with the element and variant that replaces it, or the consumer's own remedy. No data-table row of the
+part), and each property, stage field, behaviour state and part of its `sk-evidence-chain` element, by role, with the element and variant that replaces it, or the consumer's own remedy. No data-table row of the
 mapping reads "pending inventory".
 
 | Class family | Role | Element and variant |
@@ -1060,6 +1102,26 @@ mapping reads "pending inventory".
 | `.sk-event-timeline` | event timeline unavailable retention | 013's `ocelle-empty-state` in place of the timeline; an announcement is the consumer's own notice or live region |
 | `.sk-event-timeline` | event timeline forced colours | built in: the dot and the line in `CanvasText`, the text in the system text colour |
 | `.sk-event-timeline` | event timeline light mode | built in: the light and dark themes |
+| `sk-evidence-chain` | evidence chain stages | `ocelle-evidence-chain` with one `ocelle-evidence-step` child per stage, in source order; the chain takes no property, and the consumer changes the children in place of assigning a new array, which the chain observes |
+| `sk-evidence-chain` | evidence chain stage id | an `id` the consumer sets on the step, if it needs one; the element neither reads nor writes an `id` |
+| `sk-evidence-chain` | evidence chain stage label, value and annotation | the consumer's markup in the step's content; the step draws no pill tag of its own; a later issue covers a valued stage |
+| `sk-evidence-chain` | evidence chain stage tone | none: the state worded in the step's text, with no state colour on any mark; a later issue covers a tone |
+| `sk-evidence-chain` | evidence chain compact step | the default step: a round `--ocelle-size-step` marker ringed by `--ocelle-ring-step`, showing the step's ordinal, before its content. #517's pill-shaped chip maps to `variant="chip"` with `--ocelle-radius-2`, never the pill radius |
+| `sk-evidence-chain` | evidence chain list part | the chain's `list` part, its shadow ordered list, named by `label` or a non-blank host `aria-label` |
+| `sk-evidence-chain` | evidence chain stage part | the `ocelle-evidence-step` host, a light-DOM element the consumer styles directly, and its `content` part |
+| `sk-evidence-chain` | evidence chain connector part | none: the connector is decorative and hidden from assistive technology, not a styling hook |
+| `sk-evidence-chain` | evidence chain connector arrow | the plain connector line, with no arrowhead; the ordered list and the ordinals convey the direction; a later issue covers an arrowhead |
+| `sk-evidence-chain` | evidence chain empty-state part | none |
+| `sk-evidence-chain` | evidence chain empty state | 013's `ocelle-empty-state`, placed by the consumer in place of the chain; an empty chain renders nothing and writes no text of its own |
+| `sk-evidence-chain` | evidence chain invalid input | none: with slotted steps there is no invalid whole input; children other than steps are neither shown nor exposed |
+| `sk-evidence-chain` | evidence chain wide layout | built in: the steps in one row while they fit, with a connector between consecutive steps on the row |
+| `sk-evidence-chain` | evidence chain narrow layout | the wrapping chain, which follows its container, not the viewport: the steps wrap onto further lines, with connectors only within a line; no stacked layout |
+| `sk-evidence-chain` | evidence chain forced colours | built in: markers, connectors and chip outlines as `CanvasText` borders, the text in the system text colour |
+| `sk-evidence-chain` | evidence chain light mode | built in: the light and dark themes |
+| `sk-evidence-chain` | evidence chain two and six stages | built in: one list item per visible step in source order, ordinals 1 to N, a connector between steps on a line |
+| `sk-evidence-chain` | evidence chain long content | built in: content wraps between words inside the step; `wrap="anywhere"` for identifiers |
+| `sk-evidence-chain` | evidence chain static form | none needed: the chain is markup, and before upgrade `@ocelle/styles` shows the visible steps one per line |
+| `sk-evidence-chain` | evidence chain composition | the consumer's layout: the chain follows its container wherever the consumer places it |
 
 ## Slot convention
 
@@ -1269,7 +1331,8 @@ gap, padding or divider with nothing in it. Forward a slot only when it has cont
 
 A host `aria-label` names the element as `label` does. For `ocelle-icon` and `ocelle-brand-mark`, when present it
 decides alone: a blank host `aria-label` leaves the element unlabelled even with a `label`. For `ocelle-scroller`,
-`ocelle-workflow-board`, `ocelle-workflow-lane`, `ocelle-data-table` and `ocelle-event-timeline` a blank host `aria-label` counts as absent, so `label` still names
+`ocelle-workflow-board`, `ocelle-workflow-lane`, `ocelle-data-table`, `ocelle-event-timeline` and `ocelle-evidence-chain` a blank host
+`aria-label` counts as absent, so `label` still names
 the element: Chromium names a host from a present `aria-label` and does not fall back from a blank one, so these
 elements put their role and name on a node in their shadow root, named by the host's non-blank `aria-label`, trimmed,
 or else by `label`. `ocelle-list-detail` takes no name: a host `aria-label` is not used. When both are set, the host
