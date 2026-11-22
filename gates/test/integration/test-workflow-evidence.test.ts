@@ -181,3 +181,38 @@ it("runs real clean-worktree red, base and green checks and refuses malformed ca
     rmSync(root, { force: true, recursive: true });
   }
 }, 80_000);
+
+it.each([
+  { label: "surplus fields", records: (sha: string) => `phase ${sha} unexpected\n` },
+  { label: "a repeated label", records: (sha: string) => `phase ${sha}\nphase ${sha}\n` },
+])("fails closed on red history with $label", ({ records }) => {
+  const root = fixture();
+  try {
+    for (const file of storyFiles) {
+      mkdirSync(dirname(join(root, file)), { recursive: true });
+      copyFileSync(join(repository, file), join(root, file));
+    }
+    const feature = "specs/002-records";
+    const reviews = `${feature}/reviews/phase-1`;
+    write(root, "answer.ts", 'export const answer = "old";\n');
+    write(root, `${reviews}/base.sha`, `${commit(root, "base")}\n`);
+    write(root, "test/answer.test.ts", [
+      'import { expect, it } from "vitest";',
+      'import { answer } from "../answer.ts";',
+      'it("keeps the corrected answer", () => {',
+      '  expect(answer).toBe("corrected");',
+      '});',
+    ].join("\n"));
+    write(root, `${reviews}/red-commits`, records(commit(root, "red")));
+    write(root, "answer.ts", 'export const answer = "corrected";\n');
+    const head = commit(root, "green");
+    const result = node(root, join(root, "gates/bin/story-evidence.ts"), "check", feature, "1",
+      `ln -s "${join(repository, "node_modules")}" node_modules`, ":(glob)**/*.test.ts");
+    expect({ status: result.status, stderr: result.stderr }).toMatchObject({ status: 0 });
+    expect(JSON.parse(result.stdout) as PhaseResult).toMatchObject({
+      status: "fail", head, problems: ["invalid red-commits entry"],
+    });
+  } finally {
+    rmSync(root, { force: true, recursive: true });
+  }
+}, 80_000);
