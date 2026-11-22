@@ -429,6 +429,26 @@ AX text unbroken; zero CSP violations; the gates of phase 1 pass.
   code-block stories and the Prose document (46 excepted, none stale) and the scope diff (`reviews/phase-2/notes.md`
   § Gates, `plants.md`).
 
+- [ ] T034 [US2] Phase 2 landing, operator round 2, RTL fixture. In the strict-CSP code-block browser fixture, load
+  and await the vendored Schibsted Grotesk sans face before mounting the RTL scroll block, as FR-021's font precondition
+  requires. With the face loaded, retain the US2-8 geometry assertions: the block and scroll box compute `rtl`, the code
+  computes `ltr`, the box overflows, all three first-character rectangles are inside its inline bounds, and
+  `scrollLeft = -(scrollWidth - clientWidth)` within the existing one-pixel tolerance. The fade stays `start` and the
+  right mask stays transparent. Keep the corresponding text-change and LTR control cases unchanged. Record the
+  controlled late-load reproduction before and after preloading and the focused strict-CSP run. Preserve the one-write
+  opening behavior, the documented late-font caveat, and the fixture's CSP and clean request checks.
+
+- [ ] T035 [US2] Phase 2 landing, operator round 2, code-block mutation and reconnect. Reproduce the changed-line
+  mutation findings from [CI run 45039436202](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45039436202)
+  with scoped evidence. For FR-020, commit an assertion-red regression before changing code. Render a code block, detach
+  it, change its light-DOM text while detached, then reconnect the same element without writing any new property or
+  attribute. Assert that the reconnected shadow copy and its derived state match the new text. Prove connected edits
+  after reattachment still update the copy. Use the mutation-visible browser project and the strict-CSP browser fixture
+  for the shared behavior. Resynchronize the copy on reconnect in `ocelle-code-block.ts`, keeping observer teardown
+  and registration, the shared overflow module, and the RTL one-write trigger intact. For the remaining reported
+  mutants, demonstrate an observable assertion that kills each or record the precise equivalence for independent
+  review. Record red, green, focused mutation results and any CI work still open in the round fix note.
+
 **Checkpoint**: `tdd-check.sh 2` reports `pass`; quickstart steps 1 to 4 pass for both elements.
 
 ---
