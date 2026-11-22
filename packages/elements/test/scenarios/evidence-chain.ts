@@ -489,7 +489,11 @@ export const evidenceChainChangeScenarios: readonly Scenario[] = [
   },
 ];
 
-/** The run-time change added for the mutation run (tasks.md T074): a step's `aria-hidden` set and removed after mount (the observer's attribute filter). */
+/**
+ * The run-time changes added for the mutation run (tasks.md T074): a step's `aria-hidden` set and removed after mount
+ * (the observer's attribute filter), and a chain moved to another parent and then narrowed (review round 1, R1-03: the
+ * line ends are still decided after a move).
+ */
 export const evidenceChainMutationScenarios: readonly Scenario[] = [
   {
     name: "aria-hidden set and removed on a step after mount: the step leaves the list and the ordinals, then comes back (FR-025)",
@@ -506,7 +510,69 @@ export const evidenceChainMutationScenarios: readonly Scenario[] = [
       shown: { ordinals: ["1", "2", "3", "4", "5", "6"], items: names },
     },
   },
+  {
+    name: "a chain moved to another parent and then narrowed to 200 px wraps with each line's ends marked, as before the move (R-12)",
+    run: async (driver) => {
+      await page(driver, `<div id="a">${ch("c", 'label="Evidence"', six("s", true))}</div><div id="b"></div>`);
+      const wide = await read(driver, 'return { lines: tops("c"), ends: ends("c") };');
+      await driver.move("c", "b");
+      await driver.setAttribute("b", "data-w", "200");
+      return { wide, narrow: await read(driver, 'return { lines: tops("c") > 1, ends: ends("c"), inside: inside("c") };') };
+    },
+    expected: { wide: { lines: 1, ends: ["ok", "ok", "ok", "ok", "ok", "ok"] }, narrow: { lines: true, ends: ["ok", "ok", "ok", "ok", "ok", "ok"], inside: true } },
+  },
 ];
 
-/** Every chain body, in the order of tasks.md T055 and T056, then the run-time changes and those of T074. */
-export const evidenceChainScenarios: readonly Scenario[] = [...evidenceChainStoryScenarios, ...evidenceChainGeometryScenarios, ...evidenceChainEdgeScenarios, ...evidenceChainChangeScenarios, ...evidenceChainMutationScenarios];
+/**
+ * A chain changed while it is detached (review round 1, R1-01; FR-025): what the chain shows once it is attached again,
+ * as phase 1's Q-M2 (a) asked of the data table. The changes are made in one task between `remove()` and `append()`,
+ * so the chain's own observers see none of them.
+ */
+export const evidenceChainReattachScenarios: readonly Scenario[] = [
+  {
+    name: "re-attach (R1-01, FR-025): a step appended while the chain is detached is shown once it is attached again, seven listitems with ordinals 1 to 7, the new step's box, and the line end on its item; then a step hidden while detached leaves the list, the ordinals and the line ends",
+    run: async (driver) => {
+      await page(driver, `<div id="a">${ch("c", 'label="Evidence"', six("s", true))}</div>`);
+      const detached = async (change: string): Promise<void> => {
+        await driver.module(`const host = document.getElementById("c");
+const parent = host.parentNode;
+host.remove();
+${change}
+parent.append(host);`);
+        await driver.settle();
+      };
+      const state = async (): Promise<unknown> => ({
+        items: (await texts(driver, "c")).texts,
+        ...((await read(driver, 'const items = lis("c"); const last = items.at(-1); return { ordinals: ordinals("c"), order: items.map((li) => stepOf(li)?.id ?? null), ends: ends("c"), lastEnd: last?.hasAttribute("data-line-end") ?? "no item", boxes: { s2: rects("s2"), s7: rects("s7") } };')) as object),
+      });
+      await detached(`const template = document.createElement("template");
+template.innerHTML = ${JSON.stringify(st("s7", "", "Merged"))};
+host.append(template.content);`);
+      const appended = await state();
+      await detached('host.querySelector("#s2").hidden = true;');
+      return { appended, hidden: await state(), messages: await driver.messages() };
+    },
+    expected: {
+      appended: {
+        items: [...names, "Merged"],
+        ordinals: ["1", "2", "chip", "4", "chip", "6", "7"],
+        order: ["s1", "s2", "s3", "s4", "s5", "s6", "s7"],
+        ends: ["ok", "ok", "ok", "ok", "ok", "ok", "ok"],
+        lastEnd: true,
+        boxes: { s2: 1, s7: 1 },
+      },
+      hidden: {
+        items: ["Spec", "Tasks", "Red commit", "Green commit", "Review", "Merged"],
+        ordinals: ["1", "chip", "3", "chip", "5", "6"],
+        order: ["s1", "s3", "s4", "s5", "s6", "s7"],
+        ends: ["ok", "ok", "ok", "ok", "ok", "ok"],
+        lastEnd: true,
+        boxes: { s2: 0, s7: 1 },
+      },
+      messages: [],
+    },
+  },
+];
+
+/** Every chain body, in the order of tasks.md T055 and T056, then the run-time changes, those of T074 and the re-attach of review round 1. */
+export const evidenceChainScenarios: readonly Scenario[] = [...evidenceChainStoryScenarios, ...evidenceChainGeometryScenarios, ...evidenceChainEdgeScenarios, ...evidenceChainChangeScenarios, ...evidenceChainMutationScenarios, ...evidenceChainReattachScenarios];
