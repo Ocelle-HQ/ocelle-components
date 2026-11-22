@@ -1,5 +1,5 @@
 import { execFileSync, spawnSync } from "node:child_process";
-import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { expect, it } from "vitest";
@@ -119,8 +119,10 @@ it("runs real clean-worktree red, base and green checks and refuses malformed ca
   const root = fixture();
   try {
     for (const file of storyFiles) {
+      const source = join(repository, file);
+      if (file === "gates/lib/story-cache.ts" && !existsSync(source)) continue;
       mkdirSync(dirname(join(root, file)), { recursive: true });
-      copyFileSync(join(repository, file), join(root, file));
+      copyFileSync(source, join(root, file));
     }
     write(root, "answer.ts", 'export const answer = "old";\n');
     write(root, "test/scenario.ts", 'import { expect } from "vitest";\nexport function inspectAnswer(value: string): void {\n  expect(value).toBe("corrected");\n}\n');
@@ -204,8 +206,10 @@ it.each([
   const root = fixture();
   try {
     for (const file of storyFiles) {
+      const source = join(repository, file);
+      if (file === "gates/lib/story-cache.ts" && !existsSync(source)) continue;
       mkdirSync(dirname(join(root, file)), { recursive: true });
-      copyFileSync(join(repository, file), join(root, file));
+      copyFileSync(source, join(root, file));
     }
     const feature = "specs/002-records";
     const reviews = `${feature}/reviews/phase-1`;
