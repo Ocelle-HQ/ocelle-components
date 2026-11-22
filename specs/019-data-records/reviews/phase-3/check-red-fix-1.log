@@ -35,15 +35,16 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 368ms using pnpm v12.16.1
+Done in 328ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at <chromium>
 $ node gates/bin/test.ts
+gates/test/integration/visual.test.ts:115: unit-tests: visual gate (gates/bin/visual.ts) captures the repository's 382 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1): Error: Test timed out in 600000ms.
 packages/elements/test/browser/event-timeline.test.ts:33: unit-tests: ocelle-event-timeline and ocelle-timeline-event on the strict-CSP fixture with the browser build (US2) re-attach (R1-11, FR-025): an event app…: AssertionError: expected { observed: { …(3) }, …(1) } to deeply equal { observed: { …(3) }, …(1) }
 packages/elements/test/browser/evidence-chain.test.ts:33: unit-tests: ocelle-evidence-chain and ocelle-evidence-step on the strict-CSP fixture with the browser build (US3) a chain moved to another parent and the…: AssertionError: expected { …(2) } to deeply equal { …(2) }
 packages/elements/test/browser/evidence-chain.test.ts:33: unit-tests: ocelle-evidence-chain and ocelle-evidence-step on the strict-CSP fixture with the browser build (US3) re-attach (R1-01, FR-025): a step appen…: AssertionError: expected { observed: { …(3) }, …(1) } to deeply equal { observed: { …(3) }, …(1) }
 packages/elements/test/event-timeline.test.ts:19: unit-tests: ocelle-event-timeline and ocelle-timeline-event, in process (US2) re-attach (R1-11, FR-025): an event app…: AssertionError: expected { appended: { …(5) }, …(2) } to deeply equal { appended: { …(5) }, …(2) }
 packages/elements/test/evidence-chain.test.ts:22: unit-tests: ocelle-evidence-chain and ocelle-evidence-step, in process (US3) a chain moved to another parent and the…: AssertionError: expected { …(2) } to deeply equal { …(2) }
 packages/elements/test/evidence-chain.test.ts:22: unit-tests: ocelle-evidence-chain and ocelle-evidence-step, in process (US3) re-attach (R1-01, FR-025): a step appen…: AssertionError: expected { appended: { …(6) }, …(2) } to deeply equal { appended: { …(6) }, …(2) }
-unit-tests: 6 of 7773 tests failed
+unit-tests: 7 of 7773 tests failed
 [ELIFECYCLE] Test failed. See above for more details.
