@@ -364,4 +364,13 @@ describe("worker and cache result decoding", () => {
     expect(decodeCachedEvidence({ ...cache, log: undefined }, key)).toBeUndefined();
     expect(decodeCachedEvidence({ ...cache, log: `${JSON.stringify(header)}\nworker output` }, key)).toEqual(red);
   });
+
+  it("requires an exact record key and plain text log even when the header matches", () => {
+    const selected = [input];
+    const header = { input: key, mode: "red", selected, evidence: red, seconds: 1, revision };
+    const cache = { key, evidence: red, selected, log: JSON.stringify(header) };
+    const wrapped = { indexOf: () => -1, toString: () => cache.log };
+    expect(decodeCachedEvidence({ ...cache, key: "another record" }, key)).toBeUndefined();
+    expect(decodeCachedEvidence({ ...cache, log: wrapped }, key)).toBeUndefined();
+  });
 });
