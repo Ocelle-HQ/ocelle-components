@@ -5,7 +5,7 @@
  * the rest in :where(), (0,1,0). No motion, no @import, no url(), no class. See README.md for the host contract.
  */
 
-/* Base layer: the reset, the body, the root color-scheme, code elements, ocelle-facts before upgrade, ocelle-event-timeline before upgrade, the focus ring, forced colours. */
+/* Base layer: the reset, the body, the root color-scheme, code elements, ocelle-facts before upgrade, ocelle-event-timeline before upgrade, ocelle-evidence-chain before upgrade, the focus ring, forced colours. */
 
 /* Pseudo-elements are invalid inside :where(), so they follow it: (0,0,0), (0,0,1), (0,0,1). */
 :where(*),
@@ -61,6 +61,19 @@
 }
 
 :where(ocelle-event-timeline:not(:defined) > ocelle-timeline-event[aria-hidden="true"]) {
+  display: none;
+}
+
+/*
+ * ocelle-evidence-chain before upgrade (019 research.md R-08, block 3): each visible step on its own line, with no
+ * marker or ordinal, until the elements are defined, and an aria-hidden one not shown, as after upgrade. (0,0,0); a
+ * hidden step keeps the user-agent display: none.
+ */
+:where(ocelle-evidence-chain:not(:defined) > ocelle-evidence-step:not([hidden]):not([aria-hidden="true"])) {
+  display: block;
+}
+
+:where(ocelle-evidence-chain:not(:defined) > ocelle-evidence-step[aria-hidden="true"]) {
   display: none;
 }
 

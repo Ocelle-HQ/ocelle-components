@@ -142,3 +142,10 @@ internal change with no effect on `ocelle-scroller` or `ocelle-workflow-board`.
   precedence over the `time` attribute while it has visible text), and its parts `time` and `content`. Entry points
   `@ocelle/elements/ocelle-event-timeline.js` (defines `ocelle-event-timeline` and its item `ocelle-timeline-event`)
   and `@ocelle/elements/ocelle-timeline-event.js` (defines `ocelle-timeline-event` only).
+- `ocelle-evidence-chain`, an evidence chain as one ordered list of its `ocelle-evidence-step` children in source
+  order, each default step with a round marker showing its ordinal, joined by connectors on each line and wrapping onto
+  further lines in a narrow container, named by `label` or a non-blank host `aria-label`, with its part `list`; and
+  `ocelle-evidence-step`, one step, with `variant` (reflected) and `wrap` (reflected), `variant="chip"` drawing a
+  compact chip with no marker, its default slot and its part `content`. Entry points
+  `@ocelle/elements/ocelle-evidence-chain.js` (defines `ocelle-evidence-chain` and its item `ocelle-evidence-step`) and
+  `@ocelle/elements/ocelle-evidence-step.js` (defines `ocelle-evidence-step` only).
