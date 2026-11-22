@@ -30,3 +30,7 @@ The axe and visual integration tests were changed only to update counts for the 
 The final local merge candidate combining pilot f737c389 and workflow afa69148 passed all six focused sub-checks in 1m40.446s. An identical rerun passed in 2.524s with all six reused. The report identified exactly the two collateral integration files. Required CI covers their full job and test inventory.
 
 A narrow, instrumented Chromium diagnostic executed the real component test files and killed all 118 textarea source mutations. It used a temporary three-file Vitest configuration and omitted the separate Stryker TypeScript checker. The required repository mutation job retains its normal configuration and determines merge readiness.
+
+### Hosted pilot verdict
+
+Run 45056194793 passed Unit tests, Plants, Visual regression, Accessibility and all five textarea-only mutation shards. Seven mutation shards failed on inherited verification tooling findings. Op 025 checkpoint 0b4d8699 adds focused coverage for those cases and passed 303 targeted tests and typecheck. The next pilot run will test the corrected workflow against the textarea.
