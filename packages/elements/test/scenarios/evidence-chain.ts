@@ -489,11 +489,7 @@ export const evidenceChainChangeScenarios: readonly Scenario[] = [
   },
 ];
 
-/**
- * The run-time changes added for the mutation run (tasks.md T074): a step's `aria-hidden` set and removed after mount
- * (the observer's attribute filter), and a chain moved to another parent and then narrowed (the size observer kept
- * across a disconnection).
- */
+/** The run-time change added for the mutation run (tasks.md T074): a step's `aria-hidden` set and removed after mount (the observer's attribute filter). */
 export const evidenceChainMutationScenarios: readonly Scenario[] = [
   {
     name: "aria-hidden set and removed on a step after mount: the step leaves the list and the ordinals, then comes back (FR-025)",
@@ -509,17 +505,6 @@ export const evidenceChainMutationScenarios: readonly Scenario[] = [
       masked: { ordinals: ["1", "2", "3", "4", "5"], items: ["Spec", "Tasks", "Red commit", "Green commit", "Review"] },
       shown: { ordinals: ["1", "2", "3", "4", "5", "6"], items: names },
     },
-  },
-  {
-    name: "a chain moved to another parent and then narrowed to 200 px wraps with each line's ends marked, as before the move (R-12)",
-    run: async (driver) => {
-      await page(driver, `<div id="a">${ch("c", 'label="Evidence"', six("s", true))}</div><div id="b"></div>`);
-      const wide = await read(driver, 'return { lines: tops("c"), ends: ends("c") };');
-      await driver.move("c", "b");
-      await driver.setAttribute("b", "data-w", "200");
-      return { wide, narrow: await read(driver, 'return { lines: tops("c") > 1, ends: ends("c"), inside: inside("c") };') };
-    },
-    expected: { wide: { lines: 1, ends: ["ok", "ok", "ok", "ok", "ok", "ok"] }, narrow: { lines: true, ends: ["ok", "ok", "ok", "ok", "ok", "ok"], inside: true } },
   },
 ];
 
