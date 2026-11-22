@@ -10,3 +10,5 @@ The first hosted original job completed in 72m29s. The same-revision aggregate c
 On the timing-weighted run 45052831289, the visual-only job passed in 34m46s and was the last shard. All six shards had finished in 35m14s from inventory start. The comparison against that revision's stock run was still in progress when this result was recorded.
 
 After the explicit collateral-CI policy, the complete focused Op proof passed all 22 sub-checks in 2m51.649s on 466a19ba. The #74 merge-candidate replay demonstrated the two exact deferred Storybook integration files with the required check inventory preserved.
+
+Runs 45062666658 and 45062695001 both found an uncovered empty worker callback. The default mutation project does not launch the CLI as a subprocess. Applying that exact mutation separately made the existing real-worktree test reject the missing worker report and record no red assertions. After restoring the worker, the named real-worktree test and all 302 other targeted tests passed. The strict mutation check for the failed Op shard passed with zero survivors and records this one subprocess boundary.
