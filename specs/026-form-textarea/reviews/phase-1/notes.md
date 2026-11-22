@@ -14,3 +14,11 @@ The stricter red, base, scaffold and HEAD proof records are collected separately
 The strict replay on 7c38b592 passed both recorded reds, the pre-phase base, the scaffold, the review fix's base and the green head in 84.938 seconds. The repeated run also passed, but the older Op build did not recognize the installed CommonJS Playwright package for cache identity, so it replayed each stage. Repeat timing with the current Op build is still pending.
 
 Eight manifest plant fixture trees now include the exact generated textarea module. The focused run of those eight plants passed. The fixtures retain their original intentional differences and expected results.
+
+### Pilot on the revised Op 025 workflow
+
+- Cold exact phase replay passed on 8ca5058f in 69.797 s. It checked the two test-only reds, the original base and scaffold, the review-fix parent, and green HEAD.
+- The identical repeat passed in 0.988 s and reused all six sub-checks. The runner selected the same cases and retained their assertion evidence.
+- The standalone browser run for the review fix passed 17 tests in 6.38 s. It covers initial invalid focus, a clean built strict-CSP fixture, and resubmission after a host-rendered failure.
+- Eight existing manifest plants passed after refreshing their fixture manifests without changing their expected outcomes.
+- Required CI, mutation and independent phase acceptance remain in progress on the draft.
