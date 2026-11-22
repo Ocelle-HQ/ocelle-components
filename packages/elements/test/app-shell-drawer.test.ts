@@ -42,7 +42,7 @@ describe("app shell drawer", () => {
     required(panel(shell)).id = "default-drawer-panel";
     const tree = await commands.axTree("default-drawer-panel", "subtree");
     expect(tree.find((node) => node.role === "dialog")?.name).toBe("Navigation");
-    expect(close(shell).getAttribute("aria-label")).toBe("Close navigation");
+    expect(tree.filter((node) => node.role === "button").map((node) => node.name)).toEqual(["Close navigation"]);
   });
 
   it("opens only for the shell's own top bar request", async () => {
