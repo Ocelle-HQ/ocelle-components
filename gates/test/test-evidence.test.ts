@@ -130,3 +130,59 @@ describe("full-suite shards", () => {
     expect(() => verifyTestShards(incomplete, reports, revision)).toThrow(/inventory/i);
   });
 });
+
+describe("assertion-site evidence", () => {
+  const originalText = "expect(submitted.value).toEqual(answer);";
+  const setupText = "expect(form).toBeDefined();";
+  const source = ["test('keeps the submitted paragraphs', () => {", setupText, originalText, "});"];
+  const intended = { ...assertion, source: { text: originalText, occurrence: 1, line: 3 } };
+  const inputs = { sources: { [input.file]: source }, changedLines: { [input.file]: [{ start: 3, end: 3 }] } };
+
+  function assertionAt(line: number): TestFileResult {
+    const failed = file(input, [], "failed");
+    return {
+      ...failed,
+      tests: [{ name: assertion.test, state: "failed", startLine: 1, errors: [{ ...assertionError, line }] }],
+    };
+  }
+
+  it("does not take red evidence from a pre-existing assertion in an edited file", () => {
+    expect(classifyStoryEvidence({ ...story([assertionAt(2)]), ...inputs }))
+      .toMatchObject({ status: "invalid", problem: /unchanged assertion/i });
+  });
+
+  it("rejects a different failure within the same named test during replay", () => {
+    const replay = { ...inputs, changedLines: { [input.file]: [{ start: 2, end: 3 }] }, expected: [intended] };
+    expect(classifyStoryEvidence({ ...story([assertionAt(2)]), ...replay }))
+      .toMatchObject({ status: "invalid", problem: /expected assertion/i });
+  });
+
+  it("retains assertion location and diagnostics when the intended site fails", () => {
+    expect(classifyStoryEvidence({ ...story([assertionAt(3)]), ...inputs })).toMatchObject({
+      status: "red",
+      assertions: [{ ...intended, diagnostic: assertionError.message }],
+    });
+  });
+
+  it("rejects a green test when its title survived but its recorded assertion was removed", () => {
+    const passed = { ...file(input), tests: [{ name: assertion.test, state: "passed" as const, startLine: 1, errors: [] }] };
+    const replay = { ...inputs, sources: { [input.file]: [source[0] ?? "", setupText, "});"] }, expected: [intended] };
+    expect(classifyStoryEvidence({ ...story([passed]), ...replay }))
+      .toMatchObject({ status: "invalid", problem: /expected assertion/i });
+  });
+
+  it("does not reuse cache records with missing, malformed, or mismatched diagnostic evidence", () => {
+    const key = storyEvidenceKey({ sources: inputs.sources });
+    const evidence = { status: "red", assertions: [intended] };
+    const header = { input: key, mode: "red", selected: [input], evidence, seconds: 1, revision };
+    const log = `${JSON.stringify(header)}\n`;
+    const complete = { key, evidence, selected: [input], log };
+    expect(decodeCachedEvidence(complete, key)).toEqual(evidence);
+    expect(decodeCachedEvidence({ ...complete, selected: [null] }, key)).toBeUndefined();
+    expect(decodeCachedEvidence({ ...complete, selected: [other] }, key)).toBeUndefined();
+    expect(decodeCachedEvidence({ ...complete, selected: [input, input] }, key)).toBeUndefined();
+    expect(decodeCachedEvidence({ ...complete, log: "" }, key)).toBeUndefined();
+    expect(decodeCachedEvidence({ ...complete, log: `${JSON.stringify({ ...header, evidence: { status: "green", assertions: [] } })}\n` }, key))
+      .toBeUndefined();
+  });
+});
