@@ -231,6 +231,16 @@ it with exactly the events of data-model.md § State transitions; the Chromium t
   `gate:mutation`. Run locally: the disclosure plants (step 1), the fast gates and the full unit tests (step 2), the
   scope diff (step 3, `notes.md` § Gates) and the records of step 4 (`notes.md`).
 
+- [ ] T014 [US1] Phase 1 landing, operator round 4. Op 022 (#64) fixed the focus trap on the integrated branch.
+  Remove the obsolete closed-disclosure limitation from the `ocelle-disclosure` README section and remove only its
+  fragment from `packages/elements/test/node/readme.test.ts`. Keep Op 022's existing native `details` cases for
+  dialog and drawer. This mission's research § Repository-wide notes calls for the distinct composition where an
+  actual `ocelle-disclosure` holding a link is the final control of an open `ocelle-dialog`. Add only that case:
+  from the closed disclosure's summary, Tab wraps to the dialog's first focus stop. Demonstrate that the new
+  assertion catches the pre-Op 022 focus walk in a disposable checkout and passes with the integrated code. Note
+  in the round fix record that Op 022 already supplied the green production change. Run the focused README and
+  browser cases and record their results.
+
 **Checkpoint**: `tdd-check.sh 1` reports `pass`; quickstart steps 1 to 4 pass for the disclosure.
 
 ---
