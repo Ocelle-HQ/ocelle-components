@@ -31,6 +31,34 @@ describe("app shell drawer", () => {
     expect(tree.filter((node) => node.role === "navigation").map((node) => node.name)).toEqual(names);
   });
 
+  it("uses usable drawer and close names when configured labels are blank", async () => {
+    const shell = await mount("personal", sidebar);
+    shell.drawerLabel = " ";
+    shell.closeLabel = " ";
+    await open(shell);
+    required(panel(shell)).id = "default-drawer-panel";
+    const tree = await commands.axTree("default-drawer-panel", "subtree");
+    expect(tree.find((node) => node.role === "dialog")?.name).toBe("Navigation");
+    expect(close(shell).getAttribute("aria-label")).toBe("Close navigation");
+  });
+
+  it("opens only for the shell's own top bar request", async () => {
+    const shell = await mount("project", sidebar);
+    const nested = document.createElement("ocelle-top-bar");
+    nested.slot = "actions";
+    nested.showMenu = true;
+    shell.append(nested);
+    await nested.updateComplete;
+    await shell.updateComplete;
+    const requests: (EventTarget | null)[] = [];
+    shell.addEventListener("ocelle-top-bar-menu-request", (event) => { requests.push(event.composedPath()[0] ?? event.target); });
+    await click(required(nested.shadowRoot?.querySelector("button")));
+    expect(requests).toEqual([nested]);
+    expect(panel(shell)?.open).toBe(false);
+    await open(shell);
+    expect(requests).toEqual([nested]);
+  });
+
   it("keeps a bare rail link readable against chrome beside content and in the drawer", async () => {
     const shell = await mount("mission", rail + sidebar, 1150);
     const link = required(document.getElementById("account"));
@@ -96,7 +124,13 @@ describe("app shell drawer", () => {
     await expect.poll(() => menu(shell)?.getAttribute("aria-expanded")).toBe("false");
     expect(dialog.open).toBe(true);
     expect(required(document.getElementById("work")).getClientRects().length).toBeGreaterThan(0);
-    required(dialog.getAnimations()[0]).finish();
+    const exit = required(dialog.getAnimations()[0]);
+    exit.pause();
+    required(menu(shell)).click();
+    await shell.updateComplete;
+    expect(menu(shell)?.getAttribute("aria-expanded")).toBe("false");
+    expect(dialog.getAnimations()).toContain(exit);
+    exit.finish();
     await expect.poll(() => dialog.open).toBe(false);
     await focused(menu(shell));
   });

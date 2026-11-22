@@ -3,6 +3,15 @@ import { deepActive } from "../src/focusable.ts";
 import { close, focused, menu, mount, open, panel, rail, required, resize, sidebar } from "./app-shell-drawer-fixture.ts";
 
 describe("app shell drawer focus", () => {
+  it("leaves focus alone when the shell has never opened its drawer", async () => {
+    const shell = await mount("project", sidebar, 1150);
+    expect(panel(shell)?.open).toBe(false);
+    await focused(null);
+    resize(850);
+    await expect.poll(() => shell.tier).toBe("collapsed");
+    expect(deepActive()).toBeNull();
+  });
+
   it("retains a destination on same-tier narrow resize and restores its identity after widening", async () => {
     const shell = await mount("mission", rail + sidebar);
     await open(shell);
@@ -136,15 +145,21 @@ describe("app shell drawer focus", () => {
     destination.focus();
     shell.style.setProperty("--ocelle-motion-base", "10s");
     const order: string[] = [];
+    const transitions: unknown[] = [];
     shell.addEventListener("ocelle-drawer-close", () => { order.push("close"); });
+    shell.addEventListener("ocelle-app-shell-tier-change", (event) => {
+      order.push("tier");
+      transitions.push((event as CustomEvent<unknown>).detail);
+    });
     resize(850);
     await expect.poll(() => shell.tier).toBe("collapsed");
     await expect.poll(() => dialog.getAnimations().length).toBe(1);
     const exit = required(dialog.getAnimations()[0]);
     exit.pause();
     expect(dialog.open).toBe(true);
-    destination.blur();
-    expect(deepActive()).not.toBe(destination);
+    const closeButton = close(shell);
+    closeButton.focus();
+    expect(deepActive()).toBe(closeButton);
 
     const { promise, resolve } = Promise.withResolvers<boolean>();
     const observer = new ResizeObserver(([entry]) => {
@@ -160,7 +175,8 @@ describe("app shell drawer focus", () => {
       await shell.updateComplete;
       expect(order).toEqual(["resize"]);
       exit.finish();
-      await expect.poll(() => order).toEqual(["resize", "close"]);
+      await expect.poll(() => order).toEqual(["resize", "close", "tier"]);
+      expect(transitions).toEqual([{ previousTier: "narrow", tier: "collapsed" }]);
       await focused(destination);
     } finally {
       observer.disconnect();
