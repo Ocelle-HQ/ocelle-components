@@ -33,6 +33,10 @@ describe("unit test shard plans", () => {
     expect(validTestPlan(result, sha)).toBe(true);
   });
 
+  it("accepts a single shard for a nonempty suite", () => {
+    expect(planTestShards(revision, [alpha, beta], 1)).toEqual({ ...manifest, shards: [[alpha, beta]] });
+  });
+
   it.each([
     ["a short revision", "a"],
     ["an almost full revision", "a".repeat(39)],
@@ -53,6 +57,12 @@ describe("unit test shard plans", () => {
 
   it("rejects duplicate planned test identities", () => {
     expect(() => planTestShards(revision, [alpha, alpha], 2))
+      .toThrow(new Error("invalid revision, shard count, or test inventory"));
+  });
+
+  it("rejects a mixed inventory even when only one path leaves the workspace", () => {
+    const outside = { ...beta, file: "../out-of-tree.test.ts" };
+    expect(() => planTestShards(revision, [alpha, outside], 1))
       .toThrow(new Error("invalid revision, shard count, or test inventory"));
   });
 

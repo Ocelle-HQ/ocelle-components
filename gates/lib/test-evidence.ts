@@ -391,9 +391,8 @@ export function decodeCachedEvidence(record: unknown, key: string): StoryEvidenc
   try {
     const end = record.log.indexOf("\n");
     header = JSON.parse(end === -1 ? record.log : record.log.slice(0, end));
-  // Stryker disable next-line BlockStatement: equivalent, a parse failure leaves header undefined and fails the object check below.
   } catch {
-    return undefined;
+    // Leave header undefined so malformed JSON fails the same object check as other invalid headers.
   }
   if (!object(header) || header.input !== key || typeof header.revision !== "string" || !revisionPattern.test(header.revision)
     || typeof header.seconds !== "number" || !Number.isFinite(header.seconds) || header.seconds < 0

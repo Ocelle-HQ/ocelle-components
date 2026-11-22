@@ -346,6 +346,7 @@ describe("worker and cache result decoding", () => {
     { evidence: missing, mode: "base", accepted: missing },
     { evidence: missing, mode: "scaffold", accepted: undefined },
     { evidence: green, mode: "red", accepted: undefined },
+    { evidence: green, mode: "base", accepted: undefined },
     { evidence: red, mode: "head", accepted: undefined },
     { evidence: green, mode: "head", accepted: green },
   ])("only resumes $evidence.status evidence for an allowed mode ($mode)", ({ evidence, mode, accepted }) => {
