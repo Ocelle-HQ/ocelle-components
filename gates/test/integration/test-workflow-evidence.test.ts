@@ -8,6 +8,7 @@ import type { Assertion } from "../../lib/test-evidence.ts";
 const repository = resolve(import.meta.dirname, "../../..");
 const storyFiles = [
   "gates/bin/story-evidence.ts",
+  "gates/lib/story-cache.ts",
   "gates/lib/test-evidence.ts",
   "gates/lib/story-selection.ts",
   "gates/lib/vitest-run.ts",
@@ -177,6 +178,20 @@ it("runs real clean-worktree red, base and green checks and refuses malformed ca
     const checked = check();
     expect({ status: checked.status, stderr: checked.stderr }).toMatchObject({ status: 0 });
     expect(JSON.parse(checked.stdout) as PhaseResult).toMatchObject({ status: "pass", focused: { base: { resumed: true }, head: { resumed: false } } });
+
+    for (const [filename, content] of [
+      ["pnpm-lock.yaml", "lockfileVersion: '9.0'\n"],
+      ["vitest.config.mjs", 'export default { test: {name:"fixture", include:["test/**/*.test.ts"], testTimeout: 6000} };\n'],
+    ] as const) {
+      write(root, filename, content);
+      commit(root, `update ${filename}`);
+      const fresh = check();
+      expect({ status: fresh.status, stderr: fresh.stderr }).toMatchObject({ status: 0 });
+      expect(JSON.parse(fresh.stdout) as PhaseResult).toMatchObject({
+        status: "pass",
+        focused: { base: { resumed: true }, head: { resumed: false } },
+      });
+    }
   } finally {
     rmSync(root, { force: true, recursive: true });
   }

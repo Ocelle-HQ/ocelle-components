@@ -5,9 +5,10 @@ import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { runTool } from "../lib/spawn.ts";
+import { browserIdentity, checkKey as phaseCacheKey } from "../lib/story-cache.ts";
 import { exactStoryCases, plannedStoryResults, selectStoryTests } from "../lib/story-selection.ts";
 import type { StoryMode } from "../lib/story-selection.ts";
-import { assertionKey, classifyStoryEvidence, decodeCachedEvidence, storyEvidenceKey } from "../lib/test-evidence.ts";
+import { assertionKey, classifyStoryEvidence, decodeCachedEvidence } from "../lib/test-evidence.ts";
 import type { Assertion, StoryEvidence } from "../lib/test-evidence.ts";
 import { testFile, testRun, withVitest } from "../lib/vitest-run.ts";
 
@@ -65,17 +66,6 @@ export interface PhaseTools {
 const root = process.cwd();
 const path = import.meta.filename;
 const environment: NodeJS.ProcessEnv = { ...process.env, CI: "true" };
-const trackedRunner = [
-  "gates/bin/story-evidence.ts",
-  "gates/lib/test-evidence.ts",
-  "gates/lib/story-selection.ts",
-  "gates/lib/vitest-run.ts",
-  "gates/lib/spawn.ts",
-  ".specify/extensions/story/story-config.yml",
-  ".specify/extensions/story/scripts/common.sh",
-  ".specify/extensions/story/scripts/red.sh",
-  ".specify/extensions/story/scripts/tdd-check.sh",
-];
 
 function git(args: readonly string[], cwd = root): string {
   // Stryker disable next-line all: process boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "runs real clean-worktree red, base and green checks and refuses malformed cache reuse"
@@ -178,49 +168,39 @@ function safeLog(value: string, tested: string): string {
   return value.replaceAll(tested, "<worktree>").replaceAll(root, "<repository>");
 }
 
-function browserIdentity(): object | null {
-  try {
-    const require = createRequire(join(root, "package.json"));
-    const playwright = require("playwright") as typeof import("playwright");
-    const override = process.env.OCELLE_CHROMIUM_PATH;
-    const bundled = playwright.chromium.executablePath();
-    const chromium = realpathSync(override === "" ? bundled : override ?? bundled);
-    const version = execFileSync(chromium, ["--version"], { encoding: "utf8" }).trim();
-    const stat = statSync(chromium);
-    if (process.env.OCELLE_CHROMIUM_PATH) return { chromium, version, size: stat.size, modified: stat.mtimeMs };
-    const linuxShell = playwright.chromium.executablePath().replace(
-      /chromium-(\d+)\/chrome-linux64\/chrome$/,
-      "chromium_headless_shell-$1/chrome-headless-shell-linux64/chrome-headless-shell",
-    );
-    if (linuxShell === chromium || !existsSync(linuxShell)) return null;
-    const shell = statSync(linuxShell);
-    return { chromium, version, size: stat.size, modified: stat.mtimeMs, shell: linuxShell, shellSize: shell.size, shellModified: shell.mtimeMs };
-  } catch {
-    return null; // A runnable checkout can still verify with per-worktree setup. It cannot reuse unpinned evidence.
-  }
-}
-
 function checkKey(check: Check, setup: string): { key: string; reusable: boolean } {
-  const overlay = check.overlay === undefined ? [] : check.selection.changed.map((file) => [file, git(["rev-parse", `${check.overlay ?? ""}:${file}`]).trim()]);
-  const runtime = ["OCELLE_CHROMIUM_PATH", "PLAYWRIGHT_BROWSERS_PATH", "NODE_OPTIONS", "TZ", "LANG", "LC_ALL"].map((name) => [name, process.env[name] ?? ""]);
-  const chromium = browserIdentity();
-  const pnpm = execFileSync("pnpm", ["--version"], { encoding: "utf8" }).trim();
-  const key = storyEvidenceKey({
-    mode: check.mode,
-    testedTree: git(["rev-parse", `${check.revision}^{tree}`]).trim(),
-    overlay,
-    selection: check.selection,
-    expected: check.expected,
-    missingModules: check.missingModules,
-    setup,
-    node: process.version,
-    platform: `${process.platform}/${process.arch}`,
-    pnpm,
-    chromium,
-    runtime,
-    runner: trackedRunner.map((file) => readFileSync(join(root, file), "utf8")),
+  const browser = browserIdentity(environment.OCELLE_CHROMIUM_PATH, {
+    bundledChromium: () => {
+      // Stryker disable next-line all: process boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "runs real clean-worktree red, base and green checks and refuses malformed cache reuse"
+      const require = createRequire(join(root, "package.json"));
+      // Stryker disable next-line all: process boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "runs real clean-worktree red, base and green checks and refuses malformed cache reuse"
+      const playwright = require("playwright") as typeof import("playwright");
+      return playwright.chromium.executablePath();
+    },
+    file: (filename) => {
+      const path = realpathSync(filename);
+      const stat = statSync(path);
+      return { path, regular: stat.isFile(), size: stat.size, modified: stat.mtimeMs };
+    },
+    // Stryker disable next-line all: process boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "runs real clean-worktree red, base and green checks and refuses malformed cache reuse"
+    version: (filename) => execFileSync(filename, ["--version"], { encoding: "utf8" }),
   });
-  return { key, reusable: chromium !== null };
+  // Stryker disable next-line all: process boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "runs real clean-worktree red, base and green checks and refuses malformed cache reuse"
+  const pnpm = execFileSync("pnpm", ["--version"], { encoding: "utf8" }).trim();
+  return phaseCacheKey(check, setup, {
+    browser,
+    environment,
+    node: process.version,
+    platform: process.platform,
+    architecture: process.arch,
+    pnpm,
+    // Stryker disable next-line all: process boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "runs real clean-worktree red, base and green checks and refuses malformed cache reuse"
+    tree: (revision) => git(["rev-parse", `${revision}^{tree}`]).trim(),
+    // Stryker disable next-line all: process boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "runs real clean-worktree red, base and green checks and refuses malformed cache reuse"
+    blob: (revision, file) => git(["rev-parse", `${revision}:${file}`]).trim(),
+    // Stryker disable next-line all: process boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "runs real clean-worktree red, base and green checks and refuses malformed cache reuse"
+    runnerFile: (file) => readFileSync(join(root, file), "utf8"),
+  });
 }
 
 function canReuse(mode: Check["mode"], evidence: StoryEvidence): boolean {
