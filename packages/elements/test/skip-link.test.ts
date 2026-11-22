@@ -22,10 +22,11 @@ describe("ocelle-skip-link", () => {
     const skip = required(document.querySelector("ocelle-skip-link"));
     const button = control(skip);
     const style = getComputedStyle(button);
-    expect(style.clipPath).not.toBe("none");
+    expect(style.opacity).toBe("0");
+    expect(style.pointerEvents).toBe("none");
     await commands.press("Tab");
     expect(deepActive()).toBe(button);
-    expect(style.clipPath).toBe("none");
+    expect(style.opacity).toBe("1");
     expect(style.outlineStyle).toBe("solid");
     expect((await commands.axState("skip", "button")).name).toBe("Zum Inhalt");
     await commands.press("Enter");

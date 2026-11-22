@@ -4751,6 +4751,81 @@
       ]
     },
     {
+      "path": "src/ocelle-skip-link.ts",
+      "kind": "javascript-module",
+      "exports": [
+        {
+          "name": "OcelleSkipLink",
+          "kind": "js",
+          "declaration": {
+            "name": "OcelleSkipLink",
+            "module": "src/ocelle-skip-link.ts"
+          }
+        }
+      ],
+      "declarations": [
+        {
+          "tagName": "ocelle-skip-link",
+          "superclass": {
+            "package": "lit",
+            "name": "LitElement"
+          },
+          "slots": [
+            {
+              "name": "",
+              "description": "The localized shortcut label."
+            }
+          ],
+          "name": "OcelleSkipLink",
+          "members": [
+            {
+              "type": {
+                "text": "HTMLElement | null"
+              },
+              "privacy": "public",
+              "name": "target",
+              "kind": "field",
+              "description": "Explicit target, which takes precedence even when it cannot receive focus.",
+              "default": "null"
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "privacy": "public",
+              "name": "targetSelector",
+              "kind": "field",
+              "description": "Selector evaluated in the control's containing root at activation.",
+              "default": "\"\"",
+              "attribute": "target-selector"
+            }
+          ],
+          "kind": "class",
+          "events": [],
+          "description": "A keyboard shortcut to programmatically focus the start of the page content.",
+          "customElement": true,
+          "cssProperties": [],
+          "cssParts": [
+            {
+              "name": "control",
+              "description": "The native keyboard control."
+            }
+          ],
+          "attributes": [
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "target-selector",
+              "fieldName": "targetSelector",
+              "description": "Selector evaluated in the control's containing root at activation.",
+              "default": "\"\""
+            }
+          ]
+        }
+      ]
+    },
+    {
       "path": "src/ocelle-tab-panel.ts",
       "kind": "javascript-module",
       "exports": [

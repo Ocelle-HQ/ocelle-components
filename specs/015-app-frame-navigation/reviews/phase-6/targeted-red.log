@@ -1,0 +1,21 @@
+Scoped source replay on the inert scaffold.
+ FAIL  |elements (chromium)| packages/elements/test/skip-link.test.ts > ocelle-skip-link > reveals the localized control on first Tab and continues after the first selector match
+ FAIL  |elements (chromium)| packages/elements/test/skip-link.test.ts > ocelle-skip-link > uses the containing shadow root and only its first matching target
+ FAIL  |elements (chromium)| packages/elements/test/skip-link.test.ts > ocelle-skip-link > uses a direct cross-root reference before the selector and continues into shell content
+ Test Files  1 failed | 1 passed (2)
+      Tests  3 failed | 7 passed (10)
+   Duration  2.51s (worker 66%, tests 32%, import 2%)
+Built shell replay after correcting the fixture locator for the slotted drawer link.
+ FAIL  |elements-browser| packages/elements/test/browser/app-shell.test.ts > resizes the built shell, dismisses its real drawer, and transfers skip focus under strict CSP
+AssertionError: expected { skipTarget: 'control', …(2) } to deeply equal { skipTarget: 'main', …(2) }
+-   "next": "main-action",
++   "next": "menu-button",
+    "recorded": {
+      "console": [],
+      "failed": [],
+      "outside": [],
+      "violations": [],
+-   "skipTarget": "main",
++   "skipTarget": "control",
+ Test Files  1 failed (1)
+      Tests  1 failed (1)

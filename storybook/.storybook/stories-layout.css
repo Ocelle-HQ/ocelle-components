@@ -204,3 +204,7 @@
 [data-story="inline-navigation-narrow"] {
   inline-size: min(20rem, 100%);
 }
+
+[data-story="skip-link-content"] {
+  padding-block-start: var(--ocelle-space-10);
+}

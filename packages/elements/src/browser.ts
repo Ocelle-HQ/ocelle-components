@@ -1,4 +1,3 @@
 // The browser build's entry (005 research.md R-05, FR-033): vite.browser.config.ts bundles it with Lit into one
-// self-contained module, dist/browser/ocelle-elements.js, which defines every element when loaded, including the inline navigation pill and breadcrumbs.
+// self-contained module, dist/browser/ocelle-elements.js, which defines every element when loaded, including the inline navigation pill, breadcrumbs and skip link.
 import "./index.ts";
-import "./ocelle-skip-link.ts";

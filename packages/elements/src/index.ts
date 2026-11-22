@@ -46,6 +46,7 @@ export { OcelleScroller } from "./ocelle-scroller.ts";
 export { OcelleSectionHeader } from "./ocelle-section-header.ts";
 export { OcelleSegment } from "./ocelle-segment.ts";
 export { OcelleSegmentedChoice } from "./ocelle-segmented-choice.ts";
+export { OcelleSkipLink } from "./ocelle-skip-link.ts";
 export { OcelleTab } from "./ocelle-tab.ts";
 export { OcelleTabPanel } from "./ocelle-tab-panel.ts";
 export { OcelleTabs } from "./ocelle-tabs.ts";

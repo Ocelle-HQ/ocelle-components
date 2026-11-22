@@ -42,6 +42,7 @@
     "./ocelle-app-shell.js": "./dist/ocelle-app-shell.js",
     "./ocelle-nav-pill.js": "./dist/ocelle-nav-pill.js",
     "./ocelle-breadcrumbs.js": "./dist/ocelle-breadcrumbs.js",
+    "./ocelle-skip-link.js": "./dist/ocelle-skip-link.js",
     "./browser.js": "./dist/browser/ocelle-elements.js",
     "./custom-elements.json": "./custom-elements.json"
   },

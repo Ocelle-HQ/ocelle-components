@@ -4751,6 +4751,81 @@
     {
       "declarations": [
         {
+          "attributes": [
+            {
+              "default": "\"\"",
+              "description": "Selector evaluated in the control's containing root at activation.",
+              "fieldName": "targetSelector",
+              "name": "target-selector",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The native keyboard control.",
+              "name": "control"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A keyboard shortcut to programmatically focus the start of the page content.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "default": "null",
+              "description": "Explicit target, which takes precedence even when it cannot receive focus.",
+              "kind": "field",
+              "name": "target",
+              "privacy": "public",
+              "type": {
+                "text": "HTMLElement | null"
+              }
+            },
+            {
+              "attribute": "target-selector",
+              "default": "\"\"",
+              "description": "Selector evaluated in the control's containing root at activation.",
+              "kind": "field",
+              "name": "targetSelector",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "name": "OcelleSkipLink",
+          "slots": [
+            {
+              "description": "The localized shortcut label.",
+              "name": ""
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-skip-link"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-skip-link.ts",
+            "name": "OcelleSkipLink"
+          },
+          "kind": "js",
+          "name": "OcelleSkipLink"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-skip-link.ts"
+    },
+    {
+      "declarations": [
+        {
           "attributes": [],
           "cssParts": [],
           "cssProperties": [],
