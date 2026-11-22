@@ -1,0 +1,26 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: a11y-security
+findings:
+  - id: PLAN-A11Y-SECURITY-1-001
+    severity: 2
+    title: "Inherited styles do not visibly identify read-only state"
+    evidence:
+      - artifact: "spec.md FR-004 requires disabled, read-only and invalid states to be distinguishable. plan.md Design reuses FormControl styling and step 5 asks for readable state cues."
+      - code: "packages/elements/src/form-control.ts:99-164 has common, invalid, focus-visible, and disabled selectors, but no read-only cue. Its forced-colours rules set the common boundary and the focus and error colours. packages/elements/test/scenarios/form-input.ts:441-448 checks read-only focus and submission, while 557-569 checks forced-colour styling independently."
+    claim: |
+      Using the shared styling alone can leave an editable and a read-only textarea visually identical, even though one permits selection and bars editing. A story separately labelled read-only can pass visual review while the control itself offers no cue in the actual form. The plan does not identify how the distinguishable state in FR-004 will be delivered or verified.
+    remedies:
+      - "Specify a visible read-only cue that survives forced colours and remains distinct from disabled and invalid, keep the inner native readonly state and focus ring, and verify the state on the same field across editable, read-only and disabled modes in the browser."
+  - id: PLAN-A11Y-SECURITY-1-002
+    severity: 2
+    title: "The failed-save scenario needs evidence that the error is announced without moving focus"
+    evidence:
+      - artifact: "spec.md US1 scenario 3 and FR-004/FR-006 add an error after a submitted answer. research.md Accessibility and visual verification says to reuse announcement behavior but only explicitly asserts computed name and description on the inner node."
+      - code: "packages/elements/src/form-control.ts:517-526 and 536-544 provide separate dynamic announcement and description paths. packages/elements/test/scenarios/form-input.ts:372-392 verifies both, including one announcement per new error. WCAG 2.2 SC 4.1.3 covers error status conveyed without a change of focus (https://www.w3.org/WAI/WCAG22/Understanding/status-messages.html)."
+    claim: |
+      Testing only the focused field's accessible description can pass if the dynamic announcer is ineffective. In the actual async failure flow focus may remain on the submit button, so the reviewer would then learn of the error only by returning to the field.
+    remedies:
+      - "Add a red-first browser scenario that sets a new host error after a real submission while focus remains on the submit button, verifies the existing polite announcement path and unchanged focus/value, and verifies that clearing the error removes it from the textarea's accessible description."
