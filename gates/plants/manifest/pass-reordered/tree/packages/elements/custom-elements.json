@@ -792,6 +792,88 @@
       ]
     },
     {
+      "path": "src/ocelle-breadcrumbs.ts",
+      "kind": "javascript-module",
+      "exports": [
+        {
+          "name": "OcelleBreadcrumbs",
+          "kind": "js",
+          "declaration": {
+            "name": "OcelleBreadcrumbs",
+            "module": "src/ocelle-breadcrumbs.ts"
+          }
+        }
+      ],
+      "declarations": [
+        {
+          "tagName": "ocelle-breadcrumbs",
+          "superclass": {
+            "package": "lit",
+            "name": "LitElement"
+          },
+          "slots": [],
+          "name": "OcelleBreadcrumbs",
+          "members": [
+            {
+              "type": {
+                "text": "string"
+              },
+              "privacy": "public",
+              "name": "label",
+              "kind": "field",
+              "description": "Localized name for the breadcrumb landmark.",
+              "default": "\"Breadcrumb\"",
+              "attribute": "label"
+            },
+            {
+              "type": {
+                "text": "readonly BreadcrumbItem[]"
+              },
+              "privacy": "public",
+              "name": "items",
+              "kind": "field",
+              "description": "Ancestors in order followed by the current page.",
+              "default": "[]"
+            }
+          ],
+          "kind": "class",
+          "events": [],
+          "description": "A named breadcrumb trail with a text current page.",
+          "customElement": true,
+          "cssProperties": [],
+          "cssParts": [
+            {
+              "name": "list",
+              "description": "The ordered breadcrumb list."
+            },
+            {
+              "name": "item",
+              "description": "A breadcrumb list item."
+            },
+            {
+              "name": "link",
+              "description": "An ancestor's native link."
+            },
+            {
+              "name": "current",
+              "description": "The current page's text."
+            }
+          ],
+          "attributes": [
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "label",
+              "fieldName": "label",
+              "description": "Localized name for the breadcrumb landmark.",
+              "default": "\"Breadcrumb\""
+            }
+          ]
+        }
+      ]
+    },
+    {
       "path": "src/ocelle-button.ts",
       "kind": "javascript-module",
       "exports": [
@@ -3690,6 +3772,80 @@
       ],
       "kind": "javascript-module",
       "path": "src/ocelle-nav-item.ts"
+    },
+    {
+      "path": "src/ocelle-nav-pill.ts",
+      "kind": "javascript-module",
+      "exports": [
+        {
+          "name": "OcelleNavPill",
+          "kind": "js",
+          "declaration": {
+            "name": "OcelleNavPill",
+            "module": "src/ocelle-nav-pill.ts"
+          }
+        }
+      ],
+      "declarations": [
+        {
+          "tagName": "ocelle-nav-pill",
+          "superclass": {
+            "package": "lit",
+            "name": "LitElement"
+          },
+          "slots": [],
+          "name": "OcelleNavPill",
+          "members": [
+            {
+              "type": {
+                "text": "string"
+              },
+              "privacy": "public",
+              "name": "label",
+              "kind": "field",
+              "description": "Localized name for the navigation landmark.",
+              "default": "\"Navigation\"",
+              "attribute": "label"
+            },
+            {
+              "type": {
+                "text": "readonly NavPillItem[]"
+              },
+              "privacy": "public",
+              "name": "items",
+              "kind": "field",
+              "description": "Destinations in host-supplied order. The first valid current destination owns the current-page state.",
+              "default": "[]"
+            }
+          ],
+          "kind": "class",
+          "events": [],
+          "description": "A named, wrapping group of native destination links.",
+          "customElement": true,
+          "cssProperties": [],
+          "cssParts": [
+            {
+              "name": "list",
+              "description": "The ordered list of destination links."
+            },
+            {
+              "name": "link",
+              "description": "A destination's native link."
+            }
+          ],
+          "attributes": [
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "label",
+              "fieldName": "label",
+              "description": "Localized name for the navigation landmark.",
+              "default": "\"Navigation\""
+            }
+          ]
+        }
+      ]
     },
     {
       "path": "src/ocelle-notice.ts",

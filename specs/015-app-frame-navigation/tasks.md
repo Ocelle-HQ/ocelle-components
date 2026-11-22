@@ -43,13 +43,13 @@ Top bar and compact destination items are shared by the shell stories. Their sta
 
 **Independent test.** Mount the pill group, breadcrumbs and compact nav item with real destinations; check native navigation, current semantics, wrapping and overlay Escape ownership.
 
-- [ ] T020 [P] [US3] Write red tests in `packages/elements/test/nav-pill.test.ts` for a named ordered group, empty group, current-page semantics, pointer and keyboard native navigation, long labels and focus during wrapping, and a separate host CTA in top-bar actions.
-- [ ] T021 [P] [US3] Write red tests in `packages/elements/test/breadcrumbs.test.ts` for landmark naming, order, current page and decorative separators, logical alignment with the title and focusable wrapping without page overflow.
-- [ ] T022 [US3] Verify compact-bubble ownership in `packages/elements/test/nav-item.test.ts` and touch behavior in `packages/elements/test/nav-item.touch.test.ts`. Cover hover-only Escape with focus elsewhere in a drawer, a second Escape dismissing the drawer, and a newer modal receiving Escape first. Put any missing behavior under red coverage before fixing it in `packages/elements/src/ocelle-nav-item.ts` or existing tooltip/overlay logic.
-- [ ] T023 [P] [US3] Implement the data-driven inline nav links in `packages/elements/src/ocelle-nav-pill.ts`, with one current link and wrapping. Keep the drawer in the shell and CTA in top-bar actions.
-- [ ] T024 [P] [US3] Implement the ordered trail, localized landmark and current text in `packages/elements/src/ocelle-breadcrumbs.ts`, with logical inline-start alignment and wrapping.
-- [ ] T025 [US3] Register both elements in `packages/elements/src/index.ts`, `packages/elements/src/browser.ts`, `packages/elements/package.json`, and `packages/elements/custom-elements.json`. Add individual entry coverage in `packages/elements/test/entry-nav-pill.test.ts` and `packages/elements/test/entry-breadcrumbs.test.ts`.
-- [ ] T026 [US3] Add pinned light/dark stories and baselines in `storybook/stories/nav-pill.stories.ts`, `storybook/stories/breadcrumbs.stories.ts` and `storybook/baselines/`. Cover default, current, keyboard focus, empty and long-content states.
+- [x] T020 [P] [US3] Write red tests in `packages/elements/test/nav-pill.test.ts` for a named ordered group, empty group, current-page semantics, pointer and keyboard native navigation, long labels and focus during wrapping, and a separate host CTA in top-bar actions.
+- [x] T021 [P] [US3] Write red tests in `packages/elements/test/breadcrumbs.test.ts` for landmark naming, order, current page and decorative separators, logical alignment with the title and focusable wrapping without page overflow.
+- [x] T022 [US3] Verify compact-bubble ownership in `packages/elements/test/nav-item.test.ts` and touch behavior in `packages/elements/test/nav-item.touch.test.ts`. Cover hover-only Escape with focus elsewhere in a drawer, a second Escape dismissing the drawer, and a newer modal receiving Escape first. Put any missing behavior under red coverage before fixing it in `packages/elements/src/ocelle-nav-item.ts` or existing tooltip/overlay logic.
+- [x] T023 [P] [US3] Implement the data-driven inline nav links in `packages/elements/src/ocelle-nav-pill.ts`, with one current link and wrapping. Keep the drawer in the shell and CTA in top-bar actions.
+- [x] T024 [P] [US3] Implement the ordered trail, localized landmark and current text in `packages/elements/src/ocelle-breadcrumbs.ts`, with logical inline-start alignment and wrapping.
+- [x] T025 [US3] Register both elements in `packages/elements/src/index.ts`, `packages/elements/src/browser.ts`, `packages/elements/package.json`, and `packages/elements/custom-elements.json`. Add individual entry coverage in `packages/elements/test/entry-nav-pill.test.ts` and `packages/elements/test/entry-breadcrumbs.test.ts`.
+- [x] T026 [US3] Add pinned light/dark stories and baselines in `storybook/stories/nav-pill.stories.ts`, `storybook/stories/breadcrumbs.stories.ts` and `storybook/baselines/`. Cover default, current, keyboard focus, empty and long-content states.
 
 ## Phase 6: User Story 4 — Skip directly to main content (P2)
 

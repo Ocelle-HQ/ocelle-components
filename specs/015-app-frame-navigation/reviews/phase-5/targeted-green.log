@@ -1,0 +1,12 @@
+Pinned scoped elements and touch projects.
+ Test Files  7 passed (7)
+      Tests  19 passed (19)
+   Duration  5.17s (worker 84%, tests 14%, import 2%)
+Scoped element-node manifest and README checks.
+ Test Files  2 passed (2)
+      Tests  1031 passed (1031)
+   Duration  5.38s (tests 85%, import 9%, transform 6%)
+Manifest, plant repository, and Storybook inventory checks.
+ Test Files  4 passed (4)
+      Tests  54 passed (54)
+   Duration  16.78s (tests 97%, import 2%, transform 1%)

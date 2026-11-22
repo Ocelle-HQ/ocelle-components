@@ -794,6 +794,88 @@
         {
           "attributes": [
             {
+              "default": "\"Breadcrumb\"",
+              "description": "Localized name for the breadcrumb landmark.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The ordered breadcrumb list.",
+              "name": "list"
+            },
+            {
+              "description": "A breadcrumb list item.",
+              "name": "item"
+            },
+            {
+              "description": "An ancestor's native link.",
+              "name": "link"
+            },
+            {
+              "description": "The current page's text.",
+              "name": "current"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A named breadcrumb trail with a text current page.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "label",
+              "default": "\"Breadcrumb\"",
+              "description": "Localized name for the breadcrumb landmark.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "[]",
+              "description": "Ancestors in order followed by the current page.",
+              "kind": "field",
+              "name": "items",
+              "privacy": "public",
+              "type": {
+                "text": "readonly BreadcrumbItem[]"
+              }
+            }
+          ],
+          "name": "OcelleBreadcrumbs",
+          "slots": [],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-breadcrumbs"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-breadcrumbs.ts",
+            "name": "OcelleBreadcrumbs"
+          },
+          "kind": "js",
+          "name": "OcelleBreadcrumbs"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-breadcrumbs.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
               "description": "Moved onto the inner control (the host keeps no copy): `\"true\"` reports expanded, `\"false\"` collapsed, an empty value clears it; `removeAttribute` after the move changes nothing.",
               "name": "aria-expanded",
               "type": {
@@ -3550,6 +3632,80 @@
       ],
       "kind": "javascript-module",
       "path": "src/ocelle-listbox.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "\"Navigation\"",
+              "description": "Localized name for the navigation landmark.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The ordered list of destination links.",
+              "name": "list"
+            },
+            {
+              "description": "A destination's native link.",
+              "name": "link"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A named, wrapping group of native destination links.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "label",
+              "default": "\"Navigation\"",
+              "description": "Localized name for the navigation landmark.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "default": "[]",
+              "description": "Destinations in host-supplied order. The first valid current destination owns the current-page state.",
+              "kind": "field",
+              "name": "items",
+              "privacy": "public",
+              "type": {
+                "text": "readonly NavPillItem[]"
+              }
+            }
+          ],
+          "name": "OcelleNavPill",
+          "slots": [],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-nav-pill"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-nav-pill.ts",
+            "name": "OcelleNavPill"
+          },
+          "kind": "js",
+          "name": "OcelleNavPill"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-nav-pill.ts"
     },
     {
       "declarations": [

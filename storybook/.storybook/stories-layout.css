@@ -200,3 +200,7 @@
 [data-story="app-shell-narrow"] {
   inline-size: min(20rem, 100%);
 }
+
+[data-story="inline-navigation-narrow"] {
+  inline-size: min(20rem, 100%);
+}
