@@ -106,6 +106,21 @@ describe("phase record validation", () => {
     expect(outputs).toEqual([]);
   });
 
+  it.each(["prefix12", "12suffix"])("requires the whole phase identifier to be numeric (%s)", async (phase) => {
+    const { tools, directories } = fixture();
+    await expect(checkPhase({ ...request, phase }, tools)).rejects.toThrow("invalid phase path");
+    expect(directories).toEqual([]);
+  });
+
+  it("accepts a multi-digit phase and fix number", async () => {
+    const { tools, files, outputs } = fixture();
+    const phase = "12";
+    const phaseDir = join(root, feature, "reviews", "phase-12");
+    await checkPhase({ ...request, phase, mode: "red", label: "fix-12" }, tools);
+    expect(files.get(join(phaseDir, "red-commits"))).toBe(`fix-12 ${head}\n`);
+    expect(outputs).toMatchObject([{ output: { phase, label: "fix-12", recorded: true } }]);
+  });
+
   it("emits a failure for a missing base even when an exemption file exists", async () => {
     const { tools, files, checks, outputs } = fixture();
     files.delete(join(dir, "base.sha"));
@@ -140,6 +155,13 @@ describe("phase record validation", () => {
   ])("rejects malformed red history %s before checking worktrees", async (records) => {
     const { tools, files, checks } = fixture();
     files.set(join(dir, "red-commits"), records);
+    await expect(checkPhase(request, tools)).rejects.toThrow("invalid red-commits entry");
+    expect(checks).toEqual([]);
+  });
+
+  it.each(["prefixphase", "phase-extra"])("requires the whole recorded red label to match (%s)", async (label) => {
+    const { tools, files, checks } = fixture();
+    files.set(join(dir, "red-commits"), `${label} ${initial}\n`);
     await expect(checkPhase(request, tools)).rejects.toThrow("invalid red-commits entry");
     expect(checks).toEqual([]);
   });
@@ -197,6 +219,22 @@ describe("red capture", () => {
     expect(outputs).toMatchObject([{ output: { phase: "1", label: "fix-1", sha: head, tests_only: true, red: true, recorded: true, exit_code: 1 } }]);
   });
 
+  it("rejects a red label with a valid name as its suffix", async () => {
+    const { tools, checks } = fixture();
+    await expect(checkPhase({ ...request, mode: "red", label: "prefixfix-12" }, tools)).rejects.toThrow("invalid red label");
+    expect(checks).toEqual([]);
+  });
+
+  it("normalizes indented records and interprets pathspec magic only at the start of an argument", async () => {
+    const { tools, files, calls } = fixture();
+    files.set(join(dir, "red-commits"), `\n\tphase  ${initial}\n \tfix-12\t  ${fix} \n\n`);
+    const literal = "test/fixtures/:(glob)/answer.test.ts";
+    await checkPhase({ ...request, patterns: [...patterns, literal], mode: "red", label: "fix-12" }, tools);
+    expect(files.get(join(dir, "red-commits"))).toBe(`phase ${initial}\nfix-12 ${head}\n`);
+    expect(calls).toContainEqual(["diff", "--no-renames", "--name-only", "-z", "--diff-filter=ACDMRTUXB",
+      `${head}^`, head, "--", ":(exclude,glob)**/*.test.ts", literal, `:(exclude)${feature}`]);
+  });
+
   it.each([
     { label: "green", evidence: result("green"), dirtyTree: false, code: 0 },
     { label: "invalid", evidence: result("invalid"), dirtyTree: false, code: 2 },
@@ -249,6 +287,52 @@ describe("phase verdict", () => {
     expect(outputs).toMatchObject([{ output: { status: "pass", final_tests_on_base_exit: 1, final_tests_on_scaffold_exit: null } }]);
   });
 
+  it("names each stage log and checks ancestry and scaffold additions with Git", async () => {
+    const { tools, files, checks, calls } = fixture();
+    files.set(join(dir, "scaffold.sha"), scaffold);
+    files.set(join(dir, "red-commits"), `phase ${initial}\nfix-12 ${fix}\n`);
+    await checkPhase(request, tools);
+    expect(checks.map(({ check }) => check.log)).toEqual([
+      join(dir, "check-red-phase.log"),
+      join(dir, "check-red-fix-12.log"),
+      join(dir, "check-final-tests-on-base.log"),
+      join(dir, "check-final-tests-on-scaffold.log"),
+      join(dir, "check-final-tests-on-fix-12-base.log"),
+      join(dir, "check-head.log"),
+    ]);
+    expect(calls.filter(([verb]) => verb === "merge-base")).toEqual([
+      ["merge-base", "--is-ancestor", anchor, head],
+      ["merge-base", "--is-ancestor", anchor, scaffold],
+      ["merge-base", "--is-ancestor", scaffold, head],
+      ["merge-base", "--is-ancestor", initial, head],
+      ["merge-base", "--is-ancestor", fix, head],
+    ]);
+    expect(calls).toContainEqual(["diff", "--no-renames", "--name-only", "-z", "--diff-filter=A", anchor, scaffold, "--"]);
+    for (const red of [initial, fix]) {
+      expect(calls).toContainEqual(["diff", "--no-renames", "--name-only", "-z", "--diff-filter=ACDMRTUXB",
+        `${red}^`, red, "--", ":(exclude,glob)**/*.test.ts", `:(exclude)${feature}`]);
+    }
+  });
+
+  it("selects the full changed-line ranges and parses a multiline scope without a scaffold", async () => {
+    const { tools, files, checks, calls } = fixture();
+    const patch = ["@@ -16,11 +120,12 @@", '+const example = "@@ -18,11 +240,12 @@";', "@@ -33 +141 @@", "@@ -35,4 +145,0 @@"].join("\n");
+    files.set(join(dir, "test-scope.txt"), "# supporting consumers\ntest/extra.test.ts\n\n test/other.test.ts\ntest/extra.test.ts\n");
+    await checkPhase(request, {
+      ...tools,
+      git: (args) => {
+        const result = tools.git(args);
+        return args.includes("--unified=0") ? patch : result;
+      },
+    });
+    expect(calls).toContainEqual(["diff", "--no-renames", "--no-color", "--no-ext-diff", "--unified=0", anchor, head, "--", file]);
+    expect(checks.at(-1)?.check.selection).toEqual({
+      changed: [file], deleted: [], extra: ["test/extra.test.ts", "test/other.test.ts"],
+      changedLines: { [file]: [{ start: 120, end: 131 }, { start: 141, end: 141 }] },
+    });
+    expect(checks.map(({ check }) => check.missingModules)).toEqual([[], [], []]);
+  });
+
   it.each([
     { pair: `${anchor}:${head}`, problem: "base is not in the history of HEAD" },
     { pair: `${anchor}:${scaffold}`, problem: "scaffold is not between base and HEAD" },
@@ -273,6 +357,13 @@ describe("phase verdict", () => {
   it.each(["/tmp/outside.test.ts", "-option", "test/../other.test.ts"])("rejects a traversal or option in declared scope (%s)", async (path) => {
     const { tools, files, checks } = fixture();
     files.set(join(dir, "test-scope.txt"), path);
+    await expect(checkPhase(request, tools)).rejects.toThrow("test-scope.txt must contain repository-relative test paths");
+    expect(checks).toEqual([]);
+  });
+
+  it("rejects an invalid scope entry alongside a valid test path", async () => {
+    const { tools, files, checks } = fixture();
+    files.set(join(dir, "test-scope.txt"), "test/answer.test.ts\ntest/../outside.test.ts\n");
     await expect(checkPhase(request, tools)).rejects.toThrow("test-scope.txt must contain repository-relative test paths");
     expect(checks).toEqual([]);
   });

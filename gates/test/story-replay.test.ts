@@ -217,6 +217,16 @@ describe("cold replay boundaries", () => {
     expect(events).toContainEqual({ operation: "remove", args: [`${tested}/${deleted}`, undefined] });
   });
 
+  it("tests HEAD without restoring or deleting files from the phase selection", async () => {
+    const { tools, events } = fixture();
+    await runCheck(check, setup, tools);
+    expect(events.filter(({ operation }) => operation === "git" || operation === "remove")).toEqual([
+      { operation: "git", args: [["worktree", "add", "--quiet", "--detach", tested, revision], undefined] },
+      { operation: "git", args: [["worktree", "remove", "--force", tested], undefined] },
+      { operation: "remove", args: [temp, true] },
+    ]);
+  });
+
   it("still removes the scratch directory when git cleanup fails", async () => {
     const { tools, events, records } = fixture({ gitRemoveError: true });
     expect(await runCheck(check, setup, tools)).toMatchObject({ evidence: green });
@@ -272,6 +282,13 @@ describe("failed subprocesses or worker evidence", () => {
     expect(events).not.toContainEqual({ operation: "git", args: [["worktree", "remove", "--force", tested], undefined] });
     expect(events).toContainEqual({ operation: "remove", args: [temp, true] });
     expect(records.has(cache)).toBe(false);
+  });
+
+  it("writes structured evidence with empty subprocess output when checkout fails before setup", async () => {
+    const { tools, logText } = fixture({ gitAddError: true });
+    const { evidence } = await runCheck(check, setup, tools);
+    const header = { mode: "head", revision, input: key, selected: [], evidence, seconds: 0.75 };
+    expect(logText.get(log)).toBe(`${JSON.stringify(header)}\n`);
   });
 
   it.each([
