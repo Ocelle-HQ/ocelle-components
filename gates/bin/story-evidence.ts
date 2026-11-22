@@ -5,10 +5,11 @@ import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { runTool } from "../lib/spawn.ts";
+import type { ToolRun } from "../lib/spawn.ts";
 import { browserIdentity, checkKey as phaseCacheKey } from "../lib/story-cache.ts";
 import { exactStoryCases, plannedStoryResults, selectStoryTests } from "../lib/story-selection.ts";
 import type { StoryMode } from "../lib/story-selection.ts";
-import { assertionKey, classifyStoryEvidence, decodeCachedEvidence } from "../lib/test-evidence.ts";
+import { assertionKey, classifyStoryEvidence, decodeCachedEvidence, decodeWorkerResult } from "../lib/test-evidence.ts";
 import type { Assertion, StoryEvidence } from "../lib/test-evidence.ts";
 import { testFile, testRun, withVitest } from "../lib/vitest-run.ts";
 
@@ -61,6 +62,24 @@ export interface PhaseTools {
   readonly mkdir: (directory: string) => void;
   readonly runCheck: (check: Check, setup: string) => Promise<CheckResult>;
   readonly emit: (value: object, filename?: string) => void;
+}
+
+export interface CheckTools {
+  readonly root: string;
+  readonly pid: number;
+  readonly now: () => number;
+  readonly key: (check: Check, setup: string) => { key: string; reusable: boolean };
+  readonly git: (args: readonly string[], cwd?: string) => string;
+  readonly tempDir: () => string;
+  readonly exists: (filename: string) => boolean;
+  readonly readJson: (filename: string) => unknown;
+  readonly writeJson: (filename: string, value: object) => void;
+  readonly writeLog: (filename: string, log: string) => void;
+  readonly mkdir: (directory: string) => void;
+  readonly remove: (target: string, recursive?: boolean) => void;
+  readonly rename: (temporary: string, final: string) => void;
+  readonly setup: (command: string, cwd: string) => Promise<ToolRun>;
+  readonly worker: (cwd: string, input: string, output: string) => Promise<ToolRun>;
 }
 
 const root = process.cwd();
@@ -164,7 +183,7 @@ function selection(from: string, to: string, patterns: readonly string[], dir: s
   return { changed, changedLines, deleted: trackedDiff(tools.git, from, to, "D", patterns), extra: scope(dir, tools) };
 }
 
-function safeLog(value: string, tested: string): string {
+function safeLog(value: string, tested: string, root: string): string {
   return value.replaceAll(tested, "<worktree>").replaceAll(root, "<repository>");
 }
 
@@ -208,23 +227,24 @@ function canReuse(mode: Check["mode"], evidence: StoryEvidence): boolean {
     : evidence.status === "red" || (mode === "base" && evidence.status === "missing-module");
 }
 
-async function runCheck(check: Check, setup: string): Promise<CheckResult> {
-  const started = Date.now();
-  const { key: input, reusable } = checkKey(check, setup);
+export async function runCheck(check: Check, setup: string, tools: CheckTools): Promise<CheckResult> {
+  const { root, git, readJson, writeJson } = tools;
+  const started = tools.now();
+  const { key: input, reusable } = tools.key(check, setup);
   const cache = join(root, "reports/story-evidence", `${input}.json`);
   try {
     const record = (reusable ? readJson(cache) : null) as { key?: unknown; evidence?: unknown; log?: unknown; selected?: unknown };
     const evidence = decodeCachedEvidence(record, input);
     if (evidence !== undefined && canReuse(check.mode, evidence) && typeof record.log === "string" && Array.isArray(record.selected)) {
       const selected = record.selected as CheckResult["selected"];
-      writeFileSync(check.log, `Reused completed evidence ${input}\n${record.log}`);
-      return { evidence, input, seconds: (Date.now() - started) / 1000, resumed: true, selected };
+      tools.writeLog(check.log, `Reused completed evidence ${input}\n${record.log}`);
+      return { evidence, input, seconds: (tools.now() - started) / 1000, resumed: true, selected };
     }
   } catch {
     // A missing or interrupted cache entry has no evidentiary value.
   }
 
-  const temporary = mkdtempSync(join(tmpdir(), "ocelle-story-"));
+  const temporary = tools.tempDir();
   const tested = join(temporary, "checkout");
   let evidence: StoryEvidence;
   let selected: CheckResult["selected"] = [];
@@ -233,10 +253,9 @@ async function runCheck(check: Check, setup: string): Promise<CheckResult> {
     git(["worktree", "add", "--quiet", "--detach", tested, check.revision]);
     if (check.overlay !== undefined) {
       if (check.selection.changed.length > 0) git(["restore", `--source=${check.overlay}`, "--worktree", "--", ...check.selection.changed], tested);
-      for (const deleted of check.selection.deleted) rmSync(join(tested, deleted), { force: true });
+      for (const deleted of check.selection.deleted) tools.remove(join(tested, deleted));
     }
-    // Stryker disable next-line all: process boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "runs real clean-worktree red, base and green checks and refuses malformed cache reuse"
-    const setupRun = await runTool("bash", ["-c", setup], tested, environment);
+    const setupRun = await tools.setup(setup, tested);
     if (setupRun.exitCode !== 0) {
       evidence = invalid("worktree setup failed");
       log = setupRun.stdout + setupRun.stderr;
@@ -244,37 +263,37 @@ async function runCheck(check: Check, setup: string): Promise<CheckResult> {
       const pending = join(temporary, "selection.json");
       const report = join(temporary, "result.json");
       writeJson(pending, { ...check.selection, mode: check.mode, expected: check.expected, missingModules: check.missingModules });
-      // Stryker disable next-line all: process boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "runs real clean-worktree red, base and green checks and refuses malformed cache reuse"
-      const ran = await runTool(process.execPath, [path, "worker", pending, report], tested, environment);
+      const ran = await tools.worker(tested, pending, report);
       log = ran.stdout + ran.stderr;
-      if (ran.exitCode !== 0 || !existsSync(report)) {
+      if (ran.exitCode !== 0 || !tools.exists(report)) {
         evidence = invalid(`focused Vitest worker failed (exit ${String(ran.exitCode)})`);
       } else {
-        const result = readJson(report) as { evidence: StoryEvidence; selected: CheckResult["selected"] };
-        ({ evidence, selected } = result);
+        const result = decodeWorkerResult(readJson(report));
+        if (result === undefined) evidence = invalid("focused Vitest worker returned incomplete evidence");
+        else ({ evidence, selected } = result);
       }
     }
   } catch (error) {
     evidence = invalid(`replay worktree failed: ${error instanceof Error ? error.message : String(error)}`);
   } finally {
-    if (existsSync(tested)) {
+    if (tools.exists(tested)) {
       try {
         git(["worktree", "remove", "--force", tested]);
       } catch {
         // Git may need to prune this worktree after an interrupted install.
       }
     }
-    rmSync(temporary, { force: true, recursive: true });
+    tools.remove(temporary, true);
   }
-  const seconds = (Date.now() - started) / 1000;
-  evidence = JSON.parse(safeLog(JSON.stringify(evidence), tested)) as StoryEvidence;
-  log = `${JSON.stringify({ mode: check.mode, revision: check.revision, overlay: check.overlay, input, selected, evidence, seconds })}\n${safeLog(log, tested)}`;
-  writeFileSync(check.log, log);
+  const seconds = (tools.now() - started) / 1000;
+  evidence = JSON.parse(safeLog(JSON.stringify(evidence), tested, root)) as StoryEvidence;
+  log = `${JSON.stringify({ mode: check.mode, revision: check.revision, overlay: check.overlay, input, selected, evidence, seconds })}\n${safeLog(log, tested, root)}`;
+  tools.writeLog(check.log, log);
   if (reusable && canReuse(check.mode, evidence)) {
-    mkdirSync(dirname(cache), { recursive: true });
-    const pending = `${cache}.${String(process.pid)}.tmp`;
+    tools.mkdir(dirname(cache));
+    const pending = `${cache}.${String(tools.pid)}.tmp`;
     writeJson(pending, { key: input, evidence, log, selected });
-    renameSync(pending, cache);
+    tools.rename(pending, cache);
   }
   return { evidence, input, seconds, resumed: false, selected };
 }
@@ -413,13 +432,25 @@ export async function checkPhase(request: PhaseRequest, tools: PhaseTools): Prom
 }
 
 if (import.meta.main) {
+  const checkTools: CheckTools = {
+    root, pid: process.pid, now: Date.now, key: checkKey, git, exists: existsSync, readJson, writeJson, rename: renameSync,
+    tempDir: () => mkdtempSync(join(tmpdir(), "ocelle-story-")),
+    writeLog: (filename, log) => { writeFileSync(filename, log); },
+    mkdir: (directory) => { mkdirSync(directory, { recursive: true }); },
+    remove: (target, recursive = false) => { rmSync(target, { force: true, recursive }); },
+    // Stryker disable next-line all: process boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "runs real clean-worktree red, base and green checks and refuses malformed cache reuse"
+    setup: (command, cwd) => runTool("bash", ["-c", command], cwd, environment),
+    // Stryker disable next-line all: process boundary, covered by gates/test/integration/test-workflow-evidence.test.ts "runs real clean-worktree red, base and green checks and refuses malformed cache reuse"
+    worker: (cwd, input, output) => runTool(process.execPath, [path, "worker", input, output], cwd, environment),
+  };
   const [mode, arg, phase, setup, patterns, label] = process.argv.slice(2);
   try {
     if (mode === "worker" && arg !== undefined && phase !== undefined) {
       await worker(arg, phase);
     } else if ((mode === "red" || mode === "check") && arg !== undefined && phase !== undefined && setup !== undefined && patterns !== undefined) {
       await checkPhase({ mode, feature: arg, phase, setup, patterns: patterns.split(/\s+/).filter(Boolean), label }, {
-        root, git, emit, runCheck,
+        root, git, emit,
+        runCheck: (check, command) => runCheck(check, command, checkTools),
         exists: existsSync,
         read: (filename) => readFileSync(filename, "utf8"),
         write: (filename, content) => { writeFileSync(filename, content); },

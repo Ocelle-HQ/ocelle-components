@@ -360,16 +360,31 @@ function assertionShape(value: unknown): value is Assertion {
     && nonempty(value.diagnostic);
 }
 
-export function decodeCachedEvidence(record: unknown, key: string): StoryEvidence | undefined {
-  if (!object(record) || record.key !== key || !object(record.evidence) || !filesShape(record.selected)
-    || record.selected.length === 0 || new Set(fileKeys(record.selected)).size !== record.selected.length
-    || !nonempty(record.log)) return undefined;
-  const { status, assertions } = record.evidence;
+export function decodeWorkerResult(record: unknown): { evidence: StoryEvidence; selected: readonly TestFile[] } | undefined {
+  if (!object(record) || !object(record.evidence) || !filesShape(record.selected)) return undefined;
+  const { status, assertions, problem } = record.evidence;
   if (!Array.isArray(assertions) || !assertions.every(assertionShape)) return undefined;
-  const selected = new Set(fileKeys(record.selected));
-  if (new Set(assertions.map(assertionKey)).size !== assertions.length || assertions.some((assertion) => !selected.has(fileKey(assertion)))) {
-    return undefined;
+  const selected = record.selected;
+  const identities = new Set(fileKeys(selected));
+  if (identities.size !== selected.length || new Set(assertions.map(assertionKey)).size !== assertions.length
+    || assertions.some((assertion) => !identities.has(fileKey(assertion)))) return undefined;
+
+  if (status === "invalid" && assertions.length === 0 && nonempty(problem)) {
+    return { evidence: { status, assertions, problem }, selected };
   }
+  if (selected.length === 0 || problem !== undefined) return undefined;
+  if ((status === "green" && assertions.length === 0) || (status === "red" && assertions.length > 0) || status === "missing-module") {
+    return { evidence: { status, assertions }, selected };
+  }
+  return undefined;
+}
+
+export function decodeCachedEvidence(record: unknown, key: string): StoryEvidence | undefined {
+  if (!object(record) || record.key !== key || !nonempty(record.log)) return undefined;
+  const decoded = decodeWorkerResult(record);
+  if (decoded === undefined) return undefined;
+  const { evidence, selected } = decoded;
+  const { status } = evidence;
   let header: unknown;
   try {
     header = JSON.parse(record.log.split("\n", 1)[0] ?? "");
@@ -378,12 +393,12 @@ export function decodeCachedEvidence(record: unknown, key: string): StoryEvidenc
   }
   if (!object(header) || header.input !== key || typeof header.revision !== "string" || !revisionPattern.test(header.revision)
     || typeof header.seconds !== "number" || !Number.isFinite(header.seconds) || header.seconds < 0
-    || !filesShape(header.selected) || !sameInventory(record.selected, header.selected)
+    || !filesShape(header.selected) || !sameInventory(selected, header.selected)
     || JSON.stringify(record.evidence) !== JSON.stringify(header.evidence)) return undefined;
-  if (status === "green" && assertions.length === 0 && header.mode === "head") return { status, assertions };
-  if (status === "red" && assertions.length > 0 && (header.mode === "red" || header.mode === "base" || header.mode === "scaffold" || header.mode === "fix")) {
-    return { status, assertions };
+  if (status === "green" && header.mode === "head") return evidence;
+  if (status === "red" && (header.mode === "red" || header.mode === "base" || header.mode === "scaffold" || header.mode === "fix")) {
+    return evidence;
   }
-  if (status === "missing-module" && header.mode === "base") return { status, assertions };
+  if (status === "missing-module" && header.mode === "base") return evidence;
   return undefined;
 }
