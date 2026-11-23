@@ -1727,6 +1727,102 @@ describe("the interactive ocelle-pill-tag stories in the built Storybook (018 US
   }
 });
 
+// 018 phase 6 (I3; research.md R-12; plan decision 16; tasks.md T058): the truncation stories of `ocelle-pill-tag`,
+// `Truncated` (in a narrow block, enabled interactive pills in button and link mode, truncated and fitting, none
+// focused, and below them one truncated pill alone in a container that clips, focused by a wrapper that calls its plain
+// `focus()` once it has rendered) and `DisabledWraps` (a disabled button-mode pill and a disabled link-mode pill in the
+// narrow block, each wrapping its long text). Each renders its pills in light and dark, defined, with the story's
+// attributes and text, its inner control, its text truncated (passing its text span's inline end on one line) or not, on
+// one line or wrapped as the story says, with base.css applied and no request outside the origin. In `Truncated` the
+// focused pill's control matches `:focus-visible`, and neither theme shows an open `ocelle-tooltip` bubble once the
+// page has settled as 006's capture settles it (fonts, two frames) and a further 700 ms past the tooltip's delay: the
+// baseline shows the ring and no bubble (plan decision 16).
+
+/** What one truncation story's pill must show. */
+interface TruncationPill {
+  readonly status: string;
+  readonly href: string | null;
+  readonly disabled: boolean;
+  readonly text: string;
+  readonly tag: string;
+  readonly truncated: boolean;
+  readonly lines: "one" | "wrapped";
+}
+
+const truncationPill = (status: string, text: string, rest: Partial<TruncationPill> = {}): TruncationPill => ({ status, href: null, disabled: false, text, tag: "button", truncated: false, lines: "one", ...rest });
+
+const truncationStories: readonly { readonly id: string; readonly pills: readonly TruncationPill[]; readonly focused: number }[] = [
+  {
+    id: "elements-ocelle-pill-tag--truncated",
+    pills: [
+      truncationPill("warning", "Blocked by the review of the scheduler pipeline", { truncated: true }),
+      truncationPill("info", "Waiting for the nightly integration run", { href: "#waiting", tag: "a", truncated: true }),
+      truncationPill("success", "Done"),
+      truncationPill("danger", "Failed in the nightly integration run", { truncated: true }),
+    ],
+    focused: 1,
+  },
+  {
+    id: "elements-ocelle-pill-tag--disabled-wraps",
+    pills: [
+      truncationPill("info", "Waiting for the nightly integration run", { disabled: true, lines: "wrapped" }),
+      truncationPill("warning", "Blocked by the review of the scheduler pipeline", { href: "#blocked", tag: "a", disabled: true, lines: "wrapped" }),
+    ],
+    focused: 0,
+  },
+];
+
+/** What a truncation story's page shows once settled: its theme, the base stylesheet, its pills, focus and open bubbles. */
+async function observeTruncation(page: Page): Promise<unknown> {
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+    for (let frame = 0; frame < 2; frame += 1) await new Promise((resolve) => requestAnimationFrame(resolve));
+    await new Promise((resolve) => setTimeout(resolve, 700));
+  });
+  return page.evaluate(() => {
+    const pills = [...document.querySelectorAll("#storybook-root ocelle-pill-tag")];
+    return {
+      theme: document.documentElement.dataset.theme,
+      base: {
+        linked: [...document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')].some((link) => link.href.endsWith("/base.css") && link.sheet !== null),
+        scheme: getComputedStyle(document.documentElement).colorScheme,
+      },
+      defined: customElements.get("ocelle-pill-tag") !== undefined && customElements.get("ocelle-tooltip") !== undefined,
+      pills: pills.map((pill) => {
+        const inner = pill.shadowRoot?.querySelectorAll('[part~="control"]') ?? [];
+        const span = pill.shadowRoot?.querySelector(".label");
+        const texts = [...pill.childNodes].filter((node): node is Text => node.nodeType === Node.TEXT_NODE && (node as Text).data.trim() !== "");
+        const range = document.createRange();
+        if (texts[0] !== undefined) range.selectNodeContents(texts[0]);
+        const lines = new Set([...range.getClientRects()].map((rect) => Math.round(rect.top))).size;
+        return {
+          status: pill.getAttribute("status"),
+          href: pill.getAttribute("href"),
+          disabled: pill.hasAttribute("disabled"),
+          text: texts.map((node) => node.data.trim()).join(" "),
+          tag: inner.length === 1 ? (inner[0]?.localName ?? "none") : `${String(inner.length)} controls`,
+          truncated: span !== null && span !== undefined && range.getBoundingClientRect().right - span.getBoundingClientRect().right > 0,
+          lines: lines === 1 ? "one" : lines > 1 ? "wrapped" : "none",
+        };
+      }),
+      focused: pills.filter((pill) => pill.shadowRoot?.activeElement?.matches(".control:focus-visible") === true).length,
+      bubbles: pills.flatMap((pill) => [...(pill.shadowRoot?.querySelectorAll("ocelle-tooltip") ?? [])]).filter((tooltip) => tooltip.shadowRoot?.querySelector(":popover-open") !== null && tooltip.shadowRoot !== null).length,
+    };
+  });
+}
+
+describe("the ocelle-pill-tag truncation stories in the built Storybook (018 US5, I3)", { timeout: 60_000 }, () => {
+  for (const { id, pills, focused } of truncationStories) {
+    for (const theme of ["light", "dark"] as const) {
+      it(`${id} in ${theme}: renders its pills with the story's attributes, text and inner control, each truncated or not and on one line or wrapped as the story says, ${String(focused)} focused with the focus ring, and no open tooltip bubble, with base.css applied and no request outside the origin`, async () => {
+        const { page, outside } = await open(id, theme, "ocelle-pill-tag");
+        expect({ ...((await observeTruncation(page)) as object), outside }).toEqual({ theme, base: { linked: true, scheme: theme }, defined: true, pills, focused, bubbles: 0, outside: [] });
+        await page.close();
+      });
+    }
+  }
+});
+
 /** A file of the repository, relative to storybook/, or "" when it does not exist. */
 function repositoryFile(path: string): string {
   const url = new URL(`../../${path}`, import.meta.url);

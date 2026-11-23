@@ -571,7 +571,7 @@ const entryRows = [
   "| `@ocelle/elements/ocelle-progress.js` | `dist/ocelle-progress.js` | `ocelle-progress` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-status-indicator.js` | `dist/ocelle-status-indicator.js` | `ocelle-status-indicator` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-metric.js` | `dist/ocelle-metric.js` | `ocelle-metric` only; for hosts with a bundler |",
-  "| `@ocelle/elements/ocelle-pill-tag.js` | `dist/ocelle-pill-tag.js` | `ocelle-pill-tag` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-pill-tag.js` | `dist/ocelle-pill-tag.js` | `ocelle-pill-tag` and the `ocelle-tooltip` it renders; for hosts with a bundler |",
   "| `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |",
   "| `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |",
 ];
@@ -931,6 +931,50 @@ describe("packages/elements/README.md: ocelle-pill-tag, interactive (018 phase 5
   });
 
   it.each(interactivePillRules)("states the README rule in its section: %s", (rule) => {
+    expect(section).toContain(flat(rule));
+  });
+});
+
+/**
+ * The `ocelle-pill-tag` section, truncation (018 FR-007, FR-033, FR-034; contracts/elements-status.md § `ocelle-pill-tag`;
+ * research.md R-09; plan decision 14; reviews/phase-1/spikes.md § R-09; tasks.md T057): what an enabled interactive
+ * pill does with a text that does not fit and what a disabled one does, and the README rules the spec, the contract and
+ * the spike name, one assertion each: the sibling `flex: none` rule and the `flex: 1 1 0` route's cost, a definite inline
+ * size, the touch limitation of 008's tooltip, a pill that becomes truncated while focused (as T002 measured: shown only
+ * when focus comes back), a late font load, and `title` beside the pill's own tooltip.
+ */
+const truncationPillFragments = [
+  "An enabled interactive pill shows its text on one line; a text that does not fit is truncated with an ellipsis at the inline end, and `ocelle-tooltip` shows the full text (the default slot's text, trimmed and with its whitespace collapsed) on hover and on keyboard focus, with the tooltip's own delay, persistence and Escape",
+  "The inner control's accessible name stays the full text, or the name `aria-labelledby`, `aria-label` or `label` gives it, and the tooltip adds nothing to the accessibility tree",
+  "A pill whose text fits shows no tooltip; truncation follows the pill's inline size, its text and `disabled` whenever they change",
+  "A disabled interactive pill is never truncated: it wraps its text onto further lines inside the pill, breaking a long word anywhere, and shows no tooltip",
+];
+
+/** The consumer-facing rules of truncation (contracts/elements-status.md § `ocelle-pill-tag`; R-09; plan decision 14). */
+const truncationPillRules = [
+  // a definite inline size (R-09)
+  "Truncation needs a definite inline size: a flex or grid parent, a fixed table layout, or a cell or column width; in an auto-layout table cell the pill grows to its text instead",
+  // the sibling rule and its cost (plan decision 14; PLAN-FRESH-2-003 (a), PLAN-FRESH-3-004)
+  "In a flex row a truncating pill shares the shrink with its siblings by their flex bases, so a sibling such as a mission name shrinks too, down to its longest word: give the sibling `flex: none` (or `flex-shrink: 0`) to keep its size",
+  "`flex: 1 1 0` on the pill also keeps the sibling's size, but it stretches the pill's visible box to the whole room left, a fitting pill included, since the inner control fills its host",
+  // the touch limitation of 008's tooltip
+  "On a touch screen a truncated pill shows no tooltip, as `ocelle-tooltip` shows none for touch; its full text stays its accessible name",
+  // becoming truncated while focused (T002, reviews/phase-1/spikes.md § R-09)
+  "A pill that becomes truncated while its inner control has keyboard focus shows its tooltip only once focus leaves it and comes back, or when the pointer rests on it",
+  // a late font load (R-09)
+  "A late font load that turns an exactly fitting text into an overflowing one is seen at the next change of the pill's inline size or text",
+  // title beside the tooltip (plan decision 8)
+  "A truncated pill with a `title` shows the browser's own tooltip beside its own, which already shows its full text",
+];
+
+describe("packages/elements/README.md: ocelle-pill-tag, truncation (018 phase 6)", () => {
+  const section = flat(/^## `ocelle-pill-tag`\n([\s\S]*?)(?=^## |(?![\s\S]))/m.exec(read("README.md"))?.[1] ?? "");
+
+  it.each(truncationPillFragments)("states in its section: %s", (fragment) => {
+    expect(section).toContain(flat(fragment));
+  });
+
+  it.each(truncationPillRules)("states the README rule in its section: %s", (rule) => {
     expect(section).toContain(flat(rule));
   });
 });

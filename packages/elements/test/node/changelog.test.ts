@@ -89,6 +89,18 @@ describe("packages/elements/CHANGELOG.md: the interactive ocelle-pill-tag is a m
   });
 });
 
+// 018 phase 6 (FR-007, constitution VII; tasks.md T057): truncation and the full-text tooltip, and the entry point that
+// now also defines `ocelle-tooltip`, are a minor change, stated once under Unreleased; no token is added.
+describe("packages/elements/CHANGELOG.md: the truncating ocelle-pill-tag is a minor change (018 phase 6)", () => {
+  const section = unreleased(read("CHANGELOG.md"));
+
+  it.each([
+    "An enabled interactive `ocelle-pill-tag` truncates a text that does not fit with an ellipsis and shows its full text in `ocelle-tooltip` on hover and keyboard focus, a disabled one wraps it, and the entry point `@ocelle/elements/ocelle-pill-tag.js` also defines `ocelle-tooltip`: a minor change",
+  ])("states under Unreleased: %s", (statement) => {
+    expect(section).toContain(flat(statement));
+  });
+});
+
 describe("packages/tokens/CHANGELOG.md: the interactive pill tag's target is a minor change (018 phase 5)", () => {
   const section = unreleased(read("../tokens/CHANGELOG.md"));
 
