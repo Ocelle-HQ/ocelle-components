@@ -508,6 +508,7 @@ describe("generate(root) on the repository's element source", () => {
       "src/ocelle-top-bar.ts",
       "src/ocelle-workflow-board.ts",
       "src/ocelle-workflow-lane.ts",
+      "src/ocelle-workflow-node.ts",
     ]);
     const [icon] = modules.find((module) => module.path === "src/ocelle-icon.ts")?.declarations ?? [];
     expect(icon).toMatchObject({
