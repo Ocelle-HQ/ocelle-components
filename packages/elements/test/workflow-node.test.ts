@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { commands } from "vitest/browser";
-import "../src/ocelle-workflow-node.ts";
+import "../src/index.ts";
 import { inProcessDriver } from "./in-process.ts";
 import {
   mountWorkflowNodes,
@@ -62,7 +62,9 @@ describe("ocelle-workflow-node selection in process", () => {
     await updateWorkflowNode("rename");
     await updateWorkflowNode("select");
     expect(readWorkflowActivity()).toEqual([...request, ...request, ...request]);
-    expect(await commands.axState("review", "button")).toMatchObject({ name: "Final security review", pressed: "true", description: expect.stringContaining("Selected") });
+    const renamed = await commands.axState("review", "button");
+    expect(renamed).toMatchObject({ name: "Final security review", pressed: "true" });
+    expect(renamed.description).toContain("Selected");
     expect(workflowSelectionState()).toEqual({ ...original, pressed: "true", selected: true, reflected: true });
     await commands.pointer("click", "review", inner);
     expect(readWorkflowActivity()).toEqual([...request, ...request, ...request, ...request]);
@@ -109,11 +111,12 @@ describe("ocelle-workflow-node selection in process", () => {
     document.getElementById("before")?.focus();
     await commands.press("Tab");
     const paint = workflowPaint();
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Vitest's asymmetric matcher is valid in this assertion.
     expect(paint).toMatchObject({ min: expect.any(Number), outline: "solid" });
     expect(paint.min).toBeGreaterThan(0);
     expect(Math.min(...paint.size)).toBeGreaterThanOrEqual(paint.min);
     expect(paint.outlineWidth).toBeGreaterThan(0);
     const [text, borderOutside, borderInside, focus, metadata] = workflowContrast(paint.colors);
-    expect({ text: text! >= 4.5, borderOutside: borderOutside! >= 3, borderInside: borderInside! >= 3, focus: focus! >= 3, metadata: metadata! >= 4.5 }).toEqual({ text: true, borderOutside: true, borderInside: true, focus: true, metadata: true });
+    expect({ text: (text ?? 0) >= 4.5, borderOutside: (borderOutside ?? 0) >= 3, borderInside: (borderInside ?? 0) >= 3, focus: (focus ?? 0) >= 3, metadata: (metadata ?? 0) >= 4.5 }).toEqual({ text: true, borderOutside: true, borderInside: true, focus: true, metadata: true });
   });
 });

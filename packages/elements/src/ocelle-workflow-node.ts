@@ -182,10 +182,10 @@ export class OcelleWorkflowNode extends LitElement {
   }
 
   protected override firstUpdated(): void {
-    const action = this.renderRoot.querySelector("button")!;
-    const title = this.renderRoot.querySelector("#title")!;
-    const literal = this.renderRoot.querySelector("#name-context")!;
-    const details = this.renderRoot.querySelector("#details")!;
+    const action = this.renderRoot.querySelector("button") as HTMLButtonElement;
+    const title = this.renderRoot.querySelector("#title") as HTMLSpanElement;
+    const literal = this.renderRoot.querySelector("#name-context") as HTMLSpanElement;
+    const details = this.renderRoot.querySelector("#details") as HTMLDivElement;
     const naming = resolveIds(this, this.getAttribute("aria-labelledby") ?? undefined);
     if (naming.length === 0 && literal.textContent !== "") naming.push(literal);
     action.ariaLabelledByElements = [title, ...naming];

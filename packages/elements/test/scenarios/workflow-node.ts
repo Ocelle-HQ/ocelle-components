@@ -1,7 +1,14 @@
 import { contrastRatio } from "../../../../gates/lib/wcag.ts";
 
-type Step = { readonly id: string; readonly title: string; readonly kind: string; readonly role: string; readonly outcomes: readonly string[] };
+interface Step {
+  readonly id: string;
+  readonly title: string;
+  readonly kind: string;
+  readonly role: string;
+  readonly outcomes: readonly string[];
+}
 type NodeFixture = HTMLElement & { step?: Step; activity?: unknown[] };
+type WorkflowNode = HTMLElementTagNameMap["ocelle-workflow-node"];
 
 export const workflowNodeText = [
   { label: "Security review", kind: "Approval", role: "Reviewer", outcomes: ["Approved", "Rejected"] },
@@ -23,8 +30,8 @@ export async function mountWorkflowNodes(mode: "references" | "literal" | "plain
     <span id="hint">Review the security findings</span>
     <span id="policy">Policy applies</span>
   `;
-  const review = fixture.querySelector<HTMLElementTagNameMap["ocelle-workflow-node"]>("#review")!;
-  const planning = fixture.querySelector<HTMLElementTagNameMap["ocelle-workflow-node"]>("#planning")!;
+  const review = fixture.querySelector("#review") as WorkflowNode;
+  const planning = fixture.querySelector("#planning") as WorkflowNode;
   const step = Object.freeze({ id: "review-12", title: "Security review", kind: "Approval", role: "Reviewer", outcomes: Object.freeze(["Approved", "Rejected"]) });
   fixture.step = step;
   review.outcomes = step.outcomes;
@@ -77,9 +84,9 @@ export function readWorkflowNodes(): unknown {
       type: action?.type ?? null,
       tabIndex: action?.tabIndex ?? null,
       text: {
-        label: action?.textContent?.trim() ?? null,
-        kind: root?.querySelector("dd")?.textContent?.trim() ?? null,
-        role: root?.querySelectorAll("dd")[1]?.textContent?.trim() ?? null,
+        label: action?.textContent.trim() ?? null,
+        kind: root?.querySelector("dd")?.textContent.trim() ?? null,
+        role: root?.querySelectorAll("dd")[1]?.textContent.trim() ?? null,
         outcomes: [...(root?.querySelectorAll("li") ?? [])].map((outcome) => outcome.textContent.trim()),
       },
     };
@@ -100,7 +107,7 @@ export function selectionActivity(target: string, nodeId: string): unknown[] {
 }
 
 export async function updateWorkflowNode(change: "rename" | "select" | "deselect" | "blank"): Promise<void> {
-  const node = document.querySelector<HTMLElementTagNameMap["ocelle-workflow-node"]>("#review")!;
+  const node = document.querySelector("#review") as WorkflowNode;
   if (change === "rename") node.label = "Final security review";
   if (change === "select") node.selected = true;
   if (change === "deselect") node.selected = false;
@@ -109,7 +116,7 @@ export async function updateWorkflowNode(change: "rename" | "select" | "deselect
 }
 
 export function workflowSelectionState(): unknown {
-  const node = document.querySelector<HTMLElementTagNameMap["ocelle-workflow-node"]>("#review")!;
+  const node = document.querySelector("#review") as WorkflowNode;
   const fixture = document.querySelector("main") as NodeFixture;
   return {
     pressed: node.shadowRoot?.querySelector("button")?.getAttribute("aria-pressed") ?? null,
@@ -123,7 +130,7 @@ export function workflowSelectionState(): unknown {
 export const originalWorkflowStep = { id: "review-12", title: "Security review", kind: "Approval", role: "Reviewer", outcomes: ["Approved", "Rejected"] };
 
 export async function replacePressedWorkflowNode(): Promise<void> {
-  const before = document.querySelector("#review")!;
+  const before = document.querySelector("#review") as WorkflowNode;
   const after = document.createElement("ocelle-workflow-node");
   after.id = "replacement";
   after.nodeId = "replacement-42";
@@ -137,13 +144,13 @@ export async function replacePressedWorkflowNode(): Promise<void> {
 
 /** A detached node leaves the sentinel active. On connection, focus goes to its one native action. */
 export async function workflowFocusLifecycle(): Promise<unknown> {
-  const before = document.getElementById("before")!;
+  const before = document.getElementById("before") as HTMLButtonElement;
   before.focus();
   const fresh = document.createElement("ocelle-workflow-node");
   fresh.label = "Fresh step";
   fresh.focus({ preventScroll: true });
   const detached = { focused: document.activeElement?.id, rendered: fresh.shadowRoot !== null };
-  document.querySelector("main")!.append(fresh);
+  (document.querySelector("main") as HTMLElement).append(fresh);
   await fresh.updateComplete;
   fresh.focus({ preventScroll: true });
   const rendered = { host: document.activeElement === fresh, control: fresh.shadowRoot?.activeElement?.localName ?? null };
@@ -181,7 +188,7 @@ export function workflowPaint(): {
   readonly outline: string;
   readonly outlineWidth: number;
 } {
-  const host = document.querySelector("ocelle-workflow-node")!;
+  const host = document.querySelector("ocelle-workflow-node") as WorkflowNode;
   const action = host.shadowRoot?.querySelector("button");
   if (action === undefined || action === null) return { min: -1, size: [0, 0], colors: [], outline: "none", outlineWidth: 0 };
   const swatch = document.createElement("span");
@@ -193,7 +200,7 @@ export function workflowPaint(): {
   const { width, height } = action.getBoundingClientRect();
   const style = getComputedStyle(action);
   const ground = getComputedStyle(host).backgroundColor;
-  const metadata = getComputedStyle(host.shadowRoot!.querySelector("dd")!);
+  const metadata = getComputedStyle(host.shadowRoot?.querySelector("dd") as HTMLElement);
   return {
     min,
     size: [width, height],

@@ -85,7 +85,9 @@ describe("ocelle-workflow-node selection on built output under strict CSP", () =
     await page.evaluate(updateWorkflowNode, "rename" as const);
     await page.evaluate(updateWorkflowNode, "select" as const);
     expect(await page.evaluate(readWorkflowActivity)).toEqual([...request, ...request, ...request]);
-    expect(await driver.axState("review", "button")).toMatchObject({ role: "button", name: "Final security review", pressed: "true", description: expect.stringContaining("Selected") });
+    const renamed = await driver.axState("review", "button");
+    expect(renamed).toMatchObject({ role: "button", name: "Final security review", pressed: "true" });
+    expect(renamed.description).toContain("Selected");
     await page.keyboard.press("Enter");
     expect(await page.evaluate(readWorkflowActivity)).toEqual([...request, ...request, ...request, ...request]);
     expect(await page.evaluate(workflowSelectionState)).toEqual({ ...unselected, pressed: "true", selected: true, reflected: true });
@@ -130,12 +132,13 @@ describe("ocelle-workflow-node selection on built output under strict CSP", () =
     await page.locator("#before").focus();
     await page.keyboard.press("Tab");
     const paint = await page.evaluate(workflowPaint);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Vitest's asymmetric matcher is valid in this assertion.
     expect(paint).toMatchObject({ min: expect.any(Number), outline: "solid" });
     expect(paint.min).toBeGreaterThan(0);
     expect(Math.min(...paint.size)).toBeGreaterThanOrEqual(paint.min);
     expect(paint.outlineWidth).toBeGreaterThan(0);
     const [text, borderOutside, borderInside, focus, metadata] = workflowContrast(paint.colors);
-    expect({ text: text! >= 4.5, borderOutside: borderOutside! >= 3, borderInside: borderInside! >= 3, focus: focus! >= 3, metadata: metadata! >= 4.5 }).toEqual({ text: true, borderOutside: true, borderInside: true, focus: true, metadata: true });
+    expect({ text: (text ?? 0) >= 4.5, borderOutside: (borderOutside ?? 0) >= 3, borderInside: (borderInside ?? 0) >= 3, focus: (focus ?? 0) >= 3, metadata: (metadata ?? 0) >= 4.5 }).toEqual({ text: true, borderOutside: true, borderInside: true, focus: true, metadata: true });
     expect(await finish()).toEqual(clean);
   });
 });

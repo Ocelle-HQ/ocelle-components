@@ -13,6 +13,11 @@ The built green checks use the same pointer input function as the in-process bro
 case names and assertions are unchanged. Playwright receives the existing update commands with literal types
 so the fixture also passes TypeScript's overload check.
 
+The final in-process suite registers through the package root. On the pre-scaffold base, Vitest browser
+mode reduced the standalone import failure to a generic file-load error. Loading the existing package
+root lets the base run the same named assertions without the workflow node. The scaffold and green
+head still load the same source module through that registration path.
+
 Security review, planning, selected and focused each have a light and dark baseline. All eight captures
 matched byte for byte across two runs of the repository's capture library, using its pinned Docker image.
 
