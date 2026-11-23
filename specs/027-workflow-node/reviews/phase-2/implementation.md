@@ -51,5 +51,54 @@ or expected results changed for the retry.
 
 The phase-base selector reported 21 of 317 plants selected and judged none with `--list`. Local fixture
 probes covered the updated manifest overlays and the existing empty-index overlay. The complete hosted
-Plants, mutation and required checks remain pending. T009 remains open until those outcomes and the
-focused replay are recorded for the exact candidate.
+run judged all 317 plants. [Plants command and output](plants.md)
+
+## Focused replay for T009
+
+The exact candidate passed all 39 workflow-node tests across the source Chromium and built strict-CSP suites.
+On the recorded red and pre-phase base, `tdd-check.sh 2` found the same 14 named failures. The phase
+extends the existing component and has no scaffold stage.
+
+| Revision | First replay | Unchanged repeat |
+| --- | --- | --- |
+| First draft `1e2c367e72f6e01d803c82c044ddf9806de02236` | 30.678 s | 1.179 s |
+| Exact candidate `32df0b5d292f5bf73908236cd54cde428c93356b` | 31.818 s | 0.707 s |
+| Independently replayed hosted merge `1278b0e967ac1b7e35af8836313d18a99f09da24` | 42.167 s | 1.285 s |
+
+The candidate's first run reused red evidence and ran the base and head stages. The first independent
+merge replay ran all three stages. Each unchanged repeat reused all three stages with identical file
+and project identities. The final red, base and green scopes contained 2, 2 and 4 files respectively.
+
+| Project | File | Stages |
+| --- | --- | --- |
+| elements (chromium) | `packages/elements/test/workflow-node.test.ts` | Red, base, head |
+| elements-browser | `packages/elements/test/browser/workflow-node.test.ts` | Red, base, head |
+| gates-integration | `gates/test/integration/plant-repo.test.ts` | Head |
+| gates-integration | `gates/test/integration/storybook-build.test.ts` | Head |
+
+The two deferred integration files stayed in the required hosted Unit tests inventory. The matching
+synthetic-merge evidence includes the discovered plan, all 11 visual integration cases and all four
+axe integration cases. [Unit plan](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45206635291/artifacts/14834735661) · [Visual integration evidence](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45206635291/artifacts/14836934947) · [Axe integration evidence](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45206635291/artifacts/14835138543)
+
+## Full hosted verification for T009
+
+Run 45206635291 passed all 18 required checks. Its wall time was **59m 00s** from 15:33:54 to
+16:32:54 UTC, with the last required check finishing at 16:32:53 UTC. GitHub checked merge
+`1278b0e967ac1b7e35af8836313d18a99f09da24`, whose parents are main
+`ff85ae5676ba52f5312719d5253fd938eac4aa94` and candidate `32df0b5d292f5bf73908236cd54cde428c93356b`.
+The merge and candidate share tree `ae48f31d17d454ab44a3edce4ead5cec74c6a3f3`.
+[Hosted CI run](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45206635291)
+
+The first Phase 2 run, 45205673544, reported a surviving `StringLiteral` at line 5 of
+`ocelle-workflow-node.ts` in its mixed mutation shard. The independent review and four individual
+source replacements above had already identified and reproduced the gap, and the test-only follow-up
+was pushed before that hosted result arrived. [First mixed mutation shard](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45205673544/job/137800954304)
+
+- Unit tests passed 10,870 tests across 326 files and six shards, 45m 18s after run creation. [Unit tests](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45206635291/job/137833775198)
+- Changed-source mutation passed all eight shards. The reports counted 86 mutants across their ranges,
+  with zero survivors, zero timeouts and 10 compile-error outcomes. The mixed shard carried the two
+  Phase 1 `ObjectLiteral` equivalent records for `label` and `kind`.
+  [Mutation testing](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45206635291/job/137843016304) · [Mixed mutation shard](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45206635291/job/137804320358)
+- Visual regression, Accessibility and Content security passed.
+  [Visual regression](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45206635291/job/137804024418) · [Accessibility](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45206635291/job/137804025761) · [Content security](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45206635291/job/137804025238)
+- The Plants aggregate judged all 317 plants from the 17 gates and the registry. [Plants verdict](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45206635291/job/137816759813)
