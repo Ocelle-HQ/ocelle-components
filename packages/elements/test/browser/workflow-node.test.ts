@@ -1,5 +1,6 @@
 import type { Browser } from "playwright";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
+import { pointer } from "../commands.ts";
 import {
   mountWorkflowNodes,
   originalWorkflowStep,
@@ -73,7 +74,7 @@ describe("ocelle-workflow-node selection on built output under strict CSP", () =
     const unselected = { pressed: "false", selected: false, reflected: false, sameOutcomes: true, data: originalWorkflowStep };
     expect(await page.evaluate(workflowSelectionState)).toEqual(unselected);
     const request = selectionActivity("review", "review-12");
-    await driver.pointer("click", "review", inner);
+    await pointer(page, page.mainFrame(), "click", "review", inner);
     expect(await page.evaluate(readWorkflowActivity)).toEqual(request);
     await page.keyboard.press("Enter");
     expect(await page.evaluate(readWorkflowActivity)).toEqual([...request, ...request]);
@@ -81,15 +82,15 @@ describe("ocelle-workflow-node selection on built output under strict CSP", () =
     expect(await page.evaluate(readWorkflowActivity)).toEqual([...request, ...request, ...request]);
     expect(await page.evaluate(workflowSelectionState)).toEqual(unselected);
 
-    await page.evaluate(updateWorkflowNode, "rename");
-    await page.evaluate(updateWorkflowNode, "select");
+    await page.evaluate(updateWorkflowNode, "rename" as const);
+    await page.evaluate(updateWorkflowNode, "select" as const);
     expect(await page.evaluate(readWorkflowActivity)).toEqual([...request, ...request, ...request]);
     expect(await driver.axState("review", "button")).toMatchObject({ role: "button", name: "Final security review", pressed: "true", description: expect.stringContaining("Selected") });
     await page.keyboard.press("Enter");
     expect(await page.evaluate(readWorkflowActivity)).toEqual([...request, ...request, ...request, ...request]);
     expect(await page.evaluate(workflowSelectionState)).toEqual({ ...unselected, pressed: "true", selected: true, reflected: true });
 
-    await page.evaluate(updateWorkflowNode, "blank");
+    await page.evaluate(updateWorkflowNode, "blank" as const);
     await page.keyboard.press("Space");
     expect(await page.evaluate(readWorkflowActivity)).toEqual([...request, ...request, ...request, ...request, request[1]]);
     expect(await finish()).toEqual(clean);
@@ -110,14 +111,14 @@ describe("ocelle-workflow-node selection on built output under strict CSP", () =
   });
 
   it("discards an interrupted pointer activation and requests selection on a fresh click of the replacement", async () => {
-    const { page, driver, finish } = await workflow();
+    const { page, finish } = await workflow();
     expect(await page.evaluate(readWorkflowNodes)).toEqual(workflowNodePresentation);
-    await driver.pointer("down", "review", inner);
+    await pointer(page, page.mainFrame(), "down", "review", inner);
     await page.evaluate(replacePressedWorkflowNode);
-    await driver.pointer("up", "replacement", inner);
+    await pointer(page, page.mainFrame(), "up", "replacement", inner);
     expect(await page.evaluate(readWorkflowRequests)).toEqual([]);
     const interrupted = await page.evaluate(readWorkflowActivity);
-    await driver.pointer("click", "replacement", inner);
+    await pointer(page, page.mainFrame(), "click", "replacement", inner);
     expect(await page.evaluate(readWorkflowActivity)).toEqual([...interrupted, ...selectionActivity("replacement", "replacement-42")]);
     expect(await finish()).toEqual(clean);
   });

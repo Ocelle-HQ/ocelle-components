@@ -2,3 +2,5 @@ packages/elements/test/browser/workflow-node.test.ts
 packages/elements/test/exports.test.ts
 packages/elements/test/node/manifest.test.ts
 packages/elements/test/workflow-node.test.ts
+ci-only gates/test/integration/axe.test.ts
+ci-only gates/test/integration/visual.test.ts
