@@ -11,6 +11,11 @@ story_require_phase "${1:-}"
 phase=$1; label=${2:-phase}
 [[ "$label" =~ ^(phase|fix-[0-9]+)$ ]] || { echo "story: label must be 'phase' or 'fix-<round>'" >&2; exit 2; }
 root=$(story_repo_root); feature_dir=$(story_feature_dir); feature_rel=${feature_dir#"$root"/}
+focused=$(story_config focused_runner)
+if [[ -n "$focused" ]]; then
+  cd "$root"
+  exec node "$root/$focused" red "$feature_rel" "$phase" "$(story_config setup_command)" "$(story_config test_pathspec)" "$label"
+fi
 dir="$feature_dir/reviews/phase-$phase"; mkdir -p "$dir"
 sha=$(git rev-parse HEAD)
 [[ -n "$(story_config test_command)" ]] || { printf '{"phase":"%s","label":"%s","sha":"%s","status":"unavailable","reason":"test_command is not set in story-config.yml"}\n' "$phase" "$label" "$sha"; exit 0; }
