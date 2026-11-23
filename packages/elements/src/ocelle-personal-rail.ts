@@ -38,7 +38,6 @@ import { SlotState } from "./slot-state.ts";
  * @tagname ocelle-personal-rail
  * @slot - The primary items, icon links for example, from the rail's start.
  * @slot bottom - The bottom group, an account link for example, kept at the rail's end.
- * Set divider-at-end to place the vertical divider directly above that group.
  */
 export class OcellePersonalRail extends LitElement {
   static override properties = {
@@ -85,6 +84,7 @@ export class OcellePersonalRail extends LitElement {
       border-block-start: var(--ocelle-border-width) solid var(--ocelle-color-chrome-muted);
     }
 
+    /* Opt-in placement for shells that separate Settings from primary navigation. */
     :host([divider-at-end]:not([orientation="horizontal"])) .divider:not(.empty) {
       margin-block-start: auto;
     }
