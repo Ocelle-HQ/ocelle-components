@@ -214,4 +214,11 @@ describe("packages/styles/CHANGELOG.md", () => {
       align: /^- `data-ocelle-align`/m.test(added),
     }).toEqual({ blocks: true, hook: true, align: true });
   });
+
+  // 019 phase 4 review round 1 (R1-02; constitution VII; tasks.md T075): the data records' final surface statement.
+  it("states under Unreleased that base.css's four blocks, the data-ocelle-align hook and the base-style hook are a minor change with no token (019 T075)", () => {
+    expect(flat(unreleased)).toContain(
+      "`base.css`'s four blocks for the data records (the `ocelle-data-table` rules, their prose override, the pre-upgrade rules of `ocelle-event-timeline` and `ocelle-evidence-chain`, and the numeric-cell rule), the `data-ocelle-align` hook with its value `end`, and the base-style hook `--data-table-box-size` and `--data-table-end-fade` that `ocelle-data-table` writes are additions to the public surface: a minor change. No token is added.",
+    );
+  });
 });
