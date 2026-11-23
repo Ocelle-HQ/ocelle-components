@@ -35,10 +35,10 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 266ms using pnpm v12.16.1
+Done in 388ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /opt/pw-browsers/chromium-1243/chrome-linux64/chrome
 $ node gates/bin/test.ts
-packages/elements/test/browser/tooltip.test.ts:35: unit-tests: ocelle-tooltip on the strict-CSP fixture with the browser build (US3) Click focus, then hover (US3-12, FR-031, FR-032; analysis C3): the button trigger clicked and the pointer resting on it: not shown before 150 ms, shown by 450 ms; the pointer moved off both boxes: hidden within one frame while focus stays on the trigger, not shown at any frame of a 900 ms wait; the pointer resting on the trigger again: shown by 450 ms from that entry: AssertionError: expected { observed: { …(6) }, …(1) } to deeply equal { observed: { …(6) }, …(1) }
+packages/elements/test/browser/drawer.test.ts:37: unit-tests: ocelle-drawer on the strict-CSP fixture with the browser build (US2) Rapid toggle during the entry, motion on: open false and true in one task: the dialog stays shown, no event, the entry animation runs on (FR-014, R-06): AssertionError: expected { observed: { entry: [], …(4) }, …(1) } to deeply equal { observed: { …(5) }, …(1) }
 unit-tests: 1 of 8245 tests failed
 [ELIFECYCLE] Test failed. See above for more details.
