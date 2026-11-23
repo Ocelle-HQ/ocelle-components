@@ -6209,7 +6209,12 @@
             "package": "lit",
             "name": "LitElement"
           },
-          "slots": [],
+          "slots": [
+            {
+              "name": "status",
+              "description": "Optional noninteractive status shown with the step details and included in the action's description."
+            }
+          ],
           "name": "OcelleWorkflowNode",
           "members": [
             {

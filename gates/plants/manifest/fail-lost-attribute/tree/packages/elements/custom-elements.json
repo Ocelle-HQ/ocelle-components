@@ -6415,7 +6415,12 @@
             }
           ],
           "name": "OcelleWorkflowNode",
-          "slots": [],
+          "slots": [
+            {
+              "description": "Optional noninteractive status shown with the step details and included in the action's description.",
+              "name": "status"
+            }
+          ],
           "superclass": {
             "name": "LitElement",
             "package": "lit"

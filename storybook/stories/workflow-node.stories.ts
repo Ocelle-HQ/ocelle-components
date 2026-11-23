@@ -32,12 +32,19 @@ interface State {
   readonly waiting?: boolean;
   readonly invalid?: boolean;
   readonly focused?: boolean;
+  readonly status?: string;
 }
 
-function step(data = review, { focused = false, ...state }: State = {}): HTMLElement {
+function step(data = review, { focused = false, status, ...state }: State = {}): HTMLElement {
   const frame = document.createElement("div");
   frame.dataset.frame = "S";
   const node = Object.assign(document.createElement("ocelle-workflow-node"), data, state);
+  if (status !== undefined) {
+    const indicator = document.createElement("span");
+    indicator.slot = "status";
+    indicator.textContent = status;
+    node.append(indicator);
+  }
   frame.append(node);
   if (focused) void node.updateComplete.then(() => { node.focus(); });
   return frame;
@@ -58,3 +65,5 @@ export const Invalid: StoryObj = { render: () => step(review, { invalid: true })
 export const Narrow: StoryObj = { render: () => step(narrowReview) };
 
 export const CombinedFocused: StoryObj = { render: () => step(narrowReview, { selected: true, waiting: true, invalid: true, focused: true }) };
+
+export const ReadOnlyInspection: StoryObj = { name: "Read-only inspection", render: () => step(review, { status: "Passed in the recorded run" }) };

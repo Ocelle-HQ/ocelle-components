@@ -351,6 +351,17 @@ describe("ocelle-workflow-node navigation and accessible context in process", ()
 });
 
 describe("ocelle-workflow-node recorded run inspection in process", () => {
+  beforeEach(async () => {
+    const sheets = [...document.adoptedStyleSheets];
+    const theme = document.documentElement.dataset.theme;
+    await driver.mount("");
+    return () => {
+      document.adoptedStyleSheets = sheets;
+      if (theme === undefined) delete document.documentElement.dataset.theme;
+      else document.documentElement.dataset.theme = theme;
+    };
+  });
+
   it("reads the recorded status outside the action and requests selection without changing the host's record", async () => {
     await mountWorkflowNodes("literal");
     await changeRecordedStatus(["add", recordedStatus]);

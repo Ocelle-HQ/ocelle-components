@@ -12,6 +12,7 @@ const hostContext = ["aria-label", "aria-labelledby", "aria-describedby", "aria-
  * @attr {string} aria-labelledby - Space-separated IDs in the host tree supplying additional name context.
  * @attr {string} aria-describedby - Space-separated IDs in the host tree supplying additional description.
  * @attr {string} aria-current - An optional current-step state on the action.
+ * @slot status - Optional noninteractive status shown with the step details and included in the action's description.
  * @csspart control - The native selection button.
  * @fires {CustomEvent<{nodeId: string}>} ocelle-workflow-node-select - A noncancelable, bubbling and composed request from the node during native activation.
  */
@@ -94,6 +95,12 @@ export class OcelleWorkflowNode extends LitElement {
       ul {
         margin-block: 0;
         padding-inline-start: var(--ocelle-space-5);
+      }
+
+      slot[name="status"]::slotted(:not(:empty)) {
+        display: block;
+        margin-block-start: var(--ocelle-space-2);
+        overflow-wrap: anywhere;
       }
 
       @media not (forced-colors: active) {
@@ -212,6 +219,7 @@ export class OcelleWorkflowNode extends LitElement {
         ${this.selected ? html`<div class="state">Selected</div>` : nothing}
         ${this.waiting ? html`<div class="state">Waiting</div>` : nothing}
         ${this.invalid ? html`<div class="state">Invalid</div>` : nothing}
+        <slot name="status"></slot>
       </div>
     `;
   }

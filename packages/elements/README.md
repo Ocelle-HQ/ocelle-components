@@ -2494,6 +2494,11 @@ ID, insert the replacement, remove the corresponding reference attribute from th
 `node.updateComplete`. Then reapply the reference attribute using the desired ID. The button retains its
 title and built-in description throughout the refresh.
 
+For read-only run inspection, pass readable, noninteractive content as a child with `slot="status"`. It appears
+outside the selection button and adds its text to the button's accessible description. Host edits and replacements
+update that text, and an empty slot adds no status text. The reviewer uses the same button and selection request
+to inspect the step. Outcome labels remain descriptive, and the host retains ownership of the step data.
+
 An activation dispatches one `ocelle-workflow-node-select` request from the element with detail
 `{ nodeId: string }`. The request bubbles, crosses shadow boundaries and is noncancelable. It reaches ancestor
 listeners before the native click bubbles to them. The host handles the request and applies selection as needed.
