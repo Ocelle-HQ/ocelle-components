@@ -7,7 +7,9 @@ in_scope: [73]
 out_of_scope: [1, 7, 13, 15, 72, 74, 75, 76]
 semver: minor
 spec_prompt: "Build a controlled, accessible ocelle-workflow-canvas for Workflow Studio authors and run reviewers from #73 and triage/029-workflow-canvas.md. Compose the landed workflow node's single selection action and focus contract. Specify stable graph and outcome IDs, separate host-supplied layout, viewport, selection and mode, and distinct selection, presentation and connection requests. Cover pan, zoom, fit, node movement with aligned edges, pointer, keyboard and tap connection editing, discoverable named destinations, host rejection, read-only inspection and focused-node removal. Evaluate graph rendering options on keyboard access, representative graph sizes, bundle cost and strict CSP before choosing a dependency. Demonstrate the journeys with a branching fixture host and prove accessibility, forced colors, reduced motion, narrow layout, long labels and empty states. Keep Studio's validation, serialization, undo and services with the host and the end-to-end composition with #76. Use the standard export, manifest, Storybook, visual and test-first gates. Trial Op 028 with ready disjoint tasks inside an approved phase and record its integrated proof and timing."
-status: proposed
+status: approved
+decided_by: "human:MOES-Media"
+decided_at: 2026-11-23T22:40:36Z
 ---
 
 # Triage 029 for the workflow canvas
