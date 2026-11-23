@@ -1,0 +1,5 @@
+Reused completed evidence edafdc3f8e5693576b74942a1871acc2cec75bf74ff678cc2bb9086205ae2991
+{"mode":"head","revision":"760f2ec592040dfdd11c3921d51f2911066f73f2","input":"edafdc3f8e5693576b74942a1871acc2cec75bf74ff678cc2bb9086205ae2991","selected":[{"project":"gates-integration","file":"gates/test/integration/plant-repo.test.ts"},{"project":"gates-integration","file":"gates/test/integration/storybook-build.test.ts"},{"project":"elements-browser","file":"packages/elements/test/browser/workflow-node.test.ts"},{"project":"elements (chromium)","file":"packages/elements/test/workflow-node.test.ts"}],"evidence":{"status":"green","assertions":[]},"seconds":18.331}
+Failed to resolve dependency: lit/directives/class-map.js, present in client 'optimizeDeps.include'
+Failed to resolve dependency: lit/directives/if-defined.js, present in client 'optimizeDeps.include'
+Failed to resolve dependency: lit/directives/live.js, present in client 'optimizeDeps.include'
