@@ -53,9 +53,9 @@ to the last colon, groups of four code points with a `--ocelle-space-1` gap, cop
 
 ### Added
 
-- Added `ocelle-form-textarea`, a multiline form field with native validation and editing, synchronous form
-  participation, and accessible help and error text. Import `@ocelle/elements/ocelle-form-textarea.js` to register
-  the element individually. This is a MINOR addition to the public surface.
+- **Workflow reviewers can enter multiline decisions (#74).** `ocelle-form-textarea` supports native editing and
+  validation, submits before its first render, and exposes accessible help and errors. Import
+  `@ocelle/elements/ocelle-form-textarea.js` to register it individually. This is a MINOR addition to the public surface.
 - `ocelle-app-shell` with named rail and sidebar regions, an adaptive top bar and navigation drawer, independent
   main padding controls, the `tier` and `contentTarget` properties, `remeasure()` and the
   `ocelle-app-shell-tier-change` event.
