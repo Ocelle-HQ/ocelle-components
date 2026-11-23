@@ -97,7 +97,7 @@ export class OcelleWorkflowNode extends LitElement {
         padding-inline-start: var(--ocelle-space-5);
       }
 
-      slot[name="status"]::slotted(:not(:empty)) {
+      slot[name="status"]::slotted(:not([hidden]):not(:empty)) {
         display: block;
         margin-block-start: var(--ocelle-space-2);
         overflow-wrap: anywhere;

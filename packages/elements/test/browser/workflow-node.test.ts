@@ -61,7 +61,7 @@ async function workflow(mode: "references" | "literal" | "plain" = "plain") {
 
 const inner = { inner: "button" };
 // Vitest's asymmetric matcher is untyped. Narrow that method without changing the recorded assertion.
-const expect: { (value: unknown): Assertion; any(type: NumberConstructor): unknown } = vitestExpect;
+const expect: { (value: unknown, message?: string): Assertion; any(type: NumberConstructor): unknown } = vitestExpect;
 
 describe("ocelle-workflow-node selection on built output under strict CSP", () => {
   it("renders the two sets of exact step text and just one native action per step", async () => {

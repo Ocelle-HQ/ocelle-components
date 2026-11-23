@@ -38,7 +38,7 @@ import { changeRecordedStatus, editedStatus, recordedStatus, recordedStep, repla
 const driver = inProcessDriver();
 const inner = { inner: "button" };
 // Vitest's asymmetric matcher is untyped. Narrow that method without changing the recorded assertion.
-const expect: { (value: unknown): Assertion; any(type: NumberConstructor): unknown } = vitestExpect;
+const expect: { (value: unknown, message?: string): Assertion; any(type: NumberConstructor): unknown } = vitestExpect;
 
 afterEach(async () => {
   document.body.replaceChildren();
