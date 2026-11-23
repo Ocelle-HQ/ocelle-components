@@ -7,7 +7,9 @@ in_scope: [72]
 out_of_scope: [1, 7, 13, 15, 73, 74, 75, 76]
 semver: minor
 spec_prompt: "Build `ocelle-workflow-node` for Workflow Studio from #72 and `triage/027-workflow-node.md`. Define a controlled, selectable node that carries a stable node ID in its selection request and displays the title, kind, accountable role, named outcomes, and optional validation and run status. Specify one accessible selection action and focus ownership for standalone use and integration with the future canvas in #73. Prove equivalent pointer and keyboard activation, stable identity after renaming, read-only inspection, and unchanged host data after selection. Show a Security review step with approved and rejected outcomes and a planning step with one outcome. Preserve full accessible labels for long values, distinguish coexisting selected, focused, waiting, and invalid states in forced colours, and support readable host-provided status content while #7 progresses. Keep graph edits and navigation in #73 and workflow semantics in Studio. Use the landed card, action-row and icon precedents, token-only styling, and the standard export, manifest, stories and light/dark visual baselines. Record focused red/green replay, repeat timing and hosted CI evidence using Op 025."
-status: proposed
+status: approved
+decided_by: "human:MOES-Media"
+decided_at: 2026-11-23T11:33:59Z
 ---
 
 # Triage 027 — Selectable workflow nodes (#72)
