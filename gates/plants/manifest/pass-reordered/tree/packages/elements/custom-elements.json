@@ -6623,6 +6623,269 @@
           ]
         }
       ]
+    },
+    {
+      "path": "src/ocelle-workflow-node.ts",
+      "kind": "javascript-module",
+      "exports": [
+        {
+          "name": "OcelleWorkflowNode",
+          "kind": "js",
+          "declaration": {
+            "name": "OcelleWorkflowNode",
+            "module": "src/ocelle-workflow-node.ts"
+          }
+        }
+      ],
+      "declarations": [
+        {
+          "tagName": "ocelle-workflow-node",
+          "superclass": {
+            "package": "lit",
+            "name": "LitElement"
+          },
+          "slots": [
+            {
+              "name": "status",
+              "description": "Optional noninteractive status shown with the step details and included in the action's description."
+            }
+          ],
+          "name": "OcelleWorkflowNode",
+          "members": [
+            {
+              "type": {
+                "text": "string"
+              },
+              "privacy": "public",
+              "name": "nodeId",
+              "kind": "field",
+              "description": "The host's stable step identifier. An empty identifier does not request selection.",
+              "default": "\"\"",
+              "attribute": "node-id"
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "privacy": "public",
+              "name": "label",
+              "kind": "field",
+              "description": "The step's visible title and first part of its accessible name.",
+              "default": "\"\"",
+              "attribute": "label"
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "privacy": "public",
+              "name": "kind",
+              "kind": "field",
+              "description": "The displayed workflow step kind.",
+              "default": "\"\"",
+              "attribute": "kind"
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "privacy": "public",
+              "name": "accountableRole",
+              "kind": "field",
+              "description": "The displayed accountable role.",
+              "default": "\"\"",
+              "attribute": "accountable-role"
+            },
+            {
+              "type": {
+                "text": "readonly string[]"
+              },
+              "privacy": "public",
+              "name": "outcomes",
+              "kind": "field",
+              "description": "Descriptive outcome labels, in the order supplied by the host.",
+              "default": "[]"
+            },
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "selected",
+              "kind": "field",
+              "description": "Whether the host has selected this step.",
+              "default": "false",
+              "attribute": "selected"
+            },
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "waiting",
+              "kind": "field",
+              "description": "Whether the step is waiting for a run to continue.",
+              "default": "false",
+              "attribute": "waiting"
+            },
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "invalid",
+              "kind": "field",
+              "description": "Whether the host identifies a validation problem with the step.",
+              "default": "false",
+              "attribute": "invalid"
+            },
+            {
+              "type": {
+                "text": "0 | -1"
+              },
+              "privacy": "public",
+              "name": "selectionTabIndex",
+              "kind": "field",
+              "description": "Set to -1 to exclude the native action from Tab navigation while keeping direct focus.",
+              "default": "0"
+            },
+            {
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "type": {
+                    "text": "FocusOptions"
+                  },
+                  "optional": true,
+                  "name": "options"
+                }
+              ],
+              "name": "focus",
+              "kind": "method",
+              "description": "Forwards focus to the selection action after render."
+            }
+          ],
+          "kind": "class",
+          "events": [
+            {
+              "type": {
+                "text": "CustomEvent<{nodeId: string}>"
+              },
+              "name": "ocelle-workflow-node-select",
+              "description": "A noncancelable, bubbling and composed request from the node during native activation."
+            }
+          ],
+          "description": "A workflow step with one native selection action and descriptive kind, role and outcomes.",
+          "customElement": true,
+          "cssProperties": [],
+          "cssParts": [
+            {
+              "name": "control",
+              "description": "The native selection button."
+            }
+          ],
+          "attributes": [
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "aria-label",
+              "description": "Additional name context if no host naming references resolve."
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "aria-labelledby",
+              "description": "Space-separated IDs in the host tree supplying additional name context."
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "aria-describedby",
+              "description": "Space-separated IDs in the host tree supplying additional description."
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "aria-current",
+              "description": "An optional current-step state on the action."
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "node-id",
+              "fieldName": "nodeId",
+              "description": "The host's stable step identifier. An empty identifier does not request selection.",
+              "default": "\"\""
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "label",
+              "fieldName": "label",
+              "description": "The step's visible title and first part of its accessible name.",
+              "default": "\"\""
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "kind",
+              "fieldName": "kind",
+              "description": "The displayed workflow step kind.",
+              "default": "\"\""
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "accountable-role",
+              "fieldName": "accountableRole",
+              "description": "The displayed accountable role.",
+              "default": "\"\""
+            },
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "name": "selected",
+              "fieldName": "selected",
+              "description": "Whether the host has selected this step.",
+              "default": "false"
+            },
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "name": "waiting",
+              "fieldName": "waiting",
+              "description": "Whether the step is waiting for a run to continue.",
+              "default": "false"
+            },
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "name": "invalid",
+              "fieldName": "invalid",
+              "description": "Whether the host identifies a validation problem with the step.",
+              "default": "false"
+            }
+          ]
+        }
+      ]
     }
   ]
 }

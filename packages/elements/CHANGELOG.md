@@ -62,6 +62,12 @@ dispatches an event, and no token is added.
 
 ### Added
 
+- **Selectable workflow steps (#72).** `ocelle-workflow-node` shows the supplied title, accountable role and
+  outcomes, and sends `ocelle-workflow-node-select` with the stable step ID. The host owns selection and can
+  coordinate Tab order with `selectionTabIndex`. Selected, waiting and invalid states can appear together.
+  The optional `status` slot adds readable context for read-only run inspection.
+  `@ocelle/elements/ocelle-workflow-node.js` registers the element as a standalone MINOR addition.
+
 - **Workflow reviewers can enter multiline decisions (#74).** `ocelle-form-textarea` supports native editing and
   validation, submits before its first render, and exposes accessible help and errors. Import
   `@ocelle/elements/ocelle-form-textarea.js` to register it individually. This is a MINOR addition to the public surface.

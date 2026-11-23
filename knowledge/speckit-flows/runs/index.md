@@ -17,6 +17,7 @@
 * [019-data-records](019-data-records.md) - Review rounds, findings and TDD checks per phase of 019-data-records, generated from its review files
 * [020-disclosure-code-block](020-disclosure-code-block.md) - Review rounds, findings and TDD checks per phase of 020-disclosure-code-block, generated from its review files
 * [026-form-textarea](026-form-textarea.md) - Review rounds, findings and TDD checks per phase of 026-form-textarea, generated from its review files
+* [027-workflow-node](027-workflow-node.md) - Review rounds, findings and TDD checks per phase of 027-workflow-node, generated from its review files
 * [op-004-token-source-mutation](op-004-token-source-mutation.md) - Review rounds, findings and TDD checks per phase of op-004-token-source-mutation, generated from its review files
 * [op-015-mutation-shard-timeout](op-015-mutation-shard-timeout.md) - Review rounds, findings and TDD checks per phase of op-015-mutation-shard-timeout, generated from its review files
 * [op-016-plants-affected](op-016-plants-affected.md) - Review rounds, findings and TDD checks per phase of op-016-plants-affected, generated from its review files

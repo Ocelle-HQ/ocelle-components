@@ -1,0 +1,16 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 2
+lens: fresh
+findings:
+  - id: PLAN-FRESH-2-001
+    severity: 2
+    title: "Replacing an accessible context element under the same ID silently drops that context"
+    evidence:
+      - artifact: "contracts/workflow-node.md:20–23 says name and description context are resolved on connection or when host attributes change; spec.md:42,75 requires the actual action to expose updated host context; quickstart.md:14 changes only the referencing attributes."
+      - code: "Pinned Chromium 1248 probe with an actual shadow button and element-reference reflection: replacing the external naming and description elements with new elements carrying the same IDs left the host attributes unchanged. The accessibility tree lost Original context and Original detail, and did not acquire New context or New detail until the references were resolved again. The built-in title and Waiting description remained."
+    claim: |
+      A host can replace metadata in a partial render while preserving the keyed workflow node and both reference strings. Element-reference reflection stores the elements themselves. With only connection and attribute-change triggers, the unchanged strings no longer contribute the context the host still declares. Two steps with the same visible title can lose the context that distinguishes them. The plan leaves a partial-render host without a documented way to refresh these associations.
+    remedies:
+      - "Define the refresh ownership explicitly. Keep the existing target element when updating text, or have the host clear and reapply its reference attributes after inserting replacement targets. Document this in the host contract and quickstart. Add a built browser case that replaces the targets under the same IDs and exercises the documented refresh, checking the actual name and description and preservation of the built-in text."

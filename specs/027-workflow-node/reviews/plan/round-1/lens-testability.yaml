@@ -1,0 +1,36 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: testability
+findings:
+  - id: PLAN-TESTABILITY-1-001
+    severity: 3
+    title: "Shared test support can turn each phase replay into a full suite"
+    evidence:
+      - artifact: "specs/027-workflow-node/plan.md:20–27,31–34 adds a built fixture, permits shared scenarios and calls for focused timings. It specifies CI-only collateral scope but leaves local helper and fixture consumers unspecified."
+      - code: "gates/lib/story-selection.ts:58–67 selects the entire inventory on red and head when changed test support has no discovered local consumers listed. tooling/speckit/README.md:159–172 documents the separate local consumer list and CI-only eligibility."
+    claim: |
+      The larger mission adds or changes support files that are not themselves Vitest entries. Following the plan can therefore produce a whole-suite red or head run while timing it as focused evidence. CI-only story inventory entries do not supply the local consumer mapping. A timing comparison would measure a different scope, even if every check passed.
+    remedies:
+      - "Require each phase with changed support files to record their complete runnable consumer list in reviews/phase-N/test-scope.txt before red proof. Check the recorded project and file selection on the first run, then capture the same check identities and reuse flags on the unchanged repeat. Keep the conservative fallback when coverage cannot be established."
+  - id: PLAN-TESTABILITY-1-002
+    severity: 3
+    title: "Assign behavior assertions to the project that mutation testing runs"
+    evidence:
+      - artifact: "specs/027-workflow-node/plan.md:19–27 lists both harnesses and promises mutation testing, but names the built browser fixture for the focus and state slice and does not assign in-process assertions to every changed behavior."
+      - code: "vitest.mutation.elements.config.ts:1–10 includes only elements and elements-touch. vitest.config.ts:237–245 registers the built strict-CSP tests separately under elements-browser. gates/bin/mutation.ts:59–68 routes element source to that mutation configuration."
+    claim: |
+      A built-browser-only assertion can pass while the changed source is unexercised by Stryker. The tab-order handoff, combined state text, status changes and selection in read-only inspection need an explicit in-process assertion route so the reviewer can observe changes to those behaviors through the actual mutation gate.
+    remedies:
+      - "Map each phase’s new public behavior to a failing assertion in elements and repeat the relevant consumer interactions under the built strict-CSP fixture. Record changed-source mutation results against the phase base and explain any equivalent mutant in the review."
+  - id: PLAN-TESTABILITY-1-003
+    severity: 3
+    title: "Make the new component’s scaffold reach a named behavioral assertion"
+    evidence:
+      - artifact: "specs/027-workflow-node/plan.md:19–25 schedules inert registration, then red assertions, but describes package and browser export wiring separately and leaves the scaffold’s loading prerequisites and first red observation unspecified."
+      - code: "packages/elements/test/browser/global-setup.ts:49–60 builds the package browser and module entries. packages/elements/test/commands.ts:394–406 throws when the shadow root or control is absent. gates/lib/test-evidence.ts:267–275,303–320 rejects non-assertion and collection errors. The preceding textarea scaffold 99d950d5 lands the inert module, public exports and compatible inventory before its behavioral tests."
+    claim: |
+      An inert registration alone can leave a red import or built setup unable to load the candidate, or leave a driver throwing before the first assertion when the native button is absent. Neither outcome proves missing selection behavior on the scaffold. This is especially likely for the first phase, which introduces the package entry, the button and its fixtures together.
+    remedies:
+      - "Specify a test-free inert scaffold that wires the module, standalone and aggregate entries used by the selected runners, and compatible existing exact inventory before the red commit. Put fixture and scenario changes in the test-only red commit. Assert the missing rendered action through an observable result before invoking driver methods that require it, then record named assertion failures on the scaffold."
