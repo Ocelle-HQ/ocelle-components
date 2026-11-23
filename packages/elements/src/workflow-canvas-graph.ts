@@ -19,12 +19,29 @@ export interface WorkflowCanvasProjection {
   readonly drawableConnections: readonly WorkflowCanvasRelationship[];
 }
 
-export const projectWorkflowCanvasGraph: (
+export function projectWorkflowCanvasGraph(
   graph: WorkflowCanvasGraph,
   layout: readonly WorkflowCanvasLayoutEntry[],
-) => WorkflowCanvasProjection = () => ({
-  nodes: [],
-  positions: new Map(),
-  relationships: [],
-  drawableConnections: [],
-});
+): WorkflowCanvasProjection {
+  const nodesById = new Map(graph.nodes.map((node) => [node.id, node]));
+  const positions = new Map<string, WorkflowCanvasPoint>();
+  for (const { nodeId, x, y } of layout) {
+    if (nodesById.has(nodeId) && Number.isFinite(x) && Number.isFinite(y)) {
+      positions.set(nodeId, { x, y });
+    }
+  }
+
+  const relationships: WorkflowCanvasRelationship[] = [];
+  for (const { sourceId, outcomeId, destinationId } of graph.connections) {
+    const source = nodesById.get(sourceId);
+    const destination = nodesById.get(destinationId);
+    if (source === undefined || destination === undefined) continue;
+    const outcome = source.outcomes.find(({ id }) => id === outcomeId);
+    if (outcome !== undefined) relationships.push({ source, outcome, destination });
+  }
+
+  const drawableConnections = relationships.filter(
+    ({ source, destination }) => positions.has(source.id) && positions.has(destination.id),
+  );
+  return { nodes: graph.nodes, positions, relationships, drawableConnections };
+}
