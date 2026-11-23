@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import "../src/ocelle-event-timeline.ts";
 import { inProcessDriver } from "./in-process.ts";
-import { eventTimelineScenarios } from "./scenarios/event-timeline.ts";
+import { detachedTimelineTimeScenarios, eventTimelineScenarios } from "./scenarios/event-timeline.ts";
 
 // `ocelle-event-timeline` and `ocelle-timeline-event`, in process on the element source (019 US2; contracts/checks.md
 // § Harnesses; tasks.md T034): the shared bodies of scenarios/event-timeline.ts (T030 to T033) on the in-process driver,
@@ -17,6 +17,10 @@ afterEach(async () => {
 
 describe("ocelle-event-timeline and ocelle-timeline-event, in process (US2)", () => {
   it.each(eventTimelineScenarios)("$name", async ({ run, expected }) => {
+    expect(await run(driver)).toEqual(expected);
+  });
+
+  it.each(detachedTimelineTimeScenarios)("$name", async ({ run, expected }) => {
     expect(await run(driver)).toEqual(expected);
   });
 });

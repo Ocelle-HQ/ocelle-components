@@ -763,5 +763,33 @@ host.append(template.content);`);
   },
 ];
 
+const slottedTime = '<time id="detached-time" slot="time">14:20</time>';
+const insertedTimelineTime = { time: "slot[detached-time]", items: ["14:20 Plan approved", "14:41 Review requested"], lines: ["time", "time"] };
+const fallbackTimelineTime = { time: "09:00", items: ["09:00 Plan approved", "14:41 Review requested"], lines: ["time", "time"] };
+
+export const detachedTimelineTimeScenarios: readonly Scenario[] = [
+  { name: "adds a slotted time while detached", initial: "", change: `event.insertAdjacentHTML("beforeend", ${JSON.stringify(slottedTime)});`, before: fallbackTimelineTime, after: insertedTimelineTime },
+  { name: "removes a slotted time while detached", initial: slottedTime, change: 'event.querySelector("#detached-time").remove();', before: insertedTimelineTime, after: fallbackTimelineTime },
+].map(({ name, initial, change, before, after }) => ({
+  name: `landing R3-01: ${name} and reconciles the rendered time, item text and marker on reconnect`,
+  run: async (driver: Driver) => {
+    await page(driver, `<div id="host">${tl("t", "", [ev("e1", 'time="09:00"', `Plan approved${initial}`), ev("e2", 'time="14:41"', "Review requested")])}</div>`);
+    const state = async (): Promise<unknown> => ({
+      ...(await read(driver, 'return { time: timeOf($("e1")), lines: lis("t").map(line) };') as object),
+      items: (await texts(driver, "t")).texts,
+    });
+    const mounted = await state();
+    await driver.module(`const timeline = document.getElementById("t");
+const host = timeline.parentNode;
+const event = timeline.querySelector("#e1");
+timeline.remove();
+${change}
+host.append(timeline);`);
+    await driver.settle();
+    return { mounted, reconnected: await state() };
+  },
+  expected: { mounted: before, reconnected: after },
+}));
+
 /** Every timeline body, in the order of tasks.md T030 to T033, then the run-time changes of T051 and the re-attach of phase 3's review round 1. */
 export const eventTimelineScenarios: readonly Scenario[] = [...eventTimelineStoryScenarios, ...eventTimelineTimeScenarios, ...eventTimelineGeometryScenarios, ...eventTimelineEdgeScenarios, ...eventTimelineChangeScenarios, ...eventTimelineReattachScenarios];

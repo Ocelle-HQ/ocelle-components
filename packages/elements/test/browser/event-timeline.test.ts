@@ -1,6 +1,6 @@
 import type { Browser } from "playwright";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
-import { eventTimelineScenarios } from "../scenarios/event-timeline.ts";
+import { detachedTimelineTimeScenarios, eventTimelineScenarios } from "../scenarios/event-timeline.ts";
 import { fixtureDriver } from "./driver.ts";
 import { clean, launch, serve, visit } from "./serve.ts";
 import type { Served } from "./serve.ts";
@@ -31,6 +31,13 @@ function started(): { readonly browser: Browser; readonly origin: string } {
 
 describe("ocelle-event-timeline and ocelle-timeline-event on the strict-CSP fixture with the browser build (US2)", { timeout: 120_000 }, () => {
   it.each(eventTimelineScenarios)("$name", async ({ run, expected }) => {
+    const { browser, origin } = started();
+    const page = await visit(browser, origin, "event-timeline.html", ["ocelle-elements.js", "module.js"]);
+    const observed = await run(fixtureDriver(page.page, page.log, true));
+    expect({ observed, recorded: await page.finish() }).toEqual({ observed: expected, recorded: clean });
+  });
+
+  it.each(detachedTimelineTimeScenarios)("$name", async ({ run, expected }) => {
     const { browser, origin } = started();
     const page = await visit(browser, origin, "event-timeline.html", ["ocelle-elements.js", "module.js"]);
     const observed = await run(fixtureDriver(page.page, page.log, true));
