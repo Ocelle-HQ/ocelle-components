@@ -87,6 +87,7 @@ export class OcellePersonalRail extends LitElement {
     /* Opt-in placement for shells that separate Settings from primary navigation. */
     :host([divider-at-end]:not([orientation="horizontal"])) .divider:not(.empty) {
       margin-block-start: auto;
+      border-block-start-color: var(--ocelle-color-rule);
     }
 
     :host([divider-at-end]:not([orientation="horizontal"])) .divider:not(.empty) + .bottom {
