@@ -1083,6 +1083,7 @@ mapping reads "pending inventory".
 | `.sk-data-table` | data table forced colours | built in: system colours for text and rules, and the row band for the stripe and the hover |
 | `.sk-data-table` | data table overflowing | built in: the region's tab stop, role and name while the table overflows |
 | `.sk-data-table` | data table tone | none: the data table carries no tone |
+| `.sk-data-table` | data table light mode | built in: the light and dark themes |
 | `.sk-event-timeline` | event timeline class | `ocelle-event-timeline`: an ordered list of its `ocelle-timeline-event` children in source order, named by `label` or a non-blank host `aria-label`; the measure cap maps to the container: for a cap, `max-inline-size` on the host |
 | `.sk-event-timeline` | event timeline item | each `ocelle-timeline-event`: one list item with a drawn dot and a gapped line to the next visible event; long identifiers break with `wrap="anywhere"` |
 | `.sk-event-timeline` | event timeline summary | the consumer's markup in the event's content, for example a `<strong>` title and text |

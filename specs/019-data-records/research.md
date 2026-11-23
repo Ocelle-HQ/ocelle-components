@@ -1043,6 +1043,7 @@ state (`sources/spec-kitty-design-inventory.md` § What `develop` adds or change
 | forced colours (state) | system colours for text and rules, and the row band for the stripe and the hover (FR-013) |
 | the overflowing scroller (state) | the region's conditional tab stop, role and name (FR-008, FR-010) |
 | tone (state, none by ruling) | none: the data table carries no tone (spec scope); no row colouring |
+| light mode (state; a #470 required state) | built in: the light and dark themes (FR-013). Added in phase 4's review round 1 (G-1 (b), `reviews/phase-4/operator-coverage-decision.md`), as the timeline and the chain have it |
 
 The data table has no part in the library (styles only), so no part row. #470's contract adds no role: its required
 states (default, light mode, responsive narrow, hover, focus, sticky header) are covered by the rows above.

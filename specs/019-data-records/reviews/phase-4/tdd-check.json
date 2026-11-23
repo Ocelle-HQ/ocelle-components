@@ -1,1 +1,1 @@
-{"phase":"4","status":"exempt","reason_file":"specs/019-data-records/reviews/phase-4/tdd-exempt.md","head":"247cdbba7737c38b2c0e571fafb32f857e0a54a5"}
+{"phase":"4","status":"pass","base":"4106d7d50025bec14023a86c39a34493e80ea49b","head":"e05373a1795dcdd94854e1f27807ef2d9d09cfbe","red_commits":[{"label":"fix-1","sha":"ce23bd9f46991cf4efa959dcaeff54434aa40622","exit_code":1}],"final_tests_on_base_exit":1,"final_tests_on_scaffold_exit":null,"head_exit":0,"problems":[]}
