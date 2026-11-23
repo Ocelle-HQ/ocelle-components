@@ -297,4 +297,54 @@ describe("ocelle-workflow-node navigation and accessible context in process", ()
       description: `${workflowDescription} Shadow hint Shadow policy`,
     });
   });
+
+  it.each([
+    {
+      attribute: "aria-label",
+      initial: "Release approvals",
+      replacement: "Retrospective context",
+      added: { name: "Security review Release approvals" },
+      changed: { name: "Security review Retrospective context" },
+    },
+    {
+      attribute: "aria-labelledby",
+      initial: "workspace stage",
+      replacement: "stage unknown",
+      added: { name: "Security review Release workspace Stage two" },
+      changed: { name: "Security review Stage two" },
+    },
+    {
+      attribute: "aria-describedby",
+      initial: "hint policy",
+      replacement: "policy",
+      added: { description: `${workflowDescription} Review the security findings Policy applies` },
+      changed: { description: `${workflowDescription} Policy applies` },
+    },
+    {
+      attribute: "aria-current",
+      initial: "step",
+      replacement: "location",
+      added: { current: "step" },
+      changed: { current: "location" },
+    },
+  ] as const)("forwards an isolated $attribute addition, change and removal to the native action", async ({ attribute, initial, replacement, added, changed }) => {
+    await mountWorkflowNodes();
+    const node = document.querySelector<HTMLElementTagNameMap["ocelle-workflow-node"]>("#review");
+    if (node === null) throw new Error("the review node must be mounted");
+
+    const update = async (value: string | null) => {
+      if (value === null) node.removeAttribute(attribute);
+      else node.setAttribute(attribute, value);
+      await node.updateComplete;
+      const { name, description } = await commands.axState("review", "button");
+      const current = node.shadowRoot?.querySelector("button")?.getAttribute("aria-current") ?? null;
+      return { name, description, current };
+    };
+
+    const builtIn = { name: "Security review", description: workflowDescription, current: null };
+    expect(await update(null)).toEqual(builtIn);
+    expect(await update(initial)).toEqual({ ...builtIn, ...added });
+    expect(await update(replacement)).toEqual({ ...builtIn, ...changed });
+    expect(await update(null)).toEqual(builtIn);
+  });
 });

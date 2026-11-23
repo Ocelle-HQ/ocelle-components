@@ -27,6 +27,12 @@ green. These probes exercised the named assertions and leave the complete mutati
 | Disable reflection for `waiting` | Setting the property restores the waiting attribute. |
 | Disable reflection for `invalid` | Clearing the property removes the invalid attribute. |
 
+The four isolated host attribute cases each await an addition, a change and a removal before reading
+the actual button's accessible name, description and current-step value. A grouped update can hide a
+missing observer by scheduling a render through another attribute. Four separate scratch runs replaced
+exactly one entry in `hostContext` with an empty string. In each run the matching named test failed
+at the addition's assertion and the other three passed. The original source passed all four cases.
+
 ## Visual examples and fixtures
 
 Waiting, invalid, narrow and combined focused have new light and dark baselines. Two pinned Docker
