@@ -21,6 +21,23 @@ head still load the same source module through that registration path.
 Security review, planning, selected and focused each have a light and dark baseline. All eight captures
 matched byte for byte across two runs of the repository's capture library, using its pinned Docker image.
 
+## Local focused replay
+
+At `2977ce1357fd06e1bcc53bc088b789d0fcce5a22`, `tdd-check.sh 1` verified all 19 named assertions
+on the red commit, pre-scaffold base and scaffold, then verified green at the implementation head.
+The first check took 57.003 seconds wall and reused the recorded red stage. The unchanged repeat took
+1.176 seconds wall and reused all four stages with the same project and file identities.
+
+| Project | File | Stages |
+| --- | --- | --- |
+| elements (chromium) | `packages/elements/test/workflow-node.test.ts` | Red, base, scaffold, head |
+| elements-browser | `packages/elements/test/browser/workflow-node.test.ts` | Red, base, scaffold, head |
+| elements (chromium) | `packages/elements/test/exports.test.ts` | Red, head |
+| elements-node | `packages/elements/test/node/manifest.test.ts` | Red, head |
+| elements-node | `packages/elements/test/node/readme.test.ts` | Head |
+| gates | `gates/test/manifest.test.ts` | Head |
+| gates-integration | `gates/test/integration/manifest.test.ts` | Head |
+
 ## Affected Plants
 
 ```text

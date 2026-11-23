@@ -1,5 +1,6 @@
 import type { Browser } from "playwright";
 import { afterAll, beforeAll, describe, expect as vitestExpect, inject, it } from "vitest";
+import type { Assertion } from "vitest";
 import { pointer } from "../commands.ts";
 import {
   mountWorkflowNodes,
@@ -47,7 +48,8 @@ async function workflow(mode: "references" | "literal" | "plain" = "plain") {
 }
 
 const inner = { inner: "button" };
-const expect: ((value: unknown) => ReturnType<typeof vitestExpect>) & { any(type: NumberConstructor): unknown } = vitestExpect;
+// Vitest's asymmetric matcher is untyped. Narrow that method without changing the recorded assertion.
+const expect: { (value: unknown): Assertion; any(type: NumberConstructor): unknown } = vitestExpect;
 
 describe("ocelle-workflow-node selection on built output under strict CSP", () => {
   it("renders the two sets of exact step text and just one native action per step", async () => {

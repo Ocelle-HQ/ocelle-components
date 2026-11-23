@@ -1,4 +1,5 @@
 import { afterEach, describe, expect as vitestExpect, it } from "vitest";
+import type { Assertion } from "vitest";
 import { commands } from "vitest/browser";
 import "../src/index.ts";
 import { inProcessDriver } from "./in-process.ts";
@@ -24,7 +25,8 @@ import {
 
 const driver = inProcessDriver();
 const inner = { inner: "button" };
-const expect: ((value: unknown) => ReturnType<typeof vitestExpect>) & { any(type: NumberConstructor): unknown } = vitestExpect;
+// Vitest's asymmetric matcher is untyped. Narrow that method without changing the recorded assertion.
+const expect: { (value: unknown): Assertion; any(type: NumberConstructor): unknown } = vitestExpect;
 
 afterEach(async () => {
   document.body.replaceChildren();
