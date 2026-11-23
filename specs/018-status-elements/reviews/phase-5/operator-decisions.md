@@ -41,3 +41,14 @@ upgrade in every mode; (c) restructure the branch for the tool.
 
 Decision: **(a).** The disable stays; its comment is extended to say it also covers the killed `false`, which stays
 covered by US4-12 and by the line's `EqualityOperator` mutant (not disabled). No source change beyond the comment.
+
+## The red/green check after the fold
+
+Question: `tdd-check.sh 5` after the fold reported "tests fail at HEAD" twice, each time 1 of 8245 on a timing test
+outside 018 (run 1: `tooltip.test.ts` "Click focus, then hover", which passed in three isolated reruns; run 2:
+`drawer.test.ts` "Rapid toggle during the entry, motion on", with the tooltip test passing). The fold changed only
+evidence SHAs; the source equals the approved head 07ba40cb, whose check passed in full. Both results are committed
+(ca9e3dbb, e01f3a30). Options: accept and force-push; rerun again; keep the unfolded history.
+
+Decision: **accept and force-push.** The HEAD failures are timing flakes outside this mission on a tree identical to
+the approved head; CI's full suite judges them. The fold is published with the old history archived.

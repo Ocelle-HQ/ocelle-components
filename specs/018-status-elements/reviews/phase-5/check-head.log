@@ -35,8 +35,10 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 305ms using pnpm v12.16.1
+Done in 388ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /opt/pw-browsers/chromium-1243/chrome-linux64/chrome
 $ node gates/bin/test.ts
-unit-tests: 8245 tests passed in 249 files
+packages/elements/test/browser/drawer.test.ts:37: unit-tests: ocelle-drawer on the strict-CSP fixture with the browser build (US2) Rapid toggle during the entry, motion on: open false and true in one task: the dialog stays shown, no event, the entry animation runs on (FR-014, R-06): AssertionError: expected { observed: { entry: [], …(4) }, …(1) } to deeply equal { observed: { …(5) }, …(1) }
+unit-tests: 1 of 8245 tests failed
+[ELIFECYCLE] Test failed. See above for more details.
