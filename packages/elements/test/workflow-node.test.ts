@@ -33,6 +33,7 @@ import {
   workflowStateCues,
   workflowTabParticipation,
 } from "./scenarios/workflow-node-navigation.ts";
+import { changeRecordedStatus, editedStatus, recordedStatus, recordedStep, replacementStatus } from "./scenarios/workflow-node-inspection.ts";
 
 const driver = inProcessDriver();
 const inner = { inner: "button" };
@@ -346,5 +347,68 @@ describe("ocelle-workflow-node navigation and accessible context in process", ()
     expect(await update(initial)).toEqual({ ...builtIn, ...added });
     expect(await update(replacement)).toEqual({ ...builtIn, ...changed });
     expect(await update(null)).toEqual(builtIn);
+  });
+});
+
+describe("ocelle-workflow-node recorded run inspection in process", () => {
+  it("reads the recorded status outside the action and requests selection without changing the host's record", async () => {
+    await mountWorkflowNodes("literal");
+    await changeRecordedStatus(["add", recordedStatus]);
+    const expected = {
+      target: "status",
+      outsideAction: true,
+      associated: true,
+      status: [{ text: recordedStatus, visible: true }],
+      actionCount: 1,
+      outcomes: ["Approved", "Rejected"],
+    };
+    expect(recordedStep()).toEqual(expected);
+    expect(await commands.axState("review", "button")).toMatchObject({
+      role: "button",
+      name: "Security review Release approvals",
+      description: `${workflowDescription} ${recordedStatus} Review the security findings Policy applies`,
+      pressed: "false",
+    });
+    const status = document.getElementById("recorded-status");
+    const unchanged = { pressed: "false", selected: false, reflected: false, sameOutcomes: true, data: originalWorkflowStep };
+    expect(workflowSelectionState()).toEqual(unchanged);
+    await commands.pointer("click", "recorded-status");
+    await commands.pointer("click", "review", { inner: "li" });
+    expect(readWorkflowRequests()).toEqual([]);
+    const passiveClicks = readWorkflowActivity();
+
+    await commands.pointer("click", "review", { inner: "button", position: { x: 4, y: 4 } });
+    const selection = selectionActivity("review", "review-12");
+    expect(readWorkflowActivity()).toEqual([...passiveClicks, ...selection]);
+    await commands.press("Enter");
+    expect(readWorkflowActivity()).toEqual([...passiveClicks, ...selection, ...selection]);
+    await commands.press("Space");
+    expect(readWorkflowActivity()).toEqual([...passiveClicks, ...selection, ...selection, ...selection]);
+
+    expect(workflowSelectionState()).toEqual(unchanged);
+    expect(document.getElementById("recorded-status")).toBe(status);
+    expect(recordedStep()).toEqual(expected);
+  });
+
+  it("keeps the built-in description through status addition, replacement, editing, empty content and removal", async () => {
+    await mountWorkflowNodes();
+    expect(recordedStep()).toMatchObject({ target: "status", status: [], actionCount: 1, outsideAction: true });
+    expect(await commands.axState("review", "button")).toMatchObject({ name: "Security review", description: workflowDescription });
+
+    await changeRecordedStatus(["add", recordedStatus]);
+    expect(recordedStep().status).toEqual([{ text: recordedStatus, visible: true }]);
+    expect(await commands.axState("review", "button")).toMatchObject({ name: "Security review", description: `${workflowDescription} ${recordedStatus}` });
+    await changeRecordedStatus(["replace", replacementStatus]);
+    expect(recordedStep().status).toEqual([{ text: replacementStatus, visible: true }]);
+    expect(await commands.axState("review", "button")).toMatchObject({ name: "Security review", description: `${workflowDescription} ${replacementStatus}` });
+    await changeRecordedStatus(["edit", editedStatus]);
+    expect(await commands.axState("review", "button")).toMatchObject({ name: "Security review", description: `${workflowDescription} ${editedStatus}` });
+    await changeRecordedStatus(["empty"]);
+    expect(recordedStep().status).toEqual([{ text: "", visible: false }]);
+    expect(await commands.axState("review", "button")).toMatchObject({ name: "Security review", description: workflowDescription });
+    await changeRecordedStatus(["remove"]);
+    expect(recordedStep()).toMatchObject({ target: "status", status: [], actionCount: 1, outsideAction: true });
+    expect(await commands.axState("review", "button")).toMatchObject({ name: "Security review", description: workflowDescription });
+    expect(readWorkflowActivity()).toEqual([]);
   });
 });

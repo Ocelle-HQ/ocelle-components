@@ -32,6 +32,7 @@ import {
   workflowStateCues,
   workflowTabParticipation,
 } from "../scenarios/workflow-node-navigation.ts";
+import { changeRecordedStatus, editedStatus, recordedStatus, recordedStep, replacementStatus } from "../scenarios/workflow-node-inspection.ts";
 import { fixtureDriver } from "./driver.ts";
 import { clean, launch, serve, visit } from "./serve.ts";
 import type { Served } from "./serve.ts";
@@ -251,6 +252,67 @@ describe("ocelle-workflow-node navigation and accessible context on built output
       name: "Security review Shadow workspace Shadow stage",
       description: `${workflowDescription} Shadow hint Shadow policy`,
     });
+    expect(await finish()).toEqual(clean);
+  });
+});
+
+describe("ocelle-workflow-node recorded run inspection on built output under strict CSP", () => {
+  it("reads the supplied status outside the only selection action and preserves the read-only host's data", async () => {
+    const { page, driver, finish } = await workflow("literal");
+    await page.evaluate(changeRecordedStatus, ["add", recordedStatus] as const);
+    const expected = {
+      target: "status",
+      outsideAction: true,
+      associated: true,
+      status: [{ text: recordedStatus, visible: true }],
+      actionCount: 1,
+      outcomes: ["Approved", "Rejected"],
+    };
+    expect(await page.evaluate(recordedStep)).toEqual(expected);
+    expect(await driver.axState("review", "button")).toMatchObject({
+      role: "button",
+      name: "Security review Release approvals",
+      description: `${workflowDescription} ${recordedStatus} Review the security findings Policy applies`,
+      pressed: "false",
+    });
+    const unchanged = { pressed: "false", selected: false, reflected: false, sameOutcomes: true, data: originalWorkflowStep };
+    expect(await page.evaluate(workflowSelectionState)).toEqual(unchanged);
+    await pointer(page, page.mainFrame(), "click", "recorded-status");
+    await pointer(page, page.mainFrame(), "click", "review", { inner: "li" });
+    expect(await page.evaluate(readWorkflowRequests)).toEqual([]);
+    const passiveClicks = await page.evaluate(readWorkflowActivity);
+
+    await pointer(page, page.mainFrame(), "click", "review", { inner: "button", position: { x: 4, y: 4 } });
+    const selection = selectionActivity("review", "review-12");
+    expect(await page.evaluate(readWorkflowActivity)).toEqual([...passiveClicks, ...selection]);
+    await page.keyboard.press("Enter");
+    expect(await page.evaluate(readWorkflowActivity)).toEqual([...passiveClicks, ...selection, ...selection]);
+    await page.keyboard.press("Space");
+    expect(await page.evaluate(readWorkflowActivity)).toEqual([...passiveClicks, ...selection, ...selection, ...selection]);
+    expect(await page.evaluate(workflowSelectionState)).toEqual(unchanged);
+    expect(await page.evaluate(recordedStep)).toEqual(expected);
+    expect(await finish()).toEqual(clean);
+  });
+
+  it("reads newly added, replaced and edited status and drops it when emptied or removed", async () => {
+    const { page, driver, finish } = await workflow();
+    expect(await page.evaluate(recordedStep)).toMatchObject({ target: "status", status: [], actionCount: 1, outsideAction: true });
+    expect(await driver.axState("review", "button")).toMatchObject({ name: "Security review", description: workflowDescription });
+    await page.evaluate(changeRecordedStatus, ["add", recordedStatus] as const);
+    expect((await page.evaluate(recordedStep)).status).toEqual([{ text: recordedStatus, visible: true }]);
+    expect(await driver.axState("review", "button")).toMatchObject({ name: "Security review", description: `${workflowDescription} ${recordedStatus}` });
+    await page.evaluate(changeRecordedStatus, ["replace", replacementStatus] as const);
+    expect((await page.evaluate(recordedStep)).status).toEqual([{ text: replacementStatus, visible: true }]);
+    expect(await driver.axState("review", "button")).toMatchObject({ name: "Security review", description: `${workflowDescription} ${replacementStatus}` });
+    await page.evaluate(changeRecordedStatus, ["edit", editedStatus] as const);
+    expect(await driver.axState("review", "button")).toMatchObject({ name: "Security review", description: `${workflowDescription} ${editedStatus}` });
+    await page.evaluate(changeRecordedStatus, ["empty"] as const);
+    expect((await page.evaluate(recordedStep)).status).toEqual([{ text: "", visible: false }]);
+    expect(await driver.axState("review", "button")).toMatchObject({ name: "Security review", description: workflowDescription });
+    await page.evaluate(changeRecordedStatus, ["remove"] as const);
+    expect(await page.evaluate(recordedStep)).toMatchObject({ target: "status", status: [], actionCount: 1, outsideAction: true });
+    expect(await driver.axState("review", "button")).toMatchObject({ name: "Security review", description: workflowDescription });
+    expect(await page.evaluate(readWorkflowActivity)).toEqual([]);
     expect(await finish()).toEqual(clean);
   });
 });
