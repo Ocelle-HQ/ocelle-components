@@ -12,6 +12,10 @@
 | --- | --- | --- |
 | Renderer-only minified and gzip bytes | 976 and 516 | 1,271 and 662 |
 | Added package bytes | 0 | 0 |
+| 12-node viewport update median JS and forced layout | 0.10–0.20 ms across repeat runs | 0.20–0.30 ms |
+| 12-node drag update median JS and forced layout | 0.10–0.20 ms across repeat runs | 0.20–0.30 ms |
+| 12-node viewport frame interval p95 | 16.8–17.1 ms across runs | 16.8–16.9 ms |
+| 12-node drag frame interval p95 | 16.8–21.8 ms across runs | 16.7–16.8 ms |
 | 96-node viewport update median JS and forced layout | 0.30–0.40 ms across repeat runs | 0.30–0.40 ms |
 | 96-node drag update median JS and forced layout | 0.10–0.20 ms | 0.30–0.40 ms |
 | 96-node viewport frame interval p95 | 16.8–27.7 ms across runs | 16.8–20.6 ms |
@@ -24,9 +28,11 @@ SVG preserves accessible HTML controls like the alternative and takes less rende
 
 ## R2 — Target size and visible focus
 
-**Decision** Scale the graph's coordinate projection and keep HTML controls at screen size. Determine visible node actions from actual rendered bounds in the viewport, including space for the focus indicator. Keep a persistent named navigation control outside the clipped graph and mark only decorative edges as hidden from accessibility.
+**Decision** Scale the graph's coordinate projection and keep HTML controls at screen size. Determine visible node actions from viewport containment and clearance from later-painted geometry, including space for the focus indicator. A named reveal can raise an in-bounds target with local paint order. Keep a persistent named relationship navigator and the native authoring controls outside the clipped graph. Hide the decorative edges from accessibility.
 
 A separate probe nested the real #72 node inside SVG and two shadow roots under the exact strict header. Chromium exposed distinct contextual native names and the combined selected and invalid state. Setting `.selectionTabIndex` to `-1` excluded the native button from Tab and retained direct focus. Enter, Space and real touchscreen tap each emitted one composed selection request and the separate native click. Scaling the whole graph to 0.4 reduced the measured 44-pixel button height to 17.6 pixels while its computed minimum stayed 44 pixels. Translating the node completely offscreen left it reachable by Tab until its participation was changed. Hiding the shared SVG root removed the real buttons from the accessibility tree. Check screen-space size, visibility and the actual accessible tree in the implementation.
+
+The round 1 Chromium checks reproduced in-bounds occlusion, focus loss on a keyed move, and a clipped native authoring control remaining in Tab order. Keep paint order separate from supplied keyboard order and host positions. Preserve focus on the same eligible action across canvas-owned moves. Use non-focusable pointer affordances in the map and native alternatives in the visible controls. [Probe observations](reviews/plan/round-1/refute.md#independent-checks)
 
 ## R3 — Controlled updates and interaction boundaries
 
@@ -35,3 +41,5 @@ A separate probe nested the real #72 node inside SVG and two shadow roots under 
 The landed workflow node supplies its public `.selectionTabIndex` and `focus` behavior and composed `ocelle-workflow-node-select` event. Compose that event directly. Key node instances by stable ID, pass its supported properties, and inspect the actual inner focus or composed path where outer trees retarget. Existing list/detail focus handling uses the relevant shadow root and recovers only when the previously focused area is affected. The canvas extends that idea with visible survivors in supplied graph order. Use native controls for named source, outcome, destination, disconnect, reveal and viewport actions. Pointer drag can optionally reach the same operation via internal hit geometry. No library dependency or host assumption is needed for keyboard or tap equivalence.
 
 The focus loop saves identities before a render, verifies visibility after layout, and rechecks the current request and initiating focus after child rendering. An older viewport update that shows only the older target cannot pull focus there. Focus departure clears the pending reveal, including departure followed by a return. Mode changes and stale authoring sessions are checked using the current properties even before the DOM has redrawn.
+
+The pointer-capture probe held the client Y coordinate at 150 while scrolling changed the map-local Y by 40 pixels. At scale two this would submit a 20-unit move if samples used different frames. Use one captured frame and cancel when the live frame changes. [Probe observations](reviews/plan/round-1/refute.md#independent-checks)
