@@ -15,7 +15,9 @@ Checked on 2026-11-23 on 4106d7d (phase 4's base), read from the repository only
   the decision R-16 cites, and each row names an element and variant, the consumer's remedy, or "none" by the
   operator's decision. One state of the library's data table has **no row**: light mode, a #470 required state that
   R-16 says "the rows above" cover, while the timeline and the chain each have a light-mode row. Not filled here:
-  question G-1 below. **T076 stays open** until the operator answers it.
+  question G-1 below. The operator chose G-1 (b) (`operator-coverage-decision.md`); phase 4's review round 1 fix adds
+  the row test-first (red `fix-1`, `round-1-fixes.md`), the README's data-table rows becoming 13 (52 rows in all), and
+  **T076 is ticked**.
 
 ## The family names
 
@@ -45,7 +47,7 @@ family cell is one of the three, and each family's rows are contiguous.
 | forced colours (state) | data table forced colours | built in: system colours and the row band | R-16 (FR-013) | covered |
 | the overflowing scroller (state) | data table overflowing | built in: the tab stop, role and name while it overflows | R-16 | covered |
 | tone (state, none by ruling) | data table tone | none: no tone | R-16 (spec scope) | covered |
-| light mode (a #470 required state; the library's LightMode story) | **none** | (built in: every story runs in both themes) | R-16: "covered by the rows above" | **gap: G-1** |
+| light mode (a #470 required state; the library's LightMode story) | data table light mode (added in review round 1) | built in: the light and dark themes | G-1 (b); R-16 (FR-013) | covered (was gap G-1) |
 
 The library's table has no part (styles only), so no part row (R-16). #470's other required states: default (the
 structure rows), responsive narrow (the overflowing row; the library's narrow exemplar is the overflowing scroller),
@@ -125,7 +127,7 @@ test body (US3-3 at 200 px), not a row.
 - **The issue texts:** #533's notes (Q-T1 to Q-T3 (a)) are in the header-cells and body-cells rows; #517's chip (Q-T4
   (a)) is in the compact-step row; the points `issue-texts-check.md` rates *agrees*, *no bearing* or *bears* change
   no row. #470's required states are covered for the timeline (default, light mode, narrow, compact) and for the data
-  table except light mode (G-1).
+  table, light mode by the row G-1 (b) added.
 
 ## Question for the operator
 

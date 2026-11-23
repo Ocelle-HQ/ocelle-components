@@ -18,8 +18,8 @@ mission's other "every plant" path is `packages/elements/package.json` (its entr
 record). The scratch worktree restores, to the mission's base, the files that select plants by gate source rather than
 by what the elements change:
 
-- run 1: `gates/lib/mutation/report.ts` and `packages/elements/package.json` (40 plants: the 23 of the elements'
-  gates and 17 mutation plants, by `gates/bin/mutation.ts`);
+- run 1: `gates/lib/mutation/report.ts` and `packages/elements/package.json` (40 plants: the 22 of the elements'
+  gates and 18 mutation plants, by `gates/bin/mutation.ts`);
 - run 2: those two, and `gates/bin/mutation.ts` (a comment change) and the plant `mutation/error-checker-failure`,
   both added with `report.ts`'s checker rule in phase 1 (22 plants).
 
@@ -192,5 +192,23 @@ plants: affected since 8d104af23ce177ec4acbbfaba59bf433f9520d6d: 22 of 314 plant
 real	47m44.186s
 user	4m10.939s
 sys	0m33.940s
+exit: 0
+```
+
+## Review round 1 fix (the phase's own base)
+
+The fix changes no source, gate, story or baseline: test files, the elements README's mapping row and records. The
+selection on the phase base is the one plant that 6f97540 touches, as the review found. This run is appended, not a
+replacement, because the sections above are T078's mission-wide record, which the round keeps and corrects (R1-03).
+
+- base: 4106d7d50025bec14023a86c39a34493e80ea49b (`base.sha`)
+- command: `pnpm run gate:plants -- --affected 4106d7d` in the working tree, with the fix applied
+- exit: 0
+
+```
+$ node gates/bin/plants.ts -- --affected 4106d7d
+note: affected: storybook-build/fail-empty-index, by gates/plants/storybook-build/fail-empty-index/tree/storybook/stories/event-timeline.stories.ts
+note: plant time: storybook-build/fail-empty-index: 3.1 s
+plants: affected since 4106d7d: 1 of 315 plants judged, every plant as expected; not the Plants check
 exit: 0
 ```

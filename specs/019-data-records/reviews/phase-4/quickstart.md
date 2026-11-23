@@ -80,7 +80,7 @@ named once (its changed lines since the mission's base; whole-file entries cut n
 
 Every exit is 0: no mutant survives, and the equivalent records are those the phases' reviews accepted
 (`reviews/phase-<N>/mutation.md`). The 8 timeouts (a timeout counts as killed): `ocelle-data-table.ts:258` (two
-mutants), and the `disconnectedCallback` and `observe()` lines of the timeline (146, 147), the event (125, 126) and the
+mutants), and `connectedCallback`'s body and its `observe()` call of the timeline (146, 147), the event (125, 126) and the
 chain (189, 190), as phase 3's record explains for the chain. `gates/bin/mutation.ts` (a comment) and
 `packages/elements/src/index.ts` (export lines) have no mutant on their changed lines. During batch A the kernel killed
 one process for lack of memory (Stryker's concurrency on 4 cores, as in phase 2's run 1); Stryker replaced the worker
