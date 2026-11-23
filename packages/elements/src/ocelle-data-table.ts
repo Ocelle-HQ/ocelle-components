@@ -17,6 +17,7 @@ import { OverflowRegion, overflowRegionStyles } from "./overflow-region.ts";
 function captionText(table: Element | undefined): string | undefined {
   const caption = table?.querySelector(":scope > caption");
   if (caption === null || caption === undefined) return undefined;
+  if (caption.hasAttribute("hidden") || caption.getAttribute("aria-hidden") === "true") return undefined;
   const parts: string[] = [];
   const walk = (node: Node): void => {
     for (const child of node.childNodes) {
