@@ -16,3 +16,11 @@ The signed preview `05c090a5019e69cb398d6b04c3f3229d9efd58dc` merges the origina
 ## Hosted checks and handoff
 
 GitHub had no workflow run on the pre-integration draft head. The integrated candidate needs all 18 current required checks, including the full Unit tests, strict Mutation testing, all Plants, Visual regression, Accessibility, Content security, Storybook build and manifest. The local mutation plan produced 43 shards and made no mutation verdict. The operator handles the PR readiness decision and merge.
+
+## Landing corrections
+
+The independent review reproduced two product defects under strict CSP. The approved fixes preserve explicit overflow naming and hide caption fallback text when its source is hidden. Timeline events now reconcile their current slotted time on reconnection, including restoration of the time attribute fallback. [Initial landing review](reviews/landing/round-1.md) · [Follow-up](reviews/landing/round-2.md)
+
+Each correction recorded four named assertion failures at its signed test-only revision. The current focused runner verified each new fix against its exact pre-fix base and green implementation. These scoped receipts complement the recorded historical phase verdicts. The independent review also passed the 222 tests in the four affected Chromium files on the combined candidate. Typecheck, lint, test lint, package build, strict CSP, manifest and sign-off passed locally on the corrected source. [Caption evidence](reviews/phase-1/round-4.md) · [Timeline evidence](reviews/phase-2/round-4.md)
+
+Local Plants selection included all 318 cases because the integrated diff changes shared gate code. Hosted CI supplies the full Plants and mutation verdicts and the pinned visual comparison. The original mission commits and archived red references remain reachable through the signed integration merge.
