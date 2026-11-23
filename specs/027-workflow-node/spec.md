@@ -30,13 +30,14 @@ A keyboard or assistive technology user identifies the step, reads its role and 
 
 **Why this priority** The user needs the same decision information in a dense canvas and when color cues are unavailable.
 
-**Independent test** Focus a selected, waiting and invalid step with long supplied labels. Check its visible and accessible text under forced colors and exercise selection with the host coordinating focus.
+**Independent test** Focus a selected, waiting and invalid step with long supplied labels. Compare its visible cues under forced colors with the states exposed to assistive technology. Check tab order and selection with the host coordinating focus.
 
 **Acceptance scenarios**
 
-1. **Given** a selected step that is waiting and invalid, **when** the keyboard user focuses it under forced colors, **then** the focus indicator remains visible and the user can identify selection, waiting and invalidity from text cues without relying on color.
+1. **Given** a selected step that is waiting and invalid, **when** the keyboard user focuses it under forced colors, **then** the focus indicator remains visible and the user can identify selection, waiting and invalidity from text cues without relying on color. The focused action and its associated information expose all three distinctions to assistive technology.
 2. **Given** a constrained layout and long titles, roles and outcome labels, **when** the user inspects the node, **then** the selection action’s accessible name contains the full visible title and the full role and outcome labels remain available to assistive technology.
-3. **Given** a host coordinating focus across multiple nodes, **when** the user moves to and activates the step, **then** the host can reach the same selection action. Focus movement and state updates on their own request zero selections.
+3. **Given** a standalone step between two controls in the tab order, **when** the user presses Tab through the controls, **then** focus stops once on the step's selection action.
+4. **Given** a host coordinating focus across multiple nodes, **when** the host removes a step's selection action from the tab order, **then** Tab skips it and the host can still focus the same action directly. Activating that action once with the keyboard requests selection exactly once. Restoring the action to the tab order gives the step one Tab stop again. Focus and tab order changes on their own request zero selections.
 
 ### User Story 3 — Inspect a recorded run (Priority P2)
 
@@ -64,12 +65,12 @@ A reviewer selects a step in a read-only run to inspect its recorded role, outco
 
 - **FR-001** The node MUST present its host-supplied title, kind, accountable role and named outcomes, preserving outcome order.
 - **FR-002** A step MUST expose one accessible selection action. Activation by pointer, Enter or Space MUST issue one selection request containing the host’s stable node identifier. The action’s accessible name MUST include the complete supplied title.
-- **FR-003** Users MUST be able to focus the same action in standalone and host-coordinated navigation. Focus movement, renaming and other data updates MUST issue zero selection requests.
+- **FR-003** The selection action MUST be the step's sole Tab stop in standalone use. A host coordinating navigation MUST be able to remove and restore that same action in the tab order. The host MUST still be able to focus it directly, and a user MUST still be able to activate it once focused. Focus movement, tab order changes, renaming and other data updates MUST issue zero selection requests.
 - **FR-004** The host MUST retain ownership of selection and step data. The node MUST reflect the supplied selection and status values and preserve the original step and outcome data when requesting selection.
-- **FR-005** The node MUST present supplied run and validation states together with selection and focus. Text MUST convey selection, waiting and invalidity under forced colors, and the focus indicator MUST stay visible.
+- **FR-005** The node MUST present supplied run and validation states together with selection and focus. Text MUST convey selection, waiting and invalidity under forced colors, and the focus indicator MUST stay visible. The selection action and its associated information MUST expose the supplied selection, run and validation states to assistive technology when the action has focus, including when all three coexist.
 - **FR-006** The node MUST retain the full accessible title, kind, role and outcome text in a constrained layout. The host MUST be able to supply readable optional status content.
 - **FR-007** Read-only run inspection MUST retain the same selection action and identifier. Outcomes MUST remain descriptive. Host and canvas controls handle workflow edits and graph operations.
-- **FR-008** The library MUST document the selection request, state ownership, accessible name and focus handoff to a host. The visual examples MUST demonstrate both kinds of step and the combined state and read-only inspection scenarios.
+- **FR-008** The library MUST document the selection request, state ownership, accessible name and focus handoff to a host. The visual examples MUST demonstrate both kinds of step and the combined state and read-only inspection scenarios in light and dark themes.
 
 ### Key Entities
 
@@ -82,8 +83,8 @@ A reviewer selects a step in a read-only run to inspect its recorded role, outco
 ### Measurable Outcomes
 
 - **SC-001** In the Security review and planning examples, every supplied title, kind, role and outcome is available and the outcomes appear in the expected order.
-- **SC-002** Across pointer, Enter and Space activation before and after renaming, every activation issues exactly one request with the expected identifier. Focus and data changes issue zero requests.
-- **SC-003** Under forced colors, a focused node can convey selection, waiting and invalidity by text while retaining a visible focus indicator. The accessibility check retrieves the full long title, role and outcome labels at the narrow test width.
+- **SC-002** Across pointer, Enter and Space activation before and after renaming, every activation issues exactly one request with the expected identifier. Tab stops once on the standalone action, skips it while the host excludes it, and stops once again when the host restores it. A keyboard activation while directly focused on the excluded action still issues exactly one request. Focus, tab order and data changes issue zero requests.
+- **SC-003** Under forced colors, a focused node conveys selection, waiting and invalidity by text while retaining a visible focus indicator. The accessibility check retrieves all three states from the focused action and its associated information, along with the full long title, role and outcome labels at the narrow test width.
 - **SC-004** Selecting a step in run inspection produces the expected request and leaves every supplied step and outcome value unchanged.
 
 ## Assumptions

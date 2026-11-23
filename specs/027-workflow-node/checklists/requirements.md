@@ -20,5 +20,7 @@
 ## Feature readiness
 
 - [x] Acceptance scenarios cover every primary flow.
-- [x] Host ownership and canvas integration responsibilities are specified.
+- [x] Scenarios verify one standalone Tab stop, host-controlled removal and restoration, and activation after direct focus.
+- [x] Combined states are verifiable through visible text under forced colors and information exposed to assistive technology.
+- [x] The visual examples cover both step kinds, combined states and read-only inspection in light and dark themes.
 - [x] A separate independent spec check will verify the result before planning.
