@@ -20,10 +20,24 @@ const planning = {
   outcomes: ["Plan ready"],
 };
 
-function step(data = review, selected = false, focused = false): HTMLElement {
+const narrowReview = {
+  ...review,
+  label: "Review the complete security evidence for the next privileged deployment",
+  accountableRole: "Reviewer accountable for authentication and release readiness",
+  outcomes: ["Approved for the staged production rollout", "EscalateToReleaseTeamForIndependentProductionVerification"],
+};
+
+interface State {
+  readonly selected?: boolean;
+  readonly waiting?: boolean;
+  readonly invalid?: boolean;
+  readonly focused?: boolean;
+}
+
+function step(data = review, { focused = false, ...state }: State = {}): HTMLElement {
   const frame = document.createElement("div");
   frame.dataset.frame = "S";
-  const node = Object.assign(document.createElement("ocelle-workflow-node"), data, { selected });
+  const node = Object.assign(document.createElement("ocelle-workflow-node"), data, state);
   frame.append(node);
   if (focused) void node.updateComplete.then(() => { node.focus(); });
   return frame;
@@ -33,6 +47,14 @@ export const SecurityReview: StoryObj = { render: () => step() };
 
 export const Planning: StoryObj = { render: () => step(planning) };
 
-export const Selected: StoryObj = { render: () => step(review, true) };
+export const Selected: StoryObj = { render: () => step(review, { selected: true }) };
 
-export const Focused: StoryObj = { render: () => step(review, false, true) };
+export const Focused: StoryObj = { render: () => step(review, { focused: true }) };
+
+export const Waiting: StoryObj = { render: () => step(review, { waiting: true }) };
+
+export const Invalid: StoryObj = { render: () => step(review, { invalid: true }) };
+
+export const Narrow: StoryObj = { render: () => step(narrowReview) };
+
+export const CombinedFocused: StoryObj = { render: () => step(narrowReview, { selected: true, waiting: true, invalid: true, focused: true }) };

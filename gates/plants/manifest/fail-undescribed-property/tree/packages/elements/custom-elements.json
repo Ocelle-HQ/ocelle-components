@@ -6234,21 +6234,21 @@
         {
           "attributes": [
             {
-              "description": "Additional name context at initial render if no host naming references resolve.",
+              "description": "Additional name context if no host naming references resolve.",
               "name": "aria-label",
               "type": {
                 "text": "string"
               }
             },
             {
-              "description": "Space-separated IDs in the host tree supplying additional name context at initial render.",
+              "description": "Space-separated IDs in the host tree supplying additional name context.",
               "name": "aria-labelledby",
               "type": {
                 "text": "string"
               }
             },
             {
-              "description": "Space-separated IDs in the host tree supplying additional description at initial render.",
+              "description": "Space-separated IDs in the host tree supplying additional description.",
               "name": "aria-describedby",
               "type": {
                 "text": "string"
@@ -6302,6 +6302,24 @@
               "description": "Whether the host has selected this step.",
               "fieldName": "selected",
               "name": "selected",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "false",
+              "description": "Whether the step is waiting for a run to continue.",
+              "fieldName": "waiting",
+              "name": "waiting",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "false",
+              "description": "Whether the host identifies a validation problem with the step.",
+              "fieldName": "invalid",
+              "name": "invalid",
               "type": {
                 "text": "boolean"
               }
@@ -6391,6 +6409,40 @@
               "reflects": true,
               "type": {
                 "text": "boolean"
+              }
+            },
+            {
+              "attribute": "waiting",
+              "default": "false",
+              "description": "Whether the step is waiting for a run to continue.",
+              "kind": "field",
+              "name": "waiting",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "attribute": "invalid",
+              "default": "false",
+              "description": "Whether the host identifies a validation problem with the step.",
+              "kind": "field",
+              "name": "invalid",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "0",
+              "description": "Set to -1 to exclude the native action from Tab navigation while keeping direct focus.",
+              "kind": "field",
+              "name": "selectionTabIndex",
+              "privacy": "public",
+              "type": {
+                "text": "0 | -1"
               }
             },
             {

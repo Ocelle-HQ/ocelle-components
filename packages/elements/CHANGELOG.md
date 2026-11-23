@@ -54,7 +54,8 @@ to the last colon, groups of four code points with a `--ocelle-space-1` gap, cop
 ### Added
 
 - **Selectable workflow steps (#72).** `ocelle-workflow-node` shows the supplied title, accountable role and
-  outcomes, and sends `ocelle-workflow-node-select` with the stable step ID. The host owns selection.
+  outcomes, and sends `ocelle-workflow-node-select` with the stable step ID. The host owns selection and can
+  coordinate Tab order with `selectionTabIndex`. Selected, waiting and invalid states can appear together.
   `@ocelle/elements/ocelle-workflow-node.js` registers the element as a standalone MINOR addition.
 
 - **Workflow reviewers can enter multiline decisions (#74).** `ocelle-form-textarea` supports native editing and

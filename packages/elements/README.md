@@ -2473,11 +2473,26 @@ The workflow node shows the supplied step title (`label`), `kind`, `accountable-
 (`nodeId`) to the step's stable identifier. The host owns the step data and `selected` state.
 
 The native button has one Tab stop and supports pointer, Enter and Space activation. Its `control` part has a
-token focus ring. Calling `focus(options)` on the host focuses that same button after render. The full visible
-title comes first in its accessible name. On initial render, resolved `aria-labelledby` references in the host's
-tree append naming context. A nonblank `aria-label` adds context when no naming references resolve.
-The description contains the step metadata and selection cue. Host `aria-describedby` references add to that
-description, and `aria-current` reaches the button independently of selection.
+token focus ring. Calling `focus(options)` on the host focuses that same button after render. A host that
+coordinates Tab navigation sets the `selectionTabIndex` property to `-1` to skip the button and `0` to restore it.
+The button can still receive direct focus and keyboard activation at `-1`. The property has no corresponding
+markup attribute.
+
+The Boolean attributes and properties `selected`, `waiting` and `invalid` default to false and can coexist.
+Their text cues remain readable when forced colors change the palette. The button exposes selection with
+`aria-pressed`, and its description contains the step metadata and active state text. Titles, roles and
+outcomes wrap in a narrow layout, with their full text available to assistive technology.
+
+The full visible title comes first in the button's accessible name. Resolved `aria-labelledby` references in
+the host's document or shadow root append naming context in reference order. A nonblank `aria-label` adds
+context when no naming references resolve. Host `aria-describedby` references add to the built-in description,
+and `aria-current` reaches the button independently of selection. Updates to these host attributes refresh
+the button's associations.
+
+Edits to a referenced element's text are read from that same element. To replace an element under an existing
+ID, insert the replacement, remove the corresponding reference attribute from the workflow node, and await
+`node.updateComplete`. Then reapply the reference attribute using the desired ID. The button retains its
+title and built-in description throughout the refresh.
 
 An activation dispatches one `ocelle-workflow-node-select` request from the element with detail
 `{ nodeId: string }`. The request bubbles, crosses shadow boundaries and is noncancelable. It reaches ancestor

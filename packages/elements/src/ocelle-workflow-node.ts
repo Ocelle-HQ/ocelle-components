@@ -2,13 +2,15 @@ import { LitElement, css, html, nothing } from "lit";
 import { controlStyles, resolveIds } from "./control.ts";
 import { define } from "./define.ts";
 
+const hostContext = ["aria-label", "aria-labelledby", "aria-describedby", "aria-current"];
+
 /**
  * A workflow step with one native selection action and descriptive kind, role and outcomes.
  *
  * @tagname ocelle-workflow-node
- * @attr {string} aria-label - Additional name context at initial render if no host naming references resolve.
- * @attr {string} aria-labelledby - Space-separated IDs in the host tree supplying additional name context at initial render.
- * @attr {string} aria-describedby - Space-separated IDs in the host tree supplying additional description at initial render.
+ * @attr {string} aria-label - Additional name context if no host naming references resolve.
+ * @attr {string} aria-labelledby - Space-separated IDs in the host tree supplying additional name context.
+ * @attr {string} aria-describedby - Space-separated IDs in the host tree supplying additional description.
  * @attr {string} aria-current - An optional current-step state on the action.
  * @csspart control - The native selection button.
  * @fires {CustomEvent<{nodeId: string}>} ocelle-workflow-node-select - A noncancelable, bubbling and composed request from the node during native activation.
@@ -23,7 +25,14 @@ export class OcelleWorkflowNode extends LitElement {
     accountableRole: { type: String, attribute: "accountable-role" },
     outcomes: { attribute: false },
     selected: { type: Boolean, reflect: true },
+    waiting: { type: Boolean, reflect: true },
+    invalid: { type: Boolean, reflect: true },
+    selectionTabIndex: { attribute: false },
   };
+
+  static override get observedAttributes(): string[] {
+    return [...super.observedAttributes, ...hostContext];
+  }
 
   static override styles = [
     css`
@@ -70,7 +79,7 @@ export class OcelleWorkflowNode extends LitElement {
         margin: 0;
       }
 
-      dt, .outcome-label, .selected {
+      dt, .outcome-label, .state {
         font-weight: var(--ocelle-font-weight-strong);
       }
 
@@ -78,7 +87,7 @@ export class OcelleWorkflowNode extends LitElement {
         margin: 0;
       }
 
-      .outcome-label, .selected {
+      .outcome-label, .state {
         margin-block-start: var(--ocelle-space-2);
       }
 
@@ -142,6 +151,15 @@ export class OcelleWorkflowNode extends LitElement {
   /** Whether the host has selected this step. @default false */
   declare selected: boolean;
 
+  /** Whether the step is waiting for a run to continue. @default false */
+  declare waiting: boolean;
+
+  /** Whether the host identifies a validation problem with the step. @default false */
+  declare invalid: boolean;
+
+  /** Set to -1 to exclude the native action from Tab navigation while keeping direct focus. @default 0 */
+  declare selectionTabIndex: 0 | -1;
+
   constructor() {
     super();
     this.nodeId = "";
@@ -150,6 +168,19 @@ export class OcelleWorkflowNode extends LitElement {
     this.accountableRole = "";
     this.outcomes = [];
     this.selected = false;
+    this.waiting = false;
+    this.invalid = false;
+    this.selectionTabIndex = 0;
+  }
+
+  override connectedCallback(): void {
+    super.connectedCallback();
+    this.requestUpdate();
+  }
+
+  override attributeChangedCallback(name: string, previous: string | null, value: string | null): void {
+    if (hostContext.includes(name)) this.requestUpdate();
+    else super.attributeChangedCallback(name, previous, value);
   }
 
   /** Forwards focus to the selection action after render. */
@@ -168,7 +199,7 @@ export class OcelleWorkflowNode extends LitElement {
 
   protected override render(): unknown {
     return html`
-      <button class="control" part="control" type="button" aria-pressed=${String(this.selected)} aria-current=${this.getAttribute("aria-current") ?? nothing} @click=${this.#requestSelection}>
+      <button class="control" part="control" type="button" tabindex=${this.selectionTabIndex === -1 ? -1 : 0} aria-pressed=${String(this.selected)} aria-current=${this.getAttribute("aria-current") ?? nothing} @click=${this.#requestSelection}>
         <span id="title">${this.label}</span>
       </button>
       <span id="name-context" hidden>${this.getAttribute("aria-label")?.trim()}</span>
@@ -178,12 +209,14 @@ export class OcelleWorkflowNode extends LitElement {
           <div class="outcome-label">Outcomes</div>
           <ul>${this.outcomes.map((outcome) => html`<li>${outcome}</li>`)}</ul>
         `}
-        ${this.selected ? html`<div class="selected">Selected</div>` : nothing}
+        ${this.selected ? html`<div class="state">Selected</div>` : nothing}
+        ${this.waiting ? html`<div class="state">Waiting</div>` : nothing}
+        ${this.invalid ? html`<div class="state">Invalid</div>` : nothing}
       </div>
     `;
   }
 
-  protected override firstUpdated(): void {
+  protected override updated(): void {
     const naming = resolveIds(this, this.getAttribute("aria-labelledby") ?? undefined);
     if (naming.length === 0) naming.push(...this.renderRoot.querySelectorAll("#name-context:not(:empty)"));
     for (const action of this.renderRoot.querySelectorAll("button")) {

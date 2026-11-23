@@ -6279,6 +6279,40 @@
               "attribute": "selected"
             },
             {
+              "type": {
+                "text": "boolean"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "waiting",
+              "kind": "field",
+              "description": "Whether the step is waiting for a run to continue.",
+              "default": "false",
+              "attribute": "waiting"
+            },
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "invalid",
+              "kind": "field",
+              "description": "Whether the host identifies a validation problem with the step.",
+              "default": "false",
+              "attribute": "invalid"
+            },
+            {
+              "type": {
+                "text": "0 | -1"
+              },
+              "privacy": "public",
+              "name": "selectionTabIndex",
+              "kind": "field",
+              "description": "Set to -1 to exclude the native action from Tab navigation while keeping direct focus.",
+              "default": "0"
+            },
+            {
               "return": {
                 "type": {
                   "text": "void"
@@ -6323,21 +6357,21 @@
                 "text": "string"
               },
               "name": "aria-label",
-              "description": "Additional name context at initial render if no host naming references resolve."
+              "description": "Additional name context if no host naming references resolve."
             },
             {
               "type": {
                 "text": "string"
               },
               "name": "aria-labelledby",
-              "description": "Space-separated IDs in the host tree supplying additional name context at initial render."
+              "description": "Space-separated IDs in the host tree supplying additional name context."
             },
             {
               "type": {
                 "text": "string"
               },
               "name": "aria-describedby",
-              "description": "Space-separated IDs in the host tree supplying additional description at initial render."
+              "description": "Space-separated IDs in the host tree supplying additional description."
             },
             {
               "type": {
@@ -6389,6 +6423,24 @@
               "name": "selected",
               "fieldName": "selected",
               "description": "Whether the host has selected this step.",
+              "default": "false"
+            },
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "name": "waiting",
+              "fieldName": "waiting",
+              "description": "Whether the step is waiting for a run to continue.",
+              "default": "false"
+            },
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "name": "invalid",
+              "fieldName": "invalid",
+              "description": "Whether the host identifies a validation problem with the step.",
               "default": "false"
             }
           ]
