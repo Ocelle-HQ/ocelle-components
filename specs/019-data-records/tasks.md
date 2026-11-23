@@ -527,7 +527,7 @@ phase and the review rounds, so each red run (command, exit, the failing asserti
 
 ### Landing correction
 
-- [ ] T090 [US1] Landing round 1 L1-02 and Phase 1 operator round 3 R3-01. Record named red regression cases in both browser harnesses for toggling `hidden` and `aria-hidden="true"` on the caption itself. Exclude a hidden caption from overflow-region fallback naming. Preserve the overflow Tab stop, explicit host naming precedence, and fallback name restoration when the caption is shown. Prove the cases fail before the fix and pass after it, and record the focused evidence in the Phase 1 review.
+- [X] T090 [US1] Landing round 1 L1-02 and Phase 1 operator round 3 R3-01. Record named red regression cases in both browser harnesses for toggling `hidden` and `aria-hidden="true"` on the caption itself. Exclude a hidden caption from overflow-region fallback naming. Preserve the overflow Tab stop, explicit host naming precedence, and fallback name restoration when the caption is shown. Prove the cases fail before the fix and pass after it, and record the focused evidence in the Phase 1 review.
 
 **Checkpoint**: `tdd-check.sh 1` reports `pass`; quickstart steps 1 to 3 pass for the data table.
 
@@ -624,7 +624,7 @@ both dots; at 320 px the page scroll width equals the viewport width; zero CSP v
 
 ### Landing correction
 
-- [ ] T091 [US2] Landing round 1 L1-01 and Phase 2 operator round 3 R3-01. Record named red regression cases in both browser harnesses for adding and removing slotted time while a rendered timeline is detached. Reconcile the event time on reconnection, preserving observer and slot behavior. Assert that the rendered time, list item text and marker reflect the new slotted time or restored attribute fallback. Prove the cases fail before the fix and pass after it, and record the focused evidence in the Phase 2 review.
+- [X] T091 [US2] Landing round 1 L1-01 and Phase 2 operator round 3 R3-01. Record named red regression cases in both browser harnesses for adding and removing slotted time while a rendered timeline is detached. Reconcile the event time on reconnection, preserving observer and slot behavior. Assert that the rendered time, list item text and marker reflect the new slotted time or restored attribute fallback. Prove the cases fail before the fix and pass after it, and record the focused evidence in the Phase 2 review.
 
 **Checkpoint**: `tdd-check.sh 2` reports `pass`; quickstart steps 1 to 3 pass for the timeline.
 
