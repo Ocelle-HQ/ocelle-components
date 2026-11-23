@@ -495,7 +495,7 @@ export class OcellePillTag extends LitElement {
   override connectedCallback(): void {
     if (!this.#upgraded) {
       this.#upgraded = true;
-      // Stryker disable next-line ConditionalExpression: equivalent, on an interactive pill adoptMirrors() writes each mirror back as its attribute and the passthrough callback moves and mirrors it again at once, so the held values and mirrors end as connected() leaves them
+      // Stryker disable next-line ConditionalExpression: equivalent, on an interactive pill adoptMirrors() writes each mirror back as its attribute and the passthrough callback moves and mirrors it again at once, so the held values and mirrors end as connected() leaves them; it also covers the killed false mutant (connected() on a static pill), which US4-12 and this line's EqualityOperator mutant still cover (Stryker disables by mutator and line only; operator decision R1-03 (a))
       if (this.#modeNow() === "static") this.#moved.adoptMirrors();
       else this.#moved.connected();
     }

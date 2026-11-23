@@ -4,7 +4,7 @@
 |----|------------|----------|-------|
 | R1-01 | fixed | `fix-1 22a403aa` (red-commits; red-fix-1.log: exactly the new body fails, in process and on the fixture, 2 of 8243 tests) | packages/elements/src/ocelle-pill-tag.ts `#modeChanged()`, `#control()`; packages/elements/test/scenarios/pill-tag-interactive.ts "US4-10, focus before the first render"; packages/elements/test/browser/pill-tag-interactive.test.ts (allowed list) |
 | R1-02 | fixed | none: not a behaviour finding (the plant run itself) | reviews/phase-5/plants.md; tasks.md T055 |
-| R1-03 | deferred: Stryker 10.1.1's directives select by mutator name and line only (its directive pattern is `Stryker (disable\|restore) [next-line] <names>`); the equivalent `true` and the killed `false` are both the `ConditionalExpression` of the one `if` test on line 498, so no comment can suppress the one without the other. The operator is asked how to proceed (below); the disable is unchanged | none: not a behaviour finding | packages/elements/src/ocelle-pill-tag.ts:498 |
+| R1-03 | fixed: by operator decision (a) (reviews/phase-5/operator-decisions.md § R1-03 revisited): the disable is kept and its comment extended to say it also covers the killed `false` mutant, which US4-12 and the line's `EqualityOperator` mutant still cover. Before that decision: Stryker 10.1.1's directives select by mutator name and line only (its directive pattern is `Stryker (disable\|restore) [next-line] <names>`); the equivalent `true` and the killed `false` are both the `ConditionalExpression` of the one `if` test on line 498, so no comment can suppress the one without the other. The operator was asked how to proceed (below) | none: not a behaviour finding | packages/elements/src/ocelle-pill-tag.ts:498 |
 | R1-04 | fixed | none: tracking only (Principle VIII: the items stay untested source until phase 6 observes them) | tasks.md T056, T059 |
 
 ## R1-01
@@ -45,7 +45,7 @@ the entry", a timing body outside this phase; the recorded run of `22a403aa` fai
 - run 2: 48 mutants, none survived; 2 timeouts (lines 495, 504), 13 compile errors (among them the optional-chaining
   and `?? null` mutants of the two fixed lines, which strict TypeScript rejects); 1 equivalent record, line 498.
 
-## Operator question (R1-03)
+## Operator question (R1-03), decided (a)
 
 Stryker 10.1.1 cannot suppress only the `true` replacement of line 498. Which should apply?
 
