@@ -525,6 +525,10 @@ phase and the review rounds, so each red run (command, exit, the failing asserti
 
 - [X] T025 [US1] Mutation: `pnpm run gate:mutation -- --base $(cat specs/019-data-records/reviews/phase-1/base.sha)` under #23 and op 015, the changed `packages/elements/src/overflow-region.ts` (T081) among the mutated source, killed by 009's tests and T079's; record survivors and any equivalence reason in the phase review. A mutant on the block-axis scrollbar's room (the caption cap's subtraction, the block-scrollbar mask layer's figure) survives the in-process run, where the room is 0: it is not equivalent; its record names the classic-scrollbar suite's body that kills it (file and test name) and T024's plant run that shows it failing (Q-A3 (a), contracts/checks.md § Harnesses; 009's landing review L1-02). T025 completes only after T083 to T089 (the operator's decisions at its stop, 2026-11-19, `reviews/phase-1/operator-mutation-decisions.md`): its final run is on the tree with T084, T086 and T089 (whose `gates/lib/mutation/report.ts` change it mutates too), `#release`'s `this.#axis = false` (line 660) is recorded as equivalent as T084 states, `disconnectedCallback`'s survivors are re-triaged as T086 states, and the survivors run 3 left in `ocelle-data-table.ts` are killed by new shared bodies or recorded as equivalent with their reasons (`reviews/phase-1/mutation.md`).
 
+### Landing correction
+
+- [ ] T090 [US1] Landing round 1 L1-02 and Phase 1 operator round 3 R3-01. Record named red regression cases in both browser harnesses for toggling `hidden` and `aria-hidden="true"` on the caption itself. Exclude a hidden caption from overflow-region fallback naming. Preserve the overflow Tab stop, explicit host naming precedence, and fallback name restoration when the caption is shown. Prove the cases fail before the fix and pass after it, and record the focused evidence in the Phase 1 review.
+
 **Checkpoint**: `tdd-check.sh 1` reports `pass`; quickstart steps 1 to 3 pass for the data table.
 
 ---
@@ -617,6 +621,10 @@ both dots; at 320 px the page scroll width equals the viewport width; zero CSP v
 - [X] T049 [US2] Affected plants: `pnpm run gate:plants -- --affected $(cat specs/019-data-records/reviews/phase-2/base.sha)`, recorded in `specs/019-data-records/reviews/phase-2/plants.md` in op 016's form; exit 0; committed with the green commit.
 - [X] T050 [US2] Element plants after green, recorded in `specs/019-data-records/reviews/phase-2/element-plants.md`: `time` not reflected; the connector span rendered for the last `<li>`; the connector started at its dot's centre; `next-has-time` never set; `hasTime` reading the attribute only; the attribute's text rendered beside the slot; `hasSlottedTime` counting a hidden or blank node; the `time` slot always rendered; the event's observer without `characterData`; the timeline's observer without `subtree`; `slot` dropped from the event's observer's attribute filter; `slot` dropped from the timeline's observer's attribute filter; the `::slotted(*)` type rule removed; the `::slotted([aria-hidden="true"])` rule removed; the pre-upgrade `aria-hidden` rule removed; the dot drawn as a `background-color`; the marker in `rule-strong`; `role="list"` removed; a blank host `aria-label` treated as decisive; `:host([hidden])` removed from the timeline and from the event. A plant that does not bite stops the phase.
 - [X] T051 [US2] Mutation: `pnpm run gate:mutation -- --base $(cat specs/019-data-records/reviews/phase-2/base.sha)`; record the result in the phase review.
+
+### Landing correction
+
+- [ ] T091 [US2] Landing round 1 L1-01 and Phase 2 operator round 3 R3-01. Record named red regression cases in both browser harnesses for adding and removing slotted time while a rendered timeline is detached. Reconcile the event time on reconnection, preserving observer and slot behavior. Assert that the rendered time, list item text and marker reflect the new slotted time or restored attribute fallback. Prove the cases fail before the fix and pass after it, and record the focused evidence in the Phase 2 review.
 
 **Checkpoint**: `tdd-check.sh 2` reports `pass`; quickstart steps 1 to 3 pass for the timeline.
 
