@@ -49,3 +49,22 @@ plants: affected since 88702025e56654ceb479d468ad0a565f23ea4f76: 317 of 317 plan
 The full hosted Plants and changed-source mutation checks are pending on the reviewable draft. T005 remains
 open until the exact candidate's hosted outcomes are recorded. The visual and axe integration inventories
 are marked CI-only in the focused phase scope. Both remain in the required hosted Unit tests inventory.
+
+## Hosted fixture inventory follow-up
+
+Run 45180364570 was on `c0bcbf2300ddbc74c62ddabd75a389d4df70ac18`. Its manifest overlays lacked the
+new declaration, and the empty-index overlay left all four workflow-node stories loadable. Local repro
+showed the unexpected stale declaration in seven intentional-failure manifest plants and the reordered
+pass plant. The empty-index gate exited 0 after building four stories. The Storybook build and plant-repo
+integration tests independently failed against their old expectations of 326 stories and 652 baselines.
+[Hosted CI run](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45180364570)
+
+The manifest overlays now include the generated declaration. The reordered plant reverses its object keys
+and keeps the array order. The empty-index overlay replaces the new file with a CSF module that exports
+only metadata. The integration expectations cover exactly 330 stories and 660 baselines. The affected
+Plants gate judged the eight manifest cases and the empty-index case as expected, and all 104 tests in
+the five focused manifest, Storybook build and plant-repo files passed.
+
+The visual token plant adds the four measured light-theme differences from the new stories and keeps its
+279 prior findings. Two pinned Docker captures confirmed all four dark baselines still match.
+The full hosted checks and T005 remain open.
