@@ -16,7 +16,9 @@ import { define } from "./define.ts";
 export class OcelleWorkflowNode extends LitElement {
   static override properties = {
     nodeId: { type: String, attribute: "node-id" },
+    // Stryker disable next-line ObjectLiteral: equivalent, {} observes "label" with the same string conversion, change detection and no reflection in Lit
     label: { type: String },
+    // Stryker disable next-line ObjectLiteral: equivalent, {} observes "kind" with the same string conversion, change detection and no reflection in Lit
     kind: { type: String },
     accountableRole: { type: String, attribute: "accountable-role" },
     outcomes: { attribute: false },

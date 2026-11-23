@@ -68,3 +68,28 @@ the five focused manifest, Storybook build and plant-repo files passed.
 The visual token plant adds the four measured light-theme differences from the new stories and keeps its
 279 prior findings. Two pinned Docker captures confirmed all four dark baselines still match.
 The full hosted checks and T005 remain open.
+
+## Hosted mutation follow-up
+
+The original mutation shard reported four surviving changes in the Lit property declarations. In a
+detached checkout of `b2fa0c06e0f44254bff0e360ba97cf5e111643fb`, the in-process suite from `7378919c`
+ran both new public markup tests against each exact replacement and the original code.
+[Hosted mutation shard](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45180364570/job/137712581838)
+
+| Replacement | Result |
+| --- | --- |
+| `label: {}` | Both tests passed, including the label's initial markup, property update and clearing. |
+| `kind: {}` | Both tests passed, including the kind's initial markup, property update and clearing. |
+| `outcomes: {}` | The property-only outcomes test failed on the first attribute write before connection. |
+| `outcomes: { attribute: true }` | The same assertion failed before connection. |
+| Original declarations | Both tests passed. |
+
+The two outcomes variants changed the initially empty array to the literal string
+`["Ignored initial markup"]`. The assertions also check that markup edits preserve the exact host
+array and that only its labels render. Both outcomes mutations remain enabled.
+
+For `label` and `kind`, Lit derives the same lowercase attribute name with either declaration. Its
+default converter returns the attribute value unchanged for both `String` and an omitted type. Both
+declarations use the same change detection, omit reflection and clear the rendered text on attribute
+removal. The manifest's documented types come from the public properties. Each declaration now has a
+located record for its equivalent `ObjectLiteral` mutant.
