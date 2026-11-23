@@ -36,6 +36,8 @@ The round 1 Chromium checks reproduced in-bounds occlusion, focus loss on a keye
 
 Round 2 found that a clipped native button with `tabindex="-1"` remained focusable in the accessibility tree and accepted direct focus. Making its HTML wrapper inert removed the action from that tree and blocked focus. Another target sat entirely inside the SVG while an enclosing pane hid it. Focusing it with `preventScroll` put focus on the hidden action, and default focus scrolled the pane. Check effective clipping before using `preventScroll` and keep visible focus on the named control when the pane still hides the target. [Probe observations](reviews/plan/round-2/refute.md#independent-checks)
 
+Round 3 reproduced native Tab reaching an action after a strict-CSP host class translated its pane offscreen. Scroll and resize notifications stayed unchanged. The intersection signal tracked the move out and back. Recomputing inert from that signal skipped the hidden action and restored the same eligible action when it returned. Use a position signal for idle eligibility and a live check at the input boundary to cover the observer delay. [Probe observations](reviews/plan/round-3/refute.md)
+
 ## R3 — Controlled updates and interaction boundaries
 
 **Decision** Keep accepted values host-owned. Native named controls and graph gestures converge on one validated completion per request type. Capture a connection's starting destination and re-read it before dispatch. Use the latest reveal destination and its initiating focus epoch for delayed viewport updates. A pending reveal never focuses an obsolete destination.
