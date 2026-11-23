@@ -1,7 +1,7 @@
 # spec-kitty-design inventory: data table, event timeline, evidence chain
 
 Read on 2026-11-18 from a read-only shallow clone of the public spec-kitty/spec-kitty-design repository (MIT) at
-`/home/user/spec-kitty/spec-kitty-design`, at two commits. Pointed out by the operator on 2026-11-18.
+`<home>/spec-kitty/spec-kitty-design`, at two commits. Pointed out by the operator on 2026-11-18.
 
 | Line | Commit | Committed | Read |
 |---|---|---|---|

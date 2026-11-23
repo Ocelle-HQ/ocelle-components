@@ -1,6 +1,6 @@
 # #470 hand-off material on spec-kitty-design `develop` (background)
 
-Recorded on 2026-11-18 from the read-only clone at `/home/user/spec-kitty/spec-kitty-design`, line `develop`, commit
+Recorded on 2026-11-18 from the read-only clone at `<home>/spec-kitty/spec-kitty-design`, line `develop`, commit
 `a6518cd` (2026-09-28), on the operator's decision IQ-25 (`reviews/phase-1/inventory-decisions.md`). **Background
 only**: this is the library's record of its own work on #470, not #470's issue body, which the operator supplies
 (IQ-25, "I'll paste them") and which is recorded verbatim beside this file when it comes (recorded on 2026-11-20 as `sources/issue-470.md`). Constitution VI: statements

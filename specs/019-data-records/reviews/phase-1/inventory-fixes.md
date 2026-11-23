@@ -3,7 +3,7 @@
 Source: `reviews/phase-1/inventory-questions.md` (2026-11-18) and the operator's decisions in
 `reviews/phase-1/inventory-decisions.md` (2026-11-18, human:jeroennouwsdev). Design artifacts only; no source or test
 file is touched. T003 and T005 stay unticked for the implementer. The library clone
-(`/home/user/spec-kitty/spec-kitty-design`) was read as data, role names and behaviour only (constitution VI).
+(`<home>/spec-kitty/spec-kitty-design`) was read as data, role names and behaviour only (constitution VI).
 
 ## Re-inventory on `develop` (IQ-1 (a), IQ-25)
 
