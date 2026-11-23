@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import "../src/ocelle-data-table.ts";
 import { inProcessDriver } from "./in-process.ts";
-import { dataTableScenarios } from "./scenarios/data-table.ts";
+import { captionVisibilityScenarios, dataTableScenarios } from "./scenarios/data-table.ts";
 
 // `ocelle-data-table`, in process on the element source (019 US1; contracts/checks.md § Harnesses; tasks.md T010): the
 // shared bodies of scenarios/data-table.ts (T006 to T009, T080) on the in-process driver, so Stryker's mutants of
@@ -45,6 +45,10 @@ describe("ocelle-data-table, in process (US1)", { timeout: 60_000 }, () => {
     const observed = await run(driver);
     // The `loop` bodies (the cases R-07 names) assert no loop error beside their outcome; the others assert their outcome.
     expect({ observed, loopErrors: checked === true ? loopErrors : [] }).toEqual({ observed: expected, loopErrors: [] });
+  });
+
+  it.each(captionVisibilityScenarios)("$name", async ({ run, expected }) => {
+    expect(await run(driver)).toEqual(expected);
   });
 
   it("the no-loop recorder sees a synthetic ErrorEvent carrying the ResizeObserver loop message", () => {

@@ -671,6 +671,48 @@ return { assigned: root.querySelector("slot").assignedNodes().map((node) => node
 
 const longCaption = "Work packages of mission nineteen across every lane, owner and review state, newest first";
 
+const captionHiding = [
+  { attribute: "hidden", hidden: "", shown: null },
+  { attribute: "aria-hidden", hidden: "true", shown: "false" },
+] as const;
+
+export const captionVisibilityScenarios: readonly DataTableScenario[] = captionHiding.map(({ attribute, hidden, shown }) => {
+  const named = (name: string): object => ({ tabindex: "0", role: "group", "aria-label": name });
+  const unnamed = { tabindex: "0", role: null, "aria-label": null };
+  return {
+    name: `landing R3-01: a caption with ${attribute} leaves fallback naming and keeps the overflow Tab stop`,
+    run: async (driver) => {
+      const table = '<table><caption id="caption">Draft inventory</caption><tbody><tr><td><span class="w800">wide</span></td></tr></tbody></table>';
+      await page(driver, dt("dt", "", table), 320);
+      const visible = await boxAttributes(driver, "dt");
+      await driver.setAttribute("caption", attribute, hidden);
+      await driver.settle();
+      const concealed = await boxAttributes(driver, "dt");
+      await driver.setAttribute("dt", "label", "Inventory");
+      await driver.settle();
+      const explicit = await boxAttributes(driver, "dt");
+      await driver.setAttribute("dt", "aria-label", "Deployments");
+      await driver.settle();
+      const preferred = await boxAttributes(driver, "dt");
+      await driver.setAttribute("dt", "aria-label", null);
+      await driver.setAttribute("dt", "label", null);
+      await driver.settle();
+      const fallback = await boxAttributes(driver, "dt");
+      await driver.setAttribute("caption", attribute, shown);
+      await driver.settle();
+      return { visible, concealed, explicit, preferred, fallback, restored: await boxAttributes(driver, "dt") };
+    },
+    expected: {
+      visible: named("Draft inventory"),
+      concealed: unnamed,
+      explicit: named("Inventory"),
+      preferred: named("Deployments"),
+      fallback: unnamed,
+      restored: named("Draft inventory"),
+    },
+  };
+});
+
 const captions: DataTableScenario[] = [
   {
     name: "R-04 caption text: a hidden span and an aria-hidden span are skipped and an <img alt> is read in the region's name",

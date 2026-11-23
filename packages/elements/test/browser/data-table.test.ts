@@ -1,6 +1,6 @@
 import type { Browser } from "playwright";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
-import { beforeUpgrade, beforeUpgradeExpected, beforeUpgradeMarkup, dataTableScenarios } from "../scenarios/data-table.ts";
+import { beforeUpgrade, beforeUpgradeExpected, beforeUpgradeMarkup, captionVisibilityScenarios, dataTableScenarios } from "../scenarios/data-table.ts";
 import { fixtureDriver } from "./driver.ts";
 import { clean, launch, serve, visit } from "./serve.ts";
 import type { Served } from "./serve.ts";
@@ -32,6 +32,13 @@ function started(): { readonly browser: Browser; readonly origin: string } {
 
 describe("ocelle-data-table on the strict-CSP fixture with the browser build (US1)", { timeout: 120_000 }, () => {
   it.each(dataTableScenarios)("$name", async ({ run, expected }) => {
+    const { browser, origin } = started();
+    const page = await visit(browser, origin, "data-table.html", ["ocelle-elements.js", "module.js"]);
+    const observed = await run(fixtureDriver(page.page, page.log, true));
+    expect({ observed, recorded: await page.finish() }).toEqual({ observed: expected, recorded: clean });
+  });
+
+  it.each(captionVisibilityScenarios)("$name", async ({ run, expected }) => {
     const { browser, origin } = started();
     const page = await visit(browser, origin, "data-table.html", ["ocelle-elements.js", "module.js"]);
     const observed = await run(fixtureDriver(page.page, page.log, true));
