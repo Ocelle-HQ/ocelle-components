@@ -117,7 +117,9 @@ export class OcelleTimelineEvent extends LitElement {
   // Stryker disable next-line BooleanLiteral: equivalent, render() sets it before the first change it is compared with can be seen: a record delivered before the first render only requests the update already pending
   #slotted = false;
 
-  readonly #mutations = new MutationObserver(() => this.#reconcileSlottedTime());
+  readonly #mutations = new MutationObserver(() => {
+    this.#reconcileSlottedTime();
+  });
 
   #reconcileSlottedTime(): void {
     // Stryker disable next-line ConditionalExpression: equivalent for the `true` variant, an update with no slotted-time change renders the same time box
