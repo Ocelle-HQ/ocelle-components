@@ -1,0 +1,28 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: fresh
+findings:
+  - id: PLAN-FRESH-1-001
+    severity: 4
+    title: "Desktop V2 evidence defines the nav pill as a group"
+    evidence:
+      - artifact: "contracts/elements.md gives ocelle-nav-pill one href, label and current state. research.md R5 identifies a conflicting upstream group but leaves the single-link assumption in place."
+      - code: "Verified the nav-pill HTML at the accepted #470 input SHA 173774af635cf34aeb13ea03a3bdaa12c651557d. packages/styles/src/nav-pill/sk-nav-pill.html renders a named nav with multiple native links, one current-page link and a separate CTA. Upstream spec-kitty-design #73 also describes an optional drawer."
+    claim: |
+      Individual links cannot deliver the named group evidenced by the immutable Desktop V2 input. Shipping the current contract would make consumers create the group themselves. Changing a published element from an individual link to a navigation group would also change its public contract. The operator must resolve which consumer behavior is in scope before implementation.
+    remedies:
+      - "Define ocelle-nav-pill as a named inline destination group with native links and current-page state. Keep responsive modal behavior with ocelle-app-shell, and record whether the CTA is supplied by a slot or stays in top-bar actions."
+      - "Define ocelle-nav-pill as the standalone responsive navigation group, including its optional modal navigation and focus lifecycle. Add the group-level contract and test scenarios to the spec and design."
+      - "Retain a single destination link only if the operator confirms that the consumers own group composition. Record that deliberate scope choice and its relationship to the Desktop V2 reference."
+  - id: PLAN-FRESH-1-002
+    severity: 3
+    title: "Collapsed mode cannot be applied to nested sidebar items by slot styling"
+    evidence:
+      - artifact: "contracts/elements.md promises that the shell presents nav items compact in the collapsed mission or project sidebar, while leaving the supported composition to later documentation. research.md R2 projects the original named slot into different regions."
+      - code: "packages/elements/src/ocelle-context-sidebar.ts:37–39 and :154–162 allow arbitrary section wrappers in a nested sidebar shadow composition. The shell's directly assigned sidebar is the wrapper host, not the nav items it contains. The contract for ocelle-nav-item currently makes compact a host Boolean and has no inherited shell presentation input."
+    claim: |
+      A consumer composing a landed sidebar with a list of nested navigation items can have an icon-width shell column while its items remain expanded. A shell slot selector cannot set nested custom-element properties, and the plan does not say how collapse state is conveyed or whether the shell overrides the consumer's explicit compact value. This risks clipped text and an unavailable compact label bubble in the expected composition.
+    remedies:
+      - "Define the supported sidebar composition and an explicit compactness propagation contract that works through nested sections, including the precedence of host-supplied compact state. Add an integrated boundary fixture with a real ocelle-context-sidebar and grouped descendant nav items, checking visual labels, bubble behavior, and unchanged link identity as the frame returns to expanded."

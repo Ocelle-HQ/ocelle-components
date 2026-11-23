@@ -23,7 +23,7 @@
 /// <reference types="vite/client" />
 import type { LitElement } from "lit";
 import { vi } from "vitest";
-import { commands, page, userEvent } from "vitest/browser";
+import { commands, page, userEvent, utils } from "vitest/browser";
 import baseText from "../../styles/src/base.css?raw";
 import framesText from "./fixtures/frames.css?raw";
 import { css } from "../../tokens/src/generate.ts";
@@ -35,7 +35,7 @@ import type { Delays, Snapshot } from "./live-reading.ts";
 import { runningOf } from "./animations.ts";
 import delayText from "./fixtures/tooltip-delay.css?raw";
 import { layoutWait } from "./layout-wait.ts";
-import { activeInnerOf, activePath, clickElement, computedOf, copyElement, currentOf, endOrder, focusElement, morphElement, preventNextEvent, recordEvents, resetPage, sentinelId, startOrder, takeRecords } from "./page-side.ts";
+import { activeInnerOf, activePath, characterBoxes, clickElement, computedOf, copyElement, copySentinel, currentOf, dropSentinel, endOrder, focusElement, morphElement, preventNextEvent, recordEvents, resetPage, selectSentinel, selectShadowRun, sentinelId, shadowClientRects, startOrder, takeRecords } from "./page-side.ts";
 import { installPageHelpers, pageHelpers } from "./page-helpers.ts";
 import { decodePng } from "./pixels.ts";
 import { heardTypes } from "./scenarios/driver.ts";
@@ -328,6 +328,31 @@ function listen(ids: readonly string[]): void {
 
 /** The numbers `identities` gave the shadow nodes it has seen. */
 const identities = new Map<Element, number>();
+
+/** The number of `findText` calls so far: each navigates to a fragment of its own. */
+let finds = 0;
+
+/** Puts the copy sentinel on the clipboard with a user copy of a scratch field (020 phase 2, `copyShadow`). */
+async function sentinelOnClipboard(): Promise<void> {
+  selectSentinel(copySentinel);
+  await userEvent.copy();
+  dropSentinel();
+}
+
+/** The clipboard's `text/plain`, read from the `clipboardData` of a user paste into a scratch field. */
+async function pastedText(): Promise<string> {
+  const field = document.createElement("textarea");
+  document.body.append(field);
+  let pasted = "";
+  field.addEventListener("paste", (event) => {
+    pasted = event.clipboardData?.getData("text/plain") ?? "";
+  });
+  field.focus();
+  await userEvent.paste();
+  field.remove();
+  getSelection()?.removeAllRanges();
+  return pasted;
+}
 
 /** The submissions recorded since the last `mount`, by form id (a capture-phase listener that prevents the unload). */
 const submissions = new Map<string, Entries>();
@@ -1232,6 +1257,41 @@ export function inProcessDriver(): InProcessDriver {
       }
       return seen;
     },
+    findText: async (word) => {
+      finds += 1;
+      const url = location.href.replace(/#.*$/, "");
+      location.href = `#ocelle-find-${String(finds)}:~:text=${encodeURIComponent(word)}`;
+      await settle();
+      await settle();
+      // The test's frame is found by its URL (the AX commands, test/commands.ts): the fragment is taken off again,
+      // with no navigation.
+      history.replaceState(history.state, "", url);
+    },
+    setProperties: (id, name, values) => {
+      const target = element(id) as unknown as Record<string, unknown>;
+      for (const value of values) target[name] = value;
+      return Promise.resolve();
+    },
+    visible: (id) => Promise.resolve(element(id).checkVisibility()),
+    reflected: (id, inner, property) => {
+      const value = (inShadow(id, inner) as unknown as Record<string, unknown>)[property] as readonly Element[] | null | undefined;
+      return Promise.resolve(value === null || value === undefined ? null : value.map(describe));
+    },
+    copyShadow: async (id, inner) => {
+      await sentinelOnClipboard();
+      await userEvent.tripleClick(inShadow(id, inner), { position: { x: 2, y: 2 } });
+      await userEvent.copy();
+      return await pastedText();
+    },
+    copyShadowRun: async (id, inner, from, to) => {
+      await sentinelOnClipboard();
+      selectShadowRun({ id, inner, from, to });
+      await userEvent.copy();
+      return await pastedText();
+    },
+    ariaSnapshot: (id, inner) => Promise.resolve(utils.aria.renderAriaTree(utils.aria.generateAriaTree(inShadow(id, inner)))),
+    clientRects: (id, inner) => Promise.resolve(shadowClientRects({ id, inner })),
+    characters: (id, inner) => Promise.resolve(characterBoxes({ id, inner })),
   };
   // Every step ends at its own page time, from which `after` measures.
   for (const [name, step] of Object.entries(driver)) {

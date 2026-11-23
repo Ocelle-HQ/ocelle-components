@@ -5,6 +5,10 @@ entry points and the browser build's file path (constitution VII).
 
 ## Unreleased
 
+**Responsive app frames and keyboard navigation are a MINOR addition (mission 015, #12).** Applications can share
+one shell across mission, project and personal screens. The shell measures its own width, presents the same
+destinations in a narrow drawer and supports a keyboard shortcut to the main content.
+
 **Selection and input elements, a MINOR change: nine elements, `ocelle-listbox`, `ocelle-option`, `ocelle-tabs`,
 `ocelle-tab`, `ocelle-tab-panel`, `ocelle-segmented-choice`, `ocelle-segment`, `ocelle-copy-field` and `ocelle-link`,
 and six events, `ocelle-listbox-change`, `ocelle-listbox-activate`, `ocelle-tabs-change`,
@@ -31,7 +35,33 @@ asked, and both fields take part in their form like native controls (value, vali
 a description and a host-set error; the elements, their properties, slots, parts, events and entry points are
 additions (a minor change).
 
+**Hosts get a disclosure, `ocelle-disclosure` (mission 020; part of #13).** Before, a host styled its own `<details>`
+for an inspector's advanced settings or a raw payload, with no shared chevron, focus ring or event, and a server swap
+could lose the state. Now the element renders a native `details` and `summary` in the Ocelle look, keeps its state in
+the `open` attribute through morphs and reports each change with one event.
+`ocelle-disclosure`, its property `open`, its moved attributes and their mirrors, the mapped `aria-expanded`, its slots
+`summary` and `icon` and its default slot, its parts `details`, `summary` and `panel`, the event
+`ocelle-disclosure-toggle`, the state `open` and its entry point are additions to the public surface: a minor change.
+
+**Hosts get a code block, `ocelle-code-block` (mission 020; part of #13).** Before, a host styled its own `<pre>` for
+a command, a log or a commit digest, in the user agent's monospace and with no shared wrap or scroll policy. Now the
+element shows the text in the library's sans with tabular figures on the inset ground, wraps it or scrolls it as an
+overflow region, and shows a digest in groups that copy and read unbroken.
+`ocelle-code-block`, its properties `overflow`, `label` and `digest`, its parts `block` and `code` and its entry point
+are additions to the public surface: a minor change. The README's element conventions gain the digest rule: a prefix
+to the last colon, groups of four code points with a `--ocelle-space-1` gap, copied and read text unbroken.
+
 ### Added
+
+- `ocelle-app-shell` with named rail and sidebar regions, an adaptive top bar and navigation drawer, independent
+  main padding controls, the `tier` and `contentTarget` properties, `remeasure()` and the
+  `ocelle-app-shell-tier-change` event.
+- `ocelle-top-bar` for product branding, application actions and the `ocelle-top-bar-menu-request` event.
+- `ocelle-nav-item` for native destination links with current and compact modes, and `ocelle-nav-pill` for a
+  wrapping inline list of destinations.
+- `ocelle-breadcrumbs` for an ordered trail with a text current page, and `ocelle-skip-link` for focusing
+  main content by reference or selector.
+- Standalone entry points for all six elements and their registrations in the package root and browser build.
 
 - `ocelle-icon`, an icon of the set drawn inline in `currentColor` at the `--ocelle-icon-size` token, decorative
   unless a `label` or a host `aria-label` names it; its properties `name` (reflected) and `label`.
@@ -122,6 +152,19 @@ additions (a minor change).
   value text at its inline end), `size` (reflected, `size="compact"`) and `ground` (reflected, `ground="tinted"` for
   tinted grounds); its parts `track`, `fill`, `label` and `value-text`. Entry point
   `@ocelle/elements/ocelle-progress.js` (defines `ocelle-progress` only).
+- `ocelle-disclosure`, a disclosure on a native `details` and `summary`: a summary that opens and closes a panel
+  inline, with the `chevron-end` icon while closed and `chevron-down` while open, or a consumer icon in the `icon` slot;
+  its property `open` (reflected), its `summary`, `icon` and default slots, its parts `details`, `summary` and
+  `panel`, the custom state `:state(open)` and the event `ocelle-disclosure-toggle` (`detail.open`, after each change,
+  changes before the native `toggle` coalesced); host `aria-label`, `aria-labelledby`, `aria-describedby` and `title`
+  moved onto the summary with their mirrors, and a host `aria-expanded` mapped onto `open`. Entry point
+  `@ocelle/elements/ocelle-disclosure.js` (defines `ocelle-disclosure` and the `ocelle-icon` it renders).
+- `ocelle-code-block`, a preformatted block for code, commands, logs and digests in the sans with tabular figures on
+  the inset ground, capped at the reading measure; its properties `overflow` (reflected; `scroll` scrolls long lines
+  sideways as an overflow region, a tab stop and a named group only while it overflows, anything else wraps), `label`
+  and `digest` (reflected; a prefix to the last colon and groups of four code points with a gap, copied and read
+  unbroken), its parts `block` and `code`; no slot, the text is the light DOM's text content. Entry point
+  `@ocelle/elements/ocelle-code-block.js` (defines `ocelle-code-block` only).
 - The style lint's token-only rule, which checks these elements' styles, admits four values and nothing near them:
   the `grid-template-columns` tracks `fit-content(<percentage>)` and `minmax(0, <flex>)` (the facts columns and
   grid), `translateX(<percentage>)` in `transform` (the progress sweep) and a bare positive integer

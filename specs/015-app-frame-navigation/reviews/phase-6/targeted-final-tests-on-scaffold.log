@@ -1,0 +1,9 @@
+Pinned final source and built fixture replay with the final visibility assertion on the tests-only checkpoint.
+ FAIL  |elements-browser| packages/elements/test/browser/app-shell.test.ts > resizes the built shell, dismisses its real drawer, and transfers skip focus under strict CSP
+ FAIL  |elements (chromium)| packages/elements/test/skip-link.test.ts > ocelle-skip-link > reveals the localized control on first Tab and continues after the first selector match
+ FAIL  |elements (chromium)| packages/elements/test/skip-link.test.ts > ocelle-skip-link > uses the containing shadow root and only its first matching target
+ FAIL  |elements (chromium)| packages/elements/test/skip-link.test.ts > ocelle-skip-link > uses a direct cross-root reference before the selector and continues into shell content
+ FAIL  |elements (chromium)| packages/elements/test/skip-link.test.ts > ocelle-skip-link > re-resolves the selector at activation and follows the first remaining match
+ Test Files  2 failed | 1 passed (3)
+      Tests  5 failed | 8 passed (13)
+   Duration  10.00s (worker 48%, tests 42%, import 9%)

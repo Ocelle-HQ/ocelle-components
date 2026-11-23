@@ -196,5 +196,329 @@
     "reason": "option clipped by the list part's `overflow: auto` scroll box (`elmPartiallyObscured`)",
     "sunset": "the op that removes the clipped options' color-contrast incomplete results of the scrolling listbox story (an axe-core release that treats text clipped by an overflow: auto scroller as hidden, or a change of the story), to be opened by the operator",
     "plan": "specs/014-selection-input/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--scroll-overflowing",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .code",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--scroll-overflowing",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .code",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--scroll-middle",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .code",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--scroll-middle",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .code",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--scroll-end",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .code",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--scroll-end",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .code",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--scroll-focused",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .code",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--scroll-focused",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .code",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--digest-scroll",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .group:nth-child(11)",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--digest-scroll",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .group:nth-child(13)",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--digest-scroll",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .group:nth-child(15)",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--digest-scroll",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .group:nth-child(17)",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--digest-scroll",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .group:nth-child(19)",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--digest-scroll",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .group:nth-child(21)",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--digest-scroll",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .group:nth-child(23)",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--digest-scroll",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .group:nth-child(25)",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--digest-scroll",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .group:nth-child(27)",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--digest-scroll",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .group:nth-child(29)",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--digest-scroll",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .group:nth-child(31)",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--digest-scroll",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .group:nth-child(33)",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--digest-scroll",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .group:nth-child(11)",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--digest-scroll",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .group:nth-child(13)",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--digest-scroll",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .group:nth-child(15)",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--digest-scroll",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .group:nth-child(17)",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--digest-scroll",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .group:nth-child(19)",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--digest-scroll",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .group:nth-child(21)",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--digest-scroll",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .group:nth-child(23)",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--digest-scroll",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .group:nth-child(25)",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--digest-scroll",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .group:nth-child(27)",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--digest-scroll",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .group:nth-child(29)",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--digest-scroll",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .group:nth-child(31)",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--digest-scroll",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .group:nth-child(33)",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--right-to-left-scroll",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .code",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--right-to-left-scroll",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .code",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--scroll-unlabelled",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .code",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
+  },
+  {
+    "story": "elements-ocelle-code-block--scroll-unlabelled",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "ocelle-code-block >>> .code",
+    "reason": "clipped line of the code block's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/020-disclosure-code-block/plan.md"
   }
 ]

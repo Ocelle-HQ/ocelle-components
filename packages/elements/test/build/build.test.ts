@@ -479,10 +479,46 @@ describe("the module build of ocelle-progress (013)", () => {
   });
 });
 
+// 020 phase 1 (T006; contracts/elements.md § Internal modules used): dist/ocelle-disclosure.js imports lit, the
+// registration helper, the control and slot-convention modules and `ocelle-icon` for its chevron, and no other element
+// module nor the root.
+describe("the module build of ocelle-disclosure (020)", () => {
+  const read = (name: string): string => (existsSync(join(dist, name)) ? readFileSync(join(dist, name), "utf8") : "");
+
+  it("dist/ocelle-disclosure.js imports lit, the registration helper, src/control and src/icon-slot, and of the element modules only ocelle-icon, not the root", () => {
+    const imported = specifiers(read("ocelle-disclosure.js"));
+    expect({
+      lit: imported.includes("lit"),
+      define: imported.includes("./define.js"),
+      control: imported.includes("./control.js"),
+      iconSlot: imported.includes("./icon-slot.js"),
+      root: imported.includes("./index.js"),
+      elements: imported.filter((specifier) => specifier.startsWith("./ocelle-")),
+    }).toEqual({ lit: true, define: true, control: true, iconSlot: true, root: false, elements: ["./ocelle-icon.js"] });
+  });
+});
+
+// 020 phase 2 (T026; contracts/elements.md § Internal modules used): dist/ocelle-code-block.js imports lit, the
+// registration helper and the overflow-region module, and no element module nor the root.
+describe("the module build of ocelle-code-block (020)", () => {
+  const read = (name: string): string => (existsSync(join(dist, name)) ? readFileSync(join(dist, name), "utf8") : "");
+
+  it("dist/ocelle-code-block.js imports lit, the registration helper and src/overflow-region, and no element module, not the root", () => {
+    const imported = specifiers(read("ocelle-code-block.js"));
+    expect({
+      lit: imported.includes("lit"),
+      define: imported.includes("./define.js"),
+      region: imported.includes("./overflow-region.js"),
+      root: imported.includes("./index.js"),
+      elements: imported.filter((specifier) => specifier.startsWith("./ocelle-")),
+    }).toEqual({ lit: true, define: true, region: true, root: false, elements: [] });
+  });
+});
+
 describe("the browser build (dist/browser/ocelle-elements.js)", () => {
   const text = (): string => (existsSync(browserBuild) ? readFileSync(browserBuild, "utf8") : "");
 
-  it("is self-contained: it defines ocelle-icon, ocelle-brand-mark, ocelle-dialog, ocelle-drawer, ocelle-tooltip, ocelle-card, ocelle-section-header, ocelle-page-header, ocelle-context-sidebar, ocelle-personal-rail, ocelle-button, ocelle-action-row, ocelle-facts, ocelle-fact, ocelle-empty-state, ocelle-progress, ocelle-listbox, ocelle-option, ocelle-tabs, ocelle-tab, ocelle-tab-panel, ocelle-segmented-choice, ocelle-segment, ocelle-copy-field and ocelle-link, with no import statement and no dynamic import", () => {
+  it("is self-contained: it defines ocelle-icon, ocelle-brand-mark, ocelle-dialog, ocelle-drawer, ocelle-tooltip, ocelle-card, ocelle-section-header, ocelle-page-header, ocelle-context-sidebar, ocelle-personal-rail, ocelle-button, ocelle-action-row, ocelle-facts, ocelle-fact, ocelle-empty-state, ocelle-progress, ocelle-listbox, ocelle-option, ocelle-tabs, ocelle-tab, ocelle-tab-panel, ocelle-segmented-choice, ocelle-segment, ocelle-copy-field, ocelle-link, ocelle-disclosure and ocelle-code-block, with no import statement and no dynamic import", () => {
     const code = text();
     expect({
       exists: code !== "",
@@ -506,6 +542,8 @@ describe("the browser build (dist/browser/ocelle-elements.js)", () => {
       definesSegmentedChoice: code.includes('"ocelle-segmented-choice"') && code.includes('"ocelle-segment"'),
       definesCopyField: code.includes('"ocelle-copy-field"'),
       definesLink: code.includes('"ocelle-link"'),
+      definesDisclosure: code.includes('"ocelle-disclosure"'),
+      definesCodeBlock: code.includes('"ocelle-code-block"'),
       specifiers: specifiers(code),
       dynamicImport: /\bimport\s*\(/.test(code),
     }).toEqual({
@@ -530,6 +568,8 @@ describe("the browser build (dist/browser/ocelle-elements.js)", () => {
       definesSegmentedChoice: true,
       definesCopyField: true,
       definesLink: true,
+      definesDisclosure: true,
+      definesCodeBlock: true,
       specifiers: [],
       dynamicImport: false,
     });

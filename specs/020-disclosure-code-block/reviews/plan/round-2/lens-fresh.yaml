@@ -1,0 +1,102 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 2
+lens: fresh
+# Probes: Playwright from /opt/node22/lib/node_modules/playwright driving Chromium 157.0.8103.78 (headless), on
+# throwaway pages in the session scratchpad, outside the repository. The overflow-region CSS was taken verbatim from
+# packages/elements/src/overflow-region.ts (overflowRegionStyles, tokens replaced by literal values), and
+# packages/elements/src/focusable.ts was transpiled with TypeScript and loaded as is. Disclosure probes used a vanilla
+# custom element with the R-01 shadow structure (details, summary with a summary slot, panel with the default slot,
+# no delegatesFocus). Round 1's refute, fixes and verify were read; nothing settled there is repeated.
+findings:
+  - id: PLAN-FRESH-2-001
+    severity: 3
+    title: "Round 1's `.block { direction: ltr }` fix fights the module's mask: under an rtl page the scroll block fades on the left, where nothing is hidden, and hard-cuts the right"
+    evidence:
+      - artifact: "research.md § R-06: '`.block` also has `direction: ltr; unicode-bidi: isolate` … The scroll box inherits `ltr`, so in scroll mode the block starts at the left and fades at the right under an `rtl` page too (US2-8)'; spec.md US2 scenario 8 'the block starts at the left and fades at the right, as in a left-to-right page'; FR-024 'needs no change to the module'; SC-007 'src/overflow-region.ts and its contract are unchanged'"
+      - code: "packages/elements/src/overflow-region.ts:185-193: the mask is mirrored on the HOST's direction, `.region-box[data-fade=\"start\"], :host(:dir(rtl)) .region-box[data-fade=\"end\"] { mask-image: linear-gradient(to right, transparent, …) }`, not on the box's own direction"
+      - code: "specs/009-workflow-layouts/contracts/overflow-region.md:147: the fade gradient per value is '(mirrored under `:host(:dir(rtl))`)'; § What a later element must not do (163-169) forbids a second fade, so the element may not restyle the mask"
+      - code: "Probe d.cjs: the module CSS in a shadow root of a host under <div dir=rtl>, with `.block { direction: ltr; unicode-bidi: isolate; width: 200px }` around `.region-frame > .region-box[data-fade=end] > .region-track > pre` (200 chars, white-space: pre). Result: box direction 'ltr', scrollLeft 0, scrollWidth 1573, clientWidth 200 (content off at the right, which the module reports as 'end'), host :dir(rtl) true, computed mask-image 'linear-gradient(to right, rgba(0,0,0,0), rgb(0,0,0) 24px), …': transparent at the LEFT edge. The higher-specificity :host(:dir(rtl)) rule wins."
+    claim: |
+      The module assumes its box has the host's direction: edgeState and clearanceScroll read the box (scrollLeft,
+      computed direction), but the mask picks its side from `:host(:dir(rtl))`. Round 1's PLAN-FRESH-1-002 (a) makes
+      the box ltr while the host stays rtl, so under any rtl page the two disagree. An overflowing scroll block then
+      fades the left edge, where no content is hidden, and the right edge, where the clipped text is, gets no cue.
+      Scrolled to the far end, the fade appears on the wrong side again. US2-8's "fades at the right" and the
+      RightToLeft scroll story cannot go green unless the element changes the module or its contract, and FR-024 and
+      SC-007 forbid that, or restyles the mask, which the contract forbids. Phase 2's green step would stop on a
+      requirement the plan says is met. The forced-colours edges do not show the problem: they use
+      `inset-inline-start` and `border-inline-*`, which resolve in the ltr direction the edges inherit. Only the mask is
+      wrong, and the planned visual-order body reads text order, not fade side. Mission 019 may change this module, and
+      the plan's operator stop before phase 2 does not mention direction.
+    remedies:
+      - "Scope the ltr rule to the text, not the box: put `direction: ltr; unicode-bidi: isolate` (plus `text-align: left`) on `.code` only. The `.block` and the module's box then keep the page direction. Under rtl a scroll block starts at the right and fades at the left, as `ocelle-scroller` does, while each line still reads `--force main.`. Amend US2-8, R-06, the contract's host styles and README statement, and keep the visual-order body. Add a fade-side assertion under rtl (the computed `mask-image` direction, or painted pixels at each edge) to US2-8."
+      - "Keep the box ltr and take a module or contract change to the operator as a separate op (the mask keyed on the box's direction, for example `.region-box:dir(rtl)` or a `[dir]`-independent rule). This is outside this mission (FR-024, SC-007), so US2-8's scroll half waits for that op or is dropped."
+  - id: PLAN-FRESH-2-002
+    severity: 3
+    title: "A disclosure in an ocelle-dialog or ocelle-drawer: the overlay's Tab walk counts links in a closed panel as stops, so Tab from the summary escapes the modal to the body"
+    evidence:
+      - artifact: "research.md § R-08: 'The hiding of a closed panel is the platform's (`details` content is skipped, not `display: none`)'; spec.md FR-008 'While closed, the panel's content has no box, is not in the tab order'; no scenario, body or story puts a disclosure inside the library's own overlays (spec US1, contracts/checks.md § Scenario bodies), though an inspector drawer with an 'Advanced settings' disclosure is US1's own use case"
+      - code: "packages/elements/src/focusable.ts:52-53: `rendered(element)` is `getClientRects().length > 0 && visibility === \"visible\"`; walk() follows open shadow roots and slots, so it walks the disclosure's shadow details and the panel slot's assigned elements"
+      - code: "packages/elements/src/overlay.ts:710-744 (#tab): the cycle's last candidate is `order.at(-1)`; a Tab from an active element that is in `order` but is not the last returns without preventDefault (line 741), so the engine moves focus natively"
+      - code: "Probe a.cjs: a link in a closed shadow-details panel, slotted from light DOM: getClientRects().length 1, visibility 'visible', tabIndex 0, checkVisibility() false, and link.focus() does not take focus. Probe b.cjs: focusable.ts walk() over `<button id=close>` + that disclosure gives order [close, summary, lk]: the hidden link is the cycle's last stop. Probe c.cjs: in a showModal() dialog with a native details as the last control, a native Tab from the summary leaves focus on the body."
+    claim: |
+      Chromium hides closed `details` content with content-visibility. A forced layout still gives it client rects and
+      a visible computed visibility, so 008's walk takes a link in a closed panel as a Tab stop. When the disclosure is
+      the last control in an ocelle-dialog or ocelle-drawer, the overlay sees the summary as a middle stop. A Tab there
+      runs natively, finds nothing focusable in the modal, and leaves focus on the body, outside the overlay's cycle.
+      That breaks the overlay's focus containment, which constitution III requires. The same defect exists today for a
+      plain `<details>`, but this mission is the one that makes a details-based control a library element and recommends
+      it for inspector content. No acceptance scenario covers that composition, so the plan ships it unseen. Mission
+      013 and 019 elements are protected (SC-008), but `focusable.ts` and `overlay.ts` are mission 008's and are not
+      listed as touched.
+    remedies:
+      - "Bring the fix into this mission with operator approval: in `focusable.ts`, have `rendered()` also require `element.checkVisibility()` (content-visibility aware; Chromium 105+, inside the engine floor), with a body in which a disclosure is the last control of an ocelle-dialog, Tab from its summary wraps to the close control, and a plant that removes the check. Record the change in plan.md Constraints and SC-008's list."
+      - "Keep 008's modules unchanged: add the case to research.md § Repository-wide notes for a separate op, state it in the README's disclosure section (a closed disclosure as the last control of an overlay lets Tab leave it), and add a known-failing or skipped body that the op turns on."
+  - id: PLAN-FRESH-2-003
+    severity: 2
+    title: "Round 1's FR-025 focus fix checks only `.region-box`; after the module's handover focus is on `.region-frame`, and a switch to wrap then drops it to the body"
+    evidence:
+      - artifact: "research.md § R-06 'Focus on the switch': 'In `willUpdate`, when the policy leaves `scroll` while the `.region-box` is the shadow root's active element, the element notes it'; spec.md FR-025 'When the switch from scroll to wrap happens while the scroll box has focus'; US2 scenario 21 and FR-024 state that the handover focuses `.region-frame`"
+      - code: "packages/elements/src/overflow-region.ts:433-445 (#handOver): with no focusable slotted element (always, for the code block) it sets `tabindex=\"-1\"` on `.region-frame` and focuses it; the frame keeps focus until its own focusout (#onFrameOut, line 467)"
+      - code: "research.md § R-06: in wrap mode the scroll structure (frame included) is gone with the scroll template; only `.block` survives the switch"
+    claim: |
+      Take a focused, overflowing scroll block whose text or container changes so that it fits: the module moves focus
+      to `.region-frame`, which is US2-21 and the plan's own path. If `overflow` then switches to wrap, with an htmx
+      attribute morph or a responsive script, the shadow root's active element is the frame, not `.region-box`. R-06's
+      check does not fire, the frame is removed with the scroll template, and focus falls to the body. FR-025's promise
+      that `document.activeElement` stays the host fails on a path the plan itself creates. The FR-025 body focuses the
+      box only, so it cannot catch this.
+    remedies:
+      - "In `willUpdate`, note the switch when the shadow root's active element is any node inside `.block` that the wrap template removes (`.block` contains it and it is not `.block`), not only `.region-box`. Add an FR-025 body that ends overflow while the box is focused (focus on `.region-frame`, as US2-21) and then switches to wrap, asserting that the host is `document.activeElement` and the shadow root's active element is `.block`."
+  - id: PLAN-FRESH-2-004
+    severity: 2
+    title: "US1-22's body reads scrollY after the Space press; Space on the body pages the document down, so a correct element fails the body"
+    evidence:
+      - artifact: "contracts/checks.md § Scenario bodies: 'US1-22: a pointer click on plain text near the end of a tall, scrolled, open panel, then Space: the shadow root's active element is not the summary, `scrollY` is unchanged, the disclosure is open, 0 events'; spec.md US1 scenario 22 says the click 'does not change the page's scroll position'"
+      - code: "Probe e.cjs (no delegatesFocus, the plan's design): an open panel 2000 px tall followed by 1500 px of page content, scrolled to the panel's end. scrollY 1751 before the click, 1751 after it, 2276 after Space. The disclosure stays open and the shadow root's active element is null. So the correct design moves the page on Space, as any page does with focus on the body."
+      - code: "verify-1.md, PLAN-FRESH-1-001: 'The refute measured scrollY unchanged after the click and Space'. That probe page ended at the panel, so Space had nowhere to scroll, and the result does not generalise to the fixture pages"
+    claim: |
+      The scroll-jump defect is something the click causes: with delegatesFocus the summary is focused and scrolled into
+      view. Space is meant to show only that the panel does not close. Read after Space, "scrollY is unchanged" holds
+      only when the page cannot scroll further. On a fixture page with any content after the disclosure, or a viewport
+      the panel does not fill to the end, the correct element fails green. The plant (delegatesFocus restored) could
+      also be caught for the wrong reason. A body whose result depends on page length is not a stable oracle
+      (Principle VIII).
+    remedies:
+      - "Read scrollY between the click and the Space press, and assert it unchanged there. After Space, assert only that the disclosure is open, the shadow root's active element is not the summary, and 0 events (then the positive control). Reword checks.md's US1-22 line to match."
+  - id: PLAN-FRESH-2-005
+    severity: 1
+    title: "The temporary focus on `.block` after a switch to wrap draws the user agent's ring, not the library's"
+    evidence:
+      - artifact: "research.md § R-06: in `updated` the element 'gives `.block` a temporary `tabindex=\"-1\"`, focuses it'; R-06 and contracts/elements.md name no `.block:focus-visible` rule"
+      - code: "packages/elements/src/overflow-region.ts:150-156: when the module itself takes focus to a non-control (its handover to `.region-frame`), it draws the library ring through `.region-frame:focus-visible > .region-ring` with `--ocelle-color-focus` and `--ocelle-focus-width`"
+    claim: |
+      A switch from a keyboard-driven context focuses `.block` by script. Chromium then matches `:focus-visible` and
+      paints its default `outline: auto` around the inset box, in a colour and width that are not the library's tokens
+      (constitution II) and that 008, 009 and 012 never show. The module's own handover avoids this with its ring
+      overlay, but the element's handover has no rule. Either the ring is wanted, and it should be the library's, or it
+      is not, and it should be suppressed as `.region-frame { outline: none }` does.
+    remedies:
+      - "State the `.block` ring in R-06 and the contract: either `.block:focus-visible { outline: var(--ocelle-focus-width) solid var(--ocelle-color-focus); outline-offset: var(--ocelle-focus-offset) }` (with `Highlight` in forced colours), or `.block { outline: none }`, as the module's frame does. Add an assertion on the focused `.block`'s computed outline to the FR-025 focus body."

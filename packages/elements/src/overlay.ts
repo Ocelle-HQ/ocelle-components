@@ -20,6 +20,12 @@ type State = "closed" | "opening" | "shown" | "closing";
 
 /** The open overlays in opening order, bottom first; only the top acts on Escape and Tab (R-02). */
 const stack: OcelleOverlay[] = [];
+const initialFocus = new WeakMap<OcelleOverlay, () => HTMLElement | undefined>();
+
+/** @internal Allows a composed overlay to choose its initial target from projected content. */
+export function setOverlayInitialFocus(overlay: OcelleOverlay, select: () => HTMLElement | undefined): void {
+  initialFocus.set(overlay, select);
+}
 // The tooltip's Escape acts only for a trigger inside the topmost open overlay (008 research.md R-12).
 bubbles.top = () => stack.at(-1);
 
@@ -423,6 +429,11 @@ export class OcelleOverlay extends LitElement {
 
   /** The initial focus target (R-04): autofocus in the body, else its first focusable element, else the close control. */
   #initialTargets(): HTMLElement[] {
+    const select = initialFocus.get(this);
+    if (select !== undefined) {
+      const target = select();
+      return target === undefined ? [] : [target];
+    }
     const slot = this.renderRoot.querySelector<HTMLSlotElement>('[part="body"] > slot');
     const assigned = slot?.assignedElements() ?? [];
     const autofocus: HTMLElement[] = [];

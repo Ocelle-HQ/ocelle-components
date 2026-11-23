@@ -1,0 +1,43 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 3
+lens: fresh
+# Probes: Playwright from /opt/node22/lib/node_modules/playwright driving headless Chromium, on throwaway pages in the
+# session scratchpad, outside the repository. The probe used a vanilla custom element whose shadow root has R-06's
+# scroll structure (.block > .region-frame > .region-box > .region-track > pre.code), with the module's box and track
+# rules copied from packages/elements/src/overflow-region.ts:123-136 and R-06's `.code` rule after round 2's fix
+# (`direction: ltr; unicode-bidi: isolate; text-align: left; white-space: pre`), under <div dir=rtl>.
+# Read: round 1 and round 2 refute, fixes and verify. Nothing settled there is repeated. This round attacks round 2's
+# fixes. PLAN-FRESH-2-002 (b) (the overlay Tab case) was re-checked against overlay.ts:710-744: Shift+Tab from the
+# first stop goes through #tryFocus over the reversed order, so a hidden last link that refuses focus falls through to
+# the summary. The case stays "last control, forward Tab" as recorded, and nothing new is reported there.
+# PLAN-FRESH-2-003 and PLAN-FRESH-2-005 were checked against the 009 contract § What a later element must not do. No
+# conflict was found.
+findings:
+  - id: PLAN-FRESH-3-001
+    severity: 3
+    title: "Round 2's rtl fix gives the scroll box `rtl` around `ltr`, start-aligned lines: at rest a scroll block on an rtl page shows only the tails of its long lines, and every short line is scrolled out of view"
+    evidence:
+      - artifact: "research.md § R-06: '`.code` has `direction: ltr; unicode-bidi: isolate; text-align: left` … `.block` and the module's `.region-box` keep the page direction … So under an `rtl` page a scroll block starts at the right and fades at the left, as `ocelle-scroller` does, while each line reads left to right'; spec.md US2 scenario 8 'it starts at the right, the fade is at the left edge, where the hidden text is'; spec.md Edge Cases 'Right-to-left pages'; contracts/elements.md code-block README statement '(so an `rtl` scroll block starts at the right and fades at the left, as `ocelle-scroller` does)'"
+      - artifact: "contracts/checks.md § Scenario bodies, US2-8's fade side: it asserts the box's direction, `data-fade` `end`, the mask side and 'the track's left edge lies left of the box's'. It does not check what text is visible at rest, so the body passes while the line starts are hidden"
+      - artifact: "plan.md Summary: 'so the module's fade side stays right under `rtl`'. Round 2's verify already called this wording contrary to US2-8"
+      - code: "packages/elements/src/overflow-region.ts:130-135: `.region-track { inline-size: max-content; min-inline-size: 100% }`, so the track is as wide as the longest line, and under an `rtl` box its scroll origin is the track's right edge"
+      - code: "Probe p1.cjs: the R-06 scroll structure under <div dir=rtl>, `.block` 300 px wide, lines 'cd /srv/app', 'docker compose --project-name … --force-recreate main' and 'ls'. Box direction 'rtl', scrollLeft 0, scrollWidth 839, clientWidth 300, box x 960 to 1260. Line rects: 'cd /srv/app' x 425 to 503 (not visible), the long line x 425 to 1256 (only its last ~300 px visible), 'ls' x 425 to 436 (not visible). At rest, the reader sees two empty-looking lines and the end of the command."
+    claim: |
+      Round 2's fix moved `direction: ltr` from `.block` to `.code` so that the mask side matches the box. But
+      `text-align: left` and `ltr` lines inside an `rtl` scroll box mean each line starts at the left edge of the track,
+      which is the far end of the scroll range. The box's scroll origin under rtl is its right edge. So at rest an
+      overflowing code block on an rtl page shows the last part of its longest line and leaves every shorter line, and
+      the start of every long line, outside the box. A command reads "…--force-recreate main" with the program name and
+      first flags hidden, and a multi-line build log looks like mostly blank lines. A one-line digest in scroll mode
+      opens on its last groups, with the `sha256:` prefix hidden. This is not "as `ocelle-scroller` does": the scroller's
+      slotted items follow the page direction and start at the right, but these lines do not. The fade is now on the
+      correct side, and it marks the text the reader needs first as the hidden part. US2-8's fade-side body and the
+      planned RightToLeft story (a wrap-mode command, R-09) both pass without showing this. The visual-order body only
+      sorts text boxes and never reads the scroll position. The design fails for its stated rtl consumer, and no test
+      in the plan can fail for it.
+    remedies:
+      - "Keep the module and round 2's mask fix, and have the element open a scroll block at the line starts under `rtl`. When the box first follows a new box, or the text changes, and the box computes `direction: rtl`, the element writes `scrollLeft = -(scrollWidth - clientWidth)` with `behavior: \"instant\"`. The 009 contract forbids only smooth writes. The module's `scroll` trigger then sets `data-fade` to `start`, which under `:host(:dir(rtl))` is the transparent-at-right gradient, on the hidden side. Amend R-06, US2-8 ('starts at the line starts, the fade is at the right edge'), the Edge Case, the contract's README statement and plan.md Summary. Replace the fade-side body with one that asserts, under rtl at rest, that each line's first character rect lies inside the box, `data-fade` is `start` and the mask is transparent at the right. Add a plant that removes the write."
+      - "Make the code block's own directionality `ltr`, so the module, the box and the lines all agree: README tells consumers to set `dir=\"ltr\"` on an `ocelle-code-block` in an rtl page (or the element sets the host's `dir` to `ltr` when the host has none, if the operator accepts an element-owned host attribute). Then `:host(:dir(rtl))` is false, the box is `ltr`, lines start visible and the fade is at the right. Amend US2-8 to 'with `dir=\"ltr\"` on the host, as in an ltr page'. Record what happens without the attribute (this finding's behaviour) as a stated limitation, and add a body for the attributed case."
+      - "Accept the behaviour and state it: README and Edge Cases say that on an rtl page a scroll block opens at the line ends and that consumers should use the wrap policy (the default) there. US2-8 gets a body that pins this behaviour (line starts outside the box at rest), and the RightToLeft story adds a scroll variant so the baseline shows it. Fix plan.md Summary's 'stays right' either way."
