@@ -6186,6 +6186,82 @@
       ],
       "kind": "javascript-module",
       "path": "src/ocelle-workflow-lane.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "kind": "field",
+              "name": "nodeId",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "label",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "kind",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "accountableRole",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "outcomes",
+              "type": {
+                "text": "readonly string[]"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "selected",
+              "type": {
+                "text": "boolean"
+              }
+            }
+          ],
+          "name": "OcelleWorkflowNode",
+          "slots": [],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-workflow-node"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-workflow-node.ts",
+            "name": "OcelleWorkflowNode"
+          },
+          "kind": "js",
+          "name": "OcelleWorkflowNode"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-workflow-node.ts"
     }
   ],
   "readme": "",
