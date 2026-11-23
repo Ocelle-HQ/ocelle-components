@@ -47,3 +47,13 @@ keep Phase 2 history and continue. The initial draft passed the hosted gates. In
 identified the hidden-status defect, which was fixed test-first and checked again on the final
 candidate. These are phase and run milestones. Issue pickup through merge was outside those clocks.
 [Phase 2 decision](reviews/phase-2/operator-history-decision.md) · [Initial Phase 3 CI](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45221456769) · [Review and fix](reviews/phase-3/round-1-fixes.md)
+
+## Landing verification
+
+**LAND.** The approved mission has 13 completed tasks, three approved phase verdicts and three passing phase replays. The current `main` commit `ff85ae56` is already an ancestor of the reviewed PR head `58fa2249`. The independent landing review approved the integrated product and test changes with zero blockers. The recorded operator decisions keep the published Phase 2 and Phase 3 history. [Run summary](../../knowledge/speckit-flows/runs/027-workflow-node.md) · [Landing review](reviews/landing/round-1.md)
+
+- Local checks on the integrated changes passed typecheck, lint, style lint, test lint, manifest, configuration copies, CSP and sign-off. Both workflow-node Chromium files passed all 45 cases through the Unit tests gate. The independent review also passed the package README and manifest suites, for 1,122 tests across four files.
+- The full hosted run on the identical product, test and gate changes passed every required check: Accessibility, Brand rules, Code lint, Content security, Contrast, Custom-elements manifest, Install and pins, Mutation testing, Plants, Prefix, Sign-off, Story config copies, Storybook build, Style lint, Test lint, Typecheck, Unit tests and Visual regression. [Green code revision](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45223305705)
+- A later documentation-only run failed its mixed mutation shard before judging mutations. Stryker reported a failed initial test run and produced no report (exit 2). The job did not name the failing assertion. The product, test and CI configuration changes match the green code revision, so the evidence points to dry-run instability, with the exact cause unconfirmed. [Failed run](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45234667230/job/137903414262) · [Newer run on the approved feature head](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/45241916610)
+
+The handoff requires the hosted verdict on the final published head. The draft description needs to reflect the completed feature and its verification. The operator handles PR readiness and merge.
